@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry excluding="main/" kind="src" path="src"/>
+	<classpathentry kind="src" path="src/main/ressource"/>
+	<classpathentry kind="src" path="src/main/java"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6"/>
+	<classpathentry kind="src" path="/orbisgis-core"/>
+	<classpathentry kind="src" path="/gdms"/>
+	<classpathentry kind="lib" path="C:/Documents and Settings/fortin/.m2/repository/com/vividsolutions/jts/1.11/jts-1.11.jar" sourcepath="C:/Documents and Settings/fortin/.m2/repository/com/vividsolutions/jts/1.11/jts-1.11-sources.jar">
+		<attributes>
+			<attribute name="maven.groupId" value="com.vividsolutions"/>
+			<attribute name="maven.artifactId" value="jts"/>
+			<attribute name="maven.version" value="1.11"/>
+			<attribute name="maven.scope" value="compile"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry combineaccessrules="false" kind="src" path="/grap"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
