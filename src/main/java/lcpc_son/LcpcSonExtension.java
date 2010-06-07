@@ -9,5 +9,6 @@ public class LcpcSonExtension extends Extension{
 	public void configure(PlugInContext context) throws Exception {
 		context.getFeatureInstaller().addRegisterFunction(BR_EvalSourceV1.class);
 		context.getFeatureInstaller().addRegisterFunction(ST_SplitLineInPoints.class);
+		context.getFeatureInstaller().addRegisterFunction(Log10.class);
 	}
 }
