@@ -42,6 +42,7 @@
 
 package lcpc_son;
 
+import org.gdms.data.DataSourceFactory;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
@@ -74,7 +75,7 @@ public class BR_EvalSourceV1 implements Function {
 			final int pl_per_hour = args[2].getAsInt();
 			
 			/////////////////////////
-			// Noise road/tyre
+			// Noise road/tire
 			//Use R2 surface
 			double vl_road_lvl=GetNoiseLvl(55.4,20.1,speed,90.);
 			double pl_road_lvl=GetNoiseLvl(63.4,20.,speed,80.);
@@ -130,11 +131,17 @@ public class BR_EvalSourceV1 implements Function {
 	}
 
 	public String getSqlOrder() {
-		return "select BR_EVAL_SOURCE_V1(loadSpeed,lightVehicleCount,heavyVehicleCount) from myTable;";
+		return "select BR_EvalSourceV1(loadSpeed,lightVehicleCount,heavyVehicleCount) from myTable;";
 	}
 
 	@Override
 	public Value getAggregateResult() {
+		return null;
+	}
+	@Override
+	public Value evaluate(DataSourceFactory dsf, Value... args)
+			throws FunctionException {
+		// TODO Auto-generated method stub
 		return null;
 	}
 

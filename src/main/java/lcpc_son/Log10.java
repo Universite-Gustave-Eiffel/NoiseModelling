@@ -37,6 +37,7 @@
 
 package lcpc_son;
 
+import org.gdms.data.DataSourceFactory;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
@@ -93,6 +94,13 @@ public class Log10 implements Function {
 
 	@Override
 	public Value getAggregateResult() {
+		return null;
+	}
+
+	@Override
+	public Value evaluate(DataSourceFactory dsf, Value... args)
+			throws FunctionException {
+		// TODO Auto-generated method stub
 		return null;
 	}
 
