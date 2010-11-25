@@ -56,7 +56,29 @@ import com.vividsolutions.jts.geom.LineString;
  */
 public class ST_SplitSegment extends AbstractSpatialFunction {
 
-	public Value evaluate(final Value... args) throws FunctionException {
+	public String getName() {
+		return "ST_SplitSegment";
+	}
+
+	public Arguments[] getFunctionArguments() {
+		return new Arguments[] { new Arguments(Argument.GEOMETRY,Argument.NUMERIC) };
+	}
+
+	public boolean isAggregate() {
+		return false;
+	}
+
+	public String getDescription() {
+		return "Split StringLine (2 vertices) into MultiStringLine (2 String Line) if the length of the line is smaller than the split length parameter.";
+	}
+
+	public String getSqlOrder() {
+		return "select ST_SplitSegment(the_geom,splitLength) from myTable;";
+	}
+
+	@Override
+	public Value evaluate(DataSourceFactory dsf, Value... args)
+			throws FunctionException {
 		if (args[0].isNull()) {
 			return ValueFactory.createNullValue();
 		} else {
@@ -140,33 +162,6 @@ public class ST_SplitSegment extends AbstractSpatialFunction {
 					gf.createLineString(endSegment.toCoordinateArray())};
 			return ValueFactory.createValue(gf.createMultiLineString(linearray));
 		}
-	}
-
-	public String getName() {
-		return "ST_SplitSegment";
-	}
-
-	public Arguments[] getFunctionArguments() {
-		return new Arguments[] { new Arguments(Argument.GEOMETRY,Argument.NUMERIC) };
-	}
-
-	public boolean isAggregate() {
-		return false;
-	}
-
-	public String getDescription() {
-		return "Split StringLine (2 vertices) into MultiStringLine (2 String Line) if the length of the line is smaller than the split length parameter.";
-	}
-
-	public String getSqlOrder() {
-		return "select ST_SplitSegment(the_geom,splitLength) from myTable;";
-	}
-
-	@Override
-	public Value evaluate(DataSourceFactory dsf, Value... args)
-			throws FunctionException {
-		// TODO Auto-generated method stub
-		return null;
 	}
 
 }

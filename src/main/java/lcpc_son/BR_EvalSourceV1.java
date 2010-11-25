@@ -66,7 +66,8 @@ public class BR_EvalSourceV1 implements Function {
 	private Double SumDba(Double dBA1,Double dBA2){
 		return WToDba(DbaToW(dBA1)+DbaToW(dBA2));
 	}
-	public Value evaluate(Value... args) throws FunctionException {
+	@Override
+	public Value evaluate(DataSourceFactory dsf, Value... args) throws FunctionException {
 		if (args.length!=3) {
 			return ValueFactory.createNullValue();
 		} else {
@@ -136,12 +137,6 @@ public class BR_EvalSourceV1 implements Function {
 
 	@Override
 	public Value getAggregateResult() {
-		return null;
-	}
-	@Override
-	public Value evaluate(DataSourceFactory dsf, Value... args)
-			throws FunctionException {
-		// TODO Auto-generated method stub
 		return null;
 	}
 

@@ -124,19 +124,6 @@ public class ST_SplitLineInPoints extends AbstractSpatialFunction {
 		return deltaPoints;
 	}
 
-	public Value evaluate(final Value... args) throws FunctionException {
-		if (args[0].isNull()) {
-			return ValueFactory.createNullValue();
-		} else {
-			GeometryFactory gf = new GeometryFactory();
-			final Geometry geom = args[0].getAsGeometry();
-			final Double delta = args[1].getAsDouble();
-			//Get the point first and last point of the geometry
-			Coordinate[] points=geom.getCoordinates();
-			return ValueFactory.createValue(gf.createMultiPoint(SplitMultiPointsInRegularPoints(points,delta)));
-		}
-	}
-
 	public String getName() {
 		return "ST_SplitLineInPoints";
 	}
@@ -160,8 +147,16 @@ public class ST_SplitLineInPoints extends AbstractSpatialFunction {
 	@Override
 	public Value evaluate(DataSourceFactory dsf, Value... args)
 			throws FunctionException {
-		// TODO Auto-generated method stub
-		return null;
+		if (args[0].isNull()) {
+			return ValueFactory.createNullValue();
+		} else {
+			GeometryFactory gf = new GeometryFactory();
+			final Geometry geom = args[0].getAsGeometry();
+			final Double delta = args[1].getAsDouble();
+			//Get the point first and last point of the geometry
+			Coordinate[] points=geom.getCoordinates();
+			return ValueFactory.createValue(gf.createMultiPoint(SplitMultiPointsInRegularPoints(points,delta)));
+		}
 	}
 
 }

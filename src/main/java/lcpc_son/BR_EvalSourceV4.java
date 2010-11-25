@@ -161,7 +161,8 @@ public class BR_EvalSourceV4 implements Function {
 		else //[-2 2]
 			return 0.;
 	}
-	public Value evaluate(Value... args) throws FunctionException {
+	@Override
+	public Value evaluate(DataSourceFactory dsf, Value... args) throws FunctionException {
 		if (args.length<10) {
 			throw new FunctionException("Not enough parameters !");
 		}else if (args.length>10) {
@@ -275,11 +276,7 @@ public class BR_EvalSourceV4 implements Function {
 	public Value getAggregateResult() {
 		return null;
 	}
-	@Override
-	public Value evaluate(DataSourceFactory dsf, Value... args)
-			throws FunctionException {
-		// TODO Auto-generated method stub
-		return null;
-	}
+
+
 
 }

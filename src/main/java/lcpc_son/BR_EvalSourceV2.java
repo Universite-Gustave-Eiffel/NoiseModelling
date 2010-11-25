@@ -150,7 +150,8 @@ public class BR_EvalSourceV2 implements Function {
 		}
 		throw new FunctionException("Unknown road type, please check (type="+type+",subtype="+subtype+").");
 	}
-	public Value evaluate(Value... args) throws FunctionException {
+	@Override
+	public Value evaluate(DataSourceFactory dsf, Value... args) throws FunctionException {
 		if (args.length!=6) {
 			throw new FunctionException("Not enough parameters !");
 		} else {
@@ -243,12 +244,6 @@ public class BR_EvalSourceV2 implements Function {
 
 	@Override
 	public Value getAggregateResult() {
-		return null;
-	}
-	@Override
-	public Value evaluate(DataSourceFactory dsf, Value... args)
-			throws FunctionException {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
