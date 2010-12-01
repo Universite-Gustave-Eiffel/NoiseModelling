@@ -422,11 +422,25 @@ public class ST_TriangleContouring implements CustomQuery {
 			}
 			
 			sds.setDefaultGeometry(spatialUpdateFieldName);
+			Metadata metaSource=sds.getMetadata();
 			DefaultMetadata metadata = new DefaultMetadata();
+
 			metadata.addField("the_geom", Type.GEOMETRY);
 			String fieldDist = MetadataUtilities.getUniqueFieldName(metadata,
 			"idiso");
 			metadata.addField(fieldDist, Type.INT);
+			LinkedList<Integer> fieldIdToExtract=new LinkedList<Integer>();
+			for(int fieldid=0;fieldid<metaSource.getFieldCount();fieldid++)
+			{
+				String fieldName=metaSource.getFieldName(fieldid);
+				if(fieldName!=spatialUpdateFieldName && fieldid!=vertex1FieldIndex && fieldid!=vertex2FieldIndex && fieldid!=vertex3FieldIndex)
+				{
+					fieldIdToExtract.add(fieldid);
+					String oldfield = MetadataUtilities.getUniqueFieldName(metadata,
+							fieldName);
+					metadata.addField(oldfield, metaSource.getFieldType(fieldid));
+				}
+			}
 			final DiskBufferDriver driver = new DiskBufferDriver(dsf,metadata );
 			GeometryFactory factory=new GeometryFactory();
 			final long rowCount = sds.getRowCount();
@@ -445,6 +459,7 @@ public class ST_TriangleContouring implements CustomQuery {
 				final Geometry geometry = sds.getGeometry(rowIndex);
 				if(geometry instanceof Polygon && geometry.getNumPoints()==4)
 				{
+					final Value[] oldValues = sds.getRow(rowIndex);
 					Coordinate[] pts=geometry.getCoordinates();
 					if(Double.isNaN(pts[0].z))
 						pts[0].z=0;
@@ -472,10 +487,16 @@ public class ST_TriangleContouring implements CustomQuery {
 								//We write to triangleToDriver the range triangles, then process the list while its not empty.
 								for(TriMarkers triExport : triangleToDriver)
 								{
-									final Value[] newValues = new Value[2];
+									final Value[] newValues = new Value[2+fieldIdToExtract.size()];
 									Coordinate[] pverts = { triExport.p0, triExport.p1, triExport.p2, triExport.p0 }; 
 									newValues[0]=ValueFactory.createValue(factory.createPolygon(factory.createLinearRing(pverts), null));
 									newValues[1]=ValueFactory.createValue(isolvl);
+									int destfield=2;
+									for(Integer srcFieldid : fieldIdToExtract)
+									{
+										newValues[destfield]=oldValues[srcFieldid];
+										destfield++;
+									}
 									driver.addValues(newValues);
 								}
 								//Exit the ISO for loop, we need to process from the beginning of the iso values (other triangle)
