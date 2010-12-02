@@ -49,6 +49,7 @@ import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
 import com.vividsolutions.jts.index.quadtree.Quadtree;
 import com.vividsolutions.jts.operation.buffer.BufferParameters;
+import com.vividsolutions.jts.simplify.TopologyPreservingSimplifier;
 class NodeList { public final LinkedList< Coordinate > nodes=new LinkedList< Coordinate >(); }
 /**
  * Set the right table row id to each left table rows from the nearest geometry, add also the column AvgDist corresponding to the average distance between the left and the right's nearest geometry found. -1 if nothing has been found in the region of the left geometry. 
@@ -93,11 +94,11 @@ public class BR_TriGrid implements CustomQuery {
 	}
 
 	public String getSqlOrder() {
-		return "select BR_TriGrid( objects_table.the_geom, sound_sources_table.the_geom,sound_sources_table.db_m,50,3,2.5,15.0,300 ) from objects_table,sound_sources_table;";
+		return "select BR_TriGrid( objects_table.the_geom, sound_sources_table.the_geom,sound_sources_table.db_m,50,3,2.5,5.0,300 ) from objects_table,sound_sources_table;";
 	}
 
 	public String getDescription() {
-		return "BR_TriGrid(buildings(polygons),sources(points),sound lvl(double),subdivision level 4^n cells(int), Closest Receiver, distance from each source point, maximum area of triangle ) Sound propagation from ponctual sound sources to ponctual receivers created by a delaunay triangulation of specified buildings geometry.";
+		return "BR_TriGrid(buildings(polygons),sources(points),sound lvl(double),subdivision level 4^n cells(int), Closest Receiver, complexify distance of roads, maximum area of triangle ) Sound propagation from ponctual sound sources to ponctual receivers created by a delaunay triangulation of specified buildings geometry.";
 	}
 
 	private Envelope GetGlobalEnvelope(DataSourceFactory dsf, DataSource[] tables, IProgressMonitor pm)  throws ExecutionException
@@ -143,7 +144,7 @@ public class BR_TriGrid implements CustomQuery {
 	/**
 	 * @param startPt Compute the closest point on lineString with this coordinate, use it as one of the splitted points
 	 */
-	private void SplitLineStringIntoPoints(Geometry geom,Coordinate startPt,LinkedList<Coordinate> pts,double delta)
+	private void SplitLineStringIntoPoints(Geometry geom,Coordinate startPt,LinkedList<Coordinate> pts)
 	{
 		//Find the position of the closest point
 		Coordinate[] points=geom.getCoordinates();
@@ -163,6 +164,9 @@ public class BR_TriGrid implements CustomQuery {
 		}	
 		if(closestPt==null)
 			return;
+		double delta=20.;
+		if(closestPtDist/2<delta)
+			delta=closestPtDist/2;
 		pts.add(closestPt);
 		Coordinate[] splitedPts=ST_SplitLineInPoints.SplitMultiPointsInRegularPoints(points, delta);
 		for(Coordinate pt : splitedPts)
@@ -225,7 +229,11 @@ public class BR_TriGrid implements CustomQuery {
 		toUniteFinal.add(Merge(toUnite,0.5));		//Merge buildings with 0.5 m buffer
 		if(!toUniteRoads.isEmpty())
 		{
+			//Build Polygons buffer from roads lines
 			Geometry bufferRoads = Merge(toUniteRoads,minRecDist);
+			//Remove small artifacts due to multiple buffer crosses
+			bufferRoads = TopologyPreservingSimplifier.simplify(bufferRoads, 1.);
+			//Densify roads to set more receiver near roads.
 			bufferRoads=Densifier.densify(bufferRoads,srcPtDist);
 			toUniteFinal.add(bufferRoads);	//Merge roads with minRecDist m buffer
 		}
@@ -471,8 +479,8 @@ public class BR_TriGrid implements CustomQuery {
 			
 			String[] firstPassResults= new String[gridDim*gridDim];
 			NodeList[] neighborsBorderVertices=new NodeList[gridDim*gridDim];
-			Type meta_type[]={TypeFactory.createType(Type.GEOMETRY),TypeFactory.createType(Type.FLOAT),TypeFactory.createType(Type.FLOAT),TypeFactory.createType(Type.FLOAT)};
-			String meta_name[]={"the_geom","db_v1","db_v2","db_v3"};
+			Type meta_type[]={TypeFactory.createType(Type.GEOMETRY),TypeFactory.createType(Type.FLOAT),TypeFactory.createType(Type.FLOAT),TypeFactory.createType(Type.FLOAT),TypeFactory.createType(Type.INT)};
+			String meta_name[]={"the_geom","db_v1","db_v2","db_v3","cellid"};
 			DefaultMetadata metadata = new DefaultMetadata(meta_type,meta_name);
 			DiskBufferDriver driver = new DiskBufferDriver(dsf,metadata );
 			
@@ -620,7 +628,7 @@ public class BR_TriGrid implements CustomQuery {
 								}else{
 									//Discretization of line into multiple point
 									//First point is the closest point of the LineString from the receiver
-									SplitLineStringIntoPoints(source,receiverCoord,srcPos,srcPtDist);
+									SplitLineStringIntoPoints(source,receiverCoord,srcPos);
 								}
 								Coordinate lastSourceCoord=null;
 								boolean lasthidingfound=false;
@@ -704,11 +712,12 @@ public class BR_TriGrid implements CustomQuery {
 					for(Triangle tri : triangles)
 					{
 						Coordinate pverts[]= {vertices.get(tri.getA()),vertices.get(tri.getB()),vertices.get(tri.getC()),vertices.get(tri.getA())};
-						final Value[] newValues = new Value[4];
+						final Value[] newValues = new Value[5];
 						newValues[0]=ValueFactory.createValue(factory.createPolygon(factory.createLinearRing(pverts), null));
 						newValues[1]=ValueFactory.createValue(verticesSoundLevel[tri.getA()]);
 						newValues[2]=ValueFactory.createValue(verticesSoundLevel[tri.getB()]);
 						newValues[3]=ValueFactory.createValue(verticesSoundLevel[tri.getC()]);
+						newValues[4]=ValueFactory.createValue(ij);
 						driver.addValues(newValues);
 					}
 					logger.info("Cell's triangles saved..");
