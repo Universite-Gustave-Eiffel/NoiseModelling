@@ -4,9 +4,9 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Stack;
 
 import org.grap.utilities.EnvelopeUtil;
-
 import com.vividsolutions.jts.algorithm.NonRobustLineIntersector;
 import com.vividsolutions.jts.algorithm.VectorMath;
 import com.vividsolutions.jts.geom.Coordinate;
@@ -203,6 +203,11 @@ public class FastObstructionTest {
 		Coordinate[] coords={this.vertices.get(tri.getA()),this.vertices.get(tri.getB()),this.vertices.get(tri.getC())};
 		return coords;
 	}
+	/**
+	 * Return the triangle id from a point coordinate inside the triangle
+	 * @param pt
+	 * @return Triangle Id, Or -1 if no triangle has been found
+	 */
 	@SuppressWarnings("unchecked")
 	private int GetTriangleIdByCoordinate(Coordinate pt)
 	{
@@ -224,6 +229,58 @@ public class FastObstructionTest {
 			}
 		}	
 		return -1;
+	}
+	/**
+	 * Compute the list of segments corresponding to holes and domain limitation
+	 * @param maxDist Maximum distance from origin to segments
+	 * @param p1 Origin of search
+	 * @return List of segment
+	 */
+	public LinkedList<LineSegment> GetLimitsInRange(double maxDist,Coordinate p1)
+	{
+		LinkedList<LineSegment> walls=new LinkedList<LineSegment>();
+		int curTri=GetTriangleIdByCoordinate(p1);
+		int nextTri=-1;
+		HashSet<Integer> navigationHistory=new HashSet<Integer>();	//List all triangles already processed
+		Stack<Integer> navigationNodes=new Stack<Integer>(); 		//List the current queue of triangles the process go through
+		navigationHistory.add(curTri);
+		while(curTri!=-1)
+		{
+			//for each side of the triangle
+			Triangle neighboors=this.triNeighbors.get(curTri);
+			nextTri=-1;
+			for(short idside=0;idside<3;idside++)
+			{
+				if(!navigationHistory.contains(neighboors.get(idside)))
+				{
+					IntSegment segVerticesIndex=this.triVertices.get(curTri).GetSegment(idside);
+					LineSegment side=new LineSegment(this.vertices.get(segVerticesIndex.getA()),this.vertices.get(segVerticesIndex.getB()));
+					Coordinate closestPoint=side.closestPoint(p1);
+					if(closestPoint.distance(p1)<=maxDist)
+					{
+						//In this direction there is a hole or this is outside of the geometry
+						if(neighboors.get(idside)==-1)
+						{
+							walls.add(side);
+						}else
+						{
+							//Store currentTriangle Id. This is where to go back when there is no more navigable neighbors at the next triangle
+							navigationNodes.add(curTri);
+							navigationHistory.add(curTri);
+							nextTri=neighboors.get(idside);
+							break; //Next triangle
+						} 
+					}
+				}
+			}
+			if(nextTri==-1 && !navigationNodes.empty())
+			{
+				//All the side have been rejected, go back by one on the navigation
+				nextTri=navigationNodes.pop();
+			}
+			curTri=nextTri;
+		}	
+		return walls;		
 	}
 	public boolean IsFreeField(Coordinate p1,Coordinate p2)
 	{
