@@ -4,12 +4,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 
+import org.jdelaunay.delaunay.BoundaryBox;
+import org.jdelaunay.delaunay.ConstraintPolygon;
 import org.jdelaunay.delaunay.DelaunayError;
-import org.jdelaunay.delaunay.MyBox;
+import org.jdelaunay.delaunay.DelaunayTriangle;
 import org.jdelaunay.delaunay.MyMesh;
-import org.jdelaunay.delaunay.MyPoint;
-import org.jdelaunay.delaunay.MyPolygon;
-import org.jdelaunay.delaunay.MyTriangle;
+import org.jdelaunay.delaunay.Point;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.CoordinateSequence;
@@ -24,7 +24,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 	private ArrayList<Coordinate> vertices = new ArrayList<Coordinate>();
 	ArrayList<Triangle> triangles=new ArrayList<Triangle>();
 	HashMap<Integer,LinkedList<Integer>> hashOfArrayIndex=new HashMap<Integer,LinkedList<Integer>>();
-	LinkedList<MyPoint> ptToInsert=new LinkedList<MyPoint>();
+	LinkedList<Point> ptToInsert=new LinkedList<Point>();
 
 	private static class SetZFilter implements CoordinateSequenceFilter {
 		private boolean done = false;
@@ -93,9 +93,9 @@ public class LayerJDelaunay implements LayerDelaunay {
 				//Add pts
 				while(!this.ptToInsert.isEmpty())
 					this.delaunayTool.addPoint(this.ptToInsert.pop());				
-				ArrayList<MyTriangle> trianglesDelaunay=delaunayTool.getTriangles();
+				ArrayList<DelaunayTriangle> trianglesDelaunay=delaunayTool.getTriangles();
 				triangles.ensureCapacity(trianglesDelaunay.size());//reserve memory
-				for(MyTriangle triangle : trianglesDelaunay)
+				for(DelaunayTriangle triangle : trianglesDelaunay)
 				{
 					int a=getOrAppendVertices(triangle.getPoint(0).getCoordinate(),vertices,hashOfArrayIndex);	
 					int b=getOrAppendVertices(triangle.getPoint(1).getCoordinate(),vertices,hashOfArrayIndex);
@@ -123,11 +123,11 @@ public class LayerJDelaunay implements LayerDelaunay {
 			newPoly.apply(zFilter);
 			if(newPoly.getNumInteriorRing()==0)
 			{
-				delaunayTool.addPolygon(new MyPolygon(newPoly,isEmpty));
+				delaunayTool.addPolygon(new ConstraintPolygon(newPoly,isEmpty));
 			}else{
 				GeometryFactory factory = new  GeometryFactory();
 				Polygon extPoly=new Polygon(factory.createLinearRing(newPoly.getExteriorRing().getCoordinates()),null,factory);
-				MyPolygon internalPoly=new MyPolygon(extPoly);
+				ConstraintPolygon internalPoly=new ConstraintPolygon(extPoly);
 				internalPoly.setEmpty(isEmpty);
 				internalPoly.setUsePolygonZ(false);
 				delaunayTool.addPolygon(internalPoly);
@@ -138,7 +138,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 					LineString holeLine=newPoly.getInteriorRingN(holeIndex);
 					//Convert hole into a polygon
 					Polygon polyBuffnew=factory.createPolygon(factory.createLinearRing(holeLine.getCoordinates()),null);
-					MyPolygon internalHolePoly=new MyPolygon(polyBuffnew);
+					ConstraintPolygon internalHolePoly=new ConstraintPolygon(polyBuffnew);
 					internalHolePoly.setEmpty(!isEmpty);
 					internalHolePoly.setUsePolygonZ(false);
 					delaunayTool.addPolygon(internalHolePoly);
@@ -165,7 +165,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 			long verticesCount) throws LayerDelaunayError {
 		if(delaunayTool==null)
 			delaunayTool=new MyMesh();
-		MyBox boundingBox=new MyBox(bBox.getMinX(),bBox.getMaxX(),bBox.getMinY(),bBox.getMaxY(),0.,0.);
+		BoundaryBox boundingBox=new BoundaryBox(bBox.getMinX(),bBox.getMaxX(),bBox.getMinY(),bBox.getMaxY(),0.,0.);
 		try {
 			delaunayTool.init(boundingBox);
 		} catch (DelaunayError e) {

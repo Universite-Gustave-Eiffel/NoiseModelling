@@ -12,10 +12,11 @@ import org.gdms.data.SpatialDataSourceDecorator;
 import org.gdms.driver.DriverException;
 import org.gdms.driver.driverManager.DriverLoadException;
 import org.grap.utilities.EnvelopeUtil;
+import org.jdelaunay.delaunay.ConstraintPolygon;
 import org.jdelaunay.delaunay.DelaunayError;
 import org.jdelaunay.delaunay.MyDrawing;
 import org.jdelaunay.delaunay.MyMesh;
-import org.jdelaunay.delaunay.MyPolygon;
+
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.CoordinateSequence;
@@ -323,7 +324,7 @@ public class DemoLayerDelaunay {
 							Coordinate[] coordinates={a,b,c,a};
 							Polygon tripoly=factory.createPolygon(factory.createLinearRing(coordinates), null);
 							tripoly.apply(new SetZFilter());
-							MyPolygon newPoly=new MyPolygon(tripoly);
+							ConstraintPolygon newPoly=new ConstraintPolygon(tripoly);
 							showMesh.addPolygon(newPoly);
 							tric++;
 							if((int)((float)tric/(float)maxtri*100) != lastshow)
