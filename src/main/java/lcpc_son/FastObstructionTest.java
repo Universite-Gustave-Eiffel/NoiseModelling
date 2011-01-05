@@ -3,9 +3,7 @@ package lcpc_son;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Stack;
-
 import org.grap.utilities.EnvelopeUtil;
 import com.vividsolutions.jts.algorithm.NonRobustLineIntersector;
 import com.vividsolutions.jts.algorithm.VectorMath;
@@ -19,18 +17,19 @@ import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.LinearRing;
 import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Polygon;
-import com.vividsolutions.jts.index.quadtree.Quadtree;
 import com.vividsolutions.jts.operation.buffer.BufferParameters;
 
 public class FastObstructionTest {
+	double epsilon = 1e-12;
 	private String tmpdir;
 	private ArrayList<Triangle> triVertices;
 	private ArrayList<Coordinate> vertices;
 	private ArrayList<Triangle> triNeighbors;
 	private LinkedList<Geometry> toUnite=new LinkedList<Geometry>(); //Polygon union
-	private Quadtree triQuad=new Quadtree();
+	//private Quadtree triQuad=new Quadtree();
+	private GridIndex triIndex=null;
 	private int lastFountPointTriTest=0;
-
+	//private static Logger logger = Logger.getLogger(FastObstructionTest.class.getName());
 	//Neighbors 
 	
 	
@@ -100,6 +99,7 @@ public class FastObstructionTest {
 		this.vertices=delaunayTool.getVertices();
 		this.triNeighbors=delaunayTool.getNeighbors();
 		//Feed quadtree
+		/*
 		this.triQuad=new Quadtree();
 
 		int triind=0;
@@ -109,6 +109,19 @@ public class FastObstructionTest {
 			TriEnv.expandToInclude(this.vertices.get(tri.getB()));
 			TriEnv.expandToInclude(this.vertices.get(tri.getC()));
 			this.triQuad.insert(TriEnv, TriEnv);
+			triind++;
+		}
+		*/
+		//Feed GridIndex
+		//int gridsize=(int)Math.pow(2, Math.log10(Math.pow(this.triVertices.size()+1,2)));
+		int gridsize=128;
+		triIndex=new GridIndex(boundingBoxFilter,gridsize ,gridsize);
+		int triind=0;
+		for(Triangle tri : this.triVertices)
+		{
+			final Coordinate[] triCoords={vertices.get(tri.getA()),vertices.get(tri.getB()),vertices.get(tri.getC()),vertices.get(tri.getA())};
+			Polygon newpoly=factory.createPolygon(factory.createLinearRing(triCoords), null);
+			triIndex.AppendGeometry(newpoly,triind);
 			triind++;
 		}
 	}
@@ -194,7 +207,7 @@ public class FastObstructionTest {
 		double v = (dot00 * dot12 - dot01 * dot02) * invDenom;
 
 		// Check if point is in triangle
-		return (u > 0.) && (v > 0.) && (u + v < 1.);
+		return (u > (0.-epsilon)) && (v > (0.-epsilon)) && (u + v < (1.+epsilon));
 
 	}
 	Coordinate[] GetTriangle(int triIndex)
@@ -208,26 +221,62 @@ public class FastObstructionTest {
 	 * @param pt
 	 * @return Triangle Id, Or -1 if no triangle has been found
 	 */
-	@SuppressWarnings("unchecked")
+	
+
 	private int GetTriangleIdByCoordinate(Coordinate pt)
 	{
 		//Shortcut, test if the last found triangle contain this point, if not use the quadtree
 		Coordinate[] trit=GetTriangle(lastFountPointTriTest);
 		if(dotInTri(pt,trit[0],trit[1],trit[2]))
 			return lastFountPointTriTest;
+		/*
+		for(int triIndex=0;triIndex<this.triVertices.size();triIndex++)
+		{
+			Coordinate[] tri=GetTriangle(triIndex);
+			Envelope trienv=new Envelope(tri[0],tri[1]);
+			trienv.expandToInclude(tri[2]);
+			if(trienv.contains(pt))
+			{
+				if(dotInTri(pt,tri[0],tri[1],tri[2]))
+				{
+					lastFountPointTriTest=triIndex;
+					return triIndex;
+				}
+			}
+		}
+		*/
+		
 		Envelope ptEnv=new Envelope(pt);
-		ptEnv.expandBy(1.);
+		//ptEnv.expandBy(10.);
+		/*
 		List<EnvelopeWithIndex<Integer>> res=this.triQuad.query(ptEnv);
 		for(EnvelopeWithIndex<Integer> triEnv : res)
 		{
 			int triIndex=triEnv.getId();
+			Coordinate[] tri=GetTriangle(triIndex);
+			Envelope trienv=new Envelope(tri[0],tri[1]);
+			trienv.expandToInclude(tri[2]);
+			if(trienv.contains(pt))
+			{
+				if(dotInTri(pt,tri[0],tri[1],tri[2]))
+				{
+					lastFountPointTriTest=triIndex;
+					return triIndex;
+				}
+			}
+		}
+		*/
+		ArrayList<Integer> res=triIndex.query(new Envelope(ptEnv));
+		for(int triIndex : res)
+		{
 			Coordinate[] tri=GetTriangle(triIndex);
 			if(dotInTri(pt,tri[0],tri[1],tri[2]))
 			{
 				lastFountPointTriTest=triIndex;
 				return triIndex;
 			}
-		}	
+		}
+			
 		return -1;
 	}
 	/**
@@ -235,6 +284,7 @@ public class FastObstructionTest {
 	 * @param maxDist Maximum distance from origin to segments
 	 * @param p1 Origin of search
 	 * @return List of segment
+	 * TODO return segment normal
 	 */
 	public LinkedList<LineSegment> GetLimitsInRange(double maxDist,Coordinate p1)
 	{
@@ -243,9 +293,9 @@ public class FastObstructionTest {
 		int nextTri=-1;
 		HashSet<Integer> navigationHistory=new HashSet<Integer>();	//List all triangles already processed
 		Stack<Integer> navigationNodes=new Stack<Integer>(); 		//List the current queue of triangles the process go through
-		navigationHistory.add(curTri);
 		while(curTri!=-1)
 		{
+			navigationHistory.add(curTri);
 			//for each side of the triangle
 			Triangle neighboors=this.triNeighbors.get(curTri);
 			nextTri=-1;
@@ -266,7 +316,6 @@ public class FastObstructionTest {
 						{
 							//Store currentTriangle Id. This is where to go back when there is no more navigable neighbors at the next triangle
 							navigationNodes.add(curTri);
-							navigationHistory.add(curTri);
 							nextTri=neighboors.get(idside);
 							break; //Next triangle
 						} 
@@ -286,6 +335,12 @@ public class FastObstructionTest {
 	{
 		LineSegment propaLine=new LineSegment(p1,p2);
 		int curTri=GetTriangleIdByCoordinate(p1);
+		//remove debug curTri
+		//if(curTri==-1)
+		//{
+		//	logger.info("Debug Warning point ["+p1.x+","+p1.y+"] cannot be found in delaunayTriangulation." );
+		//	curTri=GetTriangleIdByCoordinate(p1);
+		//}
 		HashSet<Integer> navigationHistory=new HashSet<Integer>();
 		while(curTri!=-1)
 		{

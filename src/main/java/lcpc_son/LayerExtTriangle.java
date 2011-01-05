@@ -92,6 +92,7 @@ public class LayerExtTriangle implements LayerDelaunay {
     private void readNodeFile(final String nodeFileName,ArrayList<Coordinate> localVertices) throws LayerDelaunayError
     {
     	this.vertices.clear();
+    	this.ptQuad=new Quadtree();
       	////////////////////////////////////////////
     	// Read model.1.node
     	
