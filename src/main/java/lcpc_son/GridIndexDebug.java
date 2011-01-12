@@ -29,17 +29,24 @@ public class GridIndexDebug {
 			
 			ArrayList<Integer> testId=new ArrayList<Integer>();
 			ArrayList<Coordinate> testCoord=new ArrayList<Coordinate>();
-			
-			long feedStart=System.currentTimeMillis();
-			GridIndex tool=new GridIndex(env, 128, 128);
 			int geoid=0;
 			for(Triangle tri : delaun.getTriangles())
 			{
 				final Coordinate[] triCoords={verts.get(tri.getA()),verts.get(tri.getB()),verts.get(tri.getC()),verts.get(tri.getA())};
 				Polygon newpoly=factory.createPolygon(factory.createLinearRing(triCoords), null);
-				tool.AppendGeometry(newpoly,geoid);
 				testId.add(geoid);
 				testCoord.add(newpoly.getInteriorPoint().getCoordinate());				
+				geoid++;
+			}
+			
+			long feedStart=System.currentTimeMillis();
+			GridIndex<Integer> tool=new GridIndex<Integer>(env, 64, 64);
+			geoid=0;
+			for(Triangle tri : delaun.getTriangles())
+			{
+				final Coordinate[] triCoords={verts.get(tri.getA()),verts.get(tri.getB()),verts.get(tri.getC()),verts.get(tri.getA())};
+				Polygon newpoly=factory.createPolygon(factory.createLinearRing(triCoords), null);
+				tool.AppendGeometry(newpoly,geoid);			
 				geoid++;
 			}
 			System.out.println("GridIndex FeedTime :"+(System.currentTimeMillis()-feedStart)+" ms");
@@ -50,7 +57,6 @@ public class GridIndexDebug {
 			{
 				final Coordinate[] triCoords={verts.get(tri.getA()),verts.get(tri.getB()),verts.get(tri.getC()),verts.get(tri.getA())};
 				Polygon newpoly=factory.createPolygon(factory.createLinearRing(triCoords), null);
-				tool.AppendGeometry(newpoly,geoid);
 				quad.insert(newpoly.getEnvelopeInternal(), new EnvelopeWithIndex<Integer>(newpoly.getEnvelopeInternal(), geoid));
 				geoid++;
 			}
@@ -63,7 +69,9 @@ public class GridIndexDebug {
 			for(Integer idGeo : testId)
 			{
 				Coordinate ptInside=testCoord.get(idGeo);
-				ArrayList<Integer> geoIds=tool.query(new Envelope(ptInside));
+				Envelope envQuery=new Envelope(ptInside);
+				envQuery.expandBy(0.01);
+				ArrayList<Integer> geoIds=tool.query(envQuery);
 				meanResCount+=geoIds.size();
 				if(geoIds.size()>maxres)
 					maxres=geoIds.size();
@@ -82,8 +90,10 @@ public class GridIndexDebug {
 			for(Integer idGeo : testId)
 			{
 				Coordinate ptInside=testCoord.get(idGeo);
+				Envelope envQuery=new Envelope(ptInside);
+				envQuery.expandBy(0.1);
 				@SuppressWarnings("unchecked")
-				ArrayList<EnvelopeWithIndex<Integer>> geoIds=(ArrayList<EnvelopeWithIndex<Integer>>)quad.query(new Envelope(ptInside));
+				ArrayList<EnvelopeWithIndex<Integer>> geoIds=(ArrayList<EnvelopeWithIndex<Integer>>)quad.query(envQuery);
 				quad_meanResCount+=geoIds.size();
 				if(geoIds.size()>quad_maxres)
 					quad_maxres=geoIds.size();

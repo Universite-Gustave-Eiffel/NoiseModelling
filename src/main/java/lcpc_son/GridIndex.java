@@ -17,13 +17,14 @@ import com.vividsolutions.jts.operation.predicate.RectangleIntersects;
  * GridIndex is a class to speed up the query of a geometry collection inside a region envelope
  * @author N.Fortin J.Picaut (IFSTTAR 2011)
  */
-public class GridIndex {
+ 
+public class GridIndex<index_t> {
 	private int[] grid=null;
 	private int nbI=0;
 	private int nbJ=0;
 	private double cellSizeI;
 	private double cellSizeJ;
-	private ArrayList<ArrayList<Integer>> gridContent=new ArrayList<ArrayList<Integer>>();
+	private ArrayList<ArrayList<index_t>> gridContent=new ArrayList<ArrayList<index_t>>();
 	private Envelope mainEnv;
 	
 	
@@ -46,13 +47,13 @@ public class GridIndex {
 		final double miny=mainEnv.getMinY()+cellSizeI*i;
 		return new Envelope(minx,minx+cellSizeJ,miny,miny+cellSizeI);
 	}
-	private void AddItem(int i,int j,Integer content)
+	private void AddItem(int i,int j,index_t content)
 	{
 		int idcontent=grid[j+i*nbJ];
 		if(idcontent==-1)
 		{
 			idcontent=gridContent.size();
-			gridContent.add(new ArrayList<Integer>());
+			gridContent.add(new ArrayList<index_t>());
 			grid[j+i*nbJ]=idcontent;
 		}
 		gridContent.get(idcontent).add(content);
@@ -84,7 +85,7 @@ public class GridIndex {
 		int[] range={minI,maxI,minJ,maxJ};
 		return range;
 	}
-	public void AppendGeometry(Geometry newGeom,final Integer externalId)
+	public void AppendGeometry(final Geometry newGeom,final index_t externalId)
 	{
 		//Compute index intervals from envelopes 
 	
@@ -95,22 +96,24 @@ public class GridIndex {
 		{
 			for(int j=minJ;j<maxJ;j++)
 			{
-				Envelope cellEnv=GetCellEnv(i, j);
 				
+				Envelope cellEnv=GetCellEnv(i, j);
 				Polygon square=factory.createPolygon((LinearRing) EnvelopeUtil.toGeometry(cellEnv), null);
 				RectangleIntersects inter=new RectangleIntersects(square);
 				if(inter.intersects(newGeom))
 				{
+				
 					AddItem(i, j, externalId);
 				}
 			}
 		}
 	}
-	public ArrayList<Integer> query(Envelope queryEnv)
+	public ArrayList<index_t> query(Envelope queryEnv)
 	{
 		int[] ranges= GetRange(queryEnv);
 		int minI=ranges[0],maxI=ranges[1],minJ=ranges[2],maxJ=ranges[3];
-		HashSet<Integer> querySet=new HashSet<Integer>();
+		ArrayList<index_t> querySet=new ArrayList<index_t>();
+		int cellsParsed=0;
 		for(int i=minI;i<maxI;i++)
 		{
 			for(int j=minJ;j<maxJ;j++)
@@ -119,10 +122,17 @@ public class GridIndex {
 				if(contentId!=-1)
 				{
 					querySet.addAll(gridContent.get(contentId));
+					cellsParsed++;
 				}
 			}
 		}
-		return new ArrayList<Integer>(querySet);
+		if(cellsParsed>1)
+		{
+			HashSet<index_t> h = new HashSet<index_t>(querySet);
+			querySet.clear();
+			querySet.addAll(h);
+		}
+		return querySet;
 	}
 
 }
