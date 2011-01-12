@@ -45,7 +45,7 @@ public class LayerExtTriangle implements LayerDelaunay {
 		super();
     	this.tempdir=tmpDir;
     	if(TrianglePath==null)
-    		TrianglePath="/home/fortin/OrbisGIS/triangle";
+    		TrianglePath="triangle";
 	}
     /*
      * Change coordinate within a local interval
