@@ -11,7 +11,9 @@ package lcpc_son;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.LinkedList;
-import java.util.List;
+import java.util.Stack;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.log4j.Logger;
 import org.gdms.data.DataSource;
 import org.gdms.data.DataSourceFactory;
@@ -22,7 +24,6 @@ import org.gdms.data.metadata.Metadata;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
-import org.gdms.data.values.ValueFactory;
 import org.gdms.driver.DriverException;
 import org.gdms.driver.ObjectDriver;
 import org.gdms.driver.driverManager.DriverLoadException;
@@ -33,25 +34,21 @@ import org.gdms.sql.function.Arguments;
 import org.gdms.driver.DiskBufferDriver;
 import org.grap.utilities.EnvelopeUtil;
 import org.orbisgis.progress.IProgressMonitor;
-
-import com.vividsolutions.jts.algorithm.NonRobustLineIntersector;
 import com.vividsolutions.jts.densify.Densifier;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryCollection;
 import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.LineSegment;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.LinearRing;
 import com.vividsolutions.jts.geom.MultiLineString;
 import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
-
-import com.vividsolutions.jts.index.quadtree.Quadtree;
 import com.vividsolutions.jts.operation.buffer.BufferParameters;
 import com.vividsolutions.jts.simplify.TopologyPreservingSimplifier;
+
 class NodeList { public final LinkedList< Coordinate > nodes=new LinkedList< Coordinate >(); }
 /**
  * Set the right table row id to each left table rows from the nearest geometry, add also the column AvgDist corresponding to the average distance between the left and the right's nearest geometry found. -1 if nothing has been found in the region of the left geometry. 
@@ -70,36 +67,12 @@ public class BR_TriGrid implements CustomQuery {
 	//Timing sum in millisec
 	private long totalParseBuildings= 0;
 	private long totalDelaunay= 0;
-	private long totalBuildingObstructionTest = 0;
-	private long totalQuadtreeQuery = 0;
-
-
+	
 	int GetCellId(int row,int col,int cols)
 	{
 		return row*cols+col;
 	}
 	
-	private Double DbaToW(Double dBA){
-		return Math.pow(10.,dBA/10.);
-	}
-	/*
-	private Double WToDba(Double W){
-		return 10*Math.log10(W);
-	}
-	*/
-	/**
-	 * Compute attenuation of sound energy by distance. Minimum distance is one meter.
-	 * @param Wj Source level
-	 * @param distance Distance in meter
-	 * @return Attenuated sound level. Take only account of geometric dispersion of sound wave.
-	 */
-	private Double AttDistW(double Wj,double distance)
-	{
-		if(distance<1.) //No infinite sound level
-			distance=1.;
-		return Wj/(4*Math.PI*distance*distance);
-	}
-
 	private Envelope GetGlobalEnvelope(DataSourceFactory dsf, DataSource[] tables, IProgressMonitor pm)  throws ExecutionException
 	{
 		//The region of interest is only where we can find sources
@@ -140,44 +113,7 @@ public class BR_TriGrid implements CustomQuery {
 		}
 		totalDelaunay+=System.currentTimeMillis()-beginAppendPolygons;
 	}
-	/**
-	 * @param startPt Compute the closest point on lineString with this coordinate, use it as one of the splitted points
-	 */
-	private void SplitLineStringIntoPoints(Geometry geom,Coordinate startPt,LinkedList<Coordinate> pts,double minRecDist)
-	{
-		//Find the position of the closest point
-		Coordinate[] points=geom.getCoordinates();
-		//For each segments
-		Double closestPtDist=Double.MAX_VALUE;
-		Coordinate closestPt=null;
-		for(int i=1;i<points.length;i++)
-		{
-			LineSegment seg=new LineSegment(points[i-1],points[i]);
-			Coordinate SegClosest=seg.closestPoint(startPt);
-			double segcdist=SegClosest.distance(startPt);
-			if(segcdist<closestPtDist)
-			{
-				closestPtDist=segcdist;
-				closestPt=SegClosest;
-			}
-		}	
-		if(closestPt==null)
-			return;
-		double delta=20.;
-		// If the minimum effective distance between the line source and the receiver is smaller than the minimum distance constraint then the discretisation parameter is changed
-		// Delta must not not too small to avoid memory overhead.
-		if(closestPtDist<minRecDist)
-			closestPtDist=minRecDist;
-		if(closestPtDist/2<delta)
-			delta=closestPtDist/2;
-		pts.add(closestPt);
-		Coordinate[] splitedPts=ST_SplitLineInPoints.SplitMultiPointsInRegularPoints(points, delta);
-		for(Coordinate pt : splitedPts)
-		{
-			pts.add(pt);
-		}
-		
-	}
+	
 	private Geometry Merge(LinkedList<Geometry> toUnite, double bufferSize)
 	{
 		GeometryFactory geometryFactory = new GeometryFactory();
@@ -445,91 +381,13 @@ public class BR_TriGrid implements CustomQuery {
 		sdsSources.close();
 		sds.close();
 	}
-	@SuppressWarnings("unchecked")
-	private boolean QuadIsFreeField(Quadtree buildingsQuadtree,Coordinate receiverCoord,Coordinate srcCoord,final SpatialDataSourceDecorator sds) throws DriverException
-	{
-		GeometryFactory factory = new  GeometryFactory();
-		Coordinate pverts[]= {receiverCoord,srcCoord};
-		LineString freeFieldLine=factory.createLineString(pverts);
-		Envelope regionIntersection=freeFieldLine.getEnvelopeInternal();
-		regionIntersection.expandBy(1.); //expand by 1 meter
-		long beginQuadQuery=System.currentTimeMillis();
-	 	List<EnvelopeWithIndex<Long>> buildingsInRegion=buildingsQuadtree.query(regionIntersection);
-	 	totalQuadtreeQuery+=(System.currentTimeMillis()-beginQuadQuery);
-		for(EnvelopeWithIndex<Long> buildEnv : buildingsInRegion)
-		{
-			if(buildEnv.intersects(regionIntersection))
-			{
-				//Read the geometry
-				Geometry building=sds.getGeometry(buildEnv.getId());
-				if(building.intersects(freeFieldLine))
-				{
-					Geometry intersectsPts=building.intersection(freeFieldLine);
-					if(intersectsPts.getNumPoints()>1)
-					{
-						// The building geometry intersect with the line string that is between the source and the receiver
-						return false;
-					}
-				}
-			}
-		}
-		return true;
-	}
-	/**
-	 * Recursive method to feed mirrored receiver position on walls. No obstruction test is done.
-	 * @param receiversImage Add receiver image here
-	 * @param receiverCoord Receiver coordinate or precedent mirrored coordinate
-	 * @param lastResult Last row index. -1 if first reflexion
-	 * @param nearBuildingsWalls Walls to be reflected on
-	 * @param depth Depth of reflection
-	 */
-	private void feedMirroredReceiverResults( ArrayList<MirrorReceiverResult> receiversImage, Coordinate receiverCoord, int lastResult,ArrayList<LineSegment> nearBuildingsWalls,int depth,double distanceLimitation)
-	{
-		//For each wall (except parent wall) compute the mirrored coordinate
-		int exceptionWallId=-1;
-		if(lastResult!=-1)
-		{
-			exceptionWallId=receiversImage.get(lastResult).getWallId();
-		}
-		int wallId=0;
-		for(LineSegment wall : nearBuildingsWalls)
-		{
-			if(wallId!=exceptionWallId)
-			{
-				Coordinate intersectionPt=wall.project(receiverCoord);
-				if(wall.distance(receiverCoord)<distanceLimitation) //Test maximum distance constraint
-				{
-					Coordinate mirrored=new Coordinate(2*intersectionPt.x-receiverCoord.x,2*intersectionPt.y-receiverCoord.y);
-					receiversImage.add(new MirrorReceiverResult(mirrored, lastResult, wallId));
-					if(depth>0)
-					{
-						feedMirroredReceiverResults(receiversImage, mirrored, receiversImage.size()-1, nearBuildingsWalls, depth-1,distanceLimitation);
-					}
-				}
-			}
-			wallId++;
-		}
-	}
 
-	/**
-	 * Compute all receiver position mirrored by specified segments
-	 * @param receiverCoord Position of the original receiver
-	 * @param nearBuildingsWalls Segments to mirror to
-	 * @param order Order of reflections 1 to a limited number
-	 * @return List of possible reflections
-	 */
-	 private ArrayList<MirrorReceiverResult> GetMirroredReceiverResults(Coordinate receiverCoord,ArrayList<LineSegment> nearBuildingsWalls,int order,double distanceLimitation)
-	 {
-		 ArrayList<MirrorReceiverResult> receiversImage=new ArrayList<MirrorReceiverResult>();
-		 feedMirroredReceiverResults(receiversImage,receiverCoord,-1,nearBuildingsWalls,order-1,distanceLimitation);
-		 return receiversImage;
-	 }
-	@SuppressWarnings("unchecked")
+
+	
 	public ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables,
 			Value[] values, IProgressMonitor pm) throws ExecutionException {
 		String tmpdir=dsf.getTempDir().getAbsolutePath();
 		String dbField = values[2].toString();
-		boolean useFastObstructionTest=true;
 		double maxSrcDist = values[3].getAsDouble();
 		int subdivLvl = values[4].getAsInt();
 		double minRecDist = values[5].getAsDouble(); /*<! Minimum distance between source and receiver*/
@@ -538,9 +396,7 @@ public class BR_TriGrid implements CustomQuery {
 		int reflexionOrder = values[8].getAsInt();
 		double wallAlpha = values[9].getAsDouble();
 		boolean forceSinglePass=false;
-		
-		
-		GeometryFactory factory = new  GeometryFactory();
+		boolean doMultiThreading=true;
 		
 		try {
 			// Steps of execution
@@ -571,9 +427,7 @@ public class BR_TriGrid implements CustomQuery {
 			int tableBuildings=0;
 			int tableSources=1;
 			long nbreceivers=0;
-			long nb_couple_receiver_src=0;
-			long nb_obstr_test=0;
-			
+		
 			double cellWidth=mainEnvelope.getWidth()/gridDim;	
 			double cellHeight=mainEnvelope.getHeight()/gridDim;	
 			
@@ -583,8 +437,14 @@ public class BR_TriGrid implements CustomQuery {
 			String meta_name[]={"the_geom","db_v1","db_v2","db_v3","cellid","triid"};
 			DefaultMetadata metadata = new DefaultMetadata(meta_type,meta_name);
 			DiskBufferDriver driver = new DiskBufferDriver(dsf,metadata );
-			
 			int nbcell=gridDim*gridDim;
+			Runtime runtime = Runtime.getRuntime();
+			ThreadPool threadManager=new ThreadPool(runtime.availableProcessors(),runtime.availableProcessors()+1,Long.MAX_VALUE,TimeUnit.SECONDS);
+			
+			Stack<ArrayList<Value>> toDriver=new Stack<ArrayList<Value>>();
+			PropagationProcessDiskWriter driverManager=new PropagationProcessDiskWriter(toDriver, driver);
+			driverManager.start();
+			PropagationProcessOut threadDataOut=new PropagationProcessOut(toDriver);
 			for (int cellI = 0; cellI < gridDim; cellI++) {
 				for (int cellJ = 0; cellJ < gridDim; cellJ++) {
 					FastObstructionTest freeFieldFinder = new FastObstructionTest(tmpdir);
@@ -604,26 +464,33 @@ public class BR_TriGrid implements CustomQuery {
 					
 					final SpatialDataSourceDecorator sds = new SpatialDataSourceDecorator(tables[tableBuildings]);
 					final SpatialDataSourceDecorator sdsSources = new SpatialDataSourceDecorator(tables[tableSources]);
+					int db_field_id=sdsSources.getFieldIndexByName(dbField);
 					////////////////////////////////////////////////////////
 					// Make source index for optimization
-					GridIndex<Long> sourcesQuad=new GridIndex<Long>(expandedCellEnvelop,64,64);
+					ArrayList<Geometry> sourceGeometries=new ArrayList<Geometry>();
+					ArrayList<Double> wj_sources=new ArrayList<Double>();
+					GridIndex<Integer> sourcesIndex=new GridIndex<Integer>(expandedCellEnvelop,64,64);
 					sdsSources.open();
 					long rowCount = sdsSources.getRowCount();
+					Integer idsource=0;
 					for (long rowIndex = 0; rowIndex < rowCount; rowIndex++)
 					{
-						Geometry pt=sdsSources.getGeometry(rowIndex);
-						Envelope ptEnv=pt.getEnvelopeInternal();
+						Value[] row=sdsSources.getRow(rowIndex);
+						Geometry geo=sdsSources.getGeometry(rowIndex);
+						Envelope ptEnv=geo.getEnvelopeInternal();
 						if(ptEnv.intersects(expandedCellEnvelop))
 						{
-							sourcesQuad.AppendGeometry(pt, rowIndex);
+							sourcesIndex.AppendGeometry(geo, idsource);
+							wj_sources.add(row[db_field_id].getAsDouble());
+							sourceGeometries.add(geo);
+							idsource++;
 						}
 					}
 					
 					
 					////////////////////////////////////////////////////////
-					// Make buildings QuadTree or feed freeFieldFinder for fast intersection query optimization
+					// feed freeFieldFinder for fast intersection query optimization
 					
-					Quadtree buildingsQuadtree=new Quadtree();
 					sds.open();
 					rowCount = sds.getRowCount();
 					for (long rowIndex = 0; rowIndex < rowCount; rowIndex++)
@@ -632,16 +499,11 @@ public class BR_TriGrid implements CustomQuery {
 						Envelope geomEnv=geometry.getEnvelopeInternal();
 						if (expandedCellEnvelop.intersects(geomEnv)) 
 						{
-							if(!useFastObstructionTest)
-							{
-								buildingsQuadtree.insert(geomEnv, new EnvelopeWithIndex<Long>(geomEnv, rowIndex));
-							}else{
-								freeFieldFinder.AddGeometry(geometry);									
-							}
+							freeFieldFinder.AddGeometry(geometry);
 						}
 					}
-					if(useFastObstructionTest)
-						freeFieldFinder.FinishPolygonFeeding(expandedCellEnvelop);
+					sds.close();
+					freeFieldFinder.FinishPolygonFeeding(expandedCellEnvelop);
 					
 					//Compute the first pass delaunay mesh
 					//The first pass doesn't take account of additional vertices of neighbor cells at the borders
@@ -683,233 +545,41 @@ public class BR_TriGrid implements CustomQuery {
 					//The evaluation of sound level must be done where the following vertices are
 					ArrayList<Coordinate> vertices=cellMesh.getVertices();
 					ArrayList<Triangle> triangles=cellMesh.getTriangles();
-
-					double verticesSoundLevel[]=new double[vertices.size()];
-
-					// For each vertices, find sources where the distance is within maxSrcDist meters
-					int idReceiver=0;
-					long propaPerc=System.currentTimeMillis();
-					for(Coordinate receiverCoord : vertices)
+					nbreceivers+=vertices.size();
+					int[] freq={0};
+					PropagationProcessData threadData=new PropagationProcessData(vertices, triangles, freeFieldFinder, sourcesIndex, sourceGeometries, wj_sources, freq, reflexionOrder, maxSrcDist, minRecDist, wallAlpha, (long)ij);
+					PropagationProcess propaProcess=new PropagationProcess(threadData, threadDataOut);
+					logger.info("Wait for free Thread to begin propagation of cell "+cellI+","+cellJ+" of the "+gridDim+"x"+gridDim+"  grid..");
+					if(doMultiThreading)
 					{
-						nbreceivers++;
-						int rayid=0;
-						if(System.currentTimeMillis()-propaPerc>500)
-						{
-							logger.info("Sound propagation "+idReceiver+"/"+vertices.size());
-							propaPerc=System.currentTimeMillis();
-							if(pm.isCancelled())
-							{
-								driver.writingFinished();
-								return driver;
-							}
-						}
-						//List of walls within maxReceiverSource distance
-						ArrayList<LineSegment> nearBuildingsWalls=null;
-						ArrayList<MirrorReceiverResult> mirroredReceiver=null;
-						if(reflexionOrder>0)
-						{
-							if(useFastObstructionTest)
-							{
-								nearBuildingsWalls=new ArrayList<LineSegment>(freeFieldFinder.GetLimitsInRange(maxSrcDist-1., receiverCoord));
-							}else{
-								LinkedList<LineSegment> tmpWalls=new LinkedList<LineSegment>();
-								long beginQuadQuery=System.currentTimeMillis();
-								Envelope maxBuildingsRegion=new Envelope(receiverCoord);
-								maxBuildingsRegion.expandBy(maxSrcDist-1.);
-							 	List<EnvelopeWithIndex<Long>> buildingsInRegion=buildingsQuadtree.query(maxBuildingsRegion);
-							 	totalQuadtreeQuery+=(System.currentTimeMillis()-beginQuadQuery);
-								for(EnvelopeWithIndex<Long> buildEnv : buildingsInRegion)
-								{
-									if(buildEnv.intersects(maxBuildingsRegion))
-									{
-										//Read the geometry
-										Geometry building=sds.getGeometry(buildEnv.getId());
-										//Append segments to neadBuildingWalls
-										Coordinate[] buildsCoords=building.getCoordinates();
-										for(int i=1;i<buildsCoords.length;i++)
-										{
-											tmpWalls.add(new LineSegment(buildsCoords[i-1],buildsCoords[i]));
-										}
-									}
-								}
-								nearBuildingsWalls=new ArrayList<LineSegment>(tmpWalls);
-							}
-							//Build mirrored receiver list from wall list
-							mirroredReceiver=GetMirroredReceiverResults(receiverCoord,nearBuildingsWalls,reflexionOrder,maxSrcDist);						
-						}
-						double energeticSum=0;
-						Envelope receiverRegion=new Envelope(receiverCoord.x-maxSrcDist,receiverCoord.x+maxSrcDist,receiverCoord.y-maxSrcDist,receiverCoord.y+maxSrcDist);
-						long beginQuadQuery=System.currentTimeMillis();
-						ArrayList<Long> regionSourcesLst=sourcesQuad.query(receiverRegion);
-						totalQuadtreeQuery+=(System.currentTimeMillis()-beginQuadQuery);
-						for(Long srcIndex : regionSourcesLst)
-						{
-							Geometry source=sdsSources.getGeometry(srcIndex);
-							double Wj=DbaToW(sdsSources.getDouble(srcIndex,dbField ));
-							LinkedList<Coordinate> srcPos=new LinkedList<Coordinate>();
-							if(source instanceof Point)
-							{
-								srcPos.add(((Point)source).getCoordinate());									
-							}else{
-								//Discretization of line into multiple point
-								//First point is the closest point of the LineString from the receiver
-								SplitLineStringIntoPoints(source,receiverCoord,srcPos,minRecDist);
-							}
-							Coordinate lastSourceCoord=null;
-							boolean lasthidingfound=false;
-							nb_couple_receiver_src+=srcPos.size();
-							for(final Coordinate srcCoord : srcPos)
-							{
-								double SrcReceiverDistance=srcCoord.distance(receiverCoord);
-								if(SrcReceiverDistance<maxSrcDist)
-								{							
-									//Then, check if the source is visible from the receiver (not hidden by a building)
-									//Create the direct Line
-									long beginBuildingObstructionTest=System.currentTimeMillis();
-									boolean somethingHideReceiver=false;
-
-									if(lastSourceCoord!=null && lastSourceCoord.equals2D(srcCoord)) //If the srcPos is the same than the last one
-									{
-										somethingHideReceiver=lasthidingfound;											
-									}else{		
-										nb_obstr_test++;
-										if(!useFastObstructionTest)
-										{
-											somethingHideReceiver=!QuadIsFreeField(buildingsQuadtree,receiverCoord, srcCoord,sds);
-										}else{
-											somethingHideReceiver=!freeFieldFinder.IsFreeField(receiverCoord, srcCoord);
-										}
-									}
-									this.totalBuildingObstructionTest+=(System.currentTimeMillis()-beginBuildingObstructionTest);
-
-									lastSourceCoord=srcCoord;
-									lasthidingfound=somethingHideReceiver;
-									if(!somethingHideReceiver)
-									{
-										//Evaluation of energy at receiver
-										//add=wj/(4*pi*distance²)
-										energeticSum+=AttDistW(Wj, SrcReceiverDistance);
-										
-									}
-									//
-									// Process specular reflection
-									if(reflexionOrder>0)
-									{
-										NonRobustLineIntersector linters=new NonRobustLineIntersector();
-										for( MirrorReceiverResult receiverReflection : mirroredReceiver)
-										{
-											double ReflectedSrcReceiverDistance=receiverReflection.getReceiverPos().distance(srcCoord);
-											if(ReflectedSrcReceiverDistance<maxSrcDist)
-											{
-												boolean validReflection=false;
-												int reflectionOrderCounter=0;
-												MirrorReceiverResult receiverReflectionCursor=receiverReflection;
-												//Test whether intersection point is on the wall segment or not
-												Coordinate destinationPt=new Coordinate(srcCoord);
-												LineSegment seg=nearBuildingsWalls.get(receiverReflection.getWallId());
-												linters.computeIntersection(seg.p0, seg.p1, receiverReflection.getReceiverPos(),destinationPt);
-												while(linters.hasIntersection()) //While there is a reflection point on another wall
-												{
-													reflectionOrderCounter++;
-													//There are a probable reflection point on the segment
-													Coordinate reflectionPt=new Coordinate(linters.getIntersection(0));
-													//Translate reflection point by epsilon value to increase computation robustness
-													Coordinate vec_epsilon=new Coordinate(reflectionPt.x-destinationPt.x,reflectionPt.y-destinationPt.y);
-													double length=vec_epsilon.distance(new Coordinate(0.,0.,0.));
-													//Normalize vector
-													vec_epsilon.x/=length;
-													vec_epsilon.y/=length;
-													//Multiply by epsilon in meter
-													vec_epsilon.x*=0.01;
-													vec_epsilon.y*=0.01;
-													//Translate reflection pt by epsilon to get outside the wall
-													reflectionPt.x-=vec_epsilon.x;
-													reflectionPt.y-=vec_epsilon.y;
-													//Test if there is no obstacles between the reflection point and old reflection pt (or source position)
-													nb_obstr_test++;
-													if(!useFastObstructionTest)
-													{
-														validReflection=QuadIsFreeField(buildingsQuadtree,reflectionPt, destinationPt,sds);
-													}else{
-														validReflection=freeFieldFinder.IsFreeField(reflectionPt, destinationPt);
-													}
-													if(validReflection) //Reflection point can see source or its image
-													{
-														if(receiverReflectionCursor.getMirrorResultId()==-1)
-														{   //Direct to the receiver
-															nb_obstr_test++;
-															if(!useFastObstructionTest)
-															{
-																validReflection=QuadIsFreeField(buildingsQuadtree,reflectionPt, receiverCoord,sds);
-															}else{
-																validReflection=freeFieldFinder.IsFreeField(reflectionPt, receiverCoord);
-															}
-															break; //That was the last reflection
-														}else{
-															//There is another reflection
-															destinationPt.setCoordinate(reflectionPt);
-															//Move reflection information cursor to a reflection closer 
-															receiverReflectionCursor=mirroredReceiver.get(receiverReflectionCursor.getMirrorResultId());
-															//Update intersection data
-															seg=nearBuildingsWalls.get(receiverReflectionCursor.getWallId());
-															linters.computeIntersection(seg.p0, seg.p1, receiverReflectionCursor.getReceiverPos(),destinationPt);
-															validReflection=false;
-														}
-													}else{
-														break;
-													}
-												}
-												if(validReflection)
-												{
-													//A path has been found
-													double geometricAtteuatedWj=AttDistW(Wj,ReflectedSrcReceiverDistance);
-													//Apply wall material attenuation
-													geometricAtteuatedWj*=Math.pow((1-wallAlpha),reflectionOrderCounter);
-													energeticSum+=geometricAtteuatedWj;
-												}
-											}
-											rayid++;
-										}
-									}
-								}
-								
-							}
-						}
-						//Save the sound level at this receiver
-						if(energeticSum<DbaToW(0.)) //If sound level<0dB, then set to 0dB
-							energeticSum=DbaToW(0.);
-						verticesSoundLevel[idReceiver]=energeticSum;
-						idReceiver++;
+						threadManager.executeBlocking(propaProcess);
+					}else{
+						propaProcess.run();
 					}
-					sdsSources.close();
-					sds.close();
-					logger.info("Save cell's triangles..");
-					//Now export all triangles with the sound level at each vertices
-					int tri_id=0;
-					for(Triangle tri : triangles)
-					{
-						Coordinate pverts[]= {vertices.get(tri.getA()),vertices.get(tri.getB()),vertices.get(tri.getC()),vertices.get(tri.getA())};
-						final Value[] newValues = new Value[6];
-						newValues[0]=ValueFactory.createValue(factory.createPolygon(factory.createLinearRing(pverts), null));
-						newValues[1]=ValueFactory.createValue(verticesSoundLevel[tri.getA()]);
-						newValues[2]=ValueFactory.createValue(verticesSoundLevel[tri.getB()]);
-						newValues[3]=ValueFactory.createValue(verticesSoundLevel[tri.getC()]);
-						newValues[4]=ValueFactory.createValue(ij);
-						newValues[5]=ValueFactory.createValue(tri_id);
-						driver.addValues(newValues);
-						tri_id++;
-					}
-					logger.info("Cell's triangles saved..");
+					logger.info("Processing enqueued"); //enqueued 
 				}
+			}
+			//Wait termination of processes
+			logger.info("Wait for termination of the lasts propagation process..");
+			while(threadManager.GetRemainingTasks()>0)
+			{
+				Thread.sleep(100);
+			}
+			//Wait for rows stack to be empty
+			driverManager.StopWatchingStack();
+			logger.info("Wait for termination of writing to the driver..");
+			while(driverManager.isRunning())
+			{
+				Thread.sleep(10);
 			}
 			driver.writingFinished();
 			logger.info("Parse polygons time:" + this.totalParseBuildings);
 			logger.info("Delaunay time:" + this.totalDelaunay);
-			logger.info("Building source-receiver obstruction test time:" + this.totalBuildingObstructionTest);
-			logger.info("Quadtree query time:" + totalQuadtreeQuery);
+			logger.info("Building source-receiver obstruction test time:" + threadDataOut.getTotalBuildingObstructionTest());
+			logger.info("Quadtree query time:" + threadDataOut.getTotalGridIndexQuery());
 			logger.info("Receiver count:" + nbreceivers);
-			logger.info("Receiver-Source count:" + nb_couple_receiver_src);
-			logger.info("Buildings obstruction test count:" + nb_obstr_test);
+			logger.info("Receiver-Source count:" + threadDataOut.getNb_couple_receiver_src());
+			logger.info("Buildings obstruction test count:" + threadDataOut.getNb_obstr_test());
 			return driver;
 		} catch (DriverLoadException e) {
 			throw new ExecutionException(e);
@@ -917,6 +587,8 @@ public class BR_TriGrid implements CustomQuery {
 			throw new ExecutionException(e);
 		} catch (LayerDelaunayError e) {
 			throw new ExecutionException(e);			
+		} catch (InterruptedException e) {
+			throw new ExecutionException(e);	
 		}
 	}
 
