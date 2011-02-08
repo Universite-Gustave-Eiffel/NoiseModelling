@@ -3,8 +3,7 @@
  * Lcpc 30_08_2010
  * @author Nicolas Fortin
  ***********************************/
-// TODO Calcul de correction de niveau sonore en fonction de la distance entre chaque source. Utiliser ce paramètre lors de la somme de chaque energie source
-// +10log10(PasSource)
+
 package lcpc_son;
 
 
@@ -382,7 +381,9 @@ public class BR_TriGrid implements CustomQuery {
 		sds.close();
 	}
 
-
+	private Double DbaToW(Double dBA){
+		return Math.pow(10.,dBA/10.);
+	}
 	
 	public ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables,
 			Value[] values, IProgressMonitor pm) throws ExecutionException {
@@ -427,7 +428,35 @@ public class BR_TriGrid implements CustomQuery {
 			int tableBuildings=0;
 			int tableSources=1;
 			long nbreceivers=0;
-		
+
+			//Load Sources and Buildings table drivers
+			final SpatialDataSourceDecorator sds = new SpatialDataSourceDecorator(tables[tableBuildings]);
+			final SpatialDataSourceDecorator sdsSources = new SpatialDataSourceDecorator(tables[tableSources]);
+			
+			sdsSources.open();
+			//Initialization frequency declared in source Table
+			ArrayList<Integer> db_field_ids=new ArrayList<Integer>();
+			ArrayList<Integer> db_field_freq=new ArrayList<Integer>();
+			int fieldid=0;
+			for(String fieldName  : sdsSources.getFieldNames())
+			{
+				if(fieldName.startsWith(dbField))
+				{
+					String sub=fieldName.substring(dbField.length());
+					if(sub.length()>0)
+					{
+						int freq=Integer.parseInt(sub);
+						db_field_ids.add(fieldid);
+						db_field_freq.add(freq);
+					}else{
+						db_field_ids.add(fieldid);
+						db_field_freq.add(0);
+					}
+				}
+				fieldid++;
+			}
+			sdsSources.close();
+			
 			double cellWidth=mainEnvelope.getWidth()/gridDim;	
 			double cellHeight=mainEnvelope.getHeight()/gridDim;	
 			
@@ -462,13 +491,12 @@ public class BR_TriGrid implements CustomQuery {
 					// Build delaunay triangulation from buildings inside the extended bounding box
 
 					
-					final SpatialDataSourceDecorator sds = new SpatialDataSourceDecorator(tables[tableBuildings]);
-					final SpatialDataSourceDecorator sdsSources = new SpatialDataSourceDecorator(tables[tableSources]);
-					int db_field_id=sdsSources.getFieldIndexByName(dbField);
+
+
 					////////////////////////////////////////////////////////
 					// Make source index for optimization
 					ArrayList<Geometry> sourceGeometries=new ArrayList<Geometry>();
-					ArrayList<Double> wj_sources=new ArrayList<Double>();
+					ArrayList<ArrayList<Double>> wj_sources=new ArrayList<ArrayList<Double>>();
 					GridIndex<Integer> sourcesIndex=new GridIndex<Integer>(expandedCellEnvelop,64,64);
 					sdsSources.open();
 					long rowCount = sdsSources.getRowCount();
@@ -481,7 +509,13 @@ public class BR_TriGrid implements CustomQuery {
 						if(ptEnv.intersects(expandedCellEnvelop))
 						{
 							sourcesIndex.AppendGeometry(geo, idsource);
-							wj_sources.add(row[db_field_id].getAsDouble());
+							ArrayList<Double> wj_spectrum=new ArrayList<Double>();
+							wj_spectrum.ensureCapacity(db_field_ids.size());
+							for(Integer idcol : db_field_ids)
+							{
+								wj_spectrum.add(DbaToW(row[idcol].getAsDouble()));								
+							}
+							wj_sources.add(wj_spectrum);
 							sourceGeometries.add(geo);
 							idsource++;
 						}
@@ -546,23 +580,40 @@ public class BR_TriGrid implements CustomQuery {
 					ArrayList<Coordinate> vertices=cellMesh.getVertices();
 					ArrayList<Triangle> triangles=cellMesh.getTriangles();
 					nbreceivers+=vertices.size();
-					int[] freq={0};
-					PropagationProcessData threadData=new PropagationProcessData(vertices, triangles, freeFieldFinder, sourcesIndex, sourceGeometries, wj_sources, freq, reflexionOrder, maxSrcDist, minRecDist, wallAlpha, (long)ij);
+					PropagationProcessData threadData=new PropagationProcessData(vertices, triangles, freeFieldFinder, sourcesIndex, sourceGeometries, wj_sources, db_field_freq, reflexionOrder, maxSrcDist, minRecDist, wallAlpha, (long)ij);
 					PropagationProcess propaProcess=new PropagationProcess(threadData, threadDataOut);
-					logger.info("Wait for free Thread to begin propagation of cell "+cellI+","+cellJ+" of the "+gridDim+"x"+gridDim+"  grid..");
-					if(doMultiThreading)
+					
+					if(doMultiThreading && nbcell>1)
 					{
-						threadManager.executeBlocking(propaProcess);
+						logger.info("Wait for free Thread to begin propagation of cell "+cellI+","+cellJ+" of the "+gridDim+"x"+gridDim+"  grid..");
+						//threadManager.executeBlocking(propaProcess);
+						while(!threadManager.isAvaibleQueueSlot())
+						{
+							if(pm.isCancelled())
+							{
+								driver.writingFinished();
+								return driver;
+							}
+							Thread.sleep(100);
+						}
+						threadManager.execute(propaProcess);
+						logger.info("Processing enqueued"); //enqueued
 					}else{
 						propaProcess.run();
 					}
-					logger.info("Processing enqueued"); //enqueued 
 				}
 			}
 			//Wait termination of processes
 			logger.info("Wait for termination of the lasts propagation process..");
-			while(threadManager.GetRemainingTasks()>0)
+			//threadManager.GetRemainingTasks()>0
+			Thread.sleep(100);
+			while(threadDataOut.getCellComputed()<nbcell)
 			{
+				if(pm.isCancelled())
+				{
+					driver.writingFinished();
+					return driver;
+				}
 				Thread.sleep(100);
 			}
 			//Wait for rows stack to be empty
@@ -570,12 +621,18 @@ public class BR_TriGrid implements CustomQuery {
 			logger.info("Wait for termination of writing to the driver..");
 			while(driverManager.isRunning())
 			{
+				if(pm.isCancelled())
+				{
+					driver.writingFinished();
+					return driver;
+				}
 				Thread.sleep(10);
 			}
 			driver.writingFinished();
-			logger.info("Parse polygons time:" + this.totalParseBuildings);
-			logger.info("Delaunay time:" + this.totalDelaunay);
-			logger.info("Building source-receiver obstruction test time:" + threadDataOut.getTotalBuildingObstructionTest());
+			logger.info("Parse polygons time:" + this.totalParseBuildings + " ms");
+			logger.info("Delaunay time:" + this.totalDelaunay + " ms");
+			logger.info("Building source-receiver obstruction test time:" + threadDataOut.getTotalBuildingObstructionTest() + " ms");
+			logger.info("Reflexion computing time:" + threadDataOut.getTotalReflexionTime() + " ms");
 			logger.info("Quadtree query time:" + threadDataOut.getTotalGridIndexQuery());
 			logger.info("Receiver count:" + nbreceivers);
 			logger.info("Receiver-Source count:" + threadDataOut.getNb_couple_receiver_src());
@@ -598,10 +655,6 @@ public class BR_TriGrid implements CustomQuery {
 		return new DefaultMetadata();
 	}
 
-	public TableDefinition[] geTablesDefinitions() {
-		return new TableDefinition[] { TableDefinition.GEOMETRY,TableDefinition.GEOMETRY };
-	}
-
 	public Arguments[] getFunctionArguments() {
 		return new Arguments[] { new Arguments(Argument.GEOMETRY,Argument.GEOMETRY,Argument.STRING,Argument.NUMERIC,Argument.INT,Argument.NUMERIC,Argument.NUMERIC,Argument.NUMERIC,Argument.INT,Argument.NUMERIC) };
 	}
@@ -615,6 +668,11 @@ public class BR_TriGrid implements CustomQuery {
 
 	public String getDescription() {
 		return "BR_TriGrid(buildings(polygons),sources(points),sound lvl(double),maximum propagation distance (double meter),subdivision level 4^n cells(int), roads width (meter), densification of receivers near roads and buildings (meter), maximum area of triangle, sound reflection order, alpha of walls ) Sound propagation from ponctual sound sources to ponctual receivers created by a delaunay triangulation of specified buildings geometry.";
+	}
+
+	@Override
+	public TableDefinition[] getTablesDefinitions() {
+		return new TableDefinition[] { TableDefinition.GEOMETRY,TableDefinition.GEOMETRY };
 	}
 
 }

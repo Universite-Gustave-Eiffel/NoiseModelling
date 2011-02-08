@@ -18,7 +18,6 @@ public class PropagationProcess implements Runnable {
 	  private Thread thread;
 	  private PropagationProcessData data;
 	  private PropagationProcessOut dataOut;
-
 		/**
 		 * Recursive method to feed mirrored receiver position on walls. No obstruction test is done.
 		 * @param receiversImage Add receiver image here
@@ -82,13 +81,17 @@ public class PropagationProcess implements Runnable {
 	    	return;
 	    }
 	  }
-	private Double DbaToW(Double dBA){
+	private double DbaToW(double dBA){
 		return Math.pow(10.,dBA/10.);
+	}
+	private double WToDba(double w){
+		return 10*Math.log10(w);
 	}
 	/**
 	 * @param startPt Compute the closest point on lineString with this coordinate, use it as one of the splitted points
+	 * @return computed delta
 	 */
-	private void SplitLineStringIntoPoints(Geometry geom,Coordinate startPt,LinkedList<Coordinate> pts,double minRecDist)
+	private double SplitLineStringIntoPoints(Geometry geom,Coordinate startPt,LinkedList<Coordinate> pts,double minRecDist)
 	{
 		//Find the position of the closest point
 		Coordinate[] points=geom.getCoordinates();
@@ -107,7 +110,7 @@ public class PropagationProcess implements Runnable {
 			}
 		}	
 		if(closestPt==null)
-			return;
+			return 1.;
 		double delta=20.;
 		// If the minimum effective distance between the line source and the receiver is smaller than the minimum distance constraint then the discretisation parameter is changed
 		// Delta must not not too small to avoid memory overhead.
@@ -121,7 +124,56 @@ public class PropagationProcess implements Runnable {
 		{
 			pts.add(pt);
 		}
-		
+		return delta;
+	}
+	/**
+	 * ISO-9613 p1 - At 15°C 70% humidity 
+	 * @param freq Third octave frequency
+	 * @return Attenuation coefficient dB/KM
+	 */
+	private static double GetAlpha(int freq)
+	{
+		switch(freq)
+		{
+			case 100:
+				return 0.25;
+			case 125:
+				return 0.38;
+			case 160:
+				return 0.57;
+			case 200:
+				return 0.82;
+			case 250:
+				return 1.13;
+			case 315:
+				return 1.51;
+			case 400:
+				return 1.92;
+			case 500:
+				return 2.36;
+			case 630:
+				return 2.84;
+			case 800:
+				return 3.38;
+			case 1000:
+				return 4.08;
+			case 1250:
+				return 5.05;
+			case 1600:
+				return 6.51;
+			case 2000:
+				return 8.75;
+			case 2500:
+				return 12.2;
+			case 3150:
+				return 17.7;
+			case 4000:
+				return 26.4;
+			case 5000:
+				return 39.9;
+			default:
+				return 0.;
+		}
 	}
 	/**
 	 * Compute attenuation of sound energy by distance. Minimum distance is one meter.
@@ -139,6 +191,13 @@ public class PropagationProcess implements Runnable {
 	public void run() {
 		long nb_obstr_test=0;
 		double verticesSoundLevel[]=new double[data.vertices.size()];				//Computed sound level of vertices
+
+		int nbfreq=data.freq_lvl.size();
+		//Compute atmospheric alpha value by specified frequency band
+		double[] alpha_atmo=new double[data.freq_lvl.size()];
+		for(int idfreq=0;idfreq<nbfreq;idfreq++)
+			alpha_atmo[idfreq]=GetAlpha(data.freq_lvl.get(idfreq));
+		
 		// For each vertices, find sources where the distance is within maxSrcDist meters
 		int idReceiver=0;
 		for(Coordinate receiverCoord : data.vertices)
@@ -154,7 +213,9 @@ public class PropagationProcess implements Runnable {
 				//Build mirrored receiver list from wall list
 				mirroredReceiver=GetMirroredReceiverResults(receiverCoord,nearBuildingsWalls,data.reflexionOrder,data.maxSrcDist);						
 			}
-			double energeticSum=0;
+			double energeticSum[]=new double[data.freq_lvl.size()];
+			for(int idfreq=0;idfreq<nbfreq;idfreq++)
+				energeticSum[idfreq]=0.0;
 			Envelope receiverRegion=new Envelope(receiverCoord.x-data.maxSrcDist,receiverCoord.x+data.maxSrcDist,receiverCoord.y-data.maxSrcDist,receiverCoord.y+data.maxSrcDist);
 			long beginQuadQuery=System.currentTimeMillis();
 			ArrayList<Integer> regionSourcesLst=data.sourcesIndex.query(receiverRegion);
@@ -162,15 +223,22 @@ public class PropagationProcess implements Runnable {
 			for(Integer srcIndex : regionSourcesLst)
 			{
 				Geometry source=data.sourceGeometries.get(srcIndex);
-				double Wj=DbaToW(data.wj_sources.get(srcIndex)); //DbaToW(sdsSources.getDouble(srcIndex,dbField ));
+				ArrayList<Double> wj=data.wj_sources.get(srcIndex); //DbaToW(sdsSources.getDouble(srcIndex,dbField ));
 				LinkedList<Coordinate> srcPos=new LinkedList<Coordinate>();
+				double li=0.;
 				if(source instanceof Point)
 				{
-					srcPos.add(((Point)source).getCoordinate());									
+					Coordinate ptpos=((Point)source).getCoordinate();
+					srcPos.add(ptpos);
+					li=Math.min(Math.max(receiverCoord.distance(ptpos),data.minRecDist)/2.,20.0);
+					//Compute li to equation  4.1 NMPB 2008 (June 2009)
+					//wj+=10*Math.log10(li);
 				}else{
 					//Discretization of line into multiple point
 					//First point is the closest point of the LineString from the receiver
-					SplitLineStringIntoPoints(source,receiverCoord,srcPos,data.minRecDist);
+					li=SplitLineStringIntoPoints(source,receiverCoord,srcPos,data.minRecDist);
+					//Compute li to equation  4.1 NMPB 2008 (June 2009)
+				
 				}
 				Coordinate lastSourceCoord=null;
 				boolean lasthidingfound=false;
@@ -199,13 +267,19 @@ public class PropagationProcess implements Runnable {
 						{
 							//Evaluation of energy at receiver
 							//add=wj/(4*pi*distance²)
-							energeticSum+=AttDistW(Wj, SrcReceiverDistance);
+							for(int idfreq=0;idfreq<nbfreq;idfreq++)
+							{
+								double AttenuatedWj=AttDistW(wj.get(idfreq), SrcReceiverDistance);
+								AttenuatedWj=DbaToW(WToDba(AttenuatedWj)-(alpha_atmo[idfreq]*SrcReceiverDistance)/1000.+10*Math.log10(li));
+								energeticSum[idfreq]+=AttenuatedWj;
+							}
 							
 						}
 						//
 						// Process specular reflection
 						if(data.reflexionOrder>0)
 						{
+							long beginReflexionTest=System.currentTimeMillis();
 							NonRobustLineIntersector linters=new NonRobustLineIntersector();
 							for( MirrorReceiverResult receiverReflection : mirroredReceiver)
 							{
@@ -263,23 +337,36 @@ public class PropagationProcess implements Runnable {
 									if(validReflection)
 									{
 										//A path has been found
-										double geometricAtteuatedWj=AttDistW(Wj,ReflectedSrcReceiverDistance);
-										//Apply wall material attenuation
-										geometricAtteuatedWj*=Math.pow((1-data.wallAlpha),reflectionOrderCounter);
-										energeticSum+=geometricAtteuatedWj;
+										for(int idfreq=0;idfreq<nbfreq;idfreq++)
+										{
+											//Geometric dispersion
+											double AttenuatedWj=AttDistW(wj.get(idfreq),ReflectedSrcReceiverDistance);
+											//Apply wall material attenuation
+											AttenuatedWj*=Math.pow((1-data.wallAlpha),reflectionOrderCounter);
+											//Apply atmospheric absorption and ground 
+											AttenuatedWj=DbaToW(WToDba(AttenuatedWj)-(alpha_atmo[idfreq]*ReflectedSrcReceiverDistance)/1000.+10*Math.log10(li));
+											energeticSum[idfreq]+=AttenuatedWj;
+										}
 									}
 								}
 								rayid++;
 							}
+							dataOut.appendTotalReflexionTime((System.currentTimeMillis()-beginReflexionTest));
 						}
 					}
 					
 				}
 			}
 			//Save the sound level at this receiver
-			if(energeticSum<DbaToW(0.)) //If sound level<0dB, then set to 0dB
-				energeticSum=DbaToW(0.);
-			verticesSoundLevel[idReceiver]=energeticSum;
+			//Do the sum of all frequency bands
+			double allfreqlvl=0;
+			for(int idfreq=0;idfreq<nbfreq;idfreq++)
+			{
+				allfreqlvl+=energeticSum[idfreq];
+			}
+			if(allfreqlvl<DbaToW(0.)) //If sound level<0dB, then set to 0dB
+				allfreqlvl=DbaToW(0.);
+			verticesSoundLevel[idReceiver]=allfreqlvl;
 			idReceiver++;
 		}
 		
@@ -301,6 +388,7 @@ public class PropagationProcess implements Runnable {
 			tri_id++;
 		}
 		dataOut.appendFreeFieldTestCount(nb_obstr_test);
+		dataOut.appendCellComputed();
 	}
-
+	
 }

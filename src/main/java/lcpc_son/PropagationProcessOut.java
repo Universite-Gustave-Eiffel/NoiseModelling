@@ -17,6 +17,8 @@ public class PropagationProcessOut {
 	private long totalGridIndexQuery=0;
 	private long nb_couple_receiver_src=0;
 	private long nb_obstr_test=0;
+	private long totalReflexionTime=0;
+	private long cellComputed=0;
 	
 	public PropagationProcessOut(Stack<ArrayList<Value>> toDriver) {
 		super();
@@ -59,8 +61,26 @@ public class PropagationProcessOut {
 	{
 		nb_obstr_test+=freeFieldTestCount;	
 	}
+	public synchronized void appendTotalReflexionTime(long reflTime)
+	{
+		totalReflexionTime+=reflTime;
+	}
+	public long getTotalReflexionTime() {
+		return totalReflexionTime;
+	}
 	public synchronized void log(String str)
 	{
 		
+	}
+	/**
+	 * Increment cell computed counter by 1
+	 */
+	public synchronized void appendCellComputed()
+	{
+		cellComputed+=1;
+	}
+	public long getCellComputed()
+	{
+		return cellComputed;
 	}
 }

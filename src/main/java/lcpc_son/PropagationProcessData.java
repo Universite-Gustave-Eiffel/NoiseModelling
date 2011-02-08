@@ -16,8 +16,8 @@ public class PropagationProcessData {
 	public FastObstructionTest freeFieldFinder;		//FreeField test
 	public GridIndex<Integer> sourcesIndex;			//Source Index
 	public ArrayList<Geometry> sourceGeometries;	//Sources geometries. Can be LINESTRING or POINT
-	public ArrayList<Double> wj_sources;			//Sound level of source. Size is nbsource*freq_count
-	public int[] freq_lvl;							//Frequency bands
+	public ArrayList<ArrayList<Double>> wj_sources;	//Sound level of source. By frequency band, energetic
+	public ArrayList<Integer> freq_lvl;				//Frequency bands values, by third octave
 	public int reflexionOrder;						//reflexionOrder
 	public double maxSrcDist;						//Maximum source distance
 	public double minRecDist;						//Minimum distance between source and receiver
@@ -26,9 +26,10 @@ public class PropagationProcessData {
 	public PropagationProcessData(ArrayList<Coordinate> vertices,
 			ArrayList<Triangle> triangles, FastObstructionTest freeFieldFinder,
 			GridIndex<Integer> sourcesIndex,
-			ArrayList<Geometry> sourceGeometries, ArrayList<Double> wj_sources,
-			int[] freq_lvl, int reflexionOrder,
-			double maxSrcDist, double minRecDist, double wallAlpha, Long cellId) {
+			ArrayList<Geometry> sourceGeometries,
+			ArrayList<ArrayList<Double>> wj_sources,
+			ArrayList<Integer> freq_lvl, int reflexionOrder, double maxSrcDist,
+			double minRecDist, double wallAlpha, Long cellId) {
 		super();
 		this.vertices = vertices;
 		this.triangles = triangles;
@@ -42,7 +43,5 @@ public class PropagationProcessData {
 		this.minRecDist = minRecDist;
 		this.wallAlpha = wallAlpha;
 		this.cellId = cellId;
-	}
-	
-	
+	}	
 }

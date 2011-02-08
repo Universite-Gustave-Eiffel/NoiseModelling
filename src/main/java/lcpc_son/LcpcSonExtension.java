@@ -20,5 +20,6 @@ public class LcpcSonExtension extends Extension{
 		context.getFeatureInstaller().addRegisterFunction(ST_SplitSegment.class);
 		context.getFeatureInstaller().addRegisterCustomQuery(BR_TriGrid.class);
 		context.getFeatureInstaller().addRegisterCustomQuery(ST_TriangleContouring.class);
+		context.getFeatureInstaller().addRegisterFunction(BR_SpectrumRepartition.class);		
 	}
 }
