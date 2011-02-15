@@ -3,12 +3,13 @@ package lcpc_son;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 
-import org.jdelaunay.delaunay.BoundaryBox;
-import org.jdelaunay.delaunay.ConstraintPolygon;
+import org.apache.log4j.Logger;
+import org.jdelaunay.delaunay.ConstrainedMesh;
 import org.jdelaunay.delaunay.DelaunayError;
 import org.jdelaunay.delaunay.DelaunayTriangle;
-import org.jdelaunay.delaunay.MyMesh;
+import org.jdelaunay.delaunay.Edge;
 import org.jdelaunay.delaunay.Point;
 
 import com.vividsolutions.jts.geom.Coordinate;
@@ -21,6 +22,7 @@ import com.vividsolutions.jts.geom.Polygon;
 
 
 public class LayerJDelaunay implements LayerDelaunay {
+	private static Logger logger = Logger.getLogger(LayerJDelaunay.class.getName());
 	private ArrayList<Coordinate> vertices = new ArrayList<Coordinate>();
 	ArrayList<Triangle> triangles=new ArrayList<Triangle>();
 	HashMap<Integer,LinkedList<Integer>> hashOfArrayIndex=new HashMap<Integer,LinkedList<Integer>>();
@@ -82,7 +84,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 		}
 		return newCoordIndex;
 	}
-	private MyMesh delaunayTool = null;
+	private ConstrainedMesh delaunayTool = null;
 
 	@Override
 	public void processDelaunay() throws LayerDelaunayError {
@@ -93,7 +95,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 				//Add pts
 				while(!this.ptToInsert.isEmpty())
 					this.delaunayTool.addPoint(this.ptToInsert.pop());				
-				ArrayList<DelaunayTriangle> trianglesDelaunay=delaunayTool.getTriangles();
+				List<DelaunayTriangle> trianglesDelaunay=delaunayTool.getTriangleList();
 				triangles.ensureCapacity(trianglesDelaunay.size());//reserve memory
 				for(DelaunayTriangle triangle : trianglesDelaunay)
 				{
@@ -116,36 +118,44 @@ public class LayerJDelaunay implements LayerDelaunay {
 	public void addPolygon(Polygon newPoly,boolean isEmpty) throws LayerDelaunayError {
 
 		if(delaunayTool==null)
-			delaunayTool=new MyMesh();
-		try {
-			//To avoid errors we set the Z coordinate to 0.
-			SetZFilter zFilter = new SetZFilter();
-			newPoly.apply(zFilter);
-			if(newPoly.getNumInteriorRing()==0)
+			delaunayTool=new ConstrainedMesh();
+
+		//To avoid errors we set the Z coordinate to 0.
+		SetZFilter zFilter = new SetZFilter();
+		newPoly.apply(zFilter);
+		GeometryFactory factory=new GeometryFactory();
+		final Coordinate[] coordinates = newPoly.getExteriorRing().getCoordinates();
+		if(coordinates.length>1)
+		{
+			LineString newLineString = factory.createLineString(coordinates);
+			this.addLineString(newLineString);
+		}
+		if(isEmpty)
+		{
+			//TODO add hole
+			//holes.add(newPoly.getInteriorPoint().getCoordinate());
+		}
+		// Append holes
+		final int holeCount = newPoly.getNumInteriorRing();
+		for(int holeIndex= 0;holeIndex < holeCount;holeIndex++)
+		{
+			LineString holeLine=newPoly.getInteriorRingN(holeIndex);
+			//Convert hole into a polygon, then compute an interior point
+			Polygon polyBuffnew=factory.createPolygon(factory.createLinearRing(holeLine.getCoordinates()),null);
+			if(polyBuffnew.getArea()>0.)
 			{
-				delaunayTool.addPolygon(new ConstraintPolygon(newPoly,isEmpty));
-			}else{
-				GeometryFactory factory = new  GeometryFactory();
-				Polygon extPoly=new Polygon(factory.createLinearRing(newPoly.getExteriorRing().getCoordinates()),null,factory);
-				ConstraintPolygon internalPoly=new ConstraintPolygon(extPoly);
-				internalPoly.setEmpty(isEmpty);
-				internalPoly.setUsePolygonZ(false);
-				delaunayTool.addPolygon(internalPoly);
-				//Append the interior polygons
-				final int holeCount = newPoly.getNumInteriorRing();
-				for(int holeIndex= 0;holeIndex < holeCount;holeIndex++)
+				Coordinate interiorPoint=polyBuffnew.getInteriorPoint().getCoordinate();
+				if(!factory.createPoint(interiorPoint).intersects(holeLine))
 				{
-					LineString holeLine=newPoly.getInteriorRingN(holeIndex);
-					//Convert hole into a polygon
-					Polygon polyBuffnew=factory.createPolygon(factory.createLinearRing(holeLine.getCoordinates()),null);
-					ConstraintPolygon internalHolePoly=new ConstraintPolygon(polyBuffnew);
-					internalHolePoly.setEmpty(!isEmpty);
-					internalHolePoly.setUsePolygonZ(false);
-					delaunayTool.addPolygon(internalHolePoly);
+					//if(!isEmpty)
+						//holes.add(interiorPoint); //TODO add hole
+					this.addLineString(holeLine);
+				}else{
+					logger.info("Warning : hole rejected, can't find interior point.");
 				}
+			}else{
+				logger.info("Warning : hole rejected, area=0");
 			}
-		} catch (DelaunayError e) {
-			throw new LayerDelaunayError(e.getMessage());
 		}
 	}
 
@@ -154,7 +164,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 		// TODO Auto-generated method stub
 		if(delaunayTool!=null)
 		{
-			delaunayTool.setMinAngle(minAngle);
+			//delaunayTool.setMinAngle(minAngle);
 		}
 	}
 
@@ -164,13 +174,16 @@ public class LayerJDelaunay implements LayerDelaunay {
 	public void HintInit(Envelope bBox, long polygonCount,
 			long verticesCount) throws LayerDelaunayError {
 		if(delaunayTool==null)
-			delaunayTool=new MyMesh();
+			delaunayTool=new ConstrainedMesh();
+		/*
 		BoundaryBox boundingBox=new BoundaryBox(bBox.getMinX(),bBox.getMaxX(),bBox.getMinY(),bBox.getMaxY(),0.,0.);
 		try {
-			delaunayTool.init(boundingBox);
+			//TODO Init delaunay
+			//delaunayTool.init(boundingBox);
 		} catch (DelaunayError e) {
 			throw new LayerDelaunayError(e.getMessage());
 		}
+		*/
 	}
 
 
@@ -212,9 +225,18 @@ public class LayerJDelaunay implements LayerDelaunay {
 
 
 	@Override
-	public void addLineString(LineString line) throws LayerDelaunayError {
-		// TODO Auto-generated method stub
-		
+	public void addLineString(LineString lineToProcess) throws LayerDelaunayError {
+		if(delaunayTool==null)
+			delaunayTool=new ConstrainedMesh();
+		try {
+			Coordinate[] coords=lineToProcess.getCoordinates();
+			for(int ind=1;ind<coords.length;ind++)
+			{
+				delaunayTool.addEdge(new Edge(new Point(coords[ind-1]),new Point(coords[ind])));	
+			}
+		} catch (DelaunayError e) {
+			throw new LayerDelaunayError(e.getMessage());
+		}
 	}
 
 
