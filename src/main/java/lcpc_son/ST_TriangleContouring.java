@@ -534,7 +534,7 @@ public class ST_TriangleContouring implements CustomQuery {
 		return new DefaultMetadata(fieldsTypes, fieldsNames);
 	}
 
-	public TableDefinition[] geTablesDefinitions() {
+	public TableDefinition[] getTablesDefinitions() {
 		return new TableDefinition[] { TableDefinition.GEOMETRY };
 	}
 

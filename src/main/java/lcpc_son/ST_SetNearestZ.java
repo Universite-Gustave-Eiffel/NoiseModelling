@@ -231,7 +231,7 @@ public class ST_SetNearestZ implements CustomQuery {
 			for (Coordinate coord : nearestCoordinates) {
 					if (area.contains(coord)) {
 						double curDist=coord.distance(seq_pt);
-						if(curDist<nearest_dist && curDist<maxDist)
+						if(curDist<nearest_dist && curDist<maxDist && coord.z>-99)
 						{
 							nearest_dist=curDist;
 							nearest_z=coord.z;
@@ -275,7 +275,7 @@ public class ST_SetNearestZ implements CustomQuery {
 		return new DefaultMetadata(fieldsTypes, fieldsNames);
 	}
 
-	public TableDefinition[] geTablesDefinitions() {
+	public TableDefinition[] getTablesDefinitions() {
 		return new TableDefinition[] { TableDefinition.GEOMETRY,TableDefinition.GEOMETRY };
 	}
 

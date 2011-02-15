@@ -289,11 +289,12 @@ public class ST_SetNearestGeometryId implements CustomQuery {
 		return new DefaultMetadata(fieldsTypes, fieldsNames);
 	}
 
-	public TableDefinition[] geTablesDefinitions() {
-		return new TableDefinition[] { TableDefinition.GEOMETRY,TableDefinition.GEOMETRY };
-	}
-
 	public Arguments[] getFunctionArguments() {
 		return new Arguments[] { new Arguments(Argument.GEOMETRY,Argument.GEOMETRY,Argument.STRING) };
+	}
+
+	@Override
+	public TableDefinition[] getTablesDefinitions() {
+		return new TableDefinition[] { TableDefinition.GEOMETRY,TableDefinition.GEOMETRY };
 	}
 }
