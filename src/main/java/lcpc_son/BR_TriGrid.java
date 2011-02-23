@@ -303,9 +303,7 @@ public class BR_TriGrid implements CustomQuery {
 		{
 			cellMesh.processDelaunay();
 		}else{
-			int maxSteiner=cellMesh.getVertices().size()*5;
-			if(maxSteiner<10000)
-				maxSteiner=10000;
+			int maxSteiner=Math.max(cellMesh.getVertices().size()*5,50000);
 			cellMesh.setMinAngle(20.);
 			String firstPathFileName=((LayerExtTriangle)cellMesh).processDelaunay("first_",GetCellId(cellI, cellJ, cellJMax), maxSteiner, true, true);
 			firstPassResults[GetCellId(cellI, cellJ, cellJMax)]=firstPathFileName;
@@ -395,7 +393,8 @@ public class BR_TriGrid implements CustomQuery {
 		double srcPtDist = values[6].getAsDouble(); /*<! Complexity distance of roads */
 		double maximumArea = values[7].getAsDouble();
 		int reflexionOrder = values[8].getAsInt();
-		double wallAlpha = values[9].getAsDouble();
+		int diffractionOrder = values[9].getAsInt();
+		double wallAlpha = values[10].getAsDouble();
 		boolean forceSinglePass=false;
 		boolean doMultiThreading=true;
 		
@@ -462,18 +461,31 @@ public class BR_TriGrid implements CustomQuery {
 			
 			String[] firstPassResults= new String[gridDim*gridDim];
 			NodeList[] neighborsBorderVertices=new NodeList[gridDim*gridDim];
+			
+			
 			Type meta_type[]={TypeFactory.createType(Type.GEOMETRY),TypeFactory.createType(Type.FLOAT),TypeFactory.createType(Type.FLOAT),TypeFactory.createType(Type.FLOAT),TypeFactory.createType(Type.INT),TypeFactory.createType(Type.INT)};
 			String meta_name[]={"the_geom","db_v1","db_v2","db_v3","cellid","triid"};
 			DefaultMetadata metadata = new DefaultMetadata(meta_type,meta_name);
 			DiskBufferDriver driver = new DiskBufferDriver(dsf,metadata );
+			
+			
 			int nbcell=gridDim*gridDim;
+			if(nbcell==1)
+			{
+				doMultiThreading=false;
+				forceSinglePass=true;
+			}
+			
 			Runtime runtime = Runtime.getRuntime();
 			ThreadPool threadManager=new ThreadPool(runtime.availableProcessors(),runtime.availableProcessors()+1,Long.MAX_VALUE,TimeUnit.SECONDS);
 			
+			ProgressionOrbisGisManager pmManager=new ProgressionOrbisGisManager(nbcell, pm);
 			Stack<ArrayList<Value>> toDriver=new Stack<ArrayList<Value>>();
 			PropagationProcessDiskWriter driverManager=new PropagationProcessDiskWriter(toDriver, driver);
 			driverManager.start();
+			pmManager.start();
 			PropagationProcessOut threadDataOut=new PropagationProcessOut(toDriver);
+
 			for (int cellI = 0; cellI < gridDim; cellI++) {
 				for (int cellJ = 0; cellJ < gridDim; cellJ++) {
 					FastObstructionTest freeFieldFinder = new FastObstructionTest(tmpdir);
@@ -482,8 +494,6 @@ public class BR_TriGrid implements CustomQuery {
 					if (pm.isCancelled()) {
 						driver.writingFinished();
 						return driver;
-					} else {
-						pm.progressTo((int) (100*ij/nbcell));
 					}			
 					Envelope cellEnvelope=getCellEnv(mainEnvelope, cellI, cellJ, gridDim, gridDim, cellWidth, cellHeight);//new Envelope(mainEnvelope.getMinX()+cellI*cellWidth, mainEnvelope.getMinX()+cellI*cellWidth+cellWidth, mainEnvelope.getMinY()+cellHeight*cellJ, mainEnvelope.getMinY()+cellHeight*cellJ+cellHeight);
 					Envelope expandedCellEnvelop=new Envelope(cellEnvelope);
@@ -497,7 +507,8 @@ public class BR_TriGrid implements CustomQuery {
 					// Make source index for optimization
 					ArrayList<Geometry> sourceGeometries=new ArrayList<Geometry>();
 					ArrayList<ArrayList<Double>> wj_sources=new ArrayList<ArrayList<Double>>();
-					GridIndex<Integer> sourcesIndex=new GridIndex<Integer>(expandedCellEnvelop,64,64);
+					QueryGeometryStructure<Integer> sourcesIndex=new QueryGridIndex<Integer>(expandedCellEnvelop,64,64);
+					//QueryGeometryStructure<Integer> sourcesIndex=new QueryQuadTree<Integer>();
 					sdsSources.open();
 					long rowCount = sdsSources.getRowCount();
 					Integer idsource=0;
@@ -571,7 +582,6 @@ public class BR_TriGrid implements CustomQuery {
 					}else{
 						computeFirstPassDelaunay(cellMesh,mainEnvelope,cellI,cellJ,gridDim,gridDim,cellWidth,cellHeight,maxSrcDist,sds,sdsSources,minRecDist,srcPtDist,firstPassResults,neighborsBorderVertices,maximumArea);
 					}
-					
 					// 	Make a structure to keep the following information
 					// 	Triangle list with 3 vertices(int), and 3 neighbor triangle ID
 					// 	Vertices list
@@ -580,10 +590,10 @@ public class BR_TriGrid implements CustomQuery {
 					ArrayList<Coordinate> vertices=cellMesh.getVertices();
 					ArrayList<Triangle> triangles=cellMesh.getTriangles();
 					nbreceivers+=vertices.size();
-					PropagationProcessData threadData=new PropagationProcessData(vertices, triangles, freeFieldFinder, sourcesIndex, sourceGeometries, wj_sources, db_field_freq, reflexionOrder, maxSrcDist, minRecDist, wallAlpha, (long)ij);
+					PropagationProcessData threadData=new PropagationProcessData(vertices, triangles, freeFieldFinder, sourcesIndex, sourceGeometries, wj_sources, db_field_freq, reflexionOrder,diffractionOrder, maxSrcDist, minRecDist, wallAlpha, (long)ij,dsf,pmManager.NextSubProcess(vertices.size()));
 					PropagationProcess propaProcess=new PropagationProcess(threadData, threadDataOut);
 					
-					if(doMultiThreading && nbcell>1)
+					if(doMultiThreading)
 					{
 						logger.info("Wait for free Thread to begin propagation of cell "+cellI+","+cellJ+" of the "+gridDim+"x"+gridDim+"  grid..");
 						//threadManager.executeBlocking(propaProcess);
@@ -607,7 +617,7 @@ public class BR_TriGrid implements CustomQuery {
 			logger.info("Wait for termination of the lasts propagation process..");
 			//threadManager.GetRemainingTasks()>0
 			Thread.sleep(100);
-			while(threadDataOut.getCellComputed()<nbcell)
+			while(threadDataOut.getCellComputed()<nbcell && doMultiThreading)
 			{
 				if(pm.isCancelled())
 				{
@@ -618,6 +628,7 @@ public class BR_TriGrid implements CustomQuery {
 			}
 			//Wait for rows stack to be empty
 			driverManager.StopWatchingStack();
+			pmManager.stop();
 			logger.info("Wait for termination of writing to the driver..");
 			while(driverManager.isRunning())
 			{
@@ -656,7 +667,8 @@ public class BR_TriGrid implements CustomQuery {
 	}
 
 	public Arguments[] getFunctionArguments() {
-		return new Arguments[] { new Arguments(Argument.GEOMETRY,Argument.GEOMETRY,Argument.STRING,Argument.NUMERIC,Argument.INT,Argument.NUMERIC,Argument.NUMERIC,Argument.NUMERIC,Argument.INT,Argument.NUMERIC) };
+											  // Builds geom    , sources.the_geom, sources.db_m  ,max propa dist  , subdiv lev ,roads width     , receiv road dis,max tri area    ,sound refl o,sound dif order,wall alpha
+		return new Arguments[] { new Arguments(Argument.GEOMETRY,Argument.GEOMETRY,Argument.STRING,Argument.NUMERIC,Argument.INT,Argument.NUMERIC,Argument.NUMERIC,Argument.NUMERIC,Argument.INT,Argument.INT   ,Argument.NUMERIC) };
 	}
 	public String getName() {
 		return "BR_TriGrid";
@@ -667,7 +679,7 @@ public class BR_TriGrid implements CustomQuery {
 	}
 
 	public String getDescription() {
-		return "BR_TriGrid(buildings(polygons),sources(points),sound lvl(double),maximum propagation distance (double meter),subdivision level 4^n cells(int), roads width (meter), densification of receivers near roads and buildings (meter), maximum area of triangle, sound reflection order, alpha of walls ) Sound propagation from ponctual sound sources to ponctual receivers created by a delaunay triangulation of specified buildings geometry.";
+		return "BR_TriGrid(buildings(polygons),sources(points),sound lvl field name(string),maximum propagation distance (double meter),subdivision level 4^n cells(int), roads width (meter), densification of receivers near roads and buildings (meter), maximum area of triangle, sound reflection order, sound diffraction order, alpha of walls ) Sound propagation from ponctual sound sources to ponctual receivers created by a delaunay triangulation of specified buildings geometry.";
 	}
 
 	@Override

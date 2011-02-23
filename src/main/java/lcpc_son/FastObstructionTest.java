@@ -5,6 +5,8 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Stack;
 import org.grap.utilities.EnvelopeUtil;
+
+import com.vividsolutions.jts.algorithm.Angle;
 import com.vividsolutions.jts.algorithm.NonRobustLineIntersector;
 import com.vividsolutions.jts.algorithm.VectorMath;
 import com.vividsolutions.jts.geom.Coordinate;
@@ -26,8 +28,9 @@ public class FastObstructionTest {
 	private ArrayList<Coordinate> vertices;
 	private ArrayList<Triangle> triNeighbors; 	//Neighbors
 	private LinkedList<Geometry> toUnite=new LinkedList<Geometry>(); //Polygon union
-	private GridIndex<Integer> triIndex=null;
+	private QueryGridIndex<Integer> triIndex=null;
 	private int lastFountPointTriTest=0;
+	private ArrayList<Double> verticesOpenAngle=null;
  
 	
 	
@@ -72,6 +75,7 @@ public class FastObstructionTest {
 	//feeding
 	public void FinishPolygonFeeding(Envelope boundingBoxFilter) throws LayerDelaunayError
 	{
+		verticesOpenAngle=null;
 		LayerExtTriangle delaunayTool = new LayerExtTriangle(tmpdir);
 		//Insert the main rectangle
 		Geometry linearRing=EnvelopeUtil.toGeometry(boundingBoxFilter);
@@ -101,7 +105,7 @@ public class FastObstructionTest {
 		
 		//int gridsize=(int)Math.pow(2, Math.log10(Math.pow(this.triVertices.size()+1,2)));
 		int gridsize=64;
-		triIndex=new GridIndex<Integer>(boundingBoxFilter,gridsize ,gridsize);
+		triIndex=new QueryGridIndex<Integer>(boundingBoxFilter,gridsize ,gridsize);
 		int triind=0;
 		for(Triangle tri : this.triVertices)
 		{
@@ -128,37 +132,113 @@ public class FastObstructionTest {
 		final Coordinate aTri=this.vertices.get(tri.getA());
 		final Coordinate bTri=this.vertices.get(tri.getB());
 		final Coordinate cTri=this.vertices.get(tri.getC());
+		
+		//Intersection First Side
 		linters.computeIntersection(propagationLine.p0, propagationLine.p1, aTri,bTri);
+
+		
 		if(linters.hasIntersection())
 		{
-			double dist=linters.getIntersection(0).distance(propagationLine.p1);
-			if(dist<nearestIntersectionPtDist && !navigationHistory.contains(this.triNeighbors.get(triIndex).get(2)))
+			Coordinate i0=linters.getIntersection(0);
+			if(linters.getIntersectionNum()==1)
 			{
-				nearestIntersectionPtDist=dist;
-				nearestIntersectionSide=2;
-			}
-		}
-		linters.computeIntersection(propagationLine.p0, propagationLine.p1, bTri,cTri);
-		if(linters.hasIntersection())
-		{
-			double dist=linters.getIntersection(0).distance(propagationLine.p1);
-			if(dist<nearestIntersectionPtDist && !navigationHistory.contains(this.triNeighbors.get(triIndex).get(0)))
-			{
-				nearestIntersectionPtDist=dist;
-				nearestIntersectionSide=0;
+				double dist=i0.distance(propagationLine.p1);
+				if(dist<nearestIntersectionPtDist && !navigationHistory.contains(this.triNeighbors.get(triIndex).get(2)))
+				{
+					nearestIntersectionPtDist=dist;
+					nearestIntersectionSide=2;
+				}
+			}else{
+				//Colinear intersection
+				Coordinate i1=linters.getIntersection(1);
+				double dist0=i0.distance(propagationLine.p1);
+				double dist1=i1.distance(propagationLine.p1);
+				Coordinate nearestPt;
+				if(dist0<dist1)
+				{
+					nearestPt=i0;
+				}else{
+					nearestPt=i1;
+				}
+				if(nearestPt==aTri)
+				{
+					return this.triNeighbors.get(triIndex).get(1);
+				}else{
+					return this.triNeighbors.get(triIndex).get(0);
+				}
+				
 			}
 		}
 		
+		//Intersection Second Side		
+		linters.computeIntersection(propagationLine.p0, propagationLine.p1, bTri,cTri);
+		if(linters.hasIntersection())
+		{
+			Coordinate i0=linters.getIntersection(0);
+			if(linters.getIntersectionNum()==1)
+			{
+				double dist=i0.distance(propagationLine.p1);
+				if(dist<nearestIntersectionPtDist && !navigationHistory.contains(this.triNeighbors.get(triIndex).get(0)))
+				{
+					nearestIntersectionPtDist=dist;
+					nearestIntersectionSide=0;
+				}
+			}else{
+				//Colinear intersection
+				Coordinate i1=linters.getIntersection(1);
+				double dist0=i0.distance(propagationLine.p1);
+				double dist1=i1.distance(propagationLine.p1);
+				Coordinate nearestPt;
+				if(dist0<dist1)
+				{
+					nearestPt=i0;
+				}else{
+					nearestPt=i1;
+				}
+				if(nearestPt==bTri)
+				{
+					return this.triNeighbors.get(triIndex).get(2);
+				}else{
+					return this.triNeighbors.get(triIndex).get(1);
+				}				
+			}
+		}
+		
+		//Intersection Third Side
 		linters.computeIntersection(propagationLine.p0, propagationLine.p1, cTri,aTri);		
 		if(linters.hasIntersection())
 		{
-			double dist=linters.getIntersection(0).distance(propagationLine.p1);
-			if(dist<nearestIntersectionPtDist && !navigationHistory.contains(this.triNeighbors.get(triIndex).get(1)))
+			Coordinate i0=linters.getIntersection(0);
+			if(linters.getIntersectionNum()==1)
 			{
-				nearestIntersectionPtDist=dist;
-				nearestIntersectionSide=1;
+				double dist=i0.distance(propagationLine.p1);
+				if(dist<nearestIntersectionPtDist && !navigationHistory.contains(this.triNeighbors.get(triIndex).get(1)))
+				{
+					nearestIntersectionPtDist=dist;
+					nearestIntersectionSide=1;
+				}
+			}else{
+				//Colinear intersection
+				Coordinate i1=linters.getIntersection(1);
+				double dist0=i0.distance(propagationLine.p1);
+				double dist1=i1.distance(propagationLine.p1);
+				Coordinate nearestPt;
+				if(dist0<dist1)
+				{
+					nearestPt=i0;
+				}else{
+					nearestPt=i1;
+				}
+				if(nearestPt==cTri)
+				{
+					return this.triNeighbors.get(triIndex).get(0);
+				}else{
+					return this.triNeighbors.get(triIndex).get(2);
+				}
+				
 			}
-		}
+		}	
+		
 		if(nearestIntersectionSide!=-1)
 			return this.triNeighbors.get(triIndex).get(nearestIntersectionSide);
 		else
@@ -229,6 +309,47 @@ public class FastObstructionTest {
 		}
 			
 		return -1;
+	}
+	/**
+	 * 
+	 * @param minAngle Minimum angle [0-2Pi]
+	 * @param maxAngle Maximum angle [0-2Pi]
+	 * @return List of corners within parameters range
+	 */
+	public ArrayList<Coordinate> GetWideAnglePoints(double minAngle, double maxAngle)
+	{
+		ArrayList<Coordinate> wideAnglePts=new ArrayList<Coordinate>(vertices.size());
+		if(verticesOpenAngle==null)
+		{
+			verticesOpenAngle=new ArrayList<Double>(vertices.size()); //Reserve size
+			for(int idvert=0;idvert<vertices.size();idvert++)
+			{
+				verticesOpenAngle.add(0.);
+			}
+			for(Triangle tri : this.triVertices)
+			{
+				//Compute angle at each corner, then add to vertices angle array
+				Coordinate triA=vertices.get(tri.getA());
+				Coordinate triB=vertices.get(tri.getB());
+				Coordinate triC=vertices.get(tri.getC());
+				//Add A vertex angle
+				verticesOpenAngle.set(tri.getA(),verticesOpenAngle.get(tri.getA())+Angle.angleBetween(triB,triA,triC));
+				//Add B vertex angle
+				verticesOpenAngle.set(tri.getB(),verticesOpenAngle.get(tri.getB())+Angle.angleBetween(triA,triB,triC));
+				//Add A vertex angle
+				verticesOpenAngle.set(tri.getC(),verticesOpenAngle.get(tri.getC())+Angle.angleBetween(triB,triC,triA));
+			}
+		}
+		int idvert=0;
+		for(Double angleVertex : verticesOpenAngle)
+		{
+			if(angleVertex>=minAngle && angleVertex<=maxAngle)
+			{
+				wideAnglePts.add(vertices.get(idvert));
+			}	
+			idvert++;
+		}		
+		return wideAnglePts;
 	}
 	/**
 	 * Compute the list of segments corresponding to holes and domain limitation

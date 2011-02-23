@@ -27,13 +27,13 @@ public class PropagationProcessDiskWriter implements Runnable {
 	    	return;
 	    }
 	  }
-	  public void StopWatchingStack()
-	  {
-		  watchingStack=false;
-	  }
 	  public boolean isRunning()
 	  {
 		  return thread.isAlive();
+	  }
+	  public void StopWatchingStack()
+	  {
+		  watchingStack=false;
 	  }
 	@Override
 	public void run() {
