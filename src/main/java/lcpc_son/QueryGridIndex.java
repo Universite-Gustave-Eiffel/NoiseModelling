@@ -18,7 +18,7 @@ import com.vividsolutions.jts.operation.predicate.RectangleIntersects;
  * @author N.Fortin J.Picaut (IFSTTAR 2011)
  */
  
-public class GridIndex<index_t> {
+public class QueryGridIndex<index_t> implements QueryGeometryStructure<index_t> {
 	private int[] grid=null;
 	private int nbI=0;
 	private int nbJ=0;
@@ -29,7 +29,7 @@ public class GridIndex<index_t> {
 	
 	
 	
-	public GridIndex(final Envelope gridEnv,int xsubdiv,int ysubdiv) {
+	public QueryGridIndex(final Envelope gridEnv,int xsubdiv,int ysubdiv) {
 		super();
 		grid=new int[xsubdiv*ysubdiv];
 		for(int i=0;i<grid.length;i++)

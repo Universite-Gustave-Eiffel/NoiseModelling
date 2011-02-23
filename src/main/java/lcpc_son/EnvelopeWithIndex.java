@@ -36,6 +36,10 @@ public class EnvelopeWithIndex<index_t>  extends Envelope {
 	public index_t getId(){
 		return index;
 	}
+	public Coordinate GetPosition()
+	{
+		return super.centre();
+	}
 	public void setId(index_t id){
 		index=id;
 	}
