@@ -17,7 +17,7 @@ public class ProgressionProcess {
 	 * 
 	 * @return The progression on this process [0-1]
 	 */
-	public double GetProcessProgression()
+	public double getProcessProgression()
 	{
 		return subprocess_done/subprocess_size;
 	}
@@ -25,12 +25,12 @@ public class ProgressionProcess {
 	 * 
 	 * @return The main progression value [0-1]
 	 */
-	public double GetMainProgression()
+	public double getMainProgression()
 	{
 		ProgressionProcess prog=this;
 		while(prog.parentProcess!=null)
 			prog=prog.parentProcess;
-		return prog.GetProcessProgression();
+		return prog.getProcessProgression();
 	}
 	protected void finalize() throws Throwable
 	{
@@ -39,7 +39,7 @@ public class ProgressionProcess {
 	  {
 		  //Complete remaining process
 		  if(subprocess_done!=subprocess_size)
-			  this.parentProcess.PushProgression(1-(subprocess_done/subprocess_size));
+			  this.parentProcess.pushProgression(1-(subprocess_done/subprocess_size));
 	  }
 	  super.finalize();
 	} 
@@ -48,35 +48,35 @@ public class ProgressionProcess {
 	 * @param subprocess_size Sub Process estimated work item (sub-sub process count)
 	 * @return
 	 */
-	public ProgressionProcess NextSubProcess(long subprocess_size)
+	public ProgressionProcess nextSubProcess(long subprocess_size)
 	{
 		return new ProgressionProcess(this,subprocess_size);
 	}
 	/**
 	 * A subprocess computation has been done (same as call NextSubProcess then destroy the returned object)
 	 */
-	public synchronized void NextSubProcessEnd()
+	public synchronized void nextSubProcessEnd()
 	{
-		PushProgression(1.0);
+		pushProgression(1.0);
 	}
 	/**
 	 * Optional, When the current process is done call this method. Or let the garbage collector free the object
 	 */
-	public synchronized void ProcessFinished()
+	public synchronized void processFinished()
 	{
 		  if(subprocess_done!=subprocess_size)
 		  {
-			  this.parentProcess.PushProgression(1-(subprocess_done/subprocess_size));
+			  this.parentProcess.pushProgression(1-(subprocess_done/subprocess_size));
 			  subprocess_done=1.;
 		  }		
 	}
-	protected synchronized void PushProgression(double incProg)
+	protected synchronized void pushProgression(double incProg)
 	{
 		if(subprocess_done+incProg<=subprocess_size)
 		{
 			subprocess_done+=incProg;
 			if(parentProcess!=null)
-				parentProcess.PushProgression((incProg/subprocess_size));
+				parentProcess.pushProgression((incProg/subprocess_size));
 		}
 	}
 }

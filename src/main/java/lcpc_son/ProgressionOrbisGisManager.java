@@ -51,24 +51,24 @@ public class ProgressionOrbisGisManager implements Runnable {
 	 * @param subprocess_size Sub Process estimated work item (sub-sub process count)
 	 * @return
 	 */
-	public ProgressionProcess NextSubProcess(long subprocess_size)
+	public ProgressionProcess nextSubProcess(long subprocess_size)
 	{
-		return rootProcess.NextSubProcess(subprocess_size);
+		return rootProcess.nextSubProcess(subprocess_size);
 	}
 	/**
 	 * A subprocess computation has been done (same as call NextSubProcess then destroy the returned object)
 	 */
-	public synchronized void NextSubProcessEnd()
+	public synchronized void nextSubProcessEnd()
 	{
-		rootProcess.NextSubProcessEnd();
+		rootProcess.nextSubProcessEnd();
 	}
 	/**
 	 * 
 	 * @return The main progression value [0-1]
 	 */
-	public double GetMainProgression()
+	public double getMainProgression()
 	{
-		return rootProcess.GetProcessProgression();
+		return rootProcess.getProcessProgression();
 	}
 	/**
 	 * Stop the update of IProgressMonitor
@@ -79,11 +79,9 @@ public class ProgressionOrbisGisManager implements Runnable {
 	}
 	@Override
 	public void run() {
-		// TODO Auto-generated method stub
 		while(enabled)
 		{
-			//System.out.println("Progression :"+GetMainProgression());
-			monitor.progressTo((int)(GetMainProgression()*100));
+			monitor.progressTo((int)(getMainProgression()*100));
 			if(monitor.isCancelled())
 				break;
 			try {
