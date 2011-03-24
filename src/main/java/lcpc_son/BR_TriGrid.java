@@ -590,7 +590,7 @@ public class BR_TriGrid implements CustomQuery {
 					ArrayList<Coordinate> vertices=cellMesh.getVertices();
 					ArrayList<Triangle> triangles=cellMesh.getTriangles();
 					nbreceivers+=vertices.size();
-					PropagationProcessData threadData=new PropagationProcessData(vertices, triangles, freeFieldFinder, sourcesIndex, sourceGeometries, wj_sources, db_field_freq, reflexionOrder,diffractionOrder, maxSrcDist, minRecDist, wallAlpha, (long)ij,dsf,pmManager.NextSubProcess(vertices.size()));
+					PropagationProcessData threadData=new PropagationProcessData(vertices, triangles, freeFieldFinder, sourcesIndex, sourceGeometries, wj_sources, db_field_freq, reflexionOrder,diffractionOrder, maxSrcDist, minRecDist, wallAlpha, (long)ij,dsf,pmManager.nextSubProcess(vertices.size()));
 					PropagationProcess propaProcess=new PropagationProcess(threadData, threadDataOut);
 					
 					if(doMultiThreading)

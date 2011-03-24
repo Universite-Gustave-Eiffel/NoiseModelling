@@ -2,14 +2,16 @@ package lcpc_son;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
-
+/*
 import org.gdms.data.metadata.DefaultMetadata;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
-import org.gdms.data.values.Value;
-import org.gdms.data.values.ValueFactory;
 import org.gdms.driver.DiskBufferDriver;
 import org.gdms.driver.DriverException;
+*/
+
+import org.gdms.data.values.Value;
+import org.gdms.data.values.ValueFactory;
 
 import com.vividsolutions.jts.algorithm.NonRobustLineIntersector;
 import com.vividsolutions.jts.geom.Coordinate;
@@ -207,6 +209,258 @@ public class PropagationProcess implements Runnable {
 			distance=1.;
 		return Wj/(4*Math.PI*distance*distance);
 	}
+
+	/**
+	 * Source-Receiver Direct+Reflection+Diffraction computation
+	 * @param[in] srcCoord Coordinate of source
+	 * @param[in] receiverCoord Coordinate of receiver
+	 * @param[out] energeticSum Energy by frequency band 
+	 * @param[in] alpha_atmo Atmospheric absorption by frequency band
+	 * @param[in] wj Source sound pressure level dB(A) by frequency band
+	 * @param[in] li Coefficient, distance between source discretization
+	 * @param[in] mirroredReceiver Receivers mirrored by walls (for reflection)  
+	 * @param[in] nearBuildingsWalls Walls within maxsrcdist
+	 * @param[in] regionCorners Corners within maxsrcdist
+	 * @param[in] regionCornersFreeToReceiver List of index of corners visible from receiver
+	 * @param[in] freq_lambda Array of sound wave lambda value by frequency band
+	 */
+	public void ReceiverSourcePropa(Coordinate srcCoord,Coordinate receiverCoord,double energeticSum[],double[] alpha_atmo,ArrayList<Double> wj,double li,ArrayList<MirrorReceiverResult> mirroredReceiver,ArrayList<LineSegment> nearBuildingsWalls,ArrayList<Coordinate> regionCorners,ArrayList<Integer> regionCornersFreeToReceiver,double[] freq_lambda)
+	{
+		int nbfreq=data.freq_lvl.size();
+		int nb_obstr_test=0;
+		double SrcReceiverDistance=srcCoord.distance(receiverCoord);
+		if(SrcReceiverDistance<data.maxSrcDist)
+		{							
+			//Then, check if the source is visible from the receiver (not hidden by a building)
+			//Create the direct Line
+			long beginBuildingObstructionTest=System.currentTimeMillis();
+			boolean somethingHideReceiver=false;
+			nb_obstr_test++;
+			somethingHideReceiver=!data.freeFieldFinder.IsFreeField(receiverCoord, srcCoord);
+			dataOut.appendObstructionTestQueryTime((System.currentTimeMillis()-beginBuildingObstructionTest));
+			if(!somethingHideReceiver)
+			{
+				//Evaluation of energy at receiver
+				//add=wj/(4*pi*distance²)
+				for(int idfreq=0;idfreq<nbfreq;idfreq++)
+				{
+					double AttenuatedWj=AttDistW(wj.get(idfreq), SrcReceiverDistance);
+					AttenuatedWj=DbaToW(WToDba(AttAtmW(AttenuatedWj, SrcReceiverDistance, alpha_atmo[idfreq]))+10*Math.log10(li));
+					energeticSum[idfreq]+=AttenuatedWj;
+				}
+				
+			}
+			//
+			// Process specular reflection
+			if(data.reflexionOrder>0)
+			{
+				long beginReflexionTest=System.currentTimeMillis();
+				NonRobustLineIntersector linters=new NonRobustLineIntersector();
+				for( MirrorReceiverResult receiverReflection : mirroredReceiver)
+				{
+					double ReflectedSrcReceiverDistance=receiverReflection.getReceiverPos().distance(srcCoord);
+					if(ReflectedSrcReceiverDistance<data.maxSrcDist)
+					{
+						boolean validReflection=false;
+						int reflectionOrderCounter=0;
+						MirrorReceiverResult receiverReflectionCursor=receiverReflection;
+						//Test whether intersection point is on the wall segment or not
+						Coordinate destinationPt=new Coordinate(srcCoord);
+						LineSegment seg=nearBuildingsWalls.get(receiverReflection.getWallId());
+						linters.computeIntersection(seg.p0, seg.p1, receiverReflection.getReceiverPos(),destinationPt);
+						while(linters.hasIntersection()) //While there is a reflection point on another wall
+						{
+							reflectionOrderCounter++;
+							//There are a probable reflection point on the segment
+							Coordinate reflectionPt=new Coordinate(linters.getIntersection(0));
+							//Translate reflection point by epsilon value to increase computation robustness
+							Coordinate vec_epsilon=new Coordinate(reflectionPt.x-destinationPt.x,reflectionPt.y-destinationPt.y);
+							double length=vec_epsilon.distance(new Coordinate(0.,0.,0.));
+							//Normalize vector
+							vec_epsilon.x/=length;
+							vec_epsilon.y/=length;
+							//Multiply by epsilon in meter
+							vec_epsilon.x*=0.01;
+							vec_epsilon.y*=0.01;
+							//Translate reflection pt by epsilon to get outside the wall
+							reflectionPt.x-=vec_epsilon.x;
+							reflectionPt.y-=vec_epsilon.y;
+							//Test if there is no obstacles between the reflection point and old reflection pt (or source position)
+							nb_obstr_test++;
+							validReflection=data.freeFieldFinder.IsFreeField(reflectionPt, destinationPt);
+							if(validReflection) //Reflection point can see source or its image
+							{
+								if(receiverReflectionCursor.getMirrorResultId()==-1)
+								{   //Direct to the receiver
+									nb_obstr_test++;
+									validReflection=data.freeFieldFinder.IsFreeField(reflectionPt, receiverCoord);
+									break; //That was the last reflection
+								}else{
+									//There is another reflection
+									destinationPt.setCoordinate(reflectionPt);
+									//Move reflection information cursor to a reflection closer 
+									receiverReflectionCursor=mirroredReceiver.get(receiverReflectionCursor.getMirrorResultId());
+									//Update intersection data
+									seg=nearBuildingsWalls.get(receiverReflectionCursor.getWallId());
+									linters.computeIntersection(seg.p0, seg.p1, receiverReflectionCursor.getReceiverPos(),destinationPt);
+									validReflection=false;
+								}
+							}else{
+								break;
+							}
+						}
+						if(validReflection)
+						{
+							//A path has been found
+							for(int idfreq=0;idfreq<nbfreq;idfreq++)
+							{
+								//Geometric dispersion
+								double AttenuatedWj=AttDistW(wj.get(idfreq),ReflectedSrcReceiverDistance);
+								//Apply wall material attenuation
+								AttenuatedWj*=Math.pow((1-data.wallAlpha),reflectionOrderCounter);
+								//Apply atmospheric absorption and ground 
+								//AttenuatedWj=DbaToW(WToDba(AttenuatedWj)-(alpha_atmo[idfreq]*ReflectedSrcReceiverDistance)/1000.+10*Math.log10(li));
+								AttenuatedWj=DbaToW(WToDba(AttAtmW(AttenuatedWj, ReflectedSrcReceiverDistance, alpha_atmo[idfreq]))+10*Math.log10(li));
+								energeticSum[idfreq]+=AttenuatedWj;
+							}
+						}
+					}
+				}
+				dataOut.appendTotalReflexionTime((System.currentTimeMillis()-beginReflexionTest));
+				
+			} //End reflexion
+			/////////////
+			// Process diffraction paths
+			if(data.diffractionOrder>0 && regionCornersFreeToReceiver.size()>0)
+			{
+				//Find the first valid source->corner
+				int receiverFreeCornerIndex=0;
+				int firstCorner=regionCornersFreeToReceiver.get(receiverFreeCornerIndex);
+				if(firstCorner!=-1)
+				{
+					//History of propagation through corners 
+					ArrayList<Integer> curCorner=new ArrayList<Integer>();
+					curCorner.add(firstCorner);
+					while(!curCorner.isEmpty())
+					{
+						Coordinate lastCorner=regionCorners.get(curCorner.get(curCorner.size()-1));
+						//Test Path is free to the source
+						if(data.freeFieldFinder.IsFreeField(lastCorner, srcCoord))
+						{
+							//True then the path is clear
+							//Compute attenuation level
+							double elength=0;
+							for(int ie=1;ie<curCorner.size();ie++)
+							{
+								elength+=regionCorners.get(curCorner.get(ie-1)).distance(regionCorners.get(curCorner.get(ie)));
+							}
+							//delta=SO^1+O^nO^(n+1)+O^nnR
+							double diffractionFullDistance=srcCoord.distance(regionCorners.get(curCorner.get(0)))+elength+srcCoord.distance(regionCorners.get(curCorner.get(curCorner.size()-1)));
+							if(diffractionFullDistance<data.maxSrcDist)
+							{
+								double delta=diffractionFullDistance-SrcReceiverDistance;
+								//Negative if free field
+								if(!somethingHideReceiver)
+									delta=-delta;
+								
+								
+									
+								//double largeAtt=0;//TODO remove
+								for(int idfreq=0;idfreq<nbfreq;idfreq++)
+								{
+									
+									double cprime;
+									if(curCorner.size()==1)
+									{
+										cprime=1;
+									}else{
+										cprime=(75*Math.pow(freq_lambda[idfreq],2)+3*Math.pow(elength,2))/(75*Math.pow(freq_lambda[idfreq],2)+Math.pow(elength,2));
+									}
+									double testForm=(40/freq_lambda[idfreq])*cprime*delta;
+									double DiffractionAttenuation=0;
+									if(testForm>=-2)
+										DiffractionAttenuation=10*Math.log10(3+testForm);
+									//Limit to 0<=DiffractionAttenuation<=25
+									DiffractionAttenuation=Math.max(0, DiffractionAttenuation);
+									//largeAtt+=DbaToW(DiffractionAttenuation);
+									//Geometric dispersion
+									double AttenuatedWj=AttDistW(wj.get(idfreq),SrcReceiverDistance);
+									//Apply diffraction attenuation
+									AttenuatedWj=DbaToW(WToDba(AttenuatedWj)-DiffractionAttenuation);
+									//Apply atmospheric absorption and ground 
+									//AttenuatedWj=DbaToW(WToDba(AttenuatedWj)-(alpha_atmo[idfreq]*ReflectedSrcReceiverDistance)/1000.+10*Math.log10(li));
+									AttenuatedWj=DbaToW(WToDba(AttAtmW(AttenuatedWj, diffractionFullDistance, alpha_atmo[idfreq]))+10*Math.log10(li));
+									energeticSum[idfreq]+=AttenuatedWj;
+								}
+								//TODO removing
+								/*
+								if(somethingHideReceiver)
+								{
+									Coordinate[] coordinates=new Coordinate[2+curCorner.size()];
+									coordinates[0]=receiverCoord;
+									int idvertex=1;
+									for(int idcorner : curCorner)
+									{
+										coordinates[idvertex]=regionCorners.get(idcorner);
+										idvertex++;
+									}
+									coordinates[coordinates.length-1]=srcCoord;
+									Value[] row=new Value[3];
+									row[0]=ValueFactory.createValue(factory.createLineString(coordinates));
+									row[1]=ValueFactory.createValue(idReceiver);
+									row[2]=ValueFactory.createValue(WToDba(largeAtt));
+									diffId++;
+									try {
+										driver.addValues(row);
+									} catch (DriverException e) {
+										// TODO Auto-generated catch block
+										e.printStackTrace();
+										return;
+									}
+								}
+								//END REMOVING
+								 */
+							}
+						}
+						//Process to the next corner
+						int nextCorner=-1;
+						if(data.diffractionOrder>curCorner.size()){
+							//Continue to next order valid corner
+							nextCorner=NextFreeFieldNode(regionCorners,lastCorner,curCorner,0,data.freeFieldFinder);
+							if(nextCorner!=-1)
+							{
+								curCorner.add(nextCorner);
+							}
+						}
+						while(nextCorner==-1 && !curCorner.isEmpty())
+						{
+							if(curCorner.size()>1)
+							{
+								//Next free field corner
+								nextCorner=NextFreeFieldNode(regionCorners,regionCorners.get(curCorner.get(curCorner.size()-2)),curCorner,curCorner.get(curCorner.size()-1),data.freeFieldFinder);
+							}else{
+								//Next receiver-corner tuple
+								receiverFreeCornerIndex++;
+								if(receiverFreeCornerIndex<regionCornersFreeToReceiver.size())
+								{
+									nextCorner=regionCornersFreeToReceiver.get(receiverFreeCornerIndex);
+								}else{
+									nextCorner=-1;
+								}
+							}
+							if(nextCorner!=-1)
+							{
+								curCorner.set(curCorner.size()-1, nextCorner);
+							}else{
+								curCorner.remove(curCorner.size()-1);
+							}	
+						}								
+					}
+				}
+			}
+		}
+	}
+	
 	/**
 	 * Compute the attenuation of atmospheric absorption
 	 * @param Wj Source energy
@@ -275,7 +529,7 @@ public class PropagationProcess implements Runnable {
 		int idReceiver=0;
 		for(Coordinate receiverCoord : data.vertices)
 		{
-			propaProcessProgression.NextSubProcessEnd();
+			propaProcessProgression.nextSubProcessEnd();
 			//List of walls within maxReceiverSource distance
 			ArrayList<LineSegment> nearBuildingsWalls=null;
 			ArrayList<MirrorReceiverResult> mirroredReceiver=null;
@@ -332,251 +586,11 @@ public class PropagationProcess implements Runnable {
 					//Compute li to equation  4.1 NMPB 2008 (June 2009)
 				
 				}
-				Coordinate lastSourceCoord=null;
-				boolean lasthidingfound=false;
 				dataOut.appendSourceCount(srcPos.size());
 				for(final Coordinate srcCoord : srcPos)
 				{
-					double SrcReceiverDistance=srcCoord.distance(receiverCoord);
-					if(SrcReceiverDistance<data.maxSrcDist)
-					{							
-						//Then, check if the source is visible from the receiver (not hidden by a building)
-						//Create the direct Line
-						long beginBuildingObstructionTest=System.currentTimeMillis();
-						boolean somethingHideReceiver=false;
-
-						if(lastSourceCoord!=null && lastSourceCoord.equals2D(srcCoord)) //If the srcPos is the same than the last one
-						{
-							somethingHideReceiver=lasthidingfound;											
-						}else{		
-							nb_obstr_test++;
-							somethingHideReceiver=!data.freeFieldFinder.IsFreeField(receiverCoord, srcCoord);
-						}
-						dataOut.appendObstructionTestQueryTime((System.currentTimeMillis()-beginBuildingObstructionTest));
-						lastSourceCoord=srcCoord;
-						lasthidingfound=somethingHideReceiver;
-						if(!somethingHideReceiver)
-						{
-							//Evaluation of energy at receiver
-							//add=wj/(4*pi*distance²)
-							for(int idfreq=0;idfreq<nbfreq;idfreq++)
-							{
-								double AttenuatedWj=AttDistW(wj.get(idfreq), SrcReceiverDistance);
-								AttenuatedWj=DbaToW(WToDba(AttAtmW(AttenuatedWj, SrcReceiverDistance, alpha_atmo[idfreq]))+10*Math.log10(li));
-								energeticSum[idfreq]+=AttenuatedWj;
-							}
-							
-						}
-						//
-						// Process specular reflection
-						if(data.reflexionOrder>0)
-						{
-							long beginReflexionTest=System.currentTimeMillis();
-							NonRobustLineIntersector linters=new NonRobustLineIntersector();
-							for( MirrorReceiverResult receiverReflection : mirroredReceiver)
-							{
-								double ReflectedSrcReceiverDistance=receiverReflection.getReceiverPos().distance(srcCoord);
-								if(ReflectedSrcReceiverDistance<data.maxSrcDist)
-								{
-									boolean validReflection=false;
-									int reflectionOrderCounter=0;
-									MirrorReceiverResult receiverReflectionCursor=receiverReflection;
-									//Test whether intersection point is on the wall segment or not
-									Coordinate destinationPt=new Coordinate(srcCoord);
-									LineSegment seg=nearBuildingsWalls.get(receiverReflection.getWallId());
-									linters.computeIntersection(seg.p0, seg.p1, receiverReflection.getReceiverPos(),destinationPt);
-									while(linters.hasIntersection()) //While there is a reflection point on another wall
-									{
-										reflectionOrderCounter++;
-										//There are a probable reflection point on the segment
-										Coordinate reflectionPt=new Coordinate(linters.getIntersection(0));
-										//Translate reflection point by epsilon value to increase computation robustness
-										Coordinate vec_epsilon=new Coordinate(reflectionPt.x-destinationPt.x,reflectionPt.y-destinationPt.y);
-										double length=vec_epsilon.distance(new Coordinate(0.,0.,0.));
-										//Normalize vector
-										vec_epsilon.x/=length;
-										vec_epsilon.y/=length;
-										//Multiply by epsilon in meter
-										vec_epsilon.x*=0.01;
-										vec_epsilon.y*=0.01;
-										//Translate reflection pt by epsilon to get outside the wall
-										reflectionPt.x-=vec_epsilon.x;
-										reflectionPt.y-=vec_epsilon.y;
-										//Test if there is no obstacles between the reflection point and old reflection pt (or source position)
-										nb_obstr_test++;
-										validReflection=data.freeFieldFinder.IsFreeField(reflectionPt, destinationPt);
-										if(validReflection) //Reflection point can see source or its image
-										{
-											if(receiverReflectionCursor.getMirrorResultId()==-1)
-											{   //Direct to the receiver
-												nb_obstr_test++;
-												validReflection=data.freeFieldFinder.IsFreeField(reflectionPt, receiverCoord);
-												break; //That was the last reflection
-											}else{
-												//There is another reflection
-												destinationPt.setCoordinate(reflectionPt);
-												//Move reflection information cursor to a reflection closer 
-												receiverReflectionCursor=mirroredReceiver.get(receiverReflectionCursor.getMirrorResultId());
-												//Update intersection data
-												seg=nearBuildingsWalls.get(receiverReflectionCursor.getWallId());
-												linters.computeIntersection(seg.p0, seg.p1, receiverReflectionCursor.getReceiverPos(),destinationPt);
-												validReflection=false;
-											}
-										}else{
-											break;
-										}
-									}
-									if(validReflection)
-									{
-										//A path has been found
-										for(int idfreq=0;idfreq<nbfreq;idfreq++)
-										{
-											//Geometric dispersion
-											double AttenuatedWj=AttDistW(wj.get(idfreq),ReflectedSrcReceiverDistance);
-											//Apply wall material attenuation
-											AttenuatedWj*=Math.pow((1-data.wallAlpha),reflectionOrderCounter);
-											//Apply atmospheric absorption and ground 
-											//AttenuatedWj=DbaToW(WToDba(AttenuatedWj)-(alpha_atmo[idfreq]*ReflectedSrcReceiverDistance)/1000.+10*Math.log10(li));
-											AttenuatedWj=DbaToW(WToDba(AttAtmW(AttenuatedWj, ReflectedSrcReceiverDistance, alpha_atmo[idfreq]))+10*Math.log10(li));
-											energeticSum[idfreq]+=AttenuatedWj;
-										}
-									}
-								}
-							}
-							dataOut.appendTotalReflexionTime((System.currentTimeMillis()-beginReflexionTest));
-							
-						} //End reflexion
-						/////////////
-						// Process diffraction paths
-						if(data.diffractionOrder>0 && regionCornersFreeToReceiver.size()>0)
-						{
-							//Find the first valid source->corner
-							int receiverFreeCornerIndex=0;
-							int firstCorner=regionCornersFreeToReceiver.get(receiverFreeCornerIndex);
-							if(firstCorner!=-1)
-							{
-								//History of propagation through corners 
-								ArrayList<Integer> curCorner=new ArrayList<Integer>();
-								curCorner.add(firstCorner);
-								while(!curCorner.isEmpty())
-								{
-									Coordinate lastCorner=regionCorners.get(curCorner.get(curCorner.size()-1));
-									//Test Path is free to the source
-									if(data.freeFieldFinder.IsFreeField(lastCorner, srcCoord))
-									{
-										//True then the path is clear
-										//Compute attenuation level
-										double elength=0;
-										for(int ie=1;ie<curCorner.size();ie++)
-										{
-											elength+=regionCorners.get(curCorner.get(ie-1)).distance(regionCorners.get(curCorner.get(ie)));
-										}
-										//delta=SO^1+O^nO^(n+1)+O^nnR
-										double diffractionFullDistance=srcCoord.distance(regionCorners.get(curCorner.get(0)))+elength+srcCoord.distance(regionCorners.get(curCorner.get(curCorner.size()-1)));
-										if(diffractionFullDistance<data.maxSrcDist)
-										{
-											double delta=diffractionFullDistance-SrcReceiverDistance;
-											//Negative if free field
-											if(!somethingHideReceiver)
-												delta=-delta;
-											
-											
-												
-											//double largeAtt=0;//TODO remove
-											for(int idfreq=0;idfreq<nbfreq;idfreq++)
-											{
-												
-												double cprime;
-												if(curCorner.size()==1)
-												{
-													cprime=1;
-												}else{
-													cprime=(75*Math.pow(freq_lambda[idfreq],2)+3*Math.pow(elength,2))/(75*Math.pow(freq_lambda[idfreq],2)+Math.pow(elength,2));
-												}
-												double testForm=(40/freq_lambda[idfreq])*cprime*delta;
-												double DiffractionAttenuation=0;
-												if(testForm>=-2)
-													DiffractionAttenuation=10*Math.log10(3+testForm);
-												//Limit to 0<=DiffractionAttenuation<=25
-												DiffractionAttenuation=Math.max(0, DiffractionAttenuation);
-												//largeAtt+=DbaToW(DiffractionAttenuation);
-												//Geometric dispersion
-												double AttenuatedWj=AttDistW(wj.get(idfreq),SrcReceiverDistance);
-												//Apply diffraction attenuation
-												AttenuatedWj=DbaToW(WToDba(AttenuatedWj)-DiffractionAttenuation);
-												//Apply atmospheric absorption and ground 
-												//AttenuatedWj=DbaToW(WToDba(AttenuatedWj)-(alpha_atmo[idfreq]*ReflectedSrcReceiverDistance)/1000.+10*Math.log10(li));
-												AttenuatedWj=DbaToW(WToDba(AttAtmW(AttenuatedWj, diffractionFullDistance, alpha_atmo[idfreq]))+10*Math.log10(li));
-												energeticSum[idfreq]+=AttenuatedWj;
-											}
-											//TODO removing
-											/*
-											if(somethingHideReceiver)
-											{
-												Coordinate[] coordinates=new Coordinate[2+curCorner.size()];
-												coordinates[0]=receiverCoord;
-												int idvertex=1;
-												for(int idcorner : curCorner)
-												{
-													coordinates[idvertex]=regionCorners.get(idcorner);
-													idvertex++;
-												}
-												coordinates[coordinates.length-1]=srcCoord;
-												Value[] row=new Value[3];
-												row[0]=ValueFactory.createValue(factory.createLineString(coordinates));
-												row[1]=ValueFactory.createValue(idReceiver);
-												row[2]=ValueFactory.createValue(WToDba(largeAtt));
-												diffId++;
-												try {
-													driver.addValues(row);
-												} catch (DriverException e) {
-													// TODO Auto-generated catch block
-													e.printStackTrace();
-													return;
-												}
-											}
-											//END REMOVING
-											 */
-										}
-									}
-									//Process to the next corner
-									int nextCorner=-1;
-									if(data.diffractionOrder>curCorner.size()){
-										//Continue to next order valid corner
-										nextCorner=NextFreeFieldNode(regionCorners,lastCorner,curCorner,0,data.freeFieldFinder);
-										if(nextCorner!=-1)
-										{
-											curCorner.add(nextCorner);
-										}
-									}
-									while(nextCorner==-1 && !curCorner.isEmpty())
-									{
-										if(curCorner.size()>1)
-										{
-											//Next free field corner
-											nextCorner=NextFreeFieldNode(regionCorners,regionCorners.get(curCorner.get(curCorner.size()-2)),curCorner,curCorner.get(curCorner.size()-1),data.freeFieldFinder);
-										}else{
-											//Next receiver-corner tuple
-											receiverFreeCornerIndex++;
-											if(receiverFreeCornerIndex<regionCornersFreeToReceiver.size())
-											{
-												nextCorner=regionCornersFreeToReceiver.get(receiverFreeCornerIndex);
-											}else{
-												nextCorner=-1;
-											}
-										}
-										if(nextCorner!=-1)
-										{
-											curCorner.set(curCorner.size()-1, nextCorner);
-										}else{
-											curCorner.remove(curCorner.size()-1);
-										}	
-									}								
-								}
-							}
-						}
-					}
-					
+					//For each Pt Source - Pt Receiver
+					ReceiverSourcePropa(srcCoord,receiverCoord,energeticSum,alpha_atmo,wj,li,mirroredReceiver,nearBuildingsWalls,regionCorners,regionCornersFreeToReceiver,freq_lambda);
 				}
 			}
 			//Save the sound level at this receiver

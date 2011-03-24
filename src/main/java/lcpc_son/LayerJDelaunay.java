@@ -7,10 +7,10 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 import org.jdelaunay.delaunay.ConstrainedMesh;
+import org.jdelaunay.delaunay.DEdge;
+import org.jdelaunay.delaunay.DPoint;
+import org.jdelaunay.delaunay.DTriangle;
 import org.jdelaunay.delaunay.DelaunayError;
-import org.jdelaunay.delaunay.DelaunayTriangle;
-import org.jdelaunay.delaunay.Edge;
-import org.jdelaunay.delaunay.Point;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.CoordinateSequence;
@@ -26,7 +26,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 	private ArrayList<Coordinate> vertices = new ArrayList<Coordinate>();
 	ArrayList<Triangle> triangles=new ArrayList<Triangle>();
 	HashMap<Integer,LinkedList<Integer>> hashOfArrayIndex=new HashMap<Integer,LinkedList<Integer>>();
-	LinkedList<Point> ptToInsert=new LinkedList<Point>();
+	LinkedList<DPoint> ptToInsert=new LinkedList<DPoint>();
 
 	private static class SetZFilter implements CoordinateSequenceFilter {
 		private boolean done = false;
@@ -95,9 +95,9 @@ public class LayerJDelaunay implements LayerDelaunay {
 				//Add pts
 				while(!this.ptToInsert.isEmpty())
 					this.delaunayTool.addPoint(this.ptToInsert.pop());				
-				List<DelaunayTriangle> trianglesDelaunay=delaunayTool.getTriangleList();
+				List<DTriangle> trianglesDelaunay=delaunayTool.getTriangleList();
 				triangles.ensureCapacity(trianglesDelaunay.size());//reserve memory
-				for(DelaunayTriangle triangle : trianglesDelaunay)
+				for(DTriangle triangle : trianglesDelaunay)
 				{
 					int a=getOrAppendVertices(triangle.getPoint(0).getCoordinate(),vertices,hashOfArrayIndex);	
 					int b=getOrAppendVertices(triangle.getPoint(1).getCoordinate(),vertices,hashOfArrayIndex);
@@ -232,7 +232,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 			Coordinate[] coords=lineToProcess.getCoordinates();
 			for(int ind=1;ind<coords.length;ind++)
 			{
-				delaunayTool.addEdge(new Edge(new Point(coords[ind-1]),new Point(coords[ind])));	
+				delaunayTool.addEdge(new DEdge(new DPoint(coords[ind-1]),new DPoint(coords[ind])));	
 			}
 		} catch (DelaunayError e) {
 			throw new LayerDelaunayError(e.getMessage());
