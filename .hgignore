@@ -1,0 +1,6 @@
+glob:.classpath
+glob:.hgignore
+glob:.project
+glob:.settings*
+glob:.svn*
+glob:*.class

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <jardesc>
-    <jar path="orbisgis-core/lib/ext/lcpc_son.jar"/>
+    <jar path="orbisgis-ui/lib/ext/lcpc_son.jar"/>
     <options buildIfNeeded="true" compress="true" descriptionLocation="/AcousMap/jarexport.jardesc" exportErrors="true" exportWarnings="true" includeDirectoryEntries="false" overwrite="false" saveDescription="true" storeRefactorings="false" useSourceFolders="false"/>
     <storedRefactorings deprecationInfo="true" structuralOnly="false"/>
     <selectedProjects/>
