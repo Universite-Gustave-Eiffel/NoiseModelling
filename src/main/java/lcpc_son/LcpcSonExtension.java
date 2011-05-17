@@ -5,9 +5,9 @@ package lcpc_son;
  * @author Nicolas FORTIN, Judicaël PICAUT
  ***********************************/
 
+import org.gdms.sql.function.math.Power;
 import org.orbisgis.core.ui.pluginSystem.Extension;
 import org.orbisgis.core.ui.pluginSystem.PlugInContext;
-import org.gdms.sql.function.math.Power;
 
 public class LcpcSonExtension extends Extension{
 
