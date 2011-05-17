@@ -1,4 +1,11 @@
 package lcpc_son;
+/***********************************
+ * ANR EvalPDU
+ * Lcpc 11_05_2011
+ * @author Nicolas FORTIN, Judicaël PICAUT
+ ***********************************/
+
+
 /**
  * Throwed delaunay error
  */

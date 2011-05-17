@@ -1,9 +1,8 @@
 package lcpc_son;
-
 /***********************************
  * ANR EvalPDU
- * Lcpc 28_07_2010
- * @author Nicolas Fortin
+ * Lcpc 11_05_2011
+ * @author Nicolas FORTIN, Judicaël PICAUT
  ***********************************/
 
 import java.util.LinkedList;

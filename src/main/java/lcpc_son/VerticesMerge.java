@@ -1,4 +1,9 @@
 package lcpc_son;
+/***********************************
+ * ANR EvalPDU
+ * IFSTTAR 11_05_2011
+ * @author Nicolas FORTIN, Judicaël PICAUT
+ ***********************************/
 
 import java.util.ArrayList;
 import java.util.List;

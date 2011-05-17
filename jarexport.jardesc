@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<jardesc>
+    <jar path="orbisgis-core/lib/ext/lcpc_son.jar"/>
+    <options buildIfNeeded="true" compress="true" descriptionLocation="/AcousMap/jarexport.jardesc" exportErrors="true" exportWarnings="true" includeDirectoryEntries="false" overwrite="false" saveDescription="true" storeRefactorings="false" useSourceFolders="false"/>
+    <storedRefactorings deprecationInfo="true" structuralOnly="false"/>
+    <selectedProjects/>
+    <manifest generateManifest="true" manifestLocation="" manifestVersion="1.0" reuseManifest="false" saveManifest="false" usesManifest="true">
+        <sealing sealJar="false">
+            <packagesToSeal/>
+            <packagesToUnSeal/>
+        </sealing>
+    </manifest>
+    <selectedElements exportClassFiles="true" exportJavaFiles="false" exportOutputFolder="false">
+        <javaElement handleIdentifier="=AcousMap/src\/main\/java&lt;lcpc_son{ProgressionOrbisGisManager.java"/>
+        <javaElement handleIdentifier="=AcousMap/src\/main\/java&lt;lcpc_son{QueryGridIndex.java"/>
+        <javaElement handleIdentifier="=AcousMap/src\/main\/java&lt;lcpc_son{LayerDelaunayError.java"/>
+        <javaElement handleIdentifier="=AcousMap/src\/main\/java&lt;lcpc_son{BR_SpectrumRepartition.java"/>
+        <javaElement handleIdentifier="=AcousMap/src\/main\/java&lt;lcpc_son{IntSegment.java"/>
+        <javaElement handleIdentifier="=AcousMap/src\/main\/java&lt;lcpc_son{ThreadPool.java"/>
+        <javaElement handleIdentifier="=AcousMap/src\/main\/java&lt;lcpc_son{PropagationProcessData.java"/>
+        <javaElement handleIdentifier="=AcousMap/src\/main\/java&lt;lcpc_son{FastObstructionTest.java"/>
+        <javaElement handleIdentifier="=AcousMap/src\/main\/java&lt;lcpc_son{LayerDelaunay.java"/>
+        <javaElement handleIdentifier="=AcousMap/src\/main\/java&lt;lcpc_son{CTriangleStruct.java"/>
+        <javaElement handleIdentifier="=AcousMap/src\/main\/java&lt;lcpc_son{ST_SetNearestZ.java"/>
+        <javaElement handleIdentifier="=AcousMap/src\/main\/java&lt;lcpc_son{ArrayCoordinateListVisitor.java"/>
+        <javaElement handleIdentifier="=AcousMap/src\/main\/java&lt;lcpc_son{LayerExtTriangle.java"/>
+        <javaElement handleIdentifier="=AcousMap/src\/main\/java&lt;lcpc_son{ST_SplitSegment.java"/>
+        <javaElement handleIdentifier="=AcousMap/src\/main\/java&lt;lcpc_son{ST_SplitLineInPoints.java"/>
+        <javaElement handleIdentifier="=AcousMap/src\/main\/java&lt;lcpc_son{PropagationProcessDiskWriter.java"/>
+        <javaElement handleIdentifier="=AcousMap/src\/main\/java&lt;lcpc_son{BR_EvalSourceV1.java"/>
+        <javaElement handleIdentifier="=AcousMap/src\/main\/java&lt;lcpc_son{ST_TriangleContouring.java"/>
+        <javaElement handleIdentifier="=AcousMap/src\/main\/java&lt;lcpc_son{BR_EvalSourceV2.java"/>
+        <javaElement handleIdentifier="=AcousMap/src\/main\/java&lt;lcpc_son{PropagationProcessOut.java"/>
+        <javaElement handleIdentifier="=AcousMap/src\/main\/java&lt;lcpc_son{QueryGeometryStructure.java"/>
+        <javaElement handleIdentifier="=AcousMap/src\/main\/java&lt;lcpc_son{VerticesMerge.java"/>
+        <javaElement handleIdentifier="=AcousMap/src\/main\/java&lt;lcpc_son{LcpcSonExtension.java"/>
+        <javaElement handleIdentifier="=AcousMap/src\/main\/java&lt;lcpc_son{Log10.java"/>
+        <javaElement handleIdentifier="=AcousMap/src\/main\/java&lt;lcpc_son{ST_SetNearestGeometryId.java"/>
+        <javaElement handleIdentifier="=AcousMap/src\/main\/java&lt;lcpc_son{BR_TriGrid.java"/>
+        <javaElement handleIdentifier="=AcousMap/src\/main\/java&lt;lcpc_son{BR_EvalSourceV4.java"/>
+        <javaElement handleIdentifier="=AcousMap/src\/main\/java&lt;lcpc_son{LayerCTriangle.java"/>
+        <javaElement handleIdentifier="=AcousMap/src\/main\/java&lt;lcpc_son{EnvelopeWithIndex.java"/>
+        <javaElement handleIdentifier="=AcousMap/src\/main\/java&lt;lcpc_son{Triangle.java"/>
+        <javaElement handleIdentifier="=AcousMap/src\/main\/java&lt;lcpc_son{ProgressionProcess.java"/>
+        <javaElement handleIdentifier="=AcousMap/src\/main\/java&lt;lcpc_son{MirrorReceiverResult.java"/>
+        <javaElement handleIdentifier="=AcousMap/src\/main\/java&lt;lcpc_son{TriMarkers.java"/>
+        <javaElement handleIdentifier="=AcousMap/src\/main\/java&lt;lcpc_son{PropagationProcess.java"/>
+        <javaElement handleIdentifier="=AcousMap/src\/main\/java&lt;lcpc_son{QueryQuadTree.java"/>
+        <javaElement handleIdentifier="=AcousMap/src\/main\/java&lt;lcpc_son{BR_EvalSourceV3.java"/>
+    </selectedElements>
+</jardesc>

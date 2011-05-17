@@ -1,7 +1,7 @@
 /***********************************
  * ANR EvalPDU
- * Lcpc 30_08_2010
- * @author Nicolas Fortin
+ * Lcpc 11_05_2011
+ * @author Nicolas FORTIN, Judicaël PICAUT
  ***********************************/
 
 package lcpc_son;
@@ -91,7 +91,8 @@ public class BR_TriGrid implements CustomQuery {
 	}
 	private void AddPolygon(Polygon newpoly,LayerDelaunay delaunayTool,Geometry boundingBox) throws DriverException, LayerDelaunayError
 	{
-		delaunayTool.addPolygon(newpoly,true);		
+		delaunayTool.addPolygon(newpoly,true);
+		
 	}
 	private void ExplodeAndAddPolygon(Geometry intersectedGeometry,LayerDelaunay delaunayTool,Geometry boundingBox) throws DriverException, LayerDelaunayError
 	{

@@ -1,4 +1,9 @@
 package lcpc_son;
+/***********************************
+ * ANR EvalPDU
+ * Lcpc 11_05_2011
+ * @author Nicolas FORTIN, Judicaël PICAUT
+ ***********************************/
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -605,8 +610,16 @@ public class PropagationProcess implements Runnable {
 			verticesSoundLevel[idReceiver]=allfreqlvl;
 			idReceiver++;
 		}
-		
-		
+		//Subdivide each triangle, and apply BiCubic interpolation.
+		/*
+		ArrayList<Triangle> bicubictri=new ArrayList<Triangle>();
+		bicubictri.ensureCapacity(data.triangles.size());
+		for(Triangle tri : data.triangles)
+		{
+			////////////////////////
+			//Find the fourth vertex
+		}
+		*/
 		//Now export all triangles with the sound level at each vertices
 		int tri_id=0;
 		for(Triangle tri : data.triangles)

@@ -1,4 +1,9 @@
 package lcpc_son;
+/***********************************
+ * ANR EvalPDU
+ * Lcpc 11_05_2011
+ * @author Nicolas FORTIN, Judicaël PICAUT
+ ***********************************/
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -120,6 +125,8 @@ public class LayerJDelaunay implements LayerDelaunay {
 		if(delaunayTool==null)
 			delaunayTool=new ConstrainedMesh();
 
+
+		
 		//To avoid errors we set the Z coordinate to 0.
 		SetZFilter zFilter = new SetZFilter();
 		newPoly.apply(zFilter);

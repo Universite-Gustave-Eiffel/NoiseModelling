@@ -1,4 +1,9 @@
 package lcpc_son;
+/***********************************
+ * ANR EvalPDU
+ * Lcpc 11_05_2011
+ * @author Nicolas FORTIN, Judicaël PICAUT
+ ***********************************/
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -12,6 +17,8 @@ import java.util.Locale;
 import java.util.Scanner;
 import java.util.LinkedList;
 import org.apache.log4j.Logger;
+
+
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.GeometryFactory;
@@ -37,15 +44,32 @@ public class LayerExtTriangle implements LayerDelaunay {
     private final boolean deleteIntermediateFile = true;
     private String maxArea="";
     private boolean retrieveNeighbords=false;
+    // remove debug instr
+	//DiskBufferDriver driverDebug;
     /**
      * @param tmpDir Temporary directory of input and output files
      * @param maxSteinerFactor Stop adding steiner point when Steiner point count (maxSteiner*input vertice count) 
      */
-    public LayerExtTriangle(String tmpDir) {
+    public LayerExtTriangle(String tmpDir) { //,DataSourceFactory dsf remove DataSourceFactory debug parameter
 		super();
     	this.tempdir=tmpDir;
     	if(TrianglePath==null)
     		TrianglePath="triangle";
+    	//remove debug instr
+    	/*
+		if(dsf != null)
+		{
+			Type meta_type[]={TypeFactory.createType(Type.GEOMETRY)};
+			String meta_name[]={"the_geom"};
+			DefaultMetadata metadata = new DefaultMetadata(meta_type,meta_name);
+			try {
+				driverDebug = new DiskBufferDriver(dsf,metadata );
+			} catch (DriverException e) {
+				e.printStackTrace();
+				return;
+			}
+		}
+		*/
 	}
     /*
      * Change coordinate within a local interval
@@ -368,6 +392,19 @@ public class LayerExtTriangle implements LayerDelaunay {
 	 * @return If savePolyToRefine is true, the path to the polygon file. can be used later with the method loadInputDelaunay
 	 */
 	public String processDelaunay(String prefix,int delaunayIndex,int maxSteiner,boolean steinerOnBoundaries,boolean savePolyToRefine) throws LayerDelaunayError {
+		
+		//remove debug instr
+		/*
+		if(driverDebug != null)
+		{
+			try {
+				driverDebug.writingFinished();
+			} catch (DriverException e) {
+				// Auto-generated catch block
+				e.printStackTrace();
+			}
+		
+		 */
 		try {
 			int refineIndex=1;
 			if(!steinerOnBoundaries)
@@ -412,7 +449,7 @@ public class LayerExtTriangle implements LayerDelaunay {
 			holes.clear();
 			segments.clear();
 			neighbors.clear();
-			options+=" "+polypath; //Add polygon file path
+			options+=" \""+polypath+"\""; //Add polygon file path
 	        String line;
 	        logger.info("Run delaunay triangulation "+TrianglePath + " " + options);
 	        Process p = Runtime.getRuntime().exec
@@ -469,6 +506,22 @@ public class LayerExtTriangle implements LayerDelaunay {
 	@Override
 	public void addPolygon(Polygon newPoly, boolean isEmpty)
 			throws LayerDelaunayError {
+		
+		//remove debug instr
+		/*
+		if(driverDebug != null)
+		{
+			Value[] row=new Value[1];
+			row[0]=ValueFactory.createValue(newPoly);
+			try {
+				driverDebug.addValues(row);
+			} catch (DriverException e) {
+				// Auto-generated catch block
+				e.printStackTrace();
+				return;
+			}
+		}
+		*/
 		// Append main polygon
 		GeometryFactory factory=new GeometryFactory();
 		final Coordinate[] coordinates = newPoly.getExteriorRing().getCoordinates();

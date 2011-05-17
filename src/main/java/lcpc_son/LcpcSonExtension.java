@@ -1,12 +1,16 @@
 package lcpc_son;
+/***********************************
+ * ANR EvalPDU
+ * Lcpc 11_05_2011
+ * @author Nicolas FORTIN, Judicaël PICAUT
+ ***********************************/
 
-import org.orbisgis.core.ui.pluginSystem.AbstractPlugIn;
+import org.orbisgis.core.ui.pluginSystem.Extension;
 import org.orbisgis.core.ui.pluginSystem.PlugInContext;
 import org.gdms.sql.function.math.Power;
 
-public class LcpcSonExtension extends AbstractPlugIn{
+public class LcpcSonExtension extends Extension{
 
-	@Override
 	public void initialize(PlugInContext context) throws Exception {
 		context.getFeatureInstaller().addRegisterFunction(BR_EvalSourceV1.class);
 		context.getFeatureInstaller().addRegisterFunction(BR_EvalSourceV2.class);
@@ -20,7 +24,13 @@ public class LcpcSonExtension extends AbstractPlugIn{
 		context.getFeatureInstaller().addRegisterFunction(ST_SplitSegment.class);
 		context.getFeatureInstaller().addRegisterCustomQuery(BR_TriGrid.class);
 		context.getFeatureInstaller().addRegisterCustomQuery(ST_TriangleContouring.class);
-		context.getFeatureInstaller().addRegisterFunction(BR_SpectrumRepartition.class);		
+		context.getFeatureInstaller().addRegisterFunction(BR_SpectrumRepartition.class);	
+		System.out.println("LcpcSonExtension plugin loaded..");
+	}
+
+	@Override
+	public void configure(PlugInContext context) throws Exception {
+		new LcpcSonExtension().initialize(context);		
 	}
 
     public  boolean execute(PlugInContext context) throws Exception {

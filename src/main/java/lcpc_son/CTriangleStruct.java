@@ -1,7 +1,7 @@
 /***********************************
  * ANR EvalPDU
- * Lcpc 28_05_2010
- * @author Nicolas Fortin
+ * Lcpc 11_05_2011
+ * @author Nicolas FORTIN, Judicaël PICAUT
  ***********************************/
 
 package lcpc_son;
