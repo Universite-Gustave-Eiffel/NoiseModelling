@@ -30,7 +30,7 @@ public class LcpcSonExtension extends Extension{
 
 	@Override
 	public void configure(PlugInContext context) throws Exception {
-		new LcpcSonExtension().initialize(context);		
+		this.initialize(context);		
 	}
 
     public  boolean execute(PlugInContext context) throws Exception {
