@@ -4,7 +4,16 @@
 	<groupId>AcousMap</groupId>
 	<artifactId>AcousMap</artifactId>
 	<version>1.0.0</version>
+        <properties>
+                <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        </properties>
 	<dependencies>
+                <dependency>
+                        <groupId>junit</groupId>
+                        <artifactId>junit</artifactId>
+                        <version>3.8.1</version>
+                        <scope>test</scope>
+                </dependency>
 		<dependency>
 			<groupId>com.vividsolutions</groupId>
 			<artifactId>jts</artifactId>
@@ -25,4 +34,31 @@
 			<scope>compile</scope>
 		</dependency>
 	</dependencies>
+        <build>
+                <plugins>
+                        <plugin>
+                                <groupId>org.apache.maven.plugins</groupId>
+                                <artifactId>maven-compiler-plugin</artifactId>
+                                <configuration>
+                                        <source>1.6</source>
+                                        <target>1.6</target>
+                                </configuration>
+                                <version>2.3.2</version>
+                        </plugin>
+                </plugins>
+        </build>
+        <repositories>
+                <repository>
+                        <id>geosysin</id>
+                        <name>Geosysin repository</name>
+                        <url>http://geosysin.iict.ch/irstv-web/maven-repo</url>
+                </repository>
+        </repositories>
+        <distributionManagement>
+                <repository>
+                        <id>IRSTV</id>
+                        <name>IRSTV repository</name>
+                        <url>sftp://irstv@www.orbisgis.org:/var/www/repo.orbisgis.org/htdocs</url>
+                </repository>
+        </distributionManagement>
 </project>
