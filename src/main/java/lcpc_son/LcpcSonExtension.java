@@ -1,7 +1,7 @@
 package lcpc_son;
 /***********************************
  * ANR EvalPDU
- * Lcpc 11_05_2011
+ * IFSTTAR 11_05_2011
  * @author Nicolas FORTIN, Judicaël PICAUT
  ***********************************/
 
@@ -24,7 +24,9 @@ public class LcpcSonExtension extends Extension{
 		context.getFeatureInstaller().addRegisterFunction(ST_SplitSegment.class);
 		context.getFeatureInstaller().addRegisterCustomQuery(BR_TriGrid.class);
 		context.getFeatureInstaller().addRegisterCustomQuery(ST_TriangleContouring.class);
-		context.getFeatureInstaller().addRegisterFunction(BR_SpectrumRepartition.class);	
+		context.getFeatureInstaller().addRegisterFunction(BR_SpectrumRepartition.class);
+		context.getFeatureInstaller().addRegisterFunction(BTW_SpectrumRepartition.class);
+		context.getFeatureInstaller().addRegisterFunction(BTW_EvalSourceV1.class);
 		System.out.println("LcpcSonExtension plugin loaded..");
 	}
 

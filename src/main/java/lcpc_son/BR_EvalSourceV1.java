@@ -1,6 +1,6 @@
 /***********************************
  * ANR EvalPDU
- * Lcpc 28_05_2010
+ * IFSTTAR 28_05_2010
  * @author Nicolas FORTIN, Judicaël PICAUT
  ***********************************/
 
