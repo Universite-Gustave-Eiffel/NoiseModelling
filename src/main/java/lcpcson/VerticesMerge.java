@@ -26,8 +26,8 @@ public class VerticesMerge implements CoordinateSequenceFilter {
 	private Quadtree ptQuad=new Quadtree();
 	private boolean done = false;
 	private boolean change = false;
-	private static final double epsilon=1.;
-	private static final double distMerge=1.;
+	private static final double EPSILON=1.;
+	private static final double DIST_MERGE=1.;
 	
 	public ArrayList<Coordinate> GetVertices()
 	{
@@ -46,7 +46,7 @@ public class VerticesMerge implements CoordinateSequenceFilter {
 		for(EnvelopeWithIndex<Integer> envel : result)
 		{
 			Coordinate foundCoord=vertices.get((int)envel.getId());
-			if(foundCoord.distance(newCoord)<distMerge)
+			if(foundCoord.distance(newCoord)<DIST_MERGE)
 			{
 				return (int)envel.getId();
 			}
@@ -61,8 +61,8 @@ public class VerticesMerge implements CoordinateSequenceFilter {
 	@Override
 	public void filter(CoordinateSequence seq, int i) {
 		Coordinate coordinate = seq.getCoordinate(i);
-		coordinate.x = ((long)(coordinate.x / epsilon)) * epsilon;
-		coordinate.x = ((long)(coordinate.y / epsilon)) * epsilon;
+		coordinate.x = ((long)(coordinate.x / EPSILON)) * EPSILON;
+		coordinate.x = ((long)(coordinate.y / EPSILON)) * EPSILON;
 		coordinate.z = 0.;
 		int id=this.getOrAppendVertices(coordinate);
 		if(id<vertices.size()-1)
