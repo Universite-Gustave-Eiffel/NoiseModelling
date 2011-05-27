@@ -43,18 +43,22 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 
 public class ST_SetNearestGeometryId implements CustomQuery {
 
+        @Override
 	public String getName() {
 		return "ST_SetNearestGeometryId";
 	}
 
+        @Override
 	public String getSqlOrder() {
 		return "select ST_SetNearestGeometryId( left_table.geomToUpdate, right_table.geomSource, \"right_table_rowId_Label\" ) from left_table,right_table;";
 	}
 
+        @Override
 	public String getDescription() {
 		return "Set the right table row id to each left table rows from the nearest geometry, add also the column AvgDist corresponding to the average distance between the left and the right's nearest geometry found. -1 if nothing has been found in the region of the left geometry.";
 	}
 
+        @Override
 	public ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables,
 			Value[] values, IProgressMonitor pm) throws ExecutionException {
 		try {
@@ -196,10 +200,12 @@ public class ST_SetNearestGeometryId implements CustomQuery {
 		}
 		public long getNearestId(){
 			int nearestLocaleId=getNearestGeometryLocalId();
-			if(nearestLocaleId>=0)
-				return (Long)nearestGeometry.get(nearestLocaleId).getUserData();
-			else
-				return -1;
+			if(nearestLocaleId>=0) {
+                                return (Long)nearestGeometry.get(nearestLocaleId).getUserData();
+                        }
+			else {
+                                return -1;
+                        }
 		}
 		public double getAvgDist(){
 			int nearestLocaleId=getNearestGeometryLocalId();
@@ -212,6 +218,7 @@ public class ST_SetNearestGeometryId implements CustomQuery {
 			}
 		}
 
+                @Override
 		public void filter(CoordinateSequence seq, int i) {
 			Coordinate seq_pt=seq.getCoordinate(i);
 			//Keep only nodes that are inside the area
@@ -238,6 +245,7 @@ public class ST_SetNearestGeometryId implements CustomQuery {
 			return done;
 		}
 	}
+        @Override
 	public Metadata getMetadata(Metadata[] tables) throws DriverException {
 		final Metadata metadata = tables[0];
 		// we don't want the resulting Metadata to be constrained !
@@ -253,6 +261,7 @@ public class ST_SetNearestGeometryId implements CustomQuery {
 		return new DefaultMetadata(fieldsTypes, fieldsNames);
 	}
 
+        @Override
 	public Arguments[] getFunctionArguments() {
 		return new Arguments[] { new Arguments(Argument.GEOMETRY,Argument.GEOMETRY,Argument.STRING) };
 	}

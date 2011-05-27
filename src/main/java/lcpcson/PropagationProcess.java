@@ -124,21 +124,25 @@ public class PropagationProcess implements Runnable {
 				closestPt=SegClosest;
 			}
 		}	
-		if(closestPt==null)
-			return 1.;
+		if(closestPt==null) {
+                        return 1.;
+                }
 		double delta=20.;
 		// If the minimum effective distance between the line source and the receiver is smaller than the minimum distance constraint then the discretisation parameter is changed
 		// Delta must not not too small to avoid memory overhead.
-		if(closestPtDist<minRecDist)
-			closestPtDist=minRecDist;
-		if(closestPtDist/2<delta)
-			delta=closestPtDist/2;
+		if(closestPtDist<minRecDist) {
+                        closestPtDist=minRecDist;
+                }
+		if(closestPtDist/2<delta) {
+                        delta=closestPtDist/2;
+                }
 		pts.add(closestPt);
 		Coordinate[] splitedPts=ST_SplitLineInPoints.SplitMultiPointsInRegularPoints(points, delta);
 		for(Coordinate pt : splitedPts)
 		{
-			if(pt.distance(closestPt)>delta)
-				pts.add(pt);
+			if(pt.distance(closestPt)>delta) {
+                                pts.add(pt);
+                        }
 		}
 		return delta;
 	}
@@ -198,8 +202,9 @@ public class PropagationProcess implements Runnable {
 		{
 			validNode++;
 		}
-		if(validNode>=nodes.size())
-			return -1;		
+		if(validNode>=nodes.size()) {
+                        return -1;
+                }		
 		return validNode;		
 	}
 	/**
@@ -210,8 +215,9 @@ public class PropagationProcess implements Runnable {
 	 */
 	private Double AttDistW(double Wj,double distance)
 	{
-		if(distance<1.) //No infinite sound level
-			distance=1.;
+		if(distance<1.) {
+                        distance=1.;
+                }
 		return Wj/(4*Math.PI*distance*distance);
 	}
 
@@ -365,8 +371,9 @@ public class PropagationProcess implements Runnable {
 							{
 								double delta=diffractionFullDistance-SrcReceiverDistance;
 								//Negative if free field
-								if(!somethingHideReceiver)
-									delta=-delta;
+								if(!somethingHideReceiver) {
+                                                                        delta=-delta;
+                                                                }
 								
 								
 									
@@ -383,8 +390,9 @@ public class PropagationProcess implements Runnable {
 									}
 									double testForm=(40/freq_lambda[idfreq])*cprime*delta;
 									double DiffractionAttenuation=0;
-									if(testForm>=-2)
-										DiffractionAttenuation=10*Math.log10(3+testForm);
+									if(testForm>=-2) {
+                                                                                DiffractionAttenuation=10*Math.log10(3+testForm);
+                                                                        }
 									//Limit to 0<=DiffractionAttenuation<=25
 									DiffractionAttenuation=Math.max(0, DiffractionAttenuation);
 									//largeAtt+=DbaToW(DiffractionAttenuation);
@@ -515,8 +523,9 @@ public class PropagationProcess implements Runnable {
 		}
 		//Compute atmospheric alpha value by specified frequency band
 		double[] alpha_atmo=new double[data.freq_lvl.size()];
-		for(int idfreq=0;idfreq<nbfreq;idfreq++)
-			alpha_atmo[idfreq]=GetAlpha(data.freq_lvl.get(idfreq));
+		for(int idfreq=0;idfreq<nbfreq;idfreq++) {
+                        alpha_atmo[idfreq]=GetAlpha(data.freq_lvl.get(idfreq));
+                }
 		///////////////////////////////////////////////
 		//Search diffraction corners
 		Quadtree cornersQuad=new Quadtree();
@@ -564,8 +573,9 @@ public class PropagationProcess implements Runnable {
 				}
 			}
 			double energeticSum[]=new double[data.freq_lvl.size()];
-			for(int idfreq=0;idfreq<nbfreq;idfreq++)
-				energeticSum[idfreq]=0.0;
+			for(int idfreq=0;idfreq<nbfreq;idfreq++) {
+                                energeticSum[idfreq]=0.0;
+                        }
 			
 			long beginQuadQuery=System.currentTimeMillis();
 			ArrayList<Integer> regionSourcesLst=data.sourcesIndex.query(receiverRegion);
@@ -605,8 +615,9 @@ public class PropagationProcess implements Runnable {
 			{
 				allfreqlvl+=energeticSum[idfreq];
 			}
-			if(allfreqlvl<DbaToW(0.)) //If sound level<0dB, then set to 0dB
-				allfreqlvl=DbaToW(0.);
+			if(allfreqlvl<DbaToW(0.)) {
+                                allfreqlvl=DbaToW(0.);
+                        }
 			verticesSoundLevel[idReceiver]=allfreqlvl;
 			idReceiver++;
 		}

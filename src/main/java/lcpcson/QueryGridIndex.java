@@ -37,8 +37,9 @@ public class QueryGridIndex<index_t> implements QueryGeometryStructure<index_t> 
 	public QueryGridIndex(final Envelope gridEnv,int xsubdiv,int ysubdiv) {
 		super();
 		grid=new int[xsubdiv*ysubdiv];
-		for(int i=0;i<grid.length;i++)
-			grid[i]=-1;
+		for(int i=0;i<grid.length;i++) {
+                        grid[i]=-1;
+                }
 		mainEnv=gridEnv;
 		nbJ=xsubdiv;
 		nbI=ysubdiv;
@@ -75,21 +76,29 @@ public class QueryGridIndex<index_t> implements QueryGeometryStructure<index_t> 
 		tmpvec=new Coordinate((geoEnv.getMaxX()-mainCenter.x)/cellSizeJ,(geoEnv.getMaxY()-mainCenter.y)/cellSizeI);
 		int maxI=(int)(Math.ceil(tmpvec.y))+halfCellCountI;
 		int maxJ=(int)(Math.ceil(tmpvec.x))+halfCellCountJ;
-		if(minI==maxI)
-			maxI+=1;
-		if(minJ==maxJ)
-			maxJ+=1;
-		if(minI<0)
-			minI=0;
-		if(minJ<0)
-			minJ=0;
-		if(maxI>nbI)
-			maxI=nbI;
-		if(maxJ>nbJ)
-			maxJ=nbJ;
+		if(minI==maxI) {
+                        maxI+=1;
+                }
+		if(minJ==maxJ) {
+                        maxJ+=1;
+                }
+		if(minI<0) {
+                        minI=0;
+                }
+		if(minJ<0) {
+                        minJ=0;
+                }
+		if(maxI>nbI) {
+                        maxI=nbI;
+                }
+		if(maxJ>nbJ) {
+                        maxJ=nbJ;
+                }
 		int[] range={minI,maxI,minJ,maxJ};
 		return range;
 	}
+        
+        @Override
 	public void AppendGeometry(final Geometry newGeom,final index_t externalId)
 	{
 		//Compute index intervals from envelopes 
@@ -113,6 +122,8 @@ public class QueryGridIndex<index_t> implements QueryGeometryStructure<index_t> 
 			}
 		}
 	}
+        
+        @Override
 	public ArrayList<index_t> query(Envelope queryEnv)
 	{
 		int[] ranges= GetRange(queryEnv);

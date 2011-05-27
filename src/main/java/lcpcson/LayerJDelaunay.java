@@ -36,6 +36,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 	private static class SetZFilter implements CoordinateSequenceFilter {
 		private boolean done = false;
 
+                @Override
 		public void filter(CoordinateSequence seq, int i) {
 			double x = seq.getX(i);
 			double y = seq.getY(i);
@@ -47,10 +48,12 @@ public class LayerJDelaunay implements LayerDelaunay {
 			}
 		}
 
+                @Override
 		public boolean isDone() {
 			return done;
 		}
 
+                @Override
 		public boolean isGeometryChanged() {
 			return true;
 		}
@@ -98,8 +101,9 @@ public class LayerJDelaunay implements LayerDelaunay {
 			try {
 				delaunayTool.processDelaunay();
 				//Add pts
-				while(!this.ptToInsert.isEmpty())
-					this.delaunayTool.addPoint(this.ptToInsert.pop());				
+				while(!this.ptToInsert.isEmpty()) {
+                                        this.delaunayTool.addPoint(this.ptToInsert.pop());
+                                }				
 				List<DTriangle> trianglesDelaunay=delaunayTool.getTriangleList();
 				triangles.ensureCapacity(trianglesDelaunay.size());//reserve memory
 				for(DTriangle triangle : trianglesDelaunay)
@@ -122,8 +126,9 @@ public class LayerJDelaunay implements LayerDelaunay {
 	@Override
 	public void addPolygon(Polygon newPoly,boolean isEmpty) throws LayerDelaunayError {
 
-		if(delaunayTool==null)
-			delaunayTool=new ConstrainedMesh();
+		if(delaunayTool==null) {
+                        delaunayTool=new ConstrainedMesh();
+                }
 
 
 		
@@ -180,8 +185,9 @@ public class LayerJDelaunay implements LayerDelaunay {
 	@Override
 	public void hintInit(Envelope bBox, long polygonCount,
 			long verticesCount) throws LayerDelaunayError {
-		if(delaunayTool==null)
-			delaunayTool=new ConstrainedMesh();
+		if(delaunayTool==null) {
+                        delaunayTool=new ConstrainedMesh();
+                }
 		/*
 		BoundaryBox boundingBox=new BoundaryBox(bBox.getMinX(),bBox.getMaxX(),bBox.getMinY(),bBox.getMaxY(),0.,0.);
 		try {
@@ -233,8 +239,9 @@ public class LayerJDelaunay implements LayerDelaunay {
 
 	@Override
 	public void addLineString(LineString lineToProcess) throws LayerDelaunayError {
-		if(delaunayTool==null)
-			delaunayTool=new ConstrainedMesh();
+		if(delaunayTool==null) {
+                        delaunayTool=new ConstrainedMesh();
+                }
 		try {
 			Coordinate[] coords=lineToProcess.getCoordinates();
 			for(int ind=1;ind<coords.length;ind++)

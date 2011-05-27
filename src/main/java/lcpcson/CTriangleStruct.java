@@ -22,29 +22,35 @@ public class CTriangleStruct {
 		pointlist = new double[2*numberofpoints];
 		pointattributelist = new double[numberofpoints*numberofpointattributes];
 		pointmarkerlist = new int[numberofpoints];
-		for(int idpt=0;idpt<numberofpoints;idpt++)
-			pointmarkerlist[idpt]=0;
+		for(int idpt=0;idpt<numberofpoints;idpt++) {
+                        pointmarkerlist[idpt]=0;
+                }
 		
 		//TRIANGLES
 		trianglelist = new int[numberofcorners*numberoftriangles];
 		triangleattributelist = new double[numberoftriangles*numberoftriangleattributes];
-		if(in)
-			trianglearealist = new double[numberoftriangles];
-		if(out)
-			neighborlist = new int[numberoftriangles*3*numberofcorners];
+		if(in) {
+                        trianglearealist = new double[numberoftriangles];
+                }
+		if(out) {
+                        neighborlist = new int[numberoftriangles*3*numberofcorners];
+                }
 		
 		//SEGMENTS
 		segmentlist = new int[2*numberofsegments];
 		segmentmarkerlist = new int[numberofsegments];
-		for(int idmark=0;idmark<numberofsegments;idmark++)
-			segmentmarkerlist[idmark]=0;
+		for(int idmark=0;idmark<numberofsegments;idmark++) {
+                        segmentmarkerlist[idmark]=0;
+                }
 		//HOLES
-		if(in)
-			holelist  = new double[2*numberofholes];
+		if(in) {
+                        holelist  = new double[2*numberofholes];
+                }
 		
 		//REGIONS
-		if(in)
-			regionlist = new double[4*numberofregions];
+		if(in) {
+                        regionlist = new double[4*numberofregions];
+                }
 	
 		//EDGES
 		if(out)

@@ -25,8 +25,9 @@ public class ArrayCoordinateListVisitor
 
   public void visitItem(Object item)
   {
-	if(destinationCoordinate.distance((Coordinate)item)<=maxDist)
-		items.add((Coordinate)item);
+	if(destinationCoordinate.distance((Coordinate)item)<=maxDist) {
+                        items.add((Coordinate)item);
+                }
   }
 
   public ArrayList<Coordinate> getItems() { return items; }

@@ -62,18 +62,22 @@ public class BTW_SpectrumRepartition implements Function {
 			return  ValueFactory.createValue(args[1].getAsDouble()+GetAttenuatedValue(args[0].getAsInt()));
 		}
 	}
+        @Override
 	public String getName() {
 		return "BR_SpectrumRepartition";
 	}
 
+        @Override
 	public boolean isAggregate() {
 		return false;
 	}
 
+        @Override
 	public Type getType(Type[] types) {
 		return TypeFactory.createType(Type.DOUBLE);
 	}
 
+        @Override
 	public Arguments[] getFunctionArguments() {
 		return new Arguments[] { new Arguments(
 				Argument.INT, 		//Frequency [100,125,160,200,250,315,400,500,630,800,1000,1250,1600,2000,2500,3150,4000,5000]
@@ -81,9 +85,11 @@ public class BTW_SpectrumRepartition implements Function {
 		)}; 	
 	}
 
+        @Override
 	public String getDescription() {
 		return "Return the dB(A) value corresponding to the the third octave frequency band. First parameter is Frequency band one of [100,125,160,200,250,315,400,500,630,800,1000,1250,1600,2000,2500,3150,4000,5000], second parameter is the category of the road surface [1:Pervious,2:Non Pervious], third parameter is the global dB(A) Spl Value.";	}
 
+        @Override
 	public String getSqlOrder() {
 		return "select BR_SpectrumRepartition(100,1,dbA) as dbA_100 from myTable;";
 	}

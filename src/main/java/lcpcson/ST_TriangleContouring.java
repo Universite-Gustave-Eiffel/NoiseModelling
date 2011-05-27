@@ -43,14 +43,17 @@ public class ST_TriangleContouring implements CustomQuery {
 	{
 		return Math.abs( isoValue1 - isoValue2 ) < EPSILON * isoValue2;
 	}
+        @Override
 	public String getName() {
 		return "ST_TriangleContouring";
 	}
 
+        @Override
 	public String getSqlOrder() {
 		return "select ST_TriangleContouring( the_geom, 'field_vert1' ,'field_vert2','field_vert3', '15,20,30,50,80') from triangle_table";
 	}
 
+        @Override
 	public String getDescription() {
 		return "select ST_TriangleContouring( geomToUpdate, verticeOneLevelValue,verticeTwoLevelValue,verticeThreeLevelValue, isoLevels ) from triangle_table";
 	}
@@ -158,21 +161,26 @@ public class ST_TriangleContouring implements CustomQuery {
 		Coordinate posIso2Start=new Coordinate(), posIso2Stop=new Coordinate();
 		//Process ISO 1 beginIncluded
 		//Find if we include some vertices
-		if(IsoEqual(currentTriangle.m1,beginIncluded))
-			vertIso1Start=0;
+		if(IsoEqual(currentTriangle.m1,beginIncluded)) {
+                        vertIso1Start=0;
+                }
 		if(IsoEqual(currentTriangle.m2,beginIncluded))
 		{
-			if(vertIso1Start==-1)
-				vertIso1Start=1;
-			else
-				vertIso1Stop=1;
+			if(vertIso1Start==-1) {
+                                vertIso1Start=1;
+                        }
+			else {
+                                vertIso1Stop=1;
+                        }
 		}
 		if(IsoEqual(currentTriangle.m3,beginIncluded))
 		{
-			if(vertIso1Start==-1)
-				vertIso1Start=2;
-			else
-				vertIso1Stop=2;
+			if(vertIso1Start==-1) {
+                                vertIso1Start=2;
+                        }
+			else {
+                                vertIso1Stop=2;
+                        }
 		}		
 		//Find if we need to split a side (interval between two points)
 		if(vertIso1Start==-1 || vertIso1Stop==-1)
@@ -185,21 +193,26 @@ public class ST_TriangleContouring implements CustomQuery {
 		}
 		//Process ISO 2 endExcluded
 		//Find if we include some vertices
-		if(IsoEqual(currentTriangle.m1,endExcluded))
-			vertIso2Start=0;
+		if(IsoEqual(currentTriangle.m1,endExcluded)) {
+                        vertIso2Start=0;
+                }
 		if(IsoEqual(currentTriangle.m2,endExcluded))
 		{
-			if(vertIso2Start==-1)
-				vertIso2Start=1;
-			else
-				vertIso2Stop=1;
+			if(vertIso2Start==-1) {
+                                vertIso2Start=1;
+                        }
+			else {
+                                vertIso2Stop=1;
+                        }
 		}
 		if(IsoEqual(currentTriangle.m3,endExcluded))
 		{
-			if(vertIso2Start==-1)
-				vertIso2Start=2;
-			else
-				vertIso2Stop=2;
+			if(vertIso2Start==-1) {
+                                vertIso2Start=2;
+                        }
+			else {
+                                vertIso2Stop=2;
+                        }
 		}		
 		//Find if we need to split a side (interval between two points)
 		if(vertIso2Start==-1 || vertIso2Stop==-1)
@@ -302,12 +315,15 @@ public class ST_TriangleContouring implements CustomQuery {
 			{
 				//Case side covered by iso
 				short thirdVert=-1;
-				if(vertIso1Start!=0 && vertIso1Stop!=0 && vertIso2Start!=0 && vertIso2Stop!=0)
-					thirdVert=0;
-				if(vertIso1Start!=1 && vertIso1Stop!=1 && vertIso2Start!=1 && vertIso2Stop!=1)
-					thirdVert=1;
-				if(vertIso1Start!=2 && vertIso1Stop!=2 && vertIso2Start!=2 && vertIso2Stop!=2)
-					thirdVert=2;
+				if(vertIso1Start!=0 && vertIso1Stop!=0 && vertIso2Start!=0 && vertIso2Stop!=0) {
+                                        thirdVert=0;
+                                }
+				if(vertIso1Start!=1 && vertIso1Stop!=1 && vertIso2Start!=1 && vertIso2Stop!=1) {
+                                        thirdVert=1;
+                                }
+				if(vertIso1Start!=2 && vertIso1Stop!=2 && vertIso2Start!=2 && vertIso2Stop!=2) {
+                                        thirdVert=2;
+                                }
 				if(currentTriangle.getMarker(thirdVert)>=beginIncluded && currentTriangle.getMarker(thirdVert)<endExcluded)
 				{
 					intervalTriangles.add(currentTriangle);			
@@ -325,24 +341,30 @@ public class ST_TriangleContouring implements CustomQuery {
 				if(currentTriangle.m1<beginIncluded)
 				{
 					vertOutside=0;
-					if(vertIso1Start==1)
-						vertInside=2;
-					else
-						vertInside=1;
+					if(vertIso1Start==1) {
+                                                vertInside=2;
+                                        }
+					else {
+                                                vertInside=1;
+                                        }
 				}else if(currentTriangle.m2<beginIncluded)
 				{
 					vertOutside=1;
-					if(vertIso1Start==0)
-						vertInside=2;
-					else
-						vertInside=0;
+					if(vertIso1Start==0) {
+                                                vertInside=2;
+                                        }
+					else {
+                                                vertInside=0;
+                                        }
 				}else if(currentTriangle.m3<beginIncluded)
 				{
 					vertOutside=2;
-					if(vertIso1Start==0)
-						vertInside=1;
-					else
-						vertInside=0;
+					if(vertIso1Start==0) {
+                                                vertInside=1;
+                                        }
+					else {
+                                                vertInside=0;
+                                        }
 				}
 				
 				outsideTriangles.add(new TriMarkers(currentTriangle.getVertice(vertIso1Start), currentTriangle.getVertice(vertOutside), posIso1Start, beginIncluded, currentTriangle.getMarker(vertOutside), beginIncluded));
@@ -355,24 +377,30 @@ public class ST_TriangleContouring implements CustomQuery {
 				if(currentTriangle.m1<endExcluded)
 				{
 					vertOutside=0;
-					if(vertIso2Start==1)
-						vertInside=2;
-					else
-						vertInside=1;
+					if(vertIso2Start==1) {
+                                                vertInside=2;
+                                        }
+					else {
+                                                vertInside=1;
+                                        }
 				}else if(currentTriangle.m2<endExcluded)
 				{
 					vertOutside=1;
-					if(vertIso2Start==0)
-						vertInside=2;
-					else
-						vertInside=0;
+					if(vertIso2Start==0) {
+                                                vertInside=2;
+                                        }
+					else {
+                                                vertInside=0;
+                                        }
 				}else if(currentTriangle.m3<endExcluded)
 				{
 					vertOutside=2;
-					if(vertIso2Start==0)
-						vertInside=1;
-					else
-						vertInside=0;
+					if(vertIso2Start==0) {
+                                                vertInside=1;
+                                        }
+					else {
+                                                vertInside=0;
+                                        }
 				}
 				
 				outsideTriangles.add(new TriMarkers(currentTriangle.getVertice(vertIso2Start), currentTriangle.getVertice(vertOutside), posIso2Start, endExcluded, currentTriangle.getMarker(vertOutside), endExcluded));
@@ -398,6 +426,7 @@ public class ST_TriangleContouring implements CustomQuery {
 		//Unknown case throw
 		throw new ExecutionException("Unhandled triangle splitting case :\n vertIso1Start("+vertIso1Start+"), vertIso1Stop("+vertIso1Stop+"), vertIso2Start("+vertIso2Start+"), vertIso2Stop("+vertIso2Stop+"), sideIso1Start("+sideIso1Start+"), sideIso1Stop("+sideIso1Stop+"), sideIso2Start("+sideIso2Start+"), sideIso2Stop("+sideIso2Stop+")");
 	}
+        @Override
 	public ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables,
 			Value[] values, IProgressMonitor pm) throws ExecutionException {
 		try {
@@ -460,12 +489,15 @@ public class ST_TriangleContouring implements CustomQuery {
 				{
 					final Value[] oldValues = sds.getRow(rowIndex);
 					Coordinate[] pts=geometry.getCoordinates();
-					if(Double.isNaN(pts[0].z))
-						pts[0].z=0;
-					if(Double.isNaN(pts[1].z))
-						pts[1].z=0;
-					if(Double.isNaN(pts[2].z))
-						pts[2].z=0;
+					if(Double.isNaN(pts[0].z)) {
+                                                pts[0].z=0;
+                                        }
+					if(Double.isNaN(pts[1].z)) {
+                                                pts[1].z=0;
+                                        }
+					if(Double.isNaN(pts[2].z)) {
+                                                pts[2].z=0;
+                                        }
 					TriMarkers currentTriangle=new TriMarkers(pts[0],pts[1],pts[2], sds.getDouble(rowIndex,vertex1FieldIndex), sds.getDouble(rowIndex,vertex2FieldIndex), sds.getDouble(rowIndex,vertex3FieldIndex));
 					
 					//For each iso interval
@@ -518,6 +550,7 @@ public class ST_TriangleContouring implements CustomQuery {
 		}
 	}
 
+        @Override
 	public Metadata getMetadata(Metadata[] tables) throws DriverException {
 		final Metadata metadata = tables[0];
 		// we don't want the resulting Metadata to be constrained !
@@ -533,10 +566,12 @@ public class ST_TriangleContouring implements CustomQuery {
 		return new DefaultMetadata(fieldsTypes, fieldsNames);
 	}
 
+        @Override
 	public TableDefinition[] getTablesDefinitions() {
 		return new TableDefinition[] { TableDefinition.GEOMETRY };
 	}
 
+        @Override
 	public Arguments[] getFunctionArguments() {
 		return new Arguments[] { new Arguments(Argument.GEOMETRY,Argument.STRING,Argument.STRING,Argument.STRING,Argument.STRING) };
 	}

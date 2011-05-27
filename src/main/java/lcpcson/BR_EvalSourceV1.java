@@ -73,28 +73,34 @@ public class BR_EvalSourceV1 implements Function {
 		}
 	}
 
+        @Override
 	public String getName() {
 		return "BR_EvalSourceV1";
 	}
 
+        @Override
 	public boolean isAggregate() {
 		return false;
 	}
 
+        @Override
 	public Type getType(Type[] types) {
 		return TypeFactory.createType(Type.DOUBLE);
 	}
 
+        @Override
 	public Arguments[] getFunctionArguments() {
 		return new Arguments[] { new Arguments(Argument.NUMERIC,
 				Argument.NUMERIC,
 				Argument.NUMERIC) };
 	}
 
+        @Override
 	public String getDescription() {
 		return "Return the dB(A) value corresponding to speed,light and heavy vehicle parameters.";
 	}
 
+        @Override
 	public String getSqlOrder() {
 		return "select BR_EvalSourceV1(loadSpeed,lightVehicleCount,heavyVehicleCount) from myTable;";
 	}

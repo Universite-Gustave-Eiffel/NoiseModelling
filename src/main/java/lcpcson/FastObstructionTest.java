@@ -84,8 +84,9 @@ public class FastObstructionTest {
 		LayerExtTriangle delaunayTool = new LayerExtTriangle(tmpdir);
 		//Insert the main rectangle
 		Geometry linearRing=EnvelopeUtil.toGeometry(boundingBoxFilter);
-		if ( !(linearRing instanceof LinearRing))
-			return;
+		if ( !(linearRing instanceof LinearRing)) {
+                        return;
+                }
 		GeometryFactory factory = new  GeometryFactory();
 		Polygon boundingBox=new Polygon((LinearRing)linearRing, null, factory);
 		delaunayTool.addPolygon(boundingBox, false);
@@ -244,10 +245,12 @@ public class FastObstructionTest {
 			}
 		}	
 		
-		if(nearestIntersectionSide!=-1)
-			return this.triNeighbors.get(triIndex).get(nearestIntersectionSide);
-		else
-			return -1;
+		if(nearestIntersectionSide!=-1) {
+                        return this.triNeighbors.get(triIndex).get(nearestIntersectionSide);
+                }
+		else {
+                        return -1;
+                }
 	}
 
 	/**
@@ -298,8 +301,9 @@ public class FastObstructionTest {
 	{
 		//Shortcut, test if the last found triangle contain this point, if not use the quadtree
 		Coordinate[] trit=GetTriangle(lastFountPointTriTest);
-		if(dotInTri(pt,trit[0],trit[1],trit[2]))
-			return lastFountPointTriTest;
+		if(dotInTri(pt,trit[0],trit[1],trit[2])) {
+                        return lastFountPointTriTest;
+                }
 
 		Envelope ptEnv=new Envelope(pt);
 		ArrayList<Integer> res=triIndex.query(new Envelope(ptEnv));
@@ -417,8 +421,9 @@ public class FastObstructionTest {
 		{
 			navigationHistory.add(curTri);
 			Coordinate[] tri=GetTriangle(curTri);
-			if(dotInTri(p2,tri[0],tri[1],tri[2]))
-				return true;
+			if(dotInTri(p2,tri[0],tri[1],tri[2])) {
+                                return true;
+                        }
 			curTri=this.GetNextTri(curTri, propaLine,navigationHistory);
 		}
 		return false;

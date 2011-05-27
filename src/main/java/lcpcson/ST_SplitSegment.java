@@ -26,22 +26,27 @@ import com.vividsolutions.jts.geom.LineString;
  */
 public class ST_SplitSegment extends AbstractSpatialFunction {
 
+        @Override
 	public String getName() {
 		return "ST_SplitSegment";
 	}
 
+        @Override
 	public Arguments[] getFunctionArguments() {
 		return new Arguments[] { new Arguments(Argument.GEOMETRY,Argument.NUMERIC) };
 	}
 
+        @Override
 	public boolean isAggregate() {
 		return false;
 	}
 
+        @Override
 	public String getDescription() {
 		return "Split StringLine (2 vertices) into MultiStringLine (2 String Line) if the length of the line is smaller than the split length parameter.";
 	}
 
+        @Override
 	public String getSqlOrder() {
 		return "select ST_SplitSegment(the_geom,splitLength) from myTable;";
 	}
@@ -57,8 +62,9 @@ public class ST_SplitSegment extends AbstractSpatialFunction {
 			final Double endLength = args[1].getAsDouble();
 			//Get the point first and last point of the geometry
 			Coordinate[] points=geom.getCoordinates();
-			if(points.length<2)
-				return ValueFactory.createNullValue();
+			if(points.length<2) {
+                                return ValueFactory.createNullValue();
+                        }
 
 			//If the distance between the first and the last point is smaller than delta, then return the avg point
 			LineString Line=gf.createLineString(points);

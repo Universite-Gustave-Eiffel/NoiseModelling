@@ -53,8 +53,9 @@ public class LayerExtTriangle implements LayerDelaunay {
     public LayerExtTriangle(String tmpDir) { //,DataSourceFactory dsf remove DataSourceFactory debug parameter
 		super();
     	this.tempdir=tmpDir;
-    	if(TrianglePath==null)
-    		TrianglePath="triangle";
+    	if(TrianglePath==null) {
+                TrianglePath="triangle";
+        }
     	//remove debug instr
     	/*
 		if(dsf != null)
@@ -138,14 +139,16 @@ public class LayerExtTriangle implements LayerDelaunay {
     	{
     		in.nextInt(); //vertice ID
     		Coordinate vcoord=new Coordinate(in.nextDouble(),in.nextDouble());
-    		if(isMarker)
-    			in.nextInt();
+    		if(isMarker) {
+                        in.nextInt();
+                }
     		localVertices.add(vcoord);
     		this.getOrAppendVertices(vcoord, this.vertices);
     	}
     	in.close();
-    	if(deleteIntermediateFile)
-    		file.delete();
+    	if(deleteIntermediateFile) {
+                file.delete();
+        }
     }
 	private void SkipCommentLines(Scanner in)
 	{
@@ -185,8 +188,9 @@ public class LayerExtTriangle implements LayerDelaunay {
     	{
     		in.nextInt(); //vertex ID
     		Coordinate vcoord=new Coordinate(in.nextDouble(),in.nextDouble());
-    		if(isVertexMarker)
-    			in.nextInt();
+    		if(isVertexMarker) {
+                        in.nextInt();
+                }
     		localVertices.add(vcoord);
     		this.getOrAppendVertices(vcoord, this.vertices);
     	}
@@ -200,14 +204,16 @@ public class LayerExtTriangle implements LayerDelaunay {
     		int a=this.getOrAppendVertices(localVertices.get(in.nextInt()-1), this.vertices);
     		int b=this.getOrAppendVertices(localVertices.get(in.nextInt()-1), this.vertices);
     		IntSegment newseg =new IntSegment(a,b);
-    		if(isMarker)
-    			in.nextInt();
+    		if(isMarker) {
+                        in.nextInt();
+                }
     		this.segments.add(newseg);
     	}
     	
 	   	final int hsize=in.nextInt(); //read hole count
-	   	if(hsize>0)
-	   		holes.clear();
+	   	if(hsize>0) {
+                        holes.clear();
+                }
     	for(int hid=0;hid<hsize;hid++)
     	{
     		in.nextInt(); //hole ID
@@ -241,20 +247,24 @@ public class LayerExtTriangle implements LayerDelaunay {
     		in.nextInt(); //triangle ID
     		
     		int a=in.nextInt()-1;
-    		if(a==-2)
-    			a=-1;
+    		if(a==-2) {
+                        a=-1;
+                }
     		int b=in.nextInt()-1;
-    		if(b==-2)
-    			b=-1;
+    		if(b==-2) {
+                        b=-1;
+                }
     		int c=in.nextInt()-1;
-    		if(c==-2)
-    			c=-1;
+    		if(c==-2) {
+                        c=-1;
+                }
     		Triangle newtri=new Triangle(a,b,c);
     		this.neighbors.add(newtri);
     	}
     	in.close();
-    	if(deleteIntermediateFile)
-    		file.delete();
+    	if(deleteIntermediateFile) {
+                file.delete();
+        }
     	
     }
     private void readEleFile(final String eleFileName,ArrayList<Coordinate> localVertices) throws LayerDelaunayError
@@ -284,13 +294,15 @@ public class LayerExtTriangle implements LayerDelaunay {
     		int b=this.getOrAppendVertices(localVertices.get(in.nextInt()-1), this.vertices);
     		int c=this.getOrAppendVertices(localVertices.get(in.nextInt()-1), this.vertices);
     		Triangle newtri=new Triangle(a,b,c);
-    		if(isMarker)
-    			in.nextInt();
+    		if(isMarker) {
+                        in.nextInt();
+                }
     		this.triangles.add(newtri);
     	}
     	in.close();
-    	if(deleteIntermediateFile)
-    		file.delete();
+    	if(deleteIntermediateFile) {
+                file.delete();
+        }
     	
     }
     private void readOutputFiles(final String nodeFileName,final String eleFileName,final String polyFileName,final String neighFileName) throws LayerDelaunayError
@@ -299,11 +311,13 @@ public class LayerExtTriangle implements LayerDelaunay {
     	readNodeFile(nodeFileName,localVertices);
     	readEleFile(eleFileName,localVertices);
     	readSegsFile(polyFileName,localVertices);
-    	if(!neighFileName.isEmpty())
-    		readNeighFile(neighFileName);
+    	if(!neighFileName.isEmpty()) {
+                readNeighFile(neighFileName);
+        }
     	localVertices.clear();
-    	if(deleteIntermediateFile)
-    		this.delete(polyFileName);
+    	if(deleteIntermediateFile) {
+                this.delete(polyFileName);
+        }
     }
 
 	private void writePolyFile(final String filepath) throws LayerDelaunayError
@@ -385,8 +399,9 @@ public class LayerExtTriangle implements LayerDelaunay {
 	private void delete(String fileName)
 	{
 		File nodef = new File(fileName);
-		if(nodef.exists())
-			nodef.delete();
+		if(nodef.exists()) {
+                        nodef.delete();
+                }
 	}
 	/**
 	 * @return If savePolyToRefine is true, the path to the polygon file. can be used later with the method loadInputDelaunay
@@ -407,8 +422,9 @@ public class LayerExtTriangle implements LayerDelaunay {
 		 */
 		try {
 			int refineIndex=1;
-			if(!steinerOnBoundaries)
-				refineIndex++;
+			if(!steinerOnBoundaries) {
+                                refineIndex++;
+                        }
 			//Convert splitted lineString into segments
 			//finalAddLineString();
 			//Translate vertices around center for precision
@@ -418,8 +434,9 @@ public class LayerExtTriangle implements LayerDelaunay {
 			String inputroot=this.tempdir+File.separatorChar+prefix+"region"+delaunayIndex;
 			String polypath=inputroot;
 			String inIndex="";
-			if(refineIndex>1)
-				inIndex="."+(refineIndex-1);
+			if(refineIndex>1) {
+                                inIndex="."+(refineIndex-1);
+                        }
 			polypath+=inIndex+".poly";
 			//Remove existing files
 			this.delete(inputroot+inIndex+".node");
@@ -432,17 +449,22 @@ public class LayerExtTriangle implements LayerDelaunay {
 			if(this.minAngle!="0")
 			{
 				options+="q";
-				if(this.minAngle!="")
-					options+=this.minAngle;
+				if(this.minAngle!="") {
+                                        options+=this.minAngle;
+                                }
 			}
-			if(this.maxArea!="")
-				options+="a"+this.maxArea;
-			if(maxSteiner!=-1)
-				options+="S"+maxSteiner;
-			if(!steinerOnBoundaries)
-				options+="YY";
-			if(this.retrieveNeighbords)
-				options+="n";
+			if(this.maxArea!="") {
+                                options+="a"+this.maxArea;
+                        }
+			if(maxSteiner!=-1) {
+                                options+="S"+maxSteiner;
+                        }
+			if(!steinerOnBoundaries) {
+                                options+="YY";
+                        }
+			if(this.retrieveNeighbords) {
+                                options+="n";
+                        }
 			///////////////////////////////////////////////////
 			//Clear mem & Call Triangle binary 
 			vertices.clear();
@@ -463,11 +485,13 @@ public class LayerExtTriangle implements LayerDelaunay {
 	        input.close();
 	        ///////////////////////////////////////////////////
 	        // Read output files
-	        if(deleteIntermediateFile)
-	        	this.delete(polypath);
+	        if(deleteIntermediateFile) {
+                                this.delete(polypath);
+                        }
 	        String neighFileName="";
-	        if(retrieveNeighbords)
-	        	neighFileName=inputroot+"."+refineIndex+".neigh";
+	        if(retrieveNeighbords) {
+                                neighFileName=inputroot+"."+refineIndex+".neigh";
+                        }
 	        readOutputFiles(inputroot+"."+refineIndex+".node",inputroot+"."+refineIndex+".ele",inputroot+"."+refineIndex+".poly",neighFileName);
 			logger.info("Size of triangulation :"+triangles.size()+" faces.");
 			//Restore original coordinates
@@ -493,10 +517,12 @@ public class LayerExtTriangle implements LayerDelaunay {
 
 	@Override
 	public void setMinAngle(Double minAngle) {
-		if(minAngle>0.01)
-			this.minAngle=minAngle.toString();
-		else
-			this.minAngle="0";
+		if(minAngle>0.01) {
+                        this.minAngle=minAngle.toString();
+                }
+		else {
+                        this.minAngle="0";
+                }
 	}
 
 	@Override
@@ -546,8 +572,9 @@ public class LayerExtTriangle implements LayerDelaunay {
 				Coordinate interiorPoint=polyBuffnew.getInteriorPoint().getCoordinate();
 				if(!factory.createPoint(interiorPoint).intersects(holeLine))
 				{
-					if(!isEmpty)
-						holes.add(interiorPoint);
+					if(!isEmpty) {
+                                                holes.add(interiorPoint);
+                                        }
 					this.addLineString(holeLine);
 				}else{
 					logger.info("Warning : hole rejected, can't find interior point.");

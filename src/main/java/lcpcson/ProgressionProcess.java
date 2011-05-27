@@ -37,18 +37,21 @@ public class ProgressionProcess {
 	public double getMainProgression()
 	{
 		ProgressionProcess prog=this;
-		while(prog.parentProcess!=null)
-			prog=prog.parentProcess;
+		while(prog.parentProcess!=null) {
+                        prog=prog.parentProcess;
+                }
 		return prog.getProcessProgression();
 	}
+        @Override
 	protected void finalize() throws Throwable
 	{
 	  //do finalization here
 	  if(this.parentProcess!=null)
 	  {
 		  //Complete remaining process
-		  if(subprocess_done!=subprocess_size)
-			  this.parentProcess.pushProgression(1-(subprocess_done/subprocess_size));
+		  if(subprocess_done!=subprocess_size) {
+                                this.parentProcess.pushProgression(1-(subprocess_done/subprocess_size));
+                        }
 	  }
 	  super.finalize();
 	} 
@@ -84,8 +87,9 @@ public class ProgressionProcess {
 		if(subprocess_done+incProg<=subprocess_size)
 		{
 			subprocess_done+=incProg;
-			if(parentProcess!=null)
-				parentProcess.pushProgression((incProg/subprocess_size));
+			if(parentProcess!=null) {
+                                parentProcess.pushProgression((incProg/subprocess_size));
+                        }
 		}
 	}
 }

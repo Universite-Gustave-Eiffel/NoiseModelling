@@ -38,18 +38,22 @@ import com.vividsolutions.jts.geom.Geometry;
 
 public class ST_SetNearestZ implements CustomQuery {
 
+        @Override
 	public String getName() {
 		return "ST_SetNearestZ";
 	}
 
+        @Override
 	public String getSqlOrder() {
 		return "select ST_SetNearestZ( left_table.geomToUpdate, right_table.geomSource, MaximumDistance ) from left_table,right_table;";
 	}
 
+        @Override
 	public String getDescription() {
 		return "Add or Update the Z information from the nearest geometry, destroy the geom line if there is no source information under the maximum distance parameter.";
 	}
 
+        @Override
 	public ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables,
 			Value[] values, IProgressMonitor pm) throws ExecutionException {
 		try {
@@ -153,8 +157,9 @@ public class ST_SetNearestZ implements CustomQuery {
 						Coordinate[] points=geometry.getCoordinates();
 						for (int ptindex = 0; ptindex < points.length; ptindex++) {
 							Coordinate coord=points[ptindex];
-							if(geomArea.contains(coord))
-								nearestCoordinates.add(coord);
+							if(geomArea.contains(coord)) {
+                                                                nearestCoordinates.add(coord);
+                                                        }
 						}
 					}
 				} catch (DriverException e) {
@@ -179,6 +184,7 @@ public class ST_SetNearestZ implements CustomQuery {
 		}
 
 
+                @Override
 		public void filter(CoordinateSequence seq, int i) {
 			double x = seq.getX(i);
 			double y = seq.getY(i);
@@ -204,10 +210,12 @@ public class ST_SetNearestZ implements CustomQuery {
 					}
 
 			}
-			if(isFound)
-				seq.setOrdinate(i, 2, nearest_z);
-			else
-				outOfBoundsDestinationGeomtry=true;
+			if(isFound) {
+                                seq.setOrdinate(i, 2, nearest_z);
+                        }
+			else {
+                                outOfBoundsDestinationGeomtry=true;
+                        }
 
 			if (i == seq.size()-1) {
 				done = true;
@@ -224,6 +232,7 @@ public class ST_SetNearestZ implements CustomQuery {
 			return done;
 		}
 	}
+        @Override
 	public Metadata getMetadata(Metadata[] tables) throws DriverException {
 		final Metadata metadata = tables[0];
 		// we don't want the resulting Metadata to be constrained !
@@ -239,10 +248,12 @@ public class ST_SetNearestZ implements CustomQuery {
 		return new DefaultMetadata(fieldsTypes, fieldsNames);
 	}
 
+        @Override
 	public TableDefinition[] getTablesDefinitions() {
 		return new TableDefinition[] { TableDefinition.GEOMETRY,TableDefinition.GEOMETRY };
 	}
 
+        @Override
 	public Arguments[] getFunctionArguments() {
 		return new Arguments[] { new Arguments(Argument.GEOMETRY,Argument.GEOMETRY,Argument.NUMERIC) };
 	}

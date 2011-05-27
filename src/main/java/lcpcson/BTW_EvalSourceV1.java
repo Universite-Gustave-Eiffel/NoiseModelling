@@ -34,27 +34,33 @@ public class BTW_EvalSourceV1 implements Function {
 		}
 	}
 
+        @Override
 	public String getName() {
 		return "BTW_EvalSourceV1";
 	}
 
+        @Override
 	public boolean isAggregate() {
 		return false;
 	}
 
+        @Override
 	public Type getType(Type[] types) {
 		return TypeFactory.createType(Type.DOUBLE);
 	}
 
+        @Override
 	public Arguments[] getFunctionArguments() {
 		return new Arguments[] { new Arguments(Argument.NUMERIC,
 				Argument.NUMERIC) };
 	}
 
+        @Override
 	public String getDescription() {
 		return "Return the dB(A) value corresponding to speed,tramway by hour parameters.";
 	}
 
+        @Override
 	public String getSqlOrder() {
 		return "select BTW_EvalSourceV1(loadSpeed,tramway_count) from myTable;";
 	}

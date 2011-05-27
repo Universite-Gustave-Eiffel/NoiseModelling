@@ -45,10 +45,12 @@ public class BR_EvalSourceV4 implements Function {
 					case 2:
 						return Math.min(vvl,90); //2x2 way 90km/h off belt-way
 					case 3:
-						if(speedmax<80)
-							return Math.min(vvl,70); //Belt-way 70 km/h
-						else
-							return Math.min(vvl,85); //Belt-way 90 km/h
+						if(speedmax<80) {
+                                                return Math.min(vvl,70);
+                                        } //Belt-way 70 km/h
+						else {
+                                                return Math.min(vvl,85);
+                                        } //Belt-way 90 km/h
 				}
 			case 3:
 				switch(subtype)
@@ -68,10 +70,12 @@ public class BR_EvalSourceV4 implements Function {
 					case 2:
 						return Math.min(vvl,90); //Standard 2x1 way 90km/h
 					case 3:
-						if(speedmax<70)
-							return Math.min(vvl,60); //2x1 way 60 km/h
-						else
-							return Math.min(vvl,80); //2x1 way 80 km/h
+						if(speedmax<70) {
+                                                        return Math.min(vvl,60);
+                                                } //2x1 way 60 km/h
+						else {
+                                                        return Math.min(vvl,80);
+                                                } //2x1 way 80 km/h
 				}
 			case 5:
 				switch(subtype)
@@ -118,12 +122,15 @@ public class BR_EvalSourceV4 implements Function {
 		slope=Math.max(-6.,slope);
 		slope=Math.min(6., slope);
 		//Computation of the correction
-		if(slope>2.)
-			return 2*(slope-2);
-		else if(slope<-2.)
-			return slope-2;
-		else //[-2 2]
-			return 0.;
+		if(slope>2.) {
+                        return 2*(slope-2);
+                }
+		else if(slope<-2.) {
+                        return slope-2;
+                }
+		else {
+                        return 0.;
+                }
 	}
 	@Override
 	public Value evaluate(DataSourceFactory dsf, Value... args) throws FunctionException {
@@ -201,18 +208,22 @@ public class BR_EvalSourceV4 implements Function {
 		}
 	}
 
+        @Override
 	public String getName() {
 		return "BR_EvalSourceV4";
 	}
 
+        @Override
 	public boolean isAggregate() {
 		return false;
 	}
 
+        @Override
 	public Type getType(Type[] types) {
 		return TypeFactory.createType(Type.DOUBLE);
 	}
 
+        @Override
 	public Arguments[] getFunctionArguments() {
 		return new Arguments[] { new Arguments(
 				Argument.NUMERIC, 		//load speed
@@ -228,10 +239,12 @@ public class BR_EvalSourceV4 implements Function {
 		)}; 	
 	}
 
+        @Override
 	public String getDescription() {
 		return "Return the dB(A) value corresponding to the road and light and heavy vehicle parameters.";
 	}
 
+        @Override
 	public String getSqlOrder() {
 		return "select BR_EvalSourceV4(loadSpeed,junction,speedMax,lightVehicleCount,heavyVehicleCount,roadType,Zbegin,Zend,roadLength,isqueue) from myTable;";
 	}

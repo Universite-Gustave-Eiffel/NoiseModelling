@@ -55,8 +55,9 @@ public class PropagationProcessDiskWriter implements Runnable {
 				{
 					ArrayList<Value> values=toDriver.pop();
 					Value[] row=new Value[values.size()];
-					for(int i=0;i<row.length;i++)
-						row[i]=values.get(i);
+					for(int i=0;i<row.length;i++) {
+                                                row[i]=values.get(i);
+                                        }
 					driver.addValues(row);
 				}
 			} catch (DriverException e) {

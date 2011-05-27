@@ -52,7 +52,6 @@ import org.gdms.sql.function.Arguments;
 import org.gdms.sql.function.Function;
 import org.gdms.sql.function.FunctionException;
 import org.gdms.sql.function.FunctionValidator;
-import org.gdms.sql.strategies.IncompatibleTypesException;
 
 // select id, Log10(id) from points;
 
@@ -67,32 +66,37 @@ public class Log10 implements Function {
 		}
 	}
 
+        @Override
 	public String getName() {
 		return "Log10";
 	}
 
+        @Override
 	public boolean isAggregate() {
 		return false;
 	}
 
+        @Override
 	public Type getType(Type[] types) {
 		return TypeFactory.createType(Type.DOUBLE);
 	}
 
+        @Override
 	public Arguments[] getFunctionArguments() {
 		return new Arguments[] { new Arguments(Argument.NUMERIC) };
 	}
 
-	public void validateTypes(Type[] argumentsTypes)
-			throws IncompatibleTypesException {
+	public void validateTypes(Type[] argumentsTypes) {
 		FunctionValidator.failIfBadNumberOfArguments(this, argumentsTypes, 1);
 		FunctionValidator.failIfNotNumeric(this, argumentsTypes[0]);
 	}
 
+        @Override
 	public String getDescription() {
 		return "Returns the base 10 logarithm of a double value";
 	}
 
+        @Override
 	public String getSqlOrder() {
 		return "select Log10(myNumericField) from myTable;";
 	}

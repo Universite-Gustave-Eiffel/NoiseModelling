@@ -133,8 +133,9 @@ public class BR_TriGrid implements CustomQuery {
 		long oldtotalDelaunay=totalDelaunay;
 		long beginfeed=System.currentTimeMillis();
 		Geometry linearRing=EnvelopeUtil.toGeometry(boundingBoxFilter);
-		if ( !(linearRing instanceof LinearRing))
-			return;
+		if ( !(linearRing instanceof LinearRing)) {
+                        return;
+                }
 		GeometryFactory factory = new  GeometryFactory();
 		Polygon boundingBox=new Polygon((LinearRing)linearRing, null, factory);
 
@@ -268,14 +269,18 @@ public class BR_TriGrid implements CustomQuery {
 					Coordinate pt2=new Coordinate(Math.cos(secondPtAng)*minRecDist*2+ptcoord.x, Math.sin(secondPtAng)*minRecDist*2+ptcoord.y);
 					Coordinate pt3=new Coordinate(Math.cos(thirdPtAng)*minRecDist+ptcoord.x, Math.sin(thirdPtAng)*minRecDist+ptcoord.y);
 					Coordinate pt4=new Coordinate(Math.cos(fourPtAng)*minRecDist*2+ptcoord.x, Math.sin(fourPtAng)*minRecDist*2+ptcoord.y);
-					if(cellEnvelope.contains(pt1))
-						cellMesh.addVertex(pt1);
-					if(cellEnvelope.contains(pt2))
-						cellMesh.addVertex(pt2);
-					if(cellEnvelope.contains(pt3))
-						cellMesh.addVertex(pt3);
-					if(cellEnvelope.contains(pt4))
-						cellMesh.addVertex(pt4);
+					if(cellEnvelope.contains(pt1)) {
+                                                cellMesh.addVertex(pt1);
+                                        }
+					if(cellEnvelope.contains(pt2)) {
+                                                cellMesh.addVertex(pt2);
+                                        }
+					if(cellEnvelope.contains(pt3)) {
+                                                cellMesh.addVertex(pt3);
+                                        }
+					if(cellEnvelope.contains(pt4)) {
+                                                cellMesh.addVertex(pt4);
+                                        }
 				}else{
 
 					if(pt instanceof LineString)
@@ -322,26 +327,30 @@ public class BR_TriGrid implements CustomQuery {
 			Envelope leftEnv=null,rightEnv=null,topEnv=null,bottomEnv=null;
 			if(isLeft)
 			{
-				if(neighborsBorderVertices[leftCellId]==null)
-					neighborsBorderVertices[leftCellId]=new NodeList();
+				if(neighborsBorderVertices[leftCellId]==null) {
+                                        neighborsBorderVertices[leftCellId]=new NodeList();
+                                }
 				leftEnv=this.getCellEnv(mainEnvelope, cellI+BR_TriGrid.neighboor[BR_TriGrid.nLeft][0], cellJ+BR_TriGrid.neighboor[BR_TriGrid.nLeft][1], cellIMax, cellJMax, cellWidth, cellHeight);
 			}	
 			if(isRight)
 			{
-				if(neighborsBorderVertices[rightCellId]==null)
-					neighborsBorderVertices[rightCellId]=new NodeList();
+				if(neighborsBorderVertices[rightCellId]==null) {
+                                        neighborsBorderVertices[rightCellId]=new NodeList();
+                                }
 				rightEnv=this.getCellEnv(mainEnvelope, cellI+BR_TriGrid.neighboor[BR_TriGrid.nRight][0], cellJ+BR_TriGrid.neighboor[BR_TriGrid.nRight][1], cellIMax, cellJMax, cellWidth, cellHeight);
 			}
 			if(isBottom)
 			{
-				if(neighborsBorderVertices[bottomCellId]==null)
-					neighborsBorderVertices[bottomCellId]=new NodeList();
+				if(neighborsBorderVertices[bottomCellId]==null) {
+                                        neighborsBorderVertices[bottomCellId]=new NodeList();
+                                }
 				bottomEnv=this.getCellEnv(mainEnvelope, cellI+BR_TriGrid.neighboor[BR_TriGrid.nBottom][0], cellJ+BR_TriGrid.neighboor[BR_TriGrid.nBottom][1], cellIMax, cellJMax, cellWidth, cellHeight);
 			}
 			if(isTop)
 			{
-				if(neighborsBorderVertices[topCellId]==null)
-					neighborsBorderVertices[topCellId]=new NodeList();
+				if(neighborsBorderVertices[topCellId]==null) {
+                                        neighborsBorderVertices[topCellId]=new NodeList();
+                                }
 				topEnv=this.getCellEnv(mainEnvelope, cellI+BR_TriGrid.neighboor[BR_TriGrid.nTop][0], cellJ+BR_TriGrid.neighboor[BR_TriGrid.nTop][1], cellIMax, cellJMax, cellWidth, cellHeight);
 			}
 			
@@ -384,6 +393,7 @@ public class BR_TriGrid implements CustomQuery {
 		return Math.pow(10.,dBA/10.);
 	}
 	
+        @Override
 	public ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables,
 			Value[] values, IProgressMonitor pm) throws ExecutionException {
 		String tmpdir=dsf.getTempDir().getAbsolutePath();
@@ -662,23 +672,28 @@ public class BR_TriGrid implements CustomQuery {
 	}
 
 	
+        @Override
 	public Metadata getMetadata(Metadata[] tables) throws DriverException {
 
 		return new DefaultMetadata();
 	}
 
+        @Override
 	public Arguments[] getFunctionArguments() {
 											  // Builds geom    , sources.the_geom, sources.db_m  ,max propa dist  , subdiv lev ,roads width     , receiv road dis,max tri area    ,sound refl o,sound dif order,wall alpha
 		return new Arguments[] { new Arguments(Argument.GEOMETRY,Argument.GEOMETRY,Argument.STRING,Argument.NUMERIC,Argument.INT,Argument.NUMERIC,Argument.NUMERIC,Argument.NUMERIC,Argument.INT,Argument.INT   ,Argument.NUMERIC) };
 	}
+        @Override
 	public String getName() {
 		return "BR_TriGrid";
 	}
 
+        @Override
 	public String getSqlOrder() {
 		return "select BR_TriGrid( objects_table.the_geom, sound_sources_table.the_geom,sound_sources_table.db_m,50,3,2.5,5.0,300,1,0.1 ) from objects_table,sound_sources_table;";
 	}
 
+        @Override
 	public String getDescription() {
 		return "BR_TriGrid(buildings(polygons),sources(points),sound lvl field name(string),maximum propagation distance (double meter),subdivision level 4^n cells(int), roads width (meter), densification of receivers near roads and buildings (meter), maximum area of triangle, sound reflection order, sound diffraction order, alpha of walls ) Sound propagation from ponctual sound sources to ponctual receivers created by a delaunay triangulation of specified buildings geometry.";
 	}

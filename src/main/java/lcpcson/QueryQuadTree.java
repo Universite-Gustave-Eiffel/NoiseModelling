@@ -26,8 +26,9 @@ public class QueryQuadTree<index_t> implements QueryGeometryStructure<index_t> {
 		ArrayList<index_t> ret=new ArrayList<index_t> (resq.size());
 		for(EnvelopeWithIndex<index_t> it : resq)
 		{
-			if(queryEnv.intersects(it))
-				ret.add(it.getId());
+			if(queryEnv.intersects(it)) {
+                                ret.add(it.getId());
+                        }
 		}
 		return ret;
 	}
