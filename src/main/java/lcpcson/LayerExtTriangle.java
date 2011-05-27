@@ -36,7 +36,7 @@ public class LayerExtTriangle implements LayerDelaunay {
 	private ArrayList<Triangle> neighbors=new ArrayList<Triangle>(); //The first neighbor of triangle i is opposite the first corner of triangle i
 	Quadtree ptQuad=new Quadtree();
 	ArrayList<Triangle> triangles=new ArrayList<Triangle>();
-    private final static String EOL = "\r\n";
+    private static final String EOL = "\r\n";
     private String TrianglePath = System.getenv("trianglepath");
     private String tempdir = "";
     private String minAngle="";

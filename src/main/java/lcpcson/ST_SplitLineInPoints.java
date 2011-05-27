@@ -25,7 +25,7 @@ import com.vividsolutions.jts.geom.LineString;
  * If the length of the line(s) is smaller than delta then the interior point will be returned
  */
 public class ST_SplitLineInPoints extends AbstractSpatialFunction {
-	static public Coordinate[] SplitMultiPointsInRegularPoints(Coordinate[] points,double delta)
+	public static Coordinate[] SplitMultiPointsInRegularPoints(Coordinate[] points,double delta)
 	{
 		GeometryFactory gf = new GeometryFactory();
 		if(points.length==0)
@@ -94,22 +94,27 @@ public class ST_SplitLineInPoints extends AbstractSpatialFunction {
 		return deltaPoints;
 	}
 
+        @Override
 	public String getName() {
 		return "ST_SplitLineInPoints";
 	}
 
+        @Override
 	public Arguments[] getFunctionArguments() {
 		return new Arguments[] { new Arguments(Argument.GEOMETRY,Argument.NUMERIC) };
 	}
 
+        @Override
 	public boolean isAggregate() {
 		return false;
 	}
 
+        @Override
 	public String getDescription() {
 		return "Split lines in multiple points with a distance step parameter between points.";
 	}
 
+        @Override
 	public String getSqlOrder() {
 		return "select ST_SplitLineInPoints(the_geom,delta) from myTable;";
 	}
