@@ -178,7 +178,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 
 
 	@Override
-	public void HintInit(Envelope bBox, long polygonCount,
+	public void hintInit(Envelope bBox, long polygonCount,
 			long verticesCount) throws LayerDelaunayError {
 		if(delaunayTool==null)
 			delaunayTool=new ConstrainedMesh();

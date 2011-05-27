@@ -560,7 +560,7 @@ public class LayerExtTriangle implements LayerDelaunay {
 
 
 	@Override
-	public void HintInit(Envelope boundingBox, long polygonCount,
+	public void hintInit(Envelope boundingBox, long polygonCount,
 			long verticesCount) throws LayerDelaunayError {
 		this.vertices.ensureCapacity((int)verticesCount);
 		this.segments.ensureCapacity((int)polygonCount*5);

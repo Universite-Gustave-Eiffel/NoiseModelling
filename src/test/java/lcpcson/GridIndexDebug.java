@@ -21,7 +21,7 @@ public class GridIndexDebug {
 				
 		try {
 			Envelope env=new Envelope(-10,30,-10,30);
-			delaun.HintInit(env, 5, 10);
+			delaun.hintInit(env, 5, 10);
 			delaun.setMaxArea(0.1);
 			final Coordinate[] polycontour={new Coordinate(14,0,0),new Coordinate(23,0,0),new Coordinate(23,6,0),new Coordinate(14,6,0),new Coordinate(14,4,0),new Coordinate(21,4,0),new Coordinate(21,2,0),new Coordinate(14,2,0),new Coordinate(14,0,0)};
 			GeometryFactory factory=new GeometryFactory();

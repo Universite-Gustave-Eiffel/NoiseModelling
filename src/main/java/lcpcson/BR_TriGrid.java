@@ -243,7 +243,7 @@ public class BR_TriGrid implements CustomQuery {
 		
 		// Build delaunay triangulation from buildings inside the extended bounding box
 
-		cellMesh.HintInit(cellEnvelope, 1500, 5000);
+		cellMesh.hintInit(cellEnvelope, 1500, 5000);
 		///////////////////////////////////////////////////
 		//Add roads into delaunay tool
 		sds.open();
