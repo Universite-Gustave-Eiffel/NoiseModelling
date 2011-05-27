@@ -17,7 +17,7 @@ public class multithread_test {
 		}
 
 		System.out.println("Wait for termination of the lasts propagation process"); 
-		while(ThreadsManager.GetRemainingTasks()>0)
+		while(ThreadsManager.getRemainingTasks()>0)
 		{
 			Thread.sleep(100);
 		}

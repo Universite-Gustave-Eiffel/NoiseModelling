@@ -75,7 +75,7 @@ public class PropagationProcess implements Runnable {
 		 * @param order Order of reflections 1 to a limited number
 		 * @return List of possible reflections
 		 */
-		 private ArrayList<MirrorReceiverResult> GetMirroredReceiverResults(Coordinate receiverCoord,ArrayList<LineSegment> nearBuildingsWalls,int order,double distanceLimitation)
+		 private ArrayList<MirrorReceiverResult> getMirroredReceiverResults(Coordinate receiverCoord,ArrayList<LineSegment> nearBuildingsWalls,int order,double distanceLimitation)
 		 {
 			 ArrayList<MirrorReceiverResult> receiversImage=new ArrayList<MirrorReceiverResult>();
 			 feedMirroredReceiverResults(receiversImage,receiverCoord,-1,nearBuildingsWalls,order-1,distanceLimitation);
@@ -96,17 +96,17 @@ public class PropagationProcess implements Runnable {
 	    	return;
 	    }
 	  }
-	private double DbaToW(double dBA){
+	private double dbaToW(double dBA){
 		return Math.pow(10.,dBA/10.);
 	}
-	private double WToDba(double w){
+	private double wToDba(double w){
 		return 10*Math.log10(w);
 	}
 	/**
 	 * @param startPt Compute the closest point on lineString with this coordinate, use it as one of the splitted points
 	 * @return computed delta
 	 */
-	private double SplitLineStringIntoPoints(Geometry geom,Coordinate startPt,LinkedList<Coordinate> pts,double minRecDist)
+	private double splitLineStringIntoPoints(Geometry geom,Coordinate startPt,LinkedList<Coordinate> pts,double minRecDist)
 	{
 		//Find the position of the closest point
 		Coordinate[] points=geom.getCoordinates();
@@ -137,7 +137,7 @@ public class PropagationProcess implements Runnable {
                         delta=closestPtDist/2;
                 }
 		pts.add(closestPt);
-		Coordinate[] splitedPts=ST_SplitLineInPoints.SplitMultiPointsInRegularPoints(points, delta);
+		Coordinate[] splitedPts=ST_SplitLineInPoints.splitMultiPointsInRegularPoints(points, delta);
 		for(Coordinate pt : splitedPts)
 		{
 			if(pt.distance(closestPt)>delta) {
@@ -151,7 +151,7 @@ public class PropagationProcess implements Runnable {
 	 * @param freq Third octave frequency
 	 * @return Attenuation coefficient dB/KM
 	 */
-	private static double GetAlpha(int freq)
+	private static double getAlpha(int freq)
 	{
 		switch(freq)
 		{
@@ -195,10 +195,10 @@ public class PropagationProcess implements Runnable {
 				return 0.;
 		}
 	}
-	private int NextFreeFieldNode(ArrayList<Coordinate> nodes,Coordinate startPt,ArrayList<Integer> NodeExceptions,int firstTestNode,FastObstructionTest freeFieldFinder)
+	private int nextFreeFieldNode(ArrayList<Coordinate> nodes,Coordinate startPt,ArrayList<Integer> NodeExceptions,int firstTestNode,FastObstructionTest freeFieldFinder)
 	{
 		int validNode=firstTestNode;
-		while(NodeExceptions.contains(validNode) || (validNode<nodes.size() && !freeFieldFinder.IsFreeField(startPt, nodes.get(validNode))))
+		while(NodeExceptions.contains(validNode) || (validNode<nodes.size() && !freeFieldFinder.isFreeField(startPt, nodes.get(validNode))))
 		{
 			validNode++;
 		}
@@ -213,7 +213,7 @@ public class PropagationProcess implements Runnable {
 	 * @param distance Distance in meter
 	 * @return Attenuated sound level. Take only account of geometric dispersion of sound wave.
 	 */
-	private Double AttDistW(double Wj,double distance)
+	private Double attDistW(double Wj,double distance)
 	{
 		if(distance<1.) {
                         distance=1.;
@@ -235,7 +235,7 @@ public class PropagationProcess implements Runnable {
 	 * @param[in] regionCornersFreeToReceiver List of index of corners visible from receiver
 	 * @param[in] freq_lambda Array of sound wave lambda value by frequency band
 	 */
-	public void ReceiverSourcePropa(Coordinate srcCoord,Coordinate receiverCoord,double energeticSum[],double[] alpha_atmo,ArrayList<Double> wj,double li,ArrayList<MirrorReceiverResult> mirroredReceiver,ArrayList<LineSegment> nearBuildingsWalls,ArrayList<Coordinate> regionCorners,ArrayList<Integer> regionCornersFreeToReceiver,double[] freq_lambda)
+	public void receiverSourcePropa(Coordinate srcCoord,Coordinate receiverCoord,double energeticSum[],double[] alpha_atmo,ArrayList<Double> wj,double li,ArrayList<MirrorReceiverResult> mirroredReceiver,ArrayList<LineSegment> nearBuildingsWalls,ArrayList<Coordinate> regionCorners,ArrayList<Integer> regionCornersFreeToReceiver,double[] freq_lambda)
 	{
 		int nbfreq=data.freq_lvl.size();
 		int nb_obstr_test=0;
@@ -247,7 +247,7 @@ public class PropagationProcess implements Runnable {
 			long beginBuildingObstructionTest=System.currentTimeMillis();
 			boolean somethingHideReceiver=false;
 			nb_obstr_test++;
-			somethingHideReceiver=!data.freeFieldFinder.IsFreeField(receiverCoord, srcCoord);
+			somethingHideReceiver=!data.freeFieldFinder.isFreeField(receiverCoord, srcCoord);
 			dataOut.appendObstructionTestQueryTime((System.currentTimeMillis()-beginBuildingObstructionTest));
 			if(!somethingHideReceiver)
 			{
@@ -255,8 +255,8 @@ public class PropagationProcess implements Runnable {
 				//add=wj/(4*pi*distance²)
 				for(int idfreq=0;idfreq<nbfreq;idfreq++)
 				{
-					double AttenuatedWj=AttDistW(wj.get(idfreq), SrcReceiverDistance);
-					AttenuatedWj=DbaToW(WToDba(AttAtmW(AttenuatedWj, SrcReceiverDistance, alpha_atmo[idfreq]))+10*Math.log10(li));
+					double AttenuatedWj=attDistW(wj.get(idfreq), SrcReceiverDistance);
+					AttenuatedWj=dbaToW(wToDba(attAtmW(AttenuatedWj, SrcReceiverDistance, alpha_atmo[idfreq]))+10*Math.log10(li));
 					energeticSum[idfreq]+=AttenuatedWj;
 				}
 				
@@ -298,13 +298,13 @@ public class PropagationProcess implements Runnable {
 							reflectionPt.y-=vec_epsilon.y;
 							//Test if there is no obstacles between the reflection point and old reflection pt (or source position)
 							nb_obstr_test++;
-							validReflection=data.freeFieldFinder.IsFreeField(reflectionPt, destinationPt);
+							validReflection=data.freeFieldFinder.isFreeField(reflectionPt, destinationPt);
 							if(validReflection) //Reflection point can see source or its image
 							{
 								if(receiverReflectionCursor.getMirrorResultId()==-1)
 								{   //Direct to the receiver
 									nb_obstr_test++;
-									validReflection=data.freeFieldFinder.IsFreeField(reflectionPt, receiverCoord);
+									validReflection=data.freeFieldFinder.isFreeField(reflectionPt, receiverCoord);
 									break; //That was the last reflection
 								}else{
 									//There is another reflection
@@ -326,12 +326,12 @@ public class PropagationProcess implements Runnable {
 							for(int idfreq=0;idfreq<nbfreq;idfreq++)
 							{
 								//Geometric dispersion
-								double AttenuatedWj=AttDistW(wj.get(idfreq),ReflectedSrcReceiverDistance);
+								double AttenuatedWj=attDistW(wj.get(idfreq),ReflectedSrcReceiverDistance);
 								//Apply wall material attenuation
 								AttenuatedWj*=Math.pow((1-data.wallAlpha),reflectionOrderCounter);
 								//Apply atmospheric absorption and ground 
 								//AttenuatedWj=DbaToW(WToDba(AttenuatedWj)-(alpha_atmo[idfreq]*ReflectedSrcReceiverDistance)/1000.+10*Math.log10(li));
-								AttenuatedWj=DbaToW(WToDba(AttAtmW(AttenuatedWj, ReflectedSrcReceiverDistance, alpha_atmo[idfreq]))+10*Math.log10(li));
+								AttenuatedWj=dbaToW(wToDba(attAtmW(AttenuatedWj, ReflectedSrcReceiverDistance, alpha_atmo[idfreq]))+10*Math.log10(li));
 								energeticSum[idfreq]+=AttenuatedWj;
 							}
 						}
@@ -356,7 +356,7 @@ public class PropagationProcess implements Runnable {
 					{
 						Coordinate lastCorner=regionCorners.get(curCorner.get(curCorner.size()-1));
 						//Test Path is free to the source
-						if(data.freeFieldFinder.IsFreeField(lastCorner, srcCoord))
+						if(data.freeFieldFinder.isFreeField(lastCorner, srcCoord))
 						{
 							//True then the path is clear
 							//Compute attenuation level
@@ -397,12 +397,12 @@ public class PropagationProcess implements Runnable {
 									DiffractionAttenuation=Math.max(0, DiffractionAttenuation);
 									//largeAtt+=DbaToW(DiffractionAttenuation);
 									//Geometric dispersion
-									double AttenuatedWj=AttDistW(wj.get(idfreq),SrcReceiverDistance);
+									double AttenuatedWj=attDistW(wj.get(idfreq),SrcReceiverDistance);
 									//Apply diffraction attenuation
-									AttenuatedWj=DbaToW(WToDba(AttenuatedWj)-DiffractionAttenuation);
+									AttenuatedWj=dbaToW(wToDba(AttenuatedWj)-DiffractionAttenuation);
 									//Apply atmospheric absorption and ground 
 									//AttenuatedWj=DbaToW(WToDba(AttenuatedWj)-(alpha_atmo[idfreq]*ReflectedSrcReceiverDistance)/1000.+10*Math.log10(li));
-									AttenuatedWj=DbaToW(WToDba(AttAtmW(AttenuatedWj, diffractionFullDistance, alpha_atmo[idfreq]))+10*Math.log10(li));
+									AttenuatedWj=dbaToW(wToDba(attAtmW(AttenuatedWj, diffractionFullDistance, alpha_atmo[idfreq]))+10*Math.log10(li));
 									energeticSum[idfreq]+=AttenuatedWj;
 								}
 								//TODO removing
@@ -439,7 +439,7 @@ public class PropagationProcess implements Runnable {
 						int nextCorner=-1;
 						if(data.diffractionOrder>curCorner.size()){
 							//Continue to next order valid corner
-							nextCorner=NextFreeFieldNode(regionCorners,lastCorner,curCorner,0,data.freeFieldFinder);
+							nextCorner=nextFreeFieldNode(regionCorners,lastCorner,curCorner,0,data.freeFieldFinder);
 							if(nextCorner!=-1)
 							{
 								curCorner.add(nextCorner);
@@ -450,7 +450,7 @@ public class PropagationProcess implements Runnable {
 							if(curCorner.size()>1)
 							{
 								//Next free field corner
-								nextCorner=NextFreeFieldNode(regionCorners,regionCorners.get(curCorner.get(curCorner.size()-2)),curCorner,curCorner.get(curCorner.size()-1),data.freeFieldFinder);
+								nextCorner=nextFreeFieldNode(regionCorners,regionCorners.get(curCorner.get(curCorner.size()-2)),curCorner,curCorner.get(curCorner.size()-1),data.freeFieldFinder);
 							}else{
 								//Next receiver-corner tuple
 								receiverFreeCornerIndex++;
@@ -481,9 +481,9 @@ public class PropagationProcess implements Runnable {
 	 * @param alpha_atmo Atmospheric alpha (dB/km)
 	 * @return
 	 */
-	private Double AttAtmW(double Wj,double dist,double alpha_atmo)
+	private Double attAtmW(double Wj,double dist,double alpha_atmo)
 	{
-		return DbaToW(WToDba(Wj)-(alpha_atmo*dist)/1000.);
+		return dbaToW(wToDba(Wj)-(alpha_atmo*dist)/1000.);
 	}
 	@Override
 	public void run() {
@@ -524,14 +524,14 @@ public class PropagationProcess implements Runnable {
 		//Compute atmospheric alpha value by specified frequency band
 		double[] alpha_atmo=new double[data.freq_lvl.size()];
 		for(int idfreq=0;idfreq<nbfreq;idfreq++) {
-                        alpha_atmo[idfreq]=GetAlpha(data.freq_lvl.get(idfreq));
+                        alpha_atmo[idfreq]=getAlpha(data.freq_lvl.get(idfreq));
                 }
 		///////////////////////////////////////////////
 		//Search diffraction corners
 		Quadtree cornersQuad=new Quadtree();
 		if(data.diffractionOrder>0)
 		{
-			ArrayList<Coordinate> corners=data.freeFieldFinder.GetWideAnglePoints(Math.PI*(1+1/16.0), Math.PI*(2-(1/16.)));
+			ArrayList<Coordinate> corners=data.freeFieldFinder.getWideAnglePoints(Math.PI*(1+1/16.0), Math.PI*(2-(1/16.)));
 			//Build Quadtree
 			for(Coordinate corner : corners)
 			{
@@ -551,9 +551,9 @@ public class PropagationProcess implements Runnable {
 			if(data.reflexionOrder>0)
 			{
 
-				nearBuildingsWalls=new ArrayList<LineSegment>(data.freeFieldFinder.GetLimitsInRange(data.maxSrcDist-1., receiverCoord));
+				nearBuildingsWalls=new ArrayList<LineSegment>(data.freeFieldFinder.getLimitsInRange(data.maxSrcDist-1., receiverCoord));
 				//Build mirrored receiver list from wall list
-				mirroredReceiver=GetMirroredReceiverResults(receiverCoord,nearBuildingsWalls,data.reflexionOrder,data.maxSrcDist);						
+				mirroredReceiver=getMirroredReceiverResults(receiverCoord,nearBuildingsWalls,data.reflexionOrder,data.maxSrcDist);						
 			}
 			ArrayList<Coordinate> regionCorners=new ArrayList<Coordinate>();
 			ArrayList<Integer> regionCornersFreeToReceiver=new ArrayList<Integer>(); //Corners free field with receiver
@@ -566,7 +566,7 @@ public class PropagationProcess implements Runnable {
 				regionCornersFreeToReceiver.ensureCapacity(regionCorners.size());
 				for(int icorner=0;icorner<regionCorners.size();icorner++)
 				{
-					if(data.freeFieldFinder.IsFreeField(receiverCoord, regionCorners.get(icorner)))
+					if(data.freeFieldFinder.isFreeField(receiverCoord, regionCorners.get(icorner)))
 					{
 						regionCornersFreeToReceiver.add(icorner);
 					}
@@ -597,7 +597,7 @@ public class PropagationProcess implements Runnable {
 				}else{
 					//Discretization of line into multiple point
 					//First point is the closest point of the LineString from the receiver
-					li=SplitLineStringIntoPoints(source,receiverCoord,srcPos,data.minRecDist);
+					li=splitLineStringIntoPoints(source,receiverCoord,srcPos,data.minRecDist);
 					//Compute li to equation  4.1 NMPB 2008 (June 2009)
 				
 				}
@@ -605,7 +605,7 @@ public class PropagationProcess implements Runnable {
 				for(final Coordinate srcCoord : srcPos)
 				{
 					//For each Pt Source - Pt Receiver
-					ReceiverSourcePropa(srcCoord,receiverCoord,energeticSum,alpha_atmo,wj,li,mirroredReceiver,nearBuildingsWalls,regionCorners,regionCornersFreeToReceiver,freq_lambda);
+					receiverSourcePropa(srcCoord,receiverCoord,energeticSum,alpha_atmo,wj,li,mirroredReceiver,nearBuildingsWalls,regionCorners,regionCornersFreeToReceiver,freq_lambda);
 				}
 			}
 			//Save the sound level at this receiver
@@ -615,8 +615,8 @@ public class PropagationProcess implements Runnable {
 			{
 				allfreqlvl+=energeticSum[idfreq];
 			}
-			if(allfreqlvl<DbaToW(0.)) {
-                                allfreqlvl=DbaToW(0.);
+			if(allfreqlvl<dbaToW(0.)) {
+                                allfreqlvl=dbaToW(0.);
                         }
 			verticesSoundLevel[idReceiver]=allfreqlvl;
 			idReceiver++;

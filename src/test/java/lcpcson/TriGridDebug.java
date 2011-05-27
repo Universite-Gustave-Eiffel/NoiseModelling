@@ -75,9 +75,9 @@ public class TriGridDebug {
 		FastObstructionTest freeFieldFinder = new FastObstructionTest("/home/fortin/OrbisGIS/temp");
 		Coordinate[] polycontour={new Coordinate(14,0,0),new Coordinate(23,0,0),new Coordinate(23,6,0),new Coordinate(14,6,0),new Coordinate(14,4,0),new Coordinate(21,4,0),new Coordinate(21,2,0),new Coordinate(14,2,0),new Coordinate(14,0,0)};
 		GeometryFactory factory=new GeometryFactory();
-		freeFieldFinder.AddGeometry(factory.createPolygon(factory.createLinearRing(polycontour), null));
-		freeFieldFinder.FinishPolygonFeeding(new Envelope(-10,30,-10,30));
-		ArrayList<LineSegment> nearBuildingsWalls=new ArrayList<LineSegment>(freeFieldFinder.GetLimitsInRange(2, receiverCoord));
+		freeFieldFinder.addGeometry(factory.createPolygon(factory.createLinearRing(polycontour), null));
+		freeFieldFinder.finishPolygonFeeding(new Envelope(-10,30,-10,30));
+		ArrayList<LineSegment> nearBuildingsWalls=new ArrayList<LineSegment>(freeFieldFinder.getLimitsInRange(2, receiverCoord));
 
 		ArrayList<MirrorReceiverResult> mirroredReceiver=GetMirroredReceiverResults(receiverCoord,nearBuildingsWalls,2,maxSrcDist);
 		NonRobustLineIntersector linters=new NonRobustLineIntersector();
@@ -114,7 +114,7 @@ public class TriGridDebug {
 					reflectionPt.y-=vec_epsilon.y;
 					//Test if there is no obstacles between the reflection point and old reflection pt (or source position)
 					
-					validReflection=freeFieldFinder.IsFreeField(reflectionPt, destinationPt);
+					validReflection=freeFieldFinder.isFreeField(reflectionPt, destinationPt);
 					if(validReflection) //Reflection point can see source or its image
 					{
 						debug_rays.add(new LineSegment(reflectionPt,destinationPt));//TODO remove debug
@@ -122,7 +122,7 @@ public class TriGridDebug {
 						if(receiverReflectionCursor.getMirrorResultId()==-1)
 						{   //Direct to the receiver
 							debug_rays.add(new LineSegment(reflectionPt,receiverCoord)); //TODO remove debug instru
-							validReflection=freeFieldFinder.IsFreeField(reflectionPt, receiverCoord);
+							validReflection=freeFieldFinder.isFreeField(reflectionPt, receiverCoord);
 							break; //That was the last reflection
 						}else{
 							//There is another reflection

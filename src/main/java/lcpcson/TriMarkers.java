@@ -22,8 +22,8 @@ public class TriMarkers extends Triangle {
 			double m2, double m3) {
 		super(p0, p1, p2);
 
-		if(!CGAlgorithms.isCCW(this.GetRing())) {
-                        this.SetCoordinates(p2,p1,p0);
+		if(!CGAlgorithms.isCCW(this.getRing())) {
+                        this.setCoordinates(p2,p1,p0);
                 }
 		this.m1 = m1;
 		this.m2 = m2;
@@ -39,20 +39,20 @@ public class TriMarkers extends Triangle {
 		this.m2 = m2;
 		this.m3 = m3;		
 	}
-	public void SetAll(Coordinate p0, Coordinate p1, Coordinate p2, double m1,
+	public void setAll(Coordinate p0, Coordinate p1, Coordinate p2, double m1,
 			double m2, double m3)
 	{
-		SetCoordinates(p0,p1,p2);
+		setCoordinates(p0,p1,p2);
 		setMarkers(m1, m2, m3);
-		if(!CGAlgorithms.isCCW(this.GetRing())) {
-                        this.SetCoordinates(p2,p1,p0);
+		if(!CGAlgorithms.isCCW(this.getRing())) {
+                        this.setCoordinates(p2,p1,p0);
                 }
 	}
-	public double GetMinMarker()
+	public double getMinMarker()
 	{
-		return GetMinMarker((short)-1);
+		return getMinMarker((short)-1);
 	}
-	public double GetMinMarker(short exception)
+	public double getMinMarker(short exception)
 	{
 		double minval=Double.POSITIVE_INFINITY;
 		if(exception!=0) {
@@ -66,11 +66,11 @@ public class TriMarkers extends Triangle {
                 }
 		return minval;
 	}
-	public double GetMaxMarker()
+	public double getMaxMarker()
 	{
-		return GetMaxMarker((short)-1);
+		return getMaxMarker((short)-1);
 	}
-	public double GetMaxMarker(short exception)
+	public double getMaxMarker(short exception)
 	{
 		double maxval=Double.NEGATIVE_INFINITY;
 		if(exception!=0) {
@@ -84,13 +84,13 @@ public class TriMarkers extends Triangle {
                 }
 		return maxval;
 	}
-	public void SetCoordinates(Coordinate p0, Coordinate p1, Coordinate p2)
+	public void setCoordinates(Coordinate p0, Coordinate p1, Coordinate p2)
 	{
 		this.p0=p0;
 		this.p1=p1;
 		this.p2=p2;
 	}
-	public Coordinate[] GetRing()
+	public Coordinate[] getRing()
 	{
 		Coordinate[] ring={p0,p1,p2,p0};
 		return ring;

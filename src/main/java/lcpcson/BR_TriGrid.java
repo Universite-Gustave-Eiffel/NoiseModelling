@@ -67,7 +67,7 @@ public class BR_TriGrid implements CustomQuery {
 	private long totalParseBuildings= 0;
 	private long totalDelaunay= 0;
 	
-	int GetCellId(int row,int col,int cols)
+	int getCellId(int row,int col,int cols)
 	{
 		return row*cols+col;
 	}
@@ -89,12 +89,12 @@ public class BR_TriGrid implements CustomQuery {
 		return mainEnvelope;
 
 	}
-	private void AddPolygon(Polygon newpoly,LayerDelaunay delaunayTool,Geometry boundingBox) throws DriverException, LayerDelaunayError
+	private void addPolygon(Polygon newpoly,LayerDelaunay delaunayTool,Geometry boundingBox) throws DriverException, LayerDelaunayError
 	{
 		delaunayTool.addPolygon(newpoly,true);
 		
 	}
-	private void ExplodeAndAddPolygon(Geometry intersectedGeometry,LayerDelaunay delaunayTool,Geometry boundingBox) throws DriverException, LayerDelaunayError
+	private void explodeAndAddPolygon(Geometry intersectedGeometry,LayerDelaunay delaunayTool,Geometry boundingBox) throws DriverException, LayerDelaunayError
 	{
 		long beginAppendPolygons=System.currentTimeMillis();
 		if(intersectedGeometry instanceof MultiPolygon || intersectedGeometry instanceof GeometryCollection )
@@ -102,11 +102,11 @@ public class BR_TriGrid implements CustomQuery {
 			for (int j = 0; j < intersectedGeometry.getNumGeometries(); j++)
 			{
 				Geometry subGeom = intersectedGeometry.getGeometryN(j);
-				ExplodeAndAddPolygon(subGeom,delaunayTool,boundingBox);
+				explodeAndAddPolygon(subGeom,delaunayTool,boundingBox);
 			}
 		}else if(intersectedGeometry instanceof Polygon)
 		{
-			AddPolygon((Polygon)intersectedGeometry,delaunayTool,boundingBox);
+			addPolygon((Polygon)intersectedGeometry,delaunayTool,boundingBox);
 		}else if(intersectedGeometry instanceof LineString)
 		{
 			delaunayTool.addLineString((LineString)intersectedGeometry);
@@ -114,7 +114,7 @@ public class BR_TriGrid implements CustomQuery {
 		totalDelaunay+=System.currentTimeMillis()-beginAppendPolygons;
 	}
 	
-	private Geometry Merge(LinkedList<Geometry> toUnite, double bufferSize)
+	private Geometry merge(LinkedList<Geometry> toUnite, double bufferSize)
 	{
 		GeometryFactory geometryFactory = new GeometryFactory();
 		Geometry geoArray[]=new Geometry[toUnite.size()];
@@ -126,7 +126,7 @@ public class BR_TriGrid implements CustomQuery {
 	{
 		return new Envelope(mainEnvelope.getMinX()+cellI*cellWidth, mainEnvelope.getMinX()+cellI*cellWidth+cellWidth, mainEnvelope.getMinY()+cellHeight*cellJ, mainEnvelope.getMinY()+cellHeight*cellJ+cellHeight);
 	}
-	private void FeedDelaunay(SpatialDataSourceDecorator polygonDatabase,LayerDelaunay delaunayTool,Envelope boundingBoxFilter,double srcDistance,LinkedList<LineString> delaunaySegments,double minRecDist,double srcPtDist ) throws  DriverException, LayerDelaunayError
+	private void feedDelaunay(SpatialDataSourceDecorator polygonDatabase,LayerDelaunay delaunayTool,Envelope boundingBoxFilter,double srcDistance,LinkedList<LineString> delaunaySegments,double minRecDist,double srcPtDist ) throws  DriverException, LayerDelaunayError
 	{
 		Envelope extendedEnvelope=new Envelope(boundingBoxFilter);
 		extendedEnvelope.expandBy(srcDistance*2.);
@@ -167,7 +167,7 @@ public class BR_TriGrid implements CustomQuery {
 		LinkedList<Geometry> toUniteFinal= new LinkedList<Geometry>();
 		if(!toUnite.isEmpty())
 		{
-			Geometry bufferBuildings=Merge(toUnite,0.5);
+			Geometry bufferBuildings=merge(toUnite,0.5);
 			//Remove small artifacts due to buildings buffer
 			bufferBuildings=TopologyPreservingSimplifier.simplify(bufferBuildings, .1);
 			//Densify receiver near buildings
@@ -179,17 +179,17 @@ public class BR_TriGrid implements CustomQuery {
 		if(!toUniteRoads.isEmpty() && minRecDist>0.01)
 		{
 			//Build Polygons buffer from roads lines
-			Geometry bufferRoads = Merge(toUniteRoads,minRecDist);
+			Geometry bufferRoads = merge(toUniteRoads,minRecDist);
 			//Remove small artifacts due to multiple buffer crosses
 			bufferRoads = TopologyPreservingSimplifier.simplify(bufferRoads, minRecDist/2);
 			//Densify roads to set more receiver near roads.
 			bufferRoads=Densifier.densify(bufferRoads,srcPtDist);
 			toUniteFinal.add(bufferRoads);	//Merge roads with minRecDist m buffer
 		}
-		Geometry union=Merge(toUniteFinal,0.);	//Merge roads and buildings together
+		Geometry union=merge(toUniteFinal,0.);	//Merge roads and buildings together
 		//Remove geometries out of the bounding box
 		union=union.intersection(boundingBox);
-		ExplodeAndAddPolygon(union,delaunayTool,boundingBox);
+		explodeAndAddPolygon(union,delaunayTool,boundingBox);
 		totalParseBuildings+=System.currentTimeMillis()-beginfeed-(totalDelaunay-oldtotalDelaunay);
 	}
 	private void computeSecondPassDelaunay(LayerExtTriangle cellMesh,Envelope mainEnvelope,int cellI,int cellJ,int cellIMax,int cellJMax,double cellWidth,double cellHeight,String firstPassResult,NodeList neighborsBorderVertices) throws LayerDelaunayError
@@ -206,7 +206,7 @@ public class BR_TriGrid implements CustomQuery {
 			 }
 		 }
 		 cellMesh.setMinAngle(0.);
-		 cellMesh.processDelaunay("second_",GetCellId(cellI, cellJ, cellJMax), -1, false, false);
+		 cellMesh.processDelaunay("second_",getCellId(cellI, cellJ, cellJMax), -1, false, false);
 		 if(neighborsBorderVertices!=null)
 		 {
 			 neighborsBorderVertices.nodes.clear();
@@ -297,7 +297,7 @@ public class BR_TriGrid implements CustomQuery {
 				}
 			}						
 		}
-		FeedDelaunay(sds,cellMesh,cellEnvelope,maxSrcDist,delaunaySegments,minRecDist,srcPtDist);
+		feedDelaunay(sds,cellMesh,cellEnvelope,maxSrcDist,delaunaySegments,minRecDist,srcPtDist);
 		
 		//Process delaunay
 		
@@ -311,18 +311,18 @@ public class BR_TriGrid implements CustomQuery {
 		}else{
 			int maxSteiner=Math.max(cellMesh.getVertices().size()*5,50000);
 			cellMesh.setMinAngle(20.);
-			String firstPathFileName=((LayerExtTriangle)cellMesh).processDelaunay("first_",GetCellId(cellI, cellJ, cellJMax), maxSteiner, true, true);
-			firstPassResults[GetCellId(cellI, cellJ, cellJMax)]=firstPathFileName;
+			String firstPathFileName=((LayerExtTriangle)cellMesh).processDelaunay("first_",getCellId(cellI, cellJ, cellJMax), maxSteiner, true, true);
+			firstPassResults[getCellId(cellI, cellJ, cellJMax)]=firstPathFileName;
 			
 			ArrayList<Coordinate> vertices = cellMesh.getVertices();
 			boolean isLeft=cellI>0;
 			boolean isRight=cellI<cellIMax-1;
 			boolean isTop=cellJ<cellJMax-1;
 			boolean isBottom=cellJ>0;
-			int leftCellId=GetCellId(cellI+BR_TriGrid.neighboor[BR_TriGrid.nLeft][0], cellJ+BR_TriGrid.neighboor[BR_TriGrid.nLeft][1], cellJMax);
-			int rightCellId=GetCellId(cellI+BR_TriGrid.neighboor[BR_TriGrid.nRight][0], cellJ+BR_TriGrid.neighboor[BR_TriGrid.nRight][1], cellJMax);
-			int topCellId=GetCellId(cellI+BR_TriGrid.neighboor[BR_TriGrid.nTop][0], cellJ+BR_TriGrid.neighboor[BR_TriGrid.nTop][1], cellJMax);
-			int bottomCellId=GetCellId(cellI+BR_TriGrid.neighboor[BR_TriGrid.nBottom][0], cellJ+BR_TriGrid.neighboor[BR_TriGrid.nBottom][1], cellJMax);
+			int leftCellId=getCellId(cellI+BR_TriGrid.neighboor[BR_TriGrid.nLeft][0], cellJ+BR_TriGrid.neighboor[BR_TriGrid.nLeft][1], cellJMax);
+			int rightCellId=getCellId(cellI+BR_TriGrid.neighboor[BR_TriGrid.nRight][0], cellJ+BR_TriGrid.neighboor[BR_TriGrid.nRight][1], cellJMax);
+			int topCellId=getCellId(cellI+BR_TriGrid.neighboor[BR_TriGrid.nTop][0], cellJ+BR_TriGrid.neighboor[BR_TriGrid.nTop][1], cellJMax);
+			int bottomCellId=getCellId(cellI+BR_TriGrid.neighboor[BR_TriGrid.nBottom][0], cellJ+BR_TriGrid.neighboor[BR_TriGrid.nBottom][1], cellJMax);
 			//Initialization of cell array object
 			Envelope leftEnv=null,rightEnv=null,topEnv=null,bottomEnv=null;
 			if(isLeft)
@@ -530,7 +530,7 @@ public class BR_TriGrid implements CustomQuery {
 						Envelope ptEnv=geo.getEnvelopeInternal();
 						if(ptEnv.intersects(expandedCellEnvelop))
 						{
-							sourcesIndex.AppendGeometry(geo, idsource);
+							sourcesIndex.appendGeometry(geo, idsource);
 							ArrayList<Double> wj_spectrum=new ArrayList<Double>();
 							wj_spectrum.ensureCapacity(db_field_ids.size());
 							for(Integer idcol : db_field_ids)
@@ -555,11 +555,11 @@ public class BR_TriGrid implements CustomQuery {
 						Envelope geomEnv=geometry.getEnvelopeInternal();
 						if (expandedCellEnvelop.intersects(geomEnv)) 
 						{
-							freeFieldFinder.AddGeometry(geometry);
+							freeFieldFinder.addGeometry(geometry);
 						}
 					}
 					sds.close();
-					freeFieldFinder.FinishPolygonFeeding(expandedCellEnvelop);
+					freeFieldFinder.finishPolygonFeeding(expandedCellEnvelop);
 					
 					//Compute the first pass delaunay mesh
 					//The first pass doesn't take account of additional vertices of neighbor cells at the borders
@@ -573,7 +573,7 @@ public class BR_TriGrid implements CustomQuery {
 							int[] ijneigh={cellI+ijneighoffset[0],cellJ+ijneighoffset[1]};
 							if(ijneigh[0]>=0 && ijneigh[0]<gridDim && ijneigh[1]>=0 && ijneigh[1]<gridDim)
 							{
-								if(firstPassResults[GetCellId(ijneigh[0],ijneigh[1],gridDim)]==null)
+								if(firstPassResults[getCellId(ijneigh[0],ijneigh[1],gridDim)]==null)
 								{
 									cellMesh.reset();
 									computeFirstPassDelaunay(cellMesh,mainEnvelope,ijneigh[0],ijneigh[1],gridDim,gridDim,cellWidth,cellHeight,maxSrcDist,sds,sdsSources,minRecDist,srcPtDist,firstPassResults,neighborsBorderVertices,maximumArea);
@@ -581,7 +581,7 @@ public class BR_TriGrid implements CustomQuery {
 							}
 						}
 						//Compute the first pass of the 5 neighbor cells if this is not already done
-						if(firstPassResults[GetCellId(cellI,cellJ,gridDim)]==null)
+						if(firstPassResults[getCellId(cellI,cellJ,gridDim)]==null)
 						{
 							cellMesh.reset();
 							computeFirstPassDelaunay(cellMesh,mainEnvelope,cellI,cellJ,gridDim,gridDim,cellWidth,cellHeight,maxSrcDist,sds,sdsSources,minRecDist,srcPtDist,firstPassResults,neighborsBorderVertices,maximumArea);
@@ -589,7 +589,7 @@ public class BR_TriGrid implements CustomQuery {
 						
 						//Compute second pass of the current cell
 						cellMesh.reset();
-						computeSecondPassDelaunay((LayerExtTriangle)cellMesh,mainEnvelope,cellI,cellJ,gridDim,gridDim,cellWidth,cellHeight, firstPassResults[GetCellId(cellI,cellJ,gridDim)], neighborsBorderVertices[GetCellId(cellI,cellJ,gridDim)]);
+						computeSecondPassDelaunay((LayerExtTriangle)cellMesh,mainEnvelope,cellI,cellJ,gridDim,gridDim,cellWidth,cellHeight, firstPassResults[getCellId(cellI,cellJ,gridDim)], neighborsBorderVertices[getCellId(cellI,cellJ,gridDim)]);
 					}else{
 						computeFirstPassDelaunay(cellMesh,mainEnvelope,cellI,cellJ,gridDim,gridDim,cellWidth,cellHeight,maxSrcDist,sds,sdsSources,minRecDist,srcPtDist,firstPassResults,neighborsBorderVertices,maximumArea);
 					}
@@ -626,7 +626,7 @@ public class BR_TriGrid implements CustomQuery {
 			}
 			//Wait termination of processes
 			logger.info("Wait for termination of the lasts propagation process..");
-			//threadManager.GetRemainingTasks()>0
+			//threadManager.getRemainingTasks()>0
 			Thread.sleep(100);
 			while(threadDataOut.getCellComputed()<nbcell && doMultiThreading)
 			{
@@ -638,7 +638,7 @@ public class BR_TriGrid implements CustomQuery {
 				Thread.sleep(100);
 			}
 			//Wait for rows stack to be empty
-			driverManager.StopWatchingStack();
+			driverManager.stopWatchingStack();
 			pmManager.stop();
 			logger.info("Wait for termination of writing to the driver..");
 			while(driverManager.isRunning())

@@ -25,13 +25,15 @@ import com.vividsolutions.jts.geom.LineString;
  * If the length of the line(s) is smaller than delta then the interior point will be returned
  */
 public class ST_SplitLineInPoints extends AbstractSpatialFunction {
-	public static Coordinate[] SplitMultiPointsInRegularPoints(Coordinate[] points,double delta)
+	public static Coordinate[] splitMultiPointsInRegularPoints(Coordinate[] points,double delta)
 	{
 		GeometryFactory gf = new GeometryFactory();
-		if(points.length==0)
-			return null;
-		if(points.length==1)
-			return points;
+		if(points.length==0) {
+                        return null;
+                }
+		if(points.length==1) {
+                        return points;
+                }
 		//If the distance between the first and the last point is smaller than delta, then return the avg point
 		LineString Line=gf.createLineString(points);
 		Double length=Line.getLength();
@@ -130,7 +132,7 @@ public class ST_SplitLineInPoints extends AbstractSpatialFunction {
 			final Double delta = args[1].getAsDouble();
 			//Get the point first and last point of the geometry
 			Coordinate[] points=geom.getCoordinates();
-			return ValueFactory.createValue(gf.createMultiPoint(SplitMultiPointsInRegularPoints(points,delta)));
+			return ValueFactory.createValue(gf.createMultiPoint(splitMultiPointsInRegularPoints(points,delta)));
 		}
 	}
 

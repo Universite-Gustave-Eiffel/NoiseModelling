@@ -41,7 +41,7 @@ public class EnvelopeWithIndex<index_t>  extends Envelope {
 	public index_t getId(){
 		return index;
 	}
-	public Coordinate GetPosition()
+	public Coordinate getPosition()
 	{
 		return super.centre();
 	}

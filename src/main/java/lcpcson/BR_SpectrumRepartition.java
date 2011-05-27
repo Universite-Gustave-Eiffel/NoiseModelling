@@ -43,7 +43,7 @@ public class BR_SpectrumRepartition implements Function {
 		freqToIndex.put(4000, 16);
 		freqToIndex.put(5000, 17);
 	}
-	public double GetAttenuatedValue(int freq) throws FunctionException
+	public double getAttenuatedValue(int freq) throws FunctionException
 	{
 		if(freqToIndex.containsKey(freq))
 		{
@@ -59,7 +59,7 @@ public class BR_SpectrumRepartition implements Function {
 		}else if (args.length>3) {
 			throw new FunctionException("Too many parameters !");
 		} else {
-			return  ValueFactory.createValue(args[2].getAsDouble()+GetAttenuatedValue(args[0].getAsInt()));
+			return  ValueFactory.createValue(args[2].getAsDouble()+getAttenuatedValue(args[0].getAsInt()));
 		}
 	}
         @Override

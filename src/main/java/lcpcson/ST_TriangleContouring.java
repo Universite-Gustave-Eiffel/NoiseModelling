@@ -39,7 +39,7 @@ import com.vividsolutions.jts.geom.Polygon;
 
 public class ST_TriangleContouring implements CustomQuery {
 	private static final double EPSILON = 1E-15;
-	private static boolean IsoEqual(double isoValue1,double isoValue2)
+	private static boolean isoEqual(double isoValue1,double isoValue2)
 	{
 		return Math.abs( isoValue1 - isoValue2 ) < EPSILON * isoValue2;
 	}
@@ -106,30 +106,30 @@ public class ST_TriangleContouring implements CustomQuery {
 	 * @param[out] secondTwinTri Splitted triangle
 	 * @return The shared vertex index [0-2]
 	 */
-	private short GetSplittedTriangle(short sideStart,short sideStop,Coordinate posIsoStart,Coordinate posIsoStop, double isoLvl,TriMarkers currentTriangle,TriMarkers aloneTri,TriMarkers firstTwinTri,TriMarkers secondTwinTri) throws ExecutionException
+	private short getSplittedTriangle(short sideStart,short sideStop,Coordinate posIsoStart,Coordinate posIsoStop, double isoLvl,TriMarkers currentTriangle,TriMarkers aloneTri,TriMarkers firstTwinTri,TriMarkers secondTwinTri) throws ExecutionException
 	{
 		short sharedVertex=-1,secondVertex=-1,thirdVertex=-1;
 		if(sideStart==0 && sideStop==2){
 			sharedVertex=0;
 			secondVertex=1;
 			thirdVertex=2;
-			aloneTri.SetAll(posIsoStart, posIsoStop, currentTriangle.getVertice(sharedVertex), isoLvl, isoLvl,currentTriangle.getMarker(sharedVertex));
-			firstTwinTri.SetAll(posIsoStart,  currentTriangle.getVertice(thirdVertex),posIsoStop,isoLvl, currentTriangle.getMarker(thirdVertex),isoLvl);
-			secondTwinTri.SetAll(posIsoStart , currentTriangle.getVertice(secondVertex) ,currentTriangle.getVertice(thirdVertex) , isoLvl , currentTriangle.getMarker(secondVertex) ,currentTriangle.getMarker(thirdVertex));
+			aloneTri.setAll(posIsoStart, posIsoStop, currentTriangle.getVertice(sharedVertex), isoLvl, isoLvl,currentTriangle.getMarker(sharedVertex));
+			firstTwinTri.setAll(posIsoStart,  currentTriangle.getVertice(thirdVertex),posIsoStop,isoLvl, currentTriangle.getMarker(thirdVertex),isoLvl);
+			secondTwinTri.setAll(posIsoStart , currentTriangle.getVertice(secondVertex) ,currentTriangle.getVertice(thirdVertex) , isoLvl , currentTriangle.getMarker(secondVertex) ,currentTriangle.getMarker(thirdVertex));
 		}else if(sideStart==0 && sideStop==1){
 			sharedVertex=1;
 			secondVertex=2;
 			thirdVertex=0;
-			aloneTri.SetAll(posIsoStart,  currentTriangle.getVertice(sharedVertex),posIsoStop, isoLvl, currentTriangle.getMarker(sharedVertex), isoLvl);
-			firstTwinTri.SetAll(posIsoStart,  posIsoStop,currentTriangle.getVertice(thirdVertex),isoLvl,isoLvl, currentTriangle.getMarker(thirdVertex));
-			secondTwinTri.SetAll(posIsoStop , currentTriangle.getVertice(secondVertex) ,currentTriangle.getVertice(thirdVertex) , isoLvl, currentTriangle.getMarker(secondVertex) , currentTriangle.getMarker(thirdVertex));
+			aloneTri.setAll(posIsoStart,  currentTriangle.getVertice(sharedVertex),posIsoStop, isoLvl, currentTriangle.getMarker(sharedVertex), isoLvl);
+			firstTwinTri.setAll(posIsoStart,  posIsoStop,currentTriangle.getVertice(thirdVertex),isoLvl,isoLvl, currentTriangle.getMarker(thirdVertex));
+			secondTwinTri.setAll(posIsoStop , currentTriangle.getVertice(secondVertex) ,currentTriangle.getVertice(thirdVertex) , isoLvl, currentTriangle.getMarker(secondVertex) , currentTriangle.getMarker(thirdVertex));
 		}else if(sideStart==1 && sideStop==2){
 			sharedVertex=2;
 			secondVertex=0;
 			thirdVertex=1;
-			aloneTri.SetAll(posIsoStart,  currentTriangle.getVertice(sharedVertex),posIsoStop, isoLvl, currentTriangle.getMarker(sharedVertex), isoLvl);
-			firstTwinTri.SetAll(posIsoStart,  posIsoStop,currentTriangle.getVertice(secondVertex),isoLvl,isoLvl, currentTriangle.getMarker(secondVertex));
-			secondTwinTri.SetAll(posIsoStart , currentTriangle.getVertice(secondVertex) ,currentTriangle.getVertice(thirdVertex) , isoLvl , currentTriangle.getMarker(secondVertex) ,currentTriangle.getMarker(thirdVertex));
+			aloneTri.setAll(posIsoStart,  currentTriangle.getVertice(sharedVertex),posIsoStop, isoLvl, currentTriangle.getMarker(sharedVertex), isoLvl);
+			firstTwinTri.setAll(posIsoStart,  posIsoStop,currentTriangle.getVertice(secondVertex),isoLvl,isoLvl, currentTriangle.getMarker(secondVertex));
+			secondTwinTri.setAll(posIsoStart , currentTriangle.getVertice(secondVertex) ,currentTriangle.getVertice(thirdVertex) , isoLvl , currentTriangle.getMarker(secondVertex) ,currentTriangle.getMarker(thirdVertex));
 		}else{
 			throw new ExecutionException("Can't find shared vertex");
 		}
@@ -145,7 +145,7 @@ public class ST_TriangleContouring implements CustomQuery {
 	 * @return False if the entire geometry is outside of the region, true if outsideTriangles or intervalTriangles has been updated.
 	 * @throws ExecutionException 
 	 */
-	private boolean SplitInterval(Double beginIncluded,Double endExcluded,TriMarkers currentTriangle,LinkedList<TriMarkers> outsideTriangles, LinkedList<TriMarkers> intervalTriangles) throws ExecutionException
+	private boolean splitInterval(Double beginIncluded,Double endExcluded,TriMarkers currentTriangle,LinkedList<TriMarkers> outsideTriangles, LinkedList<TriMarkers> intervalTriangles) throws ExecutionException
 	{
 		if((beginIncluded>currentTriangle.m1 && beginIncluded>currentTriangle.m2 && beginIncluded>currentTriangle.m3)|| //If triangles vertices ALL outside inferior
 		   (endExcluded<currentTriangle.m1 && endExcluded<currentTriangle.m2 && endExcluded<currentTriangle.m3)//If triangles vertices ALL outside inferior
@@ -161,10 +161,10 @@ public class ST_TriangleContouring implements CustomQuery {
 		Coordinate posIso2Start=new Coordinate(), posIso2Stop=new Coordinate();
 		//Process ISO 1 beginIncluded
 		//Find if we include some vertices
-		if(IsoEqual(currentTriangle.m1,beginIncluded)) {
+		if(isoEqual(currentTriangle.m1,beginIncluded)) {
                         vertIso1Start=0;
                 }
-		if(IsoEqual(currentTriangle.m2,beginIncluded))
+		if(isoEqual(currentTriangle.m2,beginIncluded))
 		{
 			if(vertIso1Start==-1) {
                                 vertIso1Start=1;
@@ -173,7 +173,7 @@ public class ST_TriangleContouring implements CustomQuery {
                                 vertIso1Stop=1;
                         }
 		}
-		if(IsoEqual(currentTriangle.m3,beginIncluded))
+		if(isoEqual(currentTriangle.m3,beginIncluded))
 		{
 			if(vertIso1Start==-1) {
                                 vertIso1Start=2;
@@ -193,10 +193,10 @@ public class ST_TriangleContouring implements CustomQuery {
 		}
 		//Process ISO 2 endExcluded
 		//Find if we include some vertices
-		if(IsoEqual(currentTriangle.m1,endExcluded)) {
+		if(isoEqual(currentTriangle.m1,endExcluded)) {
                         vertIso2Start=0;
                 }
-		if(IsoEqual(currentTriangle.m2,endExcluded))
+		if(isoEqual(currentTriangle.m2,endExcluded))
 		{
 			if(vertIso2Start==-1) {
                                 vertIso2Start=1;
@@ -205,7 +205,7 @@ public class ST_TriangleContouring implements CustomQuery {
                                 vertIso2Stop=1;
                         }
 		}
-		if(IsoEqual(currentTriangle.m3,endExcluded))
+		if(isoEqual(currentTriangle.m3,endExcluded))
 		{
 			if(vertIso2Start==-1) {
                                 vertIso2Start=2;
@@ -230,8 +230,8 @@ public class ST_TriangleContouring implements CustomQuery {
 		if((sideIso1Start==-1 && sideIso2Start==-1) && ((vertIso1Start!=-1 && vertIso1Stop==-1) || (vertIso2Start!=-1 && vertIso2Stop==-1)))
 		{
 			//Only one vertex in the range domain
-			if((vertIso1Start!=-1 && currentTriangle.GetMaxMarker(vertIso1Start)<beginIncluded) ||
-			   (vertIso2Start!=-1 && currentTriangle.GetMinMarker(vertIso2Start)>endExcluded)
+			if((vertIso1Start!=-1 && currentTriangle.getMaxMarker(vertIso1Start)<beginIncluded) ||
+			   (vertIso2Start!=-1 && currentTriangle.getMinMarker(vertIso2Start)>endExcluded)
 			)
 			{
 				return false;
@@ -261,7 +261,7 @@ public class ST_TriangleContouring implements CustomQuery {
 				//Find the shared vertex between each
 
 				TriMarkers aloneTri=new TriMarkers(),firstTwinTri=new TriMarkers(),secondTwinTri=new TriMarkers();
-				short sharedVertex=GetSplittedTriangle(sideIso1Start,sideIso1Stop,posIso1Start,posIso1Stop, beginIncluded,currentTriangle,aloneTri,firstTwinTri,secondTwinTri);
+				short sharedVertex=getSplittedTriangle(sideIso1Start,sideIso1Stop,posIso1Start,posIso1Stop, beginIncluded,currentTriangle,aloneTri,firstTwinTri,secondTwinTri);
 				
 				if(currentTriangle.getMarker(sharedVertex)<beginIncluded)
 				{
@@ -289,7 +289,7 @@ public class ST_TriangleContouring implements CustomQuery {
 				// First triangle in the shared vertex side
 				//Find the shared vertex between each
 				TriMarkers aloneTri=new TriMarkers(),firstTwinTri=new TriMarkers(),secondTwinTri=new TriMarkers();
-				short sharedVertex=GetSplittedTriangle(sideIso2Start,sideIso2Stop,posIso2Start,posIso2Stop, endExcluded,currentTriangle,aloneTri,firstTwinTri,secondTwinTri);
+				short sharedVertex=getSplittedTriangle(sideIso2Start,sideIso2Stop,posIso2Start,posIso2Stop, endExcluded,currentTriangle,aloneTri,firstTwinTri,secondTwinTri);
 				if(currentTriangle.getMarker(sharedVertex)>endExcluded)
 				{
 					outsideTriangles.add(aloneTri);
@@ -415,11 +415,11 @@ public class ST_TriangleContouring implements CustomQuery {
 			
 			//First step, make outside inferior triangle
 			LinkedList<TriMarkers> insideTriangles=new LinkedList<TriMarkers>();
-			SplitInterval(beginIncluded,Double.POSITIVE_INFINITY,currentTriangle,outsideTriangles, insideTriangles);
+			splitInterval(beginIncluded,Double.POSITIVE_INFINITY,currentTriangle,outsideTriangles, insideTriangles);
 			// distribute inside and outside superior triangle from the end iso
 			for(TriMarkers insideTri : insideTriangles)
 			{
-				SplitInterval(Double.NEGATIVE_INFINITY,endExcluded,insideTri,outsideTriangles, intervalTriangles);
+				splitInterval(Double.NEGATIVE_INFINITY,endExcluded,insideTri,outsideTriangles, intervalTriangles);
 			}
 			return true;
 		}
@@ -512,7 +512,7 @@ public class ST_TriangleContouring implements CustomQuery {
 						for(Double endInterval : iso_lvls)
 						{
 							LinkedList<TriMarkers> triangleToDriver=new LinkedList<TriMarkers>();
-							if(SplitInterval(beginInterval,endInterval,currentTriangle,triangleToProcess, triangleToDriver))
+							if(splitInterval(beginInterval,endInterval,currentTriangle,triangleToProcess, triangleToDriver))
 							{
 								//triangleToProcess has been split. Then we can't use it with the next iso levels.
 								//We write to triangleToDriver the range triangles, then process the list while its not empty.

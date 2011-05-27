@@ -15,7 +15,7 @@ public class QueryQuadTree<index_t> implements QueryGeometryStructure<index_t> {
 	private Quadtree quad=new Quadtree();
 
 	@Override
-	public void AppendGeometry(Geometry newGeom, index_t externalId) {
+	public void appendGeometry(Geometry newGeom, index_t externalId) {
 		quad.insert(newGeom.getEnvelopeInternal(), new EnvelopeWithIndex<index_t>(newGeom.getEnvelopeInternal(), externalId));
 	}
 

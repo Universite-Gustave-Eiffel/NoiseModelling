@@ -75,7 +75,7 @@ public class LayerExtTriangle implements LayerDelaunay {
     /*
      * Change coordinate within a local interval
      */
-    private void Unitize()
+    private void unitize()
     {
     	Coordinate min=new Coordinate(this.vertices.get(0)),max=new Coordinate(this.vertices.get(0));
     	for(Coordinate pt : this.vertices)
@@ -101,7 +101,7 @@ public class LayerExtTriangle implements LayerDelaunay {
     		this.holes.set(idh, new Coordinate(v.x-unitize_translation_vec.x,v.y-unitize_translation_vec.y));
     	}
     }
-    private void CancelUnitize()
+    private void cancelUnitize()
     {
     	for(int idv=0;idv<this.vertices.size();idv++)
     	{
@@ -150,7 +150,7 @@ public class LayerExtTriangle implements LayerDelaunay {
                 file.delete();
         }
     }
-	private void SkipCommentLines(Scanner in)
+	private void skipCommentLines(Scanner in)
 	{
 		//while(in.findInLine("#(.*)")!=null)
 		while(!in.hasNextInt())
@@ -174,7 +174,7 @@ public class LayerExtTriangle implements LayerDelaunay {
 			throw new LayerDelaunayError(e.getMessage());
 		}
 		in.useLocale(Locale.US); // essential to read float values
-		SkipCommentLines(in);
+		skipCommentLines(in);
 	   	final int vsize=in.nextInt(); //read vertice count
     	in.nextInt(); //read dimension
     	in.nextInt(); //read third header
@@ -428,7 +428,7 @@ public class LayerExtTriangle implements LayerDelaunay {
 			//Convert splitted lineString into segments
 			//finalAddLineString();
 			//Translate vertices around center for precision
-			this.Unitize();
+			this.unitize();
 			///////////////////////////////////////////////////
 			//Write Polygon File
 			String inputroot=this.tempdir+File.separatorChar+prefix+"region"+delaunayIndex;
@@ -495,7 +495,7 @@ public class LayerExtTriangle implements LayerDelaunay {
 	        readOutputFiles(inputroot+"."+refineIndex+".node",inputroot+"."+refineIndex+".ele",inputroot+"."+refineIndex+".poly",neighFileName);
 			logger.info("Size of triangulation :"+triangles.size()+" faces.");
 			//Restore original coordinates
-			this.CancelUnitize();
+			this.cancelUnitize();
 			//Save mesh to refine the mesh later
 			String finalName=new String();
 			if(savePolyToRefine)

@@ -18,18 +18,18 @@ import org.gdms.sql.function.FunctionException;
 
 
 public class BR_EvalSourceV2 implements Function {
-	private Double GetNoiseLvl(Double base,Double adj,Double speed,Double speedBase)
+	private Double getNoiseLvl(Double base,Double adj,Double speed,Double speedBase)
 	{
 		return base+adj*Math.log(speed/speedBase);
 	}
-	private Double DbaToW(Double dBA){
+	private Double dbaToW(Double dBA){
 		return Math.pow(10.,dBA/10.);
 	}
-	private Double WToDba(Double W){
+	private Double wToDba(Double W){
 		return 10*Math.log10(W);
 	}
-	private Double SumDba(Double dBA1,Double dBA2){
-		return WToDba(DbaToW(dBA1)+DbaToW(dBA2));
+	private Double sumDba(Double dBA1,Double dBA2){
+		return wToDba(dbaToW(dBA1)+dbaToW(dBA2));
 	}
 	private double getVPl(double vvl,double speedmax,int type,int subtype) throws FunctionException
 	{
@@ -148,33 +148,33 @@ public class BR_EvalSourceV2 implements Function {
 			/////////////////////////
 			// Noise road/tire
 			//Use R2 surface
-			double vl_road_lvl=GetNoiseLvl(55.4,20.1,speed,90.);
-			double pl_road_lvl=GetNoiseLvl(63.4,20.,speed_pl,80.);
+			double vl_road_lvl=getNoiseLvl(55.4,20.1,speed,90.);
+			double pl_road_lvl=getNoiseLvl(63.4,20.,speed_pl,80.);
 			
 			/////////////////////////
 			// Noise motor
 			double vl_motor_lvl=0.;
 			if(speed<30.){
-				vl_motor_lvl=GetNoiseLvl(36.7,-10.,speed,90.);
+				vl_motor_lvl=getNoiseLvl(36.7,-10.,speed,90.);
 			}else if(speed<110.){
-				vl_motor_lvl=GetNoiseLvl(42.4,2.,speed,90.);
+				vl_motor_lvl=getNoiseLvl(42.4,2.,speed,90.);
 			}else{
-				vl_motor_lvl=GetNoiseLvl(40.7,21.3,speed,90.);				
+				vl_motor_lvl=getNoiseLvl(40.7,21.3,speed,90.);				
 			}
 			
 			double pl_motor_lvl=0.;
 			if(speed_pl<70.){
-				pl_motor_lvl=GetNoiseLvl(49.6,-10.,speed_pl,80.);
+				pl_motor_lvl=getNoiseLvl(49.6,-10.,speed_pl,80.);
 			}else{
-				pl_motor_lvl=GetNoiseLvl(50.4,3.,speed_pl,80.);
+				pl_motor_lvl=getNoiseLvl(50.4,3.,speed_pl,80.);
 			}
 			
 			//////////////////////////
 			// Energetic SUM
-			double vl_lvl=SumDba(vl_road_lvl,vl_motor_lvl)+10*Math.log10(vl_per_hour);
-			double pl_lvl=SumDba(pl_road_lvl,pl_motor_lvl)+10*Math.log10(pl_per_hour);
+			double vl_lvl=sumDba(vl_road_lvl,vl_motor_lvl)+10*Math.log10(vl_per_hour);
+			double pl_lvl=sumDba(pl_road_lvl,pl_motor_lvl)+10*Math.log10(pl_per_hour);
 
-			double sum_lvl=SumDba(vl_lvl,pl_lvl);
+			double sum_lvl=sumDba(vl_lvl,pl_lvl);
 			return ValueFactory.createValue(sum_lvl);
 		}
 	}

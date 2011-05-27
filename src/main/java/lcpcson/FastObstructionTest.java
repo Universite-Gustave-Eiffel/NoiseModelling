@@ -44,11 +44,11 @@ public class FastObstructionTest {
 		this.tmpdir = tmpdir;
 	}
 
-	public void AddGeometry(Geometry obstructionPoly)
+	public void addGeometry(Geometry obstructionPoly)
 	{
 		toUnite.add(obstructionPoly);		
 	}
-	private Geometry Merge(LinkedList<Geometry> toUnite, double bufferSize)
+	private Geometry merge(LinkedList<Geometry> toUnite, double bufferSize)
 	{
 		GeometryFactory geometryFactory = new GeometryFactory();
 		Geometry geoArray[]=new Geometry[toUnite.size()];
@@ -56,29 +56,29 @@ public class FastObstructionTest {
 		GeometryCollection polygonCollection = geometryFactory.createGeometryCollection(geoArray);
 		return polygonCollection.buffer(bufferSize,0,BufferParameters.CAP_SQUARE);
 	}
-	private void AddPolygon(Polygon newpoly,LayerDelaunay delaunayTool,Geometry boundingBox) throws LayerDelaunayError
+	private void addPolygon(Polygon newpoly,LayerDelaunay delaunayTool,Geometry boundingBox) throws LayerDelaunayError
 	{
 		delaunayTool.addPolygon(newpoly,true);		
 	}
-	private void ExplodeAndAddPolygon(Geometry intersectedGeometry,LayerDelaunay delaunayTool,Geometry boundingBox) throws LayerDelaunayError
+	private void explodeAndAddPolygon(Geometry intersectedGeometry,LayerDelaunay delaunayTool,Geometry boundingBox) throws LayerDelaunayError
 	{
 		if(intersectedGeometry instanceof MultiPolygon || intersectedGeometry instanceof GeometryCollection )
 		{
 			for (int j = 0; j < intersectedGeometry.getNumGeometries(); j++)
 			{
 				Geometry subGeom = intersectedGeometry.getGeometryN(j);
-				ExplodeAndAddPolygon(subGeom,delaunayTool,boundingBox);
+				explodeAndAddPolygon(subGeom,delaunayTool,boundingBox);
 			}
 		}else if(intersectedGeometry instanceof Polygon)
 		{
-			AddPolygon((Polygon)intersectedGeometry,delaunayTool,boundingBox);
+			addPolygon((Polygon)intersectedGeometry,delaunayTool,boundingBox);
 		}else if(intersectedGeometry instanceof LineString)
 		{
 			delaunayTool.addLineString((LineString)intersectedGeometry);
 		}
 	}
 	//feeding
-	public void FinishPolygonFeeding(Envelope boundingBoxFilter) throws LayerDelaunayError
+	public void finishPolygonFeeding(Envelope boundingBoxFilter) throws LayerDelaunayError
 	{
 		verticesOpenAngle=null;
 		LayerExtTriangle delaunayTool = new LayerExtTriangle(tmpdir);
@@ -92,11 +92,11 @@ public class FastObstructionTest {
 		delaunayTool.addPolygon(boundingBox, false);
 		
 		//Merge polygon
-		Geometry allbuilds=Merge(toUnite,0.);
+		Geometry allbuilds=merge(toUnite,0.);
 		toUnite.clear();
 		//Remove geometries out of the bounding box
 		allbuilds=allbuilds.intersection(boundingBox);
-		ExplodeAndAddPolygon(allbuilds,delaunayTool,boundingBox);
+		explodeAndAddPolygon(allbuilds,delaunayTool,boundingBox);
 		//Process delaunay Triangulation
 		delaunayTool.setMinAngle(0.);
 		delaunayTool.setRetrieveNeighbors(true);
@@ -117,7 +117,7 @@ public class FastObstructionTest {
 		{
 			final Coordinate[] triCoords={vertices.get(tri.getA()),vertices.get(tri.getB()),vertices.get(tri.getC()),vertices.get(tri.getA())};
 			Polygon newpoly=factory.createPolygon(factory.createLinearRing(triCoords), null);
-			triIndex.AppendGeometry(newpoly,triind);
+			triIndex.appendGeometry(newpoly,triind);
 			triind++;
 		}
 	}
@@ -128,7 +128,7 @@ public class FastObstructionTest {
 	 * @param propagationLine Propagation line
 	 * @return Next triangle to the specified direction, -1 if there is no triangle neighbor.
 	 */
-	private int GetNextTri(final int triIndex, final LineSegment propagationLine, HashSet<Integer> navigationHistory)
+	private int getNextTri(final int triIndex, final LineSegment propagationLine, HashSet<Integer> navigationHistory)
 	{
 		NonRobustLineIntersector linters=new NonRobustLineIntersector();
 		final Triangle tri=this.triVertices.get(triIndex);
@@ -284,7 +284,7 @@ public class FastObstructionTest {
 		return (u > (0.-epsilon)) && (v > (0.-epsilon)) && (u + v < (1.+epsilon));
 
 	}
-	Coordinate[] GetTriangle(int triIndex)
+	Coordinate[] getTriangle(int triIndex)
 	{
 		final Triangle tri=this.triVertices.get(triIndex);
 		Coordinate[] coords={this.vertices.get(tri.getA()),this.vertices.get(tri.getB()),this.vertices.get(tri.getC())};
@@ -297,10 +297,10 @@ public class FastObstructionTest {
 	 */
 	
 
-	private int GetTriangleIdByCoordinate(Coordinate pt)
+	private int getTriangleIdByCoordinate(Coordinate pt)
 	{
 		//Shortcut, test if the last found triangle contain this point, if not use the quadtree
-		Coordinate[] trit=GetTriangle(lastFountPointTriTest);
+		Coordinate[] trit=getTriangle(lastFountPointTriTest);
 		if(dotInTri(pt,trit[0],trit[1],trit[2])) {
                         return lastFountPointTriTest;
                 }
@@ -309,7 +309,7 @@ public class FastObstructionTest {
 		ArrayList<Integer> res=triIndex.query(new Envelope(ptEnv));
 		for(int triIndex : res)
 		{
-			Coordinate[] tri=GetTriangle(triIndex);
+			Coordinate[] tri=getTriangle(triIndex);
 			if(dotInTri(pt,tri[0],tri[1],tri[2]))
 			{
 				lastFountPointTriTest=triIndex;
@@ -325,7 +325,7 @@ public class FastObstructionTest {
 	 * @param maxAngle Maximum angle [0-2Pi]
 	 * @return List of corners within parameters range
 	 */
-	public ArrayList<Coordinate> GetWideAnglePoints(double minAngle, double maxAngle)
+	public ArrayList<Coordinate> getWideAnglePoints(double minAngle, double maxAngle)
 	{
 		ArrayList<Coordinate> wideAnglePts=new ArrayList<Coordinate>(vertices.size());
 		if(verticesOpenAngle==null)
@@ -367,10 +367,10 @@ public class FastObstructionTest {
 	 * @return List of segment
 	 * TODO return segment normal
 	 */
-	public LinkedList<LineSegment> GetLimitsInRange(double maxDist,Coordinate p1)
+	public LinkedList<LineSegment> getLimitsInRange(double maxDist,Coordinate p1)
 	{
 		LinkedList<LineSegment> walls=new LinkedList<LineSegment>();
-		int curTri=GetTriangleIdByCoordinate(p1);
+		int curTri=getTriangleIdByCoordinate(p1);
 		int nextTri=-1;
 		HashSet<Integer> navigationHistory=new HashSet<Integer>();	//List all triangles already processed
 		Stack<Integer> navigationNodes=new Stack<Integer>(); 		//List the current queue of triangles the process go through
@@ -384,7 +384,7 @@ public class FastObstructionTest {
 			{
 				if(!navigationHistory.contains(neighboors.get(idside)))
 				{
-					IntSegment segVerticesIndex=this.triVertices.get(curTri).GetSegment(idside);
+					IntSegment segVerticesIndex=this.triVertices.get(curTri).getSegment(idside);
 					LineSegment side=new LineSegment(this.vertices.get(segVerticesIndex.getA()),this.vertices.get(segVerticesIndex.getB()));
 					Coordinate closestPoint=side.closestPoint(p1);
 					if(closestPoint.distance(p1)<=maxDist)
@@ -412,19 +412,19 @@ public class FastObstructionTest {
 		}	
 		return walls;		
 	}
-	public boolean IsFreeField(Coordinate p1,Coordinate p2)
+	public boolean isFreeField(Coordinate p1,Coordinate p2)
 	{
 		LineSegment propaLine=new LineSegment(p1,p2);
-		int curTri=GetTriangleIdByCoordinate(p1);
+		int curTri=getTriangleIdByCoordinate(p1);
 		HashSet<Integer> navigationHistory=new HashSet<Integer>();
 		while(curTri!=-1)
 		{
 			navigationHistory.add(curTri);
-			Coordinate[] tri=GetTriangle(curTri);
+			Coordinate[] tri=getTriangle(curTri);
 			if(dotInTri(p2,tri[0],tri[1],tri[2])) {
                                 return true;
                         }
-			curTri=this.GetNextTri(curTri, propaLine,navigationHistory);
+			curTri=this.getNextTri(curTri, propaLine,navigationHistory);
 		}
 		return false;
 	}

@@ -51,7 +51,7 @@ public class GridIndexDebug {
 			{
 				final Coordinate[] triCoords={verts.get(tri.getA()),verts.get(tri.getB()),verts.get(tri.getC()),verts.get(tri.getA())};
 				Polygon newpoly=factory.createPolygon(factory.createLinearRing(triCoords), null);
-				tool.AppendGeometry(newpoly,geoid);			
+				tool.appendGeometry(newpoly,geoid);			
 				geoid++;
 			}
 			System.out.println("GridIndex FeedTime :"+(System.currentTimeMillis()-feedStart)+" ms");

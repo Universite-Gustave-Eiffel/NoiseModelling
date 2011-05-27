@@ -29,7 +29,7 @@ public class VerticesMerge implements CoordinateSequenceFilter {
 	private static final double EPSILON=1.;
 	private static final double DIST_MERGE=1.;
 	
-	public ArrayList<Coordinate> GetVertices()
+	public ArrayList<Coordinate> getVertices()
 	{
 		return vertices;
 	}

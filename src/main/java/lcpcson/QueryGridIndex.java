@@ -47,13 +47,13 @@ public class QueryGridIndex<index_t> implements QueryGeometryStructure<index_t> 
 		cellSizeJ=mainEnv.getWidth()/nbJ;
 	}
 	
-	private Envelope GetCellEnv(int i,int j)
+	private Envelope getCellEnv(int i,int j)
 	{
 		final double minx=mainEnv.getMinX()+cellSizeJ*j;
 		final double miny=mainEnv.getMinY()+cellSizeI*i;
 		return new Envelope(minx,minx+cellSizeJ,miny,miny+cellSizeI);
 	}
-	private void AddItem(int i,int j,index_t content)
+	private void addItem(int i,int j,index_t content)
 	{
 		int idcontent=grid[j+i*nbJ];
 		if(idcontent==-1)
@@ -64,7 +64,7 @@ public class QueryGridIndex<index_t> implements QueryGeometryStructure<index_t> 
 		}
 		gridContent.get(idcontent).add(content);
 	}
-	private int[] GetRange(Envelope geoEnv)
+	private int[] getRange(Envelope geoEnv)
 	{
 		//Compute index intervals from envelopes 
 		Coordinate mainCenter=mainEnv.centre();
@@ -99,11 +99,11 @@ public class QueryGridIndex<index_t> implements QueryGeometryStructure<index_t> 
 	}
         
         @Override
-	public void AppendGeometry(final Geometry newGeom,final index_t externalId)
+	public void appendGeometry(final Geometry newGeom,final index_t externalId)
 	{
 		//Compute index intervals from envelopes 
 	
-		int[] ranges= GetRange(newGeom.getEnvelopeInternal());
+		int[] ranges= getRange(newGeom.getEnvelopeInternal());
 		int minI=ranges[0],maxI=ranges[1],minJ=ranges[2],maxJ=ranges[3];
 		GeometryFactory factory=new GeometryFactory();
 		for(int i=minI;i<maxI;i++)
@@ -111,13 +111,13 @@ public class QueryGridIndex<index_t> implements QueryGeometryStructure<index_t> 
 			for(int j=minJ;j<maxJ;j++)
 			{
 				
-				Envelope cellEnv=GetCellEnv(i, j);
+				Envelope cellEnv=getCellEnv(i, j);
 				Polygon square=factory.createPolygon((LinearRing) EnvelopeUtil.toGeometry(cellEnv), null);
 				RectangleIntersects inter=new RectangleIntersects(square);
 				if(inter.intersects(newGeom))
 				{
 				
-					AddItem(i, j, externalId);
+					addItem(i, j, externalId);
 				}
 			}
 		}
@@ -126,7 +126,7 @@ public class QueryGridIndex<index_t> implements QueryGeometryStructure<index_t> 
         @Override
 	public ArrayList<index_t> query(Envelope queryEnv)
 	{
-		int[] ranges= GetRange(queryEnv);
+		int[] ranges= getRange(queryEnv);
 		int minI=ranges[0],maxI=ranges[1],minJ=ranges[2],maxJ=ranges[3];
 		ArrayList<index_t> querySet=new ArrayList<index_t>();
 		int cellsParsed=0;

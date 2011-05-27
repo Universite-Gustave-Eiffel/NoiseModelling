@@ -36,7 +36,7 @@ public class PropagationProcessDiskWriter implements Runnable {
 	  {
 		  return thread.isAlive();
 	  }
-	  public void StopWatchingStack()
+	  public void stopWatchingStack()
 	  {
 		  watchingStack=false;
 	  }

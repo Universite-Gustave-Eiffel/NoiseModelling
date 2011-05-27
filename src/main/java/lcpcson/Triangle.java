@@ -51,7 +51,7 @@ public class Triangle {
 	 * @param side
 	 * @return
 	 */
-	public IntSegment GetSegment(int side)
+	public IntSegment getSegment(int side)
 	{
 		switch (side) {
 			default:	
