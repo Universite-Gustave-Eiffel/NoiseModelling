@@ -14,9 +14,9 @@ import com.vividsolutions.jts.geom.Geometry;
  * @author N.Fortin J.Picaut (IFSTTAR 2011)
  */
  
-public interface QueryGeometryStructure<index_t> {
+public interface QueryGeometryStructure<T> {
 	
-	public void AppendGeometry(final Geometry newGeom,final index_t externalId);
-	public ArrayList<index_t> query(Envelope queryEnv);
+	void AppendGeometry(final Geometry newGeom,final T externalId);
+	ArrayList<T> query(Envelope queryEnv);
 
 }
