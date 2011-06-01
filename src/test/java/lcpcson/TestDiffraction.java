@@ -6,7 +6,7 @@ import com.vividsolutions.jts.geom.Coordinate;
 
 import junit.framework.TestCase;
 
-public class testDiffraction extends TestCase {
+public class TestDiffraction extends TestCase {
 	
 	static boolean isBarelyEqual(double v1,double v2)
 	{
