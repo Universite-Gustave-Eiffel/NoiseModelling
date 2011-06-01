@@ -1,8 +1,6 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>AcousMap</groupId>
-	<artifactId>AcousMap</artifactId>
 	<version>1.0.0</version>
         <properties>
                 <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -19,20 +17,21 @@
 			<artifactId>jts</artifactId>
 			<version>1.11</version>
 		</dependency>
-		<dependency>
-			<groupId>org.jdelaunay</groupId>
-			<artifactId>jdelaunay</artifactId>
-			<version>0.5</version>
-			<type>jar</type>
-			<scope>compile</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.orbisgis</groupId>
-			<artifactId>orbisgis-ui</artifactId>
-			<version>3.1-SNAPSHOT</version>
-			<type>jar</type>
-			<scope>compile</scope>
-		</dependency>
+	 <dependency>
+	  <groupId>org.gdms</groupId>
+	  <artifactId>gdms</artifactId>
+	  <version>1.6-SNAPSHOT</version>
+	 </dependency>
+	 <dependency>
+	  <groupId>org.jdelaunay</groupId>
+	  <artifactId>jdelaunay</artifactId>
+	  <version>0.5</version>
+	 </dependency>
+	 <dependency>
+	  <groupId>org.orbisgis</groupId>
+	  <artifactId>orbisgis-ui</artifactId>
+	  <version>3.1-SNAPSHOT</version>
+	 </dependency>
 	</dependencies>
         <build>
                 <plugins>
@@ -61,4 +60,8 @@
                         <url>sftp://irstv@www.orbisgis.org:/var/www/repo.orbisgis.org/htdocs</url>
                 </repository>
         </distributionManagement>
+    <packaging>jar</packaging>
+ <name>lcpcson</name>
+ <groupId>org.lcpcson</groupId>
+ <artifactId>lcpcson</artifactId>
 </project>
