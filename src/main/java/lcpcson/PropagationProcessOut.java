@@ -29,7 +29,7 @@ public class PropagationProcessOut {
 		super();
 		this.toDriver = toDriver;
 	}
-	public void addValues(Value... row)
+	public synchronized void addValues(Value... row)
 	{
 		ArrayList<Value> newArray=new ArrayList<Value>(row.length);
 		for(int i=0;i<row.length;i++)
@@ -38,16 +38,16 @@ public class PropagationProcessOut {
 		}
 		toDriver.push(newArray);
 	}
-	public long getTotalBuildingObstructionTest() {
+	public synchronized long getTotalBuildingObstructionTest() {
 		return totalBuildingObstructionTest;
 	}
-	public long getTotalGridIndexQuery() {
+	public synchronized long getTotalGridIndexQuery() {
 		return totalGridIndexQuery;
 	}
-	public long getNb_couple_receiver_src() {
+	public synchronized long getNb_couple_receiver_src() {
 		return nb_couple_receiver_src;
 	}
-	public long getNb_obstr_test() {
+	public synchronized long getNb_obstr_test() {
 		return nb_obstr_test;
 	}
 	public synchronized void appendSourceCount(int srcCount)
@@ -70,7 +70,7 @@ public class PropagationProcessOut {
 	{
 		totalReflexionTime+=reflTime;
 	}
-	public long getTotalReflexionTime() {
+	public synchronized long getTotalReflexionTime() {
 		return totalReflexionTime;
 	}
 	public synchronized void log(String str)
@@ -84,7 +84,7 @@ public class PropagationProcessOut {
 	{
 		cellComputed+=1;
 	}
-	public long getCellComputed()
+	public synchronized long getCellComputed()
 	{
 		return cellComputed;
 	}

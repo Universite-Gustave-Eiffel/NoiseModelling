@@ -26,7 +26,7 @@ public class ProgressionProcess {
 	 * 
 	 * @return The progression on this process [0-1]
 	 */
-	public double getProcessProgression()
+	public synchronized double getProcessProgression()
 	{
 		return subprocess_done/subprocess_size;
 	}
@@ -34,7 +34,7 @@ public class ProgressionProcess {
 	 * 
 	 * @return The main progression value [0-1]
 	 */
-	public double getMainProgression()
+	public synchronized double getMainProgression()
 	{
 		ProgressionProcess prog=this;
 		while(prog.parentProcess!=null) {
@@ -43,7 +43,7 @@ public class ProgressionProcess {
 		return prog.getProcessProgression();
 	}
         @Override
-	protected void finalize() throws Throwable
+	protected synchronized void finalize() throws Throwable
 	{
 	  //do finalization here
 	  if(this.parentProcess!=null)
@@ -60,7 +60,7 @@ public class ProgressionProcess {
 	 * @param subprocess_size Sub Process estimated work item (sub-sub process count)
 	 * @return
 	 */
-	public ProgressionProcess nextSubProcess(long subprocess_size)
+	public synchronized ProgressionProcess nextSubProcess(long subprocess_size)
 	{
 		return new ProgressionProcess(this,subprocess_size);
 	}
