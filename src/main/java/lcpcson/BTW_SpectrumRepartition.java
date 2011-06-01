@@ -64,7 +64,7 @@ public class BTW_SpectrumRepartition implements Function {
 	}
         @Override
 	public String getName() {
-		return "BR_SpectrumRepartition";
+		return "BTW_SpectrumRepartition";
 	}
 
         @Override
@@ -91,7 +91,7 @@ public class BTW_SpectrumRepartition implements Function {
 
         @Override
 	public String getSqlOrder() {
-		return "select BR_SpectrumRepartition(100,1,dbA) as dbA_100 from myTable;";
+		return "select BTW_SpectrumRepartition(100,1,dbA) as dbA_100 from myTable;";
 	}
 
 	@Override
