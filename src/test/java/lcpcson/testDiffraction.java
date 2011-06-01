@@ -24,7 +24,7 @@ public class testDiffraction extends TestCase {
 		for(int rangeid=0;rangeid<ccw_values.length-1;rangeid+=2)
 		{
 			verticesAngle.add(new ArrayList<Double>());
-     		FastObstructionTest.UpdateMinMax(0, new Coordinate(0,0), new Coordinate(Math.cos(ccw_values[rangeid]),Math.sin(ccw_values[rangeid])), new Coordinate(Math.cos(ccw_values[rangeid+1]),Math.sin(ccw_values[rangeid+1])), verticesAngle);
+     		FastObstructionTest.updateMinMax(0, new Coordinate(0,0), new Coordinate(Math.cos(ccw_values[rangeid]),Math.sin(ccw_values[rangeid])), new Coordinate(Math.cos(ccw_values[rangeid+1]),Math.sin(ccw_values[rangeid+1])), verticesAngle);
 		}	
 		assertShortcut=verticesAngle.get(0);
 		assertTrue("Merging of open angle failed, too many elements !", assertShortcut.size()==2);

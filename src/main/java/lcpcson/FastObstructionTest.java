@@ -8,7 +8,9 @@ package lcpcson;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Stack;
+
 import org.grap.utilities.EnvelopeUtil;
 
 import com.vividsolutions.jts.algorithm.Angle;
@@ -25,9 +27,12 @@ import com.vividsolutions.jts.geom.LinearRing;
 import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Polygon;
 import com.vividsolutions.jts.operation.buffer.BufferParameters;
-
+/**
+ * FastObstructionTest is a Delaunay Structure to speed up the search of visibility test.
+ * TODO enable add and query of geometry object (other than fitting elements) into the delaunay triangulation. To do something called visibility culling.
+ */
 public class FastObstructionTest {
-	double epsilon = 1e-12;
+	private static double epsilon = 1e-12;
 	private String tmpdir;
 	private ArrayList<Triangle> triVertices;
 	private ArrayList<Coordinate> vertices;
@@ -35,8 +40,8 @@ public class FastObstructionTest {
 	private LinkedList<Geometry> toUnite=new LinkedList<Geometry>(); //Polygon union
 	private QueryGridIndex<Integer> triIndex=null;
 	private int lastFountPointTriTest=0;
-	private ArrayList<Double> verticesOpenAngle=null;
- 
+	private ArrayList<Float> verticesOpenAngle=null;
+	private ArrayList<Coordinate> verticesOpenAngleTranslated=null; /*<Open angle position translated by epsilon in open angle */
 	
 	
 	public FastObstructionTest(String tmpdir) {
@@ -84,9 +89,10 @@ public class FastObstructionTest {
 		LayerExtTriangle delaunayTool = new LayerExtTriangle(tmpdir);
 		//Insert the main rectangle
 		Geometry linearRing=EnvelopeUtil.toGeometry(boundingBoxFilter);
-		if ( !(linearRing instanceof LinearRing)) {
-                        return;
-                }
+		if ( !(linearRing instanceof LinearRing))
+		{
+			return;
+		}
 		GeometryFactory factory = new  GeometryFactory();
 		Polygon boundingBox=new Polygon((LinearRing)linearRing, null, factory);
 		delaunayTool.addPolygon(boundingBox, false);
@@ -245,12 +251,12 @@ public class FastObstructionTest {
 			}
 		}	
 		
-		if(nearestIntersectionSide!=-1) {
-                        return this.triNeighbors.get(triIndex).get(nearestIntersectionSide);
-                }
-		else {
-                        return -1;
-                }
+		if(nearestIntersectionSide!=-1)
+		{
+			return this.triNeighbors.get(triIndex).get(nearestIntersectionSide);
+		}else{
+			return -1;
+		}
 	}
 
 	/**
@@ -301,10 +307,10 @@ public class FastObstructionTest {
 	{
 		//Shortcut, test if the last found triangle contain this point, if not use the quadtree
 		Coordinate[] trit=getTriangle(lastFountPointTriTest);
-		if(dotInTri(pt,trit[0],trit[1],trit[2])) {
-                        return lastFountPointTriTest;
-                }
-
+		if(dotInTri(pt,trit[0],trit[1],trit[2]))
+		{
+			return lastFountPointTriTest;
+		}
 		Envelope ptEnv=new Envelope(pt);
 		ArrayList<Integer> res=triIndex.query(new Envelope(ptEnv));
 		for(int triIndex : res)
@@ -319,42 +325,138 @@ public class FastObstructionTest {
 			
 		return -1;
 	}
+	
+	
+
+	/**
+	 * Add open angle to verticesAngle array (merge with existing open angle if exists) 
+	 * @param vertexId Index of vertex in the verticesAngle array 
+	 * @param vertexCoordinate Coordinate of the vertex
+	 * @param left CCW Neighbor 1 of vertex (open angle)
+	 * @param right CCW Neighbor 2 of vertex (open angle)
+	 * @param verticesAngle Array of Array of open angle
+	 */
+	public static void updateMinMax(int vertexId,Coordinate vertexCoordinate,Coordinate left,Coordinate right,ArrayList<ArrayList<Double>> verticesAngle)
+	{
+		ArrayList<Double> curVertex=verticesAngle.get(vertexId);
+		Coordinate refPosition=new Coordinate(vertexCoordinate.x+1,vertexCoordinate.y);
+		double ccw1=(float)Angle.angleBetweenOriented(refPosition,vertexCoordinate,left);
+		double ccw2=(float)Angle.angleBetweenOriented(refPosition,vertexCoordinate,right);
+		//Iterate over the open angle array and find something ~ equal to ccw1/ccw2 angle
+		boolean inserted=false;
+		//Update existing angle ranges
+		boolean doNewLoop=true;
+		while(doNewLoop)
+		{
+			doNewLoop=false;
+			for(int idrange=0;idrange<curVertex.size()-1;idrange+=2)
+			{
+				if(curVertex.get(idrange).compareTo(ccw2)==0)
+				{
+					inserted=true;
+					if(curVertex.size()>2)
+					{
+						//Remove merged element and reloop
+						doNewLoop=true;
+						inserted=false;
+						ccw2=curVertex.get(idrange+1);
+						curVertex.remove(idrange);
+						curVertex.remove(idrange);
+					}else{
+						curVertex.set(idrange,ccw1);
+					}	
+					break;
+				}else if(curVertex.get(idrange+1).compareTo(ccw1)==0)
+				{
+					inserted=true;
+					if(curVertex.size()>2)
+					{
+						//Remove merged element and reloop
+						doNewLoop=true;
+						inserted=false;
+						ccw1=curVertex.get(idrange);
+						curVertex.remove(idrange);
+						curVertex.remove(idrange);
+					}else{
+						curVertex.set(idrange+1,ccw2);						
+					}
+					break;
+				}
+			}
+		}
+		//Angles not contiguous
+		if(!inserted)
+		{
+			curVertex.add(ccw1);
+			curVertex.add(ccw2);
+		}
+	}
 	/**
 	 * 
 	 * @param minAngle Minimum angle [0-2Pi]
 	 * @param maxAngle Maximum angle [0-2Pi]
 	 * @return List of corners within parameters range
 	 */
-	public ArrayList<Coordinate> getWideAnglePoints(double minAngle, double maxAngle)
+	public List<Coordinate> getWideAnglePoints(double minAngle, double maxAngle)
 	{
-		ArrayList<Coordinate> wideAnglePts=new ArrayList<Coordinate>(vertices.size());
+		List<Coordinate> wideAnglePts=new ArrayList<Coordinate>(vertices.size());
 		if(verticesOpenAngle==null)
 		{
-			verticesOpenAngle=new ArrayList<Double>(vertices.size()); //Reserve size
+			double transEpsilon=0.01;
+			verticesOpenAngle=new ArrayList<Float>(vertices.size()); //Reserve size
+			verticesOpenAngleTranslated=new ArrayList<Coordinate>(vertices.size());
+			//Vertex open angle. For each vertex [ccwmin,ccwmax,ccwmin,ccwmax,..]
+			ArrayList<ArrayList<Double>> verticesOpenAnglesTuples=new ArrayList<ArrayList<Double>>(vertices.size());
 			for(int idvert=0;idvert<vertices.size();idvert++)
 			{
-				verticesOpenAngle.add(0.);
+				verticesOpenAngle.add(0.f);
+				verticesOpenAnglesTuples.add(new ArrayList<Double>());
 			}
+			int triId=0;
 			for(Triangle tri : this.triVertices)
 			{
 				//Compute angle at each corner, then add to vertices angle array
 				Coordinate triA=vertices.get(tri.getA());
 				Coordinate triB=vertices.get(tri.getB());
 				Coordinate triC=vertices.get(tri.getC());
-				//Add A vertex angle
-				verticesOpenAngle.set(tri.getA(),verticesOpenAngle.get(tri.getA())+Angle.angleBetween(triB,triA,triC));
+				//Add A vertex min/max angle
+				updateMinMax(tri.getA(),triA,triB,triC,verticesOpenAnglesTuples);
+				verticesOpenAngle.set(tri.getA(),(float)(verticesOpenAngle.get(tri.getA())+Angle.angleBetween(triB,triA,triC)));
 				//Add B vertex angle
-				verticesOpenAngle.set(tri.getB(),verticesOpenAngle.get(tri.getB())+Angle.angleBetween(triA,triB,triC));
-				//Add A vertex angle
-				verticesOpenAngle.set(tri.getC(),verticesOpenAngle.get(tri.getC())+Angle.angleBetween(triB,triC,triA));
+				updateMinMax(tri.getB(),triB,triC,triA,verticesOpenAnglesTuples);
+				verticesOpenAngle.set(tri.getB(),(float)(verticesOpenAngle.get(tri.getB())+Angle.angleBetween(triA,triB,triC)));
+				//Add C vertex angle
+				updateMinMax(tri.getC(),triC,triA,triB,verticesOpenAnglesTuples);
+				verticesOpenAngle.set(tri.getC(),(float)(verticesOpenAngle.get(tri.getC())+Angle.angleBetween(triB,triC,triA)));
+				triId++;
+			}
+
+			for(int idvert=0;idvert<vertices.size();idvert++)
+			{
+				//Compute median angle of open angle point
+				ArrayList<Double> curvert=verticesOpenAnglesTuples.get(idvert);
+				Coordinate curVert=vertices.get(idvert);
+				if(curvert.size()==2)
+				{
+					double ccw1=curvert.get(0);
+					double ccw2=curvert.get(1);
+					if(ccw1>ccw2)
+					{
+						ccw1=ccw1-(2*Math.PI);						
+					}
+					double midAngle=((ccw2-ccw1)/2.)+ccw1;
+					verticesOpenAngleTranslated.add(new Coordinate(curVert.x+(Math.cos(midAngle)*transEpsilon),curVert.y+(Math.sin(midAngle)*transEpsilon)));
+				}else{
+					verticesOpenAngleTranslated.add(curVert);	
+				}
 			}
 		}
 		int idvert=0;
-		for(Double angleVertex : verticesOpenAngle)
+		for(Float angleVertex : verticesOpenAngle)
 		{
 			if(angleVertex>=minAngle && angleVertex<=maxAngle)
 			{
-				wideAnglePts.add(vertices.get(idvert));
+				wideAnglePts.add(verticesOpenAngleTranslated.get(idvert));
 			}	
 			idvert++;
 		}		
@@ -421,9 +523,10 @@ public class FastObstructionTest {
 		{
 			navigationHistory.add(curTri);
 			Coordinate[] tri=getTriangle(curTri);
-			if(dotInTri(p2,tri[0],tri[1],tri[2])) {
-                                return true;
-                        }
+			if(dotInTri(p2,tri[0],tri[1],tri[2]))
+			{
+				return true;
+			}
 			curTri=this.getNextTri(curTri, propaLine,navigationHistory);
 		}
 		return false;
