@@ -35,53 +35,52 @@ import com.vividsolutions.jts.geom.CoordinateSequenceFilter;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
 
-
 public class ST_SetNearestZ implements CustomQuery {
 
-        @Override
+	@Override
 	public String getName() {
 		return "ST_SetNearestZ";
 	}
 
-        @Override
+	@Override
 	public String getSqlOrder() {
 		return "select ST_SetNearestZ( left_table.geomToUpdate, right_table.geomSource, MaximumDistance ) from left_table,right_table;";
 	}
 
-        @Override
+	@Override
 	public String getDescription() {
 		return "Add or Update the Z information from the nearest geometry, destroy the geom line if there is no source information under the maximum distance parameter.";
 	}
 
-        @Override
+	@Override
 	public ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables,
 			Value[] values, IProgressMonitor pm) throws ExecutionException {
 		try {
-			final double maxDist=values[2].getAsDouble();
-			//Declare source and Destination tables
+			final double maxDist = values[2].getAsDouble();
+			// Declare source and Destination tables
 			final SpatialDataSourceDecorator sds = new SpatialDataSourceDecorator(
 					tables[0]);
 			final SpatialDataSourceDecorator sdsSource = new SpatialDataSourceDecorator(
 					tables[1]);
-			//Open source and Destination tables			
+			// Open source and Destination tables
 			sds.open();
 			sdsSource.open();
 
-			//Set defaultGeom as the geom set by the user
+			// Set defaultGeom as the geom set by the user
 			final String spatialUpdateFieldName = values[0].toString();
 			final String spatialSourceFieldName = values[1].toString();
 			sds.setDefaultGeometry(spatialUpdateFieldName);
 			sdsSource.setDefaultGeometry(spatialSourceFieldName);
 			final int spatialFieldIndex = sds.getSpatialFieldIndex();
-			
-			
-			final DiskBufferDriver driver = new DiskBufferDriver(dsf, sds.getMetadata());
+
+			final DiskBufferDriver driver = new DiskBufferDriver(dsf,
+					sds.getMetadata());
 
 			final long rowCount = sds.getRowCount();
 			final long rowSourceCount = sdsSource.getRowCount();
-			//First Loop
-			//Build QuadTree from Source Geometry
-			Quadtree quadtree= new Quadtree();
+			// First Loop
+			// Build QuadTree from Source Geometry
+			Quadtree quadtree = new Quadtree();
 			for (long rowIndex = 0; rowIndex < rowSourceCount; rowIndex++) {
 
 				if (rowIndex / 50 == rowIndex / 50.0) {
@@ -92,11 +91,14 @@ public class ST_SetNearestZ implements CustomQuery {
 					}
 				}
 				final Geometry geometry = sdsSource.getGeometry(rowIndex);
-				quadtree.insert(geometry.getEnvelopeInternal(),new EnvelopeWithIndex<Long>(geometry.getEnvelopeInternal(),rowIndex));
+				quadtree.insert(
+						geometry.getEnvelopeInternal(),
+						new EnvelopeWithIndex<Long>(geometry
+								.getEnvelopeInternal(), rowIndex));
 			}
 
-			//Second Loop
-			//Appends Rows With modified Z values
+			// Second Loop
+			// Appends Rows With modified Z values
 			for (long rowIndex = 0; rowIndex < rowCount; rowIndex++) {
 
 				if (rowIndex / 50 == rowIndex / 50.0) {
@@ -107,22 +109,28 @@ public class ST_SetNearestZ implements CustomQuery {
 					}
 				}
 
-				//Find the nearest Z information within the maxDist
+				// Find the nearest Z information within the maxDist
 				final Geometry geometry = sds.getGeometry(rowIndex);
-				QuadtreeZFilter zFilter = new QuadtreeZFilter(quadtree,maxDist,sdsSource,geometry.getEnvelopeInternal());
+				QuadtreeZFilter zFilter = new QuadtreeZFilter(quadtree,
+						maxDist, sdsSource, geometry.getEnvelopeInternal());
 				geometry.apply(zFilter);
-			
-				
-				if(!zFilter.isOneCoordOutOfSource()) //We skip this line if there is no information for at least one of the destination coordinates
+
+				if (!zFilter.isOneCoordOutOfSource()) // We skip this line if
+														// there is no
+														// information for at
+														// least one of the
+														// destination
+														// coordinates
 				{
 					final Value[] fieldsValues = sds.getRow(rowIndex);
-					//If we found something within MaximumDistance units.
+					// If we found something within MaximumDistance units.
 					final Value[] newValues = new Value[fieldsValues.length];
 					System.arraycopy(fieldsValues, 0, newValues, 0,
 							fieldsValues.length);
-					//Update the geom
-					newValues[spatialFieldIndex]=ValueFactory.createValue(geometry);
-					//Append row
+					// Update the geom
+					newValues[spatialFieldIndex] = ValueFactory
+							.createValue(geometry);
+					// Append row
 					driver.addValues(newValues);
 				}
 			}
@@ -136,88 +144,95 @@ public class ST_SetNearestZ implements CustomQuery {
 			throw new ExecutionException(e);
 		}
 	}
+
 	private class QuadtreeZFilter implements CoordinateSequenceFilter {
 		private boolean done = false;
 		private final double maxDist;
-		private boolean outOfBoundsDestinationGeomtry = false; //If one coordinates of the geometry did not find a source Z coordinate
-		private ArrayList<Coordinate> nearestCoordinates=new ArrayList<Coordinate>();
-		
+		private boolean outOfBoundsDestinationGeomtry = false; // If one
+																// coordinates
+																// of the
+																// geometry did
+																// not find a
+																// source Z
+																// coordinate
+		private ArrayList<Coordinate> nearestCoordinates = new ArrayList<Coordinate>();
+
 		@SuppressWarnings("unchecked")
-		public QuadtreeZFilter(Quadtree quadtree,final double maxDist,SpatialDataSourceDecorator sdsSource,Envelope geomArea) {
+		public QuadtreeZFilter(Quadtree quadtree, final double maxDist,
+				SpatialDataSourceDecorator sdsSource, Envelope geomArea) {
 			super();
-			this.maxDist=maxDist;
-			//Find coordinates under the distance of the geom
+			this.maxDist = maxDist;
+			// Find coordinates under the distance of the geom
 			geomArea.expandBy(maxDist);
 			List<EnvelopeWithIndex<Long>> list = quadtree.query(geomArea);
 			for (EnvelopeWithIndex<Long> env_with_index : list) {
 
 				try {
 					if ((env_with_index.intersects(geomArea))) {
-						Geometry geometry = sdsSource.getGeometry(env_with_index.getId());
-						Coordinate[] points=geometry.getCoordinates();
+						Geometry geometry = sdsSource
+								.getGeometry(env_with_index.getId());
+						Coordinate[] points = geometry.getCoordinates();
 						for (int ptindex = 0; ptindex < points.length; ptindex++) {
-							Coordinate coord=points[ptindex];
-							if(geomArea.contains(coord)) {
-                                                                nearestCoordinates.add(coord);
-                                                        }
+							Coordinate coord = points[ptindex];
+							if (geomArea.contains(coord)) {
+								nearestCoordinates.add(coord);
+							}
 						}
 					}
 				} catch (DriverException e) {
 					e.printStackTrace();
-					done=true;
+					done = true;
 				}
 			}
-			if(list.isEmpty() || nearestCoordinates.isEmpty()){
-				//There is no Z information in this area. We skip this line
-				outOfBoundsDestinationGeomtry=true;
-				done=true;
+			if (list.isEmpty() || nearestCoordinates.isEmpty()) {
+				// There is no Z information in this area. We skip this line
+				outOfBoundsDestinationGeomtry = true;
+				done = true;
 			}
 		}
-		
+
 		/**
-		 * If one of the coordinate to update did not find the nearest Z coordinate 
-		 * this method return True
+		 * If one of the coordinate to update did not find the nearest Z
+		 * coordinate this method return True
 		 */
-		public boolean isOneCoordOutOfSource()
-		{
+		public boolean isOneCoordOutOfSource() {
 			return outOfBoundsDestinationGeomtry;
 		}
 
-
-                @Override
+		@Override
 		public void filter(CoordinateSequence seq, int i) {
 			double x = seq.getX(i);
 			double y = seq.getY(i);
-			Coordinate seq_pt=seq.getCoordinate(i);
+			Coordinate seq_pt = seq.getCoordinate(i);
 			seq.setOrdinate(i, 0, x);
 			seq.setOrdinate(i, 1, y);
 
-			//Keep only nodes that are inside the area
-			//and keep the nearest
-			Envelope area = new Envelope(x-maxDist,x+maxDist,y-maxDist,y+maxDist);
-			boolean isFound=false;
-			double nearest_z=0;
-			double nearest_dist=2*maxDist;
+			// Keep only nodes that are inside the area
+			// and keep the nearest
+			Envelope area = new Envelope(x - maxDist, x + maxDist, y - maxDist,
+					y + maxDist);
+			boolean isFound = false;
+			double nearest_z = 0;
+			double nearest_dist = 2 * maxDist;
 			for (Coordinate coord : nearestCoordinates) {
-					if (area.contains(coord)) {
-						double curDist=coord.distance(seq_pt);
-						if(curDist<nearest_dist && curDist<maxDist && coord.z>-99)
-						{
-							nearest_dist=curDist;
-							nearest_z=coord.z;
-							isFound=true;
-						}
+				if (area.contains(coord)) {
+					double curDist = coord.distance(seq_pt);
+					if (curDist < nearest_dist && curDist < maxDist
+							&& coord.z > -99) {
+						nearest_dist = curDist;
+						nearest_z = coord.z;
+						isFound = true;
 					}
+				}
 
 			}
-			if(isFound) {
-                                seq.setOrdinate(i, 2, nearest_z);
-                        }
-			else {
-                                outOfBoundsDestinationGeomtry=true;
-                        }
+			if (isFound) {
+				seq.setOrdinate(i, 2, nearest_z);
+			} else {
+				outOfBoundsDestinationGeomtry = true;
+			}
 
-			if (i == seq.size()-1) {
+			if (i == seq.size() - 1) {
 				done = true;
 			}
 		}
@@ -232,7 +247,8 @@ public class ST_SetNearestZ implements CustomQuery {
 			return done;
 		}
 	}
-        @Override
+
+	@Override
 	public Metadata getMetadata(Metadata[] tables) throws DriverException {
 		final Metadata metadata = tables[0];
 		// we don't want the resulting Metadata to be constrained !
@@ -248,13 +264,15 @@ public class ST_SetNearestZ implements CustomQuery {
 		return new DefaultMetadata(fieldsTypes, fieldsNames);
 	}
 
-        @Override
+	@Override
 	public TableDefinition[] getTablesDefinitions() {
-		return new TableDefinition[] { TableDefinition.GEOMETRY,TableDefinition.GEOMETRY };
+		return new TableDefinition[] { TableDefinition.GEOMETRY,
+				TableDefinition.GEOMETRY };
 	}
 
-        @Override
+	@Override
 	public Arguments[] getFunctionArguments() {
-		return new Arguments[] { new Arguments(Argument.GEOMETRY,Argument.GEOMETRY,Argument.NUMERIC) };
+		return new Arguments[] { new Arguments(Argument.GEOMETRY,
+				Argument.GEOMETRY, Argument.NUMERIC) };
 	}
 }

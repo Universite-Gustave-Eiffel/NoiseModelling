@@ -66,22 +66,22 @@ public class Log10 implements Function {
 		}
 	}
 
-        @Override
+	@Override
 	public String getName() {
 		return "Log10";
 	}
 
-        @Override
+	@Override
 	public boolean isAggregate() {
 		return false;
 	}
 
-        @Override
+	@Override
 	public Type getType(Type[] types) {
 		return TypeFactory.createType(Type.DOUBLE);
 	}
 
-        @Override
+	@Override
 	public Arguments[] getFunctionArguments() {
 		return new Arguments[] { new Arguments(Argument.NUMERIC) };
 	}
@@ -91,12 +91,12 @@ public class Log10 implements Function {
 		FunctionValidator.failIfNotNumeric(this, argumentsTypes[0]);
 	}
 
-        @Override
+	@Override
 	public String getDescription() {
 		return "Returns the base 10 logarithm of a double value";
 	}
 
-        @Override
+	@Override
 	public String getSqlOrder() {
 		return "select Log10(myNumericField) from myTable;";
 	}

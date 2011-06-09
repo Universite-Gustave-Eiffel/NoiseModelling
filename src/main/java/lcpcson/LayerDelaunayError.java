@@ -1,15 +1,14 @@
 package lcpcson;
+
 /***********************************
  * ANR EvalPDU
  * IFSTTAR 11_05_2011
  * @author Nicolas FORTIN, Judicaël PICAUT
  ***********************************/
 
-
 /**
  * Throwed delaunay error
  */
-
 
 public class LayerDelaunayError extends Throwable {
 	private static final long serialVersionUID = 1L;
@@ -19,7 +18,7 @@ public class LayerDelaunayError extends Throwable {
 
 	public LayerDelaunayError(String ErrorMsg) {
 		super();
-		errorMessage=ErrorMsg;
+		errorMessage = ErrorMsg;
 	}
 
 	/*

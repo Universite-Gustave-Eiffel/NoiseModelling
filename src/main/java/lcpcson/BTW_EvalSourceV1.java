@@ -19,48 +19,50 @@ import org.gdms.sql.function.FunctionException;
 public class BTW_EvalSourceV1 implements Function {
 
 	@Override
-	public Value evaluate(DataSourceFactory dsf, Value... args) throws FunctionException {
-		if (args.length!=2) {
+	public Value evaluate(DataSourceFactory dsf, Value... args)
+			throws FunctionException {
+		if (args.length != 2) {
 			return ValueFactory.createNullValue();
 		} else {
 			final double speed = args[0].getAsDouble();
 			final int tw_per_hour = args[1].getAsInt();
-			
-			/////////////////////////
+
+			// ///////////////////////
 			// Noise Tramway
-			double tw_lvl=50+2.*Math.log(speed/30.)+10*Math.log10(tw_per_hour);
+			double tw_lvl = 50 + 2. * Math.log(speed / 30.) + 10
+					* Math.log10(tw_per_hour);
 
 			return ValueFactory.createValue(tw_lvl);
 		}
 	}
 
-        @Override
+	@Override
 	public String getName() {
 		return "BTW_EvalSourceV1";
 	}
 
-        @Override
+	@Override
 	public boolean isAggregate() {
 		return false;
 	}
 
-        @Override
+	@Override
 	public Type getType(Type[] types) {
 		return TypeFactory.createType(Type.DOUBLE);
 	}
 
-        @Override
+	@Override
 	public Arguments[] getFunctionArguments() {
 		return new Arguments[] { new Arguments(Argument.NUMERIC,
 				Argument.NUMERIC) };
 	}
 
-        @Override
+	@Override
 	public String getDescription() {
 		return "Return the dB(A) value corresponding to speed,tramway by hour parameters.";
 	}
 
-        @Override
+	@Override
 	public String getSqlOrder() {
 		return "select BTW_EvalSourceV1(loadSpeed,tramway_count) from myTable;";
 	}
