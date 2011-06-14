@@ -1,4 +1,4 @@
-package lcpcson;
+package org.noisemap.plugin;
 
 /***********************************
  * ANR EvalPDU
@@ -6,11 +6,25 @@ package lcpcson;
  * @author Nicolas FORTIN, Judicaël PICAUT
  ***********************************/
 
+import org.noisemap.core.BR_EvalSourceV1;
+import org.noisemap.core.BR_EvalSourceV2;
+import org.noisemap.core.BR_EvalSourceV3;
+import org.noisemap.core.BR_EvalSourceV4;
+import org.noisemap.core.BR_SpectrumRepartition;
+import org.noisemap.core.BR_TriGrid;
+import org.noisemap.core.BTW_EvalSourceV1;
+import org.noisemap.core.BTW_SpectrumRepartition;
+import org.noisemap.core.Log10;
+import org.noisemap.core.ST_SetNearestGeometryId;
+import org.noisemap.core.ST_SetNearestZ;
+import org.noisemap.core.ST_SplitLineInPoints;
+import org.noisemap.core.ST_SplitSegment;
+import org.noisemap.core.ST_TriangleContouring;
 import org.gdms.sql.function.math.Power;
 import org.orbisgis.core.ui.pluginSystem.Extension;
 import org.orbisgis.core.ui.pluginSystem.PlugInContext;
 
-public class LcpcSonExtension extends Extension {
+public class NoiseMapExtension extends Extension {
 
 	public void initialize(PlugInContext context) throws Exception {
 		context.getFeatureInstaller()

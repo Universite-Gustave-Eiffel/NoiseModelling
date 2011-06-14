@@ -4,7 +4,7 @@
  * @author Nicolas FORTIN, Judicaël PICAUT
  ***********************************/
 
-package lcpcson;
+package org.noisemap.core;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -575,8 +575,7 @@ public class BR_TriGrid implements CustomQuery {
 
 			for (int cellI = 0; cellI < gridDim; cellI++) {
 				for (int cellJ = 0; cellJ < gridDim; cellJ++) {
-					FastObstructionTest freeFieldFinder = new FastObstructionTest(
-							tmpdir);
+					FastObstructionTest freeFieldFinder = new FastObstructionTest();
 					int ij = cellI * gridDim + cellJ;
 					logger.info("Begin processing of cell " + cellI + ","
 							+ cellJ + " of the " + gridDim + "x" + gridDim

@@ -1,4 +1,4 @@
-package lcpcson;
+package org.noisemap.core;
 
 /***********************************
  * ANR EvalPDU
@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Stack;
 
 import org.apache.log4j.Logger;
 import org.jdelaunay.delaunay.ConstrainedMesh;
@@ -18,6 +19,7 @@ import org.jdelaunay.delaunay.DPoint;
 import org.jdelaunay.delaunay.DTriangle;
 import org.jdelaunay.delaunay.DelaunayError;
 
+import com.vividsolutions.jts.algorithm.CGAlgorithms;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.CoordinateSequence;
 import com.vividsolutions.jts.geom.CoordinateSequenceFilter;
@@ -31,10 +33,35 @@ public class LayerJDelaunay implements LayerDelaunay {
 			.getName());
 	private List<Coordinate> vertices = new ArrayList<Coordinate>();
 	private ArrayList<DEdge> constraintEdge = new ArrayList<DEdge>();
-	ArrayList<Triangle> triangles = new ArrayList<Triangle>();
+	private LinkedList<DPoint> ptToInsert = new LinkedList<DPoint>();
+	private List<Coordinate> holes = new LinkedList<Coordinate>();
+	
+	private boolean computeNeighbors=false;
+	List<Triangle> triangles = new ArrayList<Triangle>();
+	private List<Triangle> neighbors = new ArrayList<Triangle>(); // The
+																		// first
+																		// neighbor
+																		// of
+																		// triangle
+																		// i is
+																		// opposite
+																		// the
+																		// first
+																		// corner
+																		// of
+																		// triangle
+																		// i
 	HashMap<Integer, LinkedList<Integer>> hashOfArrayIndex = new HashMap<Integer, LinkedList<Integer>>();
-	LinkedList<DPoint> ptToInsert = new LinkedList<DPoint>();
 
+	private static DTriangle findTriByCoordinate(Coordinate pos,List<DTriangle> trilst) throws DelaunayError {
+		DPoint pt;
+		if(Double.isNaN(pos.z)) {
+			pt=new DPoint(pos.x,pos.y,0);
+		} else {
+			pt=new DPoint(pos);
+		}
+		return trilst.get(trilst.size()/2).searchPointContainer(pt);
+	}
 	private static class SetZFilter implements CoordinateSequenceFilter {
 		private boolean done = false;
 
@@ -109,26 +136,93 @@ public class LayerJDelaunay implements LayerDelaunay {
 		if (delaunayTool != null) {
 			try {
 				// Push segments
+				delaunayTool.setPoints(ptToInsert);
 				delaunayTool.setConstraintEdges(constraintEdge);
-
+				//delaunayTool.forceConstraintIntegrity();
 				delaunayTool.processDelaunay();
 				constraintEdge.clear();
-				// Add pts
-				while (!this.ptToInsert.isEmpty()) {
-					this.delaunayTool.addPoint(this.ptToInsert.pop());
-				}
+				ptToInsert.clear();
 				List<DTriangle> trianglesDelaunay = delaunayTool
 						.getTriangleList();
-				triangles.ensureCapacity(trianglesDelaunay.size());// reserve
+				//triangles.ensureCapacity(trianglesDelaunay.size());// reserve
 																	// memory
+				HashMap<Integer, Integer> gidToIndex = new HashMap<Integer, Integer>();
+				ArrayList<Triangle> gidTriangle=new ArrayList<Triangle>(trianglesDelaunay.size());
+				
+				//Build ArrayList for binary search
+				
+				//Remove triangles
+				for(Coordinate hole : holes) {
+					DTriangle foundTri=findTriByCoordinate(hole,trianglesDelaunay);
+					if(foundTri == null) {
+						throw new LayerDelaunayError("hole outside domain");
+					}
+					//Navigate through neighbors until it reach a deleted tri or locked segment
+					Stack<DTriangle> navHistoryTri=new Stack<DTriangle>();
+					Stack<Short> navHistoryDir=new Stack<Short>();
+					navHistoryTri.push(foundTri);
+					navHistoryDir.push((short)0);//Set as hole
+					foundTri.setExternalGID(0);
+					while(!navHistoryTri.empty()) {
+						if(navHistoryDir.peek()==3) {
+							navHistoryTri.pop();
+							navHistoryDir.pop();							
+						} else {
+							DEdge ed = navHistoryTri.peek().getEdge(navHistoryDir.peek());
+							if(!ed.isLocked()) {
+								DTriangle neigh=ed.getOtherTriangle(navHistoryTri.peek());
+								if(neigh != null) {
+									if(neigh.getExternalGID()!=0) { //Not set as destroyed
+										neigh.setExternalGID(0); //Set as hole
+										navHistoryDir.push((short)(navHistoryDir.pop()+1));
+										navHistoryDir.push((short)-1);
+										navHistoryTri.push(neigh);
+									}
+								}
+							}
+							navHistoryDir.push((short)(navHistoryDir.pop()+1));
+						}
+					}
+				}
+				
 				for (DTriangle triangle : trianglesDelaunay) {
-					int a = getOrAppendVertices(triangle.getPoint(0)
-							.getCoordinate(), vertices, hashOfArrayIndex);
-					int b = getOrAppendVertices(triangle.getPoint(1)
-							.getCoordinate(), vertices, hashOfArrayIndex);
-					int c = getOrAppendVertices(triangle.getPoint(2)
-							.getCoordinate(), vertices, hashOfArrayIndex);
-					triangles.add(new Triangle(a, b, c));
+					if(triangle.getExternalGID()!=0) //Not a hole
+					{
+						Coordinate [] ring = new Coordinate [] {triangle.getPoint(0).getCoordinate(),triangle.getPoint(1).getCoordinate(),triangle.getPoint(2).getCoordinate(),triangle.getPoint(0).getCoordinate()};
+						if(!CGAlgorithms.isCCW(ring)) {
+							Coordinate tmp= new Coordinate(ring[0]);
+							ring[0]=ring[2];
+							ring[2]=tmp;
+						}
+							
+						int a = getOrAppendVertices(ring[0], vertices, hashOfArrayIndex);
+						int b = getOrAppendVertices(ring[1], vertices, hashOfArrayIndex);
+						int c = getOrAppendVertices(ring[2], vertices, hashOfArrayIndex);
+						triangles.add(new Triangle(a, b, c));
+						if(this.computeNeighbors) {
+							Triangle gidTri=new Triangle(-1,-1,-1);
+							for(int i=0;i<3;i++) {
+								DTriangle neighTriangle = triangle.getEdge(i).getOtherTriangle(triangle);
+								if(neighTriangle!=null && neighTriangle.getExternalGID()!=0) {
+									gidTri.set(i,neighTriangle.getGID());
+								}
+							}
+							gidTriangle.add(gidTri);
+							gidToIndex.put(triangle.getGID(),gidTriangle.size()-1);
+						}
+					}
+				}
+				if(this.computeNeighbors) {
+					//Translate GID to local index
+					for(Triangle tri : gidTriangle) {
+						Triangle localTri=new Triangle(-1,-1,-1);
+						for(int i=0;i<3;i++) {
+							int index=tri.get(i);
+							if(index!=-1)
+								localTri.set(i, gidToIndex.get(index));
+						}
+						neighbors.add(localTri);
+					}
 				}
 				delaunayTool = null;
 
@@ -157,8 +251,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 			this.addLineString(newLineString);
 		}
 		if (isEmpty) {
-			// TODO add hole
-			// holes.add(newPoly.getInteriorPoint().getCoordinate());
+			holes.add(newPoly.getInteriorPoint().getCoordinate());
 		}
 		// Append holes
 		final int holeCount = newPoly.getNumInteriorRing();
@@ -171,8 +264,8 @@ public class LayerJDelaunay implements LayerDelaunay {
 				Coordinate interiorPoint = polyBuffnew.getInteriorPoint()
 						.getCoordinate();
 				if (!factory.createPoint(interiorPoint).intersects(holeLine)) {
-					// if(!isEmpty)
-					// holes.add(interiorPoint); //TODO add hole
+					if(!isEmpty)
+						holes.add(interiorPoint);
 					this.addLineString(holeLine);
 				} else {
 					logger.info("Warning : hole rejected, can't find interior point.");
@@ -194,16 +287,6 @@ public class LayerJDelaunay implements LayerDelaunay {
 	@Override
 	public void hintInit(Envelope bBox, long polygonCount, long verticesCount)
 			throws LayerDelaunayError {
-		if (delaunayTool == null) {
-			delaunayTool = new ConstrainedMesh();
-		}
-		/*
-		 * BoundaryBox boundingBox=new
-		 * BoundaryBox(bBox.getMinX(),bBox.getMaxX(),
-		 * bBox.getMinY(),bBox.getMaxY(),0.,0.); try { //TODO Init delaunay
-		 * //delaunayTool.init(boundingBox); } catch (DelaunayError e) { throw
-		 * new LayerDelaunayError(e.getMessage()); }
-		 */
 	}
 
 	@Override
@@ -212,7 +295,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 	}
 
 	@Override
-	public ArrayList<Triangle> getTriangles() throws LayerDelaunayError {
+	public List<Triangle> getTriangles() throws LayerDelaunayError {
 		return this.triangles;
 	}
 
@@ -251,6 +334,21 @@ public class LayerJDelaunay implements LayerDelaunay {
 	public void reset() {
 		// TODO Auto-generated method stub
 
+	}
+
+	@Override
+	public List<Triangle> getNeighbors() throws LayerDelaunayError {
+		if(computeNeighbors) {
+			return neighbors;
+		} else {
+			throw new LayerDelaunayError("You must call setRetrieveNeighbors(True) before process delaunay triangulation");
+		}
+	}
+
+	@Override
+	public void setRetrieveNeighbors(boolean retrieve) {
+		this.computeNeighbors=retrieve;
+		
 	}
 
 }

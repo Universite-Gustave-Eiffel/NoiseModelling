@@ -1,4 +1,4 @@
-package lcpcson;
+package org.noisemap.core;
 
 /***********************************
  * ANR EvalPDU
@@ -429,7 +429,12 @@ public class LayerExtTriangle implements LayerDelaunay {
 			nodef.delete();
 		}
 	}
-
+	public static boolean isWindows() {
+		 
+		String os = System.getProperty("os.name").toLowerCase();
+		//windows
+	    return (os.indexOf( "win" ) >= 0); 
+	}
 	/**
 	 * @return If savePolyToRefine is true, the path to the polygon file. can be
 	 *         used later with the method loadInputDelaunay
@@ -457,7 +462,7 @@ public class LayerExtTriangle implements LayerDelaunay {
 			// Write Polygon File
 			String inputroot = this.tempdir + File.separatorChar + prefix
 					+ "region" + delaunayIndex;
-			String polypath = inputroot;
+			String polypath = new String(inputroot);
 			String inIndex = "";
 			if (refineIndex > 1) {
 				inIndex = "." + (refineIndex - 1);
@@ -495,7 +500,11 @@ public class LayerExtTriangle implements LayerDelaunay {
 			holes.clear();
 			segments.clear();
 			neighbors.clear();
-			options += " \"" + polypath + "\""; // Add polygon file path
+			if(isWindows()) {
+				options += " \"" + polypath + "\""; // Add polygon file path
+			} else {
+				options += " " +polypath ; // Add polygon file path
+			}
 			String line;
 			logger.info("Run delaunay triangulation " + TrianglePath + " "
 					+ options);
@@ -610,16 +619,16 @@ public class LayerExtTriangle implements LayerDelaunay {
 	}
 
 	@Override
-	public ArrayList<Coordinate> getVertices() throws LayerDelaunayError {
+	public List<Coordinate> getVertices() throws LayerDelaunayError {
 		return vertices;
 	}
 
 	@Override
-	public ArrayList<Triangle> getTriangles() throws LayerDelaunayError {
+	public List<Triangle> getTriangles() throws LayerDelaunayError {
 		return triangles;
 	}
 
-	public ArrayList<Triangle> getNeighbors() throws LayerDelaunayError {
+	public List<Triangle> getNeighbors() throws LayerDelaunayError {
 		return neighbors;
 	}
 

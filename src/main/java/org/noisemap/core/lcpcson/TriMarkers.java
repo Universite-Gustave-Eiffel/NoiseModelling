@@ -1,4 +1,4 @@
-package lcpcson;
+package org.noisemap.core;
 
 /***********************************
  * ANR EvalPDU
@@ -10,6 +10,11 @@ import com.vividsolutions.jts.algorithm.CGAlgorithms;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Triangle;
 
+/**
+ * Used by TriangleContouring
+ * Add the constraint of CCW orientation
+ * Store also three double values, one fore each vertices
+ */
 public class TriMarkers extends Triangle {
 
 	public TriMarkers() {
@@ -25,10 +30,13 @@ public class TriMarkers extends Triangle {
 
 		if (!CGAlgorithms.isCCW(this.getRing())) {
 			this.setCoordinates(p2, p1, p0);
+			this.m1 = m3;
+			this.m3 = m1;
+		} else {
+			this.m1 = m1;
+			this.m3 = m3;
 		}
-		this.m1 = m1;
 		this.m2 = m2;
-		this.m3 = m3;
 	}
 
 	public double m1, m2, m3;
@@ -45,6 +53,8 @@ public class TriMarkers extends Triangle {
 		setMarkers(m1, m2, m3);
 		if (!CGAlgorithms.isCCW(this.getRing())) {
 			this.setCoordinates(p2, p1, p0);
+			this.m1 = m3;
+			this.m3 = m1;
 		}
 	}
 

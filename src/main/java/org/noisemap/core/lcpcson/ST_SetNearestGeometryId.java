@@ -4,7 +4,7 @@
  * @author Nicolas FORTIN, Judicaël PICAUT
  ***********************************/
 
-package lcpcson;
+package org.noisemap.core;
 
 import java.util.ArrayList;
 import java.util.List;

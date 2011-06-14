@@ -1,4 +1,4 @@
-package lcpcson;
+package org.noisemap.core;
 
 /***********************************
  * ANR EvalPDU IFSTTAR 11_05_2011
@@ -26,6 +26,19 @@ public class Triangle {
 			return b;
 		default:
 			return c;
+		}
+	}
+
+	public void set(int id,int index) {
+		switch (id) {
+		case 0:
+			a=index;
+			break;
+		case 1:
+			b=index;
+			break;
+		default:
+			c=index;
 		}
 	}
 

@@ -40,7 +40,7 @@
  * @author Nicolas FORTIN, Judicaël PICAUT
  ***********************************/
 
-package lcpcson;
+package org.noisemap.core;
 
 import org.gdms.data.DataSourceFactory;
 import org.gdms.data.types.Type;

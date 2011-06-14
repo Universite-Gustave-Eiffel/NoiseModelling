@@ -1,4 +1,4 @@
-package lcpcson;
+package org.noisemap.core;
 
 /***********************************
  * ANR EvalPDU
@@ -36,17 +36,17 @@ import com.vividsolutions.jts.operation.buffer.BufferParameters;
  * visibility culling.
  */
 public class FastObstructionTest {
-	private static double epsilon = 1e-12;
-	private String tmpdir;
-	private ArrayList<Triangle> triVertices;
-	private ArrayList<Coordinate> vertices;
-	private ArrayList<Triangle> triNeighbors; // Neighbors
+	public static final double epsilon = 1e-7;
+	public static final double wideAngleTranslationEpsilon = 0.01;
+	private List<Triangle> triVertices;
+	private List<Coordinate> vertices;
+	private List<Triangle> triNeighbors; // Neighbors
 	private LinkedList<Geometry> toUnite = new LinkedList<Geometry>(); // Polygon
 																		// union
-	private QueryGridIndex<Integer> triIndex = null;
+	private QueryGeometryStructure<Integer> triIndex = null; //TODO remove
 	private int lastFountPointTriTest = 0;
-	private ArrayList<Float> verticesOpenAngle = null;
-	private ArrayList<Coordinate> verticesOpenAngleTranslated = null; /*
+	private List<Float> verticesOpenAngle = null;
+	private List<Coordinate> verticesOpenAngleTranslated = null; /*
 																	 * <Open
 																	 * angle
 																	 * position
@@ -57,9 +57,8 @@ public class FastObstructionTest {
 																	 * angle
 																	 */
 
-	public FastObstructionTest(String tmpdir) {
+	public FastObstructionTest() {
 		super();
-		this.tmpdir = tmpdir;
 	}
 
 	public void addGeometry(Geometry obstructionPoly) {
@@ -100,8 +99,9 @@ public class FastObstructionTest {
 	// feeding
 	public void finishPolygonFeeding(Envelope boundingBoxFilter)
 			throws LayerDelaunayError {
+		
 		verticesOpenAngle = null;
-		LayerExtTriangle delaunayTool = new LayerExtTriangle(tmpdir);
+		LayerDelaunay delaunayTool = new LayerJDelaunay();
 		// Insert the main rectangle
 		Geometry linearRing = EnvelopeUtil.toGeometry(boundingBoxFilter);
 		if (!(linearRing instanceof LinearRing)) {
@@ -121,6 +121,7 @@ public class FastObstructionTest {
 		// Process delaunay Triangulation
 		delaunayTool.setMinAngle(0.);
 		delaunayTool.setRetrieveNeighbors(true);
+		
 		delaunayTool.processDelaunay();
 
 		// Get results
@@ -132,7 +133,7 @@ public class FastObstructionTest {
 
 		// int gridsize=(int)Math.pow(2,
 		// Math.log10(Math.pow(this.triVertices.size()+1,2)));
-		int gridsize = 64;
+		int gridsize = 16;
 		triIndex = new QueryGridIndex<Integer>(boundingBoxFilter, gridsize,
 				gridsize);
 		int triind = 0;
@@ -429,7 +430,6 @@ public class FastObstructionTest {
 		List<Coordinate> wideAnglePts = new ArrayList<Coordinate>(
 				vertices.size());
 		if (verticesOpenAngle == null) {
-			double transEpsilon = 0.01;
 			verticesOpenAngle = new ArrayList<Float>(vertices.size()); // Reserve
 																		// size
 			verticesOpenAngleTranslated = new ArrayList<Coordinate>(
@@ -483,8 +483,8 @@ public class FastObstructionTest {
 					}
 					double midAngle = ((ccw2 - ccw1) / 2.) + ccw1;
 					verticesOpenAngleTranslated.add(new Coordinate(curVert.x
-							+ (Math.cos(midAngle) * transEpsilon), curVert.y
-							+ (Math.sin(midAngle) * transEpsilon)));
+							+ (Math.cos(midAngle) * wideAngleTranslationEpsilon), curVert.y
+							+ (Math.sin(midAngle) * wideAngleTranslationEpsilon)));
 				} else {
 					verticesOpenAngleTranslated.add(curVert);
 				}

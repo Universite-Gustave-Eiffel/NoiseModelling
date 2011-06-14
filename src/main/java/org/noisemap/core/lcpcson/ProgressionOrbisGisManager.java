@@ -1,4 +1,4 @@
-package lcpcson;
+package org.noisemap.core;
 
 /***********************************
  * ANR EvalPDU
@@ -12,9 +12,6 @@ import org.orbisgis.progress.IProgressMonitor;
  * ProgressionManager class aims to easily manage the update of process
  * progression information It is used in a hierarchical way, allowing
  * multi-threading algorithm
- * 
- * @author fortin
- * 
  */
 public class ProgressionOrbisGisManager implements Runnable {
 	private Thread thread;

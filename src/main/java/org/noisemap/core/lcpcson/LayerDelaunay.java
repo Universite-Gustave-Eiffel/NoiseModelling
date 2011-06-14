@@ -1,4 +1,4 @@
-package lcpcson;
+package org.noisemap.core;
 
 /***********************************
  * ANR EvalPDU
@@ -87,9 +87,18 @@ public interface LayerDelaunay {
 	 * unique vertices by their index.
 	 */
 	List<Triangle> getTriangles() throws LayerDelaunayError;
-
-	/*
+	/**
+	 * When the processDelaunay has been called, retrieve results Triangle link
+	 * triangles neighbor by their index.
+	 */
+	List<Triangle> getNeighbors() throws LayerDelaunayError;
+	/**
 	 * Remove all data, come back to the constructor state
 	 */
 	void reset();
+	/**
+	 * Enable or Disable the collecting of triangles neighboring data.
+	 * @param retrieve
+	 */
+	public void setRetrieveNeighbors(boolean retrieve);
 }
