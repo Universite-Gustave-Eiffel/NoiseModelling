@@ -60,7 +60,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 		} else {
 			pt=new DPoint(pos);
 		}
-		return trilst.get(trilst.size()/2).searchPointContainer(pt);
+		return (DTriangle)trilst.get(trilst.size()/2).searchPointContainer(pt);
 	}
 	private static class SetZFilter implements CoordinateSequenceFilter {
 		private boolean done = false;
