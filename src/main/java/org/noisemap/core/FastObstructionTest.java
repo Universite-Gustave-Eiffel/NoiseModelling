@@ -37,6 +37,7 @@ import com.vividsolutions.jts.operation.buffer.BufferParameters;
 public class FastObstructionTest {
 	public static final double epsilon = 1e-7;
 	public static final double wideAngleTranslationEpsilon = 0.01;
+	private long nbObstructionTest=0;
 	private List<Triangle> triVertices;
 	private List<Coordinate> vertices;
 	private List<Triangle> triNeighbors; // Neighbors
@@ -59,6 +60,9 @@ public class FastObstructionTest {
 
 	public FastObstructionTest() {
 		super();
+	}
+	public long getNbObstructionTest() {
+		return nbObstructionTest;
 	}
 	/**
 	 * Retrieve triangle list, only for debug and unit test purpose
@@ -517,6 +521,7 @@ public class FastObstructionTest {
 	}
 
 	public boolean isFreeField(Coordinate p1, Coordinate p2) {
+		nbObstructionTest++;
 		LineSegment propaLine = new LineSegment(p1, p2);
 		int curTri = getTriangleIdByCoordinate(p1);
 		HashSet<Integer> navigationHistory = new HashSet<Integer>();

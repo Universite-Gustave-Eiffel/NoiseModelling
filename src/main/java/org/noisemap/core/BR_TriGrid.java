@@ -33,6 +33,8 @@ import org.gdms.sql.function.Arguments;
 import org.gdms.driver.DiskBufferDriver;
 import org.grap.utilities.EnvelopeUtil;
 import org.orbisgis.progress.IProgressMonitor;
+
+
 import com.vividsolutions.jts.densify.Densifier;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
@@ -45,6 +47,7 @@ import com.vividsolutions.jts.geom.MultiLineString;
 import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
+
 import com.vividsolutions.jts.operation.buffer.BufferParameters;
 import com.vividsolutions.jts.simplify.TopologyPreservingSimplifier;
 
@@ -123,7 +126,32 @@ public class BR_TriGrid implements CustomQuery {
 		}
 		totalDelaunay += System.currentTimeMillis() - beginAppendPolygons;
 	}
-
+	/**
+	 * This function compute buffer polygon near roads, densify, then add points to the delaunayTriangulation
+	 * @param toUnite
+	 * @param bufferSize
+	 * @param delaunayTool
+	 * @param boundingBoxFilter
+	 * @throws LayerDelaunayError
+	 */
+	private void makeBufferPointsNearRoads(List<Geometry> toUnite, double bufferSize,Envelope filter,LayerDelaunay delaunayTool) throws LayerDelaunayError {
+		GeometryFactory geometryFactory = new GeometryFactory();
+		Geometry geoArray[] = new Geometry[toUnite.size()];
+		toUnite.toArray(geoArray);
+		GeometryCollection polygonCollection = geometryFactory
+				.createGeometryCollection(geoArray);
+		Geometry polygon=polygonCollection.buffer(bufferSize, 4,
+				BufferParameters.CAP_SQUARE);
+		polygon=TopologyPreservingSimplifier.simplify(polygon,
+				bufferSize / 2.);
+		polygon=Densifier.densify(polygon, bufferSize);
+		Coordinate pts[]=polygon.getCoordinates();
+		for(Coordinate pt : pts) {
+			if(filter.contains(pt)) {
+				delaunayTool.addVertex(pt);
+			}
+		}
+	}
 	private Geometry merge(LinkedList<Geometry> toUnite, double bufferSize) {
 		GeometryFactory geometryFactory = new GeometryFactory();
 		Geometry geoArray[] = new Geometry[toUnite.size()];
@@ -200,8 +228,10 @@ public class BR_TriGrid implements CustomQuery {
 			bufferRoads = TopologyPreservingSimplifier.simplify(bufferRoads,
 					minRecDist / 2);
 			// Densify roads to set more receiver near roads.
-			bufferRoads = Densifier.densify(bufferRoads, srcPtDist);
+			//bufferRoads = Densifier.densify(bufferRoads, srcPtDist);
 			//Add points buffer to the final triangulation, this will densify sound level extraction near
+			//toUniteFinal.add(makeBufferSegmentsNearRoads(toUniteRoads,srcPtDist));
+			makeBufferPointsNearRoads(toUniteRoads,srcPtDist,boundingBoxFilter,delaunayTool);
 			//roads, and helps to reduce over estimation due to inapropriate interpolation.
 			toUniteFinal.add(bufferRoads); // Merge roads with minRecDist m
 											// buffer
@@ -211,6 +241,7 @@ public class BR_TriGrid implements CustomQuery {
 		// Remove geometries out of the bounding box
 		union = union.intersection(boundingBox);
 		explodeAndAddPolygon(union, delaunayTool, boundingBox);
+		
 		totalParseBuildings += System.currentTimeMillis() - beginfeed
 				- (totalDelaunay - oldtotalDelaunay);
 	}

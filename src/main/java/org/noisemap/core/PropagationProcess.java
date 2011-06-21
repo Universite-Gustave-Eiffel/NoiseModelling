@@ -751,7 +751,6 @@ public class PropagationProcess implements Runnable {
 		 * catch (DriverException e) { e.printStackTrace(); return; }
 		 */
 
-		long nb_obstr_test = 0;
 		double verticesSoundLevel[] = new double[data.vertices.size()]; // Computed
 																		// sound
 																		// level
@@ -810,7 +809,7 @@ public class PropagationProcess implements Runnable {
 			dataOut.addValues(newValues);
 			tri_id++;
 		}
-		dataOut.appendFreeFieldTestCount(nb_obstr_test);
+		dataOut.appendFreeFieldTestCount(data.freeFieldFinder.getNbObstructionTest());
 		dataOut.appendCellComputed();
 		/*
 		 * try { driver.writingFinished(); } catch (DriverException e) { // TODO
