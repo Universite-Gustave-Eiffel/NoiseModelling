@@ -96,7 +96,16 @@ public class TestFastObstruction extends TestCase {
 		//Run intersection test
 		collisionTask(manager);
 		//Run wide angle detection
-		openAngleTask(manager,building1Coords);
+		List<Coordinate> openAngle=openAngleTask(manager,building1Coords);
+		int freefieldcpt=0;
+		Coordinate receiver=new Coordinate(5,20,0);
+		for(Coordinate corner : openAngle)
+		{
+			if(manager.isFreeField(receiver, corner)) {
+				freefieldcpt++;
+			}
+		}
+		assertTrue("Missed visible corner or found more than visible",freefieldcpt==2);
 	}
 	private void collisionTask(FastObstructionTest manager) throws LayerDelaunayError {
 
@@ -104,7 +113,7 @@ public class TestFastObstruction extends TestCase {
 		assertFalse("Intersection test #2 failed",manager.isFreeField(new Coordinate(5,20), new Coordinate(16,31)));
 
 	}
-	private void openAngleTask(FastObstructionTest manager,Coordinate[] buildingCoords) throws LayerDelaunayError {
+	private List<Coordinate> openAngleTask(FastObstructionTest manager,Coordinate[] buildingCoords) throws LayerDelaunayError {
 		List<Coordinate> wideangle=manager.getWideAnglePoints(Math.PI * (1 + 1 / 16.0), Math.PI * (2 - (1 / 16.)));
 		assertTrue("Too many corners found",wideangle.size()==4);
 		for(Coordinate buildingCorner : buildingCoords)
@@ -119,5 +128,6 @@ public class TestFastObstruction extends TestCase {
 			}
 			assertTrue("Corner at "+buildingCorner+" of building not found !",found);				
 		}
+		return wideangle;
 	}
 }

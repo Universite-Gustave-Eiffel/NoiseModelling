@@ -173,7 +173,7 @@ public class BR_TriGrid implements CustomQuery {
 				toUnite.add(geometry);
 			}
 		}
-		// Merge buildings
+		// Merge roads
 
 		LinkedList<Geometry> toUniteRoads = new LinkedList<Geometry>();
 		for (LineString road : delaunaySegments) {
@@ -201,6 +201,8 @@ public class BR_TriGrid implements CustomQuery {
 					minRecDist / 2);
 			// Densify roads to set more receiver near roads.
 			bufferRoads = Densifier.densify(bufferRoads, srcPtDist);
+			//Add points buffer to the final triangulation, this will densify sound level extraction near
+			//roads, and helps to reduce over estimation due to inapropriate interpolation.
 			toUniteFinal.add(bufferRoads); // Merge roads with minRecDist m
 											// buffer
 		}
@@ -261,7 +263,7 @@ public class BR_TriGrid implements CustomQuery {
 	private void computeFirstPassDelaunay(LayerDelaunay cellMesh,
 			Envelope mainEnvelope, int cellI, int cellJ, int cellIMax,
 			int cellJMax, double cellWidth, double cellHeight,
-			double maxSrcDist, SpatialDataSourceDecorator sds,
+			double maxSrcDist, SpatialDataSourceDecorator sdsBuildings,
 			SpatialDataSourceDecorator sdsSources, double minRecDist,
 			double srcPtDist, String[] firstPassResults,
 			NodeList[] neighborsBorderVertices, double maximumArea)
@@ -282,7 +284,7 @@ public class BR_TriGrid implements CustomQuery {
 		cellMesh.hintInit(cellEnvelope, 1500, 5000);
 		// /////////////////////////////////////////////////
 		// Add roads into delaunay tool
-		sds.open();
+		sdsBuildings.open();
 		sdsSources.open();
 		long rowCount = sdsSources.getRowCount();
 		final double firstPtAng = (Math.PI) / 4.;
@@ -336,7 +338,7 @@ public class BR_TriGrid implements CustomQuery {
 				}
 			}
 		}
-		feedDelaunay(sds, cellMesh, cellEnvelope, maxSrcDist, delaunaySegments,
+		feedDelaunay(sdsBuildings, cellMesh, cellEnvelope, maxSrcDist, delaunaySegments,
 				minRecDist, srcPtDist);
 
 		// Process delaunay
@@ -442,7 +444,7 @@ public class BR_TriGrid implements CustomQuery {
 		logger.info("End delaunay");
 		totalDelaunay += System.currentTimeMillis() - beginDelaunay;
 		sdsSources.close();
-		sds.close();
+		sdsBuildings.close();
 	}
 
 	private Double DbaToW(Double dBA) {
@@ -600,7 +602,7 @@ public class BR_TriGrid implements CustomQuery {
 					ArrayList<Geometry> sourceGeometries = new ArrayList<Geometry>();
 					ArrayList<ArrayList<Double>> wj_sources = new ArrayList<ArrayList<Double>>();
 					QueryGeometryStructure<Integer> sourcesIndex = new QueryGridIndex<Integer>(
-							expandedCellEnvelop, 64, 64);
+							expandedCellEnvelop, 16, 16);
 					// QueryGeometryStructure<Integer> sourcesIndex=new
 					// QueryQuadTree<Integer>();
 					sdsSources.open();

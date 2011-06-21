@@ -15,7 +15,6 @@ import java.util.Stack;
 import org.grap.utilities.EnvelopeUtil;
 
 import com.vividsolutions.jts.algorithm.Angle;
-import com.vividsolutions.jts.algorithm.NonRobustLineIntersector;
 import com.vividsolutions.jts.algorithm.VectorMath;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
@@ -42,7 +41,8 @@ public class FastObstructionTest {
 	private List<Coordinate> vertices;
 	private List<Triangle> triNeighbors; // Neighbors
 	private LinkedList<Geometry> toUnite = new LinkedList<Geometry>(); // Polygon
-																		// union
+	private Envelope geometriesBoundingBox=null;
+	// union;
 	private QueryGeometryStructure<Integer> triIndex = null; //TODO remove
 	private int lastFountPointTriTest = 0;
 	private List<Float> verticesOpenAngle = null;
@@ -60,8 +60,26 @@ public class FastObstructionTest {
 	public FastObstructionTest() {
 		super();
 	}
-
+	/**
+	 * Retrieve triangle list, only for debug and unit test purpose
+	 * @return
+	 */
+	public List<Triangle> getTriangles() {
+		return triVertices;
+	}
+	/**
+	 * Retrieve vertices list, only for debug and unit test purpose
+	 * @return
+	 */
+	public List<Coordinate> getVertices() {
+		return vertices;
+	}
 	public void addGeometry(Geometry obstructionPoly) {
+		if(this.geometriesBoundingBox==null) {
+			this.geometriesBoundingBox=new Envelope(obstructionPoly.getEnvelopeInternal());
+		} else {
+			this.geometriesBoundingBox.expandToInclude(obstructionPoly.getEnvelopeInternal());
+		}
 		toUnite.add(obstructionPoly);
 	}
 
@@ -99,11 +117,16 @@ public class FastObstructionTest {
 	// feeding
 	public void finishPolygonFeeding(Envelope boundingBoxFilter)
 			throws LayerDelaunayError {
+		if(boundingBoxFilter!=null)
+			this.geometriesBoundingBox.expandToInclude(boundingBoxFilter);
 		
 		verticesOpenAngle = null;
 		LayerDelaunay delaunayTool = new LayerJDelaunay();
+		// Merge polygon
+		Geometry allbuilds = merge(toUnite, 0.);
+		toUnite.clear();
 		// Insert the main rectangle
-		Geometry linearRing = EnvelopeUtil.toGeometry(boundingBoxFilter);
+		Geometry linearRing = EnvelopeUtil.toGeometry(this.geometriesBoundingBox);
 		if (!(linearRing instanceof LinearRing)) {
 			return;
 		}
@@ -112,9 +135,6 @@ public class FastObstructionTest {
 				factory);
 		delaunayTool.addPolygon(boundingBox, false);
 
-		// Merge polygon
-		Geometry allbuilds = merge(toUnite, 0.);
-		toUnite.clear();
 		// Remove geometries out of the bounding box
 		allbuilds = allbuilds.intersection(boundingBox);
 		explodeAndAddPolygon(allbuilds, delaunayTool, boundingBox);
@@ -134,7 +154,7 @@ public class FastObstructionTest {
 		// int gridsize=(int)Math.pow(2,
 		// Math.log10(Math.pow(this.triVertices.size()+1,2)));
 		int gridsize = 16;
-		triIndex = new QueryGridIndex<Integer>(boundingBoxFilter, gridsize,
+		triIndex = new QueryGridIndex<Integer>(this.geometriesBoundingBox, gridsize,
 				gridsize);
 		int triind = 0;
 		for (Triangle tri : this.triVertices) {
@@ -162,7 +182,7 @@ public class FastObstructionTest {
 	private int getNextTri(final int triIndex,
 			final LineSegment propagationLine,
 			HashSet<Integer> navigationHistory) {
-		NonRobustLineIntersector linters = new NonRobustLineIntersector();
+		//NonRobustLineIntersector linters = new NonRobustLineIntersector();
 		final Triangle tri = this.triVertices.get(triIndex);
 		int nearestIntersectionSide = -1;
 		double nearestIntersectionPtDist = Double.MAX_VALUE;
@@ -170,103 +190,37 @@ public class FastObstructionTest {
 		final Coordinate aTri = this.vertices.get(tri.getA());
 		final Coordinate bTri = this.vertices.get(tri.getB());
 		final Coordinate cTri = this.vertices.get(tri.getC());
-
+		double distline_line;
 		// Intersection First Side
-		linters.computeIntersection(propagationLine.p0, propagationLine.p1,
-				aTri, bTri);
-
-		if (linters.hasIntersection()) {
-			Coordinate i0 = linters.getIntersection(0);
-			if (linters.getIntersectionNum() == 1) {
-				double dist = i0.distance(propagationLine.p1);
-				if (dist < nearestIntersectionPtDist
-						&& !navigationHistory.contains(this.triNeighbors.get(
-								triIndex).get(2))) {
-					nearestIntersectionPtDist = dist;
-					nearestIntersectionSide = 2;
-				}
-			} else {
-				// Colinear intersection
-				Coordinate i1 = linters.getIntersection(1);
-				double dist0 = i0.distance(propagationLine.p1);
-				double dist1 = i1.distance(propagationLine.p1);
-				Coordinate nearestPt;
-				if (dist0 < dist1) {
-					nearestPt = i0;
-				} else {
-					nearestPt = i1;
-				}
-				if (nearestPt == aTri) {
-					return this.triNeighbors.get(triIndex).get(1);
-				} else {
-					return this.triNeighbors.get(triIndex).get(0);
-				}
-
+		distline_line=propagationLine.distance(new LineSegment(aTri, bTri));
+		if (distline_line<FastObstructionTest.epsilon) {
+			if (distline_line < nearestIntersectionPtDist
+					&& !navigationHistory.contains(this.triNeighbors.get(
+							triIndex).get(2))) {
+				nearestIntersectionPtDist = distline_line;
+				nearestIntersectionSide = 2;
 			}
 		}
 
 		// Intersection Second Side
-		linters.computeIntersection(propagationLine.p0, propagationLine.p1,
-				bTri, cTri);
-		if (linters.hasIntersection()) {
-			Coordinate i0 = linters.getIntersection(0);
-			if (linters.getIntersectionNum() == 1) {
-				double dist = i0.distance(propagationLine.p1);
-				if (dist < nearestIntersectionPtDist
-						&& !navigationHistory.contains(this.triNeighbors.get(
-								triIndex).get(0))) {
-					nearestIntersectionPtDist = dist;
-					nearestIntersectionSide = 0;
-				}
-			} else {
-				// Colinear intersection
-				Coordinate i1 = linters.getIntersection(1);
-				double dist0 = i0.distance(propagationLine.p1);
-				double dist1 = i1.distance(propagationLine.p1);
-				Coordinate nearestPt;
-				if (dist0 < dist1) {
-					nearestPt = i0;
-				} else {
-					nearestPt = i1;
-				}
-				if (nearestPt == bTri) {
-					return this.triNeighbors.get(triIndex).get(2);
-				} else {
-					return this.triNeighbors.get(triIndex).get(1);
-				}
+		distline_line=propagationLine.distance(new LineSegment(bTri, cTri));
+		if (distline_line<FastObstructionTest.epsilon) {
+			if (distline_line < nearestIntersectionPtDist
+					&& !navigationHistory.contains(this.triNeighbors.get(
+							triIndex).get(0))) {
+				nearestIntersectionPtDist = distline_line;
+				nearestIntersectionSide = 0;
 			}
 		}
 
 		// Intersection Third Side
-		linters.computeIntersection(propagationLine.p0, propagationLine.p1,
-				cTri, aTri);
-		if (linters.hasIntersection()) {
-			Coordinate i0 = linters.getIntersection(0);
-			if (linters.getIntersectionNum() == 1) {
-				double dist = i0.distance(propagationLine.p1);
-				if (dist < nearestIntersectionPtDist
-						&& !navigationHistory.contains(this.triNeighbors.get(
-								triIndex).get(1))) {
-					nearestIntersectionPtDist = dist;
-					nearestIntersectionSide = 1;
-				}
-			} else {
-				// Colinear intersection
-				Coordinate i1 = linters.getIntersection(1);
-				double dist0 = i0.distance(propagationLine.p1);
-				double dist1 = i1.distance(propagationLine.p1);
-				Coordinate nearestPt;
-				if (dist0 < dist1) {
-					nearestPt = i0;
-				} else {
-					nearestPt = i1;
-				}
-				if (nearestPt == cTri) {
-					return this.triNeighbors.get(triIndex).get(0);
-				} else {
-					return this.triNeighbors.get(triIndex).get(2);
-				}
-
+		distline_line=propagationLine.distance(new LineSegment(cTri, aTri));
+		if (distline_line<FastObstructionTest.epsilon) {
+			if (distline_line < nearestIntersectionPtDist
+					&& !navigationHistory.contains(this.triNeighbors.get(
+							triIndex).get(1))) {
+				nearestIntersectionPtDist = distline_line;
+				nearestIntersectionSide = 1;
 			}
 		}
 

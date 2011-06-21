@@ -9,18 +9,8 @@ package org.noisemap.core;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-
-/*
- import org.gdms.data.metadata.DefaultMetadata;
- import org.gdms.data.types.Type;
- import org.gdms.data.types.TypeFactory;
- import org.gdms.driver.DriverException;
- */
-import org.gdms.driver.DiskBufferDriver;
-
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
-
 import com.vividsolutions.jts.algorithm.NonRobustLineIntersector;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
@@ -31,10 +21,14 @@ import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.index.quadtree.Quadtree;
 
 public class PropagationProcess implements Runnable {
+	public static double ONETHIRD=1./3.;
 	private Thread thread;
 	private PropagationProcessData data;
 	private PropagationProcessOut dataOut;
-
+	private Quadtree cornersQuad;
+	private int nbfreq;
+	private double[] alpha_atmo;
+	private double[] freq_lambda;
 	/**
 	 * Recursive method to feed mirrored receiver position on walls. No
 	 * obstruction test is done.
@@ -125,11 +119,11 @@ public class PropagationProcess implements Runnable {
 		}
 	}
 
-	private double dbaToW(double dBA) {
+	public static double dbaToW(double dBA) {
 		return Math.pow(10., dBA / 10.);
 	}
 
-	private double wToDba(double w) {
+	public static double wToDba(double w) {
 		return 10 * Math.log10(w);
 	}
 
@@ -261,7 +255,7 @@ public class PropagationProcess implements Runnable {
 	 * @return Attenuated sound level. Take only account of geometric dispersion
 	 *         of sound wave.
 	 */
-	private Double attDistW(double Wj, double distance) {
+	public static double attDistW(double Wj, double distance) {
 		if (distance < 1.) // No infinite sound level
 		{
 			return Wj / (4 * Math.PI);
@@ -286,14 +280,13 @@ public class PropagationProcess implements Runnable {
 	 *            from receiver
 	 * @param[in] freq_lambda Array of sound wave lambda value by frequency band
 	 */
-	public void receiverSourcePropa(Coordinate srcCoord,
+	private void receiverSourcePropa(Coordinate srcCoord,
 			Coordinate receiverCoord, double energeticSum[],
 			double[] alpha_atmo, List<Double> wj, double li,
 			List<MirrorReceiverResult> mirroredReceiver,
 			List<LineSegment> nearBuildingsWalls,
 			List<Coordinate> regionCorners,
-			List<Integer> regionCornersFreeToReceiver, double[] freq_lambda,
-			DiskBufferDriver driver, int idReceiver) // todo remove driver debug
+			List<Integer> regionCornersFreeToReceiver, double[] freq_lambda) 
 	{
 		// GeometryFactory factory=new GeometryFactory();
 		int nbfreq = data.freq_lvl.size();
@@ -438,7 +431,7 @@ public class PropagationProcess implements Runnable {
 				// Process diffraction paths
 			if (data.diffractionOrder > 0
 					&& regionCornersFreeToReceiver.size() > 0) {
-				// Find the first valid source->corner
+				// Get the first valid receiver->corner
 				int receiverFreeCornerIndex = 0;
 				int firstCorner = regionCornersFreeToReceiver
 						.get(receiverFreeCornerIndex);
@@ -455,18 +448,19 @@ public class PropagationProcess implements Runnable {
 							// True then the path is clear
 							// Compute attenuation level
 							double elength = 0;
+							//Compute distance of the corner path
 							for (int ie = 1; ie < curCorner.size(); ie++) {
 								elength += regionCorners.get(
 										curCorner.get(ie - 1)).distance(
 										regionCorners.get(curCorner.get(ie)));
 							}
 							// delta=SO^1+O^nO^(n+1)+O^nnR
-							double diffractionFullDistance = srcCoord
-									.distance(regionCorners.get(curCorner
+							double diffractionFullDistance = receiverCoord
+									.distance(regionCorners.get(curCorner 			//Receiver to first corner distance
 											.get(0)))
-									+ elength
+									+ elength										//Corner to corner distance
 									+ srcCoord
-											.distance(regionCorners.get(curCorner
+											.distance(regionCorners.get(curCorner	//Last corner to source distance
 													.get(curCorner.size() - 1)));
 							if (diffractionFullDistance < data.maxSrcDist) {
 								double delta = diffractionFullDistance
@@ -480,20 +474,20 @@ public class PropagationProcess implements Runnable {
 								for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
 
 									double cprime;
+									//C" NMPB 2008 P.33
 									if (curCorner.size() == 1) {
-										cprime = 1;
+										cprime = 1; //Single diffraction cprime=1
 									} else {
-										cprime = (75 * Math.pow(
-												freq_lambda[idfreq], 2) + 3 * Math
-												.pow(elength, 2))
-												/ (75 * Math.pow(
-														freq_lambda[idfreq], 2) + Math
-														.pow(elength, 2));
+										//Multiple diffraction
+										//CPRIME=( 1+(5*gamma)^2)/((1/3)+(5*gamma)^2)
+										double gammapart=Math.pow((5*freq_lambda[idfreq])/diffractionFullDistance, 2);
+										cprime=(1.+gammapart)/(ONETHIRD+gammapart);
 									}
+									//(7.11) NMP2008 P.32
 									double testForm = (40 / freq_lambda[idfreq])
 											* cprime * delta;
-									double DiffractionAttenuation = 0;
-									if (testForm >= -2) {
+									double DiffractionAttenuation = 0.;
+									if (testForm >= -2.) {
 										DiffractionAttenuation = 10 * Math
 												.log10(3 + testForm);
 									}
@@ -597,10 +591,152 @@ public class PropagationProcess implements Runnable {
 	private Double attAtmW(double Wj, double dist, double alpha_atmo) {
 		return dbaToW(wToDba(Wj) - (alpha_atmo * dist) / 1000.);
 	}
+	/**
+	 * Compute sound level by frequency band at this receiver position
+	 * @param receiverPosition
+	 * @param energeticSum
+	 */
+	public void computeSoundLevelAtPosition(Coordinate receiverCoord,double energeticSum[]) {
+		// List of walls within maxReceiverSource distance
+		List<LineSegment> nearBuildingsWalls = null;
+		List<MirrorReceiverResult> mirroredReceiver = null;
+		Envelope receiverRegion = new Envelope(receiverCoord.x
+				- data.maxSrcDist, receiverCoord.x + data.maxSrcDist,
+				receiverCoord.y - data.maxSrcDist, receiverCoord.y
+						+ data.maxSrcDist);
+		if (data.reflexionOrder > 0) {
 
+			nearBuildingsWalls = new ArrayList<LineSegment>(
+					data.freeFieldFinder.getLimitsInRange(
+							data.maxSrcDist - 1., receiverCoord));
+			// Build mirrored receiver list from wall list
+			mirroredReceiver = getMirroredReceiverResults(receiverCoord,
+					nearBuildingsWalls, data.reflexionOrder,
+					data.maxSrcDist);
+		}
+		List<Coordinate> regionCorners = new ArrayList<Coordinate>();
+		List<Integer> regionCornersFreeToReceiver = new ArrayList<Integer>(); // Corners
+																				// free
+																				// field
+																				// with
+																				// receiver
+		if (data.diffractionOrder > 0) {
+			// Query corners in the current zone
+			ArrayCoordinateListVisitor cornerQuery = new ArrayCoordinateListVisitor(
+					receiverCoord, data.maxSrcDist);
+			cornersQuad.query(receiverRegion, cornerQuery);
+			regionCorners = cornerQuery.getItems();
+			// regionCornersFreeToReceiver.ensureCapacity(regionCorners.size());
+			for (int icorner = 0; icorner < regionCorners.size(); icorner++) {
+				// TODO remove debug instruction
+				/*
+				 * if(receiverCoord.distance(new
+				 * Coordinate(305282,2253003))<2.) { Value[] row=new
+				 * Value[3];
+				 * row[0]=ValueFactory.createValue(factory.createPoint
+				 * (regionCorners.get(icorner)));
+				 * row[1]=ValueFactory.createValue(idReceiver);
+				 * row[2]=ValueFactory.createValue(0); try {
+				 * driver.addValues(row); } catch (DriverException e) { //
+				 * TODO Auto-generated catch block e.printStackTrace();
+				 * return; } }
+				 */
+				if (data.freeFieldFinder.isFreeField(receiverCoord,
+						regionCorners.get(icorner))) {
+					regionCornersFreeToReceiver.add(icorner);
+				}
+			}
+		}
+		long beginQuadQuery = System.currentTimeMillis();
+		List<Integer> regionSourcesLst = data.sourcesIndex
+				.query(receiverRegion);
+		dataOut.appendGridIndexQueryTime((System.currentTimeMillis() - beginQuadQuery));
+		for (Integer srcIndex : regionSourcesLst) {
+			Geometry source = data.sourceGeometries.get(srcIndex);
+			List<Double> wj = data.wj_sources.get(srcIndex); // DbaToW(sdsSources.getDouble(srcIndex,dbField
+																// ));
+			LinkedList<Coordinate> srcPos = new LinkedList<Coordinate>();
+			double li = 0.;
+			if (source instanceof Point) {
+				Coordinate ptpos = ((Point) source).getCoordinate();
+				srcPos.add(ptpos);
+				// li=Math.min(Math.max(receiverCoord.distance(ptpos),data.minRecDist)/2.,20.0);
+				li = 1;
+				// Compute li to equation 4.1 NMPB 2008 (June 2009)
+				// wj+=10*Math.log10(li);
+			} else {
+				// Discretization of line into multiple point
+				// First point is the closest point of the LineString from
+				// the receiver
+				li = splitLineStringIntoPoints(source, receiverCoord,
+						srcPos, data.minRecDist);
+				// Compute li to equation 4.1 NMPB 2008 (June 2009)
+
+			}
+			dataOut.appendSourceCount(srcPos.size());
+			for (final Coordinate srcCoord : srcPos) {
+				// For each Pt Source - Pt Receiver
+				// TODO remove debug if
+				/*
+				 * if(receiverCoord.distance(new
+				 * Coordinate(305282,2253003))<2.) // &&
+				 * srcCoord.distance(new Coordinate(305178,2253023))<2. {
+				 * //TODO remove debug instruction
+				 * 
+				 * Value[] row=new Value[3];
+				 * row[0]=ValueFactory.createValue(
+				 * factory.createPoint(srcCoord));
+				 * row[1]=ValueFactory.createValue(idReceiver);
+				 * row[2]=ValueFactory.createValue(1); try {
+				 * driver.addValues(row); } catch (DriverException e) { //
+				 * TODO Auto-generated catch block e.printStackTrace();
+				 * return; }
+				 * 
+				 * 
+				 * }
+				 */
+				receiverSourcePropa(srcCoord, receiverCoord, energeticSum,
+						alpha_atmo, wj, li, mirroredReceiver,
+						nearBuildingsWalls, regionCorners,
+						regionCornersFreeToReceiver, freq_lambda);
+			}
+		}
+	}
+	/**
+	 * Must be called before computeSoundLevelAtPosition
+	 */
+	public void initStructures() {
+		nbfreq = data.freq_lvl.size();
+		// Init wave length for each frequency
+		double cel = 344.23935;
+		freq_lambda = new double[nbfreq];
+		for (int idf = 0; idf < nbfreq; idf++) {
+			if (data.freq_lvl.get(idf) > 0) {
+				freq_lambda[idf] = cel / data.freq_lvl.get(idf);
+			} else {
+				freq_lambda[idf] = 1;
+			}
+		}
+		// Compute atmospheric alpha value by specified frequency band
+		alpha_atmo = new double[data.freq_lvl.size()];
+		for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
+			alpha_atmo[idfreq] = getAlpha(data.freq_lvl.get(idfreq));
+		}
+		// /////////////////////////////////////////////
+		// Search diffraction corners
+		cornersQuad = new Quadtree();
+		if (data.diffractionOrder > 0) {
+			List<Coordinate> corners = data.freeFieldFinder.getWideAnglePoints(
+					Math.PI * (1 + 1 / 16.0), Math.PI * (2 - (1 / 16.)));
+			// Build Quadtree
+			for (Coordinate corner : corners) {
+				cornersQuad.insert(new Envelope(corner), corner);
+			}
+		}
+	}
 	@Override
 	public void run() {
-
+		initStructures();
 		GeometryFactory factory = new GeometryFactory();
 
 		// TODO comment debugging code
@@ -622,148 +758,18 @@ public class PropagationProcess implements Runnable {
 																		// of
 																		// vertices
 
-		int nbfreq = data.freq_lvl.size();
-		// Init wave length for each frequency
-		double cel = 344.23935;
-		double[] freq_lambda = new double[nbfreq];
-		for (int idf = 0; idf < nbfreq; idf++) {
-			if (data.freq_lvl.get(idf) > 0) {
-				freq_lambda[idf] = cel / data.freq_lvl.get(idf);
-			} else {
-				freq_lambda[idf] = 1;
-			}
-		}
-		// Compute atmospheric alpha value by specified frequency band
-		double[] alpha_atmo = new double[data.freq_lvl.size()];
-		for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
-			alpha_atmo[idfreq] = getAlpha(data.freq_lvl.get(idfreq));
-		}
-		// /////////////////////////////////////////////
-		// Search diffraction corners
-		Quadtree cornersQuad = new Quadtree();
-		if (data.diffractionOrder > 0) {
-			List<Coordinate> corners = data.freeFieldFinder.getWideAnglePoints(
-					Math.PI * (1 + 1 / 16.0), Math.PI * (2 - (1 / 16.)));
-			// Build Quadtree
-			for (Coordinate corner : corners) {
-				cornersQuad.insert(new Envelope(corner), corner);
-			}
-		}
+
 		// For each vertices, find sources where the distance is within
 		// maxSrcDist meters
 		ProgressionProcess propaProcessProgression = data.cellProg;
 		int idReceiver = 0;
 		for (Coordinate receiverCoord : data.vertices) {
 			propaProcessProgression.nextSubProcessEnd();
-			// List of walls within maxReceiverSource distance
-			List<LineSegment> nearBuildingsWalls = null;
-			List<MirrorReceiverResult> mirroredReceiver = null;
-			Envelope receiverRegion = new Envelope(receiverCoord.x
-					- data.maxSrcDist, receiverCoord.x + data.maxSrcDist,
-					receiverCoord.y - data.maxSrcDist, receiverCoord.y
-							+ data.maxSrcDist);
-			if (data.reflexionOrder > 0) {
-
-				nearBuildingsWalls = new ArrayList<LineSegment>(
-						data.freeFieldFinder.getLimitsInRange(
-								data.maxSrcDist - 1., receiverCoord));
-				// Build mirrored receiver list from wall list
-				mirroredReceiver = getMirroredReceiverResults(receiverCoord,
-						nearBuildingsWalls, data.reflexionOrder,
-						data.maxSrcDist);
-			}
-			List<Coordinate> regionCorners = new ArrayList<Coordinate>();
-			List<Integer> regionCornersFreeToReceiver = new ArrayList<Integer>(); // Corners
-																					// free
-																					// field
-																					// with
-																					// receiver
-			if (data.diffractionOrder > 0) {
-				// Query corners in the current zone
-				ArrayCoordinateListVisitor cornerQuery = new ArrayCoordinateListVisitor(
-						receiverCoord, data.maxSrcDist);
-				cornersQuad.query(receiverRegion, cornerQuery);
-				regionCorners = cornerQuery.getItems();
-				// regionCornersFreeToReceiver.ensureCapacity(regionCorners.size());
-				for (int icorner = 0; icorner < regionCorners.size(); icorner++) {
-					// TODO remove debug instruction
-					/*
-					 * if(receiverCoord.distance(new
-					 * Coordinate(305282,2253003))<2.) { Value[] row=new
-					 * Value[3];
-					 * row[0]=ValueFactory.createValue(factory.createPoint
-					 * (regionCorners.get(icorner)));
-					 * row[1]=ValueFactory.createValue(idReceiver);
-					 * row[2]=ValueFactory.createValue(0); try {
-					 * driver.addValues(row); } catch (DriverException e) { //
-					 * TODO Auto-generated catch block e.printStackTrace();
-					 * return; } }
-					 */
-					if (data.freeFieldFinder.isFreeField(receiverCoord,
-							regionCorners.get(icorner))) {
-						regionCornersFreeToReceiver.add(icorner);
-					}
-				}
-			}
 			double energeticSum[] = new double[data.freq_lvl.size()];
 			for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
 				energeticSum[idfreq] = 0.0;
 			}
-			long beginQuadQuery = System.currentTimeMillis();
-			List<Integer> regionSourcesLst = data.sourcesIndex
-					.query(receiverRegion);
-			dataOut.appendGridIndexQueryTime((System.currentTimeMillis() - beginQuadQuery));
-			for (Integer srcIndex : regionSourcesLst) {
-				Geometry source = data.sourceGeometries.get(srcIndex);
-				List<Double> wj = data.wj_sources.get(srcIndex); // DbaToW(sdsSources.getDouble(srcIndex,dbField
-																	// ));
-				LinkedList<Coordinate> srcPos = new LinkedList<Coordinate>();
-				double li = 0.;
-				if (source instanceof Point) {
-					Coordinate ptpos = ((Point) source).getCoordinate();
-					srcPos.add(ptpos);
-					// li=Math.min(Math.max(receiverCoord.distance(ptpos),data.minRecDist)/2.,20.0);
-					li = 1;
-					// Compute li to equation 4.1 NMPB 2008 (June 2009)
-					// wj+=10*Math.log10(li);
-				} else {
-					// Discretization of line into multiple point
-					// First point is the closest point of the LineString from
-					// the receiver
-					li = splitLineStringIntoPoints(source, receiverCoord,
-							srcPos, data.minRecDist);
-					// Compute li to equation 4.1 NMPB 2008 (June 2009)
-
-				}
-				dataOut.appendSourceCount(srcPos.size());
-				for (final Coordinate srcCoord : srcPos) {
-					// For each Pt Source - Pt Receiver
-					// TODO remove debug if
-					/*
-					 * if(receiverCoord.distance(new
-					 * Coordinate(305282,2253003))<2.) // &&
-					 * srcCoord.distance(new Coordinate(305178,2253023))<2. {
-					 * //TODO remove debug instruction
-					 * 
-					 * Value[] row=new Value[3];
-					 * row[0]=ValueFactory.createValue(
-					 * factory.createPoint(srcCoord));
-					 * row[1]=ValueFactory.createValue(idReceiver);
-					 * row[2]=ValueFactory.createValue(1); try {
-					 * driver.addValues(row); } catch (DriverException e) { //
-					 * TODO Auto-generated catch block e.printStackTrace();
-					 * return; }
-					 * 
-					 * 
-					 * }
-					 */
-					receiverSourcePropa(srcCoord, receiverCoord, energeticSum,
-							alpha_atmo, wj, li, mirroredReceiver,
-							nearBuildingsWalls, regionCorners,
-							regionCornersFreeToReceiver, freq_lambda, null,
-							idReceiver);
-				}
-			}
+			computeSoundLevelAtPosition(receiverCoord, energeticSum);
 			// Save the sound level at this receiver
 			// Do the sum of all frequency bands
 			double allfreqlvl = 0;

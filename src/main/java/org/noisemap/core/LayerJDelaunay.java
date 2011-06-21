@@ -6,6 +6,10 @@ package org.noisemap.core;
  * @author Nicolas FORTIN, Judicaël PICAUT
  ***********************************/
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -18,6 +22,7 @@ import org.jdelaunay.delaunay.DEdge;
 import org.jdelaunay.delaunay.DPoint;
 import org.jdelaunay.delaunay.DTriangle;
 import org.jdelaunay.delaunay.DelaunayError;
+import org.jdelaunay.delaunay.Element;
 
 import com.vividsolutions.jts.algorithm.CGAlgorithms;
 import com.vividsolutions.jts.geom.Coordinate;
@@ -35,7 +40,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 	private ArrayList<DEdge> constraintEdge = new ArrayList<DEdge>();
 	private LinkedList<DPoint> ptToInsert = new LinkedList<DPoint>();
 	private List<Coordinate> holes = new LinkedList<Coordinate>();
-	
+	private boolean debugMode=false; //output primitives in a text file
 	private boolean computeNeighbors=false;
 	List<Triangle> triangles = new ArrayList<Triangle>();
 	private List<Triangle> neighbors = new ArrayList<Triangle>(); // The
@@ -60,7 +65,17 @@ public class LayerJDelaunay implements LayerDelaunay {
 		} else {
 			pt=new DPoint(pos);
 		}
-		return (DTriangle)trilst.get(trilst.size()/2).searchPointContainer(pt);
+		Element foundEl=trilst.get(trilst.size()/2).searchPointContainer(pt);
+		if(foundEl instanceof DTriangle) {
+			return (DTriangle)foundEl;
+		}else{
+			for(DTriangle tri : trilst) {
+				if(tri.contains(pt)) {
+					return tri;
+				}
+			}
+			return null;
+		}
 	}
 	private static class SetZFilter implements CoordinateSequenceFilter {
 		private boolean done = false;
@@ -138,7 +153,39 @@ public class LayerJDelaunay implements LayerDelaunay {
 				// Push segments
 				delaunayTool.setPoints(ptToInsert);
 				delaunayTool.setConstraintEdges(constraintEdge);
-				//delaunayTool.forceConstraintIntegrity();
+				
+				if(debugMode) {
+					try
+					{
+					//Debug mode write input & output data to files
+					File file = new File("./layerjdlaunaydebug"+System.currentTimeMillis()+".txt");	
+					// Initialization
+					PrintWriter out = new PrintWriter(new FileOutputStream(file));
+						
+					out.printf("DPoint pts[]={");
+					// write pts
+					for(DPoint pt : ptToInsert) {
+						out.printf("new DPoint(%s, %s, %s),\r\n",Double.toString(pt.getX()),Double.toString(pt.getY()),Double.toString(pt.getZ()));
+					}
+					out.printf("};\r\n");
+					//write segments
+					out.printf("DEdge edges[]={");
+					// write pts
+
+					for(DEdge edge : constraintEdge) {
+						DPoint pt=edge.getStartPoint();
+						DPoint pt2=edge.getEndPoint();
+						out.printf("new DEdge(%s, %s, %s,%s, %s, %s),\r\n",Double.toString(pt.getX()),Double.toString(pt.getY()),Double.toString(pt.getZ()),Double.toString(pt2.getX()),Double.toString(pt2.getY()),Double.toString(pt2.getZ()));
+					}
+					out.printf("};\r\n");					
+					out.close();
+					} catch (FileNotFoundException e) {
+						throw new LayerDelaunayError(e.getMessage());
+					}
+				}
+				
+				
+				delaunayTool.forceConstraintIntegrity();
 				delaunayTool.processDelaunay();
 				constraintEdge.clear();
 				ptToInsert.clear();
@@ -155,7 +202,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 				for(Coordinate hole : holes) {
 					DTriangle foundTri=findTriByCoordinate(hole,trianglesDelaunay);
 					if(foundTri == null) {
-						throw new LayerDelaunayError("hole outside domain");
+						throw new LayerDelaunayError("hole outside domain ("+hole+")");
 					}
 					//Navigate through neighbors until it reach a deleted tri or locked segment
 					Stack<DTriangle> navHistoryTri=new Stack<DTriangle>();
@@ -188,11 +235,13 @@ public class LayerJDelaunay implements LayerDelaunay {
 				for (DTriangle triangle : trianglesDelaunay) {
 					if(triangle.getExternalGID()!=0) //Not a hole
 					{
+						boolean orientationReversed=false;
 						Coordinate [] ring = new Coordinate [] {triangle.getPoint(0).getCoordinate(),triangle.getPoint(1).getCoordinate(),triangle.getPoint(2).getCoordinate(),triangle.getPoint(0).getCoordinate()};
 						if(!CGAlgorithms.isCCW(ring)) {
 							Coordinate tmp= new Coordinate(ring[0]);
 							ring[0]=ring[2];
 							ring[2]=tmp;
+							orientationReversed=true;
 						}
 							
 						int a = getOrAppendVertices(ring[0], vertices, hashOfArrayIndex);
@@ -202,12 +251,16 @@ public class LayerJDelaunay implements LayerDelaunay {
 						if(this.computeNeighbors) {
 							Triangle gidTri=new Triangle(-1,-1,-1);
 							for(int i=0;i<3;i++) {
-								DTriangle neighTriangle = triangle.getEdge(i).getOtherTriangle(triangle);
+								DTriangle neighTriangle = triangle.getOppositeEdge(triangle.getPoint(i)).getOtherTriangle(triangle);
 								if(neighTriangle!=null && neighTriangle.getExternalGID()!=0) {
 									gidTri.set(i,neighTriangle.getGID());
 								}
 							}
-							gidTriangle.add(gidTri);
+							if(!orientationReversed) {
+								gidTriangle.add(gidTri);
+							} else {
+								gidTriangle.add(new Triangle(gidTri.getC(),gidTri.getB(),gidTri.getA()));
+							}
 							gidToIndex.put(triangle.getGID(),gidTriangle.size()-1);
 						}
 					}
@@ -227,11 +280,18 @@ public class LayerJDelaunay implements LayerDelaunay {
 				delaunayTool = null;
 
 			} catch (DelaunayError e) {
-				throw new LayerDelaunayError(e.getMessage());
+				String msgStack=new String();
+				for(StackTraceElement lign : e.getStackTrace()) {
+					msgStack+=lign.toString()+"\n";
+				}
+				throw new LayerDelaunayError(e.getMessage()+msgStack);
 			}
 		}
 	}
-
+	private void addHole(Coordinate holePosition) throws LayerDelaunayError
+	{
+		holes.add(holePosition);
+	}
 	@Override
 	public void addPolygon(Polygon newPoly, boolean isEmpty)
 			throws LayerDelaunayError {
@@ -251,7 +311,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 			this.addLineString(newLineString);
 		}
 		if (isEmpty) {
-			holes.add(newPoly.getInteriorPoint().getCoordinate());
+			addHole(newPoly.getInteriorPoint().getCoordinate());
 		}
 		// Append holes
 		final int holeCount = newPoly.getNumInteriorRing();
@@ -264,8 +324,9 @@ public class LayerJDelaunay implements LayerDelaunay {
 				Coordinate interiorPoint = polyBuffnew.getInteriorPoint()
 						.getCoordinate();
 				if (!factory.createPoint(interiorPoint).intersects(holeLine)) {
-					if(!isEmpty)
-						holes.add(interiorPoint);
+					if(!isEmpty) {
+						addHole(interiorPoint);
+					}
 					this.addLineString(holeLine);
 				} else {
 					logger.info("Warning : hole rejected, can't find interior point.");
@@ -302,12 +363,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 	@Override
 	public void addVertex(Coordinate vertexCoordinate)
 			throws LayerDelaunayError {
-		/*
-		 * try { MyPoint newpt=new
-		 * MyPoint(vertexCoordinate.x,vertexCoordinate.y,0.);
-		 * newpt.setUseZ(false); this.ptToInsert.add(newpt); } catch
-		 * (DelaunayError e) { throw new LayerDelaunayError(e.getMessage()); }
-		 */
+		this.getOrAppendVertices(vertexCoordinate, vertices, hashOfArrayIndex);
 	}
 
 	@Override
