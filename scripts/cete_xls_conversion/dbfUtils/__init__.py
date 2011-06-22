@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+
+# dbfUtils.py
+# By Raymond Hettinger
+# http://code.google.com/p/primary-maps-2008/source/browse/trunk/dbfUtils.py
+
 import struct, datetime, decimal, itertools
 
 def dbfreader(f):

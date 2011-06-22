@@ -93,6 +93,17 @@ def ConvertBusTramSpeed(speed_saveto,fulldata=None,xlsfilename=u"tps tc troncons
     SaveArrayToDBF(speed_saveto,col_label,data)
     print u"Extraction of data done in %g seconds." % (time.time()-start_t)
 
-Convert("morning","tron.dbf","queue.dbf",xlsfilename=sys.argv[1])
-ConvertBusTram("morning","bustram.dbf",xlsfilename=sys.argv[2])
+time_ranges=["morning" , "day" , "evening","night","average"]
+choice=0
+
+if len(sys.argv)<3:
+    raise ValueError("This script request at least 3 arguments. Xml filenames of roads traffic,tramway&busway traffic,tramway&busway speed")
+if len(sys.argv)<5:    
+    print "Choose day range to extract 0-%i :" % (len(time_ranges))
+    print ["%i:%s" % (id,name) for id,name in enumerate(time_ranges)]
+    choice=int(raw_input('Time range id:'))
+else:
+    choice=int(sys.argv[4])
+Convert(time_ranges[choice],"tron.dbf","queue.dbf",xlsfilename=sys.argv[1])
+ConvertBusTram(time_ranges[choice],"bustram.dbf",xlsfilename=sys.argv[2])
 ConvertBusTramSpeed("bustram_speed.dbf",xlsfilename=sys.argv[3])
