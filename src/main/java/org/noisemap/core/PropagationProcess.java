@@ -290,7 +290,6 @@ public class PropagationProcess implements Runnable {
 	{
 		// GeometryFactory factory=new GeometryFactory();
 		int nbfreq = data.freq_lvl.size();
-		int nb_obstr_test = 0;
 		double SrcReceiverDistance = srcCoord.distance(receiverCoord);
 		if (SrcReceiverDistance < data.maxSrcDist) {
 			// Then, check if the source is visible from the receiver (not
@@ -298,7 +297,6 @@ public class PropagationProcess implements Runnable {
 			// Create the direct Line
 			long beginBuildingObstructionTest = System.currentTimeMillis();
 			boolean somethingHideReceiver = false;
-			nb_obstr_test++;
 			somethingHideReceiver = !data.freeFieldFinder.isFreeField(
 					receiverCoord, srcCoord);
 			dataOut.appendObstructionTestQueryTime((System.currentTimeMillis() - beginBuildingObstructionTest));
@@ -365,7 +363,6 @@ public class PropagationProcess implements Runnable {
 							// Test if there is no obstacles between the
 							// reflection point and old reflection pt (or source
 							// position)
-							nb_obstr_test++;
 							validReflection = data.freeFieldFinder.isFreeField(
 									reflectionPt, destinationPt);
 							if (validReflection) // Reflection point can see
@@ -376,7 +373,6 @@ public class PropagationProcess implements Runnable {
 																		// to
 																		// the
 																		// receiver
-									nb_obstr_test++;
 									validReflection = data.freeFieldFinder
 											.isFreeField(reflectionPt,
 													receiverCoord);

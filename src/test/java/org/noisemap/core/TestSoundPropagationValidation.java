@@ -39,7 +39,7 @@ public class TestSoundPropagationValidation extends TestCase {
 		List<Geometry> srclst=new ArrayList<Geometry>(); 
 		srclst.add(factory.createPoint(new Coordinate(40,15,0)));
 		//Scene dimension
-		Envelope cellEnvelope=new Envelope(new Coordinate(0., 0.,0.),new Coordinate(45., 45.,0.));
+		Envelope cellEnvelope=new Envelope(new Coordinate(-170., -170.,0.),new Coordinate(170, 170,0.));
 		//Add source sound level
 		List<ArrayList<Double>> srcSpectrum=new ArrayList<ArrayList<Double>>();
 		srcSpectrum.add(new ArrayList<Double>());
@@ -70,12 +70,35 @@ public class TestSoundPropagationValidation extends TestCase {
 		propManager.initStructures();
 		
 		//Run test
-		splCompare(splCompute(propManager, new Coordinate(5,15,0)), "Scene 1 R1_S1", 34.97106);
+		/////////////////////////////////////////////////////////////////////////
+		// 					   Single diffraction test
+		propData.diffractionOrder=1;
+		propData.reflexionOrder=0;
+		splCompare(splCompute(propManager, new Coordinate(15,40,0)), "Scene 1 R4_S1", 46.81);
+		/////////////////////////////////////////////////////////////////////////
+		// 					   Dual diffraction test
+		propData.diffractionOrder=2;
+		propData.reflexionOrder=0;
+		splCompare(splCompute(propManager, new Coordinate(5,15,0)), "Scene 1 R1_S1", 34.97);
+		/////////////////////////////////////////////////////////////////////////
+		// 					   Geometric dispersion test
 		//Get reference spl value at 5m
+		propData.reflexionOrder=0;
 		propData.diffractionOrder=0;
 		double dbaRef=splCompute(propManager, new Coordinate(40,20,0));
 		//spl value at 10m
 		double dbaReduced=splCompute(propManager, new Coordinate(40,25,0));
 		splCompare(dbaReduced, "Scene 1 R2_S1", dbaRef-6.); //Double distance, then loss 6 dB. Atmospheric attenuation is not significant at 125Hz and  5 m distance
+		/////////////////////////////////////////////////////////////////////////
+		// 					   First reflection test
+		dbaRef=splCompute(propManager, new Coordinate(35,15,0));           //Ref, at 5m of src, at 5m of wall
+		double dbaRef2=splCompute(propManager, new Coordinate(40,15+15,0));//Ref2, at 15m of src (Src->Receiver->Wall->Receiver : 5+5+5)
+		propData.reflexionOrder=1;
+		propData.wallAlpha=0.2;
+		double dbaReflection=splCompute(propManager, new Coordinate(35,15,0)); //dbaReflection must be equal to the energetic sum of Ref&Ref2, with Ref2 attenuated by wall alpha.
+		splCompare(dbaReflection, "Scene 1 R3_S1",PropagationProcess.wToDba( PropagationProcess.dbaToW(dbaRef)+PropagationProcess.dbaToW(dbaRef2)*(1-propData.wallAlpha)));
+		
+		
+		System.out.println(manager.getNbObstructionTest()+" obstruction test has been done..");
 	}
 }
