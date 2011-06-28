@@ -21,8 +21,9 @@ import org.gdms.sql.function.FunctionException;
 public class BTW_SpectrumRepartition implements Function {
 
 	private HashMap<Integer, Integer> freqToIndex = new HashMap<Integer, Integer>();
-	private double[] non_pervious_att = { -27, -26, -24, -21, -19, -16, -14,
-			-11, -11, -8, -7, -8, -10, -13, -16, -18, -21, -23 };
+	private final static double[] non_pervious_att = { -11.3, -11.3, -11.3, -11.3, -11.3 ,-11.3,-11.3,
+			-11.3, -11.3, -11.3, -11.3, -11.3, -16.3, -16.3, -16.3, -21.3, -21.3, -21.3 };
+
 
 	public BTW_SpectrumRepartition() {
 		super();
@@ -86,19 +87,19 @@ public class BTW_SpectrumRepartition implements Function {
 	@Override
 	public Arguments[] getFunctionArguments() {
 		return new Arguments[] { new Arguments(Argument.INT, // Frequency
-																// [100,125,160,200,250,315,400,500,630,800,1000,1250,1600,2000,2500,3150,4000,5000]
+															 // [100,125,160,200,250,315,400,500,630,800,1000,1250,1600,2000,2500,3150,4000,5000]
 				Argument.DOUBLE // Global SPL value (dBA)
 		) };
 	}
 
 	@Override
 	public String getDescription() {
-		return "Return the dB(A) value corresponding to the the third octave frequency band. First parameter is Frequency band one of [100,125,160,200,250,315,400,500,630,800,1000,1250,1600,2000,2500,3150,4000,5000], second parameter is the category of the road surface [1:Pervious,2:Non Pervious], third parameter is the global dB(A) Spl Value.";
+		return "Return the dB(A) value corresponding to the the third octave frequency band. First parameter is Frequency band one of [100,125,160,200,250,315,400,500,630,800,1000,1250,1600,2000,2500,3150,4000,5000] third parameter is the global dB(A) Spl Value.";
 	}
 
 	@Override
 	public String getSqlOrder() {
-		return "select BTW_SpectrumRepartition(100,1,dbA) as dbA_100 from myTable;";
+		return "select BTW_SpectrumRepartition(100,dbA) as dbA_100 from myTable;";
 	}
 
 	@Override

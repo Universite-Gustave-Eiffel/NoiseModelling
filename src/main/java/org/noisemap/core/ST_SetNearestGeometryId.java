@@ -65,6 +65,7 @@ public class ST_SetNearestGeometryId implements CustomQuery {
 	public ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables,
 			Value[] values, IProgressMonitor pm) throws ExecutionException {
 		try {
+			ProgressionOrbisGisManager progManager=new ProgressionOrbisGisManager(2, pm);
 			// Declare source and Destination tables
 			final SpatialDataSourceDecorator sds = new SpatialDataSourceDecorator(
 					tables[0]);
@@ -99,14 +100,11 @@ public class ST_SetNearestGeometryId implements CustomQuery {
 			// First Loop
 			// Build QuadTree from Source Geometry
 			Quadtree quadtree = new Quadtree();
+			ProgressionProcess quadprocess=progManager.nextSubProcess(rowSourceCount);
 			for (long rowIndex = 0; rowIndex < rowSourceCount; rowIndex++) {
-
-				if (rowIndex / 50 == rowIndex / 50.0) {
-					if (pm.isCancelled()) {
-						break;
-					} else {
-						pm.progressTo((int) (50 * rowIndex / rowSourceCount));
-					}
+				quadprocess.nextSubProcessEnd();
+				if (pm.isCancelled()) {
+					break;
 				}
 				final Geometry geometry = sdsSource.getGeometry(rowIndex);
 				quadtree.insert(
@@ -117,14 +115,12 @@ public class ST_SetNearestGeometryId implements CustomQuery {
 
 			// Second Loop
 			// Appends Rows With nearest right table row index
+			ProgressionProcess queryprocess=progManager.nextSubProcess(rowSourceCount);
 			for (long rowIndex = 0; rowIndex < rowCount; rowIndex++) {
+				queryprocess.nextSubProcessEnd();
 
-				if (rowIndex / 50 == rowIndex / 50.0) {
-					if (pm.isCancelled()) {
-						break;
-					} else {
-						pm.progressTo((int) (50 + 50 * rowIndex / rowCount));
-					}
+				if (pm.isCancelled()) {
+					break;
 				}
 
 				// Find the nearest row id information with the min avg dist

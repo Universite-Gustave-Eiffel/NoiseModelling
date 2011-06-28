@@ -10,6 +10,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -443,13 +444,6 @@ public class LayerExtTriangle implements LayerDelaunay {
 			int maxSteiner, boolean steinerOnBoundaries,
 			boolean savePolyToRefine) throws LayerDelaunayError {
 
-		// remove debug instr
-		/*
-		 * if(driverDebug != null) { try { driverDebug.writingFinished(); }
-		 * catch (DriverException e) { // Auto-generated catch block
-		 * e.printStackTrace(); }
-		 */
-		try {
 			int refineIndex = 1;
 			if (!steinerOnBoundaries) {
 				refineIndex++;
@@ -508,13 +502,29 @@ public class LayerExtTriangle implements LayerDelaunay {
 			String line;
 			logger.info("Run delaunay triangulation " + TrianglePath + " "
 					+ options);
-			Process p = Runtime.getRuntime().exec(TrianglePath + " " + options);
-			BufferedReader input = new BufferedReader(new InputStreamReader(
-					p.getInputStream()));
-			while ((line = input.readLine()) != null) {
-				System.out.println(line);
-			}
-			input.close();
+
+				BufferedReader input=null;
+				try {
+					Process p = Runtime.getRuntime().exec(TrianglePath + " " + options);
+					input = new BufferedReader(new InputStreamReader(
+							p.getInputStream()));
+				
+					while ((line = input.readLine()) != null) {
+						System.out.println(line);
+					}
+				} catch (IOException e) {
+					e.printStackTrace();
+					throw new LayerDelaunayError(e.getMessage());
+				} finally {
+					if(input!=null) {
+						try {
+							input.close();
+						} catch (IOException e) {
+							e.printStackTrace();
+							throw new LayerDelaunayError(e.getMessage());
+						}
+					}						
+				}
 			// /////////////////////////////////////////////////
 			// Read output files
 			if (deleteIntermediateFile) {
@@ -539,10 +549,7 @@ public class LayerExtTriangle implements LayerDelaunay {
 				this.writePolyFile(finalName);
 			}
 			return finalName;
-		} catch (Exception e) {
-			e.printStackTrace();
-			throw new LayerDelaunayError(e.getMessage());
-		}
+		
 	}
 
 	@Override

@@ -6,13 +6,10 @@ package org.noisemap.plugin;
  * @author Nicolas FORTIN, Judicaël PICAUT
  ***********************************/
 
-import org.noisemap.core.BR_EvalSourceV1;
-import org.noisemap.core.BR_EvalSourceV2;
-import org.noisemap.core.BR_EvalSourceV3;
-import org.noisemap.core.BR_EvalSourceV4;
+import org.noisemap.core.BR_EvalSource;
 import org.noisemap.core.BR_SpectrumRepartition;
 import org.noisemap.core.BR_TriGrid;
-import org.noisemap.core.BTW_EvalSourceV1;
+import org.noisemap.core.BTW_EvalSource;
 import org.noisemap.core.BTW_SpectrumRepartition;
 import org.noisemap.core.Log10;
 import org.noisemap.core.ST_SetNearestGeometryId;
@@ -28,13 +25,7 @@ public class NoiseMapExtension extends Extension {
 
 	public void initialize(PlugInContext context) throws Exception {
 		context.getFeatureInstaller()
-				.addRegisterFunction(BR_EvalSourceV1.class);
-		context.getFeatureInstaller()
-				.addRegisterFunction(BR_EvalSourceV2.class);
-		context.getFeatureInstaller()
-				.addRegisterFunction(BR_EvalSourceV3.class);
-		context.getFeatureInstaller()
-				.addRegisterFunction(BR_EvalSourceV4.class);
+				.addRegisterFunction(BR_EvalSource.class);
 		context.getFeatureInstaller().addRegisterFunction(
 				ST_SplitLineInPoints.class);
 		context.getFeatureInstaller().addRegisterFunction(Log10.class);
@@ -53,8 +44,8 @@ public class NoiseMapExtension extends Extension {
 		context.getFeatureInstaller().addRegisterFunction(
 				BTW_SpectrumRepartition.class);
 		context.getFeatureInstaller().addRegisterFunction(
-				BTW_EvalSourceV1.class);
-		System.out.println("LcpcSonExtension plugin loaded..");
+				BTW_EvalSource.class);
+		System.out.println("Noise mapping extension plugin loaded..");
 	}
 
 	@Override

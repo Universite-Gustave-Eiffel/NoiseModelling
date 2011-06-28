@@ -56,6 +56,7 @@ public class ST_SetNearestZ implements CustomQuery {
 	public ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables,
 			Value[] values, IProgressMonitor pm) throws ExecutionException {
 		try {
+			ProgressionOrbisGisManager progManager=new ProgressionOrbisGisManager(2, pm);
 			final double maxDist = values[2].getAsDouble();
 			// Declare source and Destination tables
 			final SpatialDataSourceDecorator sds = new SpatialDataSourceDecorator(
@@ -81,14 +82,11 @@ public class ST_SetNearestZ implements CustomQuery {
 			// First Loop
 			// Build QuadTree from Source Geometry
 			Quadtree quadtree = new Quadtree();
+			ProgressionProcess quadprog=progManager.nextSubProcess(rowSourceCount);
 			for (long rowIndex = 0; rowIndex < rowSourceCount; rowIndex++) {
-
-				if (rowIndex / 50 == rowIndex / 50.0) {
-					if (pm.isCancelled()) {
-						break;
-					} else {
-						pm.progressTo((int) (50 * rowIndex / rowSourceCount));
-					}
+				quadprog.nextSubProcessEnd();
+				if (pm.isCancelled()) {
+					break;
 				}
 				final Geometry geometry = sdsSource.getGeometry(rowIndex);
 				quadtree.insert(
@@ -99,14 +97,12 @@ public class ST_SetNearestZ implements CustomQuery {
 
 			// Second Loop
 			// Appends Rows With modified Z values
+			ProgressionProcess queryprog=progManager.nextSubProcess(rowCount);
 			for (long rowIndex = 0; rowIndex < rowCount; rowIndex++) {
 
-				if (rowIndex / 50 == rowIndex / 50.0) {
-					if (pm.isCancelled()) {
-						break;
-					} else {
-						pm.progressTo((int) (50 + 50 * rowIndex / rowCount));
-					}
+				queryprog.nextSubProcessEnd();
+				if (pm.isCancelled()) {
+					break;
 				}
 
 				// Find the nearest Z information within the maxDist

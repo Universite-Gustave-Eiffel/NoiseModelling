@@ -16,22 +16,16 @@ import org.gdms.sql.function.Arguments;
 import org.gdms.sql.function.Function;
 import org.gdms.sql.function.FunctionException;
 
-public class BR_EvalSourceV2 implements Function {
+public class BR_EvalSource implements Function {
 	private Double getNoiseLvl(Double base, Double adj, Double speed,
 			Double speedBase) {
 		return base + adj * Math.log(speed / speedBase);
 	}
 
-	private Double dbaToW(Double dBA) {
-		return Math.pow(10., dBA / 10.);
-	}
 
-	private Double wToDba(Double W) {
-		return 10 * Math.log10(W);
-	}
 
 	private Double sumDba(Double dBA1, Double dBA2) {
-		return wToDba(dbaToW(dBA1) + dbaToW(dBA2));
+		return PropagationProcess.wToDba(PropagationProcess.dbaToW(dBA1) + PropagationProcess.dbaToW(dBA2));
 	}
 
 	private double getVPl(double vvl, double speedmax, int type, int subtype)
@@ -107,8 +101,6 @@ public class BR_EvalSourceV2 implements Function {
 			case 4:
 				return Math.min(vvl, 50); // Bus-way extra boulevard Street
 											// <50km/h
-			case 7:
-				return Math.min(vvl, 50); // ?? Unknown
 			case 8:
 				return Math.min(vvl, 50); // Bus-way in boulevard Street 50km/h
 			case 9:
@@ -119,33 +111,79 @@ public class BR_EvalSourceV2 implements Function {
 				+ type + ",subtype=" + subtype + ").");
 	}
 
+	private Double GetCorrection(double slope) {
+		// Limitation of slope
+		slope = Math.max(-6., slope);
+		slope = Math.min(6., slope);
+		// Computation of the correction
+		if (slope > 2.) {
+			return 2 * (slope - 2);
+		} else if (slope < -2.) {
+			return slope - 2;
+		} else {
+			return 0.;
+		}
+	}
+
 	@Override
 	public Value evaluate(DataSourceFactory dsf, Value... args)
 			throws FunctionException {
-		if (args.length != 6) {
+		if (args.length < 3) {
 			throw new FunctionException("Not enough parameters !");
+		} else if (args.length > 10) {
+			throw new FunctionException("Too many parameters !");
 		} else {
-			final double speed_load = args[0].getAsDouble();
-			final double speed_junction = args[1].getAsDouble();
-			final double speed_max = args[2].getAsDouble();
-			final int vl_per_hour = args[3].getAsInt();
-			final int pl_per_hour = args[4].getAsInt();
-			final int copound_roadtype = args[5].getAsInt();
-			// Separation of main index and sub index
-			final int roadtype = copound_roadtype / 10;
-			final int roadsubtype = copound_roadtype - (roadtype * 10);
-			// Computation of traffic speed
-			double speed = 0.;
-			if (speed_junction > 0.) {
-				speed = speed_junction;
-			} else if (speed_load > 0.) {
-				speed = speed_load;
-			} else {
-				speed = speed_max;
+			// Basic arguments
+			double speed_load = args[0].getAsDouble();
+			int vl_per_hour = args[1].getAsInt();
+			int pl_per_hour = args[2].getAsInt();
+			double speed_junction = speed_load;
+			double speed_max = speed_load;
+			int copound_roadtype = 58;
+			double begin_z = 0;
+			double end_z = 0;
+			double road_length = 10;
+			boolean is_queue = false;
+			if (args.length >= 6) {
+				speed_junction = args[3].getAsDouble();
+				speed_max = args[4].getAsDouble();
+				copound_roadtype = args[5].getAsInt();
 			}
+			if (args.length >= 9) {
+				begin_z = args[6].getAsDouble();
+				end_z = args[7].getAsDouble();
+				road_length = args[8].getAsDouble();
+			}
+			if (args.length >= 10) {
+				is_queue = args[9].getAsBoolean();
+			}
+			double speed;
+			double speed_pl;
+			if(args.length >= 6) {
+				// Separation of main index and sub index
+				final int roadtype = copound_roadtype / 10;
+				final int roadsubtype = copound_roadtype - (roadtype * 10);
+	
+				// Compute the slope
+				// final double
+				// ground_dist=Math.sqrt(Math.pow(road_length,2)-Math.pow(end_z-begin_z,2));
+				// OrbisGis return the length without the Z data; then we don't need
+				// to compute the zero level distance
 
-			double speed_pl = getVPl(speed, speed_max, roadtype, roadsubtype);
-
+				// Computation of the traffic speed
+				if (speed_junction > 0. && is_queue) {
+					speed = speed_junction;
+				} else if (speed_load > 0.) {
+					speed = speed_load;
+				} else {
+					speed = speed_max;
+				}
+	
+				speed_pl = getVPl(speed, speed_max, roadtype, roadsubtype);
+			}else{
+				speed = speed_load;
+				speed_pl = speed_load;
+			}
 			// ///////////////////////
 			// Noise road/tire
 			// Use R2 surface
@@ -169,6 +207,12 @@ public class BR_EvalSourceV2 implements Function {
 			} else {
 				pl_motor_lvl = getNoiseLvl(50.4, 3., speed_pl, 80.);
 			}
+			//Taking account of slope percentage
+			if (args.length >= 9) {
+				final double ground_dist = road_length;
+			    final double slope_perc = (end_z - begin_z) / ground_dist * 100.;
+    			pl_motor_lvl += GetCorrection(slope_perc); // Slope correction of Lmw,m,PL
+			 }
 
 			// ////////////////////////
 			// Energetic SUM
@@ -184,7 +228,7 @@ public class BR_EvalSourceV2 implements Function {
 
 	@Override
 	public String getName() {
-		return "BR_EvalSourceV2";
+		return "BR_EvalSource";
 	}
 
 	@Override
@@ -200,22 +244,50 @@ public class BR_EvalSourceV2 implements Function {
 	@Override
 	public Arguments[] getFunctionArguments() {
 		return new Arguments[] { new Arguments(Argument.NUMERIC, // load speed
-				Argument.NUMERIC, // junction speed
-				Argument.NUMERIC, // speed limit
+				Argument.NUMERIC, // light vehicle
+				Argument.NUMERIC  // heavy vehicle
+				),
+				new Arguments(Argument.NUMERIC, // load speed
+						Argument.NUMERIC, // light vehicle
+						Argument.NUMERIC, // heavy vehicle
+						Argument.NUMERIC, // junction speed
+						Argument.NUMERIC, // speed limit
+						Argument.NUMERIC // Road Type XY
+				),
+				new Arguments(Argument.NUMERIC, // load speed
+						Argument.NUMERIC, // light vehicle
+						Argument.NUMERIC, // heavy vehicle
+						Argument.NUMERIC, // junction speed
+						Argument.NUMERIC, // speed limit
+						Argument.NUMERIC, // Road Type XY
+						Argument.NUMERIC, // Z begin
+						Argument.NUMERIC, // Z end
+						Argument.NUMERIC // Road length(m) (without taking account of
+											// the Z coordinate)
+				),
+				new Arguments(Argument.NUMERIC, // load speed
 				Argument.NUMERIC, // light vehicle
 				Argument.NUMERIC, // heavy vehicle
-				Argument.NUMERIC // Road Type XY
+				Argument.NUMERIC, // junction speed
+				Argument.NUMERIC, // speed limit
+				Argument.NUMERIC, // Road Type XY
+				Argument.NUMERIC, // Z begin
+				Argument.NUMERIC, // Z end
+				Argument.NUMERIC, // Road length(m) (without taking account of
+									// the Z coordinate)
+				Argument.BOOLEAN // Is queue (use junction speed as effective
+									// speed)
 		) };
 	}
 
 	@Override
 	public String getDescription() {
-		return "Return the dB(A) value corresponding to the road and light and heavy vehicle parameters.";
+		return "Return the dB(A) value corresponding to the parameters.You can specify from 3 to 10 parameters.";
 	}
 
 	@Override
 	public String getSqlOrder() {
-		return "select BR_EvalSourceV2(loadSpeed,junction,speedMax,lightVehicleCount,heavyVehicleCount,roadType) from myTable;";
+		return "BR_EvalSource(loadSpeed,lightVehicleCount,heavyVehicleCount[,junction speed,speedMax,roadType[,Zbegin,Zend,roadLength[,isqueue]]])";
 	}
 
 	@Override

@@ -88,7 +88,7 @@ public class BR_TriGrid implements CustomQuery {
 			DataSource[] tables, IProgressMonitor pm) throws ExecutionException {
 		// The region of interest is only where we can find sources
 		// Then we keep only the region where the area is covered by sources
-		Envelope mainEnvelope = new Envelope();
+		Envelope mainEnvelope;
 
 		final SpatialDataSourceDecorator sdsSource = new SpatialDataSourceDecorator(
 				tables[1]);

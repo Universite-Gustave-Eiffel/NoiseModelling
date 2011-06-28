@@ -223,7 +223,6 @@ public class FastObstructionTest {
 			if (distline_line < nearestIntersectionPtDist
 					&& !navigationHistory.contains(this.triNeighbors.get(
 							triIndex).get(1))) {
-				nearestIntersectionPtDist = distline_line;
 				nearestIntersectionSide = 1;
 			}
 		}

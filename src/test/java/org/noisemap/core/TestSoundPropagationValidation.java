@@ -20,10 +20,13 @@ public class TestSoundPropagationValidation extends TestCase {
 		propManager.computeSoundLevelAtPosition(receiverPosition, energeticSum);
 		return PropagationProcess.wToDba(energeticSum[0]);		
 	}
+	public static boolean isSameDbValues(double dba,double dba2) {
+		return Math.abs(dba-dba2)<splEpsilon || (Double.isInfinite(dba) && Double.isInfinite(dba2));
+	}
 	private void splCompare(double dba,String testName,double goodSpl) {
 
 		System.out.println(testName+" "+dba+" dB(A)");
-		assertTrue(goodSpl+"!="+dba+" (right ref)Sound level computation error @ "+testName,Math.abs(dba-goodSpl)<splEpsilon);		
+		assertTrue(goodSpl+"!="+dba+" (right ref)Sound level computation error @ "+testName,isSameDbValues(dba,goodSpl));		
 	}
 	public void testScene1() throws LayerDelaunayError {
 		////////////////////////////////////////////////////////////////////////////

@@ -49,7 +49,7 @@ public class ProgressionProcess {
 		// do finalization here
 		if (this.parentProcess != null) {
 			// Complete remaining process
-			if (subprocess_done != subprocess_size) {
+			if (Double.compare(subprocess_done, subprocess_size)  != 0) {
 				this.parentProcess
 						.pushProgression(1 - (subprocess_done / subprocess_size));
 			}
@@ -81,10 +81,10 @@ public class ProgressionProcess {
 	 * garbage collector free the object
 	 */
 	public synchronized void processFinished() {
-		if (subprocess_done != subprocess_size) {
+		if (Double.compare(subprocess_done, subprocess_size)  != 0) {
 			this.parentProcess
 					.pushProgression(1 - (subprocess_done / subprocess_size));
-			subprocess_done = 1.;
+			subprocess_done = subprocess_size;
 		}
 	}
 

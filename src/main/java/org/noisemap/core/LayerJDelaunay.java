@@ -18,11 +18,11 @@ import java.util.Stack;
 
 import org.apache.log4j.Logger;
 import org.jdelaunay.delaunay.ConstrainedMesh;
-import org.jdelaunay.delaunay.DEdge;
-import org.jdelaunay.delaunay.DPoint;
-import org.jdelaunay.delaunay.DTriangle;
-import org.jdelaunay.delaunay.DelaunayError;
-import org.jdelaunay.delaunay.Element;
+import org.jdelaunay.delaunay.geometries.DEdge;
+import org.jdelaunay.delaunay.geometries.DPoint;
+import org.jdelaunay.delaunay.geometries.DTriangle;
+import org.jdelaunay.delaunay.error.DelaunayError;
+import org.jdelaunay.delaunay.geometries.Element;
 
 import com.vividsolutions.jts.algorithm.CGAlgorithms;
 import com.vividsolutions.jts.geom.Coordinate;
@@ -282,7 +282,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 			} catch (DelaunayError e) {
 				String msgStack=new String();
 				for(StackTraceElement lign : e.getStackTrace()) {
-					msgStack+=lign.toString()+"\n";
+					msgStack.concat(lign.toString()+"\n");
 				}
 				throw new LayerDelaunayError(e.getMessage()+msgStack);
 			}
@@ -340,9 +340,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 	@Override
 	public void setMinAngle(Double minAngle) {
 		// TODO Auto-generated method stub
-		if (delaunayTool != null) {
-			// delaunayTool.setMinAngle(minAngle);
-		}
+
 	}
 
 	@Override
