@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<geocognition-node xmlns:ns2="org.orbisgis.mapContext" xmlns:ns3="org.orbisgis.legend" xmlns:ns4="org.orbisgis.symbol" version="1" id="">
+      <geocognition-node id="cartes">
+            <geocognition-node id="CartographieIsoContour">
+                  <node-content content-type-id="org.orbisgis.core.geocognition.MapContext">
+                        <ns2:map-context>
+                              <ns2:idTime name="1286374228981"/>
+                              <ns2:boundingBox name="POLYGON ((-76.06831251239377 -173.70116993852912, -76.06831251239377 203.53460241919515, 249.13493952012703 203.53460241919515, 249.13493952012703 -173.70116993852912, -76.06831251239377 -173.70116993852912))"/>
+                              <ns2:layer-collection visible="false" name="root">
+                                    <layer visible="false" source-name="tri_lvl" name="tri_lvl">
+                                          <ns2:legends field-name="the_geom">
+                                                <ns2:simple-legend legend-id="org.orbisgis.legend.UniqueSymbol">
+                                                      <ns3:legend-container>
+                                                            <legend-description xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="ns3:unique-symbol-legend-type" visible="true" name="Unique symbol">
+                                                                  <symbol xsi:type="ns4:symbol-composite-type">
+                                                                        <symbol xsi:type="ns4:simple-symbol-type" symbol-type-id="org.orbisgis.symbol.Polygon">
+                                                                              <ns4:property value="-686804063" name="outline-color"/>
+                                                                              <ns4:property value="Polygon" name="name"/>
+                                                                              <ns4:property value="false" name="map-units"/>
+                                                                              <ns4:property value="1" name="line-width"/>
+                                                                        </symbol>
+                                                                        <symbol xsi:type="ns4:simple-symbol-type" symbol-type-id="org.orbisgis.symbol.point.Square">
+                                                                              <ns4:property value="-16777216" name="outline-color"/>
+                                                                              <ns4:property value="-65536" name="fill-color"/>
+                                                                              <ns4:property value="false" name="map-units"/>
+                                                                              <ns4:property value="Square in point" name="name"/>
+                                                                              <ns4:property value="1" name="line-width"/>
+                                                                              <ns4:property value="5" name="size"/>
+                                                                        </symbol>
+                                                                        <symbol xsi:type="ns4:simple-symbol-type" symbol-type-id="org.orbisgis.symbol.Line">
+                                                                              <ns4:property value="-15715423" name="outline-color"/>
+                                                                              <ns4:property value="false" name="map-units"/>
+                                                                              <ns4:property value="Line" name="name"/>
+                                                                              <ns4:property value="1" name="line-width"/>
+                                                                        </symbol>
+                                                                  </symbol>
+                                                            </legend-description>
+                                                      </ns3:legend-container>
+                                                </ns2:simple-legend>
+                                          </ns2:legends>
+                                    </layer>
+                                    <layer visible="true" source-name="contouring_noise_map" name="contouring_noise_map">
+                                          <ns2:legends field-name="the_geom">
+                                                <ns2:simple-legend legend-id="org.orbisgis.legend.ValueClassification">
+                                                      <ns3:legend-container>
+                                                            <legend-description xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="ns3:unique-value-legend-type" field-type="64" field-name="idiso" visible="true" name="Value classification">
+                                                                  <ns3:value-classification label="&lt;45" value="0">
+                                                                        <symbol xsi:type="ns4:symbol-composite-type">
+                                                                              <symbol xsi:type="ns4:simple-symbol-type" symbol-type-id="org.orbisgis.symbol.Polygon">
+                                                                                    <ns4:property value="-11745280" name="fill-color"/>
+                                                                                    <ns4:property value="Polygon" name="name"/>
+                                                                                    <ns4:property value="false" name="map-units"/>
+                                                                                    <ns4:property value="1" name="line-width"/>
+                                                                              </symbol>
+                                                                        </symbol>
+                                                                  </ns3:value-classification>
+                                                                  <ns3:value-classification label="45-50" value="1">
+                                                                        <symbol xsi:type="ns4:symbol-composite-type">
+                                                                              <symbol xsi:type="ns4:simple-symbol-type" symbol-type-id="org.orbisgis.symbol.Polygon">
+                                                                                    <ns4:property value="-11141376" name="fill-color"/>
+                                                                                    <ns4:property value="Polygon" name="name"/>
+                                                                                    <ns4:property value="false" name="map-units"/>
+                                                                                    <ns4:property value="1" name="line-width"/>
+                                                                              </symbol>
+                                                                        </symbol>
+                                                                  </ns3:value-classification>
+                                                                  <ns3:value-classification label="50-55" value="2">
+                                                                        <symbol xsi:type="ns4:symbol-composite-type">
+                                                                              <symbol xsi:type="ns4:simple-symbol-type" symbol-type-id="org.orbisgis.symbol.Polygon">
+                                                                                    <ns4:property value="-4587661" name="fill-color"/>
+                                                                                    <ns4:property value="Polygon" name="name"/>
+                                                                                    <ns4:property value="false" name="map-units"/>
+                                                                                    <ns4:property value="1" name="line-width"/>
+                                                                              </symbol>
+                                                                        </symbol>
+                                                                  </ns3:value-classification>
+                                                                  <ns3:value-classification label="55-60" value="3">
+                                                                        <symbol xsi:type="ns4:symbol-composite-type">
+                                                                              <symbol xsi:type="ns4:simple-symbol-type" symbol-type-id="org.orbisgis.symbol.Polygon">
+                                                                                    <ns4:property value="-256" name="fill-color"/>
+                                                                                    <ns4:property value="Polygon" name="name"/>
+                                                                                    <ns4:property value="false" name="map-units"/>
+                                                                                    <ns4:property value="1" name="line-width"/>
+                                                                              </symbol>
+                                                                        </symbol>
+                                                                  </ns3:value-classification>
+                                                                  <ns3:value-classification label="60-65" value="4">
+                                                                        <symbol xsi:type="ns4:symbol-composite-type">
+                                                                              <symbol xsi:type="ns4:simple-symbol-type" symbol-type-id="org.orbisgis.symbol.Polygon">
+                                                                                    <ns4:property value="-22016" name="fill-color"/>
+                                                                                    <ns4:property value="Polygon" name="name"/>
+                                                                                    <ns4:property value="false" name="map-units"/>
+                                                                                    <ns4:property value="1" name="line-width"/>
+                                                                              </symbol>
+                                                                        </symbol>
+                                                                  </ns3:value-classification>
+                                                                  <ns3:value-classification label="65-70" value="5">
+                                                                        <symbol xsi:type="ns4:symbol-composite-type">
+                                                                              <symbol xsi:type="ns4:simple-symbol-type" symbol-type-id="org.orbisgis.symbol.Polygon">
+                                                                                    <ns4:property value="-65536" name="fill-color"/>
+                                                                                    <ns4:property value="Polygon" name="name"/>
+                                                                                    <ns4:property value="false" name="map-units"/>
+                                                                                    <ns4:property value="1" name="line-width"/>
+                                                                              </symbol>
+                                                                        </symbol>
+                                                                  </ns3:value-classification>
+                                                                  <ns3:value-classification label="70-75" value="6">
+                                                                        <symbol xsi:type="ns4:symbol-composite-type">
+                                                                              <symbol xsi:type="ns4:simple-symbol-type" symbol-type-id="org.orbisgis.symbol.Polygon">
+                                                                                    <ns4:property value="-2817793" name="fill-color"/>
+                                                                                    <ns4:property value="Polygon" name="name"/>
+                                                                                    <ns4:property value="false" name="map-units"/>
+                                                                                    <ns4:property value="1" name="line-width"/>
+                                                                              </symbol>
+                                                                        </symbol>
+                                                                  </ns3:value-classification>
+                                                                  <ns3:value-classification label="&gt;75" value="7">
+                                                                        <symbol xsi:type="ns4:symbol-composite-type">
+                                                                              <symbol xsi:type="ns4:simple-symbol-type" symbol-type-id="org.orbisgis.symbol.Polygon">
+                                                                                    <ns4:property value="-6946716" name="fill-color"/>
+                                                                                    <ns4:property value="Polygon" name="name"/>
+                                                                                    <ns4:property value="false" name="map-units"/>
+                                                                                    <ns4:property value="1" name="line-width"/>
+                                                                              </symbol>
+                                                                        </symbol>
+                                                                  </ns3:value-classification>
+                                                            </legend-description>
+                                                      </ns3:legend-container>
+                                                </ns2:simple-legend>
+                                                <ns2:simple-legend legend-id="org.orbisgis.legend.UniqueSymbol">
+                                                      <ns3:legend-container>
+                                                            <legend-description xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="ns3:unique-symbol-legend-type" visible="false" name="Unique symbol">
+                                                                  <symbol xsi:type="ns4:symbol-composite-type">
+                                                                        <symbol xsi:type="ns4:simple-symbol-type" symbol-type-id="org.orbisgis.symbol.Polygon">
+                                                                              <ns4:property value="-16777216" name="outline-color"/>
+                                                                              <ns4:property value="Polygon" name="name"/>
+                                                                              <ns4:property value="false" name="map-units"/>
+                                                                              <ns4:property value="1" name="line-width"/>
+                                                                        </symbol>
+                                                                  </symbol>
+                                                            </legend-description>
+                                                      </ns3:legend-container>
+                                                </ns2:simple-legend>
+                                          </ns2:legends>
+                                    </layer>
+                              </ns2:layer-collection>
+                              <ns2:selected-layer name="tri_lvl"/>
+                        </ns2:map-context>
+                  </node-content>
+            </geocognition-node>
+      </geocognition-node>
+</geocognition-node>
