@@ -425,7 +425,7 @@ public class PropagationProcess implements Runnable {
 			} // End reflexion
 				// ///////////
 				// Process diffraction paths
-			if (data.diffractionOrder > 0
+			if (somethingHideReceiver && data.diffractionOrder > 0
 					&& regionCornersFreeToReceiver.size() > 0) {
 				// Get the first valid receiver->corner
 				int receiverFreeCornerIndex = 0;
@@ -461,10 +461,6 @@ public class PropagationProcess implements Runnable {
 							if (diffractionFullDistance < data.maxSrcDist) {
 								double delta = diffractionFullDistance
 										- SrcReceiverDistance;
-								// Negative if free field
-								if (!somethingHideReceiver) {
-									delta = -delta;
-								}
 
 								// double largeAtt=0;//TODO remove
 								for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
@@ -486,24 +482,26 @@ public class PropagationProcess implements Runnable {
 									if (testForm >= -2.) {
 										DiffractionAttenuation = 10 * Math
 												.log10(3 + testForm);
+									}else{
+										System.out.println("c' < -2");
 									}
 									// Limit to 0<=DiffractionAttenuation<=25
 									DiffractionAttenuation = Math.max(0,
 											DiffractionAttenuation);
 									// largeAtt+=DbaToW(DiffractionAttenuation);
+									double AttenuatedWj = wj.get(idfreq);
 									// Geometric dispersion
-									double AttenuatedWj = attDistW(
-											wj.get(idfreq), SrcReceiverDistance);
+									AttenuatedWj=attDistW(AttenuatedWj, SrcReceiverDistance);
 									// Apply diffraction attenuation
 									AttenuatedWj = dbaToW(wToDba(AttenuatedWj)
 											- DiffractionAttenuation);
 									// Apply atmospheric absorption and ground
-									// AttenuatedWj=DbaToW(WToDba(AttenuatedWj)-(alpha_atmo[idfreq]*ReflectedSrcReceiverDistance)/1000.+10*Math.log10(li));
 									AttenuatedWj = dbaToW(wToDba(attAtmW(
 											AttenuatedWj,
 											diffractionFullDistance,
 											alpha_atmo[idfreq]))
 											+ 10 * Math.log10(li));
+									
 									energeticSum[idfreq] += AttenuatedWj;
 								}
 								// TODO removing
