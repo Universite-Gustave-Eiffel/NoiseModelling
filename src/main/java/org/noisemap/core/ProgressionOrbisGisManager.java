@@ -6,7 +6,7 @@ package org.noisemap.core;
  * @author Nicolas FORTIN, Judicaël PICAUT
  ***********************************/
 
-import org.orbisgis.progress.IProgressMonitor;
+import org.orbisgis.progress.ProgressMonitor;
 
 /**
  * ProgressionManager class aims to easily manage the update of process
@@ -16,11 +16,11 @@ import org.orbisgis.progress.IProgressMonitor;
 public class ProgressionOrbisGisManager implements Runnable {
 	private Thread thread;
 	private ProgressionProcess rootProcess;
-	private IProgressMonitor monitor;
+	private ProgressMonitor monitor;
 	private long updateInterval = 1000;
 	private boolean enabled = true;
 
-	public ProgressionOrbisGisManager(long taskCount, IProgressMonitor monitor) {
+	public ProgressionOrbisGisManager(long taskCount, ProgressMonitor monitor) {
 		thread = new Thread(this);
 		this.rootProcess = new ProgressionProcess(null, taskCount);
 		this.monitor = monitor;

@@ -9,25 +9,25 @@ package org.noisemap.core;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.gdms.data.DataSource;
-import org.gdms.data.DataSourceFactory;
-import org.gdms.data.ExecutionException;
-import org.gdms.data.SpatialDataSourceDecorator;
-import org.gdms.data.metadata.DefaultMetadata;
-import org.gdms.data.metadata.Metadata;
+import org.gdms.data.SQLDataSourceFactory;
+import org.gdms.data.schema.DefaultMetadata;
+import org.gdms.data.schema.Metadata;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
 import org.gdms.driver.DriverException;
-import org.gdms.driver.ObjectDriver;
+import org.gdms.driver.ReadAccess;
 import org.gdms.driver.driverManager.DriverLoadException;
-import org.gdms.sql.customQuery.CustomQuery;
-import org.gdms.sql.customQuery.TableDefinition;
-import org.gdms.sql.function.Argument;
-import org.gdms.sql.function.Arguments;
+import org.gdms.sql.function.FunctionException;
+import org.gdms.sql.function.FunctionSignature;
+import org.gdms.sql.function.ScalarArgument;
+import org.gdms.sql.function.table.AbstractTableFunction;
+import org.gdms.sql.function.table.TableArgument;
+import org.gdms.sql.function.table.TableDefinition;
+import org.gdms.sql.function.table.TableFunctionSignature;
 import org.gdms.driver.DiskBufferDriver;
-import org.orbisgis.progress.IProgressMonitor;
+import org.orbisgis.progress.ProgressMonitor;
 import com.vividsolutions.jts.index.quadtree.Quadtree;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.CoordinateSequence;
@@ -35,112 +35,7 @@ import com.vividsolutions.jts.geom.CoordinateSequenceFilter;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
 
-public class ST_SetNearestZ implements CustomQuery {
-
-	@Override
-	public String getName() {
-		return "ST_SetNearestZ";
-	}
-
-	@Override
-	public String getSqlOrder() {
-		return "select ST_SetNearestZ( left_table.geomToUpdate, right_table.geomSource, MaximumDistance ) from left_table,right_table;";
-	}
-
-	@Override
-	public String getDescription() {
-		return "Add or Update the Z information from the nearest geometry, destroy the geom line if there is no source information under the maximum distance parameter.";
-	}
-
-	@Override
-	public ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables,
-			Value[] values, IProgressMonitor pm) throws ExecutionException {
-		try {
-			ProgressionOrbisGisManager progManager=new ProgressionOrbisGisManager(2, pm);
-			final double maxDist = values[2].getAsDouble();
-			// Declare source and Destination tables
-			final SpatialDataSourceDecorator sds = new SpatialDataSourceDecorator(
-					tables[0]);
-			final SpatialDataSourceDecorator sdsSource = new SpatialDataSourceDecorator(
-					tables[1]);
-			// Open source and Destination tables
-			sds.open();
-			sdsSource.open();
-
-			// Set defaultGeom as the geom set by the user
-			final String spatialUpdateFieldName = values[0].toString();
-			final String spatialSourceFieldName = values[1].toString();
-			sds.setDefaultGeometry(spatialUpdateFieldName);
-			sdsSource.setDefaultGeometry(spatialSourceFieldName);
-			final int spatialFieldIndex = sds.getSpatialFieldIndex();
-
-			final DiskBufferDriver driver = new DiskBufferDriver(dsf,
-					sds.getMetadata());
-
-			final long rowCount = sds.getRowCount();
-			final long rowSourceCount = sdsSource.getRowCount();
-			// First Loop
-			// Build QuadTree from Source Geometry
-			Quadtree quadtree = new Quadtree();
-			ProgressionProcess quadprog=progManager.nextSubProcess(rowSourceCount);
-			for (long rowIndex = 0; rowIndex < rowSourceCount; rowIndex++) {
-				quadprog.nextSubProcessEnd();
-				if (pm.isCancelled()) {
-					break;
-				}
-				final Geometry geometry = sdsSource.getGeometry(rowIndex);
-				quadtree.insert(
-						geometry.getEnvelopeInternal(),
-						new EnvelopeWithIndex<Long>(geometry
-								.getEnvelopeInternal(), rowIndex));
-			}
-
-			// Second Loop
-			// Appends Rows With modified Z values
-			ProgressionProcess queryprog=progManager.nextSubProcess(rowCount);
-			for (long rowIndex = 0; rowIndex < rowCount; rowIndex++) {
-
-				queryprog.nextSubProcessEnd();
-				if (pm.isCancelled()) {
-					break;
-				}
-
-				// Find the nearest Z information within the maxDist
-				final Geometry geometry = sds.getGeometry(rowIndex);
-				QuadtreeZFilter zFilter = new QuadtreeZFilter(quadtree,
-						maxDist, sdsSource, geometry.getEnvelopeInternal());
-				geometry.apply(zFilter);
-
-				if (!zFilter.isOneCoordOutOfSource()) // We skip this line if
-														// there is no
-														// information for at
-														// least one of the
-														// destination
-														// coordinates
-				{
-					final Value[] fieldsValues = sds.getRow(rowIndex);
-					// If we found something within MaximumDistance units.
-					final Value[] newValues = new Value[fieldsValues.length];
-					System.arraycopy(fieldsValues, 0, newValues, 0,
-							fieldsValues.length);
-					// Update the geom
-					newValues[spatialFieldIndex] = ValueFactory
-							.createValue(geometry);
-					// Append row
-					driver.addValues(newValues);
-				}
-			}
-			driver.writingFinished();
-			sds.close();
-			sdsSource.close();
-			return driver;
-		} catch (DriverLoadException e) {
-			throw new ExecutionException(e);
-		} catch (DriverException e) {
-			throw new ExecutionException(e);
-		}
-	}
-
+public class ST_SetNearestZ extends AbstractTableFunction {
 	private class QuadtreeZFilter implements CoordinateSequenceFilter {
 		private boolean done = false;
 		private final double maxDist;
@@ -155,7 +50,7 @@ public class ST_SetNearestZ implements CustomQuery {
 
 		@SuppressWarnings("unchecked")
 		public QuadtreeZFilter(Quadtree quadtree, final double maxDist,
-				SpatialDataSourceDecorator sdsSource, Envelope geomArea) {
+				ReadAccess sdsSource,int geoFieldIndex, Envelope geomArea) {
 			super();
 			this.maxDist = maxDist;
 			// Find coordinates under the distance of the geom
@@ -166,7 +61,7 @@ public class ST_SetNearestZ implements CustomQuery {
 				try {
 					if ((env_with_index.intersects(geomArea))) {
 						Geometry geometry = sdsSource
-								.getGeometry(env_with_index.getId());
+								.getFieldValue(env_with_index.getId(),geoFieldIndex).getAsGeometry();
 						Coordinate[] points = geometry.getCoordinates();
 						for (int ptindex = 0; ptindex < points.length; ptindex++) {
 							Coordinate coord = points[ptindex];
@@ -243,6 +138,109 @@ public class ST_SetNearestZ implements CustomQuery {
 			return done;
 		}
 	}
+	@Override
+	public String getName() {
+		return "ST_SetNearestZ";
+	}
+
+	@Override
+	public String getSqlOrder() {
+		return "select ST_SetNearestZ( left_table.geomToUpdate, right_table.geomSource, MaximumDistance ) from left_table,right_table;";
+	}
+
+	@Override
+	public String getDescription() {
+		return "Add or Update the Z information from the nearest geometry, destroy the geom line if there is no source information under the maximum distance parameter.";
+	}
+
+	@Override
+	public ReadAccess evaluate(SQLDataSourceFactory dsf, ReadAccess[] tables,
+            Value[] values, ProgressMonitor pm) throws FunctionException {
+		try {
+			ProgressionOrbisGisManager progManager=new ProgressionOrbisGisManager(2, pm);
+			final double maxDist = values[2].getAsDouble();
+			// Declare source and Destination tables
+			final ReadAccess sds = tables[0];
+			final ReadAccess sdsSource = tables[1];
+			// Open source and Destination tables
+
+
+			// Set defaultGeom as the geom set by the user
+			final String spatialUpdateFieldName = values[0].toString();
+			final String spatialSourceFieldName = values[1].toString();
+			int spatialUpdateFieldIndex = sds.getMetadata().getFieldIndex(spatialUpdateFieldName);
+			int spatialSourceFieldIndex = sdsSource.getMetadata().getFieldIndex(spatialSourceFieldName);
+
+
+			final DiskBufferDriver driver = new DiskBufferDriver(dsf,
+					sds.getMetadata());
+
+			final long rowCount = sds.getRowCount();
+			final long rowSourceCount = sdsSource.getRowCount();
+			// First Loop
+			// Build QuadTree from Source Geometry
+			Quadtree quadtree = new Quadtree();
+			ProgressionProcess quadprog=progManager.nextSubProcess(rowSourceCount);
+			for (long rowIndex = 0; rowIndex < rowSourceCount; rowIndex++) {
+				quadprog.nextSubProcessEnd();
+				if (pm.isCancelled()) {
+					break;
+				}
+				final Geometry geometry = sdsSource.getFieldValue(rowIndex,spatialSourceFieldIndex).getAsGeometry();
+				quadtree.insert(
+						geometry.getEnvelopeInternal(),
+						new EnvelopeWithIndex<Long>(geometry
+								.getEnvelopeInternal(), rowIndex));
+			}
+
+			// Second Loop
+			// Appends Rows With modified Z values
+			ProgressionProcess queryprog=progManager.nextSubProcess(rowCount);
+			for (long rowIndex = 0; rowIndex < rowCount; rowIndex++) {
+
+				queryprog.nextSubProcessEnd();
+				if (pm.isCancelled()) {
+					break;
+				}
+
+				// Find the nearest Z information within the maxDist
+				final Geometry geometry = sds.getFieldValue(rowIndex,spatialUpdateFieldIndex).getAsGeometry();
+				QuadtreeZFilter zFilter = new QuadtreeZFilter(quadtree,
+						maxDist, sdsSource,spatialSourceFieldIndex, geometry.getEnvelopeInternal());
+				geometry.apply(zFilter);
+
+				if (!zFilter.isOneCoordOutOfSource()) // We skip this line if
+														// there is no
+														// information for at
+														// least one of the
+														// destination
+														// coordinates
+				{
+					//final Value[] fieldsValues = sds. getRow(rowIndex);
+					// If we found something within MaximumDistance units.
+					int fieldCount = sds.getMetadata().getFieldCount();
+					final Value[] newValues = new Value[fieldCount];
+					
+                    for (int j = 0; j < fieldCount; j++) {
+                    	newValues[j] = sds.getFieldValue(rowIndex, j);
+                    }
+					// Update the geom
+					newValues[spatialUpdateFieldIndex] = ValueFactory
+							.createValue(geometry);
+					// Append row
+					driver.addValues(newValues);
+				}
+			}
+			driver.writingFinished();
+			return driver.getTable("main");
+		} catch (DriverLoadException e) {
+			throw new FunctionException(e);
+		} catch (DriverException e) {
+			throw new FunctionException(e);
+		}
+	}
+
+	
 
 	@Override
 	public Metadata getMetadata(Metadata[] tables) throws DriverException {
@@ -260,15 +258,14 @@ public class ST_SetNearestZ implements CustomQuery {
 		return new DefaultMetadata(fieldsTypes, fieldsNames);
 	}
 
-	@Override
-	public TableDefinition[] getTablesDefinitions() {
-		return new TableDefinition[] { TableDefinition.GEOMETRY,
-				TableDefinition.GEOMETRY };
-	}
 
-	@Override
-	public Arguments[] getFunctionArguments() {
-		return new Arguments[] { new Arguments(Argument.GEOMETRY,
-				Argument.GEOMETRY, Argument.NUMERIC) };
-	}
+    @Override
+    public FunctionSignature[] getFunctionSignatures() {
+            return new FunctionSignature[]{
+                            new TableFunctionSignature(TableDefinition.GEOMETRY,
+                            new TableArgument(TableDefinition.GEOMETRY),
+                            ScalarArgument.DOUBLE)
+                    };
+    }
+
 }

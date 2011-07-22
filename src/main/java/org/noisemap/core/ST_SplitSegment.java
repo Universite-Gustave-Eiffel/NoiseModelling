@@ -6,13 +6,15 @@
 
 package org.noisemap.core;
 
-import org.gdms.data.DataSourceFactory;
+import org.gdms.data.SQLDataSourceFactory;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
-import org.gdms.sql.function.Argument;
-import org.gdms.sql.function.Arguments;
+import org.gdms.sql.function.BasicFunctionSignature;
 import org.gdms.sql.function.FunctionException;
-import org.gdms.sql.function.spatial.geometry.AbstractSpatialFunction;
+import org.gdms.sql.function.FunctionSignature;
+import org.gdms.sql.function.ScalarArgument;
+import org.gdms.sql.function.spatial.geometry.AbstractScalarSpatialFunction;
+
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.CoordinateList;
 import com.vividsolutions.jts.geom.Geometry;
@@ -25,37 +27,10 @@ import com.vividsolutions.jts.geom.LineString;
  * @brief Split StringLine (2 vertices) into MultiStringLine (2 String Line) if
  *        the length of the line is smaller than the split length parameter
  */
-public class ST_SplitSegment extends AbstractSpatialFunction {
+public class ST_SplitSegment extends AbstractScalarSpatialFunction {
 
-	@Override
-	public String getName() {
-		return "ST_SplitSegment";
-	}
 
-	@Override
-	public Arguments[] getFunctionArguments() {
-		return new Arguments[] { new Arguments(Argument.GEOMETRY,
-				Argument.NUMERIC) };
-	}
-
-	@Override
-	public boolean isAggregate() {
-		return false;
-	}
-
-	@Override
-	public String getDescription() {
-		return "Split StringLine (2 vertices) into MultiStringLine (2 String Line) if the length of the line is smaller than the split length parameter.";
-	}
-
-	@Override
-	public String getSqlOrder() {
-		return "select ST_SplitSegment(the_geom,splitLength) from myTable;";
-	}
-
-	@Override
-	public Value evaluate(DataSourceFactory dsf, Value... args)
-			throws FunctionException {
+	public Value evaluate(SQLDataSourceFactory dsf,Value... args) throws FunctionException {
 		if (args[0].isNull()) {
 			return ValueFactory.createNullValue();
 		} else {
@@ -142,5 +117,35 @@ public class ST_SplitSegment extends AbstractSpatialFunction {
 					.createValue(gf.createMultiLineString(linearray));
 		}
 	}
+	@Override
+	public String getName() {
+		return "ST_SplitSegment";
+	}
 
+
+	@Override
+    public FunctionSignature[] getFunctionSignatures() {
+            return new FunctionSignature[] {
+                    new BasicFunctionSignature(getType(null),
+                    		ScalarArgument.GEOMETRY, 
+                    		ScalarArgument.DOUBLE
+                    		
+                    )
+            };
+	}
+
+	@Override
+	public boolean isAggregate() {
+		return false;
+	}
+
+	@Override
+	public String getDescription() {
+		return "Split StringLine (2 vertices) into MultiStringLine (2 String Line) if the length of the line is smaller than the split length parameter.";
+	}
+
+	@Override
+	public String getSqlOrder() {
+		return "select ST_SplitSegment(the_geom,splitLength) from myTable;";
+	}
 }

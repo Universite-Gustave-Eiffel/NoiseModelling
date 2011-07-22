@@ -5,18 +5,18 @@
  ***********************************/
 
 package org.noisemap.core;
-
-import org.gdms.data.DataSourceFactory;
+import org.gdms.data.SQLDataSourceFactory;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
-import org.gdms.sql.function.Argument;
-import org.gdms.sql.function.Arguments;
-import org.gdms.sql.function.Function;
+import org.gdms.sql.function.AbstractScalarFunction;
+import org.gdms.sql.function.BasicFunctionSignature;
 import org.gdms.sql.function.FunctionException;
+import org.gdms.sql.function.FunctionSignature;
+import org.gdms.sql.function.ScalarArgument;
 
-public class BR_EvalSource implements Function {
+public class BR_EvalSource  extends AbstractScalarFunction {
 	private Double getNoiseLvl(Double base, Double adj, Double speed,
 			Double speedBase) {
 		return base + adj * Math.log(speed / speedBase);
@@ -126,8 +126,7 @@ public class BR_EvalSource implements Function {
 	}
 
 	@Override
-	public Value evaluate(DataSourceFactory dsf, Value... args)
-			throws FunctionException {
+	public Value evaluate(SQLDataSourceFactory dsf,Value... args) throws FunctionException {
 		if (args.length < 3) {
 			throw new FunctionException("Not enough parameters !");
 		} else if (args.length > 10) {
@@ -240,45 +239,50 @@ public class BR_EvalSource implements Function {
 	public Type getType(Type[] types) {
 		return TypeFactory.createType(Type.DOUBLE);
 	}
-
 	@Override
-	public Arguments[] getFunctionArguments() {
-		return new Arguments[] { new Arguments(Argument.NUMERIC, // load speed
-				Argument.NUMERIC, // light vehicle
-				Argument.NUMERIC  // heavy vehicle
-				),
-				new Arguments(Argument.NUMERIC, // load speed
-						Argument.NUMERIC, // light vehicle
-						Argument.NUMERIC, // heavy vehicle
-						Argument.NUMERIC, // junction speed
-						Argument.NUMERIC, // speed limit
-						Argument.NUMERIC // Road Type XY
-				),
-				new Arguments(Argument.NUMERIC, // load speed
-						Argument.NUMERIC, // light vehicle
-						Argument.NUMERIC, // heavy vehicle
-						Argument.NUMERIC, // junction speed
-						Argument.NUMERIC, // speed limit
-						Argument.NUMERIC, // Road Type XY
-						Argument.NUMERIC, // Z begin
-						Argument.NUMERIC, // Z end
-						Argument.NUMERIC // Road length(m) (without taking account of
-											// the Z coordinate)
-				),
-				new Arguments(Argument.NUMERIC, // load speed
-				Argument.NUMERIC, // light vehicle
-				Argument.NUMERIC, // heavy vehicle
-				Argument.NUMERIC, // junction speed
-				Argument.NUMERIC, // speed limit
-				Argument.NUMERIC, // Road Type XY
-				Argument.NUMERIC, // Z begin
-				Argument.NUMERIC, // Z end
-				Argument.NUMERIC, // Road length(m) (without taking account of
-									// the Z coordinate)
-				Argument.BOOLEAN // Is queue (use junction speed as effective
-									// speed)
-		) };
-	}
+    public FunctionSignature[] getFunctionSignatures() {
+            return new FunctionSignature[] {
+                    new BasicFunctionSignature(getType(null),
+                    		ScalarArgument.DOUBLE, // load speed
+                    		ScalarArgument.DOUBLE, // light vehicle
+                    		ScalarArgument.DOUBLE  // heavy vehicle
+                    		
+                    ),new BasicFunctionSignature(getType(null),
+                    		ScalarArgument.DOUBLE, // load speed
+                    		ScalarArgument.DOUBLE, // light vehicle
+                    		ScalarArgument.DOUBLE,  // heavy vehicle
+                    		ScalarArgument.DOUBLE, // junction speed
+                    		ScalarArgument.DOUBLE, // speed limit
+                    		ScalarArgument.DOUBLE // Road Type XY
+                    		
+                    ),new BasicFunctionSignature(getType(null),
+                    		ScalarArgument.DOUBLE, // load speed
+                    		ScalarArgument.DOUBLE, // light vehicle
+                    		ScalarArgument.DOUBLE, // heavy vehicle
+                    		ScalarArgument.DOUBLE, // junction speed
+                    		ScalarArgument.DOUBLE, // speed limit
+                    		ScalarArgument.DOUBLE, // Road Type XY
+                    		ScalarArgument.DOUBLE, // Z begin
+                    		ScalarArgument.DOUBLE, // Z end
+                    		ScalarArgument.DOUBLE  // Road length(m) (without taking account of
+    											   // the Z coordinate)
+                    		
+                    ),new BasicFunctionSignature(getType(null),
+                    		ScalarArgument.DOUBLE, // load speed
+                    		ScalarArgument.DOUBLE, // light vehicle
+                    		ScalarArgument.DOUBLE, // heavy vehicle
+                    		ScalarArgument.DOUBLE, // junction speed
+                    		ScalarArgument.DOUBLE, // speed limit
+                    		ScalarArgument.DOUBLE, // Road Type XY
+                    		ScalarArgument.DOUBLE, // Z begin
+                    		ScalarArgument.DOUBLE, // Z end
+                    		ScalarArgument.DOUBLE, // Road length(m) (without taking account of
+    											   // the Z coordinate)
+                    		ScalarArgument.BOOLEAN // Is queue (use junction speed as effective
+												   // speed)
+                    )
+            };
+    }
 
 	@Override
 	public String getDescription() {
@@ -290,9 +294,7 @@ public class BR_EvalSource implements Function {
 		return "BR_EvalSource(loadSpeed,lightVehicleCount,heavyVehicleCount[,junction speed,speedMax,roadType[,Zbegin,Zend,roadLength[,isqueue]]])";
 	}
 
-	@Override
-	public Value getAggregateResult() {
-		return null;
-	}
+
+
 
 }

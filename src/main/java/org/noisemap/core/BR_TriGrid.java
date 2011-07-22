@@ -14,25 +14,26 @@ import java.util.Stack;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.Logger;
-import org.gdms.data.DataSource;
-import org.gdms.data.DataSourceFactory;
-import org.gdms.data.ExecutionException;
-import org.gdms.data.SpatialDataSourceDecorator;
-import org.gdms.data.metadata.DefaultMetadata;
-import org.gdms.data.metadata.Metadata;
+import org.gdms.data.SQLDataSourceFactory;
+import org.gdms.data.schema.DefaultMetadata;
+import org.gdms.data.schema.Metadata;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
 import org.gdms.driver.DriverException;
-import org.gdms.driver.ObjectDriver;
+import org.gdms.driver.DriverUtilities;
+import org.gdms.driver.ReadAccess;
 import org.gdms.driver.driverManager.DriverLoadException;
-import org.gdms.sql.customQuery.CustomQuery;
-import org.gdms.sql.customQuery.TableDefinition;
-import org.gdms.sql.function.Argument;
-import org.gdms.sql.function.Arguments;
+import org.gdms.sql.function.FunctionException;
+import org.gdms.sql.function.FunctionSignature;
+import org.gdms.sql.function.ScalarArgument;
+import org.gdms.sql.function.table.AbstractTableFunction;
+import org.gdms.sql.function.table.TableArgument;
+import org.gdms.sql.function.table.TableDefinition;
+import org.gdms.sql.function.table.TableFunctionSignature;
 import org.gdms.driver.DiskBufferDriver;
 import org.grap.utilities.EnvelopeUtil;
-import org.orbisgis.progress.IProgressMonitor;
+import org.orbisgis.progress.ProgressMonitor;
 
 
 import com.vividsolutions.jts.densify.Densifier;
@@ -62,7 +63,7 @@ class NodeList {
  * the region of the left geometry.
  */
 
-public class BR_TriGrid implements CustomQuery {
+public class BR_TriGrid extends AbstractTableFunction {
 
 	private static Logger logger = Logger.getLogger(BR_TriGrid.class.getName());
 	// _________ ^
@@ -84,20 +85,15 @@ public class BR_TriGrid implements CustomQuery {
 		return row * cols + col;
 	}
 
-	private Envelope GetGlobalEnvelope(DataSourceFactory dsf,
-			DataSource[] tables, IProgressMonitor pm) throws ExecutionException {
+	private Envelope GetGlobalEnvelope(ReadAccess sdsSource, ProgressMonitor pm) throws FunctionException {
 		// The region of interest is only where we can find sources
 		// Then we keep only the region where the area is covered by sources
 		Envelope mainEnvelope;
 
-		final SpatialDataSourceDecorator sdsSource = new SpatialDataSourceDecorator(
-				tables[1]);
 		try {
-			sdsSource.open();
-			mainEnvelope = sdsSource.getFullExtent();
-			sdsSource.close();
+			mainEnvelope = DriverUtilities.getFullExtent(sdsSource);
 		} catch (DriverException e) {
-			throw new ExecutionException(e);
+			throw new FunctionException(e);
 		}
 		return mainEnvelope;
 
@@ -170,7 +166,7 @@ public class BR_TriGrid implements CustomQuery {
 				mainEnvelope.getMinY() + cellHeight * cellJ + cellHeight);
 	}
 
-	private void feedDelaunay(SpatialDataSourceDecorator polygonDatabase,
+	private void feedDelaunay(ReadAccess polygonDatabase,int spatialBuildingsFieldIndex,
 			LayerDelaunay delaunayTool, Envelope boundingBoxFilter,
 			double srcDistance, LinkedList<LineString> delaunaySegments,
 			double minRecDist, double srcPtDist) throws DriverException,
@@ -193,7 +189,7 @@ public class BR_TriGrid implements CustomQuery {
 		LinkedList<Geometry> toUnite = new LinkedList<Geometry>();
 		final long rowCount = polygonDatabase.getRowCount();
 		for (long rowIndex = 0; rowIndex < rowCount; rowIndex++) {
-			final Geometry geometry = polygonDatabase.getGeometry(rowIndex);
+			final Geometry geometry = polygonDatabase.getFieldValue(rowIndex, spatialBuildingsFieldIndex).getAsGeometry();
 			Envelope geomEnv = geometry.getEnvelopeInternal();
 			geomEnv.expandBy(0.5);
 			if (boundingBoxFilter.intersects(geomEnv)) {
@@ -294,8 +290,8 @@ public class BR_TriGrid implements CustomQuery {
 	private void computeFirstPassDelaunay(LayerDelaunay cellMesh,
 			Envelope mainEnvelope, int cellI, int cellJ, int cellIMax,
 			int cellJMax, double cellWidth, double cellHeight,
-			double maxSrcDist, SpatialDataSourceDecorator sdsBuildings,
-			SpatialDataSourceDecorator sdsSources, double minRecDist,
+			double maxSrcDist, ReadAccess sdsBuildings,
+			ReadAccess sdsSources,int spatialBuildingsFieldIndex,int spatialSourceFieldIndex, double minRecDist,
 			double srcPtDist, String[] firstPassResults,
 			NodeList[] neighborsBorderVertices, double maximumArea)
 			throws DriverException, LayerDelaunayError {
@@ -315,8 +311,7 @@ public class BR_TriGrid implements CustomQuery {
 		cellMesh.hintInit(cellEnvelope, 1500, 5000);
 		// /////////////////////////////////////////////////
 		// Add roads into delaunay tool
-		sdsBuildings.open();
-		sdsSources.open();
+
 		long rowCount = sdsSources.getRowCount();
 		final double firstPtAng = (Math.PI) / 4.;
 		final double secondPtAng = (Math.PI) - firstPtAng;
@@ -324,7 +319,7 @@ public class BR_TriGrid implements CustomQuery {
 		final double fourPtAng = -firstPtAng;
 		LinkedList<LineString> delaunaySegments = new LinkedList<LineString>();
 		for (long rowIndex = 0; rowIndex < rowCount; rowIndex++) {
-			Geometry pt = sdsSources.getGeometry(rowIndex);
+			Geometry pt = sdsSources.getFieldValue(rowIndex, spatialSourceFieldIndex).getAsGeometry();
 			Envelope ptEnv = pt.getEnvelopeInternal();
 			if (ptEnv.intersects(expandedCellEnvelop)) {
 				if (pt instanceof Point) {
@@ -369,7 +364,7 @@ public class BR_TriGrid implements CustomQuery {
 				}
 			}
 		}
-		feedDelaunay(sdsBuildings, cellMesh, cellEnvelope, maxSrcDist, delaunaySegments,
+		feedDelaunay(sdsBuildings,spatialBuildingsFieldIndex, cellMesh, cellEnvelope, maxSrcDist, delaunaySegments,
 				minRecDist, srcPtDist);
 
 		// Process delaunay
@@ -474,8 +469,7 @@ public class BR_TriGrid implements CustomQuery {
 		}
 		logger.info("End delaunay");
 		totalDelaunay += System.currentTimeMillis() - beginDelaunay;
-		sdsSources.close();
-		sdsBuildings.close();
+
 	}
 
 	private Double DbaToW(Double dBA) {
@@ -483,8 +477,8 @@ public class BR_TriGrid implements CustomQuery {
 	}
 
 	@Override
-	public ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables,
-			Value[] values, IProgressMonitor pm) throws ExecutionException {
+	public ReadAccess evaluate(SQLDataSourceFactory dsf, ReadAccess[] tables,
+            Value[] values, ProgressMonitor pm) throws FunctionException {
 		String tmpdir = dsf.getTempDir().getAbsolutePath();
 		String dbField = values[2].toString();
 		double maxSrcDist = values[3].getAsDouble();
@@ -526,9 +520,25 @@ public class BR_TriGrid implements CustomQuery {
 			// if not then append the distance attenuated sound level to the
 			// receiver
 			// Save the triangle geometry with the db_m value of the 3 vertices
+			;
+			int tableBuildings = 0;
+			int tableSources = 1;
+			long nbreceivers = 0;
 
+			// Load Sources and Buildings table drivers
+			final ReadAccess sds = tables[tableBuildings];
+			final ReadAccess sdsSources = tables[tableSources];
+			
+			// Set defaultGeom as the geom set by the user
+			final String spatialBuildingsFieldName = values[tableBuildings].toString();
+			final String spatialSourceFieldName = values[tableSources].toString();
+			int spatialBuildingsFieldIndex = sds.getMetadata().getFieldIndex(spatialBuildingsFieldName);
+			int spatialSourceFieldIndex = sdsSources.getMetadata().getFieldIndex(spatialSourceFieldName);
+			
+			
+			
 			// 1 Step - Evaluation of the main bounding box (sources)
-			Envelope mainEnvelope = GetGlobalEnvelope(dsf, tables, pm);
+			Envelope mainEnvelope = GetGlobalEnvelope(sdsSources, pm);
 			// Reduce by the distance of Sources distance
 			mainEnvelope = new Envelope(mainEnvelope.getMinX() + maxSrcDist,
 					mainEnvelope.getMaxX() - maxSrcDist, mainEnvelope.getMinY()
@@ -536,22 +546,12 @@ public class BR_TriGrid implements CustomQuery {
 			// Split domain into 4^subdiv cells
 
 			int gridDim = (int) Math.pow(2, subdivLvl);
-			int tableBuildings = 0;
-			int tableSources = 1;
-			long nbreceivers = 0;
 
-			// Load Sources and Buildings table drivers
-			final SpatialDataSourceDecorator sds = new SpatialDataSourceDecorator(
-					tables[tableBuildings]);
-			final SpatialDataSourceDecorator sdsSources = new SpatialDataSourceDecorator(
-					tables[tableSources]);
-
-			sdsSources.open();
 			// Initialization frequency declared in source Table
 			ArrayList<Integer> db_field_ids = new ArrayList<Integer>();
 			ArrayList<Integer> db_field_freq = new ArrayList<Integer>();
 			int fieldid = 0;
-			for (String fieldName : sdsSources.getFieldNames()) {
+			for (String fieldName : sdsSources.getMetadata().getFieldNames()) {
 				if (fieldName.startsWith(dbField)) {
 					String sub = fieldName.substring(dbField.length());
 					if (sub.length() > 0) {
@@ -565,7 +565,6 @@ public class BR_TriGrid implements CustomQuery {
 				}
 				fieldid++;
 			}
-			sdsSources.close();
 
 			double cellWidth = mainEnvelope.getWidth() / gridDim;
 			double cellHeight = mainEnvelope.getHeight() / gridDim;
@@ -615,7 +614,7 @@ public class BR_TriGrid implements CustomQuery {
 							+ "  grid..");
 					if (pm.isCancelled()) {
 						driver.writingFinished();
-						return driver;
+						return driver.getTable("main");
 					}
 					Envelope cellEnvelope = getCellEnv(mainEnvelope, cellI,
 							cellJ, gridDim, gridDim, cellWidth, cellHeight);// new
@@ -636,12 +635,20 @@ public class BR_TriGrid implements CustomQuery {
 							expandedCellEnvelop, 16, 16);
 					// QueryGeometryStructure<Integer> sourcesIndex=new
 					// QueryQuadTree<Integer>();
-					sdsSources.open();
+
 					long rowCount = sdsSources.getRowCount();
+					int fieldCount = sdsSources.getMetadata().getFieldCount();
 					Integer idsource = 0;
 					for (long rowIndex = 0; rowIndex < rowCount; rowIndex++) {
-						Value[] row = sdsSources.getRow(rowIndex);
-						Geometry geo = sdsSources.getGeometry(rowIndex);
+						
+						//Value[] row = sdsSources.getRow(rowIndex);
+						//Geometry geo = sdsSources.getGeometry(rowIndex);
+                        final Value[] row = new Value[fieldCount];
+                        for (int j = 0; j < fieldCount; j++) {
+                        	row[j] = sds.getFieldValue(rowIndex, j);
+                        }
+                        Geometry geo = row[spatialSourceFieldIndex].getAsGeometry();
+                        
 						Envelope ptEnv = geo.getEnvelopeInternal();
 						if (ptEnv.intersects(expandedCellEnvelop)) {
 							sourcesIndex.appendGeometry(geo, idsource);
@@ -661,16 +668,16 @@ public class BR_TriGrid implements CustomQuery {
 					// feed freeFieldFinder for fast intersection query
 					// optimization
 
-					sds.open();
+
 					rowCount = sds.getRowCount();
 					for (long rowIndex = 0; rowIndex < rowCount; rowIndex++) {
-						final Geometry geometry = sds.getGeometry(rowIndex);
+						final Geometry geometry = sds.getFieldValue(rowIndex, spatialBuildingsFieldIndex).getAsGeometry();
 						Envelope geomEnv = geometry.getEnvelopeInternal();
 						if (expandedCellEnvelop.intersects(geomEnv)) {
 							freeFieldFinder.addGeometry(geometry);
 						}
 					}
-					sds.close();
+
 					freeFieldFinder.finishPolygonFeeding(expandedCellEnvelop);
 
 					// Compute the first pass delaunay mesh
@@ -697,7 +704,7 @@ public class BR_TriGrid implements CustomQuery {
 											mainEnvelope, ijneigh[0],
 											ijneigh[1], gridDim, gridDim,
 											cellWidth, cellHeight, maxSrcDist,
-											sds, sdsSources, minRecDist,
+											sds, sdsSources,spatialBuildingsFieldIndex,spatialSourceFieldIndex, minRecDist,
 											srcPtDist, firstPassResults,
 											neighborsBorderVertices,
 											maximumArea);
@@ -710,7 +717,7 @@ public class BR_TriGrid implements CustomQuery {
 							cellMesh.reset();
 							computeFirstPassDelaunay(cellMesh, mainEnvelope,
 									cellI, cellJ, gridDim, gridDim, cellWidth,
-									cellHeight, maxSrcDist, sds, sdsSources,
+									cellHeight, maxSrcDist, sds, sdsSources, spatialBuildingsFieldIndex,spatialSourceFieldIndex,
 									minRecDist, srcPtDist, firstPassResults,
 									neighborsBorderVertices, maximumArea);
 						}
@@ -733,7 +740,7 @@ public class BR_TriGrid implements CustomQuery {
 					} else {
 						computeFirstPassDelaunay(cellMesh, mainEnvelope, cellI,
 								cellJ, gridDim, gridDim, cellWidth, cellHeight,
-								maxSrcDist, sds, sdsSources, minRecDist,
+								maxSrcDist, sds, sdsSources, spatialBuildingsFieldIndex, spatialSourceFieldIndex, minRecDist,
 								srcPtDist, firstPassResults,
 								neighborsBorderVertices, maximumArea);
 					}
@@ -768,7 +775,7 @@ public class BR_TriGrid implements CustomQuery {
 						while (!threadManager.isAvaibleQueueSlot()) {
 							if (pm.isCancelled()) {
 								driver.writingFinished();
-								return driver;
+								return driver.getTable("main");
 							}
 							Thread.sleep(100);
 						}
@@ -786,7 +793,7 @@ public class BR_TriGrid implements CustomQuery {
 			while (threadDataOut.getCellComputed() < nbcell && doMultiThreading) {
 				if (pm.isCancelled()) {
 					driver.writingFinished();
-					return driver;
+					return driver.getTable("main");
 				}
 				Thread.sleep(100);
 			}
@@ -797,7 +804,7 @@ public class BR_TriGrid implements CustomQuery {
 			while (driverManager.isRunning()) {
 				if (pm.isCancelled()) {
 					driver.writingFinished();
-					return driver;
+					return driver.getTable("main");
 				}
 				Thread.sleep(10);
 			}
@@ -816,15 +823,15 @@ public class BR_TriGrid implements CustomQuery {
 					+ threadDataOut.getNb_couple_receiver_src());
 			logger.info("Buildings obstruction test count:"
 					+ threadDataOut.getNb_obstr_test());
-			return driver;
+			return driver.getTable("main");
 		} catch (DriverLoadException e) {
-			throw new ExecutionException(e);
+			throw new FunctionException(e);
 		} catch (DriverException e) {
-			throw new ExecutionException(e);
+			throw new FunctionException(e);
 		} catch (LayerDelaunayError e) {
-			throw new ExecutionException(e);
+			throw new FunctionException(e);
 		} catch (InterruptedException e) {
-			throw new ExecutionException(e);
+			throw new FunctionException(e);
 		}
 	}
 
@@ -834,16 +841,26 @@ public class BR_TriGrid implements CustomQuery {
 		return new DefaultMetadata();
 	}
 
-	@Override
-	public Arguments[] getFunctionArguments() {
+    @Override
+    public FunctionSignature[] getFunctionSignatures() {
 		// Builds geom , sources.the_geom, sources.db_m ,max propa dist , subdiv
 		// lev ,roads width , receiv road dis,max tri area ,sound refl o,sound
 		// dif order,wall alpha
-		return new Arguments[] { new Arguments(Argument.GEOMETRY,
-				Argument.GEOMETRY, Argument.STRING, Argument.NUMERIC,
-				Argument.INT, Argument.NUMERIC, Argument.NUMERIC,
-				Argument.NUMERIC, Argument.INT, Argument.INT, Argument.NUMERIC) };
-	}
+            return new FunctionSignature[]{
+                            new TableFunctionSignature(TableDefinition.GEOMETRY,
+                            new TableArgument(TableDefinition.GEOMETRY),
+                            new TableArgument(TableDefinition.GEOMETRY),
+                            ScalarArgument.STRING,
+                            ScalarArgument.DOUBLE,
+                            ScalarArgument.INT,
+                            ScalarArgument.DOUBLE,
+                            ScalarArgument.DOUBLE,
+                            ScalarArgument.DOUBLE,
+                            ScalarArgument.INT,
+                            ScalarArgument.INT,
+                            ScalarArgument.DOUBLE)
+                    };
+    }
 
 	@Override
 	public String getName() {
@@ -860,10 +877,5 @@ public class BR_TriGrid implements CustomQuery {
 		return "BR_TriGrid(buildings(polygons),sources(points),sound lvl field name(string),maximum propagation distance (double meter),subdivision level 4^n cells(int), roads width (meter), densification of receivers near roads and buildings (meter), maximum area of triangle, sound reflection order, sound diffraction order, alpha of walls ) Sound propagation from ponctual sound sources to ponctual receivers created by a delaunay triangulation of specified buildings geometry.";
 	}
 
-	@Override
-	public TableDefinition[] getTablesDefinitions() {
-		return new TableDefinition[] { TableDefinition.GEOMETRY,
-				TableDefinition.GEOMETRY };
-	}
 
 }

@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Stack;
 
 import org.apache.log4j.Logger;
+
 import org.jdelaunay.delaunay.ConstrainedMesh;
 import org.jdelaunay.delaunay.geometries.DEdge;
 import org.jdelaunay.delaunay.geometries.DPoint;

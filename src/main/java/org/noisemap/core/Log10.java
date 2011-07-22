@@ -41,23 +41,19 @@
  ***********************************/
 
 package org.noisemap.core;
-
-import org.gdms.data.DataSourceFactory;
+import org.gdms.data.SQLDataSourceFactory;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
-import org.gdms.sql.function.Argument;
-import org.gdms.sql.function.Arguments;
-import org.gdms.sql.function.Function;
 import org.gdms.sql.function.FunctionException;
 import org.gdms.sql.function.FunctionValidator;
-
+import org.gdms.sql.function.math.AbstractScalarMathFunction;
 // select id, Log10(id) from points;
 
-public class Log10 implements Function {
+public class Log10 extends AbstractScalarMathFunction {
 
-	public Value evaluate(final Value... args) throws FunctionException {
+	public Value evaluate(SQLDataSourceFactory dsf, Value... args) throws FunctionException {
 		if (args[0].isNull()) {
 			return ValueFactory.createNullValue();
 		} else {
@@ -81,10 +77,6 @@ public class Log10 implements Function {
 		return TypeFactory.createType(Type.DOUBLE);
 	}
 
-	@Override
-	public Arguments[] getFunctionArguments() {
-		return new Arguments[] { new Arguments(Argument.NUMERIC) };
-	}
 
 	public void validateTypes(Type[] argumentsTypes) {
 		FunctionValidator.failIfBadNumberOfArguments(this, argumentsTypes, 1);
@@ -101,16 +93,6 @@ public class Log10 implements Function {
 		return "select Log10(myNumericField) from myTable;";
 	}
 
-	@Override
-	public Value getAggregateResult() {
-		return null;
-	}
 
-	@Override
-	public Value evaluate(DataSourceFactory dsf, Value... args)
-			throws FunctionException {
-		// TODO Auto-generated method stub
-		return null;
-	}
 
 }

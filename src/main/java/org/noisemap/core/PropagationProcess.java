@@ -670,25 +670,6 @@ public class PropagationProcess implements Runnable {
 			dataOut.appendSourceCount(srcPos.size());
 			for (final Coordinate srcCoord : srcPos) {
 				// For each Pt Source - Pt Receiver
-				// TODO remove debug if
-				/*
-				 * if(receiverCoord.distance(new
-				 * Coordinate(305282,2253003))<2.) // &&
-				 * srcCoord.distance(new Coordinate(305178,2253023))<2. {
-				 * //TODO remove debug instruction
-				 * 
-				 * Value[] row=new Value[3];
-				 * row[0]=ValueFactory.createValue(
-				 * factory.createPoint(srcCoord));
-				 * row[1]=ValueFactory.createValue(idReceiver);
-				 * row[2]=ValueFactory.createValue(1); try {
-				 * driver.addValues(row); } catch (DriverException e) { //
-				 * TODO Auto-generated catch block e.printStackTrace();
-				 * return; }
-				 * 
-				 * 
-				 * }
-				 */
 				receiverSourcePropa(srcCoord, receiverCoord, energeticSum,
 						alpha_atmo, wj, li, mirroredReceiver,
 						nearBuildingsWalls, regionCorners,

@@ -6,17 +6,18 @@
 
 package org.noisemap.core;
 
-import org.gdms.data.DataSourceFactory;
+import org.gdms.data.SQLDataSourceFactory;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
-import org.gdms.sql.function.Argument;
-import org.gdms.sql.function.Arguments;
-import org.gdms.sql.function.Function;
+import org.gdms.sql.function.AbstractScalarFunction;
+import org.gdms.sql.function.BasicFunctionSignature;
 import org.gdms.sql.function.FunctionException;
+import org.gdms.sql.function.FunctionSignature;
+import org.gdms.sql.function.ScalarArgument;
 
-public class BTW_EvalSource implements Function {
+public class BTW_EvalSource  extends AbstractScalarFunction {
 	public static final int ground_type_grass=0;
 	public static final  int ground_type_rigid=1;
 	public static final  double grass_a_factor=26.;
@@ -25,8 +26,7 @@ public class BTW_EvalSource implements Function {
 	public static final  double rigid_b_factor=78.;
 	public static final  double speed_reference=40.;
 	@Override
-	public Value evaluate(DataSourceFactory dsf, Value... args)
-			throws FunctionException {
+	public Value evaluate(SQLDataSourceFactory dsf,Value... args) throws FunctionException {
 		if (args.length != 4) {
 			return ValueFactory.createNullValue();
 		} else {
@@ -74,16 +74,18 @@ public class BTW_EvalSource implements Function {
 	public Type getType(Type[] types) {
 		return TypeFactory.createType(Type.DOUBLE);
 	}
-
 	@Override
-	public Arguments[] getFunctionArguments() {
-		return new Arguments[] { new Arguments(Argument.NUMERIC, //Speed Km/h
-								               Argument.NUMERIC, //Tramway by hour
-								               Argument.INT,	 //Ground category
-								               Argument.BOOLEAN  //Anti-vibration system
-								               ) 
-		 						};
+    public FunctionSignature[] getFunctionSignatures() {
+            return new FunctionSignature[] {
+                    new BasicFunctionSignature(getType(null),
+                    		ScalarArgument.DOUBLE,  //Speed Km/h
+                    		ScalarArgument.DOUBLE,  //Tramway per hour
+                    		ScalarArgument.DOUBLE,  //Ground category
+                    		ScalarArgument.BOOLEAN  //Anti-vibration system
+                    		)
+            };
 	}
+
 
 	@Override
 	public String getDescription() {
@@ -93,11 +95,6 @@ public class BTW_EvalSource implements Function {
 	@Override
 	public String getSqlOrder() {
 		return "select BTW_EvalSource(loadSpeed,tramway_count_per_hour,ground_category,has_anti_vibration_system) from myTable;";
-	}
-
-	@Override
-	public Value getAggregateResult() {
-		return null;
 	}
 
 }

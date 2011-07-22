@@ -6,13 +6,14 @@
 
 package org.noisemap.core;
 
-import org.gdms.data.DataSourceFactory;
+import org.gdms.data.SQLDataSourceFactory;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
-import org.gdms.sql.function.Argument;
-import org.gdms.sql.function.Arguments;
+import org.gdms.sql.function.BasicFunctionSignature;
 import org.gdms.sql.function.FunctionException;
-import org.gdms.sql.function.spatial.geometry.AbstractSpatialFunction;
+import org.gdms.sql.function.FunctionSignature;
+import org.gdms.sql.function.ScalarArgument;
+import org.gdms.sql.function.spatial.geometry.AbstractScalarSpatialFunction;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
@@ -27,7 +28,7 @@ import com.vividsolutions.jts.geom.LineString;
  *        If the length of the line(s) is smaller than delta then the interior
  *        point will be returned
  */
-public class ST_SplitLineInPoints extends AbstractSpatialFunction {
+public class ST_SplitLineInPoints extends AbstractScalarSpatialFunction {
 	public static Coordinate[] splitMultiPointsInRegularPoints(
 			Coordinate[] points, double delta) {
 		GeometryFactory gf = new GeometryFactory();
@@ -103,11 +104,15 @@ public class ST_SplitLineInPoints extends AbstractSpatialFunction {
 	public String getName() {
 		return "ST_SplitLineInPoints";
 	}
-
 	@Override
-	public Arguments[] getFunctionArguments() {
-		return new Arguments[] { new Arguments(Argument.GEOMETRY,
-				Argument.NUMERIC) };
+    public FunctionSignature[] getFunctionSignatures() {
+            return new FunctionSignature[] {
+                    new BasicFunctionSignature(getType(null),
+                    		ScalarArgument.GEOMETRY, 
+                    		ScalarArgument.DOUBLE
+                    		
+                    )
+            };
 	}
 
 	@Override
@@ -126,8 +131,7 @@ public class ST_SplitLineInPoints extends AbstractSpatialFunction {
 	}
 
 	@Override
-	public Value evaluate(DataSourceFactory dsf, Value... args)
-			throws FunctionException {
+	public Value evaluate(SQLDataSourceFactory dsf,Value... args) throws FunctionException {
 		if (args[0].isNull()) {
 			return ValueFactory.createNullValue();
 		} else {

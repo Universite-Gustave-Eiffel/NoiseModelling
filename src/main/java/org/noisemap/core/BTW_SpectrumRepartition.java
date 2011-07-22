@@ -7,18 +7,18 @@ package org.noisemap.core;
  ***********************************/
 
 import java.util.HashMap;
-
-import org.gdms.data.DataSourceFactory;
+import org.gdms.data.SQLDataSourceFactory;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
-import org.gdms.sql.function.Argument;
-import org.gdms.sql.function.Arguments;
-import org.gdms.sql.function.Function;
+import org.gdms.sql.function.AbstractScalarFunction;
+import org.gdms.sql.function.BasicFunctionSignature;
 import org.gdms.sql.function.FunctionException;
+import org.gdms.sql.function.FunctionSignature;
+import org.gdms.sql.function.ScalarArgument;
 
-public class BTW_SpectrumRepartition implements Function {
+public class BTW_SpectrumRepartition extends AbstractScalarFunction {
 
 	private HashMap<Integer, Integer> freqToIndex = new HashMap<Integer, Integer>();
 	private final static double[] non_pervious_att = { -11.3, -11.3, -11.3, -11.3, -11.3 ,-11.3,-11.3,
@@ -57,8 +57,7 @@ public class BTW_SpectrumRepartition implements Function {
 	}
 
 	@Override
-	public Value evaluate(DataSourceFactory dsf, Value... args)
-			throws FunctionException {
+	public Value evaluate(SQLDataSourceFactory dsf, Value... args) throws FunctionException {
 		if (args.length < 2) {
 			throw new FunctionException("Not enough parameters !");
 		} else if (args.length > 2) {
@@ -84,13 +83,17 @@ public class BTW_SpectrumRepartition implements Function {
 		return TypeFactory.createType(Type.DOUBLE);
 	}
 
-	@Override
-	public Arguments[] getFunctionArguments() {
-		return new Arguments[] { new Arguments(Argument.INT, // Frequency
-															 // [100,125,160,200,250,315,400,500,630,800,1000,1250,1600,2000,2500,3150,4000,5000]
-				Argument.DOUBLE // Global SPL value (dBA)
-		) };
-	}
+	   
+    @Override
+    public FunctionSignature[] getFunctionSignatures() {
+            return new FunctionSignature[] {
+                    new BasicFunctionSignature(getType(null),
+                    		ScalarArgument.INT,  // Frequency
+							// [100,125,160,200,250,315,400,500,630,800,1000,1250,1600,2000,2500,3150,4000,5000]
+                    		ScalarArgument.DOUBLE // Global SPL value (dBA)
+                    		)
+            };
+    }
 
 	@Override
 	public String getDescription() {
@@ -102,8 +105,4 @@ public class BTW_SpectrumRepartition implements Function {
 		return "select BTW_SpectrumRepartition(100,dbA) as dbA_100 from myTable;";
 	}
 
-	@Override
-	public Value getAggregateResult() {
-		return null;
-	}
 }

@@ -8,26 +8,26 @@ package org.noisemap.core;
 
 import java.util.LinkedList;
 
-import org.gdms.data.DataSource;
-import org.gdms.data.DataSourceFactory;
-import org.gdms.data.ExecutionException;
-import org.gdms.data.SpatialDataSourceDecorator;
-import org.gdms.data.metadata.DefaultMetadata;
-import org.gdms.data.metadata.Metadata;
-import org.gdms.data.metadata.MetadataUtilities;
+import org.gdms.data.SQLDataSourceFactory;
+import org.gdms.data.schema.DefaultMetadata;
+import org.gdms.data.schema.Metadata;
+import org.gdms.data.schema.MetadataUtilities;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
 import org.gdms.driver.DriverException;
-import org.gdms.driver.ObjectDriver;
+import org.gdms.driver.ReadAccess;
 import org.gdms.driver.driverManager.DriverLoadException;
-import org.gdms.sql.customQuery.CustomQuery;
-import org.gdms.sql.customQuery.TableDefinition;
-import org.gdms.sql.function.Argument;
-import org.gdms.sql.function.Arguments;
+import org.gdms.sql.function.FunctionException;
+import org.gdms.sql.function.FunctionSignature;
+import org.gdms.sql.function.ScalarArgument;
+import org.gdms.sql.function.table.AbstractTableFunction;
+import org.gdms.sql.function.table.TableArgument;
+import org.gdms.sql.function.table.TableDefinition;
+import org.gdms.sql.function.table.TableFunctionSignature;
 import org.gdms.driver.DiskBufferDriver;
-import org.orbisgis.progress.IProgressMonitor;
+import org.orbisgis.progress.ProgressMonitor;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
@@ -38,7 +38,7 @@ import com.vividsolutions.jts.geom.Polygon;
  * Split triangle into area within the specified range values
  */
 
-public class ST_TriangleContouring implements CustomQuery {
+public class ST_TriangleContouring extends AbstractTableFunction {
 	private static final double EPSILON = 1E-15;
 
 	private static boolean isoEqual(double isoValue1, double isoValue2) {
@@ -139,7 +139,7 @@ public class ST_TriangleContouring implements CustomQuery {
 			Coordinate posIsoStart, Coordinate posIsoStop, double isoLvl,
 			TriMarkers currentTriangle, TriMarkers aloneTri,
 			TriMarkers firstTwinTri, TriMarkers secondTwinTri)
-			throws ExecutionException {
+			throws FunctionException {
 		short sharedVertex = -1, secondVertex = -1, thirdVertex = -1;
 		if (sideStart == 0 && sideStop == 2) {
 			sharedVertex = 0;
@@ -187,7 +187,7 @@ public class ST_TriangleContouring implements CustomQuery {
 					currentTriangle.getMarker(secondVertex),
 					currentTriangle.getMarker(thirdVertex));
 		} else {
-			throw new ExecutionException("Can't find shared vertex");
+			throw new FunctionException("Can't find shared vertex");
 		}
 		return sharedVertex;
 	}
@@ -207,7 +207,7 @@ public class ST_TriangleContouring implements CustomQuery {
 	private boolean splitInterval(Double beginIncluded, Double endExcluded,
 			TriMarkers currentTriangle,
 			LinkedList<TriMarkers> outsideTriangles,
-			LinkedList<TriMarkers> intervalTriangles) throws ExecutionException {
+			LinkedList<TriMarkers> intervalTriangles) throws FunctionException {
 		if ((beginIncluded > currentTriangle.m1
 				&& beginIncluded > currentTriangle.m2 && beginIncluded > currentTriangle.m3)
 				|| // If triangles vertices ALL outside inferior
@@ -525,7 +525,7 @@ public class ST_TriangleContouring implements CustomQuery {
 			return true;
 		}
 		// Unknown case throw
-		throw new ExecutionException(
+		throw new FunctionException(
 				"Unhandled triangle splitting case :\n vertIso1Start("
 						+ vertIso1Start + "), vertIso1Stop(" + vertIso1Stop
 						+ "), vertIso2Start(" + vertIso2Start
@@ -537,24 +537,23 @@ public class ST_TriangleContouring implements CustomQuery {
 	}
 
 	@Override
-	public ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables,
-			Value[] values, IProgressMonitor pm) throws ExecutionException {
+	public ReadAccess evaluate(SQLDataSourceFactory dsf, ReadAccess[] tables,
+            Value[] values, ProgressMonitor pm) throws FunctionException {
 		try {
 			// Declare source and Destination tables
-			final SpatialDataSourceDecorator sds = new SpatialDataSourceDecorator(
-					tables[0]);
+			final ReadAccess sds = tables[0];
 			// Open source and Destination tables
-			sds.open();
 
 			// Set defaultGeom as the geom set by the user
 			// the_geom, 'field_vert1' ,'field_vert2','field_vert3',
 			// '15,20,30,50,80'
 			String spatialUpdateFieldName = values[0].toString();
-			int vertex1FieldIndex = sds.getFieldIndexByName(values[1]
+			int spatialFieldIndex=sds.getMetadata().getFieldIndex(spatialUpdateFieldName);			
+			int vertex1FieldIndex = sds.getMetadata().getFieldIndex(values[1]
 					.getAsString());
-			int vertex2FieldIndex = sds.getFieldIndexByName(values[2]
+			int vertex2FieldIndex = sds.getMetadata().getFieldIndex(values[2]
 					.getAsString());
-			int vertex3FieldIndex = sds.getFieldIndexByName(values[3]
+			int vertex3FieldIndex = sds.getMetadata().getFieldIndex(values[3]
 					.getAsString());
 			String isolevels_str = values[4].getAsString();
 			LinkedList<Double> iso_lvls = new LinkedList<Double>();
@@ -562,7 +561,6 @@ public class ST_TriangleContouring implements CustomQuery {
 				iso_lvls.add(Double.valueOf(isolvl));
 			}
 
-			sds.setDefaultGeometry(spatialUpdateFieldName);
 			Metadata metaSource = sds.getMetadata();
 			DefaultMetadata metadata = new DefaultMetadata();
 
@@ -599,9 +597,8 @@ public class ST_TriangleContouring implements CustomQuery {
 						pm.progressTo(lastPerc);
 					}
 				}
-				final Geometry geometry = sds.getGeometry(rowIndex);
+				final Geometry geometry = sds.getFieldValue(rowIndex, spatialFieldIndex).getAsGeometry();
 				if (geometry instanceof Polygon && geometry.getNumPoints() == 4) {
-					final Value[] oldValues = sds.getRow(rowIndex);
 					Coordinate[] pts = geometry.getCoordinates();
 					if (Double.isNaN(pts[0].z)) {
 						pts[0].z = 0;
@@ -613,9 +610,9 @@ public class ST_TriangleContouring implements CustomQuery {
 						pts[2].z = 0;
 					}
 					TriMarkers currentTriangle = new TriMarkers(pts[0], pts[1],
-							pts[2], sds.getDouble(rowIndex, vertex1FieldIndex),
-							sds.getDouble(rowIndex, vertex2FieldIndex),
-							sds.getDouble(rowIndex, vertex3FieldIndex));
+							pts[2], sds.getFieldValue(rowIndex, vertex1FieldIndex).getAsDouble(),
+							sds.getFieldValue(rowIndex, vertex2FieldIndex).getAsDouble(),
+							sds.getFieldValue(rowIndex, vertex3FieldIndex).getAsDouble());
 
 					// For each iso interval
 					LinkedList<TriMarkers> triangleToProcess = new LinkedList<TriMarkers>();
@@ -649,7 +646,7 @@ public class ST_TriangleContouring implements CustomQuery {
 											.createValue(isolvl);
 									int destfield = 2;
 									for (Integer srcFieldid : fieldIdToExtract) {
-										newValues[destfield] = oldValues[srcFieldid];
+										newValues[destfield] = sds.getFieldValue(rowIndex, srcFieldid);
 										destfield++;
 									}
 									driver.addValues(newValues);
@@ -667,12 +664,11 @@ public class ST_TriangleContouring implements CustomQuery {
 				}
 			}
 			driver.writingFinished();
-			sds.close();
-			return driver;
+			return driver.getTable("main");
 		} catch (DriverLoadException e) {
-			throw new ExecutionException(e);
+			throw new FunctionException(e);
 		} catch (DriverException e) {
-			throw new ExecutionException(e);
+			throw new FunctionException(e);
 		}
 	}
 
@@ -692,15 +688,17 @@ public class ST_TriangleContouring implements CustomQuery {
 		return new DefaultMetadata(fieldsTypes, fieldsNames);
 	}
 
-	@Override
-	public TableDefinition[] getTablesDefinitions() {
-		return new TableDefinition[] { TableDefinition.GEOMETRY };
-	}
 
-	@Override
-	public Arguments[] getFunctionArguments() {
-		return new Arguments[] { new Arguments(Argument.GEOMETRY,
-				Argument.STRING, Argument.STRING, Argument.STRING,
-				Argument.STRING) };
-	}
+    @Override
+    public FunctionSignature[] getFunctionSignatures() {
+            return new FunctionSignature[]{
+                            new TableFunctionSignature(TableDefinition.GEOMETRY,
+                            new TableArgument(TableDefinition.GEOMETRY),
+                            ScalarArgument.STRING,
+                            ScalarArgument.STRING,
+                            ScalarArgument.STRING,
+                            ScalarArgument.STRING)
+                    };
+    }
+
 }

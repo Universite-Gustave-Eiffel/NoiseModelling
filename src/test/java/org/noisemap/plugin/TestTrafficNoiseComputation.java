@@ -1,8 +1,8 @@
 package org.noisemap.plugin;
 
 import org.gdms.data.values.ValueFactory;
+import org.gdms.data.types.IncompatibleTypesException;
 import org.gdms.sql.function.FunctionException;
-import org.gdms.sql.strategies.IncompatibleTypesException;
 import org.noisemap.core.BR_EvalSource;
 import org.noisemap.core.TestSoundPropagationValidation;
 

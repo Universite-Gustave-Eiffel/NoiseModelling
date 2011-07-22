@@ -9,26 +9,27 @@ package org.noisemap.core;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.gdms.data.DataSource;
-import org.gdms.data.DataSourceFactory;
-import org.gdms.data.ExecutionException;
-import org.gdms.data.SpatialDataSourceDecorator;
-import org.gdms.data.metadata.DefaultMetadata;
-import org.gdms.data.metadata.Metadata;
-import org.gdms.data.metadata.MetadataUtilities;
+import org.gdms.data.SQLDataSourceFactory;
+import org.gdms.data.schema.DefaultMetadata;
+import org.gdms.data.schema.Metadata;
+import org.gdms.data.schema.MetadataUtilities;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
 import org.gdms.driver.DriverException;
-import org.gdms.driver.ObjectDriver;
+import org.gdms.driver.ReadAccess;
 import org.gdms.driver.driverManager.DriverLoadException;
-import org.gdms.sql.customQuery.CustomQuery;
-import org.gdms.sql.customQuery.TableDefinition;
-import org.gdms.sql.function.Argument;
-import org.gdms.sql.function.Arguments;
+import org.gdms.sql.function.FunctionException;
+import org.gdms.sql.function.FunctionSignature;
+import org.gdms.sql.function.ScalarArgument;
+import org.gdms.sql.function.table.AbstractTableFunction;
+import org.gdms.sql.function.table.TableArgument;
+import org.gdms.sql.function.table.TableDefinition;
+import org.gdms.sql.function.table.TableFunctionSignature;
 import org.gdms.driver.DiskBufferDriver;
-import org.orbisgis.progress.IProgressMonitor;
+import org.orbisgis.progress.ProgressMonitor;
+
 import com.vividsolutions.jts.index.quadtree.Quadtree;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.CoordinateSequence;
@@ -44,7 +45,7 @@ import com.vividsolutions.jts.geom.GeometryFactory;
  * the region of the left geometry.
  */
 
-public class ST_SetNearestGeometryId implements CustomQuery {
+public class ST_SetNearestGeometryId extends AbstractTableFunction {
 
 	@Override
 	public String getName() {
@@ -62,28 +63,22 @@ public class ST_SetNearestGeometryId implements CustomQuery {
 	}
 
 	@Override
-	public ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables,
-			Value[] values, IProgressMonitor pm) throws ExecutionException {
+	public ReadAccess evaluate(SQLDataSourceFactory dsf, ReadAccess[] tables,
+            Value[] values, ProgressMonitor pm) throws FunctionException {
 		try {
 			ProgressionOrbisGisManager progManager=new ProgressionOrbisGisManager(2, pm);
 			// Declare source and Destination tables
-			final SpatialDataSourceDecorator sds = new SpatialDataSourceDecorator(
-					tables[0]);
-			final SpatialDataSourceDecorator sdsSource = new SpatialDataSourceDecorator(
-					tables[1]);
-			// Open source and Destination tables
-			sds.open();
-			sdsSource.open();
+			final ReadAccess sds = tables[0];
+			final ReadAccess sdsSource = tables[1];
 
 			// Set defaultGeom as the geom set by the user
 			String spatialUpdateFieldName = values[0].toString();
 			String spatialSourceFieldName = values[1].toString();
 			String idSourceFieldName = values[2].toString();
 
-			sds.setDefaultGeometry(spatialUpdateFieldName);
-			sdsSource.setDefaultGeometry(spatialSourceFieldName);
-			final int idSourceNum = sdsSource
-					.getFieldIndexByName(idSourceFieldName);
+			int spatialUpdateFieldIndex = sds.getMetadata().getFieldIndex(spatialUpdateFieldName);
+			int spatialSourceFieldIndex = sdsSource.getMetadata().getFieldIndex(spatialSourceFieldName);
+			final int idSourceNum = sdsSource.getMetadata().getFieldIndex(idSourceFieldName);
 
 			DefaultMetadata metadata = new DefaultMetadata(sds.getMetadata());
 			String field = MetadataUtilities.getUniqueFieldName(metadata,
@@ -106,7 +101,7 @@ public class ST_SetNearestGeometryId implements CustomQuery {
 				if (pm.isCancelled()) {
 					break;
 				}
-				final Geometry geometry = sdsSource.getGeometry(rowIndex);
+				final Geometry geometry = sdsSource.getFieldValue(rowIndex,spatialSourceFieldIndex).getAsGeometry();
 				quadtree.insert(
 						geometry.getEnvelopeInternal(),
 						new EnvelopeWithIndex<Long>(geometry
@@ -124,21 +119,25 @@ public class ST_SetNearestGeometryId implements CustomQuery {
 				}
 
 				// Find the nearest row id information with the min avg dist
-				final Geometry geometry = sds.getGeometry(rowIndex);
+				final Geometry geometry = sds.getFieldValue(rowIndex,spatialUpdateFieldIndex).getAsGeometry();
 				QuadtreeNearestFilter zFilter = new QuadtreeNearestFilter(
-						quadtree, sdsSource, geometry.getEnvelopeInternal());
+						quadtree, sdsSource, spatialSourceFieldIndex, geometry.getEnvelopeInternal());
 				geometry.apply(zFilter);
 
-				final Value[] fieldsValues = sds.getRow(rowIndex);
-				final Value[] newValues = new Value[fieldsValues.length + 2];
-				System.arraycopy(fieldsValues, 0, newValues, 0,
-						fieldsValues.length);
+				int fieldCount = sds.getMetadata().getFieldCount();
+				final Value[] newValues = new Value[fieldCount + 2];
+				
+                for (int j = 0; j < fieldCount; j++) {
+                	newValues[j] = sds.getFieldValue(rowIndex, j);
+                }
+	
+				
 				// Set the two new columns values
 				long nearest_id = zFilter.getNearestId();
 				if (nearest_id != -1) {
 					newValues[newValues.length - 2] = ValueFactory
-							.createValue(sdsSource.getLong(nearest_id,
-									idSourceNum));
+							.createValue(sdsSource.getFieldValue(nearest_id,
+									idSourceNum).getAsLong());
 					newValues[newValues.length - 1] = ValueFactory
 							.createValue(zFilter.getAvgDist());
 				} else {
@@ -152,13 +151,12 @@ public class ST_SetNearestGeometryId implements CustomQuery {
 
 			}
 			driver.writingFinished();
-			sds.close();
-			sdsSource.close();
-			return driver;
+
+			return driver.getTable("main");
 		} catch (DriverLoadException e) {
-			throw new ExecutionException(e);
+			throw new FunctionException(e);
 		} catch (DriverException e) {
-			throw new ExecutionException(e);
+			throw new FunctionException(e);
 		}
 	}
 
@@ -170,7 +168,7 @@ public class ST_SetNearestGeometryId implements CustomQuery {
 
 		@SuppressWarnings("unchecked")
 		public QuadtreeNearestFilter(Quadtree quadtree,
-				SpatialDataSourceDecorator sdsSource, Envelope geomArea) {
+				ReadAccess sdsSource,int geoFieldIndex,Envelope geomArea) {
 			super();
 			// Find coordinates under the distance of the geom
 
@@ -180,7 +178,7 @@ public class ST_SetNearestGeometryId implements CustomQuery {
 				try {
 					if ((env_with_index.intersects(geomArea))) {
 						Geometry geometry = sdsSource
-								.getGeometry(env_with_index.getId());
+								.getFieldValue(env_with_index.getId(),geoFieldIndex).getAsGeometry();
 						geometry.setUserData(Long.valueOf(env_with_index
 								.getId()));
 						nearestGeometry.add(geometry);
@@ -278,16 +276,13 @@ public class ST_SetNearestGeometryId implements CustomQuery {
 		}
 		return new DefaultMetadata(fieldsTypes, fieldsNames);
 	}
-
-	@Override
-	public Arguments[] getFunctionArguments() {
-		return new Arguments[] { new Arguments(Argument.GEOMETRY,
-				Argument.GEOMETRY, Argument.STRING) };
-	}
-
-	@Override
-	public TableDefinition[] getTablesDefinitions() {
-		return new TableDefinition[] { TableDefinition.GEOMETRY,
-				TableDefinition.GEOMETRY };
-	}
+    @Override
+    public FunctionSignature[] getFunctionSignatures() {
+            return new FunctionSignature[]{
+                            new TableFunctionSignature(TableDefinition.GEOMETRY,
+                            new TableArgument(TableDefinition.GEOMETRY),
+                            new TableArgument(TableDefinition.GEOMETRY),
+                            ScalarArgument.STRING)
+                    };
+    }
 }

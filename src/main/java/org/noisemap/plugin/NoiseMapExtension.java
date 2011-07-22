@@ -30,14 +30,13 @@ public class NoiseMapExtension extends Extension {
 				ST_SplitLineInPoints.class);
 		context.getFeatureInstaller().addRegisterFunction(Log10.class);
 		context.getFeatureInstaller().addRegisterFunction(Power.class);
-		context.getFeatureInstaller().addRegisterCustomQuery(
-				ST_SetNearestZ.class);
-		context.getFeatureInstaller().addRegisterCustomQuery(
-				ST_SetNearestGeometryId.class);
+		context.getFeatureInstaller().addRegisterFunction(ST_SetNearestZ.class);
+		context.getFeatureInstaller().
+		addRegisterFunction(ST_SetNearestGeometryId.class);
 		context.getFeatureInstaller()
 				.addRegisterFunction(ST_SplitSegment.class);
-		context.getFeatureInstaller().addRegisterCustomQuery(BR_TriGrid.class);
-		context.getFeatureInstaller().addRegisterCustomQuery(
+		context.getFeatureInstaller().addRegisterFunction(BR_TriGrid.class);
+		context.getFeatureInstaller().addRegisterFunction(
 				ST_TriangleContouring.class);
 		context.getFeatureInstaller().addRegisterFunction(
 				BR_SpectrumRepartition.class);
