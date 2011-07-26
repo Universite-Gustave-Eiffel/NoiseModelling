@@ -9,8 +9,11 @@ import org.noisemap.core.LayerDelaunayError;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
+import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Polygon;
+import com.vividsolutions.jts.index.quadtree.Quadtree;
 
 import junit.framework.TestCase;
 
@@ -76,8 +79,86 @@ public class TestFastObstruction extends TestCase {
 		checkMerge(values5, values5[2], values5[5]);
 
 	}
-	public void testScene1() throws LayerDelaunayError {
+	public void testVoidScene() throws LayerDelaunayError {
+		//Create obstruction test object
+		FastObstructionTest manager = new FastObstructionTest();
+		manager.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.),
+				new Coordinate(45., 45.,0.)));
+		assertTrue("Void Intersection test #1 failed",manager.isFreeField(new Coordinate(5,20), new Coordinate(14,30)));
+		manager.getWideAnglePoints(Math.PI * (1 + 1 / 16.0), Math.PI * (2 - (1 / 16.)));
+	}
+	public void testBenchmark() throws LayerDelaunayError {
+		System.out.println("________________________________________________");
+		System.out.println("Bench :");
+		//
+		//Build Scene with One Building
+		GeometryFactory factory = new GeometryFactory();
+		Coordinate[] building1Coords = { new Coordinate(15., 5.,0.),
+				new Coordinate(30., 5.,0.), new Coordinate(30., 30.,0.),
+				new Coordinate(15., 30.,0.), new Coordinate(15., 5.,0.) };
+		Polygon building1 = factory.createPolygon(
+				factory.createLinearRing(building1Coords), null);
 		
+		long beginBuildObstrTest=System.currentTimeMillis();
+		//Create obstruction test object
+		FastObstructionTest manager = new FastObstructionTest();
+		manager.addGeometry(building1);
+		manager.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.),
+				new Coordinate(45., 45.,0.)));
+		System.out.println("Bench FastObstructionTest build in "+(System.currentTimeMillis()-beginBuildObstrTest)+"ms");
+		//Create quadtree
+		long beginBuildJTS=System.currentTimeMillis();
+		Quadtree buildingsQuadtree=new Quadtree();
+		Envelope geomEnv=building1.getEnvelopeInternal();
+		buildingsQuadtree.insert(geomEnv, new EnvelopeWithIndex<Long>(geomEnv, 0l));
+		Coordinate receiver=new Coordinate(5,15);
+		Coordinate source=new Coordinate(16,31);
+		System.out.println("Bench JTS&Quadtree build in "+(System.currentTimeMillis()-beginBuildJTS)+"ms");
+		
+		
+		
+		int query_count=100;
+		long debFastObstructionTest=System.nanoTime();
+		for(int i=0;i<query_count;i++) {
+			assertFalse("Intersection test bench #1 failed",manager.isFreeField(receiver, source));
+		}
+		long testfast=(System.nanoTime()-debFastObstructionTest);
+		System.out.println(query_count+" Bench FastObstructionTest test in "+testfast+" ns");
+		
+		long debjtsintersects=System.nanoTime();
+		Envelope regionIntersection=new Envelope(receiver,source);
+		Coordinate pverts[]= {receiver,source};
+		LineString freeFieldLine=factory.createLineString(pverts);
+		for(int i=0;i<query_count;i++) {
+			boolean somethingHideReceiver=false;
+			
+			
+			@SuppressWarnings("unchecked")
+			List<EnvelopeWithIndex<Long>> buildingsInRegion=buildingsQuadtree.query(regionIntersection);
+			for(EnvelopeWithIndex<Long> buildEnv : buildingsInRegion)
+			{
+				if(buildEnv.intersects(regionIntersection))
+				{
+					//Read the geometry
+					if(building1.intersects(freeFieldLine))
+					{
+						Geometry intersectsPts=building1.intersection(freeFieldLine);
+						if(intersectsPts.getNumPoints()>1)
+						{
+							// The building geometry intersect with the line string that is between the source and the receiver
+							somethingHideReceiver=true;
+							break;  // Exit the loop of buildings
+						}
+					}
+				}
+			}
+			assertTrue(query_count+"Intersection test bench #1 failed",somethingHideReceiver);
+		}
+		long testJTS=(System.nanoTime()-debjtsintersects);
+		System.out.println(query_count+" Bench JTS intersection test in "+testJTS+" ns");
+		System.out.println("Speed-up of FastObstructionTest: "+testJTS/testfast+" x");
+	}
+	public void testScene1() throws LayerDelaunayError {
 		//Build Scene with One Building
 		GeometryFactory factory = new GeometryFactory();
 		Coordinate[] building1Coords = { new Coordinate(15., 5.,0.),
@@ -89,10 +170,8 @@ public class TestFastObstruction extends TestCase {
 		//Create obstruction test object
 		FastObstructionTest manager = new FastObstructionTest();
 		manager.addGeometry(building1);
-		Long deb=System.currentTimeMillis();
 		manager.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.),
 				new Coordinate(45., 45.,0.)));
-		System.out.println("finishPolygonFeeding in "+(System.currentTimeMillis()-deb)+"ms");
 		//Run intersection test
 		collisionTask(manager);
 		//Run wide angle detection

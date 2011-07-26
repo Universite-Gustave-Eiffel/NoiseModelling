@@ -622,19 +622,6 @@ public class PropagationProcess implements Runnable {
 			regionCorners = cornerQuery.getItems();
 			// regionCornersFreeToReceiver.ensureCapacity(regionCorners.size());
 			for (int icorner = 0; icorner < regionCorners.size(); icorner++) {
-				// TODO remove debug instruction
-				/*
-				 * if(receiverCoord.distance(new
-				 * Coordinate(305282,2253003))<2.) { Value[] row=new
-				 * Value[3];
-				 * row[0]=ValueFactory.createValue(factory.createPoint
-				 * (regionCorners.get(icorner)));
-				 * row[1]=ValueFactory.createValue(idReceiver);
-				 * row[2]=ValueFactory.createValue(0); try {
-				 * driver.addValues(row); } catch (DriverException e) { //
-				 * TODO Auto-generated catch block e.printStackTrace();
-				 * return; } }
-				 */
 				if (data.freeFieldFinder.isFreeField(receiverCoord,
 						regionCorners.get(icorner))) {
 					regionCornersFreeToReceiver.add(icorner);
@@ -654,10 +641,8 @@ public class PropagationProcess implements Runnable {
 			if (source instanceof Point) {
 				Coordinate ptpos = ((Point) source).getCoordinate();
 				srcPos.add(ptpos);
-				// li=Math.min(Math.max(receiverCoord.distance(ptpos),data.minRecDist)/2.,20.0);
 				li = 1;
 				// Compute li to equation 4.1 NMPB 2008 (June 2009)
-				// wj+=10*Math.log10(li);
 			} else {
 				// Discretization of line into multiple point
 				// First point is the closest point of the LineString from

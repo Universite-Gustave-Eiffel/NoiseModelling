@@ -4,6 +4,7 @@ import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Polygon;
 
 import java.util.ArrayList;
@@ -29,6 +30,9 @@ public class TestSoundPropagationValidation extends TestCase {
 		assertTrue(goodSpl+"!="+dba+" (right ref)Sound level computation error @ "+testName,isSameDbValues(dba,goodSpl));		
 	}
 	public void testScene1() throws LayerDelaunayError {
+		System.out.println("________________________________________________");
+		System.out.println("Scene 1 :");
+		long startMakeScene=System.currentTimeMillis();
 		////////////////////////////////////////////////////////////////////////////
 		//Build Scene with One Building
 		GeometryFactory factory = new GeometryFactory();
@@ -57,11 +61,13 @@ public class TestSoundPropagationValidation extends TestCase {
 			sourcesIndex.appendGeometry(src, idsrc);
 			idsrc++;
 		}
-		
+		System.out.println("Construction scene in "+(System.currentTimeMillis()-startMakeScene)+"ms");
+		long startObstructionTest=System.currentTimeMillis();
 		//Create obstruction test object
 		FastObstructionTest manager = new FastObstructionTest();
 		manager.addGeometry(building1);
 		manager.finishPolygonFeeding(cellEnvelope);	
+		
 		//Retrieve Delaunay triangulation of scene
 		List<Triangle> tri=manager.getTriangles();
 		List<Coordinate> vert=manager.getVertices();
@@ -71,7 +77,9 @@ public class TestSoundPropagationValidation extends TestCase {
 		PropagationProcessOut propDataOut=new PropagationProcessOut(dataStack);
 		PropagationProcess propManager=new PropagationProcess(propData, propDataOut);
 		propManager.initStructures();
-		
+
+		System.out.println("Propagation initialisation in "+(System.currentTimeMillis()-startObstructionTest)+"ms");
+		long startSimulation=System.currentTimeMillis();
 		//Run test
 		/////////////////////////////////////////////////////////////////////////
 		// 					   Single diffraction test
@@ -100,8 +108,85 @@ public class TestSoundPropagationValidation extends TestCase {
 		propData.wallAlpha=0.2;
 		double dbaReflection=splCompute(propManager, new Coordinate(35,15,0)); //dbaReflection must be equal to the energetic sum of Ref&Ref2, with Ref2 attenuated by wall alpha.
 		splCompare(dbaReflection, "Scene 1 R3_S1",PropagationProcess.wToDba( PropagationProcess.dbaToW(dbaRef)+PropagationProcess.dbaToW(dbaRef2)*(1-propData.wallAlpha)));
-		
+		System.out.println("Simulation done in "+(System.currentTimeMillis()-startSimulation)+"ms");
 		
 		System.out.println(manager.getNbObstructionTest()+" obstruction test has been done..");
+		System.out.println("testScene1 done in "+(System.currentTimeMillis()-startMakeScene)+"ms");
+	}
+	public void testScene2() throws LayerDelaunayError {
+		System.out.println("________________________________________________");
+		System.out.println("Scene 2 :");
+		long startMakeScene=System.currentTimeMillis();
+		////////////////////////////////////////////////////////////////////////////
+		//Build Scene with One Building
+		GeometryFactory factory = new GeometryFactory();
+		Coordinate[] building1Coords = { new Coordinate(6., 2.,0.),new Coordinate(18., 2.,0.),new Coordinate(18., 6.,0.),new Coordinate(6., 6.,0.),new Coordinate(6., 2.,0.)};
+		Polygon building1 = factory.createPolygon(
+				factory.createLinearRing(building1Coords), null);
+		Coordinate[] building2Coords = { new Coordinate(24., 2.,0.),new Coordinate(28., 2.,0.),new Coordinate(28., 6.,0.),new Coordinate(24., 6.,0.),new Coordinate(24., 2.,0.)};
+		Polygon building2 = factory.createPolygon(
+				factory.createLinearRing(building2Coords), null);
+		Coordinate[] building3Coords = { new Coordinate(6., 10.,0.),new Coordinate(24., 10.,0.),new Coordinate(24.,18.,0.),new Coordinate(6., 18.,0.),new Coordinate(6., 10.,0.)};
+		Polygon building3 = factory.createPolygon(
+				factory.createLinearRing(building3Coords), null);
+		////////////////////////////////////////////////////////////////////////////
+		//Add road source as one point
+		List<Geometry> srclst=new ArrayList<Geometry>();
+		Coordinate[] way1={new Coordinate(2,8,0),new Coordinate(24,8,0),new Coordinate(30,14,0)};
+		LineString road1=factory.createLineString(way1);
+		srclst.add(road1);
+		srclst.add(road1.reverse());
+		//Scene dimension
+		Envelope cellEnvelope=new Envelope(new Coordinate(-170., -170.,0.),new Coordinate(170, 170,0.));
+		//Add source sound level
+		List<ArrayList<Double>> srcSpectrum=new ArrayList<ArrayList<Double>>();
+		srcSpectrum.add(new ArrayList<Double>());
+		srcSpectrum.add(new ArrayList<Double>());
+		srcSpectrum.get(0).add(PropagationProcess.dbaToW(100.)); // 100 dB(A) @ 125 Hz
+		srcSpectrum.get(1).add(PropagationProcess.dbaToW(98.)); // 98 dB(A) @ 125 Hz
+		List<Integer> freqLvl=new ArrayList<Integer>();
+		freqLvl.add(125);
+		//Build query structure for sources
+		QueryGeometryStructure<Integer> sourcesIndex = new QueryGridIndex<Integer>(
+				cellEnvelope, 8, 8);
+		int idsrc=0;
+		for(Geometry src : srclst) {
+			sourcesIndex.appendGeometry(src, idsrc);
+			idsrc++;
+		}
+		System.out.println("Construction scene in "+(System.currentTimeMillis()-startMakeScene)+"ms");
+		long startObstructionTest=System.currentTimeMillis();
+		//Create obstruction test object
+		FastObstructionTest manager = new FastObstructionTest();
+		manager.addGeometry(building1);
+		manager.addGeometry(building2);
+		manager.addGeometry(building3);
+		manager.finishPolygonFeeding(cellEnvelope);	
+		
+		//Retrieve Delaunay triangulation of scene
+		List<Triangle> tri=manager.getTriangles();
+		List<Coordinate> vert=manager.getVertices();
+
+		Stack<ArrayList<Value>> dataStack=new Stack<ArrayList<Value>>();		
+		PropagationProcessData propData=new PropagationProcessData(vert, tri, manager, sourcesIndex, srclst, srcSpectrum, freqLvl, 0, 2, 80., 1., 0., 0l, null, null);
+		PropagationProcessOut propDataOut=new PropagationProcessOut(dataStack);
+		PropagationProcess propManager=new PropagationProcess(propData, propDataOut);
+		propManager.initStructures();
+
+		System.out.println("Propagation initialisation in "+(System.currentTimeMillis()-startObstructionTest)+"ms");
+		long startSimulation=System.currentTimeMillis();
+		//Run test
+		/////////////////////////////////////////////////////////////////////////
+		// 					   Geometric dispersion test
+		//Get reference spl value at 5m
+		propData.reflexionOrder=2;
+		propData.diffractionOrder=0;
+		double dbaRef=splCompute(propManager, new Coordinate(20,4,0));
+		System.out.println("R(20,4) : " + dbaRef + "dB(A)");
+		System.out.println("Simulation done in "+(System.currentTimeMillis()-startSimulation)+"ms");
+		System.out.println(manager.getNbObstructionTest()+" obstruction test has been done..");
+		System.out.println(propDataOut.getNb_couple_receiver_src()+" point source created..");
+		System.out.println(propDataOut.getTotalReflexionTime()+" ms reflexion time");
+		System.out.println("testScene1 done in "+(System.currentTimeMillis()-startMakeScene)+"ms");
 	}
 }

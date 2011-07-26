@@ -121,8 +121,13 @@ public class FastObstructionTest {
 	// feeding
 	public void finishPolygonFeeding(Envelope boundingBoxFilter)
 			throws LayerDelaunayError {
-		if(boundingBoxFilter!=null)
-			this.geometriesBoundingBox.expandToInclude(boundingBoxFilter);
+		if(boundingBoxFilter!=null) {
+			if(this.geometriesBoundingBox!=null) {
+				this.geometriesBoundingBox.expandToInclude(boundingBoxFilter);
+			} else {
+				this.geometriesBoundingBox=boundingBoxFilter;
+			}
+		}
 		
 		verticesOpenAngle = null;
 		LayerDelaunay delaunayTool = new LayerJDelaunay();
@@ -157,7 +162,7 @@ public class FastObstructionTest {
 
 		// int gridsize=(int)Math.pow(2,
 		// Math.log10(Math.pow(this.triVertices.size()+1,2)));
-		int gridsize = 16;
+		int gridsize = 8;
 		triIndex = new QueryGridIndex<Integer>(this.geometriesBoundingBox, gridsize,
 				gridsize);
 		int triind = 0;
