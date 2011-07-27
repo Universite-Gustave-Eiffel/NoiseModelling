@@ -7,10 +7,11 @@ package org.noisemap.core;
  ***********************************/
 
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
+import org.gdms.sql.function.math.Round;
+
 import com.vividsolutions.jts.algorithm.NonRobustLineIntersector;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
@@ -21,7 +22,8 @@ import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.index.quadtree.Quadtree;
 
 public class PropagationProcess implements Runnable {
-	public static double ONETHIRD=1./3.;
+	public final static double ONETHIRD=1./3.;
+	public final static double MERGE_SRC_DIST=1.;
 	private Thread thread;
 	private PropagationProcessData data;
 	private PropagationProcessOut dataOut;
@@ -134,7 +136,7 @@ public class PropagationProcess implements Runnable {
 	 * @return computed delta
 	 */
 	private double splitLineStringIntoPoints(Geometry geom, Coordinate startPt,
-			LinkedList<Coordinate> pts, double minRecDist) {
+			List<Coordinate> pts, double minRecDist) {
 		// Find the position of the closest point
 		Coordinate[] points = geom.getCoordinates();
 		// For each segments
@@ -282,7 +284,7 @@ public class PropagationProcess implements Runnable {
 	 */
 	private void receiverSourcePropa(Coordinate srcCoord,
 			Coordinate receiverCoord, double energeticSum[],
-			double[] alpha_atmo, List<Double> wj, double li,
+			double[] alpha_atmo, List<Double> wj,
 			List<MirrorReceiverResult> mirroredReceiver,
 			List<LineSegment> nearBuildingsWalls,
 			List<Coordinate> regionCorners,
@@ -308,8 +310,7 @@ public class PropagationProcess implements Runnable {
 							SrcReceiverDistance);
 					AttenuatedWj = dbaToW(wToDba(attAtmW(AttenuatedWj,
 							SrcReceiverDistance, alpha_atmo[idfreq]))
-							+ 10
-							* Math.log10(li));
+							);
 					energeticSum[idfreq] += AttenuatedWj;
 				}
 
@@ -409,12 +410,10 @@ public class PropagationProcess implements Runnable {
 								AttenuatedWj *= Math.pow((1 - data.wallAlpha),
 										reflectionOrderCounter);
 								// Apply atmospheric absorption and ground
-								// AttenuatedWj=DbaToW(WToDba(AttenuatedWj)-(alpha_atmo[idfreq]*ReflectedSrcReceiverDistance)/1000.+10*Math.log10(li));
 								AttenuatedWj = dbaToW(wToDba(attAtmW(
 										AttenuatedWj,
 										ReflectedSrcReceiverDistance,
-										alpha_atmo[idfreq]))
-										+ 10 * Math.log10(li));
+										alpha_atmo[idfreq])));
 								energeticSum[idfreq] += AttenuatedWj;
 							}
 						}
@@ -499,8 +498,7 @@ public class PropagationProcess implements Runnable {
 									AttenuatedWj = dbaToW(wToDba(attAtmW(
 											AttenuatedWj,
 											diffractionFullDistance,
-											alpha_atmo[idfreq]))
-											+ 10 * Math.log10(li));
+											alpha_atmo[idfreq])));
 									
 									energeticSum[idfreq] += AttenuatedWj;
 								}
@@ -570,7 +568,24 @@ public class PropagationProcess implements Runnable {
 			}
 		}
 	}
-
+	private static void insertPtSource(Coordinate ptpos,List<Double> wj,double li,List<Coordinate> srcPos,List<ArrayList<Double>> srcWj,PointsMerge sourcesMerger) {
+		int mergedSrcIndex=sourcesMerger.getOrAppendVertex(ptpos);
+		if(mergedSrcIndex<srcPos.size()) {
+			ArrayList<Double> mergedWj=srcWj.get(mergedSrcIndex);
+			//A source already exist and is close enough to merge
+			for(int fb=0;fb<wj.size();fb++) {
+				mergedWj.set(fb, mergedWj.get(fb)+dbaToW(wToDba(wj.get(fb))+10*Math.log10(li)));
+			}		
+		} else {
+			//New source
+			ArrayList<Double> liWj=new ArrayList<Double>(wj);
+			 for(int fb=0;fb<wj.size();fb++) {
+				 liWj.set(fb, dbaToW(wToDba(liWj.get(fb))+10*Math.log10(li)));
+			 }
+			srcPos.add(ptpos);
+			srcWj.add(liWj);
+		}
+	}
 	/**
 	 * Compute the attenuation of atmospheric absorption
 	 * 
@@ -632,34 +647,40 @@ public class PropagationProcess implements Runnable {
 		List<Integer> regionSourcesLst = data.sourcesIndex
 				.query(receiverRegion);
 		dataOut.appendGridIndexQueryTime((System.currentTimeMillis() - beginQuadQuery));
+		PointsMerge sourcesMerger=new PointsMerge(MERGE_SRC_DIST);
+		List<Coordinate> srcPos = new ArrayList<Coordinate>();
+		List<ArrayList<Double>> srcWj= new ArrayList<ArrayList<Double>>();
 		for (Integer srcIndex : regionSourcesLst) {
 			Geometry source = data.sourceGeometries.get(srcIndex);
 			List<Double> wj = data.wj_sources.get(srcIndex); // DbaToW(sdsSources.getDouble(srcIndex,dbField
-																// ));
-			LinkedList<Coordinate> srcPos = new LinkedList<Coordinate>();
+
 			double li = 0.;
 			if (source instanceof Point) {
 				Coordinate ptpos = ((Point) source).getCoordinate();
-				srcPos.add(ptpos);
-				li = 1;
+				insertPtSource(ptpos, wj, 1., srcPos, srcWj, sourcesMerger);
 				// Compute li to equation 4.1 NMPB 2008 (June 2009)
 			} else {
 				// Discretization of line into multiple point
 				// First point is the closest point of the LineString from
 				// the receiver
+				ArrayList<Coordinate> pts=new ArrayList<Coordinate>() ;
 				li = splitLineStringIntoPoints(source, receiverCoord,
-						srcPos, data.minRecDist);
+						pts, data.minRecDist);
+				for(Coordinate pt : pts) {
+					insertPtSource(pt, wj, li, srcPos, srcWj, sourcesMerger);
+				}
 				// Compute li to equation 4.1 NMPB 2008 (June 2009)
-
 			}
-			dataOut.appendSourceCount(srcPos.size());
-			for (final Coordinate srcCoord : srcPos) {
-				// For each Pt Source - Pt Receiver
-				receiverSourcePropa(srcCoord, receiverCoord, energeticSum,
-						alpha_atmo, wj, li, mirroredReceiver,
-						nearBuildingsWalls, regionCorners,
-						regionCornersFreeToReceiver, freq_lambda);
-			}
+		}
+		dataOut.appendSourceCount(srcPos.size());
+		for (int mergedSrcId=0;mergedSrcId<srcPos.size();mergedSrcId++) {
+			// For each Pt Source - Pt Receiver
+			Coordinate srcCoord=srcPos.get(mergedSrcId);
+			ArrayList<Double> wj= srcWj.get(mergedSrcId);
+			receiverSourcePropa(srcCoord, receiverCoord, energeticSum,
+					alpha_atmo, wj, mirroredReceiver,
+					nearBuildingsWalls, regionCorners,
+					regionCornersFreeToReceiver, freq_lambda);
 		}
 	}
 	/**

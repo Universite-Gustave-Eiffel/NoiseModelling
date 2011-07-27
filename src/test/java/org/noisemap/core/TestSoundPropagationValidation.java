@@ -15,7 +15,7 @@ import org.gdms.data.values.Value;
 import junit.framework.TestCase;
 
 public class TestSoundPropagationValidation extends TestCase {
-	public static double splEpsilon=0.05;
+	public static double splEpsilon=0.04;
 	private double splCompute(PropagationProcess propManager,Coordinate receiverPosition) {
 		double energeticSum[]={0.};
 		propManager.computeSoundLevelAtPosition(receiverPosition, energeticSum);
@@ -55,7 +55,7 @@ public class TestSoundPropagationValidation extends TestCase {
 		freqLvl.add(125);
 		//Build query structure for sources
 		QueryGeometryStructure<Integer> sourcesIndex = new QueryGridIndex<Integer>(
-				cellEnvelope, 16, 16);
+				cellEnvelope, 8, 8);
 		int idsrc=0;
 		for(Geometry src : srclst) {
 			sourcesIndex.appendGeometry(src, idsrc);
@@ -108,12 +108,34 @@ public class TestSoundPropagationValidation extends TestCase {
 		propData.wallAlpha=0.2;
 		double dbaReflection=splCompute(propManager, new Coordinate(35,15,0)); //dbaReflection must be equal to the energetic sum of Ref&Ref2, with Ref2 attenuated by wall alpha.
 		splCompare(dbaReflection, "Scene 1 R3_S1",PropagationProcess.wToDba( PropagationProcess.dbaToW(dbaRef)+PropagationProcess.dbaToW(dbaRef2)*(1-propData.wallAlpha)));
-		System.out.println("Simulation done in "+(System.currentTimeMillis()-startSimulation)+"ms");
+		/////////////////////////////////////////////////////////////////////////
+		// 					   Energetic sum of source test
+		// The same source duplicated at the same position must be equal to a single point source with an energetic sum of SPL.
+		// Get reference spl value
+		propData.reflexionOrder=0;
+		propData.diffractionOrder=0;
+		srcSpectrum.get(0).set(0,PropagationProcess.dbaToW(100.)+PropagationProcess.dbaToW(100.));
+		double dbaSingleSource=splCompute(propManager, new Coordinate(40,20,0));
+		//spl value
+		srcSpectrum.add(new ArrayList<Double>());
+		srcSpectrum.get(0).set(0,PropagationProcess.dbaToW(100.));
+		srcSpectrum.get(1).add(PropagationProcess.dbaToW(100.)); // 100 dB(A) @ 125 Hz
+		srclst.add(factory.createPoint(new Coordinate(40,15,0)));
+		sourcesIndex.appendGeometry(srclst.get(1), idsrc);
+		idsrc++;
+		double dbaDupp=splCompute(propManager, new Coordinate(40,20,0));
+		splCompare(dbaSingleSource, "Scene 1 R3_S2",dbaDupp);
+
 		
+		System.out.println("Simulation done in "+(System.currentTimeMillis()-startSimulation)+"ms");
 		System.out.println(manager.getNbObstructionTest()+" obstruction test has been done..");
 		System.out.println("testScene1 done in "+(System.currentTimeMillis()-startMakeScene)+"ms");
 	}
-	public void testScene2() throws LayerDelaunayError {
+	/**
+	 * Build a scene with two line source at the same position
+	 * @throws LayerDelaunayError
+	 */
+	public void testMergeSources() throws LayerDelaunayError {
 		System.out.println("________________________________________________");
 		System.out.println("Scene 2 :");
 		long startMakeScene=System.currentTimeMillis();
@@ -135,7 +157,7 @@ public class TestSoundPropagationValidation extends TestCase {
 		Coordinate[] way1={new Coordinate(2,8,0),new Coordinate(24,8,0),new Coordinate(30,14,0)};
 		LineString road1=factory.createLineString(way1);
 		srclst.add(road1);
-		srclst.add(road1.reverse());
+		srclst.add(road1);
 		//Scene dimension
 		Envelope cellEnvelope=new Envelope(new Coordinate(-170., -170.,0.),new Coordinate(170, 170,0.));
 		//Add source sound level
@@ -143,7 +165,7 @@ public class TestSoundPropagationValidation extends TestCase {
 		srcSpectrum.add(new ArrayList<Double>());
 		srcSpectrum.add(new ArrayList<Double>());
 		srcSpectrum.get(0).add(PropagationProcess.dbaToW(100.)); // 100 dB(A) @ 125 Hz
-		srcSpectrum.get(1).add(PropagationProcess.dbaToW(98.)); // 98 dB(A) @ 125 Hz
+		srcSpectrum.get(1).add(PropagationProcess.dbaToW(100.)); // 100 dB(A) @ 125 Hz
 		List<Integer> freqLvl=new ArrayList<Integer>();
 		freqLvl.add(125);
 		//Build query structure for sources
@@ -179,14 +201,14 @@ public class TestSoundPropagationValidation extends TestCase {
 		/////////////////////////////////////////////////////////////////////////
 		// 					   Geometric dispersion test
 		//Get reference spl value at 5m
-		propData.reflexionOrder=2;
+		propData.reflexionOrder=3;
 		propData.diffractionOrder=0;
 		double dbaRef=splCompute(propManager, new Coordinate(20,4,0));
-		System.out.println("R(20,4) : " + dbaRef + "dB(A)");
 		System.out.println("Simulation done in "+(System.currentTimeMillis()-startSimulation)+"ms");
 		System.out.println(manager.getNbObstructionTest()+" obstruction test has been done..");
 		System.out.println(propDataOut.getNb_couple_receiver_src()+" point source created..");
 		System.out.println(propDataOut.getTotalReflexionTime()+" ms reflexion time");
+		splCompare(dbaRef, "Scene 2 (20,4)",94.849);
 		System.out.println("testScene1 done in "+(System.currentTimeMillis()-startMakeScene)+"ms");
 	}
 }
