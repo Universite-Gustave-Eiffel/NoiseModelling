@@ -72,6 +72,22 @@ public class FastObstructionTest {
 		return triVertices;
 	}
 	/**
+	 * Debug purpose
+	 */
+	public String getDelaunayGeoms() {
+		StringBuffer geoms=new StringBuffer();
+		geoms.append("create table mesh as SELECT ST_GeomFromText('MULTIPOLYGON (");
+		for(Triangle tri : triVertices) {
+			Coordinate va=vertices.get(tri.getA());
+			Coordinate vb=vertices.get(tri.getB());
+			Coordinate vc=vertices.get(tri.getC());
+			geoms.append("(("+va.x+" "+va.y+", "+vb.x+" "+vb.y+", "+vc.x+" "+vc.y+", "+va.x+" "+va.y+")),");
+		}
+		geoms.deleteCharAt(geoms.length()-1);
+		geoms.append(")') as the_geom from fence;");
+		return geoms.toString();
+	}
+	/**
 	 * Retrieve vertices list, only for debug and unit test purpose
 	 * @return
 	 */
@@ -469,7 +485,7 @@ public class FastObstructionTest {
 	 *            Maximum distance from origin to segments
 	 * @param p1
 	 *            Origin of search
-	 * @return List of segment TODO return segment normal
+	 * @return List of segment
 	 */
 	public LinkedList<LineSegment> getLimitsInRange(double maxDist,
 			Coordinate p1) {
@@ -502,7 +518,9 @@ public class FastObstructionTest {
 						// In this direction there is a hole or this is outside
 						// of the geometry
 						if (neighboors.get(idside) == -1) {
-							walls.add(side);
+							if(!walls.contains(side)) {
+								walls.add(side);
+							}
 						} else {
 							// Store currentTriangle Id. This is where to go
 							// back when there is no more navigable neighbors at

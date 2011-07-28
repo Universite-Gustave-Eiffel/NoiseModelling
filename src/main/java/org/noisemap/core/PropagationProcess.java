@@ -10,9 +10,8 @@ import java.util.ArrayList;
 import java.util.List;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
-import org.gdms.sql.function.math.Round;
-
 import com.vividsolutions.jts.algorithm.NonRobustLineIntersector;
+import com.vividsolutions.jts.algorithm.CGAlgorithms;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
@@ -31,6 +30,14 @@ public class PropagationProcess implements Runnable {
 	private int nbfreq;
 	private double[] alpha_atmo;
 	private double[] freq_lambda;
+	/**
+	 * Occlusion test on two walls. Segments are CCW oriented.
+	 * @param wall1
+	 * @param wall2
+	 */
+	static public boolean wallWallTest(LineSegment wall1,LineSegment wall2) {
+		return ((CGAlgorithms.isCCW(new Coordinate[] {wall1.getCoordinate(0),wall1.getCoordinate(1),wall2.getCoordinate(0),wall1.getCoordinate(0)}) || CGAlgorithms.isCCW(new Coordinate[] {wall1.getCoordinate(0),wall1.getCoordinate(1),wall2.getCoordinate(1),wall1.getCoordinate(0)})) && (CGAlgorithms.isCCW(new Coordinate[] {wall2.getCoordinate(0),wall2.getCoordinate(1),wall1.getCoordinate(0),wall2.getCoordinate(0)}) || CGAlgorithms.isCCW(new Coordinate[] {wall2.getCoordinate(0),wall2.getCoordinate(1),wall1.getCoordinate(1),wall2.getCoordinate(0)})));
+	}
 	/**
 	 * Recursive method to feed mirrored receiver position on walls. No
 	 * obstruction test is done.
@@ -60,21 +67,35 @@ public class PropagationProcess implements Runnable {
 		int wallId = 0;
 		for (LineSegment wall : nearBuildingsWalls) {
 			if (wallId != exceptionWallId) {
-				Coordinate intersectionPt = wall.project(receiverCoord);
-				if (wall.distance(receiverCoord) < distanceLimitation) // Test
-																		// maximum
-																		// distance
-																		// constraint
-				{
-					Coordinate mirrored = new Coordinate(2 * intersectionPt.x
-							- receiverCoord.x, 2 * intersectionPt.y
-							- receiverCoord.y);
-					receiversImage.add(new MirrorReceiverResult(mirrored,
-							lastResult, wallId));
-					if (depth > 0) {
-						feedMirroredReceiverResults(receiversImage, mirrored,
-								receiversImage.size() - 1, nearBuildingsWalls,
-								depth - 1, distanceLimitation);
+				//Counter ClockWise test. Walls vertices are CCW oriented.
+				//This help to test if a wall could see a point or another wall
+				//If the triangle formed by two point of the wall + the receiver is CCW then the wall is oriented toward the point.
+				boolean isCCW=false;
+				if (lastResult == -1) { //If the receiverCoord is not an image
+					if(CGAlgorithms.isCCW(new Coordinate[] {wall.getCoordinate(0),wall.getCoordinate(1),receiverCoord,wall.getCoordinate(0)})) {
+						isCCW=true;
+					}
+				} else {
+					//Call wall visibility test
+					isCCW=wallWallTest(nearBuildingsWalls.get(exceptionWallId),wall);
+				}
+				if(isCCW) {
+					Coordinate intersectionPt = wall.project(receiverCoord);
+					if (wall.distance(receiverCoord) < distanceLimitation) // Test
+																			// maximum
+																			// distance
+																			// constraint
+					{
+						Coordinate mirrored = new Coordinate(2 * intersectionPt.x
+								- receiverCoord.x, 2 * intersectionPt.y
+								- receiverCoord.y);
+						receiversImage.add(new MirrorReceiverResult(mirrored,
+								lastResult, wallId));
+						if (depth > 0) {
+							feedMirroredReceiverResults(receiversImage, mirrored,
+									receiversImage.size() - 1, nearBuildingsWalls,
+									depth - 1, distanceLimitation);
+						}
 					}
 				}
 			}
@@ -401,6 +422,23 @@ public class PropagationProcess implements Runnable {
 							}
 						}
 						if (validReflection) {
+							//NTODO remove output
+							/*
+   						    System.out.print("("+srcCoord+")Path : ");
+							receiverReflectionCursor = receiverReflection;
+							while(receiverReflectionCursor != null) {
+								System.out.print(receiverReflectionCursor.getWallId()+" ");
+								if(receiverReflectionCursor
+										.getMirrorResultId()!=-1) {
+								receiverReflectionCursor = mirroredReceiver
+								.get(receiverReflectionCursor
+										.getMirrorResultId());
+								}else{
+									receiverReflectionCursor=null;
+								}
+							}
+							System.out.println();
+							*/
 							// A path has been found
 							for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
 								// Geometric dispersion
@@ -622,6 +660,7 @@ public class PropagationProcess implements Runnable {
 			mirroredReceiver = getMirroredReceiverResults(receiverCoord,
 					nearBuildingsWalls, data.reflexionOrder,
 					data.maxSrcDist);
+			System.out.println("There are "+mirroredReceiver.size()+" receiver image."); //TODO remove
 		}
 		List<Coordinate> regionCorners = new ArrayList<Coordinate>();
 		List<Integer> regionCornersFreeToReceiver = new ArrayList<Integer>(); // Corners
@@ -792,10 +831,6 @@ public class PropagationProcess implements Runnable {
 		}
 		dataOut.appendFreeFieldTestCount(data.freeFieldFinder.getNbObstructionTest());
 		dataOut.appendCellComputed();
-		/*
-		 * try { driver.writingFinished(); } catch (DriverException e) { // TODO
-		 * Auto-generated catch block e.printStackTrace(); }
-		 */
 	}
 
 }

@@ -151,6 +151,7 @@ public class TestSoundPropagationValidation extends TestCase {
 		Coordinate[] building3Coords = { new Coordinate(6., 10.,0.),new Coordinate(24., 10.,0.),new Coordinate(24.,18.,0.),new Coordinate(6., 18.,0.),new Coordinate(6., 10.,0.)};
 		Polygon building3 = factory.createPolygon(
 				factory.createLinearRing(building3Coords), null);
+
 		////////////////////////////////////////////////////////////////////////////
 		//Add road source as one point
 		List<Geometry> srclst=new ArrayList<Geometry>();
@@ -159,7 +160,7 @@ public class TestSoundPropagationValidation extends TestCase {
 		srclst.add(road1);
 		srclst.add(road1);
 		//Scene dimension
-		Envelope cellEnvelope=new Envelope(new Coordinate(-170., -170.,0.),new Coordinate(170, 170,0.));
+		Envelope cellEnvelope=new Envelope(new Coordinate(-500., -500.,0.),new Coordinate(500, 500,0.));
 		//Add source sound level
 		List<ArrayList<Double>> srcSpectrum=new ArrayList<ArrayList<Double>>();
 		srcSpectrum.add(new ArrayList<Double>());
@@ -198,6 +199,7 @@ public class TestSoundPropagationValidation extends TestCase {
 		System.out.println("Propagation initialisation in "+(System.currentTimeMillis()-startObstructionTest)+"ms");
 		long startSimulation=System.currentTimeMillis();
 		//Run test
+		//System.out.println(manager.getDelaunayGeoms());
 		/////////////////////////////////////////////////////////////////////////
 		// 					   Geometric dispersion test
 		//Get reference spl value at 5m
@@ -208,7 +210,7 @@ public class TestSoundPropagationValidation extends TestCase {
 		System.out.println(manager.getNbObstructionTest()+" obstruction test has been done..");
 		System.out.println(propDataOut.getNb_couple_receiver_src()+" point source created..");
 		System.out.println(propDataOut.getTotalReflexionTime()+" ms reflexion time");
-		splCompare(dbaRef, "Scene 2 (20,4)",94.849);
+		splCompare(dbaRef, "Scene 2 (20,4)",91.916);
 		System.out.println("testScene1 done in "+(System.currentTimeMillis()-startMakeScene)+"ms");
 	}
 }
