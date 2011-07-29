@@ -492,6 +492,7 @@ public class FastObstructionTest {
 		LinkedList<LineSegment> walls = new LinkedList<LineSegment>();
 		int curTri = getTriangleIdByCoordinate(p1);
 		int nextTri = -1;
+		short firstSide = 0;
 		HashSet<Integer> navigationHistory = new HashSet<Integer>(); // List all
 																		// triangles
 																		// already
@@ -501,12 +502,14 @@ public class FastObstructionTest {
 																// of triangles
 																// the process
 																// go through
+		Stack<Short> navigationSide = new Stack<Short>(); //History of current processing side
+		
 		while (curTri != -1) {
 			navigationHistory.add(curTri);
 			// for each side of the triangle
 			Triangle neighboors = this.triNeighbors.get(curTri);
 			nextTri = -1;
-			for (short idside = 0; idside < 3; idside++) {
+			for (short idside = firstSide; idside < 3; idside++) {
 				if (!navigationHistory.contains(neighboors.get(idside))) {
 					IntSegment segVerticesIndex = this.triVertices.get(curTri)
 							.getSegment(idside);
@@ -518,14 +521,14 @@ public class FastObstructionTest {
 						// In this direction there is a hole or this is outside
 						// of the geometry
 						if (neighboors.get(idside) == -1) {
-							if(!walls.contains(side)) {
-								walls.add(side);
-							}
+							walls.add(side);
 						} else {
 							// Store currentTriangle Id. This is where to go
 							// back when there is no more navigable neighbors at
 							// the next triangle
 							navigationNodes.add(curTri);
+							navigationSide.add(idside);
+							firstSide=0;
 							nextTri = neighboors.get(idside);
 							break; // Next triangle
 						}
@@ -536,6 +539,7 @@ public class FastObstructionTest {
 				// All the side have been rejected, go back by one on the
 				// navigation
 				nextTri = navigationNodes.pop();
+				firstSide = navigationSide.pop();
 			}
 			curTri = nextTri;
 		}

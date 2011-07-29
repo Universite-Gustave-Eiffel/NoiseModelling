@@ -24,6 +24,8 @@ public class PropagationProcessOut {
 	private long totalGridIndexQuery = 0;
 	private long nb_couple_receiver_src = 0;
 	private long nb_obstr_test = 0;
+	private long nb_image_receiver = 0;
+	private long nb_reflexion_path = 0;
 	private long totalReflexionTime = 0;
 	private long cellComputed = 0;
 
@@ -54,6 +56,19 @@ public class PropagationProcessOut {
 
 	public synchronized long getNb_obstr_test() {
 		return nb_obstr_test;
+	}
+	public synchronized void appendReflexionPath(long added) {
+		nb_reflexion_path+=added;
+	}
+	public synchronized void appendImageReceiver(long added) {
+		nb_image_receiver+=added;
+	}
+	public synchronized long getNb_image_receiver() {
+		return nb_image_receiver;
+	}
+
+	public synchronized long getNb_reflexion_path() {
+		return nb_reflexion_path;
 	}
 
 	public synchronized void appendSourceCount(int srcCount) {

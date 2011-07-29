@@ -34,9 +34,19 @@ public class PropagationProcess implements Runnable {
 	 * Occlusion test on two walls. Segments are CCW oriented.
 	 * @param wall1
 	 * @param wall2
+	 * @return True if the walls are face to face
 	 */
 	static public boolean wallWallTest(LineSegment wall1,LineSegment wall2) {
 		return ((CGAlgorithms.isCCW(new Coordinate[] {wall1.getCoordinate(0),wall1.getCoordinate(1),wall2.getCoordinate(0),wall1.getCoordinate(0)}) || CGAlgorithms.isCCW(new Coordinate[] {wall1.getCoordinate(0),wall1.getCoordinate(1),wall2.getCoordinate(1),wall1.getCoordinate(0)})) && (CGAlgorithms.isCCW(new Coordinate[] {wall2.getCoordinate(0),wall2.getCoordinate(1),wall1.getCoordinate(0),wall2.getCoordinate(0)}) || CGAlgorithms.isCCW(new Coordinate[] {wall2.getCoordinate(0),wall2.getCoordinate(1),wall1.getCoordinate(1),wall2.getCoordinate(0)})));
+	}
+	/**
+	 * Occlusion test on two walls. Segments are CCW oriented.
+	 * @param wall1
+	 * @param wall2
+	 * @return True if the wall is oriented to the point
+	 */
+	static public boolean wallPointTest(LineSegment wall1,Coordinate pt) {
+		return CGAlgorithms.isCCW(new Coordinate[] {wall1.getCoordinate(0),wall1.getCoordinate(1),pt,wall1.getCoordinate(0)});
 	}
 	/**
 	 * Recursive method to feed mirrored receiver position on walls. No
@@ -72,13 +82,12 @@ public class PropagationProcess implements Runnable {
 				//If the triangle formed by two point of the wall + the receiver is CCW then the wall is oriented toward the point.
 				boolean isCCW=false;
 				if (lastResult == -1) { //If the receiverCoord is not an image
-					if(CGAlgorithms.isCCW(new Coordinate[] {wall.getCoordinate(0),wall.getCoordinate(1),receiverCoord,wall.getCoordinate(0)})) {
-						isCCW=true;
-					}
+					isCCW=wallPointTest(wall,receiverCoord);
 				} else {
 					//Call wall visibility test
 					isCCW=wallWallTest(nearBuildingsWalls.get(exceptionWallId),wall);
 				}
+				
 				if(isCCW) {
 					Coordinate intersectionPt = wall.project(receiverCoord);
 					if (wall.distance(receiverCoord) < distanceLimitation) // Test
@@ -339,12 +348,16 @@ public class PropagationProcess implements Runnable {
 			//
 			// Process specular reflection
 			if (data.reflexionOrder > 0) {
+				long refpathcount=0;
 				long beginReflexionTest = System.currentTimeMillis();
 				NonRobustLineIntersector linters = new NonRobustLineIntersector();
 				for (MirrorReceiverResult receiverReflection : mirroredReceiver) {
+
+					
 					double ReflectedSrcReceiverDistance = receiverReflection
 							.getReceiverPos().distance(srcCoord);
-					if (ReflectedSrcReceiverDistance < data.maxSrcDist) {
+					if (ReflectedSrcReceiverDistance < data.maxSrcDist && PropagationProcess.wallPointTest(nearBuildingsWalls
+							.get(receiverReflection.getWallId()), srcCoord)) {
 						boolean validReflection = false;
 						int reflectionOrderCounter = 0;
 						MirrorReceiverResult receiverReflectionCursor = receiverReflection;
@@ -440,6 +453,7 @@ public class PropagationProcess implements Runnable {
 							System.out.println();
 							*/
 							// A path has been found
+							refpathcount+=1;
 							for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
 								// Geometric dispersion
 								double AttenuatedWj = attDistW(wj.get(idfreq),
@@ -458,7 +472,7 @@ public class PropagationProcess implements Runnable {
 					}
 				}
 				dataOut.appendTotalReflexionTime((System.currentTimeMillis() - beginReflexionTest));
-
+				dataOut.appendReflexionPath(refpathcount);
 			} // End reflexion
 				// ///////////
 				// Process diffraction paths
@@ -660,7 +674,7 @@ public class PropagationProcess implements Runnable {
 			mirroredReceiver = getMirroredReceiverResults(receiverCoord,
 					nearBuildingsWalls, data.reflexionOrder,
 					data.maxSrcDist);
-			System.out.println("There are "+mirroredReceiver.size()+" receiver image."); //TODO remove
+			this.dataOut.appendImageReceiver(mirroredReceiver.size());
 		}
 		List<Coordinate> regionCorners = new ArrayList<Coordinate>();
 		List<Integer> regionCornersFreeToReceiver = new ArrayList<Integer>(); // Corners

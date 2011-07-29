@@ -202,13 +202,14 @@ public class TestSoundPropagationValidation extends TestCase {
 		//System.out.println(manager.getDelaunayGeoms());
 		/////////////////////////////////////////////////////////////////////////
 		// 					   Geometric dispersion test
-		//Get reference spl value at 5m
 		propData.reflexionOrder=3;
 		propData.diffractionOrder=0;
 		double dbaRef=splCompute(propManager, new Coordinate(20,4,0));
 		System.out.println("Simulation done in "+(System.currentTimeMillis()-startSimulation)+"ms");
 		System.out.println(manager.getNbObstructionTest()+" obstruction test has been done..");
 		System.out.println(propDataOut.getNb_couple_receiver_src()+" point source created..");
+		System.out.println(propDataOut.getNb_image_receiver()+" receiver image found..");
+		System.out.println(propDataOut.getNb_reflexion_path()+" reflection path found..");
 		System.out.println(propDataOut.getTotalReflexionTime()+" ms reflexion time");
 		splCompare(dbaRef, "Scene 2 (20,4)",91.916);
 		System.out.println("testScene1 done in "+(System.currentTimeMillis()-startMakeScene)+"ms");
