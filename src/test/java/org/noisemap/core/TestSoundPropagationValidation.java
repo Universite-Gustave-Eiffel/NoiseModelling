@@ -73,7 +73,7 @@ public class TestSoundPropagationValidation extends TestCase {
 		List<Coordinate> vert=manager.getVertices();
 
 		Stack<ArrayList<Value>> dataStack=new Stack<ArrayList<Value>>();		
-		PropagationProcessData propData=new PropagationProcessData(vert, tri, manager, sourcesIndex, srclst, srcSpectrum, freqLvl, 0, 2, 80., 1., 0., 0l, null, null);
+		PropagationProcessData propData=new PropagationProcessData(vert, tri, manager, sourcesIndex, srclst, srcSpectrum, freqLvl, 0, 2, 80.,50., 1., 0., 0l, null, null);
 		PropagationProcessOut propDataOut=new PropagationProcessOut(dataStack);
 		PropagationProcess propManager=new PropagationProcess(propData, propDataOut);
 		propManager.initStructures();
@@ -191,7 +191,7 @@ public class TestSoundPropagationValidation extends TestCase {
 		List<Coordinate> vert=manager.getVertices();
 
 		Stack<ArrayList<Value>> dataStack=new Stack<ArrayList<Value>>();		
-		PropagationProcessData propData=new PropagationProcessData(vert, tri, manager, sourcesIndex, srclst, srcSpectrum, freqLvl, 0, 2, 80., 1., 0., 0l, null, null);
+		PropagationProcessData propData=new PropagationProcessData(vert, tri, manager, sourcesIndex, srclst, srcSpectrum, freqLvl, 0, 2, 80.,50., 1., 0., 0l, null, null);
 		PropagationProcessOut propDataOut=new PropagationProcessOut(dataStack);
 		PropagationProcess propManager=new PropagationProcess(propData, propDataOut);
 		propManager.initStructures();
@@ -199,7 +199,7 @@ public class TestSoundPropagationValidation extends TestCase {
 		System.out.println("Propagation initialisation in "+(System.currentTimeMillis()-startObstructionTest)+"ms");
 		long startSimulation=System.currentTimeMillis();
 		//Run test
-		System.out.println(manager.getDelaunayGeoms());
+		//System.out.println(manager.getDelaunayGeoms());
 		/////////////////////////////////////////////////////////////////////////
 		// 					   Geometric dispersion test
 		propData.reflexionOrder=3;

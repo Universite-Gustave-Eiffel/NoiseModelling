@@ -80,7 +80,9 @@ public class BR_TriGrid extends AbstractTableFunction {
 	// Timing sum in millisec
 	private long totalParseBuildings = 0;
 	private long totalDelaunay = 0;
-
+        public void setLogger(Logger logger) {
+            BR_TriGrid.logger = logger;
+        }
 	int getCellId(int row, int col, int cols) {
 		return row * cols + col;
 	}
@@ -480,24 +482,33 @@ public class BR_TriGrid extends AbstractTableFunction {
 	public ReadAccess evaluate(SQLDataSourceFactory dsf, ReadAccess[] tables,
             Value[] values, ProgressMonitor pm) throws FunctionException {
 		String tmpdir = dsf.getTempDir().getAbsolutePath();
+                if(values.length<12) {
+                    throw new FunctionException("Not enough parameters !");
+                }else if(values.length>12){
+                    throw new FunctionException("Too many parameters !");
+                }
 		String dbField = values[2].toString();
 		double maxSrcDist = values[3].getAsDouble();
-		int subdivLvl = values[4].getAsInt();
-		double minRecDist = values[5].getAsDouble(); /*
+                double maxRefDist = values[4].getAsDouble();
+		int subdivLvl = values[5].getAsInt();
+		double minRecDist = values[6].getAsDouble(); /*
 													 * <! Minimum distance
 													 * between source and
 													 * receiver
 													 */
-		double srcPtDist = values[6].getAsDouble(); /*
+		double srcPtDist = values[7].getAsDouble(); /*
 													 * <! Complexity distance of
 													 * roads
 													 */
-		double maximumArea = values[7].getAsDouble();
-		int reflexionOrder = values[8].getAsInt();
-		int diffractionOrder = values[9].getAsInt();
-		double wallAlpha = values[10].getAsDouble();
+		double maximumArea = values[8].getAsDouble();
+		int reflexionOrder = values[9].getAsInt();
+		int diffractionOrder = values[10].getAsInt();
+		double wallAlpha = values[11].getAsDouble();
 		boolean forceSinglePass = false;
 		boolean doMultiThreading = true;
+                assert(maxSrcDist>maxRefDist); //Maximum Source-Receiver
+                                               //distance must be superior than
+                                               //maximum Receiver-Wall distance
 
 		try {
 			// Steps of execution
@@ -757,7 +768,7 @@ public class BR_TriGrid extends AbstractTableFunction {
 					PropagationProcessData threadData = new PropagationProcessData(
 							vertices, triangles, freeFieldFinder, sourcesIndex,
 							sourceGeometries, wj_sources, db_field_freq,
-							reflexionOrder, diffractionOrder, maxSrcDist,
+							reflexionOrder, diffractionOrder, maxSrcDist,maxRefDist,
 							minRecDist, wallAlpha, (long) ij, dsf,
 							pmManager.nextSubProcess(vertices.size()));
 					PropagationProcess propaProcess = new PropagationProcess(
@@ -821,6 +832,10 @@ public class BR_TriGrid extends AbstractTableFunction {
 			logger.info("Receiver count:" + nbreceivers);
 			logger.info("Receiver-Source count:"
 					+ threadDataOut.getNb_couple_receiver_src());
+                        logger.info("Receiver image (reflections):"
+                                        + threadDataOut.getNb_image_receiver());
+                        logger.info("Receiver-Sources specular reflection path count:"
+                                        + threadDataOut.getNb_reflexion_path());
 			logger.info("Buildings obstruction test count:"
 					+ threadDataOut.getNb_obstr_test());
 			return driver.getTable("main");
@@ -852,6 +867,7 @@ public class BR_TriGrid extends AbstractTableFunction {
                             new TableArgument(TableDefinition.GEOMETRY),
                             ScalarArgument.STRING,
                             ScalarArgument.DOUBLE,
+                            ScalarArgument.DOUBLE,
                             ScalarArgument.INT,
                             ScalarArgument.DOUBLE,
                             ScalarArgument.DOUBLE,
@@ -869,12 +885,12 @@ public class BR_TriGrid extends AbstractTableFunction {
 
 	@Override
 	public String getSqlOrder() {
-		return "select BR_TriGrid( objects_table.the_geom, sound_sources_table.the_geom,sound_sources_table.db_m,50,3,2.5,5.0,300,1,0.1 ) from objects_table,sound_sources_table;";
+		return "select BR_TriGrid( objects_table.the_geom, sound_sources_table.the_geom,sound_sources_table.db_m,170,50,3,2.5,5.0,300,1,0.1 ) from objects_table,sound_sources_table;";
 	}
 
 	@Override
 	public String getDescription() {
-		return "BR_TriGrid(buildings(polygons),sources(points),sound lvl field name(string),maximum propagation distance (double meter),subdivision level 4^n cells(int), roads width (meter), densification of receivers near roads and buildings (meter), maximum area of triangle, sound reflection order, sound diffraction order, alpha of walls ) Sound propagation from ponctual sound sources to ponctual receivers created by a delaunay triangulation of specified buildings geometry.";
+		return "BR_TriGrid(buildings(polygons),sources(points),sound lvl field name(string),maximum propagation distance (double meter),maximum wall seeking distance (double meter),subdivision level 4^n cells(int), roads width (meter), densification of receivers near roads (meter), maximum area of triangle, sound reflection order, sound diffraction order, alpha of walls ) Sound propagation from ponctual sound sources to ponctual receivers created by a delaunay triangulation of specified buildings geometry.";
 	}
 
 

@@ -183,8 +183,9 @@ public class PropagationProcess implements Runnable {
 				closestPt = SegClosest;
 			}
 		}
-		if (closestPt == null)
+		if (closestPt == null) {
 			return 1.;
+                }
 		double delta = 20.;
 		// If the minimum effective distance between the line source and the
 		// receiver is smaller than the minimum distance constraint then the
@@ -668,7 +669,7 @@ public class PropagationProcess implements Runnable {
 
 			nearBuildingsWalls = new ArrayList<LineSegment>(
 					data.freeFieldFinder.getLimitsInRange(
-							data.maxSrcDist - 1., receiverCoord));
+							data.maxRefDist , receiverCoord));
 			// Build mirrored receiver list from wall list
 			mirroredReceiver = getMirroredReceiverResults(receiverCoord,
 					nearBuildingsWalls, data.reflexionOrder,

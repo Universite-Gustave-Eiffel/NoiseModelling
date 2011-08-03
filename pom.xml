@@ -31,13 +31,6 @@
 			<type>jar</type>
 			<scope>compile</scope>
 		</dependency>
-		<dependency>
-			<groupId>org.gdms.sql</groupId>
-			<artifactId>gdmsql</artifactId>
-			<version>0.1-SNAPSHOT</version>
-			<type>jar</type>
-			<scope>compile</scope>
-		</dependency>
 	 <dependency>
 	  <groupId>org.jdelaunay</groupId>
 	  <artifactId>jdelaunay</artifactId>
@@ -55,6 +48,19 @@
                                         <target>1.6</target>
                                 </configuration>
                                 <version>2.3.2</version>
+                        </plugin>
+                        <plugin>
+                            <artifactId>maven-assembly-plugin</artifactId>
+                            <configuration>
+                                <archive>
+                                    <manifest>
+                                        <mainClass>org.noisemap.run.trigrid</mainClass>
+                                    </manifest>
+                                </archive>
+                                <descriptorRefs>
+                                    <descriptorRef>jar-with-dependencies</descriptorRef>
+                                </descriptorRefs>
+                            </configuration>
                         </plugin>
                 </plugins>
         </build>

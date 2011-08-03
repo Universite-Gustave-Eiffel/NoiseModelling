@@ -13,7 +13,7 @@ import org.gdms.data.values.Value;
 
 /**
  * Way to store data computed by thread
- * 
+ * Multiple threads use the same Out, then all methods has been synchronized
  * @author fortin
  * 
  */
@@ -21,6 +21,7 @@ public class PropagationProcessOut {
 	private Stack<ArrayList<Value>> toDriver;
 
 	private long totalBuildingObstructionTest = 0;
+        private long sourceSplittingTime = 0;
 	private long totalGridIndexQuery = 0;
 	private long nb_couple_receiver_src = 0;
 	private long nb_obstr_test = 0;
@@ -28,6 +29,10 @@ public class PropagationProcessOut {
 	private long nb_reflexion_path = 0;
 	private long totalReflexionTime = 0;
 	private long cellComputed = 0;
+
+        public synchronized  long getSourceSplittingTime() {
+            return sourceSplittingTime;
+        }
 
 	public PropagationProcessOut(Stack<ArrayList<Value>> toDriver) {
 		super();

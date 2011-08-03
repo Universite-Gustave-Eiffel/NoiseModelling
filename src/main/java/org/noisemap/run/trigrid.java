@@ -26,6 +26,7 @@ import org.noisemap.core.BR_TriGrid;
 public class trigrid {
 
     private static void printUsage() {
+        System.out.println("BR_TriGrid version 03/08/2011 16:52");
         System.out.println("Usage :");
         System.out.println("java trigrid.jar [options] -ib bpath -is spath -o outpath");
         System.out.println("Options :");
@@ -33,6 +34,7 @@ public class trigrid {
         System.out.println("-sfield the_geom : sources column nale (points or lines)");
         System.out.println("-splfield db_m   : sound lvl field name(string)");
         System.out.println("-maxdist 170     : maximum propagation distance (double meter)");
+        System.out.println("-maxrdist 50     : maximum wall reflexion distance (double meter)");
         System.out.println("-splitdepth 3    : subdivision level 4^n cells (int) [0-n]");
         System.out.println("-rwidth 0.8      : roads width (double meter)");
         System.out.println("-dense 5         : densification of receivers near roads (meter double)");
@@ -57,6 +59,7 @@ public class trigrid {
         String sField="the_geom";
         String splField="db_m";
         double maxDist=170;
+        double maxRDist=50;
         int splitDepth=3;
         double roadsWidth=0.8;
         double densification=5.;
@@ -82,6 +85,8 @@ public class trigrid {
                 splField=sargs.pop();
             }else if(argument.contentEquals("-maxdist")) {
                 maxDist=Double.valueOf(sargs.pop());
+            }else if(argument.contentEquals("-maxrdist")) {
+                maxRDist=Double.valueOf(sargs.pop());
             }else if(argument.contentEquals("-splitdepth")) {
                 splitDepth=Integer.valueOf(sargs.pop());
             }else if(argument.contentEquals("-rwidth")) {
@@ -102,6 +107,10 @@ public class trigrid {
                 sourcesFilename=sargs.pop();
             }else if(argument.contentEquals("-o")) {
                 outputFilename=sargs.pop();
+            }else{
+                System.err.println("Unknown parameter :"+argument);
+                printUsage();
+                return;
             }
         }
         if(buildingsFilename.isEmpty() || sourcesFilename.isEmpty() || outputFilename.isEmpty()) {
@@ -128,7 +137,8 @@ public class trigrid {
         //Run propagation
 
         BR_TriGrid propa=new BR_TriGrid();
-        Value[] propaArgs={ValueFactory.createValue(bField),ValueFactory.createValue(sField),ValueFactory.createValue(splField),ValueFactory.createValue(maxDist),ValueFactory.createValue(splitDepth),ValueFactory.createValue(roadsWidth),ValueFactory.createValue(densification),ValueFactory.createValue(maxarea),ValueFactory.createValue(reflectionDepth),ValueFactory.createValue(diffractionDepth),ValueFactory.createValue(wallAlpha)};
+        propa.setLogger(new ConsoleLogger("BR_TriGrid"));
+        Value[] propaArgs={ValueFactory.createValue(bField),ValueFactory.createValue(sField),ValueFactory.createValue(splField),ValueFactory.createValue(maxDist),ValueFactory.createValue(maxRDist),ValueFactory.createValue(splitDepth),ValueFactory.createValue(roadsWidth),ValueFactory.createValue(densification),ValueFactory.createValue(maxarea),ValueFactory.createValue(reflectionDepth),ValueFactory.createValue(diffractionDepth),ValueFactory.createValue(wallAlpha)};
         try {
             ReadAccess data = propa.evaluate(factory, tables, propaArgs, null);
         } catch (FunctionException ex) {
