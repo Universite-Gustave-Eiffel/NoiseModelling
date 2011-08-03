@@ -38,12 +38,11 @@
 			<type>jar</type>
 			<scope>compile</scope>
 		</dependency>
-		<dependency>
-			<groupId>org.jdelaunay</groupId>
-			<artifactId>jdelaunay</artifactId>
-			<version>0.5</version>
-			<scope>compile</scope>
-		</dependency>
+	 <dependency>
+	  <groupId>org.jdelaunay</groupId>
+	  <artifactId>jdelaunay</artifactId>
+	  <version>0.5</version>
+	 </dependency>
 	</dependencies>
 	<description>Translate light vehicle, heavy vehicle, public bus, tramway traffic into linear noise source. Then compute sound propagation and iso surface.</description>
 	<build>

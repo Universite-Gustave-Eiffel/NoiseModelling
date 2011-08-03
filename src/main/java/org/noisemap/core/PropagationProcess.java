@@ -356,8 +356,7 @@ public class PropagationProcess implements Runnable {
 					
 					double ReflectedSrcReceiverDistance = receiverReflection
 							.getReceiverPos().distance(srcCoord);
-					if (ReflectedSrcReceiverDistance < data.maxSrcDist && PropagationProcess.wallPointTest(nearBuildingsWalls
-							.get(receiverReflection.getWallId()), srcCoord)) {
+					if (ReflectedSrcReceiverDistance < data.maxSrcDist ) {
 						boolean validReflection = false;
 						int reflectionOrderCounter = 0;
 						MirrorReceiverResult receiverReflectionCursor = receiverReflection;
@@ -369,7 +368,7 @@ public class PropagationProcess implements Runnable {
 						linters.computeIntersection(seg.p0, seg.p1,
 								receiverReflection.getReceiverPos(),
 								destinationPt);
-						while (linters.hasIntersection()) // While there is a
+						while (linters.hasIntersection() && PropagationProcess.wallPointTest(seg, destinationPt)) // While there is a
 															// reflection point
 															// on another wall
 						{

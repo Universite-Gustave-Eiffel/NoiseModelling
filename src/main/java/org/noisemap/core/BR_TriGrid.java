@@ -520,7 +520,7 @@ public class BR_TriGrid extends AbstractTableFunction {
 			// if not then append the distance attenuated sound level to the
 			// receiver
 			// Save the triangle geometry with the db_m value of the 3 vertices
-			;
+			
 			int tableBuildings = 0;
 			int tableSources = 1;
 			long nbreceivers = 0;
@@ -612,7 +612,7 @@ public class BR_TriGrid extends AbstractTableFunction {
 					logger.info("Begin processing of cell " + cellI + ","
 							+ cellJ + " of the " + gridDim + "x" + gridDim
 							+ "  grid..");
-					if (pm.isCancelled()) {
+					if (pm!=null && pm.isCancelled()) {
 						driver.writingFinished();
 						return driver.getTable("main");
 					}
@@ -773,7 +773,7 @@ public class BR_TriGrid extends AbstractTableFunction {
 								+ "x" + gridDim + "  grid..");
 						// threadManager.executeBlocking(propaProcess);
 						while (!threadManager.isAvaibleQueueSlot()) {
-							if (pm.isCancelled()) {
+							if (pm!=null && pm.isCancelled()) {
 								driver.writingFinished();
 								return driver.getTable("main");
 							}
@@ -791,7 +791,7 @@ public class BR_TriGrid extends AbstractTableFunction {
 			// threadManager.getRemainingTasks()>0
 			Thread.sleep(100);
 			while (threadDataOut.getCellComputed() < nbcell && doMultiThreading) {
-				if (pm.isCancelled()) {
+				if (pm!=null && pm.isCancelled()) {
 					driver.writingFinished();
 					return driver.getTable("main");
 				}
@@ -802,7 +802,7 @@ public class BR_TriGrid extends AbstractTableFunction {
 			pmManager.stop();
 			logger.info("Wait for termination of writing to the driver..");
 			while (driverManager.isRunning()) {
-				if (pm.isCancelled()) {
+				if (pm!=null && pm.isCancelled()) {
 					driver.writingFinished();
 					return driver.getTable("main");
 				}

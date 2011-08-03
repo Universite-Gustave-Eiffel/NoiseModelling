@@ -92,16 +92,20 @@ public class ProgressionOrbisGisManager implements Runnable {
 
 	@Override
 	public void run() {
-		while (enabled) {
-			monitor.progressTo((int) (getMainProgression() * 100));
-			if (monitor.isCancelled()) {
-				break;
-			}
-			try {
-				Thread.sleep(updateInterval);
-			} catch (InterruptedException e) {
-				break;
-			}
-		}
+            while (enabled) {
+                if(monitor!=null) {
+                    monitor.progressTo((int) (getMainProgression() * 100));
+                    if (monitor.isCancelled()) {
+                            break;
+                    }
+                }else{
+                    System.out.println((getMainProgression() * 100)+" %");
+                }
+                try {
+                        Thread.sleep(updateInterval);
+                } catch (InterruptedException e) {
+                        break;
+                }
+            }
 	}
 }

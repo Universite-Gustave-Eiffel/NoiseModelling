@@ -199,7 +199,7 @@ public class TestSoundPropagationValidation extends TestCase {
 		System.out.println("Propagation initialisation in "+(System.currentTimeMillis()-startObstructionTest)+"ms");
 		long startSimulation=System.currentTimeMillis();
 		//Run test
-		//System.out.println(manager.getDelaunayGeoms());
+		System.out.println(manager.getDelaunayGeoms());
 		/////////////////////////////////////////////////////////////////////////
 		// 					   Geometric dispersion test
 		propData.reflexionOrder=3;
