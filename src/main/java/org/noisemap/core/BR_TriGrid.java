@@ -654,12 +654,12 @@ public class BR_TriGrid extends AbstractTableFunction {
 						
 						//Value[] row = sdsSources.getRow(rowIndex);
 						//Geometry geo = sdsSources.getGeometry(rowIndex);
-                        final Value[] row = new Value[fieldCount];
-                        for (int j = 0; j < fieldCount; j++) {
-                        	row[j] = sds.getFieldValue(rowIndex, j);
-                        }
-                        Geometry geo = row[spatialSourceFieldIndex].getAsGeometry();
-                        
+                                                final Value[] row = new Value[fieldCount];
+                                                for (int j = 0; j < fieldCount; j++) {
+                                                        row[j] = sdsSources.getFieldValue(rowIndex, j);
+                                                }
+                                                Geometry geo = row[spatialSourceFieldIndex].getAsGeometry();
+
 						Envelope ptEnv = geo.getEnvelopeInternal();
 						if (ptEnv.intersects(expandedCellEnvelop)) {
 							sourcesIndex.appendGeometry(geo, idsource);

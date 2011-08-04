@@ -26,7 +26,7 @@ import org.noisemap.core.BR_TriGrid;
 public class trigrid {
 
     private static void printUsage() {
-        System.out.println("BR_TriGrid version 03/08/2011 16:52");
+        System.out.println("BR_TriGrid version 04/08/2011 11:29");
         System.out.println("Usage :");
         System.out.println("java trigrid.jar [options] -ib bpath -is spath -o outpath");
         System.out.println("Options :");
@@ -126,7 +126,7 @@ public class trigrid {
             buildings.setFile(new File(buildingsFilename));
             buildings.open();
             tables[0]=buildings.getTable("main");
-            sources.setFile(new File(buildingsFilename));
+            sources.setFile(new File(sourcesFilename));
             sources.open();
             tables[1]=sources.getTable("main");
         } catch (DriverException ex) {
