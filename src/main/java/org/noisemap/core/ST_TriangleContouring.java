@@ -586,17 +586,7 @@ public class ST_TriangleContouring extends AbstractTableFunction {
 			GeometryFactory factory = new GeometryFactory();
 			final long rowCount = sds.getRowCount();
 			// For each triangle
-			int lastPerc = 0;
 			for (long rowIndex = 0; rowIndex < rowCount; rowIndex++) {
-
-				if ((int) ((float) rowIndex / rowCount * 100) != lastPerc) {
-					lastPerc = (int) ((float) rowIndex / rowCount * 100);
-					if (pm.isCancelled()) {
-						break;
-					} else {
-						pm.progressTo(lastPerc);
-					}
-				}
 				final Geometry geometry = sds.getFieldValue(rowIndex, spatialFieldIndex).getAsGeometry();
 				if (geometry instanceof Polygon && geometry.getNumPoints() == 4) {
 					Coordinate[] pts = geometry.getCoordinates();
@@ -664,6 +654,7 @@ public class ST_TriangleContouring extends AbstractTableFunction {
 				}
 			}
 			driver.writingFinished();
+                        driver.start();
 			return driver.getTable("main");
 		} catch (DriverLoadException e) {
 			throw new FunctionException(e);

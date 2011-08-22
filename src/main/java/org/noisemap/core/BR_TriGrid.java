@@ -819,7 +819,9 @@ public class BR_TriGrid extends AbstractTableFunction {
 				}
 				Thread.sleep(10);
 			}
+                        threadManager.shutdown();
 			driver.writingFinished();
+                        driver.start();
 			logger.info("Parse polygons time:" + this.totalParseBuildings
 					+ " ms");
 			logger.info("Delaunay time:" + this.totalDelaunay + " ms");

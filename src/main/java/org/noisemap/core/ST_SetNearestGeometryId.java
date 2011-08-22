@@ -151,7 +151,7 @@ public class ST_SetNearestGeometryId extends AbstractTableFunction {
 
 			}
 			driver.writingFinished();
-
+                           driver.start();
 			return driver.getTable("main");
 		} catch (DriverLoadException e) {
 			throw new FunctionException(e);
