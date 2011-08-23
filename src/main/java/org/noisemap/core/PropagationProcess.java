@@ -8,8 +8,6 @@ package org.noisemap.core;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.gdms.data.values.Value;
-import org.gdms.data.values.ValueFactory;
 import com.vividsolutions.jts.algorithm.NonRobustLineIntersector;
 import com.vividsolutions.jts.algorithm.CGAlgorithms;
 import com.vividsolutions.jts.geom.Coordinate;
@@ -42,8 +40,8 @@ public class PropagationProcess implements Runnable {
 	/**
 	 * Occlusion test on two walls. Segments are CCW oriented.
 	 * @param wall1
-	 * @param wall2
-	 * @return True if the wall is oriented to the point
+         * @param pt
+         * @return True if the wall is oriented to the point
 	 */
 	static public boolean wallPointTest(LineSegment wall1,Coordinate pt) {
 		return CGAlgorithms.isCCW(new Coordinate[] {wall1.getCoordinate(0),wall1.getCoordinate(1),pt,wall1.getCoordinate(0)});
@@ -121,7 +119,8 @@ public class PropagationProcess implements Runnable {
 	 *            Segments to mirror to
 	 * @param order
 	 *            Order of reflections 1 to a limited number
-	 * @return List of possible reflections
+         * @param distanceLimitation Limitation of searching mirrored receivers
+         * @return List of possible reflections
 	 */
 	static public List<MirrorReceiverResult> getMirroredReceiverResults(
 			Coordinate receiverCoord, List<LineSegment> nearBuildingsWalls,
@@ -322,7 +321,7 @@ public class PropagationProcess implements Runnable {
 			List<Integer> regionCornersFreeToReceiver, double[] freq_lambda) 
 	{
 		// GeometryFactory factory=new GeometryFactory();
-		int nbfreq = data.freq_lvl.size();
+		int freqcount = data.freq_lvl.size();
 		double SrcReceiverDistance = srcCoord.distance(receiverCoord);
 		if (SrcReceiverDistance < data.maxSrcDist) {
 			// Then, check if the source is visible from the receiver (not
@@ -336,7 +335,7 @@ public class PropagationProcess implements Runnable {
 			if (!somethingHideReceiver) {
 				// Evaluation of energy at receiver
 				// add=wj/(4*pi*distance²)
-				for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
+				for (int idfreq = 0; idfreq < freqcount; idfreq++) {
 					double AttenuatedWj = attDistW(wj.get(idfreq),
 							SrcReceiverDistance);
 					AttenuatedWj = dbaToW(wToDba(attAtmW(AttenuatedWj,
@@ -454,7 +453,7 @@ public class PropagationProcess implements Runnable {
 							*/
 							// A path has been found
 							refpathcount+=1;
-							for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
+							for (int idfreq = 0; idfreq < freqcount; idfreq++) {
 								// Geometric dispersion
 								double AttenuatedWj = attDistW(wj.get(idfreq),
 										ReflectedSrcReceiverDistance);
@@ -514,7 +513,7 @@ public class PropagationProcess implements Runnable {
 										- SrcReceiverDistance;
 
 								// double largeAtt=0;//TODO remove
-								for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
+								for (int idfreq = 0; idfreq < freqcount; idfreq++) {
 
 									double cprime;
 									//C" NMPB 2008 P.33
@@ -654,7 +653,7 @@ public class PropagationProcess implements Runnable {
 	}
 	/**
 	 * Compute sound level by frequency band at this receiver position
-	 * @param receiverPosition
+	 * @param receiverCoord
 	 * @param energeticSum
 	 */
 	public void computeSoundLevelAtPosition(Coordinate receiverCoord,double energeticSum[]) {
@@ -829,18 +828,13 @@ public class PropagationProcess implements Runnable {
 					data.vertices.get(tri.getB()),
 					data.vertices.get(tri.getC()),
 					data.vertices.get(tri.getA()) };
-			final Value[] newValues = new Value[6];
-			newValues[0] = ValueFactory.createValue(factory.createPolygon(
-					factory.createLinearRing(pverts), null));
-			newValues[1] = ValueFactory.createValue(verticesSoundLevel[tri
-					.getA()]);
-			newValues[2] = ValueFactory.createValue(verticesSoundLevel[tri
-					.getB()]);
-			newValues[3] = ValueFactory.createValue(verticesSoundLevel[tri
-					.getC()]);
-			newValues[4] = ValueFactory.createValue(data.cellId);
-			newValues[5] = ValueFactory.createValue(tri_id);
-			dataOut.addValues(newValues);
+			dataOut.addValues(new PropagationResultRecord(
+                                factory.createPolygon(factory.createLinearRing(pverts), null),
+                                verticesSoundLevel[tri.getA()],
+                                verticesSoundLevel[tri.getB()],
+                                verticesSoundLevel[tri.getC()],
+                                data.cellId,
+                                tri_id));
 			tri_id++;
 		}
 		dataOut.appendFreeFieldTestCount(data.freeFieldFinder.getNbObstructionTest());

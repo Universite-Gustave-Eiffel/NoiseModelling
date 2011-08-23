@@ -18,7 +18,7 @@ import org.gdms.data.values.Value;
  * 
  */
 public class PropagationProcessOut {
-	private Stack<ArrayList<Value>> toDriver;
+	private Stack<PropagationResultRecord> toDriver;
 
 	private long totalBuildingObstructionTest = 0;
         private long sourceSplittingTime = 0;
@@ -34,17 +34,17 @@ public class PropagationProcessOut {
             return sourceSplittingTime;
         }
 
-	public PropagationProcessOut(Stack<ArrayList<Value>> toDriver) {
+        /**
+         *
+         * @param toDriver Push data in this synchronized stack
+         */
+        public PropagationProcessOut(Stack<PropagationResultRecord> toDriver) {
 		super();
 		this.toDriver = toDriver;
 	}
 
-	public synchronized void addValues(Value... row) {
-		ArrayList<Value> newArray = new ArrayList<Value>(row.length);
-		for (int i = 0; i < row.length; i++) {
-			newArray.add(row[i]);
-		}
-		toDriver.push(newArray);
+	public synchronized void addValues(PropagationResultRecord record) {
+		toDriver.push(record);
 	}
 
 	public synchronized long getTotalBuildingObstructionTest() {

@@ -608,7 +608,7 @@ public class BR_TriGrid extends AbstractTableFunction {
 
 			ProgressionOrbisGisManager pmManager = new ProgressionOrbisGisManager(
 					nbcell, pm);
-			Stack<ArrayList<Value>> toDriver = new Stack<ArrayList<Value>>();
+			Stack<PropagationResultRecord> toDriver = new Stack<PropagationResultRecord>();
 			PropagationProcessDiskWriter driverManager = new PropagationProcessDiskWriter(
 					toDriver, driver);
 			driverManager.start();

@@ -567,7 +567,7 @@ public class ST_TriangleContouring extends AbstractTableFunction {
 			metadata.addField("the_geom", Type.GEOMETRY);
 			String fieldDist = MetadataUtilities.getUniqueFieldName(metadata,
 					"idiso");
-			metadata.addField(fieldDist, Type.INT);
+			metadata.addField(fieldDist, Type.SHORT);
 			LinkedList<Integer> fieldIdToExtract = new LinkedList<Integer>();
 			for (int fieldid = 0; fieldid < metaSource.getFieldCount(); fieldid++) {
 				String fieldName = metaSource.getFieldName(fieldid);
@@ -611,7 +611,7 @@ public class ST_TriangleContouring extends AbstractTableFunction {
 					do {
 						currentTriangle = triangleToProcess.pop();
 						Double beginInterval = Double.NEGATIVE_INFINITY;
-						int isolvl = 0;
+						short isolvl = 0;
 						for (Double endInterval : iso_lvls) {
 							LinkedList<TriMarkers> triangleToDriver = new LinkedList<TriMarkers>();
 							if (splitInterval(beginInterval, endInterval,

@@ -72,7 +72,7 @@ public class TestSoundPropagationValidation extends TestCase {
 		List<Triangle> tri=manager.getTriangles();
 		List<Coordinate> vert=manager.getVertices();
 
-		Stack<ArrayList<Value>> dataStack=new Stack<ArrayList<Value>>();		
+		Stack<PropagationResultRecord> dataStack=new Stack<PropagationResultRecord>();
 		PropagationProcessData propData=new PropagationProcessData(vert, tri, manager, sourcesIndex, srclst, srcSpectrum, freqLvl, 0, 2, 80.,50., 1., 0., 0l, null, null);
 		PropagationProcessOut propDataOut=new PropagationProcessOut(dataStack);
 		PropagationProcess propManager=new PropagationProcess(propData, propDataOut);
@@ -190,7 +190,7 @@ public class TestSoundPropagationValidation extends TestCase {
 		List<Triangle> tri=manager.getTriangles();
 		List<Coordinate> vert=manager.getVertices();
 
-		Stack<ArrayList<Value>> dataStack=new Stack<ArrayList<Value>>();		
+		Stack<PropagationResultRecord> dataStack=new Stack<PropagationResultRecord>();
 		PropagationProcessData propData=new PropagationProcessData(vert, tri, manager, sourcesIndex, srclst, srcSpectrum, freqLvl, 0, 2, 80.,50., 1., 0., 0l, null, null);
 		PropagationProcessOut propDataOut=new PropagationProcessOut(dataStack);
 		PropagationProcess propManager=new PropagationProcess(propData, propDataOut);
