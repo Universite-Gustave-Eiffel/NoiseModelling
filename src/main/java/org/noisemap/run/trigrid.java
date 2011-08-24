@@ -10,7 +10,7 @@ package org.noisemap.run;
 
 import java.io.File;
 import org.gdms.driver.DriverException;
-import org.gdms.driver.ReadAccess;
+import org.gdms.driver.DataSet;
 import org.gdms.driver.gdms.GdmsDriver;
 import java.util.Stack;
 import org.apache.log4j.Logger;
@@ -129,7 +129,7 @@ public class trigrid {
         SQLDataSourceFactory factory=new SQLDataSourceFactory();
         GdmsDriver buildings=new GdmsDriver();
         GdmsDriver sources=new GdmsDriver();
-        ReadAccess[] tables={null,null};
+        DataSet[] tables={null,null};
         try {
             buildings.setFile(new File(buildingsFilename));
             buildings.open();
@@ -148,7 +148,7 @@ public class trigrid {
         Logger log = new ConsoleLogger("BR_TriGrid");
         propa.setLogger(log);
         Value[] propaArgs={ValueFactory.createValue(bField),ValueFactory.createValue(sField),ValueFactory.createValue(splField),ValueFactory.createValue(maxDist),ValueFactory.createValue(maxRDist),ValueFactory.createValue(splitDepth),ValueFactory.createValue(roadsWidth),ValueFactory.createValue(densification),ValueFactory.createValue(maxarea),ValueFactory.createValue(reflectionDepth),ValueFactory.createValue(diffractionDepth),ValueFactory.createValue(wallAlpha)};
-        ReadAccess data=null;
+        DataSet data=null;
         try {
             data = propa.evaluate(factory, tables, propaArgs, null);
             System.out.println("Overall computation time: "+(System.currentTimeMillis()-debComputeTime)+" ms.");
@@ -167,9 +167,9 @@ public class trigrid {
             String isolvls="31622, 100000, 316227, 1000000, 3162277, 1e+7, 31622776, 1e+20";
             Value[] isoArgs={ValueFactory.createValue("the_geom"),ValueFactory.createValue("db_v1"),ValueFactory.createValue("db_v2"),ValueFactory.createValue("db_v3"),ValueFactory.createValue(isolvls)};
 
-            ReadAccess isoContourResult=null;
+            DataSet isoContourResult=null;
             try {
-                ReadAccess[] isoTables={data};
+                DataSet[] isoTables={data};
                 isoContourResult=contour.evaluate(factory, isoTables, isoArgs, null);
             } catch (FunctionException ex) {
                 System.err.println(ex.getMessage());

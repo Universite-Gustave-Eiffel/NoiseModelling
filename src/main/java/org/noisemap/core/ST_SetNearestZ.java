@@ -17,7 +17,7 @@ import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
 import org.gdms.driver.DriverException;
-import org.gdms.driver.ReadAccess;
+import org.gdms.driver.DataSet;
 import org.gdms.driver.driverManager.DriverLoadException;
 import org.gdms.sql.function.FunctionException;
 import org.gdms.sql.function.FunctionSignature;
@@ -50,7 +50,7 @@ public class ST_SetNearestZ extends AbstractTableFunction {
 
 		@SuppressWarnings("unchecked")
 		public QuadtreeZFilter(Quadtree quadtree, final double maxDist,
-				ReadAccess sdsSource,int geoFieldIndex, Envelope geomArea) {
+				DataSet sdsSource,int geoFieldIndex, Envelope geomArea) {
 			super();
 			this.maxDist = maxDist;
 			// Find coordinates under the distance of the geom
@@ -154,14 +154,14 @@ public class ST_SetNearestZ extends AbstractTableFunction {
 	}
 
 	@Override
-	public ReadAccess evaluate(SQLDataSourceFactory dsf, ReadAccess[] tables,
+	public DataSet evaluate(SQLDataSourceFactory dsf, DataSet[] tables,
             Value[] values, ProgressMonitor pm) throws FunctionException {
 		try {
 			ProgressionOrbisGisManager progManager=new ProgressionOrbisGisManager(2, pm);
 			final double maxDist = values[2].getAsDouble();
 			// Declare source and Destination tables
-			final ReadAccess sds = tables[0];
-			final ReadAccess sdsSource = tables[1];
+			final DataSet sds = tables[0];
+			final DataSet sdsSource = tables[1];
 			// Open source and Destination tables
 
 

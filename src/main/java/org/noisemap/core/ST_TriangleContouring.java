@@ -17,7 +17,7 @@ import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
 import org.gdms.driver.DriverException;
-import org.gdms.driver.ReadAccess;
+import org.gdms.driver.DataSet;
 import org.gdms.driver.driverManager.DriverLoadException;
 import org.gdms.sql.function.FunctionException;
 import org.gdms.sql.function.FunctionSignature;
@@ -537,11 +537,11 @@ public class ST_TriangleContouring extends AbstractTableFunction {
 	}
 
 	@Override
-	public ReadAccess evaluate(SQLDataSourceFactory dsf, ReadAccess[] tables,
+	public DataSet evaluate(SQLDataSourceFactory dsf, DataSet[] tables,
             Value[] values, ProgressMonitor pm) throws FunctionException {
 		try {
 			// Declare source and Destination tables
-			final ReadAccess sds = tables[0];
+			final DataSet sds = tables[0];
 			// Open source and Destination tables
 
 			// Set defaultGeom as the geom set by the user

@@ -22,7 +22,7 @@ import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
 import org.gdms.driver.DriverException;
 import org.gdms.driver.DriverUtilities;
-import org.gdms.driver.ReadAccess;
+import org.gdms.driver.DataSet;
 import org.gdms.driver.driverManager.DriverLoadException;
 import org.gdms.sql.function.FunctionException;
 import org.gdms.sql.function.FunctionSignature;
@@ -87,7 +87,7 @@ public class BR_TriGrid extends AbstractTableFunction {
 		return row * cols + col;
 	}
 
-	private Envelope GetGlobalEnvelope(ReadAccess sdsSource, ProgressMonitor pm) throws FunctionException {
+	private Envelope GetGlobalEnvelope(DataSet sdsSource, ProgressMonitor pm) throws FunctionException {
 		// The region of interest is only where we can find sources
 		// Then we keep only the region where the area is covered by sources
 		Envelope mainEnvelope;
@@ -168,7 +168,7 @@ public class BR_TriGrid extends AbstractTableFunction {
 				mainEnvelope.getMinY() + cellHeight * cellJ + cellHeight);
 	}
 
-	private void feedDelaunay(ReadAccess polygonDatabase,int spatialBuildingsFieldIndex,
+	private void feedDelaunay(DataSet polygonDatabase,int spatialBuildingsFieldIndex,
 			LayerDelaunay delaunayTool, Envelope boundingBoxFilter,
 			double srcDistance, LinkedList<LineString> delaunaySegments,
 			double minRecDist, double srcPtDist) throws DriverException,
@@ -292,8 +292,8 @@ public class BR_TriGrid extends AbstractTableFunction {
 	private void computeFirstPassDelaunay(LayerDelaunay cellMesh,
 			Envelope mainEnvelope, int cellI, int cellJ, int cellIMax,
 			int cellJMax, double cellWidth, double cellHeight,
-			double maxSrcDist, ReadAccess sdsBuildings,
-			ReadAccess sdsSources,int spatialBuildingsFieldIndex,int spatialSourceFieldIndex, double minRecDist,
+			double maxSrcDist, DataSet sdsBuildings,
+			DataSet sdsSources,int spatialBuildingsFieldIndex,int spatialSourceFieldIndex, double minRecDist,
 			double srcPtDist, String[] firstPassResults,
 			NodeList[] neighborsBorderVertices, double maximumArea)
 			throws DriverException, LayerDelaunayError {
@@ -479,7 +479,7 @@ public class BR_TriGrid extends AbstractTableFunction {
 	}
 
 	@Override
-	public ReadAccess evaluate(SQLDataSourceFactory dsf, ReadAccess[] tables,
+	public DataSet evaluate(SQLDataSourceFactory dsf, DataSet[] tables,
             Value[] values, ProgressMonitor pm) throws FunctionException {
 		String tmpdir = dsf.getTempDir().getAbsolutePath();
                 if(values.length<12) {
@@ -537,8 +537,8 @@ public class BR_TriGrid extends AbstractTableFunction {
 			long nbreceivers = 0;
 
 			// Load Sources and Buildings table drivers
-			final ReadAccess sds = tables[tableBuildings];
-			final ReadAccess sdsSources = tables[tableSources];
+			final DataSet sds = tables[tableBuildings];
+			final DataSet sdsSources = tables[tableSources];
 			
 			// Set defaultGeom as the geom set by the user
 			final String spatialBuildingsFieldName = values[tableBuildings].toString();
