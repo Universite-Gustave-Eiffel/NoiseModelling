@@ -65,7 +65,7 @@ class NodeList {
 
 public class BR_TriGrid extends AbstractTableFunction {
 
-	private static Logger logger = Logger.getLogger(BR_TriGrid.class.getName());
+	private Logger logger = Logger.getLogger(BR_TriGrid.class.getName());
 	// _________ ^
 	// | | | | | | Y or J (bottom to top)
 	// | | | | |
@@ -81,7 +81,7 @@ public class BR_TriGrid extends AbstractTableFunction {
 	private long totalParseBuildings = 0;
 	private long totalDelaunay = 0;
         public void setLogger(Logger logger) {
-            BR_TriGrid.logger = logger;
+            this.logger = logger;
         }
 	int getCellId(int row, int col, int cols) {
 		return row * cols + col;

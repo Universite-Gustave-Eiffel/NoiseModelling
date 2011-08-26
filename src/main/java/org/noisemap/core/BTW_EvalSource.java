@@ -39,7 +39,7 @@ public class BTW_EvalSource  extends AbstractScalarFunction {
 			if(ground_type==ground_type_grass) {
 				a_factor=grass_a_factor;
 				b_factor=grass_b_factor;
-			}else if(ground_type==ground_type_grass) {
+			}else if(ground_type==ground_type_rigid) {
 				a_factor=rigid_a_factor;
 				b_factor=rigid_b_factor;				
 			}else{
