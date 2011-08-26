@@ -116,11 +116,6 @@ public class ST_SplitLineInPoints extends AbstractScalarSpatialFunction {
 	}
 
 	@Override
-	public boolean isAggregate() {
-		return false;
-	}
-
-	@Override
 	public String getDescription() {
 		return "Split lines in multiple points with a distance step parameter between points.";
 	}

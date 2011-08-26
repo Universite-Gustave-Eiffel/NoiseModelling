@@ -67,10 +67,6 @@ public class Log10 extends AbstractScalarMathFunction {
 		return "Log10";
 	}
 
-	@Override
-	public boolean isAggregate() {
-		return false;
-	}
 
 	@Override
 	public Type getType(Type[] types) {

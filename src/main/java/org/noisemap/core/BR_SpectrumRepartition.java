@@ -78,11 +78,6 @@ public class BR_SpectrumRepartition extends AbstractScalarFunction {
 	}
 
 	@Override
-	public boolean isAggregate() {
-		return false;
-	}
-
-	@Override
 	public Type getType(Type[] types) {
 		return TypeFactory.createType(Type.DOUBLE);
 	}

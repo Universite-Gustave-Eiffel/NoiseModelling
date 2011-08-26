@@ -65,10 +65,6 @@ public class BTW_EvalSource  extends AbstractScalarFunction {
 		return "BTW_EvalSource";
 	}
 
-	@Override
-	public boolean isAggregate() {
-		return false;
-	}
 
 	@Override
 	public Type getType(Type[] types) {

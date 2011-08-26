@@ -231,11 +231,6 @@ public class BR_EvalSource  extends AbstractScalarFunction {
 	}
 
 	@Override
-	public boolean isAggregate() {
-		return false;
-	}
-
-	@Override
 	public Type getType(Type[] types) {
 		return TypeFactory.createType(Type.DOUBLE);
 	}

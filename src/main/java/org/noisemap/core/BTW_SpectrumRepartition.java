@@ -73,10 +73,6 @@ public class BTW_SpectrumRepartition extends AbstractScalarFunction {
 		return "BTW_SpectrumRepartition";
 	}
 
-	@Override
-	public boolean isAggregate() {
-		return false;
-	}
 
 	@Override
 	public Type getType(Type[] types) {

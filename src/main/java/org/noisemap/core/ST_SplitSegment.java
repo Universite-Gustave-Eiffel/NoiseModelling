@@ -135,11 +135,6 @@ public class ST_SplitSegment extends AbstractScalarSpatialFunction {
 	}
 
 	@Override
-	public boolean isAggregate() {
-		return false;
-	}
-
-	@Override
 	public String getDescription() {
 		return "Split StringLine (2 vertices) into MultiStringLine (2 String Line) if the length of the line is smaller than the split length parameter.";
 	}
