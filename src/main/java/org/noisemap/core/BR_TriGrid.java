@@ -831,6 +831,7 @@ public class BR_TriGrid extends AbstractTableFunction {
 					+ threadDataOut.getTotalReflexionTime() + " ms");
 			logger.info("Quadtree query time:"
 					+ threadDataOut.getTotalGridIndexQuery());
+                        logger.info("Min Max computation time by receiver : "+ (threadDataOut.getMinimalReceiverComputationTime()/1000.) +" ms to "+ (threadDataOut.getMaximalReceiverComputationTime()/1000.)+" ms.");
 			logger.info("Receiver count:" + nbreceivers);
 			logger.info("Receiver-Source count:"
 					+ threadDataOut.getNb_couple_receiver_src());
@@ -838,6 +839,7 @@ public class BR_TriGrid extends AbstractTableFunction {
                                         + threadDataOut.getNb_image_receiver());
                         logger.info("Receiver-Sources specular reflection path count:"
                                         + threadDataOut.getNb_reflexion_path());
+                        logger.info("Receiver-Source diffraction path count:"+threadDataOut.getNb_diffraction_path());
 			logger.info("Buildings obstruction test count:"
 					+ threadDataOut.getNb_obstr_test());
 			return driver.getTable("main");

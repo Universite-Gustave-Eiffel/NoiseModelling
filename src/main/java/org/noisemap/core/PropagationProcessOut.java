@@ -27,11 +27,28 @@ public class PropagationProcessOut {
 	private long nb_obstr_test = 0;
 	private long nb_image_receiver = 0;
 	private long nb_reflexion_path = 0;
+        private long nb_diffraction_path = 0;
 	private long totalReflexionTime = 0;
 	private long cellComputed = 0;
+        private long minimalReceiverComputationTime=0;
+        private long maximalReceiverComputationTime=Long.MAX_VALUE;
 
+        public synchronized void updateMinimalReceiverComputationTime(long value) {
+            minimalReceiverComputationTime=Math.min(minimalReceiverComputationTime,value);
+        }
+        public synchronized void updateMaximalReceiverComputationTime(long value) {
+            maximalReceiverComputationTime=Math.max(maximalReceiverComputationTime,value);
+        }
         public synchronized  long getSourceSplittingTime() {
             return sourceSplittingTime;
+        }
+
+        public synchronized long getMaximalReceiverComputationTime() {
+            return maximalReceiverComputationTime;
+        }
+
+        public synchronized long getMinimalReceiverComputationTime() {
+            return minimalReceiverComputationTime;
         }
 
         /**
@@ -65,6 +82,13 @@ public class PropagationProcessOut {
 	public synchronized void appendReflexionPath(long added) {
 		nb_reflexion_path+=added;
 	}
+	public synchronized void appendDiffractionPath(long added) {
+		nb_diffraction_path+=added;
+	}
+
+        public synchronized long getNb_diffraction_path() {
+            return nb_diffraction_path;
+        }
 	public synchronized void appendImageReceiver(long added) {
 		nb_image_receiver+=added;
 	}
@@ -76,7 +100,7 @@ public class PropagationProcessOut {
 		return nb_reflexion_path;
 	}
 
-	public synchronized void appendSourceCount(int srcCount) {
+	public synchronized void appendSourceCount(long srcCount) {
 		nb_couple_receiver_src += srcCount;
 	}
 
