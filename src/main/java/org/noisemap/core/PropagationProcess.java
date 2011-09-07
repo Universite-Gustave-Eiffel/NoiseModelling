@@ -18,11 +18,15 @@ import com.vividsolutions.jts.geom.LineSegment;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.index.quadtree.Quadtree;
 import java.util.Collections;
+import java.util.HashSet;
 
 public class PropagationProcess implements Runnable {
 	public final static double ONETHIRD=1./3.;
 	public final static double MERGE_SRC_DIST=1.;
         public final static double DBA_FORGET_SOURCE=0.01;
+        public final static short STEP_RANGE_COUNT=5;
+        public final static double FIRST_STEP_RANGE=50;
+        public final static double W_RANGE=Math.pow(10,94./10.); //94 dB(A) range search. Max iso level is >75 dB(a), first range is set to 50m. Then the level is set 94 dB(A) to stop search if level at receiver is already at 76 dB(A).
 	private Thread thread;
 	private PropagationProcessData data;
 	private PropagationProcessOut dataOut;
@@ -33,6 +37,13 @@ public class PropagationProcess implements Runnable {
         private long totalReflexionTime=0;
 	private double[] alpha_atmo;
 	private double[] freq_lambda;
+        private static double GetGlobalLevel(int nbfreq,double energeticSum[]) {
+            double globlvl = 0;
+            for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
+                    globlvl += energeticSum[idfreq];
+            }
+            return globlvl;
+        }
 	/**
 	 * Occlusion test on two walls. Segments are CCW oriented.
 	 * @param wall1
@@ -685,7 +696,7 @@ public class PropagationProcess implements Runnable {
 			// Build mirrored receiver list from wall list
 			mirroredReceiver = getMirroredReceiverResults(receiverCoord,
 					nearBuildingsWalls, data.reflexionOrder,
-					data.maxSrcDist);
+					data.maxRefDist*2);
 			this.dataOut.appendImageReceiver(mirroredReceiver.size());
 		}
 		List<Coordinate> regionCorners = new ArrayList<Coordinate>();
@@ -697,8 +708,11 @@ public class PropagationProcess implements Runnable {
 		if (data.diffractionOrder > 0) {
 			// Query corners in the current zone
 			ArrayCoordinateListVisitor cornerQuery = new ArrayCoordinateListVisitor(
-					receiverCoord, data.maxSrcDist);
-			cornersQuad.query(receiverRegion, cornerQuery);
+					receiverCoord, data.maxRefDist);
+			cornersQuad.query(new Envelope(receiverCoord.x
+				-  data.maxRefDist, receiverCoord.x +  data.maxRefDist,
+				receiverCoord.y -  data.maxRefDist, receiverCoord.y
+						+  data.maxRefDist), cornerQuery);
 			regionCorners = cornerQuery.getItems();
 			// regionCornersFreeToReceiver.ensureCapacity(regionCorners.size());
 			for (int icorner = 0; icorner < regionCorners.size(); icorner++) {
@@ -708,58 +722,78 @@ public class PropagationProcess implements Runnable {
 				}
 			}
 		}
-		long beginQuadQuery = System.currentTimeMillis();
-		List<Integer> regionSourcesLst = data.sourcesIndex
-				.query(receiverRegion);
-		dataOut.appendGridIndexQueryTime((System.currentTimeMillis() - beginQuadQuery));
-		PointsMerge sourcesMerger=new PointsMerge(MERGE_SRC_DIST);
-                List<Integer> srcSortByDist = new ArrayList<Integer>();
-                List<Double> srcDist = new ArrayList<Double>();
-		List<Coordinate> srcPos = new ArrayList<Coordinate>();
-		List<ArrayList<Double>> srcWj= new ArrayList<ArrayList<Double>>();
-		for (Integer srcIndex : regionSourcesLst) {
-			Geometry source = data.sourceGeometries.get(srcIndex);
-			List<Double> wj = data.wj_sources.get(srcIndex); // DbaToW(sdsSources.getDouble(srcIndex,dbField
-			if (source instanceof Point) {
-				Coordinate ptpos = ((Point) source).getCoordinate();
-				insertPtSource(receiverCoord,ptpos, wj, 1., srcPos, srcWj, sourcesMerger,srcSortByDist,srcDist);
-				// Compute li to equation 4.1 NMPB 2008 (June 2009)
-			} else {
-				// Discretization of line into multiple point
-				// First point is the closest point of the LineString from
-				// the receiver
-				ArrayList<Coordinate> pts=new ArrayList<Coordinate>() ;
-				double li = splitLineStringIntoPoints(source, receiverCoord,
-						pts, data.minRecDist);
-				for(Coordinate pt : pts) {
-					insertPtSource(receiverCoord,pt, wj, li, srcPos, srcWj, sourcesMerger,srcSortByDist,srcDist);
-				}
-				// Compute li to equation 4.1 NMPB 2008 (June 2009)
-			}
-		}
-		
+                // Source search by multiple range query
+                HashSet<Integer> processedLineSources = new HashSet<Integer>(); //Already processed Raw source (line and/or points)
+                List<Double> ranges=new ArrayList<Double>();
+                for(int idrange=0;idrange<STEP_RANGE_COUNT;idrange++) {
+                    ranges.add((data.maxSrcDist/STEP_RANGE_COUNT)*(idrange+1));
+                }
+                if(STEP_RANGE_COUNT>1) {
+                    ranges.set(0, FIRST_STEP_RANGE);
+                }
                 long sourceCount=0;
-                //Iterate over source point sorted by their distance from the receiver
-		for (int mergedSrcId : srcSortByDist) {
-			// For each Pt Source - Pt Receiver
-			Coordinate srcCoord=srcPos.get(mergedSrcId);
-			ArrayList<Double> wj= srcWj.get(mergedSrcId);
-
-                        double allreceiverfreqlvl = 0;
-                        double allsourcefreqlvl = 0;
-			for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
-				allreceiverfreqlvl += energeticSum[idfreq];
-                                allsourcefreqlvl += wj.get(idfreq);
-			}
-                        double wAttDistSource=attDistW(allsourcefreqlvl,srcCoord.distance(receiverCoord));
-                        if(Math.abs(wToDba(wAttDistSource+allreceiverfreqlvl)-wToDba(allreceiverfreqlvl))>DBA_FORGET_SOURCE) {
-                            sourceCount++;
-                            receiverSourcePropa(srcCoord, receiverCoord, energeticSum,
-                                            alpha_atmo, wj, mirroredReceiver,
-                                            nearBuildingsWalls, regionCorners,
-                                            regionCornersFreeToReceiver, freq_lambda);
+                for(Double searchSourceDistance : ranges) {
+                    Envelope receiverSourceRegion = new Envelope(receiverCoord.x
+				- searchSourceDistance, receiverCoord.x + searchSourceDistance,
+				receiverCoord.y - searchSourceDistance, receiverCoord.y
+						+ searchSourceDistance);
+                    //long beginQuadQuery = System.nanoTime();
+                    List<Integer> regionSourcesLst = data.sourcesIndex
+                                    .query(receiverSourceRegion);
+                    //dataOut.appendGridIndexQueryTime(System.nanoTime() - beginQuadQuery);
+                    PointsMerge sourcesMerger=new PointsMerge(MERGE_SRC_DIST);
+                    List<Integer> srcSortByDist = new ArrayList<Integer>();
+                    List<Double> srcDist = new ArrayList<Double>();
+                    List<Coordinate> srcPos = new ArrayList<Coordinate>();
+                    List<ArrayList<Double>> srcWj= new ArrayList<ArrayList<Double>>();
+                    for (Integer srcIndex : regionSourcesLst) {
+                        if(!processedLineSources.contains(srcIndex)) {
+                            processedLineSources.add(srcIndex);
+                            Geometry source = data.sourceGeometries.get(srcIndex);
+                            List<Double> wj = data.wj_sources.get(srcIndex); // DbaToW(sdsSources.getDouble(srcIndex,dbField
+                            if (source instanceof Point) {
+                                Coordinate ptpos = ((Point) source).getCoordinate();
+                                insertPtSource(receiverCoord,ptpos, wj, 1., srcPos, srcWj, sourcesMerger,srcSortByDist,srcDist);
+                                // Compute li to equation 4.1 NMPB 2008 (June 2009)
+                            } else {
+                                // Discretization of line into multiple point
+                                // First point is the closest point of the LineString from
+                                // the receiver
+                                ArrayList<Coordinate> pts=new ArrayList<Coordinate>() ;
+                                double li = splitLineStringIntoPoints(source, receiverCoord,
+                                                pts, data.minRecDist);
+                                for(Coordinate pt : pts) {
+                                        insertPtSource(receiverCoord,pt, wj, li, srcPos, srcWj, sourcesMerger,srcSortByDist,srcDist);
+                                }
+                                // Compute li to equation 4.1 NMPB 2008 (June 2009)
+                            }
                         }
-		}
+                    }
+
+                    //Iterate over source point sorted by their distance from the receiver
+                    for (int mergedSrcId : srcSortByDist) {
+                            // For each Pt Source - Pt Receiver
+                            Coordinate srcCoord=srcPos.get(mergedSrcId);
+                            ArrayList<Double> wj= srcWj.get(mergedSrcId);
+                            double allreceiverfreqlvl = GetGlobalLevel(nbfreq,energeticSum);
+                            double allsourcefreqlvl = 0;
+                            for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
+                                    allsourcefreqlvl += wj.get(idfreq);
+                            }
+                            double wAttDistSource=attDistW(allsourcefreqlvl,srcCoord.distance(receiverCoord));
+                            if(Math.abs(wToDba(wAttDistSource+allreceiverfreqlvl)-wToDba(allreceiverfreqlvl))>DBA_FORGET_SOURCE) {
+                                sourceCount++;
+                                receiverSourcePropa(srcCoord, receiverCoord, energeticSum,
+                                                alpha_atmo, wj, mirroredReceiver,
+                                                nearBuildingsWalls, regionCorners,
+                                                regionCornersFreeToReceiver, freq_lambda);
+                            }
+                    }
+                    double allreceiverfreqlvl = GetGlobalLevel(nbfreq,energeticSum);
+                    if(Math.abs(wToDba(attDistW(W_RANGE,searchSourceDistance)+allreceiverfreqlvl)-wToDba(allreceiverfreqlvl))<DBA_FORGET_SOURCE) {
+                        break; //Stop search for fartest sources
+                    }
+                }
                 dataOut.appendSourceCount(sourceCount);
 	}
 	/**

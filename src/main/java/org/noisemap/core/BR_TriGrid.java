@@ -830,7 +830,7 @@ public class BR_TriGrid extends AbstractTableFunction {
 			logger.info("Reflexion computing time:"
 					+ threadDataOut.getTotalReflexionTime() + " ms");
 			logger.info("Quadtree query time:"
-					+ threadDataOut.getTotalGridIndexQuery());
+					+ (threadDataOut.getTotalGridIndexQuery()/1000) + " ms");
                         logger.info("Min Max computation time by receiver : "+ (threadDataOut.getMinimalReceiverComputationTime()/1000.) +" ms to "+ (threadDataOut.getMaximalReceiverComputationTime()/1000.)+" ms.");
 			logger.info("Receiver count:" + nbreceivers);
 			logger.info("Receiver-Source count:"
