@@ -550,11 +550,7 @@ public class BR_TriGrid extends AbstractTableFunction {
 			
 			// 1 Step - Evaluation of the main bounding box (sources)
 			Envelope mainEnvelope = GetGlobalEnvelope(sdsSources, pm);
-			// Reduce by the distance of Sources distance
-			mainEnvelope = new Envelope(mainEnvelope.getMinX() + maxSrcDist,
-					mainEnvelope.getMaxX() - maxSrcDist, mainEnvelope.getMinY()
-							+ maxSrcDist, mainEnvelope.getMaxY() - maxSrcDist);
-			// Split domain into 4^subdiv cells
+                        // Split domain into 4^subdiv cells
 
 			int gridDim = (int) Math.pow(2, subdivLvl);
 
@@ -620,8 +616,8 @@ public class BR_TriGrid extends AbstractTableFunction {
 				for (int cellJ = 0; cellJ < gridDim; cellJ++) {
 					FastObstructionTest freeFieldFinder = new FastObstructionTest();
 					int ij = cellI * gridDim + cellJ;
-					logger.info("Begin processing of cell " + cellI + ","
-							+ cellJ + " of the " + gridDim + "x" + gridDim
+					logger.info("Begin processing of cell " + (cellI+1) + ","
+							+ (cellJ+1) + " of the " + gridDim + "x" + gridDim
 							+ "  grid..");
 					if (pm!=null && pm.isCancelled()) {
 						driver.writingFinished();
@@ -776,9 +772,9 @@ public class BR_TriGrid extends AbstractTableFunction {
 
 					if (doMultiThreading) {
 						logger.info("Wait for free Thread to begin propagation of cell "
-								+ cellI
+								+ (cellI + 1)
 								+ ","
-								+ cellJ
+								+ (cellJ + 1)
 								+ " of the "
 								+ gridDim
 								+ "x" + gridDim + "  grid..");

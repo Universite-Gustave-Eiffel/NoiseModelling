@@ -15,7 +15,7 @@ import org.gdms.data.values.Value;
 import junit.framework.TestCase;
 
 public class TestSoundPropagationValidation extends TestCase {
-	public static double splEpsilon=0.04;
+	public static double splEpsilon=0.05;
 	private double splCompute(PropagationProcess propManager,Coordinate receiverPosition) {
 		double energeticSum[]={0.};
 		propManager.computeSoundLevelAtPosition(receiverPosition, energeticSum);

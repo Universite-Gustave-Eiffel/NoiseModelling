@@ -49,7 +49,9 @@ public class BiCubicInterpolation {
 				- .75 * p[2][3] - .25 * p[3][0] + .75 * p[3][1] - .75 * p[3][2]
 				+ .25 * p[3][3];
 	}
-
+	public static double getValue (double[] p, double x) {
+		return p[1] + 0.5 * x*(p[2] - p[0] + x*(2.0*p[0] - 5.0*p[1] + 4.0*p[2] - p[3] + x*(3.0*(p[1] - p[2]) + p[3] - p[0])));
+	}
 	public double getValue(double x, double y) {
 		double x2 = x * x;
 		double x3 = x2 * x;

@@ -21,12 +21,14 @@ import java.util.Collections;
 import java.util.HashSet;
 
 public class PropagationProcess implements Runnable {
-	public final static double ONETHIRD=1./3.;
-	public final static double MERGE_SRC_DIST=1.;
-        public final static double DBA_FORGET_SOURCE=0.01;
-        public final static short STEP_RANGE_COUNT=5;
-        public final static double FIRST_STEP_RANGE=50;
-        public final static double W_RANGE=Math.pow(10,94./10.); //94 dB(A) range search. Max iso level is >75 dB(a), first range is set to 50m. Then the level is set 94 dB(A) to stop search if level at receiver is already at 76 dB(A).
+	private final static double ONETHIRD=1./3.;
+	private final static double MERGE_SRC_DIST=1.;
+        private final static double DBA_FORGET_SOURCE=0.03;
+        private final static double FIRST_STEP_RANGE=90;
+        private final static double W_RANGE=Math.pow(10,94./10.); //94 dB(A) range search. Max iso level is >75 dB(a).
+        private final static double CEL = 344.23935;
+        private final static int LIMITATION_RECEIVER_MIRROR = 1000;
+        private final static int LIMITATION_DIFFRACTION_PATH = 1000;
 	private Thread thread;
 	private PropagationProcessData data;
 	private PropagationProcessOut dataOut;
@@ -123,6 +125,9 @@ public class PropagationProcess implements Runnable {
 				}
 			}
 			wallId++;
+                        if(receiversImage.size()>LIMITATION_RECEIVER_MIRROR) {
+                            break;
+                        }
 		}
 	}
 
@@ -507,7 +512,6 @@ public class PropagationProcess implements Runnable {
 								srcCoord)) {
 							// True then the path is clear
 							// Compute attenuation level
-                                                        diffractionPathCount++;
 							double elength = 0;
 							//Compute distance of the corner path
 							for (int ie = 1; ie < curCorner.size(); ie++) {
@@ -524,6 +528,7 @@ public class PropagationProcess implements Runnable {
 											.distance(regionCorners.get(curCorner	//Last corner to source distance
 													.get(curCorner.size() - 1)));
 							if (diffractionFullDistance < data.maxSrcDist) {
+                                                                diffractionPathCount++;
 								double delta = diffractionFullDistance
 										- SrcReceiverDistance;
 
@@ -550,7 +555,7 @@ public class PropagationProcess implements Runnable {
 									}else{
 										System.out.println("c' < -2");
 									}
-									// Limit to 0<=DiffractionAttenuation<=25
+									// Limit to 0<=DiffractionAttenuation
 									DiffractionAttenuation = Math.max(0,
 											DiffractionAttenuation);
 									// largeAtt+=DbaToW(DiffractionAttenuation);
@@ -568,6 +573,9 @@ public class PropagationProcess implements Runnable {
 									
 									energeticSum[idfreq] += AttenuatedWj;
 								}
+                                                                if(diffractionPathCount>LIMITATION_DIFFRACTION_PATH) {
+                                                                    break; //exit diffraction search
+                                                                }
 								// TODO removing
 								/*
 								 * if(somethingHideReceiver) { Coordinate[]
@@ -682,6 +690,7 @@ public class PropagationProcess implements Runnable {
 	 */
 	public void computeSoundLevelAtPosition(Coordinate receiverCoord,double energeticSum[]) {
 		// List of walls within maxReceiverSource distance
+                double srcEnergeticSum=dbaToW(0.); //Global energetic sum of all sources processed
 		List<LineSegment> nearBuildingsWalls = null;
 		List<MirrorReceiverResult> mirroredReceiver = null;
 		Envelope receiverRegion = new Envelope(receiverCoord.x
@@ -724,15 +733,10 @@ public class PropagationProcess implements Runnable {
 		}
                 // Source search by multiple range query
                 HashSet<Integer> processedLineSources = new HashSet<Integer>(); //Already processed Raw source (line and/or points)
-                List<Double> ranges=new ArrayList<Double>();
-                for(int idrange=0;idrange<STEP_RANGE_COUNT;idrange++) {
-                    ranges.add((data.maxSrcDist/STEP_RANGE_COUNT)*(idrange+1));
-                }
-                if(STEP_RANGE_COUNT>1) {
-                    ranges.set(0, FIRST_STEP_RANGE);
-                }
+                double[] ranges=new double[] {FIRST_STEP_RANGE,data.maxSrcDist/5,data.maxSrcDist/4,data.maxSrcDist/2,data.maxSrcDist};
                 long sourceCount=0;
-                for(Double searchSourceDistance : ranges) {
+ 
+                for(double searchSourceDistance : ranges) {
                     Envelope receiverSourceRegion = new Envelope(receiverCoord.x
 				- searchSourceDistance, receiverCoord.x + searchSourceDistance,
 				receiverCoord.y - searchSourceDistance, receiverCoord.y
@@ -780,7 +784,9 @@ public class PropagationProcess implements Runnable {
                             for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
                                     allsourcefreqlvl += wj.get(idfreq);
                             }
+
                             double wAttDistSource=attDistW(allsourcefreqlvl,srcCoord.distance(receiverCoord));
+                            srcEnergeticSum+=wAttDistSource;
                             if(Math.abs(wToDba(wAttDistSource+allreceiverfreqlvl)-wToDba(allreceiverfreqlvl))>DBA_FORGET_SOURCE) {
                                 sourceCount++;
                                 receiverSourcePropa(srcCoord, receiverCoord, energeticSum,
@@ -789,8 +795,8 @@ public class PropagationProcess implements Runnable {
                                                 regionCornersFreeToReceiver, freq_lambda);
                             }
                     }
-                    double allreceiverfreqlvl = GetGlobalLevel(nbfreq,energeticSum);
-                    if(Math.abs(wToDba(attDistW(W_RANGE,searchSourceDistance)+allreceiverfreqlvl)-wToDba(allreceiverfreqlvl))<DBA_FORGET_SOURCE) {
+                    //srcEnergeticSum=GetGlobalLevel(nbfreq,energeticSum);
+                    if(Math.abs(wToDba(attDistW(W_RANGE,searchSourceDistance)+srcEnergeticSum)-wToDba(srcEnergeticSum))<DBA_FORGET_SOURCE) {
                         break; //Stop search for fartest sources
                     }
                 }
@@ -802,11 +808,10 @@ public class PropagationProcess implements Runnable {
 	public void initStructures() {
 		nbfreq = data.freq_lvl.size();
 		// Init wave length for each frequency
-		double cel = 344.23935;
 		freq_lambda = new double[nbfreq];
 		for (int idf = 0; idf < nbfreq; idf++) {
 			if (data.freq_lvl.get(idf) > 0) {
-				freq_lambda[idf] = cel / data.freq_lvl.get(idf);
+				freq_lambda[idf] = CEL / data.freq_lvl.get(idf);
 			} else {
 				freq_lambda[idf] = 1;
 			}
