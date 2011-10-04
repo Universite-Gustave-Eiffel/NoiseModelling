@@ -22,7 +22,6 @@ public class PropagationProcessOut {
 
 	private long totalBuildingObstructionTest = 0;
         private long sourceSplittingTime = 0;
-	private long totalGridIndexQuery = 0;
 	private long nb_couple_receiver_src = 0;
 	private long nb_obstr_test = 0;
 	private long nb_image_receiver = 0;
@@ -30,8 +29,8 @@ public class PropagationProcessOut {
         private long nb_diffraction_path = 0;
 	private long totalReflexionTime = 0;
 	private long cellComputed = 0;
-        private long minimalReceiverComputationTime=0;
-        private long maximalReceiverComputationTime=Long.MAX_VALUE;
+        private long minimalReceiverComputationTime=Long.MAX_VALUE;
+        private long maximalReceiverComputationTime=0;
 
         public synchronized void updateMinimalReceiverComputationTime(long value) {
             minimalReceiverComputationTime=Math.min(minimalReceiverComputationTime,value);
@@ -68,9 +67,6 @@ public class PropagationProcessOut {
 		return totalBuildingObstructionTest;
 	}
 
-	public synchronized long getTotalGridIndexQuery() {
-		return totalGridIndexQuery;
-	}
 
 	public synchronized long getNb_couple_receiver_src() {
 		return nb_couple_receiver_src;
@@ -104,10 +100,10 @@ public class PropagationProcessOut {
 		nb_couple_receiver_src += srcCount;
 	}
 
-	public synchronized void appendGridIndexQueryTime(long queryTime) {
-		totalGridIndexQuery += queryTime;
-	}
 
+        public synchronized void appendSourceQueryTime(long queryTime) {
+                sourceSplittingTime+=queryTime;
+        }
 	public synchronized void appendObstructionTestQueryTime(long queryTime) {
 		totalBuildingObstructionTest += queryTime;
 	}

@@ -7,6 +7,7 @@ package org.noisemap.core;
 /**
  * @brief Sources merging This class can merge source point by a
  *        maximum distance, from another closed source.
+ *  TODO use hashmap with position/epsilon_merge
  */
 
 import java.util.List;

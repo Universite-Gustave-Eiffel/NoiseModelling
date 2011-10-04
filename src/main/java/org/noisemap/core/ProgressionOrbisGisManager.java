@@ -25,8 +25,7 @@ public class ProgressionOrbisGisManager implements Runnable {
     private boolean enabled = true;
     private Stack<Double> progressionHistoryValue=new Stack<Double>();
     private Stack<Long> progressionHistoryTime=new Stack<Long>();
-    private final static double historyTimeStep=30*1000;
-    private final static int historyStepsCount=30;
+    private final static double historyTimeStep=10*1000;
     private long lastPushedProgress=0;
     private double lastEstimation=0;
     private static String getHumanTime(long millisec)  {
@@ -124,22 +123,22 @@ public class ProgressionOrbisGisManager implements Runnable {
                     progressionHistoryTime.push(System.currentTimeMillis());
                     progressionHistoryValue.push(progression);
                 }else{
-                    while(progressionHistoryTime.size()>=historyStepsCount) {
-                        progressionHistoryTime.remove(0);
-                        progressionHistoryValue.remove(0);
-                    }
                     if(lastPushedProgress<System.currentTimeMillis()-historyTimeStep) {
                         //reg.addData(progression,System.currentTimeMillis());
                         lastPushedProgress=System.currentTimeMillis();
-                        progressionHistoryTime.push(System.currentTimeMillis());
-                        progressionHistoryValue.push(progression);
+                        if((int)(progression-progressionHistoryValue.lastElement())>=1) {
+                            progressionHistoryTime.push(System.currentTimeMillis());
+                            progressionHistoryValue.push(progression);
+                        }
                         //Estimate end of computation
                         SimpleRegression reg= new SimpleRegression();
-                        double prog[][]=new double[progressionHistoryTime.size()][2];
+                        double prog[][]=new double[progressionHistoryTime.size()+1][2];
                         for(int t=0;t<progressionHistoryTime.size();t++) {
                             prog[t][0]=progressionHistoryValue.get(t);
                             prog[t][1]=progressionHistoryTime.get(t);
                         }
+                        prog[progressionHistoryTime.size()][0]=progression;
+                        prog[progressionHistoryTime.size()][1]=System.currentTimeMillis();
                         reg.addData(prog);
                         lastEstimation=reg.predict(100);
                     }

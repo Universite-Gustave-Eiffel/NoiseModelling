@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.HashSet;
 
 public class PropagationProcess implements Runnable {
+        private final static double BASE_LVL=1.; // 0dB lvl
 	private final static double ONETHIRD=1./3.;
 	private final static double MERGE_SRC_DIST=1.;
         private final static double DBA_FORGET_SOURCE=0.03;
@@ -170,7 +171,6 @@ public class PropagationProcess implements Runnable {
 			return;
 		}
 	}
-
 	public static double dbaToW(double dBA) {
 		return Math.pow(10., dBA / 10.);
 	}
@@ -359,9 +359,9 @@ public class PropagationProcess implements Runnable {
 				for (int idfreq = 0; idfreq < freqcount; idfreq++) {
 					double AttenuatedWj = attDistW(wj.get(idfreq),
 							SrcReceiverDistance);
-					AttenuatedWj = dbaToW(wToDba(attAtmW(AttenuatedWj,
-							SrcReceiverDistance, alpha_atmo[idfreq]))
-							);
+					AttenuatedWj = attAtmW(AttenuatedWj,
+                                                SrcReceiverDistance,
+                                                alpha_atmo[idfreq]);
 					energeticSum[idfreq] += AttenuatedWj;
 				}
 
@@ -481,10 +481,10 @@ public class PropagationProcess implements Runnable {
 								AttenuatedWj *= Math.pow((1 - data.wallAlpha),
 										reflectionOrderCounter);
 								// Apply atmospheric absorption and ground
-								AttenuatedWj = dbaToW(wToDba(attAtmW(
+								AttenuatedWj = attAtmW(
 										AttenuatedWj,
 										ReflectedSrcReceiverDistance,
-										alpha_atmo[idfreq])));
+										alpha_atmo[idfreq]);
 								energeticSum[idfreq] += AttenuatedWj;
 							}
 						}
@@ -532,7 +532,6 @@ public class PropagationProcess implements Runnable {
 								double delta = diffractionFullDistance
 										- SrcReceiverDistance;
 
-								// double largeAtt=0;//TODO remove
 								for (int idfreq = 0; idfreq < freqcount; idfreq++) {
 
 									double cprime;
@@ -558,7 +557,6 @@ public class PropagationProcess implements Runnable {
 									// Limit to 0<=DiffractionAttenuation
 									DiffractionAttenuation = Math.max(0,
 											DiffractionAttenuation);
-									// largeAtt+=DbaToW(DiffractionAttenuation);
 									double AttenuatedWj = wj.get(idfreq);
 									// Geometric dispersion
 									AttenuatedWj=attDistW(AttenuatedWj, SrcReceiverDistance);
@@ -566,10 +564,10 @@ public class PropagationProcess implements Runnable {
 									AttenuatedWj = dbaToW(wToDba(AttenuatedWj)
 											- DiffractionAttenuation);
 									// Apply atmospheric absorption and ground
-									AttenuatedWj = dbaToW(wToDba(attAtmW(
+									AttenuatedWj = attAtmW(
 											AttenuatedWj,
 											diffractionFullDistance,
-											alpha_atmo[idfreq])));
+											alpha_atmo[idfreq]);
 									
 									energeticSum[idfreq] += AttenuatedWj;
 								}
@@ -648,19 +646,19 @@ public class PropagationProcess implements Runnable {
 			ArrayList<Double> mergedWj=srcWj.get(mergedSrcIndex);
 			//A source already exist and is close enough to merge
 			for(int fb=0;fb<wj.size();fb++) {
-				mergedWj.set(fb, mergedWj.get(fb)+dbaToW(wToDba(wj.get(fb))+10*Math.log10(li)));
-			}		
+				mergedWj.set(fb, mergedWj.get(fb)+wj.get(fb)*li);
+			}
 		} else {
 			//New source
-			ArrayList<Double> liWj=new ArrayList<Double>(wj);
-			 for(int fb=0;fb<wj.size();fb++) {
-				 liWj.set(fb, dbaToW(wToDba(liWj.get(fb))+10*Math.log10(li)));
-			 }
+			ArrayList<Double> liWj=new ArrayList<Double>(wj.size());
+                        for(Double lvl : wj) {
+                            liWj.add(lvl*li);
+                        }
 			srcPos.add(ptpos);
 			srcWj.add(liWj);
                         double distanceSrcPt=ptpos.distance(receiverPos);
                         int index = Collections.binarySearch(srcDistSorted, distanceSrcPt);
-			if(index >=0){
+			if(index >=0) {
                             srcSortedIndex.add(index,mergedSrcIndex);
                             srcDistSorted.add(index,distanceSrcPt);
 			} else {
@@ -690,13 +688,10 @@ public class PropagationProcess implements Runnable {
 	 */
 	public void computeSoundLevelAtPosition(Coordinate receiverCoord,double energeticSum[]) {
 		// List of walls within maxReceiverSource distance
-                double srcEnergeticSum=dbaToW(0.); //Global energetic sum of all sources processed
+                double srcEnergeticSum=BASE_LVL; //Global energetic sum of all sources processed
+                long sourceQueryNanoTime=0;
 		List<LineSegment> nearBuildingsWalls = null;
 		List<MirrorReceiverResult> mirroredReceiver = null;
-		Envelope receiverRegion = new Envelope(receiverCoord.x
-				- data.maxSrcDist, receiverCoord.x + data.maxSrcDist,
-				receiverCoord.y - data.maxSrcDist, receiverCoord.y
-						+ data.maxSrcDist);
 		if (data.reflexionOrder > 0) {
 
 			nearBuildingsWalls = new ArrayList<LineSegment>(
@@ -741,10 +736,10 @@ public class PropagationProcess implements Runnable {
 				- searchSourceDistance, receiverCoord.x + searchSourceDistance,
 				receiverCoord.y - searchSourceDistance, receiverCoord.y
 						+ searchSourceDistance);
-                    //long beginQuadQuery = System.nanoTime();
+                    long beginQuadQuery = System.nanoTime();
                     List<Integer> regionSourcesLst = data.sourcesIndex
                                     .query(receiverSourceRegion);
-                    //dataOut.appendGridIndexQueryTime(System.nanoTime() - beginQuadQuery);
+
                     PointsMerge sourcesMerger=new PointsMerge(MERGE_SRC_DIST);
                     List<Integer> srcSortByDist = new ArrayList<Integer>();
                     List<Double> srcDist = new ArrayList<Double>();
@@ -773,7 +768,7 @@ public class PropagationProcess implements Runnable {
                             }
                         }
                     }
-
+                    sourceQueryNanoTime+=System.nanoTime()-beginQuadQuery;
                     //Iterate over source point sorted by their distance from the receiver
                     for (int mergedSrcId : srcSortByDist) {
                             // For each Pt Source - Pt Receiver
@@ -801,6 +796,7 @@ public class PropagationProcess implements Runnable {
                     }
                 }
                 dataOut.appendSourceCount(sourceCount);
+                dataOut.appendSourceQueryTime((long)(sourceQueryNanoTime/1e6));
 	}
 	/**
 	 * Must be called before computeSoundLevelAtPosition
@@ -861,8 +857,8 @@ public class PropagationProcess implements Runnable {
 		// maxSrcDist meters
 		ProgressionProcess propaProcessProgression = data.cellProg;
 		int idReceiver = 0;
-                long min_compute_time=0;
-                long max_compute_time=Long.MAX_VALUE;
+                long min_compute_time=Long.MAX_VALUE;
+                long max_compute_time=0;
 		for (Coordinate receiverCoord : data.vertices) {
                         long debReceiverTime = System.nanoTime();
                         
@@ -878,10 +874,7 @@ public class PropagationProcess implements Runnable {
 			for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
 				allfreqlvl += energeticSum[idfreq];
 			}
-			if (allfreqlvl < dbaToW(0.)) // If sound level<0dB, then set to 0dB
-			{
-				allfreqlvl = dbaToW(0.);
-			}
+                        allfreqlvl= Math.max(allfreqlvl,BASE_LVL);
 			verticesSoundLevel[idReceiver] = allfreqlvl;
 
                         long computeTime=System.nanoTime()-debReceiverTime;

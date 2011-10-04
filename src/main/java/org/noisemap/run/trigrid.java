@@ -27,7 +27,16 @@ import org.noisemap.core.ST_TriangleContouring;
  * Take two gdms file as input. The single output is another gdms file.
  */
 public class trigrid {
-
+    private static String getHumanTime(long millisec)  {
+        long day=millisec/(1000*3600*24);
+        long millirest=millisec%(1000*3600*24);
+        long hour=millirest/(1000*3600);
+        millirest %= (1000 * 3600);
+        long minute=millirest/(1000*60);
+        millirest %= (1000 * 60);
+        long sec=millirest/1000;
+        return day+" day(s) "+hour+" hour(s) "+minute+" minutes "+sec+" seconds";
+    }
     private static void printUsage() {
         System.out.println("BR_TriGrid version 04/08/2011 11:29");
         System.out.println("Usage :");
@@ -151,7 +160,9 @@ public class trigrid {
         DataSet data=null;
         try {
             data = propa.evaluate(factory, tables, propaArgs, null);
-            System.out.println("Overall computation time: "+(System.currentTimeMillis()-debComputeTime)+" ms.");
+            long overallComputeTime=System.currentTimeMillis()-debComputeTime;
+            System.out.println("Overall computation time: "+overallComputeTime+" ms."+getHumanTime(overallComputeTime));
+
         } catch (FunctionException ex) {
             System.err.println(ex.getMessage());
             ex.printStackTrace(System.err);
