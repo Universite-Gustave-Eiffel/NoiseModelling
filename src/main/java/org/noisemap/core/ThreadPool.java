@@ -100,7 +100,7 @@ public class ThreadPool extends ThreadPoolExecutor {
 
 	/**
 	 * 
-	 * @return Remaining treads Running and queued
+	 * @return Remaining threads Running and queued
 	 */
 	public int getRemainingTasks() {
 		return this.getQueue().size() + this.getActiveCount();

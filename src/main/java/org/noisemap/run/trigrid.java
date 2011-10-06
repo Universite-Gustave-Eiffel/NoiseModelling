@@ -38,7 +38,7 @@ public class trigrid {
         return day+" day(s) "+hour+" hour(s) "+minute+" minutes "+sec+" seconds";
     }
     private static void printUsage() {
-        System.out.println("BR_TriGrid version 04/08/2011 11:29");
+        System.out.println("BR_TriGrid version 04/10/2011 11:33");
         System.out.println("Usage :");
         System.out.println("java -jar trigrid.jar [options] -ib bpath -is spath -o outpath");
         System.out.println("Options :");

@@ -54,7 +54,7 @@ public class ST_SetNearestGeometryId extends AbstractTableFunction {
 
 	@Override
 	public String getSqlOrder() {
-		return "select ST_SetNearestGeometryId( left_table.geomToUpdate, right_table.geomSource, \"right_table_rowId_Label\" ) from left_table,right_table;";
+		return "select * from ST_SetNearestGeometryId( left_table,right_table, left_table.geomToUpdate, right_table.geomSource, \"right_table_rowId_Label\" );";
 	}
 
 	@Override
