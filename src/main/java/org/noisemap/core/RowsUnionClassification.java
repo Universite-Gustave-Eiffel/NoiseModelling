@@ -8,6 +8,7 @@
 package org.noisemap.core;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -26,48 +27,37 @@ public class RowsUnionClassification {
     }
     public void addRow(int row) {
         // Iterate over the row range array and find contiguous row
-        // row deb/row end angle
-        int rowdeb=row;
-        int rowend=row;
         boolean inserted = false;
-        // Update existing angle ranges
-        boolean doNewLoop = true;
-        while (doNewLoop) {
-                doNewLoop = false;
-                for (int idrange = 0; idrange < rowrange.size() - 1; idrange += 2) {
-                        if (rowrange.get(idrange)==rowend + 1) {
-                                inserted = true;
-                                if (rowrange.size() > 2) {
-                                        // Remove merged element and reloop
-                                        doNewLoop = true;
-                                        inserted = false;
-                                        rowend = rowrange.get(idrange + 1);
-                                        rowrange.remove(idrange);
-                                        rowrange.remove(idrange);
-                                } else {
-                                        rowrange.set(idrange, rowdeb);
-                                }
-                                break;
-                        } else if (rowrange.get(idrange + 1)==rowdeb - 1) {
-                                inserted = true;
-                                if (rowrange.size() > 2) {
-                                        // Remove merged element and reloop
-                                        doNewLoop = true;
-                                        inserted = false;
-                                        rowdeb = rowrange.get(idrange);
-                                        rowrange.remove(idrange);
-                                        rowrange.remove(idrange);
-                                } else {
-                                        rowrange.set(idrange + 1, rowend);
-                                }
-                                break;
-                        }
-                }
+        int index=-1;
+        //Search another End Range to this row number
+        index = Collections.binarySearch(rowrange, row-1);
+        if(index >=0) {
+            inserted = true;
+            if(index % 2==0) {
+                rowrange.set(index+1, row); //Cover case [row,row], index+1 must be updated
+            } else {
+                rowrange.set(index, row);
+            }
+            //Search if this number link with end of another range
+            int indexAnother = Collections.binarySearch(rowrange, row+1);
+            if(indexAnother >=0) {
+                //That the case, we must update the current range and delete two elements.
+                rowrange.set(index,rowrange.get(indexAnother+1));
+                rowrange.remove(indexAnother);
+                rowrange.remove(indexAnother);
+            }
+        } else {
+            //Search another Begin Range to this row number
+            index = Collections.binarySearch(rowrange, row+1);
+            if(index >=0) {
+                inserted = true;
+                rowrange.set(index, row);
+            }
         }
-        // Row is not contiguous with others
-        if (!inserted) {
-                rowrange.add(rowdeb);
-                rowrange.add(rowend);
+        if(!inserted) {
+            //New range
+            rowrange.add(-index-1,row);
+            rowrange.add(-index-1,row);
         }
     }
 }

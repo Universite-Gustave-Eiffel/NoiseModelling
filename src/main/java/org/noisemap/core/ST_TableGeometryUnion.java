@@ -97,6 +97,8 @@ public class ST_TableGeometryUnion extends AbstractTableFunction {
         //First pass
         //Aggregation of row line number corresponding to groups.
         try {
+
+            pm.startTask("Grouping and Fusion of geometries", 100);
             int spatialFieldIndex;
             final DataSet sds = dss[0];
             int cellidFieldIndex=sds.getMetadata().getFieldIndex("cellid");
@@ -167,6 +169,7 @@ public class ST_TableGeometryUnion extends AbstractTableFunction {
 		toUnite.toArray(geoArray);
 		GeometryCollection polygonCollection = geometryFactory
 				.createGeometryCollection(geoArray);
+                toUnite.clear();
                 Geometry mergedGeom=polygonCollection.union();
                 Value[] row = new Value[3];
                 row[0] = ValueFactory.createValue(mergedGeom);
@@ -178,6 +181,7 @@ public class ST_TableGeometryUnion extends AbstractTableFunction {
             
             //Close all threads & files
             pmManager.stop();
+            pm.endTask();
             driver.start();
             return driver.getTable("main");
             } catch (DriverException e) {

@@ -111,48 +111,48 @@ public class ProgressionOrbisGisManager implements Runnable {
     @Override
     public void run() {
         while (enabled) {
+            double progression=(getMainProgression() * 100);
             if(monitor!=null) {
-                monitor.progressTo((int) (getMainProgression() * 100));
+                monitor.progressTo((long) progression);
                 if (monitor.isCancelled()) {
                         break;
                 }
-            }else{
-                double progression=(getMainProgression() * 100);
-               
-                if(progressionHistoryTime.isEmpty()) {
-                    progressionHistoryTime.push(System.currentTimeMillis());
-                    progressionHistoryValue.push(progression);
-                }else{
-                    if(lastPushedProgress<System.currentTimeMillis()-historyTimeStep) {
-                        //reg.addData(progression,System.currentTimeMillis());
-                        lastPushedProgress=System.currentTimeMillis();
-                        if((int)(progression-progressionHistoryValue.lastElement())>=1) {
-                            progressionHistoryTime.push(System.currentTimeMillis());
-                            progressionHistoryValue.push(progression);
-                        }
-                        //Estimate end of computation
-                        SimpleRegression reg= new SimpleRegression();
-                        double prog[][]=new double[progressionHistoryTime.size()+1][2];
-                        for(int t=0;t<progressionHistoryTime.size();t++) {
-                            prog[t][0]=progressionHistoryValue.get(t);
-                            prog[t][1]=progressionHistoryTime.get(t);
-                        }
-                        prog[progressionHistoryTime.size()][0]=progression;
-                        prog[progressionHistoryTime.size()][1]=System.currentTimeMillis();
-                        reg.addData(prog);
-                        lastEstimation=reg.predict(100);
-                    }
-                }
-                 
-                //Round
-                progression=(((int)(progression * 100000))/100000.);
-                if(lastEstimation>0) {
-                    System.out.println(progression+" % remaining "+getHumanTime((long)lastEstimation-System.currentTimeMillis()));
-                } else {
-                    System.out.println(progression+" %");
-                }
-               
             }
+               
+            if(progressionHistoryTime.isEmpty()) {
+                progressionHistoryTime.push(System.currentTimeMillis());
+                progressionHistoryValue.push(progression);
+            }else{
+                if(lastPushedProgress<System.currentTimeMillis()-historyTimeStep) {
+                    //reg.addData(progression,System.currentTimeMillis());
+                    lastPushedProgress=System.currentTimeMillis();
+                    if((int)(progression-progressionHistoryValue.lastElement())>=1) {
+                        progressionHistoryTime.push(System.currentTimeMillis());
+                        progressionHistoryValue.push(progression);
+                    }
+                    //Estimate end of computation
+                    SimpleRegression reg= new SimpleRegression();
+                    double prog[][]=new double[progressionHistoryTime.size()+1][2];
+                    for(int t=0;t<progressionHistoryTime.size();t++) {
+                        prog[t][0]=progressionHistoryValue.get(t);
+                        prog[t][1]=progressionHistoryTime.get(t);
+                    }
+                    prog[progressionHistoryTime.size()][0]=progression;
+                    prog[progressionHistoryTime.size()][1]=System.currentTimeMillis();
+                    reg.addData(prog);
+                    lastEstimation=reg.predict(100);
+                }
+            }
+
+            //Round
+            progression=(((int)(progression * 100000))/100000.);
+            if(lastEstimation>0) {
+                System.out.println(progression+" % remaining "+getHumanTime((long)lastEstimation-System.currentTimeMillis()));
+            } else {
+                System.out.println(progression+" %");
+            }
+               
+            
             try {
                     Thread.sleep(updateInterval);
             } catch (InterruptedException e) {
