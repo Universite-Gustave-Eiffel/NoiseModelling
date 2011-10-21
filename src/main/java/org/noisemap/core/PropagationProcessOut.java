@@ -31,6 +31,16 @@ public class PropagationProcessOut {
 	private long cellComputed = 0;
         private long minimalReceiverComputationTime=Long.MAX_VALUE;
         private long maximalReceiverComputationTime=0;
+        private long sumReceiverComputationTime=0;
+
+        public synchronized long getSumReceiverComputationTime() {
+            return sumReceiverComputationTime;
+        }
+
+        public synchronized void addSumReceiverComputationTime(long sumReceiverComputationTime) {
+            this.sumReceiverComputationTime += sumReceiverComputationTime;
+        }
+
 
         public synchronized void updateMinimalReceiverComputationTime(long value) {
             minimalReceiverComputationTime=Math.min(minimalReceiverComputationTime,value);

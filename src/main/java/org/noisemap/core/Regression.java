@@ -8,7 +8,21 @@ package org.noisemap.core;
  ***********************************/
 
 public class Regression {
-  
+    /**
+     * Apply y = a0*X^0 + a1*X^1 + ... + an*X^n
+     * @param x X axis value
+     * @param coef linear_equation result
+     * @return Estimated Y value
+     */
+   static double evaluate(double x,double[] coef) {
+       double result=0;
+       int exp=0;
+       for(double a : coef) {
+           result+=a*Math.pow(x, exp);
+           exp++;
+       }
+       return result;
+   }
    // Apply least squares to raw data to determine the coefficients for
    // an n-order equation: y = a0*X^0 + a1*X^1 + ... + an*X^n.
    // Returns the coefficients for the solved equation, given a number
@@ -21,14 +35,12 @@ public class Regression {
       double a[][] = new double[norder+1][norder+1];
       double b[] = new double[norder+1];
       double term[] = new double[norder+1];
-      double ysquare = 0;
 
       // step through each raw data entries
       for (int i = 0; i < rawData.length; i++) {
 
          // sum the y values
          b[0] += rawData[i][0];
-         ysquare += rawData[i][0] * rawData[i][0];
 
          // sum the x power values
          double xpower = 1;
@@ -49,14 +61,6 @@ public class Regression {
 
       // solve for the coefficients
       double coef[] = gauss(a, b);
-
-      // calculate the r-squared statistic
-      double ss = 0;
-      double yaverage = b[0] / rawData.length;
-      for (int i = 0; i < norder+1; i++) {
-         double xaverage = a[0][i] / rawData.length;
-         ss += coef[i] * (b[i] - (rawData.length * xaverage * yaverage));
-      }
       
       // solve the simultaneous equations via gauss
       return coef;

@@ -34,6 +34,7 @@ import com.vividsolutions.jts.geom.CoordinateSequence;
 import com.vividsolutions.jts.geom.CoordinateSequenceFilter;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
+import org.gdms.data.schema.MetadataUtilities;
 
 public class ST_SetNearestZ extends AbstractTableFunction {
 	private class QuadtreeZFilter implements CoordinateSequenceFilter {
@@ -145,12 +146,12 @@ public class ST_SetNearestZ extends AbstractTableFunction {
 
 	@Override
 	public String getSqlOrder() {
-		return "select ST_SetNearestZ( left_table.geomToUpdate, right_table.geomSource, MaximumDistance ) from left_table,right_table;";
+		return "ST_SetNearestZ( left_table,right_table,'the_geom','the_geom', MaximumDistance )";
 	}
 
 	@Override
 	public String getDescription() {
-		return "Add or Update the Z information from the nearest geometry, destroy the geom line if there is no source information under the maximum distance parameter.";
+		return "Read the Z information from the right table, then apply to the left table nearest geometry, destroy the geom line if there is no Z information in the maximum distance parameter.";
 	}
 
 	@Override
@@ -158,18 +159,26 @@ public class ST_SetNearestZ extends AbstractTableFunction {
             Value[] values, ProgressMonitor pm) throws FunctionException {
 		try {
 			ProgressionOrbisGisManager progManager=new ProgressionOrbisGisManager(2, pm);
-			final double maxDist = values[2].getAsDouble();
+			final double maxDist;
 			// Declare source and Destination tables
 			final DataSet sds = tables[0];
 			final DataSet sdsSource = tables[1];
 			// Open source and Destination tables
 
+                        int spatialUpdateFieldIndex,spatialSourceFieldIndex;
 
 			// Set defaultGeom as the geom set by the user
-			final String spatialUpdateFieldName = values[0].toString();
-			final String spatialSourceFieldName = values[1].toString();
-			int spatialUpdateFieldIndex = sds.getMetadata().getFieldIndex(spatialUpdateFieldName);
-			int spatialSourceFieldIndex = sdsSource.getMetadata().getFieldIndex(spatialSourceFieldName);
+                        if(values.length==3) {
+                            final String spatialUpdateFieldName = values[0].toString();
+                            final String spatialSourceFieldName = values[1].toString();
+                            spatialUpdateFieldIndex = sds.getMetadata().getFieldIndex(spatialUpdateFieldName);
+                            spatialSourceFieldIndex = sdsSource.getMetadata().getFieldIndex(spatialSourceFieldName);
+                            maxDist = values[2].getAsDouble();
+                        } else  {
+                            spatialUpdateFieldIndex = MetadataUtilities.getSpatialFieldIndex(sds.getMetadata());
+                            spatialSourceFieldIndex = MetadataUtilities.getSpatialFieldIndex(sdsSource.getMetadata());
+                            maxDist = values[0].getAsDouble();
+                        }
 
 
 			final DiskBufferDriver driver = new DiskBufferDriver(dsf,
@@ -265,6 +274,13 @@ public class ST_SetNearestZ extends AbstractTableFunction {
             return new FunctionSignature[]{
                             new TableFunctionSignature(TableDefinition.GEOMETRY,
                             new TableArgument(TableDefinition.GEOMETRY),
+                            new TableArgument(TableDefinition.GEOMETRY),
+                            ScalarArgument.DOUBLE),
+                            new TableFunctionSignature(TableDefinition.GEOMETRY,
+                            new TableArgument(TableDefinition.GEOMETRY),
+                            new TableArgument(TableDefinition.GEOMETRY),
+                            ScalarArgument.STRING, //'the_geom'
+                            ScalarArgument.STRING, //'the_geom'
                             ScalarArgument.DOUBLE)
                     };
     }

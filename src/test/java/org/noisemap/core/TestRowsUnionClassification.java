@@ -22,7 +22,7 @@ public class TestRowsUnionClassification extends TestCase  {
         for(int i=450;i<1500;i++) {
             mergeTool.addRow(i);
         }
-        for(int i=2000;i<200000;i++) {
+        for(int i=2000;i<20000;i++) {
             mergeTool.addRow(i);
         }
         for(int i=401;i<450;i++) {
@@ -39,7 +39,7 @@ public class TestRowsUnionClassification extends TestCase  {
         correctRanges.add(300);
         correctRanges.add(1499);
         correctRanges.add(2000);
-        correctRanges.add(199999);
+        correctRanges.add(19999);
 
         while(it.hasNext()) {
             int begin=it.next();

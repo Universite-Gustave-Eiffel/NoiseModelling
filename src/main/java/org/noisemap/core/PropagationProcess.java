@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.HashSet;
 
 public class PropagationProcess implements Runnable {
+        private final static double receiverComputationTimeLimit = 5000;
         private final static double BASE_LVL=1.; // 0dB lvl
 	private final static double ONETHIRD=1./3.;
 	private final static double MERGE_SRC_DIST=1.;
@@ -690,6 +691,7 @@ public class PropagationProcess implements Runnable {
 		// List of walls within maxReceiverSource distance
                 double srcEnergeticSum=BASE_LVL; //Global energetic sum of all sources processed
                 long sourceQueryNanoTime=0;
+                long beginEvaluateSPL=System.currentTimeMillis();
 		List<LineSegment> nearBuildingsWalls = null;
 		List<MirrorReceiverResult> mirroredReceiver = null;
 		if (data.reflexionOrder > 0) {
@@ -789,9 +791,12 @@ public class PropagationProcess implements Runnable {
                                                 nearBuildingsWalls, regionCorners,
                                                 regionCornersFreeToReceiver, freq_lambda);
                             }
+                            if(System.currentTimeMillis()-beginEvaluateSPL>receiverComputationTimeLimit) {
+                                break;
+                            }
                     }
                     //srcEnergeticSum=GetGlobalLevel(nbfreq,energeticSum);
-                    if(Math.abs(wToDba(attDistW(W_RANGE,searchSourceDistance)+srcEnergeticSum)-wToDba(srcEnergeticSum))<DBA_FORGET_SOURCE) {
+                    if(Math.abs(wToDba(attDistW(W_RANGE,searchSourceDistance)+srcEnergeticSum)-wToDba(srcEnergeticSum))<DBA_FORGET_SOURCE || System.currentTimeMillis()-beginEvaluateSPL>receiverComputationTimeLimit) {
                         break; //Stop search for fartest sources
                     }
                 }
@@ -859,6 +864,7 @@ public class PropagationProcess implements Runnable {
 		int idReceiver = 0;
                 long min_compute_time=Long.MAX_VALUE;
                 long max_compute_time=0;
+                long sum_compute=0;
 		for (Coordinate receiverCoord : data.vertices) {
                         long debReceiverTime = System.nanoTime();
                         
@@ -880,6 +886,7 @@ public class PropagationProcess implements Runnable {
                         long computeTime=System.nanoTime()-debReceiverTime;
                         min_compute_time=Math.min(computeTime, min_compute_time);
                         max_compute_time=Math.max(computeTime, max_compute_time);
+                        sum_compute+=computeTime;
 			idReceiver++;
 		}
 		// Subdivide each triangle, and apply BiCubic interpolation.
@@ -908,6 +915,7 @@ public class PropagationProcess implements Runnable {
 		dataOut.appendCellComputed();
                 dataOut.updateMaximalReceiverComputationTime(max_compute_time);
                 dataOut.updateMinimalReceiverComputationTime(min_compute_time);
+                dataOut.addSumReceiverComputationTime(sum_compute);
                 dataOut.appendDiffractionPath(diffractionPathCount);
                 dataOut.appendTotalReflexionTime(totalReflexionTime);
 		dataOut.appendReflexionPath(refpathcount);

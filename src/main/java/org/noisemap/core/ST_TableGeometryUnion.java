@@ -112,23 +112,23 @@ public class ST_TableGeometryUnion extends AbstractTableFunction {
             }
             final MemoryDataSetDriver driver = new MemoryDataSetDriver(
 					getMetadata(null));
+
+
+            //Declaration of the HashMap that will keep the lines number for each geometries of the same category.
             HashMap<GroupKey,RowsUnionClassification> groups=new HashMap<GroupKey,RowsUnionClassification>();
             long rowCount = sds.getRowCount();
+            //Instanciate the progression manager
             ProgressionOrbisGisManager pmManager = new ProgressionOrbisGisManager(
 					2, pm);
             ProgressionProcess progressionInfo=pmManager.nextSubProcess(rowCount);
             pmManager.start();
-            long minGrouping=Long.MIN_VALUE;
-            long maxGrouping=0;
+            // Fill the HashMap with rowCount line numbers
             for (long i = 0; i < rowCount; i++) {
                 if(pm.isCancelled()) {
                     throw new FunctionException("Canceled by user");
                 }
-
-
                 int cellid=sds.getFieldValue(i,cellidFieldIndex).getAsInt();
                 short idiso=sds.getFieldValue(i,idisoFieldIndex).getAsShort();
-                long beginGroup=System.nanoTime();
                 GroupKey thekey=new GroupKey(cellid,idiso);
                 RowsUnionClassification res=groups.get(thekey);
                 if(res==null) {
@@ -136,9 +136,6 @@ public class ST_TableGeometryUnion extends AbstractTableFunction {
                 } else {
                     res.addRow((int) i);
                 }
-                long groupingTime=System.nanoTime()-beginGroup;
-                minGrouping=Math.min(minGrouping,groupingTime);
-                maxGrouping=Math.max(maxGrouping, groupingTime);
                 progressionInfo.nextSubProcessEnd();
             }
 
@@ -167,10 +164,11 @@ public class ST_TableGeometryUnion extends AbstractTableFunction {
                 //Merge geometries
                 Geometry geoArray[] = new Geometry[toUnite.size()];
 		toUnite.toArray(geoArray);
+                toUnite.clear();
 		GeometryCollection polygonCollection = geometryFactory
 				.createGeometryCollection(geoArray);
-                toUnite.clear();
                 Geometry mergedGeom=polygonCollection.union();
+                //Save the merged geometries into the driver
                 Value[] row = new Value[3];
                 row[0] = ValueFactory.createValue(mergedGeom);
                 row[1] = ValueFactory.createValue(pairs.getKey().getCellId());
