@@ -47,16 +47,7 @@ public class FastObstructionTest {
 	private QueryGeometryStructure<Integer> triIndex = null; //TODO remove
 	private int lastFountPointTriTest = 0;
 	private List<Float> verticesOpenAngle = null;
-	private List<Coordinate> verticesOpenAngleTranslated = null; /*
-																	 * <Open
-																	 * angle
-																	 * position
-																	 * translated
-																	 * by
-																	 * epsilon
-																	 * in open
-																	 * angle
-																	 */
+	private List<Coordinate> verticesOpenAngleTranslated = null; /*Open angle*/
 
 	public FastObstructionTest() {
 		super();
@@ -210,6 +201,7 @@ public class FastObstructionTest {
 		//NonRobustLineIntersector linters = new NonRobustLineIntersector();
 		final Triangle tri = this.triVertices.get(triIndex);
 		int nearestIntersectionSide = -1;
+                int idneigh=-1;
 		double nearestIntersectionPtDist = Double.MAX_VALUE;
 		// Find intersection pt
 		final Coordinate aTri = this.vertices.get(tri.getA());
@@ -217,37 +209,38 @@ public class FastObstructionTest {
 		final Coordinate cTri = this.vertices.get(tri.getC());
 		double distline_line;
 		// Intersection First Side
-		distline_line=propagationLine.distance(new LineSegment(aTri, bTri));
-		if (distline_line<FastObstructionTest.epsilon) {
-			if (distline_line < nearestIntersectionPtDist
-					&& !navigationHistory.contains(this.triNeighbors.get(
-							triIndex).get(2))) {
-				nearestIntersectionPtDist = distline_line;
-				nearestIntersectionSide = 2;
-			}
-		}
-
+                idneigh=this.triNeighbors.get(
+                                                triIndex).get(2);
+                if (idneigh!=-1 && !navigationHistory.contains(idneigh)) {
+                    distline_line=propagationLine.distance(new LineSegment(aTri, bTri));
+                    if (distline_line<FastObstructionTest.epsilon &&
+                            distline_line < nearestIntersectionPtDist) {
+                        nearestIntersectionPtDist = distline_line;
+                        nearestIntersectionSide = 2;
+                    }
+                }
 		// Intersection Second Side
-		distline_line=propagationLine.distance(new LineSegment(bTri, cTri));
-		if (distline_line<FastObstructionTest.epsilon) {
-			if (distline_line < nearestIntersectionPtDist
-					&& !navigationHistory.contains(this.triNeighbors.get(
-							triIndex).get(0))) {
-				nearestIntersectionPtDist = distline_line;
-				nearestIntersectionSide = 0;
-			}
-		}
+                idneigh=this.triNeighbors.get(
+                                                triIndex).get(0);
+                if (idneigh!=-1 && !navigationHistory.contains(idneigh)) {
+                    distline_line=propagationLine.distance(new LineSegment(bTri, cTri));
+                    if (distline_line<FastObstructionTest.epsilon &&
+                            distline_line < nearestIntersectionPtDist) {
+                            nearestIntersectionPtDist = distline_line;
+                            nearestIntersectionSide = 0;
+                    }
+                }
 
 		// Intersection Third Side
-		distline_line=propagationLine.distance(new LineSegment(cTri, aTri));
-		if (distline_line<FastObstructionTest.epsilon) {
-			if (distline_line < nearestIntersectionPtDist
-					&& !navigationHistory.contains(this.triNeighbors.get(
-							triIndex).get(1))) {
-				nearestIntersectionSide = 1;
-			}
-		}
-
+                idneigh=this.triNeighbors.get(
+                                                triIndex).get(1);
+                if (idneigh!=-1 && !navigationHistory.contains(idneigh)) {
+                    distline_line=propagationLine.distance(new LineSegment(cTri, aTri));
+                    if (distline_line<FastObstructionTest.epsilon &&
+                            distline_line < nearestIntersectionPtDist) {
+                            nearestIntersectionSide = 1;
+                    }
+                }
 		if (nearestIntersectionSide != -1) {
 			return this.triNeighbors.get(triIndex).get(nearestIntersectionSide);
 		} else {
