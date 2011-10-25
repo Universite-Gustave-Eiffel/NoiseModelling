@@ -26,10 +26,22 @@ public class TestTrafficNoiseComputation extends TestCase {
 		//6 Components traffic information 
 		value=noiseEval.evaluate(null, ValueFactory.createValue(40.),ValueFactory.createValue(100.),ValueFactory.createValue(0.),ValueFactory.createValue(32),ValueFactory.createValue(50),ValueFactory.createValue(53)).getAsDouble();
 		doSplAssert("100 vl/h @ 40km/h (junct 32,max 50), extra boulevard Street",63.03,value);
-		
+
+
+                //BR_EvalSource(loadSpeed,lightVehicleCount,heavyVehicleCount
+                //              [,junction speed,speedMax,roadType
+                //              [,Zbegin,Zend,roadLength
+                //              [,isqueue]]])
 		//10 Components traffic information
 		value=noiseEval.evaluate(null, ValueFactory.createValue(40.),ValueFactory.createValue(50.),ValueFactory.createValue(50.),ValueFactory.createValue(32),ValueFactory.createValue(50),ValueFactory.createValue(53),ValueFactory.createValue(0),ValueFactory.createValue(5),ValueFactory.createValue(45.),ValueFactory.createValue(false)).getAsDouble();
 		doSplAssert("50 vl/h 50 pl/h @ 40km/h",81.69,value);
-				
+
+                //Other 10 Components, restart engine < 25 km/h
+		value=noiseEval.evaluate(null, ValueFactory.createValue(40.),ValueFactory.createValue(793.),ValueFactory.createValue(49.),ValueFactory.createValue(1.75),ValueFactory.createValue(40),ValueFactory.createValue(58),ValueFactory.createValue(7.9),ValueFactory.createValue(7.3),ValueFactory.createValue(8.61),ValueFactory.createValue(true)).getAsDouble();
+		doSplAssert("793 vl/h 49 pl/h @ 1.72km/h",82.72,value);
+
+                //Another
+                value=noiseEval.evaluate(null, ValueFactory.createValue(20.),ValueFactory.createValue(239.),ValueFactory.createValue(13.),ValueFactory.createValue(20.),ValueFactory.createValue(20.),ValueFactory.createValue(59),ValueFactory.createValue(7.7),ValueFactory.createValue(12.),ValueFactory.createValue(4.14),ValueFactory.createValue(false)).getAsDouble();
+		doSplAssert("239 vl/h 13 pl/h @ 20 km/h",81.98,value);
 	}
 }

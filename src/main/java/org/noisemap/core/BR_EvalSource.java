@@ -110,16 +110,20 @@ public class BR_EvalSource  extends AbstractScalarFunction {
 		throw new FunctionException("Unknown road type, please check (type="
 				+ type + ",subtype=" + subtype + ").");
 	}
-
+        /**
+         * Motor noise Sound level correction corresponding to a slope percentage
+         * @param slope Slope percentage
+         * @return Correction in dB(A)
+         */
 	private Double GetCorrection(double slope) {
 		// Limitation of slope
-		slope = Math.max(-6., slope);
-		slope = Math.min(6., slope);
+		double rslope = Math.max(-6., slope);
+		rslope = Math.min(6., rslope);
 		// Computation of the correction
-		if (slope > 2.) {
-			return 2 * (slope - 2);
-		} else if (slope < -2.) {
-			return slope - 2;
+		if (rslope > 2.) {
+			return 2 * (rslope - 2);
+		} else if (rslope < -2.) {
+			return rslope - 2;
 		} else {
 			return 0.;
 		}
@@ -192,26 +196,38 @@ public class BR_EvalSource  extends AbstractScalarFunction {
 			// ///////////////////////
 			// Noise motor
 			double vl_motor_lvl = 0.;
-			if (speed < 30.) {
-				vl_motor_lvl = getNoiseLvl(36.7, -10., speed, 90.);
+                        if (speed < 25.) { //restart
+                                vl_motor_lvl = 51.1;
+                        }else if (speed < 30.) {
+				vl_motor_lvl = getNoiseLvl(36.7, -10., Math.max(20,speed), 90.);
 			} else if (speed < 110.) {
 				vl_motor_lvl = getNoiseLvl(42.4, 2., speed, 90.);
 			} else {
 				vl_motor_lvl = getNoiseLvl(40.7, 21.3, speed, 90.);
 			}
 
-			double pl_motor_lvl = 0.;
-			if (speed_pl < 70.) {
-				pl_motor_lvl = getNoiseLvl(49.6, -10., speed_pl, 80.);
-			} else {
-				pl_motor_lvl = getNoiseLvl(50.4, 3., speed_pl, 80.);
-			}
-			//Taking account of slope percentage
+
+                        double ground_dist = road_length; //distance is not hypotenuse
+			double slope_perc = 0;
+                        double pl_motor_lvl = 0.;
 			if (args.length >= 9) {
-				final double ground_dist = road_length;
-			    final double slope_perc = (end_z - begin_z) / ground_dist * 100.;
-    			pl_motor_lvl += GetCorrection(slope_perc); // Slope correction of Lmw,m,PL
-			 }
+                            //Taking account of slope percentage
+                            slope_perc =  Math.min(6.,Math.max(-6.,(end_z - begin_z) / ground_dist * 100.));
+           		}
+                        if (speed < 25.) { //restart
+                            if(slope_perc > 2) {
+                                pl_motor_lvl = 62.4 + Math.max(0,2*slope_perc-4.5);
+                            } else {
+                                pl_motor_lvl = 62.4;
+                            }
+                        } else {
+                            if (speed_pl < 70.) {
+                                    pl_motor_lvl = getNoiseLvl(49.6, -10., Math.max(20,speed_pl), 80.);
+                            } else {
+                                    pl_motor_lvl = getNoiseLvl(50.4, 3., speed_pl, 80.);
+                            }
+                            pl_motor_lvl += GetCorrection(slope_perc); // Slope correction of Lmw,m,PL
+                        }
 
 			// ////////////////////////
 			// Energetic SUM
