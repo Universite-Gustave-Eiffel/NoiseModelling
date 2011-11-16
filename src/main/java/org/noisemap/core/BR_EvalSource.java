@@ -47,6 +47,7 @@ public class BR_EvalSource  extends AbstractScalarFunction {
 					return Math.min(vvl, 85);
 				} // Belt-way 90 km/h
 			}
+                        break;
 		case 3:
 			switch (subtype) {
 			case 1:
@@ -56,6 +57,7 @@ public class BR_EvalSource  extends AbstractScalarFunction {
 			case 7:
 				return vvl; // inside-boulevard roundabout circular junction
 			}
+                        break;
 		case 4:
 			switch (subtype) {
 			case 1:
@@ -70,6 +72,7 @@ public class BR_EvalSource  extends AbstractScalarFunction {
 					return Math.min(vvl, 80);
 				} // 2x1 way 80 km/h
 			}
+                        break;
 		case 5:
 			switch (subtype) {
 			case 1:
@@ -89,6 +92,7 @@ public class BR_EvalSource  extends AbstractScalarFunction {
 			case 9:
 				return Math.min(vvl, 50); // in boulevard Street <50km/h
 			}
+                        break;
 		case 6:
 			switch (subtype) {
 			case 1:
@@ -106,6 +110,7 @@ public class BR_EvalSource  extends AbstractScalarFunction {
 			case 9:
 				return Math.min(vvl, 50); // Bus-way in boulevard Street <50km/h
 			}
+                        break;
 		}
 		throw new FunctionException("Unknown road type, please check (type="
 				+ type + ",subtype=" + subtype + ").");

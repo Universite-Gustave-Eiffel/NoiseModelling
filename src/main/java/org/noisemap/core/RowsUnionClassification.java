@@ -22,6 +22,11 @@ public class RowsUnionClassification {
         rowrange.add(row);
         rowrange.add(row);
     }
+    /**
+     * Return an iteror for reading row line ranges
+     * To iterate over 
+     * @return
+     */
     public Iterator<Integer> getRowRanges() {
         return this.rowrange.iterator();
     }

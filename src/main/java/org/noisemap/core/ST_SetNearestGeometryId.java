@@ -12,7 +12,6 @@ import java.util.List;
 import org.gdms.data.SQLDataSourceFactory;
 import org.gdms.data.schema.DefaultMetadata;
 import org.gdms.data.schema.Metadata;
-import org.gdms.data.schema.MetadataUtilities;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
@@ -46,7 +45,8 @@ import com.vividsolutions.jts.geom.GeometryFactory;
  */
 
 public class ST_SetNearestGeometryId extends AbstractTableFunction {
-
+        private String id_field_name="ID2";
+        private Type id_field_type=TypeFactory.createType(Type.LONG);
 	@Override
 	public String getName() {
 		return "ST_SetNearestGeometryId";
@@ -54,12 +54,12 @@ public class ST_SetNearestGeometryId extends AbstractTableFunction {
 
 	@Override
 	public String getSqlOrder() {
-		return "select * from ST_SetNearestGeometryId( left_table,right_table, left_table.geomToUpdate, right_table.geomSource, \"right_table_rowId_Label\" );";
+		return "select * from ST_SetNearestGeometryId( left_table,right_table, 'left_table.geomToUpdate', 'right_table.geomSource', 'right_table_rowId_Label' );";
 	}
 
 	@Override
 	public String getDescription() {
-		return "Set the right table row id to each left table rows from the nearest geometry, add also the column AvgDist corresponding to the average distance between the left and the right's nearest geometry found. -1 if nothing has been found in the region of the left geometry.";
+		return "Set the right table row id to each left table rows from the nearest geometry, add also the column AvgDist corresponding to the average distance between the left and the right's nearest geometry found. -1 if nothing has been found in the region of the left geometry.The id of the right table is renamed as ID2.";
 	}
 
 	@Override
@@ -67,6 +67,7 @@ public class ST_SetNearestGeometryId extends AbstractTableFunction {
             Value[] values, ProgressMonitor pm) throws FunctionException {
 		try {
 			ProgressionOrbisGisManager progManager=new ProgressionOrbisGisManager(2, pm);
+                        progManager.start();
 			// Declare source and Destination tables
 			final DataSet sds = tables[0];
 			final DataSet sdsSource = tables[1];
@@ -79,16 +80,19 @@ public class ST_SetNearestGeometryId extends AbstractTableFunction {
 			int spatialUpdateFieldIndex = sds.getMetadata().getFieldIndex(spatialUpdateFieldName);
 			int spatialSourceFieldIndex = sdsSource.getMetadata().getFieldIndex(spatialSourceFieldName);
 			final int idSourceNum = sdsSource.getMetadata().getFieldIndex(idSourceFieldName);
-
+                        /*
 			DefaultMetadata metadata = new DefaultMetadata(sds.getMetadata());
 			String field = MetadataUtilities.getUniqueFieldName(metadata,
 					idSourceFieldName);
 			metadata.addField(field,
 					sdsSource.getMetadata().getFieldType(idSourceNum));
+                        id_field_name=field;
+                        id_field_type=sdsSource.getMetadata().getFieldType(idSourceNum);
 			String fieldDist = MetadataUtilities.getUniqueFieldName(metadata,
 					"avgDist");
 			metadata.addField(fieldDist, TypeFactory.createType(Type.FLOAT));
-			final DiskBufferDriver driver = new DiskBufferDriver(dsf, metadata);
+                        */
+			final DiskBufferDriver driver = new DiskBufferDriver(dsf, this.getMetadata(new Metadata[] {tables[0].getMetadata()}));
 
 			final long rowCount = sds.getRowCount();
 			final long rowSourceCount = sdsSource.getRowCount();
@@ -126,10 +130,10 @@ public class ST_SetNearestGeometryId extends AbstractTableFunction {
 
 				int fieldCount = sds.getMetadata().getFieldCount();
 				final Value[] newValues = new Value[fieldCount + 2];
-				
-                for (int j = 0; j < fieldCount; j++) {
-                	newValues[j] = sds.getFieldValue(rowIndex, j);
-                }
+
+                                for (int j = 0; j < fieldCount; j++) {
+                                        newValues[j] = sds.getFieldValue(rowIndex, j);
+                                }
 	
 				
 				// Set the two new columns values
@@ -150,6 +154,7 @@ public class ST_SetNearestGeometryId extends AbstractTableFunction {
 				driver.addValues(newValues);
 
 			}
+                        progManager.stop();
 			driver.writingFinished();
                            driver.start();
 			return driver.getTable("main");
@@ -266,14 +271,18 @@ public class ST_SetNearestGeometryId extends AbstractTableFunction {
 		final Metadata metadata = tables[0];
 		// we don't want the resulting Metadata to be constrained !
 		final int fieldCount = metadata.getFieldCount();
-		final Type[] fieldsTypes = new Type[fieldCount];
-		final String[] fieldsNames = new String[fieldCount];
+		final Type[] fieldsTypes = new Type[fieldCount+2];
+		final String[] fieldsNames = new String[fieldCount+2];
 
 		for (int fieldId = 0; fieldId < fieldCount; fieldId++) {
 			fieldsNames[fieldId] = metadata.getFieldName(fieldId);
 			final Type tmp = metadata.getFieldType(fieldId);
 			fieldsTypes[fieldId] = TypeFactory.createType(tmp.getTypeCode());
 		}
+		fieldsNames[fieldCount]=id_field_name;
+		fieldsTypes[fieldCount]=id_field_type;
+		fieldsNames[fieldCount+1]="avgDist";
+		fieldsTypes[fieldCount+1]=TypeFactory.createType(Type.FLOAT);
 		return new DefaultMetadata(fieldsTypes, fieldsNames);
 	}
     @Override
@@ -282,7 +291,9 @@ public class ST_SetNearestGeometryId extends AbstractTableFunction {
                             new TableFunctionSignature(TableDefinition.GEOMETRY,
                             new TableArgument(TableDefinition.GEOMETRY),
                             new TableArgument(TableDefinition.GEOMETRY),
-                            ScalarArgument.STRING)
+                            ScalarArgument.STRING, //'the_geom'
+                            ScalarArgument.STRING, //'the_geom'
+                            ScalarArgument.STRING)//'fieldid'
                     };
     }
 }

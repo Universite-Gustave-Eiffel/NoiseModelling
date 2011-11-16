@@ -18,7 +18,7 @@ import com.vividsolutions.jts.index.quadtree.Quadtree;
 public class PointsMerge {
 	private Quadtree ptQuad = new Quadtree();
 	private double distMerge = 1.;
-
+        private int index_counter=-1;
 	
 	public PointsMerge(double distMerge) {
 		super();
@@ -34,7 +34,6 @@ public class PointsMerge {
 	 * @return The index of the vertex
 	 */
 	public int getOrAppendVertex(Coordinate newCoord) {
-		int newCoordIndex = -1;
 		Envelope queryEnv = new Envelope(newCoord);
 		queryEnv.expandBy(this.distMerge*2);
 		List<EnvelopeWithIndex<Integer>> result = this.ptQuad.query(queryEnv);
@@ -45,9 +44,10 @@ public class PointsMerge {
 		}
 		// Not found then
 		// Append to the list and QuadTree
-		newCoordIndex = this.ptQuad.size();
+                index_counter++;
 		this.ptQuad.insert(queryEnv, new EnvelopeWithIndex<Integer>(queryEnv,
-				newCoordIndex));
-		return newCoordIndex;
+				index_counter));
+                
+		return index_counter;
 	}
 }

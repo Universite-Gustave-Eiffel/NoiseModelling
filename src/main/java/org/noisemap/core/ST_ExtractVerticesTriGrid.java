@@ -1,16 +1,14 @@
 /***********************************
  * ANR EvalPDU
- * IFSTTAR 05_10_2011
+ * IFSTTAR 16_11_2011
  * @author Nicolas FORTIN, Judicaël PICAUT
  ***********************************/
 package org.noisemap.core;
 
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.GeometryCollection;
+import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
 import org.gdms.data.SQLDataSourceFactory;
@@ -32,63 +30,19 @@ import org.gdms.sql.function.table.TableDefinition;
 import org.gdms.sql.function.table.TableFunctionSignature;
 import org.orbisgis.progress.ProgressMonitor;
 
-class GroupKey {
-    private int cellId;
-    private short idIso;
 
-    @Override
-    public int hashCode() {
-        int hash = 7;
-        hash = 13 * hash + this.cellId;
-        hash = 13 * hash + this.idIso;
-        return hash;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final GroupKey other = (GroupKey) obj;
-        if (this.cellId != other.getCellId()) {
-            return false;
-        }
-        if (this.idIso != other.getIdIso()) {
-            return false;
-        }
-        return true;
-    }
-
-    public int getCellId() {
-        return cellId;
-    }
-
-    public void setCellId(int cellId) {
-        this.cellId = cellId;
-    }
-
-    public short getIdIso() {
-        return idIso;
-    }
-
-    public void setIdIso(short idIso) {
-        this.idIso = idIso;
-    }
-
-    public GroupKey(int cellId, short idIso) {
-        this.cellId = cellId;
-        this.idIso = idIso;
-    }
-}
 
 /**
- * This function is the post process of ST_TriangleContouring function. It will merge geometry of the same category.
+ * This function is the post process of ST_BrTriGrid function. It will extract and merge the vertices and corresponding values of triangles.
  */
-public class ST_TableGeometryUnion extends AbstractTableFunction {
+public class ST_ExtractVerticesTriGrid extends AbstractTableFunction {
 
+    private static void registerNewVertex(GeometryFactory geometryFactory,final DiskBufferDriver driver, Coordinate pt, double value) throws DriverException {
+        Value[] row = new Value[2];
+        row[0] = ValueFactory.createValue(geometryFactory.createPoint(pt));
+        row[1] = ValueFactory.createValue(value);
+        driver.addValues(row);
+    }
     @Override
     public DataSet evaluate(SQLDataSourceFactory sqldsf, DataSet[] dss, Value[] values, ProgressMonitor pm) throws FunctionException {
         //First pass
@@ -99,7 +53,9 @@ public class ST_TableGeometryUnion extends AbstractTableFunction {
             int spatialFieldIndex;
             final DataSet sds = dss[0];
             int cellidFieldIndex=sds.getMetadata().getFieldIndex("cellid");
-            int idisoFieldIndex=sds.getMetadata().getFieldIndex("idiso");
+            int dbv1FieldIndex=sds.getMetadata().getFieldIndex("db_v1");
+            int dbv2FieldIndex=sds.getMetadata().getFieldIndex("db_v2");
+            int dbv3FieldIndex=sds.getMetadata().getFieldIndex("db_v3");
             if (1 == values.length) {
                     // if no spatial's field's name is provided, the default (first)
                     // one is arbitrarily chosen.
@@ -110,9 +66,9 @@ public class ST_TableGeometryUnion extends AbstractTableFunction {
             final DiskBufferDriver driver = new DiskBufferDriver(sqldsf,
 					getMetadata(null));
 
-
+            GeometryFactory geometryFactory = new GeometryFactory();
             //Declaration of the HashMap that will keep the lines number for each geometries of the same category.
-            HashMap<GroupKey,RowsUnionClassification> groups=new HashMap<GroupKey,RowsUnionClassification>();
+            HashMap<Integer,RowsUnionClassification> groups=new HashMap<Integer,RowsUnionClassification>();
             long rowCount = sds.getRowCount();
             //Instanciate the progression manager
             ProgressionOrbisGisManager pmManager = new ProgressionOrbisGisManager(
@@ -124,12 +80,10 @@ public class ST_TableGeometryUnion extends AbstractTableFunction {
                 if(pm.isCancelled()) {
                     throw new FunctionException("Canceled by user");
                 }
-                int cellid=sds.getFieldValue(i,cellidFieldIndex).getAsInt();
-                short idiso=sds.getFieldValue(i,idisoFieldIndex).getAsShort();
-                GroupKey thekey=new GroupKey(cellid,idiso);
-                RowsUnionClassification res=groups.get(thekey);
+                Integer cellid=(Integer)sds.getFieldValue(i,cellidFieldIndex).getAsInt();
+                RowsUnionClassification res=groups.get(cellid);
                 if(res==null) {
-                    groups.put(thekey, new RowsUnionClassification((int) i));
+                    groups.put(cellid, new RowsUnionClassification((int) i));
                 } else {
                     res.addRow((int) i);
                 }
@@ -137,17 +91,17 @@ public class ST_TableGeometryUnion extends AbstractTableFunction {
             }
 
 
-            //Step 2, Union of geometries
+            //Step 2, Union of vertices
             ProgressionProcess progressionInfoUnion=pmManager.nextSubProcess(groups.size());
-            Iterator<Entry<GroupKey,RowsUnionClassification>> it = groups.entrySet().iterator();
+            Iterator<Entry<Integer,RowsUnionClassification>> it = groups.entrySet().iterator();
             //For each distinct group
-            GeometryFactory geometryFactory = new GeometryFactory();
-            for(Map.Entry<GroupKey,RowsUnionClassification> pairs : groups.entrySet()) {
+            for(Map.Entry<Integer,RowsUnionClassification> pairs : groups.entrySet()) {
                 if(pm.isCancelled()) {
                     throw new FunctionException("Canceled by user");
                 }
                 Iterator<Integer> ranges=pairs.getValue().getRowRanges();
-                LinkedList<Geometry> toUnite=new LinkedList<Geometry>();
+                PointsMerge verticesMergeTool=new PointsMerge(0.1);
+                int cpt=0;
                 while(ranges.hasNext()) {
                     int begin=ranges.next();
                     int end=ranges.next();
@@ -155,25 +109,23 @@ public class ST_TableGeometryUnion extends AbstractTableFunction {
                         if(pm.isCancelled()) {
                             throw new FunctionException("Canceled by user");
                         }
-                        toUnite.add(sds.getFieldValue(rowid,spatialFieldIndex).getAsGeometry());
+                        Coordinate [] coords = sds.getFieldValue(rowid,spatialFieldIndex).getAsGeometry().getCoordinates();
+                        if(verticesMergeTool.getOrAppendVertex(coords[0])==cpt) {
+                            registerNewVertex(geometryFactory,driver,coords[0],sds.getFieldValue(rowid,dbv1FieldIndex).getAsDouble());
+                            cpt++;
+                        }
+                        if(verticesMergeTool.getOrAppendVertex(coords[1])==cpt) {
+                            registerNewVertex(geometryFactory,driver,coords[1],sds.getFieldValue(rowid,dbv2FieldIndex).getAsDouble());
+                            cpt++;
+                        }
+                        if(verticesMergeTool.getOrAppendVertex(coords[2])==cpt) {
+                            registerNewVertex(geometryFactory,driver,coords[2],sds.getFieldValue(rowid,dbv3FieldIndex).getAsDouble());
+                            cpt++;
+                        }
                     }
                 }
-                //Merge geometries
-                Geometry geoArray[] = new Geometry[toUnite.size()];
-		toUnite.toArray(geoArray);
-                toUnite.clear();
-		GeometryCollection polygonCollection = geometryFactory
-				.createGeometryCollection(geoArray);
-                Geometry mergedGeom=polygonCollection.union();
-                //Save the merged geometries into the driver
-                Value[] row = new Value[3];
-                row[0] = ValueFactory.createValue(mergedGeom);
-                row[1] = ValueFactory.createValue(pairs.getKey().getCellId());
-                row[2] = ValueFactory.createValue(pairs.getKey().getIdIso());
-                driver.addValues(row);
                 progressionInfoUnion.nextSubProcessEnd();
             }
-            
             //Close all threads & files
             pmManager.stop();
             pm.endTask();
@@ -189,16 +141,14 @@ public class ST_TableGeometryUnion extends AbstractTableFunction {
     public Metadata getMetadata(Metadata[] mtdts) throws DriverException {
 		return new DefaultMetadata(new Type[] {
 				TypeFactory.createType(Type.GEOMETRY),
-				TypeFactory.createType(Type.INT),
-                                TypeFactory.createType(Type.SHORT)},
+				TypeFactory.createType(Type.DOUBLE)},
                                 new String[] { "the_geom",
-				"cellid",
-                                "idiso"});
+				"db_v"});
     }
 
     @Override
     public String getDescription() {
-        return "This function is not generic,it post process the ST_TriangleContouring function. It will merge geometry of the same category (cellid and idiso).";
+        return "This function is the post process of ST_BrTriGrid function. It will extract and merge the vertices and corresponding values of triangles.";
     }
 
     @Override
@@ -211,12 +161,12 @@ public class ST_TableGeometryUnion extends AbstractTableFunction {
 
     @Override
     public String getName() {
-        return "ST_TableGeometryUnion";
+        return "ST_ExtractVerticesTriGrid";
     }
 
     @Override
     public String getSqlOrder() {
-        return "select * from ST_TableGeometryUnion(contouring_table);";
+        return "select * from ST_ExtractVerticesTriGrid(tri_table);";
     }
 
 }

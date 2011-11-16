@@ -33,6 +33,9 @@ import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Polygon;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map.Entry;
 
 /**
  * Split triangle into area within the specified range values
@@ -60,7 +63,7 @@ public class ST_TriangleContouring extends AbstractTableFunction {
 		return "select ST_TriangleContouring( geomToUpdate, verticeOneLevelValue,verticeTwoLevelValue,verticeThreeLevelValue, isoLevels ) from triangle_table";
 	}
 
-	private boolean computeSplitPositionOrdered(double marker1, double marker2,
+	private static boolean computeSplitPositionOrdered(double marker1, double marker2,
 			double isoValue, Coordinate p1, Coordinate p2,
 			Coordinate splitPosition) {
 		if (marker1 < isoValue && isoValue < marker2) {
@@ -74,7 +77,7 @@ public class ST_TriangleContouring extends AbstractTableFunction {
 		}
 	}
 
-	private boolean computeSplitPosition(double marker1, double marker2,
+	private static boolean computeSplitPosition(double marker1, double marker2,
 			double isoValue, Coordinate p1, Coordinate p2,
 			Coordinate splitPosition) {
 		if (marker1 < marker2) {
@@ -86,7 +89,7 @@ public class ST_TriangleContouring extends AbstractTableFunction {
 		}
 	}
 
-	private short findTriangleSide(TriMarkers currentTriangle, double isoValue,
+	private static short findTriangleSide(TriMarkers currentTriangle, double isoValue,
 			short sideException, Coordinate splitPosition) {
 		if (sideException != 0
 				&& computeSplitPosition(currentTriangle.m1, currentTriangle.m2,
@@ -135,7 +138,7 @@ public class ST_TriangleContouring extends AbstractTableFunction {
 	 * 
 	 * @return The shared vertex index [0-2]
 	 */
-	private short getSplittedTriangle(short sideStart, short sideStop,
+	private static short getSplittedTriangle(short sideStart, short sideStop,
 			Coordinate posIsoStart, Coordinate posIsoStop, double isoLvl,
 			TriMarkers currentTriangle, TriMarkers aloneTri,
 			TriMarkers firstTwinTri, TriMarkers secondTwinTri)
@@ -204,7 +207,7 @@ public class ST_TriangleContouring extends AbstractTableFunction {
 	 *         outsideTriangles or intervalTriangles has been updated.
 	 * @throws ExecutionException
 	 */
-	private boolean splitInterval(Double beginIncluded, Double endExcluded,
+	private static boolean splitInterval(Double beginIncluded, Double endExcluded,
 			TriMarkers currentTriangle,
 			LinkedList<TriMarkers> outsideTriangles,
 			LinkedList<TriMarkers> intervalTriangles) throws FunctionException {
@@ -535,7 +538,36 @@ public class ST_TriangleContouring extends AbstractTableFunction {
 						+ "), sideIso2Start(" + sideIso2Start
 						+ "), sideIso2Stop(" + sideIso2Stop + ")");
 	}
+        /**
+         *
+         * @param triangleData Triangle Coordinates and Marker values
+         * @param iso_lvls Iso level to extract.
+         * @return processedTriangles Return sub-triangle corresponding to iso levels. iso level are stored in markers (same for m0,m1,m2)
+         * @throws FunctionException
+         */
+        public static HashMap<Short,LinkedList<TriMarkers>> processTriangle(TriMarkers triangleData,List<Double> iso_lvls) throws FunctionException {
+            TriMarkers currentTriangle=triangleData;
+            HashMap<Short,LinkedList<TriMarkers>> toDriver=new HashMap<Short,LinkedList<TriMarkers>>();
+            // For each iso interval
+            LinkedList<TriMarkers> triangleToProcess = new LinkedList<TriMarkers>();
+            triangleToProcess.add(currentTriangle);
 
+            do {
+                    currentTriangle = triangleToProcess.pop();
+                    Double beginInterval = Double.NEGATIVE_INFINITY;
+                    short isolvl = 0;
+                    for (Double endInterval : iso_lvls) {
+                            LinkedList<TriMarkers> triangleToDriver = new LinkedList<TriMarkers>();
+                            splitInterval(beginInterval, endInterval,
+                                            currentTriangle, triangleToProcess,
+                                            triangleToDriver);
+                            toDriver.put(isolvl, triangleToDriver);
+                            beginInterval = endInterval;
+                            isolvl++;
+                    }
+            } while (!triangleToProcess.isEmpty());
+            return toDriver;
+        }
 	@Override
 	public DataSet evaluate(SQLDataSourceFactory dsf, DataSet[] tables,
             Value[] values, ProgressMonitor pm) throws FunctionException {
@@ -604,53 +636,32 @@ public class ST_TriangleContouring extends AbstractTableFunction {
 							sds.getFieldValue(rowIndex, vertex2FieldIndex).getAsDouble(),
 							sds.getFieldValue(rowIndex, vertex3FieldIndex).getAsDouble());
 
-					// For each iso interval
-					LinkedList<TriMarkers> triangleToProcess = new LinkedList<TriMarkers>();
-					triangleToProcess.add(currentTriangle);
 
-					do {
-						currentTriangle = triangleToProcess.pop();
-						Double beginInterval = Double.NEGATIVE_INFINITY;
-						short isolvl = 0;
-						for (Double endInterval : iso_lvls) {
-							LinkedList<TriMarkers> triangleToDriver = new LinkedList<TriMarkers>();
-							if (splitInterval(beginInterval, endInterval,
-									currentTriangle, triangleToProcess,
-									triangleToDriver)) {
-								// triangleToProcess has been split. Then we
-								// can't use it with the next iso levels.
-								// We write to triangleToDriver the range
-								// triangles, then process the list while its
-								// not empty.
-								for (TriMarkers triExport : triangleToDriver) {
-									final Value[] newValues = new Value[2 + fieldIdToExtract
-											.size()];
-									Coordinate[] pverts = { triExport.p0,
-											triExport.p1, triExport.p2,
-											triExport.p0 };
-									newValues[0] = ValueFactory
-											.createValue(factory.createPolygon(
-													factory.createLinearRing(pverts),
-													null));
-									newValues[1] = ValueFactory
-											.createValue(isolvl);
-									int destfield = 2;
-									for (Integer srcFieldid : fieldIdToExtract) {
-										newValues[destfield] = sds.getFieldValue(rowIndex, srcFieldid);
-										destfield++;
-									}
-									driver.addValues(newValues);
-								}
-								// Exit the ISO for loop, we need to process
-								// from the beginning of the iso values (other
-								// triangle)
 
-								break;
-							}
-							beginInterval = endInterval;
-							isolvl++;
-						}
-					} while (!triangleToProcess.isEmpty());
+                                        HashMap<Short,LinkedList<TriMarkers>> triangleToDriver=processTriangle(currentTriangle, iso_lvls);
+
+                                        for(Entry<Short,LinkedList<TriMarkers>> entry : triangleToDriver.entrySet()) {
+                                                for(TriMarkers triExport : entry.getValue()) {
+                                                    final Value[] newValues = new Value[2 + fieldIdToExtract
+                                                                    .size()];
+                                                    Coordinate[] pverts = { triExport.p0,
+                                                                    triExport.p1, triExport.p2,
+                                                                    triExport.p0 };
+                                                    newValues[0] = ValueFactory
+                                                                    .createValue(factory.createPolygon(
+                                                                                    factory.createLinearRing(pverts),
+                                                                                    null));
+                                                    newValues[1] = ValueFactory
+                                                                    .createValue(entry.getKey());
+                                                    int destfield = 2;
+                                                    for (Integer srcFieldid : fieldIdToExtract) {
+                                                            newValues[destfield] = sds.getFieldValue(rowIndex, srcFieldid);
+                                                            destfield++;
+                                                    }
+                                                    driver.addValues(newValues);
+                                            }
+                                        }
+					
 				}
 			}
 			driver.writingFinished();
