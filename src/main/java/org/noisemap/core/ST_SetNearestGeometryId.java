@@ -76,22 +76,14 @@ public class ST_SetNearestGeometryId extends AbstractTableFunction {
 			String spatialUpdateFieldName = values[0].toString();
 			String spatialSourceFieldName = values[1].toString();
 			String idSourceFieldName = values[2].toString();
-
+                        double searchRadius=1;
+                        if(values.length>=4) {
+                            searchRadius = values[3].getAsDouble();
+                        }
 			int spatialUpdateFieldIndex = sds.getMetadata().getFieldIndex(spatialUpdateFieldName);
 			int spatialSourceFieldIndex = sdsSource.getMetadata().getFieldIndex(spatialSourceFieldName);
 			final int idSourceNum = sdsSource.getMetadata().getFieldIndex(idSourceFieldName);
-                        /*
-			DefaultMetadata metadata = new DefaultMetadata(sds.getMetadata());
-			String field = MetadataUtilities.getUniqueFieldName(metadata,
-					idSourceFieldName);
-			metadata.addField(field,
-					sdsSource.getMetadata().getFieldType(idSourceNum));
-                        id_field_name=field;
-                        id_field_type=sdsSource.getMetadata().getFieldType(idSourceNum);
-			String fieldDist = MetadataUtilities.getUniqueFieldName(metadata,
-					"avgDist");
-			metadata.addField(fieldDist, TypeFactory.createType(Type.FLOAT));
-                        */
+ 
 			final DiskBufferDriver driver = new DiskBufferDriver(dsf, this.getMetadata(new Metadata[] {tables[0].getMetadata()}));
 
 			final long rowCount = sds.getRowCount();
@@ -114,7 +106,7 @@ public class ST_SetNearestGeometryId extends AbstractTableFunction {
 
 			// Second Loop
 			// Appends Rows With nearest right table row index
-			ProgressionProcess queryprocess=progManager.nextSubProcess(rowSourceCount);
+			ProgressionProcess queryprocess=progManager.nextSubProcess(rowCount);
 			for (long rowIndex = 0; rowIndex < rowCount; rowIndex++) {
 				queryprocess.nextSubProcessEnd();
 
@@ -124,8 +116,10 @@ public class ST_SetNearestGeometryId extends AbstractTableFunction {
 
 				// Find the nearest row id information with the min avg dist
 				final Geometry geometry = sds.getFieldValue(rowIndex,spatialUpdateFieldIndex).getAsGeometry();
+                                Envelope queryEnv=geometry.getEnvelopeInternal();
+                                queryEnv.expandBy(searchRadius);
 				QuadtreeNearestFilter zFilter = new QuadtreeNearestFilter(
-						quadtree, sdsSource, spatialSourceFieldIndex, geometry.getEnvelopeInternal());
+						quadtree, sdsSource, spatialSourceFieldIndex,queryEnv );
 				geometry.apply(zFilter);
 
 				int fieldCount = sds.getMetadata().getFieldCount();
@@ -293,7 +287,15 @@ public class ST_SetNearestGeometryId extends AbstractTableFunction {
                             new TableArgument(TableDefinition.GEOMETRY),
                             ScalarArgument.STRING, //'the_geom'
                             ScalarArgument.STRING, //'the_geom'
-                            ScalarArgument.STRING)//'fieldid'
+                            ScalarArgument.STRING) // Field index
+                            ,
+                            new TableFunctionSignature(TableDefinition.GEOMETRY,
+                            new TableArgument(TableDefinition.GEOMETRY),
+                            new TableArgument(TableDefinition.GEOMETRY),
+                            ScalarArgument.STRING, //'the_geom'
+                            ScalarArgument.STRING, //'the_geom'
+                            ScalarArgument.STRING, // Field index
+                            ScalarArgument.DOUBLE) //'Search radius'
                     };
     }
 }

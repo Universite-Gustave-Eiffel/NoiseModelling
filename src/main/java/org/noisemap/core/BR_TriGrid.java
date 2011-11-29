@@ -199,12 +199,6 @@ public class BR_TriGrid extends AbstractTableFunction {
 				toUnite.add(geometry);
 			}
 		}
-		// Merge roads
-
-		LinkedList<Geometry> toUniteRoads = new LinkedList<Geometry>();
-		for (LineString road : delaunaySegments) {
-			toUniteRoads.add(road);
-		}
 		// Reduce small artifacts to avoid, shortest geometry to be
 		// over-triangulated
 		LinkedList<Geometry> toUniteFinal = new LinkedList<Geometry>();
@@ -219,21 +213,28 @@ public class BR_TriGrid extends AbstractTableFunction {
 			toUniteFinal.add(bufferBuildings); // Add buildings to triangulation
 		}
 
-		if (!toUniteRoads.isEmpty() && minRecDist > 0.01) {
-			// Build Polygons buffer from roads lines
-			Geometry bufferRoads = merge(toUniteRoads, minRecDist);
-			// Remove small artifacts due to multiple buffer crosses
-			bufferRoads = TopologyPreservingSimplifier.simplify(bufferRoads,
-					minRecDist / 2);
-			// Densify roads to set more receiver near roads.
-			//bufferRoads = Densifier.densify(bufferRoads, srcPtDist);
-			//Add points buffer to the final triangulation, this will densify sound level extraction near
-			//toUniteFinal.add(makeBufferSegmentsNearRoads(toUniteRoads,srcPtDist));
-			makeBufferPointsNearRoads(toUniteRoads,srcPtDist,boundingBoxFilter,delaunayTool);
-			//roads, and helps to reduce over estimation due to inapropriate interpolation.
-			toUniteFinal.add(bufferRoads); // Merge roads with minRecDist m
-											// buffer
-		}
+		// Merge roads
+                if(minRecDist > 0.01) {
+                    LinkedList<Geometry> toUniteRoads = new LinkedList<Geometry>();
+                    for (LineString road : delaunaySegments) {
+                            toUniteRoads.add(road);
+                    }
+                    if (!toUniteRoads.isEmpty()) {
+                            // Build Polygons buffer from roads lines
+                            Geometry bufferRoads = merge(toUniteRoads, minRecDist);
+                            // Remove small artifacts due to multiple buffer crosses
+                            bufferRoads = TopologyPreservingSimplifier.simplify(bufferRoads,
+                                            minRecDist / 2);
+                            // Densify roads to set more receiver near roads.
+                            //bufferRoads = Densifier.densify(bufferRoads, srcPtDist);
+                            //Add points buffer to the final triangulation, this will densify sound level extraction near
+                            //toUniteFinal.add(makeBufferSegmentsNearRoads(toUniteRoads,srcPtDist));
+                            makeBufferPointsNearRoads(toUniteRoads,srcPtDist,boundingBoxFilter,delaunayTool);
+                            //roads, and helps to reduce over estimation due to inapropriate interpolation.
+                            toUniteFinal.add(bufferRoads); // Merge roads with minRecDist m
+                                                                                            // buffer
+                    }
+                }
 		Geometry union = merge(toUniteFinal, 0.); // Merge roads and buildings
 													// together
 		// Remove geometries out of the bounding box
@@ -313,59 +314,60 @@ public class BR_TriGrid extends AbstractTableFunction {
 		cellMesh.hintInit(cellEnvelope, 1500, 5000);
 		// /////////////////////////////////////////////////
 		// Add roads into delaunay tool
+                LinkedList<LineString> delaunaySegments = new LinkedList<LineString>();
+                if(minRecDist>0.1) {
+                    long rowCount = sdsSources.getRowCount();
+                    final double firstPtAng = (Math.PI) / 4.;
+                    final double secondPtAng = (Math.PI) - firstPtAng;
+                    final double thirdPtAng = Math.PI + firstPtAng;
+                    final double fourPtAng = -firstPtAng;
+                    for (long rowIndex = 0; rowIndex < rowCount; rowIndex++) {
+                            Geometry pt = sdsSources.getFieldValue(rowIndex, spatialSourceFieldIndex).getAsGeometry();
+                            Envelope ptEnv = pt.getEnvelopeInternal();
+                            if (ptEnv.intersects(expandedCellEnvelop)) {
+                                    if (pt instanceof Point) {
+                                            Coordinate ptcoord = ((Point) pt).getCoordinate();
+                                            // Add 4 pts
+                                            Coordinate pt1 = new Coordinate(Math.cos(firstPtAng)
+                                                            * minRecDist + ptcoord.x, Math.sin(firstPtAng)
+                                                            * minRecDist + ptcoord.y);
+                                            Coordinate pt2 = new Coordinate(Math.cos(secondPtAng)
+                                                            * minRecDist * 2 + ptcoord.x, Math.sin(secondPtAng)
+                                                            * minRecDist * 2 + ptcoord.y);
+                                            Coordinate pt3 = new Coordinate(Math.cos(thirdPtAng)
+                                                            * minRecDist + ptcoord.x, Math.sin(thirdPtAng)
+                                                            * minRecDist + ptcoord.y);
+                                            Coordinate pt4 = new Coordinate(Math.cos(fourPtAng)
+                                                            * minRecDist * 2 + ptcoord.x, Math.sin(fourPtAng)
+                                                            * minRecDist * 2 + ptcoord.y);
+                                            if (cellEnvelope.contains(pt1)) {
+                                                    cellMesh.addVertex(pt1);
+                                            }
+                                            if (cellEnvelope.contains(pt2)) {
+                                                    cellMesh.addVertex(pt2);
+                                            }
+                                            if (cellEnvelope.contains(pt3)) {
+                                                    cellMesh.addVertex(pt3);
+                                            }
+                                            if (cellEnvelope.contains(pt4)) {
+                                                    cellMesh.addVertex(pt4);
+                                            }
+                                    } else {
 
-		long rowCount = sdsSources.getRowCount();
-		final double firstPtAng = (Math.PI) / 4.;
-		final double secondPtAng = (Math.PI) - firstPtAng;
-		final double thirdPtAng = Math.PI + firstPtAng;
-		final double fourPtAng = -firstPtAng;
-		LinkedList<LineString> delaunaySegments = new LinkedList<LineString>();
-		for (long rowIndex = 0; rowIndex < rowCount; rowIndex++) {
-			Geometry pt = sdsSources.getFieldValue(rowIndex, spatialSourceFieldIndex).getAsGeometry();
-			Envelope ptEnv = pt.getEnvelopeInternal();
-			if (ptEnv.intersects(expandedCellEnvelop)) {
-				if (pt instanceof Point) {
-					Coordinate ptcoord = ((Point) pt).getCoordinate();
-					// Add 4 pts
-					Coordinate pt1 = new Coordinate(Math.cos(firstPtAng)
-							* minRecDist + ptcoord.x, Math.sin(firstPtAng)
-							* minRecDist + ptcoord.y);
-					Coordinate pt2 = new Coordinate(Math.cos(secondPtAng)
-							* minRecDist * 2 + ptcoord.x, Math.sin(secondPtAng)
-							* minRecDist * 2 + ptcoord.y);
-					Coordinate pt3 = new Coordinate(Math.cos(thirdPtAng)
-							* minRecDist + ptcoord.x, Math.sin(thirdPtAng)
-							* minRecDist + ptcoord.y);
-					Coordinate pt4 = new Coordinate(Math.cos(fourPtAng)
-							* minRecDist * 2 + ptcoord.x, Math.sin(fourPtAng)
-							* minRecDist * 2 + ptcoord.y);
-					if (cellEnvelope.contains(pt1)) {
-						cellMesh.addVertex(pt1);
-					}
-					if (cellEnvelope.contains(pt2)) {
-						cellMesh.addVertex(pt2);
-					}
-					if (cellEnvelope.contains(pt3)) {
-						cellMesh.addVertex(pt3);
-					}
-					if (cellEnvelope.contains(pt4)) {
-						cellMesh.addVertex(pt4);
-					}
-				} else {
-
-					if (pt instanceof LineString) {
-						delaunaySegments.add((LineString) (pt));
-					} else if (pt instanceof MultiLineString) {
-						int nblinestring = ((MultiLineString) pt)
-								.getNumGeometries();
-						for (int idlinestring = 0; idlinestring < nblinestring; idlinestring++) {
-							delaunaySegments.add((LineString) (pt
-									.getGeometryN(idlinestring)));
-						}
-					}
-				}
-			}
-		}
+                                            if (pt instanceof LineString) {
+                                                    delaunaySegments.add((LineString) (pt));
+                                            } else if (pt instanceof MultiLineString) {
+                                                    int nblinestring = ((MultiLineString) pt)
+                                                                    .getNumGeometries();
+                                                    for (int idlinestring = 0; idlinestring < nblinestring; idlinestring++) {
+                                                            delaunaySegments.add((LineString) (pt
+                                                                            .getGeometryN(idlinestring)));
+                                                    }
+                                            }
+                                    }
+                            }
+                    }
+                }
 		feedDelaunay(sdsBuildings,spatialBuildingsFieldIndex, cellMesh, cellEnvelope, maxSrcDist, delaunaySegments,
 				minRecDist, srcPtDist);
 
@@ -373,7 +375,9 @@ public class BR_TriGrid extends AbstractTableFunction {
 
 		long beginDelaunay = System.currentTimeMillis();
 		logger.info("Begin delaunay");
-		cellMesh.setMaxArea(maximumArea); // Maximum area
+                if(maximumArea>1) {
+                    cellMesh.setMaxArea(maximumArea); // Maximum area
+                }
 		// Maximum 5x steinerpt than input point, this limits avoid infinite
 		// loop, or memory consuming triangulation
 		if (!(cellMesh instanceof LayerExtTriangle)) {

@@ -557,11 +557,17 @@ public class ST_TriangleContouring extends AbstractTableFunction {
                     Double beginInterval = Double.NEGATIVE_INFINITY;
                     short isolvl = 0;
                     for (Double endInterval : iso_lvls) {
-                            LinkedList<TriMarkers> triangleToDriver = new LinkedList<TriMarkers>();
+                            LinkedList<TriMarkers> triangleToDriver;
+
+                            if(!toDriver.containsKey(isolvl)) {
+                                triangleToDriver = new LinkedList<TriMarkers>();
+                                toDriver.put(isolvl, triangleToDriver);
+                            }else{
+                                triangleToDriver = toDriver.get(isolvl);
+                            }
                             splitInterval(beginInterval, endInterval,
                                             currentTriangle, triangleToProcess,
                                             triangleToDriver);
-                            toDriver.put(isolvl, triangleToDriver);
                             beginInterval = endInterval;
                             isolvl++;
                     }
@@ -592,29 +598,10 @@ public class ST_TriangleContouring extends AbstractTableFunction {
 			for (String isolvl : isolevels_str.split(",")) {
 				iso_lvls.add(Double.valueOf(isolvl));
 			}
-
 			Metadata metaSource = sds.getMetadata();
-			DefaultMetadata metadata = new DefaultMetadata();
+                        int fieldCount = sds.getMetadata().getFieldCount();
 
-			metadata.addField("the_geom", Type.GEOMETRY);
-			String fieldDist = MetadataUtilities.getUniqueFieldName(metadata,
-					"idiso");
-			metadata.addField(fieldDist, Type.SHORT);
-			LinkedList<Integer> fieldIdToExtract = new LinkedList<Integer>();
-			for (int fieldid = 0; fieldid < metaSource.getFieldCount(); fieldid++) {
-				String fieldName = metaSource.getFieldName(fieldid);
-				if (fieldName != spatialUpdateFieldName
-						&& fieldid != vertex1FieldIndex
-						&& fieldid != vertex2FieldIndex
-						&& fieldid != vertex3FieldIndex) {
-					fieldIdToExtract.add(fieldid);
-					String oldfield = MetadataUtilities.getUniqueFieldName(
-							metadata, fieldName);
-					metadata.addField(oldfield,
-							metaSource.getFieldType(fieldid));
-				}
-			}
-			final DiskBufferDriver driver = new DiskBufferDriver(dsf, metadata);
+			final DiskBufferDriver driver = new DiskBufferDriver(dsf, this.getMetadata(new Metadata[] {tables[0].getMetadata()}));
 			GeometryFactory factory = new GeometryFactory();
 			final long rowCount = sds.getRowCount();
 			// For each triangle
@@ -642,22 +629,23 @@ public class ST_TriangleContouring extends AbstractTableFunction {
 
                                         for(Entry<Short,LinkedList<TriMarkers>> entry : triangleToDriver.entrySet()) {
                                                 for(TriMarkers triExport : entry.getValue()) {
-                                                    final Value[] newValues = new Value[2 + fieldIdToExtract
-                                                                    .size()];
+
+                                                    final Value[] newValues = new Value[fieldCount + 1];
+
+                                                    for (int j = 0; j < fieldCount; j++) {
+                                                        if(j!=spatialFieldIndex) {
+                                                            newValues[j] = sds.getFieldValue(rowIndex, j);
+                                                        }
+                                                    }
                                                     Coordinate[] pverts = { triExport.p0,
                                                                     triExport.p1, triExport.p2,
                                                                     triExport.p0 };
-                                                    newValues[0] = ValueFactory
+                                                    newValues[spatialFieldIndex] = ValueFactory
                                                                     .createValue(factory.createPolygon(
                                                                                     factory.createLinearRing(pverts),
                                                                                     null));
-                                                    newValues[1] = ValueFactory
+                                                    newValues[fieldCount] = ValueFactory
                                                                     .createValue(entry.getKey());
-                                                    int destfield = 2;
-                                                    for (Integer srcFieldid : fieldIdToExtract) {
-                                                            newValues[destfield] = sds.getFieldValue(rowIndex, srcFieldid);
-                                                            destfield++;
-                                                    }
                                                     driver.addValues(newValues);
                                             }
                                         }
@@ -679,14 +667,16 @@ public class ST_TriangleContouring extends AbstractTableFunction {
 		final Metadata metadata = tables[0];
 		// we don't want the resulting Metadata to be constrained !
 		final int fieldCount = metadata.getFieldCount();
-		final Type[] fieldsTypes = new Type[fieldCount];
-		final String[] fieldsNames = new String[fieldCount];
+		final Type[] fieldsTypes = new Type[fieldCount + 1];
+		final String[] fieldsNames = new String[fieldCount + 1];
 
 		for (int fieldId = 0; fieldId < fieldCount; fieldId++) {
 			fieldsNames[fieldId] = metadata.getFieldName(fieldId);
 			final Type tmp = metadata.getFieldType(fieldId);
 			fieldsTypes[fieldId] = TypeFactory.createType(tmp.getTypeCode());
 		}
+                fieldsTypes[fieldCount]=TypeFactory.createType(Type.SHORT);
+                fieldsNames[fieldCount]=MetadataUtilities.getUniqueFieldName(metadata, "idiso");
 		return new DefaultMetadata(fieldsTypes, fieldsNames);
 	}
 
@@ -696,10 +686,11 @@ public class ST_TriangleContouring extends AbstractTableFunction {
             return new FunctionSignature[]{
                             new TableFunctionSignature(TableDefinition.GEOMETRY,
                             new TableArgument(TableDefinition.GEOMETRY),
-                            ScalarArgument.STRING,
-                            ScalarArgument.STRING,
-                            ScalarArgument.STRING,
-                            ScalarArgument.STRING)
+                            ScalarArgument.STRING, //'the_geom'
+                            ScalarArgument.STRING, //'db_v1'
+                            ScalarArgument.STRING,//'db_v2'
+                            ScalarArgument.STRING,//'db_v3'
+                            ScalarArgument.STRING) //'75,80,90'
                     };
     }
 
