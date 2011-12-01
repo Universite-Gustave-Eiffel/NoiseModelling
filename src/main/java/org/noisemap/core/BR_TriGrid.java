@@ -57,10 +57,8 @@ class NodeList {
 }
 
 /**
- * Set the right table row id to each left table rows from the nearest geometry,
- * add also the column AvgDist corresponding to the average distance between the
- * left and the right's nearest geometry found. -1 if nothing has been found in
- * the region of the left geometry.
+ * Compute the delaunay grid and evaluate at each vertices the sound level.
+ * The user don't have to set the receiver position. This function is usefull to make noise maps.
  */
 
 public class BR_TriGrid extends AbstractTableFunction {
@@ -86,8 +84,14 @@ public class BR_TriGrid extends AbstractTableFunction {
 	int getCellId(int row, int col, int cols) {
 		return row * cols + col;
 	}
-
-	private Envelope GetGlobalEnvelope(DataSet sdsSource, ProgressMonitor pm) throws FunctionException {
+        /**
+         * Compute the envelope of sdsSource
+         * @param sdsSource
+         * @param pm
+         * @return
+         * @throws FunctionException
+         */
+	public static Envelope GetGlobalEnvelope(DataSet sdsSource, ProgressMonitor pm) throws FunctionException {
 		// The region of interest is only where we can find sources
 		// Then we keep only the region where the area is covered by sources
 		Envelope mainEnvelope;
@@ -159,8 +163,18 @@ public class BR_TriGrid extends AbstractTableFunction {
 		return polygonCollection.buffer(bufferSize, 0,
 				BufferParameters.CAP_SQUARE);
 	}
-
-	private Envelope getCellEnv(Envelope mainEnvelope, int cellI, int cellJ,
+        /**
+         * Compute the envelope corresping to parameters
+         * @param mainEnvelope Global envelope
+         * @param cellI I cell index
+         * @param cellJ J cell index
+         * @param cellIMax  I cell count
+         * @param cellJMax  J cell count
+         * @param cellWidth Cell width meter
+         * @param cellHeight    Cell height meter
+         * @return Envelope of the cell
+         */
+	public static Envelope getCellEnv(Envelope mainEnvelope, int cellI, int cellJ,
 			int cellIMax, int cellJMax, double cellWidth, double cellHeight) {
 		return new Envelope(mainEnvelope.getMinX() + cellI * cellWidth,
 				mainEnvelope.getMinX() + cellI * cellWidth + cellWidth,
@@ -478,7 +492,7 @@ public class BR_TriGrid extends AbstractTableFunction {
 
 	}
 
-	private Double DbaToW(Double dBA) {
+	public static Double DbaToW(Double dBA) {
 		return Math.pow(10., dBA / 10.);
 	}
 
@@ -608,13 +622,13 @@ public class BR_TriGrid extends AbstractTableFunction {
 
 			ProgressionOrbisGisManager pmManager = new ProgressionOrbisGisManager(
 					nbcell, pm);
-			Stack<PropagationResultRecord> toDriver = new Stack<PropagationResultRecord>();
+			Stack<PropagationResultTriRecord> toDriver = new Stack<PropagationResultTriRecord>();
 			PropagationProcessDiskWriter driverManager = new PropagationProcessDiskWriter(
-					toDriver, driver);
+					toDriver,null, driver,null);
 			driverManager.start();
 			pmManager.start();
 			PropagationProcessOut threadDataOut = new PropagationProcessOut(
-					toDriver);
+					toDriver,null);
 
 			for (int cellI = 0; cellI < gridDim; cellI++) {
 				for (int cellJ = 0; cellJ < gridDim; cellJ++) {
@@ -634,7 +648,7 @@ public class BR_TriGrid extends AbstractTableFunction {
 																			// mainEnvelope.getMinY()+cellHeight*cellJ,
 																			// mainEnvelope.getMinY()+cellHeight*cellJ+cellHeight);
 					Envelope expandedCellEnvelop = new Envelope(cellEnvelope);
-					expandedCellEnvelop.expandBy(maxSrcDist * 2.);
+					expandedCellEnvelop.expandBy(maxSrcDist);
 					// Build delaunay triangulation from buildings inside the
 					// extended bounding box
 
@@ -766,10 +780,10 @@ public class BR_TriGrid extends AbstractTableFunction {
 					List<Triangle> triangles = cellMesh.getTriangles();
 					nbreceivers += vertices.size();
 					PropagationProcessData threadData = new PropagationProcessData(
-							vertices, triangles, freeFieldFinder, sourcesIndex,
+							vertices,null, triangles, freeFieldFinder, sourcesIndex,
 							sourceGeometries, wj_sources, db_field_freq,
 							reflexionOrder, diffractionOrder, maxSrcDist,maxRefDist,
-							minRecDist, wallAlpha, (long) ij, dsf,
+							minRecDist, wallAlpha, ij, dsf,
 							pmManager.nextSubProcess(vertices.size()));
 					PropagationProcess propaProcess = new PropagationProcess(
 							threadData, threadDataOut);

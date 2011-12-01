@@ -22,6 +22,7 @@ import com.vividsolutions.jts.geom.Geometry;
  */
 public class PropagationProcessData {
 	public List<Coordinate> vertices; // Coordinate of receivers
+        public List<Long> receiverRowId;  //Row id of receivers, only for BR_PtGrid
 	public List<Triangle> triangles; // Index of vertices of triangles
 	public FastObstructionTest freeFieldFinder; // FreeField test
 	public QueryGeometryStructure<Integer> sourcesIndex; // Source Index
@@ -36,12 +37,13 @@ public class PropagationProcessData {
         public double maxRefDist; // Maximum reflection wall distance
 	public double minRecDist; // Minimum distance between source and receiver
 	public double wallAlpha; // Wall alpha [0-1]
-	public Long cellId; // cell id
+	public int cellId; // cell id
 	public DataSourceFactory dsf; // Debug purpose
-	ProgressionProcess cellProg; // Progression information
+	public ProgressionProcess cellProg; // Progression information
 
-    public PropagationProcessData(List<Coordinate> vertices, List<Triangle> triangles, FastObstructionTest freeFieldFinder, QueryGeometryStructure<Integer> sourcesIndex, List<Geometry> sourceGeometries, List<ArrayList<Double>> wj_sources, List<Integer> freq_lvl, int reflexionOrder, int diffractionOrder, double maxSrcDist, double maxRefDist, double minRecDist, double wallAlpha, Long cellId, DataSourceFactory dsf, ProgressionProcess cellProg) {
+    public PropagationProcessData(List<Coordinate> vertices, List<Long> receiverRowId, List<Triangle> triangles, FastObstructionTest freeFieldFinder, QueryGeometryStructure<Integer> sourcesIndex, List<Geometry> sourceGeometries, List<ArrayList<Double>> wj_sources, List<Integer> freq_lvl, int reflexionOrder, int diffractionOrder, double maxSrcDist, double maxRefDist, double minRecDist, double wallAlpha, int cellId, DataSourceFactory dsf, ProgressionProcess cellProg) {
         this.vertices = vertices;
+        this.receiverRowId = receiverRowId;
         this.triangles = triangles;
         this.freeFieldFinder = freeFieldFinder;
         this.sourcesIndex = sourcesIndex;
@@ -58,6 +60,7 @@ public class PropagationProcessData {
         this.dsf = dsf;
         this.cellProg = cellProg;
     }
+
 
 	
 

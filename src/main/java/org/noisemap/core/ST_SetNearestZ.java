@@ -157,8 +157,9 @@ public class ST_SetNearestZ extends AbstractTableFunction {
 	@Override
 	public DataSet evaluate(SQLDataSourceFactory dsf, DataSet[] tables,
             Value[] values, ProgressMonitor pm) throws FunctionException {
+                ProgressionOrbisGisManager progManager=new ProgressionOrbisGisManager(2, pm);
 		try {
-			ProgressionOrbisGisManager progManager=new ProgressionOrbisGisManager(2, pm);
+			
 			final double maxDist;
 			// Declare source and Destination tables
 			final DataSet sds = tables[0];
@@ -244,8 +245,10 @@ public class ST_SetNearestZ extends AbstractTableFunction {
                         driver.start();
 			return driver.getTable("main");
 		} catch (DriverLoadException e) {
+                        progManager.stop();
 			throw new FunctionException(e);
 		} catch (DriverException e) {
+                        progManager.stop();
 			throw new FunctionException(e);
 		}
 	}

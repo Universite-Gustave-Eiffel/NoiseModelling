@@ -12,14 +12,14 @@ import com.vividsolutions.jts.geom.Geometry;
  *
  * @author fortin
  */
-public class PropagationResultRecord {
+public class PropagationResultTriRecord {
 
 
     private Geometry triangle;
     private double v1,v2,v3;
     private long cellId,triId;
 
-    public PropagationResultRecord(Geometry triangle, double v1, double v2, double v3, long cellId, long triId) {
+    public PropagationResultTriRecord(Geometry triangle, double v1, double v2, double v3, long cellId, long triId) {
         this.triangle = triangle;
         this.v1 = v1;
         this.v2 = v2;
@@ -52,6 +52,4 @@ public class PropagationResultRecord {
     public double getV3() {
         return v3;
     }
-
-
 }

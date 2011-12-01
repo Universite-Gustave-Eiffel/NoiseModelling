@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
 
-import org.gdms.data.values.Value;
+
 import junit.framework.TestCase;
 
 public class TestSoundPropagationValidation extends TestCase {
@@ -39,7 +39,7 @@ public class TestSoundPropagationValidation extends TestCase {
 		Coordinate[] building1Coords = { new Coordinate(15., 5.,0.),
 				new Coordinate(30., 5.,0.), new Coordinate(30., 30.,0.),
 				new Coordinate(15., 30.,0.), new Coordinate(15., 5.,0.) };
-		Polygon building1 = factory.createPolygon(
+                Polygon building1 = factory.createPolygon(
 				factory.createLinearRing(building1Coords), null);
 		////////////////////////////////////////////////////////////////////////////
 		//Add road source as one point
@@ -72,9 +72,9 @@ public class TestSoundPropagationValidation extends TestCase {
 		List<Triangle> tri=manager.getTriangles();
 		List<Coordinate> vert=manager.getVertices();
 
-		Stack<PropagationResultRecord> dataStack=new Stack<PropagationResultRecord>();
-		PropagationProcessData propData=new PropagationProcessData(vert, tri, manager, sourcesIndex, srclst, srcSpectrum, freqLvl, 0, 2, 80.,50., 1., 0., 0l, null, null);
-		PropagationProcessOut propDataOut=new PropagationProcessOut(dataStack);
+		Stack<PropagationResultTriRecord> dataStack=new Stack<PropagationResultTriRecord>();
+		PropagationProcessData propData=new PropagationProcessData(vert,null, tri, manager, sourcesIndex, srclst, srcSpectrum, freqLvl, 0, 2, 80.,50., 1., 0., 0, null, null);
+		PropagationProcessOut propDataOut=new PropagationProcessOut(dataStack,null);
 		PropagationProcess propManager=new PropagationProcess(propData, propDataOut);
 		propManager.initStructures();
 
@@ -126,7 +126,6 @@ public class TestSoundPropagationValidation extends TestCase {
 		double dbaDupp=splCompute(propManager, new Coordinate(40,20,0));
 		splCompare(dbaSingleSource, "Scene 1 R3_S2",dbaDupp);
 
-		
 		System.out.println("Simulation done in "+(System.currentTimeMillis()-startSimulation)+"ms");
 		System.out.println(manager.getNbObstructionTest()+" obstruction test has been done..");
 		System.out.println("testScene1 done in "+(System.currentTimeMillis()-startMakeScene)+"ms");
@@ -142,13 +141,19 @@ public class TestSoundPropagationValidation extends TestCase {
 		////////////////////////////////////////////////////////////////////////////
 		//Build Scene with One Building
 		GeometryFactory factory = new GeometryFactory();
-		Coordinate[] building1Coords = { new Coordinate(6., 2.,0.),new Coordinate(18., 2.,0.),new Coordinate(18., 6.,0.),new Coordinate(6., 6.,0.),new Coordinate(6., 2.,0.)};
+		Coordinate[] building1Coords = { new Coordinate(6., 2.,0.),
+                new Coordinate(18., 2.,0.),new Coordinate(18., 6.,0.),
+                new Coordinate(6., 6.,0.),new Coordinate(6., 2.,0.)};
 		Polygon building1 = factory.createPolygon(
 				factory.createLinearRing(building1Coords), null);
-		Coordinate[] building2Coords = { new Coordinate(24., 2.,0.),new Coordinate(28., 2.,0.),new Coordinate(28., 6.,0.),new Coordinate(24., 6.,0.),new Coordinate(24., 2.,0.)};
+		Coordinate[] building2Coords = { new Coordinate(24., 2.,0.),
+                new Coordinate(28., 2.,0.),new Coordinate(28., 6.,0.),
+                new Coordinate(24., 6.,0.),new Coordinate(24., 2.,0.)};
 		Polygon building2 = factory.createPolygon(
 				factory.createLinearRing(building2Coords), null);
-		Coordinate[] building3Coords = { new Coordinate(6., 10.,0.),new Coordinate(24., 10.,0.),new Coordinate(24.,18.,0.),new Coordinate(6., 18.,0.),new Coordinate(6., 10.,0.)};
+		Coordinate[] building3Coords = { new Coordinate(6., 10.,0.),
+                new Coordinate(24., 10.,0.),new Coordinate(24.,18.,0.),
+                new Coordinate(6., 18.,0.),new Coordinate(6., 10.,0.)};
 		Polygon building3 = factory.createPolygon(
 				factory.createLinearRing(building3Coords), null);
 
@@ -190,9 +195,9 @@ public class TestSoundPropagationValidation extends TestCase {
 		List<Triangle> tri=manager.getTriangles();
 		List<Coordinate> vert=manager.getVertices();
 
-		Stack<PropagationResultRecord> dataStack=new Stack<PropagationResultRecord>();
-		PropagationProcessData propData=new PropagationProcessData(vert, tri, manager, sourcesIndex, srclst, srcSpectrum, freqLvl, 0, 2, 80.,50., 1., 0., 0l, null, null);
-		PropagationProcessOut propDataOut=new PropagationProcessOut(dataStack);
+		Stack<PropagationResultTriRecord> dataStack=new Stack<PropagationResultTriRecord>();
+		PropagationProcessData propData=new PropagationProcessData(vert,null, tri, manager, sourcesIndex, srclst, srcSpectrum, freqLvl, 0, 2, 80.,50., 1., 0., 0, null, null);
+		PropagationProcessOut propDataOut=new PropagationProcessOut(dataStack,null);
 		PropagationProcess propManager=new PropagationProcess(propData, propDataOut);
 		propManager.initStructures();
 
@@ -205,6 +210,22 @@ public class TestSoundPropagationValidation extends TestCase {
 		propData.reflexionOrder=3;
 		propData.diffractionOrder=0;
 		double dbaRef=splCompute(propManager, new Coordinate(20,4,0));
+
+
+		//Receiver in the buildings
+		propData.reflexionOrder=2;
+		propData.diffractionOrder=1;
+                double dbaInBuilding=splCompute(propManager, new Coordinate(26,4,0));
+                splCompare(Double.NEGATIVE_INFINITY, "in building",dbaInBuilding);
+                dbaInBuilding=splCompute(propManager, new Coordinate(8,12,0));
+                splCompare(Double.NEGATIVE_INFINITY, "in building",dbaInBuilding);
+                dbaInBuilding=splCompute(propManager, new Coordinate(20,12,0));
+                splCompare(Double.NEGATIVE_INFINITY, "in building",dbaInBuilding);
+                dbaInBuilding=splCompute(propManager, new Coordinate(12,4,0));
+                splCompare(Double.NEGATIVE_INFINITY, "in building",dbaInBuilding);
+
+
+
 		System.out.println("Simulation done in "+(System.currentTimeMillis()-startSimulation)+"ms");
 		System.out.println(manager.getNbObstructionTest()+" obstruction test has been done..");
 		System.out.println(propDataOut.getNb_couple_receiver_src()+" point source created..");

@@ -18,6 +18,7 @@ import org.noisemap.core.ST_SplitLineInPoints;
 import org.noisemap.core.ST_SplitSegment;
 import org.noisemap.core.ST_TriangleContouring;
 import org.gdms.sql.function.math.Power;
+import org.noisemap.core.BR_PtGrid;
 import org.noisemap.core.ST_ExtractVerticesTriGrid;
 import org.noisemap.core.ST_TableGeometryUnion;
 import org.orbisgis.core.ui.pluginSystem.Extension;
@@ -43,6 +44,7 @@ public class NoiseMapExtension extends Extension {
 		fi.addRegisterFunction(BTW_EvalSource.class);
                 fi.addRegisterFunction(ST_TableGeometryUnion.class);
                 fi.addRegisterFunction(ST_ExtractVerticesTriGrid.class);
+                fi.addRegisterFunction(BR_PtGrid.class);
 		System.out.println("Noise mapping extension plugin loaded..");
 	}
 

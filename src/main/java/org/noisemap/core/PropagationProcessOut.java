@@ -18,7 +18,8 @@ import org.gdms.data.values.Value;
  * 
  */
 public class PropagationProcessOut {
-	private Stack<PropagationResultRecord> toDriver;
+	private Stack<PropagationResultTriRecord> triToDriver;
+        private Stack<PropagationResultPtRecord> ptToDriver;
 
 	private long totalBuildingObstructionTest = 0;
         private long sourceSplittingTime = 0;
@@ -60,19 +61,20 @@ public class PropagationProcessOut {
             return minimalReceiverComputationTime;
         }
 
-        /**
-         *
-         * @param toDriver Push data in this synchronized stack
-         */
-        public PropagationProcessOut(Stack<PropagationResultRecord> toDriver) {
-		super();
-		this.toDriver = toDriver;
+        public PropagationProcessOut(Stack<PropagationResultTriRecord> triToDriver, Stack<PropagationResultPtRecord> ptToDriver) {
+            this.triToDriver = triToDriver;
+            this.ptToDriver = ptToDriver;
+        }
+
+
+
+	public synchronized void addValues(PropagationResultTriRecord record) {
+		triToDriver.push(record);
 	}
 
-	public synchronized void addValues(PropagationResultRecord record) {
-		toDriver.push(record);
+	public synchronized void addValues(PropagationResultPtRecord record) {
+		ptToDriver.push(record);
 	}
-
 	public synchronized long getTotalBuildingObstructionTest() {
 		return totalBuildingObstructionTest;
 	}
