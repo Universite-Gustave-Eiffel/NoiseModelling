@@ -98,7 +98,13 @@ public class BR_PtGrid extends AbstractTableFunction {
     public String getDescription() {
             return "BR_PtGrid(buildings(polygons),sources(points),receivers(points),sound lvl field name(string),maximum propagation distance (double meter),maximum wall seeking distance (double meter),subdivision level 4^n cells(int), sound reflection order, sound diffraction order, alpha of walls ) Sound propagation from ponctual sound sources to specified ponctual receivers .";
     }
-
+    /**
+     * Set the logger for object message
+     * @param logger
+     */
+    public void setLogger(Logger logger) {
+        this.logger = logger;
+    }
     @Override
     public DataSet evaluate(SQLDataSourceFactory sqldsf, DataSet[] tables, Value[] values, ProgressMonitor pm) throws FunctionException {
 
@@ -185,7 +191,7 @@ public class BR_PtGrid extends AbstractTableFunction {
                     			TimeUnit.SECONDS);
 
 			ProgressionOrbisGisManager pmManager = new ProgressionOrbisGisManager(
-					nbcell, pm);
+					nbreceivers, pm);
 			Stack<PropagationResultPtRecord> toDriver = new Stack<PropagationResultPtRecord>();
 			PropagationProcessDiskWriter driverManager = new PropagationProcessDiskWriter(
 					null,toDriver, driver,sdsReceivers);
@@ -242,12 +248,8 @@ public class BR_PtGrid extends AbstractTableFunction {
                                             Integer idsource = 0;
                                             for (long rowIndex = 0; rowIndex < rowCount; rowIndex++) {
 
-                                                    final Value[] row = new Value[fieldCount];
-                                                    for (int j = 0; j < fieldCount; j++) {
-                                                            row[j] = sdsSources.getFieldValue(rowIndex, j);
-                                                    }
+                                                    final Value[] row =sdsSources.getRow(rowIndex);
                                                     Geometry geo = row[spatialSourceFieldIndex].getAsGeometry();
-
                                                     Envelope ptEnv = geo.getEnvelopeInternal();
                                                     if (ptEnv.intersects(expandedCellEnvelop)) {
                                                             sourcesIndex.appendGeometry(geo, idsource);
@@ -283,7 +285,7 @@ public class BR_PtGrid extends AbstractTableFunction {
                                                             sourceGeometries, wj_sources, db_field_freq,
                                                             reflexionOrder, diffractionOrder, maxSrcDist,maxRefDist,
                                                             1., wallAlpha, ij, sqldsf,
-                                                            pmManager.nextSubProcess(cellReceivers.size()));
+                                                            pmManager.getRootProgress());
                                             PropagationProcess propaProcess = new PropagationProcess(
                                                             threadData, threadDataOut);
 

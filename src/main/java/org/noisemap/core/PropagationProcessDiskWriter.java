@@ -79,9 +79,8 @@ public class PropagationProcessDiskWriter implements Runnable {
                             while (!ptToDriver.empty()) {
                                 PropagationResultPtRecord values = ptToDriver.pop();
                                 final Value[] newValues = new Value[fieldCount + 2];
-                                for (int j = 0; j < fieldCount; j++) {
-                                        newValues[j] = sdsReceivers.getFieldValue(values.getReceiverRecordRow(), j);
-                                }
+                                final Value[] receiverValues=sdsReceivers.getRow(values.getReceiverRecordRow());
+                                System.arraycopy(receiverValues, 0, newValues, 0, receiverValues.length);
                                 //Add dB value and cellId
                                 newValues[fieldCount] = ValueFactory.createValue(values.getReceiverLvl());
                                 newValues[fieldCount+1] = ValueFactory.createValue(values.getCellId());

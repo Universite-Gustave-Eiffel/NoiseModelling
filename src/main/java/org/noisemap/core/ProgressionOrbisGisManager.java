@@ -47,7 +47,9 @@ public class ProgressionOrbisGisManager implements Runnable {
     public void start() {
             thread.start();
     }
-
+    public ProgressionProcess getRootProgress() {
+        return rootProcess;
+    }
     public void join() {
             try {
                     thread.join();

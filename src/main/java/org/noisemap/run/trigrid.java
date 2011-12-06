@@ -19,6 +19,7 @@ import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
 import org.gdms.driver.DiskBufferDriver;
 import org.gdms.sql.function.FunctionException;
+import org.noisemap.core.BR_PtGrid;
 import org.noisemap.core.BR_TriGrid;
 import org.noisemap.core.ST_TriangleContouring;
 
@@ -44,20 +45,21 @@ public class trigrid {
         System.out.println("Options :");
         System.out.println("-bfield the_geom : buildings column name (polygons)");
         System.out.println("-sfield the_geom : sources column nale (points or lines)");
+        System.out.println("-ir receiverspath: Points receivers coordinates (points)");
         System.out.println("-splfield db_m   : sound lvl field name(string)");
         System.out.println("-maxdist 170     : maximum propagation distance (double meter)");
         System.out.println("-maxrdist 50     : maximum wall reflexion distance (double meter)");
         System.out.println("-splitdepth 3    : subdivision level 4^n cells (int) [0-n]");
-        System.out.println("-rwidth 0.8      : roads width (double meter)");
-        System.out.println("-dense 5         : densification of receivers near roads (meter double)");
-        System.out.println("-marea 250       : maximum area of triangle (square meter)");
+        System.out.println("-rwidth 0.8      : roads width (double meter), only when receiver not specified");
+        System.out.println("-dense 5         : densification of receivers near roads (meter double), only when receiver not specified");
+        System.out.println("-marea 250       : maximum area of triangle (square meter), only when receiver not specified");
         System.out.println("-rdepth 2        : sound reflection order [0-n] (int)");
         System.out.println("-ddepth 1        : sound diffraction order [0-n] (int)");
         System.out.println("-awalls 0.2      : alpha of walls [0-1[ (double)");
         System.out.println("-ib builds.gdms  : file name of buildings gdms file");
         System.out.println("-is sources.gdms : file name of noise sources gdms file");
         System.out.println("-o trilvl.gdms   : output filename of gdms file");
-        System.out.println("-otype nointerp  : output type, can be [noiso,nfs31130]  ");
+        System.out.println("-otype nointerp  : output type, can be [noiso,nfs31130], only when receiver not specified");
     }
     /**
      * @param args the command line arguments
@@ -68,6 +70,7 @@ public class trigrid {
         String buildingsFilename="";
         String sourcesFilename="";
         String outputFilename="";
+        String receiverFilename="";
         //Optionnal parameters
         String bField="the_geom";
         String sField="the_geom";
@@ -119,6 +122,8 @@ public class trigrid {
                 buildingsFilename=sargs.pop();
             }else if(argument.contentEquals("-is")) {
                 sourcesFilename=sargs.pop();
+            }else if(argument.contentEquals("-ir")) {
+                receiverFilename=sargs.pop();
             }else if(argument.contentEquals("-o")) {
                 outputFilename=sargs.pop();
             }else if(argument.contentEquals("-otype")) {
@@ -138,7 +143,9 @@ public class trigrid {
         SQLDataSourceFactory factory=new SQLDataSourceFactory();
         GdmsDriver buildings=new GdmsDriver();
         GdmsDriver sources=new GdmsDriver();
-        DataSet[] tables={null,null};
+        GdmsDriver receivers_driv=new GdmsDriver();
+
+        DataSet[] tables={null,null,null};
         try {
             buildings.setFile(new File(buildingsFilename));
             buildings.open();
@@ -146,42 +153,66 @@ public class trigrid {
             sources.setFile(new File(sourcesFilename));
             sources.open();
             tables[1]=sources.getTable("main");
+            if(!receiverFilename.isEmpty()) {
+                receivers_driv.setFile(new File(receiverFilename));
+                receivers_driv.open();
+                tables[2]=receivers_driv.getTable("main");
+            }
         } catch (DriverException ex) {
             System.err.println(ex.getMessage());
             ex.printStackTrace(System.err);
             return;
         }
         //Run propagation
-
-        BR_TriGrid propa=new BR_TriGrid();
-        Logger log = new ConsoleLogger("BR_TriGrid");
-        propa.setLogger(log);
-        Value[] propaArgs={ValueFactory.createValue(bField),ValueFactory.createValue(sField),ValueFactory.createValue(splField),ValueFactory.createValue(maxDist),ValueFactory.createValue(maxRDist),ValueFactory.createValue(splitDepth),ValueFactory.createValue(roadsWidth),ValueFactory.createValue(densification),ValueFactory.createValue(maxarea),ValueFactory.createValue(reflectionDepth),ValueFactory.createValue(diffractionDepth),ValueFactory.createValue(wallAlpha)};
-        DataSet data=null;
-        try {
-            data = propa.evaluate(factory, tables, propaArgs, null);
-            long overallComputeTime=System.currentTimeMillis()-debComputeTime;
-            System.out.println("Overall computation time: "+overallComputeTime+" ms."+getHumanTime(overallComputeTime));
-
-        } catch (FunctionException ex) {
-            System.err.println(ex.getMessage());
-            ex.printStackTrace(System.err);
-            return;
-        }
-        if(otype.equals("noiso")) {
-            //Rename output file
-            ((DiskBufferDriver)data).getFile().renameTo(new File(outputFilename));
-        } else {
-            //Compute isocontour
-            GdmsDriver trilvls=new GdmsDriver();
-            ST_TriangleContouring contour=new ST_TriangleContouring();
-            String isolvls="31622, 100000, 316227, 1000000, 3162277, 1e+7, 31622776, 1e+20";
-            Value[] isoArgs={ValueFactory.createValue("the_geom"),ValueFactory.createValue("db_v1"),ValueFactory.createValue("db_v2"),ValueFactory.createValue("db_v3"),ValueFactory.createValue(isolvls)};
-
-            DataSet isoContourResult=null;
+        if(receiverFilename.isEmpty()) {
+            BR_TriGrid propa=new BR_TriGrid();
+            Logger log = new ConsoleLogger("BR_TriGrid");
+            propa.setLogger(log);
+            Value[] propaArgs={ValueFactory.createValue(bField),ValueFactory.createValue(sField),ValueFactory.createValue(splField),ValueFactory.createValue(maxDist),ValueFactory.createValue(maxRDist),ValueFactory.createValue(splitDepth),ValueFactory.createValue(roadsWidth),ValueFactory.createValue(densification),ValueFactory.createValue(maxarea),ValueFactory.createValue(reflectionDepth),ValueFactory.createValue(diffractionDepth),ValueFactory.createValue(wallAlpha)};
+            DataSet data=null;
             try {
-                DataSet[] isoTables={data};
-                isoContourResult=contour.evaluate(factory, isoTables, isoArgs, null);
+                data = propa.evaluate(factory, tables, propaArgs, null);
+                long overallComputeTime=System.currentTimeMillis()-debComputeTime;
+                System.out.println("Overall computation time: "+overallComputeTime+" ms."+getHumanTime(overallComputeTime));
+
+            } catch (FunctionException ex) {
+                System.err.println(ex.getMessage());
+                ex.printStackTrace(System.err);
+                return;
+            }
+            if(otype.equals("noiso")) {
+                //Rename output file
+                ((DiskBufferDriver)data).getFile().renameTo(new File(outputFilename));
+            } else {
+                //Compute isocontour
+                GdmsDriver trilvls=new GdmsDriver();
+                ST_TriangleContouring contour=new ST_TriangleContouring();
+                String isolvls="31622, 100000, 316227, 1000000, 3162277, 1e+7, 31622776, 1e+20";
+                Value[] isoArgs={ValueFactory.createValue("the_geom"),ValueFactory.createValue("db_v1"),ValueFactory.createValue("db_v2"),ValueFactory.createValue("db_v3"),ValueFactory.createValue(isolvls)};
+
+                DataSet isoContourResult=null;
+                try {
+                    DataSet[] isoTables={data};
+                    isoContourResult=contour.evaluate(factory, isoTables, isoArgs, null);
+                    ((DiskBufferDriver)isoContourResult).getFile().renameTo(new File(outputFilename));
+                } catch (FunctionException ex) {
+                    System.err.println(ex.getMessage());
+                    ex.printStackTrace(System.err);
+                    return;
+                }
+            }
+        }else{
+            BR_PtGrid propa=new BR_PtGrid();
+            Logger log = new ConsoleLogger("BR_PtGrid");
+            propa.setLogger(log);
+            Value[] propaArgs={ValueFactory.createValue(splField),ValueFactory.createValue(maxDist),ValueFactory.createValue(maxRDist),ValueFactory.createValue(splitDepth),ValueFactory.createValue(reflectionDepth),ValueFactory.createValue(diffractionDepth),ValueFactory.createValue(wallAlpha)};
+            DataSet data=null;
+            try {
+                data=propa.evaluate(factory, tables, propaArgs, null);
+                //Rename output file
+                ((DiskBufferDriver)data).getFile().renameTo(new File(outputFilename));
+                long overallComputeTime=System.currentTimeMillis()-debComputeTime;
+                System.out.println("Overall computation time: "+overallComputeTime+" ms."+getHumanTime(overallComputeTime));
             } catch (FunctionException ex) {
                 System.err.println(ex.getMessage());
                 ex.printStackTrace(System.err);
