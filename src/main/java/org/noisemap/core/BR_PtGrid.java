@@ -290,14 +290,16 @@ public class BR_PtGrid extends AbstractTableFunction {
                                                             threadData, threadDataOut);
 
                                             if (doMultiThreading) {
-                                                    logger.info("Wait for free Thread to begin propagation of cell "
-                                                                    + (cellI + 1)
-                                                                    + ","
-                                                                    + (cellJ + 1)
-                                                                    + " of the "
-                                                                    + gridDim
-                                                                    + "x" + gridDim + "  grid..");
-                                                    while (!threadManager.isAvaibleQueueSlot()) {
+                                                    if(!threadManager.hasAvaibleQueueSlot()) {
+                                                        logger.info("Wait for free Thread to begin propagation of cell "
+                                                                        + (cellI + 1)
+                                                                        + ","
+                                                                        + (cellJ + 1)
+                                                                        + " of the "
+                                                                        + gridDim
+                                                                        + "x" + gridDim + "  grid..");
+                                                    }
+                                                    while (!threadManager.hasAvaibleQueueSlot()) {
                                                             if (pm!=null && pm.isCancelled()) {
                                                                     driver.writingFinished();
                                                                     return driver.getTable("main");
@@ -313,20 +315,24 @@ public class BR_PtGrid extends AbstractTableFunction {
 				}
 			}
 			// Wait termination of processes
-			logger.info("Wait for termination of the lasts propagation process..");
-			// threadManager.getRemainingTasks()>0
 			Thread.sleep(100);
-			while (threadDataOut.getCellComputed() < nbcell && doMultiThreading) {
+                        if(threadManager.getRemainingTasks() > 0) {
+                            logger.info("Wait for termination of the lasts propagation process..");
+                        }
+			while (threadManager.getRemainingTasks() > 0) {
 				if (pm!=null && pm.isCancelled()) {
 					driver.writingFinished();
 					return driver.getTable("main");
 				}
 				Thread.sleep(100);
 			}
+			Thread.sleep(100);
 			// Wait for rows stack to be empty
 			driverManager.stopWatchingStack();
 			pmManager.stop();
-			logger.info("Wait for termination of writing to the driver..");
+                        if(driverManager.isRunning()) {
+                            logger.info("Wait for termination of writing to the driver..");
+                        }
 			while (driverManager.isRunning()) {
 				if (pm!=null && pm.isCancelled()) {
 					driver.writingFinished();

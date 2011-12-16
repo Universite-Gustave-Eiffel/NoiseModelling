@@ -797,7 +797,7 @@ public class BR_TriGrid extends AbstractTableFunction {
 								+ gridDim
 								+ "x" + gridDim + "  grid..");
 						// threadManager.executeBlocking(propaProcess);
-						while (!threadManager.isAvaibleQueueSlot()) {
+						while (!threadManager.hasAvaibleQueueSlot()) {
 							if (pm!=null && pm.isCancelled()) {
 								driver.writingFinished();
 								return driver.getTable("main");

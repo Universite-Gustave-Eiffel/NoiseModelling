@@ -2,6 +2,7 @@
 from xls_to_dbf import ParseXlsData,FilterXlsData,SetDefaultValueWhereNone,SaveArrayToDBF
 import time
 import sys
+import os
 def extract_queue(xlsdata,day_time_to_extract,queue_saveto):
     sheet_id=2
     start_line=2
@@ -39,16 +40,16 @@ def Convert(day_time_to_extract,traffic_saveto,queue_saveto,fulldata=None,xlsfil
     night_first_col=39
     avg_first_col=47
     cols={ "morning" : [morning_first_col+2,morning_first_col+3,morning_first_col+5,morning_first_col+7], "day" : [day_first_col+2,day_first_col+3,day_first_col+5,day_first_col+7], "evening" : [evening_first_col+2,evening_first_col+3,evening_first_col+5,evening_first_col+7], "night" : [night_first_col+2,night_first_col+3,night_first_col+5,night_first_col+7], "average" : [avg_first_col+2,avg_first_col+3,avg_first_col+4,avg_first_col+4] }
-    col_label=["id_tronc","from_node","to_node","direction","surtype","type","length","capacity","speedmax","tv","pl","speedload","speedcross"]
+    col_label=["id_tronc","from_node","to_node","direction","surtype","rtype","length","capacity","speedmax","tv","pl","speedload","speedcross"]
     if fulldata is None:
         print u"Extract %s fields from XLS file.." % (day_time_to_extract)
         fulldata=ParseXlsData(xlsfilename)
     fields,data=FilterXlsData(fulldata,sheet_id,start_line,base_cols+cols[day_time_to_extract],field_line)
     print u"Set default values in empty cells"
     data=SetDefaultValueWhereNone(data)
-    print u"Save traffic to dbf file"
+    print u"Save traffic to dbf file",traffic_saveto
     SaveArrayToDBF(traffic_saveto,col_label,data)
-    print u"Save queue to dbf file"
+    print u"Save queue to dbf file :",queue_saveto
     extract_queue(fulldata,day_time_to_extract,queue_saveto)
     print u"Extraction of data done in %g seconds." % (time.time()-start_t)
 def ConvertBusTram(day_time_to_extract,traffic_saveto,fulldata=None,xlsfilename=u"Services TC 2008.xls"):
@@ -61,9 +62,15 @@ def ConvertBusTram(day_time_to_extract,traffic_saveto,fulldata=None,xlsfilename=
     morning_first_col=1
     day_first_col=3
     evening_first_col=2
-    night_first_col=5 #4:20h-1h 5:4h-6h
+    night_first_col=4  #4: 20h-1h
+    night2_first_col=5 #5:  4h-6h
     avg_first_col=6
-    cols={ "morning" : [morning_first_col,morning_first_col+6,morning_first_col+12], "day" : [day_first_col,day_first_col+6,day_first_col+12], "evening" : [evening_first_col,evening_first_col+6,evening_first_col+12], "night" : [night_first_col], "average" : [avg_first_col,avg_first_col+6,avg_first_col+12] }
+    cols={ "morning" : [morning_first_col,morning_first_col+6,morning_first_col+12],
+           "day" : [day_first_col,day_first_col+6,day_first_col+12],
+           "evening" : [evening_first_col,evening_first_col+6,evening_first_col+12],
+           "night" : [night_first_col,night_first_col+6,night_first_col+12],
+           "night2" : [night2_first_col,night2_first_col+6,night2_first_col+12],
+           "average" : [avg_first_col,avg_first_col+6,avg_first_col+12] }
     col_label=["id_tronc","bus","busway","tramway"]
     if fulldata is None:
         print u"Extract %s fields from XLS file.." % (day_time_to_extract)
@@ -93,7 +100,8 @@ def ConvertBusTramSpeed(speed_saveto,fulldata=None,xlsfilename=u"tps tc troncons
     SaveArrayToDBF(speed_saveto,col_label,data)
     print u"Extraction of data done in %g seconds." % (time.time()-start_t)
 
-time_ranges=["morning" , "day" , "evening","night","average"]
+time_ranges=["morning" , "day" , "evening","night","night2","average"]
+time_ranges_lbl=["hpm_","hcj_","hps_","hcn_","hcn2_","avg_"]
 choice=0
 
 if len(sys.argv)<3:
@@ -104,6 +112,15 @@ if len(sys.argv)<5:
     choice=int(raw_input('Time range id:'))
 else:
     choice=int(sys.argv[4])
-Convert(time_ranges[choice],"tron.dbf","queue.dbf",xlsfilename=sys.argv[1])
-ConvertBusTram(time_ranges[choice],"bustram.dbf",xlsfilename=sys.argv[2])
-ConvertBusTramSpeed("bustram_speed.dbf",xlsfilename=sys.argv[3])
+if time_ranges[choice]!="night2" and os.path.exists(sys.argv[1]):
+    Convert(time_ranges[choice],time_ranges_lbl[choice]+"tron.dbf",time_ranges_lbl[choice]+"queue.dbf",xlsfilename=sys.argv[1])
+else:
+    print "Skip tron and queue, file doesn't exist or are not specified"
+if os.path.exists(sys.argv[2]):
+    ConvertBusTram(time_ranges[choice],time_ranges_lbl[choice]+"bustram.dbf",xlsfilename=sys.argv[2])
+else:
+    print "Skip bustram.dbf, file doesn't exist or are not specified"
+if os.path.exists(sys.argv[3]):
+    ConvertBusTramSpeed("bustram_speed.dbf",xlsfilename=sys.argv[3])
+else:
+    print "Skip bustram_speed.dbf, file doesn't exist or are not specified"

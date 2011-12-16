@@ -93,7 +93,7 @@ public class ThreadPool extends ThreadPoolExecutor {
 	/**
 	 * @return True if poolSize is inferior of maximum pool size
 	 */
-	boolean isAvaibleQueueSlot() {
+	boolean hasAvaibleQueueSlot() {
 		return this.getQueue().size() + this.getActiveCount() < this
 				.getMaximumPoolSize();
 	}
