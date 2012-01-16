@@ -14,10 +14,15 @@ import java.util.List;
 
 /**
  * This is a record for a value of the hashmap of the function ST_TableGeometryUnion
+ * This class agregates rows index, the goal is to reduce memory usage, ordering by ascending index, and may be optimize row query thanks to interval row number
  */
 public class RowsUnionClassification {
     private List<Integer> rowrange=new ArrayList<Integer>(); //Row intervals ex: 0,15,50,60 for 0 to 15 and 50 to 60
 
+    /**
+     * 
+     * @param row First row id
+     */
     RowsUnionClassification(int row) {
         rowrange.add(row);
         rowrange.add(row);
@@ -25,11 +30,15 @@ public class RowsUnionClassification {
     /**
      * Return an iteror for reading row line ranges
      * To iterate over 
-     * @return
+     * @return An integer, begin of a range then end of the range, then begin of next range etc..
      */
     public Iterator<Integer> getRowRanges() {
         return this.rowrange.iterator();
     }
+    /**
+     * Add a row index in the list
+     * @param row The row index. Duplicates are not pushed, and do not raise errors.
+     */
     public void addRow(int row) {
         // Iterate over the row range array and find contiguous row
         boolean inserted = false;
@@ -60,9 +69,25 @@ public class RowsUnionClassification {
             }
         }
         if(!inserted) {
-            //New range
-            rowrange.add(-index-1,row);
-            rowrange.add(-index-1,row);
+            //Find if this range is already contained in the intervals
+            index = Collections.binarySearch(rowrange, row);
+            if(index < 0) {
+                index=-index-1; //retrieve the nearest index by order
+                if(index != rowrange.size()) {
+                    if(index % 2==0) {  //If index corresponding to begin of a range
+                           if(row >= rowrange.get(index) && row <= rowrange.get(index+1) ) {
+                               return; //Nothing to do, row is already in the array
+                           }
+                    } else {            //If index corresponding to the end of a range
+                           if(row >= rowrange.get(index-1) && row <= rowrange.get(index) ) {
+                               return; //Nothing to do, row is already in the array
+                           }
+                    }
+                }
+                //New range
+                rowrange.add(index,row);
+                rowrange.add(index,row);
+            }
         }
     }
 }

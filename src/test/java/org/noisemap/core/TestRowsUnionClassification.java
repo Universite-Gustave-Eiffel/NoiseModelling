@@ -28,6 +28,12 @@ public class TestRowsUnionClassification extends TestCase  {
         for(int i=401;i<450;i++) {
             mergeTool.addRow(i);
         }
+        //Add already pushed rows id, the result of intervals must be the same
+        mergeTool.addRow(401);
+        mergeTool.addRow(410);
+        mergeTool.addRow(19999);
+        
+        
         mergeTool.addRow(400);
         double timeadd=((System.nanoTime()-deb)/1e6);
         //Test if results is correct
