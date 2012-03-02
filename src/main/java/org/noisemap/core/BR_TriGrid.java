@@ -51,6 +51,7 @@ import com.vividsolutions.jts.geom.Polygon;
 
 import com.vividsolutions.jts.operation.buffer.BufferParameters;
 import com.vividsolutions.jts.simplify.TopologyPreservingSimplifier;
+import org.gdms.data.schema.MetadataUtilities;
 
 class NodeList {
 	public final LinkedList<Coordinate> nodes = new LinkedList<Coordinate>();
@@ -500,34 +501,37 @@ public class BR_TriGrid extends AbstractTableFunction {
 	public DataSet evaluate(SQLDataSourceFactory dsf, DataSet[] tables,
             Value[] values, ProgressMonitor pm) throws FunctionException {
 		String tmpdir = dsf.getTempDir().getAbsolutePath();
-                if(values.length<12) {
+                if(values.length<10) {
                     throw new FunctionException("Not enough parameters !");
-                }else if(values.length>12){
+                }else if(values.length>10){
                     throw new FunctionException("Too many parameters !");
                 }
-		String dbField = values[2].toString();
-		double maxSrcDist = values[3].getAsDouble();
-                double maxRefDist = values[4].getAsDouble();
-		int subdivLvl = values[5].getAsInt();
-		double minRecDist = values[6].getAsDouble(); /*
+		String dbField = values[0].toString();
+		double maxSrcDist = values[1].getAsDouble();
+                double maxRefDist = values[2].getAsDouble();
+		int subdivLvl = values[3].getAsInt();
+		double minRecDist = values[4].getAsDouble(); /*
 													 * <! Minimum distance
 													 * between source and
 													 * receiver
 													 */
-		double srcPtDist = values[7].getAsDouble(); /*
+		double srcPtDist = values[5].getAsDouble(); /*
 													 * <! Complexity distance of
 													 * roads
 													 */
-		double maximumArea = values[8].getAsDouble();
-		int reflexionOrder = values[9].getAsInt();
-		int diffractionOrder = values[10].getAsInt();
-		double wallAlpha = values[11].getAsDouble();
+		double maximumArea = values[6].getAsDouble();
+		int reflexionOrder = values[7].getAsInt();
+		int diffractionOrder = values[8].getAsInt();
+		double wallAlpha = values[9].getAsDouble();
 		boolean forceSinglePass = false;
 		boolean doMultiThreading = true;
                 assert(maxSrcDist>maxRefDist); //Maximum Source-Receiver
                                                //distance must be superior than
                                                //maximum Receiver-Wall distance
-
+                DiskBufferDriver driver=null;
+                ThreadPool threadManager=null;
+                ProgressionOrbisGisManager pmManager=null;
+                PropagationProcessDiskWriter driverManager=null;
 		try {
 			// Steps of execution
 			// Evaluation of the main bounding box (sources+buildings)
@@ -558,11 +562,9 @@ public class BR_TriGrid extends AbstractTableFunction {
 			final DataSet sds = tables[tableBuildings];
 			final DataSet sdsSources = tables[tableSources];
 			
-			// Set defaultGeom as the geom set by the user
-			final String spatialBuildingsFieldName = values[tableBuildings].toString();
-			final String spatialSourceFieldName = values[tableSources].toString();
-			int spatialBuildingsFieldIndex = sds.getMetadata().getFieldIndex(spatialBuildingsFieldName);
-			int spatialSourceFieldIndex = sdsSources.getMetadata().getFieldIndex(spatialSourceFieldName);
+                        // extract spatial field index of two input tables
+			int spatialBuildingsFieldIndex = MetadataUtilities.getSpatialFieldIndex(sds.getMetadata());
+			int spatialSourceFieldIndex = MetadataUtilities.getSpatialFieldIndex(sdsSources.getMetadata());
 			
 			
 			
@@ -606,7 +608,7 @@ public class BR_TriGrid extends AbstractTableFunction {
 			String meta_name[] = { "the_geom", "db_v1", "db_v2", "db_v3",
 					"cellid", "triid" };
 			DefaultMetadata metadata = new DefaultMetadata(meta_type, meta_name);
-			DiskBufferDriver driver = new DiskBufferDriver(dsf, metadata);
+			driver = new DiskBufferDriver(dsf, metadata);
 
 			int nbcell = gridDim * gridDim;
 			if (nbcell == 1) {
@@ -615,15 +617,15 @@ public class BR_TriGrid extends AbstractTableFunction {
 			}
 
 			Runtime runtime = Runtime.getRuntime();
-			ThreadPool threadManager = new ThreadPool(
+			threadManager = new ThreadPool(
 					runtime.availableProcessors(),
 					runtime.availableProcessors() + 1, Long.MAX_VALUE,
 					TimeUnit.SECONDS);
 
-			ProgressionOrbisGisManager pmManager = new ProgressionOrbisGisManager(
+			pmManager = new ProgressionOrbisGisManager(
 					nbcell, pm);
 			Stack<PropagationResultTriRecord> toDriver = new Stack<PropagationResultTriRecord>();
-			PropagationProcessDiskWriter driverManager = new PropagationProcessDiskWriter(
+			driverManager = new PropagationProcessDiskWriter(
 					toDriver,null, driver,null);
 			driverManager.start();
 			pmManager.start();
@@ -865,7 +867,18 @@ public class BR_TriGrid extends AbstractTableFunction {
 			throw new FunctionException(e);
 		} catch (InterruptedException e) {
 			throw new FunctionException(e);
-		}
+		} finally {
+                    //Stop threads if there are not stoped
+                    if(pmManager!=null) {
+                        pmManager.stop();
+                    }
+                    if(threadManager!=null) {
+                        threadManager.shutdown();
+                    }
+                    if(driverManager!=null) {
+                        driverManager.stopWatchingStack();
+                    }
+                }
 	}
 
 	@Override
