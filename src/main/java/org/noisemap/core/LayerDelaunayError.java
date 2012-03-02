@@ -21,6 +21,10 @@ public class LayerDelaunayError extends Throwable {
 		errorMessage = ErrorMsg;
 	}
 
+        public LayerDelaunayError(Throwable thrwbl) {
+            super(thrwbl);
+        }
+
 	/*
 	 * (non-Javadoc)
 	 * 
