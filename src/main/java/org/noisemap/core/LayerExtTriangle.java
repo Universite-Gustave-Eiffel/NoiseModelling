@@ -91,30 +91,32 @@ public class LayerExtTriangle implements LayerDelaunay {
 	 * Change coordinate within a local interval
 	 */
 	private void unitize() {
-		Coordinate min = new Coordinate(this.vertices.get(0)), max = new Coordinate(
-				this.vertices.get(0));
-		for (Coordinate pt : this.vertices) {
-			min.x = Math.min(min.x, pt.x);
-			min.y = Math.min(min.y, pt.y);
-			max.x = Math.max(max.x, pt.x);
-			max.y = Math.max(max.y, pt.y);
-		}
+            if(!this.vertices.isEmpty()) {
+                Coordinate min = new Coordinate(this.vertices.get(0)), max = new Coordinate(
+                                this.vertices.get(0));
+                for (Coordinate pt : this.vertices) {
+                        min.x = Math.min(min.x, pt.x);
+                        min.y = Math.min(min.y, pt.y);
+                        max.x = Math.max(max.x, pt.x);
+                        max.y = Math.max(max.y, pt.y);
+                }
 
-		// Compute unitize translation vector
-		unitize_translation_vec.x = min.x - (max.x - min.x) / 2.;
-		unitize_translation_vec.y = min.y - (max.y - min.y) / 2.;
+                // Compute unitize translation vector
+                unitize_translation_vec.x = min.x - (max.x - min.x) / 2.;
+                unitize_translation_vec.y = min.y - (max.y - min.y) / 2.;
 
-		for (int idv = 0; idv < this.vertices.size(); idv++) {
-			Coordinate v = this.vertices.get(idv);
-			this.vertices.set(idv, new Coordinate(v.x
-					- unitize_translation_vec.x, v.y
-					- unitize_translation_vec.y));
-		}
-		for (int idh = 0; idh < this.holes.size(); idh++) {
-			Coordinate v = this.holes.get(idh);
-			this.holes.set(idh, new Coordinate(v.x - unitize_translation_vec.x,
-					v.y - unitize_translation_vec.y));
-		}
+                for (int idv = 0; idv < this.vertices.size(); idv++) {
+                        Coordinate v = this.vertices.get(idv);
+                        this.vertices.set(idv, new Coordinate(v.x
+                                        - unitize_translation_vec.x, v.y
+                                        - unitize_translation_vec.y));
+                }
+                for (int idh = 0; idh < this.holes.size(); idh++) {
+                        Coordinate v = this.holes.get(idh);
+                        this.holes.set(idh, new Coordinate(v.x - unitize_translation_vec.x,
+                                        v.y - unitize_translation_vec.y));
+                }                    
+            }
 	}
 
 	private void cancelUnitize() {
@@ -144,7 +146,7 @@ public class LayerExtTriangle implements LayerDelaunay {
 		try {
 			in = new Scanner(file);
 		} catch (FileNotFoundException e) {
-			throw new LayerDelaunayError(e.getMessage());
+			throw new LayerDelaunayError(e);
 		}
 		in.useLocale(Locale.US); // essential to read float values
 		final int vsize = in.nextInt(); // read vertice count

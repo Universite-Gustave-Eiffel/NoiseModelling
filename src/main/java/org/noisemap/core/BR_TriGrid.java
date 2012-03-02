@@ -916,7 +916,7 @@ public class BR_TriGrid extends AbstractTableFunction {
 
 	@Override
 	public String getSqlOrder() {
-		return "select BR_TriGrid( objects_table.the_geom, sound_sources_table.the_geom,sound_sources_table.db_m,170,50,3,2.5,5.0,300,1,0.1 ) from objects_table,sound_sources_table;";
+		return "create table result as select * from BR_TriGrid( buildings_table, sound_sources_table,'source db field name',searchSourceLimit,searchReflectionWallLimit,subdivlevel,roadwith(1.8),densification_receiver(5),max triangle area(300),reflection order(2),diffraction order(1),wall absorption(0.1));";
 	}
 
 	@Override
