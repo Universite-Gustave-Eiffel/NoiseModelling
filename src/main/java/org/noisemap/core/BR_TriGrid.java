@@ -649,8 +649,7 @@ public class BR_TriGrid extends AbstractTableFunction {
 					// Make source index for optimization
 					ArrayList<Geometry> sourceGeometries = new ArrayList<Geometry>();
 					ArrayList<ArrayList<Double>> wj_sources = new ArrayList<ArrayList<Double>>();
-					QueryGeometryStructure sourcesIndex = new QueryGridIndex(
-							expandedCellEnvelop, 16, 16);
+					QueryGeometryStructure sourcesIndex = new QueryQuadTree();
 					// QueryGeometryStructure<Integer> sourcesIndex=new
 					// QueryQuadTree<Integer>();
 

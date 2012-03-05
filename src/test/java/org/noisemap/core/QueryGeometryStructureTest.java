@@ -17,6 +17,7 @@ import org.gdms.data.schema.MetadataUtilities;
 import org.gdms.driver.DataSet;
 import org.gdms.driver.DriverException;
 import org.gdms.source.Source;
+import org.grap.utilities.EnvelopeUtil;
 import org.junit.Before;
 
 /**
@@ -87,13 +88,29 @@ public class QueryGeometryStructureTest extends TestCase {
         Envelope testExtract = new Envelope(envScene.centre());
         testExtract.expandBy(envScene.getWidth()/3., envScene.getHeight()/3);
         
+        //compute expected Query Values
+        
+        ArrayList<Integer> expectedQueryValue = new ArrayList<Integer>();
+        Geometry env = EnvelopeUtil.toGeometry(testExtract);
+        for (Integer rowIndex = 0; rowIndex < rowCount; rowIndex++) {
+            Geometry sourceGeom = sdsSources.getFieldValue(rowIndex, spatialSourceFieldIndex).getAsGeometry();
+            if(env.intersects(sourceGeom)) {
+                expectedQueryValue.add(rowIndex);
+            }
+        }
+        
         //Request for each implementation of QueryGeometryStructure
+        System.out.println("Expected result items : "+expectedQueryValue.size()+" items");
         long debQuery = System.nanoTime();
         long nbItemsReturned = countResult(quadIndex.query(testExtract));
         System.out.println("QueryQuadTree query time in "+(System.nanoTime() - debQuery)/1e6+" ms with "+nbItemsReturned+" items returned.");
         debQuery = System.nanoTime();
         nbItemsReturned = countResult(gridIndex.query(testExtract));
         System.out.println("QueryGridIndex query time in "+(System.nanoTime() - debQuery)/1e6+" ms with "+nbItemsReturned+" items returned.");
+        
+        
+        //Check items returned by GridIndex
+        //queryAssert(expectedQueryValue,gridIndex.query(testExtract));
     }
     private Integer countResult(Iterator<Integer> result) {
         Integer counter=0;

@@ -246,10 +246,8 @@ public class BR_PtGrid extends AbstractTableFunction {
                                             // Make source index for optimization
                                             ArrayList<Geometry> sourceGeometries = new ArrayList<Geometry>();
                                             ArrayList<ArrayList<Double>> wj_sources = new ArrayList<ArrayList<Double>>();
-                                            QueryGeometryStructure sourcesIndex = new QueryGridIndex(
-                                                            expandedCellEnvelop, 16, 16);
+                                            QueryGeometryStructure sourcesIndex = new QueryQuadTree();
                                             long rowCount = sdsSources.getRowCount();
-                                            int fieldCount = sdsSources.getMetadata().getFieldCount();
                                             Integer idsource = 0;
                                             for (long rowIndex = 0; rowIndex < rowCount; rowIndex++) {
 

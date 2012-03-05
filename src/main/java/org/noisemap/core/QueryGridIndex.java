@@ -73,12 +73,6 @@ public class QueryGridIndex implements QueryGeometryStructure {
 				(geoEnv.getMaxY() - mainCenter.y) / cellSizeI);
 		int maxI = (int) (Math.ceil(tmpvec.y)) + halfCellCountI;
 		int maxJ = (int) (Math.ceil(tmpvec.x)) + halfCellCountJ;
-		if (minI == maxI) {
-			maxI += 1;
-		}
-		if (minJ == maxJ) {
-			maxJ += 1;
-		}
 		if (minI < 0) {
 			minI = 0;
 		}
@@ -91,6 +85,12 @@ public class QueryGridIndex implements QueryGeometryStructure {
 		if (maxJ > nbJ) {
 			maxJ = nbJ;
 		}
+		if (minI == maxI) {
+			maxI += 1;
+		}
+		if (minJ == maxJ) {
+			maxJ += 1;
+		}
 		int[] range = { minI, maxI, minJ, maxJ };
 		return range;
 	}
@@ -101,7 +101,8 @@ public class QueryGridIndex implements QueryGeometryStructure {
 
 		int[] ranges = getRange(newGeom.getEnvelopeInternal());
 		int minI = ranges[0], maxI = ranges[1], minJ = ranges[2], maxJ = ranges[3];
-		GeometryFactory factory = new GeometryFactory();
+                
+                GeometryFactory factory = new GeometryFactory();
                 //Compute intersection between the geom and grid cells
 		for (int i = minI; i < maxI; i++) {
 			for (int j = minJ; j < maxJ; j++) {
@@ -151,8 +152,8 @@ public class QueryGridIndex implements QueryGeometryStructure {
                     throw new UnsupportedOperationException("Intervals can't be pushed when this iterator is used.");
                 }
                 if(newInterval.hasNext()) {
-                    Integer begin = newInterval.next();
-                    Integer end = newInterval.next();
+                    int begin = newInterval.next();
+                    int end = newInterval.next();
                     if(rowsIndex==null) {
                         rowsIndex = new RowsUnionClassification(begin,end);
                     } else {
