@@ -599,16 +599,7 @@ public class BR_TriGrid extends AbstractTableFunction {
 			String[] firstPassResults = new String[gridDim * gridDim];
 			NodeList[] neighborsBorderVertices = new NodeList[gridDim * gridDim];
 
-			Type meta_type[] = { TypeFactory.createType(Type.GEOMETRY),
-					TypeFactory.createType(Type.FLOAT),
-					TypeFactory.createType(Type.FLOAT),
-					TypeFactory.createType(Type.FLOAT),
-					TypeFactory.createType(Type.INT),
-					TypeFactory.createType(Type.INT) };
-			String meta_name[] = { "the_geom", "db_v1", "db_v2", "db_v3",
-					"cellid", "triid" };
-			DefaultMetadata metadata = new DefaultMetadata(meta_type, meta_name);
-			driver = new DiskBufferDriver(dsf, metadata);
+			driver = new DiskBufferDriver(dsf, getMetadata(null));
 
 			int nbcell = gridDim * gridDim;
 			if (nbcell == 1) {
@@ -658,7 +649,7 @@ public class BR_TriGrid extends AbstractTableFunction {
 					// Make source index for optimization
 					ArrayList<Geometry> sourceGeometries = new ArrayList<Geometry>();
 					ArrayList<ArrayList<Double>> wj_sources = new ArrayList<ArrayList<Double>>();
-					QueryGeometryStructure<Integer> sourcesIndex = new QueryGridIndex<Integer>(
+					QueryGeometryStructure sourcesIndex = new QueryGridIndex(
 							expandedCellEnvelop, 16, 16);
 					// QueryGeometryStructure<Integer> sourcesIndex=new
 					// QueryQuadTree<Integer>();
@@ -883,8 +874,15 @@ public class BR_TriGrid extends AbstractTableFunction {
 
 	@Override
 	public Metadata getMetadata(Metadata[] tables) throws DriverException {
-
-		return new DefaultMetadata();
+            Type meta_type[] = { TypeFactory.createType(Type.GEOMETRY),
+                            TypeFactory.createType(Type.FLOAT),
+                            TypeFactory.createType(Type.FLOAT),
+                            TypeFactory.createType(Type.FLOAT),
+                            TypeFactory.createType(Type.INT),
+                            TypeFactory.createType(Type.INT) };
+            String meta_name[] = { "the_geom", "db_v1", "db_v2", "db_v3",
+                            "cellid", "triid" };
+            return new DefaultMetadata(meta_type, meta_name);
 	}
 
     @Override

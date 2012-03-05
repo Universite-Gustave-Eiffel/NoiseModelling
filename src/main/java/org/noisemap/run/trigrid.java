@@ -168,7 +168,7 @@ public class trigrid {
             BR_TriGrid propa=new BR_TriGrid();
             Logger log = new ConsoleLogger("BR_TriGrid");
             propa.setLogger(log);
-            Value[] propaArgs={ValueFactory.createValue(bField),ValueFactory.createValue(sField),ValueFactory.createValue(splField),ValueFactory.createValue(maxDist),ValueFactory.createValue(maxRDist),ValueFactory.createValue(splitDepth),ValueFactory.createValue(roadsWidth),ValueFactory.createValue(densification),ValueFactory.createValue(maxarea),ValueFactory.createValue(reflectionDepth),ValueFactory.createValue(diffractionDepth),ValueFactory.createValue(wallAlpha)};
+            Value[] propaArgs={ValueFactory.createValue(splField),ValueFactory.createValue(maxDist),ValueFactory.createValue(maxRDist),ValueFactory.createValue(splitDepth),ValueFactory.createValue(roadsWidth),ValueFactory.createValue(densification),ValueFactory.createValue(maxarea),ValueFactory.createValue(reflectionDepth),ValueFactory.createValue(diffractionDepth),ValueFactory.createValue(wallAlpha)};
             DataSet data=null;
             try {
                 data = propa.evaluate(factory, tables, propaArgs, null);

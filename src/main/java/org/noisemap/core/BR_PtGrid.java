@@ -41,6 +41,8 @@ import org.apache.log4j.Logger;
  * Evaluate the sound level at each coordinate specified in parameters.
  * This function doesn't make a noise map but is usefull to quickely get the
  * sound level at some coordinates.
+ * TODO subdivision level is useless, subdivision level can be computed from 
+ * the maximum propagation distance and computation boudings box
  */
 public class BR_PtGrid extends AbstractTableFunction {
         private Logger logger = Logger.getLogger(BR_TriGrid.class.getName());
@@ -124,6 +126,9 @@ public class BR_PtGrid extends AbstractTableFunction {
                 assert(maxSrcDist>maxRefDist); //Maximum Source-Receiver
                                                //distance must be superior than
                                                //maximum Receiver-Wall distance
+                ThreadPool threadManager = null;
+                ProgressionOrbisGisManager pmManager=null;
+                PropagationProcessDiskWriter driverManager=null;
 		try {
 			// Steps of execution
 			// Evaluation of the main bounding box (receivers+max dist propagation)
@@ -185,15 +190,15 @@ public class BR_PtGrid extends AbstractTableFunction {
 			}
 
 			Runtime runtime = Runtime.getRuntime();
-			ThreadPool threadManager = new ThreadPool(
+			threadManager = new ThreadPool(
 					runtime.availableProcessors(),
 					runtime.availableProcessors() + 1, Long.MAX_VALUE,
                     			TimeUnit.SECONDS);
 
-			ProgressionOrbisGisManager pmManager = new ProgressionOrbisGisManager(
+			pmManager = new ProgressionOrbisGisManager(
 					nbreceivers, pm);
 			Stack<PropagationResultPtRecord> toDriver = new Stack<PropagationResultPtRecord>();
-			PropagationProcessDiskWriter driverManager = new PropagationProcessDiskWriter(
+			driverManager = new PropagationProcessDiskWriter(
 					null,toDriver, driver,sdsReceivers);
 			driverManager.start();
 			pmManager.start();
@@ -241,7 +246,7 @@ public class BR_PtGrid extends AbstractTableFunction {
                                             // Make source index for optimization
                                             ArrayList<Geometry> sourceGeometries = new ArrayList<Geometry>();
                                             ArrayList<ArrayList<Double>> wj_sources = new ArrayList<ArrayList<Double>>();
-                                            QueryGeometryStructure<Integer> sourcesIndex = new QueryGridIndex<Integer>(
+                                            QueryGeometryStructure sourcesIndex = new QueryGridIndex(
                                                             expandedCellEnvelop, 16, 16);
                                             long rowCount = sdsSources.getRowCount();
                                             int fieldCount = sdsSources.getMetadata().getFieldCount();
@@ -369,7 +374,18 @@ public class BR_PtGrid extends AbstractTableFunction {
 			throw new FunctionException(e);
 		} catch (InterruptedException e) {
 			throw new FunctionException(e);
-		}
+		} finally {
+                    //Stop threads if there are not stoped
+                    if(pmManager!=null) {
+                        pmManager.stop();
+                    }
+                    if(threadManager!=null) {
+                        threadManager.shutdown();
+                    }
+                    if(driverManager!=null) {
+                        driverManager.stopWatchingStack();
+                    }
+                }
     }
 
 }

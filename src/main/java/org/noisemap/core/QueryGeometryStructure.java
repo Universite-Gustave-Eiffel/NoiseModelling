@@ -6,9 +6,9 @@ package org.noisemap.core;
  * @author Nicolas FORTIN, Judicaël PICAUT
  ***********************************/
 
-import java.util.ArrayList;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
+import java.util.Iterator;
 
 /**
  * QueryGeometryStructure aims to speed up the query of a geometry collection
@@ -17,10 +17,10 @@ import com.vividsolutions.jts.geom.Geometry;
  * @author N.Fortin J.Picaut (IFSTTAR 2011)
  */
 
-public interface QueryGeometryStructure<T> {
+public interface QueryGeometryStructure {
 
-	void appendGeometry(final Geometry newGeom, final T externalId);
+	void appendGeometry(final Geometry newGeom, Integer externalId);
 
-	ArrayList<T> query(Envelope queryEnv);
+	Iterator<Integer> query(Envelope queryEnv);
 
 }

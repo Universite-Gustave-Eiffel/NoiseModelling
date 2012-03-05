@@ -17,8 +17,7 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineSegment;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.index.quadtree.Quadtree;
-import java.util.Collections;
-import java.util.HashSet;
+import java.util.*;
 
 public class PropagationProcess implements Runnable {
         private final static double receiverComputationTimeLimit = 5000;
@@ -739,7 +738,7 @@ public class PropagationProcess implements Runnable {
 				receiverCoord.y - searchSourceDistance, receiverCoord.y
 						+ searchSourceDistance);
                     long beginQuadQuery = System.nanoTime();
-                    List<Integer> regionSourcesLst = data.sourcesIndex
+                    Iterator<Integer> regionSourcesLst = data.sourcesIndex
                                     .query(receiverSourceRegion);
 
                     PointsMerge sourcesMerger=new PointsMerge(MERGE_SRC_DIST);
@@ -747,7 +746,8 @@ public class PropagationProcess implements Runnable {
                     List<Double> srcDist = new ArrayList<Double>();
                     List<Coordinate> srcPos = new ArrayList<Coordinate>();
                     List<ArrayList<Double>> srcWj= new ArrayList<ArrayList<Double>>();
-                    for (Integer srcIndex : regionSourcesLst) {
+                    while (regionSourcesLst.hasNext()) {
+                        Integer srcIndex = regionSourcesLst.next();
                         if(!processedLineSources.contains(srcIndex)) {
                             processedLineSources.add(srcIndex);
                             Geometry source = data.sourceGeometries.get(srcIndex);

@@ -24,16 +24,17 @@
 		<dependency>
 			<groupId>org.orbisgis</groupId>
 			<artifactId>orbisgis-ui</artifactId>
-			<type>jar</type>
                         <version>4.0-SNAPSHOT</version>
-			<scope>compile</scope>
 		</dependency>
                 <dependency>
                     <groupId>org.jdelaunay</groupId>
                     <artifactId>jdelaunay</artifactId>
-                    <type>jar</type>
                     <version>0.5</version>
-                    <scope>compile</scope>
+                </dependency>
+                <dependency>
+                    <groupId>com.vividsolutions</groupId>
+                    <artifactId>jts</artifactId>
+                    <version>1.11</version>
                 </dependency>
 	</dependencies>
 	<description>Translate light vehicle, heavy vehicle, public bus, tramway traffic into linear noise source. Then compute sound propagation and iso surface.</description>

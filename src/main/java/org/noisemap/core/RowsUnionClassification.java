@@ -28,23 +28,42 @@ public class RowsUnionClassification {
         rowrange.add(row);
     }
     /**
+     * 
+     * @param row First row id
+     */
+    RowsUnionClassification(int rowbegin, int rowend) {
+        if(rowend<rowbegin) {
+            throw new IllegalArgumentException("Begin row index must be inferior or equal to end row index.");
+        }
+        rowrange.add(rowbegin);
+        rowrange.add(rowend);
+    }
+    /**
      * Return an iteror for reading row line ranges
      * To iterate over 
      * @return An integer, begin of a range then end of the range, then begin of next range etc..
+     * @warning begin and end values are included [begin-end]
      */
     public Iterator<Integer> getRowRanges() {
         return this.rowrange.iterator();
     }
     /**
+     * Does this container has intervals
+     * @return True if this container is empty, false otherwise
+     */
+    public boolean isEmpty() {
+        return this.rowrange.isEmpty();
+    }
+    /**
      * Add a row index in the list
      * @param row The row index. Duplicates are not pushed, and do not raise errors.
+     * @TODO Add function to push a range instead of a single row index
      */
     public void addRow(int row) {
         // Iterate over the row range array and find contiguous row
         boolean inserted = false;
-        int index=-1;
         //Search another End Range to this row number
-        index = Collections.binarySearch(rowrange, row-1);
+        int index = Collections.binarySearch(rowrange, row-1);
         if(index >=0) {
             inserted = true;
             if(index % 2==0) {

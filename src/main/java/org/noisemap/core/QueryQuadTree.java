@@ -6,34 +6,34 @@ package org.noisemap.core;
  * @author Nicolas FORTIN, Judicaël PICAUT
  ***********************************/
 
-import java.util.ArrayList;
-
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.index.quadtree.Quadtree;
+import java.util.ArrayList;
+import java.util.Iterator;
 
-public class QueryQuadTree<index_t> implements QueryGeometryStructure<index_t> {
+public class QueryQuadTree implements QueryGeometryStructure {
 	private Quadtree quad = new Quadtree();
 
 	@Override
-	public void appendGeometry(Geometry newGeom, index_t externalId) {
+	public void appendGeometry(Geometry newGeom, Integer externalId) {
 		quad.insert(newGeom.getEnvelopeInternal(),
-				new EnvelopeWithIndex<index_t>(newGeom.getEnvelopeInternal(),
+				new EnvelopeWithIndex<Integer>(newGeom.getEnvelopeInternal(),
 						externalId));
 	}
 
 	@Override
-	public ArrayList<index_t> query(Envelope queryEnv) {
+	public Iterator<Integer> query(Envelope queryEnv) {
 		@SuppressWarnings("unchecked")
-		ArrayList<EnvelopeWithIndex<index_t>> resq = (ArrayList<EnvelopeWithIndex<index_t>>) quad
+		ArrayList<EnvelopeWithIndex<Integer>> resq = (ArrayList<EnvelopeWithIndex<Integer>>) quad
 				.query(queryEnv);
-		ArrayList<index_t> ret = new ArrayList<index_t>(resq.size());
-		for (EnvelopeWithIndex<index_t> it : resq) {
+		ArrayList<Integer> ret = new ArrayList<Integer>(resq.size());
+		for (EnvelopeWithIndex<Integer> it : resq) {
 			if (queryEnv.intersects(it)) {
 				ret.add(it.getId());
 			}
 		}
-		return ret;
+		return ret.iterator();
 	}
 
 }

@@ -6,10 +6,7 @@ package org.noisemap.core;
  * @author Nicolas FORTIN, Judicaël PICAUT
  ***********************************/
 
-import java.util.ArrayList;
 import java.util.Stack;
-
-import org.gdms.data.values.Value;
 
 /**
  * Way to store data computed by thread

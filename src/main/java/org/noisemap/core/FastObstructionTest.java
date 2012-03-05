@@ -27,6 +27,7 @@ import com.vividsolutions.jts.geom.LinearRing;
 import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Polygon;
 import com.vividsolutions.jts.operation.buffer.BufferParameters;
+import java.util.*;
 
 /**
  * FastObstructionTest is a Delaunay Structure to speed up the search of
@@ -44,7 +45,7 @@ public class FastObstructionTest {
 	private LinkedList<Geometry> toUnite = new LinkedList<Geometry>(); // Polygon
 	private Envelope geometriesBoundingBox=null;
 	// union;
-	private QueryGeometryStructure<Integer> triIndex = null; //TODO remove
+	private QueryGeometryStructure triIndex = null; //TODO remove
 	private int lastFountPointTriTest = 0;
 	private List<Float> verticesOpenAngle = null;
 	private List<Coordinate> verticesOpenAngleTranslated = null; /*Open angle*/
@@ -170,7 +171,7 @@ public class FastObstructionTest {
 		// int gridsize=(int)Math.pow(2,
 		// Math.log10(Math.pow(this.triVertices.size()+1,2)));
 		int gridsize = 8;
-		triIndex = new QueryGridIndex<Integer>(this.geometriesBoundingBox, gridsize,
+		triIndex = new QueryGridIndex(this.geometriesBoundingBox, gridsize,
 				gridsize);
 		int triind = 0;
 		for (Triangle tri : this.triVertices) {
@@ -201,7 +202,7 @@ public class FastObstructionTest {
 		//NonRobustLineIntersector linters = new NonRobustLineIntersector();
 		final Triangle tri = this.triVertices.get(triIndex);
 		int nearestIntersectionSide = -1;
-                int idneigh=-1;
+                int idneigh;
 		double nearestIntersectionPtDist = Double.MAX_VALUE;
 		// Find intersection pt
 		final Coordinate aTri = this.vertices.get(tri.getA());
@@ -308,8 +309,9 @@ public class FastObstructionTest {
 			return lastFountPointTriTest;
 		}
 		Envelope ptEnv = new Envelope(pt);
-		ArrayList<Integer> res = triIndex.query(new Envelope(ptEnv));
-		for (int triIndex : res) {
+		Iterator<Integer> res = triIndex.query(new Envelope(ptEnv));
+		while (res.hasNext()) {
+                        int triIndex = res.next();
 			Coordinate[] tri = getTriangle(triIndex);
 			if (dotInTri(pt, tri[0], tri[1], tri[2])) {
 				lastFountPointTriTest = triIndex;

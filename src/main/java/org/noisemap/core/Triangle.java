@@ -63,8 +63,12 @@ public class Triangle {
 	}
 
 	/**
-	 * Get triangle side (a side is the opposite of vertex index 0 /\ c/ \ b
-	 * /____\ 1 a 2
+	 * Get triangle side (a side is the opposite of vertex index
+         *    0
+         *   /\ 
+         * c/  \ b
+	 * /____\ 
+         *1  a   2
 	 * 
 	 * @param side
 	 * @return

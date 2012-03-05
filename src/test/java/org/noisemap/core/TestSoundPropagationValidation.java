@@ -24,6 +24,9 @@ public class TestSoundPropagationValidation extends TestCase {
 	public static boolean isSameDbValues(double dba,double dba2) {
 		return Math.abs(dba-dba2)<splEpsilon || (Double.isInfinite(dba) && Double.isInfinite(dba2));
 	}
+	public static boolean isSameDbValues(double dba,double dba2,double externalEpsilon) {
+		return Math.abs(dba-dba2)<externalEpsilon || (Double.isInfinite(dba) && Double.isInfinite(dba2));
+	}
 	private void splCompare(double dba,String testName,double goodSpl) {
 
 		System.out.println(testName+" "+dba+" dB(A)");
@@ -54,7 +57,7 @@ public class TestSoundPropagationValidation extends TestCase {
 		List<Integer> freqLvl=new ArrayList<Integer>();
 		freqLvl.add(125);
 		//Build query structure for sources
-		QueryGeometryStructure<Integer> sourcesIndex = new QueryGridIndex<Integer>(
+		QueryGeometryStructure sourcesIndex = new QueryGridIndex(
 				cellEnvelope, 8, 8);
 		int idsrc=0;
 		for(Geometry src : srclst) {
@@ -139,7 +142,7 @@ public class TestSoundPropagationValidation extends TestCase {
 		System.out.println("Scene 2 :");
 		long startMakeScene=System.currentTimeMillis();
 		////////////////////////////////////////////////////////////////////////////
-		//Build Scene with One Building
+		//Build Scene with Three Building
 		GeometryFactory factory = new GeometryFactory();
 		Coordinate[] building1Coords = { new Coordinate(6., 2.,0.),
                 new Coordinate(18., 2.,0.),new Coordinate(18., 6.,0.),
@@ -175,7 +178,7 @@ public class TestSoundPropagationValidation extends TestCase {
 		List<Integer> freqLvl=new ArrayList<Integer>();
 		freqLvl.add(125);
 		//Build query structure for sources
-		QueryGeometryStructure<Integer> sourcesIndex = new QueryGridIndex<Integer>(
+		QueryGeometryStructure sourcesIndex = new QueryGridIndex(
 				cellEnvelope, 8, 8);
 		int idsrc=0;
 		for(Geometry src : srclst) {
