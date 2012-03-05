@@ -89,7 +89,7 @@ public class TestFastObstruction extends TestCase {
 	}
 	public void testBenchmark() throws LayerDelaunayError {
 		System.out.println("________________________________________________");
-		System.out.println("Bench :");
+		System.out.println("FastObstructionTest Bench :");
 		//
 		//Build Scene with One Building
 		GeometryFactory factory = new GeometryFactory();

@@ -16,8 +16,9 @@ drop table if exists tri_lvl;
 create table tri_lvl as SELECT BR_TriGrid(b.the_geom,s.the_geom,'db_m',200,0,1.5,2.8,75,1,1,0.23) FROM buildings as b,roads_src as s;
 
 -- Use the triangle area contouring interpolation (split triangle covering level parameter)
--- iso lvls in w '45,50,55,60,65,70,75,200'
-create table tricontouring_noise_map AS SELECT ST_TriangleContouring(the_geom,'db_v1','db_v2','db_v3','31622, 100000, 316227, 1000000, 3162277, 1e+7, 31622776, 1e+20') FROM tri_lvl;
+-- iso lvls in w corresponding to dB->'45,50,55,60,65,70,75,200'
+-- the output iso will be [-inf to 45] -> 0 ]45 to 50] -> 1 etc.. 
+create table tricontouring_noise_map AS SELECT * from ST_TriangleContouring(tri_lvl,'the_geom','db_v1','db_v2','db_v3','31622, 100000, 316227, 1000000, 3162277, 1e+7, 31622776, 1e+20');
 
 --Merge adjacent triangle into polygons (multiple polygon by row, for unique isoLevel and cellId key)
 create table multipolygon_iso as select ST_Union(the_geom) as the_geom,cellid,idiso from tricontouring_noise_map GROUP BY idiso,cellid;
