@@ -21,7 +21,12 @@ public class QueryQuadTree implements QueryGeometryStructure {
 				new EnvelopeWithIndex<Integer>(newGeom.getEnvelopeInternal(),
 						externalId));
 	}
-
+        /**
+         * @return Number of items
+         */
+        public int size() {
+            return quad.size();
+        }
 	@Override
 	public Iterator<Integer> query(Envelope queryEnv) {
 		@SuppressWarnings("unchecked")

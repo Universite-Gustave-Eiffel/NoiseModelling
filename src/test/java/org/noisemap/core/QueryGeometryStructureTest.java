@@ -5,6 +5,7 @@
 package org.noisemap.core;
 
 import com.vividsolutions.jts.geom.*;
+import com.vividsolutions.jts.operation.predicate.RectangleIntersects;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -14,9 +15,7 @@ import org.gdms.data.DataSource;
 import org.gdms.data.DataSourceCreationException;
 import org.gdms.data.DataSourceFactory;
 import org.gdms.data.schema.MetadataUtilities;
-import org.gdms.driver.DataSet;
 import org.gdms.driver.DriverException;
-import org.gdms.source.Source;
 import org.grap.utilities.EnvelopeUtil;
 import org.junit.Before;
 
@@ -71,7 +70,7 @@ public class QueryGeometryStructureTest extends TestCase {
         long feedQuadtreeTime = System.currentTimeMillis() - startFeedQuadree;
         //Init grid structure
         long startFeedGrid=System.currentTimeMillis();
-        QueryGridIndex gridIndex = new QueryGridIndex(sdsSources.getFullExtent(),64,64);
+        QueryGridIndex gridIndex = new QueryGridIndex(sdsSources.getFullExtent(),8,8);
         for (Integer rowIndex = 0; rowIndex < rowCount; rowIndex++) {
             Geometry sourceGeom = sdsSources.getFieldValue(rowIndex, spatialSourceFieldIndex).getAsGeometry();
             gridIndex.appendGeometry(sourceGeom, rowIndex);
@@ -88,6 +87,11 @@ public class QueryGeometryStructureTest extends TestCase {
         
         ArrayList<Integer> expectedQueryValue = new ArrayList<Integer>();
         Geometry env = EnvelopeUtil.toGeometry(testExtract);
+        
+        GeometryFactory factory = new GeometryFactory();
+        Polygon square = factory.createPolygon(
+                        (LinearRing) env, null);
+        RectangleIntersects inter = new RectangleIntersects(square);
         for (Integer rowIndex = 0; rowIndex < rowCount; rowIndex++) {
             Geometry sourceGeom = sdsSources.getFieldValue(rowIndex, spatialSourceFieldIndex).getAsGeometry();
             if(env.intersects(sourceGeom)) {
@@ -100,10 +104,11 @@ public class QueryGeometryStructureTest extends TestCase {
         long debQuery = System.nanoTime();
         long nbItemsReturned = countResult(quadIndex.query(testExtract));
         System.out.println("QueryQuadTree query time in "+(System.nanoTime() - debQuery)/1e6+" ms with "+nbItemsReturned+" items returned.");
+        System.out.println("QueryQuadTree item count "+quadIndex.size());
         debQuery = System.nanoTime();
         nbItemsReturned = countResult(gridIndex.query(testExtract));
         System.out.println("QueryGridIndex query time in "+(System.nanoTime() - debQuery)/1e6+" ms with "+nbItemsReturned+" items returned.");
-        
+        System.out.println("QueryGridIndex item count "+gridIndex.size());
         
         //Check items returned by GridIndex
         queryAssert(expectedQueryValue,gridIndex.query(testExtract));

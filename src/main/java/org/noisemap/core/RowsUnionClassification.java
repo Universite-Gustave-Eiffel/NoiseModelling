@@ -17,6 +17,7 @@ import java.util.List;
  * This class agregates rows index, the goal is to reduce memory usage, ordering by ascending index, and may be optimize row query thanks to interval row number
  */
 public class RowsUnionClassification {
+    //TODO store int instead of Integer
     private List<Integer> rowrange=new ArrayList<Integer>(); //Row intervals ex: 0,15,50,60 for 0 to 15 and 50 to 60
 
     /**
@@ -47,6 +48,14 @@ public class RowsUnionClassification {
     public Iterator<Integer> getRowRanges() {
         return this.rowrange.iterator();
     }
+    
+    /**
+     * @return The number of Integer in this instance
+     */
+    public int getItemCount() {
+        return rowrange.size();
+    }
+    
     /**
      * Does this container has intervals
      * @return True if this container is empty, false otherwise
@@ -58,6 +67,7 @@ public class RowsUnionClassification {
      * Add a row index in the list
      * @param row The row index. Duplicates are not pushed, and do not raise errors.
      * @TODO Add function to push a range instead of a single row index
+     * @TODO refactor, use only one call of binarySearch !
      */
     public void addRow(int row) {
         // Iterate over the row range array and find contiguous row

@@ -6,12 +6,14 @@ package org.noisemap.core;
  ***********************************/
 import com.vividsolutions.jts.geom.*;
 import com.vividsolutions.jts.operation.predicate.RectangleIntersects;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.NoSuchElementException;
 import org.grap.utilities.EnvelopeUtil;
 /**
- * GridIndex is a class to speed up the query of a geometry collection inside a
- * region envelope
- *
+ * GridIndex is a class to speed up the query of a geometry collection and
+ * to minimize the memory used for storing geometry items index.
  * @author N.Fortin J.Picaut (IFSTTAR 2011)
  */
 public class QueryGridIndex implements QueryGeometryStructure {
@@ -21,7 +23,10 @@ public class QueryGridIndex implements QueryGeometryStructure {
         private double cellSizeJ;
         private Envelope mainEnv;
         private Map<Integer,RowsUnionClassification> gridContent = new HashMap<Integer,RowsUnionClassification>();
-                
+             
+        
+        
+        
         public QueryGridIndex(final Envelope gridEnv, int xsubdiv, int ysubdiv) {
                 super();
                 mainEnv = gridEnv;
@@ -46,10 +51,11 @@ public class QueryGridIndex implements QueryGeometryStructure {
         }
         private void addItem(int i, int j, Integer content) {
             Integer flatIndex = getFlatIndex(i,j);
-            if(!gridContent.containsKey(flatIndex)) {
+            RowsUnionClassification res=gridContent.get(flatIndex);
+            if(res==null) {
                 gridContent.put(flatIndex, new RowsUnionClassification(content));
             } else {
-                gridContent.get(flatIndex).addRow(content);
+                res.addRow(content);
             }
         }
         /**
@@ -96,6 +102,16 @@ public class QueryGridIndex implements QueryGeometryStructure {
                 }
         }
         
+        /**
+         * @return The number of items in the grid
+         */
+        public int size() {
+            int nbitem = 0;
+            for(RowsUnionClassification item : gridContent.values()) {
+                nbitem+=item.getItemCount();
+            }
+            return nbitem;
+        }
                 @Override
         public Iterator<Integer> query(Envelope queryEnv) {
             int[] ranges = getRange(queryEnv);
@@ -104,8 +120,9 @@ public class QueryGridIndex implements QueryGeometryStructure {
             for (int i = minI; i < maxI; i++) {
                 for (int j = minJ; j < maxJ; j++) {
                     Integer flatIndex = getFlatIndex(i,j);
-                    if(gridContent.containsKey(flatIndex)) {
-                        querySet.addIntervals(gridContent.get(flatIndex).getRowRanges());
+                    RowsUnionClassification res=gridContent.get(flatIndex);
+                    if(res!=null) {
+                        querySet.addIntervals(res.getRowRanges());
                     }
                 }
             }
