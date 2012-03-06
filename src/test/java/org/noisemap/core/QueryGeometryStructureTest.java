@@ -71,7 +71,7 @@ public class QueryGeometryStructureTest extends TestCase {
         long feedQuadtreeTime = System.currentTimeMillis() - startFeedQuadree;
         //Init grid structure
         long startFeedGrid=System.currentTimeMillis();
-        QueryGridIndex gridIndex = new QueryGridIndex(sdsSources.getFullExtent(),8,8);
+        QueryGridIndex gridIndex = new QueryGridIndex(sdsSources.getFullExtent(),32,32);
         for (Integer rowIndex = 0; rowIndex < rowCount; rowIndex++) {
             Geometry sourceGeom = sdsSources.getFieldValue(rowIndex, spatialSourceFieldIndex).getAsGeometry();
             gridIndex.appendGeometry(sourceGeom, rowIndex);
@@ -85,8 +85,9 @@ public class QueryGeometryStructureTest extends TestCase {
 	
         
         
-        Envelope testExtract = new Envelope(envScene.centre());
-        testExtract.expandBy(envScene.getWidth()/3., envScene.getHeight()/3);
+        Envelope testExtract = new Envelope(envScene.getMinX(),envScene.getMinX()+
+                (envScene.getWidth()/4.), envScene.getMinY(),
+                envScene.getMinY()+(envScene.getHeight()/4.));
         
         //compute expected Query Values
         
@@ -110,7 +111,8 @@ public class QueryGeometryStructureTest extends TestCase {
         
         
         //Check items returned by GridIndex
-        //queryAssert(expectedQueryValue,gridIndex.query(testExtract));
+        queryAssert(expectedQueryValue,gridIndex.query(testExtract));
+        queryAssert(expectedQueryValue,quadIndex.query(testExtract));
     }
     private Integer countResult(Iterator<Integer> result) {
         Integer counter=0;
