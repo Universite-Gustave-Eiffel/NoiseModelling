@@ -4,10 +4,45 @@ package org.noisemap.core;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
 import junit.framework.TestCase;
 
 public class TestRowsUnionClassification extends TestCase  {
-
+    private int GetRandomRowNumber(Random randomizer) {
+        return (int)(randomizer.nextDouble() * 100);
+    }
+    private void checkMerging(RowsUnionClassification mergeTool,List<Integer> correctValues,Long seedValue,int forIndex) {
+        Iterator<Integer> it=mergeTool.getRowRanges();
+        while(it.hasNext()) {
+            int begin=it.next();
+            int end=it.next();
+            assertTrue("end>begin.Seed is "+seedValue+" for() i="+forIndex,begin<=end);
+            for(int val=begin;val<=end;val++) {
+                if(!correctValues.contains(val)) {
+                    assertTrue(val+" not in expected ranges. Seed is "+seedValue+" for() i="+forIndex,correctValues.contains(val));
+                }
+            }
+        }
+        
+    }
+    public void testRowMergeRandom() {
+        Random randomizer = new Random();
+        long seedValue = System.nanoTime();
+        randomizer.setSeed(seedValue);
+        int firstValue = GetRandomRowNumber(randomizer);
+        
+        RowsUnionClassification mergeTool=new RowsUnionClassification(firstValue);
+        List<Integer> correctValues=new ArrayList<Integer>();
+        correctValues.add(firstValue);
+        
+        for(int i=0;i<80;i++) {
+            int rndValue = GetRandomRowNumber(randomizer);
+            mergeTool.addRow(rndValue);
+            correctValues.add(rndValue);
+            checkMerging(mergeTool, correctValues, seedValue,i);
+        }
+        
+    }
     public void testRowMerge() {
         long deb=System.nanoTime();
         RowsUnionClassification mergeTool=new RowsUnionClassification(50);

@@ -171,8 +171,9 @@ public class FastObstructionTest {
 		// int gridsize=(int)Math.pow(2,
 		// Math.log10(Math.pow(this.triVertices.size()+1,2)));
 		int gridsize = 8;
-		triIndex = new QueryGridIndex(this.geometriesBoundingBox, gridsize,
-				gridsize);
+		///triIndex = new QueryGridIndex(this.geometriesBoundingBox, gridsize,
+		//		gridsize);
+                triIndex = new QueryQuadTree();
 		int triind = 0;
 		for (Triangle tri : this.triVertices) {
 			final Coordinate[] triCoords = { vertices.get(tri.getA()),

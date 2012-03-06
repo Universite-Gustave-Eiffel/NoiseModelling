@@ -65,15 +65,22 @@ public class RowsUnionClassification {
         //Search another End Range to this row number
         int index = Collections.binarySearch(rowrange, row-1);
         if(index >=0) {
-            inserted = true;
             if(index % 2==0) {
-                rowrange.set(index+1, row); //Cover case [row,row], index+1 must be updated
+                if(rowrange.get(index+1)<row) {
+                    rowrange.set(index+1, row); //Cover case [row,row], index+1 must be updated
+                    index++;
+                } else {
+                    return; //The end range cover the row value
+                }
             } else {
                 rowrange.set(index, row);
             }
             //Search if this number link with end of another range
             int indexAnother = Collections.binarySearch(rowrange, row+1);
             if(indexAnother >=0) {
+                if(indexAnother % 2!=0 && rowrange.get(indexAnother-1)==row+1) {
+                    indexAnother--;
+                }
                 //That the case, we must update the current range and delete two elements.
                 rowrange.set(index,rowrange.get(indexAnother+1));
                 rowrange.remove(indexAnother);
@@ -84,7 +91,14 @@ public class RowsUnionClassification {
             index = Collections.binarySearch(rowrange, row+1);
             if(index >=0) {
                 inserted = true;
-                rowrange.set(index, row);
+                if(index % 2==0) {
+                    inserted = true;
+                    rowrange.set(index, row);
+                } else {
+                    if(rowrange.get(index-1)>row) {
+                        rowrange.set(index -1, row);
+                    }
+                }
             }
         }
         if(!inserted) {

@@ -71,7 +71,7 @@ public class QueryGeometryStructureTest extends TestCase {
         long feedQuadtreeTime = System.currentTimeMillis() - startFeedQuadree;
         //Init grid structure
         long startFeedGrid=System.currentTimeMillis();
-        QueryGridIndex gridIndex = new QueryGridIndex(sdsSources.getFullExtent(),32,32);
+        QueryGridIndex gridIndex = new QueryGridIndex(sdsSources.getFullExtent(),64,64);
         for (Integer rowIndex = 0; rowIndex < rowCount; rowIndex++) {
             Geometry sourceGeom = sdsSources.getFieldValue(rowIndex, spatialSourceFieldIndex).getAsGeometry();
             gridIndex.appendGeometry(sourceGeom, rowIndex);
@@ -82,13 +82,8 @@ public class QueryGeometryStructureTest extends TestCase {
         System.out.println("Feed QueryGridIndex in "+feedGridTime+" ms");
         
         Envelope envScene = sdsSources.getFullExtent();
-	
-        
-        
-        Envelope testExtract = new Envelope(envScene.getMinX(),envScene.getMinX()+
-                (envScene.getWidth()/4.), envScene.getMinY(),
-                envScene.getMinY()+(envScene.getHeight()/4.));
-        
+
+        Envelope testExtract = new Envelope(new Coordinate(305834,2257149),new Coordinate(305938,2257249));
         //compute expected Query Values
         
         ArrayList<Integer> expectedQueryValue = new ArrayList<Integer>();
@@ -136,11 +131,14 @@ public class QueryGeometryStructureTest extends TestCase {
                 remainingExpectedResult.remove(geoIndex);
             }
         }
-        assertTrue("QueryGeometryStructure does not return the expected row index",remainingExpectedResult.isEmpty());
+        if(!remainingExpectedResult.isEmpty()) {
+            assertTrue("QueryGeometryStructure does not return the expected row index (first :"+remainingExpectedResult.get(0)+" )",remainingExpectedResult.isEmpty());
+        }
     }
     /**
      * Add lines in a geometry query structure
      */
+    /*
     public void testLineSegmentsIntersect() {
         GeometryFactory fact = new GeometryFactory();
         //Init segments
@@ -180,4 +178,5 @@ public class QueryGeometryStructureTest extends TestCase {
         queryAssert(expectedIndex, quadIndex.query(queryEnv));
         queryAssert(expectedIndex, gridIndex.query(queryEnv));
     }
+    */
 }
