@@ -63,22 +63,8 @@ public class FastObstructionTest {
 	public List<Triangle> getTriangles() {
 		return triVertices;
 	}
-	/**
-	 * Debug purpose
-	 */
-	public String getDelaunayGeoms() {
-		StringBuffer geoms=new StringBuffer();
-		geoms.append("create table mesh as SELECT ST_GeomFromText('MULTIPOLYGON (");
-		for(Triangle tri : triVertices) {
-			Coordinate va=vertices.get(tri.getA());
-			Coordinate vb=vertices.get(tri.getB());
-			Coordinate vc=vertices.get(tri.getC());
-			geoms.append("(("+va.x+" "+va.y+", "+vb.x+" "+vb.y+", "+vc.x+" "+vc.y+", "+va.x+" "+va.y+")),");
-		}
-		geoms.deleteCharAt(geoms.length()-1);
-		geoms.append(")') as the_geom from fence;");
-		return geoms.toString();
-	}
+
+        
 	/**
 	 * Retrieve vertices list, only for debug and unit test purpose
 	 * @return
@@ -166,13 +152,8 @@ public class FastObstructionTest {
 		this.vertices = delaunayTool.getVertices();
 		this.triNeighbors = delaunayTool.getNeighbors();
 		// /////////////////////////////////
-		// Feed GridIndex
+		// Feed Query Structure to find triangle, by coordinate
 
-		// int gridsize=(int)Math.pow(2,
-		// Math.log10(Math.pow(this.triVertices.size()+1,2)));
-		int gridsize = 8;
-		///triIndex = new QueryGridIndex(this.geometriesBoundingBox, gridsize,
-		//		gridsize);
                 triIndex = new QueryQuadTree();
 		int triind = 0;
 		for (Triangle tri : this.triVertices) {
@@ -312,14 +293,13 @@ public class FastObstructionTest {
 		Envelope ptEnv = new Envelope(pt);
 		Iterator<Integer> res = triIndex.query(new Envelope(ptEnv));
 		while (res.hasNext()) {
-                        int triIndex = res.next();
-			Coordinate[] tri = getTriangle(triIndex);
+                        int triId = res.next();
+			Coordinate[] tri = getTriangle(triId);
 			if (dotInTri(pt, tri[0], tri[1], tri[2])) {
-				lastFountPointTriTest = triIndex;
-				return triIndex;
+				lastFountPointTriTest = triId;
+				return triId;
 			}
 		}
-
 		return -1;
 	}
 
