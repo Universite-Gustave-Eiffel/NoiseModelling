@@ -36,7 +36,13 @@
                     <artifactId>jts</artifactId>
                     <version>1.11</version>
                 </dependency>
-	</dependencies>
+                <dependency>
+                    <groupId>commons-collections</groupId>
+                    <artifactId>commons-collections</artifactId>
+                    <version>3.2.1</version>
+                    <type>jar</type>
+                </dependency>
+                </dependencies>
 	<description>Translate light vehicle, heavy vehicle, public bus, tramway traffic into linear noise source. Then compute sound propagation and iso surface.</description>
 	<build>
                 <plugins>
