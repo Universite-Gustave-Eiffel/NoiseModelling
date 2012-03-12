@@ -8,7 +8,7 @@ import java.util.Map;
 /**
  * This class centralize informations on profiling
  * use the ProfileTask class profile tasks
- * This class is only used for retrieving stats through the getTasksStats method
+ * This class is only used for retrieving stats through the getTaskStats method
  */
 public  class TimeProfiler {
     private final static Map<String, StatInfo> stats = Collections.synchronizedMap(new  HashMap<String, StatInfo>());
@@ -24,9 +24,18 @@ public  class TimeProfiler {
         }
         stat.taskFinish(taskLength);
     }
-    
+    /**
+     * @return All tasks statistics
+     */
     public static synchronized Collection<StatInfo> getTasksStats() {
         return stats.values();
+    }
+    /**
+     * @param name The Task name
+     * @return The stat or null if the stat is not found
+     */
+    public static synchronized StatInfo getTaskStats(String name) {
+        return stats.get(name);
     }
 
 }

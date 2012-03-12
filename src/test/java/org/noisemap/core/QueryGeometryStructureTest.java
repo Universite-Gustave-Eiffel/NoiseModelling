@@ -76,22 +76,28 @@ public class QueryGeometryStructureTest extends TestCase {
             gridIndex.appendGeometry(sourceGeom, rowIndex);
         }
         long feedGridTime = System.currentTimeMillis() - startFeedGrid;
+        //Init rtree structure
+        long startFeedRtree=System.currentTimeMillis();
+        QueryRTree rTreeIndex = new QueryRTree();
+        for (Integer rowIndex = 0; rowIndex < rowCount; rowIndex++) {
+            Geometry sourceGeom = sdsSources.getFieldValue(rowIndex, spatialSourceFieldIndex).getAsGeometry();
+            rTreeIndex.appendGeometry(sourceGeom, rowIndex);
+        }
+        long feedRTreeTime = System.currentTimeMillis() - startFeedRtree;
+        
+        
+        
         System.out.println("Feed structures with "+rowCount+" items..");
         System.out.println("Feed QueryQuadTree in "+feedQuadtreeTime+" ms");
         System.out.println("Feed QueryGridIndex in "+feedGridTime+" ms");
+        System.out.println("Feed RTreeIndex in "+feedRTreeTime+" ms");
         
-        Envelope envScene = sdsSources.getFullExtent();
-
         Envelope testExtract = new Envelope(new Coordinate(305834,2257149),new Coordinate(305938,2257249));
         //compute expected Query Values
         
         ArrayList<Integer> expectedQueryValue = new ArrayList<Integer>();
         Geometry env = EnvelopeUtil.toGeometry(testExtract);
         
-        GeometryFactory factory = new GeometryFactory();
-        Polygon square = factory.createPolygon(
-                        (LinearRing) env, null);
-        RectangleIntersects inter = new RectangleIntersects(square);
         for (Integer rowIndex = 0; rowIndex < rowCount; rowIndex++) {
             Geometry sourceGeom = sdsSources.getFieldValue(rowIndex, spatialSourceFieldIndex).getAsGeometry();
             if(env.intersects(sourceGeom)) {
@@ -109,10 +115,16 @@ public class QueryGeometryStructureTest extends TestCase {
         nbItemsReturned = countResult(gridIndex.query(testExtract));
         System.out.println("QueryGridIndex query time in "+(System.nanoTime() - debQuery)/1e6+" ms with "+nbItemsReturned+" items returned.");
         System.out.println("QueryGridIndex item count "+gridIndex.size());
+        debQuery = System.nanoTime();
+        nbItemsReturned = countResult(rTreeIndex.query(testExtract));
+        System.out.println("RTreeIndex query time in "+(System.nanoTime() - debQuery)/1e6+" ms with "+nbItemsReturned+" items returned.");
+
+        
+        
         
         //Check items returned by GridIndex
         queryAssert(expectedQueryValue,gridIndex.query(testExtract));
-        queryAssert(expectedQueryValue,quadIndex.query(testExtract));
+        //queryAssert(expectedQueryValue,quadIndex.query(testExtract));
     }
     private Integer countResult(Iterator<Integer> result) {
         Integer counter=0;

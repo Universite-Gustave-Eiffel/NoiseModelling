@@ -7,10 +7,16 @@ package org.noisemap.profile;
 import junit.framework.TestCase;
 
 public class TestProfileTask extends TestCase {
-        private final static Long MAIN_EPSILON = 50L; //millisec epsilon
-        private final static Long TASK_EPSILON = 5L; //millisec epsilon
-        private void assertTime(long timeNano,long targetTimeMilli,long epsilon) {
-            assertTrue((timeNano / 1e6) > targetTimeMilli - epsilon && (timeNano / 1e6) < targetTimeMilli + epsilon);
+        public void testProfileTheProfiler() {
+            int ni=10000;
+            ProfileTask profilerTask = new ProfileTask("profilerTask");
+            for(int i=0;i<ni;i++) {
+                ProfileTask subTask = new ProfileTask("subProfilerTask");
+                subTask.end();
+            }
+            profilerTask.end();
+            
+            System.out.println("Profiling took : "+ (TimeProfiler.getTaskStats("profilerTask").getMax() / ni)+ " nanosec per task");
         }
 	public void testProfiling () throws InterruptedException {
             long taskSleep=20;
@@ -32,10 +38,8 @@ public class TestProfileTask extends TestCase {
             for(StatInfo info : TimeProfiler.getTasksStats()) {
                 System.out.println(info.getName()+" Task min: "+info.getMin() / 1e6+" ms max: "+info.getMax() / 1e6+" ms avg: "+info.getAverage() / 1e6+" ms");
                 if(info.getName().equals("mainTask")) {
-                    assertTime(info.getAverage(), ni * taskSleep,MAIN_EPSILON);
                     hasMainStat=true;
                 } else if(info.getName().equals("subTask")) {
-                    assertTime(info.getAverage(), taskSleep,TASK_EPSILON);
                     hasTaskStat=true;
                 }
             }
