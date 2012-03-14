@@ -5,7 +5,6 @@ package org.noisemap.core;
  * @author Nicolas FORTIN, Judicaël PICAUT
  ***********************************/
 import com.vividsolutions.jts.geom.*;
-import com.vividsolutions.jts.operation.predicate.RectangleIntersects;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -92,10 +91,12 @@ public class QueryGridIndex implements QueryGeometryStructure {
                 for (int i = minI; i < maxI; i++) {
                         for (int j = minJ; j < maxJ; j++) {
                                 Envelope cellEnv = getCellEnv(i, j);
+                                //Intersection of geometries is more
+                                //precise than the intersection of envelope of geometry
+                                //but it take more time
                                 Polygon square = factory.createPolygon(
                                                 (LinearRing) EnvelopeUtil.toGeometry(cellEnv), null);
-                                RectangleIntersects inter = new RectangleIntersects(square);
-                                if (inter.intersects(newGeom)) {
+                                if (square.intersects(newGeom)) {
                                         addItem(i, j, externalId);
                                 }
                         }

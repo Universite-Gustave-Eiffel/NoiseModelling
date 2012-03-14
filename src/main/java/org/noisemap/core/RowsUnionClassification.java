@@ -21,6 +21,12 @@ public class RowsUnionClassification {
     private List<Integer> rowrange=new ArrayList<Integer>(); //Row intervals ex: 0,15,50,60 for 0 to 15 and 50 to 60
 
     /**
+     * Default constructor
+     */
+    RowsUnionClassification() {
+        
+    }
+    /**
      * 
      * @param row First row id
      */

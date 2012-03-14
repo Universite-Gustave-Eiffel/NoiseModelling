@@ -16,10 +16,10 @@ public class TestProfileTask extends TestCase {
             }
             profilerTask.end();
             
-            System.out.println("Profiling took : "+ (TimeProfiler.getTaskStats("profilerTask").getMax() / ni)+ " nanosec per task");
+            System.out.println("Profiling took : "+ (TimeProfiler.getTaskStats("profilerTask").getMax() /(ni*1e6))+ " ms per task");
         }
 	public void testProfiling () throws InterruptedException {
-            long taskSleep=20;
+            long taskSleep=2;
             int ni=100;
             ProfileTask mainTask = new ProfileTask("mainTask");
             ProfileTask subTask = new ProfileTask("subTask");
