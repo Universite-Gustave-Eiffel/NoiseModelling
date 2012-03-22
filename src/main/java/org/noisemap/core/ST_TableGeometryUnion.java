@@ -5,14 +5,10 @@
  ***********************************/
 package org.noisemap.core;
 
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.GeometryCollection;
-import com.vividsolutions.jts.geom.GeometryFactory;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.Map;
+import com.vividsolutions.jts.geom.*;
+import java.util.*;
 import java.util.Map.Entry;
+import org.apache.log4j.Logger;
 import org.gdms.data.SQLDataSourceFactory;
 import org.gdms.data.schema.DefaultMetadata;
 import org.gdms.data.schema.Metadata;
@@ -88,11 +84,12 @@ class GroupKey {
  * This function is the post process of ST_TriangleContouring function. It will merge geometry of the same category.
  */
 public class ST_TableGeometryUnion extends AbstractTableFunction {
-
+    private Logger logger = Logger.getLogger(ST_TableGeometryUnion.class);
     @Override
     public DataSet evaluate(SQLDataSourceFactory sqldsf, DataSet[] dss, Value[] values, ProgressMonitor pm) throws FunctionException {
         //First pass
         //Aggregation of row line number corresponding to groups.
+        ProgressionOrbisGisManager pmManager=null;
         try {
 
             pm.startTask("Grouping and Fusion of geometries", 100);
@@ -115,7 +112,7 @@ public class ST_TableGeometryUnion extends AbstractTableFunction {
             HashMap<GroupKey,RowsUnionClassification> groups=new HashMap<GroupKey,RowsUnionClassification>();
             long rowCount = sds.getRowCount();
             //Instanciate the progression manager
-            ProgressionOrbisGisManager pmManager = new ProgressionOrbisGisManager(
+            pmManager = new ProgressionOrbisGisManager(
 					2, pm);
             ProgressionProcess progressionInfo=pmManager.nextSubProcess(rowCount);
             pmManager.start();
@@ -146,25 +143,35 @@ public class ST_TableGeometryUnion extends AbstractTableFunction {
                 if(pm.isCancelled()) {
                     throw new FunctionException("Canceled by user");
                 }
-                Iterator<Integer> ranges=pairs.getValue().getRowRanges();
-                LinkedList<Geometry> toUnite=new LinkedList<Geometry>();
-                while(ranges.hasNext()) {
-                    int begin=ranges.next();
-                    int end=ranges.next();
-                    for(int rowid=begin;rowid<=end;rowid++) {
+                RowsUnionClassification curClassification = pairs.getValue();
+                int sizeof=0;
+                for(RowInterval interval : curClassification) {
+                    sizeof+=interval.getEnd()-interval.getBegin();
+                }
+                List<Polygon> toUnite=new ArrayList<Polygon>(sizeof);
+                for(RowInterval interval : curClassification) {
+                    for(int rowid=interval.getBegin();rowid<interval.getEnd();rowid++) {
                         if(pm.isCancelled()) {
                             throw new FunctionException("Canceled by user");
                         }
-                        toUnite.add(sds.getFieldValue(rowid,spatialFieldIndex).getAsGeometry());
+                        Geometry unknownGeo=sds.getFieldValue(rowid,spatialFieldIndex).getAsGeometry();
+                        if(unknownGeo instanceof Polygon) {
+                            toUnite.add((Polygon)unknownGeo);
+                        } else {
+                            throw new FunctionException("Only polygons are accepted");
+                        }
                     }
                 }
                 //Merge geometries
-                Geometry geoArray[] = new Geometry[toUnite.size()];
-		toUnite.toArray(geoArray);
-                toUnite.clear();
-		GeometryCollection polygonCollection = geometryFactory
-				.createGeometryCollection(geoArray);
-                Geometry mergedGeom=polygonCollection.union();
+                Polygon[] allTri = new Polygon[toUnite.size()];
+                MultiPolygon polygonCollection = geometryFactory.createMultiPolygon(toUnite.toArray(allTri));
+                Geometry mergedGeom;
+                try {
+                    mergedGeom=polygonCollection.union();
+                } catch (IllegalArgumentException e) {
+                    //Union fails
+                    throw new FunctionException("Union fails with geometry argument "+polygonCollection.toText(), e);
+                }
                 //Save the merged geometries into the driver
                 Value[] row = new Value[3];
                 row[0] = ValueFactory.createValue(mergedGeom);
@@ -182,6 +189,10 @@ public class ST_TableGeometryUnion extends AbstractTableFunction {
             return driver.getTable("main");
             } catch (DriverException e) {
                     throw new FunctionException(e);
+            } finally {
+                if(pmManager!=null) {
+                    pmManager.stop();
+                }
             }
     }
 
@@ -205,7 +216,8 @@ public class ST_TableGeometryUnion extends AbstractTableFunction {
     public FunctionSignature[] getFunctionSignatures() {
         return new FunctionSignature[]{
                 new TableFunctionSignature(TableDefinition.GEOMETRY,
-                new TableArgument(TableDefinition.GEOMETRY))
+                new TableArgument(TableDefinition.GEOMETRY)),
+                new TableFunctionSignature(TableDefinition.GEOMETRY)
         };
     }
 

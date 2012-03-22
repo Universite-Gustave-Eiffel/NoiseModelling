@@ -565,9 +565,12 @@ public class ST_TriangleContouring extends AbstractTableFunction {
                             }else{
                                 triangleToDriver = toDriver.get(isolvl);
                             }
-                            splitInterval(beginInterval, endInterval,
+                            if(splitInterval(beginInterval, endInterval,
                                             currentTriangle, triangleToProcess,
-                                            triangleToDriver);
+                                            triangleToDriver))
+                            {
+                                break;
+                            }
                             beginInterval = endInterval;
                             isolvl++;
                     }

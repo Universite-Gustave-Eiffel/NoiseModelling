@@ -24,6 +24,11 @@ public class TriMarkers extends Triangle {
 		this.m3 = 0;
 	}
 
+        @Override
+        public String toString() {
+            return "TriMarkers{" + "p1=" + p0 + ", p2=" + p1 + ", p3=" + p2 + " m1=" + m1 + ", m2=" + m2 + ", m3=" + m3 + "}";
+        }
+
 	public TriMarkers(Coordinate p0, Coordinate p1, Coordinate p2, double m1,
 			double m2, double m3) {
 		super(p0, p1, p2);

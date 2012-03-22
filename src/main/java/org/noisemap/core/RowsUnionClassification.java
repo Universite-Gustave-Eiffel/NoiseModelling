@@ -16,7 +16,7 @@ import java.util.List;
  * This is a record for a value of the hashmap of the function ST_TableGeometryUnion
  * This class agregates rows index, the goal is to reduce memory usage, ordering by ascending index, and may be optimize row query thanks to interval row number
  */
-public class RowsUnionClassification {
+public class RowsUnionClassification implements Iterable<RowInterval> {
     //TODO store int instead of Integer
     private List<Integer> rowrange=new ArrayList<Integer>(); //Row intervals ex: 0,15,50,60 for 0 to 15 and 50 to 60
 
@@ -50,6 +50,7 @@ public class RowsUnionClassification {
      * To iterate over 
      * @return An integer, begin of a range then end of the range, then begin of next range etc..
      * @warning begin and end values are included [begin-end]
+     * @deprecated Use RowsUnionClassification has an iterable
      */
     public Iterator<Integer> getRowRanges() {
         return this.rowrange.iterator();
@@ -138,5 +139,33 @@ public class RowsUnionClassification {
                 rowrange.add(index,row);
             }
         }
+    }
+
+    @Override
+    public Iterator<RowInterval> iterator() {
+        return new RowIterator(rowrange.iterator());
+    }
+    private class RowIterator implements Iterator<RowInterval> {
+        Iterator<Integer> itR;
+
+        public RowIterator(Iterator<Integer> itR) {
+            this.itR = itR;
+        }
+        
+        @Override
+        public boolean hasNext() {
+            return itR.hasNext();
+        }
+
+        @Override
+        public RowInterval next() {
+            return new RowInterval(itR.next(),itR.next()+1);
+        }
+
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+        
     }
 }
