@@ -112,10 +112,15 @@ create table raster_dbm as select * from ST_INTERPOLATE(receivers_db,2,'db_m');
 -- sound diffraction order (int)
 -- absorption coefficient of walls ([0-1] double) 
 drop table if exists tri_lvl;
-create table tri_lvl as SELECT * from BR_TRIGRID(bati_in_fence,sources,'db_m',750,50,2,0,0,280,0,0,0.23);
-
+-- 2 min map comput
+create table tri_lvl as SELECT * from BR_TRIGRID(bati_in_fence,sources ,'db_m',750,50,2,0,5,280,1,0,0.23);
 
 -- Use the triangle area contouring interpolation (split triangle covering level parameter)
 -- iso lvls in w corresponding to dB->'45,50,55,60,65,70,75,200'
 -- the output iso will be [-inf to 45] -> 0 ]45 to 50] -> 1 etc.. 
 create table tricontouring_noise_map AS SELECT * from ST_TriangleContouring(tri_lvl,'the_geom','db_v1','db_v2','db_v3','31622, 100000, 316227, 1000000, 3162277, 1e+7, 31622776, 1e+20');
+
+-- Merge triangle together to reduce the number of rows
+create table contouring_noise_map as select * from ST_TABLEGEOMETRYUNION(tricontouring_noise_map);
+
+

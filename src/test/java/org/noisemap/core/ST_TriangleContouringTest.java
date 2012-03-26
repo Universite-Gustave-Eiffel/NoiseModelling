@@ -5,7 +5,6 @@
 package org.noisemap.core;
 
 import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.GeometryFactory;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -38,18 +37,12 @@ public class ST_TriangleContouringTest  extends TestCase{
         for (String isolvl : isolevels_str.split(",")) {
                 iso_lvls.add(Double.valueOf(isolvl));
         }
-        GeometryFactory factory = new GeometryFactory();
         //Split the triangle into multiple triangles
         HashMap<Short,LinkedList<TriMarkers>> triangleToDriver=ST_TriangleContouring.processTriangle(triangleData, iso_lvls);
-         
-         for(Map.Entry<Short,LinkedList<TriMarkers>> entry : triangleToDriver.entrySet()) {
-             short IsoId = entry.getKey();
-             System.out.println("ISO :"+IsoId);
-            for(TriMarkers triExport : entry.getValue()) {
-                 subdividedTri++;
-            }
-         }
-         assertTrue(subdividedTri==5);
+        for(Map.Entry<Short,LinkedList<TriMarkers>> entry : triangleToDriver.entrySet()) {
+           subdividedTri+=entry.getValue().size();
+        }
+        assertTrue(subdividedTri==5);
     }
 
     @BeforeClass

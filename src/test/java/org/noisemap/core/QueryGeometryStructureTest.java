@@ -7,14 +7,19 @@ package org.noisemap.core;
 import com.vividsolutions.jts.geom.*;
 import com.vividsolutions.jts.operation.predicate.RectangleIntersects;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import junit.framework.TestCase;
 import org.gdms.data.DataSource;
 import org.gdms.data.DataSourceCreationException;
 import org.gdms.data.DataSourceFactory;
+import org.gdms.data.NoSuchTableException;
+import org.gdms.data.indexes.DefaultSpatialIndexQuery;
+import org.gdms.data.indexes.IndexException;
+import org.gdms.data.indexes.IndexManager;
+import org.gdms.data.indexes.IndexQueryException;
+import org.gdms.data.indexes.tree.IndexVisitor;
 import org.gdms.data.schema.MetadataUtilities;
+import org.gdms.driver.DataSet;
 import org.gdms.driver.DriverException;
 import org.grap.utilities.EnvelopeUtil;
 import org.junit.Before;
@@ -34,11 +39,87 @@ public class QueryGeometryStructureTest extends TestCase {
             dsf = new DataSourceFactory(sourceDir.getAbsolutePath(),
                     targetDir.getAbsolutePath());
     }
+    
+    
+    
+    public void removedTestGdmsIndex() throws DataSourceCreationException, DriverException, NoSuchTableException, IndexException, IndexQueryException {
+        //Register gdms file
+        File sourcesGdmsFile = new File("src"+File.separatorChar+
+                "test"+File.separatorChar+
+                "resource"+File.separatorChar+
+                "org"+File.separatorChar+
+                "noisemap"+File.separatorChar+
+                "core"+File.separatorChar+
+                "multiple_lines.gdms"
+                );
+        dsf.getSourceManager().register("soundSources", 
+                sourcesGdmsFile);
+        
+        DataSource sourcefil = dsf.getDataSource(sourcesGdmsFile);
+        sourcefil.open();
+        
+        DataSet sdsSources = sourcefil.getDriverTable();
+        int spatialSourceFieldIndex = MetadataUtilities.getSpatialFieldIndex(sdsSources.getMetadata());
+        String spatialSourceFieldName = sdsSources.getMetadata().getFieldName(spatialSourceFieldIndex);
+        long rowCount = sdsSources.getRowCount();
+        IndexManager im = dsf.getIndexManager();
+        //Index of Sound Sources Table
+        if(!im.isIndexed(sdsSources,spatialSourceFieldName)) {
+            im.buildIndex(sdsSources, spatialSourceFieldName, null);
+        }
+
+        Envelope testExtract = new Envelope(new Coordinate(305380,2256968),
+                                            new Coordinate(305776,2257351));
+        //compute expected Query Values
+        
+        Set<Integer> expectedQueryValue = new HashSet<Integer>();
+        Geometry env = EnvelopeUtil.toGeometry(testExtract);
+        
+        for (Integer rowIndex = 0; rowIndex < rowCount; rowIndex++) {
+            Geometry sourceGeom = sdsSources.getFieldValue(rowIndex, spatialSourceFieldIndex).getAsGeometry();
+            if(sourceGeom.getEnvelopeInternal().intersects(testExtract)) {
+                expectedQueryValue.add(rowIndex);
+            }
+        }
+        int foundRows = expectedQueryValue.size();
+        //Query with rTree
+        DefaultSpatialIndexQuery sourceSpatialIndexQuery = new DefaultSpatialIndexQuery(testExtract, spatialSourceFieldName);
+        RowVisitor visitor = new RowVisitor();
+        im.queryIndex(sdsSources, sourceSpatialIndexQuery, visitor);
+        int foundRowsByIndex = visitor.getVisitedRows().size();
+        for(int foundIndex : visitor.getVisitedRows()) {
+            expectedQueryValue.remove(foundIndex);
+        }
+        System.out.println("GDMS RIndex found "+foundRowsByIndex+" rows and missed "+expectedQueryValue.size()+" / "+foundRows+" rows"); 
+    }
+    
+    private class RowVisitor implements IndexVisitor {
+        List<Integer> visitedRows = new ArrayList<Integer>();
+        @Override
+        public void visitElement(int row, Object env) {
+            visitedRows.add(row);
+        }
+        /**
+         * 
+         * @return Query result
+         */
+        public List<Integer> getVisitedRows() {
+            return visitedRows;
+        }
+        
+    }
+    
+    /**
+     * Dummy test
+     */
+    public void testVoid() {
+        
+    }
     /**
      * This function does not assert,
      * but keep track of the evolution of geometry structures optimisations
      */
-    public void testBenchQueryGeometryStructure() throws DataSourceCreationException, DriverException {
+    public void removedTestBenchQueryGeometryStructure() throws DataSourceCreationException, DriverException {
         
         System.out.println("________________________________________________");
         System.out.println("QueryGeometryStructure Bench :");
