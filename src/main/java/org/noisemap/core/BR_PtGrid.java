@@ -6,24 +6,30 @@
 
 package org.noisemap.core;
 
+import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.Coordinate;
-
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Stack;
 import java.util.concurrent.TimeUnit;
-
+import org.apache.log4j.Logger;
+import org.gdms.data.NoSuchTableException;
 import org.gdms.data.SQLDataSourceFactory;
+import org.gdms.data.indexes.DefaultSpatialIndexQuery;
+import org.gdms.data.indexes.IndexException;
+import org.gdms.data.indexes.IndexManager;
+import org.gdms.data.indexes.IndexQueryException;
+import org.gdms.data.indexes.tree.IndexVisitor;
 import org.gdms.data.schema.DefaultMetadata;
 import org.gdms.data.schema.Metadata;
+import org.gdms.data.schema.MetadataUtilities;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
-import org.gdms.data.schema.MetadataUtilities;
-import org.gdms.driver.DiskBufferDriver;
 import org.gdms.driver.DataSet;
+import org.gdms.driver.DiskBufferDriver;
 import org.gdms.driver.DriverException;
 import org.gdms.driver.driverManager.DriverLoadException;
 import org.gdms.sql.function.FunctionException;
@@ -34,8 +40,6 @@ import org.gdms.sql.function.table.TableArgument;
 import org.gdms.sql.function.table.TableDefinition;
 import org.gdms.sql.function.table.TableFunctionSignature;
 import org.orbisgis.progress.ProgressMonitor;
-
-import org.apache.log4j.Logger;
 
 /**
  * Evaluate the sound level at each coordinate specified in parameters.
@@ -109,7 +113,12 @@ public class BR_PtGrid extends AbstractTableFunction {
     }
     @Override
     public DataSet evaluate(SQLDataSourceFactory sqldsf, DataSet[] tables, Value[] values, ProgressMonitor pm) throws FunctionException {
-
+                boolean useGeometryIndex = false; //Use gdms geometry index for source and buildings parsing
+                IndexManager im =null;
+                if(useGeometryIndex) {
+                    im = sqldsf.getIndexManager();
+                }
+                
                 if(values.length<7) {
                     throw new FunctionException("Not enough parameters !");
                 }else if(values.length>7){
@@ -152,8 +161,20 @@ public class BR_PtGrid extends AbstractTableFunction {
 			int spatialBuildingsFieldIndex = MetadataUtilities.getSpatialFieldIndex(sds.getMetadata());
 			int spatialSourceFieldIndex = MetadataUtilities.getSpatialFieldIndex(sdsSources.getMetadata());
                         int spatialReceiversFieldIndex= MetadataUtilities.getSpatialFieldIndex(sdsReceivers.getMetadata());
-
-
+                        String spatialSourceFieldName =sdsSources.getMetadata().getFieldName(spatialSourceFieldIndex);
+                        String spatialBuildingsFieldName = sds.getMetadata().getFieldName(spatialBuildingsFieldIndex);                        
+                        
+                        //Initialize geometry index
+                        if(useGeometryIndex) {
+                            //Index of Sound Sources Table
+                            if(!im.isIndexed(sdsSources,spatialSourceFieldName)) {
+                                im.buildIndex(sdsSources, spatialSourceFieldName, null);
+                            }
+                            //Index of Buildings Table
+                            if(!im.isIndexed(sds,spatialBuildingsFieldName)) {
+                                im.buildIndex(sds,spatialBuildingsFieldName,null);
+                            }
+                        }
 			// 1 Step - Evaluation of the main bounding box (receivers)
 			Envelope mainEnvelope = BR_TriGrid.GetGlobalEnvelope(sdsReceivers, pm);
                         // Split domain into 4^subdiv cells
@@ -247,40 +268,68 @@ public class BR_PtGrid extends AbstractTableFunction {
                                             ArrayList<Geometry> sourceGeometries = new ArrayList<Geometry>();
                                             ArrayList<ArrayList<Double>> wj_sources = new ArrayList<ArrayList<Double>>();
                                             QueryGeometryStructure sourcesIndex = new QueryQuadTree();
-                                            long rowCount = sdsSources.getRowCount();
-                                            Integer idsource = 0;
-                                            for (long rowIndex = 0; rowIndex < rowCount; rowIndex++) {
+                                            //Make the Geometry Index request of Buildings
+                                            RowsUnionClassification buildingsRowsToFetch;
+                                            if(useGeometryIndex) {
+                                                DefaultSpatialIndexQuery buildingsSpatialIndexQuery = new DefaultSpatialIndexQuery(expandedCellEnvelop, spatialBuildingsFieldName);
+                                                RowVisitor visitor = new RowVisitor();
+                                                im.queryIndex(sds, buildingsSpatialIndexQuery,visitor);
+                                                buildingsRowsToFetch = visitor.getVisitedRows();
+                                            } else {
+                                                buildingsRowsToFetch = new RowsUnionClassification(0,(int)sds.getRowCount()-1);
+                                            }
+                                            //Make the Geometry Index request of Sound Sources
+                                            RowsUnionClassification sourcesRowsToFetch;
+                                            if(useGeometryIndex) {
+                                                DefaultSpatialIndexQuery sourcesSpatialIndexQuery = new DefaultSpatialIndexQuery(expandedCellEnvelop, spatialSourceFieldName);
+                                                RowVisitor visitor = new RowVisitor();
+                                                im.queryIndex(sdsSources, sourcesSpatialIndexQuery,visitor);
+                                                sourcesRowsToFetch = visitor.getVisitedRows();
+                                            } else {
+                                                sourcesRowsToFetch = new RowsUnionClassification(0,(int)sdsSources.getRowCount()-1);
+                                            }
+                                            
+                                            
+                                            
+                                            Iterator<Integer> itSrcRows = sourcesRowsToFetch.getRowRanges();
+                                            while(itSrcRows.hasNext()) {
+                                                int rbegin=itSrcRows.next();
+                                                int rend=itSrcRows.next();
+                                                Integer idsource = 0;
+                                                for (long rowIndex = rbegin; rowIndex <= rend; rowIndex++) {
 
-                                                    final Value[] row =sdsSources.getRow(rowIndex);
-                                                    Geometry geo = row[spatialSourceFieldIndex].getAsGeometry();
-                                                    Envelope ptEnv = geo.getEnvelopeInternal();
-                                                    if (ptEnv.intersects(expandedCellEnvelop)) {
-                                                            sourcesIndex.appendGeometry(geo, idsource);
-                                                            ArrayList<Double> wj_spectrum = new ArrayList<Double>();
-                                                            wj_spectrum.ensureCapacity(db_field_ids.size());
-                                                            for (Integer idcol : db_field_ids) {
-                                                                    wj_spectrum.add(BR_TriGrid.DbaToW(row[idcol].getAsDouble()));
-                                                            }
-                                                            wj_sources.add(wj_spectrum);
-                                                            sourceGeometries.add(geo);
-                                                            idsource++;
-                                                    }
+                                                        final Value[] row =sdsSources.getRow(rowIndex);
+                                                        Geometry geo = row[spatialSourceFieldIndex].getAsGeometry();
+                                                        Envelope ptEnv = geo.getEnvelopeInternal();
+                                                        if (ptEnv.intersects(expandedCellEnvelop)) {
+                                                                sourcesIndex.appendGeometry(geo, idsource);
+                                                                ArrayList<Double> wj_spectrum = new ArrayList<Double>();
+                                                                wj_spectrum.ensureCapacity(db_field_ids.size());
+                                                                for (Integer idcol : db_field_ids) {
+                                                                        wj_spectrum.add(BR_TriGrid.DbaToW(row[idcol].getAsDouble()));
+                                                                }
+                                                                wj_sources.add(wj_spectrum);
+                                                                sourceGeometries.add(geo);
+                                                                idsource++;
+                                                        }
+                                                }
                                             }
 
                                             // //////////////////////////////////////////////////////
                                             // feed freeFieldFinder for fast intersection query
                                             // optimization
-
-
-                                            rowCount = sds.getRowCount();
-                                            for (long rowIndex = 0; rowIndex < rowCount; rowIndex++) {
-                                                    final Geometry geometry = sds.getFieldValue(rowIndex, spatialBuildingsFieldIndex).getAsGeometry();
-                                                    Envelope geomEnv = geometry.getEnvelopeInternal();
-                                                    if (expandedCellEnvelop.intersects(geomEnv)) {
-                                                            freeFieldFinder.addGeometry(geometry);
-                                                    }
+                                            Iterator<Integer> itBuildingsRows = buildingsRowsToFetch.getRowRanges();
+                                            while(itBuildingsRows.hasNext()) {
+                                                int rbegin=itBuildingsRows.next();
+                                                int rend=itBuildingsRows.next();
+                                                for (long rowIndex = rbegin; rowIndex <= rend; rowIndex++) {
+                                                        final Geometry geometry = sds.getFieldValue(rowIndex, spatialBuildingsFieldIndex).getAsGeometry();
+                                                        Envelope geomEnv = geometry.getEnvelopeInternal();
+                                                        if (expandedCellEnvelop.intersects(geomEnv)) {
+                                                                freeFieldFinder.addGeometry(geometry);
+                                                        }
+                                                }
                                             }
-
                                             freeFieldFinder.finishPolygonFeeding(expandedCellEnvelop);
 
                                             PropagationProcessData threadData = new PropagationProcessData(
@@ -372,6 +421,12 @@ public class BR_PtGrid extends AbstractTableFunction {
 			throw new FunctionException(e);
 		} catch (InterruptedException e) {
 			throw new FunctionException(e);
+                } catch (NoSuchTableException e)  {
+			throw new FunctionException(e);   
+                } catch (IndexException e)  {
+			throw new FunctionException(e); 
+                } catch (IndexQueryException e)  {
+			throw new FunctionException(e);                
 		} finally {
                     //Stop threads if there are not stoped
                     if(pmManager!=null) {
@@ -385,5 +440,19 @@ public class BR_PtGrid extends AbstractTableFunction {
                     }
                 }
     }
-
+    private class RowVisitor implements IndexVisitor {
+        RowsUnionClassification visitedRows = new RowsUnionClassification();
+        @Override
+        public void visitElement(int row, Object env) {
+            visitedRows.addRow(row);
+        }
+        /**
+         * 
+         * @return Query result
+         */
+        public RowsUnionClassification getVisitedRows() {
+            return visitedRows;
+        }
+        
+    }
 }
