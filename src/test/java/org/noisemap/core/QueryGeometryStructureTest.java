@@ -42,7 +42,7 @@ public class QueryGeometryStructureTest extends TestCase {
     
     
     
-    public void removedTestGdmsIndex() throws DataSourceCreationException, DriverException, NoSuchTableException, IndexException, IndexQueryException {
+    public void testGdmsIndex() throws DataSourceCreationException, DriverException, NoSuchTableException, IndexException, IndexQueryException {
         //Register gdms file
         File sourcesGdmsFile = new File("src"+File.separatorChar+
                 "test"+File.separatorChar+
@@ -50,7 +50,7 @@ public class QueryGeometryStructureTest extends TestCase {
                 "org"+File.separatorChar+
                 "noisemap"+File.separatorChar+
                 "core"+File.separatorChar+
-                "multiple_lines.gdms"
+                "osm_bench_lines.gdms"
                 );
         dsf.getSourceManager().register("soundSources", 
                 sourcesGdmsFile);
@@ -68,8 +68,8 @@ public class QueryGeometryStructureTest extends TestCase {
             im.buildIndex(sdsSources, spatialSourceFieldName, null);
         }
 
-        Envelope testExtract = new Envelope(new Coordinate(305380,2256968),
-                                            new Coordinate(305776,2257351));
+        Envelope testExtract = new Envelope(new Coordinate(-1.5552300630926283,47.24373163594368),
+                                            new Coordinate(-1.5516724508251067,47.246733371294404));
         //compute expected Query Values
         
         Set<Integer> expectedQueryValue = new HashSet<Integer>();
@@ -119,7 +119,7 @@ public class QueryGeometryStructureTest extends TestCase {
      * This function does not assert,
      * but keep track of the evolution of geometry structures optimisations
      */
-    public void removedTestBenchQueryGeometryStructure() throws DataSourceCreationException, DriverException {
+    public void testBenchQueryGeometryStructure() throws DataSourceCreationException, DriverException {
         
         System.out.println("________________________________________________");
         System.out.println("QueryGeometryStructure Bench :");
@@ -131,7 +131,7 @@ public class QueryGeometryStructureTest extends TestCase {
                 "org"+File.separatorChar+
                 "noisemap"+File.separatorChar+
                 "core"+File.separatorChar+
-                "multiple_lines.gdms"
+                "osm_bench_lines.gdms"
                 );
         dsf.getSourceManager().register("soundSources", 
                 sourcesGdmsFile);
@@ -173,8 +173,9 @@ public class QueryGeometryStructureTest extends TestCase {
         System.out.println("Feed QueryGridIndex in "+feedGridTime+" ms");
         System.out.println("Feed RTreeIndex in "+feedRTreeTime+" ms");
         
-        Envelope testExtract = new Envelope(new Coordinate(305834,2257149),new Coordinate(305938,2257249));
-        //compute expected Query Values
+       Envelope testExtract = new Envelope(new Coordinate(-1.5552300630926283,47.24373163594368),
+                                            new Coordinate(-1.5516724508251067,47.246733371294404));
+       //compute expected Query Values
         
         ArrayList<Integer> expectedQueryValue = new ArrayList<Integer>();
         Geometry env = EnvelopeUtil.toGeometry(testExtract);
