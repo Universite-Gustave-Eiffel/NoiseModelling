@@ -52,30 +52,49 @@
                                 <configuration>
                                         <source>1.6</source>
                                         <target>1.6</target>
+                                        <descriptorRefs>
+                                            <descriptorRef>jar-with-dependencies</descriptorRef>
+                                        </descriptorRefs>
                                 </configuration>
                                 <version>2.3.2</version>
-                        </plugin>
-                        <plugin>
-                            <artifactId>maven-assembly-plugin</artifactId>
+                        </plugin>            <plugin>
+                    <artifactId>maven-assembly-plugin</artifactId>
+                    <version>2.2.1</version>
+                    <configuration>
+                            <descriptors>
+                                    <descriptor>src/main/assembly/src.xml</descriptor>
+                            </descriptors>
+                    </configuration>
+                    </plugin>
+                    <plugin>
+                            <groupId>org.codehaus.mojo</groupId>
+                            <artifactId>exec-maven-plugin</artifactId>
+                            <version>1.2</version>
                             <configuration>
-                                <archive>
-                                    <manifest>
-                                        <mainClass>org.noisemap.run.trigrid</mainClass>
-                                    </manifest>
-                                </archive>
-                                <descriptorRefs>
-                                    <descriptorRef>jar-with-dependencies</descriptorRef>
-                                </descriptorRefs>
+                                    <executable>java</executable>
+                                    <classpathScope>runtime</classpathScope>
+                                    <arguments>
+                                            <argument>-classpath</argument>
+                                            <classpath />
+                                            <argument>org.orbisgis.core.Main</argument>
+                                            <argument>-pluginDir</argument>
+                                            <argument>target</argument>
+                                    </arguments>
                             </configuration>
-                        </plugin>
+                    </plugin>
                 </plugins>
         </build>
         <repositories>
-                <repository>
-                        <id>geosysin</id>
-                        <name>Geosysin repository</name>
-                        <url>http://geosysin.iict.ch/irstv-web/maven-repo</url>
-                </repository>
+            <repository>
+                <id>IRSTV</id>
+                <name>IRSTV repository</name>
+                <url>http://repo.orbisgis.org</url>
+            </repository>
+            <repository>
+                <id>repo2.maven.org</id>
+                <name>Maven2 repository 2</name>
+                <url>http://repo2.maven.org/maven2</url>
+            </repository>
         </repositories>
         <distributionManagement>
                 <repository>
