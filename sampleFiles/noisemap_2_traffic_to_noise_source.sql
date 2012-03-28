@@ -5,7 +5,7 @@ CREATE TABLE roads_dir_one AS SELECT the_geom,road_type,load_speed,junction_spee
 CREATE TABLE roads_dir_two AS SELECT the_geom,road_type,load_speed,junction_speed,max_speed,lightVehicleCount,heavyVehicleCount FROM roads_geom as geo,roads_traffic traff WHERE geo.node_to=traff.node_from AND geo.node_from=traff.node_to;
 -- Collapse two direction in one table
 drop table if exists roads_geo_and_traffic;
-CREATE TABLE roads_geo_and_traffic AS roads_dir_one UNION roads_dir_two;
+CREATE TABLE roads_geo_and_traffic AS select * from roads_dir_one UNION select * from roads_dir_two;
 
 -- Compute the sound level for each segment of roads
 drop table if exists roads_src_global;
@@ -39,3 +39,5 @@ INSERT INTO roads_src (the_geom, db_m100,db_m125,db_m160,db_m200,db_m250,db_m315
 db_m800,db_m1000,db_m1250,db_m1600,db_m2000,db_m2500,db_m3150,db_m4000,db_m5000) VALUES (ST_GeomFromText('POINT( -300 -300 0 )'),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0));
 INSERT INTO roads_src (the_geom, db_m100,db_m125,db_m160,db_m200,db_m250,db_m315,db_m400,db_m500,db_m630,
 db_m800,db_m1000,db_m1250,db_m1600,db_m2000,db_m2500,db_m3150,db_m4000,db_m5000) VALUES (ST_GeomFromText('POINT( 500 500 0 )'),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0));
+
+-- Clear intermediate tables
