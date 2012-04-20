@@ -185,6 +185,7 @@ public class ST_TableGeometryUnion extends AbstractTableFunction {
             pmManager.stop();
             pm.endTask();
             driver.writingFinished();
+            driver.open();
             return driver.getTable("main");
             } catch (DriverException e) {
                     throw new FunctionException(e);

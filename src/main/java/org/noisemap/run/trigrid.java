@@ -185,7 +185,6 @@ public class trigrid {
                 ((DiskBufferDriver)data).getFile().renameTo(new File(outputFilename));
             } else {
                 //Compute isocontour
-                GdmsDriver trilvls=new GdmsDriver();
                 ST_TriangleContouring contour=new ST_TriangleContouring();
                 String isolvls="31622, 100000, 316227, 1000000, 3162277, 1e+7, 31622776, 1e+20";
                 Value[] isoArgs={ValueFactory.createValue("the_geom"),ValueFactory.createValue("db_v1"),ValueFactory.createValue("db_v2"),ValueFactory.createValue("db_v3"),ValueFactory.createValue(isolvls)};

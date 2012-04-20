@@ -242,6 +242,7 @@ public class ST_SetNearestZ extends AbstractTableFunction {
 				}
 			}
 			driver.writingFinished();
+                        driver.open();
 			return driver.getTable("main");
 		} catch (DriverLoadException e) {
                         progManager.stop();
