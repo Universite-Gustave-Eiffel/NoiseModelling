@@ -130,7 +130,6 @@ public class ST_ExtractVerticesTriGrid extends AbstractTableFunction {
             pmManager.stop();
             pm.endTask();
             driver.writingFinished();
-            driver.start();
             return driver.getTable("main");
             } catch (DriverException e) {
                     throw new FunctionException(e);

@@ -394,7 +394,6 @@ public class BR_PtGrid extends AbstractTableFunction {
 			}
                         threadManager.shutdown();
 			driver.writingFinished();
-                        driver.start();
 			logger.info("Building source-receiver obstruction test time:"
 					+ threadDataOut.getTotalBuildingObstructionTest() + " ms");
 			logger.info("Reflexion computing time:"

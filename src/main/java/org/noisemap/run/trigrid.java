@@ -9,15 +9,15 @@
 package org.noisemap.run;
 
 import java.io.File;
-import org.gdms.driver.DriverException;
-import org.gdms.driver.DataSet;
-import org.gdms.driver.gdms.GdmsDriver;
 import java.util.Stack;
 import org.apache.log4j.Logger;
 import org.gdms.data.SQLDataSourceFactory;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
+import org.gdms.driver.DataSet;
 import org.gdms.driver.DiskBufferDriver;
+import org.gdms.driver.DriverException;
+import org.gdms.driver.gdms.GdmsDriver;
 import org.gdms.sql.function.FunctionException;
 import org.noisemap.core.BR_PtGrid;
 import org.noisemap.core.BR_TriGrid;
@@ -169,7 +169,7 @@ public class trigrid {
             Logger log = new ConsoleLogger("BR_TriGrid");
             propa.setLogger(log);
             Value[] propaArgs={ValueFactory.createValue(splField),ValueFactory.createValue(maxDist),ValueFactory.createValue(maxRDist),ValueFactory.createValue(splitDepth),ValueFactory.createValue(roadsWidth),ValueFactory.createValue(densification),ValueFactory.createValue(maxarea),ValueFactory.createValue(reflectionDepth),ValueFactory.createValue(diffractionDepth),ValueFactory.createValue(wallAlpha)};
-            DataSet data=null;
+            DataSet data;
             try {
                 data = propa.evaluate(factory, tables, propaArgs, null);
                 long overallComputeTime=System.currentTimeMillis()-debComputeTime;
@@ -190,7 +190,7 @@ public class trigrid {
                 String isolvls="31622, 100000, 316227, 1000000, 3162277, 1e+7, 31622776, 1e+20";
                 Value[] isoArgs={ValueFactory.createValue("the_geom"),ValueFactory.createValue("db_v1"),ValueFactory.createValue("db_v2"),ValueFactory.createValue("db_v3"),ValueFactory.createValue(isolvls)};
 
-                DataSet isoContourResult=null;
+                DataSet isoContourResult;
                 try {
                     DataSet[] isoTables={data};
                     isoContourResult=contour.evaluate(factory, isoTables, isoArgs, null);
@@ -206,7 +206,7 @@ public class trigrid {
             Logger log = new ConsoleLogger("BR_PtGrid");
             propa.setLogger(log);
             Value[] propaArgs={ValueFactory.createValue(splField),ValueFactory.createValue(maxDist),ValueFactory.createValue(maxRDist),ValueFactory.createValue(splitDepth),ValueFactory.createValue(reflectionDepth),ValueFactory.createValue(diffractionDepth),ValueFactory.createValue(wallAlpha)};
-            DataSet data=null;
+            DataSet data;
             try {
                 data=propa.evaluate(factory, tables, propaArgs, null);
                 //Rename output file
