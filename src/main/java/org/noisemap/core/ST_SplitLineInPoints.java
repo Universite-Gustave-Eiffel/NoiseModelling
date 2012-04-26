@@ -6,7 +6,7 @@
 
 package org.noisemap.core;
 
-import org.gdms.data.SQLDataSourceFactory;
+import org.gdms.data.DataSourceFactory;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
 import org.gdms.sql.function.BasicFunctionSignature;
@@ -126,7 +126,7 @@ public class ST_SplitLineInPoints extends AbstractScalarSpatialFunction {
 	}
 
 	@Override
-	public Value evaluate(SQLDataSourceFactory dsf,Value... args) throws FunctionException {
+	public Value evaluate(DataSourceFactory dsf,Value... args) throws FunctionException {
 		if (args[0].isNull()) {
 			return ValueFactory.createNullValue();
 		} else {

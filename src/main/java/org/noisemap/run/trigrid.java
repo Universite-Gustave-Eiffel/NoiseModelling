@@ -11,7 +11,7 @@ package org.noisemap.run;
 import java.io.File;
 import java.util.Stack;
 import org.apache.log4j.Logger;
-import org.gdms.data.SQLDataSourceFactory;
+import org.gdms.data.DataSourceFactory;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
 import org.gdms.driver.DataSet;
@@ -140,7 +140,7 @@ public class trigrid {
             return;
         }
         //Load files
-        SQLDataSourceFactory factory=new SQLDataSourceFactory();
+        DataSourceFactory factory=new DataSourceFactory();
         GdmsDriver buildings=new GdmsDriver();
         GdmsDriver sources=new GdmsDriver();
         GdmsDriver receivers_driv=new GdmsDriver();

@@ -9,7 +9,7 @@ package org.noisemap.core;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.gdms.data.SQLDataSourceFactory;
+import org.gdms.data.DataSourceFactory;
 import org.gdms.data.schema.DefaultMetadata;
 import org.gdms.data.schema.Metadata;
 import org.gdms.data.types.Type;
@@ -155,7 +155,7 @@ public class ST_SetNearestZ extends AbstractTableFunction {
 	}
 
 	@Override
-	public DataSet evaluate(SQLDataSourceFactory dsf, DataSet[] tables,
+	public DataSet evaluate(DataSourceFactory dsf, DataSet[] tables,
             Value[] values, ProgressMonitor pm) throws FunctionException {
                 ProgressionOrbisGisManager progManager=new ProgressionOrbisGisManager(2, pm);
 		try {

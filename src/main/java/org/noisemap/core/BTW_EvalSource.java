@@ -6,7 +6,7 @@
 
 package org.noisemap.core;
 
-import org.gdms.data.SQLDataSourceFactory;
+import org.gdms.data.DataSourceFactory;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
@@ -26,7 +26,7 @@ public class BTW_EvalSource  extends AbstractScalarFunction {
 	public static final  double rigid_b_factor=78.;
 	public static final  double speed_reference=40.;
 	@Override
-	public Value evaluate(SQLDataSourceFactory dsf,Value... args) throws FunctionException {
+	public Value evaluate(DataSourceFactory dsf,Value... args) throws FunctionException {
 		if (args.length != 4) {
 			return ValueFactory.createNullValue();
 		} else {

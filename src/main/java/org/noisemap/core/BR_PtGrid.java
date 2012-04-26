@@ -16,7 +16,7 @@ import java.util.Stack;
 import java.util.concurrent.TimeUnit;
 import org.apache.log4j.Logger;
 import org.gdms.data.NoSuchTableException;
-import org.gdms.data.SQLDataSourceFactory;
+import org.gdms.data.DataSourceFactory;
 import org.gdms.data.indexes.DefaultSpatialIndexQuery;
 import org.gdms.data.indexes.IndexException;
 import org.gdms.data.indexes.IndexManager;
@@ -112,7 +112,7 @@ public class BR_PtGrid extends AbstractTableFunction {
         this.logger = logger;
     }
     @Override
-    public DataSet evaluate(SQLDataSourceFactory sqldsf, DataSet[] tables, Value[] values, ProgressMonitor pm) throws FunctionException {
+    public DataSet evaluate(DataSourceFactory sqldsf, DataSet[] tables, Value[] values, ProgressMonitor pm) throws FunctionException {
                 boolean useGeometryIndex = false; //Use gdms geometry index for source and buildings parsing
                 IndexManager im =null;
                 if(useGeometryIndex) {

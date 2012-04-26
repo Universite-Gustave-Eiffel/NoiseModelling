@@ -7,7 +7,7 @@ package org.noisemap.core;
  ***********************************/
 
 import java.util.HashMap;
-import org.gdms.data.SQLDataSourceFactory;
+import org.gdms.data.DataSourceFactory;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
@@ -57,7 +57,7 @@ public class BTW_SpectrumRepartition extends AbstractScalarFunction {
 	}
 
 	@Override
-	public Value evaluate(SQLDataSourceFactory dsf, Value... args) throws FunctionException {
+	public Value evaluate(DataSourceFactory dsf, Value... args) throws FunctionException {
 		if (args.length < 2) {
 			throw new FunctionException("Not enough parameters !");
 		} else if (args.length > 2) {

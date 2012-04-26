@@ -41,7 +41,7 @@
  ***********************************/
 
 package org.noisemap.core;
-import org.gdms.data.SQLDataSourceFactory;
+import org.gdms.data.DataSourceFactory;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
@@ -53,7 +53,7 @@ import org.gdms.sql.function.math.AbstractScalarMathFunction;
 
 public class Log10 extends AbstractScalarMathFunction {
 
-	public Value evaluate(SQLDataSourceFactory dsf, Value... args) throws FunctionException {
+	public Value evaluate(DataSourceFactory dsf, Value... args) throws FunctionException {
 		if (args[0].isNull()) {
 			return ValueFactory.createNullValue();
 		} else {

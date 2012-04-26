@@ -14,7 +14,7 @@ import java.util.Stack;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.Logger;
-import org.gdms.data.SQLDataSourceFactory;
+import org.gdms.data.DataSourceFactory;
 import org.gdms.data.schema.DefaultMetadata;
 import org.gdms.data.schema.Metadata;
 import org.gdms.data.types.Type;
@@ -498,7 +498,7 @@ public class BR_TriGrid extends AbstractTableFunction {
 	}
 
 	@Override
-	public DataSet evaluate(SQLDataSourceFactory dsf, DataSet[] tables,
+	public DataSet evaluate(DataSourceFactory dsf, DataSet[] tables,
             Value[] values, ProgressMonitor pm) throws FunctionException {
 		String tmpdir = dsf.getTempDir().getAbsolutePath();
                 if(values.length<10) {

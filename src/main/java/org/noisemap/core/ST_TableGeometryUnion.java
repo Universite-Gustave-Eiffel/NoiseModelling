@@ -9,7 +9,7 @@ import com.vividsolutions.jts.geom.*;
 import java.util.*;
 import java.util.Map.Entry;
 import org.apache.log4j.Logger;
-import org.gdms.data.SQLDataSourceFactory;
+import org.gdms.data.DataSourceFactory;
 import org.gdms.data.schema.DefaultMetadata;
 import org.gdms.data.schema.Metadata;
 import org.gdms.data.schema.MetadataUtilities;
@@ -86,7 +86,7 @@ class GroupKey {
 public class ST_TableGeometryUnion extends AbstractTableFunction {
     private Logger logger = Logger.getLogger(ST_TableGeometryUnion.class);
     @Override
-    public DataSet evaluate(SQLDataSourceFactory sqldsf, DataSet[] dss, Value[] values, ProgressMonitor pm) throws FunctionException {
+    public DataSet evaluate(DataSourceFactory sqldsf, DataSet[] dss, Value[] values, ProgressMonitor pm) throws FunctionException {
         //First pass
         //Aggregation of row line number corresponding to groups.
         ProgressionOrbisGisManager pmManager=null;

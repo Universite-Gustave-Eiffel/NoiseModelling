@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
-import org.gdms.data.SQLDataSourceFactory;
+import org.gdms.data.DataSourceFactory;
 import org.gdms.data.schema.DefaultMetadata;
 import org.gdms.data.schema.Metadata;
 import org.gdms.data.schema.MetadataUtilities;
@@ -44,7 +44,7 @@ public class ST_ExtractVerticesTriGrid extends AbstractTableFunction {
         driver.addValues(row);
     }
     @Override
-    public DataSet evaluate(SQLDataSourceFactory sqldsf, DataSet[] dss, Value[] values, ProgressMonitor pm) throws FunctionException {
+    public DataSet evaluate(DataSourceFactory sqldsf, DataSet[] dss, Value[] values, ProgressMonitor pm) throws FunctionException {
         //First pass
         //Aggregation of row line number corresponding to groups.
         try {
