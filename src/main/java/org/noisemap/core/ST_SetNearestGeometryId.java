@@ -65,8 +65,11 @@ public class ST_SetNearestGeometryId extends AbstractTableFunction {
 	@Override
 	public DataSet evaluate(DataSourceFactory dsf, DataSet[] tables,
             Value[] values, ProgressMonitor pm) throws FunctionException {
+            
+                ProgressionOrbisGisManager progManager = null;
+                DiskBufferDriver driver=null;
 		try {
-			ProgressionOrbisGisManager progManager=new ProgressionOrbisGisManager(2, pm);
+			progManager=new ProgressionOrbisGisManager(2, pm);
                         progManager.start();
 			// Declare source and Destination tables
 			final DataSet sds = tables[0];
@@ -84,7 +87,7 @@ public class ST_SetNearestGeometryId extends AbstractTableFunction {
 			int spatialSourceFieldIndex = sdsSource.getMetadata().getFieldIndex(spatialSourceFieldName);
 			final int idSourceNum = sdsSource.getMetadata().getFieldIndex(idSourceFieldName);
  
-			final DiskBufferDriver driver = new DiskBufferDriver(dsf, this.getMetadata(new Metadata[] {tables[0].getMetadata()}));
+			driver = new DiskBufferDriver(dsf, this.getMetadata(new Metadata[] {tables[0].getMetadata()}));
 
 			final long rowCount = sds.getRowCount();
 			final long rowSourceCount = sdsSource.getRowCount();
@@ -148,15 +151,22 @@ public class ST_SetNearestGeometryId extends AbstractTableFunction {
 				driver.addValues(newValues);
 
 			}
-                        progManager.stop();
 			driver.writingFinished();
                         driver.open();
-			return driver.getTable("main");
 		} catch (DriverLoadException e) {
 			throw new FunctionException(e);
 		} catch (DriverException e) {
 			throw new FunctionException(e);
-		}
+		} finally {
+                    if(progManager!=null) {
+                        progManager.stop();
+                    }
+                }
+                if(driver!=null) {
+                    return driver.getTable("main");
+                } else {
+		    throw new FunctionException("No output data");
+                }
 	}
 
 	private class QuadtreeNearestFilter implements CoordinateSequenceFilter {
