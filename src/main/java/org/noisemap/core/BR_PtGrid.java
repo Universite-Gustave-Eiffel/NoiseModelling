@@ -15,8 +15,8 @@ import java.util.List;
 import java.util.Stack;
 import java.util.concurrent.TimeUnit;
 import org.apache.log4j.Logger;
-import org.gdms.data.NoSuchTableException;
 import org.gdms.data.DataSourceFactory;
+import org.gdms.data.NoSuchTableException;
 import org.gdms.data.indexes.DefaultSpatialIndexQuery;
 import org.gdms.data.indexes.IndexException;
 import org.gdms.data.indexes.IndexManager;
@@ -43,10 +43,10 @@ import org.orbisgis.progress.ProgressMonitor;
 
 /**
  * Evaluate the sound level at each coordinate specified in parameters.
- * This function doesn't make a noise map but is usefull to quickely get the
+ * This function doesn't make a noise map but is useful to get the
  * sound level at some coordinates.
  * TODO subdivision level is useless, subdivision level can be computed from 
- * the maximum propagation distance and computation boudings box
+ * the maximum propagation distance and computation bounding box
  */
 public class BR_PtGrid extends AbstractTableFunction {
         private Logger logger = Logger.getLogger(BR_TriGrid.class.getName());
@@ -395,12 +395,6 @@ public class BR_PtGrid extends AbstractTableFunction {
                         threadManager.shutdown();
 			driver.writingFinished();
                         driver.open();
-			logger.info("Building source-receiver obstruction test time:"
-					+ threadDataOut.getTotalBuildingObstructionTest() + " ms");
-			logger.info("Reflexion computing time:"
-					+ threadDataOut.getTotalReflexionTime() + " ms");
-			logger.info("Source query and optimisation time:"
-					+ threadDataOut.getSourceSplittingTime() + " ms");
                         logger.info("Min Max Avg computation time by receiver : "+ (threadDataOut.getMinimalReceiverComputationTime()/1e6) +" ms to "+ (threadDataOut.getMaximalReceiverComputationTime()/1e6)+" ms. Avg :"+(threadDataOut.getSumReceiverComputationTime()/(nbreceivers*1e6))+" ms.");
 			logger.info("Receiver count:" + nbreceivers);
 			logger.info("Receiver-Source count:"

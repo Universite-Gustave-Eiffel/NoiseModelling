@@ -429,7 +429,7 @@ public class BR_TriGrid extends AbstractTableFunction {
 				if (neighborsBorderVertices[leftCellId] == null) {
 					neighborsBorderVertices[leftCellId] = new NodeList();
 				}
-				leftEnv = this.getCellEnv(mainEnvelope, cellI
+				leftEnv = getCellEnv(mainEnvelope, cellI
 						+ BR_TriGrid.neighboor[BR_TriGrid.nLeft][0], cellJ
 						+ BR_TriGrid.neighboor[BR_TriGrid.nLeft][1], cellIMax,
 						cellJMax, cellWidth, cellHeight);
@@ -438,7 +438,7 @@ public class BR_TriGrid extends AbstractTableFunction {
 				if (neighborsBorderVertices[rightCellId] == null) {
 					neighborsBorderVertices[rightCellId] = new NodeList();
 				}
-				rightEnv = this.getCellEnv(mainEnvelope, cellI
+				rightEnv = getCellEnv(mainEnvelope, cellI
 						+ BR_TriGrid.neighboor[BR_TriGrid.nRight][0], cellJ
 						+ BR_TriGrid.neighboor[BR_TriGrid.nRight][1], cellIMax,
 						cellJMax, cellWidth, cellHeight);
@@ -447,7 +447,7 @@ public class BR_TriGrid extends AbstractTableFunction {
 				if (neighborsBorderVertices[bottomCellId] == null) {
 					neighborsBorderVertices[bottomCellId] = new NodeList();
 				}
-				bottomEnv = this.getCellEnv(mainEnvelope, cellI
+				bottomEnv = getCellEnv(mainEnvelope, cellI
 						+ BR_TriGrid.neighboor[BR_TriGrid.nBottom][0], cellJ
 						+ BR_TriGrid.neighboor[BR_TriGrid.nBottom][1],
 						cellIMax, cellJMax, cellWidth, cellHeight);
@@ -456,7 +456,7 @@ public class BR_TriGrid extends AbstractTableFunction {
 				if (neighborsBorderVertices[topCellId] == null) {
 					neighborsBorderVertices[topCellId] = new NodeList();
 				}
-				topEnv = this.getCellEnv(mainEnvelope, cellI
+				topEnv = getCellEnv(mainEnvelope, cellI
 						+ BR_TriGrid.neighboor[BR_TriGrid.nTop][0], cellJ
 						+ BR_TriGrid.neighboor[BR_TriGrid.nTop][1], cellIMax,
 						cellJMax, cellWidth, cellHeight);
@@ -831,12 +831,6 @@ public class BR_TriGrid extends AbstractTableFunction {
 			logger.info("Parse polygons time:" + this.totalParseBuildings
 					+ " ms");
 			logger.info("Delaunay time:" + this.totalDelaunay + " ms");
-			logger.info("Building source-receiver obstruction test time:"
-					+ threadDataOut.getTotalBuildingObstructionTest() + " ms");
-			logger.info("Reflexion computing time:"
-					+ threadDataOut.getTotalReflexionTime() + " ms");
-			logger.info("Source query and optimisation time:"
-					+ threadDataOut.getSourceSplittingTime() + " ms");
                         logger.info("Min Max Avg computation time by receiver : "+ (threadDataOut.getMinimalReceiverComputationTime()/1e6) +" ms to "+ (threadDataOut.getMaximalReceiverComputationTime()/1e6)+" ms. Avg :"+(threadDataOut.getSumReceiverComputationTime()/(nbreceivers*1e6))+" ms.");
 			logger.info("Receiver count:" + nbreceivers);
 			logger.info("Receiver-Source count:"

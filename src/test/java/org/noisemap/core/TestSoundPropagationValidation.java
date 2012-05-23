@@ -234,7 +234,6 @@ public class TestSoundPropagationValidation extends TestCase {
 		System.out.println(propDataOut.getNb_couple_receiver_src()+" point source created..");
 		System.out.println(propDataOut.getNb_image_receiver()+" receiver image found..");
 		System.out.println(propDataOut.getNb_reflexion_path()+" reflection path found..");
-		System.out.println(propDataOut.getTotalReflexionTime()+" ms reflexion time");
 		splCompare(dbaRef, "Scene 2 (20,4)",91.916);
 		System.out.println("testScene1 done in "+(System.currentTimeMillis()-startMakeScene)+"ms");
 	}

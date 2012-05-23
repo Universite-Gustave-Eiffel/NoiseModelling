@@ -20,7 +20,6 @@ import com.vividsolutions.jts.index.quadtree.Quadtree;
 import java.util.*;
 
 public class PropagationProcess implements Runnable {
-        private final static double receiverComputationTimeLimit = 5000;
         private final static double BASE_LVL=1.; // 0dB lvl
 	private final static double ONETHIRD=1./3.;
 	private final static double MERGE_SRC_DIST=1.;
@@ -37,7 +36,6 @@ public class PropagationProcess implements Runnable {
 	private int nbfreq;
         private long diffractionPathCount=0;
         private long refpathcount=0;
-        private long totalReflexionTime=0;
 	private double[] alpha_atmo;
 	private double[] freq_lambda;
         private static double GetGlobalLevel(int nbfreq,double energeticSum[]) {
@@ -348,11 +346,9 @@ public class PropagationProcess implements Runnable {
 			// Then, check if the source is visible from the receiver (not
 			// hidden by a building)
 			// Create the direct Line
-			long beginBuildingObstructionTest = System.currentTimeMillis();
 			boolean somethingHideReceiver = false;
 			somethingHideReceiver = !data.freeFieldFinder.isFreeField(
 					receiverCoord, srcCoord);
-			dataOut.appendObstructionTestQueryTime((System.currentTimeMillis() - beginBuildingObstructionTest));
 			if (!somethingHideReceiver) {
 				// Evaluation of energy at receiver
 				// add=wj/(4*pi*distance²)
@@ -369,7 +365,6 @@ public class PropagationProcess implements Runnable {
 			//
 			// Process specular reflection
 			if (data.reflexionOrder > 0) {
-				long beginReflexionTest = System.currentTimeMillis();
 				NonRobustLineIntersector linters = new NonRobustLineIntersector();
 				for (MirrorReceiverResult receiverReflection : mirroredReceiver) {
 
@@ -490,7 +485,6 @@ public class PropagationProcess implements Runnable {
 						}
 					}
 				}
-                                totalReflexionTime+=System.currentTimeMillis() - beginReflexionTest;
 			} // End reflexion
 				// ///////////
 				// Process diffraction paths
@@ -552,7 +546,7 @@ public class PropagationProcess implements Runnable {
 										DiffractionAttenuation = 10 * Math
 												.log10(3 + testForm);
 									}else{
-										System.out.println("c' < -2");
+										
 									}
 									// Limit to 0<=DiffractionAttenuation
 									DiffractionAttenuation = Math.max(0,
@@ -689,8 +683,6 @@ public class PropagationProcess implements Runnable {
 	public void computeSoundLevelAtPosition(Coordinate receiverCoord,double energeticSum[]) {
 		// List of walls within maxReceiverSource distance
                 double srcEnergeticSum=BASE_LVL; //Global energetic sum of all sources processed
-                long sourceQueryNanoTime=0;
-                long beginEvaluateSPL=System.currentTimeMillis();
 		List<LineSegment> nearBuildingsWalls = null;
 		List<MirrorReceiverResult> mirroredReceiver = null;
 		if (data.reflexionOrder > 0) {
@@ -737,7 +729,6 @@ public class PropagationProcess implements Runnable {
 				- searchSourceDistance, receiverCoord.x + searchSourceDistance,
 				receiverCoord.y - searchSourceDistance, receiverCoord.y
 						+ searchSourceDistance);
-                    long beginQuadQuery = System.nanoTime();
                     Iterator<Integer> regionSourcesLst = data.sourcesIndex
                                     .query(receiverSourceRegion);
 
@@ -770,7 +761,6 @@ public class PropagationProcess implements Runnable {
                             }
                         }
                     }
-                    sourceQueryNanoTime+=System.nanoTime()-beginQuadQuery;
                     //Iterate over source point sorted by their distance from the receiver
                     for (int mergedSrcId : srcSortByDist) {
                             // For each Pt Source - Pt Receiver
@@ -791,17 +781,13 @@ public class PropagationProcess implements Runnable {
                                                 nearBuildingsWalls, regionCorners,
                                                 regionCornersFreeToReceiver, freq_lambda);
                             }
-                            if(System.currentTimeMillis()-beginEvaluateSPL>receiverComputationTimeLimit) {
-                                break;
-                            }
                     }
                     //srcEnergeticSum=GetGlobalLevel(nbfreq,energeticSum);
-                    if(Math.abs(wToDba(attDistW(W_RANGE,searchSourceDistance)+srcEnergeticSum)-wToDba(srcEnergeticSum))<DBA_FORGET_SOURCE || System.currentTimeMillis()-beginEvaluateSPL>receiverComputationTimeLimit) {
+                    if(Math.abs(wToDba(attDistW(W_RANGE,searchSourceDistance)+srcEnergeticSum)-wToDba(srcEnergeticSum))<DBA_FORGET_SOURCE) {
                         break; //Stop search for fartest sources
                     }
                 }
                 dataOut.appendSourceCount(sourceCount);
-                dataOut.appendSourceQueryTime((long)(sourceQueryNanoTime/1e6));
 	}
 	/**
 	 * Must be called before computeSoundLevelAtPosition
@@ -924,7 +910,6 @@ public class PropagationProcess implements Runnable {
                 dataOut.updateMinimalReceiverComputationTime(min_compute_time);
                 dataOut.addSumReceiverComputationTime(sum_compute);
                 dataOut.appendDiffractionPath(diffractionPathCount);
-                dataOut.appendTotalReflexionTime(totalReflexionTime);
 		dataOut.appendReflexionPath(refpathcount);
 	}
 
