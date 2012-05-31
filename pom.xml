@@ -100,7 +100,7 @@
                 <repository>
                         <id>IRSTV</id>
                         <name>IRSTV repository</name>
-                        <url>sftp://irstv@www.orbisgis.org:/var/www/repo.orbisgis.org/htdocs</url>
+                        <url>scp://ateliersig@repo.orbisgis.org:/var/www/repo.orbisgis.org/</url>
                 </repository>
         </distributionManagement>
 </project>
