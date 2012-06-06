@@ -271,7 +271,7 @@ public class BR_PtGrid extends AbstractTableFunction {
                                             //Make the Geometry Index request of Buildings
                                             RowsUnionClassification buildingsRowsToFetch;
                                             if(useGeometryIndex) {
-                                                DefaultSpatialIndexQuery buildingsSpatialIndexQuery = new DefaultSpatialIndexQuery(expandedCellEnvelop, spatialBuildingsFieldName);
+                                                DefaultSpatialIndexQuery buildingsSpatialIndexQuery = new DefaultSpatialIndexQuery(spatialBuildingsFieldName,expandedCellEnvelop);
                                                 RowVisitor visitor = new RowVisitor();
                                                 im.queryIndex(sds, buildingsSpatialIndexQuery,visitor);
                                                 buildingsRowsToFetch = visitor.getVisitedRows();
@@ -281,7 +281,7 @@ public class BR_PtGrid extends AbstractTableFunction {
                                             //Make the Geometry Index request of Sound Sources
                                             RowsUnionClassification sourcesRowsToFetch;
                                             if(useGeometryIndex) {
-                                                DefaultSpatialIndexQuery sourcesSpatialIndexQuery = new DefaultSpatialIndexQuery(expandedCellEnvelop, spatialSourceFieldName);
+                                                DefaultSpatialIndexQuery sourcesSpatialIndexQuery = new DefaultSpatialIndexQuery(spatialSourceFieldName,expandedCellEnvelop);
                                                 RowVisitor visitor = new RowVisitor();
                                                 im.queryIndex(sdsSources, sourcesSpatialIndexQuery,visitor);
                                                 sourcesRowsToFetch = visitor.getVisitedRows();

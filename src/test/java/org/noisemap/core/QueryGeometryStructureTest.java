@@ -83,7 +83,7 @@ public class QueryGeometryStructureTest extends TestCase {
         }
         int foundRows = expectedQueryValue.size();
         //Query with rTree
-        DefaultSpatialIndexQuery sourceSpatialIndexQuery = new DefaultSpatialIndexQuery(testExtract, spatialSourceFieldName);
+        DefaultSpatialIndexQuery sourceSpatialIndexQuery = new DefaultSpatialIndexQuery(spatialSourceFieldName,testExtract);
         RowVisitor visitor = new RowVisitor();
         im.queryIndex(sdsSources, sourceSpatialIndexQuery, visitor);
         int foundRowsByIndex = visitor.getVisitedRows().size();
