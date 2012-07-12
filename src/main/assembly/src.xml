@@ -18,7 +18,7 @@
                          <useProjectArtifact>true</useProjectArtifact>
                         <excludes>
                                 <exclude>org.orbisgis:orbisgis-ui</exclude>
-                                <exclude>org.gdms.sql:gdmsql</exclude>
+                                <exclude>org.gdms:gdms</exclude>
                         </excludes>
                         <useTransitiveFiltering>true</useTransitiveFiltering>
                         <unpack>true</unpack>
