@@ -75,8 +75,8 @@ public class BTW_SpectrumRepartition extends AbstractScalarFunction {
 
 
 	@Override
-	public Type getType(Type[] types) {
-		return TypeFactory.createType(Type.DOUBLE);
+	public int getType(int[] types) {
+		return Type.DOUBLE;
 	}
 
 	   

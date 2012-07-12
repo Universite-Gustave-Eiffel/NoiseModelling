@@ -69,8 +69,8 @@ public class Log10 extends AbstractScalarMathFunction {
 
 
 	@Override
-	public Type getType(Type[] types) {
-		return TypeFactory.createType(Type.DOUBLE);
+	public int getType(int[] types) {
+		return Type.DOUBLE;
 	}
 
 

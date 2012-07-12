@@ -252,8 +252,8 @@ public class BR_EvalSource  extends AbstractScalarFunction {
 	}
 
 	@Override
-	public Type getType(Type[] types) {
-		return TypeFactory.createType(Type.DOUBLE);
+	public int getType(int[] types) {
+		return Type.DOUBLE;
 	}
 	@Override
     public FunctionSignature[] getFunctionSignatures() {

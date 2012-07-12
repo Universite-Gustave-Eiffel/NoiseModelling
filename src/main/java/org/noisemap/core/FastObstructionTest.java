@@ -15,7 +15,7 @@ import java.util.Stack;
 import org.grap.utilities.EnvelopeUtil;
 
 import com.vividsolutions.jts.algorithm.Angle;
-import com.vividsolutions.jts.algorithm.VectorMath;
+import com.vividsolutions.jts.math.Vector2D;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
@@ -247,16 +247,16 @@ public class FastObstructionTest {
 	 */
 	private boolean dotInTri(Coordinate p, Coordinate a, Coordinate b,
 			Coordinate c) {
-		Coordinate v0 = new Coordinate(c.x - a.x, c.y - a.y, 0.);
-		Coordinate v1 = new Coordinate(b.x - a.x, b.y - a.y, 0.);
-		Coordinate v2 = new Coordinate(p.x - a.x, p.y - a.y, 0.);
+		Vector2D v0 = new Vector2D(c.x - a.x, c.y - a.y);
+		Vector2D v1 = new Vector2D(b.x - a.x, b.y - a.y);
+		Vector2D v2 = new Vector2D(p.x - a.x, p.y - a.y);
 
 		// Compute dot products
-		double dot00 = VectorMath.dotProduct(v0, v0);
-		double dot01 = VectorMath.dotProduct(v0, v1);
-		double dot02 = VectorMath.dotProduct(v0, v2);
-		double dot11 = VectorMath.dotProduct(v1, v1);
-		double dot12 = VectorMath.dotProduct(v1, v2);
+		double dot00 = v0.dot(v0);
+		double dot01 = v0.dot(v1);
+		double dot02 = v0.dot(v2);
+		double dot11 = v1.dot(v1);
+		double dot12 = v1.dot(v2);
 
 		// Compute barycentric coordinates
 		double invDenom = 1 / (dot00 * dot11 - dot01 * dot01);
