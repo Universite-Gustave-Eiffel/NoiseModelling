@@ -1,6 +1,6 @@
 /**
- * NoiseMap is a scientific computation plugin for OrbisGIS to quickly evaluate the
- * noise impact on European action plans and urban mobility plans. This model is
+ * NoiseMap is a scientific computation plugin for OrbisGIS developed in order to
+ * evaluate the noise impact on urban mobility plans. This model is
  * based on the French standard method NMPB2008. It includes traffic-to-noise
  * sources evaluation and sound propagation processing.
  *
@@ -13,7 +13,7 @@
  * as part of the "Atelier SIG" team of the IRSTV Institute <http://www.irstv.fr/>.
  *
  * Copyright (C) 2011 IFSTTAR
- * Copyright (C) 2011-1012 IRSTV (FR CNRS 2488)
+ * Copyright (C) 2011-2012 IRSTV (FR CNRS 2488)
  *
  * Noisemap is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software
