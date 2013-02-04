@@ -53,7 +53,7 @@
                             <configuration>
                                 <instructions>
                                     <Bundle-Activator>org.noisemap.plugin.Activator</Bundle-Activator>
-                                    <Private-Package>org.noisemap.plugin.*</Private-Package>
+                                    <Private-Package>org.noisemap.*</Private-Package>
                                     <Bundle-Vendor>IFSTTAR, IRSTV - FR CNRS 2488</Bundle-Vendor>
                                     <Bundle-Category>gdms,sql,OrbisGIS</Bundle-Category>
                                     <Bundle-Icon>icon.png;size=32</Bundle-Icon>
