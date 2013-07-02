@@ -71,13 +71,15 @@ public class FastObstructionTest {
 	private List<Coordinate> vertices;
 	private List<Triangle> triNeighbors; // Neighbors
 	private LinkedList<Geometry> toUnite = new LinkedList<Geometry>(); // Polygon
+        private LinkedHashMap<String, Double> toUnites= new LinkedHashMap<String,Double>(); // Polygon with height(key String coordinate)
+        private LinkedHashMap<Geometry, Double> toUnitetest= new LinkedHashMap<Geometry, Double>();//test Polygon with height(key Geometry)
 	private Envelope geometriesBoundingBox=null;
 	// union;
 	private QueryGeometryStructure triIndex = null; //TODO remove
 	private int lastFountPointTriTest = 0;
 	private List<Float> verticesOpenAngle = null;
 	private List<Coordinate> verticesOpenAngleTranslated = null; /*Open angle*/
-
+        
 	public FastObstructionTest() {
 		super();
 	}
@@ -108,7 +110,22 @@ public class FastObstructionTest {
 		}
 		toUnite.add(obstructionPoly);
 	}
-
+        
+        /**
+         * Add height of building 
+         * @return
+         */
+      	public void addGeometry(Geometry obstructionPoly, double heightofBuilding) {
+		if(this.geometriesBoundingBox==null) {
+			this.geometriesBoundingBox=new Envelope(obstructionPoly.getEnvelopeInternal());
+		} else {
+			this.geometriesBoundingBox.expandToInclude(obstructionPoly.getEnvelopeInternal());
+		}
+                toUnites.put(obstructionPoly.toString(), heightofBuilding);
+                toUnitetest.put(obstructionPoly, heightofBuilding);
+                toUnite.add(obstructionPoly);
+        }
+                
 	private Geometry merge(LinkedList<Geometry> toUnite, double bufferSize) {
 		GeometryFactory geometryFactory = new GeometryFactory();
 		Geometry geoArray[] = new Geometry[toUnite.size()];
@@ -118,7 +135,7 @@ public class FastObstructionTest {
 		return polygonCollection.buffer(bufferSize, 0,
 				BufferParameters.CAP_SQUARE);
 	}
-
+  
 	private void addPolygon(Polygon newpoly, LayerDelaunay delaunayTool,
 			Geometry boundingBox) throws LayerDelaunayError {
 		delaunayTool.addPolygon(newpoly, true);
