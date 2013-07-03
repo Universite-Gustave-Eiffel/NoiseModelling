@@ -71,15 +71,17 @@ public class FastObstructionTest {
 	private List<Coordinate> vertices;
 	private List<Triangle> triNeighbors; // Neighbors
 	private LinkedList<Geometry> toUnite = new LinkedList<Geometry>(); // Polygon
-        private LinkedHashMap<String, Double> toUnites= new LinkedHashMap<String,Double>(); // Polygon with height(key String coordinate)
+        private LinkedHashMap<Integer, Double> toUnites= new LinkedHashMap<Integer,Double>(); // Polygon with height(key Int coordinate)
         private LinkedHashMap<Geometry, Double> toUnitetest= new LinkedHashMap<Geometry, Double>();//test Polygon with height(key Geometry)
-	private Envelope geometriesBoundingBox=null;
+	private LinkedList<Double> height= new  LinkedList<Double>(); // height
+        private Envelope geometriesBoundingBox=null;
 	// union;
 	private QueryGeometryStructure triIndex = null; //TODO remove
 	private int lastFountPointTriTest = 0;
 	private List<Float> verticesOpenAngle = null;
 	private List<Coordinate> verticesOpenAngleTranslated = null; /*Open angle*/
-        
+        private int BuildingIndex=0;
+                
 	public FastObstructionTest() {
 		super();
 	}
@@ -121,9 +123,10 @@ public class FastObstructionTest {
 		} else {
 			this.geometriesBoundingBox.expandToInclude(obstructionPoly.getEnvelopeInternal());
 		}
-                toUnites.put(obstructionPoly.toString(), heightofBuilding);
-                toUnitetest.put(obstructionPoly, heightofBuilding);
+                height.add(heightofBuilding);
                 toUnite.add(obstructionPoly);
+                System.out.println(height.get(toUnite.indexOf(obstructionPoly)));
+             
         }
                 
 	private Geometry merge(LinkedList<Geometry> toUnite, double bufferSize) {
@@ -136,14 +139,20 @@ public class FastObstructionTest {
 				BufferParameters.CAP_SQUARE);
 	}
   
-	private void addPolygon(Polygon newpoly, LayerDelaunay delaunayTool,
+	private void addPolygon(Polygon newpoly, LayerJDelaunay delaunayTool,
 			Geometry boundingBox) throws LayerDelaunayError {
 		delaunayTool.addPolygon(newpoly, true);
 	}
-
+        
+        private void addPolygon(Polygon newpoly, LayerJDelaunay delaunayTool,
+			Geometry boundingBox, double heightofPolygon) throws LayerDelaunayError {
+		delaunayTool.addPolygon(newpoly, true, heightofPolygon);
+	}
+        
 	private void explodeAndAddPolygon(Geometry intersectedGeometry,
-			LayerDelaunay delaunayTool, Geometry boundingBox)
+			LayerJDelaunay delaunayTool, Geometry boundingBox)
 			throws LayerDelaunayError {
+                
 		if (intersectedGeometry instanceof MultiPolygon
 				|| intersectedGeometry instanceof GeometryCollection) {
 			for (int j = 0; j < intersectedGeometry.getNumGeometries(); j++) {
@@ -151,7 +160,13 @@ public class FastObstructionTest {
 				explodeAndAddPolygon(subGeom, delaunayTool, boundingBox);
 			}
 		} else if (intersectedGeometry instanceof Polygon) {
-			addPolygon((Polygon) intersectedGeometry, delaunayTool, boundingBox);
+                        for(Geometry geo : toUnite){
+                            if(geo.equals(intersectedGeometry)){
+                              addPolygon((Polygon) intersectedGeometry, delaunayTool, boundingBox, height.get(toUnite.indexOf(geo)));
+                            }
+                        }
+                       
+                        addPolygon((Polygon) intersectedGeometry, delaunayTool, boundingBox);
 		} else if (intersectedGeometry instanceof LineString) {
 			delaunayTool.addLineString((LineString) intersectedGeometry);
 		}
@@ -169,10 +184,10 @@ public class FastObstructionTest {
 		}
 		
 		verticesOpenAngle = null;
-		LayerDelaunay delaunayTool = new LayerJDelaunay();
+		LayerJDelaunay delaunayTool = new LayerJDelaunay();
 		// Merge polygon
 		Geometry allbuilds = merge(toUnite, 0.);
-		toUnite.clear();
+		
 		// Insert the main rectangle
 		Geometry linearRing = EnvelopeUtil.toGeometry(this.geometriesBoundingBox);
 		if (!(linearRing instanceof LinearRing)) {
@@ -182,7 +197,6 @@ public class FastObstructionTest {
 		Polygon boundingBox = new Polygon((LinearRing) linearRing, null,
 				factory);
 		delaunayTool.addPolygon(boundingBox, false);
-
 		// Remove geometries out of the bounding box
 		allbuilds = allbuilds.intersection(boundingBox);
 		explodeAndAddPolygon(allbuilds, delaunayTool, boundingBox);

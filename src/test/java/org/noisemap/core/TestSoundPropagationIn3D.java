@@ -23,22 +23,23 @@ public class TestSoundPropagationIn3D extends TestCase {
     public TestSoundPropagationIn3D(){
     } 
     
-    public void test(){
+    public void test() throws LayerDelaunayError{
     
            GeometryFactory factory = new GeometryFactory();
-           Coordinate[] building1Coords = { new Coordinate(15., 5.,2.),
-				new Coordinate(30., 5.,2.), new Coordinate(30., 30.,2.),
-				new Coordinate(15., 30.,2.), new Coordinate(15., 5.,2.) };
-           Coordinate[] building2Coords = { new Coordinate(25., 5.,0.),
-				new Coordinate(30., 5.,5.), new Coordinate(30., 30.,5.),
-				new Coordinate(15., 30.,5.), new Coordinate(25., 5.,5.) };
+           Coordinate[] building1Coords = { new Coordinate(15., 5.,0.),
+				new Coordinate(30., 5.,0.), new Coordinate(30., 30.,0.),
+				new Coordinate(15., 30.,0.), new Coordinate(15., 5.,0.) };
+           Coordinate[] building2Coords = { new Coordinate(32., 5.,0.),
+				new Coordinate(34., 5.,0.), new Coordinate(34., 34.,0.),
+				new Coordinate(32., 34.,0.), new Coordinate(32., 5.,0.) };
            Polygon building1 = factory.createPolygon(
 			factory.createLinearRing(building1Coords), null);
            Polygon building2 = factory.createPolygon(
 			factory.createLinearRing(building2Coords), null);     
            FastObstructionTest ft= new FastObstructionTest();
-           ft.addGeometry(building1, 2.0);
-           ft.addGeometry(building2, 5.0);
+           ft.addGeometry(building1,5.);
+           ft.addGeometry(building2,4.);
+           ft.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(45., 45.,0.)));
            
     }
 }

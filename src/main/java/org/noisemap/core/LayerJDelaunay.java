@@ -369,6 +369,49 @@ public class LayerJDelaunay implements LayerDelaunay {
 		}
 	}
 
+        public void addPolygon(Polygon newPoly, boolean isEmpty,double height)
+			throws LayerDelaunayError {
+
+		if (delaunayTool == null) {
+			delaunayTool = new ConstrainedMesh();
+		}
+
+		// To avoid errors we set the Z coordinate to 0.
+		SetZFilter zFilter = new SetZFilter();
+		newPoly.apply(zFilter);
+		GeometryFactory factory = new GeometryFactory();
+		final Coordinate[] coordinates = newPoly.getExteriorRing()
+				.getCoordinates();
+		if (coordinates.length > 1) {
+			LineString newLineString = factory.createLineString(coordinates);
+			this.addLineString(newLineString);
+		}
+		if (isEmpty) {
+			addHole(newPoly.getInteriorPoint().getCoordinate());
+		}
+		// Append holes
+		final int holeCount = newPoly.getNumInteriorRing();
+		for (int holeIndex = 0; holeIndex < holeCount; holeIndex++) {
+			LineString holeLine = newPoly.getInteriorRingN(holeIndex);
+			// Convert hole into a polygon, then compute an interior point
+			Polygon polyBuffnew = factory.createPolygon(
+					factory.createLinearRing(holeLine.getCoordinates()), null);
+			if (polyBuffnew.getArea() > 0.) {
+				Coordinate interiorPoint = polyBuffnew.getInteriorPoint()
+						.getCoordinate();
+				if (!factory.createPoint(interiorPoint).intersects(holeLine)) {
+					if(!isEmpty) {
+						addHole(interiorPoint);
+					}
+					this.addLineString(holeLine);
+				} else {
+					logger.info("Warning : hole rejected, can't find interior point.");
+				}
+			} else {
+				logger.info("Warning : hole rejected, area=0");
+			}
+		}
+	}
 	@Override
 	public void setMinAngle(Double minAngle) {
 		// TODO Auto-generated method stub
