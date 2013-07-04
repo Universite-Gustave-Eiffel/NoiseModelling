@@ -72,6 +72,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 	private ArrayList<DEdge> constraintEdge = new ArrayList<DEdge>();
 	private LinkedList<DPoint> ptToInsert = new LinkedList<DPoint>();
 	private List<Coordinate> holes = new LinkedList<Coordinate>();
+        private LinkedList<Holeswihtheight> holewithheight= new LinkedList<Holeswihtheight>();//holes coordinate and height
 	private boolean debugMode=false; //output primitives in a text file
 	private boolean computeNeighbors=false;
 	List<Triangle> triangles = new ArrayList<Triangle>();
@@ -135,6 +136,29 @@ public class LayerJDelaunay implements LayerDelaunay {
 		}
 	}
 
+        private static class Holeswihtheight{
+                private Coordinate holecoodinate;
+                private double height;
+                
+                public Holeswihtheight(Coordinate holecoodinate, double height) {
+                    this.holecoodinate=holecoodinate;
+                    this.height=height;
+                }
+                public void setHoleswihtheight(Coordinate holecoodinate, double height){
+                    this.holecoodinate=holecoodinate;
+                    this.height=height;
+                }
+                
+                public Coordinate getHolesCoordinate()
+                {
+                    return this.holecoodinate;
+                }
+                public double getHolesHeight()
+                {
+                    return this.height;
+                }
+              
+        }
 	private int getOrAppendVertices(Coordinate newCoord,
 			List<Coordinate> vertices,
 			HashMap<Integer, LinkedList<Integer>> hashOfArrayIndex) {
@@ -185,7 +209,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 				// Push segments
 				delaunayTool.setPoints(ptToInsert);
 				delaunayTool.setConstraintEdges(constraintEdge);
-				
+			
 				if(debugMode) {
 					try
 					{
@@ -230,6 +254,46 @@ public class LayerJDelaunay implements LayerDelaunay {
 				
 				//Build ArrayList for binary search
 				
+                                //Remove triangles 
+                                //test add height
+				for(Holeswihtheight hole : holewithheight) {
+					DTriangle foundTri=findTriByCoordinate(hole.getHolesCoordinate(),trianglesDelaunay);
+					double heightofTri = hole.getHolesHeight();
+                                        if(foundTri == null) {
+						throw new LayerDelaunayError("hole outside domain ("+hole+")");
+					}
+					//Navigate through neighbors until it reach a deleted tri or locked segment
+					Stack<DTriangle> navHistoryTri=new Stack<DTriangle>();
+					Stack<Short> navHistoryDir=new Stack<Short>();
+					navHistoryTri.push(foundTri);
+					navHistoryDir.push((short)0);
+					foundTri.setExternalGID(0);//Set as hole
+                                        foundTri.setHeight(heightofTri);//Add the height to this triangle
+					while(!navHistoryTri.empty()) {
+						if(navHistoryDir.peek()==3) {
+							navHistoryTri.pop();
+							navHistoryDir.pop();							
+						} else {
+							DEdge ed = navHistoryTri.peek().getEdge(navHistoryDir.peek());
+							if(!ed.isLocked()) {
+								DTriangle neigh=ed.getOtherTriangle(navHistoryTri.peek());
+								if(neigh != null) {
+									if(neigh.getExternalGID()!=0) { //Not set as destroyed
+										neigh.setExternalGID(0); //Set as hole
+                                                                                neigh.setHeight(heightofTri);//Add the height to this triangle
+										navHistoryDir.push((short)(navHistoryDir.pop()+1));
+										navHistoryDir.push((short)-1);
+										navHistoryTri.push(neigh);
+									}
+								}
+							}
+							navHistoryDir.push((short)(navHistoryDir.pop()+1));
+						}
+					}
+				}
+                                
+                                
+                    /*            
 				//Remove triangles
 				for(Coordinate hole : holes) {
 					DTriangle foundTri=findTriByCoordinate(hole,trianglesDelaunay);
@@ -263,7 +327,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 						}
 					}
 				}
-				
+		    */		
 				for (DTriangle triangle : trianglesDelaunay) {
 					if(triangle.getExternalGID()!=0) //Not a hole
 					{
@@ -324,6 +388,10 @@ public class LayerJDelaunay implements LayerDelaunay {
 	{
 		holes.add(holePosition);
 	}
+        private void addHole(Coordinate holePosition,double height) throws LayerDelaunayError
+	{
+                holewithheight.add(new Holeswihtheight(holePosition,height));
+	}
 	@Override
 	public void addPolygon(Polygon newPoly, boolean isEmpty)
 			throws LayerDelaunayError {
@@ -369,6 +437,10 @@ public class LayerJDelaunay implements LayerDelaunay {
 		}
 	}
 
+         /**
+         * Add height of building 
+         * @return
+         */
         public void addPolygon(Polygon newPoly, boolean isEmpty,double height)
 			throws LayerDelaunayError {
 
@@ -387,7 +459,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 			this.addLineString(newLineString);
 		}
 		if (isEmpty) {
-			addHole(newPoly.getInteriorPoint().getCoordinate());
+			addHole(newPoly.getInteriorPoint().getCoordinate(),height);
 		}
 		// Append holes
 		final int holeCount = newPoly.getNumInteriorRing();

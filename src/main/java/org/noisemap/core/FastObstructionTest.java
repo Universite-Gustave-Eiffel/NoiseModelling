@@ -73,7 +73,8 @@ public class FastObstructionTest {
 	private LinkedList<Geometry> toUnite = new LinkedList<Geometry>(); // Polygon
         private LinkedHashMap<Integer, Double> toUnites= new LinkedHashMap<Integer,Double>(); // Polygon with height(key Int coordinate)
         private LinkedHashMap<Geometry, Double> toUnitetest= new LinkedHashMap<Geometry, Double>();//test Polygon with height(key Geometry)
-	private LinkedList<Double> height= new  LinkedList<Double>(); // height
+	private LinkedList<Double> height= new  LinkedList<Double>(); // Height of Polygon
+        private LinkedList<PolygonWithHeight> polygonwithheight= new LinkedList<PolygonWithHeight>();
         private Envelope geometriesBoundingBox=null;
 	// union;
 	private QueryGeometryStructure triIndex = null; //TODO remove
@@ -81,7 +82,25 @@ public class FastObstructionTest {
 	private List<Float> verticesOpenAngle = null;
 	private List<Coordinate> verticesOpenAngleTranslated = null; /*Open angle*/
         private int BuildingIndex=0;
-                
+        
+        private static class PolygonWithHeight{
+            private Geometry geo;
+            private double height;
+            public PolygonWithHeight(Geometry geo,double height){
+            
+                this.geo=geo;
+                this.height=height;
+            }
+            public Geometry getGeometry(){
+            
+                return this.geo;
+            }
+            public double getHeight(){
+                return this.height;
+            }
+        
+        }
+        
 	public FastObstructionTest() {
 		super();
 	}
@@ -111,6 +130,8 @@ public class FastObstructionTest {
 			this.geometriesBoundingBox.expandToInclude(obstructionPoly.getEnvelopeInternal());
 		}
 		toUnite.add(obstructionPoly);
+                height.add(0.);
+                
 	}
         
         /**
@@ -123,9 +144,9 @@ public class FastObstructionTest {
 		} else {
 			this.geometriesBoundingBox.expandToInclude(obstructionPoly.getEnvelopeInternal());
 		}
-                height.add(heightofBuilding);
+                
                 toUnite.add(obstructionPoly);
-                System.out.println(height.get(toUnite.indexOf(obstructionPoly)));
+                polygonwithheight.add(new PolygonWithHeight(obstructionPoly, heightofBuilding));
              
         }
                 
@@ -160,13 +181,13 @@ public class FastObstructionTest {
 				explodeAndAddPolygon(subGeom, delaunayTool, boundingBox);
 			}
 		} else if (intersectedGeometry instanceof Polygon) {
-                        for(Geometry geo : toUnite){
-                            if(geo.equals(intersectedGeometry)){
-                              addPolygon((Polygon) intersectedGeometry, delaunayTool, boundingBox, height.get(toUnite.indexOf(geo)));
+                        for(PolygonWithHeight geo : polygonwithheight){
+                            if(geo.getGeometry().equals(intersectedGeometry)){
+                              addPolygon((Polygon) intersectedGeometry, delaunayTool, boundingBox, geo.getHeight());
+                              return;
                             }
                         }
-                       
-                        addPolygon((Polygon) intersectedGeometry, delaunayTool, boundingBox);
+                        addPolygon((Polygon) intersectedGeometry, delaunayTool, boundingBox, 0.);
 		} else if (intersectedGeometry instanceof LineString) {
 			delaunayTool.addLineString((LineString) intersectedGeometry);
 		}
@@ -187,7 +208,7 @@ public class FastObstructionTest {
 		LayerJDelaunay delaunayTool = new LayerJDelaunay();
 		// Merge polygon
 		Geometry allbuilds = merge(toUnite, 0.);
-		
+		toUnite.clear();
 		// Insert the main rectangle
 		Geometry linearRing = EnvelopeUtil.toGeometry(this.geometriesBoundingBox);
 		if (!(linearRing instanceof LinearRing)) {
