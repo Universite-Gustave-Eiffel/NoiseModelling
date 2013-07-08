@@ -144,11 +144,7 @@ public class LayerJDelaunay implements LayerDelaunay {
                     this.holecoodinate=holecoodinate;
                     this.height=height;
                 }
-                public void setHoleswihtheight(Coordinate holecoodinate, double height){
-                    this.holecoodinate=holecoodinate;
-                    this.height=height;
-                }
-                
+
                 public Coordinate getHolesCoordinate()
                 {
                     return this.holecoodinate;
@@ -267,7 +263,11 @@ public class LayerJDelaunay implements LayerDelaunay {
 					Stack<Short> navHistoryDir=new Stack<Short>();
 					navHistoryTri.push(foundTri);
 					navHistoryDir.push((short)0);
-					foundTri.setExternalGID(0);//Set as hole
+					/*
+                                         * pass the hole
+                                         * foundTri.setExternalGID(0);//Set as hole
+                                         * 
+                                        */
                                         foundTri.setHeight(heightofTri);//Add the height to this triangle
 					while(!navHistoryTri.empty()) {
 						if(navHistoryDir.peek()==3) {
@@ -278,8 +278,13 @@ public class LayerJDelaunay implements LayerDelaunay {
 							if(!ed.isLocked()) {
 								DTriangle neigh=ed.getOtherTriangle(navHistoryTri.peek());
 								if(neigh != null) {
-									if(neigh.getExternalGID()!=0) { //Not set as destroyed
-										neigh.setExternalGID(0); //Set as hole
+									if(neigh.getExternalGID()!=0 && neigh.getHeight()==0) { //Not set as destroyed
+                                                                            /*  
+                                                                             * pass the hole
+									     * neigh.setExternalGID(0); //Set as hole
+                                                                             *
+                                                                            */
+                                                                            
                                                                                 neigh.setHeight(heightofTri);//Add the height to this triangle
 										navHistoryDir.push((short)(navHistoryDir.pop()+1));
 										navHistoryDir.push((short)-1);
@@ -343,19 +348,21 @@ public class LayerJDelaunay implements LayerDelaunay {
 						int a = getOrAppendVertices(ring[0], vertices, hashOfArrayIndex);
 						int b = getOrAppendVertices(ring[1], vertices, hashOfArrayIndex);
 						int c = getOrAppendVertices(ring[2], vertices, hashOfArrayIndex);
-						triangles.add(new Triangle(a, b, c));
+                                                double height=triangle.getHeight();
+						triangles.add(new Triangle(a, b, c,height));
 						if(this.computeNeighbors) {
-							Triangle gidTri=new Triangle(-1,-1,-1);
+							Triangle gidTri=new Triangle(-1,-1,-1,0);
 							for(int i=0;i<3;i++) {
 								DTriangle neighTriangle = triangle.getOppositeEdge(triangle.getPoint(i)).getOtherTriangle(triangle);
 								if(neighTriangle!=null && neighTriangle.getExternalGID()!=0) {
 									gidTri.set(i,neighTriangle.getGID());
+                                                                        gidTri.setHeight(neighTriangle.getHeight());//set height
 								}
 							}
 							if(!orientationReversed) {
 								gidTriangle.add(gidTri);
 							} else {
-								gidTriangle.add(new Triangle(gidTri.getC(),gidTri.getB(),gidTri.getA()));
+								gidTriangle.add(new Triangle(gidTri.getC(),gidTri.getB(),gidTri.getA(),gidTri.getHeight()));
 							}
 							gidToIndex.put(triangle.getGID(),gidTriangle.size()-1);
 						}
@@ -364,11 +371,13 @@ public class LayerJDelaunay implements LayerDelaunay {
 				if(this.computeNeighbors) {
 					//Translate GID to local index
 					for(Triangle tri : gidTriangle) {
-						Triangle localTri=new Triangle(-1,-1,-1);
+						Triangle localTri=new Triangle(-1,-1,-1,0);
 						for(int i=0;i<3;i++) {
 							int index=tri.get(i);
-							if(index!=-1)
+							if(index!=-1){
 								localTri.set(i, gidToIndex.get(index));
+                                                                localTri.setHeight(tri.getHeight());
+                                                        }
 						}
 						neighbors.add(localTri);
 					}

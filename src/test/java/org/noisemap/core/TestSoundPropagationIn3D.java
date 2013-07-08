@@ -10,7 +10,7 @@ import com.vividsolutions.jts.geom.Polygon;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
-
+import java.util.LinkedList;
 
 import junit.framework.TestCase;
 
@@ -20,18 +20,16 @@ import junit.framework.TestCase;
  */
 public class TestSoundPropagationIn3D extends TestCase {
 
-    public TestSoundPropagationIn3D(){
-    } 
-    
+
     public void test() throws LayerDelaunayError{
     
            GeometryFactory factory = new GeometryFactory();
            Coordinate[] building1Coords = { new Coordinate(15., 5.,0.),
 				new Coordinate(30., 5.,0.), new Coordinate(30., 30.,0.),
 				new Coordinate(15., 30.,0.), new Coordinate(15., 5.,0.) };
-           Coordinate[] building2Coords = { new Coordinate(32., 5.,0.),
-				new Coordinate(34., 5.,0.), new Coordinate(34., 34.,0.),
-				new Coordinate(32., 34.,0.), new Coordinate(32., 5.,0.) };
+           Coordinate[] building2Coords = { new Coordinate(40., 5.,0.),
+				new Coordinate(45., 5.,0.), new Coordinate(45., 30.,0.),
+				new Coordinate(40., 30.,0.), new Coordinate(40., 5.,0.) };
            Polygon building1 = factory.createPolygon(
 			factory.createLinearRing(building1Coords), null);
            Polygon building2 = factory.createPolygon(
@@ -39,7 +37,40 @@ public class TestSoundPropagationIn3D extends TestCase {
            FastObstructionTest ft= new FastObstructionTest();
            ft.addGeometry(building1,5.);
            ft.addGeometry(building2,4.);
-           ft.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(45., 45.,0.)));
+           ft.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(60., 60.,0.)));
+           boolean a=ft.isFreeField(new Coordinate(10,5), new Coordinate(12,45));
+           
+           boolean b=ft.isFreeField(new Coordinate(10,5), new Coordinate(32,15));
+           System.out.println("----------------TEST isFreeField with height of building----------------");
+           System.out.println(a);
+           System.out.println(b);
+           
+           System.out.println("----------------TEST Triangle list in Building between source and receiver----------------");
+           
+           System.out.println("----------TEST with 1 building----- ");
+           ft.setTriBuildingList(new Coordinate(10,5), new Coordinate(32,15));
+           LinkedList<Coordinate[]> lt=ft.getTriBuildingCoordinate();
+           
+           for(int i=0 ; i<lt.size();i++){
+               System.out.println("Triangle "+ (i+1));
+               System.out.println(lt.get(i)[0]+ "--" + lt.get(i)[1] + "--" + lt.get(i)[2]);
+               System.out.println((ft.getTriBuildingHeight()).get(i));
+              
+           }
+           
+           
+           System.out.println("----------TEST with 2 buildings----- ");
+           ft.setTriBuildingList(new Coordinate(10,5), new Coordinate(47,15));
+           
+           lt=ft.getTriBuildingCoordinate();
+           
+           for(int i=0 ; i<lt.size();i++){
+               System.out.println("Triangle "+ (i+1));
+               System.out.println(lt.get(i)[0]+ "--" + lt.get(i)[1] + "--" + lt.get(i)[2]);
+               System.out.println((ft.getTriBuildingHeight()).get(i));
+              
+           }
+           
            
     }
 }

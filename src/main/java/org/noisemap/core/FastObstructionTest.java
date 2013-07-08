@@ -71,8 +71,6 @@ public class FastObstructionTest {
 	private List<Coordinate> vertices;
 	private List<Triangle> triNeighbors; // Neighbors
 	private LinkedList<Geometry> toUnite = new LinkedList<Geometry>(); // Polygon
-        private LinkedHashMap<Integer, Double> toUnites= new LinkedHashMap<Integer,Double>(); // Polygon with height(key Int coordinate)
-        private LinkedHashMap<Geometry, Double> toUnitetest= new LinkedHashMap<Geometry, Double>();//test Polygon with height(key Geometry)
 	private LinkedList<Double> height= new  LinkedList<Double>(); // Height of Polygon
         private LinkedList<PolygonWithHeight> polygonwithheight= new LinkedList<PolygonWithHeight>();
         private Envelope geometriesBoundingBox=null;
@@ -81,7 +79,7 @@ public class FastObstructionTest {
 	private int lastFountPointTriTest = 0;
 	private List<Float> verticesOpenAngle = null;
 	private List<Coordinate> verticesOpenAngleTranslated = null; /*Open angle*/
-        private int BuildingIndex=0;
+        private LinkedList<Integer> BuildingTriangleIndex= new LinkedList<Integer>(); /* the buildings list between source and receiver */
         
         private static class PolygonWithHeight{
             private Geometry geo;
@@ -226,7 +224,7 @@ public class FastObstructionTest {
 		delaunayTool.setRetrieveNeighbors(true);
 		
 		delaunayTool.processDelaunay();
-
+                polygonwithheight.clear();
 		// Get results
 		this.triVertices = delaunayTool.getTriangles();
 		this.vertices = delaunayTool.getVertices();
@@ -265,6 +263,7 @@ public class FastObstructionTest {
 		final Triangle tri = this.triVertices.get(triIndex);
 		int nearestIntersectionSide = -1;
                 int idneigh;
+                double heightOfTri=this.triNeighbors.get(triIndex).getHeight();
 		double nearestIntersectionPtDist = Double.MAX_VALUE;
 		// Find intersection pt
 		final Coordinate aTri = this.vertices.get(tri.getA());
@@ -274,6 +273,71 @@ public class FastObstructionTest {
 		// Intersection First Side
                 idneigh=this.triNeighbors.get(
                                                 triIndex).get(2);
+                //add: search triangle without height
+                if (idneigh!=-1 && !navigationHistory.contains(idneigh) && heightOfTri==0) {
+                    distline_line=propagationLine.distance(new LineSegment(aTri, bTri));
+                    if (distline_line<FastObstructionTest.epsilon &&
+                            distline_line < nearestIntersectionPtDist && this.triVertices.get(idneigh).getHeight()==0) {
+                        nearestIntersectionPtDist = distline_line;
+                        nearestIntersectionSide = 2;
+                    }
+                }
+		// Intersection Second Side
+                idneigh=this.triNeighbors.get(
+                                                triIndex).get(0);
+                if (idneigh!=-1 && !navigationHistory.contains(idneigh) && heightOfTri==0 ) {
+                    distline_line=propagationLine.distance(new LineSegment(bTri, cTri));
+                    if (distline_line<FastObstructionTest.epsilon &&
+                            distline_line < nearestIntersectionPtDist && this.triVertices.get(idneigh).getHeight()==0) {
+                            nearestIntersectionPtDist = distline_line;
+                            nearestIntersectionSide = 0;
+                    }
+                }
+
+		// Intersection Third Side
+                idneigh=this.triNeighbors.get(
+                                                triIndex).get(1);
+                if (idneigh!=-1 && !navigationHistory.contains(idneigh) && heightOfTri==0) {
+                    distline_line=propagationLine.distance(new LineSegment(cTri, aTri));
+                    if (distline_line<FastObstructionTest.epsilon &&
+                            distline_line < nearestIntersectionPtDist && this.triVertices.get(idneigh).getHeight()==0) {
+                            nearestIntersectionSide = 1;
+                    }
+                }
+		if (nearestIntersectionSide != -1) {
+			return this.triNeighbors.get(triIndex).get(nearestIntersectionSide);
+		} else {
+			return -1;
+		}
+	}
+
+/**
+	 * Compute the next triangle index.Find the shortest intersection point of
+	 * triIndex segments to the p1 coordinate and add the triangles in building to the list
+	 * 
+	 * @param triIndex
+	 *            Triangle index
+	 * @param propagationLine
+	 *            Propagation line
+	 * 
+	 */
+	private int getTriList(final int triIndex,
+			final LineSegment propagationLine,
+			HashSet<Integer> navigationHistory) {
+		//NonRobustLineIntersector linters = new NonRobustLineIntersector();
+		final Triangle tri = this.triVertices.get(triIndex);
+		int nearestIntersectionSide = -1;
+                int idneigh;
+		double nearestIntersectionPtDist = Double.MAX_VALUE;
+		// Find intersection pt
+		final Coordinate aTri = this.vertices.get(tri.getA());
+		final Coordinate bTri = this.vertices.get(tri.getB());
+		final Coordinate cTri = this.vertices.get(tri.getC());
+		double distline_line;
+		// Intersection First Side
+                idneigh=this.triNeighbors.get(
+                                                triIndex).get(2);
+                
                 if (idneigh!=-1 && !navigationHistory.contains(idneigh)) {
                     distline_line=propagationLine.distance(new LineSegment(aTri, bTri));
                     if (distline_line<FastObstructionTest.epsilon &&
@@ -304,13 +368,17 @@ public class FastObstructionTest {
                             nearestIntersectionSide = 1;
                     }
                 }
+                int BuildingTriID=this.triNeighbors.get(triIndex).get(nearestIntersectionSide);
 		if (nearestIntersectionSide != -1) {
-			return this.triNeighbors.get(triIndex).get(nearestIntersectionSide);
+                    //if the nearest triangle in the building, save this triangle to building list
+                         if(this.triVertices.get(BuildingTriID).getHeight()!=0 &&!BuildingTriangleIndex.contains(BuildingTriID)){
+                              BuildingTriangleIndex.add(BuildingTriID);
+                         }
+			 return BuildingTriID;
 		} else {
-			return -1;
+			 return -1;
 		}
-	}
-
+	}        
 	/**
 	 * Fast dot in triangle test
 	 * 
@@ -613,8 +681,57 @@ public class FastObstructionTest {
 			if (dotInTri(p2, tri[0], tri[1], tri[2])) {
 				return true;
 			}
-			curTri = this.getNextTri(curTri, propaLine, navigationHistory);
+			curTri = this.getNextTri(curTri, propaLine, navigationHistory);              
 		}
 		return false;
 	}
+        
+        
+        /*
+         * 
+         * add Triangles to the list (who are in buildings) between the source and the receiver
+         * must called after finishPolygonFeeding
+         */
+        public void setTriBuildingList(Coordinate p1, Coordinate p2) {
+		
+		LineSegment propaLine = new LineSegment(p1, p2);
+		int curTri = getTriangleIdByCoordinate(p1);
+		HashSet<Integer> navigationHistory = new HashSet<Integer>();
+		while (curTri != -1) {
+			navigationHistory.add(curTri);
+			Coordinate[] tri = getTriangle(curTri);
+			if (dotInTri(p2, tri[0], tri[1], tri[2])) {
+				return;
+			}
+			curTri = this.getTriList(curTri, propaLine, navigationHistory);              
+		}
+		
+	}
+        /*
+         * 
+         * get Triangles(in buildings)'s coordiante, must called after setTriBuildingList
+         */
+        public LinkedList<Coordinate[]> getTriBuildingCoordinate(){
+            LinkedList<Coordinate[]> TriBuilding= new LinkedList<Coordinate[]>();
+            for(int i: BuildingTriangleIndex){
+                TriBuilding.add(getTriangle(i));
+            }
+           
+            return TriBuilding;
+        }
+        /*
+         * 
+         * get Heights of Triangles of Building, must called after setTriBuildingList
+         */
+        public LinkedList<Double> getTriBuildingHeight(){
+            LinkedList<Double> TriBuildingHeight= new LinkedList<Double>();
+            for(int i:BuildingTriangleIndex){
+                TriBuildingHeight.add(this.triVertices.get(i).getHeight());
+            }
+            return TriBuildingHeight;
+        }
+        
+  
+  
+	
 }

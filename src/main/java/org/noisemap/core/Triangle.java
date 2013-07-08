@@ -42,6 +42,7 @@ public class Triangle {
 	private int a = 0;
 	private int b = 0;
 	private int c = 0;
+        private double height=0.0;
 
 	public int getA() {
 		return a;
@@ -57,6 +58,13 @@ public class Triangle {
 			return c;
 		}
 	}
+        public double getHeight(){
+                return this.height;
+        }
+        
+        public void setHeight(double height){
+                this.height=height;
+        }
 
 	public void set(int id,int index) {
 		switch (id) {
@@ -114,10 +122,19 @@ public class Triangle {
 		}
 	}
 
-	public Triangle(int a, int b, int c) {
+	public Triangle(int a, int b, int c, double height) {
 		super();
 		this.a = a;
 		this.b = b;
 		this.c = c;
+                this.height=height;
+	}
+        
+        public Triangle(int a, int b, int c) {
+		super();
+		this.a = a;
+		this.b = b;
+		this.c = c;
+             
 	}
 }
