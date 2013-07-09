@@ -252,6 +252,8 @@ public class LayerJDelaunay implements LayerDelaunay {
 				
                                 //Remove triangles 
                                 //test add height
+                                
+                                if(holes.isEmpty()){
 				for(Holeswihtheight hole : holewithheight) {
 					DTriangle foundTri=findTriByCoordinate(hole.getHolesCoordinate(),trianglesDelaunay);
 					double heightofTri = hole.getHolesHeight();
@@ -269,6 +271,8 @@ public class LayerJDelaunay implements LayerDelaunay {
                                          * 
                                         */
                                         foundTri.setHeight(heightofTri);//Add the height to this triangle
+                                        //if this tri have height
+                                        if(heightofTri!=0){
 					while(!navHistoryTri.empty()) {
 						if(navHistoryDir.peek()==3) {
 							navHistoryTri.pop();
@@ -295,10 +299,12 @@ public class LayerJDelaunay implements LayerDelaunay {
 							navHistoryDir.push((short)(navHistoryDir.pop()+1));
 						}
 					}
-				}
-                                
-                                
-                    /*            
+                                      }
+                          
+                                    }
+                                }
+                                else{
+                               
 				//Remove triangles
 				for(Coordinate hole : holes) {
 					DTriangle foundTri=findTriByCoordinate(hole,trianglesDelaunay);
@@ -331,8 +337,8 @@ public class LayerJDelaunay implements LayerDelaunay {
 							navHistoryDir.push((short)(navHistoryDir.pop()+1));
 						}
 					}
-				}
-		    */		
+                                    }
+                                }	
 				for (DTriangle triangle : trianglesDelaunay) {
 					if(triangle.getExternalGID()!=0) //Not a hole
 					{

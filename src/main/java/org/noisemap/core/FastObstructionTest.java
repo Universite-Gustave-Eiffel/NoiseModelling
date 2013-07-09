@@ -128,7 +128,7 @@ public class FastObstructionTest {
 			this.geometriesBoundingBox.expandToInclude(obstructionPoly.getEnvelopeInternal());
 		}
 		toUnite.add(obstructionPoly);
-                height.add(0.);
+                height.add(-1.0);
                 
 	}
         
@@ -185,7 +185,7 @@ public class FastObstructionTest {
                               return;
                             }
                         }
-                        addPolygon((Polygon) intersectedGeometry, delaunayTool, boundingBox, 0.);
+                        addPolygon((Polygon) intersectedGeometry, delaunayTool, boundingBox);
 		} else if (intersectedGeometry instanceof LineString) {
 			delaunayTool.addLineString((LineString) intersectedGeometry);
 		}
@@ -224,7 +224,7 @@ public class FastObstructionTest {
 		delaunayTool.setRetrieveNeighbors(true);
 		
 		delaunayTool.processDelaunay();
-                polygonwithheight.clear();
+               // polygonwithheight.clear();
 		// Get results
 		this.triVertices = delaunayTool.getTriangles();
 		this.vertices = delaunayTool.getVertices();
@@ -670,6 +670,9 @@ public class FastObstructionTest {
 		return walls;
 	}
 
+        /*
+         * compute diffraction.
+         */
 	public boolean isFreeField(Coordinate p1, Coordinate p2) {
 		nbObstructionTest++;
 		LineSegment propaLine = new LineSegment(p1, p2);
@@ -689,11 +692,12 @@ public class FastObstructionTest {
         
         /*
          * 
-         * add Triangles to the list (who are in buildings) between the source and the receiver
+         * add Triangles to the list (who are in buildings) between the source and the receiver to compute vertical diffraction 
          * must called after finishPolygonFeeding
+         * p1 source, p2 receiver
          */
         public void setTriBuildingList(Coordinate p1, Coordinate p2) {
-		
+		BuildingTriangleIndex.clear();
 		LineSegment propaLine = new LineSegment(p1, p2);
 		int curTri = getTriangleIdByCoordinate(p1);
 		HashSet<Integer> navigationHistory = new HashSet<Integer>();
@@ -729,6 +733,33 @@ public class FastObstructionTest {
                 TriBuildingHeight.add(this.triVertices.get(i).getHeight());
             }
             return TriBuildingHeight;
+        }
+        
+        
+        public void setListofIntersection(){
+            for(int i=0;i<this.polygonwithheight.size();i++){
+                for(int j=0;j<this.polygonwithheight.get(i).getGeometry().getCoordinates().length;j++){
+                    System.out.println((this.polygonwithheight.get(i).getGeometry().getCoordinates())[j].toString());
+                    LineSegment line= new LineSegment((this.polygonwithheight.get(i).getGeometry().getCoordinates())[j],this.polygonwithheight.get(i).getGeometry().getCoordinates()[j] );
+         
+                }
+                
+        
+            }
+        }
+        
+        
+        
+        
+        public LinkedList<Coordinate> getListofIntersection(Coordinate p1, Coordinate p2){
+            LinkedList<Coordinate> list=new LinkedList<Coordinate>();
+            for(PolygonWithHeight building:polygonwithheight){
+                        
+                       
+                 
+            }
+            
+            return list; 
         }
         
   
