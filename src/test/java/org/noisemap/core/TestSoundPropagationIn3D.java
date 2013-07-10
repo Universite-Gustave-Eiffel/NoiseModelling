@@ -59,9 +59,16 @@ public class TestSoundPropagationIn3D extends TestCase {
               
            }
            
+           System.out.println("------------------Test intersection---------------");
+           
+           LinkedList<Coordinate> pointsIntersection=ft.getIntersection();
+           for(Coordinate point:pointsIntersection){
+               System.out.println(point.toString());
+           
+           }
            
            System.out.println("----------TEST with 1 buildings other side----- ");
-           ft.setTriBuildingList(new Coordinate(32,15), new Coordinate(47,15));
+           ft.setTriBuildingList(new Coordinate(32,15,0.5), new Coordinate(47,15,1.0));
            
            lt=ft.getTriBuildingCoordinate();
            
@@ -70,11 +77,28 @@ public class TestSoundPropagationIn3D extends TestCase {
                System.out.println(lt.get(i)[0]+ "--" + lt.get(i)[1] + "--" + lt.get(i)[2]);
                System.out.println((ft.getTriBuildingHeight()).get(i));
               
+           }
+           
+           System.out.println("----------TEST with special points ----- ");
+           ft.setTriBuildingList(new Coordinate(1,16,0.5), new Coordinate(17,32,1.0));
+           
+           lt=ft.getTriBuildingCoordinate();
+           
+           for(int i=0 ; i<lt.size();i++){
+               System.out.println("Triangle "+ (i+1));
+               System.out.println(lt.get(i)[0]+ "--" + lt.get(i)[1] + "--" + lt.get(i)[2]);
+               System.out.println((ft.getTriBuildingHeight()).get(i));
+              
+           }
+           System.out.println("------------------Test intersection---------------");
+           pointsIntersection=ft.getIntersection();
+           for(Coordinate point:pointsIntersection){
+               System.out.println(point.toString());
            }
            
            
            System.out.println("----------TEST with 2 buildings----- ");
-           ft.setTriBuildingList(new Coordinate(5,15), new Coordinate(47,15));
+           ft.setTriBuildingList(new Coordinate(5,15), new Coordinate(55,55));
            
            lt=ft.getTriBuildingCoordinate();
            
@@ -84,11 +108,19 @@ public class TestSoundPropagationIn3D extends TestCase {
                System.out.println((ft.getTriBuildingHeight()).get(i));
               
            }
+           System.out.println("------------------Test intersection---------------");
+           pointsIntersection=ft.getIntersection();
+           for(Coordinate point:pointsIntersection){
+               System.out.println(point.toString());
+           }
+
+           
            
            System.out.println("----------------TEST Finished----------------");
-           
+        /*   
            LineSegment a=new LineSegment(); 
            ft.setListofIntersection();
            ft.getListofIntersection(new Coordinate(10,5), new Coordinate(32,15));
+         */
     }
 }

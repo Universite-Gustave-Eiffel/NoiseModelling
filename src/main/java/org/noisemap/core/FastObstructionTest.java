@@ -80,7 +80,7 @@ public class FastObstructionTest {
 	private List<Float> verticesOpenAngle = null;
 	private List<Coordinate> verticesOpenAngleTranslated = null; /*Open angle*/
         private LinkedList<Integer> BuildingTriangleIndex= new LinkedList<Integer>(); /* the buildings list between source and receiver */
-        
+        private LinkedList<Coordinate> pointsIntersection= new LinkedList<Coordinate>();
         private static class PolygonWithHeight{
             private Geometry geo;
             private double height;
@@ -314,6 +314,7 @@ public class FastObstructionTest {
 /**
 	 * Compute the next triangle index.Find the shortest intersection point of
 	 * triIndex segments to the p1 coordinate and add the triangles in building to the list
+         * and add the point of intersection(between segment of source-reciver and segment of triangle) to the list
 	 * 
 	 * @param triIndex
 	 *            Triangle index
@@ -337,13 +338,16 @@ public class FastObstructionTest {
 		// Intersection First Side
                 idneigh=this.triNeighbors.get(
                                                 triIndex).get(2);
-                
+                Coordinate intersection=new Coordinate();
                 if (idneigh!=-1 && !navigationHistory.contains(idneigh)) {
                     distline_line=propagationLine.distance(new LineSegment(aTri, bTri));
                     if (distline_line<FastObstructionTest.epsilon &&
                             distline_line < nearestIntersectionPtDist) {
                         nearestIntersectionPtDist = distline_line;
                         nearestIntersectionSide = 2;
+                        if(tri.getHeight()!=0||this.triVertices.get(this.triNeighbors.get(triIndex).get(nearestIntersectionSide)).getHeight()!=0){
+                        intersection=propagationLine.intersection(new LineSegment(aTri, bTri));
+                        }
                     }
                 }
 		// Intersection Second Side
@@ -355,6 +359,9 @@ public class FastObstructionTest {
                             distline_line < nearestIntersectionPtDist) {
                             nearestIntersectionPtDist = distline_line;
                             nearestIntersectionSide = 0;
+                            if(tri.getHeight()!=0||this.triVertices.get(this.triNeighbors.get(triIndex).get(nearestIntersectionSide)).getHeight()!=0){
+                            intersection=propagationLine.intersection(new LineSegment(bTri, cTri));
+                            }
                     }
                 }
 
@@ -366,14 +373,42 @@ public class FastObstructionTest {
                     if (distline_line<FastObstructionTest.epsilon &&
                             distline_line < nearestIntersectionPtDist) {
                             nearestIntersectionSide = 1;
+                            if(tri.getHeight()!=0||this.triVertices.get(this.triNeighbors.get(triIndex).get(nearestIntersectionSide)).getHeight()!=0){
+                            intersection=propagationLine.intersection(new LineSegment(cTri, aTri));
+                            }
                     }
                 }
+                
                 int BuildingTriID=this.triNeighbors.get(triIndex).get(nearestIntersectionSide);
+                boolean triNeighborIsBuidling=false;
+                
+                if(tri.getHeight()>0 &&(this.triVertices.get(BuildingTriID).getHeight()>0)){
+                    //intersection is in the building
+                    triNeighborIsBuidling=true;
+                }
+                //add height to this intersection
+                if(tri.getHeight()==0&&this.triVertices.get(BuildingTriID).getHeight()>0){
+                    intersection.z=this.triVertices.get(BuildingTriID).getHeight();
+                }
+                else if(tri.getHeight()>0&&this.triVertices.get(BuildingTriID).getHeight()>0){
+                    intersection.z=Math.max(this.triVertices.get(BuildingTriID).getHeight(), tri.getHeight());
+                }
+                else if(tri.getHeight()>0&&this.triVertices.get(BuildingTriID).getHeight()==0){
+                    intersection.z=tri.getHeight();
+                }
+                
 		if (nearestIntersectionSide != -1) {
                     //if the nearest triangle in the building, save this triangle to building list
                          if(this.triVertices.get(BuildingTriID).getHeight()!=0 &&!BuildingTriangleIndex.contains(BuildingTriID)){
                               BuildingTriangleIndex.add(BuildingTriID);
                          }
+                    //if intersection is not in the building, save this intersection to intersection list
+                         
+                    if(!triNeighborIsBuidling&&!intersection.equals3D(new Coordinate(0.0,0.0,Double.NaN))){
+                                  //every buidling whcih is between ray source-receiver have 2 intersections, 
+                                  //if the intersection is corner of the buiding, pointsIntersection will save 2 times with the same value  
+                                  pointsIntersection.add(intersection);
+                              }     
 			 return BuildingTriID;
 		} else {
 			 return -1;
@@ -698,6 +733,7 @@ public class FastObstructionTest {
          */
         public void setTriBuildingList(Coordinate p1, Coordinate p2) {
 		BuildingTriangleIndex.clear();
+                pointsIntersection.clear();
 		LineSegment propaLine = new LineSegment(p1, p2);
 		int curTri = getTriangleIdByCoordinate(p1);
 		HashSet<Integer> navigationHistory = new HashSet<Integer>();
@@ -735,7 +771,20 @@ public class FastObstructionTest {
             return TriBuildingHeight;
         }
         
+        public LinkedList<Coordinate> getIntersection(){
+            LinkedList<Coordinate> intersection=new LinkedList<Coordinate>();
+            for(Coordinate inter:this.pointsIntersection){
+                intersection.add(inter);
+            }
+            
+            return intersection;
         
+        } 
+        
+        
+        /*
+         * second method to compute the intersecton
+         */
         public void setListofIntersection(){
             for(int i=0;i<this.polygonwithheight.size();i++){
                 for(int j=0;j<this.polygonwithheight.get(i).getGeometry().getCoordinates().length;j++){
