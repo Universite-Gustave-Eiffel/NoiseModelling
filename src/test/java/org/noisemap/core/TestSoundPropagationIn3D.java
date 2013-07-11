@@ -7,6 +7,9 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineSegment;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Polygon;
+import com.vividsolutions.jts.index.chain.MonotoneChain;
+import com.vividsolutions.jts.index.chain.MonotoneChainBuilder;
+import com.vividsolutions.jts.index.chain.MonotoneChainSelectAction;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,6 +17,7 @@ import java.util.Stack;
 import java.util.LinkedList;
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertTrue;
+
 
 import junit.framework.TestCase;
 
@@ -25,7 +29,7 @@ public class TestSoundPropagationIn3D extends TestCase {
 
 
     public void test() throws LayerDelaunayError{
-    
+    /*
            GeometryFactory factory = new GeometryFactory();
            Coordinate[] building1Coords = { new Coordinate(15., 5.,0.),
 				new Coordinate(30., 5.,0.), new Coordinate(30., 30.,0.),
@@ -122,5 +126,21 @@ public class TestSoundPropagationIn3D extends TestCase {
            ft.setListofIntersection();
            ft.getListofIntersection(new Coordinate(10,5), new Coordinate(32,15));
          */
+           
+           System.out.println("--------------------TEST Monotone Chain----------------------");
+           
+           Coordinate[] points=new Coordinate[100];
+           points[0]=new Coordinate(1.0,1.0,0.);
+           points[1]=new Coordinate(1.0,2.0,0.);
+           points[2]=new Coordinate(1.0,3.0,0.);
+           points[3]=new Coordinate(2.0,1.0,0.);
+           points[4]=new Coordinate(2.0,1.5,0.);
+           points[5]=new Coordinate(2.0,3.0,0.);
+           points[6]=new Coordinate(3.0,1.5,0.);
+           points[7]=new Coordinate(3.0,1.0,0.);
+           
+           List a=MonotoneChainBuilder.getChains(points);
+      
+
     }
 }

@@ -72,15 +72,15 @@ public class FastObstructionTest {
 	private List<Triangle> triNeighbors; // Neighbors
 	private LinkedList<Geometry> toUnite = new LinkedList<Geometry>(); // Polygon
 	private LinkedList<Double> height= new  LinkedList<Double>(); // Height of Polygon
-        private LinkedList<PolygonWithHeight> polygonwithheight= new LinkedList<PolygonWithHeight>();
+        private LinkedList<PolygonWithHeight> polygonwithheight= new LinkedList<PolygonWithHeight>();//list polygon with height
         private Envelope geometriesBoundingBox=null;
 	// union;
 	private QueryGeometryStructure triIndex = null; //TODO remove
 	private int lastFountPointTriTest = 0;
 	private List<Float> verticesOpenAngle = null;
 	private List<Coordinate> verticesOpenAngleTranslated = null; /*Open angle*/
-        private LinkedList<Integer> BuildingTriangleIndex= new LinkedList<Integer>(); /* the buildings list between source and receiver */
-        private LinkedList<Coordinate> pointsIntersection= new LinkedList<Coordinate>();
+        private LinkedList<Integer> BuildingTriangleIndex= new LinkedList<Integer>(); /* the buildings list between source and receiver. Reconstruction after get a new source-reciver */
+        private LinkedList<Coordinate> pointsIntersection= new LinkedList<Coordinate>();/* the intersection of the segment source-receiver and builiding's side. Reconstruction after get a new source-reciver */
         private static class PolygonWithHeight{
             private Geometry geo;
             private double height;
