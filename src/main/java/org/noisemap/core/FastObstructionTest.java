@@ -381,19 +381,19 @@ public class FastObstructionTest {
                 
                 int BuildingTriID=this.triNeighbors.get(triIndex).get(nearestIntersectionSide);
                 boolean triNeighborIsBuidling=false;
-                
-                if(tri.getHeight()>0 &&(this.triVertices.get(BuildingTriID).getHeight()>0)){
+                double nextTriHeight=this.triVertices.get(BuildingTriID).getHeight();
+                if(tri.getHeight()>0 &&(nextTriHeight>0)){
                     //intersection is in the building
                     triNeighborIsBuidling=true;
                 }
                 //add height to this intersection
-                if(tri.getHeight()==0&&this.triVertices.get(BuildingTriID).getHeight()>0){
-                    intersection.z=this.triVertices.get(BuildingTriID).getHeight();
+                if(tri.getHeight()==0&&nextTriHeight>0){
+                    intersection.z=nextTriHeight;
                 }
-                else if(tri.getHeight()>0&&this.triVertices.get(BuildingTriID).getHeight()>0){
-                    intersection.z=Math.max(this.triVertices.get(BuildingTriID).getHeight(), tri.getHeight());
+                else if(tri.getHeight()>0&&nextTriHeight>0){
+                    intersection.z=Math.max(nextTriHeight, tri.getHeight());
                 }
-                else if(tri.getHeight()>0&&this.triVertices.get(BuildingTriID).getHeight()==0){
+                else if(tri.getHeight()>0&&nextTriHeight==0){
                     intersection.z=tri.getHeight();
                 }
                 
@@ -760,7 +760,7 @@ public class FastObstructionTest {
             return TriBuilding;
         }
         /*
-         * 
+         * this function just for testing the height of building
          * get Heights of Triangles of Building, must called after setTriBuildingList
          */
         public LinkedList<Double> getTriBuildingHeight(){
