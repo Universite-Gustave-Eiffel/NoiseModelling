@@ -29,7 +29,7 @@ public class TestSoundPropagationIn3D extends TestCase {
 
 
     public void test() throws LayerDelaunayError{
-    /*
+    
            GeometryFactory factory = new GeometryFactory();
            Coordinate[] building1Coords = { new Coordinate(15., 5.,0.),
 				new Coordinate(30., 5.,0.), new Coordinate(30., 30.,0.),
@@ -50,7 +50,7 @@ public class TestSoundPropagationIn3D extends TestCase {
            assertTrue("Intersection test isFreeField #1 failed",ft.isFreeField(new Coordinate(10,5), new Coordinate(12,45)));
            assertFalse("Intersection test isFreeField #2 failed",ft.isFreeField(new Coordinate(10,5), new Coordinate(32,15)));
            assertFalse("Intersection test isFreeField #2 failed",ft.isFreeField(new Coordinate(10,5,6.0), new Coordinate(32,15,7.0)));
-           System.out.println("----------------TEST Triangle list in Building between source and receiver----------------");
+           System.out.println("----------------TEST intersection between source and receiver----------------");
            
            System.out.println("----------TEST with 1 building----- ");
            ft.setTriBuildingList(new Coordinate(10,5), new Coordinate(32,15));
@@ -82,6 +82,11 @@ public class TestSoundPropagationIn3D extends TestCase {
                System.out.println((ft.getTriBuildingHeight()).get(i));
               
            }
+           pointsIntersection=ft.getIntersection();
+           for(Coordinate point:pointsIntersection){
+               System.out.println(point.toString());
+           
+           }
            
            System.out.println("----------TEST with special points ----- ");
            ft.setTriBuildingList(new Coordinate(1,16,0.5), new Coordinate(17,32,1.0));
@@ -91,7 +96,7 @@ public class TestSoundPropagationIn3D extends TestCase {
            for(int i=0 ; i<lt.size();i++){
                System.out.println("Triangle "+ (i+1));
                System.out.println(lt.get(i)[0]+ "--" + lt.get(i)[1] + "--" + lt.get(i)[2]);
-               System.out.println((ft.getTriBuildingHeight()).get(i));
+               System.out.println("Height:"+(ft.getTriBuildingHeight()).get(i));
               
            }
            System.out.println("------------------Test intersection---------------");
@@ -102,14 +107,14 @@ public class TestSoundPropagationIn3D extends TestCase {
            
            
            System.out.println("----------TEST with 2 buildings----- ");
-           ft.setTriBuildingList(new Coordinate(5,15), new Coordinate(55,55));
+           ft.setTriBuildingList(new Coordinate(5,15), new Coordinate(48,25));
            
            lt=ft.getTriBuildingCoordinate();
            
            for(int i=0 ; i<lt.size();i++){
                System.out.println("Triangle "+ (i+1));
                System.out.println(lt.get(i)[0]+ "--" + lt.get(i)[1] + "--" + lt.get(i)[2]);
-               System.out.println((ft.getTriBuildingHeight()).get(i));
+               System.out.println("Height:"+(ft.getTriBuildingHeight()).get(i));
               
            }
            System.out.println("------------------Test intersection---------------");
@@ -121,26 +126,37 @@ public class TestSoundPropagationIn3D extends TestCase {
            
            
            System.out.println("----------------TEST Finished----------------");
-        /*   
+         /*
            LineSegment a=new LineSegment(); 
            ft.setListofIntersection();
            ft.getListofIntersection(new Coordinate(10,5), new Coordinate(32,15));
-         */
+         
+           */
+           System.out.println("--------------------TEST Javis March----------------------");
            
-           System.out.println("--------------------TEST Monotone Chain----------------------");
            
-           Coordinate[] points=new Coordinate[100];
-           points[0]=new Coordinate(1.0,1.0,0.);
-           points[1]=new Coordinate(1.0,2.0,0.);
-           points[2]=new Coordinate(1.0,3.0,0.);
-           points[3]=new Coordinate(2.0,1.0,0.);
-           points[4]=new Coordinate(2.0,1.5,0.);
-           points[5]=new Coordinate(2.0,3.0,0.);
-           points[6]=new Coordinate(3.0,1.5,0.);
-           points[7]=new Coordinate(3.0,1.0,0.);
            
-           List a=MonotoneChainBuilder.getChains(points);
-      
+           double x[]=new double[100];
+           double y[]=new double[100];
+           for(int i=0;i<10;i++){
+               
+               x[i]=(double)i;
+               if(i<5)
+               {
+               y[i]=(double)i;
+               }
+               else{
+               y[i]=(double)i-3;
+               }
+           
+           }
+           
+           JarvisMarch jm=new JarvisMarch(new JarvisMarch.Points(x,y));
+           JarvisMarch.Points points=jm.calculateHull();
+           for (int i=0;i<points.x.length;i++){
+           System.out.println(points.x[i]+","+points.y[i]);
+               System.out.println("---");
 
-    }
+             }
+           }
 }
