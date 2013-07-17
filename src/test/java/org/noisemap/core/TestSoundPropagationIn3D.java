@@ -10,11 +10,13 @@ import com.vividsolutions.jts.geom.Polygon;
 import com.vividsolutions.jts.index.chain.MonotoneChain;
 import com.vividsolutions.jts.index.chain.MonotoneChainBuilder;
 import com.vividsolutions.jts.index.chain.MonotoneChainSelectAction;
+import com.vividsolutions.jts.index.chain.MonotoneChainOverlapAction;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
 import java.util.LinkedList;
+import java.util.Iterator;
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertTrue;
 
@@ -158,5 +160,25 @@ public class TestSoundPropagationIn3D extends TestCase {
                System.out.println("---");
 
              }
+           
+           System.out.println("--------Test Jarvis Finished--------------");
+           System.out.println("--------Test Monotone Chain---------------");
+           Coordinate[] coorPt=new Coordinate[10];
+           
+           for(int i=0;i<10;i++){
+                
+               if(i>=5){
+                coorPt[i]=new Coordinate((double)i,(double)i-4,0.0 );
+               
+               }
+               else{
+                coorPt[i]=new Coordinate((double)i,(double)i,0.0 );
+               }
+              
+             
+           }
+           List<MonotoneChain> a=MonotoneChainBuilder.getChains(coorPt);
+  
+           System.out.println("--------Test Monotone Chain  Finished---------------");
            }
 }
