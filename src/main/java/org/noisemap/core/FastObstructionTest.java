@@ -729,7 +729,7 @@ public class FastObstructionTest {
          * 
          * add Triangles to the list (who are in buildings) between the source and the receiver to compute vertical diffraction 
          * must called after finishPolygonFeeding
-         * p1 source, p2 receiver
+         * p1 receiver, p2 source
          */
         public void setTriBuildingList(Coordinate p1, Coordinate p2) {
 		BuildingTriangleIndex.clear();
@@ -745,7 +745,10 @@ public class FastObstructionTest {
 			}
 			curTri = this.getTriList(curTri, propaLine, navigationHistory);              
 		}
-		
+                //after get all intersection points, add the point source et receiver into list
+		LinkedList<Coordinate> ltPoints=getIntersection();
+                ltPoints.addFirst(p1);
+                ltPoints.addLast(p2);
 	}
         /*
          * 
@@ -770,7 +773,11 @@ public class FastObstructionTest {
             }
             return TriBuildingHeight;
         }
-        
+        /*
+         * get coordiantes(with height) of all intersections
+         * must called after setTriBuildingList
+         * 
+         */
         public LinkedList<Coordinate> getIntersection(){
             LinkedList<Coordinate> intersection=new LinkedList<Coordinate>();
             for(Coordinate inter:this.pointsIntersection){
@@ -809,6 +816,17 @@ public class FastObstructionTest {
             }
             
             return list; 
+        }
+        
+        /*
+         * change markland, use original coordinate in 3D to change into a new markland in 2D with new x' and z is original height of point
+        */
+        private LinkedList<Coordinate> changemarkland(LinkedList<Coordinate> listpoints){
+            LinkedList<Coordinate> newcoord=new LinkedList<Coordinate>();
+            
+            
+            return newcoord;
+        
         }
         
   
