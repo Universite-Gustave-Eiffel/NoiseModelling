@@ -7,16 +7,8 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineSegment;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Polygon;
-import com.vividsolutions.jts.index.chain.MonotoneChain;
-import com.vividsolutions.jts.index.chain.MonotoneChainBuilder;
-import com.vividsolutions.jts.index.chain.MonotoneChainSelectAction;
-import com.vividsolutions.jts.index.chain.MonotoneChainOverlapAction;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Stack;
 import java.util.LinkedList;
-import java.util.Iterator;
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertTrue;
 
@@ -52,12 +44,22 @@ public class TestSoundPropagationIn3D extends TestCase {
            assertTrue("Intersection test isFreeField #1 failed",ft.isFreeField(new Coordinate(10,5), new Coordinate(12,45)));
            assertFalse("Intersection test isFreeField #2 failed",ft.isFreeField(new Coordinate(10,5), new Coordinate(32,15)));
            assertFalse("Intersection test isFreeField #2 failed",ft.isFreeField(new Coordinate(10,5,6.0), new Coordinate(32,15,7.0)));
-           System.out.println("----------------TEST intersection between source and receiver----------------");
+           System.out.println("----------------TEST path between source and receiver----------------");
            
            System.out.println("----------TEST with 1 building----- ");
-           ft.setTriBuildingList(new Coordinate(10,5), new Coordinate(32,15));
-           LinkedList<Coordinate[]> lt=ft.getTriBuildingCoordinate();
            
+           LinkedList<LineSegment> lt=ft.getPath(new Coordinate(48,25), new Coordinate(5,15));
+          // LinkedList<Coordinate> lt=ft.getPath(new Coordinate(4,4,0.5), new Coordinate(31,31,1.5));
+           for(int i=0;i<lt.size();i++){
+               if(i!=lt.size()-1){
+                    System.out.println("point"+i+":" +lt.get(i).p0.toString());
+               }
+               else{    
+                    System.out.println("point"+i+":" +lt.get(i).p0.toString());
+                    System.out.println("point"+i+":" +lt.get(i).p1.toString());
+               }
+           }
+           /*
            for(int i=0 ; i<lt.size();i++){
                System.out.println("Triangle "+ (i+1));
                System.out.println(lt.get(i)[0]+ "--" + lt.get(i)[1] + "--" + lt.get(i)[2]);
@@ -74,7 +76,7 @@ public class TestSoundPropagationIn3D extends TestCase {
            }
            
            System.out.println("----------TEST with 1 buildings other side----- ");
-           ft.setTriBuildingList(new Coordinate(32,15,0.5), new Coordinate(47,15,1.0));
+           ft.getPath(new Coordinate(32,15,0.5), new Coordinate(47,15,1.0));
            
            lt=ft.getTriBuildingCoordinate();
            
@@ -91,7 +93,7 @@ public class TestSoundPropagationIn3D extends TestCase {
            }
            
            System.out.println("----------TEST with special points ----- ");
-           ft.setTriBuildingList(new Coordinate(1,16,0.5), new Coordinate(17,32,1.0));
+           ft.getPath(new Coordinate(1,16,0.5), new Coordinate(17,32,1.0));
            
            lt=ft.getTriBuildingCoordinate();
            
@@ -109,7 +111,7 @@ public class TestSoundPropagationIn3D extends TestCase {
            
            
            System.out.println("----------TEST with 2 buildings----- ");
-           ft.setTriBuildingList(new Coordinate(5,15), new Coordinate(48,25));
+           ft.getPath(new Coordinate(5,15), new Coordinate(48,25));
            
            lt=ft.getTriBuildingCoordinate();
            
@@ -134,51 +136,7 @@ public class TestSoundPropagationIn3D extends TestCase {
            ft.getListofIntersection(new Coordinate(10,5), new Coordinate(32,15));
          
            */
-           System.out.println("--------------------TEST Javis March----------------------");
-           
-           
-           
-           double x[]=new double[100];
-           double y[]=new double[100];
-           for(int i=0;i<10;i++){
-               
-               x[i]=(double)i;
-               if(i<5)
-               {
-               y[i]=(double)i;
-               }
-               else{
-               y[i]=(double)i-3;
-               }
-           
-           }
-           
-           JarvisMarch jm=new JarvisMarch(new JarvisMarch.Points(x,y));
-           JarvisMarch.Points points=jm.calculateHull();
-           for (int i=0;i<points.x.length;i++){
-           System.out.println(points.x[i]+","+points.y[i]);
-               System.out.println("---");
 
-             }
            
-           System.out.println("--------Test Jarvis Finished--------------");
-           System.out.println("--------Test Monotone Chain---------------");
-           Coordinate[] coorPt=new Coordinate[10];
-           
-           for(int i=0;i<10;i++){
-                
-               if(i>=5){
-                coorPt[i]=new Coordinate((double)i,(double)i-4,0.0 );
-               
-               }
-               else{
-                coorPt[i]=new Coordinate((double)i,(double)i,0.0 );
-               }
-              
-             
-           }
-           List<MonotoneChain> a=MonotoneChainBuilder.getChains(coorPt);
-  
-           System.out.println("--------Test Monotone Chain  Finished---------------");
            }
 }
