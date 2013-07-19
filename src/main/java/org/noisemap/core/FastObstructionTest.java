@@ -727,11 +727,15 @@ public class FastObstructionTest {
         
         /*
          * 
-         * add Triangles to the list (who are in buildings) between the source and the receiver to compute vertical diffraction 
+         * get the distance of all intersections (after the filtration by algo Jarvis March)  between the source and the receiver to compute vertical diffraction 
          * must called after finishPolygonFeeding
-         * p1 receiver, p2 source
+	 * @param p1
+	 *            Coordiante receiver
+	 * @param p2
+	 *            Coordiante source
+	 * @return distance of the intersection's path
          */
-        public void setTriBuildingList(Coordinate p1, Coordinate p2) {
+        public LinkedList<LineSegment> getPath(Coordinate p1, Coordinate p2) {
 		BuildingTriangleIndex.clear();
                 pointsIntersection.clear();
 		LineSegment propaLine = new LineSegment(p1, p2);
@@ -741,19 +745,62 @@ public class FastObstructionTest {
 			navigationHistory.add(curTri);
 			Coordinate[] tri = getTriangle(curTri);
 			if (dotInTri(p2, tri[0], tri[1], tri[2])) {
-				return;
+				break;
 			}
 			curTri = this.getTriList(curTri, propaLine, navigationHistory);              
 		}
-                //after get all intersection points, add the point source et receiver into list
+                //after get all intersection points, add the point source et receiver into the list intersection
 		LinkedList<Coordinate> ltPoints=getIntersection();
-                ltPoints.addFirst(p1);
-                ltPoints.addLast(p2);
+                //add point receiver and point source into list.
+                //if these two points have height, add also the point who without the height to initialize points for the algo Convex Hull
+                
+                if(((Double)p1.z).isNaN()){
+                    p1.setCoordinate(new Coordinate(p1.x,p1.y,0.0));
+                    ltPoints.addFirst(p1);
+                }
+                else{
+                    Coordinate p1org=new Coordinate(p1.x,p1.y,0.0);
+                    ltPoints.addFirst(p1);
+                    ltPoints.addFirst(p1org);
+                }
+                
+                if(((Double)p2.z).isNaN()){
+                    p2.setCoordinate(new Coordinate(p2.x,p2.y,0.0));
+                    ltPoints.addLast(p2);
+                }
+                else{
+                    Coordinate p2org=new Coordinate(p2.x,p2.y,0.0);
+                    ltPoints.addLast(p2);
+                    ltPoints.addLast(p2org);
+                }
+                      
+                LinkedList<Coordinate> newPoints= changeMarkland(ltPoints);
+                double[] pointsX;
+                pointsX=new double[newPoints.size()];
+                double[] pointsY;
+                pointsY=new double[newPoints.size()];
+                for(int i=0;i<newPoints.size();i++){
+                    pointsX[i]=newPoints.get(i).x;
+                    pointsY[i]=newPoints.get(i).y;
+                            
+                }
+                //algo JarvisMarch to get the convex hull           
+                JarvisMarch jm=new JarvisMarch(new JarvisMarch.Points(pointsX,pointsY));
+                JarvisMarch.Points points=jm.calculateHull();
+                LinkedList<LineSegment> path=new LinkedList<LineSegment>(); 
+                for (int i=0;i<points.x.length-1;i++){
+                    path.add(new LineSegment(new Coordinate(points.x[i],points.y[i]),new Coordinate(points.x[i+1],points.y[i+1])));
+             
+
+             }
+                
+                return path;
+                
 	}
         /*
          * 
          * get Triangles(in buildings)'s coordiante, must called after setTriBuildingList
-         */
+      
         public LinkedList<Coordinate[]> getTriBuildingCoordinate(){
             LinkedList<Coordinate[]> TriBuilding= new LinkedList<Coordinate[]>();
             for(int i: BuildingTriangleIndex){
@@ -762,10 +809,13 @@ public class FastObstructionTest {
            
             return TriBuilding;
         }
+        */
+        
+        
         /*
          * this function just for testing the height of building
          * get Heights of Triangles of Building, must called after setTriBuildingList
-         */
+       
         public LinkedList<Double> getTriBuildingHeight(){
             LinkedList<Double> TriBuildingHeight= new LinkedList<Double>();
             for(int i:BuildingTriangleIndex){
@@ -773,12 +823,13 @@ public class FastObstructionTest {
             }
             return TriBuildingHeight;
         }
+        */
+        
         /*
          * get coordiantes(with height) of all intersections
-         * must called after setTriBuildingList
          * 
          */
-        public LinkedList<Coordinate> getIntersection(){
+        private LinkedList<Coordinate> getIntersection(){
             LinkedList<Coordinate> intersection=new LinkedList<Coordinate>();
             for(Coordinate inter:this.pointsIntersection){
                 intersection.add(inter);
@@ -789,20 +840,7 @@ public class FastObstructionTest {
         } 
         
         
-        /*
-         * second method to compute the intersecton
-         */
-        public void setListofIntersection(){
-            for(int i=0;i<this.polygonwithheight.size();i++){
-                for(int j=0;j<this.polygonwithheight.get(i).getGeometry().getCoordinates().length;j++){
-                    System.out.println((this.polygonwithheight.get(i).getGeometry().getCoordinates())[j].toString());
-                    LineSegment line= new LineSegment((this.polygonwithheight.get(i).getGeometry().getCoordinates())[j],this.polygonwithheight.get(i).getGeometry().getCoordinates()[j] );
-         
-                }
-                
-        
-            }
-        }
+
         
         
         
@@ -819,12 +857,23 @@ public class FastObstructionTest {
         }
         
         /*
-         * change markland, use original coordinate in 3D to change into a new markland in 2D with new x' and z is original height of point
+         * change markland, use original coordinate in 3D to change into a new markland in 2D with new x' and y' is original height of point
+         * http://en.wikipedia.org/wiki/Rotation_matrix
         */
-        private LinkedList<Coordinate> changemarkland(LinkedList<Coordinate> listpoints){
+        private LinkedList<Coordinate> changeMarkland(LinkedList<Coordinate> listpoints){
             LinkedList<Coordinate> newcoord=new LinkedList<Coordinate>();
+            //get angle by ray source-receiver with the X-axis.
+            double angle=new LineSegment(listpoints.get(0),listpoints.get(listpoints.size()-1)).angle(); 
+            double sin=Math.sin(angle);
+            double cos=Math.cos(angle);
+                
+            for(int i=0;i<listpoints.size();i++){
+                double newX=(listpoints.get(i).x-listpoints.get(0).x)*cos+(listpoints.get(i).y-listpoints.get(0).y)*sin;
+                newcoord.add(new Coordinate(newX,listpoints.get(i).z));
             
             
+            }
+    
             return newcoord;
         
         }

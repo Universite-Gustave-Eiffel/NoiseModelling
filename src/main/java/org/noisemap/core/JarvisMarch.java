@@ -13,7 +13,8 @@ public class JarvisMarch {
   public JarvisMarch(Points pts) {
     this.pts = pts;
   }
-
+  //algo JarvisMarch http://butunclebob.com/ArticleS.UncleBob.ConvexHullTiming 
+  //author by UncleBob
   /**
    * The Jarvis March, sometimes known as the Gift Wrap Algorithm.
    * The next point is the point with the next largest angle.
