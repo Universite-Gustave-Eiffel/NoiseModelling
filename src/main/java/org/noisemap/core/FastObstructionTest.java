@@ -774,7 +774,7 @@ public class FastObstructionTest {
                     ltPoints.addLast(p2org);
                 }
                       
-                LinkedList<Coordinate> newPoints= changeMarkland(ltPoints);
+                LinkedList<Coordinate> newPoints= getNewCoordinateSystem(ltPoints);
                 double[] pointsX;
                 pointsX=new double[newPoints.size()];
                 double[] pointsY;
@@ -842,7 +842,7 @@ public class FastObstructionTest {
         
 
         
-        
+        /*
         
         
         public LinkedList<Coordinate> getListofIntersection(Coordinate p1, Coordinate p2){
@@ -855,12 +855,15 @@ public class FastObstructionTest {
             
             return list; 
         }
+        */
+        
         
         /*
-         * change markland, use original coordinate in 3D to change into a new markland in 2D with new x' and y' is original height of point
+         * changeCoordinateSystem, use original coordinate in 3D to change into a new markland in 2D with new x' and y' is original height of point
          * http://en.wikipedia.org/wiki/Rotation_matrix
+         * http://read.pudn.com/downloads93/ebook/364220/zbzh.pdf
         */
-        private LinkedList<Coordinate> changeMarkland(LinkedList<Coordinate> listpoints){
+        private LinkedList<Coordinate> getNewCoordinateSystem(LinkedList<Coordinate> listpoints){
             LinkedList<Coordinate> newcoord=new LinkedList<Coordinate>();
             //get angle by ray source-receiver with the X-axis.
             double angle=new LineSegment(listpoints.get(0),listpoints.get(listpoints.size()-1)).angle(); 
