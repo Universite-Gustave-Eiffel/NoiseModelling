@@ -46,19 +46,56 @@ public class TestSoundPropagationIn3D extends TestCase {
            assertFalse("Intersection test isFreeField #2 failed",ft.isFreeField(new Coordinate(10,5,6.0), new Coordinate(32,15,7.0)));
            System.out.println("----------------TEST path between source and receiver----------------");
            
-           System.out.println("----------TEST with 1 building----- ");
+           System.out.println("----------TEST with 2 building----- ");
            
-           LinkedList<LineSegment> lt=ft.getPath(new Coordinate(48,25), new Coordinate(5,15));
+           LinkedList<LineSegment> lt=ft.getPath(new Coordinate(48,25,0.5), new Coordinate(5,15,1.5));
+           
           // LinkedList<Coordinate> lt=ft.getPath(new Coordinate(4,4,0.5), new Coordinate(31,31,1.5));
+           
+           double distance=0.0;
+           double distanceforRandS=lt.get(0).distance(lt.get(lt.size()-1));
            for(int i=0;i<lt.size();i++){
                if(i!=lt.size()-1){
                     System.out.println("point"+i+":" +lt.get(i).p0.toString());
                }
                else{    
                     System.out.println("point"+i+":" +lt.get(i).p0.toString());
-                    System.out.println("point"+i+":" +lt.get(i).p1.toString());
+                    System.out.println("point"+(i+1)+":" +lt.get(i).p1.toString());
                }
+               
+               distance=lt.get(i).getLength()+distance;
            }
+           double deltdistance1=distance-distanceforRandS;
+           
+           
+           System.out.println("distance="+distance);
+           System.out.println("distanceRandS="+distanceforRandS);
+           System.out.println("Delt distance="+deltdistance1);
+           
+           
+           System.out.println("----------same situation but exchange source and receiver----- ");
+           lt=ft.getPath(new Coordinate(5,15,1.5), new Coordinate(48,25,0.5));
+
+           double distanceforRandS2=lt.get(0).distance(lt.get(lt.size()-1));
+           double distance2=0.0;
+           for(int i=0;i<lt.size();i++){
+               if(i!=lt.size()-1){
+                    System.out.println("point"+i+":" +lt.get(i).p0.toString());
+               }
+               else{    
+                    System.out.println("point"+i+":" +lt.get(i).p0.toString());
+                    System.out.println("point"+(i+1)+":" +lt.get(i).p1.toString());
+               }
+               
+               distance2=lt.get(i).getLength()+distance2;
+           }
+           double deltdistance2=distance2-distanceforRandS2;
+           System.out.println("distance="+distance2);
+           System.out.println("distanceRandS="+distanceforRandS2);
+           System.out.println("Delt distance="+deltdistance2);
+           
+           //deltdistance1 and deltdistance2 may have the same resultat
+           assertTrue("getPath #1 failed", deltdistance2==deltdistance1);
            /*
            for(int i=0 ; i<lt.size();i++){
                System.out.println("Triangle "+ (i+1));

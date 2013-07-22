@@ -79,8 +79,8 @@ public class FastObstructionTest {
 	private int lastFountPointTriTest = 0;
 	private List<Float> verticesOpenAngle = null;
 	private List<Coordinate> verticesOpenAngleTranslated = null; /*Open angle*/
-        private LinkedList<Integer> BuildingTriangleIndex= new LinkedList<Integer>(); /* the buildings list between source and receiver. Reconstruction after get a new source-reciver */
-        private LinkedList<Coordinate> pointsIntersection= new LinkedList<Coordinate>();/* the intersection of the segment source-receiver and builiding's side. Reconstruction after get a new source-reciver */
+        //private LinkedList<Integer> BuildingTriangleIndex= new LinkedList<Integer>(); /* the buildings list between source and receiver. Reconstruction after get a new source-reciver */
+        //private LinkedList<Coordinate> pointsIntersection= new LinkedList<Coordinate>();/* the intersection of the segment source-receiver and builiding's side. Reconstruction after get a new source-reciver */
         private static class PolygonWithHeight{
             private Geometry geo;
             private double height;
@@ -95,6 +95,24 @@ public class FastObstructionTest {
             }
             public double getHeight(){
                 return this.height;
+            }
+        
+        }
+        
+         private static class TriIdWithIntersection{
+            private int triID;
+            private Coordinate coorIntersection;
+            public TriIdWithIntersection(int triID, Coordinate coorIntersection){
+            
+                this.triID=triID;
+                this.coorIntersection=coorIntersection;
+            }
+            public int gettriID(){
+            
+                return this.triID;
+            }
+            public Coordinate getcoorIntersection(){
+                return this.coorIntersection;
             }
         
         }
@@ -128,7 +146,6 @@ public class FastObstructionTest {
 			this.geometriesBoundingBox.expandToInclude(obstructionPoly.getEnvelopeInternal());
 		}
 		toUnite.add(obstructionPoly);
-                height.add(-1.0);
                 
 	}
         
@@ -322,7 +339,7 @@ public class FastObstructionTest {
 	 *            Propagation line
 	 * 
 	 */
-	private int getTriList(final int triIndex,
+	private TriIdWithIntersection getTriList(final int triIndex,
 			final LineSegment propagationLine,
 			HashSet<Integer> navigationHistory) {
 		//NonRobustLineIntersector linters = new NonRobustLineIntersector();
@@ -398,20 +415,24 @@ public class FastObstructionTest {
                 }
                 
 		if (nearestIntersectionSide != -1) {
+                    /*
                     //if the nearest triangle in the building, save this triangle to building list
                          if(this.triVertices.get(BuildingTriID).getHeight()!=0 &&!BuildingTriangleIndex.contains(BuildingTriID)){
                               BuildingTriangleIndex.add(BuildingTriID);
                          }
                     //if intersection is not in the building, save this intersection to intersection list
-                         
+                    */    
                     if(!triNeighborIsBuidling&&!intersection.equals3D(new Coordinate(0.0,0.0,Double.NaN))){
                                   //every buidling whcih is between ray source-receiver have 2 intersections, 
                                   //if the intersection is corner of the buiding, pointsIntersection will save 2 times with the same value  
-                                  pointsIntersection.add(intersection);
-                              }     
-			 return BuildingTriID;
+                                  return new TriIdWithIntersection(BuildingTriID,intersection);
+                    }
+                    else{
+                                  return new TriIdWithIntersection(BuildingTriID,new Coordinate(-1,-1,-1));
+                    }
+			 
 		} else {
-			 return -1;
+			 return new TriIdWithIntersection(-1,new Coordinate(-1,-1,-1));
 		}
 	}        
 	/**
@@ -736,10 +757,11 @@ public class FastObstructionTest {
 	 * @return distance of the intersection's path
          */
         public LinkedList<LineSegment> getPath(Coordinate p1, Coordinate p2) {
-		BuildingTriangleIndex.clear();
-                pointsIntersection.clear();
+		//BuildingTriangleIndex.clear();
+                
 		LineSegment propaLine = new LineSegment(p1, p2);
 		int curTri = getTriangleIdByCoordinate(p1);
+                LinkedList<Coordinate> pointsIntersection= new LinkedList<Coordinate>();
 		HashSet<Integer> navigationHistory = new HashSet<Integer>();
 		while (curTri != -1) {
 			navigationHistory.add(curTri);
@@ -747,34 +769,19 @@ public class FastObstructionTest {
 			if (dotInTri(p2, tri[0], tri[1], tri[2])) {
 				break;
 			}
-			curTri = this.getTriList(curTri, propaLine, navigationHistory);              
+			curTri = this.getTriList(curTri, propaLine, navigationHistory).gettriID();
+                        Coordinate coorIntersection=this.getTriList(curTri, propaLine, navigationHistory).getcoorIntersection();
+                        if(!coorIntersection.equals(new Coordinate(-1,-1,-1))){
+                        pointsIntersection.add(coorIntersection);
+                }
 		}
-                //after get all intersection points, add the point source et receiver into the list intersection
-		LinkedList<Coordinate> ltPoints=getIntersection();
+                
+		
                 //add point receiver and point source into list.
-                //if these two points have height, add also the point who without the height to initialize points for the algo Convex Hull
-                
-                if(((Double)p1.z).isNaN()){
-                    p1.setCoordinate(new Coordinate(p1.x,p1.y,0.0));
-                    ltPoints.addFirst(p1);
-                }
-                else{
-                    Coordinate p1org=new Coordinate(p1.x,p1.y,0.0);
-                    ltPoints.addFirst(p1);
-                    ltPoints.addFirst(p1org);
-                }
-                
-                if(((Double)p2.z).isNaN()){
-                    p2.setCoordinate(new Coordinate(p2.x,p2.y,0.0));
-                    ltPoints.addLast(p2);
-                }
-                else{
-                    Coordinate p2org=new Coordinate(p2.x,p2.y,0.0);
-                    ltPoints.addLast(p2);
-                    ltPoints.addLast(p2org);
-                }
-                      
-                LinkedList<Coordinate> newPoints= getNewCoordinateSystem(ltPoints);
+                pointsIntersection.addFirst(p1);
+                pointsIntersection.addLast(p2);
+                //change Coordinate system from 3D to 2D 
+                LinkedList<Coordinate> newPoints= getNewCoordinateSystem(pointsIntersection);
                 double[] pointsX;
                 pointsX=new double[newPoints.size()];
                 double[] pointsY;
@@ -829,6 +836,7 @@ public class FastObstructionTest {
          * get coordiantes(with height) of all intersections
          * 
          */
+        /*
         private LinkedList<Coordinate> getIntersection(){
             LinkedList<Coordinate> intersection=new LinkedList<Coordinate>();
             for(Coordinate inter:this.pointsIntersection){
@@ -838,7 +846,7 @@ public class FastObstructionTest {
             return intersection;
         
         } 
-        
+        */
         
 
         

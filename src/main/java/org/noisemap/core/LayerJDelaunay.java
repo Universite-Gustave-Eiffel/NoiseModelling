@@ -72,7 +72,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 	private ArrayList<DEdge> constraintEdge = new ArrayList<DEdge>();
 	private LinkedList<DPoint> ptToInsert = new LinkedList<DPoint>();
 	private List<Coordinate> holes = new LinkedList<Coordinate>();
-        private LinkedList<Holeswihtheight> holewithheight= new LinkedList<Holeswihtheight>();//holes coordinate and height
+        private LinkedList<Buildingwihtheight> buildingwihtheight= new LinkedList<Buildingwihtheight>();//holes coordinate and height
 	private boolean debugMode=false; //output primitives in a text file
 	private boolean computeNeighbors=false;
 	List<Triangle> triangles = new ArrayList<Triangle>();
@@ -136,11 +136,11 @@ public class LayerJDelaunay implements LayerDelaunay {
 		}
 	}
 
-        private static class Holeswihtheight{
+        private static class Buildingwihtheight{
                 private Coordinate holecoodinate;
                 private double height;
                 
-                public Holeswihtheight(Coordinate holecoodinate, double height) {
+                public Buildingwihtheight(Coordinate holecoodinate, double height) {
                     this.holecoodinate=holecoodinate;
                     this.height=height;
                 }
@@ -254,7 +254,7 @@ public class LayerJDelaunay implements LayerDelaunay {
                                 //test add height
                                 
                                 if(holes.isEmpty()){
-				for(Holeswihtheight hole : holewithheight) {
+				for(Buildingwihtheight hole : buildingwihtheight) {
 					DTriangle foundTri=findTriByCoordinate(hole.getHolesCoordinate(),trianglesDelaunay);
 					double heightofTri = hole.getHolesHeight();
                                         if(foundTri == null) {
@@ -403,9 +403,9 @@ public class LayerJDelaunay implements LayerDelaunay {
 	{
 		holes.add(holePosition);
 	}
-        private void addHole(Coordinate holePosition,double height) throws LayerDelaunayError
+        private void addbuilding(Coordinate holePosition,double height) throws LayerDelaunayError
 	{
-                holewithheight.add(new Holeswihtheight(holePosition,height));
+                buildingwihtheight.add(new Buildingwihtheight(holePosition,height));
 	}
 	@Override
 	public void addPolygon(Polygon newPoly, boolean isEmpty)
@@ -474,7 +474,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 			this.addLineString(newLineString);
 		}
 		if (isEmpty) {
-			addHole(newPoly.getInteriorPoint().getCoordinate(),height);
+			addbuilding(newPoly.getInteriorPoint().getCoordinate(),height);
 		}
 		// Append holes
 		final int holeCount = newPoly.getNumInteriorRing();
