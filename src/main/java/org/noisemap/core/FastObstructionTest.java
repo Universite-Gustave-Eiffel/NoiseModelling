@@ -758,6 +758,7 @@ public class FastObstructionTest {
          *         Double[0]:delt distance;
          *         Doulbe[1]:e;
          *         Double[2]:the heigh of the highest intersection
+         *         if Double[0],Double[1],Double[2] are -1. then no usefull intersections.
          */
         public Double[] getPath(Coordinate p1, Coordinate p2) {
 		//BuildingTriangleIndex.clear();
