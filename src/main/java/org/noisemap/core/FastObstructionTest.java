@@ -754,11 +754,14 @@ public class FastObstructionTest {
 	 *            Coordiante receiver
 	 * @param p2
 	 *            Coordiante source
-	 * @return distance of the intersection's path
+	 * @return Double list: data prepared to compute diffraction
+         *         Double[0]:delt distance;
+         *         Doulbe[1]:e;
+         *         Double[2]:the heigh of the highest intersection
          */
-        public LinkedList<LineSegment> getPath(Coordinate p1, Coordinate p2) {
+        public Double[] getPath(Coordinate p1, Coordinate p2) {
 		//BuildingTriangleIndex.clear();
-                
+                Double[] data=new Double[3];
 		LineSegment propaLine = new LineSegment(p1, p2);
 		int curTri = getTriangleIdByCoordinate(p1);
                 LinkedList<Coordinate> pointsIntersection= new LinkedList<Coordinate>();
@@ -775,7 +778,7 @@ public class FastObstructionTest {
                         pointsIntersection.add(coorIntersection);
                 }
 		}
-                
+
 		
                 //add point receiver and point source into list.
                 pointsIntersection.addFirst(p1);
@@ -794,14 +797,43 @@ public class FastObstructionTest {
                 //algo JarvisMarch to get the convex hull           
                 JarvisMarch jm=new JarvisMarch(new JarvisMarch.Points(pointsX,pointsY));
                 JarvisMarch.Points points=jm.calculateHull();
-                LinkedList<LineSegment> path=new LinkedList<LineSegment>(); 
-                for (int i=0;i<points.x.length-1;i++){
-                    path.add(new LineSegment(new Coordinate(points.x[i],points.y[i]),new Coordinate(points.x[i+1],points.y[i+1])));
-             
-
-             }
+                //if there are no useful intersection 
+                if(points.x.length<=2){
+                    data[0]=-1.0;
+                    data[1]=-1.0;
+                    data[2]=-1.0;
+                    return data;
                 
-                return path;
+                }
+                else{
+                    LinkedList<LineSegment> path=new LinkedList<LineSegment>(); 
+                    for (int i=0;i<points.x.length-1;i++){
+                        path.add(new LineSegment(new Coordinate(points.x[i],points.y[i]),new Coordinate(points.x[i+1],points.y[i+1])));
+
+
+                    }
+                    double distancepath=0.0;//distance of path
+
+                    //prepare data to compute pure diffraction
+                    double heightpoint=0.0;//h0:the highest point intersection
+                    for(int i=0;i<path.size();i++){
+                        distancepath=path.get(i).getLength()+distancepath;
+                        if(path.get(i).p0.y>heightpoint){
+                            heightpoint=path.get(i).p0.y;
+                        }
+                    }
+                    //we used coordinate after change coordinate system to get the right distance.
+                    double distanceRandS=path.getFirst().p0.distance(path.getLast().p1);//distance of receiver and source
+                    double e=distancepath-path.getFirst().getLength()-path.getLast().getLength();//distance without first part path and last part path
+                    double deltdistance=distancepath-distanceRandS;//delt distance
+
+
+                    data[0]=deltdistance;
+                    data[1]=e;
+                    data[2]=heightpoint;
+                    return data;
+                
+                }
                 
 	}
         /*
@@ -874,7 +906,7 @@ public class FastObstructionTest {
         private LinkedList<Coordinate> getNewCoordinateSystem(LinkedList<Coordinate> listpoints){
             LinkedList<Coordinate> newcoord=new LinkedList<Coordinate>();
             //get angle by ray source-receiver with the X-axis.
-            double angle=new LineSegment(listpoints.get(0),listpoints.get(listpoints.size()-1)).angle(); 
+            double angle=new LineSegment(listpoints.getFirst(),listpoints.getLast()).angle(); 
             double sin=Math.sin(angle);
             double cos=Math.cos(angle);
                 

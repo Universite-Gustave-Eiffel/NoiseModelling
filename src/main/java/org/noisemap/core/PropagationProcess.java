@@ -393,6 +393,14 @@ public class PropagationProcess implements Runnable {
 				}
 
 			}
+                        
+                        Double[] diffractiondata=data.freeFieldFinder.getPath(receiverCoord, srcCoord);
+                        //diffraction 3D
+                        if(diffractiondata[0]!=-1.0&&diffractiondata[1]!=-1.0&&diffractiondata[2]!=-1.0){
+                        
+                        
+                        
+                        }
 			//
 			// Process specular reflection
 			if (data.reflexionOrder > 0) {
