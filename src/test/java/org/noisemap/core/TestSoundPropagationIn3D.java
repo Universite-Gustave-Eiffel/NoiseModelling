@@ -45,31 +45,31 @@ public class TestSoundPropagationIn3D extends TestCase {
            assertFalse("Intersection test isFreeField #2 failed",ft.isFreeField(new Coordinate(10,5), new Coordinate(32,15)));
            assertFalse("Intersection test isFreeField #2 failed",ft.isFreeField(new Coordinate(10,5,6.0), new Coordinate(32,15,7.0)));
            System.out.println("----------------TEST path between source and receiver----------------");
-           
+           System.out.println("-----no building-----");
            Double[]lt=ft.getPath(new Coordinate(5,15,1.5), new Coordinate(10,15,0.5));
-           
+           System.out.println("----deltadistance----");
            System.out.println(lt[0]);
-           System.out.println("-----");
+           System.out.println("----e----");
            System.out.println(lt[1]);
-           System.out.println("-----");
-           System.out.println(lt[2]);
+           System.out.println("----distancepath----");
+           System.out.println(lt[3]);
            System.out.println("----------TEST with 2 building----- ");
            
            lt=ft.getPath(new Coordinate(48,25,0.5), new Coordinate(5,15,1.5));
-           
+           System.out.println("----deltadistance----");
            System.out.println(lt[0]);
-           System.out.println("-----");
+           System.out.println("----e----");
            System.out.println(lt[1]);
-           System.out.println("-----");
-           System.out.println(lt[2]);
-
+           System.out.println("----distancepath----");
+           System.out.println(lt[3]);
+           System.out.println("-----------exchange source receiver------------");
            lt=ft.getPath(new Coordinate(5,15,1.5), new Coordinate(48,25,0.5));
-           
+           System.out.println("----deltadistance----");
            System.out.println(lt[0]);
-           System.out.println("-----");
+           System.out.println("----e----");
            System.out.println(lt[1]);
-           System.out.println("-----");
-           System.out.println(lt[2]);
+           System.out.println("----distancepath----");
+           System.out.println(lt[3]);
           // LinkedList<Coordinate> lt=ft.getPath(new Coordinate(4,4,0.5), new Coordinate(31,31,1.5));
           // before change fastobstruction.get path return data type LinkedList<Segment>; 
            /*
