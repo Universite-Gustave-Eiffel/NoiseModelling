@@ -146,7 +146,7 @@ public class FastObstructionTest {
 			this.geometriesBoundingBox.expandToInclude(obstructionPoly.getEnvelopeInternal());
 		}
 		toUnite.add(obstructionPoly);
-                
+                polygonwithheight.add(new PolygonWithHeight(obstructionPoly, 0.0));
 	}
         
         /**
@@ -412,6 +412,9 @@ public class FastObstructionTest {
                 }
                 else if(tri.getHeight()>0&&nextTriHeight==0){
                     intersection.z=tri.getHeight();
+                }
+                else if(tri.getHeight()==0&&nextTriHeight==0){
+                    intersection.z=0.;
                 }
                 
 		if (nearestIntersectionSide != -1) {
@@ -755,14 +758,16 @@ public class FastObstructionTest {
 	 * @param p2
 	 *            Coordiante source
 	 * @return Double list: data prepared to compute diffraction
-         *         Double[0]:delt distance;
+         *         Double[0]:delta distance;
          *         Doulbe[1]:e;
-         *         Double[2]:the heigh of the highest intersection
-         *         if Double[0],Double[1],Double[2] are -1. then no usefull intersections.
+         *         Double[2]:the heigh of the highest intersection(this one is used to compute Ch, NMPB 2008 page 33, Ch is given by 1 now ,so not useful for now)
+         *         Double[3]:the full distance of difrraction path
+         *         if Double[0],Double[1],Double[2],Double[3] are -1. then no usefull intersections.
          */
         public Double[] getPath(Coordinate p1, Coordinate p2) {
 		//BuildingTriangleIndex.clear();
-                Double[] data=new Double[3];
+                
+                Double[] data=new Double[4];
 		LineSegment propaLine = new LineSegment(p1, p2);
 		int curTri = getTriangleIdByCoordinate(p1);
                 LinkedList<Coordinate> pointsIntersection= new LinkedList<Coordinate>();
@@ -777,7 +782,7 @@ public class FastObstructionTest {
                         Coordinate coorIntersection=this.getTriList(curTri, propaLine, navigationHistory).getcoorIntersection();
                         if(!coorIntersection.equals(new Coordinate(-1,-1,-1))){
                         pointsIntersection.add(coorIntersection);
-                }
+                        }
 		}
 
 		
@@ -792,7 +797,12 @@ public class FastObstructionTest {
                 pointsY=new double[newPoints.size()];
                 for(int i=0;i<newPoints.size();i++){
                     pointsX[i]=newPoints.get(i).x;
-                    pointsY[i]=newPoints.get(i).y;
+                    if(newPoints.get(i).y!=Double.NaN){
+                        pointsY[i]=newPoints.get(i).y;
+                    }
+                    else{
+                        pointsY[i]=0.;
+                    }
                             
                 }
                 //algo JarvisMarch to get the convex hull           
@@ -800,9 +810,10 @@ public class FastObstructionTest {
                 JarvisMarch.Points points=jm.calculateHull();
                 //if there are no useful intersection 
                 if(points.x.length<=2){
-                    data[0]=-1.0;
-                    data[1]=-1.0;
-                    data[2]=-1.0;
+                    data[0]=-1.;
+                    data[1]=-1.;
+                    data[2]=-1.;
+                    data[3]=-1.;
                     return data;
                 
                 }
@@ -826,12 +837,13 @@ public class FastObstructionTest {
                     //we used coordinate after change coordinate system to get the right distance.
                     double distanceRandS=path.getFirst().p0.distance(path.getLast().p1);//distance of receiver and source
                     double e=distancepath-path.getFirst().getLength()-path.getLast().getLength();//distance without first part path and last part path
-                    double deltdistance=distancepath-distanceRandS;//delt distance
+                    double deltadistance=distancepath-distanceRandS;//delt distance
 
 
-                    data[0]=deltdistance;
+                    data[0]=deltadistance;
                     data[1]=e;
                     data[2]=heightpoint;
+                    data[3]=distancepath;
                     return data;
                 
                 }
