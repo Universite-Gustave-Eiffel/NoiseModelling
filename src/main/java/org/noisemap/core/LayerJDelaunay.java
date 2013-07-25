@@ -72,7 +72,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 	private ArrayList<DEdge> constraintEdge = new ArrayList<DEdge>();
 	private LinkedList<DPoint> ptToInsert = new LinkedList<DPoint>();
 	private List<Coordinate> holes = new LinkedList<Coordinate>();
-        private LinkedList<Buildingwihtheight> buildingwihtheight= new LinkedList<Buildingwihtheight>();//holes coordinate and height
+        private LinkedList<Buildingwihtheight> buildingwithheight= new LinkedList<Buildingwihtheight>();//holes coordinate and height
 	private boolean debugMode=false; //output primitives in a text file
 	private boolean computeNeighbors=false;
 	List<Triangle> triangles = new ArrayList<Triangle>();
@@ -145,11 +145,11 @@ public class LayerJDelaunay implements LayerDelaunay {
                     this.height=height;
                 }
 
-                public Coordinate getHolesCoordinate()
+                public Coordinate getMiddleCoordinateOfBuilding()
                 {
                     return this.holecoodinate;
                 }
-                public double getHolesHeight()
+                public double getBuildingHeight()
                 {
                     return this.height;
                 }
@@ -254,9 +254,9 @@ public class LayerJDelaunay implements LayerDelaunay {
                                 //test add height
                                 
                                 if(holes.isEmpty()){
-				for(Buildingwihtheight hole : buildingwihtheight) {
-					DTriangle foundTri=findTriByCoordinate(hole.getHolesCoordinate(),trianglesDelaunay);
-					double heightofTri = hole.getHolesHeight();
+				for(Buildingwihtheight hole : buildingwithheight) {
+					DTriangle foundTri=findTriByCoordinate(hole.getMiddleCoordinateOfBuilding(),trianglesDelaunay);
+					double heightofTri = hole.getBuildingHeight();
                                         if(foundTri == null) {
 						throw new LayerDelaunayError("hole outside domain ("+hole+")");
 					}
@@ -405,7 +405,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 	}
         private void addbuilding(Coordinate holePosition,double height) throws LayerDelaunayError
 	{
-                buildingwihtheight.add(new Buildingwihtheight(holePosition,height));
+                buildingwithheight.add(new Buildingwihtheight(holePosition,height));
 	}
 	@Override
 	public void addPolygon(Polygon newPoly, boolean isEmpty)
