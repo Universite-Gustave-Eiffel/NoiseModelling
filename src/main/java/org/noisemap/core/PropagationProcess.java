@@ -393,14 +393,64 @@ public class PropagationProcess implements Runnable {
 				}
 
 			}
+                        //Process diffraction 3D
                         
                         Double[] diffractiondata=data.freeFieldFinder.getPath(receiverCoord, srcCoord);
-                        //diffraction 3D
-                        if(diffractiondata[0]!=-1.0&&diffractiondata[1]!=-1.0&&diffractiondata[2]!=-1.0){
                         
+                        double deltadistance=diffractiondata[0];
+                        double e=diffractiondata[1];
+                        double heightpoint=diffractiondata[2];
+                        double fulldistance=diffractiondata[3];
+                        
+                        if(deltadistance!=-1.&&e!=-1.&&heightpoint!=-1.&&fulldistance!=-1.&&fulldistance<data.maxSrcDist){
+                            for (int idfreq = 0; idfreq < freqcount; idfreq++) {
+
+									double cprime;
+									//C" NMPB 2008 P.33
+									
+										//Multiple diffraction
+										//CPRIME=( 1+(5*gamma)^2)/((1/3)+(5*gamma)^2)
+										double gammapart=Math.pow((5*freq_lambda[idfreq])/e, 2);
+                                                                                //NFS 31-133 page 46
+                                                                                if(e>0.3){
+                                                                                    cprime=(1.+gammapart)/(ONETHIRD+gammapart);
+                                                                                }
+                                                                                else{
+                                                                                    cprime=1.;
+                                                                                }
+									
+									//(7.11) NMP2008 P.32
+									double testForm = (40 / freq_lambda[idfreq])
+											* cprime * deltadistance;
+									double DiffractionAttenuation = 0.;
+									if (testForm >= -2.) {
+										DiffractionAttenuation = 10 * Math
+												.log10(3 + testForm);
+									}else{
+										
+									}
+									// Limit to 0<=DiffractionAttenuation
+									DiffractionAttenuation = Math.max(0,
+											DiffractionAttenuation);
+									double AttenuatedWj = wj.get(idfreq);
+									// Geometric dispersion
+                                                                        //fulldistance-deltdistance is the distance direct between source and receiver
+									AttenuatedWj=attDistW(AttenuatedWj, fulldistance-deltadistance);
+									// Apply diffraction attenuation
+									AttenuatedWj = dbaToW(wToDba(AttenuatedWj)
+											- DiffractionAttenuation);
+									// Apply atmospheric absorption and ground
+									AttenuatedWj = attAtmW(
+											AttenuatedWj,
+											fulldistance,
+											alpha_atmo[idfreq]);
+									
+									energeticSum[idfreq] += AttenuatedWj;
+								}
                         
                         
                         }
+                 
 			//
 			// Process specular reflection
 			if (data.reflexionOrder > 0) {
