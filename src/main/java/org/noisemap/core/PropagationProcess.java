@@ -394,7 +394,7 @@ public class PropagationProcess implements Runnable {
 
 			}
                         //Process diffraction 3D
-                        
+                    /*    
                         Double[] diffractiondata=data.freeFieldFinder.getPath(receiverCoord, srcCoord);
                         
                         double deltadistance=diffractiondata[0];
@@ -450,7 +450,7 @@ public class PropagationProcess implements Runnable {
                         
                         
                         }
-                 
+                 */
 			//
 			// Process specular reflection
 			if (data.reflexionOrder > 0) {

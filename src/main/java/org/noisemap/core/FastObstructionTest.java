@@ -146,7 +146,7 @@ public class FastObstructionTest {
 			this.geometriesBoundingBox.expandToInclude(obstructionPoly.getEnvelopeInternal());
 		}
 		toUnite.add(obstructionPoly);
-                polygonwithheight.add(new PolygonWithHeight(obstructionPoly, 0.0));
+                polygonwithheight.add(new PolygonWithHeight(obstructionPoly, -1.));
 	}
         
         /**
@@ -246,6 +246,7 @@ public class FastObstructionTest {
 		this.triVertices = delaunayTool.getTriangles();
 		this.vertices = delaunayTool.getVertices();
 		this.triNeighbors = delaunayTool.getNeighbors();
+
 		// /////////////////////////////////
 		// Feed Query Structure to find triangle, by coordinate
 
@@ -735,18 +736,24 @@ public class FastObstructionTest {
 	public boolean isFreeField(Coordinate p1, Coordinate p2) {
 		nbObstructionTest++;
 		LineSegment propaLine = new LineSegment(p1, p2);
+                
 		int curTri = getTriangleIdByCoordinate(p1);
 		HashSet<Integer> navigationHistory = new HashSet<Integer>();
-		while (curTri != -1) {
-			navigationHistory.add(curTri);
-			Coordinate[] tri = getTriangle(curTri);
-			if (dotInTri(p2, tri[0], tri[1], tri[2])) {
-				return true;
-			}
-			curTri = this.getNextTri(curTri, propaLine, navigationHistory);              
-		}
-		return false;
-	}
+                if(this.triVertices.get(curTri).getHeight()!=-1.){
+                    while (curTri != -1) {
+                            navigationHistory.add(curTri);
+                            Coordinate[] tri = getTriangle(curTri);
+                            if (dotInTri(p2, tri[0], tri[1], tri[2])) {
+                                    return true;
+                            }
+                            curTri = this.getNextTri(curTri, propaLine, navigationHistory);              
+                    }
+                    return false;
+	        }
+                else{
+                    return false;
+                }
+        }
         
         
         /*
