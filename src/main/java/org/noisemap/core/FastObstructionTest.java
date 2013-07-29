@@ -146,7 +146,7 @@ public class FastObstructionTest {
 			this.geometriesBoundingBox.expandToInclude(obstructionPoly.getEnvelopeInternal());
 		}
 		toUnite.add(obstructionPoly);
-                polygonwithheight.add(new PolygonWithHeight(obstructionPoly, -1.));
+                polygonwithheight.add(new PolygonWithHeight(obstructionPoly, Double.MAX_VALUE));
 	}
         
         /**
@@ -605,7 +605,9 @@ public class FastObstructionTest {
 				verticesOpenAnglesTuples.add(new ArrayList<Double>());
 			}
 			int triId = 0;
+                        
 			for (Triangle tri : this.triVertices) {
+                            if(tri.getHeight()<=0){
 				// Compute angle at each corner, then add to vertices angle
 				// array
 				Coordinate triA = vertices.get(tri.getA());
@@ -651,6 +653,7 @@ public class FastObstructionTest {
 					verticesOpenAngleTranslated.add(curVert);
 				}
 			}
+                        }
 		}
 		int idvert = 0;
 		for (Float angleVertex : verticesOpenAngle) {
