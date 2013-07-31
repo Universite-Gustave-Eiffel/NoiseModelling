@@ -146,6 +146,7 @@ public class FastObstructionTest {
 			this.geometriesBoundingBox.expandToInclude(obstructionPoly.getEnvelopeInternal());
 		}
 		toUnite.add(obstructionPoly);
+                //no height defined, set it to Max value
                 polygonwithheight.add(new PolygonWithHeight(obstructionPoly, Double.MAX_VALUE));
 	}
         
@@ -162,7 +163,6 @@ public class FastObstructionTest {
                 
                 toUnite.add(obstructionPoly);
                 polygonwithheight.add(new PolygonWithHeight(obstructionPoly, heightofBuilding));
-             
         }
                 
 	private Geometry merge(LinkedList<Geometry> toUnite, double bufferSize) {
@@ -181,8 +181,8 @@ public class FastObstructionTest {
 	}
         
         private void addPolygon(Polygon newpoly, LayerJDelaunay delaunayTool,
-			Geometry boundingBox, double heightofPolygon) throws LayerDelaunayError {
-		delaunayTool.addPolygon(newpoly, true, heightofPolygon);
+			Geometry boundingBox, int buildingID) throws LayerDelaunayError {
+		delaunayTool.addPolygon(newpoly, true, buildingID);
 	}
         
 	private void explodeAndAddPolygon(Geometry intersectedGeometry,
@@ -198,7 +198,7 @@ public class FastObstructionTest {
 		} else if (intersectedGeometry instanceof Polygon) {
                         for(PolygonWithHeight geo : polygonwithheight){
                             if(geo.getGeometry().equals(intersectedGeometry)){
-                              addPolygon((Polygon) intersectedGeometry, delaunayTool, boundingBox, geo.getHeight());
+                              addPolygon((Polygon) intersectedGeometry, delaunayTool, boundingBox,polygonwithheight.indexOf(geo));
                               return;
                             }
                         }

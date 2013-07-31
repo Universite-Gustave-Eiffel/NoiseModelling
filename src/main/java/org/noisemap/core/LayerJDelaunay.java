@@ -456,7 +456,7 @@ public class LayerJDelaunay implements LayerDelaunay {
          * Add height of building 
          * @return
          */
-        public void addPolygon(Polygon newPoly, boolean isEmpty,double height)
+        public void addPolygon(Polygon newPoly, boolean isEmpty,int biudlingID)
 			throws LayerDelaunayError {
 
 		if (delaunayTool == null) {
@@ -471,10 +471,10 @@ public class LayerJDelaunay implements LayerDelaunay {
 				.getCoordinates();
 		if (coordinates.length > 1) {
 			LineString newLineString = factory.createLineString(coordinates);
-			this.addLineString(newLineString);
+			this.addLineString(newLineString,biudlingID);
 		}
 		if (isEmpty) {
-			addbuilding(newPoly.getInteriorPoint().getCoordinate(),height);
+			addHole(newPoly.getInteriorPoint().getCoordinate());
 		}
 		// Append holes
 		final int holeCount = newPoly.getNumInteriorRing();
@@ -546,6 +546,20 @@ public class LayerJDelaunay implements LayerDelaunay {
 		}
 	}
 
+        
+	public void addLineString(LineString lineToProcess,int buildingID)
+			throws LayerDelaunayError {
+		Coordinate[] coords = lineToProcess.getCoordinates();
+		try {
+			for (int ind = 1; ind < coords.length; ind++) {
+				this.constraintEdge.add(new DEdge(new DPoint(coords[ind - 1]),
+						new DPoint(coords[ind]), buildingID));
+			}
+		} catch (DelaunayError e) {
+			throw new LayerDelaunayError(e.getMessage());
+		}
+	}
+        
 	@Override
 	public void reset() {
 		// TODO Auto-generated method stub
