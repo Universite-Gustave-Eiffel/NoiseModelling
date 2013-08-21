@@ -31,14 +31,29 @@ public class TestSoundPropagationIn3DWithNewFunction extends TestCase {
            Coordinate[] building2Coords = { new Coordinate(40., 5.,0.),
 				new Coordinate(45., 5.,0.), new Coordinate(45., 30.,0.),
 				new Coordinate(40., 30.,0.), new Coordinate(40., 5.,0.) };
+           //special building have intersection with boundingBox 
+           Coordinate[] building3Coords = { new Coordinate(50., 5.,0.),
+				new Coordinate(60., 5.,0.), new Coordinate(60., 60.,0.),
+				new Coordinate(50., 60.,0.), new Coordinate(50., 5.,0.) };
+           //building2Coords and building4Coords are glued
+           Coordinate[] building4Coords = { new Coordinate(45., 5.,0.),
+				new Coordinate(50., 5.,0.), new Coordinate(50., 40.,0.),
+				new Coordinate(45., 40.,0.), new Coordinate(45., 5.,0.) };           
            Polygon building1 = factory.createPolygon(
 			factory.createLinearRing(building1Coords), null);
            Polygon building2 = factory.createPolygon(
-			factory.createLinearRing(building2Coords), null);     
-           FastObstructionTest ft= new FastObstructionTest();
+			factory.createLinearRing(building2Coords), null);   
+           Polygon building3 = factory.createPolygon(
+			factory.createLinearRing(building3Coords), null);
+           Polygon building4 = factory.createPolygon(
+			factory.createLinearRing(building4Coords), null);           
+           FastObstructionTest ft= new FastObstructionTest();          
            //add building with height
-           ft.addGeometry(building1,5.);
+           //ft.addGeometry(building1,5.);
+           //ft.addGeometry(building2,4.);
+           //test building out of the boundingBox
            ft.addGeometry(building2,4.);
+           ft.addGeometry(building4,5.);
            ft.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(60., 60.,0.)));
                       
            assertTrue("Intersection test isFreeField #1 failed",ft.isFreeField(new Coordinate(10,5), new Coordinate(12,45)));
