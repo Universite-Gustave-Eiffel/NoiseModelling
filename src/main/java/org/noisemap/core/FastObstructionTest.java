@@ -54,6 +54,7 @@ import com.vividsolutions.jts.geom.LinearRing;
 import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Polygon;
 import com.vividsolutions.jts.operation.buffer.BufferParameters;
+import com.vividsolutions.jts.index.quadtree.Quadtree;
 import java.util.*;
 
 /**
@@ -81,7 +82,9 @@ public class FastObstructionTest {
 	private List<Coordinate> verticesOpenAngleTranslated = null; /*Open angle*/
         //private LinkedList<Integer> BuildingTriangleIndex= new LinkedList<Integer>(); /* the buildings list between source and receiver. Reconstruction after get a new source-reciver */
         //private LinkedList<Coordinate> pointsIntersection= new LinkedList<Coordinate>();/* the intersection of the segment source-receiver and builiding's side. Reconstruction after get a new source-reciver */
-        private int TestBranch;
+        
+        private Quadtree ptQuad = new Quadtree();//
+        private Quadtree ptQuadForMergeBuilding = new Quadtree();//
         private static class PolygonWithHeight{
             private Geometry geo;
             private double height;
@@ -97,7 +100,10 @@ public class FastObstructionTest {
             public double getHeight(){
                 return this.height;
             }
-        
+            public void setGeometry(Geometry geo){
+                this.geo=geo;
+            }
+            
         }
         
          private static class TriIdWithIntersection{
@@ -155,15 +161,47 @@ public class FastObstructionTest {
          * Add height of building 
          * @return
          */
+        @SuppressWarnings("unchecked")
       	public void addGeometry(Geometry obstructionPoly, double heightofBuilding) {
-		if(this.geometriesBoundingBox==null) {
+                PolygonWithHeight building=new PolygonWithHeight(obstructionPoly, heightofBuilding); 
+           	if(this.geometriesBoundingBox==null) {
 			this.geometriesBoundingBox=new Envelope(obstructionPoly.getEnvelopeInternal());
 		} else {
 			this.geometriesBoundingBox.expandToInclude(obstructionPoly.getEnvelopeInternal());
 		}
+                //if there is no building 
+                if(ptQuadForMergeBuilding.size()==0){
+                    polygonwithheight.add(building);
+                    toUnite.add(obstructionPoly);
+                    //add this building to QuadTree
+                    ptQuadForMergeBuilding.insert(obstructionPoly.getEnvelopeInternal(),new EnvelopeWithIndex<Integer>(obstructionPoly.getEnvelopeInternal(),
+				polygonwithheight.indexOf(building)));
+                    
+                }
+                else{
+                    //check if a new building have the intersection with other buildings
+                    List<EnvelopeWithIndex<Integer>> result = ptQuadForMergeBuilding.query(obstructionPoly.getEnvelopeInternal());
+                    if (result.isEmpty()){
+                        polygonwithheight.add(building);
+                        toUnite.add(obstructionPoly);
+                        ptQuadForMergeBuilding.insert(obstructionPoly.getEnvelopeInternal(),new EnvelopeWithIndex<Integer>(obstructionPoly.getEnvelopeInternal(),
+				polygonwithheight.indexOf(building)));
+                    }
+                    else{
+                        for(EnvelopeWithIndex<Integer> envel : result){
+                            int intersectedBuildingID=envel.getId();
+                            double maxHeight=polygonwithheight.get(intersectedBuildingID).getHeight();
+                            if (maxHeight<heightofBuilding){
+                                maxHeight=heightofBuilding;
+                                
+                            }
+                        }
+                    }
+                }
                 
-                toUnite.add(obstructionPoly);
-                polygonwithheight.add(new PolygonWithHeight(obstructionPoly, heightofBuilding));
+                
+                
+                
         }
                 
 	private Geometry merge(LinkedList<Geometry> toUnite, double bufferSize) {
@@ -210,6 +248,7 @@ public class FastObstructionTest {
 	}
 
 	// feeding
+        @SuppressWarnings("unchecked")
 	public void finishPolygonFeeding(Envelope boundingBoxFilter)
 			throws LayerDelaunayError {
 		if(boundingBoxFilter!=null) {
@@ -223,6 +262,11 @@ public class FastObstructionTest {
 		verticesOpenAngle = null;
 		LayerJDelaunay delaunayTool = new LayerJDelaunay();
 		// Merge polygon
+                for(PolygonWithHeight poly:polygonwithheight){
+                    ptQuad.insert(poly.getGeometry().getEnvelopeInternal(),new EnvelopeWithIndex<Integer>(poly.getGeometry().getEnvelopeInternal(),
+				polygonwithheight.indexOf(poly)));
+                }
+
 		Geometry allbuilds = merge(toUnite, 0.);
 		toUnite.clear();
 		// Insert the main rectangle
@@ -234,8 +278,18 @@ public class FastObstructionTest {
 		Polygon boundingBox = new Polygon((LinearRing) linearRing, null,
 				factory);
 		delaunayTool.addPolygon(boundingBox, false);
+                //get intersected polygon with bondingBox
+                List<EnvelopeWithIndex<Integer>> result = ptQuad.query(boundingBoxFilter);
+                for (EnvelopeWithIndex<Integer> envel : result) {
+			int id=envel.getId();
+                        Geometry buildingInBoundingBox=polygonwithheight.get(id).getGeometry().intersection(boundingBox);
+                        polygonwithheight.get(id).setGeometry(buildingInBoundingBox);
+		}
 		// Remove geometries out of the bounding box
 		allbuilds = allbuilds.intersection(boundingBox);
+                for(PolygonWithHeight polygon:polygonwithheight){
+                    explodeAndAddPolygon(polygon.getGeometry(), delaunayTool, boundingBox);
+                }
 		explodeAndAddPolygon(allbuilds, delaunayTool, boundingBox);
 		// Process delaunay Triangulation
 		delaunayTool.setMinAngle(0.);
