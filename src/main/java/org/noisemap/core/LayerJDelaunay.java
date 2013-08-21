@@ -546,14 +546,16 @@ public class LayerJDelaunay implements LayerDelaunay {
 		}
 	}
 
-        
+        //add buildingID to edge property
 	public void addLineString(LineString lineToProcess,int buildingID)
 			throws LayerDelaunayError {
 		Coordinate[] coords = lineToProcess.getCoordinates();
 		try {
 			for (int ind = 1; ind < coords.length; ind++) {
-				this.constraintEdge.add(new DEdge(new DPoint(coords[ind - 1]),
-						new DPoint(coords[ind]), buildingID));
+                                DEdge edge=new DEdge(new DPoint(coords[ind - 1]),
+						new DPoint(coords[ind])); 
+                                edge.setProperty(buildingID);
+				this.constraintEdge.add(edge);
 			}
 		} catch (DelaunayError e) {
 			throw new LayerDelaunayError(e.getMessage());
