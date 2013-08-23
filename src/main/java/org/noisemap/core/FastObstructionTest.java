@@ -73,7 +73,8 @@ public class FastObstructionTest {
 	private List<Triangle> triNeighbors; // Neighbors
 	private LinkedList<Geometry> toUnite = new LinkedList<Geometry>(); // Polygon
 	private LinkedList<Double> height= new  LinkedList<Double>(); // Height of Polygon
-        private LinkedList<PolygonWithHeight> polygonwithheight= new LinkedList<PolygonWithHeight>();//list polygon with height
+        private LinkedList<PolygonWithHeight> polygonWithHeight= new LinkedList<PolygonWithHeight>();//list polygon with height
+        private HashMap <Integer,PolygonWithHeight> buildingWithID=new HashMap<Integer,PolygonWithHeight>();//list to save all of buildings(both new polygon and old polygon) when do the merge building.
         private Envelope geometriesBoundingBox=null;
 	// union;
 	private QueryGeometryStructure triIndex = null; //TODO remove
@@ -154,13 +155,36 @@ public class FastObstructionTest {
 		}
 		toUnite.add(obstructionPoly);
                 //no height defined, set it to Max value
-                polygonwithheight.add(new PolygonWithHeight(obstructionPoly, Double.MAX_VALUE));
+                polygonWithHeight.add(new PolygonWithHeight(obstructionPoly, Double.MAX_VALUE));
 	}
-        
+   
         /**
          * Add height of building 
          * @return
          */
+       /*
+      	public void addGeometry(Geometry obstructionPoly, double heightofBuilding) {
+		if(this.geometriesBoundingBox==null) {
+			this.geometriesBoundingBox=new Envelope(obstructionPoly.getEnvelopeInternal());
+		} else {
+			this.geometriesBoundingBox.expandToInclude(obstructionPoly.getEnvelopeInternal());
+		}
+                
+                toUnite.add(obstructionPoly);
+                polygonwithheight.add(new PolygonWithHeight(obstructionPoly, heightofBuilding));
+             
+        }        
+        */
+        
+        /**
+         * Add height of building and merge buildings if they have intersection 
+         * @param obstructionPoly
+	 *            building's Geometry
+	 * @param heightofBuilding
+	 *            buidling's Height
+         * @return
+         */
+
         @SuppressWarnings("unchecked")
       	public void addGeometry(Geometry obstructionPoly, double heightofBuilding) {
                 PolygonWithHeight newbuilding=new PolygonWithHeight(obstructionPoly, heightofBuilding); 
@@ -170,12 +194,13 @@ public class FastObstructionTest {
 			this.geometriesBoundingBox.expandToInclude(obstructionPoly.getEnvelopeInternal());
 		}
                 //if there is no building 
-                if(ptQuadForMergeBuilding.size()==0){
-                    polygonwithheight.add(newbuilding);
+                if(buildingWithID.isEmpty()){
+                    polygonWithHeight.add(newbuilding);
                     toUnite.add(obstructionPoly);
+                    buildingWithID.put(buildingWithID.size(),newbuilding);
                     //add this building to QuadTree
                     ptQuadForMergeBuilding.insert(obstructionPoly.getEnvelopeInternal(),new EnvelopeWithIndex<Integer>(obstructionPoly.getEnvelopeInternal(),
-				polygonwithheight.indexOf(newbuilding)));
+				buildingWithID.size()-1));
                     
                 }
                 else{
@@ -183,44 +208,49 @@ public class FastObstructionTest {
                     List<EnvelopeWithIndex<Integer>> result = ptQuadForMergeBuilding.query(obstructionPoly.getEnvelopeInternal());
                     //if no intersection 
                     if (result.isEmpty()){
-                        polygonwithheight.add(newbuilding);
+                        polygonWithHeight.add(newbuilding);
                         toUnite.add(obstructionPoly);
+                        buildingWithID.put(buildingWithID.size(),newbuilding);
                         ptQuadForMergeBuilding.insert(obstructionPoly.getEnvelopeInternal(),new EnvelopeWithIndex<Integer>(obstructionPoly.getEnvelopeInternal(),
-				polygonwithheight.indexOf(newbuilding)));
+				buildingWithID.size()-1));
                     }
-                    //if have intersection get the building who intersected with this new building using ID
-                    //we use the highest building's height and give it to the intersected Geo
+                    //if we may have intersection, get the building who intersected with this new building using ID
+                    //we use the less height building's height and give it to the intersected Geo
                     else{
                             Geometry newBuildingModified=obstructionPoly;
-                            boolean noChangeToNewBuilding=true;
-                        for(EnvelopeWithIndex<Integer> envel : result){
-                            int intersectedBuildingID=envel.getId();
-                            PolygonWithHeight intersectedBuilidng=polygonwithheight.get(intersectedBuildingID);
-                            
-                            Geometry intersectedGeo=intersectedBuilidng.getGeometry().intersection(newBuildingModified);
-                            double maxHeight=intersectedBuilidng.getHeight();
-                            if (maxHeight<heightofBuilding){
-                                //if the new building's height more than old intersected building 
-                                //then modify old building's Geo to remove the repeated part of Geo and add the new building to list and QuadTree
-                                intersectedBuilidng.setGeometry(intersectedBuilidng.getGeometry().difference(intersectedGeo));
-                                
-                            }
-                            else{
-                                //if the new building's height less or equal than old intersected building 
-                                //then modify new building's Geo to remove the repeated part of Geo and add the new building with new Geo to list and QuadTree
-                                newBuildingModified=newBuildingModified.difference(intersectedGeo);
-                                noChangeToNewBuilding=false;
-                            }
+                            double minHeight=heightofBuilding;
+                            for(EnvelopeWithIndex<Integer> envel : result){
+                                int intersectedBuildingID=envel.getId();
+                                PolygonWithHeight intersectedBuilidng=buildingWithID.get(intersectedBuildingID);
+                                //if new Polygon interset old Polygon
+                                if(intersectedBuilidng.getGeometry().intersects(obstructionPoly)){
+                                    //we merge the building and give it a new height
+                                    newBuildingModified=intersectedBuilidng.getGeometry().union(newBuildingModified);
+                                    if (minHeight>intersectedBuilidng.getHeight()){
+                                    //if the new building's height less than old intersected building, we get the min height 
+                                        minHeight=intersectedBuilidng.getHeight();
+                                        
+                                    }
+                                    //if we are sure a old building have intersection with new building, 
+                                    //we will remove the old building in the building list and QuadTree(not remove in buildingWithID list)
+                                    polygonWithHeight.remove(intersectedBuilidng);
+                                    toUnite.remove(intersectedBuilidng.getGeometry());
+                                    ptQuadForMergeBuilding.remove(intersectedBuilidng.getGeometry().getEnvelopeInternal(),new EnvelopeWithIndex<Integer>(intersectedBuilidng.getGeometry().getEnvelopeInternal(),
+				intersectedBuildingID));
+                                    
+                                        
+                                 }
+                                 
                                      
-                        }
-                        //if new building's Geom changed
-                        if(!noChangeToNewBuilding){
-                            newbuilding.setGeometry(newBuildingModified);
-                        }
-                            polygonwithheight.add(newbuilding);
-                            toUnite.add(newbuilding.getGeometry());
-                            ptQuadForMergeBuilding.insert(newbuilding.getGeometry().getEnvelopeInternal(),new EnvelopeWithIndex<Integer>(newbuilding.getGeometry().getEnvelopeInternal(),
-			    polygonwithheight.indexOf(newbuilding)));
+                            }
+                            PolygonWithHeight newPoly=new PolygonWithHeight(newBuildingModified,minHeight);
+                            polygonWithHeight.add(newPoly);
+                            toUnite.add(newBuildingModified);
+                            buildingWithID.put(buildingWithID.size(), newPoly);
+                            //because we dont remove the building in HashMap buildingWithID, so the buildingWithID will keep both new or old bulding
+                            ptQuadForMergeBuilding.insert(newBuildingModified.getEnvelopeInternal(),new EnvelopeWithIndex<Integer>(newBuildingModified.getEnvelopeInternal(),
+				buildingWithID.size()-1));
+
                     }
                 }
                 
@@ -228,6 +258,7 @@ public class FastObstructionTest {
                 
                 
         }
+
                 
 	private Geometry merge(LinkedList<Geometry> toUnite, double bufferSize) {
 		GeometryFactory geometryFactory = new GeometryFactory();
@@ -239,36 +270,33 @@ public class FastObstructionTest {
 				BufferParameters.CAP_SQUARE);
 	}
   
-	private void addPolygon(Polygon newpoly, LayerJDelaunay delaunayTool,
-			Geometry boundingBox) throws LayerDelaunayError {
+	private void addPolygon(Polygon newpoly, LayerJDelaunay delaunayTool
+			) throws LayerDelaunayError {
 		delaunayTool.addPolygon(newpoly, true);
 	}
         
         private void addPolygon(Polygon newpoly, LayerJDelaunay delaunayTool,
-			Geometry boundingBox, int buildingID) throws LayerDelaunayError {
-		delaunayTool.addPolygon(newpoly, true, buildingID);
+			 int buildingID) throws LayerDelaunayError {
+		delaunayTool.addPolygon(newpoly, false, buildingID);
 	}
         
 	private void explodeAndAddPolygon(Geometry intersectedGeometry,
-			LayerJDelaunay delaunayTool, Geometry boundingBox)
+			LayerJDelaunay delaunayTool, int buildingID)
 			throws LayerDelaunayError {
                 
 		if (intersectedGeometry instanceof MultiPolygon
 				|| intersectedGeometry instanceof GeometryCollection) {
-			for (int j = 0; j < intersectedGeometry.getNumGeometries(); j++) {
-				Geometry subGeom = intersectedGeometry.getGeometryN(j);
-				explodeAndAddPolygon(subGeom, delaunayTool, boundingBox);
+                 
+                        
+                        for (int j = 0; j < intersectedGeometry.getNumGeometries(); j++) {
+			Geometry subGeom = intersectedGeometry.getGeometryN(j);
+			explodeAndAddPolygon(subGeom, delaunayTool,buildingID);
+               
 			}
 		} else if (intersectedGeometry instanceof Polygon) {
-                        for(PolygonWithHeight geo : polygonwithheight){
-                            if(geo.getGeometry().equals(intersectedGeometry)){
-                              addPolygon((Polygon) intersectedGeometry, delaunayTool, boundingBox,polygonwithheight.indexOf(geo));
-                              return;
-                            }
-                        }
-                        addPolygon((Polygon) intersectedGeometry, delaunayTool, boundingBox);
+                        addPolygon((Polygon) intersectedGeometry, delaunayTool,buildingID);
 		} else if (intersectedGeometry instanceof LineString) {
-			delaunayTool.addLineString((LineString) intersectedGeometry);
+			delaunayTool.addLineString((LineString) intersectedGeometry,buildingID);
 		}
 	}
 
@@ -287,12 +315,15 @@ public class FastObstructionTest {
 		verticesOpenAngle = null;
 		LayerJDelaunay delaunayTool = new LayerJDelaunay();
 		// Merge polygon
-                for(PolygonWithHeight poly:polygonwithheight){
-                    ptQuad.insert(poly.getGeometry().getEnvelopeInternal(),new EnvelopeWithIndex<Integer>(poly.getGeometry().getEnvelopeInternal(),
-				polygonwithheight.indexOf(poly)));
+                
+                for(int i=0;i<polygonWithHeight.size();i++){
+                    ptQuad.insert(polygonWithHeight.get(i).getGeometry().getEnvelopeInternal(),new EnvelopeWithIndex<Integer>(polygonWithHeight.get(i).getGeometry().getEnvelopeInternal(),
+				i));
+                    explodeAndAddPolygon(polygonWithHeight.get(i).getGeometry(), delaunayTool,i);
+               
                 }
 
-		Geometry allbuilds = merge(toUnite, 0.);
+		//Geometry allbuilds = merge(toUnite, 0.);
 		toUnite.clear();
 		// Insert the main rectangle
 		Geometry linearRing = EnvelopeUtil.toGeometry(this.geometriesBoundingBox);
@@ -304,18 +335,8 @@ public class FastObstructionTest {
 				factory);
 		delaunayTool.addPolygon(boundingBox, false);
                 //get intersected polygon with bondingBox
-                List<EnvelopeWithIndex<Integer>> result = ptQuad.query(boundingBoxFilter);
-                for (EnvelopeWithIndex<Integer> envel : result) {
-			int id=envel.getId();
-                        Geometry buildingInBoundingBox=polygonwithheight.get(id).getGeometry().intersection(boundingBox);
-                        polygonwithheight.get(id).setGeometry(buildingInBoundingBox);
-		}
 		// Remove geometries out of the bounding box
-		allbuilds = allbuilds.intersection(boundingBox);
-                for(PolygonWithHeight polygon:polygonwithheight){
-                    explodeAndAddPolygon(polygon.getGeometry(), delaunayTool, boundingBox);
-                }
-		explodeAndAddPolygon(allbuilds, delaunayTool, boundingBox);
+		//explodeAndAddPolygon(allbuilds, delaunayTool);
 		// Process delaunay Triangulation
 		delaunayTool.setMinAngle(0.);
 		delaunayTool.setRetrieveNeighbors(true);
@@ -839,7 +860,7 @@ public class FastObstructionTest {
         }
         
         
-        /*
+        /**
          * 
          * get the distance of all intersections (after the filtration by algo Jarvis March)  between the source and the receiver to compute vertical diffraction 
          * must called after finishPolygonFeeding
@@ -1022,6 +1043,14 @@ public class FastObstructionTest {
     
             return newcoord;
         
+        }
+        //function just for test MergePolygon
+        public void testMergeGetPolygonWithHeight(){
+            
+            for(PolygonWithHeight polygon:polygonWithHeight){
+                System.out.println("Polygon is:"+ polygon.getGeometry().toString());
+                System.out.println("Building height is:"+ polygon.getHeight());
+            }
         }
         
   
