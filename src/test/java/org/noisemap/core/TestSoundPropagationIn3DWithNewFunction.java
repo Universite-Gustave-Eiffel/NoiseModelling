@@ -35,10 +35,19 @@ public class TestSoundPropagationIn3DWithNewFunction extends TestCase {
            Coordinate[] building3Coords = { new Coordinate(50., 5.,0.),
 				new Coordinate(60., 5.,0.), new Coordinate(60., 60.,0.),
 				new Coordinate(50., 60.,0.), new Coordinate(50., 5.,0.) };
-           //building2Coords and building4Coords are glued
+           //building 2,4,5,6,7 are glued
            Coordinate[] building4Coords = { new Coordinate(45., 5.,0.),
 				new Coordinate(50., 5.,0.), new Coordinate(50., 40.,0.),
-				new Coordinate(45., 40.,0.), new Coordinate(45., 5.,0.) };           
+				new Coordinate(45., 40.,0.), new Coordinate(45., 5.,0.) };
+           Coordinate[] building5Coords = { new Coordinate(50., 5.,0.),
+				new Coordinate(55., 5.,0.), new Coordinate(55., 40.,0.),
+				new Coordinate(50., 40.,0.), new Coordinate(50., 5.,0.) };
+           Coordinate[] building6Coords = { new Coordinate(55., 2.,0.),
+				new Coordinate(58., 2.,0.), new Coordinate(58., 50.,0.),
+				new Coordinate(55., 50.,0.), new Coordinate(55., 2.,0.) };
+           Coordinate[] building7Coords = { new Coordinate(58., 5.,0.),
+				new Coordinate(65., 5.,0.), new Coordinate(65., 60.,0.),
+				new Coordinate(58., 60.,0.), new Coordinate(58., 5.,0.) };
            Polygon building1 = factory.createPolygon(
 			factory.createLinearRing(building1Coords), null);
            Polygon building2 = factory.createPolygon(
@@ -46,15 +55,29 @@ public class TestSoundPropagationIn3DWithNewFunction extends TestCase {
            Polygon building3 = factory.createPolygon(
 			factory.createLinearRing(building3Coords), null);
            Polygon building4 = factory.createPolygon(
-			factory.createLinearRing(building4Coords), null);           
+			factory.createLinearRing(building4Coords), null);
+           Polygon building5 = factory.createPolygon(
+			factory.createLinearRing(building5Coords), null);    
+           Polygon building6 = factory.createPolygon(
+			factory.createLinearRing(building6Coords), null);    
+           Polygon building7 = factory.createPolygon(
+			factory.createLinearRing(building7Coords), null);    
+   
            FastObstructionTest ft= new FastObstructionTest();          
            //add building with height
            //ft.addGeometry(building1,5.);
            //ft.addGeometry(building2,4.);
-           //test building out of the boundingBox
+           System.out.println("----------------TEST buildings are glued---------------");
            ft.addGeometry(building2,4.);
            ft.addGeometry(building4,5.);
-           ft.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(60., 60.,0.)));
+           ft.addGeometry(building5,10.);
+           ft.addGeometry(building6,8.);
+           ft.addGeometry(building7,6.);
+           //building 2,4,5,6,7 are glued so normaly we will get one polygon with a minimal height of all of buildings
+           
+           ft.testMergeGetPolygonWithHeight();     
+           System.out.println("----------------TEST buildings are glued  finished---------------");
+           ft.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(80., 80.,0.)));
                       
            assertTrue("Intersection test isFreeField #1 failed",ft.isFreeField(new Coordinate(10,5), new Coordinate(12,45)));
            assertFalse("Intersection test isFreeField #2 failed",ft.isFreeField(new Coordinate(10,5), new Coordinate(32,15)));
