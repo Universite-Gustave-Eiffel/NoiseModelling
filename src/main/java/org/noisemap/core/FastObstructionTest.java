@@ -71,20 +71,17 @@ public class FastObstructionTest {
 	private List<Triangle> triVertices;
 	private List<Coordinate> vertices;
 	private List<Triangle> triNeighbors; // Neighbors
-	private LinkedList<Geometry> toUnite = new LinkedList<Geometry>(); // Polygon
 	private LinkedList<Double> height= new  LinkedList<Double>(); // Height of Polygon
         private LinkedList<PolygonWithHeight> polygonWithHeight= new LinkedList<PolygonWithHeight>();//list polygon with height
         private HashMap <Integer,PolygonWithHeight> buildingWithID=new HashMap<Integer,PolygonWithHeight>();//list to save all of buildings(both new polygon and old polygon) when do the merge building.
         private Envelope geometriesBoundingBox=null;
-	// union;
+
 	private QueryGeometryStructure triIndex = null; //TODO remove
 	private int lastFountPointTriTest = 0;
 	private List<Float> verticesOpenAngle = null;
 	private List<Coordinate> verticesOpenAngleTranslated = null; /*Open angle*/
         //private LinkedList<Integer> BuildingTriangleIndex= new LinkedList<Integer>(); /* the buildings list between source and receiver. Reconstruction after get a new source-reciver */
         //private LinkedList<Coordinate> pointsIntersection= new LinkedList<Coordinate>();/* the intersection of the segment source-receiver and builiding's side. Reconstruction after get a new source-reciver */
-        
-        private Quadtree ptQuad = new Quadtree();//
         private Quadtree ptQuadForMergeBuilding = new Quadtree();//
         private static class PolygonWithHeight{
             private Geometry geo;
@@ -153,7 +150,6 @@ public class FastObstructionTest {
 		} else {
 			this.geometriesBoundingBox.expandToInclude(obstructionPoly.getEnvelopeInternal());
 		}
-		toUnite.add(obstructionPoly);
                 //no height defined, set it to Max value
                 polygonWithHeight.add(new PolygonWithHeight(obstructionPoly, Double.MAX_VALUE));
 	}
@@ -196,7 +192,6 @@ public class FastObstructionTest {
                 //if there is no building 
                 if(buildingWithID.isEmpty()){
                     polygonWithHeight.add(newbuilding);
-                    toUnite.add(obstructionPoly);
                     buildingWithID.put(buildingWithID.size(),newbuilding);
                     //add this building to QuadTree
                     ptQuadForMergeBuilding.insert(obstructionPoly.getEnvelopeInternal(),new EnvelopeWithIndex<Integer>(obstructionPoly.getEnvelopeInternal(),
@@ -209,7 +204,6 @@ public class FastObstructionTest {
                     //if no intersection 
                     if (result.isEmpty()){
                         polygonWithHeight.add(newbuilding);
-                        toUnite.add(obstructionPoly);
                         buildingWithID.put(buildingWithID.size(),newbuilding);
                         ptQuadForMergeBuilding.insert(obstructionPoly.getEnvelopeInternal(),new EnvelopeWithIndex<Integer>(obstructionPoly.getEnvelopeInternal(),
 				buildingWithID.size()-1));
@@ -234,7 +228,6 @@ public class FastObstructionTest {
                                     //if we are sure a old building have intersection with new building, 
                                     //we will remove the old building in the building list and QuadTree(not remove in buildingWithID list)
                                     polygonWithHeight.remove(intersectedBuilidng);
-                                    toUnite.remove(intersectedBuilidng.getGeometry());
                                     ptQuadForMergeBuilding.remove(intersectedBuilidng.getGeometry().getEnvelopeInternal(),new EnvelopeWithIndex<Integer>(intersectedBuilidng.getGeometry().getEnvelopeInternal(),
 				intersectedBuildingID));
                                     
@@ -245,7 +238,6 @@ public class FastObstructionTest {
                             }
                             PolygonWithHeight newPoly=new PolygonWithHeight(newBuildingModified,minHeight);
                             polygonWithHeight.add(newPoly);
-                            toUnite.add(newBuildingModified);
                             buildingWithID.put(buildingWithID.size(), newPoly);
                             //because we dont remove the building in HashMap buildingWithID, so the buildingWithID will keep both new or old bulding
                             ptQuadForMergeBuilding.insert(newBuildingModified.getEnvelopeInternal(),new EnvelopeWithIndex<Integer>(newBuildingModified.getEnvelopeInternal(),
@@ -277,7 +269,7 @@ public class FastObstructionTest {
         
         private void addPolygon(Polygon newpoly, LayerJDelaunay delaunayTool,
 			 int buildingID) throws LayerDelaunayError {
-		delaunayTool.addPolygon(newpoly, false, buildingID);
+		delaunayTool.addPolygon(newpoly, true, buildingID);
 	}
         
 	private void explodeAndAddPolygon(Geometry intersectedGeometry,
@@ -316,15 +308,13 @@ public class FastObstructionTest {
 		LayerJDelaunay delaunayTool = new LayerJDelaunay();
 		// Merge polygon
                 
-                for(int i=0;i<polygonWithHeight.size();i++){
-                    ptQuad.insert(polygonWithHeight.get(i).getGeometry().getEnvelopeInternal(),new EnvelopeWithIndex<Integer>(polygonWithHeight.get(i).getGeometry().getEnvelopeInternal(),
-				i));
-                    explodeAndAddPolygon(polygonWithHeight.get(i).getGeometry(), delaunayTool,i);
-               
+                for(int i=1;i<=polygonWithHeight.size();i++){
+                    //element's property deafult is 0 so we use from 1 to give the buildingID
+                    //e.x: building 1=polygonWithHeight.get(0)
+                    explodeAndAddPolygon(polygonWithHeight.get(i-1).getGeometry(), delaunayTool,i);
                 }
 
-		//Geometry allbuilds = merge(toUnite, 0.);
-		toUnite.clear();
+
 		// Insert the main rectangle
 		Geometry linearRing = EnvelopeUtil.toGeometry(this.geometriesBoundingBox);
 		if (!(linearRing instanceof LinearRing)) {
@@ -382,7 +372,7 @@ public class FastObstructionTest {
 		final Triangle tri = this.triVertices.get(triIndex);
 		int nearestIntersectionSide = -1;
                 int idneigh;
-                double heightOfTri=this.triNeighbors.get(triIndex).getHeight();
+                double heightOfTri=this.polygonWithHeight.get(this.triNeighbors.get(triIndex).getBuidlingID()).getHeight();
 		double nearestIntersectionPtDist = Double.MAX_VALUE;
 		// Find intersection pt
 		final Coordinate aTri = this.vertices.get(tri.getA());
@@ -393,10 +383,10 @@ public class FastObstructionTest {
                 idneigh=this.triNeighbors.get(
                                                 triIndex).get(2);
                 //add: search triangle without height
-                if (idneigh!=-1 && !navigationHistory.contains(idneigh) && heightOfTri==0) {
+                if (idneigh!=-1 && !navigationHistory.contains(idneigh) && this.triNeighbors.get(triIndex).getBuidlingID()==0) {
                     distline_line=propagationLine.distance(new LineSegment(aTri, bTri));
                     if (distline_line<FastObstructionTest.epsilon &&
-                            distline_line < nearestIntersectionPtDist && this.triVertices.get(idneigh).getHeight()==0) {
+                            distline_line < nearestIntersectionPtDist && this.triVertices.get(idneigh).getBuidlingID()==0) {
                         nearestIntersectionPtDist = distline_line;
                         nearestIntersectionSide = 2;
                     }
@@ -407,7 +397,7 @@ public class FastObstructionTest {
                 if (idneigh!=-1 && !navigationHistory.contains(idneigh) && heightOfTri==0 ) {
                     distline_line=propagationLine.distance(new LineSegment(bTri, cTri));
                     if (distline_line<FastObstructionTest.epsilon &&
-                            distline_line < nearestIntersectionPtDist && this.triVertices.get(idneigh).getHeight()==0) {
+                            distline_line < nearestIntersectionPtDist && this.triVertices.get(idneigh).getBuidlingID()==0) {
                             nearestIntersectionPtDist = distline_line;
                             nearestIntersectionSide = 0;
                     }
@@ -419,7 +409,7 @@ public class FastObstructionTest {
                 if (idneigh!=-1 && !navigationHistory.contains(idneigh) && heightOfTri==0) {
                     distline_line=propagationLine.distance(new LineSegment(cTri, aTri));
                     if (distline_line<FastObstructionTest.epsilon &&
-                            distline_line < nearestIntersectionPtDist && this.triVertices.get(idneigh).getHeight()==0) {
+                            distline_line < nearestIntersectionPtDist && this.triVertices.get(idneigh).getBuidlingID()==0) {
                             nearestIntersectionSide = 1;
                     }
                 }
@@ -464,7 +454,7 @@ public class FastObstructionTest {
                             distline_line < nearestIntersectionPtDist) {
                         nearestIntersectionPtDist = distline_line;
                         nearestIntersectionSide = 2;
-                        if(tri.getHeight()!=0||this.triVertices.get(this.triNeighbors.get(triIndex).get(nearestIntersectionSide)).getHeight()!=0){
+                        if(tri.getBuidlingID()!=0||this.triVertices.get(this.triNeighbors.get(triIndex).get(nearestIntersectionSide)).getBuidlingID()!=0){
                         intersection=propagationLine.intersection(new LineSegment(aTri, bTri));
                         }
                     }
@@ -478,7 +468,7 @@ public class FastObstructionTest {
                             distline_line < nearestIntersectionPtDist) {
                             nearestIntersectionPtDist = distline_line;
                             nearestIntersectionSide = 0;
-                            if(tri.getHeight()!=0||this.triVertices.get(this.triNeighbors.get(triIndex).get(nearestIntersectionSide)).getHeight()!=0){
+                            if(tri.getBuidlingID()!=0||this.triVertices.get(this.triNeighbors.get(triIndex).get(nearestIntersectionSide)).getBuidlingID()!=0){
                             intersection=propagationLine.intersection(new LineSegment(bTri, cTri));
                             }
                     }
@@ -492,7 +482,7 @@ public class FastObstructionTest {
                     if (distline_line<FastObstructionTest.epsilon &&
                             distline_line < nearestIntersectionPtDist) {
                             nearestIntersectionSide = 1;
-                            if(tri.getHeight()!=0||this.triVertices.get(this.triNeighbors.get(triIndex).get(nearestIntersectionSide)).getHeight()!=0){
+                            if(tri.getBuidlingID()!=0||this.triVertices.get(this.triNeighbors.get(triIndex).get(nearestIntersectionSide)).getBuidlingID()!=0){
                             intersection=propagationLine.intersection(new LineSegment(cTri, aTri));
                             }
                     }
@@ -500,22 +490,22 @@ public class FastObstructionTest {
                 
                 int BuildingTriID=this.triNeighbors.get(triIndex).get(nearestIntersectionSide);
                 boolean triNeighborIsBuidling=false;
-                double nextTriHeight=this.triVertices.get(BuildingTriID).getHeight();
-                if(tri.getHeight()>0 &&(nextTriHeight>0)){
+                double nextTriHeight=this.polygonWithHeight.get(this.triVertices.get(BuildingTriID).getBuidlingID()).getHeight();
+                if(tri.getBuidlingID()>0 &&(nextTriHeight>0)){
                     //intersection is in the building
                     triNeighborIsBuidling=true;
                 }
                 //add height to this intersection
-                if(tri.getHeight()==0&&nextTriHeight>0){
+                if(tri.getBuidlingID()==0&&nextTriHeight>0){
                     intersection.z=nextTriHeight;
                 }
-                else if(tri.getHeight()>0&&nextTriHeight>0){
-                    intersection.z=Math.max(nextTriHeight, tri.getHeight());
+                else if(tri.getBuidlingID()>0&&nextTriHeight>0){
+                    intersection.z=Math.max(nextTriHeight, this.polygonWithHeight.get(tri.getBuidlingID()).getHeight());
                 }
-                else if(tri.getHeight()>0&&nextTriHeight==0){
-                    intersection.z=tri.getHeight();
+                else if(tri.getBuidlingID()>0&&nextTriHeight==0){
+                    intersection.z=this.polygonWithHeight.get(tri.getBuidlingID()).getHeight();
                 }
-                else if(tri.getHeight()==0&&nextTriHeight==0){
+                else if(tri.getBuidlingID()==0&&nextTriHeight==0){
                     intersection.z=0.;
                 }
                 
@@ -708,7 +698,7 @@ public class FastObstructionTest {
 			int triId = 0;
                         
 			for (Triangle tri : this.triVertices) {
-                            if(tri.getHeight()<=0){
+                            if(tri.getBuidlingID()==0){
 				// Compute angle at each corner, then add to vertices angle
 				// array
 				Coordinate triA = vertices.get(tri.getA());
@@ -843,7 +833,7 @@ public class FastObstructionTest {
                 
 		int curTri = getTriangleIdByCoordinate(p1);
 		HashSet<Integer> navigationHistory = new HashSet<Integer>();
-                if(this.triVertices.get(curTri).getHeight()!=-1.){
+                if(this.triVertices.get(curTri).getBuidlingID()!=0){
                     while (curTri != -1) {
                             navigationHistory.add(curTri);
                             Coordinate[] tri = getTriangle(curTri);

@@ -90,7 +90,13 @@ public class LayerJDelaunay implements LayerDelaunay {
 																		// triangle
 																		// i
 	HashMap<Integer, LinkedList<Integer>> hashOfArrayIndex = new HashMap<Integer, LinkedList<Integer>>();
-
+        //this value is to check if the polygon is counter-clockwise when polygon's have 3 or more coordiantes. 
+        //-1 there are no polygon have 3 or more coordiantes
+        //0 polygons are oriented counter-clockwise
+        //1 polygons are oriented clockwise
+        //2 warning
+        private int checkisCCW=-1;
+        
 	private static DTriangle findTriByCoordinate(Coordinate pos,List<DTriangle> trilst) throws DelaunayError {
 		DPoint pt;
 		if(Double.isNaN(pos.z)) {
@@ -249,96 +255,79 @@ public class LayerJDelaunay implements LayerDelaunay {
 				ArrayList<Triangle> gidTriangle=new ArrayList<Triangle>(trianglesDelaunay.size());
 				
 				//Build ArrayList for binary search
-				
-                                //Remove triangles 
                                 //test add height
+            
                                 
-                                if(holes.isEmpty()){
-				for(Buildingwihtheight hole : buildingwithheight) {
-					DTriangle foundTri=findTriByCoordinate(hole.getMiddleCoordinateOfBuilding(),trianglesDelaunay);
-					double heightofTri = hole.getBuildingHeight();
-                                        if(foundTri == null) {
-						throw new LayerDelaunayError("hole outside domain ("+hole+")");
+                                
+                                for (DTriangle triangle : trianglesDelaunay) {
+                                                Coordinate [] ring = new Coordinate [] {triangle.getPoint(0).getCoordinate(),triangle.getPoint(1).getCoordinate(),triangle.getPoint(2).getCoordinate(),triangle.getPoint(0).getCoordinate()};
+						boolean orientationReversed=false;
+                                                //if 3 points have buildingID and buildingID>=1
+                                                if(triangle.getPoint(0).getProperty()==triangle.getPoint(1).getProperty()&&triangle.getPoint(0).getProperty()==triangle.getPoint(2).getProperty()&&triangle.getPoint(0).getProperty()>=1){
+                                                    //if building are not have different directions  
+                                                    if(checkisCCW!=2&&checkisCCW!=-1){
+                                                          //if triangle have the same direction than building so this triangle is in building
+                                                          if((CGAlgorithms.isCCW(ring)&&checkisCCW==0)||(!CGAlgorithms.isCCW(ring)&&checkisCCW==1)){
+                                                              //give this DTriangle a building ID same to the point of this triangle
+                                                              triangle.setProperty(triangle.getPoint(0).getProperty());
+                                                          }
+                                                          //else triangle have the diffrent directions than building so this triangle is out of building
+                                                          else{
+                                                              //set building ID=0
+                                                              triangle.setProperty(0);
+                                                          }
+                                                    }
+                                                    //waiting answer
+                                                    else{
+                                                    
+                                                    }
+                                                
+                                                
+                                                }
+                                                //if there are less than 3 points have buildingID this triangle is out of building
+                                                else{
+                                                    triangle.setProperty(0);
+                                                }
+                                                                                                         
+                                                              
+                                                              if(!CGAlgorithms.isCCW(ring)) {
+                                                                  Coordinate tmp= new Coordinate(ring[0]);
+                                                                  ring[0]=ring[2];
+                                                                  ring[2]=tmp;
+                                                                  orientationReversed=true;
+                                                                }
+							
+                                                              int a = getOrAppendVertices(ring[0], vertices, hashOfArrayIndex);
+                                                              int b = getOrAppendVertices(ring[1], vertices, hashOfArrayIndex);
+                                                              int c = getOrAppendVertices(ring[2], vertices, hashOfArrayIndex);
+                                                              int buildingID=triangle.getProperty();
+                                                              triangles.add(new Triangle(a, b, c,buildingID));
+                                                              if(this.computeNeighbors) {
+                                                                    Triangle gidTri=new Triangle(-1,-1,-1,0);
+                                                                    for(int i=0;i<3;i++) {
+                                                                            DTriangle neighTriangle = triangle.getOppositeEdge(triangle.getPoint(i)).getOtherTriangle(triangle);
+                                                                            if(neighTriangle!=null && neighTriangle.getExternalGID()!=0) {
+                                                                                    gidTri.set(i,neighTriangle.getGID());
+                                                                                    gidTri.setBuidlingID(buildingID);//set building ID
+                                                                            }
+                                                                    }
+                                                                    if(!orientationReversed) {
+                                                                            gidTriangle.add(gidTri);
+                                                                    } else {
+                                                                            gidTriangle.add(new Triangle(gidTri.getC(),gidTri.getB(),gidTri.getA(),buildingID));
+                                                                    }
+                                                                    gidToIndex.put(triangle.getGID(),gidTriangle.size()-1);
+                                                            }    
+                                                
+                                                
+						
+                                                
+                                                
+                                                
+                                                
 					}
-					//Navigate through neighbors until it reach a deleted tri or locked segment
-					Stack<DTriangle> navHistoryTri=new Stack<DTriangle>();
-					Stack<Short> navHistoryDir=new Stack<Short>();
-					navHistoryTri.push(foundTri);
-					navHistoryDir.push((short)0);
-					/*
-                                         * pass the hole
-                                         * foundTri.setExternalGID(0);//Set as hole
-                                         * 
-                                        */
-                                        foundTri.setHeight(heightofTri);//Add the height to this triangle
-                                        //if this tri have height
-                                        if(heightofTri!=0){
-					while(!navHistoryTri.empty()) {
-						if(navHistoryDir.peek()==3) {
-							navHistoryTri.pop();
-							navHistoryDir.pop();							
-						} else {
-							DEdge ed = navHistoryTri.peek().getEdge(navHistoryDir.peek());
-							if(!ed.isLocked()) {
-								DTriangle neigh=ed.getOtherTriangle(navHistoryTri.peek());
-								if(neigh != null) {
-									if(neigh.getExternalGID()!=0 && neigh.getHeight()==0) { //Not set as destroyed
-                                                                            /*  
-                                                                             * pass the hole
-									     * neigh.setExternalGID(0); //Set as hole
-                                                                             *
-                                                                            */
-                                                                            
-                                                                                neigh.setHeight(heightofTri);//Add the height to this triangle
-										navHistoryDir.push((short)(navHistoryDir.pop()+1));
-										navHistoryDir.push((short)-1);
-										navHistoryTri.push(neigh);
-									}
-								}
-							}
-							navHistoryDir.push((short)(navHistoryDir.pop()+1));
-						}
-					}
-                                      }
-                          
-                                    }
-                                }
-                                else{
-                               
-				//Remove triangles
-				for(Coordinate hole : holes) {
-					DTriangle foundTri=findTriByCoordinate(hole,trianglesDelaunay);
-					if(foundTri == null) {
-						throw new LayerDelaunayError("hole outside domain ("+hole+")");
-					}
-					//Navigate through neighbors until it reach a deleted tri or locked segment
-					Stack<DTriangle> navHistoryTri=new Stack<DTriangle>();
-					Stack<Short> navHistoryDir=new Stack<Short>();
-					navHistoryTri.push(foundTri);
-					navHistoryDir.push((short)0);//Set as hole
-					foundTri.setExternalGID(0);
-					while(!navHistoryTri.empty()) {
-						if(navHistoryDir.peek()==3) {
-							navHistoryTri.pop();
-							navHistoryDir.pop();							
-						} else {
-							DEdge ed = navHistoryTri.peek().getEdge(navHistoryDir.peek());
-							if(!ed.isLocked()) {
-								DTriangle neigh=ed.getOtherTriangle(navHistoryTri.peek());
-								if(neigh != null) {
-									if(neigh.getExternalGID()!=0) { //Not set as destroyed
-										neigh.setExternalGID(0); //Set as hole
-										navHistoryDir.push((short)(navHistoryDir.pop()+1));
-										navHistoryDir.push((short)-1);
-										navHistoryTri.push(neigh);
-									}
-								}
-							}
-							navHistoryDir.push((short)(navHistoryDir.pop()+1));
-						}
-					}
-                                    }
-                                }	
+				
+                                /*
 				for (DTriangle triangle : trianglesDelaunay) {
 					if(triangle.getExternalGID()!=0) //Not a hole
 					{
@@ -374,6 +363,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 						}
 					}
 				}
+                                */
 				if(this.computeNeighbors) {
 					//Translate GID to local index
 					for(Triangle tri : gidTriangle) {
@@ -382,7 +372,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 							int index=tri.get(i);
 							if(index!=-1){
 								localTri.set(i, gidToIndex.get(index));
-                                                                localTri.setHeight(tri.getHeight());
+                                                                localTri.setBuidlingID(tri.getBuidlingID());
                                                         }
 						}
 						neighbors.add(localTri);
@@ -472,6 +462,34 @@ public class LayerJDelaunay implements LayerDelaunay {
 		if (coordinates.length > 1) {
 			LineString newLineString = factory.createLineString(coordinates);
 			this.addLineString(newLineString,biudlingID);
+                        if (coordinates.length>=3){
+                            switch(checkisCCW){
+                                case -1:
+                                    if(CGAlgorithms.isCCW(coordinates)){
+                                        checkisCCW=0;
+                                    }
+                                    else{
+                                        checkisCCW=1;
+                                    }
+                                break;
+                                    
+                                case 0:
+                                    if(!CGAlgorithms.isCCW(coordinates)){
+                                        checkisCCW=2;    
+                                        logger.info("Warning : buildings have different directions"); 
+                                    }
+                                break;
+                                    
+                                case 1:
+                                    if(!CGAlgorithms.isCCW(coordinates)){
+                                        checkisCCW=2;    
+                                        logger.info("Warning : buildings have different directions"); 
+                                    }
+                                break;
+                            }
+
+                                    
+                        }
 		}
 		if (isEmpty) {
 			addHole(newPoly.getInteriorPoint().getCoordinate());
@@ -552,8 +570,12 @@ public class LayerJDelaunay implements LayerDelaunay {
 		Coordinate[] coords = lineToProcess.getCoordinates();
 		try {
 			for (int ind = 1; ind < coords.length; ind++) {
-                                DEdge edge=new DEdge(new DPoint(coords[ind - 1]),
-						new DPoint(coords[ind])); 
+                                DPoint point1=new DPoint(coords[ind - 1]);
+                                DPoint point2=new DPoint(coords[ind]);
+                                point1.setProperty(buildingID);
+                                point2.setProperty(buildingID);
+                                DEdge edge=new DEdge(point1,
+						point2); 
                                 edge.setProperty(buildingID);
 				this.constraintEdge.add(edge);
 			}
