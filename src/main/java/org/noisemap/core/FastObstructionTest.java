@@ -454,7 +454,7 @@ public class FastObstructionTest {
                             distline_line < nearestIntersectionPtDist) {
                         nearestIntersectionPtDist = distline_line;
                         nearestIntersectionSide = 2;
-                        if(tri.getBuidlingID()!=0||this.triVertices.get(this.triNeighbors.get(triIndex).get(nearestIntersectionSide)).getBuidlingID()!=0){
+                        if(tri.getBuidlingID()>0||this.triVertices.get(this.triNeighbors.get(triIndex).get(nearestIntersectionSide)).getBuidlingID()>0){
                         intersection=propagationLine.intersection(new LineSegment(aTri, bTri));
                         }
                     }
@@ -468,7 +468,7 @@ public class FastObstructionTest {
                             distline_line < nearestIntersectionPtDist) {
                             nearestIntersectionPtDist = distline_line;
                             nearestIntersectionSide = 0;
-                            if(tri.getBuidlingID()!=0||this.triVertices.get(this.triNeighbors.get(triIndex).get(nearestIntersectionSide)).getBuidlingID()!=0){
+                            if(tri.getBuidlingID()>0||this.triVertices.get(this.triNeighbors.get(triIndex).get(nearestIntersectionSide)).getBuidlingID()>0){
                             intersection=propagationLine.intersection(new LineSegment(bTri, cTri));
                             }
                     }
@@ -482,7 +482,7 @@ public class FastObstructionTest {
                     if (distline_line<FastObstructionTest.epsilon &&
                             distline_line < nearestIntersectionPtDist) {
                             nearestIntersectionSide = 1;
-                            if(tri.getBuidlingID()!=0||this.triVertices.get(this.triNeighbors.get(triIndex).get(nearestIntersectionSide)).getBuidlingID()!=0){
+                            if(tri.getBuidlingID()>0||this.triVertices.get(this.triNeighbors.get(triIndex).get(nearestIntersectionSide)).getBuidlingID()>0){
                             intersection=propagationLine.intersection(new LineSegment(cTri, aTri));
                             }
                     }
@@ -490,7 +490,14 @@ public class FastObstructionTest {
                 
                 int BuildingTriID=this.triNeighbors.get(triIndex).get(nearestIntersectionSide);
                 boolean triNeighborIsBuidling=false;
-                double nextTriHeight=this.polygonWithHeight.get(this.triVertices.get(BuildingTriID).getBuidlingID()).getHeight();
+                double nextTriHeight=0.;
+                if (this.triVertices.get(BuildingTriID).getBuidlingID()==0){
+                    nextTriHeight=0.;
+                }
+                else if(this.triVertices.get(BuildingTriID).getBuidlingID()>0){
+                    nextTriHeight=this.polygonWithHeight.get(this.triVertices.get(BuildingTriID).getBuidlingID()-1).getHeight();
+                }
+                
                 if(tri.getBuidlingID()>0 &&(nextTriHeight>0)){
                     //intersection is in the building
                     triNeighborIsBuidling=true;
@@ -500,10 +507,10 @@ public class FastObstructionTest {
                     intersection.z=nextTriHeight;
                 }
                 else if(tri.getBuidlingID()>0&&nextTriHeight>0){
-                    intersection.z=Math.max(nextTriHeight, this.polygonWithHeight.get(tri.getBuidlingID()).getHeight());
+                    intersection.z=Math.max(nextTriHeight, this.polygonWithHeight.get(tri.getBuidlingID()-1).getHeight());
                 }
                 else if(tri.getBuidlingID()>0&&nextTriHeight==0){
-                    intersection.z=this.polygonWithHeight.get(tri.getBuidlingID()).getHeight();
+                    intersection.z=this.polygonWithHeight.get(tri.getBuidlingID()-1).getHeight();
                 }
                 else if(tri.getBuidlingID()==0&&nextTriHeight==0){
                     intersection.z=0.;
