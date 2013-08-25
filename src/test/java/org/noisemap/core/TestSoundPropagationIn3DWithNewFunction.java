@@ -94,7 +94,7 @@ public class TestSoundPropagationIn3DWithNewFunction extends TestCase {
            System.out.println(lt[1]);
            System.out.println("----distancepath----");
            System.out.println(lt[3]);
-           System.out.println("----------TEST with 2 building----- ");
+           System.out.println("----------TEST with 1 building----- ");
            
            lt=ft.getPath(new Coordinate(48,25,0.5), new Coordinate(5,15,1.5));
            System.out.println("----deltadistance----");
