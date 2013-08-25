@@ -48,6 +48,9 @@ public class TestSoundPropagationIn3DWithNewFunction extends TestCase {
            Coordinate[] building7Coords = { new Coordinate(58., 5.,0.),
 				new Coordinate(65., 5.,0.), new Coordinate(65., 60.,0.),
 				new Coordinate(58., 60.,0.), new Coordinate(58., 5.,0.) };
+           Coordinate[] building8Coords = { new Coordinate(70., 5.,0.),
+				new Coordinate(75., 5.,0.), new Coordinate(75., 60.,0.),
+				new Coordinate(70., 60.,0.), new Coordinate(70., 5.,0.) };           
            Polygon building1 = factory.createPolygon(
 			factory.createLinearRing(building1Coords), null);
            Polygon building2 = factory.createPolygon(
@@ -62,26 +65,26 @@ public class TestSoundPropagationIn3DWithNewFunction extends TestCase {
 			factory.createLinearRing(building6Coords), null);    
            Polygon building7 = factory.createPolygon(
 			factory.createLinearRing(building7Coords), null);    
-   
+           Polygon building8 = factory.createPolygon(
+			factory.createLinearRing(building8Coords), null);   
            FastObstructionTest ft= new FastObstructionTest();          
            //add building with height
-           //ft.addGeometry(building1,5.);
-           //ft.addGeometry(building2,4.);
+           /*
            System.out.println("----------------TEST buildings are glued---------------");
            ft.addGeometry(building2,4.);
            ft.addGeometry(building4,5.);
            ft.addGeometry(building5,10.);
            ft.addGeometry(building6,8.);
            ft.addGeometry(building7,6.);
+           */
+           ft.addGeometry(building1,4.);
+           ft.addGeometry(building8,6.);
            //building 2,4,5,6,7 are glued so normaly we will get one polygon with a minimal height of all of buildings
            
            ft.testMergeGetPolygonWithHeight();     
-           System.out.println("----------------TEST buildings are glued  finished---------------");
+           //System.out.println("----------------TEST buildings are glued  finished---------------");
            ft.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(80., 80.,0.)));
                       
-           assertTrue("Intersection test isFreeField #1 failed",ft.isFreeField(new Coordinate(10,5), new Coordinate(12,45)));
-           assertFalse("Intersection test isFreeField #2 failed",ft.isFreeField(new Coordinate(10,5), new Coordinate(32,15)));
-           assertFalse("Intersection test isFreeField #2 failed",ft.isFreeField(new Coordinate(10,5,6.0), new Coordinate(32,15,7.0)));
            System.out.println("----------------TEST path between source and receiver----------------");
            System.out.println("-----no building-----");
            Double[]lt=ft.getPath(new Coordinate(5,15,1.5), new Coordinate(10,15,0.5));
