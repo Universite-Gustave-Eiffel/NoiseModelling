@@ -455,7 +455,7 @@ public class FastObstructionTest {
                         nearestIntersectionPtDist = distline_line;
                         nearestIntersectionSide = 2;
                         if(tri.getBuidlingID()>0||this.triVertices.get(this.triNeighbors.get(triIndex).get(nearestIntersectionSide)).getBuidlingID()>0){
-                        intersection=propagationLine.intersection(new LineSegment(aTri, bTri));
+                            intersection=propagationLine.intersection(new LineSegment(aTri, bTri));
                         }
                     }
                 }
@@ -469,7 +469,7 @@ public class FastObstructionTest {
                             nearestIntersectionPtDist = distline_line;
                             nearestIntersectionSide = 0;
                             if(tri.getBuidlingID()>0||this.triVertices.get(this.triNeighbors.get(triIndex).get(nearestIntersectionSide)).getBuidlingID()>0){
-                            intersection=propagationLine.intersection(new LineSegment(bTri, cTri));
+                                intersection=propagationLine.intersection(new LineSegment(bTri, cTri));
                             }
                     }
                 }
@@ -483,7 +483,7 @@ public class FastObstructionTest {
                             distline_line < nearestIntersectionPtDist) {
                             nearestIntersectionSide = 1;
                             if(tri.getBuidlingID()>0||this.triVertices.get(this.triNeighbors.get(triIndex).get(nearestIntersectionSide)).getBuidlingID()>0){
-                            intersection=propagationLine.intersection(new LineSegment(cTri, aTri));
+                                intersection=propagationLine.intersection(new LineSegment(cTri, aTri));
                             }
                     }
                 }
