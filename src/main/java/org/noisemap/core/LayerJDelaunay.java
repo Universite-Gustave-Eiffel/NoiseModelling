@@ -60,7 +60,7 @@ import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Polygon;
-
+import com.vividsolutions.jts.geom.Point;
 /**
  * 
  * @author Nicolas Fortin
@@ -71,6 +71,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 	private List<Coordinate> vertices = new ArrayList<Coordinate>();
 	private ArrayList<DEdge> constraintEdge = new ArrayList<DEdge>();
 	private LinkedList<DPoint> ptToInsert = new LinkedList<DPoint>();
+        private LinkedList<BuildingWithID> buildingWithID=new LinkedList<BuildingWithID>();
 	private List<Coordinate> holes = new LinkedList<Coordinate>();
 	private boolean debugMode=false; //output primitives in a text file
 	private boolean computeNeighbors=false;
@@ -144,23 +145,22 @@ public class LayerJDelaunay implements LayerDelaunay {
 		}
 	}
 
-        private static class Buildingwihtheight{
-                private Coordinate holecoodinate;
-                private double height;
+        private static class BuildingWithID{
+                private Polygon building;
                 
-                public Buildingwihtheight(Coordinate holecoodinate, double height) {
-                    this.holecoodinate=holecoodinate;
-                    this.height=height;
+                
+                public BuildingWithID(Polygon building) {
+                    this.building=building;
+                    
                 }
 
-                public Coordinate getMiddleCoordinateOfBuilding()
+                public boolean isTriangleInBuilding(DPoint point)
                 {
-                    return this.holecoodinate;
+                    GeometryFactory factory=new GeometryFactory();
+                    Point middlepoint=factory.createPoint(point.getCoordinate());
+                    return this.building.contains(middlepoint);
                 }
-                public double getBuildingHeight()
-                {
-                    return this.height;
-                }
+
               
         }
 	private int getOrAppendVertices(Coordinate newCoord,
@@ -268,22 +268,13 @@ public class LayerJDelaunay implements LayerDelaunay {
 						boolean orientationReversed=false;
                                                 //if 3 points have buildingID and buildingID>=1
                                                 if(triangle.getPoint(0).getProperty()==triangle.getPoint(1).getProperty()&&triangle.getPoint(0).getProperty()==triangle.getPoint(2).getProperty()&&triangle.getPoint(0).getProperty()>=1){
-                                                    //if building are not have different directions  
-                                                    if(checkisCCW!=2&&checkisCCW!=-1){
-                                                          //if triangle have the same direction than building so this triangle is in building
-                                                          if((CGAlgorithms.isCCW(ring)&&checkisCCW==0)||(!CGAlgorithms.isCCW(ring)&&checkisCCW==1)){
-                                                              //give this DTriangle a building ID same to the point of this triangle
-                                                              triangle.setProperty(triangle.getPoint(0).getProperty());
-                                                          }
-                                                          //else triangle have the diffrent directions than building so this triangle is out of building
-                                                          else{
-                                                              //set building ID=0
-                                                              triangle.setProperty(0);
-                                                          }
+                                                    //get the Barycenter of the triangle so we can sure this point is in this triangle and we will check if the building contain this point
+                                                    int propertyBuildingID=triangle.getPoint(0).getProperty();
+                                                    if(this.buildingWithID.get(propertyBuildingID-1).isTriangleInBuilding(triangle.getBarycenter())){
+                                                        triangle.setProperty(propertyBuildingID);
                                                     }
-                                                    //waiting answer
                                                     else{
-                                                    
+                                                        triangle.setProperty(0);
                                                     }
                                                 
                                                 
@@ -310,7 +301,7 @@ public class LayerJDelaunay implements LayerDelaunay {
                                                                     Triangle gidTri=new Triangle(-1,-1,-1,0);
                                                                     for(int i=0;i<3;i++) {
                                                                             DTriangle neighTriangle = triangle.getOppositeEdge(triangle.getPoint(i)).getOtherTriangle(triangle);
-                                                                            if(neighTriangle!=null && neighTriangle.getExternalGID()!=0) {
+                                                                            if(neighTriangle!=null && neighTriangle.getProperty()>=0) {
                                                                                     gidTri.set(i,neighTriangle.getGID());
                                                                                     gidTri.setBuidlingID(buildingID);//set building ID
                                                                             }
@@ -462,34 +453,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 		if (coordinates.length > 1) {
 			LineString newLineString = factory.createLineString(coordinates);
 			this.addLineString(newLineString,biudlingID);
-                        if (coordinates.length>=4){
-                            switch(checkisCCW){
-                                case -1:
-                                    if(CGAlgorithms.isCCW(coordinates)){
-                                        checkisCCW=0;
-                                    }
-                                    else{
-                                        checkisCCW=1;
-                                    }
-                                break;
-                                    
-                                case 0:
-                                    if(!CGAlgorithms.isCCW(coordinates)){
-                                        checkisCCW=2;    
-                                        logger.info("Warning : buildings have different directions"); 
-                                    }
-                                break;
-                                    
-                                case 1:
-                                    if(!CGAlgorithms.isCCW(coordinates)){
-                                        checkisCCW=2;    
-                                        logger.info("Warning : buildings have different directions"); 
-                                    }
-                                break;
-                            }
-
-                                    
-                        }
+                        this.buildingWithID.add(biudlingID-1, new BuildingWithID(newPoly));
 		}
 		if (isEmpty) {
 			addHole(newPoly.getInteriorPoint().getCoordinate());
