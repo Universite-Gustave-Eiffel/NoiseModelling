@@ -72,12 +72,11 @@ public class LayerJDelaunay implements LayerDelaunay {
 	private ArrayList<DEdge> constraintEdge = new ArrayList<DEdge>();
 	private LinkedList<DPoint> ptToInsert = new LinkedList<DPoint>();
 	private List<Coordinate> holes = new LinkedList<Coordinate>();
-        private LinkedList<Buildingwihtheight> buildingwithheight= new LinkedList<Buildingwihtheight>();//holes coordinate and height
 	private boolean debugMode=false; //output primitives in a text file
 	private boolean computeNeighbors=false;
 	List<Triangle> triangles = new ArrayList<Triangle>();
 	private List<Triangle> neighbors = new ArrayList<Triangle>(); // The
-																		// first
+																// first
 																		// neighbor
 																		// of
 																		// triangle
@@ -96,6 +95,9 @@ public class LayerJDelaunay implements LayerDelaunay {
         //1 polygons are oriented clockwise
         //2 warning
         private int checkisCCW=-1;
+        //triangletest is for JDeLaunayTriangleDirectionChange to test triangle direction
+        private List<DTriangle> triangletest=new ArrayList<DTriangle>();
+        
         
 	private static DTriangle findTriByCoordinate(Coordinate pos,List<DTriangle> trilst) throws DelaunayError {
 		DPoint pt;
@@ -249,6 +251,8 @@ public class LayerJDelaunay implements LayerDelaunay {
 				ptToInsert.clear();
 				List<DTriangle> trianglesDelaunay = delaunayTool
 						.getTriangleList();
+                                //this value is for the unit test
+                                triangletest=delaunayTool.getTriangleList();
 				//triangles.ensureCapacity(trianglesDelaunay.size());// reserve
 																	// memory
 				HashMap<Integer, Integer> gidToIndex = new HashMap<Integer, Integer>();
@@ -393,10 +397,6 @@ public class LayerJDelaunay implements LayerDelaunay {
 	{
 		holes.add(holePosition);
 	}
-        private void addbuilding(Coordinate holePosition,double height) throws LayerDelaunayError
-	{
-                buildingwithheight.add(new Buildingwihtheight(holePosition,height));
-	}
 	@Override
 	public void addPolygon(Polygon newPoly, boolean isEmpty)
 			throws LayerDelaunayError {
@@ -462,7 +462,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 		if (coordinates.length > 1) {
 			LineString newLineString = factory.createLineString(coordinates);
 			this.addLineString(newLineString,biudlingID);
-                        if (coordinates.length>=3){
+                        if (coordinates.length>=4){
                             switch(checkisCCW){
                                 case -1:
                                     if(CGAlgorithms.isCCW(coordinates)){
@@ -564,7 +564,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 		}
 	}
 
-        //add buildingID to edge property
+        //add buildingID to edge property and to points property
 	public void addLineString(LineString lineToProcess,int buildingID)
 			throws LayerDelaunayError {
 		Coordinate[] coords = lineToProcess.getCoordinates();
@@ -604,5 +604,11 @@ public class LayerJDelaunay implements LayerDelaunay {
 		this.computeNeighbors=retrieve;
 		
 	}
+        
+        
+	public List<DTriangle> gettriangletest() {
+		return this.triangletest;
+		
+	}        
 
 }

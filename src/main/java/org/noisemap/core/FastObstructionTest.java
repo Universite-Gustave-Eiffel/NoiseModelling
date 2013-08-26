@@ -173,7 +173,8 @@ public class FastObstructionTest {
         */
         
         /**
-         * Add height of building and merge buildings if they have intersection 
+         * Add a new building with height and merge this new building with existing buildings if they have intersections 
+         * When we merge the buildings, we will use The shortest height to new building
          * @param obstructionPoly
 	 *            building's Geometry
 	 * @param heightofBuilding
@@ -239,7 +240,7 @@ public class FastObstructionTest {
                             PolygonWithHeight newPoly=new PolygonWithHeight(newBuildingModified,minHeight);
                             polygonWithHeight.add(newPoly);
                             buildingWithID.put(buildingWithID.size(), newPoly);
-                            //because we dont remove the building in HashMap buildingWithID, so the buildingWithID will keep both new or old bulding
+                            //Because we dont remove the building in HashMap buildingWithID, so the buildingWithID will keep both new or old bulding
                             ptQuadForMergeBuilding.insert(newBuildingModified.getEnvelopeInternal(),new EnvelopeWithIndex<Integer>(newBuildingModified.getEnvelopeInternal(),
 				buildingWithID.size()-1));
 
@@ -306,11 +307,11 @@ public class FastObstructionTest {
 		
 		verticesOpenAngle = null;
 		LayerJDelaunay delaunayTool = new LayerJDelaunay();
-		// Merge polygon
-                
+		
+                //add buildings to JDelaunay
                 for(int i=1;i<=polygonWithHeight.size();i++){
                     //element's property deafult is 0 so we use from 1 to give the buildingID
-                    //e.x: building 1=polygonWithHeight.get(0)
+                    //e.x: building ID 1=polygonWithHeight.get(0)
                     explodeAndAddPolygon(polygonWithHeight.get(i-1).getGeometry(), delaunayTool,i);
                 }
 
@@ -324,16 +325,12 @@ public class FastObstructionTest {
 		Polygon boundingBox = new Polygon((LinearRing) linearRing, null,
 				factory);
 		delaunayTool.addPolygon(boundingBox, false);
-                //get intersected polygon with bondingBox
-		// Remove geometries out of the bounding box
-		//explodeAndAddPolygon(allbuilds, delaunayTool);
+                //explodeAndAddPolygon(allbuilds, delaunayTool);
 		// Process delaunay Triangulation
 		delaunayTool.setMinAngle(0.);
 		delaunayTool.setRetrieveNeighbors(true);
-		
 		delaunayTool.processDelaunay();
-               // polygonwithheight.clear();
-		// Get results
+                // Get results
 		this.triVertices = delaunayTool.getTriangles();
 		this.vertices = delaunayTool.getVertices();
 		this.triNeighbors = delaunayTool.getNeighbors();
@@ -889,7 +886,7 @@ public class FastObstructionTest {
 			curTri = this.getTriList(curTri, propaLine, navigationHistory).gettriID();
                         Coordinate coorIntersection=this.getTriList(curTri, propaLine, navigationHistory).getcoorIntersection();
                         if(!coorIntersection.equals(new Coordinate(-1,-1,-1))){
-                        pointsIntersection.add(coorIntersection);
+                            pointsIntersection.add(coorIntersection);
                         }
 		}
 

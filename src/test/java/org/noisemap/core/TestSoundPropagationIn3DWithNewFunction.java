@@ -22,19 +22,15 @@ import junit.framework.TestCase;
 public class TestSoundPropagationIn3DWithNewFunction extends TestCase {
 
 
-    public void test() throws LayerDelaunayError{
+    public void testDiffraction3D() throws LayerDelaunayError{
     
            GeometryFactory factory = new GeometryFactory();
            Coordinate[] building1Coords = { new Coordinate(15., 5.,0.),
-				new Coordinate(30., 5.,0.), new Coordinate(30., 30.,0.),
-				new Coordinate(15., 30.,0.), new Coordinate(15., 5.,0.) };
+				new Coordinate(15., 30.,0.), new Coordinate(30., 30.,0.),
+				new Coordinate(30., 5.,0.), new Coordinate(15., 5.,0.) };
            Coordinate[] building2Coords = { new Coordinate(40., 5.,0.),
 				new Coordinate(45., 5.,0.), new Coordinate(45., 30.,0.),
 				new Coordinate(40., 30.,0.), new Coordinate(40., 5.,0.) };
-           //special building have intersection with boundingBox 
-           Coordinate[] building3Coords = { new Coordinate(50., 5.,0.),
-				new Coordinate(60., 5.,0.), new Coordinate(60., 60.,0.),
-				new Coordinate(50., 60.,0.), new Coordinate(50., 5.,0.) };
            //building 2,4,5,6,7 are glued
            Coordinate[] building4Coords = { new Coordinate(45., 5.,0.),
 				new Coordinate(50., 5.,0.), new Coordinate(50., 40.,0.),
@@ -55,8 +51,6 @@ public class TestSoundPropagationIn3DWithNewFunction extends TestCase {
 			factory.createLinearRing(building1Coords), null);
            Polygon building2 = factory.createPolygon(
 			factory.createLinearRing(building2Coords), null);   
-           Polygon building3 = factory.createPolygon(
-			factory.createLinearRing(building3Coords), null);
            Polygon building4 = factory.createPolygon(
 			factory.createLinearRing(building4Coords), null);
            Polygon building5 = factory.createPolygon(
@@ -69,8 +63,10 @@ public class TestSoundPropagationIn3DWithNewFunction extends TestCase {
 			factory.createLinearRing(building8Coords), null);   
            FastObstructionTest ft= new FastObstructionTest();          
            //add building with height
-           /*
+
            System.out.println("----------------TEST buildings are glued---------------");
+           //building 2,4,5,6,7 are glued so normaly we will get one polygon with a minimal height of all of buildings
+           /*
            ft.addGeometry(building2,4.);
            ft.addGeometry(building4,5.);
            ft.addGeometry(building5,10.);
@@ -78,11 +74,12 @@ public class TestSoundPropagationIn3DWithNewFunction extends TestCase {
            ft.addGeometry(building7,6.);
            */
            ft.addGeometry(building1,4.);
+           /*
            ft.addGeometry(building8,6.);
-           //building 2,4,5,6,7 are glued so normaly we will get one polygon with a minimal height of all of buildings
+          */
            
            ft.testMergeGetPolygonWithHeight();     
-           //System.out.println("----------------TEST buildings are glued  finished---------------");
+           System.out.println("----------------TEST buildings are glued  finished---------------");
            ft.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(80., 80.,0.)));
                       
            System.out.println("----------------TEST path between source and receiver----------------");
@@ -94,9 +91,9 @@ public class TestSoundPropagationIn3DWithNewFunction extends TestCase {
            System.out.println(lt[1]);
            System.out.println("----distancepath----");
            System.out.println(lt[3]);
-           System.out.println("----------TEST with 1 building----- ");
+           System.out.println("----------TEST diffraction with one building(building1)----- ");
            
-           lt=ft.getPath(new Coordinate(48,25,0.5), new Coordinate(5,15,1.5));
+           lt=ft.getPath(new Coordinate(15,3,0.5), new Coordinate(30,40,1.5));
            System.out.println("----deltadistance----");
            System.out.println(lt[0]);
            System.out.println("----e----");
@@ -104,7 +101,7 @@ public class TestSoundPropagationIn3DWithNewFunction extends TestCase {
            System.out.println("----distancepath----");
            System.out.println(lt[3]);
            System.out.println("-----------exchange source receiver------------");
-           lt=ft.getPath(new Coordinate(5,15,1.5), new Coordinate(48,25,0.5));
+           lt=ft.getPath(new Coordinate(30,40,1.5), new Coordinate(15,3,0.5));
            System.out.println("----deltadistance----");
            System.out.println(lt[0]);
            System.out.println("----e----");
