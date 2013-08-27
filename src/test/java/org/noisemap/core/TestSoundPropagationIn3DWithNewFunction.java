@@ -60,14 +60,14 @@ public class TestSoundPropagationIn3DWithNewFunction extends TestCase {
            System.out.println("----distancepath----");
            System.out.println(lt[3]);
            System.out.println("-----------exchange source receiver------------");
-           lt=ft.getPath(new Coordinate(5,15,1.5), new Coordinate(48,25,0.5));
+           Double[]lt1=ft.getPath(new Coordinate(5,15,1.5), new Coordinate(48,25,0.5));
            System.out.println("----deltadistance----");
-           System.out.println(lt[0]);
+           System.out.println(lt1[0]);
            System.out.println("----e----");
-           System.out.println(lt[1]);
+           System.out.println(lt1[1]);
            System.out.println("----distancepath----");
-           System.out.println(lt[3]);
-         
+           System.out.println(lt1[3]);
+           assertTrue("Exchange source receiver got the different resultat",lt[0].equals(lt1[0])&&lt[1].equals(lt1[1])&&lt[3].equals(lt1[3]));
            
            }
     
@@ -103,14 +103,14 @@ public class TestSoundPropagationIn3DWithNewFunction extends TestCase {
            System.out.println("----distancepath----");
            System.out.println(lt[3]);
            System.out.println("-----------exchange source receiver------------");
-           lt=ft.getPath(new Coordinate(5,15,1.5), new Coordinate(48,25,0.5));
+           Double[]lt1=ft.getPath(new Coordinate(5,15,1.5), new Coordinate(48,25,0.5));
            System.out.println("----deltadistance----");
-           System.out.println(lt[0]);
+           System.out.println(lt1[0]);
            System.out.println("----e----");
-           System.out.println(lt[1]);
+           System.out.println(lt1[1]);
            System.out.println("----distancepath----");
-           System.out.println(lt[3]);
-         
+           System.out.println(lt1[3]);
+          
            
            }
     
