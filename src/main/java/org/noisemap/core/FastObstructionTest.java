@@ -468,7 +468,7 @@ public class FastObstructionTest {
                          }
                     //if intersection is not in the building, save this intersection to intersection list
                     */    
-                    if(!triNeighborIsBuidling&&!intersection.equals3D(new Coordinate(0.0,0.0,Double.NaN))){
+                    if(!triNeighborIsBuidling&&!intersection.equals3D(new Coordinate(0.0,0.0,0.))){
                                   //every buidling whcih is between ray source-receiver have 2 intersections, 
                                   //if the intersection is corner of the buiding, pointsIntersection will save 2 times with the same value  
                                   return new TriIdWithIntersection(BuildingTriID,intersection);
@@ -830,8 +830,9 @@ public class FastObstructionTest {
 			if (dotInTri(p2, tri[0], tri[1], tri[2])) {
 				break;
 			}
-			curTri = this.getTriList(curTri, propaLine, navigationHistory).gettriID();
-                        Coordinate coorIntersection=this.getTriList(curTri, propaLine, navigationHistory).getcoorIntersection();
+                        TriIdWithIntersection tirIDWithIntersection=this.getTriList(curTri, propaLine, navigationHistory);
+			curTri=tirIDWithIntersection.gettriID();
+                        Coordinate coorIntersection=tirIDWithIntersection.getcoorIntersection();
                         if(!coorIntersection.equals(new Coordinate(-1,-1,-1))){
                             pointsIntersection.add(coorIntersection);
                         }
