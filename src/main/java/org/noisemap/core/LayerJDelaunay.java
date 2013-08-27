@@ -571,6 +571,10 @@ public class LayerJDelaunay implements LayerDelaunay {
 		
 	}
         
-              
+        
+	public List<DTriangle> gettriangletest() {
+		return this.triangletest;
+		
+	}        
 
 }
