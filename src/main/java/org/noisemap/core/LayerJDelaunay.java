@@ -71,24 +71,12 @@ public class LayerJDelaunay implements LayerDelaunay {
 	private List<Coordinate> vertices = new ArrayList<Coordinate>();
 	private ArrayList<DEdge> constraintEdge = new ArrayList<DEdge>();
 	private LinkedList<DPoint> ptToInsert = new LinkedList<DPoint>();
-        private LinkedList<BuildingWithID> buildingWithID=new LinkedList<BuildingWithID>();
+        private HashMap<Integer,BuildingWithID> buildingWithID=new HashMap<Integer,BuildingWithID>();
 	private List<Coordinate> holes = new LinkedList<Coordinate>();
 	private boolean debugMode=false; //output primitives in a text file
 	private boolean computeNeighbors=false;
 	List<Triangle> triangles = new ArrayList<Triangle>();
-	private List<Triangle> neighbors = new ArrayList<Triangle>(); // The
-																// first
-																		// neighbor
-																		// of
-																		// triangle
-																		// i is
-																		// opposite
-																		// the
-																		// first
-																		// corner
-																		// of
-																		// triangle
-																		// i
+	private List<Triangle> neighbors = new ArrayList<Triangle>(); // The first neighbor triangle is opposite the first corner of triangle  i
 	HashMap<Integer, LinkedList<Integer>> hashOfArrayIndex = new HashMap<Integer, LinkedList<Integer>>();
         //this value is to check if the polygon is counter-clockwise when polygon's have 3 or more coordiantes. 
         //-1 there are no polygon have 3 or more coordiantes
@@ -270,7 +258,7 @@ public class LayerJDelaunay implements LayerDelaunay {
                                                 if(triangle.getPoint(0).getProperty()==triangle.getPoint(1).getProperty()&&triangle.getPoint(0).getProperty()==triangle.getPoint(2).getProperty()&&triangle.getPoint(0).getProperty()>=1){
                                                     //get the Barycenter of the triangle so we can sure this point is in this triangle and we will check if the building contain this point
                                                     int propertyBuildingID=triangle.getPoint(0).getProperty();
-                                                    if(this.buildingWithID.get(propertyBuildingID-1).isTriangleInBuilding(triangle.getBarycenter())){
+                                                    if(this.buildingWithID.get(propertyBuildingID).isTriangleInBuilding(triangle.getBarycenter())){
                                                         triangle.setProperty(propertyBuildingID);
                                                     }
                                                     else{
@@ -301,11 +289,24 @@ public class LayerJDelaunay implements LayerDelaunay {
                                                                     Triangle gidTri=new Triangle(-1,-1,-1,0);
                                                                     for(int i=0;i<3;i++) {
                                                                             DTriangle neighTriangle = triangle.getOppositeEdge(triangle.getPoint(i)).getOtherTriangle(triangle);
-                                                                            if(neighTriangle!=null && neighTriangle.getProperty()>=0) {
+                                                                            if(neighTriangle!=null&& neighTriangle.getExternalGID()!=0) {
+                                                                                //if neighbor is in building
+                                                                                    int neighBuildingID=0;
+                                                                                    if(neighTriangle.getPoint(0).getProperty()==neighTriangle.getPoint(1).getProperty()&&neighTriangle.getPoint(0).getProperty()==neighTriangle.getPoint(2).getProperty()&&(neighTriangle.getPoint(0).getProperty()>=1)){
+                                                                                        neighBuildingID=neighTriangle.getPoint(0).getProperty();
+                                                                                        if(this.buildingWithID.get(neighBuildingID).isTriangleInBuilding(neighTriangle.getBarycenter())){
+                                                                                            neighTriangle.setProperty(neighBuildingID);
+                                                                                        }
+                                                                                        else{
+                                                                                            neighTriangle.setProperty(0);
+                                                                                        }
+                                                                                    
+                                                                                    }    
                                                                                     gidTri.set(i,neighTriangle.getGID());
-                                                                                    gidTri.setBuidlingID(buildingID);//set building ID
+                                                                                    
                                                                             }
                                                                     }
+                                                                    gidTri.setBuidlingID(buildingID);
                                                                     if(!orientationReversed) {
                                                                             gidTriangle.add(gidTri);
                                                                     } else {
@@ -367,9 +368,10 @@ public class LayerJDelaunay implements LayerDelaunay {
 							int index=tri.get(i);
 							if(index!=-1){
 								localTri.set(i, gidToIndex.get(index));
-                                                                localTri.setBuidlingID(tri.getBuidlingID());
                                                         }
+                                                        
 						}
+                                                localTri.setBuidlingID(tri.getBuidlingID());
 						neighbors.add(localTri);
 					}
 				}
@@ -453,8 +455,8 @@ public class LayerJDelaunay implements LayerDelaunay {
 		if (coordinates.length > 1) {
 			LineString newLineString = factory.createLineString(coordinates);
 			this.addLineString(newLineString,biudlingID);
-                        this.buildingWithID.add(biudlingID-1, new BuildingWithID(newPoly));
-		}
+                        this.buildingWithID.put(biudlingID, new BuildingWithID(newPoly));
+                }
 		if (isEmpty) {
 			addHole(newPoly.getInteriorPoint().getCoordinate());
 		}
@@ -569,10 +571,6 @@ public class LayerJDelaunay implements LayerDelaunay {
 		
 	}
         
-        
-	public List<DTriangle> gettriangletest() {
-		return this.triangletest;
-		
-	}        
+              
 
 }
