@@ -254,17 +254,23 @@ public class LayerJDelaunay implements LayerDelaunay {
                                 for (DTriangle triangle : trianglesDelaunay) {
                                                 Coordinate [] ring = new Coordinate [] {triangle.getPoint(0).getCoordinate(),triangle.getPoint(1).getCoordinate(),triangle.getPoint(2).getCoordinate(),triangle.getPoint(0).getCoordinate()};
 						boolean orientationReversed=false;
-                                                //if 3 points have buildingID and buildingID>=1
-                                                if(triangle.getPoint(0).getProperty()==triangle.getPoint(1).getProperty()&&triangle.getPoint(0).getProperty()==triangle.getPoint(2).getProperty()&&triangle.getPoint(0).getProperty()>=1){
-                                                    //get the Barycenter of the triangle so we can sure this point is in this triangle and we will check if the building contain this point
-                                                    int propertyBuildingID=triangle.getPoint(0).getProperty();
-                                                    if(this.buildingWithID.get(propertyBuildingID).isTriangleInBuilding(triangle.getBarycenter())){
-                                                        triangle.setProperty(propertyBuildingID);
+                                                //if one of three vertices have buildingID and buildingID>=1
+                                                if(triangle.getPoint(0).getProperty()>=1||triangle.getPoint(1).getProperty()>=1||triangle.getPoint(2).getProperty()>=1){
+                                                    int propertyBulidingID=0;
+                                                    for(int i=0;i<=2;i++){
+                                                        int potentialBuildingID=triangle.getPoint(i).getProperty();
+                                                        if(potentialBuildingID>=1){
+                                                            //get the Barycenter of the triangle so we can sure this point is in this triangle and we will check if the building contain this point
+
+                                                            if(this.buildingWithID.get(potentialBuildingID).isTriangleInBuilding(triangle.getBarycenter())){
+                                                                propertyBulidingID=potentialBuildingID;
+                                                                break;
+                                                            }
+                                                            
+                                                        }
+                                                        
                                                     }
-                                                    else{
-                                                        triangle.setProperty(0);
-                                                    }
-                                                
+                                                    triangle.setProperty(propertyBulidingID);
                                                 
                                                 }
                                                 //if there are less than 3 points have buildingID this triangle is out of building
@@ -291,17 +297,28 @@ public class LayerJDelaunay implements LayerDelaunay {
                                                                             DTriangle neighTriangle = triangle.getOppositeEdge(triangle.getPoint(i)).getOtherTriangle(triangle);
                                                                             if(neighTriangle!=null&& neighTriangle.getExternalGID()!=0) {
                                                                                 //if neighbor is in building
-                                                                                    int neighBuildingID=0;
-                                                                                    if(neighTriangle.getPoint(0).getProperty()==neighTriangle.getPoint(1).getProperty()&&neighTriangle.getPoint(0).getProperty()==neighTriangle.getPoint(2).getProperty()&&(neighTriangle.getPoint(0).getProperty()>=1)){
-                                                                                        neighBuildingID=neighTriangle.getPoint(0).getProperty();
-                                                                                        if(this.buildingWithID.get(neighBuildingID).isTriangleInBuilding(neighTriangle.getBarycenter())){
-                                                                                            neighTriangle.setProperty(neighBuildingID);
-                                                                                        }
-                                                                                        else{
-                                                                                            neighTriangle.setProperty(0);
-                                                                                        }
                                                                                     
-                                                                                    }    
+                                                                                    if(neighTriangle.getPoint(0).getProperty()>=1||neighTriangle.getPoint(1).getProperty()>=1||neighTriangle.getPoint(2).getProperty()>=1){
+                                                                                        int neighBuildingID=0;
+                                                                                        for(int j=0; j<=2; j++){
+                                                                                            int potentialNeighBuildingID=neighTriangle.getPoint(j).getProperty();
+                                                                                            if(potentialNeighBuildingID>=1){
+                                                                                               if(this.buildingWithID.get(potentialNeighBuildingID).isTriangleInBuilding(neighTriangle.getBarycenter())){
+                                                                                                  neighBuildingID=potentialNeighBuildingID;
+                                                                                                  break;
+                                                                                               }
+                                                                                               
+                                                                                            }
+                                                                                            
+                                                                                        }
+                                                                                       
+                                                                                            neighTriangle.setProperty(neighBuildingID);
+
+                                                                                    
+                                                                                    }
+                                                                                    else{
+                                                                                            neighTriangle.setProperty(0);
+                                                                                    }
                                                                                     gidTri.set(i,neighTriangle.getGID());
                                                                                     
                                                                             }
