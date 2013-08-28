@@ -181,7 +181,7 @@ public class FastObstructionTest {
 	 *            buidling's Height
          * @return
          */
-
+                @SuppressWarnings("unchecked")
       	public void addGeometry(Geometry obstructionPoly, double heightofBuilding) {
                 PolygonWithHeight newbuilding=new PolygonWithHeight(obstructionPoly, heightofBuilding); 
            	if(this.geometriesBoundingBox==null) {
@@ -189,10 +189,67 @@ public class FastObstructionTest {
 		} else {
 			this.geometriesBoundingBox.expandToInclude(obstructionPoly.getEnvelopeInternal());
 		}
-                
-                polygonWithHeight.add(newbuilding);
-                   
+                //if there is no building 
+                if(buildingWithID.isEmpty()){
+                    polygonWithHeight.add(newbuilding);
+                    buildingWithID.put(buildingWithID.size(),newbuilding);
+                    //add this building to QuadTree
+                    ptQuadForMergeBuilding.insert(obstructionPoly.getEnvelopeInternal(),new EnvelopeWithIndex<Integer>(obstructionPoly.getEnvelopeInternal(),
+				buildingWithID.size()-1));
+                    
                 }
+                else{
+                    //check if a new building have the intersection with other buildings
+                    List<EnvelopeWithIndex<Integer>> result = ptQuadForMergeBuilding.query(obstructionPoly.getEnvelopeInternal());
+                    //if no intersection 
+                    if (result.isEmpty()){
+                        polygonWithHeight.add(newbuilding);
+                        buildingWithID.put(buildingWithID.size(),newbuilding);
+                        ptQuadForMergeBuilding.insert(obstructionPoly.getEnvelopeInternal(),new EnvelopeWithIndex<Integer>(obstructionPoly.getEnvelopeInternal(),
+				buildingWithID.size()-1));
+                    }
+                    //if we may have intersection, get the building who intersected with this new building using ID
+                    //we use the less height building's height and give it to the intersected Geo
+                    else{
+                            Geometry newBuildingModified=obstructionPoly;
+                            double minHeight=heightofBuilding;
+                            for(EnvelopeWithIndex<Integer> envel : result){
+                                int intersectedBuildingID=envel.getId();
+                                PolygonWithHeight intersectedBuilidng=buildingWithID.get(intersectedBuildingID);
+                                //if new Polygon interset old Polygon
+                                if(intersectedBuilidng.getGeometry().intersects(obstructionPoly)){
+                                    //we merge the building and give it a new height
+                                    newBuildingModified=intersectedBuilidng.getGeometry().union(newBuildingModified);
+                                    if (minHeight>intersectedBuilidng.getHeight()){
+                                    //if the new building's height less than old intersected building, we get the min height 
+                                        minHeight=intersectedBuilidng.getHeight();
+                                        
+                                    }
+                                    //if we are sure a old building have intersection with new building, 
+                                    //we will remove the old building in the building list and QuadTree(not remove in buildingWithID list)
+                                    polygonWithHeight.remove(intersectedBuilidng);
+                                    ptQuadForMergeBuilding.remove(intersectedBuilidng.getGeometry().getEnvelopeInternal(),new EnvelopeWithIndex<Integer>(intersectedBuilidng.getGeometry().getEnvelopeInternal(),
+				intersectedBuildingID));
+                                    
+                                        
+                                 }
+                                 
+                                     
+                            }
+                            PolygonWithHeight newPoly=new PolygonWithHeight(newBuildingModified,minHeight);
+                            polygonWithHeight.add(newPoly);
+                            buildingWithID.put(buildingWithID.size(), newPoly);
+                            //Because we dont remove the building in HashMap buildingWithID, so the buildingWithID will keep both new or old bulding
+                            ptQuadForMergeBuilding.insert(newBuildingModified.getEnvelopeInternal(),new EnvelopeWithIndex<Integer>(newBuildingModified.getEnvelopeInternal(),
+				buildingWithID.size()-1));
+
+                    }
+                }
+                
+                
+                
+                
+        }
                 
                 
                 
@@ -316,7 +373,7 @@ public class FastObstructionTest {
 		final Triangle tri = this.triVertices.get(triIndex);
 		int nearestIntersectionSide = -1;
                 int idneigh;
-                double heightOfTri=this.polygonWithHeight.get(this.triNeighbors.get(triIndex).getBuidlingID()).getHeight();
+                double heightOfTri=this.polygonWithHeight.get(this.triNeighbors.get(triIndex).getBuidlingID()-1).getHeight();
 		double nearestIntersectionPtDist = Double.MAX_VALUE;
 		// Find intersection pt
 		final Coordinate aTri = this.vertices.get(tri.getA());
@@ -375,7 +432,7 @@ public class FastObstructionTest {
 	 *            Propagation line
 	 * 
 	 */
-	private TriIdWithIntersection getTriList(final int triIndex,
+	private TriIdWithIntersection getNextTriWithIntersection(final int triIndex,
 			final LineSegment propagationLine,
 			HashSet<Integer> navigationHistory) {
 		//NonRobustLineIntersector linters = new NonRobustLineIntersector();
@@ -803,8 +860,8 @@ public class FastObstructionTest {
         
         /**
          * 
-         * get the distance of all intersections (after the filtration by algo Jarvis March)  between the source and the receiver to compute vertical diffraction 
-         * must called after finishPolygonFeeding
+         * Get the distance of all intersections (after the filtration by algo Jarvis March)  between the source and the receiver to compute vertical diffraction 
+         * Must called after finishPolygonFeeding
 	 * @param p1
 	 *            Coordiante receiver
 	 * @param p2
@@ -830,7 +887,7 @@ public class FastObstructionTest {
 			if (dotInTri(p2, tri[0], tri[1], tri[2])) {
 				break;
 			}
-                        TriIdWithIntersection tirIDWithIntersection=this.getTriList(curTri, propaLine, navigationHistory);
+                        TriIdWithIntersection tirIDWithIntersection=this.getNextTriWithIntersection(curTri, propaLine, navigationHistory);
 			curTri=tirIDWithIntersection.gettriID();
                         Coordinate coorIntersection=tirIDWithIntersection.getcoorIntersection();
                         if(!coorIntersection.equals(new Coordinate(-1,-1,-1))){
@@ -839,7 +896,7 @@ public class FastObstructionTest {
 		}
 
 		
-                //add point receiver and point source into list.
+                //add point receiver and point source into list head and tail.
                 pointsIntersection.addFirst(p1);
                 pointsIntersection.addLast(p2);
                 //change Coordinate system from 3D to 2D 
@@ -880,7 +937,8 @@ public class FastObstructionTest {
                     double distancepath=0.0;//distance of path
 
                     //prepare data to compute pure diffraction
-                    double heightpoint=0.0;//h0:the highest point intersection
+                    //h0 in expression diffraction:the highest point intersection
+                    double heightpoint=0.0;
                     for(int i=0;i<path.size();i++){
                         distancepath=path.get(i).getLength()+distancepath;
                         if(path.get(i).p0.y>heightpoint){
