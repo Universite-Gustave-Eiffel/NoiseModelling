@@ -5,7 +5,6 @@ import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Polygon;
 
-import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertTrue;
 
 
@@ -50,7 +49,7 @@ public class TestSoundPropagationIn3DWithNewFunction extends TestCase {
            System.out.println(lt[1]);
            System.out.println("----distancepath----");
            System.out.println(lt[3]);
-           System.out.println("----------TEST diffraction with 2 buildings(building1 and building3)----- ");
+           System.out.println("----------TEST diffraction with 2 buildings(building1 and building2)----- ");
            
            lt=ft.getPath(new Coordinate(48,25,0.5), new Coordinate(5,15,1.5));
            System.out.println("----deltadistance----");
@@ -70,7 +69,7 @@ public class TestSoundPropagationIn3DWithNewFunction extends TestCase {
            assertTrue("Exchange source receiver got the different resultat",lt[0].equals(lt1[0])&&lt[1].equals(lt1[1])&&lt[3].equals(lt1[3]));
            
            }
-    
+   
     public void testDiffraction3DSpecialBuilding() throws LayerDelaunayError{
            GeometryFactory factory = new GeometryFactory();
            Coordinate[] building1Coords = { new Coordinate(15., 5.,0.),
@@ -90,10 +89,12 @@ public class TestSoundPropagationIn3DWithNewFunction extends TestCase {
 
            ft.addGeometry(building1,5.);
            ft.addGeometry(building2,4.);
-
+           System.out.println("----------------TEST 2 buildings are glued----------------");
+           ft.testMergeGetPolygonWithHeight(); 
+           System.out.println("----------------TEST 2 buildings are glued Finished----------------");
            ft.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(60., 60.,0.)));
                       
-           System.out.println("----------------TEST 2 buildings are glued----------------");
+           
            
            Double[]lt=ft.getPath(new Coordinate(48,25,0.5), new Coordinate(5,15,1.5));
            System.out.println("----deltadistance----");
@@ -110,7 +111,7 @@ public class TestSoundPropagationIn3DWithNewFunction extends TestCase {
            System.out.println(lt1[1]);
            System.out.println("----distancepath----");
            System.out.println(lt1[3]);
-          
+           assertTrue("Exchange source receiver got the different resultat",lt[0].equals(lt1[0])&&lt[1].equals(lt1[1])&&lt[3].equals(lt1[3]));
            
            }
     
