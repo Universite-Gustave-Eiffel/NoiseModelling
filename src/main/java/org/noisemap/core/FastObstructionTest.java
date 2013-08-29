@@ -373,7 +373,7 @@ public class FastObstructionTest {
 		final Triangle tri = this.triVertices.get(triIndex);
 		int nearestIntersectionSide = -1;
                 int idneigh;
-                double heightOfTri=this.polygonWithHeight.get(this.triNeighbors.get(triIndex).getBuidlingID()-1).getHeight();
+                
 		double nearestIntersectionPtDist = Double.MAX_VALUE;
 		// Find intersection pt
 		final Coordinate aTri = this.vertices.get(tri.getA());
@@ -395,7 +395,7 @@ public class FastObstructionTest {
 		// Intersection Second Side
                 idneigh=this.triNeighbors.get(
                                                 triIndex).get(0);
-                if (idneigh!=-1 && !navigationHistory.contains(idneigh) && heightOfTri==0 ) {
+                if (idneigh!=-1 && !navigationHistory.contains(idneigh)) {
                     distline_line=propagationLine.distance(new LineSegment(bTri, cTri));
                     if (distline_line<FastObstructionTest.epsilon &&
                             distline_line < nearestIntersectionPtDist && this.triVertices.get(idneigh).getBuidlingID()==0) {
@@ -407,7 +407,7 @@ public class FastObstructionTest {
 		// Intersection Third Side
                 idneigh=this.triNeighbors.get(
                                                 triIndex).get(1);
-                if (idneigh!=-1 && !navigationHistory.contains(idneigh) && heightOfTri==0) {
+                if (idneigh!=-1 && !navigationHistory.contains(idneigh)) {
                     distline_line=propagationLine.distance(new LineSegment(cTri, aTri));
                     if (distline_line<FastObstructionTest.epsilon &&
                             distline_line < nearestIntersectionPtDist && this.triVertices.get(idneigh).getBuidlingID()==0) {
@@ -703,10 +703,10 @@ public class FastObstructionTest {
 				verticesOpenAngle.add(0.f);
 				verticesOpenAnglesTuples.add(new ArrayList<Double>());
 			}
-			int triId = 0;
+			
                         
 			for (Triangle tri : this.triVertices) {
-                            if(tri.getBuidlingID()==0){
+                            if(tri.getBuidlingID()<1){
 				// Compute angle at each corner, then add to vertices angle
 				// array
 				Coordinate triA = vertices.get(tri.getA());
@@ -730,8 +730,7 @@ public class FastObstructionTest {
 				verticesOpenAngle.set(tri.getC(),
 						(float) (verticesOpenAngle.get(tri.getC()) + Angle
 								.angleBetween(triB, triC, triA)));
-				triId++;
-			}
+                            }	
 
 			for (int idvert = 0; idvert < vertices.size(); idvert++) {
 				// Compute median angle of open angle point
@@ -841,7 +840,7 @@ public class FastObstructionTest {
                 
 		int curTri = getTriangleIdByCoordinate(p1);
 		HashSet<Integer> navigationHistory = new HashSet<Integer>();
-                if(this.triVertices.get(curTri).getBuidlingID()!=0){
+                if(this.triVertices.get(curTri).getBuidlingID()==0){
                     while (curTri != -1) {
                             navigationHistory.add(curTri);
                             Coordinate[] tri = getTriangle(curTri);
