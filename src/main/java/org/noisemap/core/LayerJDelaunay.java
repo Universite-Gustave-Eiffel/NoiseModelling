@@ -78,12 +78,6 @@ public class LayerJDelaunay implements LayerDelaunay {
 	List<Triangle> triangles = new ArrayList<Triangle>();
 	private List<Triangle> neighbors = new ArrayList<Triangle>(); // The first neighbor triangle is opposite the first corner of triangle  i
 	HashMap<Integer, LinkedList<Integer>> hashOfArrayIndex = new HashMap<Integer, LinkedList<Integer>>();
-        //this value is to check if the polygon is counter-clockwise when polygon's have 3 or more coordiantes. 
-        //-1 there are no polygon have 3 or more coordiantes
-        //0 polygons are oriented counter-clockwise
-        //1 polygons are oriented clockwise
-        //2 warning
-        private int checkisCCW=-1;
         //triangletest is for JDeLaunayTriangleDirectionChange to test triangle direction
         private List<DTriangle> triangletest=new ArrayList<DTriangle>();
         
@@ -340,44 +334,7 @@ public class LayerJDelaunay implements LayerDelaunay {
                                                 
 					}
 				
-                                /*
-				for (DTriangle triangle : trianglesDelaunay) {
-					if(triangle.getExternalGID()!=0) //Not a hole
-					{
-						boolean orientationReversed=false;
-						Coordinate [] ring = new Coordinate [] {triangle.getPoint(0).getCoordinate(),triangle.getPoint(1).getCoordinate(),triangle.getPoint(2).getCoordinate(),triangle.getPoint(0).getCoordinate()};
-						if(!CGAlgorithms.isCCW(ring)) {
-							Coordinate tmp= new Coordinate(ring[0]);
-							ring[0]=ring[2];
-							ring[2]=tmp;
-							orientationReversed=true;
-						}
-							
-						int a = getOrAppendVertices(ring[0], vertices, hashOfArrayIndex);
-						int b = getOrAppendVertices(ring[1], vertices, hashOfArrayIndex);
-						int c = getOrAppendVertices(ring[2], vertices, hashOfArrayIndex);
-                                                double height=triangle.getHeight();
-						triangles.add(new Triangle(a, b, c,height));
-						if(this.computeNeighbors) {
-							Triangle gidTri=new Triangle(-1,-1,-1,0);
-							for(int i=0;i<3;i++) {
-								DTriangle neighTriangle = triangle.getOppositeEdge(triangle.getPoint(i)).getOtherTriangle(triangle);
-								if(neighTriangle!=null && neighTriangle.getExternalGID()!=0) {
-									gidTri.set(i,neighTriangle.getGID());
-                                                                        gidTri.setHeight(neighTriangle.getHeight());//set height
-								}
-							}
-							if(!orientationReversed) {
-								gidTriangle.add(gidTri);
-							} else {
-								gidTriangle.add(new Triangle(gidTri.getC(),gidTri.getB(),gidTri.getA(),gidTri.getHeight()));
-							}
-							gidToIndex.put(triangle.getGID(),gidTriangle.size()-1);
-						}
-					}
-				}
-                                */
-				if(this.computeNeighbors) {
+                               if(this.computeNeighbors) {
 					//Translate GID to local index
 					for(Triangle tri : gidTriangle) {
 						Triangle localTri=new Triangle(-1,-1,-1,0);
