@@ -730,7 +730,8 @@ public class FastObstructionTest {
 				verticesOpenAngle.set(tri.getC(),
 						(float) (verticesOpenAngle.get(tri.getC()) + Angle
 								.angleBetween(triB, triC, triA)));
-                            }	
+                            }
+                        }
 
 			for (int idvert = 0; idvert < vertices.size(); idvert++) {
 				// Compute median angle of open angle point
@@ -751,7 +752,7 @@ public class FastObstructionTest {
 					verticesOpenAngleTranslated.add(curVert);
 				}
 			}
-                        }
+                        
 		}
 		int idvert = 0;
 		for (Float angleVertex : verticesOpenAngle) {
