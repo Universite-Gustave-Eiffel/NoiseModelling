@@ -40,7 +40,7 @@ public class TestSoundPropagationIn3DWithNewFunction extends TestCase {
 
            ft.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(60., 60.,0.)));
                       
-           System.out.println("----------------TEST path between source and receiver----------------");
+           System.out.println("----------------TEST 1 test path between source and receiver----------------");
            System.out.println("-----no building but have one cross triangle-----");
            Double[]lt=ft.getPath(new Coordinate(5,15,1.5), new Coordinate(10,15,0.5));
            System.out.println("----deltadistance----");
@@ -49,6 +49,9 @@ public class TestSoundPropagationIn3DWithNewFunction extends TestCase {
            System.out.println(lt[1]);
            System.out.println("----distancepath----");
            System.out.println(lt[3]);
+           
+           System.out.println("-----no building but have one cross triangle finished-----");
+           
            System.out.println("----------TEST diffraction with 2 buildings(building1 and building2)----- ");
            
            lt=ft.getPath(new Coordinate(48,25,0.5), new Coordinate(5,15,1.5));
@@ -66,8 +69,9 @@ public class TestSoundPropagationIn3DWithNewFunction extends TestCase {
            System.out.println(lt1[1]);
            System.out.println("----distancepath----");
            System.out.println(lt1[3]);
-           assertTrue("Exchange source receiver got the different resultat",lt[0].equals(lt1[0])&&lt[1].equals(lt1[1])&&lt[3].equals(lt1[3]));
-           
+           assertTrue("Exchange source receiver got the different resultat",lt[0]-lt1[0]<=FastObstructionTest.epsilon
+                      &&lt[1]-lt1[1]<=FastObstructionTest.epsilon&&lt[3]-lt1[3]<=FastObstructionTest.epsilon);
+           System.out.println("----------TEST diffraction with 2 buildings(building1 and building2) finished----- ");
            }
    
     public void testDiffraction3DSpecialBuilding() throws LayerDelaunayError{
@@ -89,9 +93,11 @@ public class TestSoundPropagationIn3DWithNewFunction extends TestCase {
 
            ft.addGeometry(building1,5.);
            ft.addGeometry(building2,4.);
-           System.out.println("----------------TEST 2 buildings are glued----------------");
+           System.out.println("----------------TEST  buildings are glued----------------");
            ft.testMergeGetPolygonWithHeight(); 
-           System.out.println("----------------TEST 2 buildings are glued Finished----------------");
+           System.out.println("----------------TEST  buildings are glued Finished----------------");
+           
+           System.out.println("----------------TEST  buildings are glued and get the path----------------");
            ft.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(60., 60.,0.)));
                       
            
@@ -111,7 +117,8 @@ public class TestSoundPropagationIn3DWithNewFunction extends TestCase {
            System.out.println(lt1[1]);
            System.out.println("----distancepath----");
            System.out.println(lt1[3]);
-           assertTrue("Exchange source receiver got the different resultat",lt[0].equals(lt1[0])&&lt[1].equals(lt1[1])&&lt[3].equals(lt1[3]));
+           assertTrue("Exchange source receiver got the different resultat",lt[0]-lt1[0]<=FastObstructionTest.epsilon
+                      &&lt[1]-lt1[1]<=FastObstructionTest.epsilon&&lt[3]-lt1[3]<=FastObstructionTest.epsilon);
            
            }
     
