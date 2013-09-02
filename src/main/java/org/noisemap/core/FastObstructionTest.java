@@ -795,32 +795,32 @@ public class FastObstructionTest {
 			// for each side of the triangle
 			Triangle neighboors = this.triNeighbors.get(curTri);
 			nextTri = -1;
-			for (short idside = firstSide; idside < 3; idside++) {
-				if (!navigationHistory.contains(neighboors.get(idside))) {
-					IntSegment segVerticesIndex = this.triVertices.get(curTri)
-							.getSegment(idside);
-					LineSegment side = new LineSegment(
-							this.vertices.get(segVerticesIndex.getA()),
-							this.vertices.get(segVerticesIndex.getB()));
-					Coordinate closestPoint = side.closestPoint(p1);
-					if (closestPoint.distance(p1) <= maxDist) {
-						// In this direction there is a hole or this is outside
-						// of the geometry
-						if (neighboors.get(idside) == -1) {
-							walls.add(side);
-						} else {
-							// Store currentTriangle Id. This is where to go
-							// back when there is no more navigable neighbors at
-							// the next triangle
-							navigationNodes.add(curTri);
-							navigationSide.add(idside);
-							firstSide=0;
-							nextTri = neighboors.get(idside);
-							break; // Next triangle
-						}
-					}
-				}
-			}
+                        for (short idside = firstSide; idside < 3; idside++) {
+                                if (!navigationHistory.contains(neighboors.get(idside))) {
+                                        IntSegment segVerticesIndex = this.triVertices.get(curTri)
+                                                        .getSegment(idside);
+                                        LineSegment side = new LineSegment(
+                                                        this.vertices.get(segVerticesIndex.getA()),
+                                                        this.vertices.get(segVerticesIndex.getB()));
+                                        Coordinate closestPoint = side.closestPoint(p1);
+                                        if (closestPoint.distance(p1) <= maxDist) {
+                                                // In this direction there is a building or this is outside
+                                                // of the geometry
+                                                if (triVertices.get(neighboors.get(idside)).getBuidlingID()>=1) {
+                                                        walls.add(side);
+                                                } else {
+                                                        // Store currentTriangle Id. This is where to go
+                                                        // back when there is no more navigable neighbors at
+                                                        // the next triangle
+                                                        navigationNodes.add(curTri);
+                                                        navigationSide.add(idside);
+                                                        firstSide=0;
+                                                        nextTri = neighboors.get(idside);
+                                                        break; // Next triangle
+                                                }
+                                        }
+                                }
+                        }
 			if (nextTri == -1 && !navigationNodes.empty()) {
 				// All the side have been rejected, go back by one on the
 				// navigation
@@ -930,8 +930,12 @@ public class FastObstructionTest {
                 else{
                     LinkedList<LineSegment> path=new LinkedList<LineSegment>(); 
                     for (int i=0;i<points.x.length-1;i++){
+                        
                         path.add(new LineSegment(new Coordinate(points.x[i],points.y[i]),new Coordinate(points.x[i+1],points.y[i+1])));
-
+                        //When we get a point we will check if this point is equal with P2 we will stop finding next point 
+                        if(p2.equals(new Coordinate(points.x[i],points.y[i]))){
+                            break;
+                        }
 
                     }
                     double distancepath=0.0;//distance of path
