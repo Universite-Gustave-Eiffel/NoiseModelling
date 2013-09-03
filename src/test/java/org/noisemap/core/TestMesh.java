@@ -22,10 +22,12 @@ public class TestMesh extends TestCase{
             Coordinate[] building1Coords = { new Coordinate(15., 5.,2.),
                                         new Coordinate(15., 30.,3.), new Coordinate(30., 30.,5.),
                                         new Coordinate(30., 5.,2.), new Coordinate(15., 5.,2.) };
+            Coordinate topoPoint1 = new Coordinate(5.,10.,4.);
             Polygon building1 = factory.createPolygon(
                             factory.createLinearRing(building1Coords), null);
-            MeshBuilder mesh=new MeshBuilder();
+            MeshBuilder mesh= new MeshBuilder();
             mesh.addGeometry(building1,4.0);
+            mesh.addTopograhic(topoPoint1);
             mesh.testMergeGetPolygonWithHeight(); 
             
             mesh.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(60., 60.,0.)));
