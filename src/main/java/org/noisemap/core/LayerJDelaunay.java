@@ -108,9 +108,15 @@ public class LayerJDelaunay implements LayerDelaunay {
 		public void filter(CoordinateSequence seq, int i) {
 			double x = seq.getX(i);
 			double y = seq.getY(i);
+                        double z = seq.getOrdinate(i, 2);
 			seq.setOrdinate(i, 0, x);
 			seq.setOrdinate(i, 1, y);
-			seq.setOrdinate(i, 2, 0);
+                        if(Double.isNaN(z)){
+                            seq.setOrdinate(i, 2, 0);
+                        }
+                        else{
+                            seq.setOrdinate(i, 2, z);
+                        }
 			if (i == seq.size()) {
 				done = true;
 			}
@@ -523,6 +529,18 @@ public class LayerJDelaunay implements LayerDelaunay {
 			throw new LayerDelaunayError(e.getMessage());
 		}
 	}
+        //add buildingID to edge property and to points property
+	
+        public void addTopoPoint(Coordinate point)
+                throws LayerDelaunayError{
+                try{
+                    DPoint topoPoint=new DPoint(point);
+                    topoPoint.setProperty(0);
+                    this.ptToInsert.add(topoPoint);
+                }catch (DelaunayError e) {
+                            throw new LayerDelaunayError(e.getMessage());
+                }
+        }
         
 	@Override
 	public void reset() {
