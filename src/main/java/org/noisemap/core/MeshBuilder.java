@@ -81,7 +81,7 @@ public class MeshBuilder {
         private LinkedList<PolygonWithHeight> polygonWithHeight= new LinkedList<PolygonWithHeight>();//list polygon with height
         private HashMap <Integer,PolygonWithHeight> buildingWithID=new HashMap<Integer,PolygonWithHeight>();//list to save all of buildings(both new polygon and old polygon) when do the merge building.
         private Envelope geometriesBoundingBox=null;
-
+        private LinkedList<Coordinate> topoPoints=new LinkedList<Coordinate>();
 	private QueryGeometryStructure triIndex = null; //TODO remove
 	private int lastFountPointTriTest = 0;
 	private List<Float> verticesOpenAngle = null;
@@ -89,8 +89,9 @@ public class MeshBuilder {
         //private LinkedList<Integer> BuildingTriangleIndex= new LinkedList<Integer>(); /* the buildings list between source and receiver. Reconstruction after get a new source-reciver */
         //private LinkedList<Coordinate> pointsIntersection= new LinkedList<Coordinate>();/* the intersection of the segment source-receiver and builiding's side. Reconstruction after get a new source-reciver */
         private Quadtree ptQuadForMergeBuilding = new Quadtree();//
-        private static class PolygonWithHeight{
+        public static class PolygonWithHeight{
             private Geometry geo;
+            //If we add the topographic, the building height will be the average ToPo Height+ Building Height of all vertices  
             private double height;
             public PolygonWithHeight(Geometry geo,double height){
             
@@ -107,7 +108,9 @@ public class MeshBuilder {
             public void setGeometry(Geometry geo){
                 this.geo=geo;
             }
-            
+            public void setHeight(Double height){
+                this.height=height;
+            }
         }
         
          private static class TriIdWithIntersection{
@@ -135,7 +138,7 @@ public class MeshBuilder {
 		return nbObstructionTest;
 	}
 	/**
-	 * Retrieve triangle list, only for debug and unit test purpose
+	 * Retrieve triangle list
 	 * @return
 	 */
 	public List<Triangle> getTriangles() {
@@ -144,12 +147,28 @@ public class MeshBuilder {
 
         
 	/**
-	 * Retrieve vertices list, only for debug and unit test purpose
+	 * Retrieve vertices list
 	 * @return
 	 */
 	public List<Coordinate> getVertices() {
 		return vertices;
 	}
+        
+        
+	/**
+	 * Retrieve Buildings polygon with the height 
+         * if called before finishPolygonFeeding it will retrun the polygons(merged)  with a height "without" the effect Topograhic
+         * if called after finishPolygonFeeding it will retrun the polygons(merged)  with a height "with" the effect Topograhic
+	 * @return
+	 */        
+        public LinkedList<PolygonWithHeight> getPolygonWithHeight(){
+                return polygonWithHeight;
+        
+        }
+                
+                
+                
+                
 	public void addGeometry(Geometry obstructionPoly) {
 		if(this.geometriesBoundingBox==null) {
 			this.geometriesBoundingBox=new Envelope(obstructionPoly.getEnvelopeInternal());
@@ -239,6 +258,17 @@ public class MeshBuilder {
                 
                 
         }
+                
+        public void addTopograhic(Coordinate point){
+            
+                if(!topoPoints.contains(point)){
+                    if(Double.isNaN(point.z))
+                    {
+                        point.setCoordinate(new Coordinate(point.x,point.y,0.));
+                    }
+                    this.topoPoints.add(point);
+                }
+        }
               
         private void addPolygon(Polygon newpoly, LayerJDelaunay delaunayTool,
 			 int buildingID) throws LayerDelaunayError {
@@ -279,14 +309,36 @@ public class MeshBuilder {
 		
 		verticesOpenAngle = null;
 		LayerJDelaunay delaunayTool = new LayerJDelaunay();
-		
                 //add buildings to JDelaunay
                 for(int i=1;i<=polygonWithHeight.size();i++){
+                    //When we get all of building, we will set every vertice of the same building a same Z, 
+                    //using the Average "z+height"
+                    Coordinate[] buildingCoor=polygonWithHeight.get(i-1).geo.getCoordinates();
+                    double buildingHeight=polygonWithHeight.get(i-1).height;
+                    //if the building is closed
+                    Double sumBuildingHeight=0.;
+                    Double averageBuildingHeight=0.;
+                    if(buildingCoor[0].equals(buildingCoor[buildingCoor.length-1])&&buildingCoor.length-1>=3){
+                        for(int j=0;j<buildingCoor.length-1;j++){
+                            sumBuildingHeight+=buildingCoor[j].z+buildingHeight;
+                        }
+                        averageBuildingHeight=sumBuildingHeight/(buildingCoor.length-2);
+                    }
+                    //set the averageBuildingZ
+                    polygonWithHeight.get(i-1).setHeight(averageBuildingHeight);
                     //element's property deafult is 0 so we use from 1 to give the buildingID
                     //e.x: building ID 1=polygonWithHeight.get(0)
                     explodeAndAddPolygon(polygonWithHeight.get(i-1).getGeometry(), delaunayTool,i);
                 }
+                //add topoPoints to JDelaunay
+                //no check if the point in the building
+                if(!topoPoints.isEmpty()){
+                    for(int j=0;j<topoPoints.size();j++){
 
+                        delaunayTool.addTopoPoint(topoPoints.get(j));
+
+                    }
+                }
 
 		// Insert the main rectangle
 		Geometry linearRing = EnvelopeUtil.toGeometry(this.geometriesBoundingBox);
@@ -298,8 +350,9 @@ public class MeshBuilder {
 				factory);
 		delaunayTool.addPolygon(boundingBox, false);
                 //explodeAndAddPolygon(allbuilds, delaunayTool);
-		// Process delaunay Triangulation
+		//Process delaunay Triangulation
 		delaunayTool.setMinAngle(0.);
+                //computeNeighbors
 		delaunayTool.setRetrieveNeighbors(true);
 		delaunayTool.processDelaunay();
                 // Get results
