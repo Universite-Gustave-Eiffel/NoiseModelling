@@ -323,7 +323,7 @@ public class LayerJDelaunay implements LayerDelaunay {
                                                                                     
                                                                             }
                                                                     }
-                                                                    gidTri.setBuidlingID(buildingID);
+                                                                    
                                                                     if(!orientationReversed) {
                                                                             gidTriangle.add(gidTri);
                                                                     } else {
@@ -351,7 +351,7 @@ public class LayerJDelaunay implements LayerDelaunay {
                                                         }
                                                         
 						}
-                                                localTri.setBuidlingID(tri.getBuidlingID());
+                                                
 						neighbors.add(localTri);
 					}
 				}
