@@ -779,6 +779,7 @@ public class NewFastObstructionTest {
                     for (int i=0;i<points.x.length-1;i++){
                         //if the intersection point after Jarvis March is not on Building so we can sure this Source-Receiver is Invisible
                         if(!this.newCoorInter.get(new Coordinate(points.x[i],points.y[i])).isIntersectionOnBuilding){
+                            System.out.println("TopoPoint:"+ this.newCoorInter.get(new Coordinate(points.x[i],points.y[i])).coorIntersection.toString() + "Block R and S");
                             isVisible=false;
                             break;
                         }
