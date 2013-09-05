@@ -69,10 +69,16 @@ public class NewFastObstructionTest {
 	private List<Coordinate> verticesOpenAngleTranslated = null; /*Open angle*/
         //private LinkedList<Integer> BuildingTriangleIndex= new LinkedList<Integer>(); /* the buildings list between source and receiver. Reconstruction after get a new source-reciver */
         //private LinkedList<Coordinate> intersections= new LinkedList<Coordinate>();/* the intersection of the segment source-receiver and builiding's side. Reconstruction after get a new source-reciver */
-        
-        private LinkedList<Coordinate> intersections= new LinkedList<Coordinate>();
-        private HashMap<Coordinate,TriIdWithIntersection> newCoorInter=new HashMap<Coordinate,TriIdWithIntersection>();
 
+        private HashMap<Coordinate,TriIdWithIntersection> newCoorInter=new HashMap<Coordinate,TriIdWithIntersection>();
+        //data for caculate 3D diffraction
+        public final int Delta_Distance=0;//delta distance;
+        public final int E_Length=1;//e length
+        public final int Full_Difrraction_Distance=2;//the full distance of difrraction path
+        public final int Highest_Point=3;//the highest point of all intersections, not usefull for now
+        
+        
+        
         private static class TriIdWithIntersection{
            private int triID;
            private Coordinate coorIntersection;
@@ -158,15 +164,7 @@ public class NewFastObstructionTest {
 	}
 
        
-                
-        /**
-         * get the Intersection Points list only for debug and unit test purpose
-         * @return 
-         */
-        public LinkedList<Coordinate> getIntersectionPoints(){
-            return this.intersections;
-        }
-        
+
 
 	/**
 	 * Compute the next triangle index.Find the shortest intersection point of
@@ -321,9 +319,10 @@ public class NewFastObstructionTest {
                     }    
                 }
                 int BuildingNextTriID=this.triNeighbors.get(triIndex).get(nearestIntersectionSide);
-                boolean triNeighborIsBuidling=false;
+                boolean triNeighborIsBuidling=false;//check if the point is the intersection of triangle In the same building
+                boolean intersectionPointOnBuilding=false;//check if the intersection point is On the building                
                 double nextTriHeight=0.;
-                boolean intersectionPointOnBuilding=false;
+
                 if(this.triVertices.get(BuildingNextTriID).getBuidlingID()>0){
                     nextTriHeight=this.polygonWithHeight.get(this.triVertices.get(BuildingNextTriID).getBuidlingID()-1).getHeight();
                 }
@@ -355,16 +354,12 @@ public class NewFastObstructionTest {
                 }
                 
 		if (nearestIntersectionSide != -1) {
-                    /*
-                    //if the nearest triangle in the building, save this triangle to building list
-                         if(this.triVertices.get(BuildingNextTriID).getHeight()!=0 &&!BuildingTriangleIndex.contains(BuildingNextTriID)){
-                              BuildingTriangleIndex.add(BuildingNextTriID);
-                         }
-                    //if intersection is not in the building, save this intersection to intersection list
-                    */    
-                    if(!triNeighborIsBuidling&&!intersection.equals3D(new Coordinate(0.0,0.0,0.))){
-                                  //every buidling whcih is between ray source-receiver have 2 intersections, 
-                                  //if the intersection is corner of the buiding, intersections will save 2 times with the same value  
+
+                    //if intersection is not the intersection in the same building, save this intersection to intersection list
+   
+                    if(!triNeighborIsBuidling){
+                                  //Buidling whcih is between ray source-receiver have 2 intersections, 
+                                  //If the intersection is corner of the buiding, intersections will save 2 times with the same value  
                                   return new TriIdWithIntersection(BuildingNextTriID,intersection,intersectionPointOnBuilding);
                     }
                     else{
@@ -704,32 +699,35 @@ public class NewFastObstructionTest {
 	 * @param p2
 	 *            Coordiante source
 	 * @return Double list: data prepared to compute diffraction
-         *         Double[0]:delta distance;
-         *         Doulbe[1]:e;
-         *         Double[2]:the heigh of the highest intersection(this one is used to compute Ch, NMPB 2008 page 33, Ch is given by 1 now ,so not useful for now)
-         *         Double[3]:the full distance of difrraction path
+         *         Double[Delta_Distance]:delta distance;
+         *         Doulbe[E_Length]:e;
+         *         Double[Full_Difrraction_Distance]:the full distance of difrraction path
+         *         Double[3]:the heigh of the highest intersection(this one is used to compute Ch, NMPB 2008 page 33, Ch is given by 1 now ,so not useful for now)
          *         if Double[0],Double[1],Double[2],Double[3] are -1. then no usefull intersections.
          */
         public Double[] getPath(Coordinate p1, Coordinate p2) {
-		//BuildingTriangleIndex.clear();
+
                 
                 Double[] data=new Double[4];
                 LinkedList<TriIdWithIntersection> interPoints=new LinkedList<TriIdWithIntersection>();
 		LineSegment propaLine = new LineSegment(p1, p2);
 		int curTri = getTriangleIdByCoordinate(p1);
-                LinkedList<Coordinate> pointsIntersection= new LinkedList<Coordinate>();
 		HashSet<Integer> navigationHistory = new HashSet<Integer>();
+                
+                
+                
 		while (curTri != -1) {
 			navigationHistory.add(curTri);
 			Coordinate[] tri = getTriangle(curTri);
 			if (dotInTri(p2, tri[0], tri[1], tri[2])) {
 				break;
 			}
-                        TriIdWithIntersection tirIDWithIntersection=this.getNextTriWithIntersection(curTri, propaLine, navigationHistory);
-			curTri=tirIDWithIntersection.getTriID();
-                        Coordinate coorIntersection=tirIDWithIntersection.getCoorIntersection();
+                        //get the next building ID, intersection Point
+                        TriIdWithIntersection triIDWithIntersection=this.getNextTriWithIntersection(curTri, propaLine, navigationHistory);
+			curTri=triIDWithIntersection.getTriID();
+                        Coordinate coorIntersection=triIDWithIntersection.getCoorIntersection();
                         if(!coorIntersection.equals(new Coordinate(-1,-1,-1))){
-                            interPoints.add(tirIDWithIntersection);
+                            interPoints.add(triIDWithIntersection);
                         }
 		}
 
@@ -737,7 +735,6 @@ public class NewFastObstructionTest {
                 //add point receiver and point source into list head and tail.
                 interPoints.addFirst(new TriIdWithIntersection(-1,p1,true));
                 interPoints.addLast(new TriIdWithIntersection(-1,p2,true));
-                this.intersections=pointsIntersection;
                 //change Coordinate system from 3D to 2D 
                 LinkedList<Coordinate> newPoints= getNewCoordinateSystem(interPoints);
                 
@@ -766,16 +763,15 @@ public class NewFastObstructionTest {
                 JarvisMarch.Points points=jm.calculateHull();
                 //if there are no useful intersection 
                 if(points.x.length<=2){
-                    data[0]=-1.;
-                    data[1]=-1.;
-                    data[2]=-1.;
-                    data[3]=-1.;
+                    data[Delta_Distance]=-1.;
+                    data[E_Length]=-1.;
+                    data[Full_Difrraction_Distance]=-1.;
                     return data;
                 
                 }
                 else{
                     LinkedList<LineSegment> path=new LinkedList<LineSegment>();
-                    boolean isVisible=true;
+                    boolean isVisible=true;//check if the source and receiver is visible
                     for (int i=0;i<points.x.length-1;i++){
                         //if the intersection point after Jarvis March is not on Building so we can sure this Source-Receiver is Invisible
                         if(!this.newCoorInter.get(new Coordinate(points.x[i],points.y[i])).isIntersectionOnBuilding){
@@ -794,36 +790,34 @@ public class NewFastObstructionTest {
 
                     }
                     if(isVisible){
-                        double distancepath=0.0;//distance of path
+                        double pathDistance=0.0;//distance of path
 
                         //prepare data to compute pure diffraction
                         //h0 in expression diffraction:the highest point intersection
-                        double heightpoint=0.0;
+                        double pointHeight=0.0;
                         for(int i=0;i<path.size();i++){
-                            distancepath=path.get(i).getLength()+distancepath;
-                            if(path.get(i).p0.y>heightpoint){
-                                heightpoint=path.get(i).p0.y;
+                            pathDistance=path.get(i).getLength()+pathDistance;
+                            if(path.get(i).p0.y>pointHeight){
+                                pointHeight=path.get(i).p0.y;
                             }
                         }
                         //we used coordinate after change coordinate system to get the right distance.
                         double distanceRandS=path.getFirst().p0.distance(path.getLast().p1);//distance of receiver and source
-                        double e=distancepath-path.getFirst().getLength()-path.getLast().getLength();//distance without first part path and last part path
-                        double deltadistance=distancepath-distanceRandS;//delt distance
+                        double e=pathDistance-path.getFirst().getLength()-path.getLast().getLength();//distance without first part path and last part path
+                        double deltaDistance=pathDistance-distanceRandS;//delt distance
 
 
-                        data[0]=deltadistance;
-                        data[1]=e;
-                        data[2]=heightpoint;
-                        data[3]=distancepath;
+                        data[Delta_Distance]=deltaDistance;
+                        data[E_Length]=e;
+                        data[Full_Difrraction_Distance]=pathDistance;
 
 
                     }
                     else{
-                        data[0]=-1.;
-                        data[1]=-1.;
-                        data[2]=-1.;
-                        data[3]=-1.;
-                        
+                        data[Delta_Distance]=-1.;
+                        data[E_Length]=-1.;
+                        data[Full_Difrraction_Distance]=-1.;
+
                         System.out.println("Path invisible");
 
                     }
@@ -832,10 +826,11 @@ public class NewFastObstructionTest {
                 }
                 
 	}
-               
+
         /**
-         * ChangeCoordinateSystem, use original coordinate in 3D to change into a new markland in 2D with new x' computed by algo and y' is original height of point
-         * http://en.wikipedia.org/wiki/Rotation_matrix
+         * ChangeCoordinateSystem, use original coordinate in 3D to change into a new markland in 2D with new x' computed by algo and y' is original height of point.
+         * Attention this function can just be used when the points in the same plane.
+         * @see http://en.wikipedia.org/wiki/Rotation_matrix,
          * http://read.pudn.com/downloads93/ebook/364220/zbzh.pdf
         */
         private LinkedList<Coordinate> getNewCoordinateSystem(LinkedList<TriIdWithIntersection> listPoints){
