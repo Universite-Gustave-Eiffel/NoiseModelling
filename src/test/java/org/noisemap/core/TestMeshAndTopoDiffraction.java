@@ -42,38 +42,28 @@ public class TestMeshAndTopoDiffraction extends TestCase{
            
             Double[]lt=nfot.getPath(new Coordinate(48,25,0.5), new Coordinate(5,15,1.5));
             System.out.println("----deltadistance----");
-            System.out.println(lt[0]);
+            System.out.println(lt[nfot.Delta_Distance]);
             System.out.println("----e----");
-            System.out.println(lt[1]);
+            System.out.println(lt[nfot.E_Length]);
             System.out.println("----distancepath----");
-            System.out.println(lt[3]);
-            
-            System.out.println("-----the intersections points------");
-            for(Coordinate intersection: nfot.getIntersectionPoints()){
-                System.out.println(intersection.toString());
-            
-            }
+            System.out.println(lt[nfot.Full_Difrraction_Distance]);
             
             
             
             System.out.println("-----------exchange source receiver------------");
             Double[]lt1=nfot.getPath(new Coordinate(5,15,1.5), new Coordinate(48,25,0.5));
             System.out.println("----deltadistance----");
-            System.out.println(lt1[0]);
+            System.out.println(lt1[nfot.Delta_Distance]);
             System.out.println("----e----");
-            System.out.println(lt1[1]);
+            System.out.println(lt1[nfot.E_Length]);
             System.out.println("----distancepath----");
-            System.out.println(lt1[3]);
+            System.out.println(lt1[nfot.Full_Difrraction_Distance]);
             
             
-            assertTrue("Exchange source receiver got the different resultat",lt[0]-lt1[0]<=FastObstructionTest.epsilon
-                       &&lt[1]-lt1[1]<=FastObstructionTest.epsilon&&lt[3]-lt1[3]<=FastObstructionTest.epsilon);
+            assertTrue("Exchange source receiver got the different resultat",lt[nfot.Delta_Distance]-lt1[nfot.Delta_Distance]<=FastObstructionTest.epsilon
+                       &&lt[nfot.E_Length]-lt1[nfot.E_Length]<=FastObstructionTest.epsilon&&lt[nfot.Full_Difrraction_Distance]-lt1[nfot.Full_Difrraction_Distance]<=FastObstructionTest.epsilon);
             System.out.println("----------TEST diffraction with 2 buildings(building1 and building2) finished----- ");
-            System.out.println("-----the intersections points------");
-            for(Coordinate intersection: nfot.getIntersectionPoints()){
-                System.out.println(intersection.toString());
-            
-            }
+
 
          }
          public void testTopoPointsBlockSourceAndReceiver() throws LayerDelaunayError{
@@ -100,40 +90,32 @@ public class TestMeshAndTopoDiffraction extends TestCase{
             NewFastObstructionTest nfot= new NewFastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
             System.out.println("----------TEST diffraction with 2 buildings(building1 and building2)----- ");
            
-            Double[]lt=nfot.getPath(new Coordinate(48,25,0.5), new Coordinate(5,15,1.5));
+            Double[] lt=nfot.getPath(new Coordinate(48,25,0.5), new Coordinate(5,15,1.5));
             System.out.println("----deltadistance----");
-            System.out.println(lt[0]);
+            System.out.println(lt[nfot.Delta_Distance]);
             System.out.println("----e----");
-            System.out.println(lt[1]);
+            System.out.println(lt[nfot.E_Length]);
             System.out.println("----distancepath----");
-            System.out.println(lt[3]);
+            System.out.println(lt[nfot.Full_Difrraction_Distance]);
             
-            System.out.println("-----the intersections points------");
-            for(Coordinate intersection: nfot.getIntersectionPoints()){
-                System.out.println(intersection.toString());
-            
-            }
             
             
             
             System.out.println("-----------exchange source receiver------------");
             Double[]lt1=nfot.getPath(new Coordinate(5,15,1.5), new Coordinate(48,25,0.5));
             System.out.println("----deltadistance----");
-            System.out.println(lt1[0]);
+            System.out.println(lt1[nfot.Delta_Distance]);
             System.out.println("----e----");
-            System.out.println(lt1[1]);
+            System.out.println(lt1[nfot.E_Length]);
             System.out.println("----distancepath----");
-            System.out.println(lt1[3]);
+            System.out.println(lt1[nfot.Full_Difrraction_Distance]);
             
             
-            assertTrue("Exchange source receiver got the different resultat",lt[0]-lt1[0]<=FastObstructionTest.epsilon
-                       &&lt[1]-lt1[1]<=FastObstructionTest.epsilon&&lt[3]-lt1[3]<=FastObstructionTest.epsilon);
+             assertTrue("Exchange source receiver got the different resultat",lt[nfot.Delta_Distance]-lt1[nfot.Delta_Distance]<=FastObstructionTest.epsilon
+                       &&lt[nfot.E_Length]-lt1[nfot.E_Length]<=FastObstructionTest.epsilon&&lt[nfot.Full_Difrraction_Distance]-lt1[nfot.Full_Difrraction_Distance]<=FastObstructionTest.epsilon);
             System.out.println("----------TEST diffraction with 2 buildings(building1 and building2) finished----- ");
             System.out.println("-----the intersections points------");
-            for(Coordinate intersection: nfot.getIntersectionPoints()){
-                System.out.println(intersection.toString());
-            
-            }
+
 
          }        
 }
