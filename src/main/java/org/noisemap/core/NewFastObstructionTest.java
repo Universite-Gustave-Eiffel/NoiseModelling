@@ -195,7 +195,7 @@ public class NewFastObstructionTest {
                 idneigh=this.triNeighbors.get(
                                                 triIndex).get(2);
                 //add: search triangle without height
-                if (idneigh!=-1 && !navigationHistory.contains(idneigh) && this.triNeighbors.get(triIndex).getBuidlingID()==0) {
+                if (idneigh!=-1 && !navigationHistory.contains(idneigh)) {
                     distline_line=propagationLine.distance(new LineSegment(aTri, bTri));
                     if (distline_line<FastObstructionTest.epsilon &&
                             distline_line < nearestIntersectionPtDist && this.triVertices.get(idneigh).getBuidlingID()==0) {
@@ -670,9 +670,26 @@ public class NewFastObstructionTest {
 	public boolean isFreeField(Coordinate p1, Coordinate p2) {
 		nbObstructionTest++;
 		LineSegment propaLine = new LineSegment(p1, p2);
-                
+                //get receiver triangle id
 		int curTri = getTriangleIdByCoordinate(p1);
-		HashSet<Integer> navigationHistory = new HashSet<Integer>();
+                //get source triangle id
+                int curTriS= getTriangleIdByCoordinate(p2);
+                Coordinate[] triR=getTriangle(curTri);
+                Coordinate[] triS=getTriangle(curTriS);
+                
+                double zTopoR=getTopoZByGiven3Points(triR[0],triR[1],triR[2],p1);
+                double zTopoS=getTopoZByGiven3Points(triS[0],triS[1],triS[2],p2);
+                
+                if(p1.z<zTopoR){
+                    System.out.println("Receiver Point:" + p1.toString() + "is improper with the Topographic");
+                    return false;
+                }
+                if(p2.z<zTopoS){
+                    System.out.println("Source Point:" + p2.toString() + "is improper with the Topographic");
+                    return false;
+                }
+                
+                HashSet<Integer> navigationHistory = new HashSet<Integer>();
                 if(this.triVertices.get(curTri).getBuidlingID()==0){
                     while (curTri != -1) {
                             navigationHistory.add(curTri);
@@ -683,7 +700,7 @@ public class NewFastObstructionTest {
                             curTri = this.getNextTri(curTri, propaLine, navigationHistory);              
                     }
                     return false;
-	        }
+                }
                 else{
                     return false;
                 }
@@ -702,8 +719,8 @@ public class NewFastObstructionTest {
          *         Double[Delta_Distance]:delta distance;
          *         Doulbe[E_Length]:e;
          *         Double[Full_Difrraction_Distance]:the full distance of difrraction path
-         *         Double[3]:the heigh of the highest intersection(this one is used to compute Ch, NMPB 2008 page 33, Ch is given by 1 now ,so not useful for now)
-         *         if Double[0],Double[1],Double[2],Double[3] are -1. then no usefull intersections.
+         *         Double[Highest_Point]:the heigh of the highest intersection(this one is used to compute Ch, NMPB 2008 page 33, Ch is given by 1 now ,so not useful for now)
+         *         if Double[Delta_Distance],Double[E_Length],Double[Full_Difrraction_Distance],Double[Highest_Point] are -1. then no usefull intersections.
          */
         public Double[] getPath(Coordinate p1, Coordinate p2) {
 
@@ -714,7 +731,28 @@ public class NewFastObstructionTest {
 		int curTri = getTriangleIdByCoordinate(p1);
 		HashSet<Integer> navigationHistory = new HashSet<Integer>();
                 
+                //get source triangle id
+                int curTriS= getTriangleIdByCoordinate(p2);
+                Coordinate[] triR=getTriangle(curTri);
+                Coordinate[] triS=getTriangle(curTriS);
                 
+                double zTopoR=getTopoZByGiven3Points(triR[0],triR[1],triR[2],p1);
+                double zTopoS=getTopoZByGiven3Points(triS[0],triS[1],triS[2],p2);
+                //Check if the given Source and Receiver are proper with the topograhic 
+                if(p1.z<zTopoR){
+                    System.out.println("Receiver Point:" + p1.toString() + "is improper with the Topographic");
+                    data[Delta_Distance]=-1.;
+                    data[E_Length]=-1.;
+                    data[Full_Difrraction_Distance]=-1.;
+                    return data;
+                }
+                if(p2.z<zTopoS){
+                    System.out.println("Source Point:" + p2.toString() + "is improper with the Topographic");
+                    data[Delta_Distance]=-1.;
+                    data[E_Length]=-1.;
+                    data[Full_Difrraction_Distance]=-1.;
+                    return data;
+                }
                 
 		while (curTri != -1) {
 			navigationHistory.add(curTri);
@@ -782,7 +820,7 @@ public class NewFastObstructionTest {
                         else{
                             path.add(new LineSegment(new Coordinate(points.x[i],points.y[i]),new Coordinate(points.x[i+1],points.y[i+1])));
                             //When we get a point we will check if this point is equal with P2 we will stop finding next point 
-                            if(p2.equals(new Coordinate(points.x[i],points.y[i]))){
+                            if(p2.equals(this.newCoorInter.get(new Coordinate(points.x[i+1],points.y[i+1])).coorIntersection)){
                                 break;
                             }
                         }
@@ -876,7 +914,7 @@ public class NewFastObstructionTest {
         
         /**
          * Caculate the Z of intersection point 
-         * http://en.wikipedia.org/wiki/Linear_interpolation
+         * @see http://en.wikipedia.org/wiki/Linear_interpolation
          * @param p1 a point of intersected segment
          * @param p2 other point of intersected segment
          * @param intersection the intersection which includes the x and y
@@ -888,6 +926,29 @@ public class NewFastObstructionTest {
             return zOfIntersection;
         
         
+        }
+        /**
+         * Equation Plane: ax+by+cz+d=0, can be fixed by 3 given points
+         * When we fix a,b,c,d by given 3 points, we can get Z of given point X,Y
+         * z=-(ax+by+d)/c
+         * @see http://en.wikipedia.org/wiki/Plane_%28geometry%29
+         * 
+         * 
+         */
+        
+        private double getTopoZByGiven3Points(Coordinate p1, Coordinate p2, Coordinate p3, Coordinate point){
+            double a;
+            double b;
+            double c;
+            double d;
+            double topoZofPoint;
+            a = ( (p2.y-p1.y)*(p3.z-p1.z)-(p2.z-p1.z)*(p3.y-p1.y) );  
+            b = ( (p2.z-p1.z)*(p3.x-p1.x)-(p2.x-p1.x)*(p3.z-p1.z) );  
+            c = ( (p2.x-p1.x)*(p3.y-p1.y)-(p2.y-p1.y)*(p3.x-p1.x) );  
+            d = ( 0-(a*p1.x+b*p1.y+c*p1.z) );  
+            topoZofPoint=-(a*point.x+b*point.y+d)/c;
+            return topoZofPoint;
+            
         }
 
 
