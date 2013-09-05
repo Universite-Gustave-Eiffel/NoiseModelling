@@ -76,7 +76,7 @@ public class TestMeshAndTopoDiffraction extends TestCase{
             }
 
          }
-         public void testTopoPointsBlockSourceEtReceiver() throws LayerDelaunayError{
+         public void testTopoPointsBlockSourceAndReceiver() throws LayerDelaunayError{
             
             GeometryFactory factory = new GeometryFactory();
             Coordinate[] building1Coords = { new Coordinate(15., 5.,2.),
