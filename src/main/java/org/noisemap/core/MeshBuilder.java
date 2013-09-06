@@ -236,7 +236,7 @@ public class MeshBuilder {
                 
         }
                 
-        public void addTopograhic(Coordinate point){
+        public void addTopograhicPoint(Coordinate point){
             
                 if(!topoPoints.contains(point)){
                     if(Double.isNaN(point.z))
