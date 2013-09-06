@@ -191,6 +191,9 @@ public class NewFastObstructionTest {
 		final Coordinate bTri = this.vertices.get(tri.getB());
 		final Coordinate cTri = this.vertices.get(tri.getC());
 		double distline_line;
+                Coordinate intersection=new Coordinate();
+                double zTopoIntersection=0.;
+                double zRandSIntersection;
 		// Intersection First Side
                 idneigh=this.triNeighbors.get(
                                                 triIndex).get(2);
@@ -201,6 +204,10 @@ public class NewFastObstructionTest {
                             distline_line < nearestIntersectionPtDist && this.triVertices.get(idneigh).getBuidlingID()==0) {
                         nearestIntersectionPtDist = distline_line;
                         nearestIntersectionSide = 2;
+                        //we will get the intersection point coordinate with(x,y,NaN)
+                        intersection=propagationLine.intersection(new LineSegment(aTri, bTri));
+                        //get this point Z using interseted segment.
+                        zTopoIntersection=calculateLinearInterpolation(aTri,bTri,intersection);
                     }
                 }
 		// Intersection Second Side
@@ -212,6 +219,9 @@ public class NewFastObstructionTest {
                             distline_line < nearestIntersectionPtDist && this.triVertices.get(idneigh).getBuidlingID()==0) {
                             nearestIntersectionPtDist = distline_line;
                             nearestIntersectionSide = 0;
+                            intersection=propagationLine.intersection(new LineSegment(bTri, cTri));
+                            //get this point Z using interseted segment.
+                            zTopoIntersection=calculateLinearInterpolation(bTri,cTri,intersection);
                     }
                 }
 
@@ -223,11 +233,26 @@ public class NewFastObstructionTest {
                     if (distline_line<FastObstructionTest.epsilon &&
                             distline_line < nearestIntersectionPtDist && this.triVertices.get(idneigh).getBuidlingID()==0) {
                             nearestIntersectionSide = 1;
+                            intersection=propagationLine.intersection(new LineSegment(cTri, aTri));
+                            //get this point Z using interseted line.
+                            zTopoIntersection=calculateLinearInterpolation(cTri,aTri,intersection);
                     }
                 }
 		if (nearestIntersectionSide != -1) {
-			return this.triNeighbors.get(triIndex).get(nearestIntersectionSide);
-		} else {
+                    //get this point Z using propagation line
+                    zRandSIntersection=calculateLinearInterpolation(propagationLine.p0,propagationLine.p1,intersection);
+                    //If the Z calculated by propagation Line >= Z calculated by intersected line, we will find next triangle
+                        if(zRandSIntersection>=zTopoIntersection){
+                            return this.triNeighbors.get(triIndex).get(nearestIntersectionSide);
+                        }
+                    //Else, the Z of Topo intersection > Z calculated by propagation Line, the Topo intersection will block the propagation line 
+                        else{
+                            System.out.println("PropagationLine blocked by:" + intersection.toString() + " Z topo:" + zTopoIntersection + " Z propagation line:" +  zRandSIntersection);
+                            return -1;
+                        }
+		} 
+                
+                else {
 			return -1;
 		}
 	}
