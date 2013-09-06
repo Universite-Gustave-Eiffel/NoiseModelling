@@ -4,6 +4,7 @@ import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Polygon;
+import static junit.framework.Assert.assertFalse;
 
 import static junit.framework.Assert.assertTrue;
 
@@ -34,7 +35,7 @@ public class TestMeshAndTopoDiffraction extends TestCase{
             MeshBuilder mesh= new MeshBuilder();
             mesh.addGeometry(building1,4.0);
             mesh.addGeometry(building2,5.0);
-            mesh.addTopograhic(topoPoint1);
+            mesh.addTopograhicPoint(topoPoint1);
 
             mesh.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(60., 60.,0.)));
             NewFastObstructionTest nfot= new NewFastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
@@ -81,7 +82,7 @@ public class TestMeshAndTopoDiffraction extends TestCase{
              MeshBuilder mesh= new MeshBuilder();
 
              mesh.addGeometry(building1,1.0);
-             mesh.addTopograhic(topoPoint1);
+             mesh.addTopograhicPoint(topoPoint1);
 
              mesh.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(60., 60.,0.)));
              NewFastObstructionTest nfot= new NewFastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
@@ -115,31 +116,10 @@ public class TestMeshAndTopoDiffraction extends TestCase{
 
          }
          
-         public void testPointsVisible() throws LayerDelaunayError{
-             GeometryFactory factory = new GeometryFactory();
-             Coordinate[] building1Coords = { new Coordinate(15., 5.,2.),
-                                       new Coordinate(15., 30.,3.), new Coordinate(30., 30.,5.),
-                                       new Coordinate(30., 5.,2.), new Coordinate(15., 5.,2.) };
-            
-             Polygon building1 = factory.createPolygon(
-                            factory.createLinearRing(building1Coords), null);
-             MeshBuilder mesh= new MeshBuilder();
-             mesh.addGeometry(building1,4.0);
-             mesh.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(60., 60.,0.)));
-             NewFastObstructionTest nfot= new NewFastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
-             
-             
-             
-             assertFalse("isFreeField Failed",nfot.isFreeField(new Coordinate(10.,10.), new Coordinate(25.,31.)));
-             
-             
-             
-            
-            
-         }
          
          
-             public void testIfSourceOrReceiverAreImporerWithTopographic() throws LayerDelaunayError{
+         
+         public void testIfSourceOrReceiverAreImporerWithTopographic() throws LayerDelaunayError{
             
              GeometryFactory factory = new GeometryFactory();
              Coordinate[] building1Coords = { new Coordinate(15., 5.,2.),
@@ -157,7 +137,7 @@ public class TestMeshAndTopoDiffraction extends TestCase{
              MeshBuilder mesh= new MeshBuilder();
              mesh.addGeometry(building1,4.0);
              mesh.addGeometry(building2,5.0);
-             mesh.addTopograhic(topoPoint1);
+             mesh.addTopograhicPoint(topoPoint1);
 
              mesh.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(60., 60.,0.)));
              NewFastObstructionTest nfot= new NewFastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
@@ -190,4 +170,54 @@ public class TestMeshAndTopoDiffraction extends TestCase{
              System.out.println("----------TEST#3 diffraction with 2 buildings(building1 and building2) finished----- ");
 
          }
+             
+         public void testPointsVisible() throws LayerDelaunayError{
+             
+
+             GeometryFactory factory = new GeometryFactory();
+             Coordinate[] building1Coords = { new Coordinate(15., 5.,2.),
+                                       new Coordinate(15., 30.,3.), new Coordinate(30., 30.,5.),
+                                       new Coordinate(30., 5.,2.), new Coordinate(15., 5.,2.) };
+            
+             Polygon building1 = factory.createPolygon(
+                            factory.createLinearRing(building1Coords), null);
+             MeshBuilder mesh= new MeshBuilder();
+             mesh.addGeometry(building1,4.0);
+             mesh.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(60., 60.,0.)));
+             NewFastObstructionTest nfot= new NewFastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
+             
+             
+
+             assertFalse("isFreeField Failed",nfot.isFreeField(new Coordinate(10.,10.), new Coordinate(25.,31.)));
+
+             
+             
+            
+            
+         }
+
+         public void testPointsVisibilityBlockedByTopoPoint() throws LayerDelaunayError{
+             GeometryFactory factory = new GeometryFactory();
+             Coordinate[] building1Coords = { new Coordinate(15., 5.,2.),
+                                       new Coordinate(15., 30.,3.), new Coordinate(30., 30.,3.),
+                                       new Coordinate(30., 5.,2.), new Coordinate(15., 5.,2.) };
+             Coordinate topoPoint1 = new Coordinate(40.,15.,8.);
+             Polygon building1 = factory.createPolygon(
+                            factory.createLinearRing(building1Coords), null);
+             MeshBuilder mesh= new MeshBuilder();
+             mesh.addGeometry(building1,4.0);
+             mesh.addTopograhicPoint(topoPoint1);
+             mesh.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(60., 60.,0.)));
+             NewFastObstructionTest nfot= new NewFastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
+             
+             
+             System.out.println("---------------------Test#5 isFreeField blocked by TopoPoint----------------------");
+             assertFalse("isFreeField Failed",nfot.isFreeField(new Coordinate(40.,3.,2.), new Coordinate(40.,50.,2.)));
+             System.out.println("---------------------Test#5 isFreeField blocked by TopoPoint finished----------------------");
+             
+             
+            
+            
+         }         
+         
 }
