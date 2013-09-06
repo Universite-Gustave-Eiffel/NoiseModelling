@@ -213,6 +213,8 @@ public class TestMeshAndTopoDiffraction extends TestCase{
              
              System.out.println("---------------------Test#5 isFreeField blocked by TopoPoint----------------------");
              assertFalse("isFreeField Failed",nfot.isFreeField(new Coordinate(40.,3.,2.), new Coordinate(40.,50.,2.)));
+             
+             assertTrue("isFreeField Failed",nfot.isFreeField(new Coordinate(40.,3.,9.), new Coordinate(40.,50.,10.)));
              System.out.println("---------------------Test#5 isFreeField blocked by TopoPoint finished----------------------");
              
              
