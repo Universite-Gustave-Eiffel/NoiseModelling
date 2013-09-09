@@ -39,28 +39,20 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Stack;
 
-import org.grap.utilities.EnvelopeUtil;
 
 import com.vividsolutions.jts.algorithm.Angle;
 import com.vividsolutions.jts.math.Vector2D;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.GeometryCollection;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineSegment;
-import com.vividsolutions.jts.geom.LineString;
-import com.vividsolutions.jts.geom.LinearRing;
-import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Polygon;
-import com.vividsolutions.jts.operation.buffer.BufferParameters;
-import com.vividsolutions.jts.index.quadtree.Quadtree;
+
 import java.util.*;
 
 /**
- * FastObstructionTest is a Delaunay Structure to speed up the search of
- * visibility test. TODO enable add and query of geometry object (other than
- * fitting elements) into the delaunay triangulation. To do something called
+ * FastObstructionTest speed up the search of
+ * visibility test and get the 3D diffraction data. TODO  using income data to do something called
  * visibility culling.
  * @author Nicolas Fortin
  */
@@ -147,7 +139,7 @@ public class FastObstructionTest {
 			triIndex.appendGeometry(newpoly, triind);
 			triind++;
 		}
-                
+                //give a average height to each building
                 setAverageBuildingHeight(polygonWithHeight);
 	}
         
