@@ -100,14 +100,16 @@ public class TestSoundPropagationValidation extends TestCase {
 		System.out.println("Construction scene in "+(System.currentTimeMillis()-startMakeScene)+"ms");
 		long startObstructionTest=System.currentTimeMillis();
 		//Create obstruction test object
-		FastObstructionTest manager = new FastObstructionTest();
-		manager.addGeometry(building1);
-		manager.finishPolygonFeeding(cellEnvelope);	
+		MeshBuilder mesh = new MeshBuilder();
+		mesh.addGeometry(building1);
+		mesh.finishPolygonFeeding(cellEnvelope);	
 		
 		//Retrieve Delaunay triangulation of scene
-		List<Triangle> tri=manager.getTriangles();
-		List<Coordinate> vert=manager.getVertices();
-
+		List<Triangle> tri=mesh.getTriangles();
+		List<Coordinate> vert=mesh.getVertices();
+                FastObstructionTest manager=new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
+                
+                
 		Stack<PropagationResultTriRecord> dataStack=new Stack<PropagationResultTriRecord>();
 		PropagationProcessData propData=new PropagationProcessData(vert,null, tri, manager, sourcesIndex, srclst, srcSpectrum, freqLvl, 0, 2, 80.,50., 1., 0., 0, null, null);
 		PropagationProcessOut propDataOut=new PropagationProcessOut(dataStack,null);
@@ -221,15 +223,16 @@ public class TestSoundPropagationValidation extends TestCase {
 		System.out.println("Construction scene in "+(System.currentTimeMillis()-startMakeScene)+"ms");
 		long startObstructionTest=System.currentTimeMillis();
 		//Create obstruction test object
-		FastObstructionTest manager = new FastObstructionTest();
-		manager.addGeometry(building1);
-		manager.addGeometry(building2);
-		manager.addGeometry(building3);
-		manager.finishPolygonFeeding(cellEnvelope);	
+		MeshBuilder mesh = new MeshBuilder();
+		mesh.addGeometry(building1);
+		mesh.addGeometry(building2);
+		mesh.addGeometry(building3);
+		mesh.finishPolygonFeeding(cellEnvelope);	
 		
 		//Retrieve Delaunay triangulation of scene
-		List<Triangle> tri=manager.getTriangles();
-		List<Coordinate> vert=manager.getVertices();
+		List<Triangle> tri=mesh.getTriangles();
+		List<Coordinate> vert=mesh.getVertices();
+                FastObstructionTest manager=new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
 
 		Stack<PropagationResultTriRecord> dataStack=new Stack<PropagationResultTriRecord>();
 		PropagationProcessData propData=new PropagationProcessData(vert,null, tri, manager, sourcesIndex, srclst, srcSpectrum, freqLvl, 0, 2, 80.,50., 1., 0., 0, null, null);

@@ -114,9 +114,10 @@ public class TestFastObstruction extends TestCase {
 	}
 	public void testVoidScene() throws LayerDelaunayError {
 		//Create obstruction test object
-		FastObstructionTest manager = new FastObstructionTest();
-		manager.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.),
+		MeshBuilder mesh = new MeshBuilder();
+		mesh.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.),
 				new Coordinate(45., 45.,0.)));
+                FastObstructionTest manager=new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices()); 
 		assertTrue("Void Intersection test #1 failed",manager.isFreeField(new Coordinate(5,20), new Coordinate(14,30)));
 		manager.getWideAnglePoints(Math.PI * (1 + 1 / 16.0), Math.PI * (2 - (1 / 16.)));
 	}
@@ -134,11 +135,13 @@ public class TestFastObstruction extends TestCase {
 		
 		long beginBuildObstrTest=System.currentTimeMillis();
 		//Create obstruction test object
-		FastObstructionTest manager = new FastObstructionTest();
-		manager.addGeometry(building1);
-		manager.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.),
+		MeshBuilder mesh = new MeshBuilder();
+		mesh.addGeometry(building1);
+		mesh.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.),
 				new Coordinate(45., 45.,0.)));
-		System.out.println("Bench FastObstructionTest build in "+(System.currentTimeMillis()-beginBuildObstrTest)+"ms");
+                FastObstructionTest manager=new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
+		
+                System.out.println("Bench FastObstructionTest build in "+(System.currentTimeMillis()-beginBuildObstrTest)+"ms");
 		//Create quadtree
 		long beginBuildJTS=System.currentTimeMillis();
 		Quadtree buildingsQuadtree=new Quadtree();
@@ -201,10 +204,12 @@ public class TestFastObstruction extends TestCase {
 				factory.createLinearRing(building1Coords), null);
 		
 		//Create obstruction test object
-		FastObstructionTest manager = new FastObstructionTest();
-		manager.addGeometry(building1);
-		manager.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.),
+		MeshBuilder mesh = new MeshBuilder();
+		mesh.addGeometry(building1);
+		mesh.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.),
 				new Coordinate(45., 45.,0.)));
+                FastObstructionTest manager=new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
+                
 		//Run intersection test
 		collisionTask(manager);
 		//Run wide angle detection

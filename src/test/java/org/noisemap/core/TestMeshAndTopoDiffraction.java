@@ -38,7 +38,7 @@ public class TestMeshAndTopoDiffraction extends TestCase{
             mesh.addTopograhicPoint(topoPoint1);
 
             mesh.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(60., 60.,0.)));
-            NewFastObstructionTest nfot= new NewFastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
+            FastObstructionTest nfot= new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
             System.out.println("----------TEST#1 diffraction with 2 buildings(building1 and building2)----- ");
            
             Double[]lt=nfot.getPath(new Coordinate(48,25,7), new Coordinate(5,15,8));
@@ -85,7 +85,7 @@ public class TestMeshAndTopoDiffraction extends TestCase{
              mesh.addTopograhicPoint(topoPoint1);
 
              mesh.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(60., 60.,0.)));
-             NewFastObstructionTest nfot= new NewFastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
+             FastObstructionTest nfot= new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
              System.out.println("----------TEST#2 diffraction blocked by TopoPoint----- ");
             
              Double[] lt=nfot.getPath(new Coordinate(48,25,4), new Coordinate(5,15,3.7));
@@ -140,7 +140,7 @@ public class TestMeshAndTopoDiffraction extends TestCase{
              mesh.addTopograhicPoint(topoPoint1);
 
              mesh.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(60., 60.,0.)));
-             NewFastObstructionTest nfot= new NewFastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
+             FastObstructionTest nfot= new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
              System.out.println("----------TEST#3 diffraction with 2 buildings(building1 and building2)----- ");
             
              Double[] lt=nfot.getPath(new Coordinate(48,25,1.5), new Coordinate(5,15,2));
@@ -184,7 +184,7 @@ public class TestMeshAndTopoDiffraction extends TestCase{
              MeshBuilder mesh= new MeshBuilder();
              mesh.addGeometry(building1,4.0);
              mesh.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(60., 60.,0.)));
-             NewFastObstructionTest nfot= new NewFastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
+             FastObstructionTest nfot= new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
              
              
 
@@ -208,7 +208,7 @@ public class TestMeshAndTopoDiffraction extends TestCase{
              mesh.addGeometry(building1,4.0);
              mesh.addTopograhicPoint(topoPoint1);
              mesh.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(60., 60.,0.)));
-             NewFastObstructionTest nfot= new NewFastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
+             FastObstructionTest nfot= new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
              
              
              System.out.println("---------------------Test#5 isFreeField blocked by TopoPoint----------------------");

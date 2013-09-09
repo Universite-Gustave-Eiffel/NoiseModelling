@@ -275,7 +275,7 @@ public class BR_PtGrid extends AbstractTableFunction {
                                                 }
                                         }
                                         if(!cellReceivers.isEmpty()) {
-                                            FastObstructionTest freeFieldFinder = new FastObstructionTest();
+                                            MeshBuilder mesh = new MeshBuilder();
                                             int ij = cellI * gridDim + cellJ;
                                             logger.info("Begin processing of cell " + (cellI+1) + ","
                                                             + (cellJ+1) + " of the " + gridDim + "x" + gridDim
@@ -355,12 +355,13 @@ public class BR_PtGrid extends AbstractTableFunction {
                                                         final Geometry geometry = sds.getFieldValue(rowIndex, spatialBuildingsFieldIndex).getAsGeometry();
                                                         Envelope geomEnv = geometry.getEnvelopeInternal();
                                                         if (expandedCellEnvelop.intersects(geomEnv)) {
-                                                                freeFieldFinder.addGeometry(geometry);
+                                                                mesh.addGeometry(geometry);
                                                         }
                                                 }
                                             }
-                                            freeFieldFinder.finishPolygonFeeding(expandedCellEnvelop);
-
+                                            mesh.finishPolygonFeeding(expandedCellEnvelop);
+                                            FastObstructionTest freeFieldFinder=new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices()); 
+                                            
                                             PropagationProcessData threadData = new PropagationProcessData(
                                                             cellReceivers,cellReceiversRowId, null, freeFieldFinder, sourcesIndex,
                                                             sourceGeometries, wj_sources, db_field_freq,

@@ -915,7 +915,10 @@ public class NewFastObstructionTest {
         }
         
         
-        
+        /**
+         * We will get all of building corners Z and set the building a average height using corner Z and orignal building height 
+         * @param polygonWithHeight 
+         */
         private void setAverageBuildingHeight(LinkedList<MeshBuilder.PolygonWithHeight> polygonWithHeight){
             for(int i=1;i<=polygonWithHeight.size();i++){
                     //When we get all of building, we will set every vertice of the same building a same Z, 
@@ -946,6 +949,10 @@ public class NewFastObstructionTest {
          * @return z of intersection point
          */
         private double calculateLinearInterpolation(Coordinate p1, Coordinate p2, Coordinate intersection){
+            if(Double.isNaN(intersection.z)){
+                intersection.setCoordinate(new Coordinate(intersection.x,intersection.y,0.));
+            
+            }
             
             double zOfIntersection=((p2.z-p1.z)*(intersection.y-p1.y))/(p2.y-p1.y)+p1.z;
             return zOfIntersection;
@@ -967,6 +974,10 @@ public class NewFastObstructionTest {
             double c;
             double d;
             double topoZofPoint;
+            if(Double.isNaN(point.z)){
+                point.setCoordinate(new Coordinate(point.x,point.y,0.));
+            
+            }            
             a = ( (p2.y-p1.y)*(p3.z-p1.z)-(p2.z-p1.z)*(p3.y-p1.y) );  
             b = ( (p2.z-p1.z)*(p3.x-p1.x)-(p2.x-p1.x)*(p3.z-p1.z) );  
             c = ( (p2.x-p1.x)*(p3.y-p1.y)-(p2.y-p1.y)*(p3.x-p1.x) );  

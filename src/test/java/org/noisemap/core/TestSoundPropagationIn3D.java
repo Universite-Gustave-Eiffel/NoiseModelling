@@ -35,12 +35,13 @@ public class TestSoundPropagationIn3D extends TestCase {
 			factory.createLinearRing(building1Coords), null);
            Polygon building2 = factory.createPolygon(
 			factory.createLinearRing(building2Coords), null);     
-           FastObstructionTest ft= new FastObstructionTest();
+           MeshBuilder mesh= new MeshBuilder();
            //add building with height
-           ft.addGeometry(building1,5.);
-           ft.addGeometry(building2,4.);
-           ft.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(60., 60.,0.)));
-                      
+           mesh.addGeometry(building1,5.);
+           mesh.addGeometry(building2,4.);
+           mesh.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(60., 60.,0.)));
+           FastObstructionTest ft=new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
+           
            assertTrue("Intersection test isFreeField #1 failed",ft.isFreeField(new Coordinate(10,5), new Coordinate(12,45)));
            assertFalse("Intersection test isFreeField #2 failed",ft.isFreeField(new Coordinate(10,5), new Coordinate(32,15)));
            assertFalse("Intersection test isFreeField #2 failed",ft.isFreeField(new Coordinate(10,5,6.0), new Coordinate(32,15,7.0)));
@@ -48,28 +49,28 @@ public class TestSoundPropagationIn3D extends TestCase {
            System.out.println("-----no building-----");
            Double[]lt=ft.getPath(new Coordinate(5,15,1.5), new Coordinate(10,15,0.5));
            System.out.println("----deltadistance----");
-           System.out.println(lt[0]);
+           System.out.println(lt[ft.Delta_Distance]);
            System.out.println("----e----");
-           System.out.println(lt[1]);
+           System.out.println(lt[ft.E_Length]);
            System.out.println("----distancepath----");
-           System.out.println(lt[3]);
+           System.out.println(lt[ft.Full_Difrraction_Distance]);
            System.out.println("----------TEST with 2 building----- ");
            
            lt=ft.getPath(new Coordinate(48,25,0.5), new Coordinate(5,15,1.5));
            System.out.println("----deltadistance----");
-           System.out.println(lt[0]);
+           System.out.println(lt[ft.Delta_Distance]);
            System.out.println("----e----");
-           System.out.println(lt[1]);
+           System.out.println(lt[ft.E_Length]);
            System.out.println("----distancepath----");
-           System.out.println(lt[3]);
+           System.out.println(lt[ft.Full_Difrraction_Distance]);
            System.out.println("-----------exchange source receiver------------");
            lt=ft.getPath(new Coordinate(5,15,1.5), new Coordinate(48,25,0.5));
            System.out.println("----deltadistance----");
-           System.out.println(lt[0]);
+           System.out.println(lt[ft.Delta_Distance]);
            System.out.println("----e----");
-           System.out.println(lt[1]);
+           System.out.println(lt[ft.E_Length]);
            System.out.println("----distancepath----");
-           System.out.println(lt[3]);
+           System.out.println(lt[ft.Full_Difrraction_Distance]);
           // LinkedList<Coordinate> lt=ft.getPath(new Coordinate(4,4,0.5), new Coordinate(31,31,1.5));
           // before change fastobstruction.get path return data type LinkedList<Segment>; 
            /*

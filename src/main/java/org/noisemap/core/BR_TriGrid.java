@@ -656,7 +656,7 @@ public class BR_TriGrid extends AbstractTableFunction {
 
 			for (int cellI = 0; cellI < gridDim; cellI++) {
 				for (int cellJ = 0; cellJ < gridDim; cellJ++) {
-					FastObstructionTest freeFieldFinder = new FastObstructionTest();
+					MeshBuilder mesh = new MeshBuilder();
 					int ij = cellI * gridDim + cellJ;
 					logger.info("Begin processing of cell " + (cellI+1) + ","
 							+ (cellJ+1) + " of the " + gridDim + "x" + gridDim
@@ -722,12 +722,12 @@ public class BR_TriGrid extends AbstractTableFunction {
 						final Geometry geometry = sds.getFieldValue(rowIndex, spatialBuildingsFieldIndex).getAsGeometry();
 						Envelope geomEnv = geometry.getEnvelopeInternal();
 						if (expandedCellEnvelop.intersects(geomEnv)) {
-							freeFieldFinder.addGeometry(geometry);
+							mesh.addGeometry(geometry);
 						}
 					}
 
-					freeFieldFinder.finishPolygonFeeding(expandedCellEnvelop);
-
+					mesh.finishPolygonFeeding(expandedCellEnvelop);
+                                        FastObstructionTest freeFieldFinder=new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices()); 
 					// Compute the first pass delaunay mesh
 					// The first pass doesn't take account of additional
 					// vertices of neighbor cells at the borders
