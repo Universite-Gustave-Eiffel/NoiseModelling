@@ -744,8 +744,8 @@ public class NewFastObstructionTest {
          *         Double[Delta_Distance]:delta distance;
          *         Doulbe[E_Length]:e;
          *         Double[Full_Difrraction_Distance]:the full distance of difrraction path
-         *         Double[Highest_Point]:the heigh of the highest intersection(this one is used to compute Ch, NMPB 2008 page 33, Ch is given by 1 now ,so not useful for now)
-         *         if Double[Delta_Distance],Double[E_Length],Double[Full_Difrraction_Distance],Double[Highest_Point] are -1. then no usefull intersections.
+         *         Double[Full_Distance_With_Soil_Effet]:the heigh of the highest intersection(this one is used to compute Ch, NMPB 2008 page 33, Ch is given by 1 now ,so not useful for now)
+         *         if Double[Delta_Distance],Double[E_Length],Double[Full_Difrraction_Distance],Double[Full_Distance_With_Soil_Effet] are -1. then no usefull intersections.
          */
         public Double[] getPath(Coordinate p1, Coordinate p2) {
 
