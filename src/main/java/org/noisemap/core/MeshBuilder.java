@@ -54,7 +54,7 @@ import java.util.*;
 
 
 /**
- * MeshBuilder is a Delaunay Structure. MeshBuilder is a part of FastObstructionTest
+ * MeshBuilder is a Delaunay Structure.
  * TODO enable add and query of geometry object (other than
  * fitting elements) into the delaunay triangulation. 
  * It can also add the point with height to complet the mesh with the topograhic
@@ -76,7 +76,7 @@ public class MeshBuilder {
         private LinkedList<Coordinate> topoPoints=new LinkedList<Coordinate>();
 
    
-        private Quadtree ptQuadForMergeBuilding = new Quadtree();//
+        private Quadtree ptQuadForMergeBuilding = new Quadtree();//Quad tree to test intersection between exist buildings and new building
         public static class PolygonWithHeight{
             private Geometry geo;
             //If we add the topographic, the building height will be the average ToPo Height+ Building Height of all vertices  
@@ -235,7 +235,11 @@ public class MeshBuilder {
                 
                 
         }
-                
+        
+        /**
+         * Add the Topograhic Point in the mesh data, to complet the topograhic data.
+         * @param point 
+         */
         public void addTopograhicPoint(Coordinate point){
             
                 if(!topoPoints.contains(point)){
