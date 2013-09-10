@@ -141,7 +141,7 @@ public class FastObstructionTest {
             
             //if debug mode
             if(checkGeoSoil){
-                if(rTreeOfGeoSoil.isEmpty()){
+                if(geoWithSoil.isEmpty()){
                     rTreeOfGeoSoil.insert(geo.getEnvelopeInternal(),new EnvelopeWithIndex<Integer>(geo.getEnvelopeInternal(),
                                     geoWithSoil.size()));
                     geoWithSoil.put(geoWithSoil.size(), new GeoWithSoilType(geo,type));
@@ -977,7 +977,10 @@ public class FastObstructionTest {
                             double firstDistance=firstZone.getLength();
                             double lastDistance=lastZone.getLength();
                             double totIntersectedDistance=0.;
-                            
+                            //debug mode
+                            if(checkGeoSoil){
+                                System.out.println("orignal full distance:"+ (firstDistance+lastDistance));
+                            }
                             
                             if(!rTreeOfGeoSoil.isEmpty()){
                                 //test intersection with GeoSoil
