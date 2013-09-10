@@ -139,44 +139,12 @@ public class FastObstructionTest {
         @SuppressWarnings("unchecked")
         public void addGeoSoil(Geometry geo, double type){
             
-            //if debug mode
-            if(checkGeoSoil){
-                if(geoWithSoil.isEmpty()){
-                    rTreeOfGeoSoil.insert(geo.getEnvelopeInternal(),new EnvelopeWithIndex<Integer>(geo.getEnvelopeInternal(),
-                                    geoWithSoil.size()));
-                    geoWithSoil.put(geoWithSoil.size(), new GeoWithSoilType(geo,type));
-                }
-                //check if new Geometry added has intersection with exist Geometry 
-                else{
-                    List<EnvelopeWithIndex<Integer>> result = rTreeOfGeoSoil.query(geo.getEnvelopeInternal());
-                    //if no intersection we will add this Geometry
-                    if (result.isEmpty()){
-                        rTreeOfGeoSoil.insert(geo.getEnvelopeInternal(),new EnvelopeWithIndex<Integer>(geo.getEnvelopeInternal(),
-                                        geoWithSoil.size()));
-                        geoWithSoil.put(geoWithSoil.size(), new GeoWithSoilType(geo,type));
-                    }
-                    //if have intersection we will ignore this new Geometry
-                    else{
-                        for(EnvelopeWithIndex<Integer> envel : result){
 
-                            if(geoWithSoil.get(envel.getId()).geo.overlaps(geo)){
-                                System.out.println("Geometry:" + geoWithSoil.get(envel.getId()).geo.toString() + "ouverlaps with the new geometry added");
-                            }
-                            else{
-                                rTreeOfGeoSoil.insert(geo.getEnvelopeInternal(),new EnvelopeWithIndex<Integer>(geo.getEnvelopeInternal(),
-                                        geoWithSoil.size()));
-                                geoWithSoil.put(geoWithSoil.size(), new GeoWithSoilType(geo,type));
-                            }
-                        }
-                    }
-                }
-            }
-            else{
-                rTreeOfGeoSoil.insert(geo.getEnvelopeInternal(),new EnvelopeWithIndex<Integer>(geo.getEnvelopeInternal(),
-                                        geoWithSoil.size()));                
-                geoWithSoil.put(geoWithSoil.size(), new GeoWithSoilType(geo,type));
+            rTreeOfGeoSoil.insert(geo.getEnvelopeInternal(),new EnvelopeWithIndex<Integer>(geo.getEnvelopeInternal(),
+                                    geoWithSoil.size()));                
+            geoWithSoil.put(geoWithSoil.size(), new GeoWithSoilType(geo,type));
+
             
-            }
         }
 
          
