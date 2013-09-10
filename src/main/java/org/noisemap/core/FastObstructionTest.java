@@ -86,12 +86,11 @@ public class FastObstructionTest {
         
         private STRtree rTreeOfGeoSoil= new STRtree();
         private HashMap<Integer,GeoWithSoilType> geoWithSoil= new HashMap<Integer, GeoWithSoilType>();
+        private LineString firstZone;
+        private LineString lastZone;
         public final int Delta_Distance=0;//delta distance;
         public final int E_Length=1;//e length
         public final int Full_Difrraction_Distance=2;//the full distance of difrraction path
-        public final int Full_Distance_With_Soil_Effet=3;//the full distance of soil effet, this distance will calculate soil effet with the first part 3D diffraction and last part 3D diffraction
-        public boolean checkGeoSoil=false;
-        public boolean isCalSoilEffet=false;
         
         private static class TriIdWithIntersection{
            private int triID;
@@ -136,7 +135,7 @@ public class FastObstructionTest {
             
         
         }
-        @SuppressWarnings("unchecked")
+
         public void addGeoSoil(Geometry geo, double type){
             
 
@@ -787,7 +786,6 @@ public class FastObstructionTest {
          *         Double[Delta_Distance]:delta distance;
          *         Doulbe[E_Length]:e;
          *         Double[Full_Difrraction_Distance]:the full distance of difrraction path
-         *         Double[Full_Distance_With_Soil_Effet]:the full distance of soil effet(we use the first part and the last part 3D diffraction zone to calculate soil effet)
          *         if Double[Delta_Distance],Double[E_Length],Double[Full_Difrraction_Distance],Double[Full_Distance_With_Soil_Effet] are -1. then no usefull intersections.
          */
         @SuppressWarnings("unchecked")
@@ -798,7 +796,6 @@ public class FastObstructionTest {
                 data[Delta_Distance]=-1.;
                 data[E_Length]=-1.;
                 data[Full_Difrraction_Distance]=-1.;
-                data[Full_Distance_With_Soil_Effet]=-1.;
                 LinkedList<TriIdWithIntersection> interPoints=new LinkedList<TriIdWithIntersection>();
 		LineSegment propaLine = new LineSegment(p1, p2);
 		int curTri = getTriangleIdByCoordinate(p1);
@@ -925,73 +922,23 @@ public class FastObstructionTest {
                         data[Full_Difrraction_Distance]=pathDistance;
                         
                         //if we have soil data
-                        double totDistanceWithSoilEffet;
-                        if(isCalSoilEffet){
-                            GeometryFactory factory=new GeometryFactory();
+                       
+                        GeometryFactory factory=new GeometryFactory();
 
-                            Coordinate[] firstPart=new Coordinate[2];
-                            Coordinate[] lastPart=new Coordinate[2];
-                            firstPart[0]=p1;
-                            //get orignal coordinate for first intersection with building
-                            firstPart[1]=this.newCoorInter.get(path.getFirst().p1).coorIntersection;
+                        Coordinate[] firstPart=new Coordinate[2];
+                        Coordinate[] lastPart=new Coordinate[2];
+                        firstPart[0]=p1;
+                        //get orignal coordinate for first intersection with building
+                        firstPart[1]=this.newCoorInter.get(path.getFirst().p1).coorIntersection;
 
-                            //get orignal coordinate for last intersection with building
-                            lastPart[0]=this.newCoorInter.get(path.getLast().p0).coorIntersection;
-                            lastPart[1]=p2;
-                            //first zone to calculate soil effet
-                            LineString firstZone=factory.createLineString(firstPart);
-                            //last zone to calculate soil effet (between first zone and last zone we ignore soil effet)
-                            LineString lastZone=factory.createLineString(lastPart);
-                            double firstDistance=firstZone.getLength();
-                            double lastDistance=lastZone.getLength();
-                            double totIntersectedDistance=0.;
-                            //debug mode
-                            if(checkGeoSoil){
-                                System.out.println("orignal full distance:"+ (firstDistance+lastDistance));
-                            }
+                        //get orignal coordinate for last intersection with building
+                        lastPart[0]=this.newCoorInter.get(path.getLast().p0).coorIntersection;
+                        lastPart[1]=p2;
+                        //first zone to calculate soil effet
+                        this.firstZone=factory.createLineString(firstPart);
+                        //last zone to calculate soil effet (between first zone and last zone we ignore soil effet)
+                        this.lastZone=factory.createLineString(lastPart);
                             
-                            if(!rTreeOfGeoSoil.isEmpty()){
-                                //test intersection with GeoSoil
-                                List<EnvelopeWithIndex<Integer>> resultZ0= rTreeOfGeoSoil.query(firstZone.getEnvelopeInternal());
-                                List<EnvelopeWithIndex<Integer>> resultZ1= rTreeOfGeoSoil.query(lastZone.getEnvelopeInternal());
-                                //if first part has intersection(s)
-                                if(!resultZ0.isEmpty()){
-                                    //get every envelope intersected
-                                    for(EnvelopeWithIndex<Integer> envel:resultZ0){
-                                        //get the geo intersected
-                                        Geometry geoInter=firstZone.intersection(this.geoWithSoil.get(envel.getId()).geo);
-                                        //get the intersected distance and delete this part from total first part distance
-                                        firstDistance-=getIntersectedDistance(geoInter);
-                                        //add the intersected distance with soil effet
-                                        totIntersectedDistance+=getIntersectedDistance(geoInter)*this.geoWithSoil.get(envel.getId()).type;
-                                    }
-
-                                }
-                                //if last part has intersection(s)
-                                if(!resultZ1.isEmpty()){
-                                    //get every envelope intersected
-                                    for(EnvelopeWithIndex<Integer> envel:resultZ1){
-                                        //get the geo intersected
-                                        Geometry geoInter=lastZone.intersection(this.geoWithSoil.get(envel.getId()).geo);
-                                        //get the intersected distance and delete this part from total last part distance
-                                        lastDistance-=getIntersectedDistance(geoInter);
-                                        //add the intersected distance with soil effet
-                                        totIntersectedDistance+=getIntersectedDistance(geoInter)*this.geoWithSoil.get(envel.getId()).type;
-                                    }
-                                
-                                }
-                                
-                                
-
-                            }
-                            
-                            
-                            totDistanceWithSoilEffet=firstDistance+lastDistance+totIntersectedDistance;
-                            data[Full_Distance_With_Soil_Effet]=totDistanceWithSoilEffet;
-                        }
-
-
-
                     }
                     else{
 
@@ -1135,6 +1082,12 @@ public class FastObstructionTest {
         
         
         
+        public LineString getFirstZone(){
+            return this.firstZone;
+        }
         
+        public LineString getLastZone(){
+            return this.lastZone;
+        }
         
 }
