@@ -42,8 +42,10 @@ import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineSegment;
+import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.index.quadtree.Quadtree;
+import com.vividsolutions.jts.index.strtree.STRtree;
 import java.util.*;
 
 /**
@@ -69,6 +71,35 @@ public class PropagationProcess implements Runnable {
         private long refpathcount=0;
 	private double[] alpha_atmo;
 	private double[] freq_lambda;
+        private STRtree rTreeOfGeoSoil= new STRtree();
+        private HashMap<Integer,GeoWithSoilType> geoWithSoil= new HashMap<Integer, GeoWithSoilType>();
+        
+        
+        
+        
+        private static class GeoWithSoilType{
+            private Geometry geo;
+            private double type;
+            
+            public GeoWithSoilType(Geometry geo, double type){
+                this.geo=geo;
+                this.type=type;
+            }
+            
+            public Geometry getGeo(){
+                return this.geo;
+            }
+            
+            public double getType(){
+                return this.type;
+            }
+            
+        
+        }
+
+        
+        
+        
         private static double GetGlobalLevel(int nbfreq,double energeticSum[]) {
             double globlvl = 0;
             for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
@@ -362,6 +393,7 @@ public class PropagationProcess implements Runnable {
 	 *            from receiver
 	 * @param[in] freq_lambda Array of sound wave lambda value by frequency band
 	 */
+        @SuppressWarnings("unchecked")
 	private void receiverSourcePropa(Coordinate srcCoord,
 			Coordinate receiverCoord, double energeticSum[],
 			double[] alpha_atmo, List<Double> wj,
@@ -394,15 +426,16 @@ public class PropagationProcess implements Runnable {
 
 			}
                         //Process diffraction 3D
-                    /*    
+                        
                         Double[] diffractiondata=data.freeFieldFinder.getPath(receiverCoord, srcCoord);
                         
-                        double deltadistance=diffractiondata[0];
-                        double e=diffractiondata[1];
-                        double heightpoint=diffractiondata[2];
-                        double fulldistance=diffractiondata[3];
+                        double deltadistance=diffractiondata[data.freeFieldFinder.Delta_Distance];
+                        double e=diffractiondata[data.freeFieldFinder.E_Length];
+                        double fulldistance=diffractiondata[data.freeFieldFinder.Full_Difrraction_Distance];
                         
-                        if(deltadistance!=-1.&&e!=-1.&&heightpoint!=-1.&&fulldistance!=-1.&&fulldistance<data.maxSrcDist){
+                        
+                        //delt diffraction
+                        if(deltadistance!=-1.&&e!=-1.&&fulldistance!=-1.){
                             for (int idfreq = 0; idfreq < freqcount; idfreq++) {
 
 									double cprime;
@@ -426,8 +459,6 @@ public class PropagationProcess implements Runnable {
 									if (testForm >= -2.) {
 										DiffractionAttenuation = 10 * Math
 												.log10(3 + testForm);
-									}else{
-										
 									}
 									// Limit to 0<=DiffractionAttenuation
 									DiffractionAttenuation = Math.max(0,
@@ -450,8 +481,75 @@ public class PropagationProcess implements Runnable {
                         
                         
                         }
-                 */
-			//
+                        
+                        
+                        //delt soil
+                        {   
+                            double gTrajet;
+                            double gTrajetPrime;
+                            double totDistanceWithSoilEffet;
+                            LineString firstZone=data.freeFieldFinder.getFirstZone();
+                            LineString lastZone=data.freeFieldFinder.getLastZone();
+                            double firstDistance=firstZone.getLength();
+                            double lastDistance=lastZone.getLength();
+                            double totIntersectedDistance=0.;
+                
+                            if(!rTreeOfGeoSoil.isEmpty()){
+                                //test intersection with GeoSoil
+                                List<EnvelopeWithIndex<Integer>> resultZ0= rTreeOfGeoSoil.query(firstZone.getEnvelopeInternal());
+                                List<EnvelopeWithIndex<Integer>> resultZ1= rTreeOfGeoSoil.query(lastZone.getEnvelopeInternal());
+                                //if first part has intersection(s)
+                                if(!resultZ0.isEmpty()){
+                                    //get every envelope intersected
+                                    for(EnvelopeWithIndex<Integer> envel:resultZ0){
+                                        //get the geo intersected
+                                        Geometry geoInter=firstZone.intersection(this.geoWithSoil.get(envel.getId()).geo);
+                                        //get the intersected distance and delete this part from total first part distance
+                                        firstDistance-=getIntersectedDistance(geoInter);
+                                        //add the intersected distance with soil effet
+                                        totIntersectedDistance+=getIntersectedDistance(geoInter)*this.geoWithSoil.get(envel.getId()).type;
+                                    }
+
+                                }
+                                //if last part has intersection(s)
+                                if(!resultZ1.isEmpty()){
+                                    //get every envelope intersected
+                                    for(EnvelopeWithIndex<Integer> envel:resultZ1){
+                                        //get the geo intersected
+                                        Geometry geoInter=lastZone.intersection(this.geoWithSoil.get(envel.getId()).geo);
+                                        //get the intersected distance and delete this part from total last part distance
+                                        lastDistance-=getIntersectedDistance(geoInter);
+                                        //add the intersected distance with soil effet
+                                        totIntersectedDistance+=getIntersectedDistance(geoInter)*this.geoWithSoil.get(envel.getId()).type;
+                                    }
+                                
+                                }
+                                
+                                
+
+                            }
+                
+                            totDistanceWithSoilEffet=firstDistance+lastDistance+totIntersectedDistance;
+                            //NF S 31-133 page 40
+                            gTrajet=totDistanceWithSoilEffet/(firstZone.getLength()+lastZone.getLength());
+                            //NF S 31-133 page 39
+                            double testForm=SrcReceiverDistance/(30*(receiverCoord.z+srcCoord.z));
+                            if(testForm<=1){
+                                gTrajetPrime=testForm*gTrajet;
+                                
+                            }
+                            else{
+                                gTrajetPrime=gTrajet;
+                            }
+                        
+                
+                
+                        }
+                        
+                        //delt sol finished
+                        
+                        
+                        
 			// Process specular reflection
 			if (data.reflexionOrder > 0) {
 				NonRobustLineIntersector linters = new NonRobustLineIntersector();
@@ -1001,5 +1099,36 @@ public class PropagationProcess implements Runnable {
                 dataOut.appendDiffractionPath(diffractionPathCount);
 		dataOut.appendReflexionPath(refpathcount);
 	}
+        
+        
+        /**
+         * Add soil geometry and soil type
+         * @param geo
+         * @param type 
+         */
+                
+        public void addGeoSoil(Geometry geo, double type){
+            
+
+            rTreeOfGeoSoil.insert(geo.getEnvelopeInternal(),new EnvelopeWithIndex<Integer>(geo.getEnvelopeInternal(),
+                                    geoWithSoil.size()));                
+            geoWithSoil.put(geoWithSoil.size(), new GeoWithSoilType(geo,type));
+
+            
+        }
+        
+        
+        private double getIntersectedDistance(Geometry geo){
+            
+            double totDistance=0.;
+            for(int i=0; i<geo.getNumGeometries();i++){
+                Coordinate[] coordinates=geo.getGeometryN(i).getCoordinates();
+                if(coordinates.length>1&&geo.getGeometryN(i) instanceof LineString){
+                    totDistance+=geo.getGeometryN(i).getLength();
+                }
+            }
+            return totDistance;
+        
+        }
 
 }
