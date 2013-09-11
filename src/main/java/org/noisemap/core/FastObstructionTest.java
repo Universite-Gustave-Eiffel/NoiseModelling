@@ -58,6 +58,7 @@ import java.util.*;
  * visibility test and get the 3D diffraction data. TODO  using income data to do something called
  * visibility culling.
  * @author Nicolas Fortin
+ * @author SU Qi
  */
 public class FastObstructionTest {
 	public static final double epsilon = 1e-7;
@@ -86,35 +87,10 @@ public class FastObstructionTest {
         
         private STRtree rTreeOfGeoSoil= new STRtree();
         private HashMap<Integer,GeoWithSoilType> geoWithSoil= new HashMap<Integer, GeoWithSoilType>();
-        private LineString firstZone;
-        private LineString lastZone;
         public final int Delta_Distance=0;//delta distance;
         public final int E_Length=1;//e length
         public final int Full_Difrraction_Distance=2;//the full distance of difrraction path
-        
-        private static class TriIdWithIntersection{
-           private int triID;
-           private Coordinate coorIntersection;
-           private boolean isIntersectionOnBuilding;
-           public TriIdWithIntersection(int triID, Coordinate coorIntersection, boolean isIntersectionInBuilding){
 
-               this.triID=triID;
-               this.coorIntersection=coorIntersection;
-               this.isIntersectionOnBuilding=isIntersectionInBuilding;
-           }
-           public int getTriID(){
-
-               return this.triID;
-           }
-           public Coordinate getCoorIntersection(){
-               return this.coorIntersection;
-           }
-
-           public boolean getIsIntersectionInBuilding(){
-               return this.isIntersectionOnBuilding;
-           }
-
-        }
         
         private static class GeoWithSoilType{
             private Geometry geo;
@@ -135,7 +111,7 @@ public class FastObstructionTest {
             
         
         }
-
+        
         public void addGeoSoil(Geometry geo, double type){
             
 
@@ -782,21 +758,26 @@ public class FastObstructionTest {
 	 *            Coordiante receiver
 	 * @param p2
 	 *            Coordiante source
-	 * @return Double list: data prepared to compute diffraction
+	 * @return DiffractionWithSoilEffetZone
+         *         Double list=DiffractionWithSoilEffetZone.diffractionData : data prepared to compute diffraction
          *         Double[Delta_Distance]:delta distance;
          *         Doulbe[E_Length]:e;
          *         Double[Full_Difrraction_Distance]:the full distance of difrraction path
          *         if Double[Delta_Distance],Double[E_Length],Double[Full_Difrraction_Distance],Double[Full_Distance_With_Soil_Effet] are -1. then no usefull intersections.
          */
         @SuppressWarnings("unchecked")
-        public Double[] getPath(Coordinate p1, Coordinate p2) {
+        public DiffractionWithSoilEffetZone getPath(Coordinate p1, Coordinate p2) {
 
-                
-                Double[] data=new Double[4];
+                GeometryFactory factory=new GeometryFactory();
+                LineString firstZone=factory.createLineString(new Coordinate[]{new Coordinate(-1,-1),new Coordinate(-1,-1)});
+                LineString lastZone=factory.createLineString(new Coordinate[]{new Coordinate(-1,-1),new Coordinate(-1,-1)});
+                Double[] data=new Double[3];
                 data[Delta_Distance]=-1.;
                 data[E_Length]=-1.;
                 data[Full_Difrraction_Distance]=-1.;
                 LinkedList<TriIdWithIntersection> interPoints=new LinkedList<TriIdWithIntersection>();
+                //set default data
+                DiffractionWithSoilEffetZone totData=new DiffractionWithSoilEffetZone(data,firstZone,lastZone);
 		LineSegment propaLine = new LineSegment(p1, p2);
 		int curTri = getTriangleIdByCoordinate(p1);
 		HashSet<Integer> navigationHistory = new HashSet<Integer>();
@@ -811,11 +792,11 @@ public class FastObstructionTest {
                 //Check if the given Source and Receiver are proper with the topograhic 
                 if(p1.z<zTopoR){
                     System.out.println("Receiver Point:" + p1.toString() + "is improper with the Topographic");
-                    return data;
+                    return totData;
                 }
                 if(p2.z<zTopoS){
                     System.out.println("Source Point:" + p2.toString() + "is improper with the Topographic");
-                    return data;
+                    return totData;
                 }
                 
 		while (curTri != -1) {
@@ -866,7 +847,7 @@ public class FastObstructionTest {
                 //if there are no useful intersection 
                 if(points.x.length<=2){
                     System.out.println("No useful intersection");
-                    return data;
+                    return totData;
                 
                 }
                 else{
@@ -874,21 +855,21 @@ public class FastObstructionTest {
                     boolean isVisible=true;//check if the source and receiver is visible
                     for (int i=0;i<points.x.length-1;i++){
                         //if the intersection point after Jarvis March is not on Building so we can sure this Source-Receiver is Invisible
-                        if(!this.newCoorInter.get(new Coordinate(points.x[i],points.y[i])).isIntersectionOnBuilding){
-                            System.out.println("TopoPoint:"+ this.newCoorInter.get(new Coordinate(points.x[i],points.y[i])).coorIntersection.toString() + "Block R and S");
+                        if(!this.newCoorInter.get(new Coordinate(points.x[i],points.y[i])).getIsIntersectionOnBuilding()){
+                            System.out.println("TopoPoint:"+ this.newCoorInter.get(new Coordinate(points.x[i],points.y[i])).getCoorIntersection().toString() + "Block R and S");
                             isVisible=false;
                             break;
                         }
                         else{
                             path.add(new LineSegment(new Coordinate(points.x[i],points.y[i]),new Coordinate(points.x[i+1],points.y[i+1])));
                             //When we get a point we will check if this point is equal with P2 we will stop finding next point 
-                            if(p2.equals(this.newCoorInter.get(new Coordinate(points.x[i+1],points.y[i+1])).coorIntersection)&&i>0){
+                            if(p2.equals(this.newCoorInter.get(new Coordinate(points.x[i+1],points.y[i+1])).getCoorIntersection())&&i>0){
                                 break;
                             }
                             //if after javis march the first point and the second point are Receiver and Source so we will quit loop and no diffraction in this case
-                            else if(p2.equals(this.newCoorInter.get(new Coordinate(points.x[i+1],points.y[i+1])).coorIntersection)&&i==0){
+                            else if(p2.equals(this.newCoorInter.get(new Coordinate(points.x[i+1],points.y[i+1])).getCoorIntersection())&&i==0){
                                 System.out.println("after jarvis march first point and second point are Receiver and Sourece");
-                                return data;                                
+                                return totData;                                
                             
                             }
                         }
@@ -923,21 +904,23 @@ public class FastObstructionTest {
                         
                         //if we have soil data
                        
-                        GeometryFactory factory=new GeometryFactory();
+                       
 
                         Coordinate[] firstPart=new Coordinate[2];
                         Coordinate[] lastPart=new Coordinate[2];
                         firstPart[0]=p1;
                         //get orignal coordinate for first intersection with building
-                        firstPart[1]=this.newCoorInter.get(path.getFirst().p1).coorIntersection;
+                        firstPart[1]=this.newCoorInter.get(path.getFirst().p1).getCoorIntersection();
 
                         //get orignal coordinate for last intersection with building
-                        lastPart[0]=this.newCoorInter.get(path.getLast().p0).coorIntersection;
+                        lastPart[0]=this.newCoorInter.get(path.getLast().p0).getCoorIntersection();
                         lastPart[1]=p2;
                         //first zone to calculate soil effet
-                        this.firstZone=factory.createLineString(firstPart);
+                        firstZone=factory.createLineString(firstPart);
                         //last zone to calculate soil effet (between first zone and last zone we ignore soil effet)
-                        this.lastZone=factory.createLineString(lastPart);
+                        lastZone=factory.createLineString(lastPart);
+                        
+                        totData=new DiffractionWithSoilEffetZone(data,firstZone,lastZone);
                             
                     }
                     else{
@@ -946,7 +929,7 @@ public class FastObstructionTest {
 
                     }
                     
-                    return data;
+                    return totData;
                 }
                 
 	}
@@ -965,8 +948,9 @@ public class FastObstructionTest {
             double cos=Math.cos(angle);
                 
             for(int i=0;i<listPoints.size();i++){
-                double newX=(listPoints.get(i).coorIntersection.x-listPoints.get(0).coorIntersection.x)*cos+(listPoints.get(i).coorIntersection.y-listPoints.get(0).coorIntersection.y)*sin;
-                newcoord.add(new Coordinate(newX,listPoints.get(i).coorIntersection.z));
+                double newX=(listPoints.get(i).getCoorIntersection().x-listPoints.get(0).getCoorIntersection().x)*cos+
+                        (listPoints.get(i).getCoorIntersection().y-listPoints.get(0).getCoorIntersection().y)*sin;
+                newcoord.add(new Coordinate(newX,listPoints.get(i).getCoorIntersection().z));
             
             
             }
@@ -1004,9 +988,12 @@ public class FastObstructionTest {
         /**
          * Caculate the Z of intersection point 
          * @see http://en.wikipedia.org/wiki/Linear_interpolation
-         * @param p1 a point of intersected segment
-         * @param p2 other point of intersected segment
-         * @param intersection the intersection which includes the x and y
+         * @param p1 
+         *          a point of intersected segment
+         * @param p2 
+         *          other point of intersected segment
+         * @param intersection 
+         *          the intersection which includes the x and y
          * @return z of intersection point
          */
         private double calculateLinearInterpolation(Coordinate p1, Coordinate p2, Coordinate intersection){
@@ -1025,9 +1012,15 @@ public class FastObstructionTest {
         
         }
         /**
+         * 
          * Equation Plane: ax+by+cz+d=0, can be fixed by 3 given points
          * When we fix a,b,c,d by given 3 points, we can get Z of given point X,Y
          * z=-(ax+by+d)/c
+         * @param p1 first point
+         * @param p2 second point 
+         * @param p3 third point
+         * @param point the point which includes the x and y
+         * @return z of point
          * @see http://en.wikipedia.org/wiki/Plane_%28geometry%29
          * 
          * 
@@ -1066,28 +1059,5 @@ public class FastObstructionTest {
             }
         }
         
-        
-        private double getIntersectedDistance(Geometry geo){
-            
-            double totDistance=0.;
-            for(int i=0; i<geo.getNumGeometries();i++){
-                Coordinate[] coordinates=geo.getGeometryN(i).getCoordinates();
-                if(coordinates.length>1&&geo.getGeometryN(i) instanceof LineString){
-                    totDistance+=geo.getGeometryN(i).getLength();
-                }
-            }
-            return totDistance;
-        
-        }
-        
-        
-        
-        public LineString getFirstZone(){
-            return this.firstZone;
-        }
-        
-        public LineString getLastZone(){
-            return this.lastZone;
-        }
         
 }
