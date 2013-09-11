@@ -827,8 +827,7 @@ public class FastObstructionTest {
                 pointsY=new double[newPoints.size()];
                 
                 for(int i=0;i<newPoints.size();i++){
-                    this.newCoorInter.put(newPoints.get(i),interPoints.get(i));
-                  
+                    
                     pointsX[i]=newPoints.get(i).x;
                     if(!Double.isNaN(newPoints.get(i).y)){
                         pointsY[i]=newPoints.get(i).y;
@@ -836,7 +835,11 @@ public class FastObstructionTest {
                     else{
                         pointsY[i]=0.;
                     }
-                            
+
+                    newPoints.get(i).setCoordinate(new Coordinate(pointsX[i],pointsY[i]));
+                    this.newCoorInter.put(newPoints.get(i),interPoints.get(i));
+                  
+        
                 }
                 
 
@@ -889,14 +892,18 @@ public class FastObstructionTest {
                             }
                         }
                                                 
+                        if(Double.isInfinite(pathDistance)){
                         
+                            return totData;
+                        }
                         
                         
                         //we used coordinate after change coordinate system to get the right distance.
                         double distanceRandS=path.getFirst().p0.distance(path.getLast().p1);//distance of receiver and source
                         double e=pathDistance-path.getFirst().getLength()-path.getLast().getLength();//distance without first part path and last part path
                         double deltaDistance=pathDistance-distanceRandS;//delt distance
-
+                        
+                        
 
                         data[Delta_Distance]=deltaDistance;
                         data[E_Length]=e;
@@ -973,13 +980,19 @@ public class FastObstructionTest {
                     //if the building is closed
                     Double sumBuildingHeight=0.;
                     Double averageBuildingHeight=0.;
-                    if(buildingCoor[0].equals(buildingCoor[buildingCoor.length-1])&&buildingCoor.length-1>=3){
-                        for(int j=0;j<buildingCoor.length-1;j++){
-                            sumBuildingHeight+=buildingCoor[j].z+buildingHeight;
-                        }
-                        averageBuildingHeight=sumBuildingHeight/(buildingCoor.length-2);
+                    if(buildingHeight==Double.MAX_VALUE){
+                        averageBuildingHeight=buildingHeight;
                     }
-                    //set the averageBuildingZ
+                    else{
+                        if(buildingCoor[0].equals(buildingCoor[buildingCoor.length-1])&&buildingCoor.length-1>=3){
+                            for(int j=0;j<buildingCoor.length-1;j++){
+                                sumBuildingHeight+=buildingCoor[j].z+buildingHeight;
+                            }
+                            averageBuildingHeight=sumBuildingHeight/(buildingCoor.length-2);
+                        }
+
+                    }
+                                            //set the averageBuildingZ
                     polygonWithHeight.get(i-1).setHeight(averageBuildingHeight);
             }
             
