@@ -807,7 +807,7 @@ public class BR_TriGrid extends AbstractTableFunction {
 							sourceGeometries, wj_sources, db_field_freq,
 							reflexionOrder, diffractionOrder, maxSrcDist,maxRefDist,
 							minRecDist, wallAlpha, ij, dsf,
-							pmManager.nextSubProcess(vertices.size()));
+							pmManager.nextSubProcess(vertices.size()),null);
 					PropagationProcess propaProcess = new PropagationProcess(
 							threadData, threadDataOut);
 
