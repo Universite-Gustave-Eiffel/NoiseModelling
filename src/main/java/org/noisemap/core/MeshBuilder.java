@@ -54,7 +54,7 @@ import java.util.*;
 
 
 /**
- * MeshBuilder is a Delaunay Structure.
+ * MeshBuilder is a Delaunay Structure builder.
  * TODO enable add and query of geometry object (other than
  * fitting elements) into the delaunay triangulation. 
  * It can also add the point with height to complet the mesh with the topograhic
