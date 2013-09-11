@@ -37,6 +37,7 @@ import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.LinkedList;
 import org.gdms.data.DataSourceFactory;
 
 /**
@@ -64,8 +65,9 @@ public class PropagationProcessData {
 	public int cellId; // cell id
 	public DataSourceFactory dsf; // Debug purpose
 	public ProgressionProcess cellProg; // Progression information
-
-    public PropagationProcessData(List<Coordinate> vertices, List<Long> receiverRowId, List<Triangle> triangles, FastObstructionTest freeFieldFinder, QueryGeometryStructure sourcesIndex, List<Geometry> sourceGeometries, List<ArrayList<Double>> wj_sources, List<Integer> freq_lvl, int reflexionOrder, int diffractionOrder, double maxSrcDist, double maxRefDist, double minRecDist, double wallAlpha, int cellId, DataSourceFactory dsf, ProgressionProcess cellProg) {
+        public LinkedList<GeoWithSoilType> geoWithSoilType;//list Geometry of soil and the type of this soil
+        
+    public PropagationProcessData(List<Coordinate> vertices, List<Long> receiverRowId, List<Triangle> triangles, FastObstructionTest freeFieldFinder, QueryGeometryStructure sourcesIndex, List<Geometry> sourceGeometries, List<ArrayList<Double>> wj_sources, List<Integer> freq_lvl, int reflexionOrder, int diffractionOrder, double maxSrcDist, double maxRefDist, double minRecDist, double wallAlpha, int cellId, DataSourceFactory dsf, ProgressionProcess cellProg, LinkedList<GeoWithSoilType> geoWithSoilType) {
         this.vertices = vertices;
         this.receiverRowId = receiverRowId;
         this.triangles = triangles;
@@ -83,6 +85,7 @@ public class PropagationProcessData {
         this.cellId = cellId;
         this.dsf = dsf;
         this.cellProg = cellProg;
+        this.geoWithSoilType=geoWithSoilType;
     }
 
 
