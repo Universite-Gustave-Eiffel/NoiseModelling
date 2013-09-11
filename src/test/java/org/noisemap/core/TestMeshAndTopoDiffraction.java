@@ -1,3 +1,37 @@
+
+/**
+ * NoiseMap is a scientific computation plugin for OrbisGIS developed in order to
+ * evaluate the noise impact on urban mobility plans. This model is
+ * based on the French standard method NMPB2008. It includes traffic-to-noise
+ * sources evaluation and sound propagation processing.
+ *
+ * This version is developed at French IRSTV Institute and at IFSTTAR
+ * (http://www.ifsttar.fr/) as part of the Eval-PDU project, funded by the
+ * French Agence Nationale de la Recherche (ANR) under contract ANR-08-VILL-0005-01.
+ *
+ * Noisemap is distributed under GPL 3 license. Its reference contact is Judicaël
+ * Picaut <judicael.picaut@ifsttar.fr>. It is maintained by Nicolas Fortin
+ * as part of the "Atelier SIG" team of the IRSTV Institute <http://www.irstv.fr/>.
+ *
+ * Copyright (C) 2011 IFSTTAR
+ * Copyright (C) 2011-2012 IRSTV (FR CNRS 2488)
+ *
+ * Noisemap is free software: you can redistribute it and/or modify it under the
+ * terms of the GNU General Public License as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option) any later
+ * version.
+ *
+ * Noisemap is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * Noisemap. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * For more information, please consult: <http://www.orbisgis.org/>
+ * or contact directly:
+ * info_at_ orbisgis.org
+ */
 package org.noisemap.core;
 
 import com.vividsolutions.jts.geom.Coordinate;
@@ -40,8 +74,9 @@ public class TestMeshAndTopoDiffraction extends TestCase{
             mesh.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(60., 60.,0.)));
             FastObstructionTest nfot= new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
             System.out.println("----------TEST#1 diffraction with 2 buildings(building1 and building2)----- ");
-           
-            Double[]lt=nfot.getPath(new Coordinate(48,25,7), new Coordinate(5,15,8));
+            
+            DiffractionWithSoilEffetZone diffraData=nfot.getPath(new Coordinate(48,25,7), new Coordinate(5,15,8));
+            Double[]lt=diffraData.getDiffractionData();
             System.out.println("----deltadistance----");
             System.out.println(lt[nfot.Delta_Distance]);
             System.out.println("----e----");
@@ -52,7 +87,8 @@ public class TestMeshAndTopoDiffraction extends TestCase{
             
             
             System.out.println("-----------exchange source receiver------------");
-            Double[]lt1=nfot.getPath(new Coordinate(5,15,8), new Coordinate(48,25,7));
+            diffraData=nfot.getPath(new Coordinate(5,15,8), new Coordinate(48,25,7));
+            Double[]lt1=diffraData.getDiffractionData();
             System.out.println("----deltadistance----");
             System.out.println(lt1[nfot.Delta_Distance]);
             System.out.println("----e----");
@@ -87,8 +123,8 @@ public class TestMeshAndTopoDiffraction extends TestCase{
              mesh.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(60., 60.,0.)));
              FastObstructionTest nfot= new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
              System.out.println("----------TEST#2 diffraction blocked by TopoPoint----- ");
-            
-             Double[] lt=nfot.getPath(new Coordinate(48,25,4), new Coordinate(5,15,3.7));
+             DiffractionWithSoilEffetZone diffraData=nfot.getPath(new Coordinate(48,25,4), new Coordinate(5,15,3.7));
+             Double[] lt=diffraData.getDiffractionData();
              System.out.println("----deltadistance----");
              System.out.println(lt[nfot.Delta_Distance]);
              System.out.println("----e----");
@@ -100,7 +136,8 @@ public class TestMeshAndTopoDiffraction extends TestCase{
             
             
              System.out.println("-----------exchange source receiver------------");
-             Double[]lt1=nfot.getPath(new Coordinate(5,15,3.7), new Coordinate(48,25,4));
+             diffraData=nfot.getPath(new Coordinate(5,15,3.7), new Coordinate(48,25,4));
+             Double[]lt1=diffraData.getDiffractionData();
              System.out.println("----deltadistance----");
              System.out.println(lt1[nfot.Delta_Distance]);
              System.out.println("----e----");
@@ -142,8 +179,8 @@ public class TestMeshAndTopoDiffraction extends TestCase{
              mesh.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(60., 60.,0.)));
              FastObstructionTest nfot= new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
              System.out.println("----------TEST#3 diffraction with 2 buildings(building1 and building2)----- ");
-            
-             Double[] lt=nfot.getPath(new Coordinate(48,25,1.5), new Coordinate(5,15,2));
+             DiffractionWithSoilEffetZone diffraData=nfot.getPath(new Coordinate(48,25,1.5), new Coordinate(5,15,2));
+             Double[] lt=diffraData.getDiffractionData();
              System.out.println("----deltadistance----");
              System.out.println(lt[nfot.Delta_Distance]);
              System.out.println("----e----");
@@ -155,7 +192,8 @@ public class TestMeshAndTopoDiffraction extends TestCase{
             
             
              System.out.println("-----------exchange source receiver------------");
-             Double[]lt1=nfot.getPath(new Coordinate(5,15,2), new Coordinate(48,25,1.5));
+             diffraData=nfot.getPath(new Coordinate(5,15,2), new Coordinate(48,25,1.5));
+             Double[]lt1=diffraData.getDiffractionData();
              System.out.println("----deltadistance----");
              System.out.println(lt1[nfot.Delta_Distance]);
              System.out.println("----e----");
