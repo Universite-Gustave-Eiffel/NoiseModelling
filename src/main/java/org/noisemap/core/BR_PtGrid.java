@@ -367,7 +367,7 @@ public class BR_PtGrid extends AbstractTableFunction {
                                                             sourceGeometries, wj_sources, db_field_freq,
                                                             reflexionOrder, diffractionOrder, maxSrcDist,maxRefDist,
                                                             1., wallAlpha, ij, sqldsf,
-                                                            pmManager.getRootProgress());
+                                                            pmManager.getRootProgress(),null);
                                             PropagationProcess propaProcess = new PropagationProcess(
                                                             threadData, threadDataOut);
 
