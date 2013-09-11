@@ -111,7 +111,7 @@ public class TestSoundPropagationValidation extends TestCase {
                 
                 
 		Stack<PropagationResultTriRecord> dataStack=new Stack<PropagationResultTriRecord>();
-		PropagationProcessData propData=new PropagationProcessData(vert,null, tri, manager, sourcesIndex, srclst, srcSpectrum, freqLvl, 0, 2, 80.,50., 1., 0., 0, null, null);
+		PropagationProcessData propData=new PropagationProcessData(vert,null, tri, manager, sourcesIndex, srclst, srcSpectrum, freqLvl, 0, 2, 80.,50., 1., 0., 0, null, null,null);
 		PropagationProcessOut propDataOut=new PropagationProcessOut(dataStack,null);
 		PropagationProcess propManager=new PropagationProcess(propData, propDataOut);
 		propManager.initStructures();
@@ -235,7 +235,7 @@ public class TestSoundPropagationValidation extends TestCase {
                 FastObstructionTest manager=new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
 
 		Stack<PropagationResultTriRecord> dataStack=new Stack<PropagationResultTriRecord>();
-		PropagationProcessData propData=new PropagationProcessData(vert,null, tri, manager, sourcesIndex, srclst, srcSpectrum, freqLvl, 0, 2, 80.,50., 1., 0., 0, null, null);
+		PropagationProcessData propData=new PropagationProcessData(vert,null, tri, manager, sourcesIndex, srclst, srcSpectrum, freqLvl, 0, 2, 80.,50., 1., 0., 0, null, null,null);
 		PropagationProcessOut propDataOut=new PropagationProcessOut(dataStack,null);
 		PropagationProcess propManager=new PropagationProcess(propData, propDataOut);
 		propManager.initStructures();
