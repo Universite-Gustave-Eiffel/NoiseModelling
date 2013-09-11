@@ -71,31 +71,12 @@ public class PropagationProcess implements Runnable {
         private long refpathcount=0;
 	private double[] alpha_atmo;
 	private double[] freq_lambda;
-        private STRtree rTreeOfGeoSoil= new STRtree();
-        private HashMap<Integer,GeoWithSoilType> geoWithSoil= new HashMap<Integer, GeoWithSoilType>();
+        private STRtree rTreeOfGeoSoil;
+
         
         
         
         
-        private static class GeoWithSoilType{
-            private Geometry geo;
-            private double type;
-            
-            public GeoWithSoilType(Geometry geo, double type){
-                this.geo=geo;
-                this.type=type;
-            }
-            
-            public Geometry getGeo(){
-                return this.geo;
-            }
-            
-            public double getType(){
-                return this.type;
-            }
-            
-        
-        }
 
         
         
@@ -427,7 +408,8 @@ public class PropagationProcess implements Runnable {
 			}
                         //Process diffraction 3D
                         
-                        Double[] diffractiondata=data.freeFieldFinder.getPath(receiverCoord, srcCoord);
+                        DiffractionWithSoilEffetZone diffDataWithSoilEffet=data.freeFieldFinder.getPath(receiverCoord, srcCoord);
+                        Double[] diffractiondata=diffDataWithSoilEffet.getDiffractionData();
                         
                         double deltadistance=diffractiondata[data.freeFieldFinder.Delta_Distance];
                         double e=diffractiondata[data.freeFieldFinder.E_Length];
@@ -488,8 +470,8 @@ public class PropagationProcess implements Runnable {
                             double gTrajet;
                             double gTrajetPrime;
                             double totDistanceWithSoilEffet;
-                            LineString firstZone=data.freeFieldFinder.getFirstZone();
-                            LineString lastZone=data.freeFieldFinder.getLastZone();
+                            LineString firstZone=diffDataWithSoilEffet.getFirstZone();
+                            LineString lastZone=diffDataWithSoilEffet.getLastZone();
                             double firstDistance=firstZone.getLength();
                             double lastDistance=lastZone.getLength();
                             double totIntersectedDistance=0.;
@@ -503,11 +485,11 @@ public class PropagationProcess implements Runnable {
                                     //get every envelope intersected
                                     for(EnvelopeWithIndex<Integer> envel:resultZ0){
                                         //get the geo intersected
-                                        Geometry geoInter=firstZone.intersection(this.geoWithSoil.get(envel.getId()).geo);
+                                        Geometry geoInter=firstZone.intersection(data.geoWithSoilType.get(envel.getId()).getGeo());
                                         //get the intersected distance and delete this part from total first part distance
                                         firstDistance-=getIntersectedDistance(geoInter);
                                         //add the intersected distance with soil effet
-                                        totIntersectedDistance+=getIntersectedDistance(geoInter)*this.geoWithSoil.get(envel.getId()).type;
+                                        totIntersectedDistance+=getIntersectedDistance(geoInter)*this.data.geoWithSoilType.get(envel.getId()).getType();
                                     }
 
                                 }
@@ -516,11 +498,11 @@ public class PropagationProcess implements Runnable {
                                     //get every envelope intersected
                                     for(EnvelopeWithIndex<Integer> envel:resultZ1){
                                         //get the geo intersected
-                                        Geometry geoInter=lastZone.intersection(this.geoWithSoil.get(envel.getId()).geo);
+                                        Geometry geoInter=lastZone.intersection(this.data.geoWithSoilType.get(envel.getId()).getGeo());
                                         //get the intersected distance and delete this part from total last part distance
                                         lastDistance-=getIntersectedDistance(geoInter);
                                         //add the intersected distance with soil effet
-                                        totIntersectedDistance+=getIntersectedDistance(geoInter)*this.geoWithSoil.get(envel.getId()).type;
+                                        totIntersectedDistance+=getIntersectedDistance(geoInter)*this.data.geoWithSoilType.get(envel.getId()).getType();
                                     }
                                 
                                 }
@@ -1006,6 +988,19 @@ public class PropagationProcess implements Runnable {
 				cornersQuad.insert(new Envelope(corner), corner);
 			}
 		}
+                //Build R-tree for soil geometry and soil type
+                rTreeOfGeoSoil=new STRtree();
+                {
+                    if(!data.geoWithSoilType.isEmpty()){
+                        for(int i=0;i<data.geoWithSoilType.size();i++){
+                            rTreeOfGeoSoil.insert(data.geoWithSoilType.get(i).getGeo().getEnvelopeInternal(),new EnvelopeWithIndex<Integer>(data.geoWithSoilType.get(i).getGeo().getEnvelopeInternal(),
+                                    i)); 
+                        }
+                    
+                    }
+                }
+                
+                
 	}
 	@Override
 	public void run() {
@@ -1101,21 +1096,7 @@ public class PropagationProcess implements Runnable {
 	}
         
         
-        /**
-         * Add soil geometry and soil type
-         * @param geo
-         * @param type 
-         */
-                
-        public void addGeoSoil(Geometry geo, double type){
-            
 
-            rTreeOfGeoSoil.insert(geo.getEnvelopeInternal(),new EnvelopeWithIndex<Integer>(geo.getEnvelopeInternal(),
-                                    geoWithSoil.size()));                
-            geoWithSoil.put(geoWithSoil.size(), new GeoWithSoilType(geo,type));
-
-            
-        }
         
         
         private double getIntersectedDistance(Geometry geo){
