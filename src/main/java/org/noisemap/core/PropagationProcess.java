@@ -991,12 +991,12 @@ public class PropagationProcess implements Runnable {
                 //Build R-tree for soil geometry and soil type
                 rTreeOfGeoSoil=new STRtree();
                 {
-                    if(!data.geoWithSoilType.isEmpty()){
+                    if(data.geoWithSoilType!=null){
                         for(int i=0;i<data.geoWithSoilType.size();i++){
                             rTreeOfGeoSoil.insert(data.geoWithSoilType.get(i).getGeo().getEnvelopeInternal(),new EnvelopeWithIndex<Integer>(data.geoWithSoilType.get(i).getGeo().getEnvelopeInternal(),
                                     i)); 
+                       
                         }
-                    
                     }
                 }
                 
