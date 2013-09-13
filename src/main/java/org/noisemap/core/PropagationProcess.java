@@ -467,43 +467,43 @@ public class PropagationProcess implements Runnable {
                         
                         //delt soil
                         {   
-                            double gTrajetFirst;
-                            double gTrajetLast;
-                            double gTrajetPrimeFirst;
-                            double gTrajetPrimeLast;
-                            LineString firstZone=diffDataWithSoilEffet.getFirstZone();
-                            LineString lastZone=diffDataWithSoilEffet.getLastZone();
-                            double firstDistance=firstZone.getLength();
-                            double lastDistance=lastZone.getLength();
-                            double totFirstIntersectedDistance=0.;
-                            double totLastIntersectedDistance=0.;
+                            double gTrajetRO;
+                            double gTrajetOS;
+                            double gTrajetPrimeRO;
+                            double gTrajetPrimeOS;
+                            LineString rOZone=diffDataWithSoilEffet.getROZone();
+                            LineString oSZone=diffDataWithSoilEffet.getOSZone();
+                            double rODistance=rOZone.getLength();
+                            double oSDistance=oSZone.getLength();
+                            double totRODistance=0.;
+                            double totOSDistance=0.;
                             if(!rTreeOfGeoSoil.isEmpty()){
                                 //test intersection with GeoSoil
-                                List<EnvelopeWithIndex<Integer>> resultZ0= rTreeOfGeoSoil.query(firstZone.getEnvelopeInternal());
-                                List<EnvelopeWithIndex<Integer>> resultZ1= rTreeOfGeoSoil.query(lastZone.getEnvelopeInternal());
-                                //if first part has intersection(s)
+                                List<EnvelopeWithIndex<Integer>> resultZ0= rTreeOfGeoSoil.query(rOZone.getEnvelopeInternal());
+                                List<EnvelopeWithIndex<Integer>> resultZ1= rTreeOfGeoSoil.query(oSZone.getEnvelopeInternal());
+                                //if receiver-first intersection part has intersection(s)
                                 if(!resultZ0.isEmpty()){
                                     //get every envelope intersected
                                     for(EnvelopeWithIndex<Integer> envel:resultZ0){
                                         //get the geo intersected
-                                        Geometry geoInter=firstZone.intersection(data.geoWithSoilType.get(envel.getId()).getGeo());
+                                        Geometry geoInter=rOZone.intersection(data.geoWithSoilType.get(envel.getId()).getGeo());
                                         //get the intersected distance and delete this part from total first part distance
-                                        firstDistance-=getIntersectedDistance(geoInter);
+                                        rODistance-=getIntersectedDistance(geoInter);
                                         //add the intersected distance with soil effet
-                                        totFirstIntersectedDistance+=getIntersectedDistance(geoInter)*this.data.geoWithSoilType.get(envel.getId()).getType();
+                                        totRODistance+=getIntersectedDistance(geoInter)*this.data.geoWithSoilType.get(envel.getId()).getType();
                                     }
 
                                 }
-                                //if last part has intersection(s)
+                                //if last intersection-source part has intersection(s)
                                 if(!resultZ1.isEmpty()){
                                     //get every envelope intersected
                                     for(EnvelopeWithIndex<Integer> envel:resultZ1){
                                         //get the geo intersected
-                                        Geometry geoInter=lastZone.intersection(this.data.geoWithSoilType.get(envel.getId()).getGeo());
+                                        Geometry geoInter=oSZone.intersection(this.data.geoWithSoilType.get(envel.getId()).getGeo());
                                         //get the intersected distance and delete this part from total last part distance
-                                        lastDistance-=getIntersectedDistance(geoInter);
+                                        oSDistance-=getIntersectedDistance(geoInter);
                                         //add the intersected distance with soil effet
-                                        totLastIntersectedDistance+=getIntersectedDistance(geoInter)*this.data.geoWithSoilType.get(envel.getId()).getType();
+                                        totOSDistance+=getIntersectedDistance(geoInter)*this.data.geoWithSoilType.get(envel.getId()).getType();
                                     }
                                 
                                 }
@@ -512,21 +512,21 @@ public class PropagationProcess implements Runnable {
 
                             }
                 
-                            totFirstIntersectedDistance+=firstDistance;
-                            totLastIntersectedDistance+=lastDistance;
+                            totRODistance+=rODistance;
+                            totOSDistance+=oSDistance;
                             //NF S 31-133 page 40
-                            gTrajetFirst=totFirstIntersectedDistance/firstZone.getLength();
-                            gTrajetLast=totLastIntersectedDistance/lastZone.getLength();
+                            gTrajetRO=totRODistance/rOZone.getLength();
+                            gTrajetOS=totOSDistance/oSZone.getLength();
                             //NF S 31-133 page 39
                             double testForm=SrcReceiverDistance/(30*(receiverCoord.z+srcCoord.z));
                             if(testForm<=1){
-                                gTrajetPrimeFirst=testForm*gTrajetFirst;
-                                gTrajetPrimeLast=testForm*gTrajetLast;
+                                gTrajetPrimeRO=testForm*gTrajetRO;
+                                gTrajetPrimeOS=testForm*gTrajetOS;
                                 
                             }
                             else{
-                                gTrajetPrimeFirst=gTrajetFirst;
-                                gTrajetPrimeLast=gTrajetLast;
+                                gTrajetPrimeRO=gTrajetRO;
+                                gTrajetPrimeOS=gTrajetOS;
                             }
                         
                 
