@@ -42,23 +42,23 @@ import com.vividsolutions.jts.geom.LineString;
  */
 public class DiffractionWithSoilEffetZone {
            private Double[] diffractionData= new Double[3]; //3D diffraction data
-           private LineString firstZone;//first zone 3D diffraction
-           private LineString lastZone;//last zone 3D diffraction
+           private LineString rOZone;//receiver-first intersection zone for 3D diffraction
+           private LineString oSZone;//last intersection-source zone for 3D diffraction
            
-           public DiffractionWithSoilEffetZone(Double[] diffractionData, LineString firstZone, LineString lastZone){
+           public DiffractionWithSoilEffetZone(Double[] diffractionData, LineString rOZone, LineString oSZone){
                this.diffractionData=diffractionData;
-               this.firstZone=firstZone;
-               this.lastZone=lastZone;
+               this.rOZone=rOZone;
+               this.oSZone=oSZone;
            }
            public Double[] getDiffractionData(){
 
                return this.diffractionData;
            }
-           public LineString getFirstZone(){
-               return this.firstZone;
+           public LineString getROZone(){
+               return this.rOZone;
            }
 
-           public LineString getLastZone(){
-               return this.lastZone;
+           public LineString getOSZone(){
+               return this.oSZone;
            }
 }
