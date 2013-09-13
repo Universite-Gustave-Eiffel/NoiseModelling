@@ -383,29 +383,86 @@ public class PropagationProcess implements Runnable {
 			List<Coordinate> regionCorners,
 			List<Integer> regionCornersFreeToReceiver, double[] freq_lambda) 
 	{
-		// GeometryFactory factory=new GeometryFactory();
+		GeometryFactory factory=new GeometryFactory();
 		int freqcount = data.freq_lvl.size();
 		double SrcReceiverDistance = srcCoord.distance(receiverCoord);
 		if (SrcReceiverDistance < data.maxSrcDist) {
 			// Then, check if the source is visible from the receiver (not
 			// hidden by a building)
 			// Create the direct Line
-			boolean somethingHideReceiver = false;
+			boolean somethingHideReceiver;
 			somethingHideReceiver = !data.freeFieldFinder.isFreeField(
 					receiverCoord, srcCoord);
 			if (!somethingHideReceiver) {
 				// Evaluation of energy at receiver
 				// add=wj/(4*pi*distance²)
-				for (int idfreq = 0; idfreq < freqcount; idfreq++) {
-					double AttenuatedWj = attDistW(wj.get(idfreq),
-							SrcReceiverDistance);
-					AttenuatedWj = attAtmW(AttenuatedWj,
+                            //add sool effet if necessary
+                            double ASoilmin;
+                            double ASoil;
+                            double gPath;
+                            double gPathPrime;
+                            double totRSDistance=0.;
+                            //will give a flag here for soil effet
+                            if(1==2){
+
+                                LineString RSZone=factory.createLineString(new Coordinate[]{receiverCoord,srcCoord});
+                                List<EnvelopeWithIndex<Integer>> resultZ0= rTreeOfGeoSoil.query(RSZone.getEnvelopeInternal());
+                                if(!resultZ0.isEmpty()){
+                                    for(EnvelopeWithIndex<Integer> envel:resultZ0){
+                                        //get the geo intersected
+                                        Geometry geoInter=RSZone.intersection(data.geoWithSoilType.get(envel.getId()).getGeo());
+                                        //add the intersected distance with soil effet
+                                        totRSDistance+=getIntersectedDistance(geoInter)*this.data.geoWithSoilType.get(envel.getId()).getType();
+                                    }
+                                }
+                                gPath=totRSDistance/SrcReceiverDistance;
+                                //NF S 31-133 page 39
+                                double testForm=SrcReceiverDistance/(30*(receiverCoord.z+srcCoord.z));
+                                if(testForm<=1){
+                                    gPathPrime=testForm*gPath;
+                                }
+                                else{
+                                    gPathPrime=gPath;
+                                }
+                            
+                            
+                            
+                            
+                                ASoilmin=-3*(1-gPathPrime);
+
+                                for (int idfreq = 0; idfreq < freqcount; idfreq++) {
+                                        double AttenuatedWj = attDistW(wj.get(idfreq),
+                                                        SrcReceiverDistance);
+
+                                        if(Double.compare(gPath, 0)!=0){
+                                            //get apport of Soil Effet, ASoil will be a negative number so it's mean a apport effet 
+                                            ASoil=getASoil(srcCoord.z,receiverCoord.z,SrcReceiverDistance,gPathPrime,idfreq,ASoilmin);
+                                        }
+                                        else{
+                                            //NF S 31-133 page 41 if gPath=0 we will add 3dB for the receiver point, -3 means it's a apport effet
+                                            ASoil=-3;
+                                        }
+                                        AttenuatedWj=dbaToW(wToDba(AttenuatedWj)- ASoil);
+
+                                        AttenuatedWj = attAtmW(AttenuatedWj,
                                                 SrcReceiverDistance,
                                                 alpha_atmo[idfreq]);
-					energeticSum[idfreq] += AttenuatedWj;
-				}
+                                        energeticSum[idfreq] += AttenuatedWj;
+                                }
+                            }
+			
+                            else{
+                                 for (int idfreq = 0; idfreq < freqcount; idfreq++) {
+                                        double AttenuatedWj = attDistW(wj.get(idfreq),
+                                                        SrcReceiverDistance);
 
-			}
+                                        AttenuatedWj = attAtmW(AttenuatedWj,
+                                                SrcReceiverDistance,
+                                                alpha_atmo[idfreq]);
+                                        energeticSum[idfreq] += AttenuatedWj;
+                                 }
+                            }
+                        }
                         //Process diffraction 3D
                         
                         DiffractionWithSoilEffetZone diffDataWithSoilEffet=data.freeFieldFinder.getPath(receiverCoord, srcCoord);
@@ -417,123 +474,161 @@ public class PropagationProcess implements Runnable {
                         
                         
                         //delt diffraction
-                        if(deltadistance!=-1.&&e!=-1.&&fulldistance!=-1.){
+                        if(Double.compare(deltadistance, -1.)!=0&&Double.compare(e, -1.)!=0&&Double.compare(fulldistance, -1.)!=0){
                             for (int idfreq = 0; idfreq < freqcount; idfreq++) {
 
-									double cprime;
-									//C" NMPB 2008 P.33
-									
-										//Multiple diffraction
-										//CPRIME=( 1+(5*gamma)^2)/((1/3)+(5*gamma)^2)
-										double gammapart=Math.pow((5*freq_lambda[idfreq])/e, 2);
-                                                                                //NFS 31-133 page 46
-                                                                                if(e>0.3){
-                                                                                    cprime=(1.+gammapart)/(ONETHIRD+gammapart);
-                                                                                }
-                                                                                else{
-                                                                                    cprime=1.;
-                                                                                }
-									
-									//(7.11) NMP2008 P.32
-									double testForm = (40 / freq_lambda[idfreq])
-											* cprime * deltadistance;
-									double DiffractionAttenuation = 0.;
-									if (testForm >= -2.) {
-										DiffractionAttenuation = 10 * Math
-												.log10(3 + testForm);
-									}
-									// Limit to 0<=DiffractionAttenuation
-									DiffractionAttenuation = Math.max(0,
-											DiffractionAttenuation);
-									double AttenuatedWj = wj.get(idfreq);
-									// Geometric dispersion
-                                                                        //fulldistance-deltdistance is the distance direct between source and receiver
-									AttenuatedWj=attDistW(AttenuatedWj, fulldistance-deltadistance);
-									// Apply diffraction attenuation
-									AttenuatedWj = dbaToW(wToDba(AttenuatedWj)
-											- DiffractionAttenuation);
-									// Apply atmospheric absorption and ground
-									AttenuatedWj = attAtmW(
-											AttenuatedWj,
-											fulldistance,
-											alpha_atmo[idfreq]);
-									
-									energeticSum[idfreq] += AttenuatedWj;
-								}
+                                double cprime;
+                                //C" NMPB 2008 P.33
+
+                                //Multiple diffraction
+                                //CPRIME=( 1+(5*gamma)^2)/((1/3)+(5*gamma)^2)
+                                double gammapart=Math.pow((5*freq_lambda[idfreq])/e, 2);
+                                //NFS 31-133 page 46
+                                if(e>0.3){
+                                    cprime=(1.+gammapart)/(ONETHIRD+gammapart);
+                                }
+                                else{
+                                    cprime=1.;
+                                }
+
+                                //(7.11) NMP2008 P.32
+                                double testForm = (40 / freq_lambda[idfreq])
+                                                * cprime * deltadistance;
+                                double DiffractionAttenuation = 0.;
+                                if (testForm >= -2.) {
+                                        DiffractionAttenuation = 10 * Math
+                                                        .log10(3 + testForm);
+                                }
+                                // Limit to 0<=DiffractionAttenuation
+                                DiffractionAttenuation = Math.max(0,
+                                                DiffractionAttenuation);
+                                //NF S 31-133 page 46
+                                //if delt diffraction > 25 we take 25dB for delt diffraction 
+                                DiffractionAttenuation = Math.min(25., DiffractionAttenuation);
+                                double AttenuatedWj = wj.get(idfreq);
+                                // Geometric dispersion
+                                //fulldistance-deltdistance is the distance direct between source and receiver
+                                AttenuatedWj=attDistW(AttenuatedWj, fulldistance-deltadistance);
+
+                                
+                                //if we add Soil effet
+                               //delt soil
+
+                                double deltSoilSO=0.;
+                                double deltSoilOR=0.;
+                                if(1==2){
+                                   double SoilSOAttenuation=0.;
+                                   double SoilORAttenuation=0.;
+                                   double gPathRO;
+                                   double gPathOS;
+                                   double gPathPrimeRO;
+                                   double gPathPrimeOS;
+                                   LineString ROZone=diffDataWithSoilEffet.getROZone();
+                                   LineString OSZone=diffDataWithSoilEffet.getOSZone();
+                                   double totRODistance=0.;
+                                   double totOSDistance=0.;
+                                   if(!rTreeOfGeoSoil.isEmpty()){
+                                       //test intersection with GeoSoil
+                                       List<EnvelopeWithIndex<Integer>> resultZ0= rTreeOfGeoSoil.query(ROZone.getEnvelopeInternal());
+                                       List<EnvelopeWithIndex<Integer>> resultZ1= rTreeOfGeoSoil.query(OSZone.getEnvelopeInternal());
+                                       //if receiver-first intersection part has intersection(s)
+                                       if(!resultZ0.isEmpty()){
+                                           //get every envelope intersected
+                                           for(EnvelopeWithIndex<Integer> envel:resultZ0){
+                                               //get the geo intersected
+                                               Geometry geoInter=ROZone.intersection(data.geoWithSoilType.get(envel.getId()).getGeo());
+
+                                               //add the intersected distance with soil effet
+                                               totRODistance+=getIntersectedDistance(geoInter)*this.data.geoWithSoilType.get(envel.getId()).getType();
+                                           }
+
+                                       }
+                                       //if last intersection-source part has intersection(s)
+                                       if(!resultZ1.isEmpty()){
+                                           //get every envelope intersected
+                                           for(EnvelopeWithIndex<Integer> envel:resultZ1){
+                                               //get the geo intersected
+                                               Geometry geoInter=OSZone.intersection(this.data.geoWithSoilType.get(envel.getId()).getGeo());
+                                               //add the intersected distance with soil effet
+                                               totOSDistance+=getIntersectedDistance(geoInter)*this.data.geoWithSoilType.get(envel.getId()).getType();
+                                           }
+
+                                       }
+
+
+
+                                   }
+
+                                   //NF S 31-133 page 40
+                                   gPathRO=totRODistance/ROZone.getLength();
+                                   gPathOS=totOSDistance/OSZone.getLength();
+                                   //NF S 31-133 page 39
+                                   double testFormROZone=ROZone.getLength()/(30*(receiverCoord.z+ROZone.getEndPoint().getCoordinate().z));
+                                   double testFormOSZone= OSZone.getLength()/(30*(OSZone.getStartPoint().getCoordinate().z+srcCoord.z));
+                                   if(testFormROZone<=1){
+                                       gPathPrimeRO=testFormROZone*gPathRO;
+                                   }
+                                   else{
+                                       gPathPrimeRO=gPathRO;
+                                   }
+
+                                   if(testFormOSZone<=1){
+                                       gPathPrimeOS=testFormOSZone*gPathOS;
+                                   }
+                                   else{
+                                       gPathPrimeOS=gPathOS;
+                                   }
+
+                                   //NF S 31-133 page 41 and page 40
+                                   double ASoilOSMin=-3*(1-gPathPrimeOS);
+                                   double ASoilROMin=-3*(1-gPathRO);
+                                   
+                                   //NF S 31-133 page 41  
+                                   if(Double.compare(gPathRO, 0.)==0)
+                                   {
+                                       SoilORAttenuation=-3.;
+                                   }
+                                   else{
+                                       
+                                       SoilORAttenuation=getASoil(ROZone.getEndPoint().getCoordinate().z, ROZone.getStartPoint().getCoordinate().z, ROZone.getLength(), gPathRO, idfreq, ASoilROMin);
+                                   }
+                                   //NF S 31-133 page 41 
+                                   if(Double.compare(gPathOS, 0.)==0){
+                                       SoilSOAttenuation=-3.;
+                                   }
+                                   else{
+                                       SoilSOAttenuation=getASoil(OSZone.getEndPoint().getCoordinate().z, OSZone.getStartPoint().getCoordinate().z, OSZone.getLength(), gPathPrimeOS, idfreq, ASoilOSMin);
+                                   
+                                   }
+                                   
+                                   deltSoilSO=getDeltSoil(SoilSOAttenuation);
+                                   deltSoilOR=getDeltSoil(SoilORAttenuation);
+                               }
+
+                               //delt sol finished
+
+
+                                // Apply diffraction attenuation with soil effet if neceesary
+                                AttenuatedWj = dbaToW(wToDba(AttenuatedWj)
+                                                - DiffractionAttenuation-deltSoilSO-deltSoilOR);
+
+
+
+
+                                // Apply atmospheric absorption and ground
+                                AttenuatedWj = attAtmW(
+                                                AttenuatedWj,
+                                                fulldistance,
+                                                alpha_atmo[idfreq]);
+
+                                energeticSum[idfreq] += AttenuatedWj;
+                            }
                         
                         
                         }
                         
                         
-                        //delt soil
-                        {   
-                            double gTrajetRO;
-                            double gTrajetOS;
-                            double gTrajetPrimeRO;
-                            double gTrajetPrimeOS;
-                            LineString rOZone=diffDataWithSoilEffet.getROZone();
-                            LineString oSZone=diffDataWithSoilEffet.getOSZone();
-                            double rODistance=rOZone.getLength();
-                            double oSDistance=oSZone.getLength();
-                            double totRODistance=0.;
-                            double totOSDistance=0.;
-                            if(!rTreeOfGeoSoil.isEmpty()){
-                                //test intersection with GeoSoil
-                                List<EnvelopeWithIndex<Integer>> resultZ0= rTreeOfGeoSoil.query(rOZone.getEnvelopeInternal());
-                                List<EnvelopeWithIndex<Integer>> resultZ1= rTreeOfGeoSoil.query(oSZone.getEnvelopeInternal());
-                                //if receiver-first intersection part has intersection(s)
-                                if(!resultZ0.isEmpty()){
-                                    //get every envelope intersected
-                                    for(EnvelopeWithIndex<Integer> envel:resultZ0){
-                                        //get the geo intersected
-                                        Geometry geoInter=rOZone.intersection(data.geoWithSoilType.get(envel.getId()).getGeo());
-                                        //get the intersected distance and delete this part from total first part distance
-                                        rODistance-=getIntersectedDistance(geoInter);
-                                        //add the intersected distance with soil effet
-                                        totRODistance+=getIntersectedDistance(geoInter)*this.data.geoWithSoilType.get(envel.getId()).getType();
-                                    }
-
-                                }
-                                //if last intersection-source part has intersection(s)
-                                if(!resultZ1.isEmpty()){
-                                    //get every envelope intersected
-                                    for(EnvelopeWithIndex<Integer> envel:resultZ1){
-                                        //get the geo intersected
-                                        Geometry geoInter=oSZone.intersection(this.data.geoWithSoilType.get(envel.getId()).getGeo());
-                                        //get the intersected distance and delete this part from total last part distance
-                                        oSDistance-=getIntersectedDistance(geoInter);
-                                        //add the intersected distance with soil effet
-                                        totOSDistance+=getIntersectedDistance(geoInter)*this.data.geoWithSoilType.get(envel.getId()).getType();
-                                    }
-                                
-                                }
-                                
-                                
-
-                            }
-                
-                            totRODistance+=rODistance;
-                            totOSDistance+=oSDistance;
-                            //NF S 31-133 page 40
-                            gTrajetRO=totRODistance/rOZone.getLength();
-                            gTrajetOS=totOSDistance/oSZone.getLength();
-                            //NF S 31-133 page 39
-                            double testForm=SrcReceiverDistance/(30*(receiverCoord.z+srcCoord.z));
-                            if(testForm<=1){
-                                gTrajetPrimeRO=testForm*gTrajetRO;
-                                gTrajetPrimeOS=testForm*gTrajetOS;
-                                
-                            }
-                            else{
-                                gTrajetPrimeRO=gTrajetRO;
-                                gTrajetPrimeOS=gTrajetOS;
-                            }
-                        
-                
-                
-                        }
-                        
-                        //delt sol finished
+           
                         
                         
                         
@@ -1115,6 +1210,38 @@ public class PropagationProcess implements Runnable {
             }
             return totDistance;
         
+        }
+        
+        /**
+         * getASoil use equation ASol in NF S 31-133 page 41 to calculate Attenuation(or contribuition) Soil Effet
+         * @param zs z of source point
+         * @param zr z of receiver point
+         * @param dp dp in equation 
+         * @param gw Gw 
+         * @param fm frequence
+         * @param aSoilMin min ASoil 
+         * @return ASoil
+         */
+        private double getASoil(double zs, double zr, double dp, double gw, int fm, double aSoilMin){
+            //NF S 31-133 page 41 c
+            double k=2*Math.PI*fm/CEL;
+            //NF S 31-113 page 41 w
+            double w=0.0185*Math.pow(fm, 2.5)*Math.pow(gw,2.6)/
+                    (Math.pow(fm, 1.5)*Math.pow(gw, 2.6)+1.3*Math.pow(10, 3)*Math.pow(fm, 0.75)*Math.pow(gw, 1.3)+1.16*Math.pow(10, 6));
+            //NF S 31-113 page 41 Cf
+            double cf=dp*(1+3*w*dp*Math.pow(Math.E,-Math.sqrt(w*dp)))/(1+w*dp);
+            //NF S 31-113 page 41 A sol
+            double ASoil=-10*Math.log10(4*Math.pow(k, 2)/Math.pow(dp, 2)*
+                    (Math.pow(zs, 2)-Math.sqrt(2*cf/k)*zs+cf/k)*(Math.pow(zr, 2)-Math.sqrt(2*cf/k)*zr+cf/k));
+            ASoil=Math.max(ASoil, aSoilMin);
+            return ASoil;
+        
+        }
+        
+        
+        private double getDeltSoil(double ASoil){
+        
+            return -20*Math.log10(1+(Math.pow(10, -ASoil/20)-1));
         }
 
 }
