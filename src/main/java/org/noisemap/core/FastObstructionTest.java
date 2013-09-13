@@ -387,12 +387,12 @@ public class FastObstructionTest {
                             //Math.max(nextTriHeight, this.polygonWithHeight.get(tri.getBuidlingID()-1).getHeight());
                 }
                 */
-                else if(tri.getBuidlingID()>0&&nextTriHeight==0){
+                else if(tri.getBuidlingID()>0&&Double.compare(nextTriHeight, 0)==0){
                     intersection.z=this.polygonWithHeight.get(tri.getBuidlingID()-1).getHeight();
                     intersectionPointOnBuilding=true;
                 }
                 //if in these two triangles we have no building
-                else if(tri.getBuidlingID()==0&&nextTriHeight==0){
+                else if(tri.getBuidlingID()==0&&Double.compare(nextTriHeight, 0)==0){
                     intersection.z=calculateLinearInterpolation(p1,p2,intersection);
                 }
                 
