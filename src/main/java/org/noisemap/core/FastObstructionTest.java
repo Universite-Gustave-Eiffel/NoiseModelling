@@ -769,15 +769,15 @@ public class FastObstructionTest {
         public DiffractionWithSoilEffetZone getPath(Coordinate p1, Coordinate p2) {
 
                 GeometryFactory factory=new GeometryFactory();
-                LineString firstZone=factory.createLineString(new Coordinate[]{new Coordinate(-1,-1),new Coordinate(-1,-1)});
-                LineString lastZone=factory.createLineString(new Coordinate[]{new Coordinate(-1,-1),new Coordinate(-1,-1)});
+                LineString rOZone=factory.createLineString(new Coordinate[]{new Coordinate(-1,-1),new Coordinate(-1,-1)});
+                LineString sOZone=factory.createLineString(new Coordinate[]{new Coordinate(-1,-1),new Coordinate(-1,-1)});
                 Double[] data=new Double[3];
                 data[Delta_Distance]=-1.;
                 data[E_Length]=-1.;
                 data[Full_Difrraction_Distance]=-1.;
                 LinkedList<TriIdWithIntersection> interPoints=new LinkedList<TriIdWithIntersection>();
                 //set default data
-                DiffractionWithSoilEffetZone totData=new DiffractionWithSoilEffetZone(data,firstZone,lastZone);
+                DiffractionWithSoilEffetZone totData=new DiffractionWithSoilEffetZone(data,rOZone,sOZone);
 		LineSegment propaLine = new LineSegment(p1, p2);
 		int curTri = getTriangleIdByCoordinate(p1);
 		HashSet<Integer> navigationHistory = new HashSet<Integer>();
@@ -922,12 +922,12 @@ public class FastObstructionTest {
                         //get orignal coordinate for last intersection with building
                         lastPart[0]=this.newCoorInter.get(path.getLast().p0).getCoorIntersection();
                         lastPart[1]=p2;
-                        //first zone to calculate soil effet
-                        firstZone=factory.createLineString(firstPart);
-                        //last zone to calculate soil effet (between first zone and last zone we ignore soil effet)
-                        lastZone=factory.createLineString(lastPart);
+                        //receiver-first intersetion zone aims to calculate soil effet
+                        rOZone=factory.createLineString(firstPart);
+                        //last intersection-source zone aims to calculate soil effet (between rOZone and sOZone we ignore soil effet)
+                        sOZone=factory.createLineString(lastPart);
                         
-                        totData=new DiffractionWithSoilEffetZone(data,firstZone,lastZone);
+                        totData=new DiffractionWithSoilEffetZone(data,rOZone,sOZone);
                             
                     }
                     else{
