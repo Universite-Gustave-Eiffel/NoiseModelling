@@ -110,6 +110,8 @@ public class BR_TriGrid extends AbstractTableFunction {
 	// Timing sum in millisec
 	private long totalParseBuildings = 0;
 	private long totalDelaunay = 0;
+        private static final String heightField = "height";
+        private static final String soilTypeField = "G"; 
         public void setLogger(Logger logger) {
             this.logger = logger;
         }
@@ -587,16 +589,39 @@ public class BR_TriGrid extends AbstractTableFunction {
 			
 			int tableBuildings = 0;
 			int tableSources = 1;
+                        int tableTopoPts = 2;
+                        int tableSoilAreas = 3; 
 			long nbreceivers = 0;
 
-			// Load Sources and Buildings table drivers
+                            
+                           
+			// Load Sources, Buildings, Topo Points and Soil Areas table drivers
+                        
 			final DataSet sds = tables[tableBuildings];
 			final DataSet sdsSources = tables[tableSources];
-			
-                        // extract spatial field index of two input tables
+                        DataSet sdsTopoPts=null;
+                        DataSet sdsSoilAreas=null;
+			if(tables.length==4){
+                            sdsTopoPts = tables[tableTopoPts]; 
+                            sdsSoilAreas = tables[tableSoilAreas];
+                        }
+                        // extract spatial field index of four input tables
 			int spatialBuildingsFieldIndex = MetadataUtilities.getSpatialFieldIndex(sds.getMetadata());
 			int spatialSourceFieldIndex = MetadataUtilities.getSpatialFieldIndex(sdsSources.getMetadata());
-			
+
+			int spatialTopoPtsFieldIndex = -1;
+                        int spatialsdsSoilAreasFieldIndex = -1;
+                            if(tables.length == 4){
+                                
+                                if(sdsTopoPts != null && MetadataUtilities.getSpatialFieldIndex(sdsTopoPts.getMetadata()) >= 0){
+                                    spatialTopoPtsFieldIndex = MetadataUtilities.getSpatialFieldIndex(sdsTopoPts.getMetadata());
+                                }
+                                
+                                if(sdsSoilAreas != null && MetadataUtilities.getSpatialFieldIndex(sdsSoilAreas.getMetadata()) >= 0){
+                                    spatialsdsSoilAreasFieldIndex = MetadataUtilities.getSpatialFieldIndex(sdsSoilAreas.getMetadata());
+                                }
+                            }
+
 			
 			
 			// 1 Step - Evaluation of the main bounding box (sources)
@@ -720,14 +745,40 @@ public class BR_TriGrid extends AbstractTableFunction {
 					rowCount = sds.getRowCount();
 					for (long rowIndex = 0; rowIndex < rowCount; rowIndex++) {
 						final Geometry geometry = sds.getFieldValue(rowIndex, spatialBuildingsFieldIndex).getAsGeometry();
+                                                double height = 0.;
+                                                
+                                                //if exist height 
+                                                if(sds.getFieldValue(rowIndex, sds.getMetadata().getFieldIndex(heightField)).getAsDouble()>0){
+                                                        height=sds.getFieldValue(rowIndex, sds.getMetadata().getFieldIndex(heightField)).getAsDouble();
+                                                 }
 						Envelope geomEnv = geometry.getEnvelopeInternal();
 						if (expandedCellEnvelop.intersects(geomEnv)) {
-							mesh.addGeometry(geometry);
+                                                    //if we dont have height of building
+                                                    if(Double.compare(height, 0.)==0){
+                                                        mesh.addGeometry(geometry);
+                                                    }
+                                                    else{
+                                                        mesh.addGeometry(geometry,height);
+                                                    }
 						}
 					}
-
+                                        //if we have topo points data
+                                        if(spatialTopoPtsFieldIndex!=-1){
+                                            rowCount=sdsTopoPts.getRowCount();
+                                            for (long rowIndex = 0; rowIndex < rowCount; rowIndex++) {
+                                                    final Geometry geometry = sdsTopoPts.getFieldValue(rowIndex, spatialTopoPtsFieldIndex).getAsGeometry();
+                                                          
+                                                    Envelope geomEnv = geometry.getEnvelopeInternal();
+                                                    if (expandedCellEnvelop.intersects(geomEnv)&&geometry instanceof Point) {
+                                                        { 
+                                                            mesh.addTopograhicPoint(geometry.getCoordinate());
+                                                        }
+                                                    }
+                                            }
+                                        }
 					mesh.finishPolygonFeeding(expandedCellEnvelop);
-                                        FastObstructionTest freeFieldFinder=new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices()); 
+                                        FastObstructionTest freeFieldFinder= new FastObstructionTest(mesh.getPolygonWithHeight(), 
+                                                                             mesh.getTriangles(), mesh.getTriNeighbors(), mesh.getVertices());
 					// Compute the first pass delaunay mesh
 					// The first pass doesn't take account of additional
 					// vertices of neighbor cells at the borders
@@ -802,12 +853,27 @@ public class BR_TriGrid extends AbstractTableFunction {
 					List<Coordinate> vertices = cellMesh.getVertices();
 					List<Triangle> triangles = cellMesh.getTriangles();
 					nbreceivers += vertices.size();
+                                        LinkedList<GeoWithSoilType> geoWithSoil=null;
+                                        if(spatialsdsSoilAreasFieldIndex!=-1){
+                                            rowCount = sdsSoilAreas.getRowCount();
+                                            
+                                            for(int i=0;i<rowCount;i++){
+                                                Geometry soilGeo = sdsSoilAreas.getFieldValue(rowCount, spatialsdsSoilAreasFieldIndex).getAsGeometry();
+                                                double soilType = sdsSoilAreas.getFieldValue(rowCount, sdsSoilAreas.getMetadata().getFieldIndex("G")).getAsDouble();
+                                                if(expandedCellEnvelop.intersects(soilGeo.getEnvelopeInternal())){
+                                                    geoWithSoil.add(new GeoWithSoilType(soilGeo, soilType));
+                                                }
+                                            
+                                            }
+                                        
+                                        }
+                                        
 					PropagationProcessData threadData = new PropagationProcessData(
 							vertices,null, triangles, freeFieldFinder, sourcesIndex,
 							sourceGeometries, wj_sources, db_field_freq,
 							reflexionOrder, diffractionOrder, maxSrcDist,maxRefDist,
 							minRecDist, wallAlpha, ij, dsf,
-							pmManager.nextSubProcess(vertices.size()),null);
+							pmManager.nextSubProcess(vertices.size()), geoWithSoil);
 					PropagationProcess propaProcess = new PropagationProcess(
 							threadData, threadDataOut);
 
@@ -916,8 +982,8 @@ public class BR_TriGrid extends AbstractTableFunction {
 		// dif order,wall alpha
             return new FunctionSignature[]{
                             new TableFunctionSignature(TableDefinition.GEOMETRY,
-                            new TableArgument(TableDefinition.GEOMETRY),
-                            new TableArgument(TableDefinition.GEOMETRY),
+                            new TableArgument(TableDefinition.GEOMETRY),//buildings
+                            new TableArgument(TableDefinition.GEOMETRY),//src
                             ScalarArgument.STRING,
                             ScalarArgument.DOUBLE,
                             ScalarArgument.DOUBLE,
@@ -927,7 +993,23 @@ public class BR_TriGrid extends AbstractTableFunction {
                             ScalarArgument.DOUBLE,
                             ScalarArgument.INT,
                             ScalarArgument.INT,
-                            ScalarArgument.DOUBLE)
+                            ScalarArgument.DOUBLE
+                            ), new TableFunctionSignature(TableDefinition.GEOMETRY,
+                            new TableArgument(TableDefinition.GEOMETRY),//buildings
+                            new TableArgument(TableDefinition.GEOMETRY),//src
+                            new TableArgument(TableDefinition.GEOMETRY),//topo Points
+                            new TableArgument(TableDefinition.GEOMETRY),//soil area
+                            ScalarArgument.STRING,
+                            ScalarArgument.DOUBLE,
+                            ScalarArgument.DOUBLE,
+                            ScalarArgument.INT,
+                            ScalarArgument.DOUBLE,
+                            ScalarArgument.DOUBLE,
+                            ScalarArgument.DOUBLE,
+                            ScalarArgument.INT,
+                            ScalarArgument.INT,
+                            ScalarArgument.DOUBLE                            
+                            )
                     };
     }
 
