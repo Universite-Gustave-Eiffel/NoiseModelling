@@ -49,6 +49,7 @@ import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.LinearRing;
 import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Polygon;
+import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.index.quadtree.Quadtree;
 import java.util.*;
 
@@ -202,8 +203,8 @@ public class MeshBuilder {
                             for(EnvelopeWithIndex<Integer> envel : result){
                                 int intersectedBuildingID=envel.getId();
                                 PolygonWithHeight intersectedBuilidng=buildingWithID.get(intersectedBuildingID);
-                                //if new Polygon interset old Polygon
-                                if(intersectedBuilidng.getGeometry().intersects(obstructionPoly)){
+                                //if new Polygon interset old Polygon && intersection is not a Point
+                                if(intersectedBuilidng.getGeometry().intersects(obstructionPoly) && !(intersectedBuilidng.getGeometry().intersection(obstructionPoly) instanceof Point)){
                                     //we merge the building and give it a new height
                                     newBuildingModified=intersectedBuilidng.getGeometry().union(newBuildingModified);
                                     if (minHeight>intersectedBuilidng.getHeight()){
@@ -219,6 +220,7 @@ public class MeshBuilder {
                                     
                                         
                                  }
+
                                  
                                      
                             }
@@ -291,8 +293,10 @@ public class MeshBuilder {
 		
 		LayerJDelaunay delaunayTool = new LayerJDelaunay();
                 //add buildings to JDelaunay
-                for(int i=1;i<=polygonWithHeight.size();i++){
-                    explodeAndAddPolygon(polygonWithHeight.get(i-1).getGeometry(), delaunayTool,i);
+                int i = 1;
+                for(PolygonWithHeight polygon: polygonWithHeight){
+                    explodeAndAddPolygon(polygon.getGeometry(),delaunayTool, i);
+                    i++;
                 }
                 //add topoPoints to JDelaunay
                 //no check if the point in the building
