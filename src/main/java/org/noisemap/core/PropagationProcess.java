@@ -618,7 +618,7 @@ public class PropagationProcess implements Runnable {
                                 // Apply atmospheric absorption and ground
                                 AttenuatedWj = attAtmW(
                                                 AttenuatedWj,
-                                                fulldistance,
+                                                fulldistance-deltadistance,
                                                 alpha_atmo[idfreq]);
 
                                 energeticSum[idfreq] += AttenuatedWj;

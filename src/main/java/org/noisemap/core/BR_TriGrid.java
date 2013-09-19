@@ -747,10 +747,10 @@ public class BR_TriGrid extends AbstractTableFunction {
 						final Geometry geometry = sds.getFieldValue(rowIndex, spatialBuildingsFieldIndex).getAsGeometry();
                                                 double height = 0.;
                                                 
-                                                //if exist height 
-                                                if(sds.getFieldValue(rowIndex, sds.getMetadata().getFieldIndex(heightField)).getAsDouble()>0){
-                                                        height=sds.getFieldValue(rowIndex, sds.getMetadata().getFieldIndex(heightField)).getAsDouble();
-                                                 }
+                                                //if exist height
+                                               if(sds.getMetadata().getFieldIndex(heightField)!=-1){
+                                                  height=sds.getFieldValue(rowIndex, sds.getMetadata().getFieldIndex(heightField)).getAsDouble();
+                                               }
 						Envelope geomEnv = geometry.getEnvelopeInternal();
 						if (expandedCellEnvelop.intersects(geomEnv)) {
                                                     //if we dont have height of building
@@ -859,7 +859,10 @@ public class BR_TriGrid extends AbstractTableFunction {
                                             
                                             for(int i=0;i<rowCount;i++){
                                                 Geometry soilGeo = sdsSoilAreas.getFieldValue(rowCount, spatialsdsSoilAreasFieldIndex).getAsGeometry();
-                                                double soilType = sdsSoilAreas.getFieldValue(rowCount, sdsSoilAreas.getMetadata().getFieldIndex("G")).getAsDouble();
+                                                double soilType = 0.;
+                                                if (sdsSoilAreas.getMetadata().getFieldIndex("G")!=-1){
+                                                    sdsSoilAreas.getFieldValue(rowCount, sdsSoilAreas.getMetadata().getFieldIndex("G")).getAsDouble();
+                                                }
                                                 if(expandedCellEnvelop.intersects(soilGeo.getEnvelopeInternal())){
                                                     geoWithSoil.add(new GeoWithSoilType(soilGeo, soilType));
                                                 }
