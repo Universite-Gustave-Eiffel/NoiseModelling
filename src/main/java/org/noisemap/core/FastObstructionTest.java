@@ -67,7 +67,7 @@ public class FastObstructionTest {
 	private List<Triangle> triVertices;
 	private List<Coordinate> vertices;
 	private List<Triangle> triNeighbors; // Neighbors
-        private LinkedList<MeshBuilder.PolygonWithHeight> polygonWithHeight= new LinkedList<MeshBuilder.PolygonWithHeight>();//list polygon with height
+        private ArrayList<MeshBuilder.PolygonWithHeight> polygonWithHeight= new ArrayList<MeshBuilder.PolygonWithHeight>();//list polygon with height
         
 	private QueryGeometryStructure triIndex = null; //TODO remove
 	private int lastFountPointTriTest = 0;
@@ -134,9 +134,9 @@ public class FastObstructionTest {
 	public  FastObstructionTest(LinkedList<MeshBuilder.PolygonWithHeight> buildings,
                 List<Triangle> triangles,List<Triangle> triNeighbors, List<Coordinate> points) {
             
-            
+                ArrayList<MeshBuilder.PolygonWithHeight> polygonWithHeightArray = new ArrayList<MeshBuilder.PolygonWithHeight>(buildings);
                 GeometryFactory factory = new GeometryFactory();
-                this.polygonWithHeight=buildings;
+                this.polygonWithHeight=polygonWithHeightArray;
                 this.triVertices=triangles;
                 this.triNeighbors=triNeighbors;
                 this.vertices=points;
@@ -156,7 +156,7 @@ public class FastObstructionTest {
 			triind++;
 		}
                 //give a average height to each building
-                setAverageBuildingHeight(polygonWithHeight);
+                setAverageBuildingHeight(this.polygonWithHeight);
 	}
         
         
@@ -999,12 +999,13 @@ public class FastObstructionTest {
          * We will get all of building corners Z and set the building a average height using corner Z and orignal building height 
          * @param polygonWithHeight 
          */
-        private void setAverageBuildingHeight(LinkedList<MeshBuilder.PolygonWithHeight> polygonWithHeight){
-            for(int i = 1;i<=polygonWithHeight.size();i++){
+        private void setAverageBuildingHeight(ArrayList<MeshBuilder.PolygonWithHeight> polygonWithHeight){
+            
+            for(MeshBuilder.PolygonWithHeight polygon : polygonWithHeight){
                     //When we get all of building, we will set every vertice of the same building a same Z, 
                     //using the Average "z+height"
-                    Coordinate[] buildingCoor = polygonWithHeight.get(i-1).getGeometry().getCoordinates();
-                    double buildingHeight = polygonWithHeight.get(i-1).getHeight();
+                    Coordinate[] buildingCoor = polygon.getGeometry().getCoordinates();
+                    double buildingHeight = polygon.getHeight();
                     //if the building is closed
                     Double sumBuildingHeight=0.;
                     Double averageBuildingHeight=0.;
@@ -1021,8 +1022,8 @@ public class FastObstructionTest {
                         }
 
                     }
-                                            //set the averageBuildingZ
-                    polygonWithHeight.get(i-1).setHeight(averageBuildingHeight);
+                    //set the averageBuildingZ
+                    polygon.setHeight(averageBuildingHeight);
             }
             
         }
