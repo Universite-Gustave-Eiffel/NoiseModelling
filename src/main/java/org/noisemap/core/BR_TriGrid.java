@@ -854,7 +854,7 @@ public class BR_TriGrid extends AbstractTableFunction {
 					List<Triangle> triangles = cellMesh.getTriangles();
 					nbreceivers += vertices.size();
                                         LinkedList<GeoWithSoilType> geoWithSoil=null;
-                                        if(spatialsdsSoilAreasFieldIndex!=-1){
+                                        if(spatialsdsSoilAreasFieldIndex!=-1&&sdsSoilAreas!=null){
                                             rowCount = sdsSoilAreas.getRowCount();
                                             
                                             for(int i=0;i<rowCount;i++){
