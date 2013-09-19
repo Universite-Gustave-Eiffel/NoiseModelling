@@ -223,11 +223,11 @@ public class FastObstructionTest {
                         nearestIntersectionPtDist = distline_line;
                         nearestIntersectionSide = 2;
                         //we will get the intersection point coordinate with(x,y,NaN)
-                        intersection = new Coordinate(propagationLine.intersection(new LineSegment(aTri, bTri)));
-                        //get this point Z using interseted segment.
-                        
-                        zTopoIntersection = calculateLinearInterpolation(aTri,bTri,intersection);
-                        
+                        if(propagationLine.intersection(new LineSegment(aTri, bTri))!=null ){
+                            intersection = new Coordinate(propagationLine.intersection(new LineSegment(aTri, bTri)));
+                            //get this point Z using interseted segment.
+                            zTopoIntersection = calculateLinearInterpolation(aTri,bTri,intersection);
+                        }
                     }
                 }
 		// Intersection Second Side
@@ -237,12 +237,15 @@ public class FastObstructionTest {
                     distline_line = propagationLine.distance(new LineSegment(bTri, cTri));
                     if (distline_line<FastObstructionTest.epsilon &&
                             distline_line < nearestIntersectionPtDist && this.triVertices.get(idneigh).getBuidlingID()==0) {
-                            nearestIntersectionPtDist = distline_line;
-                            nearestIntersectionSide = 0;
+                        nearestIntersectionPtDist = distline_line;
+                        nearestIntersectionSide = 0;
+                        if(propagationLine.intersection(new LineSegment(bTri, cTri))!=null){
                             intersection = new Coordinate(propagationLine.intersection(new LineSegment(bTri, cTri)));
-                     
-                            //get this point Z using interseted segment.
+                             //get this point Z using interseted segment.
                             zTopoIntersection = calculateLinearInterpolation(bTri,cTri,intersection);
+                        }    
+                           
+                            
                            
                     }
                 }
@@ -254,12 +257,13 @@ public class FastObstructionTest {
                     distline_line=propagationLine.distance(new LineSegment(cTri, aTri));
                     if (distline_line<FastObstructionTest.epsilon &&
                             distline_line < nearestIntersectionPtDist && this.triVertices.get(idneigh).getBuidlingID()==0) {
-                            nearestIntersectionSide = 1;
+                        nearestIntersectionSide = 1;
+                        if (propagationLine.intersection(new LineSegment(cTri, aTri))!=null){
                             intersection = new Coordinate(propagationLine.intersection(new LineSegment(cTri, aTri)));
                             //get this point Z using interseted line.
-                            
-                            zTopoIntersection = calculateLinearInterpolation(cTri,aTri,intersection);
 
+                            zTopoIntersection = calculateLinearInterpolation(cTri,aTri,intersection);
+                        }
                     }
                 }
 		if (nearestIntersectionSide != -1) {
@@ -313,10 +317,11 @@ public class FastObstructionTest {
                     distline_line=propagationLine.distance(new LineSegment(aTri, bTri));
                     if (distline_line<FastObstructionTest.epsilon &&
                             distline_line < nearestIntersectionPtDist) {
-                            nearestIntersectionPtDist = distline_line;
-                            nearestIntersectionSide = 2;
+                        nearestIntersectionPtDist = distline_line;
+                        nearestIntersectionSide = 2;
+                        if(propagationLine.intersection(new LineSegment(aTri, bTri))!=null){
                             intersection = new Coordinate(propagationLine.intersection(new LineSegment(aTri, bTri)));
-                        
+                        }
                     }
                 }
 		// Intersection Second Side
@@ -326,10 +331,11 @@ public class FastObstructionTest {
                     distline_line=propagationLine.distance(new LineSegment(bTri, cTri));
                     if (distline_line<FastObstructionTest.epsilon &&
                             distline_line < nearestIntersectionPtDist) {
-                            nearestIntersectionPtDist = distline_line;
-                            nearestIntersectionSide = 0;
+                        nearestIntersectionPtDist = distline_line;
+                        nearestIntersectionSide = 0;
+                        if(propagationLine.intersection(new LineSegment(bTri, cTri))!=null){
                             intersection = new Coordinate(propagationLine.intersection(new LineSegment(bTri, cTri)));
-                            
+                        }
                     }
                 }
 
@@ -340,9 +346,10 @@ public class FastObstructionTest {
                     distline_line=propagationLine.distance(new LineSegment(cTri, aTri));
                     if (distline_line<FastObstructionTest.epsilon &&
                             distline_line < nearestIntersectionPtDist) {
-                            nearestIntersectionSide = 1;
+                        nearestIntersectionSide = 1;
+                        if(propagationLine.intersection(new LineSegment(cTri, aTri))!=null){
                             intersection = new Coordinate(propagationLine.intersection(new LineSegment(cTri, aTri)));
-                            
+                        }
                     }
                 }
                 
