@@ -67,7 +67,7 @@ public class FastObstructionTest {
 	private List<Triangle> triVertices;
 	private List<Coordinate> vertices;
 	private List<Triangle> triNeighbors; // Neighbors
-        private ArrayList<MeshBuilder.PolygonWithHeight> polygonWithHeight= new ArrayList<MeshBuilder.PolygonWithHeight>();//list polygon with height
+        private List<MeshBuilder.PolygonWithHeight> polygonWithHeight= new ArrayList<MeshBuilder.PolygonWithHeight>();//list polygon with height
         
 	private QueryGeometryStructure triIndex = null; //TODO remove
 	private int lastFountPointTriTest = 0;
@@ -134,7 +134,7 @@ public class FastObstructionTest {
 	public  FastObstructionTest(LinkedList<MeshBuilder.PolygonWithHeight> buildings,
                 List<Triangle> triangles,List<Triangle> triNeighbors, List<Coordinate> points) {
             
-                ArrayList<MeshBuilder.PolygonWithHeight> polygonWithHeightArray = new ArrayList<MeshBuilder.PolygonWithHeight>(buildings);
+                List<MeshBuilder.PolygonWithHeight> polygonWithHeightArray = new ArrayList<MeshBuilder.PolygonWithHeight>(buildings);
                 GeometryFactory factory = new GeometryFactory();
                 this.polygonWithHeight=polygonWithHeightArray;
                 this.triVertices=triangles;
@@ -209,8 +209,8 @@ public class FastObstructionTest {
 		final Coordinate bTri = this.vertices.get(tri.getB());
 		final Coordinate cTri = this.vertices.get(tri.getC());
 		double distline_line;
-                Coordinate intersection=new Coordinate();
-                double zTopoIntersection=0.;
+                Coordinate intersection = new Coordinate();
+                double zTopoIntersection = 0.;
                 double zRandSIntersection;
 		// Intersection First Side
                 idneigh=this.triNeighbors.get(
@@ -223,27 +223,27 @@ public class FastObstructionTest {
                         nearestIntersectionPtDist = distline_line;
                         nearestIntersectionSide = 2;
                         //we will get the intersection point coordinate with(x,y,NaN)
-                        intersection=propagationLine.intersection(new LineSegment(aTri, bTri));
+                        intersection = new Coordinate(propagationLine.intersection(new LineSegment(aTri, bTri)));
                         //get this point Z using interseted segment.
-                        if(intersection!=null){
-                            zTopoIntersection=calculateLinearInterpolation(aTri,bTri,intersection);
-                        }
+                        
+                        zTopoIntersection = calculateLinearInterpolation(aTri,bTri,intersection);
+                        
                     }
                 }
 		// Intersection Second Side
-                idneigh=this.triNeighbors.get(
+                idneigh = this.triNeighbors.get(
                                                 triIndex).get(0);
                 if (idneigh!=-1 && !navigationHistory.contains(idneigh)) {
-                    distline_line=propagationLine.distance(new LineSegment(bTri, cTri));
+                    distline_line = propagationLine.distance(new LineSegment(bTri, cTri));
                     if (distline_line<FastObstructionTest.epsilon &&
                             distline_line < nearestIntersectionPtDist && this.triVertices.get(idneigh).getBuidlingID()==0) {
                             nearestIntersectionPtDist = distline_line;
                             nearestIntersectionSide = 0;
-                            intersection=propagationLine.intersection(new LineSegment(bTri, cTri));
-                            if(intersection!=null){
+                            intersection = new Coordinate(propagationLine.intersection(new LineSegment(bTri, cTri)));
+                     
                             //get this point Z using interseted segment.
-                                zTopoIntersection=calculateLinearInterpolation(bTri,cTri,intersection);
-                            }
+                            zTopoIntersection = calculateLinearInterpolation(bTri,cTri,intersection);
+                           
                     }
                 }
 
@@ -255,11 +255,11 @@ public class FastObstructionTest {
                     if (distline_line<FastObstructionTest.epsilon &&
                             distline_line < nearestIntersectionPtDist && this.triVertices.get(idneigh).getBuidlingID()==0) {
                             nearestIntersectionSide = 1;
-                            intersection=propagationLine.intersection(new LineSegment(cTri, aTri));
+                            intersection = new Coordinate(propagationLine.intersection(new LineSegment(cTri, aTri)));
                             //get this point Z using interseted line.
-                            if(intersection!=null){
-                                zTopoIntersection=calculateLinearInterpolation(cTri,aTri,intersection);
-                            }
+                            
+                            zTopoIntersection = calculateLinearInterpolation(cTri,aTri,intersection);
+
                     }
                 }
 		if (nearestIntersectionSide != -1) {
@@ -315,7 +315,7 @@ public class FastObstructionTest {
                             distline_line < nearestIntersectionPtDist) {
                             nearestIntersectionPtDist = distline_line;
                             nearestIntersectionSide = 2;
-                            intersection=propagationLine.intersection(new LineSegment(aTri, bTri));
+                            intersection = new Coordinate(propagationLine.intersection(new LineSegment(aTri, bTri)));
                         
                     }
                 }
@@ -328,7 +328,7 @@ public class FastObstructionTest {
                             distline_line < nearestIntersectionPtDist) {
                             nearestIntersectionPtDist = distline_line;
                             nearestIntersectionSide = 0;
-                            intersection=propagationLine.intersection(new LineSegment(bTri, cTri));
+                            intersection = new Coordinate(propagationLine.intersection(new LineSegment(bTri, cTri)));
                             
                     }
                 }
@@ -341,48 +341,48 @@ public class FastObstructionTest {
                     if (distline_line<FastObstructionTest.epsilon &&
                             distline_line < nearestIntersectionPtDist) {
                             nearestIntersectionSide = 1;
-                            intersection=propagationLine.intersection(new LineSegment(cTri, aTri));
+                            intersection = new Coordinate(propagationLine.intersection(new LineSegment(cTri, aTri)));
                             
                     }
                 }
                 
                 //these points will be used by calculate Linear interpolation 
-                Coordinate p1=new Coordinate();
-                Coordinate p2=new Coordinate();
+                Coordinate p1 = new Coordinate();
+                Coordinate p2 = new Coordinate();
                 
                 switch(nearestIntersectionSide){
                     case 0:{
-                        p1=bTri;
-                        p2=cTri;
+                        p1 = bTri;
+                        p2 = cTri;
                         break;
                     }
                     case 1:{
-                        p1=cTri;
-                        p2=aTri;
+                        p1 = cTri;
+                        p2 = aTri;
                         break;
                     }
                     case 2:{
-                        p1=aTri;
-                        p2=bTri;
+                        p1 = aTri;
+                        p2 = bTri;
                         break;
                     }    
                 }
-                int BuildingNextTriID=this.triNeighbors.get(triIndex).get(nearestIntersectionSide);
-                boolean triNeighborIsBuidling=false;//check if the point is the intersection of triangle In the same building
-                boolean intersectionPointOnBuilding=false;//check if the intersection point is On the building                
-                double nextTriHeight=0.;
+                int BuildingNextTriID = this.triNeighbors.get(triIndex).get(nearestIntersectionSide);
+                boolean triNeighborIsBuidling = false;//check if the point is the intersection of triangle In the same building
+                boolean intersectionPointOnBuilding = false;//check if the intersection point is On the building                
+                double nextTriHeight = 0.;
 
                 if(this.triVertices.get(BuildingNextTriID).getBuidlingID()>0){
-                    nextTriHeight=this.polygonWithHeight.get(this.triVertices.get(BuildingNextTriID).getBuidlingID()-1).getHeight();
+                    nextTriHeight = this.polygonWithHeight.get(this.triVertices.get(BuildingNextTriID).getBuidlingID()-1).getHeight();
                 }
                 
                 if(tri.getBuidlingID()>0 &&(nextTriHeight>0)){
                     //intersection is between two triangle in the same building, so we will not keep intersection point
-                    triNeighborIsBuidling=true;
+                    triNeighborIsBuidling = true;
                 }
                 //add height to this intersection
                 if(tri.getBuidlingID()==0&&nextTriHeight>0){
-                    intersectionPointOnBuilding=true;
+                    intersectionPointOnBuilding = true;
                     intersection.setOrdinate(2, nextTriHeight);
                 }
 
@@ -396,7 +396,7 @@ public class FastObstructionTest {
                 */
                 else if(tri.getBuidlingID()>0&&Double.compare(nextTriHeight, 0.)==0){
                     intersection.setOrdinate(2, this.polygonWithHeight.get(tri.getBuidlingID()-1).getHeight());
-                    intersectionPointOnBuilding=true;
+                    intersectionPointOnBuilding = true;
                 }
                 //if in these two triangles we have no building
                 else if(tri.getBuidlingID()==0&&Double.compare(nextTriHeight, 0.)==0){
@@ -999,7 +999,7 @@ public class FastObstructionTest {
          * We will get all of building corners Z and set the building a average height using corner Z and orignal building height 
          * @param polygonWithHeight 
          */
-        private void setAverageBuildingHeight(ArrayList<MeshBuilder.PolygonWithHeight> polygonWithHeight){
+        private void setAverageBuildingHeight(List<MeshBuilder.PolygonWithHeight> polygonWithHeight){
             
             for(MeshBuilder.PolygonWithHeight polygon : polygonWithHeight){
                     //When we get all of building, we will set every vertice of the same building a same Z, 
