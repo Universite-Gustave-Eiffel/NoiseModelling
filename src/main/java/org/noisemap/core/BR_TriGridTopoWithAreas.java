@@ -531,4 +531,9 @@ public class BR_TriGridTopoWithAreas extends BR_TriGrid{
                     }
                 }
 	}
+        
+        @Override
+	public String getName() {
+		return "BR_TriGridTopoWithAreas";
+	}
 }

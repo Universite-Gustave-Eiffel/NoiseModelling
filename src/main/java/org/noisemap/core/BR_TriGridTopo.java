@@ -513,6 +513,11 @@ public class BR_TriGridTopo extends BR_TriGrid{
                     }
                 }
 	}
+    
+        @Override
+	public String getName() {
+		return "BR_TriGridTopo";
+	}
 
     
     

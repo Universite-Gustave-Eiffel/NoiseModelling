@@ -511,4 +511,9 @@ public class BR_TriGridAreas extends BR_TriGrid{
                     }
                 }
 	}
+        
+        @Override
+	public String getName() {
+		return "BR_TriGridAreas";
+	}
 }
