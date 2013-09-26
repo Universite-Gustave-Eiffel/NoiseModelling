@@ -63,7 +63,7 @@ import org.gdms.data.schema.MetadataUtilities;
  * @author SU Qi
  */
 public class BR_TriGridAreas extends BR_TriGrid{
-        private Logger logger = Logger.getLogger(BR_TriGrid.class.getName());
+        private Logger logger = Logger.getLogger(BR_TriGridAreas.class.getName());
 	// _________ ^
 	// | | | | | | Y or J (bottom to top)
 	// | | | | |

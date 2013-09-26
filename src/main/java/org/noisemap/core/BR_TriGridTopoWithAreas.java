@@ -67,7 +67,7 @@ import static org.noisemap.core.BR_TriGrid.getCellEnv;
  */
 public class BR_TriGridTopoWithAreas extends BR_TriGrid{
     
-        private Logger logger = Logger.getLogger(BR_TriGrid.class.getName());
+        private Logger logger = Logger.getLogger(BR_TriGridTopoWithAreas.class.getName());
 	// _________ ^
 	// | | | | | | Y or J (bottom to top)
 	// | | | | |
