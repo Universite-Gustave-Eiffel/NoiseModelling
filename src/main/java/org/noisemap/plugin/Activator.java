@@ -36,6 +36,9 @@ import org.noisemap.core.BR_EvalSource;
 import org.noisemap.core.BR_PtGrid;
 import org.noisemap.core.BR_SpectrumRepartition;
 import org.noisemap.core.BR_TriGrid;
+import org.noisemap.core.BR_TriGridTopo;
+import org.noisemap.core.BR_TriGridAreas;
+import org.noisemap.core.BR_TriGridTopoWithAreas;
 import org.noisemap.core.BTW_EvalSource;
 import org.noisemap.core.BTW_SpectrumRepartition;
 import org.noisemap.core.Log10;
@@ -65,6 +68,10 @@ public class Activator implements BundleActivator {
         reg(new ST_SetNearestGeometryId());
         reg(new ST_SplitSegment());
         reg(new BR_TriGrid());
+        reg(new BR_TriGridTopo());
+        reg(new BR_TriGridAreas());
+        reg(new BR_TriGridTopoWithAreas());
+        
   //      reg(new ST_TriangleContouring());
         reg(new BR_SpectrumRepartition());
         reg(new BTW_SpectrumRepartition());
