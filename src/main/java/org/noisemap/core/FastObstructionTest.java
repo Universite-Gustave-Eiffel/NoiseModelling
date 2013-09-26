@@ -210,7 +210,7 @@ public class FastObstructionTest {
 		final Coordinate cTri = this.vertices.get(tri.getC());
 		double distline_line;
                 Coordinate intersection = new Coordinate();
-                double zTopoIntersection = 0.;
+                double zTopoIntersection = Double.MIN_VALUE;
                 double zRandSIntersection;
 		// Intersection First Side
                 idneigh=this.triNeighbors.get(
