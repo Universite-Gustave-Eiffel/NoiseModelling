@@ -613,11 +613,11 @@ public class BR_TriGrid extends AbstractTableFunction {
                         int spatialsdsSoilAreasFieldIndex = -1;
                             if(tables.length == 4){
                                 
-                                if(sdsTopoPts != null && MetadataUtilities.getSpatialFieldIndex(sdsTopoPts.getMetadata()) >= 0){
+                                if(!(sdsTopoPts == null) && MetadataUtilities.getSpatialFieldIndex(sdsTopoPts.getMetadata()) >= 0){
                                     spatialTopoPtsFieldIndex = MetadataUtilities.getSpatialFieldIndex(sdsTopoPts.getMetadata());
                                 }
                                 
-                                if(sdsSoilAreas != null && MetadataUtilities.getSpatialFieldIndex(sdsSoilAreas.getMetadata()) >= 0){
+                                if(!(sdsSoilAreas == null) && MetadataUtilities.getSpatialFieldIndex(sdsSoilAreas.getMetadata()) >= 0){
                                     spatialsdsSoilAreasFieldIndex = MetadataUtilities.getSpatialFieldIndex(sdsSoilAreas.getMetadata());
                                 }
                             }

@@ -223,7 +223,7 @@ public class FastObstructionTest {
                         nearestIntersectionPtDist = distline_line;
                         nearestIntersectionSide = 2;
                         //we will get the intersection point coordinate with(x,y,NaN)
-                        if(propagationLine.intersection(new LineSegment(aTri, bTri))!=null ){
+                        if(!(propagationLine.intersection(new LineSegment(aTri, bTri))==null) ){
                             intersection = new Coordinate(propagationLine.intersection(new LineSegment(aTri, bTri)));
                             //get this point Z using interseted segment.
                             zTopoIntersection = calculateLinearInterpolation(aTri,bTri,intersection);
@@ -239,7 +239,7 @@ public class FastObstructionTest {
                             distline_line < nearestIntersectionPtDist && this.triVertices.get(idneigh).getBuidlingID()==0) {
                         nearestIntersectionPtDist = distline_line;
                         nearestIntersectionSide = 0;
-                        if(propagationLine.intersection(new LineSegment(bTri, cTri))!=null){
+                        if( !(propagationLine.intersection(new LineSegment(bTri, cTri))==null)){
                             intersection = new Coordinate(propagationLine.intersection(new LineSegment(bTri, cTri)));
                              //get this point Z using interseted segment.
                             zTopoIntersection = calculateLinearInterpolation(bTri,cTri,intersection);
@@ -258,7 +258,7 @@ public class FastObstructionTest {
                     if (distline_line<FastObstructionTest.epsilon &&
                             distline_line < nearestIntersectionPtDist && this.triVertices.get(idneigh).getBuidlingID()==0) {
                         nearestIntersectionSide = 1;
-                        if (propagationLine.intersection(new LineSegment(cTri, aTri))!=null){
+                        if (!(propagationLine.intersection(new LineSegment(cTri, aTri))==null)){
                             intersection = new Coordinate(propagationLine.intersection(new LineSegment(cTri, aTri)));
                             //get this point Z using interseted line.
 
@@ -319,7 +319,7 @@ public class FastObstructionTest {
                             distline_line < nearestIntersectionPtDist) {
                         nearestIntersectionPtDist = distline_line;
                         nearestIntersectionSide = 2;
-                        if(propagationLine.intersection(new LineSegment(aTri, bTri))!=null){
+                        if(! (propagationLine.intersection(new LineSegment(aTri, bTri))==null)){
                             intersection = new Coordinate(propagationLine.intersection(new LineSegment(aTri, bTri)));
                         }
                     }
@@ -333,7 +333,7 @@ public class FastObstructionTest {
                             distline_line < nearestIntersectionPtDist) {
                         nearestIntersectionPtDist = distline_line;
                         nearestIntersectionSide = 0;
-                        if(propagationLine.intersection(new LineSegment(bTri, cTri))!=null){
+                        if(!(propagationLine.intersection(new LineSegment(bTri, cTri))==null)){
                             intersection = new Coordinate(propagationLine.intersection(new LineSegment(bTri, cTri)));
                         }
                     }
@@ -347,7 +347,7 @@ public class FastObstructionTest {
                     if (distline_line<FastObstructionTest.epsilon &&
                             distline_line < nearestIntersectionPtDist) {
                         nearestIntersectionSide = 1;
-                        if(propagationLine.intersection(new LineSegment(cTri, aTri))!=null){
+                        if(!(propagationLine.intersection(new LineSegment(cTri, aTri))==null)){
                             intersection = new Coordinate(propagationLine.intersection(new LineSegment(cTri, aTri)));
                         }
                     }
@@ -894,7 +894,7 @@ public class FastObstructionTest {
                     for (int i=0;i<points.x.length-1;i++){
                         //if the intersection point after Jarvis March is not on Building so we can sure this Source-Receiver is Invisible
                         if(!newCoorInter.get(new Coordinate(points.x[i],points.y[i])).getIsIntersectionOnBuilding()){
-              //              System.out.println("TopoPoint:"+ newCoorInter.get(new Coordinate(points.x[i],points.y[i])).getCoorIntersection().toString() + "Block R and S");
+                            System.out.println("TopoPoint:"+ newCoorInter.get(new Coordinate(points.x[i],points.y[i])).getCoorIntersection().toString() + "Block R and S");
                             isVisible=false;
                             break;
                         }
@@ -906,7 +906,7 @@ public class FastObstructionTest {
                             }
                             //if after javis march the first point and the second point are Receiver and Source so we will quit loop and no diffraction in this case
                             else if(p2.equals(newCoorInter.get(new Coordinate(points.x[i+1],points.y[i+1])).getCoorIntersection())&&i==0){
-                          //      System.out.println("after jarvis march first point and second point are Receiver and Sourece");
+                                // after jarvis march first point and second point are Receiver and Sourece 
                                 return totData;                                
                             
                             }
@@ -966,9 +966,8 @@ public class FastObstructionTest {
                             
                     }
                     else{
-
-                        System.out.println("Path invisible");
-
+                        // Path invisible
+                        
                     }
                     
                     return totData;
