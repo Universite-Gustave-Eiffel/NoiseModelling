@@ -403,7 +403,7 @@ public class PropagationProcess implements Runnable {
                             double gPathPrime;
                             double totRSDistance=0.;
                             //will give a flag here for soil effet
-                            if(data.geoWithSoilType!=null){
+                            if(data.geoWithSoilType.size()>=1){
 
                                 LineString RSZone=factory.createLineString(new Coordinate[]{receiverCoord,srcCoord});
                                 List<EnvelopeWithIndex<Integer>> resultZ0= rTreeOfGeoSoil.query(RSZone.getEnvelopeInternal());
@@ -516,7 +516,7 @@ public class PropagationProcess implements Runnable {
 
                                 double deltSoilSO=0.;
                                 double deltSoilOR=0.;
-                                if(data.geoWithSoilType!=null){
+                                if(data.geoWithSoilType.size() >= 1){
                                    double SoilSOAttenuation=0.;
                                    double SoilORAttenuation=0.;
                                    double gPathRO;
@@ -1091,7 +1091,7 @@ public class PropagationProcess implements Runnable {
                 //Build R-tree for soil geometry and soil type
                 rTreeOfGeoSoil=new STRtree();
                 {
-                    if(data.geoWithSoilType!=null){
+                    if(data.geoWithSoilType.size()>=1){
                         for(int i=0;i<data.geoWithSoilType.size();i++){
                             rTreeOfGeoSoil.insert(data.geoWithSoilType.get(i).getGeo().getEnvelopeInternal(),new EnvelopeWithIndex<Integer>(data.geoWithSoilType.get(i).getGeo().getEnvelopeInternal(),
                                     i)); 

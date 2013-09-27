@@ -65,9 +65,9 @@ public class PropagationProcessData {
 	public int cellId; // cell id
 	public DataSourceFactory dsf; // Debug purpose
 	public ProgressionProcess cellProg; // Progression information
-        public LinkedList<GeoWithSoilType> geoWithSoilType;//list Geometry of soil and the type of this soil
+        public List<GeoWithSoilType> geoWithSoilType;//list Geometry of soil and the type of this soil
         
-    public PropagationProcessData(List<Coordinate> vertices, List<Long> receiverRowId, List<Triangle> triangles, FastObstructionTest freeFieldFinder, QueryGeometryStructure sourcesIndex, List<Geometry> sourceGeometries, List<ArrayList<Double>> wj_sources, List<Integer> freq_lvl, int reflexionOrder, int diffractionOrder, double maxSrcDist, double maxRefDist, double minRecDist, double wallAlpha, int cellId, DataSourceFactory dsf, ProgressionProcess cellProg, LinkedList<GeoWithSoilType> geoWithSoilType) {
+    public PropagationProcessData(List<Coordinate> vertices, List<Long> receiverRowId, List<Triangle> triangles, FastObstructionTest freeFieldFinder, QueryGeometryStructure sourcesIndex, List<Geometry> sourceGeometries, List<ArrayList<Double>> wj_sources, List<Integer> freq_lvl, int reflexionOrder, int diffractionOrder, double maxSrcDist, double maxRefDist, double minRecDist, double wallAlpha, int cellId, DataSourceFactory dsf, ProgressionProcess cellProg, List<GeoWithSoilType> geoWithSoilType) {
         this.vertices = vertices;
         this.receiverRowId = receiverRowId;
         this.triangles = triangles;

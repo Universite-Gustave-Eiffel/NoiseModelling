@@ -400,7 +400,7 @@ public class BR_TriGridAreas extends BR_TriGrid{
 					List<Coordinate> vertices = cellMesh.getVertices();
 					List<Triangle> triangles = cellMesh.getTriangles();
 					nbreceivers += vertices.size();
-                                        LinkedList<GeoWithSoilType> geoWithSoil=null;
+                                        List<GeoWithSoilType> geoWithSoil = new LinkedList<GeoWithSoilType>();
                                         if(spatialsdsSoilAreasFieldIndex!=-1&&sdsSoilAreas!=null){
                                             rowCount = sdsSoilAreas.getRowCount();
                                             
@@ -408,7 +408,7 @@ public class BR_TriGridAreas extends BR_TriGrid{
                                                 Geometry soilGeo = sdsSoilAreas.getFieldValue(i, spatialsdsSoilAreasFieldIndex).getAsGeometry();
                                                 double soilType = 0.;
                                                 if (sdsSoilAreas.getMetadata().getFieldIndex("G")!=-1){
-                                                    soilType = sdsSoilAreas.getFieldValue(i, sdsSoilAreas.getMetadata().getFieldIndex("G")).getAsDouble();
+                                                    sdsSoilAreas.getFieldValue(i, sdsSoilAreas.getMetadata().getFieldIndex("G")).getAsDouble();
                                                 }
                                                 if(expandedCellEnvelop.intersects(soilGeo.getEnvelopeInternal())){
                                                     geoWithSoil.add(new GeoWithSoilType(soilGeo, soilType));
