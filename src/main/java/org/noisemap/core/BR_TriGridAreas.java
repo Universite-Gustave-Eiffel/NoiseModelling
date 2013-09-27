@@ -519,4 +519,15 @@ public class BR_TriGridAreas extends BR_TriGrid{
 	public String getName() {
 		return "BR_TriGridAreas";
 	}
+        
+        
+        @Override
+	public String getSqlOrder() {
+		return "create table result as select * from BR_TriGridAreas( buildings_table, sound_sources_table, soil_areas, 'source db field name',searchSourceLimit,searchReflectionWallLimit,subdivlevel,roadwith(1.8),densification_receiver(5),max triangle area(300),reflection order(2),diffraction order(1),wall absorption(0.1));";
+	}
+
+	@Override
+	public String getDescription() {
+		return "BR_TriGridAreas(buildings(polygons),sources(points),soilareas(polygons, G), sound lvl field name(string),maximum propagation distance (double meter),maximum wall seeking distance (double meter),subdivision level 4^n cells(int), roads width (meter), densification of receivers near roads (meter), maximum area of triangle, sound reflection order, sound diffraction order, alpha of walls ) Sound propagation from ponctual sound sources to ponctual receivers created by a delaunay triangulation of specified buildings geometry.";
+	}
 }

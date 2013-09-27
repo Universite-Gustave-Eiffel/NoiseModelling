@@ -85,7 +85,7 @@ public class PropagationProcessData {
         this.cellId = cellId;
         this.dsf = dsf;
         this.cellProg = cellProg;
-        this.geoWithSoilType=geoWithSoilType;
+        this.geoWithSoilType = geoWithSoilType;
     }
 
 

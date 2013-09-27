@@ -63,6 +63,7 @@ import java.util.*;
 public class FastObstructionTest {
 	public static final double epsilon = 1e-7;
 	public static final double wideAngleTranslationEpsilon = 0.01;
+        public static final double receiverDefaultHeight = 1.6;
 	private long nbObstructionTest=0;
 	private List<Triangle> triVertices;
 	private List<Coordinate> vertices;
@@ -276,7 +277,7 @@ public class FastObstructionTest {
                         }
                     //Else, the Z of Topo intersection > Z calculated by propagation Line, the Topo intersection will block the propagation line 
                         else{
-                            System.out.println("PropagationLine blocked by:" + intersection.toString() + " Z topo:" + zTopoIntersection + " Z propagation line:" +  zRandSIntersection);
+                            //Propagation line blocked by the topography
                             return -1;
                         }
 		} 
@@ -735,11 +736,11 @@ public class FastObstructionTest {
                 Coordinate[] triR = getTriangle(curTri);
                 Coordinate[] triS = getTriangle(curTriS);
                 if(this.triVertices.get(curTri).getBuidlingID()>=1){
-                    System.out.println("receiver in building");
+                    //receiver is in the building so this propagation line is invisible
                     return false;
                 }
                 if(this.triVertices.get(curTriS).getBuidlingID()>=1){
-                    System.out.println("source in building");
+                    //receiver is in the building so this propagation line is invisible
                     return false;
                 }
                 
@@ -747,12 +748,12 @@ public class FastObstructionTest {
                 double zTopoS=getTopoZByGiven3Points(triS[0],triS[1],triS[2],p2);
                 
                 
-                if(p1.z<zTopoR){
-                    System.out.println("Receiver Point:" + p1.toString() + "is improper with the Topographic");
-                    return false;
+                if(p1.z<zTopoR || Double.isNaN(p1.z)){
+                    //Z value of the receiver is low than topography, we will modify this receiver height
+                    p1.setCoordinate(new Coordinate(p1.x, p1.y, zTopoR + receiverDefaultHeight));
                 }
                 if(p2.z<zTopoS){
-                    System.out.println("Source Point:" + p2.toString() + "is improper with the Topographic");
+                    //Z value of the source is low than topography, than the propagation cant not be compute
                     return false;
                 }
                 
@@ -811,26 +812,27 @@ public class FastObstructionTest {
                 //get source triangle id
                 int curTriS= getTriangleIdByCoordinate(p2);
                 if(this.triVertices.get(curTri).getBuidlingID()>=1){
-                    System.out.println("receiver in building");
+                    //receiver is in the building, so we cant compute propagation
                     return totData;
                 }
                 if(this.triVertices.get(curTriS).getBuidlingID()>=1){
-                    System.out.println("source in building");
+                    
+                    //source is in the building, so we cant compute propagation
                     return totData;
                 }
                 
                 Coordinate[] triR = getTriangle(curTri);
                 Coordinate[] triS = getTriangle(curTriS);
                 
-                double zTopoR=getTopoZByGiven3Points(triR[0],triR[1],triR[2],p1);
-                double zTopoS=getTopoZByGiven3Points(triS[0],triS[1],triS[2],p2);
+                double zTopoR = getTopoZByGiven3Points(triR[0],triR[1],triR[2],p1);
+                double zTopoS = getTopoZByGiven3Points(triS[0],triS[1],triS[2],p2);
                 //Check if the given Source and Receiver are proper with the topograhic 
-                if(p1.z<zTopoR){
-                    System.out.println("Receiver Point:" + p1.toString() + "is improper with the Topographic");
-                    return totData;
-                }
+                if(p1.z<zTopoR || Double.isNaN(p1.z)){
+                    //Z value of the receiver is low than topography, we will modify this receiver height
+                    p1.setCoordinate(new Coordinate(p1.x, p1.y, zTopoR + receiverDefaultHeight));
+                 }
                 if(p2.z<zTopoS){
-                    System.out.println("Source Point:" + p2.toString() + "is improper with the Topographic");
+                    //Z value of the source is low than topography, than the propagation cant not be compute
                     return totData;
                 }
                 
@@ -885,7 +887,7 @@ public class FastObstructionTest {
                 JarvisMarch.Points points=jm.calculateHull();
                 //if there are no useful intersection 
                 if(points.x.length<=2){
-                   // System.out.println("No useful intersection");
+                   //after jarvis march if we get the lenght of list of points less than 2, so we have no useful points 
                     return totData;
                 
                 }
@@ -895,7 +897,7 @@ public class FastObstructionTest {
                     for (int i=0;i<points.x.length-1;i++){
                         //if the intersection point after Jarvis March is not on Building so we can sure this Source-Receiver is Invisible
                         if(!newCoorInter.get(new Coordinate(points.x[i],points.y[i])).getIsIntersectionOnBuilding()){
-                            System.out.println("TopoPoint:"+ newCoorInter.get(new Coordinate(points.x[i],points.y[i])).getCoorIntersection().toString() + "Block R and S");
+                            //The topograhy block this propagation line
                             isVisible=false;
                             break;
                         }
@@ -1089,7 +1091,7 @@ public class FastObstructionTest {
             double c;
             double d;
             double topoZofPoint=0.;
-            LinkedList<Coordinate> points=new LinkedList<Coordinate>();
+            List<Coordinate> points=new LinkedList<Coordinate>();
             points.add(p1);
             points.add(p2);
             points.add(p3);
@@ -1107,7 +1109,7 @@ public class FastObstructionTest {
             
         }
 
-        private void setNaNZ0(LinkedList<Coordinate> points){
+        private void setNaNZ0(List<Coordinate> points){
             for(Coordinate point:points){
                 if(Double.isNaN(point.z)){
                     point.setCoordinate(new Coordinate(point.x,point.y,0.));
