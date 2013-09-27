@@ -405,10 +405,10 @@ public class BR_TriGridAreas extends BR_TriGrid{
                                             rowCount = sdsSoilAreas.getRowCount();
                                             
                                             for(int i=0;i<rowCount;i++){
-                                                Geometry soilGeo = sdsSoilAreas.getFieldValue(rowCount, spatialsdsSoilAreasFieldIndex).getAsGeometry();
+                                                Geometry soilGeo = sdsSoilAreas.getFieldValue(i, spatialsdsSoilAreasFieldIndex).getAsGeometry();
                                                 double soilType = 0.;
                                                 if (sdsSoilAreas.getMetadata().getFieldIndex("G")!=-1){
-                                                    sdsSoilAreas.getFieldValue(rowCount, sdsSoilAreas.getMetadata().getFieldIndex("G")).getAsDouble();
+                                                    sdsSoilAreas.getFieldValue(i, sdsSoilAreas.getMetadata().getFieldIndex("G")).getAsDouble();
                                                 }
                                                 if(expandedCellEnvelop.intersects(soilGeo.getEnvelopeInternal())){
                                                     geoWithSoil.add(new GeoWithSoilType(soilGeo, soilType));
