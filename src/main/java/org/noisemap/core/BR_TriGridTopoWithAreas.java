@@ -428,7 +428,7 @@ public class BR_TriGridTopoWithAreas extends BR_TriGrid{
                                                 Geometry soilGeo = sdsSoilAreas.getFieldValue(i, spatialsdsSoilAreasFieldIndex).getAsGeometry();
                                                 double soilType = 0.;
                                                 if (sdsSoilAreas.getMetadata().getFieldIndex("G")!=-1){
-                                                    sdsSoilAreas.getFieldValue(i, sdsSoilAreas.getMetadata().getFieldIndex("G")).getAsDouble();
+                                                    soilType = sdsSoilAreas.getFieldValue(i, sdsSoilAreas.getMetadata().getFieldIndex("G")).getAsDouble();
                                                 }
                                                 if(expandedCellEnvelop.intersects(soilGeo.getEnvelopeInternal())){
                                                     geoWithSoil.add(new GeoWithSoilType(soilGeo, soilType));
