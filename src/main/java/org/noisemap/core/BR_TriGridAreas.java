@@ -417,6 +417,9 @@ public class BR_TriGridAreas extends BR_TriGrid{
                                             }
                                         
                                         }
+                                        if(geoWithSoil.isEmpty()){
+                                            geoWithSoil = null;
+                                        }
                                         
 					PropagationProcessData threadData = new PropagationProcessData(
 							vertices,null, triangles, freeFieldFinder, sourcesIndex,

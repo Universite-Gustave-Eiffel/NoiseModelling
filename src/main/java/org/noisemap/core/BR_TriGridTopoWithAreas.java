@@ -420,7 +420,7 @@ public class BR_TriGridTopoWithAreas extends BR_TriGrid{
 					List<Coordinate> vertices = cellMesh.getVertices();
 					List<Triangle> triangles = cellMesh.getTriangles();
 					nbreceivers += vertices.size();
-                                        LinkedList<GeoWithSoilType> geoWithSoil=null;
+                                        List<GeoWithSoilType> geoWithSoil = new LinkedList<GeoWithSoilType>();
                                         if(spatialsdsSoilAreasFieldIndex!=-1&&sdsSoilAreas!=null){
                                             rowCount = sdsSoilAreas.getRowCount();
                                             
@@ -436,6 +436,10 @@ public class BR_TriGridTopoWithAreas extends BR_TriGrid{
                                             
                                             }
                                         
+                                        }
+                                        
+                                        if(geoWithSoil.isEmpty()){
+                                            geoWithSoil = null;
                                         }
                                         
 					PropagationProcessData threadData = new PropagationProcessData(
