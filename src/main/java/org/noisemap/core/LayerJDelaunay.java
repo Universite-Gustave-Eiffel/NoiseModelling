@@ -72,6 +72,9 @@ public class LayerJDelaunay implements LayerDelaunay {
 	private ArrayList<DEdge> constraintEdge = new ArrayList<DEdge>();
 	private LinkedList<DPoint> ptToInsert = new LinkedList<DPoint>();
 	private List<Coordinate> holes = new LinkedList<Coordinate>();
+    private Double maxArea; // maximum area, if set a grid of points is added before triangulation
+    /** If a grid point is nearest than another point by this distance then the grid point is not added */
+    private static final double EPSILON_AREA_CONSTRAINT = 1;
 	private boolean debugMode=false; //output primitives in a text file
 	private boolean computeNeighbors=false;
 	List<Triangle> triangles = new ArrayList<Triangle>();
@@ -180,11 +183,52 @@ public class LayerJDelaunay implements LayerDelaunay {
 
 	@Override
 	public void processDelaunay() throws LayerDelaunayError {
-		if (delaunayTool != null) {
+		if (delaunayTool != null && (!ptToInsert.isEmpty() || !constraintEdge.isEmpty())) {
 			try {
-				// Push segments
-				delaunayTool.setPoints(ptToInsert);
-				delaunayTool.setConstraintEdges(constraintEdge);
+                if(maxArea != null) {
+                    List<DPoint> dpoints = new LinkedList<DPoint>(ptToInsert);
+                    // Build a PointsMerge tool to not add duplicates
+                    Envelope gridEnv = null;
+                    if(!ptToInsert.isEmpty()) {
+                        gridEnv = new Envelope(ptToInsert.get(0).getCoordinate());
+                    } else if(!constraintEdge.isEmpty()) {
+                        gridEnv = new Envelope(constraintEdge.get(0).getStartPoint().getCoordinate());
+                    }
+                    PointsMerge merge = new PointsMerge(EPSILON_AREA_CONSTRAINT);
+                    for(DPoint dPoint : ptToInsert) {
+                        merge.getOrAppendVertex(dPoint.getCoordinate());
+                        gridEnv.expandToInclude(dPoint.getCoordinate());
+                    }
+                    for(DEdge edge : constraintEdge) {
+                        merge.getOrAppendVertex(edge.getStartPoint().getCoordinate());
+                        merge.getOrAppendVertex(edge.getEndPoint().getCoordinate());
+                        gridEnv.expandToInclude(edge.getStartPoint().getCoordinate());
+                        gridEnv.expandToInclude(edge.getEndPoint().getCoordinate());
+                    }
+                    // Points of delaunay input has been inserted, and final grid envelope computed
+                    // Compute delta as a point must be inserted at each corner + begin side and side
+                    // in order to guarantee continuity between cells
+                    // Now insert grid points
+                    double requestedDeltaGrid = Math.sqrt(maxArea * 2); // Mul by 2 as square is made of 2 triangles
+                    double xCount = Math.ceil((gridEnv.getMaxX() - gridEnv.getMinX()) / requestedDeltaGrid);
+                    double yCount = Math.ceil((gridEnv.getMaxY() - gridEnv.getMinY()) / requestedDeltaGrid);
+                    double xDelta = (gridEnv.getMaxX() - gridEnv.getMinX()) / xCount;
+                    double yDelta = (gridEnv.getMaxY() - gridEnv.getMinY()) / yCount;
+                    for(int xi = 0; xi < xCount; xi++) {
+                        for(int yi = 0; yi < yCount; yi++) {
+                            Coordinate gridPoint = new Coordinate(gridEnv.getMinX() + xi * xDelta, gridEnv.getMinY() + yi * yDelta, 0);
+                            // If this point does not belong to an existing mesh constraint
+                            if(merge.getOrAppendVertex(gridPoint) + 1 == merge.getSize()) {
+                                dpoints.add(new DPoint(gridPoint));
+                            }
+                        }
+                    }
+                    delaunayTool.setPoints(dpoints);
+                } else {
+                    delaunayTool.setPoints(ptToInsert);
+                }
+                // Push segments
+                delaunayTool.setConstraintEdges(constraintEdge);
 				
 				if(debugMode) {
 					try
@@ -219,6 +263,10 @@ public class LayerJDelaunay implements LayerDelaunay {
 				
 				delaunayTool.forceConstraintIntegrity();
 				delaunayTool.processDelaunay();
+                // Post-refinement
+                if(maxArea != null) {
+                    // refine mesh
+                }
 				constraintEdge.clear();
 				ptToInsert.clear();
 				List<DTriangle> trianglesDelaunay = delaunayTool
@@ -398,8 +446,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 
 	@Override
 	public void setMaxArea(Double maxArea) throws LayerDelaunayError {
-		// TODO Auto-generated method stub
-
+		this.maxArea = maxArea;
 	}
 
 	@Override

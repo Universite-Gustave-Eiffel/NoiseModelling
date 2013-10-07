@@ -395,22 +395,10 @@ public class BR_TriGrid extends AbstractTableFunction {
 
 		long beginDelaunay = System.currentTimeMillis();
 		logger.info("Begin delaunay");
-                if(maximumArea>1) {
-                    cellMesh.setMaxArea(maximumArea); // Maximum area
-                }
-		// Maximum 5x steinerpt than input point, this limits avoid infinite
-		// loop, or memory consuming triangulation
-		if (!(cellMesh instanceof LayerExtTriangle)) {
-			cellMesh.processDelaunay();
-		} else {
-			int maxSteiner = Math.max(cellMesh.getVertices().size() * 5, 50000);
-			cellMesh.setMinAngle(20.);
-			String firstPathFileName = ((LayerExtTriangle) cellMesh)
-					.processDelaunay("first_",
-							getCellId(cellI, cellJ, cellJMax), maxSteiner,
-							true, true);
-			firstPassResults[getCellId(cellI, cellJ, cellJMax)] = firstPathFileName;
-		}
+        if(maximumArea>1) {
+            cellMesh.setMaxArea(maximumArea); // Maximum area
+        }
+        cellMesh.processDelaunay();
 		logger.info("End delaunay");
 		totalDelaunay += System.currentTimeMillis() - beginDelaunay;
 	}
