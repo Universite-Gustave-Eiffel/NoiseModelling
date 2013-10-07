@@ -566,7 +566,7 @@ public class PropagationProcess implements Runnable {
 									} else {
 										//Multiple diffraction
 										//CPRIME=( 1+(5*gamma)^2)/((1/3)+(5*gamma)^2)
-										double gammapart=Math.pow((5*freq_lambda[idfreq])/diffractionFullDistance, 2);
+										double gammapart=Math.pow((5*freq_lambda[idfreq])/elength, 2);
 										cprime=(1.+gammapart)/(ONETHIRD+gammapart);
 									}
 									//(7.11) NMP2008 P.32
