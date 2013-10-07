@@ -126,7 +126,7 @@ public class TestSoundPropagationValidation extends TestCase {
 		// 					   Dual diffraction test
 		propData.diffractionOrder=2;
 		propData.reflexionOrder=0;
-		splCompare(splCompute(propManager, new Coordinate(5,15,0)), "Scene 1 R1_S1", 34.97);
+		splCompare(splCompute(propManager, new Coordinate(5,15,0)), "Scene 1 R1_S1", 37.096);
 		/////////////////////////////////////////////////////////////////////////
 		// 					   Geometric dispersion test
 		//Get reference spl value at 5m
