@@ -45,7 +45,6 @@ import org.noisemap.core.ST_SetNearestZ;
 import org.noisemap.core.ST_SplitLineInPoints;
 import org.noisemap.core.ST_SplitSegment;
 import org.noisemap.core.ST_TableGeometryUnion;
-import org.noisemap.core.ST_TriangleContouring;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 
@@ -65,7 +64,6 @@ public class Activator implements BundleActivator {
         reg(new ST_SetNearestGeometryId());
         reg(new ST_SplitSegment());
         reg(new BR_TriGrid());
-        reg(new ST_TriangleContouring());
         reg(new BR_SpectrumRepartition());
         reg(new BTW_SpectrumRepartition());
         reg(new BTW_EvalSource());

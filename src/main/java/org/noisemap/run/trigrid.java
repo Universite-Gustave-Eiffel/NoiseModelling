@@ -46,7 +46,6 @@ import org.gdms.driver.gdms.GdmsDriver;
 import org.gdms.sql.function.FunctionException;
 import org.noisemap.core.BR_PtGrid;
 import org.noisemap.core.BR_TriGrid;
-import org.noisemap.core.ST_TriangleContouring;
 
 /**
  * Independant run of BR_TriGrid plugin.
@@ -86,7 +85,6 @@ public class trigrid {
         System.out.println("-ib builds.gdms  : file name of buildings gdms file");
         System.out.println("-is sources.gdms : file name of noise sources gdms file");
         System.out.println("-o trilvl.gdms   : output filename of gdms file");
-        System.out.println("-otype nointerp  : output type, can be [noiso,nfs31130], only when receiver not specified");
     }
     /**
      * @param args the command line arguments
@@ -102,7 +100,6 @@ public class trigrid {
         String bField="the_geom";
         String sField="the_geom";
         String splField="db_m";
-        String otype="noiso";
         double maxDist=170;
         double maxRDist=50;
         int splitDepth=3;
@@ -153,9 +150,6 @@ public class trigrid {
                 receiverFilename=sargs.pop();
             }else if(argument.contentEquals("-o")) {
                 outputFilename=sargs.pop();
-            }else if(argument.contentEquals("-otype")) {
-                otype=sargs.pop().toLowerCase();
-                assert(otype.equals("noiso") || otype.equals("nfs31130"));
             }else{
                 System.err.println("Unknown parameter :"+argument);
                 printUsage();
@@ -207,26 +201,8 @@ public class trigrid {
                 ex.printStackTrace(System.err);
                 return;
             }
-            if(otype.equals("noiso")) {
-                //Rename output file
-                ((DiskBufferDriver)data).getFile().renameTo(new File(outputFilename));
-            } else {
-                //Compute isocontour
-                ST_TriangleContouring contour=new ST_TriangleContouring();
-                String isolvls="31622, 100000, 316227, 1000000, 3162277, 1e+7, 31622776, 1e+20";
-                Value[] isoArgs={ValueFactory.createValue("the_geom"),ValueFactory.createValue("db_v1"),ValueFactory.createValue("db_v2"),ValueFactory.createValue("db_v3"),ValueFactory.createValue(isolvls)};
-
-                DataSet isoContourResult;
-                try {
-                    DataSet[] isoTables={data};
-                    isoContourResult=contour.evaluate(factory, isoTables, isoArgs, null);
-                    ((DiskBufferDriver)isoContourResult).getFile().renameTo(new File(outputFilename));
-                } catch (FunctionException ex) {
-                    System.err.println(ex.getMessage());
-                    ex.printStackTrace(System.err);
-                    return;
-                }
-            }
+            //Rename output file
+            ((DiskBufferDriver)data).getFile().renameTo(new File(outputFilename));
         }else{
             BR_PtGrid propa=new BR_PtGrid();
             Logger log = new ConsoleLogger("BR_PtGrid");
