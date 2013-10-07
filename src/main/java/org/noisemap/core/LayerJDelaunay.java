@@ -41,8 +41,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Stack;
 
+import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.LineSegment;
+import com.vividsolutions.jts.index.strtree.STRtree;
 import org.apache.log4j.Logger;
 
 import org.jdelaunay.delaunay.ConstrainedMesh;
@@ -72,9 +76,13 @@ public class LayerJDelaunay implements LayerDelaunay {
 	private ArrayList<DEdge> constraintEdge = new ArrayList<DEdge>();
 	private LinkedList<DPoint> ptToInsert = new LinkedList<DPoint>();
 	private List<Coordinate> holes = new LinkedList<Coordinate>();
+    private Double maxArea; // maximum area, if set a grid of points is added before triangulation
+    /** If a grid point is nearest than another point by this distance then the grid point is not added */
+    private static final double EPSILON_AREA_CONSTRAINT = 1;
 	private boolean debugMode=false; //output primitives in a text file
 	private boolean computeNeighbors=false;
 	List<Triangle> triangles = new ArrayList<Triangle>();
+    private final static int GRID_PROP = 4;
 	private List<Triangle> neighbors = new ArrayList<Triangle>(); // The
 																		// first
 																		// neighbor
@@ -178,13 +186,94 @@ public class LayerJDelaunay implements LayerDelaunay {
 
 	private ConstrainedMesh delaunayTool = null;
 
+    /**
+     * This function return insertSegment if insertSegment is not collinear with staticSegment.
+     * Otherwise it return the difference of insertSegment and staticSegment
+     * @param factory Geometry factory
+     * @param staticSegment Segment one
+     * @param insertSegment Segment two
+     * @return LineSegment or null
+     */
+    private static LineSegment[] computeIntersection(GeometryFactory factory, LineSegment staticSegment, LineSegment insertSegment) {
+        LineString staticSegmentLine = staticSegment.toGeometry(factory);
+        LineString insertSegmentLine = insertSegment.toGeometry(factory);
+        Geometry diff = staticSegmentLine.difference(insertSegmentLine);
+        if(diff instanceof LineString) {
+            return new LineSegment[] { insertSegment };
+        } else {
+            return new LineSegment[] { insertSegment };
+        }
+    }
+
 	@Override
 	public void processDelaunay() throws LayerDelaunayError {
-		if (delaunayTool != null) {
+		if (delaunayTool != null && (!ptToInsert.isEmpty() || !constraintEdge.isEmpty())) {
 			try {
-				// Push segments
-				delaunayTool.setPoints(ptToInsert);
-				delaunayTool.setConstraintEdges(constraintEdge);
+                if(maxArea != null) {
+                    ArrayList<DEdge> edges = new ArrayList<DEdge>(constraintEdge);
+                    // Build a PointsMerge tool to not add duplicates
+                    Envelope gridEnv = null;
+                    if(!ptToInsert.isEmpty()) {
+                        gridEnv = new Envelope(ptToInsert.get(0).getCoordinate());
+                    } else if(!constraintEdge.isEmpty()) {
+                        gridEnv = new Envelope(constraintEdge.get(0).getStartPoint().getCoordinate());
+                    }
+                    for(DPoint dPoint : ptToInsert) {
+                        gridEnv.expandToInclude(dPoint.getCoordinate());
+                    }
+                    for(DEdge edge : constraintEdge) {
+                        gridEnv.expandToInclude(edge.getStartPoint().getCoordinate());
+                        gridEnv.expandToInclude(edge.getEndPoint().getCoordinate());
+                    }
+                    // Points of delaunay input has been inserted, and final grid envelope computed
+                    // Compute delta as a point must be inserted at each corner + begin side and side
+                    // in order to guarantee continuity between cells
+                    // Now insert grid points
+                    double requestedDeltaGrid = Math.sqrt(maxArea * 2); // Mul by 2 as square is made of 2 triangles
+                    double xCount = Math.ceil((gridEnv.getMaxX() - gridEnv.getMinX()) / requestedDeltaGrid);
+                    double yCount = Math.ceil((gridEnv.getMaxY() - gridEnv.getMinY()) / requestedDeltaGrid);
+                    double xDelta = (gridEnv.getMaxX() - gridEnv.getMinX()) / xCount;
+                    double yDelta = (gridEnv.getMaxY() - gridEnv.getMinY()) / yCount;
+                    GeometryFactory factory = new GeometryFactory();
+                    // Set negative weigths for grid  as this is less important constraint as polygons.
+                    Map<Integer, Integer> weights = new HashMap<Integer, Integer>();
+                    weights.put(GRID_PROP, -1);
+                    delaunayTool.setWeights(weights);
+                    for(int xi = 0; xi < xCount; xi++) {
+                        for(int yi = 0; yi < yCount; yi++) {
+                            Coordinate gridPoint = new Coordinate(gridEnv.getMinX() + xi * xDelta, gridEnv.getMinY() + yi * yDelta, 0);
+                            LineSegment horizontal = new LineSegment(gridPoint, new Coordinate(gridEnv.getMinX() + (xi + 1) * xDelta, gridEnv.getMinY() + yi * yDelta, 0));
+                            LineSegment vertical = new LineSegment(gridPoint, new Coordinate(gridEnv.getMinX() + xi * xDelta, gridEnv.getMinY() + (yi + 1) * yDelta, 0));
+                            // Insert horizontal constraint
+                            /**
+                            List results = colinearTestRTree.query(new Envelope(horizontal.p0, horizontal.p1));
+                            boolean doInsert = true;
+                            LineString segment = factory.createLineString()
+                            for(Object index : results) {
+                                if(index instanceof Integer) {
+                                    DEdge edge = constraintEdge.get((Integer) index);
+                                    // If grid segment is partially colinear with edge then update grid segment to complete the line
+                                    // if grid segment is totally colinear, do not include the edge
+
+                                }
+                            }
+                            */
+                            DEdge hEdge = new DEdge(new DPoint(horizontal.p0), new DPoint(horizontal.p1));
+                            hEdge.setProperty(GRID_PROP);
+                            edges.add(hEdge);
+                            DEdge vEdge = new DEdge(new DPoint(vertical.p0), new DPoint(vertical.p1));
+                            vEdge.setProperty(GRID_PROP);
+                            edges.add(vEdge);
+                        }
+                    }
+                    delaunayTool.setPoints(ptToInsert);
+                    // Push segments
+                    delaunayTool.setConstraintEdges(edges);
+                } else {
+                    delaunayTool.setPoints(ptToInsert);
+                    // Push segments
+                    delaunayTool.setConstraintEdges(constraintEdge);
+                }
 				
 				if(debugMode) {
 					try
@@ -219,6 +308,10 @@ public class LayerJDelaunay implements LayerDelaunay {
 				
 				delaunayTool.forceConstraintIntegrity();
 				delaunayTool.processDelaunay();
+                // Post-refinement
+                if(maxArea != null) {
+                    // refine mesh
+                }
 				constraintEdge.clear();
 				ptToInsert.clear();
 				List<DTriangle> trianglesDelaunay = delaunayTool
@@ -248,7 +341,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 							navHistoryDir.pop();							
 						} else {
 							DEdge ed = navHistoryTri.peek().getEdge(navHistoryDir.peek());
-							if(!ed.isLocked()) {
+							if(!ed.isLocked() || ed.getProperty() == GRID_PROP) {
 								DTriangle neigh=ed.getOtherTriangle(navHistoryTri.peek());
 								if(neigh != null) {
 									if(neigh.getExternalGID()!=0) { //Not set as destroyed
@@ -398,8 +491,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 
 	@Override
 	public void setMaxArea(Double maxArea) throws LayerDelaunayError {
-		// TODO Auto-generated method stub
-
+		this.maxArea = maxArea;
 	}
 
 	@Override
