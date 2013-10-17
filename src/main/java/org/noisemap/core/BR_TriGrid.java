@@ -413,7 +413,7 @@ public class BR_TriGrid extends AbstractTableFunction {
 		String tmpdir = dsf.getTempDir().getAbsolutePath();
                 if(values.length<10) {
                     throw new FunctionException("Not enough parameters !");
-                }else if(values.length>10){
+                }else if(values.length>11){
                     throw new FunctionException("Too many parameters !");
                 }
 		String dbField = values[0].toString();
@@ -479,8 +479,14 @@ public class BR_TriGrid extends AbstractTableFunction {
 			
 			
 			// 1 Step - Evaluation of the main bounding box (sources)
-			Envelope mainEnvelope = GetGlobalEnvelope(sdsSources, pm);
-                        // Split domain into 4^subdiv cells
+			Envelope mainEnvelope;
+            if(values.length > 10) {
+                mainEnvelope = values[10].getAsGeometry().getEnvelopeInternal();
+            } else {
+                mainEnvelope = GetGlobalEnvelope(sdsSources, pm);
+            }
+
+            // Split domain into 4^subdiv cells
 
 			int gridDim = (int) Math.pow(2, subdivLvl);
 
@@ -753,8 +759,22 @@ public class BR_TriGrid extends AbstractTableFunction {
                             ScalarArgument.DOUBLE,
                             ScalarArgument.INT,
                             ScalarArgument.INT,
-                            ScalarArgument.DOUBLE)
-                    };
+                            ScalarArgument.DOUBLE) ,
+                    new TableFunctionSignature(TableDefinition.GEOMETRY,
+                            new TableArgument(TableDefinition.GEOMETRY),
+                            new TableArgument(TableDefinition.GEOMETRY),
+                            ScalarArgument.STRING,
+                            ScalarArgument.DOUBLE,
+                            ScalarArgument.DOUBLE,
+                            ScalarArgument.INT,
+                            ScalarArgument.DOUBLE,
+                            ScalarArgument.DOUBLE,
+                            ScalarArgument.DOUBLE,
+                            ScalarArgument.INT,
+                            ScalarArgument.INT,
+                            ScalarArgument.DOUBLE,
+                            ScalarArgument.POLYGON)
+            };
     }
 
 	@Override
@@ -769,7 +789,7 @@ public class BR_TriGrid extends AbstractTableFunction {
 
 	@Override
 	public String getDescription() {
-		return "BR_TriGrid(buildings(polygons),sources(points),sound lvl field name(string),maximum propagation distance (double meter),maximum wall seeking distance (double meter),subdivision level 4^n cells(int), roads width (meter), densification of receivers near roads (meter), maximum area of triangle, sound reflection order, sound diffraction order, alpha of walls ) Sound propagation from ponctual sound sources to ponctual receivers created by a delaunay triangulation of specified buildings geometry.";
+		return "BR_TriGrid(buildings(polygons),sources(points),sound lvl field name(string),maximum propagation distance (double meter),maximum wall seeking distance (double meter),subdivision level 4^n cells(int), roads width (meter), densification of receivers near roads (meter), maximum area of triangle, sound reflection order, sound diffraction order, alpha of walls[, envelope polygon] ) Sound propagation from ponctual sound sources to ponctual receivers created by a delaunay triangulation of specified buildings geometry.";
 	}
 
 
