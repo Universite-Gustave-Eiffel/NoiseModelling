@@ -285,7 +285,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 						
 					out.printf("DPoint pts[]={");
 					// write pts
-					for(DPoint pt : ptToInsert) {
+					for(DPoint pt : delaunayTool.getPoints()) {
 						out.printf("new DPoint(%s, %s, %s),\r\n",Double.toString(pt.getX()),Double.toString(pt.getY()),Double.toString(pt.getZ()));
 					}
 					out.printf("};\r\n");
@@ -293,7 +293,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 					out.printf("DEdge edges[]={");
 					// write pts
 
-					for(DEdge edge : constraintEdge) {
+					for(DEdge edge : delaunayTool.getConstraintEdges()) {
 						DPoint pt=edge.getStartPoint();
 						DPoint pt2=edge.getEndPoint();
 						out.printf("new DEdge(%s, %s, %s,%s, %s, %s),\r\n",Double.toString(pt.getX()),Double.toString(pt.getY()),Double.toString(pt.getZ()),Double.toString(pt2.getX()),Double.toString(pt2.getY()),Double.toString(pt2.getZ()));
