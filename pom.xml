@@ -10,7 +10,12 @@
         <name>noisemap</name>
         <groupId>org.noisemap</groupId>
         <artifactId>noisemap</artifactId>
-    <description>Translate light vehicle, heavy vehicle, public bus, tramway traffic into linear noise source. Then compute sound propagation and iso surface.</description>
+        <parent>
+            <groupId>org.orbisgis</groupId>
+            <artifactId>orbisgis-nexus</artifactId>
+            <version>1</version>
+        </parent>
+        <description>Translate light vehicle, heavy vehicle, public bus, tramway traffic into linear noise source. Then compute sound propagation and iso surface.</description>
         <dependencies>
                 <dependency>
                         <groupId>org.apache.commons</groupId>
@@ -104,11 +109,4 @@
                         <url>http://repo2.maven.org/maven2</url>
                 </repository>
         </repositories>
-        <distributionManagement>
-                <repository>
-                        <id>IRSTV</id>
-                        <name>IRSTV repository</name>
-                        <url>scp://ateliersig@repo.orbisgis.org:/var/www/repo.orbisgis.org/</url>
-                </repository>
-        </distributionManagement>
 </project>
