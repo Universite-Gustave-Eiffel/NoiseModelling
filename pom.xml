@@ -15,6 +15,7 @@
             <artifactId>orbisgis-nexus</artifactId>
             <version>1</version>
         </parent>
+        <url>https://github.com/irstv/noisemap/wiki</url>
         <description>Translate light vehicle, heavy vehicle, public bus, tramway traffic into linear noise source. Then compute sound propagation and iso surface.</description>
         <dependencies>
                 <dependency>
