@@ -56,76 +56,6 @@ import com.vividsolutions.jts.geom.LineString;
  * @author Nicolas Fortin
  */
 public class ST_SplitLineInPoints extends AbstractScalarSpatialFunction {
-	public static Coordinate[] splitMultiPointsInRegularPoints(
-			Coordinate[] points, double delta) {
-		GeometryFactory gf = new GeometryFactory();
-		if (points.length == 0) {
-			return null;
-		}
-		if (points.length == 1) {
-			return points;
-		}
-		// If the distance between the first and the last point is smaller than
-		// delta, then return the avg point
-		LineString Line = gf.createLineString(points);
-		Double length = Line.getLength();
-		if (length < delta) {
-			if (points.length == 2) {
-				Coordinate[] coords = { new Coordinate(
-						(points[1].x + points[0].x) / 2.,
-						(points[1].y + points[0].y) / 2.,
-						(points[1].y + points[0].y) / 2.) };
-				return coords;
-			} else {
-				return Line.getInteriorPoint().getCoordinates();
-			}
-		}
-		// We can't set an absolute value, but we can provide a way to compute
-		// a delta value that will build a regular set of points with the
-		// constraint of a maximum delta value.
-		Double ModifiedDelta = length / Math.ceil(length / delta);
-		// The line length is greater than Delta, then we will create a set of
-		// points where each point lies at the distance of the modified delta
-		int nbpts = (int) Math.ceil(length / delta);
-		Coordinate[] deltaPoints = new Coordinate[nbpts];
-		int pts = 0;
-		int cursorPts = 1; // This is the navigation cursor inside the points
-							// array
-		Coordinate refpt = points[0];
-		Double distToNextPt = ModifiedDelta;
-		while (pts < nbpts) {
-			Coordinate nextbldpts;
-			Double distToNextControlPt = refpt.distance(points[cursorPts]);
-			while (distToNextControlPt < distToNextPt
-					&& points.length != cursorPts + 1) {
-				// The distance with the next control point is not sufficient to
-				// build a new point
-				distToNextPt -= distToNextControlPt;
-				refpt = points[cursorPts];
-				cursorPts++;
-				distToNextControlPt = refpt.distance(points[cursorPts]);
-			}
-			if (distToNextControlPt >= distToNextPt) {
-				// AB Normalized vector
-				Coordinate A = refpt;
-				Coordinate B = points[cursorPts];
-				Double ABlen = B.distance(A);
-				Coordinate AB = new Coordinate((B.x - A.x) / ABlen, (B.y - A.y)
-						/ ABlen, (B.z - A.z) / ABlen);
-				// Compute intermediate P vector
-				Coordinate P = new Coordinate(A.x + AB.x * distToNextPt, A.y
-						+ AB.y * distToNextPt, A.z + AB.z * distToNextPt);
-				nextbldpts = P;
-			} else {
-				nextbldpts = points[cursorPts];
-			}
-			refpt = nextbldpts;
-			deltaPoints[pts] = nextbldpts;
-			pts++;
-			distToNextPt = ModifiedDelta;
-		}
-		return deltaPoints;
-	}
 
 	@Override
 	public String getName() {
@@ -163,7 +93,7 @@ public class ST_SplitLineInPoints extends AbstractScalarSpatialFunction {
 			// Get the point first and last point of the geometry
 			Coordinate[] points = geom.getCoordinates();
 			return ValueFactory.createValue(gf
-					.createMultiPoint(splitMultiPointsInRegularPoints(points,
+					.createMultiPoint(JTSUtility.splitMultiPointsInRegularPoints(points,
 							delta)));
 		}
 	}
