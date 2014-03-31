@@ -31,14 +31,12 @@
  * or contact directly:
  * info_at_ orbisgis.org
  */
-package org.noisemap.core;
+package org.orbisgis.noisemap.core;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.LinkedList;
-import org.gdms.data.DataSourceFactory;
 
 /**
  * Data input for a propagation process (SubEnveloppe of BR_TriGrid).
@@ -63,11 +61,15 @@ public class PropagationProcessData {
 	public double minRecDist; // Minimum distance between source and receiver
 	public double wallAlpha; // Wall alpha [0-1]
 	public int cellId; // cell id
-	public DataSourceFactory dsf; // Debug purpose
 	public ProgressionProcess cellProg; // Progression information
         public List<GeoWithSoilType> geoWithSoilType;//list Geometry of soil and the type of this soil
         
-    public PropagationProcessData(List<Coordinate> vertices, List<Long> receiverRowId, List<Triangle> triangles, FastObstructionTest freeFieldFinder, QueryGeometryStructure sourcesIndex, List<Geometry> sourceGeometries, List<ArrayList<Double>> wj_sources, List<Integer> freq_lvl, int reflexionOrder, int diffractionOrder, double maxSrcDist, double maxRefDist, double minRecDist, double wallAlpha, int cellId, DataSourceFactory dsf, ProgressionProcess cellProg, List<GeoWithSoilType> geoWithSoilType) {
+    public PropagationProcessData(List<Coordinate> vertices, List<Long> receiverRowId, List<Triangle> triangles,
+                                  FastObstructionTest freeFieldFinder, QueryGeometryStructure sourcesIndex,
+                                  List<Geometry> sourceGeometries, List<ArrayList<Double>> wj_sources,
+                                  List<Integer> freq_lvl, int reflexionOrder, int diffractionOrder, double maxSrcDist,
+                                  double maxRefDist, double minRecDist, double wallAlpha, int cellId, ProgressionProcess cellProg,
+                                  List<GeoWithSoilType> geoWithSoilType) {
         this.vertices = vertices;
         this.receiverRowId = receiverRowId;
         this.triangles = triangles;
@@ -83,7 +85,6 @@ public class PropagationProcessData {
         this.minRecDist = minRecDist;
         this.wallAlpha = wallAlpha;
         this.cellId = cellId;
-        this.dsf = dsf;
         this.cellProg = cellProg;
         this.geoWithSoilType = geoWithSoilType;
     }
