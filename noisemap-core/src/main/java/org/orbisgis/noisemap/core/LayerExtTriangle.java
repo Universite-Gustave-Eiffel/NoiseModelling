@@ -45,7 +45,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Scanner;
 import java.util.LinkedList;
-import org.apache.log4j.Logger;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
@@ -53,6 +52,8 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Polygon;
 import com.vividsolutions.jts.index.quadtree.Quadtree;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 
@@ -60,8 +61,8 @@ import com.vividsolutions.jts.index.quadtree.Quadtree;
  */
 public class LayerExtTriangle implements LayerDelaunay {
 
-	private static Logger logger = Logger.getLogger(LayerExtTriangle.class
-			.getName());
+	private static Logger logger = LoggerFactory.getLogger(LayerExtTriangle.class
+            .getName());
 	// Final list
 	private ArrayList<Coordinate> vertices = new ArrayList<Coordinate>();
 	private LinkedList<Coordinate> holes = new LinkedList<Coordinate>();

@@ -38,7 +38,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import org.grap.utilities.EnvelopeUtil;
+
 /**
  * GridIndex is a class to speed up the query of a geometry collection and
  * to minimize the memory used for storing geometry items index.
@@ -124,8 +124,7 @@ public class QueryGridIndex implements QueryGeometryStructure {
                                 //Intersection of geometries is more
                                 //precise than the intersection of envelope of geometry
                                 //but it take more time
-                                Polygon square = factory.createPolygon(
-                                                (LinearRing) EnvelopeUtil.toGeometry(cellEnv), null);
+                                Polygon square = (Polygon)factory.toGeometry(cellEnv);
                                 if (square.intersects(newGeom)) {
                                         addItem(i, j, externalId);
                                 }

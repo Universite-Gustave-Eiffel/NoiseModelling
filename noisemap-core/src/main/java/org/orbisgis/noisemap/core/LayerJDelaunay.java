@@ -31,7 +31,7 @@
  * or contact directly:
  * info_at_ orbisgis.org
  */
-package org.noisemap.core;
+package org.orbisgis.noisemap.core;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -41,9 +41,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Stack;
-
-import org.apache.log4j.Logger;
 
 import org.jdelaunay.delaunay.ConstrainedMesh;
 import org.jdelaunay.delaunay.geometries.DEdge;
@@ -61,13 +58,15 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Polygon;
 import com.vividsolutions.jts.geom.Point;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * 
  * @author Nicolas Fortin
  */
 public class LayerJDelaunay implements LayerDelaunay {
-	private static Logger logger = Logger.getLogger(LayerJDelaunay.class
-			.getName());
+	private static Logger logger = LoggerFactory.getLogger(LayerJDelaunay.class);
 	private List<Coordinate> vertices = new ArrayList<Coordinate>();
 	private ArrayList<DEdge> constraintEdge = new ArrayList<DEdge>();
 	private LinkedList<DPoint> ptToInsert = new LinkedList<DPoint>();

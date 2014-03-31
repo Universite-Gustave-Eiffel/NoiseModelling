@@ -38,6 +38,16 @@
             <artifactId>jts</artifactId>
             <version>${jts-version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.orbisgis</groupId>
+            <artifactId>jdelaunay</artifactId>
+            <version>0.5.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.5</version>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

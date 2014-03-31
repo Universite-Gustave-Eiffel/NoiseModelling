@@ -37,9 +37,6 @@ package org.orbisgis.noisemap.core;
 import java.util.LinkedList;
 import java.util.List;
 
-
-import org.grap.utilities.EnvelopeUtil;
-
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
@@ -301,22 +298,17 @@ public class MeshBuilder {
                 //add topoPoints to JDelaunay
                 //no check if the point in the building
                 if(!topoPoints.isEmpty()){
-                    for(int j=0;j<topoPoints.size();j++){
-
-                        delaunayTool.addTopoPoint(topoPoints.get(j));
-
+                    for (Coordinate topoPoint : topoPoints) {
+                        delaunayTool.addTopoPoint(topoPoint);
                     }
                 }
 
 		// Insert the main rectangle
-		Geometry linearRing = EnvelopeUtil.toGeometry(this.geometriesBoundingBox);
-		if (!(linearRing instanceof LinearRing)) {
+		Geometry boundingBox = new GeometryFactory().toGeometry(this.geometriesBoundingBox);
+		if (!(boundingBox instanceof Polygon)) {
 			return;
 		}
-		GeometryFactory factory = new GeometryFactory();
-		Polygon boundingBox = new Polygon((LinearRing) linearRing, null,
-				factory);
-		delaunayTool.addPolygon(boundingBox, false);
+		delaunayTool.addPolygon((Polygon)boundingBox, false);
                 //explodeAndAddPolygon(allbuilds, delaunayTool);
 		//Process delaunay Triangulation
 		delaunayTool.setMinAngle(0.);
