@@ -43,7 +43,6 @@ import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryCollection;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
-import com.vividsolutions.jts.geom.LinearRing;
 import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Polygon;
 import com.vividsolutions.jts.geom.Point;
@@ -55,7 +54,7 @@ import java.util.*;
  * MeshBuilder is a Delaunay Structure builder.
  * TODO enable add and query of geometry object (other than
  * fitting elements) into the delaunay triangulation. 
- * It can also add the point with Z to complet the mesh with the topograhic
+ * It can also add the point with Z to complete the mesh with the topography
  * @author Nicolas Fortin
  * @author SU Qi
  */
