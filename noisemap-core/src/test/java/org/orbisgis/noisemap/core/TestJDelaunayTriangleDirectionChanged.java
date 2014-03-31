@@ -1,4 +1,4 @@
-package org.noisemap.core;
+package org.orbisgis.noisemap.core;
 
 import com.vividsolutions.jts.geom.Coordinate;
 

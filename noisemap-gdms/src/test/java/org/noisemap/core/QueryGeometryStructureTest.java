@@ -52,6 +52,9 @@ import org.gdms.driver.DataSet;
 import org.gdms.driver.DriverException;
 import org.grap.utilities.EnvelopeUtil;
 import org.junit.Before;
+import org.orbisgis.noisemap.core.QueryGridIndex;
+import org.orbisgis.noisemap.core.QueryQuadTree;
+import org.orbisgis.noisemap.core.QueryRTree;
 
 /**
  * Unit test & quick benchmark of implemented GeometryStructure.
@@ -172,7 +175,7 @@ public class QueryGeometryStructureTest extends TestCase {
         
         //Init quadtree structures
         long startFeedQuadree=System.currentTimeMillis();
-        QueryQuadTree quadIndex = new QueryQuadTree();        
+        QueryQuadTree quadIndex = new QueryQuadTree();
         for (Integer rowIndex = 0; rowIndex < rowCount; rowIndex++) {
             Geometry sourceGeom = sdsSources.getFieldValue(rowIndex, spatialSourceFieldIndex).getAsGeometry();
             quadIndex.appendGeometry(sourceGeom, rowIndex);

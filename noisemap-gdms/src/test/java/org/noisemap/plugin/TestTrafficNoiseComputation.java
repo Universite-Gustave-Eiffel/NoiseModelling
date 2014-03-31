@@ -37,14 +37,16 @@ import org.gdms.data.values.ValueFactory;
 import org.gdms.data.types.IncompatibleTypesException;
 import org.gdms.sql.function.FunctionException;
 import org.noisemap.core.BR_EvalSource;
-import org.noisemap.core.TestSoundPropagationValidation;
 
 import junit.framework.TestCase;
 
 public class TestTrafficNoiseComputation extends TestCase {
         public static double splEpsilon=0.001;
+    public static boolean isSameDbValues(double dba,double dba2,double externalEpsilon) {
+        return Math.abs(dba-dba2)<externalEpsilon || (Double.isInfinite(dba) && Double.isInfinite(dba2));
+    }
 	private void doSplAssert(String parameters,double expecteddB,double computeddB) {
-		assertTrue("Road noise estimation ("+parameters+") failed. Expected value is "+expecteddB+" dB(A), computed value is "+computeddB+" dB(A).", TestSoundPropagationValidation.isSameDbValues(computeddB, expecteddB,splEpsilon));
+		assertTrue("Road noise estimation ("+parameters+") failed. Expected value is "+expecteddB+" dB(A), computed value is "+computeddB+" dB(A).", isSameDbValues(computeddB, expecteddB,splEpsilon));
 	}
 	public void testRoadVehicleNoise() throws IncompatibleTypesException, FunctionException {
 
