@@ -31,34 +31,56 @@
  * or contact directly:
  * info_at_ orbisgis.org
  */
-package org.noisemap.core;
+package org.orbisgis.noisemap.core;
 
-import com.vividsolutions.jts.geom.LineString;
+import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.Envelope;
+
 /**
- * DiffractionWithSoilEffetZone work for FastOBstructionTest, 
- * aims to keep the 3D diffraction, first diffraction zone and last diffraction zone data, 
- * to give them to propagation process data
- * @author SU Qi
+ * This class append an index to the envelope class
+ * 
+ * @param <index_t>
+ * @author Nicolas Fortin
  */
-public class DiffractionWithSoilEffetZone {
-           private Double[] diffractionData= new Double[3]; //3D diffraction data
-           private LineString rOZone;//receiver-first intersection zone for 3D diffraction
-           private LineString oSZone;//last intersection-source zone for 3D diffraction
-           
-           public DiffractionWithSoilEffetZone(Double[] diffractionData, LineString rOZone, LineString oSZone){
-               this.diffractionData=diffractionData;
-               this.rOZone=rOZone;
-               this.oSZone=oSZone;
-           }
-           public Double[] getDiffractionData(){
+public class EnvelopeWithIndex<index_t> extends Envelope {
 
-               return this.diffractionData;
-           }
-           public LineString getROZone(){
-               return this.rOZone;
-           }
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -8552159007637756012L;
+	private index_t index;
 
-           public LineString getOSZone(){
-               return this.oSZone;
-           }
+	public EnvelopeWithIndex(Coordinate p, index_t id) {
+		super(p);
+		index = id;
+	}
+
+	public EnvelopeWithIndex(Envelope env, index_t id) {
+		super(env);
+		index = id;
+	}
+
+	public EnvelopeWithIndex(Coordinate p1, Coordinate p2, index_t id) {
+		super(p1, p2);
+		index = id;
+	}
+
+	public EnvelopeWithIndex(double x1, double x2, double y1, double y2,
+			index_t id) {
+		super(x1, x2, y1, y2);
+		index = id;
+	}
+
+	public index_t getId() {
+		return index;
+	}
+
+	public Coordinate getPosition() {
+		return super.centre();
+	}
+
+	public void setId(index_t id) {
+		index = id;
+	}
+
 }

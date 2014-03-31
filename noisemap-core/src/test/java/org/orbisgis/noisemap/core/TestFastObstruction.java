@@ -31,14 +31,10 @@
  * or contact directly:
  * info_at_ orbisgis.org
  */
-package org.noisemap.core;
+package org.orbisgis.noisemap.core;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import org.noisemap.core.FastObstructionTest;
-import org.noisemap.core.LayerDelaunayError;
-
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;

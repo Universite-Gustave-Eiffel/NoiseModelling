@@ -31,34 +31,34 @@
  * or contact directly:
  * info_at_ orbisgis.org
  */
-package org.noisemap.core;
+package org.orbisgis.noisemap.core;
 
+import com.vividsolutions.jts.geom.LineString;
 /**
- * Throwed delaunay error.
- * @author Nicolas Fortin
+ * DiffractionWithSoilEffetZone work for FastOBstructionTest, 
+ * aims to keep the 3D diffraction, first diffraction zone and last diffraction zone data, 
+ * to give them to propagation process data
+ * @author SU Qi
  */
-public class LayerDelaunayError extends Throwable {
-	private static final long serialVersionUID = 1L;
+public class DiffractionWithSoilEffetZone {
+           private Double[] diffractionData= new Double[3]; //3D diffraction data
+           private LineString rOZone;//receiver-first intersection zone for 3D diffraction
+           private LineString oSZone;//last intersection-source zone for 3D diffraction
+           
+           public DiffractionWithSoilEffetZone(Double[] diffractionData, LineString rOZone, LineString oSZone){
+               this.diffractionData=diffractionData;
+               this.rOZone=rOZone;
+               this.oSZone=oSZone;
+           }
+           public Double[] getDiffractionData(){
 
-	// error code saving
-	String errorMessage;
+               return this.diffractionData;
+           }
+           public LineString getROZone(){
+               return this.rOZone;
+           }
 
-	public LayerDelaunayError(String ErrorMsg) {
-		super();
-		errorMessage = ErrorMsg;
-	}
-
-        public LayerDelaunayError(Throwable thrwbl) {
-            super(thrwbl);
-        }
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see java.lang.Throwable#getMessage()
-	 */
-	@Override
-	public String getMessage() {
-		return errorMessage;
-	}
+           public LineString getOSZone(){
+               return this.oSZone;
+           }
 }

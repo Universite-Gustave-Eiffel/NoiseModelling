@@ -31,46 +31,34 @@
  * or contact directly:
  * info_at_ orbisgis.org
  */
-package org.noisemap.core;
+package org.orbisgis.noisemap.core;
 
-import com.vividsolutions.jts.geom.Coordinate;
 /**
- * TriIdWithIntersection work for FastObstructionTest, 
- * aims to keep the interseted points coordinate and check if this point in building
- * @author SU Qi
+ * Throwed delaunay error.
+ * @author Nicolas Fortin
  */
-public class TriIdWithIntersection {
-    
-           private int triID;//triangle id 
-           private Coordinate coorIntersection;//intersection coordinate
-           private boolean isIntersectionOnBuilding;//if this intersection is on building
-           public TriIdWithIntersection(int triID, Coordinate coorIntersection, boolean isIntersectionOnBuilding){
+public class LayerDelaunayError extends Throwable {
+	private static final long serialVersionUID = 1L;
 
-               this.triID=triID;
-               this.coorIntersection=coorIntersection;
-               this.isIntersectionOnBuilding=isIntersectionOnBuilding;
-           }
-           
-           /**
-            * 
-            * @return Tiangle ID 
-            */
-           public int getTriID(){
+	// error code saving
+	String errorMessage;
 
-               return this.triID;
-           }
-           /**
-            * 
-            * @return Intersection coordinate
-            */
-           public Coordinate getCoorIntersection(){
-               return this.coorIntersection;
-           }
-           /**
-            * 
-            * @return 
-            */
-           public boolean getIsIntersectionOnBuilding(){
-               return this.isIntersectionOnBuilding;
-           }
+	public LayerDelaunayError(String ErrorMsg) {
+		super();
+		errorMessage = ErrorMsg;
+	}
+
+        public LayerDelaunayError(Throwable thrwbl) {
+            super(thrwbl);
+        }
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Throwable#getMessage()
+	 */
+	@Override
+	public String getMessage() {
+		return errorMessage;
+	}
 }

@@ -31,7 +31,7 @@
  * or contact directly:
  * info_at_ orbisgis.org
  */
-package org.noisemap.core;
+package org.orbisgis.noisemap.core;
 
 /**
  * A triangle built from the combination of the 3 vertices index.

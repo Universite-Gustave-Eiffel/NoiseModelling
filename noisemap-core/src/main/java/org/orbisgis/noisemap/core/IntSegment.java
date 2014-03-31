@@ -31,23 +31,36 @@
  * or contact directly:
  * info_at_ orbisgis.org
  */
-package org.noisemap.core;
-
-import com.vividsolutions.jts.geom.Envelope;
-import com.vividsolutions.jts.geom.Geometry;
-import java.util.Iterator;
+package org.orbisgis.noisemap.core;
 
 /**
- * QueryGeometryStructure aims to speed up the query of a geometry collection
- * inside a region envelope.
- * 
+ * A segment built from the combination of 2 vertices index.
  * @author Nicolas Fortin
  */
+public class IntSegment {
+	private int a = 0;
+	private int b = 0;
 
-public interface QueryGeometryStructure {
+	public IntSegment(int a, int b) {
+		super();
+		this.a = a;
+		this.b = b;
+	}
 
-	void appendGeometry(final Geometry newGeom, Integer externalId);
+	public int getA() {
+		return a;
+	}
 
-	Iterator<Integer> query(Envelope queryEnv);
+	public void setA(int a) {
+		this.a = a;
+	}
+
+	public int getB() {
+		return b;
+	}
+
+	public void setB(int b) {
+		this.b = b;
+	}
 
 }

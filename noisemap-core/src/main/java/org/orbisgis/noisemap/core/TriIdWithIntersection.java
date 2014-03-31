@@ -31,56 +31,46 @@
  * or contact directly:
  * info_at_ orbisgis.org
  */
-package org.noisemap.core;
+package org.orbisgis.noisemap.core;
 
 import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.Envelope;
-
 /**
- * This class append an index to the envelope class
- * 
- * @param <index_t>
- * @author Nicolas Fortin
+ * TriIdWithIntersection work for FastObstructionTest, 
+ * aims to keep the interseted points coordinate and check if this point in building
+ * @author SU Qi
  */
-public class EnvelopeWithIndex<index_t> extends Envelope {
+public class TriIdWithIntersection {
+    
+           private int triID;//triangle id 
+           private Coordinate coorIntersection;//intersection coordinate
+           private boolean isIntersectionOnBuilding;//if this intersection is on building
+           public TriIdWithIntersection(int triID, Coordinate coorIntersection, boolean isIntersectionOnBuilding){
 
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = -8552159007637756012L;
-	private index_t index;
+               this.triID=triID;
+               this.coorIntersection=coorIntersection;
+               this.isIntersectionOnBuilding=isIntersectionOnBuilding;
+           }
+           
+           /**
+            * 
+            * @return Tiangle ID 
+            */
+           public int getTriID(){
 
-	public EnvelopeWithIndex(Coordinate p, index_t id) {
-		super(p);
-		index = id;
-	}
-
-	public EnvelopeWithIndex(Envelope env, index_t id) {
-		super(env);
-		index = id;
-	}
-
-	public EnvelopeWithIndex(Coordinate p1, Coordinate p2, index_t id) {
-		super(p1, p2);
-		index = id;
-	}
-
-	public EnvelopeWithIndex(double x1, double x2, double y1, double y2,
-			index_t id) {
-		super(x1, x2, y1, y2);
-		index = id;
-	}
-
-	public index_t getId() {
-		return index;
-	}
-
-	public Coordinate getPosition() {
-		return super.centre();
-	}
-
-	public void setId(index_t id) {
-		index = id;
-	}
-
+               return this.triID;
+           }
+           /**
+            * 
+            * @return Intersection coordinate
+            */
+           public Coordinate getCoorIntersection(){
+               return this.coorIntersection;
+           }
+           /**
+            * 
+            * @return 
+            */
+           public boolean getIsIntersectionOnBuilding(){
+               return this.isIntersectionOnBuilding;
+           }
 }
