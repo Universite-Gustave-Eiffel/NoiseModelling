@@ -16,6 +16,11 @@
     </parent>
     <description>Translate light vehicle, heavy vehicle, public bus, tramway traffic into linear noise source. Then compute sound propagation and iso surface.</description>
         <dependencies>
+            <dependency>
+                <groupId>org.orbisgis</groupId>
+                <artifactId>noisemap-core</artifactId>
+                <version>${version}</version>
+            </dependency>
                 <dependency>
                         <groupId>org.apache.commons</groupId>
                         <artifactId>commons-math</artifactId>

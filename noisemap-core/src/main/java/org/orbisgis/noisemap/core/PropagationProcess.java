@@ -259,7 +259,7 @@ public class PropagationProcess implements Runnable {
 			delta = closestPtDist / 2;
 		}
 		pts.add(closestPt);
-		Coordinate[] splitedPts = ST_SplitLineInPoints
+		Coordinate[] splitedPts = JTSUtility
 				.splitMultiPointsInRegularPoints(points, delta);
 		for (Coordinate pt : splitedPts) {
 			if (pt.distance(closestPt) > delta) {
@@ -366,7 +366,6 @@ public class PropagationProcess implements Runnable {
 	 * @param[out] energeticSum Energy by frequency band
 	 * @param[in] alpha_atmo Atmospheric absorption by frequency band
 	 * @param[in] wj Source sound pressure level dB(A) by frequency band
-	 * @param[in] li Coefficient, distance between source discretization
 	 * @param[in] mirroredReceiver Receivers mirrored by walls (for reflection)
 	 * @param[in] nearBuildingsWalls Walls within maxsrcdist
 	 * @param[in] regionCorners Corners within maxsrcdist

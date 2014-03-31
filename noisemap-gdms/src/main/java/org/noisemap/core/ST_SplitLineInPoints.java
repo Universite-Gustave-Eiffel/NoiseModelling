@@ -45,6 +45,7 @@ import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
+import org.orbisgis.noisemap.core.JTSUtility;
 
 /**
  * 
@@ -94,7 +95,7 @@ public class ST_SplitLineInPoints extends AbstractScalarSpatialFunction {
 			Coordinate[] points = geom.getCoordinates();
 			return ValueFactory.createValue(gf
 					.createMultiPoint(JTSUtility.splitMultiPointsInRegularPoints(points,
-							delta)));
+                            delta)));
 		}
 	}
 
