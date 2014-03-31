@@ -17,7 +17,11 @@
             <url>http://www.gnu.org/licenses/gpl-3.0.html</url>
         </license>
     </licenses>
+    <properties>
+        <jts-version>1.13</jts-version>
+    </properties>
     <modules>
+        <module>noisemap-core</module>
         <module>noisemap-gdms</module>
     </modules>
     <scm>
