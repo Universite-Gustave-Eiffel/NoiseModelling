@@ -52,14 +52,14 @@ public class RowsUnionClassification implements Iterable<RowInterval> {
     /**
      * Default constructor
      */
-    RowsUnionClassification() {
-        
+    public RowsUnionClassification() {
+
     }
     /**
      * 
      * @param row First row id
      */
-    RowsUnionClassification(int row) {
+    public RowsUnionClassification(int row) {
         rowrange.add(row);
         rowrange.add(row);
     }
@@ -67,7 +67,7 @@ public class RowsUnionClassification implements Iterable<RowInterval> {
      * 
      * @param row First row id
      */
-    RowsUnionClassification(int rowbegin, int rowend) {
+    public RowsUnionClassification(int rowbegin, int rowend) {
         if(rowend<rowbegin) {
             throw new IllegalArgumentException("Begin row index must be inferior or equal to end row index.");
         }

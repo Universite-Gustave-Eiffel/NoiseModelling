@@ -54,6 +54,8 @@ import org.gdms.sql.function.table.TableArgument;
 import org.gdms.sql.function.table.TableDefinition;
 import org.gdms.sql.function.table.TableFunctionSignature;
 import org.gdms.driver.DiskBufferDriver;
+import org.orbisgis.noisemap.core.EnvelopeWithIndex;
+import org.orbisgis.noisemap.core.ProgressionProcess;
 import org.orbisgis.progress.ProgressMonitor;
 
 import com.vividsolutions.jts.index.quadtree.Quadtree;

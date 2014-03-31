@@ -58,6 +58,19 @@ import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.Point;
 import org.gdms.data.schema.MetadataUtilities;
+import org.orbisgis.noisemap.core.FastObstructionTest;
+import org.orbisgis.noisemap.core.GeoWithSoilType;
+import org.orbisgis.noisemap.core.LayerDelaunay;
+import org.orbisgis.noisemap.core.LayerDelaunayError;
+import org.orbisgis.noisemap.core.LayerExtTriangle;
+import org.orbisgis.noisemap.core.MeshBuilder;
+import org.orbisgis.noisemap.core.PropagationProcess;
+import org.orbisgis.noisemap.core.PropagationProcessData;
+import org.orbisgis.noisemap.core.PropagationProcessOut;
+import org.orbisgis.noisemap.core.PropagationResultTriRecord;
+import org.orbisgis.noisemap.core.QueryGeometryStructure;
+import org.orbisgis.noisemap.core.QueryQuadTree;
+import org.orbisgis.noisemap.core.Triangle;
 /**
  *
  * @author SU Qi
@@ -424,7 +437,7 @@ public class BR_TriGridTopo extends BR_TriGrid{
 							vertices,null, triangles, freeFieldFinder, sourcesIndex,
 							sourceGeometries, wj_sources, db_field_freq,
 							reflexionOrder, diffractionOrder, maxSrcDist,maxRefDist,
-							minRecDist, wallAlpha, ij, dsf,
+							minRecDist, wallAlpha, ij,
 							pmManager.nextSubProcess(vertices.size()), geoWithSoil);
 					PropagationProcess propaProcess = new PropagationProcess(
 							threadData, threadDataOut);

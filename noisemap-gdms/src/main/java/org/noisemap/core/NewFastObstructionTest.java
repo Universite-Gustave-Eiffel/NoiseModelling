@@ -47,6 +47,14 @@ import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineSegment;
 import com.vividsolutions.jts.geom.Polygon;
+import org.orbisgis.noisemap.core.FastObstructionTest;
+import org.orbisgis.noisemap.core.IntSegment;
+import org.orbisgis.noisemap.core.JarvisMarch;
+import org.orbisgis.noisemap.core.MeshBuilder;
+import org.orbisgis.noisemap.core.QueryGeometryStructure;
+import org.orbisgis.noisemap.core.QueryQuadTree;
+import org.orbisgis.noisemap.core.Triangle;
+
 import java.util.*;
 
 /**
@@ -200,7 +208,7 @@ public class NewFastObstructionTest {
                 //add: search triangle without height
                 if (idneigh!=-1 && !navigationHistory.contains(idneigh)) {
                     distline_line=propagationLine.distance(new LineSegment(aTri, bTri));
-                    if (distline_line<FastObstructionTest.epsilon &&
+                    if (distline_line< FastObstructionTest.epsilon &&
                             distline_line < nearestIntersectionPtDist && this.triVertices.get(idneigh).getBuidlingID()==0) {
                         nearestIntersectionPtDist = distline_line;
                         nearestIntersectionSide = 2;
@@ -398,7 +406,7 @@ public class NewFastObstructionTest {
 	/**
 	 * Fast dot in triangle test
 	 * 
-	 * @see http://www.blackpawn.com/texts/pointinpoly/default.html
+	 * @see "http://www.blackpawn.com/texts/pointinpoly/default.html"
 	 * @param p
 	 *            Coordinate of the point
 	 * @param a
@@ -407,7 +415,7 @@ public class NewFastObstructionTest {
 	 *            Coordinate of the B vertex of triangle
 	 * @param c
 	 *            Coordinate of the C vertex of triangle
-	 * @return
+	 * @return True if the coordinate p is in the triangle a b c
 	 */
 	private boolean dotInTri(Coordinate p, Coordinate a, Coordinate b,
 			Coordinate c) {
@@ -893,7 +901,7 @@ public class NewFastObstructionTest {
         /**
          * ChangeCoordinateSystem, use original coordinate in 3D to change into a new markland in 2D with new x' computed by algo and y' is original height of point.
          * Attention this function can just be used when the points in the same plane.
-         * @see http://en.wikipedia.org/wiki/Rotation_matrix,
+         * @see "http://en.wikipedia.org/wiki/Rotation_matrix",
          * http://read.pudn.com/downloads93/ebook/364220/zbzh.pdf
         */
         private LinkedList<Coordinate> getNewCoordinateSystem(LinkedList<TriIdWithIntersection> listPoints){
@@ -902,12 +910,10 @@ public class NewFastObstructionTest {
             double angle=new LineSegment(listPoints.getFirst().getCoorIntersection(),listPoints.getLast().getCoorIntersection()).angle(); 
             double sin=Math.sin(angle);
             double cos=Math.cos(angle);
-                
-            for(int i=0;i<listPoints.size();i++){
-                double newX=(listPoints.get(i).coorIntersection.x-listPoints.get(0).coorIntersection.x)*cos+(listPoints.get(i).coorIntersection.y-listPoints.get(0).coorIntersection.y)*sin;
-                newcoord.add(new Coordinate(newX,listPoints.get(i).coorIntersection.z));
-            
-            
+
+            for (TriIdWithIntersection listPoint : listPoints) {
+                double newX = (listPoint.coorIntersection.x - listPoints.get(0).coorIntersection.x) * cos + (listPoint.coorIntersection.y - listPoints.get(0).coorIntersection.y) * sin;
+                newcoord.add(new Coordinate(newX, listPoint.coorIntersection.z));
             }
     
             return newcoord;
@@ -942,7 +948,7 @@ public class NewFastObstructionTest {
         
         /**
          * Caculate the Z of intersection point 
-         * @see http://en.wikipedia.org/wiki/Linear_interpolation
+         * @see "http://en.wikipedia.org/wiki/Linear_interpolation"
          * @param p1 a point of intersected segment
          * @param p2 other point of intersected segment
          * @param intersection the intersection which includes the x and y
@@ -953,9 +959,8 @@ public class NewFastObstructionTest {
                 intersection.setCoordinate(new Coordinate(intersection.x,intersection.y,0.));
             
             }
-            
-            double zOfIntersection=((p2.z-p1.z)*(intersection.y-p1.y))/(p2.y-p1.y)+p1.z;
-            return zOfIntersection;
+
+            return ((p2.z-p1.z)*(intersection.y-p1.y))/(p2.y-p1.y)+p1.z;
         
         
         }
@@ -963,7 +968,7 @@ public class NewFastObstructionTest {
          * Equation Plane: ax+by+cz+d=0, can be fixed by 3 given points
          * When we fix a,b,c,d by given 3 points, we can get Z of given point X,Y
          * z=-(ax+by+d)/c
-         * @see http://en.wikipedia.org/wiki/Plane_%28geometry%29
+         * @see "http://en.wikipedia.org/wiki/Plane_%28geometry%29"
          * 
          * 
          */

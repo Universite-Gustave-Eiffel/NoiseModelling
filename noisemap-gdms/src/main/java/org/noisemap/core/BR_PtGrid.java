@@ -66,6 +66,16 @@ import org.gdms.sql.function.table.AbstractTableFunction;
 import org.gdms.sql.function.table.TableArgument;
 import org.gdms.sql.function.table.TableDefinition;
 import org.gdms.sql.function.table.TableFunctionSignature;
+import org.orbisgis.noisemap.core.FastObstructionTest;
+import org.orbisgis.noisemap.core.LayerDelaunayError;
+import org.orbisgis.noisemap.core.MeshBuilder;
+import org.orbisgis.noisemap.core.PropagationProcess;
+import org.orbisgis.noisemap.core.PropagationProcessData;
+import org.orbisgis.noisemap.core.PropagationProcessOut;
+import org.orbisgis.noisemap.core.PropagationResultPtRecord;
+import org.orbisgis.noisemap.core.QueryGeometryStructure;
+import org.orbisgis.noisemap.core.QueryQuadTree;
+import org.orbisgis.noisemap.core.RowsUnionClassification;
 import org.orbisgis.progress.ProgressMonitor;
 
 /**
@@ -360,13 +370,13 @@ public class BR_PtGrid extends AbstractTableFunction {
                                                 }
                                             }
                                             mesh.finishPolygonFeeding(expandedCellEnvelop);
-                                            FastObstructionTest freeFieldFinder=new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices()); 
+                                            FastObstructionTest freeFieldFinder=new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
                                             
                                             PropagationProcessData threadData = new PropagationProcessData(
                                                             cellReceivers,cellReceiversRowId, null, freeFieldFinder, sourcesIndex,
                                                             sourceGeometries, wj_sources, db_field_freq,
                                                             reflexionOrder, diffractionOrder, maxSrcDist,maxRefDist,
-                                                            1., wallAlpha, ij, sqldsf,
+                                                            1., wallAlpha, ij,
                                                             pmManager.getRootProgress(),null);
                                             PropagationProcess propaProcess = new PropagationProcess(
                                                             threadData, threadDataOut);

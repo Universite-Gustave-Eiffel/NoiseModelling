@@ -56,6 +56,9 @@ import org.gdms.sql.function.table.AbstractTableFunction;
 import org.gdms.sql.function.table.TableArgument;
 import org.gdms.sql.function.table.TableDefinition;
 import org.gdms.sql.function.table.TableFunctionSignature;
+import org.orbisgis.noisemap.core.PointsMerge;
+import org.orbisgis.noisemap.core.ProgressionProcess;
+import org.orbisgis.noisemap.core.RowsUnionClassification;
 import org.orbisgis.progress.ProgressMonitor;
 
 

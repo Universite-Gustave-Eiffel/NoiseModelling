@@ -43,6 +43,7 @@ import org.gdms.sql.function.BasicFunctionSignature;
 import org.gdms.sql.function.FunctionException;
 import org.gdms.sql.function.FunctionSignature;
 import org.gdms.sql.function.ScalarArgument;
+import org.orbisgis.noisemap.core.PropagationProcess;
 
 /**
  * 

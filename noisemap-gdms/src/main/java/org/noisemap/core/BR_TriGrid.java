@@ -60,6 +60,18 @@ import org.gdms.sql.function.table.TableDefinition;
 import org.gdms.sql.function.table.TableFunctionSignature;
 import org.gdms.driver.DiskBufferDriver;
 import org.grap.utilities.EnvelopeUtil;
+import org.orbisgis.noisemap.core.FastObstructionTest;
+import org.orbisgis.noisemap.core.LayerDelaunay;
+import org.orbisgis.noisemap.core.LayerDelaunayError;
+import org.orbisgis.noisemap.core.LayerExtTriangle;
+import org.orbisgis.noisemap.core.MeshBuilder;
+import org.orbisgis.noisemap.core.PropagationProcess;
+import org.orbisgis.noisemap.core.PropagationProcessData;
+import org.orbisgis.noisemap.core.PropagationProcessOut;
+import org.orbisgis.noisemap.core.PropagationResultTriRecord;
+import org.orbisgis.noisemap.core.QueryGeometryStructure;
+import org.orbisgis.noisemap.core.QueryQuadTree;
+import org.orbisgis.noisemap.core.Triangle;
 import org.orbisgis.progress.ProgressMonitor;
 
 
@@ -744,7 +756,7 @@ public class BR_TriGrid extends AbstractTableFunction {
 					}
 
 					mesh.finishPolygonFeeding(expandedCellEnvelop);
-                                        FastObstructionTest freeFieldFinder= new FastObstructionTest(mesh.getPolygonWithHeight(), 
+                                        FastObstructionTest freeFieldFinder= new FastObstructionTest(mesh.getPolygonWithHeight(),
                                                                              mesh.getTriangles(), mesh.getTriNeighbors(), mesh.getVertices());
 					// Compute the first pass delaunay mesh
 					// The first pass doesn't take account of additional
@@ -826,7 +838,7 @@ public class BR_TriGrid extends AbstractTableFunction {
 							vertices,null, triangles, freeFieldFinder, sourcesIndex,
 							sourceGeometries, wj_sources, db_field_freq,
 							reflexionOrder, diffractionOrder, maxSrcDist,maxRefDist,
-							minRecDist, wallAlpha, ij, dsf,
+							minRecDist, wallAlpha, ij,
 							pmManager.nextSubProcess(vertices.size()), null);
 					PropagationProcess propaProcess = new PropagationProcess(
 							threadData, threadDataOut);

@@ -33,6 +33,7 @@
  */
 package org.noisemap.core;
 
+import org.orbisgis.noisemap.core.ProgressionProcess;
 import org.orbisgis.progress.ProgressMonitor;
 import java.util.Stack;
 import org.apache.commons.math.stat.regression.SimpleRegression;

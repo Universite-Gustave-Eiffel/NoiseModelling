@@ -40,6 +40,8 @@ import org.gdms.driver.DiskBufferDriver;
 import org.gdms.driver.DriverException;
 import org.gdms.data.values.ValueFactory;
 import org.gdms.driver.DataSet;
+import org.orbisgis.noisemap.core.PropagationResultPtRecord;
+import org.orbisgis.noisemap.core.PropagationResultTriRecord;
 
 /**
  * 
