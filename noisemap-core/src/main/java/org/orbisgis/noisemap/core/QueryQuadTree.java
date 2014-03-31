@@ -31,29 +31,45 @@
  * or contact directly:
  * info_at_ orbisgis.org
  */
-package org.noisemap.core;
+package org.orbisgis.noisemap.core;
+
+import com.vividsolutions.jts.geom.Envelope;
+import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.index.quadtree.Quadtree;
+import java.util.ArrayList;
+import java.util.Iterator;
+
 /**
- * Interval of index, [begin-end[
- * Use it in a for loop.
- * <code> for(int i=begin;i<end;i++) </code>
  * 
  * @author Nicolas Fortin
  */
-public class RowInterval {
-    final int begin;
-    final int end;
+public class QueryQuadTree implements QueryGeometryStructure {
+	private Quadtree quad = new Quadtree();
 
-    public RowInterval(int begin, int end) {
-        this.begin = begin;
-        this.end = end;
-    }
+	@Override
+	public void appendGeometry(Geometry newGeom, Integer externalId) {
+		quad.insert(newGeom.getEnvelopeInternal(),
+				new EnvelopeWithIndex<Integer>(newGeom.getEnvelopeInternal(),
+						externalId));
+	}
+        /**
+         * @return Number of items
+         */
+        public int size() {
+            return quad.size();
+        }
+	@Override
+	public Iterator<Integer> query(Envelope queryEnv) {
+		@SuppressWarnings("unchecked")
+		ArrayList<EnvelopeWithIndex<Integer>> resq = (ArrayList<EnvelopeWithIndex<Integer>>) quad
+				.query(queryEnv);
+		ArrayList<Integer> ret = new ArrayList<Integer>(resq.size());
+		for (EnvelopeWithIndex<Integer> it : resq) {
+			if (queryEnv.intersects(it)) {
+				ret.add(it.getId());
+			}
+		}
+		return ret.iterator();
+	}
 
-    public int getBegin() {
-        return begin;
-    }
-
-    public int getEnd() {
-        return end;
-    }
-    
 }

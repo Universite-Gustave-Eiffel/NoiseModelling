@@ -31,31 +31,29 @@
  * or contact directly:
  * info_at_ orbisgis.org
  */
-package org.noisemap.core;
-
-import com.vividsolutions.jts.geom.Envelope;
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.index.strtree.STRtree;
-import java.util.Iterator;
-
+package org.orbisgis.noisemap.core;
 /**
- * Connector for RTree.
+ * Interval of index, [begin-end[
+ * Use it in a for loop.
+ * <code> for(int i=begin;i<end;i++) </code>
+ * 
  * @author Nicolas Fortin
  */
-public class QueryRTree implements QueryGeometryStructure {
-    private STRtree rTree;
-    public QueryRTree() {
-        rTree = new STRtree();
+public class RowInterval {
+    final int begin;
+    final int end;
+
+    public RowInterval(int begin, int end) {
+        this.begin = begin;
+        this.end = end;
     }
 
-    @Override
-    public void appendGeometry(Geometry newGeom, Integer externalId) {
-        rTree.insert(newGeom.getEnvelopeInternal(), externalId);
+    public int getBegin() {
+        return begin;
     }
 
-    @Override
-    public Iterator<Integer> query(Envelope queryEnv) {
-        return rTree.query(queryEnv).iterator();
+    public int getEnd() {
+        return end;
     }
     
 }
