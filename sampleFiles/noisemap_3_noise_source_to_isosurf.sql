@@ -19,7 +19,7 @@ create table tri_lvl as SELECT * from BR_TriGrid(buildings,roads_src,'db_m',750,
 -- iso lvls in w corresponding to dB->'45,50,55,60,65,70,75,200'
 -- the output iso will be [-inf to 45] -> 0 ]45 to 50] -> 1 etc.. 
 -- Theses levels corresponding to the ranges specified in the standart NF S 31 130 
-create table tricontouring_noise_map AS SELECT * from ST_TriangleContouring(tri_lvl,'the_geom','db_v1','db_v2','db_v3','31622, 100000, 316227, 1000000, 3162277, 1e+7, 31622776, 1e+20');
+create table tricontouring_noise_map AS SELECT * from ST_TriangleContouring(tri_lvl,'db_v1','db_v2','db_v3','31622, 100000, 316227, 1000000, 3162277, 1e+7, 31622776, 1e+20');
 
 -- Merge adjacent triangle into polygons (multiple polygon by row, for unique isoLevel and cellId key)
 -- Merge triangle together to reduce the number of rows
