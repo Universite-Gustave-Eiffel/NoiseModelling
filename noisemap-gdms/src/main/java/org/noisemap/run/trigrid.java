@@ -44,9 +44,9 @@ import org.gdms.driver.DiskBufferDriver;
 import org.gdms.driver.DriverException;
 import org.gdms.driver.gdms.GdmsDriver;
 import org.gdms.sql.function.FunctionException;
+import org.gdms.sql.function.spatial.tin.analysis.ST_TriangleContouring;
 import org.noisemap.core.BR_PtGrid;
 import org.noisemap.core.BR_TriGrid;
-import org.noisemap.core.ST_TriangleContouring;
 
 /**
  * Independant run of BR_TriGrid plugin.
@@ -214,7 +214,7 @@ public class trigrid {
                 //Compute isocontour
                 ST_TriangleContouring contour=new ST_TriangleContouring();
                 String isolvls="31622, 100000, 316227, 1000000, 3162277, 1e+7, 31622776, 1e+20";
-                Value[] isoArgs={ValueFactory.createValue("the_geom"),ValueFactory.createValue("db_v1"),ValueFactory.createValue("db_v2"),ValueFactory.createValue("db_v3"),ValueFactory.createValue(isolvls)};
+                Value[] isoArgs={ValueFactory.createValue("db_v1"),ValueFactory.createValue("db_v2"),ValueFactory.createValue("db_v3"),ValueFactory.createValue(isolvls)};
 
                 DataSet isoContourResult;
                 try {
