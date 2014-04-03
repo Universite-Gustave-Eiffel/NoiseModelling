@@ -33,63 +33,22 @@
  */
 package org.noisemap.core;
 
-import java.util.HashMap;
-
-
 import org.gdms.data.DataSourceFactory;
 import org.gdms.data.types.Type;
-import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
-
-
 import org.gdms.sql.function.BasicFunctionSignature;
-
 import org.gdms.sql.function.FunctionException;
 import org.gdms.sql.function.FunctionSignature;
 import org.gdms.sql.function.ScalarArgument;
 import org.gdms.sql.function.AbstractScalarFunction;
+import org.orbisgis.noisemap.core.VehicleSpectrumRepartition;
 
 /**
  * 
  * @author Nicolas Fortin
  */
 public class BR_SpectrumRepartition extends AbstractScalarFunction {
-
-	private HashMap<Integer, Integer> freqToIndex = new HashMap<Integer, Integer>();
-	private double[] non_pervious_att = { -27, -26, -24, -21, -19, -16, -14,
-			-11, -11, -8, -7, -8, -10, -13, -16, -18, -21, -23 };
-
-	public BR_SpectrumRepartition() {
-		super();
-		freqToIndex.put(100, 0);
-		freqToIndex.put(125, 1);
-		freqToIndex.put(160, 2);
-		freqToIndex.put(200, 3);
-		freqToIndex.put(250, 4);
-		freqToIndex.put(315, 5);
-		freqToIndex.put(400, 6);
-		freqToIndex.put(500, 7);
-		freqToIndex.put(630, 8);
-		freqToIndex.put(800, 9);
-		freqToIndex.put(1000, 10);
-		freqToIndex.put(1250, 11);
-		freqToIndex.put(1600, 12);
-		freqToIndex.put(2000, 13);
-		freqToIndex.put(2500, 14);
-		freqToIndex.put(3150, 15);
-		freqToIndex.put(4000, 16);
-		freqToIndex.put(5000, 17);
-	}
-
-	public double getAttenuatedValue(int freq) throws FunctionException {
-		if (freqToIndex.containsKey(freq)) {
-			return non_pervious_att[freqToIndex.get(freq)];
-		} else {
-			throw new FunctionException("The frequency " + freq
-					+ " Hz is unknown !");
-		}
-	}
 
 	@Override
 	public Value evaluate(DataSourceFactory dsf, Value... args) throws FunctionException {
@@ -99,13 +58,13 @@ public class BR_SpectrumRepartition extends AbstractScalarFunction {
 			throw new FunctionException("Too many parameters !");
 		} else {
 			return ValueFactory.createValue(args[2].getAsDouble()
-					+ getAttenuatedValue(args[0].getAsInt()));
+					+ VehicleSpectrumRepartition.getAttenuatedValue(args[0].getAsInt()));
 		}
 	}
 
 	@Override
 	public String getName() {
-		return "BR_SpectrumRepartition";
+		return "VehicleSpectrumRepartition";
 	}
 
 	@Override
@@ -135,7 +94,7 @@ public class BR_SpectrumRepartition extends AbstractScalarFunction {
 
 	@Override
 	public String getSqlOrder() {
-		return "select BR_SpectrumRepartition(100,1,dbA) as dbA_100 from myTable;";
+		return "select VehicleSpectrumRepartition(100,1,dbA) as dbA_100 from myTable;";
 	}
 
 }
