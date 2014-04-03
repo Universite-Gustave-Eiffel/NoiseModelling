@@ -39,11 +39,6 @@ package org.orbisgis.noisemap.core;
  * @author Nicolas Fortin
  */
 public class EvalRoadSource {
-    /**
-     * Utility class
-     */
-    private EvalRoadSource() {
-    }
 
     private Double getNoiseLvl(Double base, Double adj, Double speed,
                                Double speedBase) {
@@ -173,6 +168,17 @@ public class EvalRoadSource {
     }
 
     /**
+     * Compute the slope
+     * @param beginZ Z start
+     * @param endZ Z end
+     * @param road_length_2d Road length (do not take account of Z)
+     * @return Slope percentage
+     */
+    public static double computeSlope(double beginZ, double endZ, double road_length_2d) {
+        return (endZ - beginZ) / road_length_2d * 100.;
+    }
+
+    /**
      * Road noise evaluation.Evaluate speed of heavy vehicle.
      * @param speed_load Average vehicle speed
      * @param vl_per_hour Average light vehicle per hour
@@ -210,7 +216,7 @@ public class EvalRoadSource {
         }
 
         speed_pl = getVPl(speed, speed_max, roadtype, roadsubtype);
-        double slope_perc = Math.min(6., Math.max(-6., (end_z - begin_z) / road_length_2d * 100.));
+        double slope_perc = Math.min(6., Math.max(-6., computeSlope(begin_z, end_z, road_length_2d)));
         return evaluate(vl_per_hour, pl_per_hour, speed, speed_pl, slope_perc);
     }
 
@@ -220,7 +226,7 @@ public class EvalRoadSource {
      * @param pl_per_hour Average heavy vehicle per hour
      * @param speed Average vehicle speed
      * @param speed_pl Average heavy vehicle speed
-     * @param slope_perc Slope percentage [-6 6]
+     * @param slope_perc Slope percentage, will be bounded to [-6 6]
      * @return Noise level in dB(A)
      */
     public double evaluate(int vl_per_hour, int pl_per_hour, double speed, double speed_pl, double slope_perc) {
