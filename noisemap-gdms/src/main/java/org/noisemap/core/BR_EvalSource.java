@@ -43,129 +43,12 @@ import org.gdms.sql.function.FunctionException;
 import org.gdms.sql.function.FunctionSignature;
 import org.gdms.sql.function.ScalarArgument;
 import org.orbisgis.noisemap.core.EvalRoadSource;
-import org.orbisgis.noisemap.core.PropagationProcess;
 
 /**
  * 
  * @author Nicolas Fortin
  */
 public class BR_EvalSource  extends AbstractScalarFunction {
-	private Double getNoiseLvl(Double base, Double adj, Double speed,
-			Double speedBase) {
-		return base + adj * Math.log(speed / speedBase);
-	}
-
-
-
-	private Double sumDba(Double dBA1, Double dBA2) {
-		return PropagationProcess.wToDba(PropagationProcess.dbaToW(dBA1) + PropagationProcess.dbaToW(dBA2));
-	}
-
-	private double getVPl(double vvl, double speedmax, int type, int subtype)
-			throws FunctionException {
-		switch (type) {
-		case 1:
-			return Math.min(vvl, 100); // Highway 2x2 130 km/h
-		case 2:
-			switch (subtype) {
-			case 1:
-				return Math.min(vvl, 90); // 2x2 way 110 km/h
-			case 2:
-				return Math.min(vvl, 90); // 2x2 way 90km/h off belt-way
-			case 3:
-				if (speedmax < 80) {
-					return Math.min(vvl, 70);
-				} // Belt-way 70 km/h
-				else {
-					return Math.min(vvl, 85);
-				} // Belt-way 90 km/h
-			}
-                        break;
-		case 3:
-			switch (subtype) {
-			case 1:
-				return vvl; // Interchange ramp
-			case 2:
-				return vvl; // Off boulevard roundabout circular junction
-			case 7:
-				return vvl; // inside-boulevard roundabout circular junction
-			}
-                        break;
-		case 4:
-			switch (subtype) {
-			case 1:
-				return Math.min(vvl, 90); // lower level 2x1 way 7m 90km/h
-			case 2:
-				return Math.min(vvl, 90); // Standard 2x1 way 90km/h
-			case 3:
-				if (speedmax < 70) {
-					return Math.min(vvl, 60);
-				} // 2x1 way 60 km/h
-				else {
-					return Math.min(vvl, 80);
-				} // 2x1 way 80 km/h
-			}
-                        break;
-		case 5:
-			switch (subtype) {
-			case 1:
-				return Math.min(vvl, 70); // extra boulevard 70km/h
-			case 2:
-				return Math.min(vvl, 50); // extra boulevard 50km/h
-			case 3:
-				return Math.min(vvl, 50); // extra boulevard Street 50km/h
-			case 4:
-				return Math.min(vvl, 50); // extra boulevard Street <50km/h
-			case 6:
-				return Math.min(vvl, 50); // in boulevard 70km/h
-			case 7:
-				return Math.min(vvl, 50); // in boulevard 50km/h
-			case 8:
-				return Math.min(vvl, 50); // in boulevard Street 50km/h
-			case 9:
-				return Math.min(vvl, 50); // in boulevard Street <50km/h
-			}
-                        break;
-		case 6:
-			switch (subtype) {
-			case 1:
-				return Math.min(vvl, 50); // Bus-way boulevard 70km/h
-			case 2:
-				return Math.min(vvl, 50); // Bus-way boulevard 50km/h
-			case 3:
-				return Math.min(vvl, 50); // Bus-way extra boulevard Street
-											// 50km/h
-			case 4:
-				return Math.min(vvl, 50); // Bus-way extra boulevard Street
-											// <50km/h
-			case 8:
-				return Math.min(vvl, 50); // Bus-way in boulevard Street 50km/h
-			case 9:
-				return Math.min(vvl, 50); // Bus-way in boulevard Street <50km/h
-			}
-                        break;
-		}
-		throw new FunctionException("Unknown road type, please check (type="
-				+ type + ",subtype=" + subtype + ").");
-	}
-        /**
-         * Motor noise Sound level correction corresponding to a slope percentage
-         * @param slope Slope percentage
-         * @return Correction in dB(A)
-         */
-	private Double GetCorrection(double slope) {
-		// Limitation of slope
-		double rslope = Math.max(-6., slope);
-		rslope = Math.min(6., rslope);
-		// Computation of the correction
-		if (rslope > 2.) {
-			return 2 * (rslope - 2);
-		} else if (rslope < -2.) {
-			return rslope - 2;
-		} else {
-			return 0.;
-		}
-	}
 
 	@Override
 	public Value evaluate(DataSourceFactory dsf,Value... args) throws FunctionException {
@@ -179,7 +62,6 @@ public class BR_EvalSource  extends AbstractScalarFunction {
 			double speed_load = args[0].getAsDouble();
 			int vl_per_hour = args[1].getAsInt();
 			int pl_per_hour = args[2].getAsInt();
-            double sum_lvl;
             if(args.length == 10) {
                 double speed_junction = args[3].getAsDouble();
                 double speed_max = args[4].getAsDouble();
@@ -188,16 +70,16 @@ public class BR_EvalSource  extends AbstractScalarFunction {
                 double end_z = args[7].getAsDouble();
                 double road_length = args[8].getAsDouble();
                 boolean is_queue = args[9].getAsBoolean();
-                sum_lvl = evalRoadSource.evaluate(speed_load, vl_per_hour, pl_per_hour, speed_junction, speed_max,
-                        copound_roadtype, begin_z, end_z, road_length, is_queue);
+                return ValueFactory.createValue(evalRoadSource.evaluate(speed_load, vl_per_hour, pl_per_hour,
+                        speed_junction, speed_max, copound_roadtype, begin_z, end_z, road_length, is_queue));
             } else if(args.length == 6) {
                 double slope = EvalRoadSource.computeSlope(args[3].getAsDouble(),args[4].getAsDouble(),
                         args[5].getAsDouble());
-                sum_lvl = evalRoadSource.evaluate(vl_per_hour, pl_per_hour, speed_load, speed_load, slope);
+                return ValueFactory.createValue(evalRoadSource.evaluate(vl_per_hour, pl_per_hour, speed_load, speed_load,
+                        slope));
             } else {
-                sum_lvl = evalRoadSource.evaluate(speed_load, vl_per_hour, pl_per_hour);
+                return ValueFactory.createValue(evalRoadSource.evaluate(speed_load, vl_per_hour, pl_per_hour));
 			}
-			return ValueFactory.createValue(sum_lvl);
 		}
 	}
 
@@ -221,16 +103,12 @@ public class BR_EvalSource  extends AbstractScalarFunction {
                     ),
                     new BasicFunctionSignature(getType(null),
                             ScalarArgument.DOUBLE, // load speed
-                            ScalarArgument.INT, // light vehicle
-                            ScalarArgument.INT  // heavy vehicle
-
-                    ),
-                    new BasicFunctionSignature(getType(null),
-                            ScalarArgument.DOUBLE, // load speed
                             ScalarArgument.INT,    // light vehicle
                             ScalarArgument.INT,    // heavy vehicle
                             ScalarArgument.DOUBLE, // Z begin
-                            ScalarArgument.DOUBLE  // Z end
+                            ScalarArgument.DOUBLE, // Z end
+                            ScalarArgument.DOUBLE  // Road length(m) (without taking account of
+                                                   // the Z coordinate)
 
                     ),new BasicFunctionSignature(getType(null),
                     		ScalarArgument.DOUBLE, // load speed
