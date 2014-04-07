@@ -57,7 +57,6 @@ public class BR_EvalSource  extends AbstractScalarFunction {
 		} else if (args.length > 10) {
 			throw new FunctionException("Too many parameters !");
 		} else {
-            EvalRoadSource evalRoadSource = new EvalRoadSource();
 			// Basic arguments
 			double speed_load = args[0].getAsDouble();
 			int vl_per_hour = args[1].getAsInt();
@@ -70,15 +69,15 @@ public class BR_EvalSource  extends AbstractScalarFunction {
                 double end_z = args[7].getAsDouble();
                 double road_length = args[8].getAsDouble();
                 boolean is_queue = args[9].getAsBoolean();
-                return ValueFactory.createValue(evalRoadSource.evaluate(speed_load, vl_per_hour, pl_per_hour,
+                return ValueFactory.createValue(EvalRoadSource.evaluate(speed_load, vl_per_hour, pl_per_hour,
                         speed_junction, speed_max, copound_roadtype, begin_z, end_z, road_length, is_queue));
             } else if(args.length == 6) {
                 double slope = EvalRoadSource.computeSlope(args[3].getAsDouble(),args[4].getAsDouble(),
                         args[5].getAsDouble());
-                return ValueFactory.createValue(evalRoadSource.evaluate(vl_per_hour, pl_per_hour, speed_load, speed_load,
+                return ValueFactory.createValue(EvalRoadSource.evaluate(vl_per_hour, pl_per_hour, speed_load, speed_load,
                         slope));
             } else {
-                return ValueFactory.createValue(evalRoadSource.evaluate(speed_load, vl_per_hour, pl_per_hour));
+                return ValueFactory.createValue(EvalRoadSource.evaluate(speed_load, vl_per_hour, pl_per_hour));
 			}
 		}
 	}

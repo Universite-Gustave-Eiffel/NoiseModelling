@@ -35,35 +35,51 @@ package org.orbisgis.noisemap.core;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
+
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Data input for a propagation process (SubEnveloppe of BR_TriGrid).
- * 
+ *
  * @author Nicolas Fortin
  */
 public class PropagationProcessData {
-	public List<Coordinate> vertices; // Coordinate of receivers
-        public List<Long> receiverRowId;  //Row id of receivers, only for BR_PtGrid
-	public List<Triangle> triangles; // Index of vertices of triangles
-	public FastObstructionTest freeFieldFinder; // FreeField test
-	public QueryGeometryStructure sourcesIndex; // Source Index
-	public List<Geometry> sourceGeometries; // Sources geometries. Can be
-											// LINESTRING or POINT
-	public List<ArrayList<Double>> wj_sources; // Sound level of source. By
-												// frequency band, energetic
-	public List<Integer> freq_lvl; // Frequency bands values, by third octave
-	public int reflexionOrder; // reflexionOrder
-	public int diffractionOrder; // diffractionOrder
-	public double maxSrcDist; // Maximum source distance
-        public double maxRefDist; // Maximum reflection wall distance
-	public double minRecDist; // Minimum distance between source and receiver
-	public double wallAlpha; // Wall alpha [0-1]
-	public int cellId; // cell id
-	public ProgressionProcess cellProg; // Progression information
-        public List<GeoWithSoilType> geoWithSoilType;//list Geometry of soil and the type of this soil
-        
+    /** Coordinate of receivers */
+    public List<Coordinate> vertices;
+    /** Row id of receivers, not used by PropagationProcess */
+    public List<Long> receiverRowId;
+    /** Index of vertices of triangles */
+    public List<Triangle> triangles;
+    /** FreeField test */
+    public FastObstructionTest freeFieldFinder;
+    /** Source Index */
+    public QueryGeometryStructure sourcesIndex;
+    /** Sources geometries. Can be LINESTRING or POINT */
+    public List<Geometry> sourceGeometries;
+    /** Sound level of source. By frequency band, energetic */
+    public List<ArrayList<Double>> wj_sources;
+    /** Frequency bands values, by third octave */
+    public List<Integer> freq_lvl;
+    /** Maximum reflexion order */
+    public int reflexionOrder;
+    /** Maximum diffraction order */
+    public int diffractionOrder;
+    /** Maximum source distance */
+    public double maxSrcDist;
+    /** Maximum reflection wall distance */
+    public double maxRefDist;
+    /** Minimum distance between source and receiver */
+    public double minRecDist;
+    /** Wall alpha [0-1] */
+    public double wallAlpha;
+    /** cellId only used in output data */
+    public int cellId;
+    /** Progression information */
+    public ProgressionProcess cellProg;
+    /** list Geometry of soil and the type of this soil */
+    public List<GeoWithSoilType> geoWithSoilType;
+
     public PropagationProcessData(List<Coordinate> vertices, List<Long> receiverRowId, List<Triangle> triangles,
                                   FastObstructionTest freeFieldFinder, QueryGeometryStructure sourcesIndex,
                                   List<Geometry> sourceGeometries, List<ArrayList<Double>> wj_sources,
@@ -89,7 +105,5 @@ public class PropagationProcessData {
         this.geoWithSoilType = geoWithSoilType;
     }
 
-
-	
 
 }

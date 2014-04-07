@@ -40,16 +40,16 @@ package org.orbisgis.noisemap.core;
  */
 public class EvalRoadSource {
 
-    private Double getNoiseLvl(Double base, Double adj, Double speed,
+    private static Double getNoiseLvl(Double base, Double adj, Double speed,
                                Double speedBase) {
         return base + adj * Math.log(speed / speedBase);
     }
 
-    private Double sumDba(Double dBA1, Double dBA2) {
+    private static Double sumDba(Double dBA1, Double dBA2) {
         return PropagationProcess.wToDba(PropagationProcess.dbaToW(dBA1) + PropagationProcess.dbaToW(dBA2));
     }
 
-    private double getVPl(double vvl, double speedmax, int type, int subtype) throws IllegalArgumentException {
+    private static double getVPl(double vvl, double speedmax, int type, int subtype) throws IllegalArgumentException {
         switch (type) {
             case 1:
                 return Math.min(vvl, 100); // Highway 2x2 130 km/h
@@ -142,7 +142,7 @@ public class EvalRoadSource {
      * @param slope Slope percentage
      * @return Correction in dB(A)
      */
-    private Double GetCorrection(double slope) {
+    private static Double GetCorrection(double slope) {
         // Limitation of slope
         double rslope = Math.max(-6., slope);
         rslope = Math.min(6., rslope);
@@ -163,7 +163,7 @@ public class EvalRoadSource {
      * @param pl_per_hour Average heavy vehicle per hour
      * @return Noise level in dB(A)
      */
-    public double evaluate(double speed_load, int vl_per_hour, int pl_per_hour) {
+    public static double evaluate(double speed_load, int vl_per_hour, int pl_per_hour) {
         return evaluate(vl_per_hour, pl_per_hour, speed_load, speed_load, 0);
     }
 
@@ -192,7 +192,7 @@ public class EvalRoadSource {
      * @param is_queue If true use speed_junction in speed_load
      * @return Noise level in dB(A)
      */
-    public double evaluate(double speed_load, int vl_per_hour, int pl_per_hour, double speed_junction, double speed_max,
+    public static double evaluate(double speed_load, int vl_per_hour, int pl_per_hour, double speed_junction, double speed_max,
                              int copound_roadtype, double begin_z,double end_z, double road_length_2d, boolean is_queue) {
         double speed;
         double speed_pl;
@@ -229,7 +229,7 @@ public class EvalRoadSource {
      * @param slope_perc Slope percentage, will be bounded to [-6 6]
      * @return Noise level in dB(A)
      */
-    public double evaluate(int vl_per_hour, int pl_per_hour, double speed, double speed_pl, double slope_perc) {
+    public static double evaluate(int vl_per_hour, int pl_per_hour, double speed, double speed_pl, double slope_perc) {
         // ///////////////////////
         // Noise road/tire
         // Use R2 surface

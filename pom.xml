@@ -23,7 +23,8 @@
     <modules>
         <module>noisemap-core</module>
         <module>noisemap-gdms</module>
-    </modules>
+    <module>noisemap-h2</module>
+  </modules>
     <scm>
         <connection>scm:git:https://github.com/irstv/noisemap.git</connection>
         <developerConnection>scm:git:https://github.com/irstv/noisemap.git</developerConnection>
