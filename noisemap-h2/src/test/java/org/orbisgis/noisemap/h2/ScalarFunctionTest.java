@@ -61,6 +61,7 @@ public class ScalarFunctionTest {
         connection = SpatialH2UT.createSpatialDataBase(ScalarFunctionTest.class.getSimpleName(), true);
         CreateSpatialExtension.registerFunction(connection.createStatement(), new BR_EvalSource(), "");
         CreateSpatialExtension.registerFunction(connection.createStatement(), new BR_SpectrumRepartition(), "");
+        CreateSpatialExtension.registerFunction(connection.createStatement(), new BTW_EvalSource(), "");
     }
 
     @AfterClass
@@ -128,5 +129,26 @@ public class ScalarFunctionTest {
     @Test(expected = SQLException.class)
     public void testBR_SpectrumRepartitionErr2() throws SQLException {
         st.executeQuery("SELECT BR_SpectrumRepartition(1001,2,83)");
+    }
+
+    @Test
+    public void testBTW_EvalSource() throws SQLException {
+        ResultSet rs = st.executeQuery("SELECT BTW_EvalSource(40,10,1,false)");
+        assertTrue(rs.next());
+        assertEquals(79, rs.getDouble(1), 0.01);
+    }
+
+    @Test
+    public void testBTW_EvalSourceAntiVib() throws SQLException {
+        ResultSet rs = st.executeQuery("SELECT BTW_EvalSource(40,10,1,true)");
+        assertTrue(rs.next());
+        assertEquals(77, rs.getDouble(1), 0.01);
+    }
+
+    @Test
+    public void testBTW_EvalSourceGrass() throws SQLException {
+        ResultSet rs = st.executeQuery("SELECT BTW_EvalSource(40,10,0,false)");
+        assertTrue(rs.next());
+        assertEquals(76, rs.getDouble(1), 0.01);
     }
 }
