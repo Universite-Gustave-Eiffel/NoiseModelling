@@ -62,6 +62,7 @@ public class ScalarFunctionTest {
         CreateSpatialExtension.registerFunction(connection.createStatement(), new BR_EvalSource(), "");
         CreateSpatialExtension.registerFunction(connection.createStatement(), new BR_SpectrumRepartition(), "");
         CreateSpatialExtension.registerFunction(connection.createStatement(), new BTW_EvalSource(), "");
+        CreateSpatialExtension.registerFunction(connection.createStatement(), new BTW_SpectrumRepartition(), "");
     }
 
     @AfterClass
@@ -151,4 +152,17 @@ public class ScalarFunctionTest {
         assertTrue(rs.next());
         assertEquals(76, rs.getDouble(1), 0.01);
     }
+
+    @Test
+    public void testBTW_SpectrumRepartition() throws SQLException {
+        ResultSet rs = st.executeQuery("SELECT BTW_SpectrumRepartition(1000,83)");
+        assertTrue(rs.next());
+        assertEquals(71.7, rs.getDouble(1), 0.01);
+    }
+
+    @Test(expected = SQLException.class)
+    public void testBTW_SpectrumRepartitionErr() throws SQLException {
+        st.executeQuery("SELECT BR_SpectrumRepartition(1001,83)");
+    }
+
 }

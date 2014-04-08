@@ -35,7 +35,7 @@ package org.orbisgis.noisemap.h2;
 
 import org.h2gis.h2spatialapi.DeterministicScalarFunction;
 import org.h2gis.h2spatialapi.Function;
-import org.orbisgis.noisemap.core.VehicleSpectrumRepartition;
+import org.orbisgis.noisemap.core.TramSpectrumRepartition;
 import org.osgi.service.component.annotations.Component;
 
 /**
@@ -43,9 +43,9 @@ import org.osgi.service.component.annotations.Component;
  * @author Nicolas Fortin
  */
 @Component(service = Function.class)
-public class BR_SpectrumRepartition extends DeterministicScalarFunction {
+public class BTW_SpectrumRepartition extends DeterministicScalarFunction {
 
-    public BR_SpectrumRepartition() {
+    public BTW_SpectrumRepartition() {
         addProperty(PROP_REMARKS, "Return the dB(A) value corresponding to the the third octave frequency band." +
                 " First parameter is Frequency band one of [100,125,160,200,250,315,400,500,630,800,1000,1250,1600,2000," +
                 "2500,3150,4000,5000], second parameter is the category of the road surface [1:Pervious,2:Non Pervious]," +
@@ -60,14 +60,10 @@ public class BR_SpectrumRepartition extends DeterministicScalarFunction {
     /**
      * Return the dB(A) value corresponding to the the third octave frequency band.
      * @param freqBand Frequency band one of [100,125,160,200,250,315,400,500,630,800,1000,1250,1600,2000,2500,3150,4000,5000]
-     * @param roadSurf Category of the road surface [1:Pervious,2:Non Pervious]
      * @param level Global dB(A) value
      * @return third octave frequency band attenuation
      */
-    public static double spectrumRepartition(int freqBand, int roadSurf, double level) throws IllegalArgumentException {
-        if(roadSurf != 2) {
-            throw new IllegalArgumentException("Pervious attenuation non supported");
-        }
-        return level + VehicleSpectrumRepartition.getAttenuatedValue(freqBand);
+    public static double spectrumRepartition(int freqBand, double level) throws IllegalArgumentException {
+        return level + TramSpectrumRepartition.getAttenuatedValue(freqBand);
     }
 }
