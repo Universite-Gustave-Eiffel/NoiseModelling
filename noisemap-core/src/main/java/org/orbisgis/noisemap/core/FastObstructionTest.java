@@ -82,46 +82,10 @@ public class FastObstructionTest {
         //data for caculate 3D diffraction, 
         //first Coordinate is the coordinate after the changment coordinate system, the second parameter will keep the data of orignal coordinate system
 
-        
-        
-        
-        
-        private STRtree rTreeOfGeoSoil= new STRtree();
-        private HashMap<Integer,GeoWithSoilType> geoWithSoil= new HashMap<Integer, GeoWithSoilType>();
         public final int Delta_Distance=0;//delta distance;
         public final int E_Length=1;//e length
         public final int Full_Difrraction_Distance=2;//the full distance of difrraction path
 
-        
-        private static class GeoWithSoilType{
-            private Geometry geo;
-            private double type;
-            
-            public GeoWithSoilType(Geometry geo, double type){
-                this.geo=geo;
-                this.type=type;
-            }
-            
-            public Geometry getGeo(){
-                return this.geo;
-            }
-            
-            public double getType(){
-                return this.type;
-            }
-            
-        
-        }
-        
-        public void addGeoSoil(Geometry geo, double type){
-            
-
-            rTreeOfGeoSoil.insert(geo.getEnvelopeInternal(),new EnvelopeWithIndex<Integer>(geo.getEnvelopeInternal(),
-                                    geoWithSoil.size()));                
-            geoWithSoil.put(geoWithSoil.size(), new GeoWithSoilType(geo,type));
-
-            
-        }
 
          
         /**
