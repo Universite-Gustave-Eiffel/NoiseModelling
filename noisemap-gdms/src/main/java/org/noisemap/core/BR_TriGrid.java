@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Stack;
 import java.util.concurrent.TimeUnit;
 
+import com.vividsolutions.jts.operation.buffer.BufferOp;
 import org.apache.log4j.Logger;
 import org.gdms.data.DataSourceFactory;
 import org.gdms.data.schema.DefaultMetadata;
@@ -113,7 +114,6 @@ public class BR_TriGrid extends AbstractTableFunction {
     private long totalParseBuildings = 0;
     private long totalDelaunay = 0;
     private static final String heightField = "height";
-    private int delaunayObjectId = 0;
 
     public void setLogger(Logger logger) {
         this.logger = logger;
@@ -146,19 +146,16 @@ public class BR_TriGrid extends AbstractTableFunction {
     }
 
     private void explodeAndAddPolygon(Geometry intersectedGeometry,
-                                      LayerDelaunay delaunayTool, Geometry boundingBox)
+                                      MeshBuilder delaunayTool, Geometry boundingBox)
             throws DriverException, LayerDelaunayError {
         long beginAppendPolygons = System.currentTimeMillis();
-        if (intersectedGeometry instanceof MultiPolygon
-                || intersectedGeometry instanceof GeometryCollection) {
+        if (intersectedGeometry instanceof GeometryCollection) {
             for (int j = 0; j < intersectedGeometry.getNumGeometries(); j++) {
                 Geometry subGeom = intersectedGeometry.getGeometryN(j);
                 explodeAndAddPolygon(subGeom, delaunayTool, boundingBox);
             }
-        } else if (intersectedGeometry instanceof Polygon) {
-            delaunayTool.addPolygon((Polygon)intersectedGeometry, true, delaunayObjectId++);
-        } else if (intersectedGeometry instanceof LineString) {
-            delaunayTool.addLineString((LineString) intersectedGeometry);
+        } else {
+            delaunayTool.addGeometry(intersectedGeometry);
         }
         totalDelaunay += System.currentTimeMillis() - beginAppendPolygons;
     }
@@ -171,7 +168,7 @@ public class BR_TriGrid extends AbstractTableFunction {
      * @param delaunayTool
      * @throws LayerDelaunayError
      */
-    private void makeBufferPointsNearRoads(List<Geometry> toUnite, double bufferSize, Envelope filter, LayerDelaunay delaunayTool) throws LayerDelaunayError {
+    private void makeBufferPointsNearRoads(List<Geometry> toUnite, double bufferSize, Envelope filter, MeshBuilder delaunayTool) throws LayerDelaunayError {
         GeometryFactory geometryFactory = new GeometryFactory();
         Geometry geoArray[] = new Geometry[toUnite.size()];
         toUnite.toArray(geoArray);
@@ -182,12 +179,7 @@ public class BR_TriGrid extends AbstractTableFunction {
         polygon = TopologyPreservingSimplifier.simplify(polygon,
                 bufferSize / 2.);
         polygon = Densifier.densify(polygon, bufferSize);
-        Coordinate pts[] = polygon.getCoordinates();
-        for (Coordinate pt : pts) {
-            if (filter.contains(pt)) {
-                delaunayTool.addVertex(pt);
-            }
-        }
+        delaunayTool.addGeometry(polygon);
     }
 
     private Geometry merge(LinkedList<Geometry> toUnite, double bufferSize) {
@@ -221,7 +213,7 @@ public class BR_TriGrid extends AbstractTableFunction {
     }
 
     private void feedDelaunay(DataSet polygonDatabase, int spatialBuildingsFieldIndex,
-                              LayerDelaunay delaunayTool, Envelope boundingBoxFilter,
+                              MeshBuilder delaunayTool, Envelope boundingBoxFilter,
                               double srcDistance, LinkedList<LineString> delaunaySegments,
                               double minRecDist, double srcPtDist) throws DriverException,
             LayerDelaunayError {
@@ -236,9 +228,6 @@ public class BR_TriGrid extends AbstractTableFunction {
         GeometryFactory factory = new GeometryFactory();
         Polygon boundingBox = new Polygon((LinearRing) linearRing, null,
                 factory);
-
-        // Insert the main rectangle
-        delaunayTool.addPolygon(boundingBox, false);
 
         LinkedList<Geometry> toUnite = new LinkedList<Geometry>();
         final long rowCount = polygonDatabase.getRowCount();
@@ -266,11 +255,10 @@ public class BR_TriGrid extends AbstractTableFunction {
         }
 
         // Merge roads
+        logger.error("minRecDist =" + minRecDist);
+        logger.error("delaunaySegments =" + delaunaySegments.size());
         if (minRecDist > 0.01) {
-            LinkedList<Geometry> toUniteRoads = new LinkedList<Geometry>();
-            for (LineString road : delaunaySegments) {
-                toUniteRoads.add(road);
-            }
+            LinkedList<Geometry> toUniteRoads = new LinkedList<Geometry>(delaunaySegments);
             if (!toUniteRoads.isEmpty()) {
                 // Build Polygons buffer from roads lines
                 Geometry bufferRoads = merge(toUniteRoads, minRecDist);
@@ -283,6 +271,7 @@ public class BR_TriGrid extends AbstractTableFunction {
                 //toUniteFinal.add(makeBufferSegmentsNearRoads(toUniteRoads,srcPtDist));
                 makeBufferPointsNearRoads(toUniteRoads, srcPtDist, boundingBoxFilter, delaunayTool);
                 //roads, and helps to reduce over estimation due to inapropriate interpolation.
+                logger.error("toUniteFinal.add( " + bufferRoads);
                 toUniteFinal.add(bufferRoads); // Merge roads with minRecDist m
                 // buffer
             }
@@ -291,34 +280,10 @@ public class BR_TriGrid extends AbstractTableFunction {
         // together
         // Remove geometries out of the bounding box
         union = union.intersection(boundingBox);
-        delaunayObjectId = 0;
         explodeAndAddPolygon(union, delaunayTool, boundingBox);
 
         totalParseBuildings += System.currentTimeMillis() - beginfeed
                 - (totalDelaunay - oldtotalDelaunay);
-    }
-
-    public void computeSecondPassDelaunay(LayerExtTriangle cellMesh,
-                                          Envelope mainEnvelope, int cellI, int cellJ, int cellIMax,
-                                          int cellJMax, double cellWidth, double cellHeight,
-                                          String firstPassResult, NodeList neighborsBorderVertices)
-            throws LayerDelaunayError {
-        long beginDelaunay = System.currentTimeMillis();
-        cellMesh.loadInputDelaunay(firstPassResult);
-        File file = new File(firstPassResult);
-        file.delete();
-        if (neighborsBorderVertices != null) {
-            for (Coordinate neighCoord : neighborsBorderVertices.nodes) {
-                cellMesh.addVertex(neighCoord);
-            }
-        }
-        cellMesh.setMinAngle(0.);
-        cellMesh.processDelaunay("second_", getCellId(cellI, cellJ, cellJMax),
-                -1, false, false);
-        if (neighborsBorderVertices != null) {
-            neighborsBorderVertices.nodes.clear();
-        }
-        totalDelaunay += System.currentTimeMillis() - beginDelaunay;
     }
 
     /**
@@ -342,7 +307,7 @@ public class BR_TriGrid extends AbstractTableFunction {
      * @throws DriverException
      * @throws LayerDelaunayError
      */
-    public void computeFirstPassDelaunay(LayerDelaunay cellMesh,
+    public void computeFirstPassDelaunay(MeshBuilder cellMesh,
                                          Envelope mainEnvelope, int cellI, int cellJ, int cellIMax,
                                          int cellJMax, double cellWidth, double cellHeight,
                                          double maxSrcDist, DataSet sdsBuildings,
@@ -363,47 +328,18 @@ public class BR_TriGrid extends AbstractTableFunction {
         // Build delaunay triangulation from buildings inside the extended
         // bounding box
 
-        cellMesh.hintInit(cellEnvelope, 1500, 5000);
         // /////////////////////////////////////////////////
         // Add roads into delaunay tool
         LinkedList<LineString> delaunaySegments = new LinkedList<LineString>();
         if (minRecDist > 0.1) {
             long rowCount = sdsSources.getRowCount();
-            final double firstPtAng = (Math.PI) / 4.;
-            final double secondPtAng = (Math.PI) - firstPtAng;
-            final double thirdPtAng = Math.PI + firstPtAng;
-            final double fourPtAng = -firstPtAng;
             for (long rowIndex = 0; rowIndex < rowCount; rowIndex++) {
                 Geometry pt = sdsSources.getFieldValue(rowIndex, spatialSourceFieldIndex).getAsGeometry();
                 Envelope ptEnv = pt.getEnvelopeInternal();
                 if (ptEnv.intersects(expandedCellEnvelop)) {
                     if (pt instanceof Point) {
-                        Coordinate ptcoord = ((Point) pt).getCoordinate();
-                        // Add 4 pts
-                        Coordinate pt1 = new Coordinate(Math.cos(firstPtAng)
-                                * minRecDist + ptcoord.x, Math.sin(firstPtAng)
-                                * minRecDist + ptcoord.y);
-                        Coordinate pt2 = new Coordinate(Math.cos(secondPtAng)
-                                * minRecDist * 2 + ptcoord.x, Math.sin(secondPtAng)
-                                * minRecDist * 2 + ptcoord.y);
-                        Coordinate pt3 = new Coordinate(Math.cos(thirdPtAng)
-                                * minRecDist + ptcoord.x, Math.sin(thirdPtAng)
-                                * minRecDist + ptcoord.y);
-                        Coordinate pt4 = new Coordinate(Math.cos(fourPtAng)
-                                * minRecDist * 2 + ptcoord.x, Math.sin(fourPtAng)
-                                * minRecDist * 2 + ptcoord.y);
-                        if (cellEnvelope.contains(pt1)) {
-                            cellMesh.addVertex(pt1);
-                        }
-                        if (cellEnvelope.contains(pt2)) {
-                            cellMesh.addVertex(pt2);
-                        }
-                        if (cellEnvelope.contains(pt3)) {
-                            cellMesh.addVertex(pt3);
-                        }
-                        if (cellEnvelope.contains(pt4)) {
-                            cellMesh.addVertex(pt4);
-                        }
+                        // Add square in rendering
+                        cellMesh.addGeometry(pt.buffer(minRecDist, BufferParameters.CAP_SQUARE));
                     } else {
 
                         if (pt instanceof LineString) {
@@ -428,11 +364,12 @@ public class BR_TriGrid extends AbstractTableFunction {
         long beginDelaunay = System.currentTimeMillis();
         logger.info("Begin delaunay");
         if (maximumArea > 1) {
-            cellMesh.setMaxArea(maximumArea); // Maximum area
+            // TODO
+            //cellMesh.setMaxArea(maximumArea); // Maximum area
         }
         // Maximum 5x steinerpt than input point, this limits avoid infinite
         // loop, or memory consuming triangulation
-        cellMesh.processDelaunay();
+        cellMesh.finishPolygonFeeding(cellEnvelope);
         logger.info("End delaunay");
         totalDelaunay += System.currentTimeMillis() - beginDelaunay;
 
@@ -661,7 +598,7 @@ public class BR_TriGrid extends AbstractTableFunction {
                     // vertices of neighbor cells at the borders
                     // then, there are discontinuities in iso surfaces at each
                     // border of cell
-                    LayerDelaunay cellMesh = new LayerJDelaunay();// new
+                    MeshBuilder cellMesh = new MeshBuilder();
 
 
                     computeFirstPassDelaunay(cellMesh, mainEnvelope, cellI,
@@ -679,7 +616,6 @@ public class BR_TriGrid extends AbstractTableFunction {
                     List<Coordinate> vertices = cellMesh.getVertices();
                     List<Triangle> triangles = new ArrayList<Triangle>();
                     for(Triangle triangle : cellMesh.getTriangles()) {
-                        logger.error("triangle.getBuidlingID() == " + triangle.getBuidlingID());
                         if(triangle.getBuidlingID() == 0) {
                             triangles.add(triangle);
                         }

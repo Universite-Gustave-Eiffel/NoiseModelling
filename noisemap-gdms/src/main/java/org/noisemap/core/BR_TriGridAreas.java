@@ -76,7 +76,7 @@ import org.gdms.data.schema.MetadataUtilities;
  * @author SU Qi
  */
 public class BR_TriGridAreas extends BR_TriGrid{
-        private Logger logger = Logger.getLogger(BR_TriGridAreas.class.getName());
+ /*       private Logger logger = Logger.getLogger(BR_TriGridAreas.class.getName());
 	// _________ ^
 	// | | | | | | Y or J (bottom to top)
 	// | | | | |
@@ -130,15 +130,15 @@ public class BR_TriGridAreas extends BR_TriGrid{
 		double maxSrcDist = values[1].getAsDouble();
                 double maxRefDist = values[2].getAsDouble();
 		int subdivLvl = values[3].getAsInt();
-		double minRecDist = values[4].getAsDouble(); /*
+		double minRecDist = values[4].getAsDouble(); *//*
 													 * <! Minimum distance
 													 * between source and
 													 * receiver
-													 */
-		double srcPtDist = values[5].getAsDouble(); /*
+													 *//*
+		double srcPtDist = values[5].getAsDouble(); *//*
 													 * <! Complexity distance of
 													 * roads
-													 */
+													 *//*
 		double maximumArea = values[6].getAsDouble();
 		int reflexionOrder = values[7].getAsInt();
 		int diffractionOrder = values[8].getAsInt();
@@ -542,5 +542,5 @@ public class BR_TriGridAreas extends BR_TriGrid{
 	@Override
 	public String getDescription() {
 		return "BR_TriGridAreas(buildings(polygons),sources(points),soilareas(polygons, G), sound lvl field name(string),maximum propagation distance (double meter),maximum wall seeking distance (double meter),subdivision level 4^n cells(int), roads width (meter), densification of receivers near roads (meter), maximum area of triangle, sound reflection order, sound diffraction order, alpha of walls ) Sound propagation from ponctual sound sources to ponctual receivers created by a delaunay triangulation of specified buildings geometry.";
-	}
+	}*/
 }
