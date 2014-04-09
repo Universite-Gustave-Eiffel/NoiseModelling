@@ -38,6 +38,7 @@ import org.h2gis.h2spatialapi.Function;
 import org.h2gis.h2spatialapi.ScalarFunction;
 import org.osgi.service.component.annotations.Component;
 
+import java.sql.Connection;
 import java.sql.SQLException;
 
 /**
@@ -62,7 +63,7 @@ public class BR_TriGrid extends AbstractFunction implements ScalarFunction {
         return "noisePropagation";
     }
 
-    public static void noisePropagation(String buildingsTable, String sourcesTable, String sourcesTableSoundFieldName,
+    public static void noisePropagation(Connection connection, String destinationTable, String buildingsTable, String sourcesTable, String sourcesTableSoundFieldName,
                                         double maximumPropagationDistance , double maximumWallSeekingDistance,
                                         double cellWidth, double roadsWidth, double receiversDensification,
                                         double maximumAreaOfTriangle, int  soundReflectionOrder,
