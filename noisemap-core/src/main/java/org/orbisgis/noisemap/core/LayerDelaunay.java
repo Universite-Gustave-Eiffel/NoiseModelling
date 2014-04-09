@@ -68,6 +68,17 @@ public interface LayerDelaunay {
 	 */
 	void addPolygon(Polygon newPoly, boolean isEmpty) throws LayerDelaunayError;
 
+    /**
+     * Append a polygon into the triangulation
+     *
+     * @param[in] newPoly Polygon to append into the mesh, internal rings will
+     *            be inserted as holes.
+     * @param[in] isEmpty This polygon is a hole. If yes, only the external ring
+     *            is used.
+     * @param[in] attribute Polygon attribute. {@link Triangle#getBuidlingID()}
+     */
+    void addPolygon(Polygon newPoly, boolean isEmpty,int attribute) throws LayerDelaunayError;
+
 	/**
 	 * Append a vertex into the triangulation
 	 * 

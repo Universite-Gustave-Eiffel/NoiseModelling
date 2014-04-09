@@ -605,7 +605,12 @@ public class LayerExtTriangle implements LayerDelaunay {
 		this.maxArea = maxArea.toString();
 	}
 
-	@Override
+    @Override
+    public void addPolygon(Polygon newPoly, boolean isEmpty, int attribute) throws LayerDelaunayError {
+        addPolygon(newPoly, isEmpty);
+    }
+
+    @Override
 	public void addPolygon(Polygon newPoly, boolean isEmpty)
 			throws LayerDelaunayError {
 

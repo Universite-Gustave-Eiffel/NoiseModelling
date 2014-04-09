@@ -107,23 +107,13 @@ class NodeList {
  */
 
 public class BR_TriGrid extends AbstractTableFunction {
-
+    private final static double BUILDING_BUFFER = 0.5;
     private Logger logger = Logger.getLogger(BR_TriGrid.class.getName());
-    // _________ ^
-    // | | | | | | Y or J (bottom to top)
-    // | | | | |
-    // |_|_|_|_|
-    // -> X or I (left to right)
-    private static short nRight = 0, nLeft = 1, nBottom = 2, nTop = 3; // neighbor
-    // relative
-    // positions
-    // index
-    private static short[][] neighboor = {{1, 0}, {-1, 0}, {0, -1},
-            {0, 1}}; // neighbor relative positions
     // Timing sum in millisec
     private long totalParseBuildings = 0;
     private long totalDelaunay = 0;
     private static final String heightField = "height";
+    private int delaunayObjectId = 0;
 
     public void setLogger(Logger logger) {
         this.logger = logger;
@@ -155,12 +145,6 @@ public class BR_TriGrid extends AbstractTableFunction {
 
     }
 
-    private void addPolygon(Polygon newpoly, LayerDelaunay delaunayTool,
-                            Geometry boundingBox) throws DriverException, LayerDelaunayError {
-        delaunayTool.addPolygon(newpoly, true);
-
-    }
-
     private void explodeAndAddPolygon(Geometry intersectedGeometry,
                                       LayerDelaunay delaunayTool, Geometry boundingBox)
             throws DriverException, LayerDelaunayError {
@@ -172,7 +156,7 @@ public class BR_TriGrid extends AbstractTableFunction {
                 explodeAndAddPolygon(subGeom, delaunayTool, boundingBox);
             }
         } else if (intersectedGeometry instanceof Polygon) {
-            addPolygon((Polygon) intersectedGeometry, delaunayTool, boundingBox);
+            delaunayTool.addPolygon((Polygon)intersectedGeometry, true, delaunayObjectId++);
         } else if (intersectedGeometry instanceof LineString) {
             delaunayTool.addLineString((LineString) intersectedGeometry);
         }
@@ -185,7 +169,6 @@ public class BR_TriGrid extends AbstractTableFunction {
      * @param toUnite
      * @param bufferSize
      * @param delaunayTool
-     * @param boundingBoxFilter
      * @throws LayerDelaunayError
      */
     private void makeBufferPointsNearRoads(List<Geometry> toUnite, double bufferSize, Envelope filter, LayerDelaunay delaunayTool) throws LayerDelaunayError {
@@ -262,7 +245,7 @@ public class BR_TriGrid extends AbstractTableFunction {
         for (long rowIndex = 0; rowIndex < rowCount; rowIndex++) {
             final Geometry geometry = polygonDatabase.getFieldValue(rowIndex, spatialBuildingsFieldIndex).getAsGeometry();
             Envelope geomEnv = geometry.getEnvelopeInternal();
-            geomEnv.expandBy(0.5);
+            geomEnv.expandBy(BUILDING_BUFFER);
             if (boundingBoxFilter.intersects(geomEnv)) {
                 // Add polygon to union array
                 toUnite.add(geometry);
@@ -272,10 +255,10 @@ public class BR_TriGrid extends AbstractTableFunction {
         // over-triangulated
         LinkedList<Geometry> toUniteFinal = new LinkedList<Geometry>();
         if (!toUnite.isEmpty()) {
-            Geometry bufferBuildings = merge(toUnite, 0.5);
+            Geometry bufferBuildings = merge(toUnite, BUILDING_BUFFER);
             // Remove small artifacts due to buildings buffer
             bufferBuildings = TopologyPreservingSimplifier.simplify(
-                    bufferBuildings, .1);
+                    bufferBuildings, BUILDING_BUFFER * 2);
             // Densify receiver near buildings
             // bufferBuildings=Densifier.densify(bufferBuildings,srcPtDist);
 
@@ -308,6 +291,7 @@ public class BR_TriGrid extends AbstractTableFunction {
         // together
         // Remove geometries out of the bounding box
         union = union.intersection(boundingBox);
+        delaunayObjectId = 0;
         explodeAndAddPolygon(union, delaunayTool, boundingBox);
 
         totalParseBuildings += System.currentTimeMillis() - beginfeed
@@ -349,7 +333,6 @@ public class BR_TriGrid extends AbstractTableFunction {
      * @param cellWidth
      * @param cellHeight
      * @param maxSrcDist
-     * @param sds
      * @param sdsSources
      * @param minRecDist
      * @param srcPtDist
@@ -696,7 +679,8 @@ public class BR_TriGrid extends AbstractTableFunction {
                     List<Coordinate> vertices = cellMesh.getVertices();
                     List<Triangle> triangles = new ArrayList<Triangle>();
                     for(Triangle triangle : cellMesh.getTriangles()) {
-                        if(triangle.getSegment()) {
+                        logger.error("triangle.getBuidlingID() == " + triangle.getBuidlingID());
+                        if(triangle.getBuidlingID() == 0) {
                             triangles.add(triangle);
                         }
                     }
