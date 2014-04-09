@@ -96,14 +96,14 @@ public class BR_EvalSource  extends AbstractScalarFunction {
             return new FunctionSignature[] {
                     new BasicFunctionSignature(getType(null),
                     		ScalarArgument.DOUBLE, // load speed
-                    		ScalarArgument.INT, // light vehicle
-                    		ScalarArgument.INT  // heavy vehicle
+                    		ScalarArgument.DOUBLE, // light vehicle
+                    		ScalarArgument.DOUBLE  // heavy vehicle
                     		
                     ),
                     new BasicFunctionSignature(getType(null),
                             ScalarArgument.DOUBLE, // load speed
-                            ScalarArgument.INT,    // light vehicle
-                            ScalarArgument.INT,    // heavy vehicle
+                            ScalarArgument.DOUBLE,    // light vehicle
+                            ScalarArgument.DOUBLE,    // heavy vehicle
                             ScalarArgument.DOUBLE, // Z begin
                             ScalarArgument.DOUBLE, // Z end
                             ScalarArgument.DOUBLE  // Road length(m) (without taking account of
@@ -111,8 +111,8 @@ public class BR_EvalSource  extends AbstractScalarFunction {
 
                     ),new BasicFunctionSignature(getType(null),
                     		ScalarArgument.DOUBLE, // load speed
-                    		ScalarArgument.INT, // light vehicle
-                    		ScalarArgument.INT, // heavy vehicle
+                    		ScalarArgument.DOUBLE, // light vehicle
+                    		ScalarArgument.DOUBLE, // heavy vehicle
                     		ScalarArgument.DOUBLE, // junction speed
                     		ScalarArgument.DOUBLE, // speed limit
                     		ScalarArgument.DOUBLE, // Road Type XY

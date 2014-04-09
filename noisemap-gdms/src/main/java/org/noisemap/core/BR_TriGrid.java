@@ -64,6 +64,7 @@ import org.orbisgis.noisemap.core.FastObstructionTest;
 import org.orbisgis.noisemap.core.LayerDelaunay;
 import org.orbisgis.noisemap.core.LayerDelaunayError;
 import org.orbisgis.noisemap.core.LayerExtTriangle;
+import org.orbisgis.noisemap.core.LayerJDelaunay;
 import org.orbisgis.noisemap.core.MeshBuilder;
 import org.orbisgis.noisemap.core.PropagationProcess;
 import org.orbisgis.noisemap.core.PropagationProcessData;
@@ -448,103 +449,7 @@ public class BR_TriGrid extends AbstractTableFunction {
         }
         // Maximum 5x steinerpt than input point, this limits avoid infinite
         // loop, or memory consuming triangulation
-        if (!(cellMesh instanceof LayerExtTriangle)) {
-            cellMesh.processDelaunay();
-        } else {
-            int maxSteiner = Math.max(cellMesh.getVertices().size() * 5, 50000);
-            cellMesh.setMinAngle(20.);
-            String firstPathFileName = ((LayerExtTriangle) cellMesh)
-                    .processDelaunay("first_",
-                            getCellId(cellI, cellJ, cellJMax), maxSteiner,
-                            true, true);
-            firstPassResults[getCellId(cellI, cellJ, cellJMax)] = firstPathFileName;
-
-            List<Coordinate> vertices = cellMesh.getVertices();
-            boolean isLeft = cellI > 0;
-            boolean isRight = cellI < cellIMax - 1;
-            boolean isTop = cellJ < cellJMax - 1;
-            boolean isBottom = cellJ > 0;
-            int leftCellId = getCellId(cellI
-                    + BR_TriGrid.neighboor[BR_TriGrid.nLeft][0], cellJ
-                    + BR_TriGrid.neighboor[BR_TriGrid.nLeft][1], cellJMax);
-            int rightCellId = getCellId(cellI
-                    + BR_TriGrid.neighboor[BR_TriGrid.nRight][0], cellJ
-                    + BR_TriGrid.neighboor[BR_TriGrid.nRight][1], cellJMax);
-            int topCellId = getCellId(cellI
-                    + BR_TriGrid.neighboor[BR_TriGrid.nTop][0], cellJ
-                    + BR_TriGrid.neighboor[BR_TriGrid.nTop][1], cellJMax);
-            int bottomCellId = getCellId(cellI
-                    + BR_TriGrid.neighboor[BR_TriGrid.nBottom][0], cellJ
-                    + BR_TriGrid.neighboor[BR_TriGrid.nBottom][1], cellJMax);
-            // Initialization of cell array object
-            Envelope leftEnv = null, rightEnv = null, topEnv = null, bottomEnv = null;
-            if (isLeft) {
-                if (neighborsBorderVertices[leftCellId] == null) {
-                    neighborsBorderVertices[leftCellId] = new NodeList();
-                }
-                leftEnv = getCellEnv(mainEnvelope, cellI
-                                + BR_TriGrid.neighboor[BR_TriGrid.nLeft][0], cellJ
-                                + BR_TriGrid.neighboor[BR_TriGrid.nLeft][1], cellIMax,
-                        cellJMax, cellWidth, cellHeight
-                );
-            }
-            if (isRight) {
-                if (neighborsBorderVertices[rightCellId] == null) {
-                    neighborsBorderVertices[rightCellId] = new NodeList();
-                }
-                rightEnv = getCellEnv(mainEnvelope, cellI
-                                + BR_TriGrid.neighboor[BR_TriGrid.nRight][0], cellJ
-                                + BR_TriGrid.neighboor[BR_TriGrid.nRight][1], cellIMax,
-                        cellJMax, cellWidth, cellHeight
-                );
-            }
-            if (isBottom) {
-                if (neighborsBorderVertices[bottomCellId] == null) {
-                    neighborsBorderVertices[bottomCellId] = new NodeList();
-                }
-                bottomEnv = getCellEnv(mainEnvelope, cellI
-                                + BR_TriGrid.neighboor[BR_TriGrid.nBottom][0], cellJ
-                                + BR_TriGrid.neighboor[BR_TriGrid.nBottom][1],
-                        cellIMax, cellJMax, cellWidth, cellHeight
-                );
-            }
-            if (isTop) {
-                if (neighborsBorderVertices[topCellId] == null) {
-                    neighborsBorderVertices[topCellId] = new NodeList();
-                }
-                topEnv = getCellEnv(mainEnvelope, cellI
-                                + BR_TriGrid.neighboor[BR_TriGrid.nTop][0], cellJ
-                                + BR_TriGrid.neighboor[BR_TriGrid.nTop][1], cellIMax,
-                        cellJMax, cellWidth, cellHeight
-                );
-            }
-
-            // Distribute border's vertices to neighbor second pass
-            // triangulation
-            for (Coordinate vertex : vertices) {
-                Envelope ptEnv = new Envelope(vertex);
-                if (isLeft && leftEnv.distance(ptEnv) < 0.0001) // leftEnv.intersects(vertex))
-                {
-                    // Left
-                    // Translate to the exact position of the border
-                    vertex.x = leftEnv.getMaxX();
-                    neighborsBorderVertices[leftCellId].nodes.add(vertex);
-                } else if (isRight && rightEnv.distance(ptEnv) < 0.0001) {
-                    // Right
-                    vertex.x = rightEnv.getMinX();
-                    neighborsBorderVertices[rightCellId].nodes.add(vertex);
-                } else if (isBottom && bottomEnv.distance(ptEnv) < 0.0001) {
-                    // Bottom
-                    vertex.y = bottomEnv.getMaxY();
-                    neighborsBorderVertices[bottomCellId].nodes.add(vertex);
-                } else if (isTop && topEnv.distance(ptEnv) < 0.0001) {
-                    // Top
-                    vertex.y = topEnv.getMinY();
-                    neighborsBorderVertices[topCellId].nodes.add(vertex);
-                }
-            }
-
-        }
+        cellMesh.processDelaunay();
         logger.info("End delaunay");
         totalDelaunay += System.currentTimeMillis() - beginDelaunay;
 
@@ -773,66 +678,14 @@ public class BR_TriGrid extends AbstractTableFunction {
                     // vertices of neighbor cells at the borders
                     // then, there are discontinuities in iso surfaces at each
                     // border of cell
-                    LayerDelaunay cellMesh = new LayerExtTriangle(tmpdir);// new
-                    // LayerCTriangle();
-                    // //new
-                    // LayerJDelaunay();
+                    LayerDelaunay cellMesh = new LayerJDelaunay();// new
 
-                    if (cellMesh instanceof LayerExtTriangle
-                            && !forceSinglePass) {
-                        for (short[] ijneighoffset : BR_TriGrid.neighboor) {
-                            int[] ijneigh = {cellI + ijneighoffset[0],
-                                    cellJ + ijneighoffset[1]};
-                            if (ijneigh[0] >= 0 && ijneigh[0] < gridDim
-                                    && ijneigh[1] >= 0 && ijneigh[1] < gridDim) {
-                                if (firstPassResults[getCellId(ijneigh[0],
-                                        ijneigh[1], gridDim)] == null) {
-                                    cellMesh.reset();
-                                    computeFirstPassDelaunay(cellMesh,
-                                            mainEnvelope, ijneigh[0],
-                                            ijneigh[1], gridDim, gridDim,
-                                            cellWidth, cellHeight, maxSrcDist,
-                                            sds, sdsSources, spatialBuildingsFieldIndex, spatialSourceFieldIndex, minRecDist,
-                                            srcPtDist, firstPassResults,
-                                            neighborsBorderVertices,
-                                            maximumArea);
-                                }
-                            }
-                        }
-                        // Compute the first pass of the 5 neighbor cells if
-                        // this is not already done
-                        if (firstPassResults[getCellId(cellI, cellJ, gridDim)] == null) {
-                            cellMesh.reset();
-                            computeFirstPassDelaunay(cellMesh, mainEnvelope,
-                                    cellI, cellJ, gridDim, gridDim, cellWidth,
-                                    cellHeight, maxSrcDist, sds, sdsSources, spatialBuildingsFieldIndex, spatialSourceFieldIndex,
-                                    minRecDist, srcPtDist, firstPassResults,
-                                    neighborsBorderVertices, maximumArea);
-                        }
 
-                        // Compute second pass of the current cell
-                        cellMesh.reset();
-                        computeSecondPassDelaunay(
-                                (LayerExtTriangle) cellMesh,
-                                mainEnvelope,
-                                cellI,
-                                cellJ,
-                                gridDim,
-                                gridDim,
-                                cellWidth,
-                                cellHeight,
-                                firstPassResults[getCellId(cellI, cellJ,
-                                        gridDim)],
-                                neighborsBorderVertices[getCellId(cellI, cellJ,
-                                        gridDim)]
-                        );
-                    } else {
-                        computeFirstPassDelaunay(cellMesh, mainEnvelope, cellI,
-                                cellJ, gridDim, gridDim, cellWidth, cellHeight,
-                                maxSrcDist, sds, sdsSources, spatialBuildingsFieldIndex, spatialSourceFieldIndex, minRecDist,
-                                srcPtDist, firstPassResults,
-                                neighborsBorderVertices, maximumArea);
-                    }
+                    computeFirstPassDelaunay(cellMesh, mainEnvelope, cellI,
+                            cellJ, gridDim, gridDim, cellWidth, cellHeight,
+                            maxSrcDist, sds, sdsSources, spatialBuildingsFieldIndex, spatialSourceFieldIndex, minRecDist,
+                            srcPtDist, firstPassResults,
+                            neighborsBorderVertices, maximumArea);
                     // Make a structure to keep the following information
                     // Triangle list with 3 vertices(int), and 3 neighbor
                     // triangle ID
@@ -841,7 +694,12 @@ public class BR_TriGrid extends AbstractTableFunction {
                     // The evaluation of sound level must be done where the
                     // following vertices are
                     List<Coordinate> vertices = cellMesh.getVertices();
-                    List<Triangle> triangles = cellMesh.getTriangles();
+                    List<Triangle> triangles = new ArrayList<Triangle>();
+                    for(Triangle triangle : cellMesh.getTriangles()) {
+                        if(triangle.getSegment()) {
+                            triangles.add(triangle);
+                        }
+                    }
                     nbreceivers += vertices.size();
 
 

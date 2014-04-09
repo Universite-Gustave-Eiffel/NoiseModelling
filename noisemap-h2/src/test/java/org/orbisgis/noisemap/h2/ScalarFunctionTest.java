@@ -117,19 +117,19 @@ public class ScalarFunctionTest {
 
     @Test
     public void testBR_SpectrumRepartition() throws SQLException {
-        ResultSet rs = st.executeQuery("SELECT BR_SpectrumRepartition(1000,2,83)");
+        ResultSet rs = st.executeQuery("SELECT BR_SpectrumRepartition(1000,1,83)");
         assertTrue(rs.next());
         assertEquals(76, rs.getDouble(1), 0.01);
     }
 
     @Test(expected = SQLException.class)
     public void testBR_SpectrumRepartitionErr() throws SQLException {
-        st.executeQuery("SELECT BR_SpectrumRepartition(1000,1,83)");
+        st.executeQuery("SELECT BR_SpectrumRepartition(1000,0,83)");
     }
 
     @Test(expected = SQLException.class)
     public void testBR_SpectrumRepartitionErr2() throws SQLException {
-        st.executeQuery("SELECT BR_SpectrumRepartition(1001,2,83)");
+        st.executeQuery("SELECT BR_SpectrumRepartition(1001,1,83)");
     }
 
     @Test

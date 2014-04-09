@@ -64,7 +64,7 @@ public class BR_SpectrumRepartition extends AbstractScalarFunction {
 
 	@Override
 	public String getName() {
-		return "VehicleSpectrumRepartition";
+		return "BR_SpectrumRepartition";
 	}
 
 	@Override
