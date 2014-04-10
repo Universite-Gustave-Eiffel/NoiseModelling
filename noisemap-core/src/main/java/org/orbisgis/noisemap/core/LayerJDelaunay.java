@@ -43,6 +43,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.jdelaunay.delaunay.ConstrainedMesh;
+import org.jdelaunay.delaunay.evaluator.InsertionEvaluator;
 import org.jdelaunay.delaunay.geometries.DEdge;
 import org.jdelaunay.delaunay.geometries.DPoint;
 import org.jdelaunay.delaunay.geometries.DTriangle;
@@ -194,6 +195,16 @@ public class LayerJDelaunay implements LayerDelaunay {
 
     @Override
     public void processDelaunay() throws LayerDelaunayError {
+        processDelaunay(0., null);
+    }
+
+    /**
+     *
+     * @param minTriangleLength Minimum triangle side length
+     * @param insertionEvaluator
+     * @throws LayerDelaunayError
+     */
+    public void processDelaunay(double minTriangleLength, InsertionEvaluator insertionEvaluator) throws LayerDelaunayError {
         if (delaunayTool != null) {
             try {
                 // Push segments
@@ -233,6 +244,10 @@ public class LayerJDelaunay implements LayerDelaunay {
 
                 delaunayTool.forceConstraintIntegrity();
                 delaunayTool.processDelaunay();
+                // Refine mesh
+                if(insertionEvaluator != null) {
+                    delaunayTool.refineMesh(minTriangleLength , insertionEvaluator);
+                }
                 constraintEdge.clear();
                 ptToInsert.clear();
                 List<DTriangle> trianglesDelaunay = delaunayTool
@@ -356,11 +371,12 @@ public class LayerJDelaunay implements LayerDelaunay {
                 delaunayTool = null;
 
             } catch (DelaunayError e) {
-                String msgStack=new String();
+                StringBuilder msgStack=new StringBuilder(e.getMessage());
                 for(StackTraceElement lign : e.getStackTrace()) {
-                    msgStack.concat(lign.toString()+"\n");
+                    msgStack.append(lign.toString());
+                    msgStack.append("\n");
                 }
-                throw new LayerDelaunayError(e.getMessage()+msgStack);
+                throw new LayerDelaunayError(msgStack.toString());
             }
         }
     }

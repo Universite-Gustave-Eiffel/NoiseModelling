@@ -348,7 +348,7 @@ public class BR_TriGridTopo extends BR_TriGrid{
                                                     Envelope geomEnv = geometry.getEnvelopeInternal();
                                                     if (expandedCellEnvelop.intersects(geomEnv)&&geometry instanceof Point) {
                                                         { 
-                                                            mesh.addTopograhicPoint(geometry.getCoordinate());
+                                                            mesh.addTopographicPoint(geometry.getCoordinate());
                                                         }
                                                     }
                                             }

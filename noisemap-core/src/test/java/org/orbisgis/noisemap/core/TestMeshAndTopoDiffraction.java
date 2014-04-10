@@ -69,7 +69,7 @@ public class TestMeshAndTopoDiffraction extends TestCase{
             MeshBuilder mesh= new MeshBuilder();
             mesh.addGeometry(building1,4.0);
             mesh.addGeometry(building2,5.0);
-            mesh.addTopograhicPoint(topoPoint1);
+            mesh.addTopographicPoint(topoPoint1);
 
             mesh.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(60., 60.,0.)));
             FastObstructionTest nfot= new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
@@ -118,7 +118,7 @@ public class TestMeshAndTopoDiffraction extends TestCase{
              MeshBuilder mesh= new MeshBuilder();
 
              mesh.addGeometry(building1,1.0);
-             mesh.addTopograhicPoint(topoPoint1);
+             mesh.addTopographicPoint(topoPoint1);
 
              mesh.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(60., 60.,0.)));
              FastObstructionTest nfot= new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
@@ -174,7 +174,7 @@ public class TestMeshAndTopoDiffraction extends TestCase{
              MeshBuilder mesh= new MeshBuilder();
              mesh.addGeometry(building1,4.0);
              mesh.addGeometry(building2,5.0);
-             mesh.addTopograhicPoint(topoPoint1);
+             mesh.addTopographicPoint(topoPoint1);
 
              mesh.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(60., 60.,0.)));
              FastObstructionTest nfot= new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
@@ -244,7 +244,7 @@ public class TestMeshAndTopoDiffraction extends TestCase{
                             factory.createLinearRing(building1Coords), null);
              MeshBuilder mesh= new MeshBuilder();
              mesh.addGeometry(building1,4.0);
-             mesh.addTopograhicPoint(topoPoint1);
+             mesh.addTopographicPoint(topoPoint1);
              mesh.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(60., 60.,0.)));
              FastObstructionTest nfot= new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
              

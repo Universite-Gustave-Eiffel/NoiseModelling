@@ -33,14 +33,12 @@
  */
 package org.noisemap.core;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Stack;
 import java.util.concurrent.TimeUnit;
 
-import com.vividsolutions.jts.operation.buffer.BufferOp;
 import org.apache.log4j.Logger;
 import org.gdms.data.DataSourceFactory;
 import org.gdms.data.schema.DefaultMetadata;
@@ -62,10 +60,8 @@ import org.gdms.sql.function.table.TableFunctionSignature;
 import org.gdms.driver.DiskBufferDriver;
 import org.grap.utilities.EnvelopeUtil;
 import org.orbisgis.noisemap.core.FastObstructionTest;
-import org.orbisgis.noisemap.core.LayerDelaunay;
 import org.orbisgis.noisemap.core.LayerDelaunayError;
-import org.orbisgis.noisemap.core.LayerExtTriangle;
-import org.orbisgis.noisemap.core.LayerJDelaunay;
+import org.orbisgis.noisemap.core.MeshRefinement;
 import org.orbisgis.noisemap.core.MeshBuilder;
 import org.orbisgis.noisemap.core.PropagationProcess;
 import org.orbisgis.noisemap.core.PropagationProcessData;
@@ -86,7 +82,6 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.LinearRing;
 import com.vividsolutions.jts.geom.MultiLineString;
-import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
 
@@ -255,8 +250,6 @@ public class BR_TriGrid extends AbstractTableFunction {
         }
 
         // Merge roads
-        logger.error("minRecDist =" + minRecDist);
-        logger.error("delaunaySegments =" + delaunaySegments.size());
         if (minRecDist > 0.01) {
             LinkedList<Geometry> toUniteRoads = new LinkedList<Geometry>(delaunaySegments);
             if (!toUniteRoads.isEmpty()) {
@@ -271,7 +264,6 @@ public class BR_TriGrid extends AbstractTableFunction {
                 //toUniteFinal.add(makeBufferSegmentsNearRoads(toUniteRoads,srcPtDist));
                 makeBufferPointsNearRoads(toUniteRoads, srcPtDist, boundingBoxFilter, delaunayTool);
                 //roads, and helps to reduce over estimation due to inapropriate interpolation.
-                logger.error("toUniteFinal.add( " + bufferRoads);
                 toUniteFinal.add(bufferRoads); // Merge roads with minRecDist m
                 // buffer
             }
@@ -364,8 +356,8 @@ public class BR_TriGrid extends AbstractTableFunction {
         long beginDelaunay = System.currentTimeMillis();
         logger.info("Begin delaunay");
         if (maximumArea > 1) {
-            // TODO
-            //cellMesh.setMaxArea(maximumArea); // Maximum area
+            cellMesh.setInsertionEvaluator(new MeshRefinement(maximumArea,0.02,
+                    MeshRefinement.DEFAULT_QUALITY));
         }
         // Maximum 5x steinerpt than input point, this limits avoid infinite
         // loop, or memory consuming triangulation
