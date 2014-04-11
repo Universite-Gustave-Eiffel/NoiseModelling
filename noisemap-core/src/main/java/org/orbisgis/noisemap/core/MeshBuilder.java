@@ -265,14 +265,10 @@ public class MeshBuilder {
                                       LayerJDelaunay delaunayTool, int buildingID)
             throws LayerDelaunayError {
 
-        if (intersectedGeometry instanceof MultiPolygon
-                || intersectedGeometry instanceof GeometryCollection) {
-
-
+        if (intersectedGeometry instanceof GeometryCollection) {
             for (int j = 0; j < intersectedGeometry.getNumGeometries(); j++) {
                 Geometry subGeom = intersectedGeometry.getGeometryN(j);
                 explodeAndAddPolygon(subGeom, delaunayTool, buildingID);
-
             }
         } else if (intersectedGeometry instanceof Polygon) {
             addPolygon((Polygon) intersectedGeometry, delaunayTool, buildingID);

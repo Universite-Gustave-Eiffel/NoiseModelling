@@ -246,7 +246,8 @@ public class LayerJDelaunay implements LayerDelaunay {
                 delaunayTool.processDelaunay();
                 // Refine mesh
                 if(insertionEvaluator != null) {
-                    delaunayTool.refineMesh(minTriangleLength , insertionEvaluator);
+                    //delaunayTool.refineMesh(minTriangleLength , insertionEvaluator);
+                    delaunayTool.refineTriangles(minTriangleLength , insertionEvaluator);
                 }
                 constraintEdge.clear();
                 ptToInsert.clear();
@@ -453,7 +454,7 @@ public class LayerJDelaunay implements LayerDelaunay {
                 Coordinate interiorPoint = polyBuffnew.getInteriorPoint()
                         .getCoordinate();
                 if (!factory.createPoint(interiorPoint).intersects(holeLine)) {
-                    this.addLineString(holeLine);
+                    this.addLineString(holeLine, buildingId);
                 } else {
                     logger.info("Warning : hole rejected, can't find interior point.");
                 }

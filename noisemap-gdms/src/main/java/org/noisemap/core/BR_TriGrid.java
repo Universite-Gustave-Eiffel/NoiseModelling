@@ -243,8 +243,7 @@ public class BR_TriGrid extends AbstractTableFunction {
             // Remove small artifacts due to buildings buffer
             bufferBuildings = TopologyPreservingSimplifier.simplify(
                     bufferBuildings, BUILDING_BUFFER * 2);
-            // Densify receiver near buildings
-            // bufferBuildings=Densifier.densify(bufferBuildings,srcPtDist);
+            bufferBuildings=Densifier.densify(bufferBuildings,srcPtDist);
 
             toUniteFinal.add(bufferBuildings); // Add buildings to triangulation
         }
@@ -357,7 +356,7 @@ public class BR_TriGrid extends AbstractTableFunction {
         logger.info("Begin delaunay");
         if (maximumArea > 1) {
             cellMesh.setInsertionEvaluator(new MeshRefinement(maximumArea,0.02,
-                    MeshRefinement.DEFAULT_QUALITY));
+                    MeshRefinement.DEFAULT_QUALITY, cellMesh));
         }
         // Maximum 5x steinerpt than input point, this limits avoid infinite
         // loop, or memory consuming triangulation

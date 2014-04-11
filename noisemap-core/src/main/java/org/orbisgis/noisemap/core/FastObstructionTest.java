@@ -637,7 +637,7 @@ public class FastObstructionTest {
                     if (closestPoint.distance(p1) <= maxDist) {
                         // In this direction there is a building or this is outside
                         // of the geometry
-                        if (triVertices.get(neighboors.get(idside)).getBuidlingID() >= 1) {
+                        if (neighboors.get(idside)==-1 || triVertices.get(neighboors.get(idside)).getBuidlingID() >= 1) {
                             walls.add(side);
                         } else {
                             // Store currentTriangle Id. This is where to go
