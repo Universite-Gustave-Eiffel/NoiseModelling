@@ -32,7 +32,6 @@ public class MeshRefinement implements InsertionEvaluator {
         this.maxArea = maxArea;
         this.minArea = minArea;
         this.targetQuality = targetQuality;
-        int id=0;
         LinkedList<MeshBuilder.PolygonWithHeight> areas = meshBuilder.getPolygonWithHeight();
         int itemCount = areas.size();
         rTree = new STRtree(itemCount);

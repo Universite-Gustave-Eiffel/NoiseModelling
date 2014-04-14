@@ -277,16 +277,13 @@ public class MeshBuilder {
         }
     }
 
-    // feeding
-    @SuppressWarnings("unchecked")
-    public void finishPolygonFeeding(Envelope boundingBoxFilter)
-            throws LayerDelaunayError {
-        if (boundingBoxFilter != null) {
-            if (this.geometriesBoundingBox != null) {
-                this.geometriesBoundingBox.expandToInclude(boundingBoxFilter);
-            } else {
-                this.geometriesBoundingBox = boundingBoxFilter;
-            }
+    public void finishPolygonFeeding(Envelope boundingBoxFilter) throws LayerDelaunayError {
+        finishPolygonFeeding(new GeometryFactory().toGeometry(boundingBoxFilter));
+    }
+
+    public void finishPolygonFeeding(Geometry boundingBoxGeom) throws LayerDelaunayError {
+        if (boundingBoxGeom != null) {
+            this.geometriesBoundingBox = boundingBoxGeom.getEnvelopeInternal();
         }
 
         LayerJDelaunay delaunayTool = new LayerJDelaunay();
@@ -305,11 +302,10 @@ public class MeshBuilder {
         }
 
         // Insert the main rectangle
-        Geometry boundingBox = new GeometryFactory().toGeometry(this.geometriesBoundingBox);
-        if (!(boundingBox instanceof Polygon)) {
+        if (!(boundingBoxGeom instanceof Polygon)) {
             return;
         }
-        delaunayTool.addPolygon((Polygon) boundingBox, false);
+        delaunayTool.addPolygon((Polygon) boundingBoxGeom, false);
         //explodeAndAddPolygon(allbuilds, delaunayTool);
         //Process delaunay Triangulation
         delaunayTool.setMinAngle(0.);
@@ -325,10 +321,7 @@ public class MeshBuilder {
         this.triVertices = delaunayTool.getTriangles();
         this.vertices = delaunayTool.getVertices();
         this.triNeighbors = delaunayTool.getNeighbors();
-
-
     }
-
 
     //function just for test MergePolygon
     public void testMergeGetPolygonWithHeight() {

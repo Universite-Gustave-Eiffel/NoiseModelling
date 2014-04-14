@@ -246,7 +246,6 @@ public class LayerJDelaunay implements LayerDelaunay {
                 delaunayTool.processDelaunay();
                 // Refine mesh
                 if(insertionEvaluator != null) {
-                    //delaunayTool.refineMesh(minTriangleLength , insertionEvaluator);
                     delaunayTool.refineTriangles(minTriangleLength , insertionEvaluator);
                 }
                 constraintEdge.clear();

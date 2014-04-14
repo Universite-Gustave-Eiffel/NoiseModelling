@@ -155,28 +155,6 @@ public class BR_TriGrid extends AbstractTableFunction {
         totalDelaunay += System.currentTimeMillis() - beginAppendPolygons;
     }
 
-    /**
-     * This function compute buffer polygon near roads, densify, then add points to the delaunayTriangulation
-     *
-     * @param toUnite
-     * @param bufferSize
-     * @param delaunayTool
-     * @throws LayerDelaunayError
-     */
-    private void makeBufferPointsNearRoads(List<Geometry> toUnite, double bufferSize, Envelope filter, MeshBuilder delaunayTool) throws LayerDelaunayError {
-        GeometryFactory geometryFactory = new GeometryFactory();
-        Geometry geoArray[] = new Geometry[toUnite.size()];
-        toUnite.toArray(geoArray);
-        GeometryCollection polygonCollection = geometryFactory
-                .createGeometryCollection(geoArray);
-        Geometry polygon = polygonCollection.buffer(bufferSize, 4,
-                BufferParameters.CAP_SQUARE);
-        polygon = TopologyPreservingSimplifier.simplify(polygon,
-                bufferSize / 2.);
-        polygon = Densifier.densify(polygon, bufferSize);
-        delaunayTool.addGeometry(polygon);
-    }
-
     private Geometry merge(LinkedList<Geometry> toUnite, double bufferSize) {
         GeometryFactory geometryFactory = new GeometryFactory();
         Geometry geoArray[] = new Geometry[toUnite.size()];
@@ -258,10 +236,9 @@ public class BR_TriGrid extends AbstractTableFunction {
                 bufferRoads = TopologyPreservingSimplifier.simplify(bufferRoads,
                         minRecDist / 2);
                 // Densify roads to set more receiver near roads.
-                //bufferRoads = Densifier.densify(bufferRoads, srcPtDist);
+                bufferRoads = Densifier.densify(bufferRoads, srcPtDist);
                 //Add points buffer to the final triangulation, this will densify sound level extraction near
                 //toUniteFinal.add(makeBufferSegmentsNearRoads(toUniteRoads,srcPtDist));
-                makeBufferPointsNearRoads(toUniteRoads, srcPtDist, boundingBoxFilter, delaunayTool);
                 //roads, and helps to reduce over estimation due to inapropriate interpolation.
                 toUniteFinal.add(bufferRoads); // Merge roads with minRecDist m
                 // buffer
@@ -308,7 +285,10 @@ public class BR_TriGrid extends AbstractTableFunction {
             throws DriverException, LayerDelaunayError {
 
         Envelope cellEnvelope = getCellEnv(mainEnvelope, cellI, cellJ,
-                cellIMax, cellJMax, cellWidth, cellHeight);// new
+                cellIMax, cellJMax, cellWidth, cellHeight);
+        Geometry cellEnvelopeGeometry = new GeometryFactory().toGeometry(cellEnvelope);
+
+                // new
         // Envelope(mainEnvelope.getMinX()+cellI*cellWidth,
         // mainEnvelope.getMinX()+cellI*cellWidth+cellWidth,
         // mainEnvelope.getMinY()+cellHeight*cellJ,
@@ -330,7 +310,7 @@ public class BR_TriGrid extends AbstractTableFunction {
                 if (ptEnv.intersects(expandedCellEnvelop)) {
                     if (pt instanceof Point) {
                         // Add square in rendering
-                        cellMesh.addGeometry(pt.buffer(minRecDist, BufferParameters.CAP_SQUARE));
+                        cellMesh.addGeometry(cellEnvelopeGeometry.intersection(pt.buffer(minRecDist, BufferParameters.CAP_SQUARE)));
                     } else {
 
                         if (pt instanceof LineString) {
@@ -360,7 +340,8 @@ public class BR_TriGrid extends AbstractTableFunction {
         }
         // Maximum 5x steinerpt than input point, this limits avoid infinite
         // loop, or memory consuming triangulation
-        cellMesh.finishPolygonFeeding(cellEnvelope);
+        Geometry densifiedEnvelope  = Densifier.densify(new GeometryFactory().toGeometry(cellEnvelope), srcPtDist);
+        cellMesh.finishPolygonFeeding(densifiedEnvelope);
         logger.info("End delaunay");
         totalDelaunay += System.currentTimeMillis() - beginDelaunay;
 
