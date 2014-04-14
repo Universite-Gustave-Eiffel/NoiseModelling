@@ -50,6 +50,8 @@ import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.index.quadtree.Quadtree;
 import com.vividsolutions.jts.index.strtree.STRtree;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Nicolas Fortin
@@ -74,6 +76,8 @@ public class PropagationProcess implements Runnable {
     private double[] alpha_atmo;
     private double[] freq_lambda;
     private STRtree rTreeOfGeoSoil;
+    private boolean hasBuildingHeight;
+    private final static Logger LOGGER = LoggerFactory.getLogger(PropagationProcess.class);
 
 
     private static double GetGlobalLevel(int nbfreq, double energeticSum[]) {
@@ -1074,101 +1078,103 @@ public class PropagationProcess implements Runnable {
                 }
             }
         }
-
-
     }
 
     @Override
     public void run() {
-        initStructures();
-        GeometryFactory factory = new GeometryFactory();
+        try {
+            initStructures();
+            GeometryFactory factory = new GeometryFactory();
 
-        // TODO comment debugging code
+            // TODO comment debugging code
 
-		/*
-		 * Type
-		 * meta_type[]={TypeFactory.createType(Type.GEOMETRY),TypeFactory.createType
-		 * (Type.INT),TypeFactory.createType(Type.DOUBLE)}; String
-		 * meta_name[]={"the_geom","difid","largebandatt"}; DefaultMetadata
-		 * metadata = new DefaultMetadata(meta_type,meta_name); DiskBufferDriver
-		 * driver; try { driver = new DiskBufferDriver(data.dsf,metadata ); }
-		 * catch (DriverException e) { e.printStackTrace(); return; }
-		 */
+            /*
+             * Type
+             * meta_type[]={TypeFactory.createType(Type.GEOMETRY),TypeFactory.createType
+             * (Type.INT),TypeFactory.createType(Type.DOUBLE)}; String
+             * meta_name[]={"the_geom","difid","largebandatt"}; DefaultMetadata
+             * metadata = new DefaultMetadata(meta_type,meta_name); DiskBufferDriver
+             * driver; try { driver = new DiskBufferDriver(data.dsf,metadata ); }
+             * catch (DriverException e) { e.printStackTrace(); return; }
+             */
 
-        double verticesSoundLevel[] = new double[data.vertices.size()]; // Computed
-        // sound
-        // level
-        // of
-        // vertices
+            double verticesSoundLevel[] = new double[data.vertices.size()]; // Computed
+            // sound
+            // level
+            // of
+            // vertices
 
 
-        // For each vertices, find sources where the distance is within
-        // maxSrcDist meters
-        ProgressionProcess propaProcessProgression = data.cellProg;
-        int idReceiver = 0;
-        long min_compute_time = Long.MAX_VALUE;
-        long max_compute_time = 0;
-        long sum_compute = 0;
-        for (Coordinate receiverCoord : data.vertices) {
-            long debReceiverTime = System.nanoTime();
+            // For each vertices, find sources where the distance is within
+            // maxSrcDist meters
+            ProgressionProcess propaProcessProgression = data.cellProg;
+            int idReceiver = 0;
+            long min_compute_time = Long.MAX_VALUE;
+            long max_compute_time = 0;
+            long sum_compute = 0;
+            for (Coordinate receiverCoord : data.vertices) {
+                long debReceiverTime = System.nanoTime();
 
-            propaProcessProgression.nextSubProcessEnd();
-            double energeticSum[] = new double[data.freq_lvl.size()];
-            for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
-                energeticSum[idfreq] = 0.0;
+                propaProcessProgression.nextSubProcessEnd();
+                double energeticSum[] = new double[data.freq_lvl.size()];
+                for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
+                    energeticSum[idfreq] = 0.0;
+                }
+                computeSoundLevelAtPosition(receiverCoord, energeticSum);
+                // Save the sound level at this receiver
+                // Do the sum of all frequency bands
+                double allfreqlvl = 0;
+                for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
+                    allfreqlvl += energeticSum[idfreq];
+                }
+                allfreqlvl = Math.max(allfreqlvl, BASE_LVL);
+                verticesSoundLevel[idReceiver] = allfreqlvl;
+
+                long computeTime = System.nanoTime() - debReceiverTime;
+                min_compute_time = Math.min(computeTime, min_compute_time);
+                max_compute_time = Math.max(computeTime, max_compute_time);
+                sum_compute += computeTime;
+                idReceiver++;
             }
-            computeSoundLevelAtPosition(receiverCoord, energeticSum);
-            // Save the sound level at this receiver
-            // Do the sum of all frequency bands
-            double allfreqlvl = 0;
-            for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
-                allfreqlvl += energeticSum[idfreq];
+            if (data.triangles != null) { //Triangle output type
+                // Subdivide each triangle, and apply BiCubic interpolation.
+                        /*
+                         * ArrayList<Triangle> bicubictri=new ArrayList<Triangle>();
+                         * bicubictri.ensureCapacity(data.triangles.size()); for(Triangle tri :
+                         * data.triangles) { //////////////////////// //Find the fourth vertex }
+                         */
+                // Now export all triangles with the sound level at each vertices
+                int tri_id = 0;
+                for (Triangle tri : data.triangles) {
+                    Coordinate pverts[] = {data.vertices.get(tri.getA()),
+                            data.vertices.get(tri.getB()),
+                            data.vertices.get(tri.getC()),
+                            data.vertices.get(tri.getA())};
+                    dataOut.addValues(new PropagationResultTriRecord(
+                            factory.createPolygon(factory.createLinearRing(pverts), null),
+                            verticesSoundLevel[tri.getA()],
+                            verticesSoundLevel[tri.getB()],
+                            verticesSoundLevel[tri.getC()],
+                            data.cellId,
+                            tri_id));
+                    tri_id++;
+                }
+            } else {
+                //Vertices output type
+                for (int receiverId = 0; receiverId < data.vertices.size(); receiverId++) {
+                    dataOut.addValues(new PropagationResultPtRecord(data.receiverRowId.get(receiverId), data.cellId, verticesSoundLevel[receiverId]));
+                }
             }
-            allfreqlvl = Math.max(allfreqlvl, BASE_LVL);
-            verticesSoundLevel[idReceiver] = allfreqlvl;
-
-            long computeTime = System.nanoTime() - debReceiverTime;
-            min_compute_time = Math.min(computeTime, min_compute_time);
-            max_compute_time = Math.max(computeTime, max_compute_time);
-            sum_compute += computeTime;
-            idReceiver++;
+            dataOut.appendFreeFieldTestCount(data.freeFieldFinder.getNbObstructionTest());
+            dataOut.appendCellComputed();
+            dataOut.updateMaximalReceiverComputationTime(max_compute_time);
+            dataOut.updateMinimalReceiverComputationTime(min_compute_time);
+            dataOut.addSumReceiverComputationTime(sum_compute);
+            dataOut.appendDiffractionPath(diffractionPathCount);
+            dataOut.appendReflexionPath(refpathcount);
+        } catch (Exception ex) {
+            LOGGER.error(ex.getLocalizedMessage(), ex);
         }
-        if (data.triangles != null) { //Triangle output type
-            // Subdivide each triangle, and apply BiCubic interpolation.
-                    /*
-                     * ArrayList<Triangle> bicubictri=new ArrayList<Triangle>();
-                     * bicubictri.ensureCapacity(data.triangles.size()); for(Triangle tri :
-                     * data.triangles) { //////////////////////// //Find the fourth vertex }
-                     */
-            // Now export all triangles with the sound level at each vertices
-            int tri_id = 0;
-            for (Triangle tri : data.triangles) {
-                Coordinate pverts[] = {data.vertices.get(tri.getA()),
-                        data.vertices.get(tri.getB()),
-                        data.vertices.get(tri.getC()),
-                        data.vertices.get(tri.getA())};
-                dataOut.addValues(new PropagationResultTriRecord(
-                        factory.createPolygon(factory.createLinearRing(pverts), null),
-                        verticesSoundLevel[tri.getA()],
-                        verticesSoundLevel[tri.getB()],
-                        verticesSoundLevel[tri.getC()],
-                        data.cellId,
-                        tri_id));
-                tri_id++;
-            }
-        } else {
-            //Vertices output type
-            for (int receiverId = 0; receiverId < data.vertices.size(); receiverId++) {
-                dataOut.addValues(new PropagationResultPtRecord(data.receiverRowId.get(receiverId), data.cellId, verticesSoundLevel[receiverId]));
-            }
-        }
-        dataOut.appendFreeFieldTestCount(data.freeFieldFinder.getNbObstructionTest());
-        dataOut.appendCellComputed();
-        dataOut.updateMaximalReceiverComputationTime(max_compute_time);
-        dataOut.updateMinimalReceiverComputationTime(min_compute_time);
-        dataOut.addSumReceiverComputationTime(sum_compute);
-        dataOut.appendDiffractionPath(diffractionPathCount);
-        dataOut.appendReflexionPath(refpathcount);
     }
 
 

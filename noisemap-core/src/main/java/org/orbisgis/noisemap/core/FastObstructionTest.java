@@ -72,6 +72,7 @@ public class FastObstructionTest {
     private int lastFountPointTriTest = 0;
     private List<Float> verticesOpenAngle = null;
     private List<Coordinate> verticesOpenAngleTranslated = null; /*Open angle*/
+    private boolean hasBuildingWithHeight;
     //private LinkedList<Integer> BuildingTriangleIndex= new LinkedList<Integer>(); /* the buildings list between source and receiver. Reconstruction after get a new source-reciver */
     //private LinkedList<Coordinate> intersections= new LinkedList<Coordinate>();/* the intersection of the segment source-receiver and builiding's side. Reconstruction after get a new source-reciver */
 
@@ -97,6 +98,13 @@ public class FastObstructionTest {
                                List<Triangle> triangles, List<Triangle> triNeighbors, List<Coordinate> points) {
 
         List<MeshBuilder.PolygonWithHeight> polygonWithHeightArray = new ArrayList<MeshBuilder.PolygonWithHeight>(buildings);
+        hasBuildingWithHeight = false;
+        for(MeshBuilder.PolygonWithHeight poly : polygonWithHeightArray) {
+            if(poly.hasHeight()) {
+                hasBuildingWithHeight = true;
+                break;
+            }
+        }
         GeometryFactory factory = new GeometryFactory();
         this.polygonWithHeight = polygonWithHeightArray;
         this.triVertices = triangles;
@@ -742,6 +750,9 @@ public class FastObstructionTest {
         LinkedList<TriIdWithIntersection> interPoints = new LinkedList<TriIdWithIntersection>();
         //set default data
         DiffractionWithSoilEffetZone totData = new DiffractionWithSoilEffetZone(data, rOZone, sOZone);
+        if(!hasBuildingWithHeight) {
+            return totData;
+        }
         LineSegment propaLine = new LineSegment(p1, p2);
         int curTri = getTriangleIdByCoordinate(p1);
         HashSet<Integer> navigationHistory = new HashSet<Integer>();
@@ -763,7 +774,7 @@ public class FastObstructionTest {
 
         double zTopoR = getTopoZByGiven3Points(triR[0], triR[1], triR[2], p1);
         double zTopoS = getTopoZByGiven3Points(triS[0], triS[1], triS[2], p2);
-        //Check if the given Source and Receiver are proper with the topograhic
+        //Check if the given Source and Receiver are proper with the topographic
         if (p1.z < zTopoR || Double.isNaN(p1.z)) {
             //Z value of the receiver is low than topography, we will modify this receiver height
             p1.setCoordinate(new Coordinate(p1.x, p1.y, zTopoR + receiverDefaultHeight));
@@ -822,7 +833,7 @@ public class FastObstructionTest {
         JarvisMarch.Points points = jm.calculateHull();
         //if there are no useful intersection
         if (points.x.length <= 2) {
-            //after jarvis march if we get the lenght of list of points less than 2, so we have no useful points
+            //after jarvis march if we get the length of list of points less than 2, so we have no useful points
             return totData;
 
         } else {
@@ -831,7 +842,7 @@ public class FastObstructionTest {
             for (int i = 0; i < points.x.length - 1; i++) {
                 //if the intersection point after Jarvis March is not on Building so we can sure this Source-Receiver is Invisible
                 if (!newCoorInter.get(new Coordinate(points.x[i], points.y[i])).getIsIntersectionOnBuilding()) {
-                    //The topograhy block this propagation line
+                    //The topography block this propagation line
                     isVisible = false;
                     break;
                 } else {
@@ -842,7 +853,7 @@ public class FastObstructionTest {
                     }
                     //if after javis march the first point and the second point are Receiver and Source so we will quit loop and no diffraction in this case
                     else if (p2.equals(newCoorInter.get(new Coordinate(points.x[i + 1], points.y[i + 1])).getCoorIntersection()) && i == 0) {
-                        // after jarvis march first point and second point are Receiver and Sourece
+                        // after jarvis march first point and second point are Receiver and Source
                         return totData;
 
                     }
@@ -856,10 +867,10 @@ public class FastObstructionTest {
                 //prepare data to compute pure diffraction
                 //h0 in expression diffraction:the highest point intersection
                 double pointHeight = 0.0;
-                for (int i = 0; i < path.size(); i++) {
-                    pathDistance = path.get(i).getLength() + pathDistance;
-                    if (path.get(i).p0.y > pointHeight) {
-                        pointHeight = path.get(i).p0.y;
+                for(LineSegment aPath : path) {
+                    pathDistance = aPath.getLength() + pathDistance;
+                    if (aPath.p0.y > pointHeight) {
+                        pointHeight = aPath.p0.y;
                     }
                 }
 
@@ -897,12 +908,7 @@ public class FastObstructionTest {
                 sOZone = factory.createLineString(lastPart);
 
                 totData = new DiffractionWithSoilEffetZone(data, rOZone, sOZone);
-
-            } else {
-                // Path invisible
-
             }
-
             return totData;
         }
 

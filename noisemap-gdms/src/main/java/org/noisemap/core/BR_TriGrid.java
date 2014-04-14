@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Stack;
 import java.util.concurrent.TimeUnit;
 
+import com.vividsolutions.jts.operation.buffer.BufferOp;
 import org.apache.log4j.Logger;
 import org.gdms.data.DataSourceFactory;
 import org.gdms.data.schema.DefaultMetadata;
@@ -161,8 +162,9 @@ public class BR_TriGrid extends AbstractTableFunction {
         toUnite.toArray(geoArray);
         GeometryCollection polygonCollection = geometryFactory
                 .createGeometryCollection(geoArray);
-        return polygonCollection.buffer(bufferSize, 0,
-                BufferParameters.CAP_SQUARE);
+        BufferOp bufferOp = new BufferOp(polygonCollection, new BufferParameters(BufferParameters.DEFAULT_QUADRANT_SEGMENTS, BufferParameters.CAP_SQUARE,
+                BufferParameters.JOIN_MITRE, BufferParameters.DEFAULT_MITRE_LIMIT));
+        return bufferOp.getResultGeometry(bufferSize);
     }
 
     /**
@@ -219,10 +221,7 @@ public class BR_TriGrid extends AbstractTableFunction {
         if (!toUnite.isEmpty()) {
             Geometry bufferBuildings = merge(toUnite, BUILDING_BUFFER);
             // Remove small artifacts due to buildings buffer
-            bufferBuildings = TopologyPreservingSimplifier.simplify(
-                    bufferBuildings, BUILDING_BUFFER * 2);
             bufferBuildings=Densifier.densify(bufferBuildings,srcPtDist);
-
             toUniteFinal.add(bufferBuildings); // Add buildings to triangulation
         }
 
@@ -354,7 +353,6 @@ public class BR_TriGrid extends AbstractTableFunction {
     @Override
     public DataSet evaluate(DataSourceFactory dsf, DataSet[] tables,
                             Value[] values, ProgressMonitor pm) throws FunctionException {
-        String tmpdir = dsf.getTempDir().getAbsolutePath();
         if (values.length < 10) {
             throw new FunctionException("Not enough parameters !");
         } else if (values.length > 10) {
@@ -377,7 +375,6 @@ public class BR_TriGrid extends AbstractTableFunction {
         int reflexionOrder = values[7].getAsInt();
         int diffractionOrder = values[8].getAsInt();
         double wallAlpha = values[9].getAsDouble();
-        boolean forceSinglePass = false;
         boolean doMultiThreading = true;
         assert (maxSrcDist > maxRefDist); //Maximum Source-Receiver
         //distance must be superior than
@@ -460,7 +457,6 @@ public class BR_TriGrid extends AbstractTableFunction {
             int nbcell = gridDim * gridDim;
             if (nbcell == 1) {
                 doMultiThreading = false;
-                forceSinglePass = true;
             }
 
             Runtime runtime = Runtime.getRuntime();
@@ -543,20 +539,16 @@ public class BR_TriGrid extends AbstractTableFunction {
 
 
                     rowCount = sds.getRowCount();
+                    int heightFieldIndex = sds.getMetadata().getFieldIndex(heightField);
                     for (long rowIndex = 0; rowIndex < rowCount; rowIndex++) {
                         final Geometry geometry = sds.getFieldValue(rowIndex, spatialBuildingsFieldIndex).getAsGeometry();
-                        double height = 0.;
-
-                        //if exist height
-                        if (sds.getMetadata().getFieldIndex(heightField) != -1) {
-                            height = sds.getFieldValue(rowIndex, sds.getMetadata().getFieldIndex(heightField)).getAsDouble();
-                        }
                         Envelope geomEnv = geometry.getEnvelopeInternal();
                         if (expandedCellEnvelop.intersects(geomEnv)) {
                             //if we dont have height of building
-                            if (Double.compare(height, 0.) == 0) {
+                            if (heightFieldIndex == -1) {
                                 mesh.addGeometry(geometry);
                             } else {
+                                double height = sds.getFieldValue(rowIndex, heightFieldIndex).getAsDouble();
                                 mesh.addGeometry(geometry, height);
                             }
                         }

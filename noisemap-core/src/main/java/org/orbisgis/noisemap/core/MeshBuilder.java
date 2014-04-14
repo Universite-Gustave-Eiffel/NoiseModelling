@@ -79,14 +79,21 @@ public class MeshBuilder {
     private Quadtree ptQuadForMergeBuilding = new Quadtree();//Quad tree to test intersection between exist buildings and new building
 
     public static class PolygonWithHeight {
-        private Geometry geo;
+        private final Geometry geo;
         //If we add the topographic, the building height will be the average ToPo Height+ Building Height of all vertices
         private double height;
+        private final boolean hasHeight;
+
+        public PolygonWithHeight(Geometry geo) {
+            this.geo = geo;
+            this.height = Double.MAX_VALUE;
+            this.hasHeight = false;
+        }
 
         public PolygonWithHeight(Geometry geo, double height) {
-
             this.geo = geo;
             this.height = height;
+            this.hasHeight = true;
         }
 
         public Geometry getGeometry() {
@@ -98,12 +105,15 @@ public class MeshBuilder {
             return this.height;
         }
 
-        public void setGeometry(Geometry geo) {
-            this.geo = geo;
-        }
-
         public void setHeight(Double height) {
             this.height = height;
+        }
+
+        /**
+         * @return True if height property has been set
+         */
+        public boolean hasHeight() {
+            return hasHeight;
         }
     }
 
@@ -163,7 +173,7 @@ public class MeshBuilder {
             this.geometriesBoundingBox.expandToInclude(obstructionPoly.getEnvelopeInternal());
         }
         //no height defined, set it to Max value
-        polygonWithHeight.add(new PolygonWithHeight(obstructionPoly, Double.MAX_VALUE));
+        polygonWithHeight.add(new PolygonWithHeight(obstructionPoly));
     }
 
 
