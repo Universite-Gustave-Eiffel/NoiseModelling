@@ -102,6 +102,9 @@ public class TriGrid {
     private long totalParseBuildings = 0;
     private long totalDelaunay = 0;
     private static final String heightField = "height";
+    public void setLogger(Logger logger) {
+        this.logger = logger;
+    }
 
     /**
      * Compute the envelope of sdsSource

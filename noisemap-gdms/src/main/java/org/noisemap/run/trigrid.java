@@ -47,6 +47,7 @@ import org.gdms.sql.function.FunctionException;
 import org.gdms.sql.function.spatial.tin.analysis.ST_TriangleContouring;
 import org.noisemap.core.BR_PtGrid;
 import org.noisemap.core.BR_TriGrid;
+import org.noisemap.core.TriGrid;
 
 /**
  * Independant run of BR_TriGrid plugin.
@@ -192,17 +193,23 @@ public class trigrid {
         }
         //Run propagation
         if(receiverFilename.isEmpty()) {
-            BR_TriGrid propa=new BR_TriGrid();
+            TriGrid propa=new TriGrid();
+            BR_TriGrid func = new BR_TriGrid();
             Logger log = new ConsoleLogger("BR_TriGrid");
             propa.setLogger(log);
-            Value[] propaArgs={ValueFactory.createValue(splField),ValueFactory.createValue(maxDist),ValueFactory.createValue(maxRDist),ValueFactory.createValue(splitDepth),ValueFactory.createValue(roadsWidth),ValueFactory.createValue(densification),ValueFactory.createValue(maxarea),ValueFactory.createValue(reflectionDepth),ValueFactory.createValue(diffractionDepth),ValueFactory.createValue(wallAlpha)};
-            DataSet data;
+            DiskBufferDriver data;
             try {
-                data = propa.evaluate(factory, tables, propaArgs, null);
+                data = new DiskBufferDriver(factory, func.getMetadata(null));
+                propa.evaluate(data, factory, splField, maxDist, maxRDist, splitDepth, roadsWidth, densification,
+                        maxarea, reflectionDepth, diffractionDepth, wallAlpha, tables[0], tables[1], null);
                 long overallComputeTime=System.currentTimeMillis()-debComputeTime;
                 System.out.println("Overall computation time: "+overallComputeTime+" ms."+getHumanTime(overallComputeTime));
 
             } catch (FunctionException ex) {
+                System.err.println(ex.getMessage());
+                ex.printStackTrace(System.err);
+                return;
+            } catch (DriverException ex) {
                 System.err.println(ex.getMessage());
                 ex.printStackTrace(System.err);
                 return;

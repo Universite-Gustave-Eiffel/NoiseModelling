@@ -33,14 +33,6 @@
  */
 package org.noisemap.core;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Stack;
-import java.util.concurrent.TimeUnit;
-
-import com.vividsolutions.jts.operation.buffer.BufferOp;
-import org.apache.log4j.Logger;
 import org.gdms.data.DataSourceFactory;
 import org.gdms.data.schema.DefaultMetadata;
 import org.gdms.data.schema.Metadata;
@@ -48,9 +40,7 @@ import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
 import org.gdms.driver.DriverException;
-import org.gdms.driver.DriverUtilities;
 import org.gdms.driver.DataSet;
-import org.gdms.driver.driverManager.DriverLoadException;
 import org.gdms.sql.function.FunctionException;
 import org.gdms.sql.function.FunctionSignature;
 import org.gdms.sql.function.ScalarArgument;
@@ -59,36 +49,7 @@ import org.gdms.sql.function.table.TableArgument;
 import org.gdms.sql.function.table.TableDefinition;
 import org.gdms.sql.function.table.TableFunctionSignature;
 import org.gdms.driver.DiskBufferDriver;
-import org.grap.utilities.EnvelopeUtil;
-import org.orbisgis.noisemap.core.FastObstructionTest;
-import org.orbisgis.noisemap.core.LayerDelaunayError;
-import org.orbisgis.noisemap.core.MeshRefinement;
-import org.orbisgis.noisemap.core.MeshBuilder;
-import org.orbisgis.noisemap.core.PropagationProcess;
-import org.orbisgis.noisemap.core.PropagationProcessData;
-import org.orbisgis.noisemap.core.PropagationProcessOut;
-import org.orbisgis.noisemap.core.PropagationResultTriRecord;
-import org.orbisgis.noisemap.core.QueryGeometryStructure;
-import org.orbisgis.noisemap.core.QueryQuadTree;
-import org.orbisgis.noisemap.core.Triangle;
 import org.orbisgis.progress.ProgressMonitor;
-
-
-import com.vividsolutions.jts.densify.Densifier;
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.Envelope;
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.GeometryCollection;
-import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.LineString;
-import com.vividsolutions.jts.geom.LinearRing;
-import com.vividsolutions.jts.geom.MultiLineString;
-import com.vividsolutions.jts.geom.Point;
-import com.vividsolutions.jts.geom.Polygon;
-
-import com.vividsolutions.jts.operation.buffer.BufferParameters;
-import com.vividsolutions.jts.simplify.TopologyPreservingSimplifier;
-import org.gdms.data.schema.MetadataUtilities;
 
 /**
  * Compute the delaunay grid and evaluate at each vertices the sound level.

@@ -215,7 +215,7 @@ public class BR_PtGrid extends AbstractTableFunction {
                             }
                         }
 			// 1 Step - Evaluation of the main bounding box (receivers)
-			Envelope mainEnvelope = BR_TriGrid.GetGlobalEnvelope(sdsReceivers, pm);
+			Envelope mainEnvelope = TriGrid.GetGlobalEnvelope(sdsReceivers, pm);
                         // Split domain into 4^subdiv cells
 
 			int gridDim = (int) Math.pow(2, subdivLvl);
@@ -267,7 +267,7 @@ public class BR_PtGrid extends AbstractTableFunction {
 
 			for (int cellI = 0; cellI < gridDim; cellI++) {
 				for (int cellJ = 0; cellJ < gridDim; cellJ++) {
-					Envelope cellEnvelope = BR_TriGrid.getCellEnv(mainEnvelope, cellI,
+					Envelope cellEnvelope = TriGrid.getCellEnv(mainEnvelope, cellI,
 							cellJ, gridDim, gridDim, cellWidth, cellHeight);// new
 																			// Envelope(mainEnvelope.getMinX()+cellI*cellWidth,
 					//Collect the list and index of receivers on the cell
@@ -345,7 +345,7 @@ public class BR_PtGrid extends AbstractTableFunction {
                                                                 ArrayList<Double> wj_spectrum = new ArrayList<Double>();
                                                                 wj_spectrum.ensureCapacity(db_field_ids.size());
                                                                 for (Integer idcol : db_field_ids) {
-                                                                        wj_spectrum.add(BR_TriGrid.DbaToW(row[idcol].getAsDouble()));
+                                                                        wj_spectrum.add(TriGrid.DbaToW(row[idcol].getAsDouble()));
                                                                 }
                                                                 wj_sources.add(wj_spectrum);
                                                                 sourceGeometries.add(geo);
