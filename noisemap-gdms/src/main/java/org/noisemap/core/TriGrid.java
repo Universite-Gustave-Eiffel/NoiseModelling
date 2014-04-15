@@ -91,33 +91,17 @@ import com.vividsolutions.jts.simplify.TopologyPreservingSimplifier;
 import org.gdms.data.schema.MetadataUtilities;
 
 /**
- * 
- * @author Nicolas Fortin
- */
-class NodeList {
-	public final LinkedList<Coordinate> nodes = new LinkedList<Coordinate>();
-}
-
-/**
  * Compute the delaunay grid and evaluate at each vertices the sound level.
  * The user don't have to set the receiver position. This function is usefull to make noise maps.
  */
 
-public class BR_TriGrid extends AbstractTableFunction {
+public class TriGrid {
     private final static double BUILDING_BUFFER = 0.5;
-    private Logger logger = Logger.getLogger(BR_TriGrid.class.getName());
+    private Logger logger = Logger.getLogger(TriGrid.class.getName());
     // Timing sum in millisec
     private long totalParseBuildings = 0;
     private long totalDelaunay = 0;
     private static final String heightField = "height";
-
-    public void setLogger(Logger logger) {
-        this.logger = logger;
-    }
-
-    int getCellId(int row, int col, int cols) {
-        return row * cols + col;
-    }
 
     /**
      * Compute the envelope of sdsSource
@@ -268,8 +252,6 @@ public class BR_TriGrid extends AbstractTableFunction {
      * @param sdsSources
      * @param minRecDist
      * @param srcPtDist
-     * @param firstPassResults
-     * @param neighborsBorderVertices
      * @param maximumArea
      * @throws DriverException
      * @throws LayerDelaunayError
@@ -279,8 +261,7 @@ public class BR_TriGrid extends AbstractTableFunction {
                                          int cellJMax, double cellWidth, double cellHeight,
                                          double maxSrcDist, DataSet sdsBuildings,
                                          DataSet sdsSources, int spatialBuildingsFieldIndex, int spatialSourceFieldIndex, double minRecDist,
-                                         double srcPtDist, String[] firstPassResults,
-                                         NodeList[] neighborsBorderVertices, double maximumArea)
+                                         double srcPtDist, double maximumArea)
             throws DriverException, LayerDelaunayError {
 
         Envelope cellEnvelope = getCellEnv(mainEnvelope, cellI, cellJ,
@@ -315,8 +296,7 @@ public class BR_TriGrid extends AbstractTableFunction {
                         if (pt instanceof LineString) {
                             delaunaySegments.add((LineString) (pt));
                         } else if (pt instanceof MultiLineString) {
-                            int nblinestring = ((MultiLineString) pt)
-                                    .getNumGeometries();
+                            int nblinestring = pt.getNumGeometries();
                             for (int idlinestring = 0; idlinestring < nblinestring; idlinestring++) {
                                 delaunaySegments.add((LineString) (pt
                                         .getGeometryN(idlinestring)));
@@ -350,36 +330,12 @@ public class BR_TriGrid extends AbstractTableFunction {
         return Math.pow(10., dBA / 10.);
     }
 
-    @Override
-    public DataSet evaluate(DataSourceFactory dsf, DataSet[] tables,
-                            Value[] values, ProgressMonitor pm) throws FunctionException {
-        if (values.length < 10) {
-            throw new FunctionException("Not enough parameters !");
-        } else if (values.length > 10) {
-            throw new FunctionException("Too many parameters !");
-        }
-        String dbField = values[0].toString();
-        double maxSrcDist = values[1].getAsDouble();
-        double maxRefDist = values[2].getAsDouble();
-        int subdivLvl = values[3].getAsInt();
-        double minRecDist = values[4].getAsDouble(); /*
-                                                     * <! Minimum distance
-													 * between source and
-													 * receiver
-													 */
-        double srcPtDist = values[5].getAsDouble(); /*
-													 * <! Complexity distance of
-													 * roads
-													 */
-        double maximumArea = values[6].getAsDouble();
-        int reflexionOrder = values[7].getAsInt();
-        int diffractionOrder = values[8].getAsInt();
-        double wallAlpha = values[9].getAsDouble();
+    public void evaluate(DiskBufferDriver driver,DataSourceFactory dsf,String dbField, double maxSrcDist,
+                            double maxRefDist,int subdivLvl, double minRecDist, double srcPtDist, double maximumArea,
+                            int reflexionOrder, int diffractionOrder,double wallAlpha,final DataSet buildingsTable,
+                            final DataSet sourceTable, ProgressMonitor pm) throws FunctionException {
         boolean doMultiThreading = true;
         assert (maxSrcDist > maxRefDist); //Maximum Source-Receiver
-        //distance must be superior than
-        //maximum Receiver-Wall distance
-        DiskBufferDriver driver = null;
         ThreadPool threadManager = null;
         ProgressionOrbisGisManager pmManager = null;
         PropagationProcessDiskWriter driverManager = null;
@@ -404,25 +360,13 @@ public class BR_TriGrid extends AbstractTableFunction {
             // if not then append the distance attenuated sound level to the
             // receiver
             // Save the triangle geometry with the db_m value of the 3 vertices
-
-            int tableBuildings = 0;
-            int tableSources = 1;
             long nbreceivers = 0;
-
-
-            // Load Sources, Buildings, Topo Points and Soil Areas table drivers
-            if (tables.length != 2) {
-                throw new FunctionException("Table lenght must be 2 !");
-            }
-            final DataSet sds = tables[tableBuildings];
-            final DataSet sdsSources = tables[tableSources];
-
             // extract spatial field index of four input tables
-            int spatialBuildingsFieldIndex = MetadataUtilities.getSpatialFieldIndex(sds.getMetadata());
-            int spatialSourceFieldIndex = MetadataUtilities.getSpatialFieldIndex(sdsSources.getMetadata());
+            int spatialBuildingsFieldIndex = MetadataUtilities.getSpatialFieldIndex(buildingsTable.getMetadata());
+            int spatialSourceFieldIndex = MetadataUtilities.getSpatialFieldIndex(sourceTable.getMetadata());
 
             // 1 Step - Evaluation of the main bounding box (sources)
-            Envelope mainEnvelope = GetGlobalEnvelope(sdsSources, pm);
+            Envelope mainEnvelope = GetGlobalEnvelope(sourceTable, pm);
             // Split domain into 4^subdiv cells
 
             int gridDim = (int) Math.pow(2, subdivLvl);
@@ -431,7 +375,7 @@ public class BR_TriGrid extends AbstractTableFunction {
             ArrayList<Integer> db_field_ids = new ArrayList<Integer>();
             ArrayList<Integer> db_field_freq = new ArrayList<Integer>();
             int fieldid = 0;
-            for (String fieldName : sdsSources.getMetadata().getFieldNames()) {
+            for (String fieldName : sourceTable.getMetadata().getFieldNames()) {
                 if (fieldName.startsWith(dbField)) {
                     String sub = fieldName.substring(dbField.length());
                     if (sub.length() > 0) {
@@ -448,11 +392,6 @@ public class BR_TriGrid extends AbstractTableFunction {
 
             double cellWidth = mainEnvelope.getWidth() / gridDim;
             double cellHeight = mainEnvelope.getHeight() / gridDim;
-
-            String[] firstPassResults = new String[gridDim * gridDim];
-            NodeList[] neighborsBorderVertices = new NodeList[gridDim * gridDim];
-
-            driver = new DiskBufferDriver(dsf, getMetadata(null));
 
             int nbcell = gridDim * gridDim;
             if (nbcell == 1) {
@@ -484,7 +423,7 @@ public class BR_TriGrid extends AbstractTableFunction {
                             + "  grid..");
                     if (pm != null && pm.isCancelled()) {
                         driver.writingFinished();
-                        return driver.getTable("main");
+                        return;
                     }
                     Envelope cellEnvelope = getCellEnv(mainEnvelope, cellI,
                             cellJ, gridDim, gridDim, cellWidth, cellHeight);// new
@@ -505,8 +444,8 @@ public class BR_TriGrid extends AbstractTableFunction {
                     // QueryGeometryStructure<Integer> sourcesIndex=new
                     // QueryQuadTree<Integer>();
 
-                    long rowCount = sdsSources.getRowCount();
-                    int fieldCount = sdsSources.getMetadata().getFieldCount();
+                    long rowCount = sourceTable.getRowCount();
+                    int fieldCount = sourceTable.getMetadata().getFieldCount();
                     Integer idsource = 0;
                     for (long rowIndex = 0; rowIndex < rowCount; rowIndex++) {
 
@@ -514,7 +453,7 @@ public class BR_TriGrid extends AbstractTableFunction {
                         //Geometry geo = sdsSources.getGeometry(rowIndex);
                         final Value[] row = new Value[fieldCount];
                         for (int j = 0; j < fieldCount; j++) {
-                            row[j] = sdsSources.getFieldValue(rowIndex, j);
+                            row[j] = sourceTable.getFieldValue(rowIndex, j);
                         }
                         Geometry geo = row[spatialSourceFieldIndex].getAsGeometry();
 
@@ -538,17 +477,17 @@ public class BR_TriGrid extends AbstractTableFunction {
                     // optimization
 
 
-                    rowCount = sds.getRowCount();
-                    int heightFieldIndex = sds.getMetadata().getFieldIndex(heightField);
+                    rowCount = buildingsTable.getRowCount();
+                    int heightFieldIndex = buildingsTable.getMetadata().getFieldIndex(heightField);
                     for (long rowIndex = 0; rowIndex < rowCount; rowIndex++) {
-                        final Geometry geometry = sds.getFieldValue(rowIndex, spatialBuildingsFieldIndex).getAsGeometry();
+                        final Geometry geometry = buildingsTable.getFieldValue(rowIndex, spatialBuildingsFieldIndex).getAsGeometry();
                         Envelope geomEnv = geometry.getEnvelopeInternal();
                         if (expandedCellEnvelop.intersects(geomEnv)) {
                             //if we dont have height of building
                             if (heightFieldIndex == -1) {
                                 mesh.addGeometry(geometry);
                             } else {
-                                double height = sds.getFieldValue(rowIndex, heightFieldIndex).getAsDouble();
+                                double height = buildingsTable.getFieldValue(rowIndex, heightFieldIndex).getAsDouble();
                                 mesh.addGeometry(geometry, height);
                             }
                         }
@@ -567,9 +506,8 @@ public class BR_TriGrid extends AbstractTableFunction {
 
                     computeFirstPassDelaunay(cellMesh, mainEnvelope, cellI,
                             cellJ, gridDim, gridDim, cellWidth, cellHeight,
-                            maxSrcDist, sds, sdsSources, spatialBuildingsFieldIndex, spatialSourceFieldIndex, minRecDist,
-                            srcPtDist, firstPassResults,
-                            neighborsBorderVertices, maximumArea);
+                            maxSrcDist, buildingsTable, sourceTable, spatialBuildingsFieldIndex, spatialSourceFieldIndex, minRecDist,
+                            srcPtDist, maximumArea);
                     // Make a structure to keep the following information
                     // Triangle list with 3 vertices(int), and 3 neighbor
                     // triangle ID
@@ -608,7 +546,7 @@ public class BR_TriGrid extends AbstractTableFunction {
                         while (!threadManager.hasAvaibleQueueSlot()) {
                             if (pm != null && pm.isCancelled()) {
                                 driver.writingFinished();
-                                return driver.getTable("main");
+                                return;
                             }
                             Thread.sleep(100);
                         }
@@ -626,7 +564,7 @@ public class BR_TriGrid extends AbstractTableFunction {
             while (threadDataOut.getCellComputed() < nbcell && doMultiThreading) {
                 if (pm != null && pm.isCancelled()) {
                     driver.writingFinished();
-                    return driver.getTable("main");
+                    return;
                 }
                 Thread.sleep(100);
             }
@@ -637,7 +575,7 @@ public class BR_TriGrid extends AbstractTableFunction {
             while (driverManager.isRunning()) {
                 if (pm != null && pm.isCancelled()) {
                     driver.writingFinished();
-                    return driver.getTable("main");
+                    return;
                 }
                 Thread.sleep(10);
             }
@@ -658,7 +596,6 @@ public class BR_TriGrid extends AbstractTableFunction {
             logger.info("Receiver-Source diffraction path count:" + threadDataOut.getNb_diffraction_path());
             logger.info("Buildings obstruction test count:"
                     + threadDataOut.getNb_obstr_test());
-            return driver.getTable("main");
         } catch (DriverLoadException e) {
             throw new FunctionException(e);
         } catch (DriverException e) {
@@ -680,57 +617,4 @@ public class BR_TriGrid extends AbstractTableFunction {
             }
         }
     }
-
-    @Override
-    public Metadata getMetadata(Metadata[] tables) throws DriverException {
-        Type meta_type[] = {TypeFactory.createType(Type.GEOMETRY),
-                TypeFactory.createType(Type.FLOAT),
-                TypeFactory.createType(Type.FLOAT),
-                TypeFactory.createType(Type.FLOAT),
-                TypeFactory.createType(Type.INT),
-                TypeFactory.createType(Type.INT)};
-        String meta_name[] = {"the_geom", "db_v1", "db_v2", "db_v3",
-                "cellid", "triid"};
-        return new DefaultMetadata(meta_type, meta_name);
-    }
-
-    @Override
-    public FunctionSignature[] getFunctionSignatures() {
-        // Builds geom , sources.the_geom, sources.db_m ,max propa dist , subdiv
-        // lev ,roads width , receiv road dis,max tri area ,sound refl o,sound
-        // dif order,wall alpha
-        return new FunctionSignature[]{
-                new TableFunctionSignature(TableDefinition.GEOMETRY,
-                        new TableArgument(TableDefinition.GEOMETRY),//buildings
-                        new TableArgument(TableDefinition.GEOMETRY),//src
-                        ScalarArgument.STRING,
-                        ScalarArgument.DOUBLE,
-                        ScalarArgument.DOUBLE,
-                        ScalarArgument.INT,
-                        ScalarArgument.DOUBLE,
-                        ScalarArgument.DOUBLE,
-                        ScalarArgument.DOUBLE,
-                        ScalarArgument.INT,
-                        ScalarArgument.INT,
-                        ScalarArgument.DOUBLE
-                )
-        };
-    }
-
-    @Override
-    public String getName() {
-        return "BR_TriGrid";
-    }
-
-    @Override
-    public String getSqlOrder() {
-        return "create table result as select * from BR_TriGrid( buildings_table, sound_sources_table,'source db field name',searchSourceLimit,searchReflectionWallLimit,subdivlevel,roadwith(1.8),densification_receiver(5),max triangle area(300),reflection order(2),diffraction order(1),wall absorption(0.1));";
-    }
-
-    @Override
-    public String getDescription() {
-        return "BR_TriGrid(buildings(polygons),sources(points),sound lvl field name(string),maximum propagation distance (double meter),maximum wall seeking distance (double meter),subdivision level 4^n cells(int), roads width (meter), densification of receivers near roads (meter), maximum area of triangle, sound reflection order, sound diffraction order, alpha of walls ) Sound propagation from ponctual sound sources to ponctual receivers created by a delaunay triangulation of specified buildings geometry.";
-    }
-
-
 }
