@@ -61,6 +61,7 @@ import org.gdms.sql.function.table.TableFunctionSignature;
 import org.gdms.driver.DiskBufferDriver;
 import org.grap.utilities.EnvelopeUtil;
 import org.orbisgis.noisemap.core.FastObstructionTest;
+import org.orbisgis.noisemap.core.GeoWithSoilType;
 import org.orbisgis.noisemap.core.LayerDelaunayError;
 import org.orbisgis.noisemap.core.MeshRefinement;
 import org.orbisgis.noisemap.core.MeshBuilder;
@@ -334,9 +335,17 @@ public class TriGrid {
     }
 
     public void evaluate(DiskBufferDriver driver,DataSourceFactory dsf,String dbField, double maxSrcDist,
+                         double maxRefDist,int subdivLvl, double minRecDist, double srcPtDist, double maximumArea,
+                         int reflexionOrder, int diffractionOrder,double wallAlpha,final DataSet buildingsTable,
+                         final DataSet sourceTable, ProgressMonitor pm) throws FunctionException {
+        evaluate(driver, dsf, dbField, maxSrcDist, maxRefDist, subdivLvl, minRecDist, srcPtDist, maximumArea,
+                reflexionOrder, diffractionOrder, wallAlpha, buildingsTable, sourceTable,null,null, pm);
+    }
+
+    public void evaluate(DiskBufferDriver driver,DataSourceFactory dsf,String dbField, double maxSrcDist,
                             double maxRefDist,int subdivLvl, double minRecDist, double srcPtDist, double maximumArea,
                             int reflexionOrder, int diffractionOrder,double wallAlpha,final DataSet buildingsTable,
-                            final DataSet sourceTable, ProgressMonitor pm) throws FunctionException {
+                            final DataSet sourceTable,final DataSet topoTable,final DataSet soilAreas, ProgressMonitor pm) throws FunctionException {
         boolean doMultiThreading = true;
         assert (maxSrcDist > maxRefDist); //Maximum Source-Receiver
         ThreadPool threadManager = null;
@@ -367,7 +376,14 @@ public class TriGrid {
             // extract spatial field index of four input tables
             int spatialBuildingsFieldIndex = MetadataUtilities.getSpatialFieldIndex(buildingsTable.getMetadata());
             int spatialSourceFieldIndex = MetadataUtilities.getSpatialFieldIndex(sourceTable.getMetadata());
-
+            int spatialsdsSoilAreasFieldIndex = -1;
+            if(soilAreas != null) {
+                MetadataUtilities.getSpatialFieldIndex(soilAreas.getMetadata());
+            }
+            int spatialTopoPtsFieldIndex = -1;
+            if(topoTable != null) {
+                MetadataUtilities.getSpatialFieldIndex(topoTable.getMetadata());
+            }
             // 1 Step - Evaluation of the main bounding box (sources)
             Envelope mainEnvelope = GetGlobalEnvelope(sourceTable, pm);
             // Split domain into 4^subdiv cells
@@ -495,7 +511,16 @@ public class TriGrid {
                             }
                         }
                     }
-
+                    //if we have topographic points data
+                    if(spatialTopoPtsFieldIndex!=-1){
+                        for (long rowIndex = 0; rowIndex < topoTable.getRowCount(); rowIndex++) {
+                            final Geometry geometry = topoTable.getFieldValue(rowIndex, spatialTopoPtsFieldIndex).getAsGeometry();
+                            Envelope geomEnv = geometry.getEnvelopeInternal();
+                            if (expandedCellEnvelop.intersects(geomEnv)&&geometry instanceof Point) {
+                                mesh.addTopographicPoint(geometry.getCoordinate());
+                            }
+                        }
+                    }
                     mesh.finishPolygonFeeding(expandedCellEnvelop);
                     FastObstructionTest freeFieldFinder = new FastObstructionTest(mesh.getPolygonWithHeight(),
                             mesh.getTriangles(), mesh.getTriNeighbors(), mesh.getVertices());
@@ -526,14 +551,30 @@ public class TriGrid {
                         }
                     }
                     nbreceivers += vertices.size();
-
-
+                    // Fetch soil areas
+                    List<GeoWithSoilType> geoWithSoil = new ArrayList<GeoWithSoilType>();
+                    if(spatialsdsSoilAreasFieldIndex!=-1 && soilAreas!=null){
+                        int GFieldIndex = soilAreas.getMetadata().getFieldIndex("G");
+                        for(int i=0;i<soilAreas.getRowCount();i++){
+                            Geometry soilGeo = soilAreas.getFieldValue(i, spatialsdsSoilAreasFieldIndex).getAsGeometry();
+                            if(expandedCellEnvelop.intersects(soilGeo.getEnvelopeInternal())){
+                                double soilType = 0.;
+                                if (GFieldIndex!=-1){
+                                    soilAreas.getFieldValue(i, GFieldIndex).getAsDouble();
+                                }
+                                geoWithSoil.add(new GeoWithSoilType(soilGeo, soilType));
+                            }
+                        }
+                    }
+                    if(geoWithSoil.isEmpty()){
+                        geoWithSoil = null;
+                    }
                     PropagationProcessData threadData = new PropagationProcessData(
                             vertices, null, triangles, freeFieldFinder, sourcesIndex,
                             sourceGeometries, wj_sources, db_field_freq,
                             reflexionOrder, diffractionOrder, maxSrcDist, maxRefDist,
                             minRecDist, wallAlpha, ij,
-                            pmManager.nextSubProcess(vertices.size()), null);
+                            pmManager.nextSubProcess(vertices.size()), geoWithSoil);
                     PropagationProcess propaProcess = new PropagationProcess(
                             threadData, threadDataOut);
 

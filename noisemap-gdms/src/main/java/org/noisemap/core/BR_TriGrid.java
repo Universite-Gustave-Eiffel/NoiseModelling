@@ -84,7 +84,7 @@ public class BR_TriGrid extends AbstractTableFunction {
             DiskBufferDriver driver = new DiskBufferDriver(dsf, getMetadata(null));
             TriGrid triGrid = new TriGrid();
             triGrid.evaluate(driver, dsf, dbField, maxSrcDist, maxRefDist, subdivLvl, minRecDist, srcPtDist,
-                    maximumArea, reflexionOrder, diffractionOrder, wallAlpha, tables[0], tables[1], pm);
+                    maximumArea, reflexionOrder, diffractionOrder, wallAlpha, tables[0], tables[1],tables[2],tables[3], pm);
             return driver.getTable("main");
         } catch (DriverException ex) {
             throw new FunctionException(ex);
@@ -113,6 +113,8 @@ public class BR_TriGrid extends AbstractTableFunction {
                 new TableFunctionSignature(TableDefinition.GEOMETRY,
                         new TableArgument(TableDefinition.GEOMETRY),//buildings
                         new TableArgument(TableDefinition.GEOMETRY),//src
+                        new TableArgument(TableDefinition.GEOMETRY),//Ground covegage
+                        new TableArgument(TableDefinition.GEOMETRY),//Topographic points
                         ScalarArgument.STRING,
                         ScalarArgument.DOUBLE,
                         ScalarArgument.DOUBLE,
@@ -139,7 +141,7 @@ public class BR_TriGrid extends AbstractTableFunction {
 
     @Override
     public String getDescription() {
-        return "BR_TriGrid(buildings(polygons),sources(points),sound lvl field name(string),maximum propagation distance (double meter),maximum wall seeking distance (double meter),subdivision level 4^n cells(int), roads width (meter), densification of receivers near roads (meter), maximum area of triangle, sound reflection order, sound diffraction order, alpha of walls ) Sound propagation from ponctual sound sources to ponctual receivers created by a delaunay triangulation of specified buildings geometry.";
+        return "BR_TriGrid(buildings(polygons),sources(points),Ground occupation(Polygon, G double),Topography(Point),sound lvl field name(string),maximum propagation distance (double meter),maximum wall seeking distance (double meter),subdivision level 4^n cells(int), roads width (meter), densification of receivers near roads (meter), maximum area of triangle, sound reflection order, sound diffraction order, alpha of walls ) Sound propagation from ponctual sound sources to ponctual receivers created by a delaunay triangulation of specified buildings geometry.";
     }
 
 
