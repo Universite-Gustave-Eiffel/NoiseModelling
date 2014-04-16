@@ -53,7 +53,7 @@ import org.orbisgis.progress.ProgressMonitor;
 
 /**
  * Compute the delaunay grid and evaluate at each vertices the sound level.
- * The user don't have to set the receiver position. This function is usefull to make noise maps.
+ * The user don't have to set the receiver position. This function is useful to make noise maps.
  */
 
 public class BR_TriGrid extends AbstractTableFunction {

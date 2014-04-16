@@ -178,7 +178,7 @@ public class TriGrid {
     private void feedDelaunay(DataSet polygonDatabase, int spatialBuildingsFieldIndex,
                               MeshBuilder delaunayTool, Envelope boundingBoxFilter,
                               double srcDistance, LinkedList<LineString> delaunaySegments,
-                              double minRecDist, double srcPtDist) throws DriverException,
+                              double minRecDist, double srcPtDist, double triangleSide) throws DriverException,
             LayerDelaunayError {
         Envelope extendedEnvelope = new Envelope(boundingBoxFilter);
         extendedEnvelope.expandBy(srcDistance * 2.);
@@ -209,7 +209,9 @@ public class TriGrid {
         if (!toUnite.isEmpty()) {
             Geometry bufferBuildings = merge(toUnite, BUILDING_BUFFER);
             // Remove small artifacts due to buildings buffer
-            bufferBuildings=Densifier.densify(bufferBuildings,srcPtDist);
+            if(triangleSide > 0) {
+                bufferBuildings = Densifier.densify(bufferBuildings, triangleSide);
+            }
             toUniteFinal.add(bufferBuildings); // Add buildings to triangulation
         }
 
@@ -218,12 +220,16 @@ public class TriGrid {
             LinkedList<Geometry> toUniteRoads = new LinkedList<Geometry>(delaunaySegments);
             if (!toUniteRoads.isEmpty()) {
                 // Build Polygons buffer from roads lines
-                Geometry bufferRoads = merge(toUniteRoads, minRecDist);
+                Geometry bufferRoads = merge(toUniteRoads, minRecDist / 2);
                 // Remove small artifacts due to multiple buffer crosses
                 bufferRoads = TopologyPreservingSimplifier.simplify(bufferRoads,
                         minRecDist / 2);
                 // Densify roads to set more receiver near roads.
-                bufferRoads = Densifier.densify(bufferRoads, srcPtDist);
+                if(srcPtDist > 0){
+                    bufferRoads = Densifier.densify(bufferRoads, srcPtDist);
+                } else if (triangleSide > 0) {
+                    bufferRoads = Densifier.densify(bufferRoads, triangleSide);
+                }
                 //Add points buffer to the final triangulation, this will densify sound level extraction near
                 //toUniteFinal.add(makeBufferSegmentsNearRoads(toUniteRoads,srcPtDist));
                 //roads, and helps to reduce over estimation due to inapropriate interpolation.
@@ -310,8 +316,11 @@ public class TriGrid {
                 }
             }
         }
+
+        // Compute equilateral triangle side from Area
+        double triangleSide = (2*Math.pow(maximumArea, 0.5)) / Math.pow(3, 0.25);
         feedDelaunay(sdsBuildings, spatialBuildingsFieldIndex, cellMesh, cellEnvelope, maxSrcDist, delaunaySegments,
-                minRecDist, srcPtDist);
+                minRecDist, srcPtDist, triangleSide);
 
         // Process delaunay
 
@@ -320,11 +329,14 @@ public class TriGrid {
         if (maximumArea > 1) {
             cellMesh.setInsertionEvaluator(new MeshRefinement(maximumArea,0.02,
                     MeshRefinement.DEFAULT_QUALITY, cellMesh));
+            Geometry densifiedEnvelope = Densifier.densify(new GeometryFactory().toGeometry(cellEnvelope), triangleSide);
+            cellMesh.finishPolygonFeeding(densifiedEnvelope);
+
+        } else {
+            cellMesh.finishPolygonFeeding(cellEnvelope);
         }
         // Maximum 5x steinerpt than input point, this limits avoid infinite
         // loop, or memory consuming triangulation
-        Geometry densifiedEnvelope  = Densifier.densify(new GeometryFactory().toGeometry(cellEnvelope), srcPtDist);
-        cellMesh.finishPolygonFeeding(densifiedEnvelope);
         logger.info("End delaunay");
         totalDelaunay += System.currentTimeMillis() - beginDelaunay;
 
