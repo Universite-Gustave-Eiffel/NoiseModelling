@@ -67,9 +67,9 @@ public class Activator implements BundleActivator {
         reg(new ST_SetNearestGeometryId());
         reg(new ST_SplitSegment());
         reg(new BR_TriGrid());
-        //reg(new BR_TriGridTopo());
-        //reg(new BR_TriGridAreas());
-        //reg(new BR_TriGridTopoWithAreas());
+        reg(new BR_TriGridTopo());
+        reg(new BR_TriGridAreas());
+        reg(new BR_TriGridTopoWithAreas());
         reg(new BR_SpectrumRepartition());
         reg(new BTW_SpectrumRepartition());
         reg(new BTW_EvalSource());

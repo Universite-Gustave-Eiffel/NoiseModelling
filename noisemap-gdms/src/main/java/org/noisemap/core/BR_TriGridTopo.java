@@ -33,18 +33,10 @@
  */
 package org.noisemap.core;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Stack;
-import java.util.concurrent.TimeUnit;
-
-import org.apache.log4j.Logger;
 import org.gdms.data.DataSourceFactory;
 import org.gdms.data.values.Value;
 import org.gdms.driver.DriverException;
 import org.gdms.driver.DataSet;
-import org.gdms.driver.driverManager.DriverLoadException;
 import org.gdms.sql.function.FunctionException;
 import org.gdms.sql.function.FunctionSignature;
 import org.gdms.sql.function.ScalarArgument;
@@ -53,24 +45,6 @@ import org.gdms.sql.function.table.TableDefinition;
 import org.gdms.sql.function.table.TableFunctionSignature;
 import org.gdms.driver.DiskBufferDriver;
 import org.orbisgis.progress.ProgressMonitor;
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.Envelope;
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.Point;
-import org.gdms.data.schema.MetadataUtilities;
-import org.orbisgis.noisemap.core.FastObstructionTest;
-import org.orbisgis.noisemap.core.GeoWithSoilType;
-import org.orbisgis.noisemap.core.LayerDelaunay;
-import org.orbisgis.noisemap.core.LayerDelaunayError;
-import org.orbisgis.noisemap.core.LayerExtTriangle;
-import org.orbisgis.noisemap.core.MeshBuilder;
-import org.orbisgis.noisemap.core.PropagationProcess;
-import org.orbisgis.noisemap.core.PropagationProcessData;
-import org.orbisgis.noisemap.core.PropagationProcessOut;
-import org.orbisgis.noisemap.core.PropagationResultTriRecord;
-import org.orbisgis.noisemap.core.QueryGeometryStructure;
-import org.orbisgis.noisemap.core.QueryQuadTree;
-import org.orbisgis.noisemap.core.Triangle;
 /**
  *
  * @author SU Qi
@@ -130,7 +104,7 @@ public class BR_TriGridTopo extends BR_TriGrid{
             DiskBufferDriver driver = new DiskBufferDriver(dsf, getMetadata(null));
             TriGrid triGrid = new TriGrid();
             triGrid.evaluate(driver, dsf, dbField, maxSrcDist, maxRefDist, subdivLvl, minRecDist, srcPtDist,
-                    maximumArea, reflexionOrder, diffractionOrder, wallAlpha, tables[0], tables[1],tables[2],null,tables[3] pm);
+                    maximumArea, reflexionOrder, diffractionOrder, wallAlpha, tables[0], tables[1],tables[2],null, pm);
             return driver.getTable("main");
         } catch (DriverException ex) {
             throw new FunctionException(ex);

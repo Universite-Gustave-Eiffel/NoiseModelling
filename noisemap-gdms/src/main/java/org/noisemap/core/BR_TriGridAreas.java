@@ -103,7 +103,7 @@ public class BR_TriGridAreas extends BR_TriGrid{
                 DiskBufferDriver driver = new DiskBufferDriver(dsf, getMetadata(null));
                 TriGrid triGrid = new TriGrid();
                 triGrid.evaluate(driver, dsf, dbField, maxSrcDist, maxRefDist, subdivLvl, minRecDist, srcPtDist,
-                        maximumArea, reflexionOrder, diffractionOrder, wallAlpha, tables[0], tables[1],tables[2], pm);
+                        maximumArea, reflexionOrder, diffractionOrder, wallAlpha, tables[0], tables[1],null,tables[2], pm);
                 return driver.getTable("main");
             } catch (DriverException ex) {
                 throw new FunctionException(ex);
