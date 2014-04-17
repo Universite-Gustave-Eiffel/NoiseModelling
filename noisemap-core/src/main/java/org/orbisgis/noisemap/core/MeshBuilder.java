@@ -74,7 +74,7 @@ public class MeshBuilder {
     private HashMap<Integer, PolygonWithHeight> buildingWithID = new HashMap<Integer, PolygonWithHeight>();//list to save all of buildings(both new polygon and old polygon) when do the merge building.
     private Envelope geometriesBoundingBox = null;
     private LinkedList<Coordinate> topoPoints = new LinkedList<Coordinate>();
-
+    private boolean computeNeighbors = true;
 
     private Quadtree ptQuadForMergeBuilding = new Quadtree();//Quad tree to test intersection between exist buildings and new building
 
@@ -320,7 +320,7 @@ public class MeshBuilder {
         //Process delaunay Triangulation
         delaunayTool.setMinAngle(0.);
         //computeNeighbors
-        delaunayTool.setRetrieveNeighbors(true);
+        delaunayTool.setRetrieveNeighbors(computeNeighbors);
         // Refine result
         if(insertionEvaluator != null) {
             delaunayTool.processDelaunay(0.1, insertionEvaluator);
@@ -331,6 +331,10 @@ public class MeshBuilder {
         this.triVertices = delaunayTool.getTriangles();
         this.vertices = delaunayTool.getVertices();
         this.triNeighbors = delaunayTool.getNeighbors();
+    }
+
+    public void setComputeNeighbors(boolean computeNeighbors) {
+        this.computeNeighbors = computeNeighbors;
     }
 
     //function just for test MergePolygon

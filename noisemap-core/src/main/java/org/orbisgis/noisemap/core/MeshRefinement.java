@@ -56,9 +56,9 @@ public class MeshRefinement implements InsertionEvaluator {
     @Override
     public boolean evaluate(DTriangle dTriangle) {
         // Do not refine in buildings area
-        if(isPointInBuilding(dTriangle.getCircumCenter())) {
-            return false;
-        }
+        //if(isPointInBuilding(dTriangle.getCircumCenter())) {
+        //    return false;
+        //}
         double area = dTriangle.getArea();
         return area >= minArea && (area > maxArea ||
                 (4 * area * SQRT3) / (

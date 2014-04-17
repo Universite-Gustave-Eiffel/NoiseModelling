@@ -232,7 +232,7 @@ public class TriGrid {
                 }
                 //Add points buffer to the final triangulation, this will densify sound level extraction near
                 //toUniteFinal.add(makeBufferSegmentsNearRoads(toUniteRoads,srcPtDist));
-                //roads, and helps to reduce over estimation due to inapropriate interpolation.
+                //roads, and helps to reduce over estimation due to inappropriate interpolation.
                 toUniteFinal.add(bufferRoads); // Merge roads with minRecDist m
                 // buffer
             }
@@ -326,6 +326,7 @@ public class TriGrid {
 
         long beginDelaunay = System.currentTimeMillis();
         logger.info("Begin delaunay");
+        cellMesh.setComputeNeighbors(false);
         if (maximumArea > 1) {
             cellMesh.setInsertionEvaluator(new MeshRefinement(maximumArea,0.02,
                     MeshRefinement.DEFAULT_QUALITY, cellMesh));

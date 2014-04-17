@@ -79,6 +79,7 @@ public class LayerJDelaunay implements LayerDelaunay {
     HashMap<Integer, LinkedList<Integer>> hashOfArrayIndex = new HashMap<Integer, LinkedList<Integer>>();
     //triangletest is for JDeLaunayTriangleDirectionChange to test triangle direction
     private List<DTriangle> triangletest=new ArrayList<DTriangle>();
+    private static GeometryFactory FACTORY = new GeometryFactory();
 
 
     private static DTriangle findTriByCoordinate(Coordinate pos,List<DTriangle> trilst) throws DelaunayError {
@@ -143,9 +144,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 
         public boolean isTriangleInBuilding(DPoint point)
         {
-            GeometryFactory factory=new GeometryFactory();
-            Point middlepoint=factory.createPoint(point.getCoordinate());
-            return this.building.contains(middlepoint);
+            return this.building.intersects(FACTORY.createPoint(point.getCoordinate()));
         }
 
 
@@ -308,7 +307,7 @@ public class LayerJDelaunay implements LayerDelaunay {
                         Triangle gidTri=new Triangle(-1,-1,-1,0);
                         for(int i=0;i<3;i++) {
                             DTriangle neighTriangle = triangle.getOppositeEdge(triangle.getPoint(i)).getOtherTriangle(triangle);
-                            if(neighTriangle!=null&& neighTriangle.getExternalGID()!=0) {
+                            if(neighTriangle !=null && neighTriangle.getProperty() == 0) {
                                 //if neighbor is in building
 
                                 if(neighTriangle.getPoint(0).getProperty()>=1||neighTriangle.getPoint(1).getProperty()>=1||neighTriangle.getPoint(2).getProperty()>=1){
