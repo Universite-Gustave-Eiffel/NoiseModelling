@@ -14,3 +14,5 @@ For more information:
 
 [nmpb_E]: http://www.setra.developpement-durable.gouv.fr/IMG/pdf/US_0957-2A_Road_noise_predictionDTRF.pdf "Road noise prediction. Part 1 - Calculating sound emissions from road traffic, SETRA (2009)"
 [nmpb_P]: http://www.setra.developpement-durable.gouv.fr/IMG/pdf/US_0957-2A_Road_noise_predictionDTRF.pdf "Road noise prediction. Part 2 - Noise propagation computation method including meteorological effects (NMPB 2008), SETRA (2009)"
+
+![alt tag](http://noisemap.orbisgis.org/assets/img/logo_noisemap_alone_small.png)
