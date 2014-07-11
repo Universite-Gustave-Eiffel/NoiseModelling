@@ -163,12 +163,11 @@
 <p align="justify"><b>NoiseM@p</b> consists of two separated parts : <b>NoiseM@p core</b> and <b>MoiseM@p plugin</b>.</p>
 		<p><img class="img-responsive" src="assets/img/noisemap_architecture.jpg" alt=""></p>
                 <h3>NoiseM@p core</h3>
-		<p style="margin:1px 0 0 0;" align="justify">This module contains the main processes to compute the noise map. The first part is related to the evaluation of sound source level, by considering is light and heavy vehicles as well as trolley cars (Road noise estimation). The second part is the propagation model (Noise propagation) described below. 
-The propagation model take as input :</p>
+		<p style="margin:1px 0 0 0;" align="justify">This module contains the main processes to compute the sound level and to produce noise maps. The first part is related to the evaluation of the noise emission, by considering light and heavy vehicles, as well as trolley cars (road noise). The second part consists in evaluating the noise propagation from sources to receivers, according to the standard model described below. The main inputs of the propagation model are :</p>
 <ul style="list-style-type:disc;">
-<li>an array of sounds sources defined by a geometry (lines or points) and a sound level for each third octave band from 100 Hz to 5000 Hz,</li>
-<li style="list-style-type:disc;">an array of buildings (2 D geometry), </li>
-<li style="list-style-type:disc;">a list of parameters, like the order of reflexion and diffraction, wall absorption, maximum propagation distance... that are needed for the calculation of the sound attenuation between sources and the receivers. </li>
+<li>an array of sounds sources defined by a geometry (lines or points) and a sound power for each third octave band from 100 Hz to 5000 Hz,</li>
+<li>an array of buildings (2 D geometry), </li>
+<li>a list of parameters, like the order of reflexion and diffraction, wall absorption, maximum propagation distance... that are needed for the calculation of the sound attenuation between sources and the receivers. </li>
 </ul>
 <p style="margin:1px 0 0 0;" align="justify">This module written in JAVA is exposed as a set of SQL  functions to the OrbisGIS software.  It uses the relational database management system (RDMS) <a href=" http://www.h2database.com/" target="blank"> H2</a> and its spatial extension called H2GIS.</p>
 <h3>NoiseM@p plugin</h3>
