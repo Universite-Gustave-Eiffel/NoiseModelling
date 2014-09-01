@@ -536,10 +536,7 @@ public class PropagationProcess implements Runnable {
                                     //add the intersected distance with soil effet
                                     totOSDistance += getIntersectedDistance(geoInter) * this.data.geoWithSoilType.get(envel.getId()).getType();
                                 }
-
                             }
-
-
                         }
 
                         //NF S 31-133 page 40

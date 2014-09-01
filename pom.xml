@@ -22,8 +22,7 @@
     </properties>
     <modules>
         <module>noisemap-core</module>
-        <module>noisemap-gdms</module>
-    <module>noisemap-h2</module>
+        <module>noisemap-h2</module>
   </modules>
     <scm>
         <connection>scm:git:https://github.com/irstv/noisemap.git</connection>

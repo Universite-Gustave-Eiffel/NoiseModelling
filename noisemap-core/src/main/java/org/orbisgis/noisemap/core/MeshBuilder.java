@@ -330,7 +330,9 @@ public class MeshBuilder {
         // Get results
         this.triVertices = delaunayTool.getTriangles();
         this.vertices = delaunayTool.getVertices();
-        this.triNeighbors = delaunayTool.getNeighbors();
+        if(computeNeighbors) {
+            this.triNeighbors = delaunayTool.getNeighbors();
+        }
     }
 
     public void setComputeNeighbors(boolean computeNeighbors) {

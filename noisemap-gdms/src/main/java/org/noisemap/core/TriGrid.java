@@ -40,6 +40,7 @@ import java.util.Stack;
 import java.util.concurrent.TimeUnit;
 
 import com.vividsolutions.jts.operation.buffer.BufferOp;
+import com.vividsolutions.jts.operation.union.UnaryUnionOp;
 import org.apache.log4j.Logger;
 import org.gdms.data.DataSourceFactory;
 import org.gdms.data.schema.DefaultMetadata;
@@ -207,6 +208,7 @@ public class TriGrid {
         // over-triangulated
         LinkedList<Geometry> toUniteFinal = new LinkedList<Geometry>();
         if (!toUnite.isEmpty()) {
+            logger.info("Merge buildings");
             Geometry bufferBuildings = merge(toUnite, BUILDING_BUFFER);
             // Remove small artifacts due to buildings buffer
             if(triangleSide > 0) {
@@ -220,6 +222,7 @@ public class TriGrid {
             LinkedList<Geometry> toUniteRoads = new LinkedList<Geometry>(delaunaySegments);
             if (!toUniteRoads.isEmpty()) {
                 // Build Polygons buffer from roads lines
+                logger.info("Merge roads");
                 Geometry bufferRoads = merge(toUniteRoads, minRecDist / 2);
                 // Remove small artifacts due to multiple buffer crosses
                 bufferRoads = TopologyPreservingSimplifier.simplify(bufferRoads,
@@ -237,12 +240,14 @@ public class TriGrid {
                 // buffer
             }
         }
+        logger.info("Merge roads and buildings");
         Geometry union = merge(toUniteFinal, 0.); // Merge roads and buildings
         // together
         // Remove geometries out of the bounding box
+        logger.info("Remove roads and buildings outside study area");
         union = union.intersection(boundingBox);
         explodeAndAddPolygon(union, delaunayTool, boundingBox);
-
+        logger.info("Feed delaunay in "+(System.currentTimeMillis() - beginfeed)+ " ms");
         totalParseBuildings += System.currentTimeMillis() - beginfeed
                 - (totalDelaunay - oldtotalDelaunay);
     }
