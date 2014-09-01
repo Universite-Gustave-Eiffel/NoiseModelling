@@ -33,6 +33,7 @@
  */
 package org.orbisgis.noisemap.core;
 
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -52,6 +53,8 @@ import com.vividsolutions.jts.index.quadtree.Quadtree;
 import com.vividsolutions.jts.index.strtree.STRtree;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+
 
 /**
  * @author Nicolas Fortin
@@ -246,7 +249,7 @@ public class PropagationProcess implements Runnable {
         double delta = 20.;
         // If the minimum effective distance between the line source and the
         // receiver is smaller than the minimum distance constraint then the
-        // discretisation parameter is changed
+        // discretization parameter is changed
         // Delta must not not too small to avoid memory overhead.
         if (closestPtDist < minRecDist) {
             closestPtDist = minRecDist;
@@ -376,24 +379,38 @@ public class PropagationProcess implements Runnable {
                                      List<Integer> regionCornersFreeToReceiver, double[] freq_lambda) {
         GeometryFactory factory = new GeometryFactory();
         int freqcount = data.freq_lvl.size();
-        double SrcReceiverDistance = srcCoord.distance(receiverCoord);
-        if (SrcReceiverDistance < data.maxSrcDist) {
+
+        Coordinate srcCoordtest = (new Coordinate(srcCoord.x, srcCoord.y, srcCoord.z));
+        Coordinate receiverCoordtest = (new Coordinate(receiverCoord.x, receiverCoord.y, receiverCoord.z));
+
+        double PropaDistance = srcCoord.distance(receiverCoord);
+        if (PropaDistance < data.maxSrcDist) {
             // Then, check if the source is visible from the receiver (not
             // hidden by a building)
             // Create the direct Line
             boolean somethingHideReceiver;
             somethingHideReceiver = !data.freeFieldFinder.isFreeField(
-                    receiverCoord, srcCoord);
+                    receiverCoordtest, srcCoordtest);
+
+
+            double dx = srcCoordtest.x-receiverCoordtest.x;
+            double dy = srcCoordtest.y-receiverCoordtest.y;
+            double dz = srcCoordtest.z-receiverCoordtest.z;
+
+            double SrcReceiverDistance = Math.sqrt(dx*dx+dy*dy+dz*dz);
+
+// todo insert the condition delta < lambda/20 if Atalus (the attenuation from a possible bank source side) is used
+
             if (!somethingHideReceiver) {
                 // Evaluation of energy at receiver
                 // add=wj/(4*pi*distance²)
-                //add sool effet if necessary
+                //add ground effect if necessary
                 double ASoilmin;
                 double ASoil;
                 double gPath;
                 double gPathPrime;
                 double totRSDistance = 0.;
-                //will give a flag here for soil effet
+                //will give a flag here for soil effect
                 if (data.geoWithSoilType != null) {
 
                     LineString RSZone = factory.createLineString(new Coordinate[]{receiverCoord, srcCoord});
@@ -402,7 +419,7 @@ public class PropagationProcess implements Runnable {
                         for (EnvelopeWithIndex<Integer> envel : resultZ0) {
                             //get the geo intersected
                             Geometry geoInter = RSZone.intersection(data.geoWithSoilType.get(envel.getId()).getGeo());
-                            //add the intersected distance with soil effet
+                            //add the intersected distance with ground effect
                             totRSDistance += getIntersectedDistance(geoInter) * this.data.geoWithSoilType.get(envel.getId()).getType();
                         }
                     }
@@ -423,10 +440,10 @@ public class PropagationProcess implements Runnable {
                                 SrcReceiverDistance);
 
                         if (Double.compare(gPath, 0) != 0) {
-                            //get apport of Soil Effet, ASoil will be a negative number so it's mean a apport effet
-                            ASoil = getASoil(srcCoord.z, receiverCoord.z, SrcReceiverDistance, gPathPrime, idfreq, ASoilmin);
+                            //get contribution of Ground Effect, ASoil will be a negative number so it's mean a contribution effect
+                            ASoil = getASoil(srcCoord.z, receiverCoord.z, SrcReceiverDistance, gPathPrime, data.freq_lvl.get(idfreq), ASoilmin);
                         } else {
-                            //NF S 31-133 page 41 if gPath=0 we will add 3dB for the receiver point, -3 means it's a apport effet
+                            //NF S 31-133 page 41 if gPath=0 we will add 3dB for the receiver point, -3 means it's a contribution effect
                             ASoil = -3;
                         }
                         AttenuatedWj = dbaToW(wToDba(AttenuatedWj) - ASoil);
@@ -450,21 +467,19 @@ public class PropagationProcess implements Runnable {
             }
             //Process diffraction 3D
 
-            DiffractionWithSoilEffetZone diffDataWithSoilEffet = data.freeFieldFinder.getPath(receiverCoord, srcCoord);
+            DiffractionWithSoilEffetZone diffDataWithSoilEffet = data.freeFieldFinder.getPath(receiverCoordtest, srcCoordtest);
             Double[] diffractiondata = diffDataWithSoilEffet.getDiffractionData();
 
             double deltadistance = diffractiondata[data.freeFieldFinder.Delta_Distance];
             double e = diffractiondata[data.freeFieldFinder.E_Length];
-            double fulldistance = diffractiondata[data.freeFieldFinder.Full_Difrraction_Distance];
+            double fulldistance = diffractiondata[data.freeFieldFinder.Full_Diffraction_Distance];
 
-
-            //delt diffraction
+            //delta diffraction
             if (Double.compare(deltadistance, -1.) != 0 && Double.compare(e, -1.) != 0 && Double.compare(fulldistance, -1.) != 0 && somethingHideReceiver) {
                 for (int idfreq = 0; idfreq < freqcount; idfreq++) {
 
                     double cprime;
                     //C" NMPB 2008 P.33
-
                     //Multiple diffraction
                     //CPRIME=( 1+(5*gamma)^2)/((1/3)+(5*gamma)^2)
                     double gammapart = Math.pow((5 * freq_lambda[idfreq]) / e, 2);
@@ -487,7 +502,7 @@ public class PropagationProcess implements Runnable {
                     DiffractionAttenuation = Math.max(0,
                             DiffractionAttenuation);
                     //NF S 31-133 page 46
-                    //if delt diffraction > 25 we take 25dB for delt diffraction
+                    //if delta diffraction > 25 we take 25dB for delta diffraction
                     DiffractionAttenuation = Math.min(25., DiffractionAttenuation);
                     double AttenuatedWj = wj.get(idfreq);
                     // Geometric dispersion
@@ -495,8 +510,8 @@ public class PropagationProcess implements Runnable {
                     AttenuatedWj = attDistW(AttenuatedWj, fulldistance - deltadistance);
 
 
-                    //if we add Soil effet
-                    //delt soil
+                    //if we add Ground effect
+                    //delta soil
 
                     double deltSoilSO = 0.;
                     double deltSoilOR = 0.;
@@ -522,7 +537,7 @@ public class PropagationProcess implements Runnable {
                                     //get the geo intersected
                                     Geometry geoInter = ROZone.intersection(data.geoWithSoilType.get(envel.getId()).getGeo());
 
-                                    //add the intersected distance with soil effet
+                                    //add the intersected distance with ground effect
                                     totRODistance += getIntersectedDistance(geoInter) * this.data.geoWithSoilType.get(envel.getId()).getType();
                                 }
 
@@ -533,7 +548,7 @@ public class PropagationProcess implements Runnable {
                                 for (EnvelopeWithIndex<Integer> envel : resultZ1) {
                                     //get the geo intersected
                                     Geometry geoInter = OSZone.intersection(this.data.geoWithSoilType.get(envel.getId()).getGeo());
-                                    //add the intersected distance with soil effet
+                                    //add the intersected distance with ground effect
                                     totOSDistance += getIntersectedDistance(geoInter) * this.data.geoWithSoilType.get(envel.getId()).getType();
                                 }
                             }
@@ -559,20 +574,20 @@ public class PropagationProcess implements Runnable {
 
                         //NF S 31-133 page 41 and page 40
                         double ASoilOSMin = -3 * (1 - gPathPrimeOS);
-                        double ASoilROMin = -3 * (1 - gPathRO);
+                        double ASoilROMin = -3 * (1 - gPathPrimeRO);
 
                         //NF S 31-133 page 41
                         if (Double.compare(gPathRO, 0.) == 0) {
                             SoilORAttenuation = -3.;
                         } else {
 
-                            SoilORAttenuation = getASoil(ROZone.getEndPoint().getCoordinate().z, ROZone.getStartPoint().getCoordinate().z, ROZone.getLength(), gPathRO, idfreq, ASoilROMin);
+                            SoilORAttenuation = getASoil(ROZone.getEndPoint().getCoordinate().z, ROZone.getStartPoint().getCoordinate().z, ROZone.getLength(), gPathRO, data.freq_lvl.get(idfreq), ASoilROMin);
                         }
                         //NF S 31-133 page 41
                         if (Double.compare(gPathOS, 0.) == 0) {
                             SoilSOAttenuation = -3.;
                         } else {
-                            SoilSOAttenuation = getASoil(OSZone.getEndPoint().getCoordinate().z, OSZone.getStartPoint().getCoordinate().z, OSZone.getLength(), gPathPrimeOS, idfreq, ASoilOSMin);
+                            SoilSOAttenuation = getASoil(OSZone.getEndPoint().getCoordinate().z, OSZone.getStartPoint().getCoordinate().z, OSZone.getLength(), gPathPrimeOS, data.freq_lvl.get(idfreq), ASoilOSMin);
 
                         }
 
@@ -580,10 +595,10 @@ public class PropagationProcess implements Runnable {
                         deltSoilOR = getDeltSoil(SoilORAttenuation);
                     }
 
-                    //delt sol finished
+                    //delta sol finished
 
 
-                    // Apply diffraction attenuation with soil effet if neceesary
+                    // Apply diffraction attenuation with ground effect if necessary
                     AttenuatedWj = dbaToW(wToDba(AttenuatedWj)
                             - DiffractionAttenuation - deltSoilSO - deltSoilOR);
 
@@ -606,9 +621,8 @@ public class PropagationProcess implements Runnable {
                 NonRobustLineIntersector linters = new NonRobustLineIntersector();
                 for (MirrorReceiverResult receiverReflection : mirroredReceiver) {
 
-
-                    double ReflectedSrcReceiverDistance = receiverReflection
-                            .getReceiverPos().distance(srcCoord);
+                    // TODO change like line 384
+                    double ReflectedSrcReceiverDistance = receiverReflection.getReceiverPos().distance(srcCoord);
                     if (ReflectedSrcReceiverDistance < data.maxSrcDist) {
                         boolean validReflection = false;
                         int reflectionOrderCounter = 0;
@@ -747,19 +761,26 @@ public class PropagationProcess implements Runnable {
                             // Compute attenuation level
                             double elength = 0;
                             //Compute distance of the corner path
+
+                            // Todo change
                             for (int ie = 1; ie < curCorner.size(); ie++) {
-                                elength += regionCorners.get(
-                                        curCorner.get(ie - 1)).distance(
-                                        regionCorners.get(curCorner.get(ie)));
+                                double dxe =  regionCorners.get(curCorner.get(ie)).x-regionCorners.get(curCorner.get(ie - 1)).x;
+                                double dye =  regionCorners.get(curCorner.get(ie)).y-regionCorners.get(curCorner.get(ie - 1)).y;
+                                double dze =  regionCorners.get(curCorner.get(ie)).z-regionCorners.get(curCorner.get(ie - 1)).z;
+                                elength +=  Math.sqrt(dxe*dxe+dye*dye+dze*dze);
                             }
                             // delta=SO^1+O^nO^(n+1)+O^nnR
-                            double diffractionFullDistance = receiverCoord
-                                    .distance(regionCorners.get(curCorner            //Receiver to first corner distance
-                                            .get(0)))
-                                    + elength                                        //Corner to corner distance
-                                    + srcCoord
-                                    .distance(regionCorners.get(curCorner    //Last corner to source distance
-                                            .get(curCorner.size() - 1)));
+                            double dxf = regionCorners.get(curCorner.get(0)).x-receiverCoord.x;                         //Receiver to first corner distance
+                            double dyf = regionCorners.get(curCorner.get(0)).y-receiverCoord.y;
+                            double dzf = regionCorners.get(curCorner.get(0)).z-receiverCoord.z;
+                            double dxl = regionCorners.get(curCorner.get(curCorner.size() - 1)).x-srcCoord.x;           //Last corner to source distance
+                            double dyl = regionCorners.get(curCorner.get(curCorner.size() - 1)).y-srcCoord.y;
+                            double dzl = regionCorners.get(curCorner.get(curCorner.size() - 1)).z-srcCoord.z;
+                            double diffractionFullDistance = Math.sqrt(dxf*dxf+dyf*dyf+dzf*dzf)
+                                    + elength                                                                           //Corner to corner distance
+                                    + Math.sqrt(dxl*dxl+dyl*dyl+dzl*dzl);
+                            // Todo end
+
                             if (diffractionFullDistance < data.maxSrcDist) {
                                 diffractionPathCount++;
                                 double delta = diffractionFullDistance
@@ -891,7 +912,13 @@ public class PropagationProcess implements Runnable {
             }
             srcPos.add(ptpos);
             srcWj.add(liWj);
-            double distanceSrcPt = ptpos.distance(receiverPos);
+
+            double dx = ptpos.x-receiverPos.x;
+            double dy = ptpos.y-receiverPos.y;
+            double dz = ptpos.z-receiverPos.z;
+
+            double distanceSrcPt = Math.sqrt(dx*dx+dy*dy+dz*dz);// TODO i have change like line 384
+
             int index = Collections.binarySearch(srcDistSorted, distanceSrcPt);
             if (index >= 0) {
                 srcSortedIndex.add(index, mergedSrcIndex);
@@ -1016,7 +1043,13 @@ public class PropagationProcess implements Runnable {
                     allsourcefreqlvl += wj.get(idfreq);
                 }
 
-                double wAttDistSource = attDistW(allsourcefreqlvl, srcCoord.distance(receiverCoord));
+                double dx = srcCoord.x-receiverCoord.x;
+                double dy = srcCoord.y-receiverCoord.y;
+                double dz = srcCoord.z-receiverCoord.z;
+
+                double SrcReceiverDistance = Math.sqrt(dx*dx+dy*dy+dz*dz);   // TODO i have change like line 384
+
+                double wAttDistSource = attDistW(allsourcefreqlvl, SrcReceiverDistance);
                 srcEnergeticSum += wAttDistSource;
                 if (Math.abs(wToDba(wAttDistSource + allreceiverfreqlvl) - wToDba(allreceiverfreqlvl)) > DBA_FORGET_SOURCE) {
                     sourceCount++;
@@ -1187,13 +1220,13 @@ public class PropagationProcess implements Runnable {
     }
 
     /**
-     * getASoil use equation ASol in NF S 31-133 page 41 to calculate Attenuation(or contribuition) Soil Effet
+     * getASoil use equation ASol in NF S 31-133 page 41 to calculate Attenuation(or contribution) Ground Effect
      *
      * @param zs       z of source point
      * @param zr       z of receiver point
      * @param dp       dp in equation
      * @param gw       Gw
-     * @param fm       frequence
+     * @param fm       frequency
      * @param aSoilMin min ASoil
      * @return ASoil
      */

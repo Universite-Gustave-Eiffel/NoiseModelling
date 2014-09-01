@@ -39,7 +39,7 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * This is a record for a value of the hashmap of the function ST_TableGeometryUnion.
+ * This is a record for a value of the has map of the function ST_TableGeometryUnion.
  * This class aggregates rows index, the goal is to reduce memory usage, ordering by ascending index,
  * and may be optimize row query thanks to interval row number.
  * 
@@ -65,7 +65,8 @@ public class RowsUnionClassification implements Iterable<RowInterval> {
     }
     /**
      * 
-     * @param row First row id
+     * @param rowbegin First row id
+     * @param rowend Last row id
      */
     public RowsUnionClassification(int rowbegin, int rowend) {
         if(rowend<rowbegin) {
@@ -79,7 +80,7 @@ public class RowsUnionClassification implements Iterable<RowInterval> {
      * To iterate over 
      * @return An integer, begin of a range then end of the range, then begin of next range etc..
      * @warning begin and end values are included [begin-end]
-     * @deprecated Use RowsUnionClassification has an iterable
+     * @deprecated Use RowsUnionClassification has an iterator
      */
     public Iterator<Integer> getRowRanges() {
         return this.rowrange.iterator();

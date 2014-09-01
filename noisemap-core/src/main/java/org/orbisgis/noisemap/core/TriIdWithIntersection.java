@@ -36,7 +36,7 @@ package org.orbisgis.noisemap.core;
 import com.vividsolutions.jts.geom.Coordinate;
 /**
  * TriIdWithIntersection work for FastObstructionTest, 
- * aims to keep the interseted points coordinate and check if this point in building
+ * aims to keep the interested points coordinate and check if this point in building
  * @author SU Qi
  */
 public class TriIdWithIntersection {
@@ -53,7 +53,7 @@ public class TriIdWithIntersection {
            
            /**
             * 
-            * @return Tiangle ID 
+            * @return Triangle ID
             */
            public int getTriID(){
 

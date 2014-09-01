@@ -83,7 +83,7 @@ public class TestSoundPropagationIn3DWithNewFunction extends TestCase {
            System.out.println("----e----");
            System.out.println(lt[ft.E_Length]);
            System.out.println("----distancepath----");
-           System.out.println(lt[ft.Full_Difrraction_Distance]);
+           System.out.println(lt[ft.Full_Diffraction_Distance]);
            
            System.out.println("-----no building but have one cross triangle finished-----");
            
@@ -95,7 +95,7 @@ public class TestSoundPropagationIn3DWithNewFunction extends TestCase {
            System.out.println("----e----");
            System.out.println(lt[ft.E_Length]);
            System.out.println("----distancepath----");
-           System.out.println(lt[ft.Full_Difrraction_Distance]);
+           System.out.println(lt[ft.Full_Diffraction_Distance]);
            System.out.println("-----------exchange source receiver------------");
            diffraData=ft.getPath(new Coordinate(5,15,1.5), new Coordinate(48,25,0.5));
            Double[]lt1=diffraData.getDiffractionData();
@@ -104,9 +104,9 @@ public class TestSoundPropagationIn3DWithNewFunction extends TestCase {
            System.out.println("----e----");
            System.out.println(lt1[ft.E_Length]);
            System.out.println("----distancepath----");
-           System.out.println(lt1[ft.Full_Difrraction_Distance]);
+           System.out.println(lt1[ft.Full_Diffraction_Distance]);
            assertTrue("Exchange source receiver got the different resultat",lt[ft.Delta_Distance]-lt1[ft.Delta_Distance]<=FastObstructionTest.epsilon
-                      &&lt[ft.E_Length]-lt1[ft.E_Length]<=FastObstructionTest.epsilon&&lt[ft.Full_Difrraction_Distance]-lt1[ft.Full_Difrraction_Distance]<=FastObstructionTest.epsilon);
+                      &&lt[ft.E_Length]-lt1[ft.E_Length]<=FastObstructionTest.epsilon&&lt[ft.Full_Diffraction_Distance]-lt1[ft.Full_Diffraction_Distance]<=FastObstructionTest.epsilon);
            System.out.println("----------TEST diffraction with 2 buildings(building1 and building2) finished----- ");
            }
    
@@ -124,8 +124,7 @@ public class TestSoundPropagationIn3DWithNewFunction extends TestCase {
            Polygon building2 = factory.createPolygon(
 			factory.createLinearRing(building2Coords), null); 
           
-           MeshBuilder mesh= new MeshBuilder();          
-
+           MeshBuilder mesh= new MeshBuilder();
 
            mesh.addGeometry(building1,5.);
            mesh.addGeometry(building2,4.);
@@ -144,7 +143,7 @@ public class TestSoundPropagationIn3DWithNewFunction extends TestCase {
            System.out.println("----e----");
            System.out.println(lt[ft.E_Length]);
            System.out.println("----distancepath----");
-           System.out.println(lt[ft.Full_Difrraction_Distance]);
+           System.out.println(lt[ft.Full_Diffraction_Distance]);
            System.out.println("-----------exchange source receiver------------");
            diffraData=ft.getPath(new Coordinate(5,15,1.5), new Coordinate(48,25,0.5));
            Double[]lt1=diffraData.getDiffractionData();
@@ -153,9 +152,9 @@ public class TestSoundPropagationIn3DWithNewFunction extends TestCase {
            System.out.println("----e----");
            System.out.println(lt1[ft.E_Length]);
            System.out.println("----distancepath----");
-           System.out.println(lt1[ft.Full_Difrraction_Distance]);
+           System.out.println(lt1[ft.Full_Diffraction_Distance]);
            assertTrue("Exchange source receiver got the different resultat",lt[ft.Delta_Distance]-lt1[ft.Delta_Distance]<=FastObstructionTest.epsilon
-                      &&lt[ft.E_Length]-lt1[ft.E_Length]<=FastObstructionTest.epsilon&&lt[ft.Full_Difrraction_Distance]-lt1[ft.Full_Difrraction_Distance]<=FastObstructionTest.epsilon);
+                      &&lt[ft.E_Length]-lt1[ft.E_Length]<=FastObstructionTest.epsilon&&lt[ft.Full_Diffraction_Distance]-lt1[ft.Full_Diffraction_Distance]<=FastObstructionTest.epsilon);
            
            }
     

@@ -82,7 +82,7 @@ public class TestMeshAndTopoDiffraction extends TestCase{
             System.out.println("----e----");
             System.out.println(lt[nfot.E_Length]);
             System.out.println("----distancepath----");
-            System.out.println(lt[nfot.Full_Difrraction_Distance]);
+            System.out.println(lt[nfot.Full_Diffraction_Distance]);
             
             
             
@@ -94,11 +94,11 @@ public class TestMeshAndTopoDiffraction extends TestCase{
             System.out.println("----e----");
             System.out.println(lt1[nfot.E_Length]);
             System.out.println("----distancepath----");
-            System.out.println(lt1[nfot.Full_Difrraction_Distance]);
+            System.out.println(lt1[nfot.Full_Diffraction_Distance]);
             
             
             assertTrue("Exchange source receiver got the different resultat",lt[nfot.Delta_Distance]-lt1[nfot.Delta_Distance]<=FastObstructionTest.epsilon
-                       &&lt[nfot.E_Length]-lt1[nfot.E_Length]<=FastObstructionTest.epsilon&&lt[nfot.Full_Difrraction_Distance]-lt1[nfot.Full_Difrraction_Distance]<=FastObstructionTest.epsilon);
+                       &&lt[nfot.E_Length]-lt1[nfot.E_Length]<=FastObstructionTest.epsilon&&lt[nfot.Full_Diffraction_Distance]-lt1[nfot.Full_Diffraction_Distance]<=FastObstructionTest.epsilon);
             System.out.println("----------TEST#1 diffraction with 2 buildings(building1 and building2) finished----- ");
 
 
@@ -130,7 +130,7 @@ public class TestMeshAndTopoDiffraction extends TestCase{
              System.out.println("----e----");
              System.out.println(lt[nfot.E_Length]);
              System.out.println("----distancepath----");
-             System.out.println(lt[nfot.Full_Difrraction_Distance]);
+             System.out.println(lt[nfot.Full_Diffraction_Distance]);
              
             
             
@@ -143,11 +143,11 @@ public class TestMeshAndTopoDiffraction extends TestCase{
              System.out.println("----e----");
              System.out.println(lt1[nfot.E_Length]);
              System.out.println("----distancepath----");
-             System.out.println(lt1[nfot.Full_Difrraction_Distance]);
-            
-            
+             System.out.println(lt1[nfot.Full_Diffraction_Distance]);
+
+
             assertTrue("testTopoPointsBlockSourceAndReceiver failed! ",lt[nfot.Delta_Distance].equals(lt1[nfot.Delta_Distance])
-                       &&lt[nfot.E_Length].equals(lt1[nfot.E_Length])&&lt[nfot.Full_Difrraction_Distance].equals(lt1[nfot.Full_Difrraction_Distance])&&lt[nfot.Delta_Distance].equals(-1.0));
+                       &&lt[nfot.E_Length].equals(lt1[nfot.E_Length])&&lt[nfot.Full_Diffraction_Distance].equals(lt1[nfot.Full_Diffraction_Distance])&&lt[nfot.Delta_Distance].equals(-1.0));
              System.out.println("----------TEST#2 diffraction blocked by TopoPoint finished----- ");
             
 
@@ -186,7 +186,7 @@ public class TestMeshAndTopoDiffraction extends TestCase{
              System.out.println("----e----");
              System.out.println(lt[nfot.E_Length]);
              System.out.println("----distancepath----");
-             System.out.println(lt[nfot.Full_Difrraction_Distance]);
+             System.out.println(lt[nfot.Full_Diffraction_Distance]);
              
             
             
@@ -199,11 +199,11 @@ public class TestMeshAndTopoDiffraction extends TestCase{
              System.out.println("----e----");
              System.out.println(lt1[nfot.E_Length]);
              System.out.println("----distancepath----");
-             System.out.println(lt1[nfot.Full_Difrraction_Distance]);
+             System.out.println(lt1[nfot.Full_Diffraction_Distance]);
             
             
              assertTrue("testIfSourceOrReceiverAreImporerWithTopographic failed! ",lt[nfot.Delta_Distance].equals(lt1[nfot.Delta_Distance])
-                       &&lt[nfot.E_Length].equals(lt1[nfot.E_Length])&&lt[nfot.Full_Difrraction_Distance].equals(lt1[nfot.Full_Difrraction_Distance])&&lt[nfot.Delta_Distance].equals(-1.0));
+                       &&lt[nfot.E_Length].equals(lt1[nfot.E_Length])&&lt[nfot.Full_Diffraction_Distance].equals(lt1[nfot.Full_Diffraction_Distance])&&lt[nfot.Delta_Distance].equals(-1.0));
             
              System.out.println("----------TEST#3 diffraction with 2 buildings(building1 and building2) finished----- ");
 
@@ -251,7 +251,7 @@ public class TestMeshAndTopoDiffraction extends TestCase{
              
              System.out.println("---------------------Test#5 isFreeField blocked by TopoPoint----------------------");
              assertFalse("isFreeField Failed",nfot.isFreeField(new Coordinate(40.,3.,2.), new Coordinate(39.,50.,3.)));
-             
+
              assertTrue("isFreeField Failed",nfot.isFreeField(new Coordinate(40.,3.,9.), new Coordinate(40.,50.,10.)));
              System.out.println("---------------------Test#5 isFreeField blocked by TopoPoint finished----------------------");
              

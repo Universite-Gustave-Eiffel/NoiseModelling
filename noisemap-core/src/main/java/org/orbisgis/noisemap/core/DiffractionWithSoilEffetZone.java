@@ -35,7 +35,7 @@ package org.orbisgis.noisemap.core;
 
 import com.vividsolutions.jts.geom.LineString;
 /**
- * DiffractionWithSoilEffetZone work for FastOBstructionTest, 
+ * DiffractionWithGroundEffectZone work for FastObstructionTest,
  * aims to keep the 3D diffraction, first diffraction zone and last diffraction zone data, 
  * to give them to propagation process data
  * @author SU Qi

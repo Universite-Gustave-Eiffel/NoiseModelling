@@ -158,7 +158,7 @@ public class MeshBuilder {
 
     /**
      * Retrieve Buildings polygon with the height
-     * @return the polygons(merged)  with a height "without" the effect Topograhic.
+     * @return the polygons(merged)  with a height "without" the effect Topographic.
      */
     public LinkedList<PolygonWithHeight> getPolygonWithHeight() {
         return polygonWithHeight;
@@ -182,7 +182,7 @@ public class MeshBuilder {
      * When we merge the buildings, we will use The shortest height to new building
      *
      * @param obstructionPoly  building's Geometry
-     * @param heightofBuilding buidling's Height
+     * @param heightofBuilding building's Height
      */
     @SuppressWarnings("unchecked")
     public void addGeometry(Geometry obstructionPoly, double heightofBuilding) {
@@ -218,7 +218,7 @@ public class MeshBuilder {
                 for (EnvelopeWithIndex<Integer> envel : result) {
                     int intersectedBuildingID = envel.getId();
                     PolygonWithHeight intersectedBuilidng = buildingWithID.get(intersectedBuildingID);
-                    //if new Polygon interset old Polygon && intersection is not a Point
+                    //if new Polygon interest old Polygon && intersection is not a Point
                     if (intersectedBuilidng.getGeometry().intersects(obstructionPoly) && !(intersectedBuilidng.getGeometry().intersection(obstructionPoly) instanceof Point)) {
                         //we merge the building and give it a new height
                         newBuildingModified = intersectedBuilidng.getGeometry().union(newBuildingModified);
@@ -241,7 +241,7 @@ public class MeshBuilder {
                 PolygonWithHeight newPoly = new PolygonWithHeight(newBuildingModified, minHeight);
                 polygonWithHeight.add(newPoly);
                 buildingWithID.put(buildingWithID.size(), newPoly);
-                //Because we dont remove the building in HashMap buildingWithID, so the buildingWithID will keep both new or old bulding
+                //Because we don't remove the building in HashMap buildingWithID, so the buildingWithID will keep both new or old building
                 ptQuadForMergeBuilding.insert(newBuildingModified.getEnvelopeInternal(), new EnvelopeWithIndex<Integer>(newBuildingModified.getEnvelopeInternal(),
                         buildingWithID.size() - 1));
 
@@ -252,7 +252,7 @@ public class MeshBuilder {
     }
 
     /**
-     * Add the Topographic Point in the mesh data, to complet the topograhic data.
+     * Add the Topographic Point in the mesh data, to complete the topographic data.
      *
      * @param point Topographic Point
      */
