@@ -83,7 +83,7 @@ public class TestSoundPropagationIn3D extends TestCase {
            System.out.println("----e----");
            System.out.println(lt[ft.E_Length]);
            System.out.println("----distancepath----");
-           System.out.println(lt[ft.Full_Difrraction_Distance]);
+           System.out.println(lt[ft.Full_Diffraction_Distance]);
            System.out.println("----------TEST with 2 building----- ");
            diffraData=ft.getPath(new Coordinate(48,25,0.5), new Coordinate(5,15,1.5));
            lt=diffraData.getDiffractionData();
@@ -92,7 +92,7 @@ public class TestSoundPropagationIn3D extends TestCase {
            System.out.println("----e----");
            System.out.println(lt[ft.E_Length]);
            System.out.println("----distancepath----");
-           System.out.println(lt[ft.Full_Difrraction_Distance]);
+           System.out.println(lt[ft.Full_Diffraction_Distance]);
            System.out.println("-----------exchange source receiver------------");
            diffraData=ft.getPath(new Coordinate(5,15,1.5), new Coordinate(48,25,0.5));
            lt=diffraData.getDiffractionData();
@@ -101,7 +101,7 @@ public class TestSoundPropagationIn3D extends TestCase {
            System.out.println("----e----");
            System.out.println(lt[ft.E_Length]);
            System.out.println("----distancepath----");
-           System.out.println(lt[ft.Full_Difrraction_Distance]);
+           System.out.println(lt[ft.Full_Diffraction_Distance]);
           // LinkedList<Coordinate> lt=ft.getPath(new Coordinate(4,4,0.5), new Coordinate(31,31,1.5));
           // before change fastobstruction.get path return data type LinkedList<Segment>; 
            /*

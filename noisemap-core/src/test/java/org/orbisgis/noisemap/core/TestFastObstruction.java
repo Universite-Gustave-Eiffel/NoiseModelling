@@ -152,7 +152,7 @@ public class TestFastObstruction extends TestCase {
 		int query_count=100;
 		long debFastObstructionTest=System.nanoTime();
 		for(int i=0;i<query_count;i++) {
-			assertFalse("Intersection test bench #1 failed",manager.isFreeField(receiver, source));
+            assertFalse("Intersection test bench #1 failed",manager.isFreeField(receiver, source));
 		}
 		long testfast=(System.nanoTime()-debFastObstructionTest);
 		System.out.println(query_count+" Bench FastObstructionTest test in "+testfast+" ns");

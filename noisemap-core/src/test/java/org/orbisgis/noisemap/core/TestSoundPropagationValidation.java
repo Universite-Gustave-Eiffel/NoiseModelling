@@ -123,12 +123,12 @@ public class TestSoundPropagationValidation extends TestCase {
 		// 					   Single diffraction test
 		propData.diffractionOrder=1;
 		propData.reflexionOrder=0;
-		splCompare(splCompute(propManager, new Coordinate(15,40,0)), "Scene 1 R4_S1", 46.81);
+		splCompare(splCompute(propManager, new Coordinate(15,40,0)), "Scene 1 R4_S1", 46.8105);
 		/////////////////////////////////////////////////////////////////////////
 		// 					   Dual diffraction test
 		propData.diffractionOrder=2;
 		propData.reflexionOrder=0;
-		splCompare(splCompute(propManager, new Coordinate(5,15,0)), "Scene 1 R1_S1", 34.97);
+		splCompare(splCompute(propManager, new Coordinate(5,15,0)), "Scene 1 R1_S1", 34.9710618);
 		/////////////////////////////////////////////////////////////////////////
 		// 					   Geometric dispersion test
 		//Get reference spl value at 5m
@@ -270,7 +270,7 @@ public class TestSoundPropagationValidation extends TestCase {
 		System.out.println(propDataOut.getNb_couple_receiver_src()+" point source created..");
 		System.out.println(propDataOut.getNb_image_receiver()+" receiver image found..");
 		System.out.println(propDataOut.getNb_reflexion_path()+" reflection path found..");
-		splCompare(dbaRef, "Scene 2 (20,4)",91.916);
+		splCompare(dbaRef, "Scene 2 (20,4)",90.67017);
 		System.out.println("testScene1 done in "+(System.currentTimeMillis()-startMakeScene)+"ms");
 	}
 }

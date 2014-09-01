@@ -41,7 +41,7 @@
         <dependency>
             <groupId>org.orbisgis</groupId>
             <artifactId>jdelaunay</artifactId>
-            <version>0.5.3-SNAPSHOT</version>
+            <version>0.5.2</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>

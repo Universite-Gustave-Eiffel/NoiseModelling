@@ -68,18 +68,18 @@ public class LayerExtTriangle implements LayerDelaunay {
 	private LinkedList<Coordinate> holes = new LinkedList<Coordinate>();
 	private ArrayList<IntSegment> segments = new ArrayList<IntSegment>();
 	private ArrayList<Triangle> neighbors = new ArrayList<Triangle>(); // The
-																		// first
-																		// neighbor
-																		// of
-																		// triangle
-																		// i is
-																		// opposite
-																		// the
-																		// first
-																		// corner
-																		// of
-																		// triangle
-																		// i
+																// first
+																// neighbor
+																// of
+																// triangle
+																// i is
+																// opposite
+																// the
+																// first
+																// corner
+																// of
+																// triangle
+																// i
 	Quadtree ptQuad = new Quadtree();
 	ArrayList<Triangle> triangles = new ArrayList<Triangle>();
 	private static final String EOL = "\r\n";
@@ -98,7 +98,7 @@ public class LayerExtTriangle implements LayerDelaunay {
 	 *            Temporary directory of input and output files
 	 * @param maxSteinerFactor
 	 *            Stop adding steiner point when Steiner point count
-	 *            (maxSteiner*input vertice count)
+	 *            (maxSteiner*input vertices count)
 	 */
 	public LayerExtTriangle(String tmpDir) { // ,DataSourceFactory dsf remove
 												// DataSourceFactory debug
@@ -181,13 +181,13 @@ public class LayerExtTriangle implements LayerDelaunay {
 			throw new LayerDelaunayError(e);
 		}
 		in.useLocale(Locale.US); // essential to read float values
-		final int vsize = in.nextInt(); // read vertice count
+		final int vsize = in.nextInt(); // read vertices count
 		in.nextInt(); // read dimension
 		in.nextInt(); // read third header
 		boolean isMarker = in.nextInt() == 1; // Read marker boolean
 		localVertices.ensureCapacity(vsize);
 		for (int vid = 0; vid < vsize; vid++) {
-			in.nextInt(); // vertice ID
+			in.nextInt(); // vertices ID
 			Coordinate vcoord = new Coordinate(in.nextDouble(), in.nextDouble());
 			if (isMarker) {
 				in.nextInt();
@@ -224,7 +224,7 @@ public class LayerExtTriangle implements LayerDelaunay {
 		}
 		in.useLocale(Locale.US); // essential to read float values
 		skipCommentLines(in);
-		final int vsize = in.nextInt(); // read vertice count
+		final int vsize = in.nextInt(); // read vertices count
 		in.nextInt(); // read dimension
 		in.nextInt(); // read third header
 		boolean isVertexMarker = in.nextInt() == 1; // Read marker boolean

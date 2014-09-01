@@ -41,7 +41,7 @@ import java.util.*;
  * and hold the string vertical.  Now move the string clockwise until you hit the next, then the next, then
  * the next.  When the string is vertical again, you will have found the hull.
  *  
- * @see http://butunclebob.com/ArticleS.UncleBob.ConvexHullTiming 
+ * @link http://butunclebob.com/ArticleS.UncleBob.ConvexHullTiming
  * @author UncleBob
  */
 
@@ -122,7 +122,7 @@ public class JarvisMarch {
   /**
    * The PseudoAngle is a number that increases as the angle from vertical increases.
    * The current implementation has the maximum pseudo angle < 4.  The pseudo angle for each quadrant is 1.
-   * The algorithm is very simple.  It just finds where the angle intesects a square and measures the
+   * The algorithm is very simple.  It just finds where the angle intersects a square and measures the
    * perimeter of the square at that point.  The math is in my Sept '06 notebook.  UncleBob.
    */
   public static double pseudoAngle(double dx, double dy) {

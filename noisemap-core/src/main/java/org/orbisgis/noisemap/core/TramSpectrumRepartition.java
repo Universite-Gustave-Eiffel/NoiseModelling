@@ -74,7 +74,7 @@ public class TramSpectrumRepartition {
 	}
 
     /**
-     * @param freq Frenquency Hz, one of [100,125,160,200,250,315,400,500,630,800,1000,1250,1600,2000,2500,3150,4000,5000]
+     * @param freq Frequency Hz, one of [100,125,160,200,250,315,400,500,630,800,1000,1250,1600,2000,2500,3150,4000,5000]
      * @return dB(A) attenuation value corresponding to the the third octave frequency band
      * @throws IllegalArgumentException
      */
