@@ -37,9 +37,9 @@ package org.orbisgis.noisemap.core;
  * @author Nicolas Fortin
  */
 public class EvaluateRoadSourceParameter {
-    private final double speed_load;
-    private final int vl_per_hour;
-    private final int pl_per_hour;
+    private final double speedLoad;
+    private final int lvPerHour;
+    private final int hgvPerHour;
 
     /**
      * BBTS means very thin asphalt concrete.
@@ -66,91 +66,91 @@ public class EvaluateRoadSourceParameter {
     private SurfaceCategory surfaceCategory = SurfaceCategory.R2;
     private int surfaceAge = 10; // Default value means no correction of road level
     private double slopePercentage = 0;
-    private double speedVl;
-    private double speedPl;
-    private EngineState vlState = EngineState.SteadySpeed;
-    private EngineState plState = EngineState.SteadySpeed;
+    private double speedLv;
+    private double speedHgv;
+    private EngineState lvState = EngineState.SteadySpeed;
+    private EngineState hgvState = EngineState.SteadySpeed;
 
-    private static double getVPl(double vvl, double speedmax, int type, int subtype) throws IllegalArgumentException {
+    private static double getVPl(double sLv, double speedmax, int type, int subtype) throws IllegalArgumentException {
         switch (type) {
             case 1:
-                return Math.min(vvl, 100); // Highway 2x2 130 km/h
+                return Math.min(sLv, 100); // Highway 2x2 130 km/h
             case 2:
                 switch (subtype) {
                     case 1:
-                        return Math.min(vvl, 90); // 2x2 way 110 km/h
+                        return Math.min(sLv, 90); // 2x2 way 110 km/h
                     case 2:
-                        return Math.min(vvl, 90); // 2x2 way 90km/h off belt-way
+                        return Math.min(sLv, 90); // 2x2 way 90km/h off belt-way
                     case 3:
                         if (speedmax < 80) {
-                            return Math.min(vvl, 70);
+                            return Math.min(sLv, 70);
                         } // Belt-way 70 km/h
                         else {
-                            return Math.min(vvl, 85);
+                            return Math.min(sLv, 85);
                         } // Belt-way 90 km/h
                 }
                 break;
             case 3:
                 switch (subtype) {
                     case 1:
-                        return vvl; // Interchange ramp
+                        return sLv; // Interchange ramp
                     case 2:
-                        return vvl; // Off boulevard roundabout circular junction
+                        return sLv; // Off boulevard roundabout circular junction
                     case 7:
-                        return vvl; // inside-boulevard roundabout circular junction
+                        return sLv; // inside-boulevard roundabout circular junction
                 }
                 break;
             case 4:
                 switch (subtype) {
                     case 1:
-                        return Math.min(vvl, 90); // lower level 2x1 way 7m 90km/h
+                        return Math.min(sLv, 90); // lower level 2x1 way 7m 90km/h
                     case 2:
-                        return Math.min(vvl, 90); // Standard 2x1 way 90km/h
+                        return Math.min(sLv, 90); // Standard 2x1 way 90km/h
                     case 3:
                         if (speedmax < 70) {
-                            return Math.min(vvl, 60);
+                            return Math.min(sLv, 60);
                         } // 2x1 way 60 km/h
                         else {
-                            return Math.min(vvl, 80);
+                            return Math.min(sLv, 80);
                         } // 2x1 way 80 km/h
                 }
                 break;
             case 5:
                 switch (subtype) {
                     case 1:
-                        return Math.min(vvl, 70); // extra boulevard 70km/h
+                        return Math.min(sLv, 70); // extra boulevard 70km/h
                     case 2:
-                        return Math.min(vvl, 50); // extra boulevard 50km/h
+                        return Math.min(sLv, 50); // extra boulevard 50km/h
                     case 3:
-                        return Math.min(vvl, 50); // extra boulevard Street 50km/h
+                        return Math.min(sLv, 50); // extra boulevard Street 50km/h
                     case 4:
-                        return Math.min(vvl, 50); // extra boulevard Street <50km/h
+                        return Math.min(sLv, 50); // extra boulevard Street <50km/h
                     case 6:
-                        return Math.min(vvl, 50); // in boulevard 70km/h
+                        return Math.min(sLv, 50); // in boulevard 70km/h
                     case 7:
-                        return Math.min(vvl, 50); // in boulevard 50km/h
+                        return Math.min(sLv, 50); // in boulevard 50km/h
                     case 8:
-                        return Math.min(vvl, 50); // in boulevard Street 50km/h
+                        return Math.min(sLv, 50); // in boulevard Street 50km/h
                     case 9:
-                        return Math.min(vvl, 50); // in boulevard Street <50km/h
+                        return Math.min(sLv, 50); // in boulevard Street <50km/h
                 }
                 break;
             case 6:
                 switch (subtype) {
                     case 1:
-                        return Math.min(vvl, 50); // Bus-way boulevard 70km/h
+                        return Math.min(sLv, 50); // Bus-way boulevard 70km/h
                     case 2:
-                        return Math.min(vvl, 50); // Bus-way boulevard 50km/h
+                        return Math.min(sLv, 50); // Bus-way boulevard 50km/h
                     case 3:
-                        return Math.min(vvl, 50); // Bus-way extra boulevard Street
+                        return Math.min(sLv, 50); // Bus-way extra boulevard Street
                     // 50km/h
                     case 4:
-                        return Math.min(vvl, 50); // Bus-way extra boulevard Street
+                        return Math.min(sLv, 50); // Bus-way extra boulevard Street
                     // <50km/h
                     case 8:
-                        return Math.min(vvl, 50); // Bus-way in boulevard Street 50km/h
+                        return Math.min(sLv, 50); // Bus-way in boulevard Street 50km/h
                     case 9:
-                        return Math.min(vvl, 50); // Bus-way in boulevard Street <50km/h
+                        return Math.min(sLv, 50); // Bus-way in boulevard Street <50km/h
                 }
                 break;
         }
@@ -159,25 +159,25 @@ public class EvaluateRoadSourceParameter {
     }
 
     /**
-     * Compute {@link EvaluateRoadSourceParameter#speedPl}
-     * and {@link EvaluateRoadSourceParameter#speedVl} from theses parameters
+     * Compute {@link EvaluateRoadSourceParameter#speedHgv}
+     * and {@link EvaluateRoadSourceParameter#speedLv} from theses parameters
      * @param speed_junction Speed in the junction section
      * @param speed_max Maximum speed authorized
      * @param copound_roadtype Road surface type.
-     * @param is_queue If true use speed_junction in speed_load
+     * @param is_queue If true use speed_junction in speedLoad
      */
     public void setSpeedFromRoadCaracteristics(double speed_junction, boolean is_queue, double speed_max,int copound_roadtype) {
         // Separation of main index and sub index
         final int roadtype = copound_roadtype / 10;
         final int roadSubType = copound_roadtype - (roadtype * 10);
         if (speed_junction > 0. && is_queue) {
-            speedVl = speed_junction;
-        } else if (speed_load > 0.) {
-            speedVl = speed_load;
+            speedLv = speed_junction;
+        } else if (speedLoad > 0.) {
+            speedLv = speedLoad;
         } else {
-            speedVl = speed_max;
+            speedLv = speed_max;
         }
-        speedPl = getVPl(speedVl, speed_max, roadtype, roadSubType);
+        speedHgv = getVPl(speedLv, speed_max, roadtype, roadSubType);
     }
 
     /**
@@ -214,50 +214,50 @@ public class EvaluateRoadSourceParameter {
 
     /**
      * Simplest road noise evaluation
-     * @param speed_load Average vehicle speed
-     * @param vl_per_hour Average light vehicle per hour
-     * @param pl_per_hour Average heavy vehicle per hour
+     * @param speedLoad Average vehicle speed
+     * @param lvPerHour Average light vehicle per hour
+     * @param hgvPerHour Average heavy vehicle per hour
      */
-    public EvaluateRoadSourceParameter(double speed_load, int vl_per_hour, int pl_per_hour) {
-        this.speed_load = speed_load;
-        this.vl_per_hour = vl_per_hour;
-        this.pl_per_hour = pl_per_hour;
-        setSpeedVl(speed_load);
-        setSpeedPl(speed_load);
+    public EvaluateRoadSourceParameter(double speedLoad, int lvPerHour, int hgvPerHour) {
+        this.speedLoad = speedLoad;
+        this.lvPerHour = lvPerHour;
+        this.hgvPerHour = hgvPerHour;
+        setSpeedLv(speedLoad);
+        setSpeedHgv(speedLoad);
     }
 
     public void setSurfaceCategory(SurfaceCategory surfaceCategory) {
         this.surfaceCategory = surfaceCategory;
     }
 
-    public void setSpeedVl(double speedVl) {
+    public void setSpeedLv(double speedLv) {
         // Validity discussed 3.5.3.2 - Speed validity of results P.45 of Road Noise Prediction
-        this.speedVl = Math.min(130, Math.max(5, speedVl));
+        this.speedLv = Math.min(130, Math.max(5, speedLv));
     }
 
-    public void setSpeedPl(double speedPl) {
+    public void setSpeedHgv(double speedHgv) {
         // Validity discussed 3.5.3.2 - Speed validity of results P.45 of Road Noise Prediction
-        this.speedPl = Math.min(100, Math.max(5, speedPl));
+        this.speedHgv = Math.min(100, Math.max(5, speedHgv));
     }
 
-    public void setVlState(EngineState vlState) {
-        this.vlState = vlState;
+    public void setLvState(EngineState lvState) {
+        this.lvState = lvState;
     }
 
-    public void setPlState(EngineState plState) {
-        this.plState = plState;
+    public void setHgvState(EngineState hgvState) {
+        this.hgvState = hgvState;
     }
 
-    public double getSpeed_load() {
-        return speed_load;
+    public double getSpeedLoad() {
+        return speedLoad;
     }
 
-    public int getVl_per_hour() {
-        return vl_per_hour;
+    public int getLvPerHour() {
+        return lvPerHour;
     }
 
-    public int getPl_per_hour() {
-        return pl_per_hour;
+    public int getHgvPerHour() {
+        return hgvPerHour;
     }
 
     public SurfaceCategory getSurfaceCategory() {
@@ -268,20 +268,20 @@ public class EvaluateRoadSourceParameter {
         return slopePercentage;
     }
 
-    public double getSpeedVl() {
-        return speedVl;
+    public double getSpeedLv() {
+        return speedLv;
     }
 
-    public double getSpeedPl() {
-        return speedPl;
+    public double getSpeedHgv() {
+        return speedHgv;
     }
 
-    public EngineState getVlState() {
-        return vlState;
+    public EngineState getLvState() {
+        return lvState;
     }
 
-    public EngineState getPlState() {
-        return plState;
+    public EngineState getHgvState() {
+        return hgvState;
     }
 
 }

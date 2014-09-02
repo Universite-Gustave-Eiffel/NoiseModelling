@@ -101,7 +101,7 @@ public class BR_EvalSource extends DeterministicScalarFunction {
                                     double road_length_2d) {
         EvaluateRoadSourceParameter evaluateRoadSourceParameter = new EvaluateRoadSourceParameter(lv_speed, vl_per_hour, pl_per_hour);
         evaluateRoadSourceParameter.setSlopePercentage(EvaluateRoadSourceParameter.computeSlope(beginZ, endZ, road_length_2d));
-        evaluateRoadSourceParameter.setSpeedPl(hv_speed);
+        evaluateRoadSourceParameter.setSpeedHgv(hv_speed);
         return EvaluateRoadSource.evaluate(evaluateRoadSourceParameter);
     }
 
