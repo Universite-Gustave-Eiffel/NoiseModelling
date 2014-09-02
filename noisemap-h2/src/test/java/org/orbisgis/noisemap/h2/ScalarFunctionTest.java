@@ -98,7 +98,7 @@ public class ScalarFunctionTest {
     public void testBR_EvalSource6Down() throws SQLException {
         ResultSet rs = st.executeQuery("SELECT BR_EvalSource(50, 1500, 15, 15, 0, 50)");
         assertTrue(rs.next());
-        assertEquals(77.67, rs.getDouble(1), 0.01);
+        assertEquals(78.32, rs.getDouble(1), 0.01);
     }
 
     @Test
