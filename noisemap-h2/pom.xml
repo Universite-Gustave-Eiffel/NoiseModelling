@@ -8,6 +8,7 @@
   </parent>
     <artifactId>noisemap-h2</artifactId>
     <name>noisemap-h2</name>
+    <description>Produce noise maps using the French method NMPB 2008. This bundle is the h2 database declaration</description>
     <packaging>bundle</packaging>
     <build>
         <plugins>
