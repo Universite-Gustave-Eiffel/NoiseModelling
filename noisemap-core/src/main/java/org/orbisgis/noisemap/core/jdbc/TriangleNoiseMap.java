@@ -1,22 +1,36 @@
 package org.orbisgis.noisemap.core.jdbc;
 
 import com.vividsolutions.jts.densify.Densifier;
+import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryCollection;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.LinearRing;
+import com.vividsolutions.jts.geom.MultiLineString;
+import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
 import com.vividsolutions.jts.operation.buffer.BufferOp;
 import com.vividsolutions.jts.operation.buffer.BufferParameters;
 import com.vividsolutions.jts.simplify.TopologyPreservingSimplifier;
-import org.h2gis.utilities.JDBCUtilities;
+import org.h2gis.h2spatialapi.ProgressVisitor;
+import org.h2gis.utilities.SFSUtilities;
 import org.h2gis.utilities.SpatialResultSet;
 import org.h2gis.utilities.TableLocation;
-import org.orbisgis.noisemap.core.JTSUtility;
+import org.jdelaunay.delaunay.evaluator.TriangleQuality;
+import org.orbisgis.noisemap.core.FastObstructionTest;
+import org.orbisgis.noisemap.core.GeoWithSoilType;
 import org.orbisgis.noisemap.core.LayerDelaunayError;
 import org.orbisgis.noisemap.core.MeshBuilder;
+import org.orbisgis.noisemap.core.PropagationProcess;
+import org.orbisgis.noisemap.core.PropagationProcessData;
+import org.orbisgis.noisemap.core.PropagationProcessOut;
+import org.orbisgis.noisemap.core.PropagationResultTriRecord;
+import org.orbisgis.noisemap.core.QueryGeometryStructure;
+import org.orbisgis.noisemap.core.QueryQuadTree;
+import org.orbisgis.noisemap.core.ThreadPool;
+import org.orbisgis.noisemap.core.Triangle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,37 +38,48 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.Stack;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Create noise map using JDBC connection. SQL syntax is compatible with H2 and PostGIS.
  * @author Nicolas Fortin
+ * @author SU Qi
  */
 public class TriangleNoiseMap {
     private String destinationTable = "";
-    private String buildings = "";
-    private String sources = "";
+    private String buildingsTableName = "";
+    private String sourcesTableName = "";
+    private String soilTableName = "";
+    // Digital elevation model table. (Contains points or triangles)
+    private String demTable = "";
     private String sound_lvl_field = "DB_M";
-    private double maximum_propagation_distance = 750;
-    private double maximum_reflection_distance = 50;
-    private int subdivision_level = -1; // TODO Guess it from maximum_propagation_distance and source extent
-    private int sound_reflection_order = 2;
-    private int sound_diffraction_order = 1;
-    private double wall_absorption = 0.05;
+    private double maximumPropagationDistance = 750;
+    private double maximumReflectionDistance = 50;
+    private int subdivisionLevel = -1; // TODO Guess it from maximumPropagationDistance and source extent
+    private int soundReflectionOrder = 2;
+    private int soundDiffractionOrder = 1;
+    private double wallAbsorption = 0.05;
     private final static double BUILDING_BUFFER = 0.5;
     private Logger logger = LoggerFactory.getLogger(TriangleNoiseMap.class);
-    private static final String heightField = "height";
+    private static final String heightField = "";
     private GeometryFactory geometryFactory = new GeometryFactory();
     private boolean doMultiThreading = true;
+    private double roadWidth = 2;
+    private double sourceDensification = 4;
+    private double maximumArea = 75;
 
     private void explodeAndAddPolygon(Geometry intersectedGeometry,
-                                      MeshBuilder delaunayTool, Geometry boundingBox)
+                                      MeshBuilder delaunayTool)
             throws LayerDelaunayError {
-        long beginAppendPolygons = System.currentTimeMillis();
         if (intersectedGeometry instanceof GeometryCollection) {
             for (int j = 0; j < intersectedGeometry.getNumGeometries(); j++) {
                 Geometry subGeom = intersectedGeometry.getGeometryN(j);
-                explodeAndAddPolygon(subGeom, delaunayTool, boundingBox);
+                explodeAndAddPolygon(subGeom, delaunayTool);
             }
         } else {
             delaunayTool.addGeometry(intersectedGeometry);
@@ -92,11 +117,9 @@ public class TriangleNoiseMap {
                 mainEnvelope.getMinY() + cellHeight * cellJ + cellHeight);
     }
 
-    private void feedDelaunay(Connection connection, String buildingsTable,String buildingsTableGeomColumn, int spatialBuildingsFieldIndex,
-                              MeshBuilder delaunayTool, Envelope boundingBoxFilter,
-                              double srcDistance, LinkedList<LineString> delaunaySegments,
-                              double minRecDist, double srcPtDist, double triangleSide) throws SQLException,
-            LayerDelaunayError {
+    private void feedDelaunay(Collection<Geometry> buildings, MeshBuilder delaunayTool, Envelope boundingBoxFilter,
+                              double srcDistance, LinkedList<LineString> delaunaySegments, double minRecDist,
+                              double srcPtDist, double triangleSide) throws LayerDelaunayError {
         Envelope extendedEnvelope = new Envelope(boundingBoxFilter);
         extendedEnvelope.expandBy(srcDistance * 2.);
         Geometry linearRing = geometryFactory.toGeometry(boundingBoxFilter);
@@ -108,35 +131,27 @@ public class TriangleNoiseMap {
         Envelope fetchBox = new Envelope(boundingBoxFilter);
         fetchBox.expandBy(BUILDING_BUFFER);
         Geometry fetchGeometry = geometryFactory.toGeometry(fetchBox);
-        try(PreparedStatement st = connection.prepareStatement("SELECT "+ TableLocation.quoteIdentifier(buildingsTableGeomColumn) +
-                " FROM "+buildingsTable+" WHERE "+ TableLocation.quoteIdentifier(buildingsTableGeomColumn) + " && ?");
-            SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
-            while(rs.next()) {
-                Geometry geometry = rs.getGeometry(buildingsTableGeomColumn);
-                if(geometry!= null && geometry.intersects(fetchGeometry)) {
-                    toUnite.add(geometry);
-                }
+        for(Geometry building : buildings) {
+            if(building.intersects(fetchGeometry)) {
+                toUnite.add(building);
             }
         }
         // Reduce small artifacts to avoid, shortest geometry to be
         // over-triangulated
         LinkedList<Geometry> toUniteFinal = new LinkedList<Geometry>();
         if (!toUnite.isEmpty()) {
-            logger.info("Merge buildings");
             Geometry bufferBuildings = merge(toUnite, BUILDING_BUFFER);
-            // Remove small artifacts due to buildings buffer
+            // Remove small artifacts due to buildingsTableName buffer
             if(triangleSide > 0) {
                 bufferBuildings = Densifier.densify(bufferBuildings, triangleSide);
             }
-            toUniteFinal.add(bufferBuildings); // Add buildings to triangulation
+            toUniteFinal.add(bufferBuildings); // Add buildingsTableName to triangulation
         }
-
         // Merge roads
         if (minRecDist > 0.01) {
             LinkedList<Geometry> toUniteRoads = new LinkedList<Geometry>(delaunaySegments);
             if (!toUniteRoads.isEmpty()) {
                 // Build Polygons buffer from roads lines
-                logger.info("Merge roads");
                 Geometry bufferRoads = merge(toUniteRoads, minRecDist / 2);
                 // Remove small artifacts due to multiple buffer crosses
                 bufferRoads = TopologyPreservingSimplifier.simplify(bufferRoads,
@@ -154,14 +169,91 @@ public class TriangleNoiseMap {
                 // buffer
             }
         }
-        logger.info("Merge roads and buildings");
-        Geometry union = merge(toUniteFinal, 0.); // Merge roads and buildings
+        Geometry union = merge(toUniteFinal, 0.); // Merge roads and buildingsTableName
         // together
         // Remove geometries out of the bounding box
-        logger.info("Remove roads and buildings outside study area");
         union = union.intersection(boundingBox);
-        explodeAndAddPolygon(union, delaunayTool, boundingBox);
+        explodeAndAddPolygon(union, delaunayTool);
     }
+
+
+    /**
+     * Delaunay triangulation of Sub-Domain
+     *
+     * @param cellMesh Final mesh target
+     * @param mainEnvelope Global envelope
+     * @param cellI I cell index
+     * @param cellJ J cell index
+     * @param cellIMax I cell count
+     * @param cellJMax J cell count
+     * @param cellWidth Cell width meter
+     * @param cellHeight Cell height meter
+     * @param maxSrcDist Maximum propagation distance
+     * @param minRecDist Minimal distance receiver-source
+     * @param srcPtDist Densification distance of sources pts
+     * @param maximumArea Maximum area of triangles
+     * @throws LayerDelaunayError
+     */
+    public void computeFirstPassDelaunay(MeshBuilder cellMesh,
+                                         Envelope mainEnvelope, int cellI, int cellJ, int cellIMax,
+                                         int cellJMax, double cellWidth, double cellHeight,
+                                         double maxSrcDist, Collection<Geometry> buildings,
+                                         Collection<Geometry> sources, double minRecDist,
+                                         double srcPtDist, double maximumArea)
+            throws LayerDelaunayError {
+
+        Envelope cellEnvelope = getCellEnv(mainEnvelope, cellI, cellJ,
+                cellIMax, cellJMax, cellWidth, cellHeight);
+        Geometry cellEnvelopeGeometry = new GeometryFactory().toGeometry(cellEnvelope);
+
+        Envelope expandedCellEnvelop = new Envelope(cellEnvelope);
+        expandedCellEnvelop.expandBy(maxSrcDist);
+
+        // Build delaunay triangulation from buildings inside the extended
+        // bounding box
+
+        // /////////////////////////////////////////////////
+        // Add roads into delaunay tool
+        LinkedList<LineString> delaunaySegments = new LinkedList<>();
+        if (minRecDist > 0.1) {
+            for (Geometry pt : sources) {
+                Envelope ptEnv = pt.getEnvelopeInternal();
+                if (ptEnv.intersects(expandedCellEnvelop)) {
+                    if (pt instanceof Point) {
+                        // Add square in rendering
+                        cellMesh.addGeometry(cellEnvelopeGeometry.intersection(pt.buffer(minRecDist, BufferParameters.CAP_SQUARE)));
+                    } else {
+                        if (pt instanceof LineString) {
+                            delaunaySegments.add((LineString) (pt));
+                        } else if (pt instanceof MultiLineString) {
+                            int nbLineString = pt.getNumGeometries();
+                            for (int idLineString = 0; idLineString < nbLineString; idLineString++) {
+                                delaunaySegments.add((LineString) (pt
+                                        .getGeometryN(idLineString)));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Compute equilateral triangle side from Area
+        double triangleSide = (2*Math.pow(maximumArea, 0.5)) / Math.pow(3, 0.25);
+        feedDelaunay(buildings, cellMesh, cellEnvelope, maxSrcDist, delaunaySegments,
+                minRecDist, srcPtDist, triangleSide);
+
+        // Process delaunay
+        logger.info("Begin delaunay");
+        cellMesh.setComputeNeighbors(false);
+        if (maximumArea > 1) {
+            cellMesh.setInsertionEvaluator(new TriangleQuality());
+            Geometry densifiedEnvelope = Densifier.densify(new GeometryFactory().toGeometry(cellEnvelope), triangleSide);
+            cellMesh.finishPolygonFeeding(densifiedEnvelope);
+        } else {
+            cellMesh.finishPolygonFeeding(cellEnvelope);
+        }
+    }
+
 
     private static Double DbaToW(Double dBA) {
         return Math.pow(10., dBA / 10.);
@@ -171,55 +263,302 @@ public class TriangleNoiseMap {
      * @param connection
      * @throws SQLException
      */
-    public void execute(Connection connection) throws SQLException {
-        if(maximum_propagation_distance < maximum_reflection_distance) {
+    public void execute(Connection connection, ProgressVisitor progression) throws SQLException {
+        if(maximumPropagationDistance < maximumReflectionDistance) {
             throw new SQLException(new IllegalArgumentException(
                     "Maximum wall seeking distance cannot be superior than maximum propagation distance"));
         }
-        if(sources.isEmpty()) {
+        if(sourcesTableName.isEmpty()) {
             throw new SQLException("A sound source table must be provided");
         }
         ThreadPool threadManager = null;
-        ProgressionOrbisGisManager pmManager = null;
+        // Steps of execution
+        // Evaluation of the main bounding box (sourcesTableName+buildingsTableName)
+        // Split domain into 4^subdiv cells
+        // For each cell :
+        // Expand bounding box cell by maxSrcDist
+        // Build delaunay triangulation from buildingsTableName polygon processed by
+        // intersection with non extended bounding box
+        // Save the list of sourcesTableName index inside the extended bounding box
+        // Save the list of buildingsTableName index inside the extended bounding box
+        // Make a structure to keep the following information
+        // Triangle list with the 3 vertices index
+        // Vertices list (as receivers)
+        // For each vertices within the cell bounding box (not the extended
+        // one)
+        // Find all sourcesTableName within maxSrcDist
+        // For All found sourcesTableName
+        // Test if there is a gap(no building) between source and receiver
+        // if not then append the distance attenuated sound level to the
+        // receiver
+        // Save the triangle geometry with the db_m value of the 3 vertices
+        long nbreceivers = 0;
+        // 1 Step - Evaluation of the main bounding box (sources)
+        Envelope mainEnvelope = SFSUtilities.getTableEnvelope(connection, TableLocation.parse(sourcesTableName), "");
+        // Split domain into 4^subdiv cells
+
+        int gridDim = (int) Math.pow(2, subdivisionLevel);
+
+        // Initialization frequency declared in source Table
+        ArrayList<Integer> db_field_ids = new ArrayList<>();
+        ArrayList<Integer> db_field_freq = new ArrayList<>();
+        TableLocation sourceTableIdentifier = TableLocation.parse(sourcesTableName);
+        try(ResultSet rs = connection.getMetaData().getColumns(sourceTableIdentifier.getCatalog(),
+            sourceTableIdentifier.getSchema(), sourceTableIdentifier.getTable(), null)) {
+            String fieldName = rs.getString("COLUMN_NAME");
+            if (fieldName.startsWith(sound_lvl_field)) {
+                String sub = fieldName.substring(sound_lvl_field.length());
+                db_field_ids.add(rs.getInt("ORDINAL_POSITION"));
+                if (sub.length() > 0) {
+                    int freq = Integer.parseInt(sub);
+                    db_field_freq.add(freq);
+                } else {
+                    db_field_freq.add(0);
+                }
+            }
+        }
+        double cellWidth = mainEnvelope.getWidth() / gridDim;
+        double cellHeight = mainEnvelope.getHeight() / gridDim;
+
+        int nbcell = gridDim * gridDim;
+        if (nbcell == 1) {
+            doMultiThreading = false;
+        }
+
+        Runtime runtime = Runtime.getRuntime();
+        threadManager = new ThreadPool(
+                runtime.availableProcessors(),
+                runtime.availableProcessors() + 1, Long.MAX_VALUE,
+                TimeUnit.SECONDS);
+        Stack<PropagationResultTriRecord> toDriver = new Stack<PropagationResultTriRecord>();
+
+        PropagationProcessOut threadDataOut = new PropagationProcessOut(
+                toDriver, null);
+
+        for (int cellI = 0; cellI < gridDim; cellI++) {
+            for (int cellJ = 0; cellJ < gridDim; cellJ++) {
+                MeshBuilder mesh = new MeshBuilder();
+                int ij = cellI * gridDim + cellJ;
+                logger.info("Begin processing of cell " + (cellI + 1) + ","
+                        + (cellJ + 1) + " of the " + gridDim + "x" + gridDim
+                        + "  grid..");
+
+                Envelope cellEnvelope = getCellEnv(mainEnvelope, cellI,
+                        cellJ, gridDim, gridDim, cellWidth, cellHeight);
+
+
+                Envelope expandedCellEnvelop = new Envelope(cellEnvelope);
+                expandedCellEnvelop.expandBy(maximumPropagationDistance);
+                // //////////////////////////////////////////////////////
+                // Make source index for optimization
+                ArrayList<Geometry> sourceGeometries = new ArrayList<Geometry>();
+                ArrayList<ArrayList<Double>> wj_sources = new ArrayList<ArrayList<Double>>();
+                QueryGeometryStructure sourcesIndex = new QueryQuadTree();
+
+                // Fetch all source located in expandedCellEnvelop
+                int idsource = 0;
+                String sourceGeomName = SFSUtilities.getGeometryFields(connection, sourceTableIdentifier).get(0);
+                try (PreparedStatement st = connection.prepareStatement("SELECT " + TableLocation.quoteIdentifier(sourceGeomName) +
+                        " FROM " + sourcesTableName + " WHERE " + TableLocation.quoteIdentifier(sourceGeomName) + " && ?")) {
+                    st.setObject(1, geometryFactory.toGeometry(expandedCellEnvelop));
+                    try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
+                        while (rs.next()) {
+                            Geometry geo = rs.getGeometry();
+                            if (geo != null) {
+                                sourcesIndex.appendGeometry(geo, idsource);
+                                ArrayList<Double> wj_spectrum = new ArrayList<>();
+                                wj_spectrum.ensureCapacity(db_field_ids.size());
+                                for (Integer idcol : db_field_ids) {
+                                    wj_spectrum
+                                            .add(DbaToW(rs.getDouble(idcol)));
+                                }
+                                wj_sources.add(wj_spectrum);
+                                sourceGeometries.add(geo);
+                                idsource++;
+                            }
+                        }
+                    }
+                }
+
+                // //////////////////////////////////////////////////////
+                // feed freeFieldFinder for fast intersection query
+                // optimization
+                // Fetch buildings in extendedEnvelope
+                String queryHeight = "";
+                if(!heightField.isEmpty()) {
+                    queryHeight = ", " + TableLocation.quoteIdentifier(heightField);
+                }
+                ArrayList<Geometry> buildingsGeometries = new ArrayList<>();
+                String buildingGeomName = SFSUtilities.getGeometryFields(connection,
+                        TableLocation.parse(buildingsTableName)).get(0);
+                try (PreparedStatement st = connection.prepareStatement(
+                        "SELECT " + TableLocation.quoteIdentifier(buildingGeomName) + queryHeight + " FROM " +
+                                buildingsTableName + " WHERE " +
+                                TableLocation.quoteIdentifier(buildingGeomName) + " && ?")) {
+                    st.setObject(1, geometryFactory.toGeometry(expandedCellEnvelop));
+                    try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
+                        while (rs.next()) {
+                            //if we don't have height of building
+                            Geometry building = rs.getGeometry();
+                            if(building != null) {
+                                buildingsGeometries.add(building);
+                                if (heightField.isEmpty()) {
+                                    mesh.addGeometry(building);
+                                } else {
+                                    mesh.addGeometry(building, rs.getDouble(heightField));
+                                }
+                            }
+                        }
+                    }
+                }
+                //if we have topographic points data
+                if(!demTable.isEmpty()) {
+                    String topoGeomName = SFSUtilities.getGeometryFields(connection,
+                            TableLocation.parse(demTable)).get(0);
+                    try (PreparedStatement st = connection.prepareStatement(
+                            "SELECT " + TableLocation.quoteIdentifier(topoGeomName) + queryHeight + " FROM " +
+                                    demTable + " WHERE " +
+                                    TableLocation.quoteIdentifier(topoGeomName) + " && ?")) {
+                        st.setObject(1, geometryFactory.toGeometry(expandedCellEnvelop));
+                        try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
+                            while (rs.next()) {
+                                Geometry pt = rs.getGeometry();
+                                if(pt != null) {
+                                    mesh.addTopographicPoint(pt.getCoordinate());
+                                }
+                            }
+                        }
+                    }
+                }
+                try {
+                    mesh.finishPolygonFeeding(expandedCellEnvelop);
+                } catch (LayerDelaunayError ex) {
+                    throw new SQLException(ex.getLocalizedMessage(), ex);
+                }
+                FastObstructionTest freeFieldFinder = new FastObstructionTest(mesh.getPolygonWithHeight(),
+                        mesh.getTriangles(), mesh.getTriNeighbors(), mesh.getVertices());
+
+                // Compute the first pass delaunay mesh
+                // The first pass doesn't take account of additional
+                // vertices of neighbor cells at the borders
+                // then, there are discontinuities in iso surfaces at each
+                // border of cell
+                MeshBuilder cellMesh = new MeshBuilder();
+                try {
+                    computeFirstPassDelaunay(cellMesh, mainEnvelope, cellI,
+                            cellJ, gridDim, gridDim, cellWidth, cellHeight,
+                            maximumPropagationDistance, buildingsGeometries, sourceGeometries, roadWidth,
+                            sourceDensification, maximumArea);
+                } catch (LayerDelaunayError err) {
+                    throw new SQLException(err.getLocalizedMessage(), err);
+                }                    // Make a structure to keep the following information
+                // Triangle list with 3 vertices(int), and 3 neighbor
+                // triangle ID
+                // Vertices list
+
+                // The evaluation of sound level must be done where the
+                // following vertices are
+                List<Coordinate> vertices = cellMesh.getVertices();
+                List<Triangle> triangles = new ArrayList<>();
+                for(Triangle triangle : cellMesh.getTriangles()) {
+                    if(triangle.getBuidlingID() == 0) {
+                        triangles.add(triangle);
+                    }
+                }
+                nbreceivers += vertices.size();
+
+
+                // Fetch soil areas
+                List<GeoWithSoilType> geoWithSoil = new ArrayList<>();
+                if(!soilTableName.isEmpty()){
+                    String soilGeomName = SFSUtilities.getGeometryFields(connection,
+                            TableLocation.parse(soilTableName)).get(0);
+                    try (PreparedStatement st = connection.prepareStatement(
+                            "SELECT " + TableLocation.quoteIdentifier(soilGeomName) + queryHeight + " FROM " +
+                                    soilTableName + " WHERE " +
+                                    TableLocation.quoteIdentifier(soilGeomName) + " && ?")) {
+                        st.setObject(1, geometryFactory.toGeometry(expandedCellEnvelop));
+                        try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
+                            while (rs.next()) {
+                                Geometry poly = rs.getGeometry();
+                                if(poly != null) {
+                                    geoWithSoil.add(new GeoWithSoilType(poly, rs.getDouble("G")));
+                                }
+                            }
+                        }
+                    }
+                }
+                if(geoWithSoil.isEmpty()){
+                    geoWithSoil = null;
+                }
+                PropagationProcessData threadData = new PropagationProcessData(
+                        vertices, null, triangles, freeFieldFinder, sourcesIndex,
+                        sourceGeometries, wj_sources, db_field_freq,
+                        soundReflectionOrder, soundDiffractionOrder, maximumPropagationDistance, maximumReflectionDistance,
+                        roadWidth, wallAbsorption, ij,
+                        progression.subProcess(vertices.size()), geoWithSoil);
+                PropagationProcess propaProcess = new PropagationProcess(
+                                threadData, threadDataOut);
+                if (doMultiThreading) {
+                    logger.info("Wait for free Thread to begin propagation of cell "
+                            + (cellI + 1)
+                            + ","
+                            + (cellJ + 1)
+                            + " of the "
+                            + gridDim
+                            + "x" + gridDim + "  grid..");
+                    while (!threadManager.hasAvaibleQueueSlot()) {
+                        try {
+                            Thread.sleep(100);
+                        } catch (InterruptedException ex) {
+                            throw new SQLException(ex.getLocalizedMessage(), ex);
+                        }
+                    }
+                    threadManager.execute(propaProcess);
+                } else {
+                    propaProcess.run();
+                }
+            }
+        }
     }
 
     public void setDestinationTable(String destinationTable) {
         this.destinationTable = destinationTable;
     }
 
-    public void setBuildings(String buildings) {
-        this.buildings = buildings;
+    public void setBuildingsTableName(String buildingsTableName) {
+        this.buildingsTableName = buildingsTableName;
     }
 
-    public void setSources(String sources) {
-        this.sources = sources;
+    public void setSourcesTableName(String sourcesTableName) {
+        this.sourcesTableName = sourcesTableName;
     }
 
     public void setSound_lvl_field(String sound_lvl_field) {
         this.sound_lvl_field = sound_lvl_field;
     }
 
-    public void setMaximum_propagation_distance(double maximum_propagation_distance) {
-        this.maximum_propagation_distance = maximum_propagation_distance;
+    public void setMaximumPropagationDistance(double maximumPropagationDistance) {
+        this.maximumPropagationDistance = maximumPropagationDistance;
     }
 
-    public void setMaximum_reflection_distance(double maximum_reflection_distance) {
-        this.maximum_reflection_distance = maximum_reflection_distance;
+    public void setMaximumReflectionDistance(double maximumReflectionDistance) {
+        this.maximumReflectionDistance = maximumReflectionDistance;
     }
 
-    public void setSubdivision_level(int subdivision_level) {
-        this.subdivision_level = subdivision_level;
+    public void setSubdivisionLevel(int subdivisionLevel) {
+        this.subdivisionLevel = subdivisionLevel;
     }
 
-    public void setSound_reflection_order(int sound_reflection_order) {
-        this.sound_reflection_order = sound_reflection_order;
+    public void setSoundReflectionOrder(int soundReflectionOrder) {
+        this.soundReflectionOrder = soundReflectionOrder;
     }
 
-    public void setSound_diffraction_order(int sound_diffraction_order) {
-        this.sound_diffraction_order = sound_diffraction_order;
+    public void setSoundDiffractionOrder(int soundDiffractionOrder) {
+        this.soundDiffractionOrder = soundDiffractionOrder;
     }
 
-    public void setWall_absorption(double wall_absorption) {
-        this.wall_absorption = wall_absorption;
+    public void setWallAbsorption(double wallAbsorption) {
+        this.wallAbsorption = wallAbsorption;
     }
 }

@@ -35,6 +35,7 @@ package org.orbisgis.noisemap.core;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
+import org.h2gis.h2spatialapi.ProgressVisitor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -76,7 +77,7 @@ public class PropagationProcessData {
     /** cellId only used in output data */
     public int cellId;
     /** Progression information */
-    public ProgressionProcess cellProg;
+    public ProgressVisitor cellProg;
     /** list Geometry of soil and the type of this soil */
     public List<GeoWithSoilType> geoWithSoilType;
 
@@ -84,7 +85,7 @@ public class PropagationProcessData {
                                   FastObstructionTest freeFieldFinder, QueryGeometryStructure sourcesIndex,
                                   List<Geometry> sourceGeometries, List<ArrayList<Double>> wj_sources,
                                   List<Integer> freq_lvl, int reflexionOrder, int diffractionOrder, double maxSrcDist,
-                                  double maxRefDist, double minRecDist, double wallAlpha, int cellId, ProgressionProcess cellProg,
+                                  double maxRefDist, double minRecDist, double wallAlpha, int cellId, ProgressVisitor cellProg,
                                   List<GeoWithSoilType> geoWithSoilType) {
         this.vertices = vertices;
         this.receiverRowId = receiverRowId;
