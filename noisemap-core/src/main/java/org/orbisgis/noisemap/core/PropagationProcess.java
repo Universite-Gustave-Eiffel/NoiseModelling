@@ -51,6 +51,7 @@ import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.index.quadtree.Quadtree;
 import com.vividsolutions.jts.index.strtree.STRtree;
+import org.h2gis.h2spatialapi.ProgressVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1135,7 +1136,7 @@ public class PropagationProcess implements Runnable {
 
             // For each vertices, find sources where the distance is within
             // maxSrcDist meters
-            ProgressionProcess propaProcessProgression = data.cellProg;
+            ProgressVisitor propaProcessProgression = data.cellProg;
             int idReceiver = 0;
             long min_compute_time = Long.MAX_VALUE;
             long max_compute_time = 0;
@@ -1143,7 +1144,7 @@ public class PropagationProcess implements Runnable {
             for (Coordinate receiverCoord : data.vertices) {
                 long debReceiverTime = System.nanoTime();
 
-                propaProcessProgression.nextSubProcessEnd();
+                propaProcessProgression.endStep();
                 double energeticSum[] = new double[data.freq_lvl.size()];
                 for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
                     energeticSum[idfreq] = 0.0;
