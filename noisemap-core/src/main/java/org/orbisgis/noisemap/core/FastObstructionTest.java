@@ -334,7 +334,7 @@ public class FastObstructionTest {
         boolean intersectionPointOnBuilding = false;//check if the intersection point is On the building
         double nextTriHeight = 0.;
 
-        if (this.triVertices.get(BuildingNextTriID).getBuidlingID() > 0) {
+        if (BuildingNextTriID >= 0 && this.triVertices.get(BuildingNextTriID).getBuidlingID() > 0) {
             nextTriHeight = this.polygonWithHeight.get(this.triVertices.get(BuildingNextTriID).getBuidlingID() - 1).getHeight();
         }
 
