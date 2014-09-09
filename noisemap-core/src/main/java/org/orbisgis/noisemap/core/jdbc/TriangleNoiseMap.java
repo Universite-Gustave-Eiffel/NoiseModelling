@@ -21,9 +21,7 @@ import org.h2gis.utilities.TableLocation;
 import org.jdelaunay.delaunay.evaluator.TriangleQuality;
 import org.orbisgis.noisemap.core.FastObstructionTest;
 import org.orbisgis.noisemap.core.GeoWithSoilType;
-import org.orbisgis.noisemap.core.LayerDelaunay;
 import org.orbisgis.noisemap.core.LayerDelaunayError;
-import org.orbisgis.noisemap.core.LayerJDelaunay;
 import org.orbisgis.noisemap.core.MeshBuilder;
 import org.orbisgis.noisemap.core.PropagationProcess;
 import org.orbisgis.noisemap.core.PropagationProcessData;
@@ -97,7 +95,7 @@ public class TriangleNoiseMap {
     }
 
     private void explodeAndAddPolygon(Geometry intersectedGeometry,
-                                      LayerDelaunay delaunayTool)
+                                      MeshBuilder delaunayTool)
             throws LayerDelaunayError {
         if (intersectedGeometry instanceof GeometryCollection) {
             for (int j = 0; j < intersectedGeometry.getNumGeometries(); j++) {
@@ -105,13 +103,7 @@ public class TriangleNoiseMap {
                 explodeAndAddPolygon(subGeom, delaunayTool);
             }
         } else {
-            if(intersectedGeometry instanceof Polygon) {
-                delaunayTool.addPolygon((Polygon) intersectedGeometry, true);
-            } else if(intersectedGeometry instanceof LineString) {
-                delaunayTool.addLineString((LineString) intersectedGeometry);
-
-            }
-
+            delaunayTool.addGeometry(intersectedGeometry);
         }
     }
 
@@ -146,8 +138,8 @@ public class TriangleNoiseMap {
                 mainEnvelope.getMinY() + cellHeight * cellJ + cellHeight);
     }
 
-    private void feedDelaunay(Collection<Geometry> buildings, LayerDelaunay delaunayTool, Envelope boundingBoxFilter,
-                              double srcDistance, LinkedList<Geometry> delaunaySegments, double minRecDist,
+    private void feedDelaunay(Collection<Geometry> buildings, MeshBuilder delaunayTool, Envelope boundingBoxFilter,
+                              double srcDistance, LinkedList<LineString> delaunaySegments, double minRecDist,
                               double srcPtDist, double triangleSide) throws LayerDelaunayError {
         Envelope extendedEnvelope = new Envelope(boundingBoxFilter);
         extendedEnvelope.expandBy(srcDistance * 2.);
@@ -209,7 +201,7 @@ public class TriangleNoiseMap {
     /**
      * Delaunay triangulation of Sub-Domain
      *
-     * @param delaunay Final mesh target
+     * @param cellMesh Final mesh target
      * @param mainEnvelope Global envelope
      * @param cellI I cell index
      * @param cellJ J cell index
@@ -223,7 +215,7 @@ public class TriangleNoiseMap {
      * @param maximumArea Maximum area of triangles
      * @throws LayerDelaunayError
      */
-    public void computeFirstPassDelaunay(LayerJDelaunay delaunay,
+    public void computeFirstPassDelaunay(MeshBuilder cellMesh,
                                          Envelope mainEnvelope, int cellI, int cellJ, int cellIMax,
                                          int cellJMax, double cellWidth, double cellHeight,
                                          double maxSrcDist, Collection<Geometry> buildings,
@@ -243,16 +235,24 @@ public class TriangleNoiseMap {
 
         // /////////////////////////////////////////////////
         // Add roads into delaunay tool
-        LinkedList<Geometry> delaunaySegments = new LinkedList<>();
+        LinkedList<LineString> delaunaySegments = new LinkedList<>();
         if (minRecDist > 0.1) {
-            for (Geometry srcGeometry : sources) {
-                Envelope ptEnv = srcGeometry.getEnvelopeInternal();
+            for (Geometry pt : sources) {
+                Envelope ptEnv = pt.getEnvelopeInternal();
                 if (ptEnv.intersects(expandedCellEnvelop)) {
-                    if (srcGeometry instanceof Point) {
+                    if (pt instanceof Point) {
                         // Add square in rendering
-                        delaunaySegments.add(cellEnvelopeGeometry.intersection(srcGeometry.buffer(minRecDist, BufferParameters.CAP_SQUARE)));
+                        cellMesh.addGeometry(cellEnvelopeGeometry.intersection(pt.buffer(minRecDist, BufferParameters.CAP_SQUARE)));
                     } else {
-                        delaunaySegments.add(srcGeometry);
+                        if (pt instanceof LineString) {
+                            delaunaySegments.add((LineString) (pt));
+                        } else if (pt instanceof MultiLineString) {
+                            int nbLineString = pt.getNumGeometries();
+                            for (int idLineString = 0; idLineString < nbLineString; idLineString++) {
+                                delaunaySegments.add((LineString) (pt
+                                        .getGeometryN(idLineString)));
+                            }
+                        }
                     }
                 }
             }
@@ -260,18 +260,18 @@ public class TriangleNoiseMap {
 
         // Compute equilateral triangle side from Area
         double triangleSide = (2*Math.pow(maximumArea, 0.5)) / Math.pow(3, 0.25);
-        feedDelaunay(buildings, delaunay, cellEnvelope, maxSrcDist, delaunaySegments,
+        feedDelaunay(buildings, cellMesh, cellEnvelope, maxSrcDist, delaunaySegments,
                 minRecDist, srcPtDist, triangleSide);
 
         // Process delaunay
         logger.info("Begin delaunay");
+        cellMesh.setComputeNeighbors(false);
         if (maximumArea > 1) {
-            Polygon densifiedEnvelope = (Polygon)Densifier.densify(new GeometryFactory().toGeometry(cellEnvelope), triangleSide);
-            delaunay.addPolygon(densifiedEnvelope, false);
-            delaunay.processDelaunay(0.1, new TriangleQuality());
+            cellMesh.setInsertionEvaluator(new TriangleQuality());
+            Geometry densifiedEnvelope = Densifier.densify(new GeometryFactory().toGeometry(cellEnvelope), triangleSide);
+            cellMesh.finishPolygonFeeding(densifiedEnvelope);
         } else {
-            delaunay.addPolygon((Polygon)new GeometryFactory().toGeometry(cellEnvelope), false);
-            delaunay.processDelaunay();
+            cellMesh.finishPolygonFeeding(cellEnvelope);
         }
     }
 
@@ -394,9 +394,9 @@ public class TriangleNoiseMap {
         // vertices of neighbor cells at the borders
         // then, there are discontinuities in iso surfaces at each
         // border of cell
-        LayerJDelaunay delaunay = new LayerJDelaunay();
+        MeshBuilder cellMesh = new MeshBuilder();
         try {
-            computeFirstPassDelaunay(delaunay, mainEnvelope, cellI,
+            computeFirstPassDelaunay(cellMesh, mainEnvelope, cellI,
                     cellJ, gridDim, gridDim, cellWidth, cellHeight,
                     maximumPropagationDistance, buildingsGeometries, sourceGeometries, roadWidth,
                     sourceDensification, maximumArea);
@@ -409,17 +409,12 @@ public class TriangleNoiseMap {
 
         // The evaluation of sound level must be done where the
         // following vertices are
-        List<Coordinate> vertices;
-        List<Triangle> triangles;
-        try {
-            vertices = delaunay.getVertices();
-        } catch (LayerDelaunayError err) {
-            throw new SQLException(err.getLocalizedMessage(), err);
-        }
-        try {
-            triangles = delaunay.getTriangles();
-        } catch (LayerDelaunayError err) {
-            throw new SQLException(err.getLocalizedMessage(), err);
+        List<Coordinate> vertices = cellMesh.getVertices();
+        List<Triangle> triangles = new ArrayList<>();
+        for(Triangle triangle : cellMesh.getTriangles()) {
+            if(triangle.getBuidlingID() == 0) {
+                triangles.add(triangle);
+            }
         }
         nbreceivers += vertices.size();
 
