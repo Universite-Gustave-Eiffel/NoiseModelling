@@ -43,7 +43,6 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Stack;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Create noise map using JDBC connection. SQL syntax is compatible with H2 and PostGIS.
@@ -51,6 +50,9 @@ import java.util.concurrent.TimeUnit;
  * @author SU Qi
  */
 public class TriangleNoiseMap {
+    // When computing cell size, try to keep propagation distance away from the cell
+    // inferior to this ratio (in comparison with cell width)
+    private static final double MINIMAL_BUFFER_RATIO = 0.3;
     private String destinationTable = "";
     private String buildingsTableName = "";
     private String sourcesTableName = "";
@@ -78,6 +80,7 @@ public class TriangleNoiseMap {
     private List<Integer> db_field_ids = new ArrayList<>();
     private List<Integer> db_field_freq = new ArrayList<>();
     private long nbreceivers = 0;
+
 
     /**
      *
@@ -306,8 +309,8 @@ public class TriangleNoiseMap {
         int idsource = 0;
         TableLocation sourceTableIdentifier = TableLocation.parse(sourcesTableName);
         String sourceGeomName = SFSUtilities.getGeometryFields(connection, sourceTableIdentifier).get(0);
-        try (PreparedStatement st = connection.prepareStatement("SELECT " + TableLocation.quoteIdentifier(sourceGeomName) +
-                " FROM " + sourcesTableName + " WHERE " + TableLocation.quoteIdentifier(sourceGeomName) + " && ?")) {
+        try (PreparedStatement st = connection.prepareStatement("SELECT * FROM " + sourcesTableName + " WHERE "
+                + TableLocation.quoteIdentifier(sourceGeomName) + " && ?")) {
             st.setObject(1, geometryFactory.toGeometry(expandedCellEnvelop));
             try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
                 while (rs.next()) {
@@ -488,7 +491,12 @@ public class TriangleNoiseMap {
         // 1 Step - Evaluation of the main bounding box (sources)
         mainEnvelope = SFSUtilities.getTableEnvelope(connection, TableLocation.parse(sourcesTableName), "");
         // Split domain into 4^subdiv cells
-
+        // Compute subdivision level using envelope and maximum propagation distance
+        double greatestSideLength = mainEnvelope.maxExtent();
+        subdivisionLevel = 0;
+        while(maximumPropagationDistance / (greatestSideLength / Math.pow(2, subdivisionLevel)) < MINIMAL_BUFFER_RATIO) {
+            subdivisionLevel++;
+        }
         gridDim = (int) Math.pow(2, subdivisionLevel);
 
         // Initialization frequency declared in source Table
@@ -509,24 +517,6 @@ public class TriangleNoiseMap {
                         db_field_freq.add(0);
                     }
                 }
-            }
-        }
-        double cellWidth = mainEnvelope.getWidth() / gridDim;
-        double cellHeight = mainEnvelope.getHeight() / gridDim;
-
-        int nbcell = gridDim * gridDim;
-        if (nbcell == 1) {
-            doMultiThreading = false;
-        }
-
-        Runtime runtime = Runtime.getRuntime();
-        threadManager = new ThreadPool(
-                runtime.availableProcessors(),
-                runtime.availableProcessors() + 1, Long.MAX_VALUE,
-                TimeUnit.SECONDS);
-
-        for (int cellI = 0; cellI < gridDim; cellI++) {
-            for (int cellJ = 0; cellJ < gridDim; cellJ++) {
             }
         }
     }
