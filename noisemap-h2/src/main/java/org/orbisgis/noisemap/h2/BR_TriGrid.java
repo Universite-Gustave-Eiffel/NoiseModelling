@@ -39,6 +39,7 @@ import org.h2gis.h2spatialapi.ScalarFunction;
 import org.osgi.service.component.annotations.Component;
 
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
@@ -62,12 +63,43 @@ public class BR_TriGrid extends AbstractFunction implements ScalarFunction {
     public String getJavaStaticMethod() {
         return "noisePropagation";
     }
-
+    /*
     public static void noisePropagation(Connection connection, String destinationTable, String buildingsTable, String sourcesTable, String sourcesTableSoundFieldName,
                                         double maximumPropagationDistance , double maximumWallSeekingDistance,
                                         double cellWidth, double roadsWidth, double receiversDensification,
                                         double maximumAreaOfTriangle, int  soundReflectionOrder,
                                         double soundDiffractionOrder, double wallAlpha ) throws SQLException {
+        if(maximumPropagationDistance < maximumWallSeekingDistance) {
+            throw new SQLException(new IllegalArgumentException(
+                    "Maximum wall seeking distance cannot be superior than maximum propagation distance"));
+        }
+
+    }
+    */
+
+    /**
+     * Advantage of returning a result set is to cancel the statement
+     * @param connection
+     * @param buildingsTable
+     * @param sourcesTable
+     * @param sourcesTableSoundFieldName
+     * @param maximumPropagationDistance
+     * @param maximumWallSeekingDistance
+     * @param cellWidth
+     * @param roadsWidth
+     * @param receiversDensification
+     * @param maximumAreaOfTriangle
+     * @param soundReflectionOrder
+     * @param soundDiffractionOrder
+     * @param wallAlpha
+     * @return
+     * @throws SQLException
+     */
+    public static ResultSet noisePropagation(Connection connection, String buildingsTable, String sourcesTable, String sourcesTableSoundFieldName,
+                                             double maximumPropagationDistance , double maximumWallSeekingDistance,
+                                             double cellWidth, double roadsWidth, double receiversDensification,
+                                             double maximumAreaOfTriangle, int  soundReflectionOrder,
+                                             double soundDiffractionOrder, double wallAlpha ) throws SQLException {
         if(maximumPropagationDistance < maximumWallSeekingDistance) {
             throw new SQLException(new IllegalArgumentException(
                     "Maximum wall seeking distance cannot be superior than maximum propagation distance"));

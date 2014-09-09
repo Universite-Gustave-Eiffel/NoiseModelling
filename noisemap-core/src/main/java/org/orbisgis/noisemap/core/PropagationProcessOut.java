@@ -144,4 +144,12 @@ public class PropagationProcessOut {
 	public synchronized long getCellComputed() {
 		return cellComputed;
 	}
+
+    public Stack<PropagationResultTriRecord> getTriToDriver() {
+        return triToDriver;
+    }
+
+    public Stack<PropagationResultPtRecord> getPtToDriver() {
+        return ptToDriver;
+    }
 }

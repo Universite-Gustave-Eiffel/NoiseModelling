@@ -72,6 +72,24 @@ public class TriangleNoiseMap {
     private double roadWidth = 2;
     private double sourceDensification = 4;
     private double maximumArea = 75;
+    // Initialised attributes
+    private int gridDim = 0;
+    private Envelope mainEnvelope = new Envelope();
+    private List<Integer> db_field_ids = new ArrayList<>();
+    private List<Integer> db_field_freq = new ArrayList<>();
+    private long nbreceivers = 0;
+
+    /**
+     *
+     * @param destinationTable Where to write result
+     * @param buildingsTableName Buildings table
+     * @param sourcesTableName Source table name
+     */
+    public TriangleNoiseMap(String destinationTable, String buildingsTableName, String sourcesTableName) {
+        this.destinationTable = destinationTable;
+        this.buildingsTableName = buildingsTableName;
+        this.sourcesTableName = sourcesTableName;
+    }
 
     private void explodeAndAddPolygon(Geometry intersectedGeometry,
                                       MeshBuilder delaunayTool)
@@ -127,7 +145,7 @@ public class TriangleNoiseMap {
             return;
         }
         Polygon boundingBox = geometryFactory.createPolygon((LinearRing)linearRing);
-        LinkedList<Geometry> toUnite = new LinkedList<Geometry>();
+        LinkedList<Geometry> toUnite = new LinkedList<>();
         Envelope fetchBox = new Envelope(boundingBoxFilter);
         fetchBox.expandBy(BUILDING_BUFFER);
         Geometry fetchGeometry = geometryFactory.toGeometry(fetchBox);
@@ -258,9 +276,184 @@ public class TriangleNoiseMap {
     private static Double DbaToW(Double dBA) {
         return Math.pow(10., dBA / 10.);
     }
+
+    public Collection<PropagationResultTriRecord> evaluateCell(Connection connection,int cellI, int cellJ, ProgressVisitor progression) throws SQLException {
+        Stack<PropagationResultTriRecord> toDriver = new Stack<>();
+        PropagationProcessOut threadDataOut = new PropagationProcessOut(
+                toDriver, null);
+
+        MeshBuilder mesh = new MeshBuilder();
+        int ij = cellI * gridDim + cellJ;
+        logger.info("Begin processing of cell " + (cellI + 1) + ","
+                + (cellJ + 1) + " of the " + gridDim + "x" + gridDim
+                + "  grid..");
+
+        double cellWidth = mainEnvelope.getWidth() / gridDim;
+        double cellHeight = mainEnvelope.getHeight() / gridDim;
+        Envelope cellEnvelope = getCellEnv(mainEnvelope, cellI,
+                cellJ, gridDim, gridDim, cellWidth, cellHeight);
+
+
+        Envelope expandedCellEnvelop = new Envelope(cellEnvelope);
+        expandedCellEnvelop.expandBy(maximumPropagationDistance);
+        // //////////////////////////////////////////////////////
+        // Make source index for optimization
+        ArrayList<Geometry> sourceGeometries = new ArrayList<Geometry>();
+        ArrayList<ArrayList<Double>> wj_sources = new ArrayList<ArrayList<Double>>();
+        QueryGeometryStructure sourcesIndex = new QueryQuadTree();
+
+        // Fetch all source located in expandedCellEnvelop
+        int idsource = 0;
+        TableLocation sourceTableIdentifier = TableLocation.parse(sourcesTableName);
+        String sourceGeomName = SFSUtilities.getGeometryFields(connection, sourceTableIdentifier).get(0);
+        try (PreparedStatement st = connection.prepareStatement("SELECT " + TableLocation.quoteIdentifier(sourceGeomName) +
+                " FROM " + sourcesTableName + " WHERE " + TableLocation.quoteIdentifier(sourceGeomName) + " && ?")) {
+            st.setObject(1, geometryFactory.toGeometry(expandedCellEnvelop));
+            try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
+                while (rs.next()) {
+                    Geometry geo = rs.getGeometry();
+                    if (geo != null) {
+                        sourcesIndex.appendGeometry(geo, idsource);
+                        ArrayList<Double> wj_spectrum = new ArrayList<>();
+                        wj_spectrum.ensureCapacity(db_field_ids.size());
+                        for (Integer idcol : db_field_ids) {
+                            wj_spectrum
+                                    .add(DbaToW(rs.getDouble(idcol)));
+                        }
+                        wj_sources.add(wj_spectrum);
+                        sourceGeometries.add(geo);
+                        idsource++;
+                    }
+                }
+            }
+        }
+
+        // //////////////////////////////////////////////////////
+        // feed freeFieldFinder for fast intersection query
+        // optimization
+        // Fetch buildings in extendedEnvelope
+        String queryHeight = "";
+        if(!heightField.isEmpty()) {
+            queryHeight = ", " + TableLocation.quoteIdentifier(heightField);
+        }
+        ArrayList<Geometry> buildingsGeometries = new ArrayList<>();
+        String buildingGeomName = SFSUtilities.getGeometryFields(connection,
+                TableLocation.parse(buildingsTableName)).get(0);
+        try (PreparedStatement st = connection.prepareStatement(
+                "SELECT " + TableLocation.quoteIdentifier(buildingGeomName) + queryHeight + " FROM " +
+                        buildingsTableName + " WHERE " +
+                        TableLocation.quoteIdentifier(buildingGeomName) + " && ?")) {
+            st.setObject(1, geometryFactory.toGeometry(expandedCellEnvelop));
+            try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
+                while (rs.next()) {
+                    //if we don't have height of building
+                    Geometry building = rs.getGeometry();
+                    if(building != null) {
+                        buildingsGeometries.add(building);
+                        if (heightField.isEmpty()) {
+                            mesh.addGeometry(building);
+                        } else {
+                            mesh.addGeometry(building, rs.getDouble(heightField));
+                        }
+                    }
+                }
+            }
+        }
+        //if we have topographic points data
+        if(!demTable.isEmpty()) {
+            String topoGeomName = SFSUtilities.getGeometryFields(connection,
+                    TableLocation.parse(demTable)).get(0);
+            try (PreparedStatement st = connection.prepareStatement(
+                    "SELECT " + TableLocation.quoteIdentifier(topoGeomName) + queryHeight + " FROM " +
+                            demTable + " WHERE " +
+                            TableLocation.quoteIdentifier(topoGeomName) + " && ?")) {
+                st.setObject(1, geometryFactory.toGeometry(expandedCellEnvelop));
+                try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
+                    while (rs.next()) {
+                        Geometry pt = rs.getGeometry();
+                        if(pt != null) {
+                            mesh.addTopographicPoint(pt.getCoordinate());
+                        }
+                    }
+                }
+            }
+        }
+        try {
+            mesh.finishPolygonFeeding(expandedCellEnvelop);
+        } catch (LayerDelaunayError ex) {
+            throw new SQLException(ex.getLocalizedMessage(), ex);
+        }
+        FastObstructionTest freeFieldFinder = new FastObstructionTest(mesh.getPolygonWithHeight(),
+                mesh.getTriangles(), mesh.getTriNeighbors(), mesh.getVertices());
+
+        // Compute the first pass delaunay mesh
+        // The first pass doesn't take account of additional
+        // vertices of neighbor cells at the borders
+        // then, there are discontinuities in iso surfaces at each
+        // border of cell
+        MeshBuilder cellMesh = new MeshBuilder();
+        try {
+            computeFirstPassDelaunay(cellMesh, mainEnvelope, cellI,
+                    cellJ, gridDim, gridDim, cellWidth, cellHeight,
+                    maximumPropagationDistance, buildingsGeometries, sourceGeometries, roadWidth,
+                    sourceDensification, maximumArea);
+        } catch (LayerDelaunayError err) {
+            throw new SQLException(err.getLocalizedMessage(), err);
+        }                    // Make a structure to keep the following information
+        // Triangle list with 3 vertices(int), and 3 neighbor
+        // triangle ID
+        // Vertices list
+
+        // The evaluation of sound level must be done where the
+        // following vertices are
+        List<Coordinate> vertices = cellMesh.getVertices();
+        List<Triangle> triangles = new ArrayList<>();
+        for(Triangle triangle : cellMesh.getTriangles()) {
+            if(triangle.getBuidlingID() == 0) {
+                triangles.add(triangle);
+            }
+        }
+        nbreceivers += vertices.size();
+
+
+        // Fetch soil areas
+        List<GeoWithSoilType> geoWithSoil = new ArrayList<>();
+        if(!soilTableName.isEmpty()){
+            String soilGeomName = SFSUtilities.getGeometryFields(connection,
+                    TableLocation.parse(soilTableName)).get(0);
+            try (PreparedStatement st = connection.prepareStatement(
+                    "SELECT " + TableLocation.quoteIdentifier(soilGeomName) + queryHeight + " FROM " +
+                            soilTableName + " WHERE " +
+                            TableLocation.quoteIdentifier(soilGeomName) + " && ?")) {
+                st.setObject(1, geometryFactory.toGeometry(expandedCellEnvelop));
+                try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
+                    while (rs.next()) {
+                        Geometry poly = rs.getGeometry();
+                        if(poly != null) {
+                            geoWithSoil.add(new GeoWithSoilType(poly, rs.getDouble("G")));
+                        }
+                    }
+                }
+            }
+        }
+        if(geoWithSoil.isEmpty()){
+            geoWithSoil = null;
+        }
+        PropagationProcessData threadData = new PropagationProcessData(
+                vertices, null, triangles, freeFieldFinder, sourcesIndex,
+                sourceGeometries, wj_sources, db_field_freq,
+                soundReflectionOrder, soundDiffractionOrder, maximumPropagationDistance, maximumReflectionDistance,
+                roadWidth, wallAbsorption, ij,
+                progression.subProcess(vertices.size()), geoWithSoil);
+        PropagationProcess propaProcess = new PropagationProcess(
+                threadData, threadDataOut);
+        propaProcess.run();
+        return toDriver;
+    }
+
     /**
      *
-     * @param connection
+     * @param connection Active connection
      * @throws SQLException
      */
     public void execute(Connection connection, ProgressVisitor progression) throws SQLException {
@@ -292,28 +485,29 @@ public class TriangleNoiseMap {
         // if not then append the distance attenuated sound level to the
         // receiver
         // Save the triangle geometry with the db_m value of the 3 vertices
-        long nbreceivers = 0;
         // 1 Step - Evaluation of the main bounding box (sources)
-        Envelope mainEnvelope = SFSUtilities.getTableEnvelope(connection, TableLocation.parse(sourcesTableName), "");
+        mainEnvelope = SFSUtilities.getTableEnvelope(connection, TableLocation.parse(sourcesTableName), "");
         // Split domain into 4^subdiv cells
 
-        int gridDim = (int) Math.pow(2, subdivisionLevel);
+        gridDim = (int) Math.pow(2, subdivisionLevel);
 
         // Initialization frequency declared in source Table
-        ArrayList<Integer> db_field_ids = new ArrayList<>();
-        ArrayList<Integer> db_field_freq = new ArrayList<>();
+        db_field_ids = new ArrayList<>();
+        db_field_freq = new ArrayList<>();
         TableLocation sourceTableIdentifier = TableLocation.parse(sourcesTableName);
         try(ResultSet rs = connection.getMetaData().getColumns(sourceTableIdentifier.getCatalog(),
             sourceTableIdentifier.getSchema(), sourceTableIdentifier.getTable(), null)) {
-            String fieldName = rs.getString("COLUMN_NAME");
-            if (fieldName.startsWith(sound_lvl_field)) {
-                String sub = fieldName.substring(sound_lvl_field.length());
-                db_field_ids.add(rs.getInt("ORDINAL_POSITION"));
-                if (sub.length() > 0) {
-                    int freq = Integer.parseInt(sub);
-                    db_field_freq.add(freq);
-                } else {
-                    db_field_freq.add(0);
+            while(rs.next()) {
+                String fieldName = rs.getString("COLUMN_NAME");
+                if (fieldName.startsWith(sound_lvl_field)) {
+                    String sub = fieldName.substring(sound_lvl_field.length());
+                    db_field_ids.add(rs.getInt("ORDINAL_POSITION"));
+                    if (sub.length() > 0) {
+                        int freq = Integer.parseInt(sub);
+                        db_field_freq.add(freq);
+                    } else {
+                        db_field_freq.add(0);
+                    }
                 }
             }
         }
@@ -330,194 +524,9 @@ public class TriangleNoiseMap {
                 runtime.availableProcessors(),
                 runtime.availableProcessors() + 1, Long.MAX_VALUE,
                 TimeUnit.SECONDS);
-        Stack<PropagationResultTriRecord> toDriver = new Stack<PropagationResultTriRecord>();
-
-        PropagationProcessOut threadDataOut = new PropagationProcessOut(
-                toDriver, null);
 
         for (int cellI = 0; cellI < gridDim; cellI++) {
             for (int cellJ = 0; cellJ < gridDim; cellJ++) {
-                MeshBuilder mesh = new MeshBuilder();
-                int ij = cellI * gridDim + cellJ;
-                logger.info("Begin processing of cell " + (cellI + 1) + ","
-                        + (cellJ + 1) + " of the " + gridDim + "x" + gridDim
-                        + "  grid..");
-
-                Envelope cellEnvelope = getCellEnv(mainEnvelope, cellI,
-                        cellJ, gridDim, gridDim, cellWidth, cellHeight);
-
-
-                Envelope expandedCellEnvelop = new Envelope(cellEnvelope);
-                expandedCellEnvelop.expandBy(maximumPropagationDistance);
-                // //////////////////////////////////////////////////////
-                // Make source index for optimization
-                ArrayList<Geometry> sourceGeometries = new ArrayList<Geometry>();
-                ArrayList<ArrayList<Double>> wj_sources = new ArrayList<ArrayList<Double>>();
-                QueryGeometryStructure sourcesIndex = new QueryQuadTree();
-
-                // Fetch all source located in expandedCellEnvelop
-                int idsource = 0;
-                String sourceGeomName = SFSUtilities.getGeometryFields(connection, sourceTableIdentifier).get(0);
-                try (PreparedStatement st = connection.prepareStatement("SELECT " + TableLocation.quoteIdentifier(sourceGeomName) +
-                        " FROM " + sourcesTableName + " WHERE " + TableLocation.quoteIdentifier(sourceGeomName) + " && ?")) {
-                    st.setObject(1, geometryFactory.toGeometry(expandedCellEnvelop));
-                    try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
-                        while (rs.next()) {
-                            Geometry geo = rs.getGeometry();
-                            if (geo != null) {
-                                sourcesIndex.appendGeometry(geo, idsource);
-                                ArrayList<Double> wj_spectrum = new ArrayList<>();
-                                wj_spectrum.ensureCapacity(db_field_ids.size());
-                                for (Integer idcol : db_field_ids) {
-                                    wj_spectrum
-                                            .add(DbaToW(rs.getDouble(idcol)));
-                                }
-                                wj_sources.add(wj_spectrum);
-                                sourceGeometries.add(geo);
-                                idsource++;
-                            }
-                        }
-                    }
-                }
-
-                // //////////////////////////////////////////////////////
-                // feed freeFieldFinder for fast intersection query
-                // optimization
-                // Fetch buildings in extendedEnvelope
-                String queryHeight = "";
-                if(!heightField.isEmpty()) {
-                    queryHeight = ", " + TableLocation.quoteIdentifier(heightField);
-                }
-                ArrayList<Geometry> buildingsGeometries = new ArrayList<>();
-                String buildingGeomName = SFSUtilities.getGeometryFields(connection,
-                        TableLocation.parse(buildingsTableName)).get(0);
-                try (PreparedStatement st = connection.prepareStatement(
-                        "SELECT " + TableLocation.quoteIdentifier(buildingGeomName) + queryHeight + " FROM " +
-                                buildingsTableName + " WHERE " +
-                                TableLocation.quoteIdentifier(buildingGeomName) + " && ?")) {
-                    st.setObject(1, geometryFactory.toGeometry(expandedCellEnvelop));
-                    try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
-                        while (rs.next()) {
-                            //if we don't have height of building
-                            Geometry building = rs.getGeometry();
-                            if(building != null) {
-                                buildingsGeometries.add(building);
-                                if (heightField.isEmpty()) {
-                                    mesh.addGeometry(building);
-                                } else {
-                                    mesh.addGeometry(building, rs.getDouble(heightField));
-                                }
-                            }
-                        }
-                    }
-                }
-                //if we have topographic points data
-                if(!demTable.isEmpty()) {
-                    String topoGeomName = SFSUtilities.getGeometryFields(connection,
-                            TableLocation.parse(demTable)).get(0);
-                    try (PreparedStatement st = connection.prepareStatement(
-                            "SELECT " + TableLocation.quoteIdentifier(topoGeomName) + queryHeight + " FROM " +
-                                    demTable + " WHERE " +
-                                    TableLocation.quoteIdentifier(topoGeomName) + " && ?")) {
-                        st.setObject(1, geometryFactory.toGeometry(expandedCellEnvelop));
-                        try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
-                            while (rs.next()) {
-                                Geometry pt = rs.getGeometry();
-                                if(pt != null) {
-                                    mesh.addTopographicPoint(pt.getCoordinate());
-                                }
-                            }
-                        }
-                    }
-                }
-                try {
-                    mesh.finishPolygonFeeding(expandedCellEnvelop);
-                } catch (LayerDelaunayError ex) {
-                    throw new SQLException(ex.getLocalizedMessage(), ex);
-                }
-                FastObstructionTest freeFieldFinder = new FastObstructionTest(mesh.getPolygonWithHeight(),
-                        mesh.getTriangles(), mesh.getTriNeighbors(), mesh.getVertices());
-
-                // Compute the first pass delaunay mesh
-                // The first pass doesn't take account of additional
-                // vertices of neighbor cells at the borders
-                // then, there are discontinuities in iso surfaces at each
-                // border of cell
-                MeshBuilder cellMesh = new MeshBuilder();
-                try {
-                    computeFirstPassDelaunay(cellMesh, mainEnvelope, cellI,
-                            cellJ, gridDim, gridDim, cellWidth, cellHeight,
-                            maximumPropagationDistance, buildingsGeometries, sourceGeometries, roadWidth,
-                            sourceDensification, maximumArea);
-                } catch (LayerDelaunayError err) {
-                    throw new SQLException(err.getLocalizedMessage(), err);
-                }                    // Make a structure to keep the following information
-                // Triangle list with 3 vertices(int), and 3 neighbor
-                // triangle ID
-                // Vertices list
-
-                // The evaluation of sound level must be done where the
-                // following vertices are
-                List<Coordinate> vertices = cellMesh.getVertices();
-                List<Triangle> triangles = new ArrayList<>();
-                for(Triangle triangle : cellMesh.getTriangles()) {
-                    if(triangle.getBuidlingID() == 0) {
-                        triangles.add(triangle);
-                    }
-                }
-                nbreceivers += vertices.size();
-
-
-                // Fetch soil areas
-                List<GeoWithSoilType> geoWithSoil = new ArrayList<>();
-                if(!soilTableName.isEmpty()){
-                    String soilGeomName = SFSUtilities.getGeometryFields(connection,
-                            TableLocation.parse(soilTableName)).get(0);
-                    try (PreparedStatement st = connection.prepareStatement(
-                            "SELECT " + TableLocation.quoteIdentifier(soilGeomName) + queryHeight + " FROM " +
-                                    soilTableName + " WHERE " +
-                                    TableLocation.quoteIdentifier(soilGeomName) + " && ?")) {
-                        st.setObject(1, geometryFactory.toGeometry(expandedCellEnvelop));
-                        try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
-                            while (rs.next()) {
-                                Geometry poly = rs.getGeometry();
-                                if(poly != null) {
-                                    geoWithSoil.add(new GeoWithSoilType(poly, rs.getDouble("G")));
-                                }
-                            }
-                        }
-                    }
-                }
-                if(geoWithSoil.isEmpty()){
-                    geoWithSoil = null;
-                }
-                PropagationProcessData threadData = new PropagationProcessData(
-                        vertices, null, triangles, freeFieldFinder, sourcesIndex,
-                        sourceGeometries, wj_sources, db_field_freq,
-                        soundReflectionOrder, soundDiffractionOrder, maximumPropagationDistance, maximumReflectionDistance,
-                        roadWidth, wallAbsorption, ij,
-                        progression.subProcess(vertices.size()), geoWithSoil);
-                PropagationProcess propaProcess = new PropagationProcess(
-                                threadData, threadDataOut);
-                if (doMultiThreading) {
-                    logger.info("Wait for free Thread to begin propagation of cell "
-                            + (cellI + 1)
-                            + ","
-                            + (cellJ + 1)
-                            + " of the "
-                            + gridDim
-                            + "x" + gridDim + "  grid..");
-                    while (!threadManager.hasAvaibleQueueSlot()) {
-                        try {
-                            Thread.sleep(100);
-                        } catch (InterruptedException ex) {
-                            throw new SQLException(ex.getLocalizedMessage(), ex);
-                        }
-                    }
-                    threadManager.execute(propaProcess);
-                } else {
-                    propaProcess.run();
-                }
             }
         }
     }

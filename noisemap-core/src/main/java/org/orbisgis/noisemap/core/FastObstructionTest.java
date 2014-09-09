@@ -69,14 +69,9 @@ public class FastObstructionTest {
     private List<MeshBuilder.PolygonWithHeight> polygonWithHeight = new ArrayList<MeshBuilder.PolygonWithHeight>();//list polygon with height
 
     private QueryGeometryStructure triIndex = null; //TODO remove
-    private int lastFountPointTriTest = 0;
     private List<Float> verticesOpenAngle = null;
     private List<Coordinate> verticesOpenAngleTranslated = null; /*Open angle*/
     private boolean hasBuildingWithHeight;
-    //private LinkedList<Integer> BuildingTriangleIndex= new LinkedList<Integer>(); /* the buildings list between source and receiver. Reconstruction after get a new source-receiver */
-    //private LinkedList<Coordinate> intersections= new LinkedList<Coordinate>();/* the intersection of the segment source-receiver and building's side. Reconstruction after get a new source-receiver */
-
-
     //data for calculate 3D diffraction,
     //first Coordinate is the coordinate after the changing coordinate system, the second parameter will keep the data of original coordinate system
 
@@ -436,19 +431,12 @@ public class FastObstructionTest {
      */
 
     private int getTriangleIdByCoordinate(Coordinate pt) {
-        // Shortcut, test if the last found triangle contain this point, if not
-        // use the quadtree
-        Coordinate[] trit = getTriangle(lastFountPointTriTest);
-        if (dotInTri(pt, trit[0], trit[1], trit[2])) {
-            return lastFountPointTriTest;
-        }
         Envelope ptEnv = new Envelope(pt);
         Iterator<Integer> res = triIndex.query(new Envelope(ptEnv));
         while (res.hasNext()) {
             int triId = res.next();
             Coordinate[] tri = getTriangle(triId);
             if (dotInTri(pt, tri[0], tri[1], tri[2])) {
-                lastFountPointTriTest = triId;
                 return triId;
             }
         }
@@ -468,7 +456,7 @@ public class FastObstructionTest {
     public static void updateMinMax(int vertexId, Coordinate vertexCoordinate,
                                     Coordinate left, Coordinate right,
                                     ArrayList<ArrayList<Double>> verticesAngle) {
-        ArrayList<Double> curVertex = verticesAngle.get(vertexId);
+        List<Double> curVertex = verticesAngle.get(vertexId);
         Coordinate refPosition = new Coordinate(vertexCoordinate.x + 1,
                 vertexCoordinate.y);
         double ccw1 = (float) Angle.angleBetweenOriented(refPosition,
