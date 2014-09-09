@@ -173,7 +173,9 @@ public class MeshBuilder {
             this.geometriesBoundingBox.expandToInclude(obstructionPoly.getEnvelopeInternal());
         }
         //no height defined, set it to Max value
-        polygonWithHeight.add(new PolygonWithHeight(obstructionPoly));
+        PolygonWithHeight polheight = new PolygonWithHeight(obstructionPoly);
+        polygonWithHeight.add(polheight);
+        buildingWithID.put(buildingWithID.size(), polheight);
     }
 
 

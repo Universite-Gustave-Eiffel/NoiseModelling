@@ -68,7 +68,7 @@ public class TriangleNoiseMap {
     private double wallAbsorption = 0.05;
     private final static double BUILDING_BUFFER = 0.5;
     private Logger logger = LoggerFactory.getLogger(TriangleNoiseMap.class);
-    private static final String heightField = "";
+    private String heightField = "";
     private GeometryFactory geometryFactory = new GeometryFactory();
     private boolean doMultiThreading = true;
     private double roadWidth = 2;
@@ -144,10 +144,10 @@ public class TriangleNoiseMap {
         Envelope extendedEnvelope = new Envelope(boundingBoxFilter);
         extendedEnvelope.expandBy(srcDistance * 2.);
         Geometry linearRing = geometryFactory.toGeometry(boundingBoxFilter);
-        if (!(linearRing instanceof LinearRing)) {
+        if (!(linearRing instanceof Polygon)) {
             return;
         }
-        Polygon boundingBox = geometryFactory.createPolygon((LinearRing)linearRing);
+        Polygon boundingBox = (Polygon)linearRing;
         LinkedList<Geometry> toUnite = new LinkedList<>();
         Envelope fetchBox = new Envelope(boundingBoxFilter);
         fetchBox.expandBy(BUILDING_BUFFER);
@@ -559,5 +559,13 @@ public class TriangleNoiseMap {
 
     public void setWallAbsorption(double wallAbsorption) {
         this.wallAbsorption = wallAbsorption;
+    }
+
+    public void setHeightField(String heightField) {
+        this.heightField = heightField;
+    }
+
+    public void setMaximumArea(double maximumArea) {
+        this.maximumArea = maximumArea;
     }
 }
