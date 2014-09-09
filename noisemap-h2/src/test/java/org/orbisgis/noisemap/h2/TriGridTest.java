@@ -108,6 +108,6 @@ public class TriGridTest {
                 "BR_SpectrumRepartition(4000,1,db_m) as db_m4000,\n" +
                 "BR_SpectrumRepartition(5000,1,db_m) as db_m5000 from roads_src_global;");
         // Compute noise map
-        st.execute("CALL BR_TRIGRID('trilvl', 'buildings', 'road_src', 'DB_M', 50, 50,1000,4,1,100,0,0,0.2)");
+        st.execute("CREATE TABLE TEST AS SELECT * FROM BR_TRIGRID('buildings', 'road_src', 'DB_M', 50, 50,1000,4,1,100,0,0,0.2)");
     }
 }

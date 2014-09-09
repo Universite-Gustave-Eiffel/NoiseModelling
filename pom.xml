@@ -19,6 +19,7 @@
     </licenses>
     <properties>
         <jts-version>1.13</jts-version>
+        <h2-version>1.3.176</h2-version>
     </properties>
     <modules>
         <module>noisemap-core</module>

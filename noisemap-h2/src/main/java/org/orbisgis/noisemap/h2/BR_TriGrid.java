@@ -33,6 +33,7 @@
  */
 package org.orbisgis.noisemap.h2;
 
+import org.h2.tools.SimpleResultSet;
 import org.h2gis.h2spatialapi.AbstractFunction;
 import org.h2gis.h2spatialapi.Function;
 import org.h2gis.h2spatialapi.ScalarFunction;
@@ -104,6 +105,6 @@ public class BR_TriGrid extends AbstractFunction implements ScalarFunction {
             throw new SQLException(new IllegalArgumentException(
                     "Maximum wall seeking distance cannot be superior than maximum propagation distance"));
         }
-
+        return new SimpleResultSet();
     }
 }
