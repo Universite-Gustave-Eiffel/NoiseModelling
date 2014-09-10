@@ -62,7 +62,7 @@ public class TriangleNoiseMap {
     private String demTable = "";
     private String sound_lvl_field = "DB_M";
     private double maximumPropagationDistance = 750;
-    private double maximumReflectionDistance = 50;
+    private double maximumReflectionDistance = 400;
     private int subdivisionLevel = -1; // TODO Guess it from maximumPropagationDistance and source extent
     private int soundReflectionOrder = 2;
     private int soundDiffractionOrder = 1;
@@ -269,7 +269,7 @@ public class TriangleNoiseMap {
         cellMesh.setComputeNeighbors(false);
         if (maximumArea > 1) {
             cellMesh.setMaximumArea(maximumArea);
-            cellMesh.setInsertionEvaluator(new TriangleConstraint());
+            cellMesh.setInsertionEvaluator(new TriangleConstraint(maximumArea));
             Geometry densifiedEnvelope = Densifier.densify(new GeometryFactory().toGeometry(cellEnvelope), triangleSide);
             cellMesh.finishPolygonFeeding(densifiedEnvelope);
         } else {
@@ -412,6 +412,7 @@ public class TriangleNoiseMap {
         // The evaluation of sound level must be done where the
         // following vertices are
         List<Coordinate> vertices = cellMesh.getVertices();
+        // TODO use topographic data to define Z of receivers (offset defined by user default to )
         List<Triangle> triangles = new ArrayList<>();
         for(Triangle triangle : cellMesh.getTriangles()) {
             if(triangle.getBuidlingID() == 0) {

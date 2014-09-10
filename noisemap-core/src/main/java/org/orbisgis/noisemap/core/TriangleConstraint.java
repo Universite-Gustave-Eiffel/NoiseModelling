@@ -61,9 +61,12 @@ public class TriangleConstraint extends TriangleQuality {
 
     @Override
     public boolean evaluate(DTriangle dTriangle) {
-        if(super.evaluate (dTriangle) && maxArea != 0) {
+        if(super.evaluate (dTriangle)) {
             return true;
         } else {
+            if(maxArea == 0) {
+                return false;
+            }
             // Check area
             try {
                 Element explodedTriangle = dTriangle.getCircumCenterContainer();
