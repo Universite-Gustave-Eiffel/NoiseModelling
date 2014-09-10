@@ -251,28 +251,26 @@ public class LayerJDelaunay implements LayerDelaunay {
                     double triangleSide = (2*Math.pow(maximumArea, 0.5)) / Math.pow(3, 0.25);
                     List<PointTriangleTuple> pointToInsert = new ArrayList<>((int) (delaunayTool.getBoundingBox().maxExtent() / triangleSide));
                     for(DTriangle triangle : delaunayTool.getTriangleList()) {
-                        if(triangle.getArea() > maximumArea) {
-                            // Insert one or more point inside the triangle
-                            Envelope env = new Envelope(triangle.getPoint(0).getCoordinate());
-                            env.expandToInclude(triangle.getPoint(1).getCoordinate());
-                            env.expandToInclude(triangle.getPoint(2).getCoordinate());
-                            int ptCountX = Math.max(2, (int) Math.ceil((env.getMaxX() - env.getMinX()) / triangleSide));
-                            int ptCountY = Math.max(2, (int) Math.ceil((env.getMaxY() - env.getMinY()) / triangleSide));
-                            for(int ptXId = -1; ptXId < ptCountX; ptXId++) {
-                                for(int ptYId = -1; ptYId < ptCountY; ptYId++) {
-                                    DPoint insertPt = new DPoint(
-                                            ptXId * triangleSide + (env.getMinX() - env.getMinX() % triangleSide),
-                                            ptYId * triangleSide + (env.getMinY() - env.getMinY() % triangleSide)
-                                            ,0);
-                                    // Offset Y to make diamonds
-                                    if((insertPt.getX() / triangleSide) % 2 != 0) {
-                                        insertPt.setY(insertPt.getY() + (triangleSide / 2.));
-                                    }
-                                    triangle.interpolateZ(insertPt);
-                                    insertPt.setProperty((triangle).getPoint(0).getProperty());
-                                    if(triangle.isInside(insertPt)) {
-                                        pointToInsert.add(new PointTriangleTuple(triangle, insertPt));
-                                    }
+                        // Insert one or more point inside the triangle
+                        Envelope env = new Envelope(triangle.getPoint(0).getCoordinate());
+                        env.expandToInclude(triangle.getPoint(1).getCoordinate());
+                        env.expandToInclude(triangle.getPoint(2).getCoordinate());
+                        int ptCountX = Math.max(2, (int) Math.ceil((env.getMaxX() - env.getMinX()) / triangleSide));
+                        int ptCountY = Math.max(2, (int) Math.ceil((env.getMaxY() - env.getMinY()) / triangleSide));
+                        for(int ptXId = -1; ptXId < ptCountX; ptXId++) {
+                            for(int ptYId = -1; ptYId < ptCountY; ptYId++) {
+                                DPoint insertPt = new DPoint(
+                                        ptXId * triangleSide + (env.getMinX() - env.getMinX() % triangleSide),
+                                        ptYId * triangleSide + (env.getMinY() - env.getMinY() % triangleSide)
+                                        ,0);
+                                // Offset Y to make diamonds
+                                if((insertPt.getX() / triangleSide) % 2 != 0) {
+                                    insertPt.setY(insertPt.getY() + (triangleSide / 2.));
+                                }
+                                triangle.interpolateZ(insertPt);
+                                insertPt.setProperty((triangle).getPoint(0).getProperty());
+                                if(triangle.isInside(insertPt)) {
+                                    pointToInsert.add(new PointTriangleTuple(triangle, insertPt));
                                 }
                             }
                         }
