@@ -267,6 +267,7 @@ public class TriangleNoiseMap {
         logger.info("Begin delaunay");
         cellMesh.setComputeNeighbors(false);
         if (maximumArea > 1) {
+            cellMesh.setMaximumArea(maximumArea);
             cellMesh.setInsertionEvaluator(new TriangleQuality());
             Geometry densifiedEnvelope = Densifier.densify(new GeometryFactory().toGeometry(cellEnvelope), triangleSide);
             cellMesh.finishPolygonFeeding(densifiedEnvelope);

@@ -80,6 +80,9 @@ public class LayerJDelaunay implements LayerDelaunay {
     //triangletest is for JDeLaunayTriangleDirectionChange to test triangle direction
     private List<DTriangle> triangletest=new ArrayList<DTriangle>();
     private static GeometryFactory FACTORY = new GeometryFactory();
+    private double maximumArea = 0;
+    /** insertion point minimal distance, in meter */
+    private static final double EPSILON_INSERTION_POINT = 1;
 
 
     private static DTriangle findTriByCoordinate(Coordinate pos,List<DTriangle> trilst) throws DelaunayError {
@@ -243,6 +246,46 @@ public class LayerJDelaunay implements LayerDelaunay {
 
                 delaunayTool.forceConstraintIntegrity();
                 delaunayTool.processDelaunay();
+                if(maximumArea > 0) {
+                    // Find triangle with area > than constraint
+                    double triangleSide = (2*Math.pow(maximumArea, 0.5)) / Math.pow(3, 0.25);
+                    List<PointTriangleTuple> pointToInsert = new ArrayList<>((int) (delaunayTool.getBoundingBox().maxExtent() / triangleSide));
+                    for(DTriangle triangle : delaunayTool.getTriangleList()) {
+                        if(triangle.getArea() > maximumArea) {
+                            // Insert one or more point inside the triangle
+                            Envelope env = new Envelope(triangle.getPoint(0).getCoordinate());
+                            env.expandToInclude(triangle.getPoint(1).getCoordinate());
+                            env.expandToInclude(triangle.getPoint(2).getCoordinate());
+                            int ptCountX = Math.max(2, (int) Math.ceil((env.getMaxX() - env.getMinX()) / triangleSide));
+                            int ptCountY = Math.max(2, (int) Math.ceil((env.getMaxY() - env.getMinY()) / triangleSide));
+                            for(int ptXId = -1; ptXId < ptCountX; ptXId++) {
+                                for(int ptYId = -1; ptYId < ptCountY; ptYId++) {
+                                    DPoint insertPt = new DPoint(
+                                            ptXId * triangleSide + (env.getMinX() - env.getMinX() % triangleSide),
+                                            ptYId * triangleSide + (env.getMinY() - env.getMinY() % triangleSide)
+                                            ,0);
+                                    // Offset Y to make diamonds
+                                    if((insertPt.getX() / triangleSide) % 2 != 0) {
+                                        insertPt.setY(insertPt.getY() + (triangleSide / 2.));
+                                    }
+                                    triangle.interpolateZ(insertPt);
+                                    insertPt.setProperty((triangle).getPoint(0).getProperty());
+                                    if(triangle.isInside(insertPt)) {
+                                        pointToInsert.add(new PointTriangleTuple(triangle, insertPt));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    // Insert points
+                    for(PointTriangleTuple tuple : pointToInsert) {
+                        Element container = tuple.getTriangle().searchPointContainer(tuple.getPoint());
+                        if(container instanceof DTriangle) {
+                            delaunayTool.insertPointInTriangle(tuple.getPoint(),(DTriangle)container ,
+                                    EPSILON_INSERTION_POINT);
+                        }
+                    }
+                }
                 // Refine mesh
                 if(insertionEvaluator != null) {
                     delaunayTool.refineTriangles(minTriangleLength , insertionEvaluator);
@@ -490,8 +533,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 
     @Override
     public void setMaxArea(Double maxArea) throws LayerDelaunayError {
-        // TODO Auto-generated method stub
-
+        maximumArea = Math.max(0, maxArea);
     }
 
     @Override
@@ -565,6 +607,33 @@ public class LayerJDelaunay implements LayerDelaunay {
     public List<DTriangle> gettriangletest() {
         return this.triangletest;
 
+    }
+
+    /**
+     * Hold a DTriangle and a DPoint
+     */
+    private static class PointTriangleTuple {
+        private DTriangle triangle;
+        private DPoint point;
+
+        private PointTriangleTuple(DTriangle triangle, DPoint point) {
+            this.triangle = triangle;
+            this.point = point;
+        }
+
+        /**
+         * @return DTriangle instance
+         */
+        public DTriangle getTriangle() {
+            return triangle;
+        }
+
+        /**
+         * @return DPoint instance
+         */
+        public DPoint getPoint() {
+            return point;
+        }
     }
 
 }

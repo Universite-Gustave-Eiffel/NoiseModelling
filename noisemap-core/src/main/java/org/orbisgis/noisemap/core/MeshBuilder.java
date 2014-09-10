@@ -75,6 +75,7 @@ public class MeshBuilder {
     private Envelope geometriesBoundingBox = null;
     private LinkedList<Coordinate> topoPoints = new LinkedList<Coordinate>();
     private boolean computeNeighbors = true;
+    private double maximumArea = 0;
 
     private Quadtree ptQuadForMergeBuilding = new Quadtree();//Quad tree to test intersection between exist buildings and new building
 
@@ -323,7 +324,12 @@ public class MeshBuilder {
         delaunayTool.setMinAngle(0.);
         //computeNeighbors
         delaunayTool.setRetrieveNeighbors(computeNeighbors);
+        ////////////////////
         // Refine result
+        // Triangle area
+        if(maximumArea > 0) {
+            delaunayTool.setMaxArea(maximumArea);
+        }
         if(insertionEvaluator != null) {
             delaunayTool.processDelaunay(0.1, insertionEvaluator);
         } else {
@@ -335,6 +341,14 @@ public class MeshBuilder {
         if(computeNeighbors) {
             this.triNeighbors = delaunayTool.getNeighbors();
         }
+    }
+
+    /**
+     * Add a constraint on maximum triangle area.
+     * @param maximumArea Value in square meter.
+     */
+    public void setMaximumArea(double maximumArea) {
+        this.maximumArea = Math.max(0, maximumArea);
     }
 
     public void setComputeNeighbors(boolean computeNeighbors) {
