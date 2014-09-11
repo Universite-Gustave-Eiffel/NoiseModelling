@@ -81,6 +81,7 @@ public class TriangleNoiseMap {
     private List<Integer> db_field_ids = new ArrayList<>();
     private List<Integer> db_field_freq = new ArrayList<>();
     private long nbreceivers = 0;
+    private double receiverHeight = 1.6;
 
 
     /**
@@ -369,7 +370,7 @@ public class TriangleNoiseMap {
             String topoGeomName = SFSUtilities.getGeometryFields(connection,
                     TableLocation.parse(demTable)).get(0);
             try (PreparedStatement st = connection.prepareStatement(
-                    "SELECT " + TableLocation.quoteIdentifier(topoGeomName) + queryHeight + " FROM " +
+                    "SELECT " + TableLocation.quoteIdentifier(topoGeomName) + " FROM " +
                             demTable + " WHERE " +
                             TableLocation.quoteIdentifier(topoGeomName) + " && ?")) {
                 st.setObject(1, geometryFactory.toGeometry(expandedCellEnvelop));
@@ -411,7 +412,16 @@ public class TriangleNoiseMap {
 
         // The evaluation of sound level must be done where the
         // following vertices are
-        List<Coordinate> vertices = cellMesh.getVertices();
+        List<Coordinate> vertices = new ArrayList<>(cellMesh.getVertices().size());
+        for(Coordinate vertex : cellMesh.getVertices()) {
+            Coordinate translatedVertex = new Coordinate(vertex);
+            double z = receiverHeight;
+            if(!demTable.isEmpty()) {
+                z = freeFieldFinder.getHeightAtPosition(translatedVertex) + receiverHeight;
+            }
+            translatedVertex.setOrdinate(2, z);
+            vertices.add(translatedVertex);
+        }
         // TODO use topographic data to define Z of receivers (offset defined by user default to )
         List<Triangle> triangles = new ArrayList<>();
         for(Triangle triangle : cellMesh.getTriangles()) {
@@ -570,5 +580,9 @@ public class TriangleNoiseMap {
 
     public void setMaximumArea(double maximumArea) {
         this.maximumArea = maximumArea;
+    }
+
+    public void setDemTable(String demTable) {
+        this.demTable = demTable;
     }
 }

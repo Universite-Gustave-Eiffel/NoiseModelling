@@ -49,6 +49,8 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineSegment;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Polygon;
+import org.jdelaunay.delaunay.geometries.DPoint;
+import org.jdelaunay.delaunay.geometries.DTriangle;
 
 /**
  * FastObstructionTest speed up the search of
@@ -656,6 +658,25 @@ public class FastObstructionTest {
             curTri = nextTri;
         }
         return walls;
+    }
+
+    /**
+     * Interpolate Z value in the triangle that contain p1
+     * @param p1 Extraction point
+     * @return Interpolated Z value, NaN if out of bounds
+     */
+    public double getHeightAtPosition(Coordinate p1) {
+        int curTri = getTriangleIdByCoordinate(p1);
+        if(curTri >= 0) {
+            Triangle triangle = triVertices.get(curTri);
+            com.vividsolutions.jts.geom.Triangle tri =
+                    new com.vividsolutions.jts.geom.Triangle(vertices.get(triangle.getA()),
+                            vertices.get(triangle.getB()),vertices.get(triangle.getC()));
+
+            return tri.interpolateZ(p1);
+        } else {
+            return Double.NaN;
+        }
     }
 
     /*
