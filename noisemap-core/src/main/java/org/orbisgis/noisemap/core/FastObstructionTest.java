@@ -953,7 +953,7 @@ public class FastObstructionTest {
 
             }
             //set the averageBuildingZ
-            polygon.setHeight(averageBuildingHeight);
+            polygon.setHeight(averageBuildingHeight + buildingHeight);
         }
 
     }

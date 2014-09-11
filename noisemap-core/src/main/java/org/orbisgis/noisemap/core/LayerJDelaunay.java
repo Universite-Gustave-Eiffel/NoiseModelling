@@ -305,46 +305,38 @@ public class LayerJDelaunay implements LayerDelaunay {
                     int b = getOrAppendVertices(ring[1], vertices, hashOfArrayIndex);
                     int c = getOrAppendVertices(ring[2], vertices, hashOfArrayIndex);
                     int buildingID=triangle.getProperty();
-                    triangles.add(new Triangle(a, b, c,buildingID));
-                    if(this.computeNeighbors) {
-                        Triangle gidTri=new Triangle(-1,-1,-1,0);
-                        for(int i=0;i<3;i++) {
+                    triangles.add(new Triangle(a, b, c, buildingID));
+                    if (this.computeNeighbors) {
+                        Triangle gidTri = new Triangle(-1, -1, -1, 0);
+                        for (int i = 0; i < 3; i++) {
                             DTriangle neighTriangle = triangle.getOppositeEdge(triangle.getPoint(i)).getOtherTriangle(triangle);
-                            if(neighTriangle !=null && neighTriangle.getProperty() == 0) {
-                                //if neighbor is in building
-
-                                if(neighTriangle.getPoint(0).getProperty()>=1||neighTriangle.getPoint(1).getProperty()>=1||neighTriangle.getPoint(2).getProperty()>=1){
-                                    int neighBuildingID=0;
-                                    for(int j=0; j<=2; j++){
-                                        int potentialNeighBuildingID=neighTriangle.getPoint(j).getProperty();
-                                        if(potentialNeighBuildingID>=1){
-                                            if(this.buildingWithID.get(potentialNeighBuildingID).isTriangleInBuilding(neighTriangle.getBarycenter())){
-                                                neighBuildingID=potentialNeighBuildingID;
+                            if (neighTriangle != null) {
+                                if (neighTriangle.getPoint(0).getProperty() >= 1 || neighTriangle.getPoint(1).getProperty() >= 1 || neighTriangle.getPoint(2).getProperty() >= 1) {
+                                    //if neighbor is in building
+                                    int neighBuildingID = 0;
+                                    for (int j = 0; j <= 2; j++) {
+                                        int potentialNeighBuildingID = neighTriangle.getPoint(j).getProperty();
+                                        if (potentialNeighBuildingID >= 1) {
+                                            if (this.buildingWithID.get(potentialNeighBuildingID).isTriangleInBuilding(neighTriangle.getBarycenter())) {
+                                                neighBuildingID = potentialNeighBuildingID;
                                                 break;
                                             }
-
                                         }
-
                                     }
-
                                     neighTriangle.setProperty(neighBuildingID);
-
-
-                                }
-                                else{
+                                } else {
                                     neighTriangle.setProperty(0);
                                 }
-                                gidTri.set(i,neighTriangle.getGID());
-
+                                gidTri.set(i, neighTriangle.getGID());
                             }
                         }
 
-                        if(!orientationReversed) {
+                        if (!orientationReversed) {
                             gidTriangle.add(gidTri);
                         } else {
-                            gidTriangle.add(new Triangle(gidTri.getC(),gidTri.getB(),gidTri.getA(),buildingID));
+                            gidTriangle.add(new Triangle(gidTri.getC(), gidTri.getB(), gidTri.getA(), buildingID));
                         }
-                        gidToIndex.put(triangle.getGID(),gidTriangle.size()-1);
+                        gidToIndex.put(triangle.getGID(), gidTriangle.size() - 1);
                     }
 
 
