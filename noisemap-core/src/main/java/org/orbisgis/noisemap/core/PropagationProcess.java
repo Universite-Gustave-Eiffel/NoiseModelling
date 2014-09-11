@@ -1142,8 +1142,6 @@ public class PropagationProcess implements Runnable {
             long max_compute_time = 0;
             long sum_compute = 0;
             for (Coordinate receiverCoord : data.vertices) {
-                long debReceiverTime = System.nanoTime();
-
                 propaProcessProgression.endStep();
                 double energeticSum[] = new double[data.freq_lvl.size()];
                 for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
@@ -1158,11 +1156,6 @@ public class PropagationProcess implements Runnable {
                 }
                 allfreqlvl = Math.max(allfreqlvl, BASE_LVL);
                 verticesSoundLevel[idReceiver] = allfreqlvl;
-
-                long computeTime = System.nanoTime() - debReceiverTime;
-                min_compute_time = Math.min(computeTime, min_compute_time);
-                max_compute_time = Math.max(computeTime, max_compute_time);
-                sum_compute += computeTime;
                 idReceiver++;
             }
             if (data.triangles != null) { //Triangle output type
