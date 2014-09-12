@@ -47,11 +47,7 @@ import java.util.List;
  */
 public class PropagationProcessData {
     /** Coordinate of receivers */
-    public List<Coordinate> vertices;
-    /** Row id of receivers, not used by PropagationProcess */
-    public List<Long> receiverRowId;
-    /** Index of vertices of triangles */
-    public List<Triangle> triangles;
+    public List<Coordinate> receivers;
     /** FreeField test */
     public FastObstructionTest freeFieldFinder;
     /** Source Index */
@@ -81,15 +77,13 @@ public class PropagationProcessData {
     /** list Geometry of soil and the type of this soil */
     public List<GeoWithSoilType> geoWithSoilType;
 
-    public PropagationProcessData(List<Coordinate> vertices, List<Long> receiverRowId, List<Triangle> triangles,
-                                  FastObstructionTest freeFieldFinder, QueryGeometryStructure sourcesIndex,
-                                  List<Geometry> sourceGeometries, List<ArrayList<Double>> wj_sources,
-                                  List<Integer> freq_lvl, int reflexionOrder, int diffractionOrder, double maxSrcDist,
-                                  double maxRefDist, double minRecDist, double wallAlpha, int cellId, ProgressVisitor cellProg,
+    public PropagationProcessData(List<Coordinate> receivers, FastObstructionTest freeFieldFinder,
+                                  QueryGeometryStructure sourcesIndex, List<Geometry> sourceGeometries,
+                                  List<ArrayList<Double>> wj_sources, List<Integer> freq_lvl, int reflexionOrder,
+                                  int diffractionOrder, double maxSrcDist, double maxRefDist, double minRecDist,
+                                  double wallAlpha, int cellId, ProgressVisitor cellProg,
                                   List<GeoWithSoilType> geoWithSoilType) {
-        this.vertices = vertices;
-        this.receiverRowId = receiverRowId;
-        this.triangles = triangles;
+        this.receivers = receivers;
         this.freeFieldFinder = freeFieldFinder;
         this.sourcesIndex = sourcesIndex;
         this.sourceGeometries = sourceGeometries;

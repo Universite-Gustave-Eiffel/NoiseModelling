@@ -42,9 +42,7 @@ import java.util.Stack;
  * @author Nicolas Fortin
  */
 public class PropagationProcessOut {
-	private Stack<PropagationResultTriRecord> triToDriver;
-        private Stack<PropagationResultPtRecord> ptToDriver;
-
+    double verticesSoundLevel[];
 	private long nb_couple_receiver_src = 0;
 	private long nb_obstr_test = 0;
 	private long nb_image_receiver = 0;
@@ -79,20 +77,13 @@ public class PropagationProcessOut {
             return minimalReceiverComputationTime;
         }
 
-        public PropagationProcessOut(Stack<PropagationResultTriRecord> triToDriver, Stack<PropagationResultPtRecord> ptToDriver) {
-            this.triToDriver = triToDriver;
-            this.ptToDriver = ptToDriver;
-        }
+    public double[] getVerticesSoundLevel() {
+        return verticesSoundLevel;
+    }
 
-
-
-	public synchronized void addValues(PropagationResultTriRecord record) {
-		triToDriver.push(record);
-	}
-
-	public synchronized void addValues(PropagationResultPtRecord record) {
-		ptToDriver.push(record);
-	}
+    public void setVerticesSoundLevel(double[] verticesSoundLevel) {
+        this.verticesSoundLevel = verticesSoundLevel;
+    }
 
 	public synchronized long getNb_couple_receiver_src() {
 		return nb_couple_receiver_src;
@@ -145,11 +136,4 @@ public class PropagationProcessOut {
 		return cellComputed;
 	}
 
-    public Stack<PropagationResultTriRecord> getTriToDriver() {
-        return triToDriver;
-    }
-
-    public Stack<PropagationResultPtRecord> getPtToDriver() {
-        return ptToDriver;
-    }
 }

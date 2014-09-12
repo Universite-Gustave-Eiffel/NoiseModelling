@@ -45,9 +45,7 @@ public class PointNoiseMap extends JdbcNoiseMap {
 
     public Collection<PropagationResultPtRecord> evaluateCell(Connection connection,int cellI, int cellJ,
                                                               ProgressVisitor progression) throws SQLException {
-        Stack<PropagationResultPtRecord> toDriver = new Stack<>();
-        PropagationProcessOut threadDataOut = new PropagationProcessOut(null, toDriver);
-
+        PropagationProcessOut threadDataOut = new PropagationProcessOut();
         MeshBuilder mesh = new MeshBuilder();
         int ij = cellI * gridDim + cellJ;
         logger.info("Begin processing of cell " + (cellI + 1) + ","
@@ -125,7 +123,7 @@ public class PointNoiseMap extends JdbcNoiseMap {
         }
 
         PropagationProcessData threadData = new PropagationProcessData(
-                receivers, receiversPk, null, freeFieldFinder, sourcesIndex,
+                receivers, freeFieldFinder, sourcesIndex,
                 sourceGeometries, wj_sources, db_field_freq,
                 soundReflectionOrder, soundDiffractionOrder, maximumPropagationDistance, maximumReflectionDistance,
                 0, wallAbsorption, ij,
@@ -133,6 +131,20 @@ public class PointNoiseMap extends JdbcNoiseMap {
         PropagationProcess propaProcess = new PropagationProcess(
                 threadData, threadDataOut);
         propaProcess.run();
+
+
+        double[] verticesSoundLevel = threadDataOut.getVerticesSoundLevel();
+        Stack<PropagationResultPtRecord> toDriver = new Stack<>();
+        //Vertices output type
+        if(receiversPk.isEmpty()) {
+            for (int receiverId = 0; receiverId < receivers.size(); receiverId++) {
+                toDriver.add(new PropagationResultPtRecord(receiverId, ij, verticesSoundLevel[receiverId]));
+            }
+        } else {
+            for (int receiverId = 0; receiverId < receivers.size(); receiverId++) {
+                toDriver.add(new PropagationResultPtRecord(receiversPk.get(receiverId), ij, verticesSoundLevel[receiverId]));
+            }
+        }
         return toDriver;
     }
 }

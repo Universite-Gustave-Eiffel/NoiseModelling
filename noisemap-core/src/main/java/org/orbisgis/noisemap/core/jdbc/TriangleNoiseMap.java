@@ -225,10 +225,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
     }
 
     public Collection<PropagationResultTriRecord> evaluateCell(Connection connection,int cellI, int cellJ, ProgressVisitor progression) throws SQLException {
-        Stack<PropagationResultTriRecord> toDriver = new Stack<>();
-        PropagationProcessOut threadDataOut = new PropagationProcessOut(
-                toDriver, null);
-
+        PropagationProcessOut threadDataOut = new PropagationProcessOut();
         MeshBuilder mesh = new MeshBuilder();
         int ij = cellI * gridDim + cellJ;
         logger.info("Begin processing of cell " + (cellI + 1) + ","
@@ -314,7 +311,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
             geoWithSoil = null;
         }
         PropagationProcessData threadData = new PropagationProcessData(
-                vertices, null, triangles, freeFieldFinder, sourcesIndex,
+                vertices, freeFieldFinder, sourcesIndex,
                 sourceGeometries, wj_sources, db_field_freq,
                 soundReflectionOrder, soundDiffractionOrder, maximumPropagationDistance, maximumReflectionDistance,
                 roadWidth, wallAbsorption, ij,
@@ -322,6 +319,23 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         PropagationProcess propaProcess = new PropagationProcess(
                 threadData, threadDataOut);
         propaProcess.run();
+        Stack<PropagationResultTriRecord> toDriver = new Stack<>();
+        int tri_id = 0;
+        double[] verticesSoundLevel = threadDataOut.getVerticesSoundLevel();
+        for (Triangle tri : triangles) {
+            Coordinate pverts[] = {vertices.get(tri.getA()),
+                    vertices.get(tri.getB()),
+                    vertices.get(tri.getC()),
+                    vertices.get(tri.getA())};
+            toDriver.add(new PropagationResultTriRecord(
+                    geometryFactory.createPolygon(geometryFactory.createLinearRing(pverts), null),
+                    verticesSoundLevel[tri.getA()],
+                    verticesSoundLevel[tri.getB()],
+                    verticesSoundLevel[tri.getC()],
+                    ij,
+                    tri_id));
+            tri_id++;
+        }
         return toDriver;
     }
 }

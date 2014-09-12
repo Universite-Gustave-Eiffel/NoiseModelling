@@ -1127,7 +1127,7 @@ public class PropagationProcess implements Runnable {
              * catch (DriverException e) { e.printStackTrace(); return; }
              */
 
-            double verticesSoundLevel[] = new double[data.vertices.size()]; // Computed
+            double verticesSoundLevel[] = new double[data.receivers.size()]; // Computed
             // sound
             // level
             // of
@@ -1141,7 +1141,7 @@ public class PropagationProcess implements Runnable {
             long min_compute_time = Long.MAX_VALUE;
             long max_compute_time = 0;
             long sum_compute = 0;
-            for (Coordinate receiverCoord : data.vertices) {
+            for (Coordinate receiverCoord : data.receivers) {
                 propaProcessProgression.endStep();
                 double energeticSum[] = new double[data.freq_lvl.size()];
                 for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
@@ -1158,35 +1158,7 @@ public class PropagationProcess implements Runnable {
                 verticesSoundLevel[idReceiver] = allfreqlvl;
                 idReceiver++;
             }
-            if (data.triangles != null) { //Triangle output type
-                // Subdivide each triangle, and apply BiCubic interpolation.
-                        /*
-                         * ArrayList<Triangle> bicubictri=new ArrayList<Triangle>();
-                         * bicubictri.ensureCapacity(data.triangles.size()); for(Triangle tri :
-                         * data.triangles) { //////////////////////// //Find the fourth vertex }
-                         */
-                // Now export all triangles with the sound level at each vertices
-                int tri_id = 0;
-                for (Triangle tri : data.triangles) {
-                    Coordinate pverts[] = {data.vertices.get(tri.getA()),
-                            data.vertices.get(tri.getB()),
-                            data.vertices.get(tri.getC()),
-                            data.vertices.get(tri.getA())};
-                    dataOut.addValues(new PropagationResultTriRecord(
-                            factory.createPolygon(factory.createLinearRing(pverts), null),
-                            verticesSoundLevel[tri.getA()],
-                            verticesSoundLevel[tri.getB()],
-                            verticesSoundLevel[tri.getC()],
-                            data.cellId,
-                            tri_id));
-                    tri_id++;
-                }
-            } else {
-                //Vertices output type
-                for (int receiverId = 0; receiverId < data.vertices.size(); receiverId++) {
-                    dataOut.addValues(new PropagationResultPtRecord(data.receiverRowId.get(receiverId), data.cellId, verticesSoundLevel[receiverId]));
-                }
-            }
+            dataOut.setVerticesSoundLevel(verticesSoundLevel);
             dataOut.appendFreeFieldTestCount(data.freeFieldFinder.getNbObstructionTest());
             dataOut.appendCellComputed();
             dataOut.updateMaximalReceiverComputationTime(max_compute_time);

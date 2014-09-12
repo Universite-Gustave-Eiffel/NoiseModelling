@@ -105,14 +105,11 @@ public class TestSoundPropagationValidation extends TestCase {
 		mesh.finishPolygonFeeding(cellEnvelope);	
 		
 		//Retrieve Delaunay triangulation of scene
-		List<Triangle> tri=mesh.getTriangles();
 		List<Coordinate> vert=mesh.getVertices();
-                FastObstructionTest manager=new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
-                
-                
-		Stack<PropagationResultTriRecord> dataStack=new Stack<PropagationResultTriRecord>();
-		PropagationProcessData propData=new PropagationProcessData(vert,null, tri, manager, sourcesIndex, srclst, srcSpectrum, freqLvl, 0, 2, 80.,50., 1., 0., 0, null,null);
-		PropagationProcessOut propDataOut=new PropagationProcessOut(dataStack,null);
+        FastObstructionTest manager=new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
+
+		PropagationProcessData propData=new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum, freqLvl, 0, 2, 80.,50., 1., 0., 0, null,null);
+		PropagationProcessOut propDataOut=new PropagationProcessOut();
 		PropagationProcess propManager=new PropagationProcess(propData, propDataOut);
 		propManager.initStructures();
 
@@ -230,13 +227,10 @@ public class TestSoundPropagationValidation extends TestCase {
 		mesh.finishPolygonFeeding(cellEnvelope);	
 		
 		//Retrieve Delaunay triangulation of scene
-		List<Triangle> tri=mesh.getTriangles();
 		List<Coordinate> vert=mesh.getVertices();
                 FastObstructionTest manager=new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
-
-		Stack<PropagationResultTriRecord> dataStack=new Stack<PropagationResultTriRecord>();
-		PropagationProcessData propData=new PropagationProcessData(vert,null, tri, manager, sourcesIndex, srclst, srcSpectrum, freqLvl, 0, 2, 80.,50., 1., 0., 0, null,null);
-		PropagationProcessOut propDataOut=new PropagationProcessOut(dataStack,null);
+		PropagationProcessData propData=new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum, freqLvl, 0, 2, 80.,50., 1., 0., 0, null,null);
+		PropagationProcessOut propDataOut=new PropagationProcessOut();
 		PropagationProcess propManager=new PropagationProcess(propData, propDataOut);
 		propManager.initStructures();
 
@@ -254,14 +248,14 @@ public class TestSoundPropagationValidation extends TestCase {
 		//Receiver in the buildings
 		propData.reflexionOrder=2;
 		propData.diffractionOrder=1;
-                double dbaInBuilding=splCompute(propManager, new Coordinate(26,4,0));
-                splCompare(Double.NEGATIVE_INFINITY, "in building",dbaInBuilding);
-                dbaInBuilding=splCompute(propManager, new Coordinate(8,12,0));
-                splCompare(Double.NEGATIVE_INFINITY, "in building",dbaInBuilding);
-                dbaInBuilding=splCompute(propManager, new Coordinate(20,12,0));
-                splCompare(Double.NEGATIVE_INFINITY, "in building",dbaInBuilding);
-                dbaInBuilding=splCompute(propManager, new Coordinate(12,4,0));
-                splCompare(Double.NEGATIVE_INFINITY, "in building",dbaInBuilding);
+        double dbaInBuilding=splCompute(propManager, new Coordinate(26,4,0));
+        splCompare(Double.NEGATIVE_INFINITY, "in building",dbaInBuilding);
+        dbaInBuilding=splCompute(propManager, new Coordinate(8,12,0));
+        splCompare(Double.NEGATIVE_INFINITY, "in building",dbaInBuilding);
+        dbaInBuilding=splCompute(propManager, new Coordinate(20,12,0));
+        splCompare(Double.NEGATIVE_INFINITY, "in building",dbaInBuilding);
+        dbaInBuilding=splCompute(propManager, new Coordinate(12,4,0));
+        splCompare(Double.NEGATIVE_INFINITY, "in building",dbaInBuilding);
 
 
 
