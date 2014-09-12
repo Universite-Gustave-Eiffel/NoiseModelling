@@ -64,9 +64,8 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
      * @param sourcesTableName Source table name
      */
     public TriangleNoiseMap(String destinationTable, String buildingsTableName, String sourcesTableName) {
+        super(buildingsTableName, sourcesTableName);
         this.destinationTable = destinationTable;
-        this.buildingsTableName = buildingsTableName;
-        this.sourcesTableName = sourcesTableName;
     }
 
     private void explodeAndAddPolygon(Geometry intersectedGeometry,

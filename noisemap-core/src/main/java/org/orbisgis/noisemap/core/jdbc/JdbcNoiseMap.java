@@ -27,8 +27,8 @@ public class JdbcNoiseMap {
     // When computing cell size, try to keep propagation distance away from the cell
     // inferior to this ratio (in comparison with cell width)
     protected static final double MINIMAL_BUFFER_RATIO = 0.3;
-    protected String buildingsTableName = "";
-    protected String sourcesTableName = "";
+    protected final String buildingsTableName;
+    protected final String sourcesTableName;
     protected String soilTableName = "";
     // Digital elevation model table. (Contains points or triangles)
     protected String demTable = "";
@@ -48,7 +48,10 @@ public class JdbcNoiseMap {
     protected List<Integer> db_field_ids = new ArrayList<>();
     protected List<Integer> db_field_freq = new ArrayList<>();
 
-
+    public JdbcNoiseMap(String buildingsTableName, String sourcesTableName) {
+        this.buildingsTableName = buildingsTableName;
+        this.sourcesTableName = sourcesTableName;
+    }
 
     /**
      * Compute the envelope corresping to parameters
