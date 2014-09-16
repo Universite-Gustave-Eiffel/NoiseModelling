@@ -277,7 +277,8 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
                     sourceDensification, maximumArea);
         } catch (LayerDelaunayError err) {
             throw new SQLException(err.getLocalizedMessage(), err);
-        }                    // Make a structure to keep the following information
+        }
+        // Make a structure to keep the following information
         // Triangle list with 3 vertices(int), and 3 neighbor
         // triangle ID
         // Vertices list
@@ -337,5 +338,37 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
             tri_id++;
         }
         return toDriver;
+    }
+
+    public double getRoadWidth() {
+        return roadWidth;
+    }
+
+    public void setRoadWidth(double roadWidth) {
+        this.roadWidth = roadWidth;
+    }
+
+    public double getSourceDensification() {
+        return sourceDensification;
+    }
+
+    public void setSourceDensification(double sourceDensification) {
+        this.sourceDensification = sourceDensification;
+    }
+
+    public double getMaximumArea() {
+        return maximumArea;
+    }
+
+    public void setMaximumArea(double maximumArea) {
+        this.maximumArea = maximumArea;
+    }
+
+    public double getReceiverHeight() {
+        return receiverHeight;
+    }
+
+    public void setReceiverHeight(double receiverHeight) {
+        this.receiverHeight = receiverHeight;
     }
 }

@@ -46,7 +46,6 @@
     </build>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <h2gis-version>1.0.3-SNAPSHOT</h2gis-version>
     </properties>
     <dependencies>
         <dependency>

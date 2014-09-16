@@ -99,10 +99,9 @@ public class PointNoiseMap extends JdbcNoiseMap {
         String receiverGeomName = SFSUtilities.getGeometryFields(connection,
                 TableLocation.parse(receiverTableName)).get(0);
         int intPk = JDBCUtilities.getIntegerPrimaryKey(connection, receiverTableName);
-        String pkName = "";
         String pkSelect = "";
         if(intPk >= 1) {
-            pkName = JDBCUtilities.getFieldName(connection.getMetaData(), receiverTableName, intPk);
+            pkSelect = ", " + JDBCUtilities.getFieldName(connection.getMetaData(), receiverTableName, intPk);
         }
         try (PreparedStatement st = connection.prepareStatement(
                 "SELECT " + TableLocation.quoteIdentifier(receiverGeomName) + pkSelect + " FROM " +
@@ -115,7 +114,7 @@ public class PointNoiseMap extends JdbcNoiseMap {
                     if(pt != null) {
                         receivers.add(pt.getCoordinate());
                     }
-                    if(!pkName.isEmpty()) {
+                    if(!pkSelect.isEmpty()) {
                         receiversPk.add(rs.getLong(2));
                     }
                 }

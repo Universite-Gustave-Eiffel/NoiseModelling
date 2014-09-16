@@ -41,12 +41,30 @@
         <dependency>
             <groupId>org.orbisgis</groupId>
             <artifactId>spatial-utilities</artifactId>
-            <version>1.1.0</version>
+            <version>${h2gis-version}</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>1.6.4</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>h2spatial</artifactId>
+            <version>${h2gis-version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>h2spatial-ext</artifactId>
+            <version>${h2gis-version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>1.6.4</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
     <build>
