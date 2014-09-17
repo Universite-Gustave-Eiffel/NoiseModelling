@@ -35,11 +35,16 @@ package org.orbisgis.noisemap.core;
 
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
+import com.vividsolutions.jts.algorithm.CGAlgorithms3D;
 import com.vividsolutions.jts.algorithm.NonRobustLineIntersector;
 import com.vividsolutions.jts.algorithm.CGAlgorithms;
 import com.vividsolutions.jts.geom.Coordinate;
@@ -51,6 +56,8 @@ import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.index.quadtree.Quadtree;
 import com.vividsolutions.jts.index.strtree.STRtree;
+import com.vividsolutions.jts.operation.distance3d.Distance3DOp;
+import com.vividsolutions.jts.triangulate.quadedge.Vertex;
 import org.h2gis.h2spatialapi.ProgressVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -274,6 +281,18 @@ public class PropagationProcess implements Runnable {
     }
 
     /**
+     * Compute project Z coordinate between p0 p1 of x,y.
+     * @param coordinateWithoutZ Coordinate to set the Z value from Z interpolation of line
+     * @param line Extract Z values of this segment
+     * @return coordinateWithoutZ with Z value computed from line.
+     */
+    private static Coordinate getProjectedZCoordinate(Coordinate coordinateWithoutZ, LineSegment line) {
+        // Z value is the interpolation of source-receiver line
+        return new Coordinate(coordinateWithoutZ.x, coordinateWithoutZ.y, Vertex.interpolateZ(
+                line.closestPoint(coordinateWithoutZ), line.p0, line.p1));
+    }
+
+    /**
      * ISO-9613 p1 - At 15°C 70% humidity
      *
      * @param freq Third octave frequency
@@ -381,9 +400,6 @@ public class PropagationProcess implements Runnable {
         GeometryFactory factory = new GeometryFactory();
         int freqcount = data.freq_lvl.size();
 
-        Coordinate srcCoordtest = (new Coordinate(srcCoord.x, srcCoord.y, srcCoord.z));
-        Coordinate receiverCoordtest = (new Coordinate(receiverCoord.x, receiverCoord.y, receiverCoord.z));
-
         double PropaDistance = srcCoord.distance(receiverCoord);
         if (PropaDistance < data.maxSrcDist) {
             // Then, check if the source is visible from the receiver (not
@@ -391,14 +407,9 @@ public class PropagationProcess implements Runnable {
             // Create the direct Line
             boolean somethingHideReceiver;
             somethingHideReceiver = !data.freeFieldFinder.isFreeField(
-                    receiverCoordtest, srcCoordtest);
+                    receiverCoord, srcCoord);
 
-
-            double dx = srcCoordtest.x-receiverCoordtest.x;
-            double dy = srcCoordtest.y-receiverCoordtest.y;
-            double dz = srcCoordtest.z-receiverCoordtest.z;
-
-            double SrcReceiverDistance = Math.sqrt(dx*dx+dy*dy+dz*dz);
+            double SrcReceiverDistance = CGAlgorithms3D.distance(srcCoord, receiverCoord);
 
 // todo insert the condition delta < lambda/20 if Atalus (the attenuation from a possible bank source side) is used
 
@@ -468,7 +479,7 @@ public class PropagationProcess implements Runnable {
             }
             //Process diffraction 3D
 
-            DiffractionWithSoilEffetZone diffDataWithSoilEffet = data.freeFieldFinder.getPath(receiverCoordtest, srcCoordtest);
+            DiffractionWithSoilEffetZone diffDataWithSoilEffet = data.freeFieldFinder.getPath(receiverCoord, srcCoord);
             Double[] diffractiondata = diffDataWithSoilEffet.getDiffractionData();
 
             double deltadistance = diffractiondata[data.freeFieldFinder.Delta_Distance];
@@ -760,28 +771,21 @@ public class PropagationProcess implements Runnable {
                                 srcCoord)) {
                             // True then the path is clear
                             // Compute attenuation level
-                            double elength = 0;
+                            double eLength = 0;
                             //Compute distance of the corner path
-
-                            // Todo change
                             for (int ie = 1; ie < curCorner.size(); ie++) {
-                                double dxe =  regionCorners.get(curCorner.get(ie)).x-regionCorners.get(curCorner.get(ie - 1)).x;
-                                double dye =  regionCorners.get(curCorner.get(ie)).y-regionCorners.get(curCorner.get(ie - 1)).y;
-                                double dze =  regionCorners.get(curCorner.get(ie)).z-regionCorners.get(curCorner.get(ie - 1)).z;
-                                elength +=  Math.sqrt(dxe*dxe+dye*dye+dze*dze);
+                                Coordinate cornerA = regionCorners.get(curCorner.get(ie));
+                                Coordinate cornerB = regionCorners.get(curCorner.get(ie - 1));
+                                eLength +=  CGAlgorithms3D.distance(cornerA,cornerB);
                             }
                             // delta=SO^1+O^nO^(n+1)+O^nnR
-                            double dxf = regionCorners.get(curCorner.get(0)).x-receiverCoord.x;                         //Receiver to first corner distance
-                            double dyf = regionCorners.get(curCorner.get(0)).y-receiverCoord.y;
-                            double dzf = regionCorners.get(curCorner.get(0)).z-receiverCoord.z;
-                            double dxl = regionCorners.get(curCorner.get(curCorner.size() - 1)).x-srcCoord.x;           //Last corner to source distance
-                            double dyl = regionCorners.get(curCorner.get(curCorner.size() - 1)).y-srcCoord.y;
-                            double dzl = regionCorners.get(curCorner.get(curCorner.size() - 1)).z-srcCoord.z;
-                            double diffractionFullDistance = Math.sqrt(dxf*dxf+dyf*dyf+dzf*dzf)
-                                    + elength                                                                           //Corner to corner distance
-                                    + Math.sqrt(dxl*dxl+dyl*dyl+dzl*dzl);
-                            // Todo end
-
+                            double receiverCornerDistance = CGAlgorithms3D.distance(receiverCoord,
+                                    regionCorners.get(curCorner.get(0)));
+                            double sourceCornerDistance = CGAlgorithms3D.distance(srcCoord,
+                                    regionCorners.get(curCorner.size() - 1));
+                            double diffractionFullDistance = receiverCornerDistance
+                                    + eLength                                                                           //Corner to corner distance
+                                    + sourceCornerDistance;
                             if (diffractionFullDistance < data.maxSrcDist) {
                                 diffractionPathCount++;
                                 double delta = diffractionFullDistance
@@ -802,22 +806,20 @@ public class PropagationProcess implements Runnable {
                                     //(7.11) NMP2008 P.32
                                     double testForm = (40 / freq_lambda[idfreq])
                                             * cprime * delta;
-                                    double DiffractionAttenuation = 0.;
+                                    double diffractionAttenuation = 0.;
                                     if (testForm >= -2.) {
-                                        DiffractionAttenuation = 10 * Math
+                                        diffractionAttenuation = 10 * Math
                                                 .log10(3 + testForm);
-                                    } else {
-
                                     }
                                     // Limit to 0<=DiffractionAttenuation
-                                    DiffractionAttenuation = Math.max(0,
-                                            DiffractionAttenuation);
+                                    diffractionAttenuation = Math.max(0,
+                                            diffractionAttenuation);
                                     double AttenuatedWj = wj.get(idfreq);
                                     // Geometric dispersion
                                     AttenuatedWj = attDistW(AttenuatedWj, SrcReceiverDistance);
                                     // Apply diffraction attenuation
                                     AttenuatedWj = dbaToW(wToDba(AttenuatedWj)
-                                            - DiffractionAttenuation);
+                                            - diffractionAttenuation);
                                     // Apply atmospheric absorption and ground
                                     AttenuatedWj = attAtmW(
                                             AttenuatedWj,
@@ -992,7 +994,7 @@ public class PropagationProcess implements Runnable {
         }
         // Source search by multiple range query
         HashSet<Integer> processedLineSources = new HashSet<Integer>(); //Already processed Raw source (line and/or points)
-        double[] ranges = new double[]{FIRST_STEP_RANGE, data.maxSrcDist / 5, data.maxSrcDist / 4, data.maxSrcDist / 2, data.maxSrcDist};
+        double[] ranges = new double[]{Math.min(FIRST_STEP_RANGE,data.maxSrcDist / 6) , data.maxSrcDist / 5, data.maxSrcDist / 4, data.maxSrcDist / 2, data.maxSrcDist};
         long sourceCount = 0;
 
         for (double searchSourceDistance : ranges) {
@@ -1043,20 +1045,21 @@ public class PropagationProcess implements Runnable {
                 for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
                     allsourcefreqlvl += wj.get(idfreq);
                 }
-
-                double dx = srcCoord.x-receiverCoord.x;
-                double dy = srcCoord.y-receiverCoord.y;
-                double dz = srcCoord.z-receiverCoord.z;
-
-                double SrcReceiverDistance = Math.sqrt(dx*dx+dy*dy+dz*dz);   // TODO i have change like line 384
-
-                double wAttDistSource = attDistW(allsourcefreqlvl, SrcReceiverDistance);
+                double wAttDistSource = attDistW(allsourcefreqlvl, CGAlgorithms3D.distance(srcCoord, receiverCoord));
                 srcEnergeticSum += wAttDistSource;
                 if (Math.abs(wToDba(wAttDistSource + allreceiverfreqlvl) - wToDba(allreceiverfreqlvl)) > DBA_FORGET_SOURCE) {
                     sourceCount++;
+                    // Compute Z of corners using the projection line srcCoord receiverCoord
+                    List<Coordinate> projectedCorners = new ArrayList<>(regionCorners.size());
+                    if(data.diffractionOrder > 0) {
+                        LineSegment srcReceiverLine = new LineSegment(srcCoord, receiverCoord);
+                        for (Coordinate cornerWithoutZ : regionCorners) {
+                            projectedCorners.add(getProjectedZCoordinate(cornerWithoutZ, srcReceiverLine));
+                        }
+                    }
                     receiverSourcePropa(srcCoord, receiverCoord, energeticSum,
                             alpha_atmo, wj, mirroredReceiver,
-                            nearBuildingsWalls, regionCorners,
+                            nearBuildingsWalls, projectedCorners,
                             regionCornersFreeToReceiver, freq_lambda);
                 }
             }

@@ -54,6 +54,7 @@ public class TestPointNoiseMap {
             st.execute("RUNSCRIPT FROM "+StringUtils.quoteStringSQL(scriptPath.toString()));
             st.execute("DELETE FROM sound_source WHERE GID = 1");
             st.execute("UPDATE sound_source SET THE_GEOM = 'POINT(120 -18 1.6)' WHERE GID = 2");
+            st.execute("DROP TABLE IF EXISTS RECEIVERS");
             st.execute("CREATE TABLE RECEIVERS(the_geom POINT, GID SERIAL)");
             st.execute("INSERT INTO RECEIVERS(the_geom) VALUES ('POINT(-275 -18 20)')");
             st.execute("INSERT INTO RECEIVERS(the_geom) VALUES ('POINT(-275 -18 1.6)')");
@@ -70,5 +71,4 @@ public class TestPointNoiseMap {
             assertEquals(0, 10*Math.log10(result.get(1).getReceiverLvl()), 1e-2);
         }
     }
-
 }

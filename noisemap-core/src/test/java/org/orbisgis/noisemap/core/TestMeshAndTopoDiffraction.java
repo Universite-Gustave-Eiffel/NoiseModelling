@@ -201,12 +201,10 @@ public class TestMeshAndTopoDiffraction extends TestCase{
              System.out.println("----distancepath----");
              System.out.println(lt1[nfot.Full_Diffraction_Distance]);
             
-            
-             assertTrue("testIfSourceOrReceiverAreImporerWithTopographic failed! ",lt[nfot.Delta_Distance].equals(lt1[nfot.Delta_Distance])
-                       &&lt[nfot.E_Length].equals(lt1[nfot.E_Length])&&lt[nfot.Full_Diffraction_Distance].equals(lt1[nfot.Full_Diffraction_Distance])&&lt[nfot.Delta_Distance].equals(-1.0));
-            
-             System.out.println("----------TEST#3 diffraction with 2 buildings(building1 and building2) finished----- ");
-
+             assertEquals(lt[nfot.Delta_Distance], lt1[nfot.Delta_Distance], 1e-12);
+             assertEquals(lt[nfot.E_Length], lt1[nfot.E_Length], 1e-12);
+             assertEquals(lt[nfot.Full_Diffraction_Distance], lt1[nfot.Full_Diffraction_Distance], 1e-12);
+             assertEquals(-1.0,lt[nfot.Delta_Distance], 1e-12);
          }
              
          public void testPointsVisible() throws LayerDelaunayError{

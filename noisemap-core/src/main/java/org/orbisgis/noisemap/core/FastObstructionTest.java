@@ -49,8 +49,7 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineSegment;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Polygon;
-import org.jdelaunay.delaunay.geometries.DPoint;
-import org.jdelaunay.delaunay.geometries.DTriangle;
+import com.vividsolutions.jts.triangulate.quadedge.Vertex;
 
 /**
  * FastObstructionTest speed up the search of
@@ -232,7 +231,7 @@ public class FastObstructionTest {
             //get this point Z using propagation line
             zRandSIntersection = calculateLinearInterpolation(propagationLine.p0, propagationLine.p1, intersection);
             //If the Z calculated by propagation Line >= Z calculated by intersected line, we will find next triangle
-            if (zRandSIntersection >= zTopoIntersection) {
+            if (Double.isNaN(zRandSIntersection) || zRandSIntersection + epsilon >= zTopoIntersection) {
                 return this.triNeighbors.get(triIndex).get(nearestIntersectionSide);
             }
             //Else, the Z of Topographic intersection > Z calculated by propagation Line, the Topographic intersection will block the propagation line
@@ -700,25 +699,12 @@ public class FastObstructionTest {
             return false;
         }
 
-        double zTopoR = getTopoZByGiven3Points(triR[0], triR[1], triR[2], p1);
-        double zTopoS = getTopoZByGiven3Points(triS[0], triS[1], triS[2], p2);
+        double zTopoP1 = getTopoZByGiven3Points(triR[0], triR[1], triR[2], p1);
+        double zTopoP2 = getTopoZByGiven3Points(triS[0], triS[1], triS[2], p2);
 
-    // todo receiverDefaultHeight if rcv height = 0
-        if (zTopoR != 0) {
-                //Z value of the receiver is low than topography, we will modify this receiver height
-              p1.setCoordinate(new Coordinate(p1.x, p1.y, zTopoR + p1.z));
-        }
-        if (zTopoS != 0) {
-                //Z value of the source is low than topography, we will modify this source height
-              p2.setCoordinate(new Coordinate(p2.x, p2.y, zTopoS + p2.z));
-        }
-
-        if (p1.z < zTopoR || Double.isNaN(p1.z)) {
-            //Z value of the receiver is low than topography, we will modify this receiver height
-            p1.setCoordinate(new Coordinate(p1.x, p1.y, zTopoR + receiverDefaultHeight));
-        }
-        if (p2.z < zTopoS) {
-            //Z value of the source is low than topography, than the propagation cant not be compute
+        if ((!Double.isNaN(p1.z) && p1.z + epsilon < zTopoP1)
+                || (!Double.isNaN(p2.z) && p2.z + epsilon < zTopoP2)) {
+            //Z value of origin or destination is lower than topography. FreeField is always false in this case
             return false;
         }
 
@@ -792,15 +778,12 @@ public class FastObstructionTest {
         Coordinate[] triR = getTriangle(curTri);
         Coordinate[] triS = getTriangle(curTriS);
 
-        double zTopoR = getTopoZByGiven3Points(triR[0], triR[1], triR[2], p1);
-        double zTopoS = getTopoZByGiven3Points(triS[0], triS[1], triS[2], p2);
+        double zTopoP1 = getTopoZByGiven3Points(triR[0], triR[1], triR[2], p1);
+        double zTopoP2 = getTopoZByGiven3Points(triS[0], triS[1], triS[2], p2);
 
-        if (p1.z < zTopoR || Double.isNaN(p1.z)) {
-            //Z value of the receiver is low than topography, we will modify this receiver height
-            p1.setCoordinate(new Coordinate(p1.x, p1.y, zTopoR + receiverDefaultHeight));
-        }
-        if (p2.z < zTopoS) {
-            //Z value of the source is low than topography, than the propagation cant not be compute
+        //There is no path if receiver of source are under
+        if ((!Double.isNaN(p1.z) && p1.z + epsilon < zTopoP1) ||
+                (!Double.isNaN(p2.z) && p2.z + epsilon < zTopoP2)) {
             return totData;
         }
         while (curTri != -1) {
@@ -924,7 +907,6 @@ public class FastObstructionTest {
      * ChangeCoordinateSystem, use original coordinate in 3D to change into a new markland in 2D with new x' computed by algorithm and y' is original height of point.
      * Attention this function can just be used when the points in the same plane.
      * {@link "http://en.wikipedia.org/wiki/Rotation_matrix"}
-     * {@link "http://read.pudn.com/downloads93/ebook/364220/zbzh.pdf"}
      */
     private LinkedList<Coordinate> getNewCoordinateSystem(LinkedList<TriIdWithIntersection> listPoints) {
         LinkedList<Coordinate> newcoord = new LinkedList<Coordinate>();
@@ -933,16 +915,12 @@ public class FastObstructionTest {
         double sin = Math.sin(angle);
         double cos = Math.cos(angle);
 
-        for (int i = 0; i < listPoints.size(); i++) {
-            double newX = (listPoints.get(i).getCoorIntersection().x - listPoints.get(0).getCoorIntersection().x) * cos +
-                    (listPoints.get(i).getCoorIntersection().y - listPoints.get(0).getCoorIntersection().y) * sin;
-            newcoord.add(new Coordinate(newX, listPoints.get(i).getCoorIntersection().z));
-
-
+        for (TriIdWithIntersection listPoint : listPoints) {
+            double newX = (listPoint.getCoorIntersection().x - listPoints.get(0).getCoorIntersection().x) * cos +
+                    (listPoint.getCoorIntersection().y - listPoints.get(0).getCoorIntersection().y) * sin;
+            newcoord.add(new Coordinate(newX, listPoint.getCoorIntersection().z));
         }
-
         return newcoord;
-
     }
 
 
@@ -989,23 +967,7 @@ public class FastObstructionTest {
      * @return z of intersection point
      */
     private double calculateLinearInterpolation(Coordinate p1, Coordinate p2, Coordinate intersection) {
-        LinkedList<Coordinate> points = new LinkedList<Coordinate>();
-        double zOfIntersection = 0.;
-        points.add(p1);
-        points.add(p2);
-        if (intersection != null) {
-            points.add(intersection);
-        } else {
-            return zOfIntersection;
-        }
-        setNaNZ0(points);
-        if ((p2.y - p1.y) + p1.z != 0 && (p2.y - p1.y) != 0) {
-            zOfIntersection = ((p2.z - p1.z) * (intersection.y - p1.y)) / (p2.y - p1.y) + p1.z;
-        }
-        else if((p2.x - p1.x) + p1.z != 0 && (p2.x - p1.x) != 0){
-            zOfIntersection = ((p2.z - p1.z) * (intersection.x - p1.x)) / (p2.x - p1.x) + p1.z;
-        }
-        return zOfIntersection;
+        return Vertex.interpolateZ(intersection, p1,p2);
     }
 
     /**
@@ -1022,35 +984,7 @@ public class FastObstructionTest {
      */
 
     private double getTopoZByGiven3Points(Coordinate p1, Coordinate p2, Coordinate p3, Coordinate point) {
-        double a;
-        double b;
-        double c;
-        double d;
-        double topoZofPoint = 0.;
-        List<Coordinate> points = new LinkedList<Coordinate>();
-        points.add(p1);
-        points.add(p2);
-        points.add(p3);
-        points.add(point);
-        setNaNZ0(points);
-
-        a = ((p2.y - p1.y) * (p3.z - p1.z) - (p2.z - p1.z) * (p3.y - p1.y));
-        b = ((p2.z - p1.z) * (p3.x - p1.x) - (p2.x - p1.x) * (p3.z - p1.z));
-        c = ((p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x));
-        d = (0 - (a * p1.x + b * p1.y + c * p1.z));
-        if (c != 0) {
-            topoZofPoint = -(a * point.x + b * point.y + d) / c;
-        }
-        return topoZofPoint;
-
-    }
-
-    private void setNaNZ0(List<Coordinate> points) {
-        for (Coordinate point : points) {
-            if (Double.isNaN(point.z)) {
-                point.setCoordinate(new Coordinate(point.x, point.y, 0.));
-            }
-        }
+        return Vertex.interpolateZ(point, p1, p2, p3);
     }
 
 
