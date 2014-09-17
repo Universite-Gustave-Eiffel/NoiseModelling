@@ -782,7 +782,7 @@ public class PropagationProcess implements Runnable {
                             double receiverCornerDistance = CGAlgorithms3D.distance(receiverCoord,
                                     regionCorners.get(curCorner.get(0)));
                             double sourceCornerDistance = CGAlgorithms3D.distance(srcCoord,
-                                    regionCorners.get(curCorner.size() - 1));
+                                    regionCorners.get(curCorner.get(curCorner.size() - 1)));
                             double diffractionFullDistance = receiverCornerDistance
                                     + eLength                                                                           //Corner to corner distance
                                     + sourceCornerDistance;
@@ -831,28 +831,6 @@ public class PropagationProcess implements Runnable {
                                 if (diffractionPathCount > LIMITATION_DIFFRACTION_PATH) {
                                     break; //exit diffraction search
                                 }
-                                // TODO removing
-								/*
-								 * if(somethingHideReceiver) { Coordinate[]
-								 * coordinates=new
-								 * Coordinate[2+curCorner.size()];
-								 * coordinates[0]=receiverCoord; int idvertex=1;
-								 * for(int idcorner : curCorner) {
-								 * coordinates[idvertex
-								 * ]=regionCorners.get(idcorner); idvertex++; }
-								 * coordinates[coordinates.length-1]=srcCoord;
-								 * Value[] row=new Value[3];
-								 * row[0]=ValueFactory.
-								 * createValue(factory.createLineString
-								 * (coordinates));
-								 * row[1]=ValueFactory.createValue(idReceiver);
-								 * row
-								 * [2]=ValueFactory.createValue(WToDba(largeAtt
-								 * )); try { driver.addValues(row); } catch
-								 * (DriverException e) { // TODO Auto-generated
-								 * catch block e.printStackTrace(); return; } }
-								 * //END REMOVING
-								 */
                             }
                         }
                         // Process to the next corner
