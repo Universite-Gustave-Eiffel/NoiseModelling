@@ -161,6 +161,7 @@ public class FastObstructionTest {
                            HashSet<Integer> navigationHistory) {
             //NonRobustLineIntersector linters = new NonRobustLineIntersector();
             final Triangle tri = this.triVertices.get(triIndex);
+            final Triangle triNeighbors = this.triNeighbors.get(triIndex);
         int nearestIntersectionSide = -1;
         int idneigh;
 
@@ -173,15 +174,14 @@ public class FastObstructionTest {
         Coordinate intersection = new Coordinate();
         //if there is no intersection, by default we set the - max value to Topography intersection to avoid the problem
         double zTopoIntersection = -Double.MAX_VALUE;
-        double zRandSIntersection;
+        double zPropagationRayIntersection;
         // Intersection First Side
-        idneigh = this.triNeighbors.get(
-                triIndex).get(2);
+        idneigh = triNeighbors.get(2);
         //add: search triangle without height
         if (idneigh != -1 && !navigationHistory.contains(idneigh)) {
             distline_line = propagationLine.distance(new LineSegment(aTri, bTri));
             if (distline_line < FastObstructionTest.epsilon &&
-                    distline_line < nearestIntersectionPtDist && this.triVertices.get(idneigh).getBuidlingID() == 0) {
+                    distline_line < nearestIntersectionPtDist) {
                 nearestIntersectionPtDist = distline_line;
                 nearestIntersectionSide = 2;
                 //we will get the intersection point coordinate with(x,y,NaN)
@@ -193,12 +193,11 @@ public class FastObstructionTest {
             }
         }
         // Intersection Second Side
-        idneigh = this.triNeighbors.get(
-                triIndex).get(0);
+        idneigh = triNeighbors.get(0);
         if (idneigh != -1 && !navigationHistory.contains(idneigh)) {
             distline_line = propagationLine.distance(new LineSegment(bTri, cTri));
             if (distline_line < FastObstructionTest.epsilon &&
-                    distline_line < nearestIntersectionPtDist && this.triVertices.get(idneigh).getBuidlingID() == 0) {
+                    distline_line < nearestIntersectionPtDist) {
                 nearestIntersectionPtDist = distline_line;
                 nearestIntersectionSide = 0;
                 if (!(propagationLine.intersection(new LineSegment(bTri, cTri)) == null)) {
@@ -212,12 +211,11 @@ public class FastObstructionTest {
         }
 
         // Intersection Third Side
-        idneigh = this.triNeighbors.get(
-                triIndex).get(1);
+        idneigh = triNeighbors.get(1);
         if (idneigh != -1 && !navigationHistory.contains(idneigh)) {
             distline_line = propagationLine.distance(new LineSegment(cTri, aTri));
             if (distline_line < FastObstructionTest.epsilon &&
-                    distline_line < nearestIntersectionPtDist && this.triVertices.get(idneigh).getBuidlingID() == 0) {
+                    distline_line < nearestIntersectionPtDist) {
                 nearestIntersectionSide = 1;
                 if (!(propagationLine.intersection(new LineSegment(cTri, aTri)) == null)) {
                     intersection = new Coordinate(propagationLine.intersection(new LineSegment(cTri, aTri)));
@@ -227,11 +225,21 @@ public class FastObstructionTest {
                 }
             }
         }
+
         if (nearestIntersectionSide != -1) {
             //get this point Z using propagation line
-            zRandSIntersection = calculateLinearInterpolation(propagationLine.p0, propagationLine.p1, intersection);
+            zPropagationRayIntersection = calculateLinearInterpolation(propagationLine.p0, propagationLine.p1, intersection);
+            // Manage blocking buildings
+            int buildingId = this.triVertices.get(triNeighbors.get(nearestIntersectionSide)).getBuidlingID();
+            if(buildingId != 0) {
+                MeshBuilder.PolygonWithHeight building = polygonWithHeight.get(buildingId - 1);
+                // Stop propagation if ray collide with the building
+                if(!building.hasHeight() || Double.isNaN(zPropagationRayIntersection) || zPropagationRayIntersection < building.getHeight()) {
+                    return -1;
+                }
+            }
             //If the Z calculated by propagation Line >= Z calculated by intersected line, we will find next triangle
-            if (Double.isNaN(zRandSIntersection) || zRandSIntersection + epsilon >= zTopoIntersection) {
+            if (Double.isNaN(zPropagationRayIntersection) || zPropagationRayIntersection + epsilon >= zTopoIntersection) {
                 return this.triNeighbors.get(triIndex).get(nearestIntersectionSide);
             }
             //Else, the Z of Topographic intersection > Z calculated by propagation Line, the Topographic intersection will block the propagation line
@@ -944,7 +952,7 @@ public class FastObstructionTest {
             } else {
                 if (buildingCoor[0].equals(buildingCoor[buildingCoor.length - 1]) && buildingCoor.length - 1 >= 3) {
                     for (int j = 0; j < buildingCoor.length - 1; j++) {
-                        sumBuildingHeight += buildingCoor[j].z + buildingHeight;
+                        sumBuildingHeight += buildingCoor[j].z;
                     }
 
                     averageBuildingHeight = sumBuildingHeight / (buildingCoor.length - 1);

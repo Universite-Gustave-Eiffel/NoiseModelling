@@ -38,6 +38,7 @@ public class JdbcNoiseMap {
     protected int subdivisionLevel = -1; // TODO Guess it from maximumPropagationDistance and source extent
     protected int soundReflectionOrder = 2;
     protected int soundDiffractionOrder = 1;
+    protected boolean computeVerticalDiffraction = true;
     protected double wallAbsorption = 0.05;
     protected String heightField = "";
     protected GeometryFactory geometryFactory = new GeometryFactory();
@@ -476,5 +477,13 @@ public class JdbcNoiseMap {
             subdivisionLevel++;
         }
         gridDim = (int) Math.pow(2, subdivisionLevel);
+    }
+
+    public boolean isComputeVerticalDiffraction() {
+        return computeVerticalDiffraction;
+    }
+
+    public void setComputeVerticalDiffraction(boolean computeVerticalDiffraction) {
+        this.computeVerticalDiffraction = computeVerticalDiffraction;
     }
 }

@@ -73,7 +73,9 @@ public class TestSoundPropagationIn3D extends TestCase {
            
            assertTrue("Intersection test isFreeField #1 failed",ft.isFreeField(new Coordinate(10,5), new Coordinate(12,45)));
            assertFalse("Intersection test isFreeField #2 failed",ft.isFreeField(new Coordinate(10,5), new Coordinate(32,15)));
-           assertFalse("Intersection test isFreeField #2 failed",ft.isFreeField(new Coordinate(10,5,6.0), new Coordinate(32,15,7.0)));
+           // Direct field propagation on top of the building
+           // Ray is at 6.22m and building height is 5m, then there is a free field.
+           assertTrue("Intersection test isFreeField #2 failed",ft.isFreeField(new Coordinate(10,5,6.0), new Coordinate(32,15,7.0)));
            System.out.println("----------------TEST path between source and receiver----------------");
            System.out.println("-----no building-----");
            DiffractionWithSoilEffetZone diffraData=ft.getPath(new Coordinate(5,15,1.5), new Coordinate(10,15,0.5));

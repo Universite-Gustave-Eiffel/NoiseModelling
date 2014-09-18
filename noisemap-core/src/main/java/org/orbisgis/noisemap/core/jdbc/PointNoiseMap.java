@@ -126,7 +126,7 @@ public class PointNoiseMap extends JdbcNoiseMap {
                 sourceGeometries, wj_sources, db_field_freq,
                 soundReflectionOrder, soundDiffractionOrder, maximumPropagationDistance, maximumReflectionDistance,
                 0, wallAbsorption, ij,
-                progression.subProcess(receivers.size()), geoWithSoil);
+                progression.subProcess(receivers.size()), geoWithSoil, computeVerticalDiffraction);
         PropagationProcess propaProcess = new PropagationProcess(
                 threadData, threadDataOut);
         propaProcess.run();

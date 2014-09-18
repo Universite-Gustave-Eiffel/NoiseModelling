@@ -76,13 +76,15 @@ public class PropagationProcessData {
     public ProgressVisitor cellProg;
     /** list Geometry of soil and the type of this soil */
     public List<GeoWithSoilType> geoWithSoilType;
+    /** True will compute vertical diffraction */
+    public boolean computeVerticalDiffraction;
 
     public PropagationProcessData(List<Coordinate> receivers, FastObstructionTest freeFieldFinder,
                                   QueryGeometryStructure sourcesIndex, List<Geometry> sourceGeometries,
                                   List<ArrayList<Double>> wj_sources, List<Integer> freq_lvl, int reflexionOrder,
                                   int diffractionOrder, double maxSrcDist, double maxRefDist, double minRecDist,
                                   double wallAlpha, int cellId, ProgressVisitor cellProg,
-                                  List<GeoWithSoilType> geoWithSoilType) {
+                                  List<GeoWithSoilType> geoWithSoilType, boolean computeVerticalDiffraction) {
         this.receivers = receivers;
         this.freeFieldFinder = freeFieldFinder;
         this.sourcesIndex = sourcesIndex;
@@ -98,7 +100,6 @@ public class PropagationProcessData {
         this.cellId = cellId;
         this.cellProg = cellProg;
         this.geoWithSoilType = geoWithSoilType;
+        this.computeVerticalDiffraction = computeVerticalDiffraction;
     }
-
-
 }

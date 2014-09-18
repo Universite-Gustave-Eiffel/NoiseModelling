@@ -108,7 +108,7 @@ public class TestSoundPropagationValidation extends TestCase {
 		List<Coordinate> vert=mesh.getVertices();
         FastObstructionTest manager=new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
 
-		PropagationProcessData propData=new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum, freqLvl, 0, 2, 80.,50., 1., 0., 0, null,null);
+		PropagationProcessData propData=new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum, freqLvl, 0, 2, 80.,50., 1., 0., 0, null,null, false);
 		PropagationProcessOut propDataOut=new PropagationProcessOut();
 		PropagationProcess propManager=new PropagationProcess(propData, propDataOut);
 		propManager.initStructures();
@@ -229,7 +229,7 @@ public class TestSoundPropagationValidation extends TestCase {
 		//Retrieve Delaunay triangulation of scene
 		List<Coordinate> vert=mesh.getVertices();
                 FastObstructionTest manager=new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
-		PropagationProcessData propData=new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum, freqLvl, 0, 2, 80.,50., 1., 0., 0, null,null);
+		PropagationProcessData propData=new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum, freqLvl, 0, 2, 80.,50., 1., 0., 0, null,null, false);
 		PropagationProcessOut propDataOut=new PropagationProcessOut();
 		PropagationProcess propManager=new PropagationProcess(propData, propDataOut);
 		propManager.initStructures();
