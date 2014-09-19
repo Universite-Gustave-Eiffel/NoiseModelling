@@ -90,6 +90,7 @@ public class TestPointNoiseMap {
             st.execute("CREATE TABLE RECEIVERS(the_geom POINT, GID SERIAL)");
             st.execute("INSERT INTO RECEIVERS(the_geom) VALUES ('POINT(-72 41 11)')");
             st.execute("INSERT INTO RECEIVERS(the_geom) VALUES ('POINT(-9 41 1.6)')");
+            st.execute("INSERT INTO RECEIVERS(the_geom) VALUES ('POINT(70 11 7)')");
             PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS", "SOUND_SOURCE", "RECEIVERS");
             pointNoiseMap.setSoundDiffractionOrder(0);
             pointNoiseMap.setSoundReflectionOrder(0);
@@ -99,9 +100,10 @@ public class TestPointNoiseMap {
             pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
             List<PropagationResultPtRecord> result =
                     new ArrayList<>(pointNoiseMap.evaluateCell(connection, 0, 0, new EmptyProgressVisitor()));
-            assertEquals(2, result.size());
+            assertEquals(3, result.size());
             assertEquals(51.20, 10*Math.log10(result.get(0).getReceiverLvl()), 1e-2);
             assertEquals(0, 10*Math.log10(result.get(1).getReceiverLvl()), 1e-2);
+            assertEquals(58.23, 10*Math.log10(result.get(2).getReceiverLvl()), 1e-2);
         }
     }
 }

@@ -703,22 +703,29 @@ public class FastObstructionTest {
         nbObstructionTest++;
         LineSegment propaLine = new LineSegment(p1, p2);
         //get receiver triangle id
-        int curTri = getTriangleIdByCoordinate(p1);
+        int curTriP1 = getTriangleIdByCoordinate(p1);
         //get source triangle id
-        int curTriS = getTriangleIdByCoordinate(p2);
-        Coordinate[] triR = getTriangle(curTri);
-        Coordinate[] triS = getTriangle(curTriS);
-        if (this.triVertices.get(curTri).getBuidlingID() >= 1) {
-            //receiver is in the building so this propagation line is invisible
-            return false;
+        int curTriP2 = getTriangleIdByCoordinate(p2);
+        Coordinate[] triP1 = getTriangle(curTriP1);
+        Coordinate[] triP2 = getTriangle(curTriP2);
+        Triangle buildingP1 = this.triVertices.get(curTriP1);
+        Triangle buildingP2 = this.triVertices.get(curTriP2);
+        if (buildingP1.getBuidlingID() >= 1) {
+            MeshBuilder.PolygonWithHeight building = polygonWithHeight.get(buildingP1.getBuidlingID() - 1);
+            if(!building.hasHeight() || Double.isNaN(p1.z) || building.getHeight() >= p1.z) {
+                //receiver is in the building so this propagation line is invisible
+                return false;
+            }
         }
-        if (this.triVertices.get(curTriS).getBuidlingID() >= 1) {
-            //receiver is in the building so this propagation line is invisible
-            return false;
+        if (buildingP2.getBuidlingID() >= 1) {
+            MeshBuilder.PolygonWithHeight building = polygonWithHeight.get(buildingP2.getBuidlingID() - 1);
+            if(!building.hasHeight() || Double.isNaN(p2.z) || building.getHeight() >= p2.z) {
+                //receiver is in the building so this propagation line is invisible
+                return false;
+            }
         }
-
-        double zTopoP1 = getTopoZByGiven3Points(triR[0], triR[1], triR[2], p1);
-        double zTopoP2 = getTopoZByGiven3Points(triS[0], triS[1], triS[2], p2);
+        double zTopoP1 = getTopoZByGiven3Points(triP1[0], triP1[1], triP1[2], p1);
+        double zTopoP2 = getTopoZByGiven3Points(triP2[0], triP2[1], triP2[2], p2);
 
         if ((!Double.isNaN(p1.z) && p1.z + epsilon < zTopoP1)
                 || (!Double.isNaN(p2.z) && p2.z + epsilon < zTopoP2)) {
@@ -727,19 +734,16 @@ public class FastObstructionTest {
         }
 
         HashSet<Integer> navigationHistory = new HashSet<Integer>();
-        if (this.triVertices.get(curTri).getBuidlingID() == 0) {
-            while (curTri != -1) {
-                navigationHistory.add(curTri);
-                Coordinate[] tri = getTriangle(curTri);
-                if (dotInTri(p2, tri[0], tri[1], tri[2])) {
-                    return true;
-                }
-                curTri = this.getNextTri(curTri, propaLine, navigationHistory);
+        int navigationTri = curTriP1;
+        while (navigationTri != -1) {
+            navigationHistory.add(navigationTri);
+            Coordinate[] tri = getTriangle(navigationTri);
+            if (dotInTri(p2, tri[0], tri[1], tri[2])) {
+                return true;
             }
-            return false;
-        } else {
-            return false;
+            navigationTri = this.getNextTri(navigationTri, propaLine, navigationHistory);
         }
+        return false;
     }
 
     /**

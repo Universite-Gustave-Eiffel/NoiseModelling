@@ -60,8 +60,6 @@ public class JdbcNoiseMap {
      * @param mainEnvelope Global envelope
      * @param cellI        I cell index
      * @param cellJ        J cell index
-     * @param cellIMax     I cell count
-     * @param cellJMax     J cell count
      * @param cellWidth    Cell width meter
      * @param cellHeight   Cell height meter
      * @return Envelope of the cell
@@ -76,8 +74,12 @@ public class JdbcNoiseMap {
 
     protected void fetchCellDem(Connection connection, Envelope fetchEnvelope, MeshBuilder mesh) throws SQLException {
         if(!demTable.isEmpty()) {
-            String topoGeomName = SFSUtilities.getGeometryFields(connection,
-                    TableLocation.parse(demTable)).get(0);
+            List<String> geomFields = SFSUtilities.getGeometryFields(connection,
+                    TableLocation.parse(demTable));
+            if(geomFields.isEmpty()) {
+                throw new SQLException("Digital elevation model table \""+demTable+"\" must exist and contain a POINT field");
+            }
+            String topoGeomName = geomFields.get(0);
             try (PreparedStatement st = connection.prepareStatement(
                     "SELECT " + TableLocation.quoteIdentifier(topoGeomName) + " FROM " +
                             demTable + " WHERE " +
