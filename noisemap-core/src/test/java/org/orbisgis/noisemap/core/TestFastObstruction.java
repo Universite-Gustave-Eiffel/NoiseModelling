@@ -45,6 +45,7 @@ import com.vividsolutions.jts.geom.Polygon;
 import com.vividsolutions.jts.index.quadtree.Quadtree;
 
 import junit.framework.TestCase;
+import org.junit.Test;
 
 public class TestFastObstruction extends TestCase {
 
@@ -243,4 +244,35 @@ public class TestFastObstruction extends TestCase {
 		}
 		return wideangle;
 	}
+
+    /**
+     * Sound propagation path over a building
+     * @throws LayerDelaunayError
+     */
+    public void testOverBuilding() throws LayerDelaunayError {
+        //Build Scene with One Building
+        GeometryFactory factory = new GeometryFactory();
+        Coordinate[] building1Coords = { new Coordinate(15., 5.,0.),
+                new Coordinate(30., 5.,0.), new Coordinate(30., 30.,0.),
+                new Coordinate(15., 30.,0.), new Coordinate(15., 5.,0.) };
+        Polygon building1 = factory.createPolygon(factory.createLinearRing(building1Coords));
+
+        //Create obstruction test object
+        MeshBuilder mesh = new MeshBuilder();
+        mesh.addGeometry(building1, 5);
+        mesh.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.),
+                new Coordinate(45., 45.,0.)));
+        FastObstructionTest manager=new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
+        // Over building
+        assertTrue(manager.isFreeField(new Coordinate(5, 20, 5.5), new Coordinate(40, 20, 5.5)));
+        // Top-down - intersection in (30,20,3.2)
+        assertFalse(manager.isFreeField(new Coordinate(5, 20, 9), new Coordinate(40, 20, 1)));
+        // Top-down - intersection in (21,20,4.8)
+        assertFalse(manager.isFreeField(new Coordinate(5, 20, 8), new Coordinate(40, 20, 1)));
+        // Top-down - intersection in (15,20,4.5)
+        assertFalse(manager.isFreeField(new Coordinate(5, 20, 6), new Coordinate(40, 20, 1)));
+        // Down-up - intersection in (15,20,3.2)
+        assertFalse(manager.isFreeField(new Coordinate(5, 20, 1), new Coordinate(40, 20, 9)));
+
+    }
 }

@@ -92,12 +92,14 @@ public class FastObstructionTest {
     public FastObstructionTest(LinkedList<MeshBuilder.PolygonWithHeight> buildings,
                                List<Triangle> triangles, List<Triangle> triNeighbors, List<Coordinate> points) {
 
-        List<MeshBuilder.PolygonWithHeight> polygonWithHeightArray = new ArrayList<MeshBuilder.PolygonWithHeight>(buildings);
+        List<MeshBuilder.PolygonWithHeight> polygonWithHeightArray = new ArrayList<MeshBuilder.PolygonWithHeight>(buildings.size());
         hasBuildingWithHeight = false;
-        for(MeshBuilder.PolygonWithHeight poly : polygonWithHeightArray) {
+        for(MeshBuilder.PolygonWithHeight poly : buildings) {
             if(poly.hasHeight()) {
                 hasBuildingWithHeight = true;
-                break;
+                polygonWithHeightArray.add(new MeshBuilder.PolygonWithHeight(poly.getGeometry(), poly.getHeight()));
+            } else {
+                polygonWithHeightArray.add(new MeshBuilder.PolygonWithHeight(poly.getGeometry()));
             }
         }
         GeometryFactory factory = new GeometryFactory();
@@ -159,9 +161,8 @@ public class FastObstructionTest {
     private int getNextTri(final int triIndex,
                            final LineSegment propagationLine,
                            HashSet<Integer> navigationHistory) {
-            //NonRobustLineIntersector linters = new NonRobustLineIntersector();
-            final Triangle tri = this.triVertices.get(triIndex);
-            final Triangle triNeighbors = this.triNeighbors.get(triIndex);
+        final Triangle tri = this.triVertices.get(triIndex);
+        final Triangle triNeighbors = this.triNeighbors.get(triIndex);
         int nearestIntersectionSide = -1;
         int idneigh;
 
@@ -230,9 +231,18 @@ public class FastObstructionTest {
             //get this point Z using propagation line
             zPropagationRayIntersection = calculateLinearInterpolation(propagationLine.p0, propagationLine.p1, intersection);
             // Manage blocking buildings
-            int buildingId = this.triVertices.get(triNeighbors.get(nearestIntersectionSide)).getBuidlingID();
-            if(buildingId != 0) {
-                MeshBuilder.PolygonWithHeight building = polygonWithHeight.get(buildingId - 1);
+            int neightBuildingId = this.triVertices.get(triNeighbors.get(nearestIntersectionSide)).getBuidlingID();
+            // Current tri is in building
+            if(tri.getBuidlingID() != 0) {
+                MeshBuilder.PolygonWithHeight building = polygonWithHeight.get(tri.getBuidlingID() - 1);
+                // Stop propagation if ray collide with the building
+                if(!building.hasHeight() || Double.isNaN(zPropagationRayIntersection) || zPropagationRayIntersection < building.getHeight()) {
+                    return -1;
+                }
+            }
+            // Next tri is in building
+            if(neightBuildingId != 0) {
+                MeshBuilder.PolygonWithHeight building = polygonWithHeight.get(neightBuildingId - 1);
                 // Stop propagation if ray collide with the building
                 if(!building.hasHeight() || Double.isNaN(zPropagationRayIntersection) || zPropagationRayIntersection < building.getHeight()) {
                     return -1;
