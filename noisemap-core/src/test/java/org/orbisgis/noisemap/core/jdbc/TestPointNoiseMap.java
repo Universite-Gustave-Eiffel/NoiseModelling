@@ -85,10 +85,11 @@ public class TestPointNoiseMap {
             st.execute("INSERT INTO buildings VALUES (" +
                     "'MULTIPOLYGON (((80 -30 0,80 90 0,-10 90 0,-10 70 0,60 70 0,60 -30 0,80 -30 0)))',4)");
             st.execute("DELETE FROM sound_source WHERE GID = 1");
-            st.execute("UPDATE sound_source SET THE_GEOM = 'POINT(120 -18 1.6)' WHERE GID = 2");
+            st.execute("UPDATE sound_source SET THE_GEOM = 'POINT(200 -18 1.6)' WHERE GID = 2");
             st.execute("DROP TABLE IF EXISTS RECEIVERS");
             st.execute("CREATE TABLE RECEIVERS(the_geom POINT, GID SERIAL)");
             st.execute("INSERT INTO RECEIVERS(the_geom) VALUES ('POINT(-72 41 11)')");
+            st.execute("INSERT INTO RECEIVERS(the_geom) VALUES ('POINT(-9 41 1.6)')");
             PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS", "SOUND_SOURCE", "RECEIVERS");
             pointNoiseMap.setSoundDiffractionOrder(0);
             pointNoiseMap.setSoundReflectionOrder(0);
@@ -98,8 +99,9 @@ public class TestPointNoiseMap {
             pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
             List<PropagationResultPtRecord> result =
                     new ArrayList<>(pointNoiseMap.evaluateCell(connection, 0, 0, new EmptyProgressVisitor()));
-            assertEquals(1, result.size());
-            assertEquals(54.34, 10*Math.log10(result.get(0).getReceiverLvl()), 1e-2);
+            assertEquals(2, result.size());
+            assertEquals(51.20, 10*Math.log10(result.get(0).getReceiverLvl()), 1e-2);
+            assertEquals(0, 10*Math.log10(result.get(1).getReceiverLvl()), 1e-2);
         }
     }
 }
