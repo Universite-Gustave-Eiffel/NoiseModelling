@@ -479,10 +479,17 @@ public class JdbcNoiseMap {
         gridDim = (int) Math.pow(2, subdivisionLevel);
     }
 
+    /**
+     * @return True if diffraction of horizontal edges is computed.
+     */
     public boolean isComputeVerticalDiffraction() {
         return computeVerticalDiffraction;
     }
 
+    /**
+     * Activate of deactivate diffraction of horizontal edges. Height of buildings must be provided.
+     * @param computeVerticalDiffraction New value
+     */
     public void setComputeVerticalDiffraction(boolean computeVerticalDiffraction) {
         this.computeVerticalDiffraction = computeVerticalDiffraction;
     }
