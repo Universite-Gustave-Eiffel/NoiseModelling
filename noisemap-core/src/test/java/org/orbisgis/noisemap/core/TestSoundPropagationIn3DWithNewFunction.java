@@ -79,11 +79,11 @@ public class TestSoundPropagationIn3DWithNewFunction extends TestCase {
            DiffractionWithSoilEffetZone diffraData=ft.getPath(new Coordinate(5,15,1.5), new Coordinate(10,15,0.5));
            Double[]lt=diffraData.getDiffractionData();
            System.out.println("----deltadistance----");
-           System.out.println(lt[ft.Delta_Distance]);
+           System.out.println(lt[DiffractionWithSoilEffetZone.DELTA_DISTANCE]);
            System.out.println("----e----");
-           System.out.println(lt[ft.E_Length]);
+           System.out.println(lt[DiffractionWithSoilEffetZone.E_LENGTH]);
            System.out.println("----distancepath----");
-           System.out.println(lt[ft.Full_Diffraction_Distance]);
+           System.out.println(lt[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE]);
            
            System.out.println("-----no building but have one cross triangle finished-----");
            
@@ -91,22 +91,22 @@ public class TestSoundPropagationIn3DWithNewFunction extends TestCase {
            diffraData=ft.getPath(new Coordinate(48,25,0.5), new Coordinate(5,15,1.5));
            lt=diffraData.getDiffractionData();
            System.out.println("----deltadistance----");
-           System.out.println(lt[ft.Delta_Distance]);
+           System.out.println(lt[DiffractionWithSoilEffetZone.DELTA_DISTANCE]);
            System.out.println("----e----");
-           System.out.println(lt[ft.E_Length]);
+           System.out.println(lt[DiffractionWithSoilEffetZone.E_LENGTH]);
            System.out.println("----distancepath----");
-           System.out.println(lt[ft.Full_Diffraction_Distance]);
+           System.out.println(lt[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE]);
            System.out.println("-----------exchange source receiver------------");
            diffraData=ft.getPath(new Coordinate(5,15,1.5), new Coordinate(48,25,0.5));
            Double[]lt1=diffraData.getDiffractionData();
            System.out.println("----deltadistance----");
-           System.out.println(lt1[ft.Delta_Distance]);
+           System.out.println(lt1[DiffractionWithSoilEffetZone.DELTA_DISTANCE]);
            System.out.println("----e----");
-           System.out.println(lt1[ft.E_Length]);
+           System.out.println(lt1[DiffractionWithSoilEffetZone.E_LENGTH]);
            System.out.println("----distancepath----");
-           System.out.println(lt1[ft.Full_Diffraction_Distance]);
-           assertTrue("Exchange source receiver got the different resultat",lt[ft.Delta_Distance]-lt1[ft.Delta_Distance]<=FastObstructionTest.epsilon
-                      &&lt[ft.E_Length]-lt1[ft.E_Length]<=FastObstructionTest.epsilon&&lt[ft.Full_Diffraction_Distance]-lt1[ft.Full_Diffraction_Distance]<=FastObstructionTest.epsilon);
+           System.out.println(lt1[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE]);
+           assertTrue("Exchange source receiver got the different resultat",lt[DiffractionWithSoilEffetZone.DELTA_DISTANCE]-lt1[DiffractionWithSoilEffetZone.DELTA_DISTANCE]<=FastObstructionTest.epsilon
+                      &&lt[DiffractionWithSoilEffetZone.E_LENGTH]-lt1[DiffractionWithSoilEffetZone.E_LENGTH]<=FastObstructionTest.epsilon&&lt[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE]-lt1[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE]<=FastObstructionTest.epsilon);
            System.out.println("----------TEST diffraction with 2 buildings(building1 and building2) finished----- ");
            }
    
@@ -139,22 +139,22 @@ public class TestSoundPropagationIn3DWithNewFunction extends TestCase {
            DiffractionWithSoilEffetZone diffraData=ft.getPath(new Coordinate(48,25,0.5), new Coordinate(5,15,1.5));
            Double[]lt=diffraData.getDiffractionData();
            System.out.println("----deltadistance----");
-           System.out.println(lt[ft.Delta_Distance]);
+           System.out.println(lt[DiffractionWithSoilEffetZone.DELTA_DISTANCE]);
            System.out.println("----e----");
-           System.out.println(lt[ft.E_Length]);
+           System.out.println(lt[DiffractionWithSoilEffetZone.E_LENGTH]);
            System.out.println("----distancepath----");
-           System.out.println(lt[ft.Full_Diffraction_Distance]);
+           System.out.println(lt[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE]);
            System.out.println("-----------exchange source receiver------------");
            diffraData=ft.getPath(new Coordinate(5,15,1.5), new Coordinate(48,25,0.5));
            Double[]lt1=diffraData.getDiffractionData();
            System.out.println("----deltadistance----");
-           System.out.println(lt1[ft.Delta_Distance]);
+           System.out.println(lt1[DiffractionWithSoilEffetZone.DELTA_DISTANCE]);
            System.out.println("----e----");
-           System.out.println(lt1[ft.E_Length]);
+           System.out.println(lt1[DiffractionWithSoilEffetZone.E_LENGTH]);
            System.out.println("----distancepath----");
-           System.out.println(lt1[ft.Full_Diffraction_Distance]);
-           assertTrue("Exchange source receiver got the different resultat",lt[ft.Delta_Distance]-lt1[ft.Delta_Distance]<=FastObstructionTest.epsilon
-                      &&lt[ft.E_Length]-lt1[ft.E_Length]<=FastObstructionTest.epsilon&&lt[ft.Full_Diffraction_Distance]-lt1[ft.Full_Diffraction_Distance]<=FastObstructionTest.epsilon);
+           System.out.println(lt1[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE]);
+           assertTrue("Exchange source receiver got the different resultat",lt[DiffractionWithSoilEffetZone.DELTA_DISTANCE]-lt1[DiffractionWithSoilEffetZone.DELTA_DISTANCE]<=FastObstructionTest.epsilon
+                      &&lt[DiffractionWithSoilEffetZone.E_LENGTH]-lt1[DiffractionWithSoilEffetZone.E_LENGTH]<=FastObstructionTest.epsilon&&lt[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE]-lt1[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE]<=FastObstructionTest.epsilon);
            
            }
     

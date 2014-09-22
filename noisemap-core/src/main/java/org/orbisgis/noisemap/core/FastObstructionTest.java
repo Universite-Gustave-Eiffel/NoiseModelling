@@ -34,7 +34,6 @@
 package org.orbisgis.noisemap.core;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -75,11 +74,6 @@ public class FastObstructionTest {
     private boolean hasBuildingWithHeight;
     //data for calculate 3D diffraction,
     //first Coordinate is the coordinate after the changing coordinate system, the second parameter will keep the data of original coordinate system
-
-    public final int Delta_Distance = 0;//delta distance;
-    public final int E_Length = 1;//e length
-    public final int Full_Diffraction_Distance = 2;//the full distance of diffraction path
-
     /**
      * New constructor, initialize buildings, triangles and points from mesh data
      *
@@ -666,10 +660,10 @@ public class FastObstructionTest {
      * @param p2 Coordinate source
      * @return DiffractionWithSoilEffectZone
      * Double list=DiffractionWithSoilEffectZone.diffractionData : data prepared to compute diffraction
-     * Double[Delta_Distance]:delta distance;
-     * Double[E_Length]:e;
-     * Double[Full_Diffraction_Distance]:the full distance of diffraction path
-     * if Double[Delta_Distance],Double[E_Length],Double[Full_Diffraction_Distance],Double[Full_Distance_With_Soil_Effect] are -1. then no useful intersections.
+     * Double[DELTA_DISTANCE]:delta distance;
+     * Double[E_LENGTH]:e;
+     * Double[FULL_DIFFRACTION_DISTANCE]:the full distance of diffraction path
+     * if Double[DELTA_DISTANCE],Double[E_LENGTH],Double[FULL_DIFFRACTION_DISTANCE],Double[Full_Distance_With_Soil_Effect] are -1. then no useful intersections.
      */
     @SuppressWarnings("unchecked")
     public DiffractionWithSoilEffetZone getPath(Coordinate p1, Coordinate p2) {
@@ -682,11 +676,22 @@ public class FastObstructionTest {
         LineString rOZone = factory.createLineString(new Coordinate[]{new Coordinate(-1, -1), new Coordinate(-1, -1)});
         LineString sOZone = factory.createLineString(new Coordinate[]{new Coordinate(-1, -1), new Coordinate(-1, -1)});
         Double[] data = new Double[3];
-        data[Delta_Distance] = -1.;
-        data[E_Length] = -1.;
-        data[Full_Diffraction_Distance] = -1.;
+        data[DiffractionWithSoilEffetZone.DELTA_DISTANCE] = -1.;
+        data[DiffractionWithSoilEffetZone.E_LENGTH] = -1.;
+        data[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE] = -1.;
+        List<TriIdWithIntersection> allInterPoints = new ArrayList<>();
+        computePropagationPath(p1, p2, false, allInterPoints);
         List<TriIdWithIntersection> interPoints = new ArrayList<>();
-        computePropagationPath(p1, p2, false, interPoints);
+        // Keep only intersection between land and buildings.
+        TriIdWithIntersection lastInter = null;
+        for(TriIdWithIntersection inter : allInterPoints) {
+            if(inter.getBuildingId() > 0 && (lastInter == null || lastInter.getBuildingId() == 0)) {
+                interPoints.add(inter);
+            } else if(lastInter != null && inter.getBuildingId() == 0 && lastInter.getBuildingId() > 0) {
+                interPoints.add(lastInter);
+            }
+            lastInter = inter;
+        }
         //set default data
         DiffractionWithSoilEffetZone totData = new DiffractionWithSoilEffetZone(data, rOZone, sOZone);
         if(!hasBuildingWithHeight) {
@@ -725,74 +730,65 @@ public class FastObstructionTest {
             //after jarvis march if we get the length of list of points less than 2, so we have no useful points
             return totData;
         } else {
-            LinkedList<LineSegment> path = new LinkedList<LineSegment>();
-            boolean isVisible = true;//check if the source and receiver is visible
+            LinkedList<LineSegment> path = new LinkedList<>();
             for (int i = 0; i < points.x.length - 1; i++) {
-                //if the intersection point after Jarvis March is not on Building so we can sure this Source-Receiver is Invisible
-                if (!interPoints.get(pointsId.get(i)).isIntersectionOnTopography()) {
-                    //The topography block this propagation line
-                    isVisible = false;
-                    break;
-                } else {
-                    path.add(new LineSegment(new Coordinate(points.x[i], points.y[i]), new Coordinate(points.x[i + 1], points.y[i + 1])));
-                    //When we get a point we will check if this point is equal with P2 we will stop finding next point
-                    if (p2.equals(interPoints.get(pointsId.get(i + 1)).getCoorIntersection()) && i > 0) {
-                        break;
-                    }
-                    //if after Jarvis march the first point and the second point are Receiver and Source so we will quit loop and no diffraction in this case
-                    else if (p2.equals(interPoints.get(pointsId.get(i + 1)).getCoorIntersection()) && i == 0) {
-                        // after jarvis march first point and second point are Receiver and Source
-                        return totData;
-                    }
-                }
-            }
-            if (isVisible) {
-                double pathDistance = 0.0;//distance of path
-                //prepare data to compute pure diffraction
-                //h0 in expression diffraction:the highest point intersection
-                double pointHeight = 0.0;
-                for(LineSegment aPath : path) {
-                    pathDistance = aPath.getLength() + pathDistance;
-                    if (aPath.p0.y > pointHeight) {
-                        pointHeight = aPath.p0.y;
-                    }
-                }
-                if (Double.isInfinite(pathDistance)) {
+                path.add(new LineSegment(new Coordinate(points.x[i], points.y[i]), new Coordinate(points.x[i + 1], points.y[i + 1])));
+                // FreeField test
+                TriIdWithIntersection interBegin = interPoints.get(pointsId.get(i));
+                TriIdWithIntersection interEnd = interPoints.get(pointsId.get(i + 1));
+                Coordinate testPBegin = new Coordinate(interBegin.getCoorIntersection());
+                Coordinate testPEnd = new Coordinate(interEnd.getCoorIntersection());
+                testPBegin.setOrdinate(Coordinate.Z, points.y[i]);
+                testPEnd.setOrdinate(Coordinate.Z, points.y[i + 1]);
+                if(!isFreeField(testPBegin, testPEnd)) {
                     return totData;
                 }
-                //we used coordinate after change coordinate system to get the right distance.
-                /*
-                                double dx = path.getFirst().p0.x-path.getLast().p1.x;
-                double dy = path.getFirst().p0.y-path.getLast().p1.y;
-                double dz = path.getFirst().p0.z-path.getLast().p1.z;
-
-                double distanceRandS =  Math.sqrt(dx*dx+dy*dy+dz*dz);
-                 */
-                double distanceRandS = path.getFirst().p0.distance(path.getLast().p1);              //distance of receiver and source
-                double e = pathDistance - path.getFirst().getLength() - path.getLast().getLength();//distance without first part path and last part path
-                double deltaDistance = pathDistance - distanceRandS;                                //delta distance
-
-                data[Delta_Distance] = deltaDistance;
-                data[E_Length] = e;
-                data[Full_Diffraction_Distance] = pathDistance;
-
-                //if we have soil data
-                Coordinate[] firstPart = new Coordinate[2];
-                Coordinate[] lastPart = new Coordinate[2];
-                firstPart[0] = p1;
-                //get original coordinate for first intersection with building
-                firstPart[1] = interPoints.get(1).getCoorIntersection();
-
-                //get original coordinate for last intersection with building
-                lastPart[0] = interPoints.get(interPoints.size() - 1).getCoorIntersection();
-                lastPart[1] = p2;
-                //receiver-first intersection zone aims to calculate ground effect
-                rOZone = factory.createLineString(firstPart);
-                //last intersection-source zone aims to calculate ground effect (between rOZone and sOZone we ignore ground effect)
-                sOZone = factory.createLineString(lastPart);
-
-                totData = new DiffractionWithSoilEffetZone(data, rOZone, sOZone);
             }
+            double pathDistance = 0.0;//distance of path
+            //prepare data to compute pure diffraction
+            //h0 in expression diffraction:the highest point intersection
+            double pointHeight = 0.0;
+            for(LineSegment aPath : path) {
+                pathDistance = aPath.getLength() + pathDistance;
+                if (aPath.p0.y > pointHeight) {
+                    pointHeight = aPath.p0.y;
+                }
+            }
+            if (Double.isInfinite(pathDistance)) {
+                return totData;
+            }
+            //we used coordinate after change coordinate system to get the right distance.
+            /*
+                            double dx = path.getFirst().p0.x-path.getLast().p1.x;
+            double dy = path.getFirst().p0.y-path.getLast().p1.y;
+            double dz = path.getFirst().p0.z-path.getLast().p1.z;
+
+            double distanceRandS =  Math.sqrt(dx*dx+dy*dy+dz*dz);
+             */
+            double distanceRandS = path.getFirst().p0.distance(path.getLast().p1);              //distance of receiver and source
+            double e = pathDistance - path.getFirst().getLength() - path.getLast().getLength();//distance without first part path and last part path
+            double deltaDistance = pathDistance - distanceRandS;                                //delta distance
+
+            data[DiffractionWithSoilEffetZone.DELTA_DISTANCE] = deltaDistance;
+            data[DiffractionWithSoilEffetZone.E_LENGTH] = e;
+            data[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE] = pathDistance;
+
+            //if we have soil data
+            Coordinate[] firstPart = new Coordinate[2];
+            Coordinate[] lastPart = new Coordinate[2];
+            firstPart[0] = p1;
+            //get original coordinate for first intersection with building
+            firstPart[1] = interPoints.get(1).getCoorIntersection();
+
+            //get original coordinate for last intersection with building
+            lastPart[0] = interPoints.get(interPoints.size() - 2).getCoorIntersection();
+            lastPart[1] = p2;
+            //receiver-first intersection zone aims to calculate ground effect
+            rOZone = factory.createLineString(firstPart);
+            //last intersection-source zone aims to calculate ground effect (between rOZone and sOZone we ignore ground effect)
+            sOZone = factory.createLineString(lastPart);
+
+            totData = new DiffractionWithSoilEffetZone(data, rOZone, sOZone);
             return totData;
         }
     }
@@ -812,7 +808,12 @@ public class FastObstructionTest {
         for (TriIdWithIntersection listPoint : listPoints) {
             double newX = (listPoint.getCoorIntersection().x - listPoints.get(0).getCoorIntersection().x) * cos +
                     (listPoint.getCoorIntersection().y - listPoints.get(0).getCoorIntersection().y) * sin;
-            newCoord.add(new Coordinate(newX, listPoint.getCoorIntersection().z));
+            // Read Z from building height, keep z for source and receiver
+            double z = listPoint.getCoorIntersection().z;
+            if(listPoint.getBuildingId() > 0) {
+                z = polygonWithHeight.get(listPoint.getBuildingId() - 1).getHeight();
+            }
+            newCoord.add(new Coordinate(newX, z));
         }
         return newCoord;
     }

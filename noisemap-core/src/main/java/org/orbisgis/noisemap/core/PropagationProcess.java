@@ -35,14 +35,10 @@ package org.orbisgis.noisemap.core;
 
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import com.vividsolutions.jts.algorithm.CGAlgorithms3D;
 import com.vividsolutions.jts.algorithm.NonRobustLineIntersector;
@@ -56,7 +52,6 @@ import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.index.quadtree.Quadtree;
 import com.vividsolutions.jts.index.strtree.STRtree;
-import com.vividsolutions.jts.operation.distance3d.Distance3DOp;
 import com.vividsolutions.jts.triangulate.quadedge.Vertex;
 import org.h2gis.h2spatialapi.ProgressVisitor;
 import org.slf4j.Logger;
@@ -482,9 +477,9 @@ public class PropagationProcess implements Runnable {
                 DiffractionWithSoilEffetZone diffDataWithSoilEffet = data.freeFieldFinder.getPath(receiverCoord, srcCoord);
                 Double[] diffractiondata = diffDataWithSoilEffet.getDiffractionData();
 
-                double deltadistance = diffractiondata[data.freeFieldFinder.Delta_Distance];
-                double e = diffractiondata[data.freeFieldFinder.E_Length];
-                double fulldistance = diffractiondata[data.freeFieldFinder.Full_Diffraction_Distance];
+                double deltadistance = diffractiondata[DiffractionWithSoilEffetZone.DELTA_DISTANCE];
+                double e = diffractiondata[DiffractionWithSoilEffetZone.E_LENGTH];
+                double fulldistance = diffractiondata[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE];
 
                 //delta diffraction
                 if (Double.compare(deltadistance, -1.) != 0 && Double.compare(e, -1.) != 0 && Double.compare(fulldistance, -1.) != 0 && somethingHideReceiver) {

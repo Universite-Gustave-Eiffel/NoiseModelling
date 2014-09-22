@@ -78,11 +78,11 @@ public class TestMeshAndTopoDiffraction extends TestCase{
             DiffractionWithSoilEffetZone diffraData=nfot.getPath(new Coordinate(48,25,7), new Coordinate(5,15,8));
             Double[]lt=diffraData.getDiffractionData();
             System.out.println("----deltadistance----");
-            System.out.println(lt[nfot.Delta_Distance]);
+            System.out.println(lt[DiffractionWithSoilEffetZone.DELTA_DISTANCE]);
             System.out.println("----e----");
-            System.out.println(lt[nfot.E_Length]);
+            System.out.println(lt[DiffractionWithSoilEffetZone.E_LENGTH]);
             System.out.println("----distancepath----");
-            System.out.println(lt[nfot.Full_Diffraction_Distance]);
+            System.out.println(lt[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE]);
             
             
             
@@ -90,15 +90,16 @@ public class TestMeshAndTopoDiffraction extends TestCase{
             diffraData=nfot.getPath(new Coordinate(5,15,8), new Coordinate(48,25,7));
             Double[]lt1=diffraData.getDiffractionData();
             System.out.println("----deltadistance----");
-            System.out.println(lt1[nfot.Delta_Distance]);
+            System.out.println(lt1[DiffractionWithSoilEffetZone.DELTA_DISTANCE]);
             System.out.println("----e----");
-            System.out.println(lt1[nfot.E_Length]);
+            System.out.println(lt1[DiffractionWithSoilEffetZone.E_LENGTH]);
             System.out.println("----distancepath----");
-            System.out.println(lt1[nfot.Full_Diffraction_Distance]);
+            System.out.println(lt1[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE]);
             
             
-            assertTrue("Exchange source receiver got the different resultat",lt[nfot.Delta_Distance]-lt1[nfot.Delta_Distance]<=FastObstructionTest.epsilon
-                       &&lt[nfot.E_Length]-lt1[nfot.E_Length]<=FastObstructionTest.epsilon&&lt[nfot.Full_Diffraction_Distance]-lt1[nfot.Full_Diffraction_Distance]<=FastObstructionTest.epsilon);
+            assertTrue("Exchange source receiver got the different resultat",
+                    lt[DiffractionWithSoilEffetZone.DELTA_DISTANCE]-lt1[DiffractionWithSoilEffetZone.DELTA_DISTANCE]<=FastObstructionTest.epsilon
+                       &&lt[DiffractionWithSoilEffetZone.E_LENGTH]-lt1[DiffractionWithSoilEffetZone.E_LENGTH]<=FastObstructionTest.epsilon&&lt[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE]-lt1[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE]<=FastObstructionTest.epsilon);
             System.out.println("----------TEST#1 diffraction with 2 buildings(building1 and building2) finished----- ");
 
 
@@ -126,11 +127,11 @@ public class TestMeshAndTopoDiffraction extends TestCase{
              DiffractionWithSoilEffetZone diffraData=nfot.getPath(new Coordinate(48,25,4), new Coordinate(5,15,3.7));
              Double[] lt=diffraData.getDiffractionData();
              System.out.println("----deltadistance----");
-             System.out.println(lt[nfot.Delta_Distance]);
+             System.out.println(lt[DiffractionWithSoilEffetZone.DELTA_DISTANCE]);
              System.out.println("----e----");
-             System.out.println(lt[nfot.E_Length]);
+             System.out.println(lt[DiffractionWithSoilEffetZone.E_LENGTH]);
              System.out.println("----distancepath----");
-             System.out.println(lt[nfot.Full_Diffraction_Distance]);
+             System.out.println(lt[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE]);
              
             
             
@@ -139,15 +140,15 @@ public class TestMeshAndTopoDiffraction extends TestCase{
              diffraData=nfot.getPath(new Coordinate(5,15,3.7), new Coordinate(48,25,4));
              Double[]lt1=diffraData.getDiffractionData();
              System.out.println("----deltadistance----");
-             System.out.println(lt1[nfot.Delta_Distance]);
+             System.out.println(lt1[DiffractionWithSoilEffetZone.DELTA_DISTANCE]);
              System.out.println("----e----");
-             System.out.println(lt1[nfot.E_Length]);
+             System.out.println(lt1[DiffractionWithSoilEffetZone.E_LENGTH]);
              System.out.println("----distancepath----");
-             System.out.println(lt1[nfot.Full_Diffraction_Distance]);
+             System.out.println(lt1[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE]);
 
 
-            assertTrue("testTopoPointsBlockSourceAndReceiver failed! ",lt[nfot.Delta_Distance].equals(lt1[nfot.Delta_Distance])
-                       &&lt[nfot.E_Length].equals(lt1[nfot.E_Length])&&lt[nfot.Full_Diffraction_Distance].equals(lt1[nfot.Full_Diffraction_Distance])&&lt[nfot.Delta_Distance].equals(-1.0));
+            assertTrue("testTopoPointsBlockSourceAndReceiver failed! ",lt[DiffractionWithSoilEffetZone.DELTA_DISTANCE].equals(lt1[DiffractionWithSoilEffetZone.DELTA_DISTANCE])
+                       &&lt[DiffractionWithSoilEffetZone.E_LENGTH].equals(lt1[DiffractionWithSoilEffetZone.E_LENGTH])&&lt[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE].equals(lt1[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE])&&lt[DiffractionWithSoilEffetZone.DELTA_DISTANCE].equals(-1.0));
              System.out.println("----------TEST#2 diffraction blocked by TopoPoint finished----- ");
             
 
@@ -182,11 +183,11 @@ public class TestMeshAndTopoDiffraction extends TestCase{
              DiffractionWithSoilEffetZone diffraData=nfot.getPath(new Coordinate(48,25,1.5), new Coordinate(5,15,2));
              Double[] lt=diffraData.getDiffractionData();
              System.out.println("----deltadistance----");
-             System.out.println(lt[nfot.Delta_Distance]);
+             System.out.println(lt[DiffractionWithSoilEffetZone.DELTA_DISTANCE]);
              System.out.println("----e----");
-             System.out.println(lt[nfot.E_Length]);
+             System.out.println(lt[DiffractionWithSoilEffetZone.E_LENGTH]);
              System.out.println("----distancepath----");
-             System.out.println(lt[nfot.Full_Diffraction_Distance]);
+             System.out.println(lt[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE]);
              
             
             
@@ -195,16 +196,16 @@ public class TestMeshAndTopoDiffraction extends TestCase{
              diffraData=nfot.getPath(new Coordinate(5,15,2), new Coordinate(48,25,1.5));
              Double[]lt1=diffraData.getDiffractionData();
              System.out.println("----deltadistance----");
-             System.out.println(lt1[nfot.Delta_Distance]);
+             System.out.println(lt1[DiffractionWithSoilEffetZone.DELTA_DISTANCE]);
              System.out.println("----e----");
-             System.out.println(lt1[nfot.E_Length]);
+             System.out.println(lt1[DiffractionWithSoilEffetZone.E_LENGTH]);
              System.out.println("----distancepath----");
-             System.out.println(lt1[nfot.Full_Diffraction_Distance]);
+             System.out.println(lt1[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE]);
             
-             assertEquals(lt[nfot.Delta_Distance], lt1[nfot.Delta_Distance], 1e-12);
-             assertEquals(lt[nfot.E_Length], lt1[nfot.E_Length], 1e-12);
-             assertEquals(lt[nfot.Full_Diffraction_Distance], lt1[nfot.Full_Diffraction_Distance], 1e-12);
-             assertEquals(-1.0,lt[nfot.Delta_Distance], 1e-12);
+             assertEquals(lt[DiffractionWithSoilEffetZone.DELTA_DISTANCE], lt1[DiffractionWithSoilEffetZone.DELTA_DISTANCE], 1e-12);
+             assertEquals(lt[DiffractionWithSoilEffetZone.E_LENGTH], lt1[DiffractionWithSoilEffetZone.E_LENGTH], 1e-12);
+             assertEquals(lt[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE], lt1[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE], 1e-12);
+             assertEquals(-1.0,lt[DiffractionWithSoilEffetZone.DELTA_DISTANCE], 1e-12);
          }
              
          public void testPointsVisible() throws LayerDelaunayError{

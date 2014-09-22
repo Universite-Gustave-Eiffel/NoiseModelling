@@ -41,24 +41,29 @@ import com.vividsolutions.jts.geom.LineString;
  * @author SU Qi
  */
 public class DiffractionWithSoilEffetZone {
-           private Double[] diffractionData= new Double[3]; //3D diffraction data
-           private LineString rOZone;//receiver-first intersection zone for 3D diffraction
-           private LineString oSZone;//last intersection-source zone for 3D diffraction
-           
-           public DiffractionWithSoilEffetZone(Double[] diffractionData, LineString rOZone, LineString oSZone){
-               this.diffractionData=diffractionData;
-               this.rOZone=rOZone;
-               this.oSZone=oSZone;
-           }
-           public Double[] getDiffractionData(){
+    public static final int DELTA_DISTANCE = 0;//delta distance;
+    public static final int E_LENGTH = 1;//e length
+    public static final int FULL_DIFFRACTION_DISTANCE = 2;//the full distance of diffraction path
+    private Double[] diffractionData = new Double[3]; //3D diffraction data
+    private LineString rOZone;//receiver-first intersection zone for 3D diffraction
+    private LineString oSZone;//last intersection-source zone for 3D diffraction
 
-               return this.diffractionData;
-           }
-           public LineString getROZone(){
-               return this.rOZone;
-           }
+    public DiffractionWithSoilEffetZone(Double[] diffractionData, LineString rOZone, LineString oSZone) {
+        this.diffractionData = diffractionData;
+        this.rOZone = rOZone;
+        this.oSZone = oSZone;
+    }
 
-           public LineString getOSZone(){
-               return this.oSZone;
-           }
+    public Double[] getDiffractionData() {
+
+        return this.diffractionData;
+    }
+
+    public LineString getROZone() {
+        return this.rOZone;
+    }
+
+    public LineString getOSZone() {
+        return this.oSZone;
+    }
 }
