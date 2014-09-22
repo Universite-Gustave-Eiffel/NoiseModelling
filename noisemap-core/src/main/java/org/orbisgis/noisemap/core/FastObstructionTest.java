@@ -618,9 +618,9 @@ public class FastObstructionTest {
      * @param p1      Origin of search
      * @return List of segment
      */
-    public LinkedList<LineSegment> getLimitsInRange(double maxDist,
+    public LinkedList<Wall> getLimitsInRange(double maxDist,
                                                     Coordinate p1) {
-        LinkedList<LineSegment> walls = new LinkedList<LineSegment>();
+        LinkedList<Wall> walls = new LinkedList<>();
         int curTri = getTriangleIdByCoordinate(p1);
         int nextTri = -1;
         short firstSide = 0;
@@ -638,29 +638,30 @@ public class FastObstructionTest {
         while (curTri != -1) {
             navigationHistory.add(curTri);
             // for each side of the triangle
-            Triangle neighboors = this.triNeighbors.get(curTri);
+            Triangle neighbors = this.triNeighbors.get(curTri);
             nextTri = -1;
-            for (short idside = firstSide; idside < 3; idside++) {
-                if (!navigationHistory.contains(neighboors.get(idside))) {
-                    IntSegment segVerticesIndex = this.triVertices.get(curTri)
-                            .getSegment(idside);
-                    LineSegment side = new LineSegment(
+            for (short sideId = firstSide; sideId < 3; sideId++) {
+                if (!navigationHistory.contains(neighbors.get(sideId))) {
+                    Triangle tri = this.triVertices.get(curTri);
+                    IntSegment segVerticesIndex = tri
+                            .getSegment(sideId);
+                    Wall side = new Wall(
                             this.vertices.get(segVerticesIndex.getA()),
-                            this.vertices.get(segVerticesIndex.getB()));
+                            this.vertices.get(segVerticesIndex.getB()),  tri.getBuidlingID());
                     Coordinate closestPoint = side.closestPoint(p1);
                     if (closestPoint.distance(p1) <= maxDist) {
                         // In this direction there is a building or this is outside
                         // of the geometry
-                        if (neighboors.get(idside)==-1 || triVertices.get(neighboors.get(idside)).getBuidlingID() >= 1) {
+                        if (neighbors.get(sideId)==-1 || triVertices.get(neighbors.get(sideId)).getBuidlingID() >= 1) {
                             walls.add(side);
                         } else {
                             // Store currentTriangle Id. This is where to go
                             // back when there is no more navigable neighbors at
                             // the next triangle
                             navigationNodes.add(curTri);
-                            navigationSide.add(idside);
+                            navigationSide.add(sideId);
                             firstSide = 0;
-                            nextTri = neighboors.get(idside);
+                            nextTri = neighbors.get(sideId);
                             break; // Next triangle
                         }
                     }
@@ -694,6 +695,14 @@ public class FastObstructionTest {
         } else {
             return Double.NaN;
         }
+    }
+
+    /**
+     * @param buildingId Building identifier [1-n]
+     * @return Position of building roof
+     */
+    public double getBuildingRoofZ(int buildingId) {
+        return polygonWithHeight.get(buildingId - 1).getHeight();
     }
 
     /*
@@ -1009,5 +1018,16 @@ public class FastObstructionTest {
         return Vertex.interpolateZ(point, p1, p2, p3);
     }
 
+    public static class Wall extends LineSegment {
+        private int buildingId = 0;
 
+        public Wall(Coordinate p0, Coordinate p1, int buildingId) {
+            super(p0, p1);
+            this.buildingId = buildingId;
+        }
+
+        public int getBuildingId() {
+            return buildingId;
+        }
+    }
 }

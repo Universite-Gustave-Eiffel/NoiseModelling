@@ -36,46 +36,54 @@ package org.orbisgis.noisemap.core;
 import com.vividsolutions.jts.geom.Coordinate;
 
 /**
- * 
+ *  Information for Receiver image.
  * @author Nicolas Fortin
  */
 public class MirrorReceiverResult {
 
-	private Coordinate receiverPos; // Coordinate of mirrored receiver
-	private int mirrorResultId = -1; // Other MirrorReceiverResult index, -1 for
-										// the first reflexion
-	private int wallId = 0; // Wall index of the last mirrored processed
+	private final Coordinate receiverPos;
+	private final int mirrorResultId;
+	private final int wallId; // Wall index of the last mirrored processed
+    private final int buildingId; // building that belongs to this wall
 
+    /**
+     * @return Coordinate of mirrored receiver
+     */
 	public Coordinate getReceiverPos() {
 		return receiverPos;
 	}
 
-	public void setReceiverPos(Coordinate receiverPos) {
-		this.receiverPos = receiverPos;
-	}
-
+    /**
+     * @return Other MirrorReceiverResult index, -1 for the first reflexion
+     */
 	public int getMirrorResultId() {
 		return mirrorResultId;
 	}
 
-	public void setMirrorResultId(int mirrorResultId) {
-		this.mirrorResultId = mirrorResultId;
-	}
-
+    /**
+     * @return Wall index of the last mirrored processed
+     */
 	public int getWallId() {
 		return wallId;
 	}
 
-	public void setWallId(int wallId) {
-		this.wallId = wallId;
-	}
+    /**
+     * @return building that belongs to this wall
+     */
+    public int getBuildingId() {
+        return buildingId;
+    }
 
-	public MirrorReceiverResult(Coordinate receiverPos, int mirrorResultId,
-			int wallId) {
-		super();
-		this.receiverPos = receiverPos;
-		this.mirrorResultId = mirrorResultId;
-		this.wallId = wallId;
-	}
-
+    /**
+     * @param receiverPos Coordinate of mirrored receiver
+     * @param mirrorResultId Other MirrorReceiverResult index, -1 for the first reflexion
+     * @param wallId Wall index of the last mirrored processed
+     * @param buildingId building that belongs to this wall
+     */
+    public MirrorReceiverResult(Coordinate receiverPos, int mirrorResultId, int wallId, int buildingId) {
+        this.receiverPos = receiverPos;
+        this.mirrorResultId = mirrorResultId;
+        this.wallId = wallId;
+        this.buildingId = buildingId;
+    }
 }

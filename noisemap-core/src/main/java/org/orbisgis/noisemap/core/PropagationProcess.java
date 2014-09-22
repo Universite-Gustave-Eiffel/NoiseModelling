@@ -135,7 +135,7 @@ public class PropagationProcess implements Runnable {
     static private void feedMirroredReceiverResults(
             List<MirrorReceiverResult> receiversImage,
             Coordinate receiverCoord, int lastResult,
-            List<LineSegment> nearBuildingsWalls, int depth,
+            List<FastObstructionTest.Wall> nearBuildingsWalls, int depth,
             double distanceLimitation) {
         // For each wall (except parent wall) compute the mirrored coordinate
         int exceptionWallId = -1;
@@ -143,7 +143,7 @@ public class PropagationProcess implements Runnable {
             exceptionWallId = receiversImage.get(lastResult).getWallId();
         }
         int wallId = 0;
-        for (LineSegment wall : nearBuildingsWalls) {
+        for (FastObstructionTest.Wall wall : nearBuildingsWalls) {
             if (wallId != exceptionWallId) {
                 //Counter ClockWise test. Walls vertices are CCW oriented.
                 //This help to test if a wall could see a point or another wall
@@ -165,9 +165,9 @@ public class PropagationProcess implements Runnable {
                     {
                         Coordinate mirrored = new Coordinate(2 * intersectionPt.x
                                 - receiverCoord.x, 2 * intersectionPt.y
-                                - receiverCoord.y);
+                                - receiverCoord.y, receiverCoord.z);
                         receiversImage.add(new MirrorReceiverResult(mirrored,
-                                lastResult, wallId));
+                                lastResult, wallId,wall.getBuildingId()));
                         if (depth > 0) {
                             feedMirroredReceiverResults(receiversImage, mirrored,
                                     receiversImage.size() - 1, nearBuildingsWalls,
@@ -193,7 +193,7 @@ public class PropagationProcess implements Runnable {
      * @return List of possible reflections
      */
     static public List<MirrorReceiverResult> getMirroredReceiverResults(
-            Coordinate receiverCoord, List<LineSegment> nearBuildingsWalls,
+            Coordinate receiverCoord, List<FastObstructionTest.Wall> nearBuildingsWalls,
             int order, double distanceLimitation) {
         List<MirrorReceiverResult> receiversImage = new ArrayList<MirrorReceiverResult>();
         feedMirroredReceiverResults(receiversImage, receiverCoord, -1,
@@ -394,7 +394,7 @@ public class PropagationProcess implements Runnable {
                                      Coordinate receiverCoord, double energeticSum[],
                                      double[] alpha_atmo, List<Double> wj,
                                      List<MirrorReceiverResult> mirroredReceiver,
-                                     List<LineSegment> nearBuildingsWalls,
+                                     List<FastObstructionTest.Wall> nearBuildingsWalls,
                                      List<Coordinate> regionCorners,
                                      List<Integer> regionCornersFreeToReceiver, double[] freq_lambda) {
         GeometryFactory factory = new GeometryFactory();
@@ -643,14 +643,18 @@ public class PropagationProcess implements Runnable {
                         // Test whether intersection point is on the wall
                         // segment or not
                         Coordinate destinationPt = new Coordinate(srcCoord);
-                        LineSegment seg = nearBuildingsWalls
+                        FastObstructionTest.Wall seg = nearBuildingsWalls
                                 .get(receiverReflection.getWallId());
                         linters.computeIntersection(seg.p0, seg.p1,
                                 receiverReflection.getReceiverPos(),
                                 destinationPt);
-                        while (linters.hasIntersection() && PropagationProcess.wallPointTest(seg, destinationPt)) // While there is a
-                        // reflection point
-                        // on another wall
+
+                        // While there is a reflection point on another wall. And intersection point is in the wall z bounds.
+                        while (linters.hasIntersection() &&
+                                (Double.isNaN(receiverReflectionCursor.getReceiverPos().z) || Double.isNaN(destinationPt.z) || seg.getBuildingId() == 0
+                                        || Vertex.interpolateZ(linters.getIntersection(0), receiverReflectionCursor.getReceiverPos(), destinationPt)
+                                        < data.freeFieldFinder.getBuildingRoofZ(seg.getBuildingId()))
+                                && PropagationProcess.wallPointTest(seg, destinationPt))
                         {
                             reflectionOrderCounter++;
                             // There are a probable reflection point on the
@@ -933,11 +937,11 @@ public class PropagationProcess implements Runnable {
     public void computeSoundLevelAtPosition(Coordinate receiverCoord, double energeticSum[]) {
         // List of walls within maxReceiverSource distance
         double srcEnergeticSum = BASE_LVL; //Global energetic sum of all sources processed
-        List<LineSegment> nearBuildingsWalls = null;
+        List<FastObstructionTest.Wall> nearBuildingsWalls = null;
         List<MirrorReceiverResult> mirroredReceiver = null;
         if (data.reflexionOrder > 0) {
 
-            nearBuildingsWalls = new ArrayList<LineSegment>(
+            nearBuildingsWalls = new ArrayList<>(
                     data.freeFieldFinder.getLimitsInRange(
                             data.maxRefDist, receiverCoord)
             );
