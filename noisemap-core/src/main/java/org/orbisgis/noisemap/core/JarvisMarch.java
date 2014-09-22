@@ -50,6 +50,7 @@ public class JarvisMarch {
   private Points hullPoints = null;
   private List<Double> hy;
   private List<Double> hx;
+  private List<Integer> hi;
   private int startingPoint;
   private double currentAngle;
   private static final double MAX_ANGLE = 4;
@@ -98,6 +99,7 @@ public class JarvisMarch {
   private void initializeHull() {
     hx = new LinkedList<Double>();
     hy = new LinkedList<Double>();
+    hi = new LinkedList<>();
   }
 
   private void buildHullPoints() {
@@ -117,6 +119,7 @@ public class JarvisMarch {
   private void addToHull(int p) {
     hx.add(pts.x[p]);
     hy.add(pts.y[p]);
+    hi.add(p);
   }
 
   /**
@@ -145,6 +148,9 @@ public class JarvisMarch {
     return hullPoints;
   }
 
+  public List<Integer> getHullPointId() {
+      return hi;
+  }
 
   public static class Points {
     public double x[];

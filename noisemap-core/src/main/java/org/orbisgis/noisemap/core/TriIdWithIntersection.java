@@ -38,39 +38,56 @@ import com.vividsolutions.jts.geom.Coordinate;
  * TriIdWithIntersection work for FastObstructionTest, 
  * aims to keep the interested points coordinate and check if this point in building
  * @author SU Qi
+ * @author Nicolas Fortin
  */
 public class TriIdWithIntersection {
-    
-           private int triID;//triangle id 
-           private Coordinate coorIntersection;//intersection coordinate
-           private boolean isIntersectionOnBuilding;//if this intersection is on building
-           public TriIdWithIntersection(int triID, Coordinate coorIntersection, boolean isIntersectionOnBuilding){
 
-               this.triID=triID;
-               this.coorIntersection=coorIntersection;
-               this.isIntersectionOnBuilding=isIntersectionOnBuilding;
-           }
-           
-           /**
-            * 
-            * @return Triangle ID
-            */
-           public int getTriID(){
+    private int triID;//triangle id
+    private Coordinate coorIntersection;//intersection coordinate
+    private final boolean intersectionOnBuilding;//if this intersection is on building
+    private final boolean intersectionOnTopography;
+    private final int buildingId;
 
-               return this.triID;
-           }
-           /**
-            * 
-            * @return Intersection coordinate
-            */
-           public Coordinate getCoorIntersection(){
-               return this.coorIntersection;
-           }
-           /**
-            * 
-            * @return 
-            */
-           public boolean getIsIntersectionOnBuilding(){
-               return this.isIntersectionOnBuilding;
-           }
+    public TriIdWithIntersection(int triID, Coordinate coorIntersection, boolean intersectionOnBuilding, boolean intersectionOnTopography, int buildingId) {
+        this.triID = triID;
+        this.coorIntersection = coorIntersection;
+        this.intersectionOnBuilding = intersectionOnBuilding;
+        this.intersectionOnTopography = intersectionOnTopography;
+        this.buildingId = buildingId;
+    }
+
+    public TriIdWithIntersection(int triID, Coordinate coorIntersection) {
+        this.triID = triID;
+        this.coorIntersection = coorIntersection;
+        intersectionOnBuilding = false;
+        intersectionOnTopography = false;
+        buildingId = 0;
+    }
+
+    /**
+     * @return Triangle ID
+     */
+    public int getTriID() {
+
+        return this.triID;
+    }
+
+    /**
+     * @return Intersection coordinate
+     */
+    public Coordinate getCoorIntersection() {
+        return this.coorIntersection;
+    }
+
+    public boolean isIntersectionOnBuilding() {
+        return intersectionOnBuilding;
+    }
+
+    public boolean isIntersectionOnTopography() {
+        return intersectionOnTopography;
+    }
+
+    public int getBuildingId() {
+        return buildingId;
+    }
 }

@@ -158,7 +158,7 @@ public class FastObstructionTest {
      * @return Next triangle to the specified direction, -1 if there is no
      * triangle neighbor.
      */
-    private int getNextTri(final int triIndex,
+    private TriIdWithIntersection getNextTri(final int triIndex,
                            final LineSegment propagationLine,
                            HashSet<Integer> navigationHistory) {
         final Triangle tri = this.triVertices.get(triIndex);
@@ -232,172 +232,46 @@ public class FastObstructionTest {
             zPropagationRayIntersection = calculateLinearInterpolation(propagationLine.p0, propagationLine.p1, intersection);
             // Manage blocking buildings
             int neightBuildingId = this.triVertices.get(triNeighbors.get(nearestIntersectionSide)).getBuidlingID();
+            int rayBuildingId = 0;
             // Current tri is in building
             if(tri.getBuidlingID() != 0) {
+                rayBuildingId = tri.getBuidlingID();
                 MeshBuilder.PolygonWithHeight building = polygonWithHeight.get(tri.getBuidlingID() - 1);
                 // Stop propagation if ray collide with the building
                 if(!building.hasHeight() || Double.isNaN(zPropagationRayIntersection) || zPropagationRayIntersection < building.getHeight()) {
-                    return -1;
+                    return new TriIdWithIntersection(triNeighbors.get(nearestIntersectionSide),
+                            new Coordinate(intersection.x, intersection.y, zPropagationRayIntersection),
+                            true,false, rayBuildingId);
                 }
             }
             // Next tri is in building
             if(neightBuildingId != 0) {
+                rayBuildingId = neightBuildingId;
                 MeshBuilder.PolygonWithHeight building = polygonWithHeight.get(neightBuildingId - 1);
                 // Stop propagation if ray collide with the building
                 if(!building.hasHeight() || Double.isNaN(zPropagationRayIntersection) || zPropagationRayIntersection < building.getHeight()) {
-                    return -1;
+                    return new TriIdWithIntersection(triNeighbors.get(nearestIntersectionSide),
+                            new Coordinate(intersection.x, intersection.y, zPropagationRayIntersection),
+                            true,false, rayBuildingId);
                 }
             }
             //If the Z calculated by propagation Line >= Z calculated by intersected line, we will find next triangle
             if (Double.isNaN(zPropagationRayIntersection) || zPropagationRayIntersection + epsilon >= zTopoIntersection) {
-                return this.triNeighbors.get(triIndex).get(nearestIntersectionSide);
+                return new TriIdWithIntersection(triNeighbors.get(nearestIntersectionSide),
+                        new Coordinate(intersection.x, intersection.y, zPropagationRayIntersection),
+                        false, false, rayBuildingId);
             }
             //Else, the Z of Topographic intersection > Z calculated by propagation Line, the Topographic intersection will block the propagation line
             else {
                 //Propagation line blocked by the topography
-                return -1;
+                return new TriIdWithIntersection(triNeighbors.get(nearestIntersectionSide),
+                        new Coordinate(intersection.x, intersection.y, zPropagationRayIntersection),
+                        false,true, rayBuildingId);
             }
         } else {
-            return -1;
-        }
-    }
-
-    /**
-     * Compute the next triangle index.Find the shortest intersection point of
-     * triIndex segments to the p1 coordinate and add the triangles in building to the list
-     * and add the point of intersection(between segment of source-receiver and segment of triangle) to the list
-     *
-     * @param triIndex        Triangle index
-     * @param propagationLine Propagation line
-     */
-    private TriIdWithIntersection getNextTriWithIntersection(final int triIndex,
-                                                             final LineSegment propagationLine,
-                                                             HashSet<Integer> navigationHistory) {
-        //NonRobustLineIntersector linters = new NonRobustLineIntersector();
-        final Triangle tri = this.triVertices.get(triIndex);
-        int nearestIntersectionSide = -1;
-        int idneigh;
-        double nearestIntersectionPtDist = Double.MAX_VALUE;
-        // Find intersection pt
-        final Coordinate aTri = this.vertices.get(tri.getA());
-        final Coordinate bTri = this.vertices.get(tri.getB());
-        final Coordinate cTri = this.vertices.get(tri.getC());
-        double distline_line;
-        // Intersection First Side
-        idneigh = this.triNeighbors.get(
-                triIndex).get(2);
-        Coordinate intersection = new Coordinate();
-        if (idneigh != -1 && !navigationHistory.contains(idneigh)) {
-            distline_line = propagationLine.distance(new LineSegment(aTri, bTri));
-            if (distline_line < FastObstructionTest.epsilon &&
-                    distline_line < nearestIntersectionPtDist) {
-                nearestIntersectionPtDist = distline_line;
-                nearestIntersectionSide = 2;
-                if (!(propagationLine.intersection(new LineSegment(aTri, bTri)) == null)) {
-                    intersection = new Coordinate(propagationLine.intersection(new LineSegment(aTri, bTri)));
-                }
-            }
-        }
-        // Intersection Second Side
-        idneigh = this.triNeighbors.get(
-                triIndex).get(0);
-        if (idneigh != -1 && !navigationHistory.contains(idneigh)) {
-            distline_line = propagationLine.distance(new LineSegment(bTri, cTri));
-            if (distline_line < FastObstructionTest.epsilon &&
-                    distline_line < nearestIntersectionPtDist) {
-                nearestIntersectionPtDist = distline_line;
-                nearestIntersectionSide = 0;
-                if (!(propagationLine.intersection(new LineSegment(bTri, cTri)) == null)) {
-                    intersection = new Coordinate(propagationLine.intersection(new LineSegment(bTri, cTri)));
-                }
-            }
-        }
-
-        // Intersection Third Side
-        idneigh = this.triNeighbors.get(
-                triIndex).get(1);
-        if (idneigh != -1 && !navigationHistory.contains(idneigh)) {
-            distline_line = propagationLine.distance(new LineSegment(cTri, aTri));
-            if (distline_line < FastObstructionTest.epsilon &&
-                    distline_line < nearestIntersectionPtDist) {
-                nearestIntersectionSide = 1;
-                if (!(propagationLine.intersection(new LineSegment(cTri, aTri)) == null)) {
-                    intersection = new Coordinate(propagationLine.intersection(new LineSegment(cTri, aTri)));
-                }
-            }
-        }
-
-        //these points will be used by calculate Linear interpolation
-        Coordinate p1 = new Coordinate();
-        Coordinate p2 = new Coordinate();
-
-        switch (nearestIntersectionSide) {
-            case 0: {
-                p1 = bTri;
-                p2 = cTri;
-                break;
-            }
-            case 1: {
-                p1 = cTri;
-                p2 = aTri;
-                break;
-            }
-            case 2: {
-                p1 = aTri;
-                p2 = bTri;
-                break;
-            }
-        }
-        int BuildingNextTriID = this.triNeighbors.get(triIndex).get(nearestIntersectionSide);
-        boolean triNeighborIsBuilding = false;//check if the point is the intersection of triangle In the same building
-        boolean intersectionPointOnBuilding = false;//check if the intersection point is On the building
-        double nextTriHeight = 0.;
-
-        if (BuildingNextTriID >= 0 && this.triVertices.get(BuildingNextTriID).getBuidlingID() > 0) {
-            nextTriHeight = this.polygonWithHeight.get(this.triVertices.get(BuildingNextTriID).getBuidlingID() - 1).getHeight();
-        }
-
-        if (tri.getBuidlingID() > 0 && (nextTriHeight > 0)) {
-            //intersection is between two triangle in the same building, so we will not keep intersection point
-            triNeighborIsBuilding = true;
-        }
-        //add height to this intersection
-        if (tri.getBuidlingID() == 0 && nextTriHeight > 0) {
-            intersectionPointOnBuilding = true;
-            intersection.setOrdinate(2, nextTriHeight);
-        }
-
-                /*
-                //not useful for the Max function because we merged all buildings, 
-                //so we don't have intersection between the two differents buildings and the building height will be the same in a building
-                else if(tri.getBuildingID()>0&&nextTriHeight>0){
-                    intersection.z=nextTriHeight;
-                            //Math.max(nextTriHeight, this.polygonWithHeight.get(tri.getBuildingID()-1).getHeight());
-                }
-                */
-        else if (tri.getBuidlingID() > 0 && Double.compare(nextTriHeight, 0.) == 0) {
-            intersection.setOrdinate(2, this.polygonWithHeight.get(tri.getBuidlingID() - 1).getHeight());
-            intersectionPointOnBuilding = true;
-        }
-        //if in these two triangles we have no building
-        else if (tri.getBuidlingID() == 0 && Double.compare(nextTriHeight, 0.) == 0) {
-            intersection.setOrdinate(2, calculateLinearInterpolation(p1, p2, intersection));
-        }
-
-        if (nearestIntersectionSide != -1) {
-
-            //if intersection is not the intersection in the same building, save this intersection to intersection list
-            if (!triNeighborIsBuilding && !propagationLine.p0.equals(intersection) && !propagationLine.p1.equals(intersection)) {
-
-                //Building which is between ray source-receiver have 2 intersections,
-                //If the intersection is corner of the building, intersections will save 2 times with the same value
-                return new TriIdWithIntersection(BuildingNextTriID, intersection, intersectionPointOnBuilding);
-            } else {
-                return new TriIdWithIntersection(BuildingNextTriID, new Coordinate(-1, -1, -1), intersectionPointOnBuilding);
-            }
-
-        } else {
-            return new TriIdWithIntersection(-1, new Coordinate(-1, -1, -1), intersectionPointOnBuilding);
+            return new TriIdWithIntersection(-1,
+                    null,
+                    false,false, 0);
         }
     }
 
@@ -717,6 +591,18 @@ public class FastObstructionTest {
      * compute diffraction.
      */
     public boolean isFreeField(Coordinate p1, Coordinate p2) {
+        return computePropagationPath(p1, p2, true, null);
+    }
+
+    /**
+     *
+     * @param p1 Start propagation path
+     * @param p2 End propagation path
+     * @param stopOnIntersection Stop if the segment between p1 and p2 intersects with topography or buildings
+     * @param path Intersection list with triangle sides.
+     * @return True if the propagation goes from p1 to p2 without intersection.
+     */
+    private boolean computePropagationPath(Coordinate p1, Coordinate p2, boolean stopOnIntersection, List<TriIdWithIntersection> path) {
         nbObstructionTest++;
         LineSegment propaLine = new LineSegment(p1, p2);
         //get receiver triangle id
@@ -758,8 +644,17 @@ public class FastObstructionTest {
             if (dotInTri(p2, tri[0], tri[1], tri[2])) {
                 return true;
             }
-            navigationTri = this.getNextTri(navigationTri, propaLine, navigationHistory);
+            TriIdWithIntersection propaTri = this.getNextTri(navigationTri, propaLine, navigationHistory);
+            if(path != null) {
+                path.add(propaTri);
+            }
+            if(!stopOnIntersection || !propaTri.isIntersectionOnBuilding() && !propaTri.isIntersectionOnTopography()) {
+                navigationTri = propaTri.getTriID();
+            } else {
+                navigationTri = -1;
+            }
         }
+        // Can't find a way to p2
         return false;
     }
 
@@ -783,8 +678,6 @@ public class FastObstructionTest {
         first Coordinate is the coordinate after the modification coordinate system,
         the second parameter will keep the data of original coordinate system
         */
-
-        HashMap<Coordinate, TriIdWithIntersection> newCoorInter = new HashMap<Coordinate, TriIdWithIntersection>();
         GeometryFactory factory = new GeometryFactory();
         LineString rOZone = factory.createLineString(new Coordinate[]{new Coordinate(-1, -1), new Coordinate(-1, -1)});
         LineString sOZone = factory.createLineString(new Coordinate[]{new Coordinate(-1, -1), new Coordinate(-1, -1)});
@@ -792,60 +685,21 @@ public class FastObstructionTest {
         data[Delta_Distance] = -1.;
         data[E_Length] = -1.;
         data[Full_Diffraction_Distance] = -1.;
-        LinkedList<TriIdWithIntersection> interPoints = new LinkedList<TriIdWithIntersection>();
+        List<TriIdWithIntersection> interPoints = new ArrayList<>();
+        computePropagationPath(p1, p2, false, interPoints);
         //set default data
         DiffractionWithSoilEffetZone totData = new DiffractionWithSoilEffetZone(data, rOZone, sOZone);
         if(!hasBuildingWithHeight) {
+            // Cannot compute envelope is building height is not available
             return totData;
-        }
-        LineSegment propaLine = new LineSegment(p1, p2);
-        int curTri = getTriangleIdByCoordinate(p1);
-        HashSet<Integer> navigationHistory = new HashSet<Integer>();
-
-        //get source triangle id
-        int curTriS = getTriangleIdByCoordinate(p2);
-        if (this.triVertices.get(curTri).getBuidlingID() >= 1) {
-            //receiver is in the building, so we cant compute propagation
-            return totData;
-        }
-        if (this.triVertices.get(curTriS).getBuidlingID() >= 1) {
-
-            //source is in the building, so we cant compute propagation
-            return totData;
-        }
-
-        Coordinate[] triR = getTriangle(curTri);
-        Coordinate[] triS = getTriangle(curTriS);
-
-        double zTopoP1 = getTopoZByGiven3Points(triR[0], triR[1], triR[2], p1);
-        double zTopoP2 = getTopoZByGiven3Points(triS[0], triS[1], triS[2], p2);
-
-        //There is no path if receiver of source are under
-        if ((!Double.isNaN(p1.z) && p1.z + epsilon < zTopoP1) ||
-                (!Double.isNaN(p2.z) && p2.z + epsilon < zTopoP2)) {
-            return totData;
-        }
-        while (curTri != -1) {
-            navigationHistory.add(curTri);
-            Coordinate[] tri = getTriangle(curTri);
-            if (dotInTri(p2, tri[0], tri[1], tri[2])) {
-                break;
-            }
-            //get the next building ID, intersection Point
-            TriIdWithIntersection triIDWithIntersection = this.getNextTriWithIntersection(curTri, propaLine, navigationHistory);
-            curTri = triIDWithIntersection.getTriID();
-            Coordinate coorIntersection = triIDWithIntersection.getCoorIntersection();
-            if (!coorIntersection.equals(new Coordinate(-1, -1, -1))) {
-                interPoints.add(triIDWithIntersection);
-            }
         }
 
         //add point receiver and point source into list head and tail.
 
-        interPoints.addFirst(new TriIdWithIntersection(-1, p1, true));
-        interPoints.addLast(new TriIdWithIntersection(-1, p2, true));
+        interPoints.add(0, new TriIdWithIntersection(-1, p1));
+        interPoints.add(new TriIdWithIntersection(-1, p2));
         //change Coordinate system from 3D to 2D
-        LinkedList<Coordinate> newPoints = getNewCoordinateSystem(interPoints);
+        List<Coordinate> newPoints = getNewCoordinateSystem(interPoints);
 
         double[] pointsX;
         pointsX = new double[newPoints.size()];
@@ -860,11 +714,12 @@ public class FastObstructionTest {
                 pointsY[i] = 0.;
             }
             newPoints.get(i).setCoordinate(new Coordinate(pointsX[i], pointsY[i]));
-            newCoorInter.put(newPoints.get(i), interPoints.get(i));
         }
         //algorithm JarvisMarch to get the convex hull
         JarvisMarch jm = new JarvisMarch(new JarvisMarch.Points(pointsX, pointsY));
         JarvisMarch.Points points = jm.calculateHull();
+        List<Integer> pointsId = jm.getHullPointId();
+
         //if there are no useful intersection
         if (points.x.length <= 2) {
             //after jarvis march if we get the length of list of points less than 2, so we have no useful points
@@ -874,18 +729,18 @@ public class FastObstructionTest {
             boolean isVisible = true;//check if the source and receiver is visible
             for (int i = 0; i < points.x.length - 1; i++) {
                 //if the intersection point after Jarvis March is not on Building so we can sure this Source-Receiver is Invisible
-                if (!newCoorInter.get(new Coordinate(points.x[i], points.y[i])).getIsIntersectionOnBuilding()) {
+                if (!interPoints.get(pointsId.get(i)).isIntersectionOnTopography()) {
                     //The topography block this propagation line
                     isVisible = false;
                     break;
                 } else {
                     path.add(new LineSegment(new Coordinate(points.x[i], points.y[i]), new Coordinate(points.x[i + 1], points.y[i + 1])));
                     //When we get a point we will check if this point is equal with P2 we will stop finding next point
-                    if (p2.equals(newCoorInter.get(new Coordinate(points.x[i + 1], points.y[i + 1])).getCoorIntersection()) && i > 0) {
+                    if (p2.equals(interPoints.get(pointsId.get(i + 1)).getCoorIntersection()) && i > 0) {
                         break;
                     }
                     //if after Jarvis march the first point and the second point are Receiver and Source so we will quit loop and no diffraction in this case
-                    else if (p2.equals(newCoorInter.get(new Coordinate(points.x[i + 1], points.y[i + 1])).getCoorIntersection()) && i == 0) {
+                    else if (p2.equals(interPoints.get(pointsId.get(i + 1)).getCoorIntersection()) && i == 0) {
                         // after jarvis march first point and second point are Receiver and Source
                         return totData;
                     }
@@ -926,10 +781,10 @@ public class FastObstructionTest {
                 Coordinate[] lastPart = new Coordinate[2];
                 firstPart[0] = p1;
                 //get original coordinate for first intersection with building
-                firstPart[1] = newCoorInter.get(path.getFirst().p1).getCoorIntersection();
+                firstPart[1] = interPoints.get(1).getCoorIntersection();
 
                 //get original coordinate for last intersection with building
-                lastPart[0] = newCoorInter.get(path.getLast().p0).getCoorIntersection();
+                lastPart[0] = interPoints.get(interPoints.size() - 1).getCoorIntersection();
                 lastPart[1] = p2;
                 //receiver-first intersection zone aims to calculate ground effect
                 rOZone = factory.createLineString(firstPart);
@@ -947,19 +802,19 @@ public class FastObstructionTest {
      * Attention this function can just be used when the points in the same plane.
      * {@link "http://en.wikipedia.org/wiki/Rotation_matrix"}
      */
-    private LinkedList<Coordinate> getNewCoordinateSystem(LinkedList<TriIdWithIntersection> listPoints) {
-        LinkedList<Coordinate> newcoord = new LinkedList<Coordinate>();
+    private List<Coordinate> getNewCoordinateSystem(List<TriIdWithIntersection> listPoints) {
+        List<Coordinate> newCoord = new ArrayList<>(listPoints.size());
         //get angle by ray source-receiver with the X-axis.
-        double angle = new LineSegment(listPoints.getFirst().getCoorIntersection(), listPoints.getLast().getCoorIntersection()).angle();
+        double angle = new LineSegment(listPoints.get(0).getCoorIntersection(), listPoints.get(listPoints.size() - 1).getCoorIntersection()).angle();
         double sin = Math.sin(angle);
         double cos = Math.cos(angle);
 
         for (TriIdWithIntersection listPoint : listPoints) {
             double newX = (listPoint.getCoorIntersection().x - listPoints.get(0).getCoorIntersection().x) * cos +
                     (listPoint.getCoorIntersection().y - listPoints.get(0).getCoorIntersection().y) * sin;
-            newcoord.add(new Coordinate(newX, listPoint.getCoorIntersection().z));
+            newCoord.add(new Coordinate(newX, listPoint.getCoorIntersection().z));
         }
-        return newcoord;
+        return newCoord;
     }
 
 
