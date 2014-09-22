@@ -636,25 +636,33 @@ public class FastObstructionTest {
         Stack<Short> navigationSide = new Stack<Short>(); //History of current processing side
 
         while (curTri != -1) {
-            navigationHistory.add(curTri);
+            if(firstSide == 0) {
+                navigationHistory.add(curTri);
+            }
             // for each side of the triangle
             Triangle neighbors = this.triNeighbors.get(curTri);
             nextTri = -1;
             for (short sideId = firstSide; sideId < 3; sideId++) {
-                if (!navigationHistory.contains(neighbors.get(sideId))) {
-                    Triangle tri = this.triVertices.get(curTri);
-                    IntSegment segVerticesIndex = tri
-                            .getSegment(sideId);
-                    Wall side = new Wall(
-                            this.vertices.get(segVerticesIndex.getA()),
-                            this.vertices.get(segVerticesIndex.getB()),  tri.getBuidlingID());
-                    Coordinate closestPoint = side.closestPoint(p1);
-                    if (closestPoint.distance(p1) <= maxDist) {
-                        // In this direction there is a building or this is outside
-                        // of the geometry
-                        if (neighbors.get(sideId)==-1 || triVertices.get(neighbors.get(sideId)).getBuidlingID() >= 1) {
-                            walls.add(side);
-                        } else {
+                Triangle tri = this.triVertices.get(curTri);
+                IntSegment segVerticesIndex = tri
+                        .getSegment(sideId);
+                int wallBuildingId = 0;
+                if(neighbors.get(sideId) != -1
+                        && tri.getBuidlingID() == 0) {
+                    wallBuildingId = triVertices.get(neighbors.get(sideId)).getBuidlingID();
+                }
+                Wall wall = new Wall(
+                        this.vertices.get(segVerticesIndex.getA()),
+                        this.vertices.get(segVerticesIndex.getB()),wallBuildingId);
+                Coordinate closestPoint = wall.closestPoint(p1);
+                if (closestPoint.distance(p1) <= maxDist) {
+                    // Propagate search in this direction if this is not the domain limitation
+                    if (neighbors.get(sideId) != -1) {
+                        // If the triangle side is a wal
+                        if (wall.getBuildingId() >= 1) {
+                            walls.add(wall);
+                        }
+                        if(!navigationHistory.contains(neighbors.get(sideId))) {
                             // Store currentTriangle Id. This is where to go
                             // back when there is no more navigable neighbors at
                             // the next triangle
@@ -671,7 +679,7 @@ public class FastObstructionTest {
                 // All the side have been rejected, go back by one on the
                 // navigation
                 nextTri = navigationNodes.pop();
-                firstSide = navigationSide.pop();
+                firstSide = (short) (navigationSide.pop() + 1);
             }
             curTri = nextTri;
         }

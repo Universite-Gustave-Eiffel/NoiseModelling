@@ -106,4 +106,39 @@ public class TestPointNoiseMap {
             assertEquals(58.23, 10*Math.log10(result.get(2).getReceiverLvl()), 1e-2);
         }
     }
+
+    /**
+     * Check if sound reflection is bounds by building height.
+     * @throws SQLException
+     */
+    @Test
+    public void testReflectionZBounds() throws SQLException {
+        try(Statement st = connection.createStatement()) {
+            URL scriptPath = TestPointNoiseMap.class.getResource("scene_with_dem.sql");
+            st.execute("RUNSCRIPT FROM "+StringUtils.quoteStringSQL(scriptPath.toString()));
+            st.execute("TRUNCATE TABLE BUILDINGS");
+            st.execute("INSERT INTO buildings VALUES (" +
+                    "'MULTIPOLYGON (((80 -30 0,80 90 0,-10 90 0,-10 70 0,60 70 0,60 -30 0,80 -30 0)))',4)");
+            st.execute("DELETE FROM sound_source WHERE GID = 1");
+            st.execute("UPDATE sound_source SET THE_GEOM = 'POINT(200 -18 1.6)' WHERE GID = 2");
+            st.execute("DROP TABLE IF EXISTS RECEIVERS");
+            st.execute("CREATE TABLE RECEIVERS(the_geom POINT, GID SERIAL)");
+            st.execute("INSERT INTO RECEIVERS(the_geom) VALUES ('POINT(-72 41 11)')");
+            st.execute("INSERT INTO RECEIVERS(the_geom) VALUES ('POINT(-9 41 1.6)')");
+            st.execute("INSERT INTO RECEIVERS(the_geom) VALUES ('POINT(70 11 7)')");
+            PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS", "SOUND_SOURCE", "RECEIVERS");
+            pointNoiseMap.setSoundDiffractionOrder(0);
+            pointNoiseMap.setSoundReflectionOrder(0);
+            pointNoiseMap.setHeightField("HEIGHT");
+            pointNoiseMap.setDemTable("DEM");
+            pointNoiseMap.setComputeVerticalDiffraction(false);
+            pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
+            List<PropagationResultPtRecord> result =
+                    new ArrayList<>(pointNoiseMap.evaluateCell(connection, 0, 0, new EmptyProgressVisitor()));
+            assertEquals(3, result.size());
+            assertEquals(51.20, 10*Math.log10(result.get(0).getReceiverLvl()), 1e-2);
+            assertEquals(0, 10*Math.log10(result.get(1).getReceiverLvl()), 1e-2);
+            assertEquals(58.23, 10*Math.log10(result.get(2).getReceiverLvl()), 1e-2);
+        }
+    }
 }

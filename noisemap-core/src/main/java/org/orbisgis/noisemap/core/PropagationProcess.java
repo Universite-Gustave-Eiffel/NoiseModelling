@@ -650,11 +650,7 @@ public class PropagationProcess implements Runnable {
                                 destinationPt);
 
                         // While there is a reflection point on another wall. And intersection point is in the wall z bounds.
-                        while (linters.hasIntersection() &&
-                                (Double.isNaN(receiverReflectionCursor.getReceiverPos().z) || Double.isNaN(destinationPt.z) || seg.getBuildingId() == 0
-                                        || Vertex.interpolateZ(linters.getIntersection(0), receiverReflectionCursor.getReceiverPos(), destinationPt)
-                                        < data.freeFieldFinder.getBuildingRoofZ(seg.getBuildingId()))
-                                && PropagationProcess.wallPointTest(seg, destinationPt))
+                        while (linters.hasIntersection() && PropagationProcess.wallPointTest(seg, destinationPt))
                         {
                             reflectionOrderCounter++;
                             // There are a probable reflection point on the
@@ -678,11 +674,17 @@ public class PropagationProcess implements Runnable {
                             // the wall
                             reflectionPt.x -= vec_epsilon.x;
                             reflectionPt.y -= vec_epsilon.y;
+                            // Compute Z interpolation
+                            reflectionPt.setOrdinate(Coordinate.Z, Vertex.interpolateZ(linters.getIntersection(0),
+                                    receiverReflectionCursor.getReceiverPos(), destinationPt));
+
                             // Test if there is no obstacles between the
                             // reflection point and old reflection pt (or source
                             // position)
-                            validReflection = data.freeFieldFinder.isFreeField(
-                                    reflectionPt, destinationPt);
+                            validReflection = (Double.isNaN(receiverReflectionCursor.getReceiverPos().z) ||
+                                    Double.isNaN(destinationPt.z) || seg.getBuildingId() == 0
+                                    || reflectionPt.z < data.freeFieldFinder.getBuildingRoofZ(seg.getBuildingId()))
+                                    && data.freeFieldFinder.isFreeField(reflectionPt, destinationPt);
                             if (validReflection) // Reflection point can see
                             // source or its image
                             {
