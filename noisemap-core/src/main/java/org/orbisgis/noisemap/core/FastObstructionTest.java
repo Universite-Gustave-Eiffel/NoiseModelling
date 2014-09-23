@@ -172,16 +172,15 @@ public class FastObstructionTest {
         double zPropagationRayIntersection;
         // Intersection First Side
         idneigh = triNeighbors.get(2);
-        //add: search triangle without height
         if (idneigh != -1 && !navigationHistory.contains(idneigh)) {
-            distline_line = propagationLine.distance(new LineSegment(aTri, bTri));
-            if (distline_line < FastObstructionTest.epsilon &&
-                    distline_line < nearestIntersectionPtDist) {
-                nearestIntersectionPtDist = distline_line;
-                nearestIntersectionSide = 2;
-                //we will get the intersection point coordinate with(x,y,NaN)
-                if (!(propagationLine.intersection(new LineSegment(aTri, bTri)) == null)) {
-                    intersection = new Coordinate(propagationLine.intersection(new LineSegment(aTri, bTri)));
+            Coordinate intersectionTest= propagationLine.intersection(new LineSegment(aTri, bTri));
+            if(intersectionTest != null) {
+                distline_line = propagationLine.p1.distance(intersectionTest);
+                if (distline_line < nearestIntersectionPtDist) {
+                    intersection = intersectionTest;
+                    nearestIntersectionPtDist = distline_line;
+                    nearestIntersectionSide = 2;
+                    //we will get the intersection point coordinate with(x,y,NaN)
                     //get this point Z using interested segment.
                     zTopoIntersection = calculateLinearInterpolation(aTri, bTri, intersection);
                 }
@@ -190,37 +189,34 @@ public class FastObstructionTest {
         // Intersection Second Side
         idneigh = triNeighbors.get(0);
         if (idneigh != -1 && !navigationHistory.contains(idneigh)) {
-            distline_line = propagationLine.distance(new LineSegment(bTri, cTri));
-            if (distline_line < FastObstructionTest.epsilon &&
-                    distline_line < nearestIntersectionPtDist) {
-                nearestIntersectionPtDist = distline_line;
-                nearestIntersectionSide = 0;
-                if (!(propagationLine.intersection(new LineSegment(bTri, cTri)) == null)) {
-                    intersection = new Coordinate(propagationLine.intersection(new LineSegment(bTri, cTri)));
+            Coordinate intersectionTest = propagationLine.intersection(new LineSegment(bTri, cTri));
+            if(intersectionTest != null) {
+                distline_line = propagationLine.p1.distance(intersectionTest);
+                if (distline_line < nearestIntersectionPtDist) {
+                    intersection = intersectionTest;
+                    nearestIntersectionPtDist = distline_line;
+                    nearestIntersectionSide = 0;
+                    //we will get the intersection point coordinate with(x,y,NaN)
                     //get this point Z using interested segment.
                     zTopoIntersection = calculateLinearInterpolation(bTri, cTri, intersection);
                 }
-
-
             }
         }
-
         // Intersection Third Side
         idneigh = triNeighbors.get(1);
         if (idneigh != -1 && !navigationHistory.contains(idneigh)) {
-            distline_line = propagationLine.distance(new LineSegment(cTri, aTri));
-            if (distline_line < FastObstructionTest.epsilon &&
-                    distline_line < nearestIntersectionPtDist) {
-                nearestIntersectionSide = 1;
-                if (!(propagationLine.intersection(new LineSegment(cTri, aTri)) == null)) {
-                    intersection = new Coordinate(propagationLine.intersection(new LineSegment(cTri, aTri)));
-                    //get this point Z using interested line.
-
+            Coordinate intersectionTest = propagationLine.intersection(new LineSegment(cTri, aTri));
+            if(intersectionTest != null) {
+                distline_line = propagationLine.p1.distance(intersectionTest);
+                if (distline_line < nearestIntersectionPtDist) {
+                    intersection = intersectionTest;
+                    nearestIntersectionSide = 1;
+                    //we will get the intersection point coordinate with(x,y,NaN)
+                    //get this point Z using interested segment.
                     zTopoIntersection = calculateLinearInterpolation(cTri, aTri, intersection);
                 }
             }
         }
-
         if (nearestIntersectionSide != -1) {
             //get this point Z using propagation line
             zPropagationRayIntersection = calculateLinearInterpolation(propagationLine.p0, propagationLine.p1, intersection);
@@ -740,7 +736,7 @@ public class FastObstructionTest {
                     // FreeField test
                     TriIdWithIntersection interBegin = interPoints.get(pointsId.get(i));
                     TriIdWithIntersection interEnd = interPoints.get(pointsId.get(i + 1));
-                    if (interBegin.getBuildingId() == 0 || interEnd.getBuildingId() == 0) {
+                    if (interBegin.getBuildingId() != interEnd.getBuildingId()) {
                         Coordinate testPBegin = new Coordinate(interBegin.getCoorIntersection());
                         Coordinate testPEnd = new Coordinate(interEnd.getCoorIntersection());
                         testPBegin.setOrdinate(Coordinate.Z, points.y[i] + epsilon);
