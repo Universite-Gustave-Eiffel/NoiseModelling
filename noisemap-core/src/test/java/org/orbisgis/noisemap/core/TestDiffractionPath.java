@@ -18,7 +18,7 @@ public class TestDiffractionPath {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestDiffractionPath.class);
 
     @Test
-    public void testPath() throws LayerDelaunayError {
+    public void testPathOneBuilding() throws LayerDelaunayError {
         //Build Scene with One Building
         double height = 5;
         GeometryFactory factory = new GeometryFactory();

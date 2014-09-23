@@ -692,6 +692,9 @@ public class FastObstructionTest {
             }
             lastInter = inter;
         }
+        if(lastInter != null && lastInter.getBuildingId() > 0) {
+            interPoints.add(lastInter);
+        }
         //set default data
         DiffractionWithSoilEffetZone totData = new DiffractionWithSoilEffetZone(data, rOZone, sOZone);
         if(!hasBuildingWithHeight) {
@@ -732,16 +735,22 @@ public class FastObstructionTest {
         } else {
             LinkedList<LineSegment> path = new LinkedList<>();
             for (int i = 0; i < points.x.length - 1; i++) {
-                path.add(new LineSegment(new Coordinate(points.x[i], points.y[i]), new Coordinate(points.x[i + 1], points.y[i + 1])));
-                // FreeField test
-                TriIdWithIntersection interBegin = interPoints.get(pointsId.get(i));
-                TriIdWithIntersection interEnd = interPoints.get(pointsId.get(i + 1));
-                Coordinate testPBegin = new Coordinate(interBegin.getCoorIntersection());
-                Coordinate testPEnd = new Coordinate(interEnd.getCoorIntersection());
-                testPBegin.setOrdinate(Coordinate.Z, points.y[i]);
-                testPEnd.setOrdinate(Coordinate.Z, points.y[i + 1]);
-                if(!isFreeField(testPBegin, testPEnd)) {
-                    return totData;
+                if(!(points.x[i] > points.x[i + 1])) {
+                    path.add(new LineSegment(new Coordinate(points.x[i], points.y[i]), new Coordinate(points.x[i + 1], points.y[i + 1])));
+                    // FreeField test
+                    TriIdWithIntersection interBegin = interPoints.get(pointsId.get(i));
+                    TriIdWithIntersection interEnd = interPoints.get(pointsId.get(i + 1));
+                    if (interBegin.getBuildingId() == 0 || interEnd.getBuildingId() == 0) {
+                        Coordinate testPBegin = new Coordinate(interBegin.getCoorIntersection());
+                        Coordinate testPEnd = new Coordinate(interEnd.getCoorIntersection());
+                        testPBegin.setOrdinate(Coordinate.Z, points.y[i] + epsilon);
+                        testPEnd.setOrdinate(Coordinate.Z, points.y[i + 1] + epsilon);
+                        if (!isFreeField(testPBegin, testPEnd)) {
+                            return totData;
+                        }
+                    }
+                } else {
+                    break;
                 }
             }
             double pathDistance = 0.0;//distance of path
