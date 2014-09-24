@@ -83,7 +83,7 @@ public class FastObstructionTest {
      * @param triNeighbors list of neighbors triangle
      * @param points       list of all points in mesh, this points includes vertices of building, Topographic points, vertices of boundingBox
      */
-    public FastObstructionTest(LinkedList<MeshBuilder.PolygonWithHeight> buildings,
+    public FastObstructionTest(List<MeshBuilder.PolygonWithHeight> buildings,
                                List<Triangle> triangles, List<Triangle> triNeighbors, List<Coordinate> points) {
 
         List<MeshBuilder.PolygonWithHeight> polygonWithHeightArray = new ArrayList<MeshBuilder.PolygonWithHeight>(buildings.size());

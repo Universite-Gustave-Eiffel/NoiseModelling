@@ -34,6 +34,7 @@
 package org.orbisgis.noisemap.core;
 
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.LinkedList;
@@ -49,6 +50,8 @@ import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Polygon;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.index.quadtree.Quadtree;
+import com.vividsolutions.jts.index.strtree.STRtree;
+import com.vividsolutions.jts.operation.buffer.BufferParameters;
 import org.jdelaunay.delaunay.evaluator.InsertionEvaluator;
 
 import java.util.List;
@@ -70,14 +73,14 @@ public class MeshBuilder {
     private List<Coordinate> vertices;
     private List<Triangle> triNeighbors; // Neighbors
     private InsertionEvaluator insertionEvaluator;
-    private LinkedList<PolygonWithHeight> polygonWithHeight = new LinkedList<PolygonWithHeight>();//list polygon with height
-    private HashMap<Integer, PolygonWithHeight> buildingWithID = new HashMap<Integer, PolygonWithHeight>();//list to save all of buildings(both new polygon and old polygon) when do the merge building.
+    private static final int BUILDING_COUNT_HINT = 1500; // 2-3 km² average buildings
+    private List<PolygonWithHeight> polygonWithHeight = new ArrayList<>(BUILDING_COUNT_HINT);//list polygon with height
     private Envelope geometriesBoundingBox = null;
-    private LinkedList<Coordinate> topoPoints = new LinkedList<Coordinate>();
+    private List<Coordinate> topoPoints = new LinkedList<Coordinate>();
     private boolean computeNeighbors = true;
     private double maximumArea = 0;
-
-    private Quadtree ptQuadForMergeBuilding = new Quadtree();//Quad tree to test intersection between exist buildings and new building
+    private GeometryFactory factory = new GeometryFactory();
+    private static final double EPSILON_MESH = 0;
 
     public static class PolygonWithHeight {
         private final Geometry geo;
@@ -161,22 +164,23 @@ public class MeshBuilder {
      * Retrieve Buildings polygon with the height
      * @return the polygons(merged)  with a height "without" the effect Topographic.
      */
-    public LinkedList<PolygonWithHeight> getPolygonWithHeight() {
+    public List<PolygonWithHeight> getPolygonWithHeight() {
         return polygonWithHeight;
 
     }
 
 
     public void addGeometry(Geometry obstructionPoly) {
+        addGeometry(new PolygonWithHeight(obstructionPoly));
+    }
+
+    private void addGeometry(PolygonWithHeight poly) {
         if (this.geometriesBoundingBox == null) {
-            this.geometriesBoundingBox = new Envelope(obstructionPoly.getEnvelopeInternal());
+            this.geometriesBoundingBox = new Envelope(poly.getGeometry().getEnvelopeInternal());
         } else {
-            this.geometriesBoundingBox.expandToInclude(obstructionPoly.getEnvelopeInternal());
+            this.geometriesBoundingBox.expandToInclude(poly.getGeometry().getEnvelopeInternal());
         }
-        //no height defined, set it to Max value
-        PolygonWithHeight polheight = new PolygonWithHeight(obstructionPoly);
-        polygonWithHeight.add(polheight);
-        buildingWithID.put(buildingWithID.size(), polheight);
+        polygonWithHeight.add(poly);
     }
 
 
@@ -189,69 +193,49 @@ public class MeshBuilder {
      */
     @SuppressWarnings("unchecked")
     public void addGeometry(Geometry obstructionPoly, double heightofBuilding) {
-        PolygonWithHeight newbuilding = new PolygonWithHeight(obstructionPoly, heightofBuilding);
-        if (this.geometriesBoundingBox == null) {
-            this.geometriesBoundingBox = new Envelope(obstructionPoly.getEnvelopeInternal());
-        } else {
-            this.geometriesBoundingBox.expandToInclude(obstructionPoly.getEnvelopeInternal());
+        addGeometry(new PolygonWithHeight(obstructionPoly, heightofBuilding));
+    }
+
+    public void mergeBuildings() {
+        if(polygonWithHeight.isEmpty()) {
+            return;
         }
-        //if there is no building
-        if (buildingWithID.isEmpty()) {
-            polygonWithHeight.add(newbuilding);
-            buildingWithID.put(buildingWithID.size(), newbuilding);
-            //add this building to QuadTree
-            ptQuadForMergeBuilding.insert(obstructionPoly.getEnvelopeInternal(), new EnvelopeWithIndex<Integer>(obstructionPoly.getEnvelopeInternal(),
-                    buildingWithID.size() - 1));
-
+        // Delaunay triangulation request good quality input data
+        // We have to merge buildings that may overlap
+        Geometry[] toUnion = new Geometry[polygonWithHeight.size()];
+        STRtree buildingsRtree;
+        if(toUnion.length > 10) {
+            buildingsRtree = new STRtree(toUnion.length);
         } else {
-            //check if a new building have the intersection with other buildings
-            List<EnvelopeWithIndex<Integer>> result = ptQuadForMergeBuilding.query(obstructionPoly.getEnvelopeInternal());
-            //if no intersection
-            if (result.isEmpty()) {
-                polygonWithHeight.add(newbuilding);
-                buildingWithID.put(buildingWithID.size(), newbuilding);
-                ptQuadForMergeBuilding.insert(obstructionPoly.getEnvelopeInternal(), new EnvelopeWithIndex<Integer>(obstructionPoly.getEnvelopeInternal(),
-                        buildingWithID.size() - 1));
-            }
-            //if we may have intersection, get the building who intersected with this new building using ID
-            //we use the less height building's height and give it to the intersected Geo
-            else {
-                Geometry newBuildingModified = obstructionPoly;
-                double minHeight = heightofBuilding;
-                for (EnvelopeWithIndex<Integer> envel : result) {
-                    int intersectedBuildingID = envel.getId();
-                    PolygonWithHeight intersectedBuilidng = buildingWithID.get(intersectedBuildingID);
-                    //if new Polygon interest old Polygon && intersection is not a Point
-                    if (intersectedBuilidng.getGeometry().intersects(obstructionPoly) && !(intersectedBuilidng.getGeometry().intersection(obstructionPoly) instanceof Point)) {
-                        //we merge the building and give it a new height
-                        newBuildingModified = intersectedBuilidng.getGeometry().union(newBuildingModified);
-                        if (minHeight > intersectedBuilidng.getHeight()) {
-                            //if the new building's height less than old intersected building, we get the min height
-                            minHeight = intersectedBuilidng.getHeight();
-
+            buildingsRtree = new STRtree();
+        }
+        int i = 0;
+        for(PolygonWithHeight poly : polygonWithHeight) {
+            toUnion[i] = poly.getGeometry();
+            buildingsRtree.insert(poly.getGeometry().getEnvelopeInternal(), i);
+            i++;
+        }
+        Geometry merged = factory.createGeometryCollection(toUnion).buffer(EPSILON_MESH, 0, BufferParameters.CAP_SQUARE );
+        List<PolygonWithHeight> mergedPolygonWithHeight = new ArrayList<>(merged.getNumGeometries());
+        // For each merged buildings fetch all contained buildings and take the minimal height then insert into mergedPolygonWithHeight
+        for(int idGeom = 0; idGeom < merged.getNumGeometries(); idGeom++) {
+            //fetch all contained buildings
+            Geometry mergedBuilding = merged.getGeometryN(idGeom);
+            if(mergedBuilding instanceof Polygon) {
+                List polyInters = buildingsRtree.query(mergedBuilding.getEnvelopeInternal());
+                double minHeight = Double.MAX_VALUE;
+                for (Object id : polyInters) {
+                    if (id instanceof Integer) {
+                        PolygonWithHeight inPoly = polygonWithHeight.get((int) id);
+                        if (inPoly.getGeometry().intersects(mergedBuilding)) {
+                            minHeight = Math.min(minHeight, inPoly.getHeight());
                         }
-                        //if we are sure a old building have intersection with new building,
-                        //we will remove the old building in the building list and QuadTree(not remove in buildingWithID list)
-                        polygonWithHeight.remove(intersectedBuilidng);
-                        ptQuadForMergeBuilding.remove(intersectedBuilidng.getGeometry().getEnvelopeInternal(), new EnvelopeWithIndex<Integer>(intersectedBuilidng.getGeometry().getEnvelopeInternal(),
-                                intersectedBuildingID));
-
-
                     }
-
-
                 }
-                PolygonWithHeight newPoly = new PolygonWithHeight(newBuildingModified, minHeight);
-                polygonWithHeight.add(newPoly);
-                buildingWithID.put(buildingWithID.size(), newPoly);
-                //Because we don't remove the building in HashMap buildingWithID, so the buildingWithID will keep both new or old building
-                ptQuadForMergeBuilding.insert(newBuildingModified.getEnvelopeInternal(), new EnvelopeWithIndex<Integer>(newBuildingModified.getEnvelopeInternal(),
-                        buildingWithID.size() - 1));
-
+                mergedPolygonWithHeight.add(new PolygonWithHeight(mergedBuilding, minHeight));
             }
         }
-
-
+        polygonWithHeight = mergedPolygonWithHeight;
     }
 
     /**
@@ -300,6 +284,8 @@ public class MeshBuilder {
         }
 
         LayerJDelaunay delaunayTool = new LayerJDelaunay();
+        //merge buildings
+        mergeBuildings();
         //add buildings to JDelaunay
         int i = 1;
         for (PolygonWithHeight polygon : polygonWithHeight) {

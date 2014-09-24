@@ -123,33 +123,14 @@ public class TestMeshAndTopoDiffraction extends TestCase{
 
              mesh.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(60., 60.,0.)));
              FastObstructionTest nfot= new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
-             System.out.println("----------TEST#2 diffraction blocked by TopoPoint----- ");
              DiffractionWithSoilEffetZone diffraData=nfot.getPath(new Coordinate(48,25,4), new Coordinate(5,15,3.7));
              Double[] lt=diffraData.getDiffractionData();
-             System.out.println("----deltadistance----");
-             System.out.println(lt[DiffractionWithSoilEffetZone.DELTA_DISTANCE]);
-             System.out.println("----e----");
-             System.out.println(lt[DiffractionWithSoilEffetZone.E_LENGTH]);
-             System.out.println("----distancepath----");
-             System.out.println(lt[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE]);
-             
-            
-            
-            
-             System.out.println("-----------exchange source receiver------------");
              diffraData=nfot.getPath(new Coordinate(5,15,3.7), new Coordinate(48,25,4));
              Double[]lt1=diffraData.getDiffractionData();
-             System.out.println("----deltadistance----");
-             System.out.println(lt1[DiffractionWithSoilEffetZone.DELTA_DISTANCE]);
-             System.out.println("----e----");
-             System.out.println(lt1[DiffractionWithSoilEffetZone.E_LENGTH]);
-             System.out.println("----distancepath----");
-             System.out.println(lt1[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE]);
-
-
-            assertTrue("testTopoPointsBlockSourceAndReceiver failed! ",lt[DiffractionWithSoilEffetZone.DELTA_DISTANCE].equals(lt1[DiffractionWithSoilEffetZone.DELTA_DISTANCE])
-                       &&lt[DiffractionWithSoilEffetZone.E_LENGTH].equals(lt1[DiffractionWithSoilEffetZone.E_LENGTH])&&lt[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE].equals(lt1[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE])&&lt[DiffractionWithSoilEffetZone.DELTA_DISTANCE].equals(-1.0));
-             System.out.println("----------TEST#2 diffraction blocked by TopoPoint finished----- ");
+             assertEquals(lt[DiffractionWithSoilEffetZone.DELTA_DISTANCE], lt1[DiffractionWithSoilEffetZone.DELTA_DISTANCE], 1e-16);
+             assertEquals(lt[DiffractionWithSoilEffetZone.E_LENGTH], lt1[DiffractionWithSoilEffetZone.E_LENGTH], 1e-16);
+             assertEquals(lt[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE], lt1[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE], 1e-16);
+             assertEquals(-1, lt[DiffractionWithSoilEffetZone.DELTA_DISTANCE], 1e-16);
             
 
          }

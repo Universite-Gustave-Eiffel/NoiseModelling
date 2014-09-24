@@ -42,6 +42,9 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
+import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.PrecisionModel;
+import com.vividsolutions.jts.io.WKTWriter;
 import org.jdelaunay.delaunay.ConstrainedMesh;
 import org.jdelaunay.delaunay.evaluator.InsertionEvaluator;
 import org.jdelaunay.delaunay.geometries.DEdge;
@@ -72,7 +75,7 @@ public class LayerJDelaunay implements LayerDelaunay {
     private ArrayList<DEdge> constraintEdge = new ArrayList<DEdge>();
     private LinkedList<DPoint> ptToInsert = new LinkedList<DPoint>();
     private HashMap<Integer,BuildingWithID> buildingWithID=new HashMap<Integer,BuildingWithID>();
-    private boolean debugMode=false; //output primitives in a text file
+    private boolean debugMode=true; //output primitives in a text file
     private boolean computeNeighbors=false;
     List<Triangle> triangles = new ArrayList<Triangle>();
     private List<Triangle> neighbors = new ArrayList<Triangle>(); // The first neighbor triangle is opposite the first corner of triangle  i
@@ -214,33 +217,29 @@ public class LayerJDelaunay implements LayerDelaunay {
                 delaunayTool.setConstraintEdges(constraintEdge);
 
                 if(debugMode) {
-                    try
-                    {
-                        //Debug mode write input & output data to files
-                        File file = new File("./layerjdlaunaydebug"+System.currentTimeMillis()+".txt");
-                        // Initialization
-                        PrintWriter out = new PrintWriter(new FileOutputStream(file));
-
-                        out.printf("DPoint pts[]={");
+                        //Debug mode SQL script to do same triangulation
+                        GeometryFactory factory = new GeometryFactory();
+                        StringBuilder out = new StringBuilder();
+                        out.append("DROP TABLE IF EXISTS DEBUG_DATA;\n");
+                        out.append("CREATE TABLE DEBUG_DATA(the_geom geometry);\n");
+                        WKTWriter wktWriter = new WKTWriter(3);
                         // write pts
                         for(DPoint pt : ptToInsert) {
-                            out.printf("new DPoint(%s, %s, %s),\r\n",Double.toString(pt.getX()),Double.toString(pt.getY()),Double.toString(pt.getZ()));
+                            Geometry geom = factory.createPoint(pt.getCoordinate());
+                            out.append("INSERT INTO DEBUG_DATA VALUES ('");
+                            out.append(wktWriter.write(geom));
+                            out.append("');\n");
                         }
-                        out.printf("};\r\n");
                         //write segments
-                        out.printf("DEdge edges[]={");
-                        // write pts
-
                         for(DEdge edge : constraintEdge) {
                             DPoint pt=edge.getStartPoint();
                             DPoint pt2=edge.getEndPoint();
-                            out.printf("new DEdge(%s, %s, %s,%s, %s, %s),\r\n",Double.toString(pt.getX()),Double.toString(pt.getY()),Double.toString(pt.getZ()),Double.toString(pt2.getX()),Double.toString(pt2.getY()),Double.toString(pt2.getZ()));
+                            Geometry geom = factory.createLineString(new Coordinate[]{pt.getCoordinate(), pt2.getCoordinate()});
+                            out.append("INSERT INTO DEBUG_DATA VALUES ('");
+                            out.append(wktWriter.write(geom));
+                            out.append("');\n");
                         }
-                        out.printf("};\r\n");
-                        out.close();
-                    } catch (FileNotFoundException e) {
-                        throw new LayerDelaunayError(e.getMessage());
-                    }
+                        logger.info(out.toString());
                 }
 
 
