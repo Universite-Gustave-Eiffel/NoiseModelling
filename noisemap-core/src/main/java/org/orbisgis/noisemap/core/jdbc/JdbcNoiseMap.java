@@ -3,6 +3,8 @@ package org.orbisgis.noisemap.core.jdbc;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.MultiPolygon;
+import com.vividsolutions.jts.geom.Polygon;
 import org.h2gis.h2spatialapi.ProgressVisitor;
 import org.h2gis.utilities.SFSUtilities;
 import org.h2gis.utilities.SpatialResultSet;
@@ -121,6 +123,7 @@ public class JdbcNoiseMap {
 
     protected void fetchCellBuildings(Connection connection, Envelope fetchEnvelope, List<Geometry> buildingsGeometries,
                                       MeshBuilder mesh) throws SQLException {
+        Geometry envGeo = geometryFactory.toGeometry(fetchEnvelope);
         String queryHeight = "";
         if(!heightField.isEmpty()) {
             queryHeight = ", " + TableLocation.quoteIdentifier(heightField);
@@ -138,10 +141,13 @@ public class JdbcNoiseMap {
                     Geometry building = rs.getGeometry();
                     if(building != null) {
                         buildingsGeometries.add(building);
-                        if (heightField.isEmpty()) {
-                            mesh.addGeometry(building);
-                        } else {
-                            mesh.addGeometry(building, rs.getDouble(heightField));
+                        Geometry intersectedGeometry = building.intersection(envGeo);
+                        if(intersectedGeometry instanceof Polygon || intersectedGeometry instanceof MultiPolygon) {
+                            if (heightField.isEmpty()) {
+                                mesh.addGeometry(intersectedGeometry);
+                            } else {
+                                mesh.addGeometry(intersectedGeometry, rs.getDouble(heightField));
+                            }
                         }
                     }
                 }

@@ -49,9 +49,12 @@ import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Polygon;
 import com.vividsolutions.jts.geom.Point;
+import com.vividsolutions.jts.geom.PrecisionModel;
 import com.vividsolutions.jts.index.quadtree.Quadtree;
 import com.vividsolutions.jts.index.strtree.STRtree;
 import com.vividsolutions.jts.operation.buffer.BufferParameters;
+import com.vividsolutions.jts.precision.GeometryPrecisionReducer;
+import com.vividsolutions.jts.precision.PrecisionReducerCoordinateOperation;
 import org.jdelaunay.delaunay.evaluator.InsertionEvaluator;
 
 import java.util.List;
@@ -80,7 +83,7 @@ public class MeshBuilder {
     private boolean computeNeighbors = true;
     private double maximumArea = 0;
     private GeometryFactory factory = new GeometryFactory();
-    private static final double EPSILON_MESH = 0;
+    private static final int EPSILON_MESH = 2; //Decimal value, Used for merged geometry precision
 
     public static class PolygonWithHeight {
         private final Geometry geo;
@@ -215,12 +218,16 @@ public class MeshBuilder {
             buildingsRtree.insert(poly.getGeometry().getEnvelopeInternal(), i);
             i++;
         }
-        Geometry merged = factory.createGeometryCollection(toUnion).buffer(EPSILON_MESH, 0, BufferParameters.CAP_SQUARE );
-        List<PolygonWithHeight> mergedPolygonWithHeight = new ArrayList<>(merged.getNumGeometries());
+        Geometry geomCollection = factory.createGeometryCollection(toUnion);
+        PrecisionModel pm = new PrecisionModel(Math.pow(10.0, EPSILON_MESH));
+        GeometryPrecisionReducer geometryPrecisionReducer = new GeometryPrecisionReducer(pm);
+        geomCollection = geometryPrecisionReducer.reduce(geomCollection);
+        geomCollection = geomCollection.buffer(0, 0, BufferParameters.CAP_SQUARE );
+        List<PolygonWithHeight> mergedPolygonWithHeight = new ArrayList<>(geomCollection.getNumGeometries());
         // For each merged buildings fetch all contained buildings and take the minimal height then insert into mergedPolygonWithHeight
-        for(int idGeom = 0; idGeom < merged.getNumGeometries(); idGeom++) {
+        for(int idGeom = 0; idGeom < geomCollection.getNumGeometries(); idGeom++) {
             //fetch all contained buildings
-            Geometry mergedBuilding = merged.getGeometryN(idGeom);
+            Geometry mergedBuilding = geomCollection.getGeometryN(idGeom);
             if(mergedBuilding instanceof Polygon) {
                 List polyInters = buildingsRtree.query(mergedBuilding.getEnvelopeInternal());
                 double minHeight = Double.MAX_VALUE;

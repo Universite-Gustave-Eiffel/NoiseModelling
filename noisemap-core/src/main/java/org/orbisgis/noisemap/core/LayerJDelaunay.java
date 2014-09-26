@@ -75,7 +75,7 @@ public class LayerJDelaunay implements LayerDelaunay {
     private ArrayList<DEdge> constraintEdge = new ArrayList<DEdge>();
     private LinkedList<DPoint> ptToInsert = new LinkedList<DPoint>();
     private HashMap<Integer,BuildingWithID> buildingWithID=new HashMap<Integer,BuildingWithID>();
-    private boolean debugMode=true; //output primitives in a text file
+    private boolean debugMode=false; //output primitives in a text file
     private boolean computeNeighbors=false;
     List<Triangle> triangles = new ArrayList<Triangle>();
     private List<Triangle> neighbors = new ArrayList<Triangle>(); // The first neighbor triangle is opposite the first corner of triangle  i
