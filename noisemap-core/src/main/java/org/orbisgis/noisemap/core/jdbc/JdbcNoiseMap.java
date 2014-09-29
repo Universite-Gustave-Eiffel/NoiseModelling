@@ -36,7 +36,7 @@ public class JdbcNoiseMap {
     protected String demTable = "";
     protected String sound_lvl_field = "DB_M";
     protected double maximumPropagationDistance = 750;
-    protected double maximumReflectionDistance = 400;
+    protected double maximumReflectionDistance = 100;
     protected int subdivisionLevel = -1; // TODO Guess it from maximumPropagationDistance and source extent
     protected int soundReflectionOrder = 2;
     protected int soundDiffractionOrder = 1;

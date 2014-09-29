@@ -64,7 +64,7 @@ public class PropagationProcessData {
     public int diffractionOrder;
     /** Maximum source distance */
     public double maxSrcDist;
-    /** Maximum reflection wall distance */
+    /** Maximum reflection wall distance from receiver->source line */
     public double maxRefDist;
     /** Minimum distance between source and receiver */
     public double minRecDist;

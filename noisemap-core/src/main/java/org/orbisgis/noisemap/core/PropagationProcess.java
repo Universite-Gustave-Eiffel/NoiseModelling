@@ -275,6 +275,142 @@ public class PropagationProcess implements Runnable {
         }
     }
 
+
+    /**
+     * Add vertical edge diffraction noise contribution to energetic sum.
+     * @param regionCornersFreeToReceiver Region corners free field fetched using
+     * {@link #fetchRegionCorners(com.vividsolutions.jts.geom.Coordinate, java.util.List, java.util.List)}
+     * @param regionCorners
+     * @param srcCoord
+     * @param receiverCoord
+     * @param energeticSum
+     * @param alpha_atmo
+     * @param wj
+     */
+    public void computeVerticalEdgeDiffraction(List<Integer> regionCornersFreeToReceiver, List<Coordinate> regionCorners
+            ,Coordinate srcCoord, Coordinate receiverCoord, double energeticSum[], double[] alpha_atmo, List<Double> wj) {
+        final double SrcReceiverDistance = CGAlgorithms3D.distance(srcCoord, receiverCoord);
+        // Get the first valid receiver->corner
+        int receiverFreeCornerIndex = 0;
+        int freqcount = data.freq_lvl.size();
+        int firstCorner = regionCornersFreeToReceiver
+                .get(receiverFreeCornerIndex);
+        if (firstCorner != -1) {
+            // History of propagation through corners
+            List<Integer> curCorner = new ArrayList<Integer>();
+            curCorner.add(firstCorner);
+            while (!curCorner.isEmpty()) {
+                Coordinate lastCorner = regionCorners.get(curCorner
+                        .get(curCorner.size() - 1));
+                // Test Path is free to the source
+                if (data.freeFieldFinder.isFreeField(lastCorner,
+                        srcCoord)) {
+                    // True then the path is clear
+                    // Compute attenuation level
+                    double eLength = 0;
+                    //Compute distance of the corner path
+                    for (int ie = 1; ie < curCorner.size(); ie++) {
+                        Coordinate cornerA = regionCorners.get(curCorner.get(ie));
+                        Coordinate cornerB = regionCorners.get(curCorner.get(ie - 1));
+                        eLength +=  CGAlgorithms3D.distance(cornerA,cornerB);
+                    }
+                    // delta=SO^1+O^nO^(n+1)+O^nnR
+                    double receiverCornerDistance = CGAlgorithms3D.distance(receiverCoord,
+                            regionCorners.get(curCorner.get(0)));
+                    double sourceCornerDistance = CGAlgorithms3D.distance(srcCoord,
+                            regionCorners.get(curCorner.get(curCorner.size() - 1)));
+                    double diffractionFullDistance = receiverCornerDistance
+                            + eLength                                                                           //Corner to corner distance
+                            + sourceCornerDistance;
+                    if (diffractionFullDistance < data.maxSrcDist) {
+                        diffractionPathCount++;
+                        double delta = diffractionFullDistance
+                                - SrcReceiverDistance;
+
+                        for (int idfreq = 0; idfreq < freqcount; idfreq++) {
+
+                            double cprime;
+                            //C" NMPB 2008 P.33
+                            if (curCorner.size() == 1) {
+                                cprime = 1; //Single diffraction cprime=1
+                            } else {
+                                //Multiple diffraction
+                                //CPRIME=( 1+(5*gamma)^2)/((1/3)+(5*gamma)^2)
+                                double gammapart = Math.pow((5 * freq_lambda[idfreq]) / diffractionFullDistance, 2);
+                                cprime = (1. + gammapart) / (ONETHIRD + gammapart);
+                            }
+                            //(7.11) NMP2008 P.32
+                            double testForm = (40 / freq_lambda[idfreq])
+                                    * cprime * delta;
+                            double diffractionAttenuation = 0.;
+                            if (testForm >= -2.) {
+                                diffractionAttenuation = 10 * Math
+                                        .log10(3 + testForm);
+                            }
+                            // Limit to 0<=DiffractionAttenuation
+                            diffractionAttenuation = Math.max(0,
+                                    diffractionAttenuation);
+                            double AttenuatedWj = wj.get(idfreq);
+                            // Geometric dispersion
+                            AttenuatedWj = attDistW(AttenuatedWj, SrcReceiverDistance);
+                            // Apply diffraction attenuation
+                            AttenuatedWj = dbaToW(wToDba(AttenuatedWj)
+                                    - diffractionAttenuation);
+                            // Apply atmospheric absorption and ground
+                            AttenuatedWj = attAtmW(
+                                    AttenuatedWj,
+                                    diffractionFullDistance,
+                                    alpha_atmo[idfreq]);
+
+                            energeticSum[idfreq] += AttenuatedWj;
+                        }
+                        if (diffractionPathCount > LIMITATION_DIFFRACTION_PATH) {
+                            break; //exit diffraction search
+                        }
+                    }
+                }
+                // Process to the next corner
+                int nextCorner = -1;
+                if (data.diffractionOrder > curCorner.size()) {
+                    // Continue to next order valid corner
+                    nextCorner = nextFreeFieldNode(regionCorners,
+                            lastCorner, curCorner, 0,
+                            data.freeFieldFinder);
+                    if (nextCorner != -1) {
+                        curCorner.add(nextCorner);
+                    }
+                }
+                while (nextCorner == -1 && !curCorner.isEmpty()) {
+                    if (curCorner.size() > 1) {
+                        // Next free field corner
+                        nextCorner = nextFreeFieldNode(regionCorners,
+                                regionCorners.get(curCorner
+                                        .get(curCorner.size() - 2)),
+                                curCorner, curCorner.get(curCorner
+                                        .size() - 1),
+                                data.freeFieldFinder
+                        );
+                    } else {
+                        // Next receiver-corner tuple
+                        receiverFreeCornerIndex++;
+                        if (receiverFreeCornerIndex < regionCornersFreeToReceiver
+                                .size()) {
+                            nextCorner = regionCornersFreeToReceiver
+                                    .get(receiverFreeCornerIndex);
+                        } else {
+                            nextCorner = -1;
+                        }
+                    }
+                    if (nextCorner != -1) {
+                        curCorner.set(curCorner.size() - 1, nextCorner);
+                    } else {
+                        curCorner.remove(curCorner.size() - 1);
+                    }
+                }
+            }
+        }
+    }
+
     /**
      * Compute project Z coordinate between p0 p1 of x,y.
      * @param coordinateWithoutZ Coordinate to set the Z value from Z interpolation of line
@@ -628,8 +764,6 @@ public class PropagationProcess implements Runnable {
             if (data.reflexionOrder > 0) {
                 NonRobustLineIntersector linters = new NonRobustLineIntersector();
                 for (MirrorReceiverResult receiverReflection : mirroredReceiver) {
-
-                    // TODO change like line 384
                     double ReflectedSrcReceiverDistance = receiverReflection.getReceiverPos().distance(srcCoord);
                     if (ReflectedSrcReceiverDistance < data.maxSrcDist) {
                         boolean validReflection = false;
@@ -757,124 +891,7 @@ public class PropagationProcess implements Runnable {
             // Process diffraction paths
             if (somethingHideReceiver && data.diffractionOrder > 0
                     && !regionCornersFreeToReceiver.isEmpty()) {
-                // Get the first valid receiver->corner
-                int receiverFreeCornerIndex = 0;
-                int firstCorner = regionCornersFreeToReceiver
-                        .get(receiverFreeCornerIndex);
-                if (firstCorner != -1) {
-                    // History of propagation through corners
-                    List<Integer> curCorner = new ArrayList<Integer>();
-                    curCorner.add(firstCorner);
-                    while (!curCorner.isEmpty()) {
-                        Coordinate lastCorner = regionCorners.get(curCorner
-                                .get(curCorner.size() - 1));
-                        // Test Path is free to the source
-                        if (data.freeFieldFinder.isFreeField(lastCorner,
-                                srcCoord)) {
-                            // True then the path is clear
-                            // Compute attenuation level
-                            double eLength = 0;
-                            //Compute distance of the corner path
-                            for (int ie = 1; ie < curCorner.size(); ie++) {
-                                Coordinate cornerA = regionCorners.get(curCorner.get(ie));
-                                Coordinate cornerB = regionCorners.get(curCorner.get(ie - 1));
-                                eLength +=  CGAlgorithms3D.distance(cornerA,cornerB);
-                            }
-                            // delta=SO^1+O^nO^(n+1)+O^nnR
-                            double receiverCornerDistance = CGAlgorithms3D.distance(receiverCoord,
-                                    regionCorners.get(curCorner.get(0)));
-                            double sourceCornerDistance = CGAlgorithms3D.distance(srcCoord,
-                                    regionCorners.get(curCorner.get(curCorner.size() - 1)));
-                            double diffractionFullDistance = receiverCornerDistance
-                                    + eLength                                                                           //Corner to corner distance
-                                    + sourceCornerDistance;
-                            if (diffractionFullDistance < data.maxSrcDist) {
-                                diffractionPathCount++;
-                                double delta = diffractionFullDistance
-                                        - SrcReceiverDistance;
-
-                                for (int idfreq = 0; idfreq < freqcount; idfreq++) {
-
-                                    double cprime;
-                                    //C" NMPB 2008 P.33
-                                    if (curCorner.size() == 1) {
-                                        cprime = 1; //Single diffraction cprime=1
-                                    } else {
-                                        //Multiple diffraction
-                                        //CPRIME=( 1+(5*gamma)^2)/((1/3)+(5*gamma)^2)
-                                        double gammapart = Math.pow((5 * freq_lambda[idfreq]) / diffractionFullDistance, 2);
-                                        cprime = (1. + gammapart) / (ONETHIRD + gammapart);
-                                    }
-                                    //(7.11) NMP2008 P.32
-                                    double testForm = (40 / freq_lambda[idfreq])
-                                            * cprime * delta;
-                                    double diffractionAttenuation = 0.;
-                                    if (testForm >= -2.) {
-                                        diffractionAttenuation = 10 * Math
-                                                .log10(3 + testForm);
-                                    }
-                                    // Limit to 0<=DiffractionAttenuation
-                                    diffractionAttenuation = Math.max(0,
-                                            diffractionAttenuation);
-                                    double AttenuatedWj = wj.get(idfreq);
-                                    // Geometric dispersion
-                                    AttenuatedWj = attDistW(AttenuatedWj, SrcReceiverDistance);
-                                    // Apply diffraction attenuation
-                                    AttenuatedWj = dbaToW(wToDba(AttenuatedWj)
-                                            - diffractionAttenuation);
-                                    // Apply atmospheric absorption and ground
-                                    AttenuatedWj = attAtmW(
-                                            AttenuatedWj,
-                                            diffractionFullDistance,
-                                            alpha_atmo[idfreq]);
-
-                                    energeticSum[idfreq] += AttenuatedWj;
-                                }
-                                if (diffractionPathCount > LIMITATION_DIFFRACTION_PATH) {
-                                    break; //exit diffraction search
-                                }
-                            }
-                        }
-                        // Process to the next corner
-                        int nextCorner = -1;
-                        if (data.diffractionOrder > curCorner.size()) {
-                            // Continue to next order valid corner
-                            nextCorner = nextFreeFieldNode(regionCorners,
-                                    lastCorner, curCorner, 0,
-                                    data.freeFieldFinder);
-                            if (nextCorner != -1) {
-                                curCorner.add(nextCorner);
-                            }
-                        }
-                        while (nextCorner == -1 && !curCorner.isEmpty()) {
-                            if (curCorner.size() > 1) {
-                                // Next free field corner
-                                nextCorner = nextFreeFieldNode(regionCorners,
-                                        regionCorners.get(curCorner
-                                                .get(curCorner.size() - 2)),
-                                        curCorner, curCorner.get(curCorner
-                                                .size() - 1),
-                                        data.freeFieldFinder
-                                );
-                            } else {
-                                // Next receiver-corner tuple
-                                receiverFreeCornerIndex++;
-                                if (receiverFreeCornerIndex < regionCornersFreeToReceiver
-                                        .size()) {
-                                    nextCorner = regionCornersFreeToReceiver
-                                            .get(receiverFreeCornerIndex);
-                                } else {
-                                    nextCorner = -1;
-                                }
-                            }
-                            if (nextCorner != -1) {
-                                curCorner.set(curCorner.size() - 1, nextCorner);
-                            } else {
-                                curCorner.remove(curCorner.size() - 1);
-                            }
-                        }
-                    }
-                }
+                computeVerticalEdgeDiffraction(regionCornersFreeToReceiver, regionCorners, srcCoord, receiverCoord, energeticSum, alpha_atmo, wj);
             }
         }
     }
@@ -926,6 +943,30 @@ public class PropagationProcess implements Runnable {
     }
 
     /**
+     * Use {@link #cornersQuad} to fetch all region corners in max ref dist and check for corner visibility (without checking Z)
+     * @param position Fetch center (receiver coordinate)
+     * @param regionCornersFreeToReceiver Array, not null
+     * @param regionCorners Array, not null
+     */
+    public void fetchRegionCorners(Coordinate position, List<Coordinate> regionCorners, List<Integer> regionCornersFreeToReceiver) {
+        // Query corners in the current zone
+        ArrayCoordinateListVisitor cornerQuery = new ArrayCoordinateListVisitor(
+                position, data.maxRefDist);
+        cornersQuad.query(new Envelope(position.x
+                - data.maxRefDist, position.x + data.maxRefDist,
+                position.y - data.maxRefDist, position.y
+                + data.maxRefDist
+        ), cornerQuery);
+        regionCorners.addAll(cornerQuery.getItems());
+        for (int icorner = 0; icorner < regionCorners.size(); icorner++) {
+            if (data.freeFieldFinder.isFreeField(position,
+                    regionCorners.get(icorner))) {
+                regionCornersFreeToReceiver.add(icorner);
+            }
+        }
+    }
+
+    /**
      * Compute sound level by frequency band at this receiver position
      *
      * @param receiverCoord
@@ -940,12 +981,12 @@ public class PropagationProcess implements Runnable {
 
             nearBuildingsWalls = new ArrayList<>(
                     data.freeFieldFinder.getLimitsInRange(
-                            data.maxRefDist, receiverCoord)
+                            data.maxRefDist + data.maxSrcDist, receiverCoord)
             );
             // Build mirrored receiver list from wall list
             mirroredReceiver = getMirroredReceiverResults(receiverCoord,
                     nearBuildingsWalls, data.reflexionOrder,
-                    data.maxRefDist * 2);
+                    data.maxRefDist + data.maxSrcDist);
             this.dataOut.appendImageReceiver(mirroredReceiver.size());
         }
         List<Coordinate> regionCorners = new ArrayList<Coordinate>();
@@ -955,22 +996,7 @@ public class PropagationProcess implements Runnable {
         // with
         // receiver
         if (data.diffractionOrder > 0) {
-            // Query corners in the current zone
-            ArrayCoordinateListVisitor cornerQuery = new ArrayCoordinateListVisitor(
-                    receiverCoord, data.maxRefDist);
-            cornersQuad.query(new Envelope(receiverCoord.x
-                    - data.maxRefDist, receiverCoord.x + data.maxRefDist,
-                    receiverCoord.y - data.maxRefDist, receiverCoord.y
-                    + data.maxRefDist
-            ), cornerQuery);
-            regionCorners = cornerQuery.getItems();
-            // regionCornersFreeToReceiver.ensureCapacity(regionCorners.size());
-            for (int icorner = 0; icorner < regionCorners.size(); icorner++) {
-                if (data.freeFieldFinder.isFreeField(receiverCoord,
-                        regionCorners.get(icorner))) {
-                    regionCornersFreeToReceiver.add(icorner);
-                }
-            }
+            fetchRegionCorners( receiverCoord, regionCorners, regionCornersFreeToReceiver);
         }
         // Source search by multiple range query
         HashSet<Integer> processedLineSources = new HashSet<Integer>(); //Already processed Raw source (line and/or points)
