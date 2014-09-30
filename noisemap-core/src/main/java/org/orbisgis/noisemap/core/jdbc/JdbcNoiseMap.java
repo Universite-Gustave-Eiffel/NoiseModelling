@@ -370,7 +370,8 @@ public class JdbcNoiseMap {
     }
 
     /**
-     * @param maximumReflectionDistance Reflection and diffraction maximum search distance, default to 400m.
+     * @param maximumReflectionDistance Reflection and diffraction seek walls and corners up to X meters
+     *                                  from the direct propagation line. Default to 100m.
      */
     public void setMaximumReflectionDistance(double maximumReflectionDistance) {
         this.maximumReflectionDistance = maximumReflectionDistance;
