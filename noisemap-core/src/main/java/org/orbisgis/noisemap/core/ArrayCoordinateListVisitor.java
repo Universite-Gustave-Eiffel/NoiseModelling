@@ -33,29 +33,33 @@
  */
 package org.orbisgis.noisemap.core;
 
-import java.util.*;
+import java.util.ArrayList;
+
+import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.index.ItemVisitor;
 import com.vividsolutions.jts.geom.Coordinate;
 
 /**
- * 
+ * Used to fetch items in JTS Index for vertical diffraction corners
  * @author Nicolas Fortin
  */
 public class ArrayCoordinateListVisitor implements ItemVisitor {
 
-	private ArrayList<Coordinate> items = new ArrayList<Coordinate>();
-	private Coordinate destinationCoordinate;
-	private double maxDist;
+	private ArrayList<Coordinate> items = new ArrayList<>();
+    private Geometry testGeom;
+    private GeometryFactory geometryFactory = new GeometryFactory();
 
-	public ArrayCoordinateListVisitor(Coordinate _destinationCoordinate,
-			double _maxDist) {
-		destinationCoordinate = _destinationCoordinate;
-		maxDist = _maxDist;
-	}
+    /**
+     * @param testGeom If item intersects with this geometry then item is added to list.
+     */
+    public ArrayCoordinateListVisitor(Geometry testGeom) {
+        this.testGeom = testGeom;
+    }
 
-	@Override
+    @Override
 	public void visitItem(Object item) {
-		if (destinationCoordinate.distance((Coordinate) item) <= maxDist) {
+		if (testGeom.intersects(geometryFactory.createPoint((Coordinate)item))) {
 			items.add((Coordinate) item);
 		}
 	}

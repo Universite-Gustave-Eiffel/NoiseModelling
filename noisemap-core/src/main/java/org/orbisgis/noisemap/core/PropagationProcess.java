@@ -52,12 +52,11 @@ import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.index.quadtree.Quadtree;
 import com.vividsolutions.jts.index.strtree.STRtree;
+import com.vividsolutions.jts.operation.buffer.BufferParameters;
 import com.vividsolutions.jts.triangulate.quadedge.Vertex;
 import org.h2gis.h2spatialapi.ProgressVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-
 
 /**
  * @author Nicolas Fortin
@@ -278,8 +277,6 @@ public class PropagationProcess implements Runnable {
 
     /**
      * Add vertical edge diffraction noise contribution to energetic sum.
-     * @param regionCornersFreeToReceiver Region corners free field fetched using
-     * {@link #fetchRegionCorners(com.vividsolutions.jts.geom.Coordinate, java.util.List, java.util.List)}
      * @param regionCorners
      * @param srcCoord
      * @param receiverCoord
@@ -287,17 +284,15 @@ public class PropagationProcess implements Runnable {
      * @param alpha_atmo
      * @param wj
      */
-    public void computeVerticalEdgeDiffraction(List<Integer> regionCornersFreeToReceiver, List<Coordinate> regionCorners
+    public void computeVerticalEdgeDiffraction(List<Coordinate> regionCorners
             ,Coordinate srcCoord, Coordinate receiverCoord, double energeticSum[], double[] alpha_atmo, List<Double> wj) {
         final double SrcReceiverDistance = CGAlgorithms3D.distance(srcCoord, receiverCoord);
         // Get the first valid receiver->corner
-        int receiverFreeCornerIndex = 0;
         int freqcount = data.freq_lvl.size();
-        int firstCorner = regionCornersFreeToReceiver
-                .get(receiverFreeCornerIndex);
+        List<Integer> curCorner = new ArrayList<>();
+        int firstCorner = nextFreeFieldNode(regionCorners, receiverCoord, curCorner, 0, data.freeFieldFinder);
         if (firstCorner != -1) {
             // History of propagation through corners
-            List<Integer> curCorner = new ArrayList<Integer>();
             curCorner.add(firstCorner);
             while (!curCorner.isEmpty()) {
                 Coordinate lastCorner = regionCorners.get(curCorner
@@ -381,26 +376,18 @@ public class PropagationProcess implements Runnable {
                     }
                 }
                 while (nextCorner == -1 && !curCorner.isEmpty()) {
-                    if (curCorner.size() > 1) {
-                        // Next free field corner
-                        nextCorner = nextFreeFieldNode(regionCorners,
-                                regionCorners.get(curCorner
-                                        .get(curCorner.size() - 2)),
-                                curCorner, curCorner.get(curCorner
-                                        .size() - 1),
-                                data.freeFieldFinder
-                        );
-                    } else {
-                        // Next receiver-corner tuple
-                        receiverFreeCornerIndex++;
-                        if (receiverFreeCornerIndex < regionCornersFreeToReceiver
-                                .size()) {
-                            nextCorner = regionCornersFreeToReceiver
-                                    .get(receiverFreeCornerIndex);
-                        } else {
-                            nextCorner = -1;
-                        }
+                    Coordinate startPoint = receiverCoord;
+                    if(curCorner.size() > 1) {
+                        startPoint = regionCorners.get(curCorner
+                                .get(curCorner.size() - 2));
                     }
+                    // Next free field corner
+                    nextCorner = nextFreeFieldNode(regionCorners,
+                            startPoint,
+                            curCorner, curCorner.get(curCorner
+                                    .size() - 1),
+                            data.freeFieldFinder
+                    );
                     if (nextCorner != -1) {
                         curCorner.set(curCorner.size() - 1, nextCorner);
                     } else {
@@ -515,8 +502,6 @@ public class PropagationProcess implements Runnable {
      * @param[in] wj Source sound pressure level dB(A) by frequency band
      * @param[in] mirroredReceiver Receivers mirrored by walls (for reflection)
      * @param[in] nearBuildingsWalls Walls within maxsrcdist
-     * @param[in] regionCorners Corners within maxsrcdist
-     * @param[in] regionCornersFreeToReceiver List of index of corners visible
      * from receiver
      * @param[in] freq_lambda Array of sound wave lambda value by frequency band
      */
@@ -526,9 +511,11 @@ public class PropagationProcess implements Runnable {
                                      double[] alpha_atmo, List<Double> wj,
                                      List<MirrorReceiverResult> mirroredReceiver,
                                      List<FastObstructionTest.Wall> nearBuildingsWalls,
-                                     List<Coordinate> regionCorners,
-                                     List<Integer> regionCornersFreeToReceiver, double[] freq_lambda) {
+                                     double[] freq_lambda) {
         GeometryFactory factory = new GeometryFactory();
+
+        List<Coordinate> regionCorners = fetchRegionCorners(new LineSegment(srcCoord, receiverCoord),data.maxRefDist);
+
         int freqcount = data.freq_lvl.size();
 
         double PropaDistance = srcCoord.distance(receiverCoord);
@@ -889,9 +876,8 @@ public class PropagationProcess implements Runnable {
             } // End reflexion
             // ///////////
             // Process diffraction paths
-            if (somethingHideReceiver && data.diffractionOrder > 0
-                    && !regionCornersFreeToReceiver.isEmpty()) {
-                computeVerticalEdgeDiffraction(regionCornersFreeToReceiver, regionCorners, srcCoord, receiverCoord, energeticSum, alpha_atmo, wj);
+            if (somethingHideReceiver && data.diffractionOrder > 0) {
+                computeVerticalEdgeDiffraction(regionCorners, srcCoord, receiverCoord, energeticSum, alpha_atmo, wj);
             }
         }
     }
@@ -943,27 +929,22 @@ public class PropagationProcess implements Runnable {
     }
 
     /**
-     * Use {@link #cornersQuad} to fetch all region corners in max ref dist and check for corner visibility (without checking Z)
-     * @param position Fetch center (receiver coordinate)
-     * @param regionCornersFreeToReceiver Array, not null
-     * @param regionCorners Array, not null
+     * Use {@link #cornersQuad} to fetch all region corners in max ref dist
+     * @param fetchLine Compute distance from this line (Propagation line)
+     * @param maxDistance Maximum distance to fetch corners (m)
+     * @return Filtered corner index list
      */
-    public void fetchRegionCorners(Coordinate position, List<Coordinate> regionCorners, List<Integer> regionCornersFreeToReceiver) {
+    public List<Coordinate> fetchRegionCorners(LineSegment fetchLine, double maxDistance) {
+        // Build Envelope
+        GeometryFactory factory = new GeometryFactory();
+        Geometry env = factory.createLineString(new Coordinate[]{fetchLine.p0, fetchLine.p1});
+        env = env.buffer(maxDistance, 0, BufferParameters.CAP_FLAT);
         // Query corners in the current zone
-        ArrayCoordinateListVisitor cornerQuery = new ArrayCoordinateListVisitor(
-                position, data.maxRefDist);
-        cornersQuad.query(new Envelope(position.x
-                - data.maxRefDist, position.x + data.maxRefDist,
-                position.y - data.maxRefDist, position.y
-                + data.maxRefDist
-        ), cornerQuery);
-        regionCorners.addAll(cornerQuery.getItems());
-        for (int icorner = 0; icorner < regionCorners.size(); icorner++) {
-            if (data.freeFieldFinder.isFreeField(position,
-                    regionCorners.get(icorner))) {
-                regionCornersFreeToReceiver.add(icorner);
-            }
-        }
+        ArrayCoordinateListVisitor cornerQuery = new ArrayCoordinateListVisitor(env);
+        Envelope queryEnv = new Envelope(fetchLine.p0, fetchLine.p1);
+        queryEnv.expandBy(maxDistance);
+        cornersQuad.query(queryEnv, cornerQuery);
+        return cornerQuery.getItems();
     }
 
     /**
@@ -988,15 +969,6 @@ public class PropagationProcess implements Runnable {
                     nearBuildingsWalls, data.reflexionOrder,
                     data.maxRefDist + data.maxSrcDist);
             this.dataOut.appendImageReceiver(mirroredReceiver.size());
-        }
-        List<Coordinate> regionCorners = new ArrayList<Coordinate>();
-        List<Integer> regionCornersFreeToReceiver = new ArrayList<Integer>(); // Corners
-        // free
-        // field
-        // with
-        // receiver
-        if (data.diffractionOrder > 0) {
-            fetchRegionCorners( receiverCoord, regionCorners, regionCornersFreeToReceiver);
         }
         // Source search by multiple range query
         HashSet<Integer> processedLineSources = new HashSet<Integer>(); //Already processed Raw source (line and/or points)
@@ -1055,18 +1027,9 @@ public class PropagationProcess implements Runnable {
                 srcEnergeticSum += wAttDistSource;
                 if (Math.abs(wToDba(wAttDistSource + allreceiverfreqlvl) - wToDba(allreceiverfreqlvl)) > DBA_FORGET_SOURCE) {
                     sourceCount++;
-                    // Compute Z of corners using the projection line srcCoord receiverCoord
-                    List<Coordinate> projectedCorners = new ArrayList<>(regionCorners.size());
-                    if(data.diffractionOrder > 0) {
-                        LineSegment srcReceiverLine = new LineSegment(srcCoord, receiverCoord);
-                        for (Coordinate cornerWithoutZ : regionCorners) {
-                            projectedCorners.add(getProjectedZCoordinate(cornerWithoutZ, srcReceiverLine));
-                        }
-                    }
                     receiverSourcePropa(srcCoord, receiverCoord, energeticSum,
                             alpha_atmo, wj, mirroredReceiver,
-                            nearBuildingsWalls, projectedCorners,
-                            regionCornersFreeToReceiver, freq_lambda);
+                            nearBuildingsWalls, freq_lambda);
                 }
             }
             //srcEnergeticSum=GetGlobalLevel(nbfreq,energeticSum);
