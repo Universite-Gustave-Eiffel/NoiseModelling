@@ -11,6 +11,10 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.orbisgis.noisemap.core.PropagationDebugInfo;
+import org.orbisgis.noisemap.core.PropagationProcess;
+import org.orbisgis.noisemap.core.PropagationProcessData;
+import org.orbisgis.noisemap.core.PropagationProcessOut;
 import org.orbisgis.noisemap.core.PropagationResultPtRecord;
 
 import javax.sql.DataSource;
@@ -141,4 +145,26 @@ public class TestPointNoiseMap {
             assertEquals(58.23, 10*Math.log10(result.get(2).getReceiverLvl()), 1e-2);
         }
     }
+
+    @Test
+    public void testReflection() throws SQLException {
+        try(Statement st = connection.createStatement()) {
+            URL scriptPath = TestPointNoiseMap.class.getResource("scene_without_dem.sql");
+            st.execute("RUNSCRIPT FROM "+StringUtils.quoteStringSQL(scriptPath.toString()));
+            PointNoiseMap nm = new PointNoiseMap("BUILDINGS", "SOUND_SOURCE", "RECEIVERS");
+            nm.setHeightField("HEIGHT");
+            nm.setSoundDiffractionOrder(0);
+            nm.setSoundReflectionOrder(2);
+            nm.setComputeVerticalDiffraction(false);
+            List<PropagationDebugInfo> debugInfo = new ArrayList<>();
+            nm.initialize(connection, new EmptyProgressVisitor());
+            PropagationProcessData propInput = nm.prepareCell(connection, 0, 0, new EmptyProgressVisitor(), new ArrayList<Long>());
+            PropagationProcessOut threadDataOut = new PropagationProcessOut();
+            PropagationProcess propaProcess = new PropagationProcess(
+                    propInput, threadDataOut);
+            propaProcess.runDebug(debugInfo);
+            assertEquals(4, debugInfo.size());
+        }
+    }
+
 }

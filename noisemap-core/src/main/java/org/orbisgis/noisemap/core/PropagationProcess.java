@@ -39,6 +39,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 
 import com.vividsolutions.jts.algorithm.CGAlgorithms3D;
@@ -70,8 +71,6 @@ public class PropagationProcess implements Runnable {
     private final static double FIRST_STEP_RANGE = 90;
     private final static double W_RANGE = Math.pow(10, 94. / 10.); //94 dB(A) range search. Max iso level is >75 dB(a).
     private final static double CEL = 344.23935;
-    private final static int LIMITATION_RECEIVER_MIRROR = 1000;
-    private final static int LIMITATION_DIFFRACTION_PATH = 1000;
     private Thread thread;
     private PropagationProcessData data;
     private PropagationProcessOut dataOut;
@@ -171,9 +170,6 @@ public class PropagationProcess implements Runnable {
                 }
             }
             wallId++;
-            if (receiversImage.size() > LIMITATION_RECEIVER_MIRROR) {
-                break;
-            }
         }
     }
 
@@ -297,8 +293,7 @@ public class PropagationProcess implements Runnable {
                         destinationPt);
                 PropagationDebugInfo propagationDebugInfo = null;
                 if(debugInfo != null) {
-                    List<Coordinate> path = new ArrayList<>();
-                    propagationDebugInfo = new PropagationDebugInfo(Arrays.asList(srcCoord), new double[data.freq_lvl.size()]);
+                    propagationDebugInfo = new PropagationDebugInfo(new LinkedList<>(Arrays.asList(srcCoord)), new double[data.freq_lvl.size()]);
                 }
                 // While there is a reflection point on another wall. And intersection point is in the wall z bounds.
                 while (linters.hasIntersection() && PropagationProcess.wallPointTest(seg, destinationPt))
@@ -339,6 +334,9 @@ public class PropagationProcess implements Runnable {
                     if (validReflection) // Reflection point can see
                     // source or its image
                     {
+                        if(propagationDebugInfo != null) {
+                            propagationDebugInfo.getPropagationPath().add(0, reflectionPt);
+                        }
                         if (receiverReflectionCursor
                                 .getMirrorResultId() == -1) { // Direct
                             // to
@@ -349,9 +347,6 @@ public class PropagationProcess implements Runnable {
                                             receiverCoord);
                             break; // That was the last reflection
                         } else {
-                            if(propagationDebugInfo != null) {
-                                propagationDebugInfo.getPropagationPath().add(0, reflectionPt);
-                            }
                             // There is another reflection
                             destinationPt.setCoordinate(reflectionPt);
                             // Move reflection information cursor to a
@@ -503,9 +498,6 @@ public class PropagationProcess implements Runnable {
                         }
                         if(debugInfo != null) {
                             debugInfo.add(propagationDebugInfo);
-                        }
-                        if (diffractionPathCount > LIMITATION_DIFFRACTION_PATH) {
-                            break; //exit diffraction search
                         }
                     }
                 }
