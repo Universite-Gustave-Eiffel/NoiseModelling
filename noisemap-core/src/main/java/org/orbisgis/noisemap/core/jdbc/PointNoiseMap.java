@@ -42,10 +42,18 @@ public class PointNoiseMap extends JdbcNoiseMap {
         this.receiverTableName = receiverTableName;
     }
 
-
-    public Collection<PropagationResultPtRecord> evaluateCell(Connection connection,int cellI, int cellJ,
-                                                              ProgressVisitor progression) throws SQLException {
-        PropagationProcessOut threadDataOut = new PropagationProcessOut();
+    /**
+     * Initialisation of data structures needed for sound propagation.
+     * @param connection JDBC Connection
+     * @param cellI Cell I [0-{@link #getGridDim()}]
+     * @param cellJ Cell J [0-{@link #getGridDim()}]
+     * @param progression Progression info
+     * @param receiversPk [out] receivers primary key extraction
+     * @return Data input for cell evaluation
+     * @throws SQLException
+     */
+    public PropagationProcessData prepareCell(Connection connection,int cellI, int cellJ,
+                                              ProgressVisitor progression, List<Long> receiversPk) throws SQLException {
         MeshBuilder mesh = new MeshBuilder();
         int ij = cellI * gridDim + cellJ;
         logger.info("Begin processing of cell " + (cellI + 1) + ","
@@ -95,7 +103,6 @@ public class PointNoiseMap extends JdbcNoiseMap {
         // Fetch receivers
 
         List<Coordinate> receivers = new ArrayList<>();
-        List<Long> receiversPk = new ArrayList<>();
         String receiverGeomName = SFSUtilities.getGeometryFields(connection,
                 TableLocation.parse(receiverTableName)).get(0);
         int intPk = JDBCUtilities.getIntegerPrimaryKey(connection, receiverTableName);
@@ -121,12 +128,29 @@ public class PointNoiseMap extends JdbcNoiseMap {
             }
         }
 
-        PropagationProcessData threadData = new PropagationProcessData(
+        return new PropagationProcessData(
                 receivers, freeFieldFinder, sourcesIndex,
                 sourceGeometries, wj_sources, db_field_freq,
                 soundReflectionOrder, soundDiffractionOrder, maximumPropagationDistance, maximumReflectionDistance,
                 0, wallAbsorption, ij,
                 progression.subProcess(receivers.size()), geoWithSoil, computeVerticalDiffraction);
+    }
+
+    /**
+     * Launch sound propagation
+     * @param connection
+     * @param cellI
+     * @param cellJ
+     * @param progression
+     * @return
+     * @throws SQLException
+     */
+    public Collection<PropagationResultPtRecord> evaluateCell(Connection connection,int cellI, int cellJ,
+                                                              ProgressVisitor progression) throws SQLException {
+        PropagationProcessOut threadDataOut = new PropagationProcessOut();
+        List<Long> receiversPk = new ArrayList<>();
+        PropagationProcessData threadData = prepareCell(connection, cellI, cellJ, progression, receiversPk);
+
         PropagationProcess propaProcess = new PropagationProcess(
                 threadData, threadDataOut);
         propaProcess.run();
@@ -136,12 +160,12 @@ public class PointNoiseMap extends JdbcNoiseMap {
         Stack<PropagationResultPtRecord> toDriver = new Stack<>();
         //Vertices output type
         if(receiversPk.isEmpty()) {
-            for (int receiverId = 0; receiverId < receivers.size(); receiverId++) {
-                toDriver.add(new PropagationResultPtRecord(receiverId, ij, verticesSoundLevel[receiverId]));
+            for (int receiverId = 0; receiverId < threadData.receivers.size(); receiverId++) {
+                toDriver.add(new PropagationResultPtRecord(receiverId, threadData.cellId, verticesSoundLevel[receiverId]));
             }
         } else {
-            for (int receiverId = 0; receiverId < receivers.size(); receiverId++) {
-                toDriver.add(new PropagationResultPtRecord(receiversPk.get(receiverId), ij, verticesSoundLevel[receiverId]));
+            for (int receiverId = 0; receiverId < threadData.receivers.size(); receiverId++) {
+                toDriver.add(new PropagationResultPtRecord(receiversPk.get(receiverId), threadData.cellId, verticesSoundLevel[receiverId]));
             }
         }
         return toDriver;

@@ -51,7 +51,7 @@ public class TestSoundPropagationValidation extends TestCase {
 	public static double splEpsilon=0.05;
 	private double splCompute(PropagationProcess propManager,Coordinate receiverPosition) {
 		double energeticSum[]={0.};
-		propManager.computeSoundLevelAtPosition(receiverPosition, energeticSum);
+		propManager.computeSoundLevelAtPosition(receiverPosition, energeticSum, null);
 		return PropagationProcess.wToDba(energeticSum[0]);		
 	}
 	public static boolean isSameDbValues(double dba,double dba2) {
