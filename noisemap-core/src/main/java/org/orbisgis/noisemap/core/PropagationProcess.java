@@ -1108,8 +1108,7 @@ public class PropagationProcess implements Runnable {
         }
     }
 
-    @Override
-    public void run() {
+    public void runDebug(List<PropagationDebugInfo> debugInfo) {
         try {
             initStructures();
 
@@ -1126,7 +1125,7 @@ public class PropagationProcess implements Runnable {
                 for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
                     energeticSum[idfreq] = 0.0;
                 }
-                computeSoundLevelAtPosition(receiverCoord, energeticSum, null);
+                computeSoundLevelAtPosition(receiverCoord, energeticSum, debugInfo);
                 // Save the sound level at this receiver
                 // Do the sum of all frequency bands
                 double allfreqlvl = 0;
@@ -1145,6 +1144,11 @@ public class PropagationProcess implements Runnable {
         } catch (Exception ex) {
             LOGGER.error(ex.getLocalizedMessage(), ex);
         }
+    }
+
+    @Override
+    public void run() {
+        runDebug(null);
     }
 
 
