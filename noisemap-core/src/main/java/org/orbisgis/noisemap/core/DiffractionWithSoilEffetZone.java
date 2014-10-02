@@ -33,6 +33,7 @@
  */
 package org.orbisgis.noisemap.core;
 
+import com.vividsolutions.jts.geom.LineSegment;
 import com.vividsolutions.jts.geom.LineString;
 /**
  * DiffractionWithGroundEffectZone work for FastObstructionTest,
@@ -45,10 +46,10 @@ public class DiffractionWithSoilEffetZone {
     public static final int E_LENGTH = 1;//e length
     public static final int FULL_DIFFRACTION_DISTANCE = 2;//the full distance of diffraction path
     private Double[] diffractionData = new Double[3]; //3D diffraction data
-    private LineString rOZone;//receiver-first intersection zone for 3D diffraction
-    private LineString oSZone;//last intersection-source zone for 3D diffraction
+    private LineSegment rOZone;//receiver-first intersection zone for 3D diffraction
+    private LineSegment oSZone;//last intersection-source zone for 3D diffraction
 
-    public DiffractionWithSoilEffetZone(Double[] diffractionData, LineString rOZone, LineString oSZone) {
+    public DiffractionWithSoilEffetZone(Double[] diffractionData, LineSegment rOZone, LineSegment oSZone) {
         this.diffractionData = diffractionData;
         this.rOZone = rOZone;
         this.oSZone = oSZone;
@@ -59,11 +60,11 @@ public class DiffractionWithSoilEffetZone {
         return this.diffractionData;
     }
 
-    public LineString getROZone() {
+    public LineSegment getROZone() {
         return this.rOZone;
     }
 
-    public LineString getOSZone() {
+    public LineSegment getOSZone() {
         return this.oSZone;
     }
 }

@@ -125,10 +125,10 @@ public class PropagationProcess implements Runnable {
      * @param depth              Depth of reflection TODO Use segment orientation to filter
      *                           wall list
      */
-    static private void feedMirroredReceiverResults(
+    private void feedMirroredReceiverResults(
             List<MirrorReceiverResult> receiversImage,
             Coordinate receiverCoord, int lastResult,
-            List<FastObstructionTest.Wall> nearBuildingsWalls, int depth,
+            List<FastObstructionTest.Wall> nearBuildingsWalls, int depth, LineSegment srcReceiver,
             double distanceLimitation) {
         // For each wall (except parent wall) compute the mirrored coordinate
         int exceptionWallId = -1;
@@ -151,20 +151,19 @@ public class PropagationProcess implements Runnable {
 
                 if (isCCW) {
                     Coordinate intersectionPt = wall.project(receiverCoord);
-                    if (wall.distance(receiverCoord) < distanceLimitation) // Test
-                    // maximum
-                    // distance
-                    // constraint
+                    if (wall.distance(srcReceiver) < distanceLimitation) // Test maximum distance constraint
                     {
                         Coordinate mirrored = new Coordinate(2 * intersectionPt.x
                                 - receiverCoord.x, 2 * intersectionPt.y
                                 - receiverCoord.y, receiverCoord.z);
-                        receiversImage.add(new MirrorReceiverResult(mirrored,
-                                lastResult, wallId,wall.getBuildingId()));
-                        if (depth > 0) {
-                            feedMirroredReceiverResults(receiversImage, mirrored,
-                                    receiversImage.size() - 1, nearBuildingsWalls,
-                                    depth - 1, distanceLimitation);
+                        if(srcReceiver.p0.distance(mirrored) < data.maxSrcDist) {
+                            receiversImage.add(new MirrorReceiverResult(mirrored,
+                                    lastResult, wallId, wall.getBuildingId()));
+                            if (depth > 0) {
+                                feedMirroredReceiverResults(receiversImage, mirrored,
+                                        receiversImage.size() - 1, nearBuildingsWalls,
+                                        depth - 1, srcReceiver, distanceLimitation);
+                            }
                         }
                     }
                 }
@@ -182,12 +181,12 @@ public class PropagationProcess implements Runnable {
      * @param distanceLimitation Limitation of searching mirrored receivers
      * @return List of possible reflections
      */
-    static public List<MirrorReceiverResult> getMirroredReceiverResults(
+    private List<MirrorReceiverResult> getMirroredReceiverResults(
             Coordinate receiverCoord, List<FastObstructionTest.Wall> nearBuildingsWalls,
-            int order, double distanceLimitation) {
-        List<MirrorReceiverResult> receiversImage = new ArrayList<MirrorReceiverResult>();
+            int order, LineSegment srcReceiver, double distanceLimitation) {
+        List<MirrorReceiverResult> receiversImage = new ArrayList<>();
         feedMirroredReceiverResults(receiversImage, receiverCoord, -1,
-                nearBuildingsWalls, order - 1, distanceLimitation);
+                nearBuildingsWalls, order - 1, srcReceiver, distanceLimitation);
         return receiversImage;
     }
 
@@ -271,9 +270,15 @@ public class PropagationProcess implements Runnable {
     }
 
 
-    public void computeReflexion(List<MirrorReceiverResult> mirroredReceiver,Coordinate receiverCoord,
+    public void computeReflexion(Coordinate receiverCoord,
                                  Coordinate srcCoord,List<Double> wj, List<FastObstructionTest.Wall> nearBuildingsWalls,
                                  double[] energeticSum, List<PropagationDebugInfo> debugInfo) {
+        // Compute receiver mirror
+        LineSegment srcReceiver = new LineSegment(srcCoord, receiverCoord);
+        List<MirrorReceiverResult> mirroredReceiver = getMirroredReceiverResults(receiverCoord,
+                nearBuildingsWalls, data.reflexionOrder,srcReceiver,
+                data.maxRefDist);
+        this.dataOut.appendImageReceiver(mirroredReceiver.size());
         NonRobustLineIntersector linters = new NonRobustLineIntersector();
         LineSegment propaLine = new LineSegment(receiverCoord, srcCoord);
         for (MirrorReceiverResult receiverReflection : mirroredReceiver) {
@@ -637,7 +642,6 @@ public class PropagationProcess implements Runnable {
      * @param[out] energeticSum Energy by frequency band
      * @param[in] alpha_atmo Atmospheric absorption by frequency band
      * @param[in] wj Source sound pressure level dB(A) by frequency band
-     * @param[in] mirroredReceiver Receivers mirrored by walls (for reflection)
      * @param[in] nearBuildingsWalls Walls within maxsrcdist
      * from receiver
      * @param[in] freq_lambda Array of sound wave lambda value by frequency band
@@ -646,12 +650,13 @@ public class PropagationProcess implements Runnable {
     private void receiverSourcePropa(Coordinate srcCoord,
                                      Coordinate receiverCoord, double energeticSum[],
                                      double[] alpha_atmo, List<Double> wj,
-                                     List<MirrorReceiverResult> mirroredReceiver,
                                      List<FastObstructionTest.Wall> nearBuildingsWalls,
                                      double[] freq_lambda, List<PropagationDebugInfo> debugInfo) {
         GeometryFactory factory = new GeometryFactory();
 
         List<Coordinate> regionCorners = fetchRegionCorners(new LineSegment(srcCoord, receiverCoord),data.maxRefDist);
+
+        // Build mirrored receiver list from wall list
 
         int freqcount = data.freq_lvl.size();
 
@@ -742,8 +747,8 @@ public class PropagationProcess implements Runnable {
                     PropagationDebugInfo propagationDebugInfo = null;
                     if(debugInfo != null) {
                         propagationDebugInfo = new PropagationDebugInfo(Arrays.asList(receiverCoord,
-                                diffDataWithSoilEffet.getROZone().getEndPoint().getCoordinate(),
-                                diffDataWithSoilEffet.getOSZone().getStartPoint().getCoordinate(), srcCoord),
+                                diffDataWithSoilEffet.getROZone().p1,
+                                diffDataWithSoilEffet.getOSZone().p0, srcCoord),
                                 new double[freqcount]);
                     }
                     for (int idfreq = 0; idfreq < freqcount; idfreq++) {
@@ -792,20 +797,20 @@ public class PropagationProcess implements Runnable {
                             double gPathOS;
                             double gPathPrimeRO;
                             double gPathPrimeOS;
-                            LineString ROZone = diffDataWithSoilEffet.getROZone();
-                            LineString OSZone = diffDataWithSoilEffet.getOSZone();
+                            LineSegment ROZone = diffDataWithSoilEffet.getROZone();
+                            LineSegment OSZone = diffDataWithSoilEffet.getOSZone();
                             double totRODistance = 0.;
                             double totOSDistance = 0.;
                             if (!rTreeOfGeoSoil.isEmpty()) {
                                 //test intersection with GeoSoil
-                                List<EnvelopeWithIndex<Integer>> resultZ0 = rTreeOfGeoSoil.query(ROZone.getEnvelopeInternal());
-                                List<EnvelopeWithIndex<Integer>> resultZ1 = rTreeOfGeoSoil.query(OSZone.getEnvelopeInternal());
+                                List<EnvelopeWithIndex<Integer>> resultZ0 = rTreeOfGeoSoil.query(new Envelope(ROZone.p0, ROZone.p1));
+                                List<EnvelopeWithIndex<Integer>> resultZ1 = rTreeOfGeoSoil.query(new Envelope(OSZone.p0, OSZone.p1));
                                 //if receiver-first intersection part has intersection(s)
                                 if (!resultZ0.isEmpty()) {
                                     //get every envelope intersected
                                     for (EnvelopeWithIndex<Integer> envel : resultZ0) {
                                         //get the geo intersected
-                                        Geometry geoInter = ROZone.intersection(data.geoWithSoilType.get(envel.getId()).getGeo());
+                                        Geometry geoInter = ROZone.toGeometry(factory).intersection(data.geoWithSoilType.get(envel.getId()).getGeo());
 
                                         //add the intersected distance with ground effect
                                         totRODistance += getIntersectedDistance(geoInter) * this.data.geoWithSoilType.get(envel.getId()).getType();
@@ -817,7 +822,7 @@ public class PropagationProcess implements Runnable {
                                     //get every envelope intersected
                                     for (EnvelopeWithIndex<Integer> envel : resultZ1) {
                                         //get the geo intersected
-                                        Geometry geoInter = OSZone.intersection(this.data.geoWithSoilType.get(envel.getId()).getGeo());
+                                        Geometry geoInter = OSZone.toGeometry(factory).intersection(this.data.geoWithSoilType.get(envel.getId()).getGeo());
                                         //add the intersected distance with ground effect
                                         totOSDistance += getIntersectedDistance(geoInter) * this.data.geoWithSoilType.get(envel.getId()).getType();
                                     }
@@ -828,8 +833,8 @@ public class PropagationProcess implements Runnable {
                             gPathRO = totRODistance / ROZone.getLength();
                             gPathOS = totOSDistance / OSZone.getLength();
                             //NF S 31-133 page 39
-                            double testFormROZone = ROZone.getLength() / (30 * (receiverCoord.z + ROZone.getEndPoint().getCoordinate().z));
-                            double testFormOSZone = OSZone.getLength() / (30 * (OSZone.getStartPoint().getCoordinate().z + srcCoord.z));
+                            double testFormROZone = ROZone.getLength() / (30 * (receiverCoord.z + ROZone.p1.z));
+                            double testFormOSZone = OSZone.getLength() / (30 * (OSZone.p0.z + srcCoord.z));
                             if (testFormROZone <= 1) {
                                 gPathPrimeRO = testFormROZone * gPathRO;
                             } else {
@@ -850,14 +855,13 @@ public class PropagationProcess implements Runnable {
                             if (Double.compare(gPathRO, 0.) == 0) {
                                 SoilORAttenuation = -3.;
                             } else {
-
-                                SoilORAttenuation = getASoil(ROZone.getEndPoint().getCoordinate().z, ROZone.getStartPoint().getCoordinate().z, ROZone.getLength(), gPathRO, data.freq_lvl.get(idfreq), ASoilROMin);
+                                SoilORAttenuation = getASoil(ROZone.p1.z, ROZone.p0.z, ROZone.getLength(), gPathRO, data.freq_lvl.get(idfreq), ASoilROMin);
                             }
                             //NF S 31-133 page 41
                             if (Double.compare(gPathOS, 0.) == 0) {
                                 SoilSOAttenuation = -3.;
                             } else {
-                                SoilSOAttenuation = getASoil(OSZone.getEndPoint().getCoordinate().z, OSZone.getStartPoint().getCoordinate().z, OSZone.getLength(), gPathPrimeOS, data.freq_lvl.get(idfreq), ASoilOSMin);
+                                SoilSOAttenuation = getASoil(OSZone.p1.z, OSZone.p0.z, OSZone.getLength(), gPathPrimeOS, data.freq_lvl.get(idfreq), ASoilOSMin);
 
                             }
 
@@ -891,7 +895,7 @@ public class PropagationProcess implements Runnable {
             }
             // Process specular reflection
             if (data.reflexionOrder > 0) {
-                computeReflexion(mirroredReceiver, receiverCoord, srcCoord, wj, nearBuildingsWalls, energeticSum, debugInfo);
+                computeReflexion(receiverCoord, srcCoord, wj, nearBuildingsWalls, energeticSum, debugInfo);
             } // End reflexion
             // ///////////
             // Process diffraction paths
@@ -976,18 +980,11 @@ public class PropagationProcess implements Runnable {
         // List of walls within maxReceiverSource distance
         double srcEnergeticSum = BASE_LVL; //Global energetic sum of all sources processed
         List<FastObstructionTest.Wall> nearBuildingsWalls = null;
-        List<MirrorReceiverResult> mirroredReceiver = null;
         if (data.reflexionOrder > 0) {
-
             nearBuildingsWalls = new ArrayList<>(
                     data.freeFieldFinder.getLimitsInRange(
                             data.maxSrcDist, receiverCoord)
             );
-            // Build mirrored receiver list from wall list
-            mirroredReceiver = getMirroredReceiverResults(receiverCoord,
-                    nearBuildingsWalls, data.reflexionOrder,
-                    data.maxRefDist + data.maxSrcDist);
-            this.dataOut.appendImageReceiver(mirroredReceiver.size());
         }
         // Source search by multiple range query
         HashSet<Integer> processedLineSources = new HashSet<Integer>(); //Already processed Raw source (line and/or points)
@@ -1047,7 +1044,7 @@ public class PropagationProcess implements Runnable {
                 if (Math.abs(wToDba(wAttDistSource + allreceiverfreqlvl) - wToDba(allreceiverfreqlvl)) > DBA_FORGET_SOURCE) {
                     sourceCount++;
                     receiverSourcePropa(srcCoord, receiverCoord, energeticSum,
-                            alpha_atmo, wj, mirroredReceiver,
+                            alpha_atmo, wj,
                             nearBuildingsWalls, freq_lambda, debugInfo);
                 }
             }

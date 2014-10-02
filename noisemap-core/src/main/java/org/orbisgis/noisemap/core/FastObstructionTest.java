@@ -648,6 +648,17 @@ public class FastObstructionTest {
         return false;
     }
 
+    private TriIdWithIntersection updateZ(TriIdWithIntersection pt) {
+        if(pt.getBuildingId() > 0) {
+            return new TriIdWithIntersection(pt.getTriID(),
+                    new Coordinate(pt.getCoorIntersection().x,pt.getCoorIntersection().y,
+                            polygonWithHeight.get(pt.getBuildingId() - 1).getHeight()), pt.isIntersectionOnBuilding(),
+                    pt.isIntersectionOnTopography(), pt.getBuildingId());
+        } else {
+            return pt;
+        }
+    }
+
     /**
      * Get the distance of all intersections (after the filtration by algorithm Jarvis March)  between the source and the receiver to compute vertical diffraction
      * Must called after finishPolygonFeeding
@@ -669,8 +680,8 @@ public class FastObstructionTest {
         the second parameter will keep the data of original coordinate system
         */
         GeometryFactory factory = new GeometryFactory();
-        LineString rOZone = factory.createLineString(new Coordinate[]{new Coordinate(-1, -1), new Coordinate(-1, -1)});
-        LineString sOZone = factory.createLineString(new Coordinate[]{new Coordinate(-1, -1), new Coordinate(-1, -1)});
+        LineSegment rOZone = new LineSegment(new Coordinate(-1, -1), new Coordinate(-1, -1));
+        LineSegment sOZone = new LineSegment(new Coordinate(-1, -1), new Coordinate(-1, -1));
         Double[] data = new Double[3];
         data[DiffractionWithSoilEffetZone.DELTA_DISTANCE] = -1.;
         data[DiffractionWithSoilEffetZone.E_LENGTH] = -1.;
@@ -682,14 +693,14 @@ public class FastObstructionTest {
         TriIdWithIntersection lastInter = null;
         for(TriIdWithIntersection inter : allInterPoints) {
             if(inter.getBuildingId() > 0 && (lastInter == null || lastInter.getBuildingId() == 0)) {
-                interPoints.add(inter);
+                interPoints.add(updateZ(inter));
             } else if(lastInter != null && inter.getBuildingId() == 0 && lastInter.getBuildingId() > 0) {
-                interPoints.add(lastInter);
+                interPoints.add(updateZ(lastInter));
             }
             lastInter = inter;
         }
         if(lastInter != null && lastInter.getBuildingId() > 0) {
-            interPoints.add(lastInter);
+            interPoints.add(updateZ(lastInter));
         }
         //set default data
         DiffractionWithSoilEffetZone totData = new DiffractionWithSoilEffetZone(data, rOZone, sOZone);
@@ -789,9 +800,9 @@ public class FastObstructionTest {
             lastPart[0] = interPoints.get(interPoints.size() - 2).getCoorIntersection();
             lastPart[1] = p2;
             //receiver-first intersection zone aims to calculate ground effect
-            rOZone = factory.createLineString(firstPart);
+            rOZone = new LineSegment(firstPart[0], firstPart[1]);
             //last intersection-source zone aims to calculate ground effect (between rOZone and sOZone we ignore ground effect)
-            sOZone = factory.createLineString(lastPart);
+            sOZone = new LineSegment(lastPart[0], lastPart[1]);
 
             totData = new DiffractionWithSoilEffetZone(data, rOZone, sOZone);
             return totData;
@@ -815,9 +826,6 @@ public class FastObstructionTest {
                     (listPoint.getCoorIntersection().y - listPoints.get(0).getCoorIntersection().y) * sin;
             // Read Z from building height, keep z for source and receiver
             double z = listPoint.getCoorIntersection().z;
-            if(listPoint.getBuildingId() > 0) {
-                z = polygonWithHeight.get(listPoint.getBuildingId() - 1).getHeight();
-            }
             newCoord.add(new Coordinate(newX, z));
         }
         return newCoord;
