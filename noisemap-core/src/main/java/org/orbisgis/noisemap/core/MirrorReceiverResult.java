@@ -42,7 +42,7 @@ import com.vividsolutions.jts.geom.Coordinate;
 public class MirrorReceiverResult {
 
 	private final Coordinate receiverPos;
-	private final int mirrorResultId;
+	private final MirrorReceiverResult parentMirror;
 	private final int wallId; // Wall index of the last mirrored processed
     private final int buildingId; // building that belongs to this wall
 
@@ -56,8 +56,8 @@ public class MirrorReceiverResult {
     /**
      * @return Other MirrorReceiverResult index, -1 for the first reflexion
      */
-	public int getMirrorResultId() {
-		return mirrorResultId;
+	public MirrorReceiverResult getParentMirror() {
+		return parentMirror;
 	}
 
     /**
@@ -80,9 +80,9 @@ public class MirrorReceiverResult {
      * @param wallId Wall index of the last mirrored processed
      * @param buildingId building that belongs to this wall
      */
-    public MirrorReceiverResult(Coordinate receiverPos, int mirrorResultId, int wallId, int buildingId) {
+    public MirrorReceiverResult(Coordinate receiverPos, MirrorReceiverResult parentMirror, int wallId, int buildingId) {
         this.receiverPos = receiverPos;
-        this.mirrorResultId = mirrorResultId;
+        this.parentMirror = parentMirror;
         this.wallId = wallId;
         this.buildingId = buildingId;
     }

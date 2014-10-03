@@ -38,6 +38,13 @@ import com.vividsolutions.jts.geom.LineSegment;
 
 import junit.framework.TestCase;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+
 public class TestWallReflection extends TestCase {
 
 	public void testWallVisibility () {
@@ -79,20 +86,78 @@ public class TestWallReflection extends TestCase {
 		LineSegment c01=new LineSegment(c0,c1);
 		LineSegment c12=new LineSegment(c1,c2);
 		//Test cases Walls face to face
-		assertTrue(PropagationProcess.wallWallTest(b30, a23));
-		assertTrue(PropagationProcess.wallWallTest(b30, a12));
-		assertTrue(PropagationProcess.wallWallTest(b01, a12));
-		assertTrue(PropagationProcess.wallWallTest(c01, c12));
-		assertTrue(PropagationProcess.wallWallTest(c12, a12));
+		assertTrue(MirrorReceiverIterator.wallWallTest(b30, a23));
+		assertTrue(MirrorReceiverIterator.wallWallTest(b30, a12));
+		assertTrue(MirrorReceiverIterator.wallWallTest(b01, a12));
+		assertTrue(MirrorReceiverIterator.wallWallTest(c01, c12));
+		assertTrue(MirrorReceiverIterator.wallWallTest(c12, a12));
 		
 		//Test cases Walls hidden
-		assertFalse(PropagationProcess.wallWallTest(b30, b12));
-		assertFalse(PropagationProcess.wallWallTest(b30, a01));
-		assertFalse(PropagationProcess.wallWallTest(b30, a30));
-		assertFalse(PropagationProcess.wallWallTest(b23, a23));
-		assertFalse(PropagationProcess.wallWallTest(b12, a23));
-		assertFalse(PropagationProcess.wallWallTest(b30, b01));
-		assertFalse(PropagationProcess.wallWallTest(b30, b23));
+		assertFalse(MirrorReceiverIterator.wallWallTest(b30, b12));
+		assertFalse(MirrorReceiverIterator.wallWallTest(b30, a01));
+		assertFalse(MirrorReceiverIterator.wallWallTest(b30, a30));
+		assertFalse(MirrorReceiverIterator.wallWallTest(b23, a23));
+		assertFalse(MirrorReceiverIterator.wallWallTest(b12, a23));
+		assertFalse(MirrorReceiverIterator.wallWallTest(b30, b01));
+		assertFalse(MirrorReceiverIterator.wallWallTest(b30, b23));
 		
 	}
+
+    public void testWallReceiverImage() {
+        Coordinate a = new Coordinate(2, 3);
+        Coordinate b = new Coordinate(6, 3);
+        Coordinate c = new Coordinate(2, 1);
+        Coordinate d = new Coordinate(6, 1);
+        Coordinate e = new Coordinate(3, 7);
+        Coordinate f = new Coordinate(7, 7);
+        Coordinate g = new Coordinate(3, 5);
+        Coordinate h = new Coordinate(7, 5);
+        List<FastObstructionTest.Wall> walls = new ArrayList<>(8);
+        // Order of walls points must be counter clock wise (from exterior of building)
+        // Building 1
+        walls.add(new FastObstructionTest.Wall(a, b, 0));
+        walls.add(new FastObstructionTest.Wall(b, d, 0));
+        walls.add(new FastObstructionTest.Wall(d, c, 0));
+        walls.add(new FastObstructionTest.Wall(c, a, 0));
+        // Building 2
+        walls.add(new FastObstructionTest.Wall(g, e, 1));
+        walls.add(new FastObstructionTest.Wall(h, g, 1));
+        walls.add(new FastObstructionTest.Wall(f, h, 1));
+        walls.add(new FastObstructionTest.Wall(e, f, 1));
+        Coordinate receiver = new Coordinate(0, 4);
+        Coordinate source = new Coordinate(9, 4);
+
+        MirrorReceiverIterator.It mirrorReceiverResults =
+                new MirrorReceiverIterator.It(receiver, walls, new LineSegment(source, receiver), 20, 2);
+        Set<Coordinate> result = new HashSet<>();
+        for(MirrorReceiverResult res : mirrorReceiverResults) {
+            result.add(res.getReceiverPos());
+        }
+        assertTrue(result.contains(new Coordinate(0, 6)));
+        assertTrue(result.contains(new Coordinate(0, 2)));
+        assertTrue(result.contains(new Coordinate(6, 4)));
+        assertTrue(result.contains(new Coordinate(4, 4)));
+        assertTrue(result.contains(new Coordinate(0, 0)));
+    }
+
+    private void equalsTest(int[] expected, List<Integer> result) {
+        for(int i=0;i<result.size();i++) {
+            assertEquals(expected[i], result.get(i).intValue());
+        }
+    }
+
+
+    public void testWallIndexIt() {
+        MirrorReceiverIterator.CrossTableIterator it = new MirrorReceiverIterator.CrossTableIterator(2, 3);
+        equalsTest(new int[]{0}, it.next());
+        equalsTest(new int[]{0,1}, it.next());
+        equalsTest(new int[]{0,2}, it.next());
+        equalsTest(new int[]{1}, it.next());
+        equalsTest(new int[]{1,0}, it.next());
+        equalsTest(new int[]{1,2}, it.next());
+        equalsTest(new int[]{2}, it.next());
+        equalsTest(new int[]{2,0}, it.next());
+        equalsTest(new int[]{2,1}, it.next());
+        assertFalse(it.hasNext());
+    }
 }

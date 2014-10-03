@@ -93,28 +93,6 @@ public class PropagationProcess implements Runnable {
     }
 
     /**
-     * Occlusion test on two walls. Segments are CCW oriented.
-     *
-     * @param wall1
-     * @param wall2
-     * @return True if the walls are face to face
-     */
-    static public boolean wallWallTest(LineSegment wall1, LineSegment wall2) {
-        return ((CGAlgorithms.isCCW(new Coordinate[]{wall1.getCoordinate(0), wall1.getCoordinate(1), wall2.getCoordinate(0), wall1.getCoordinate(0)}) || CGAlgorithms.isCCW(new Coordinate[]{wall1.getCoordinate(0), wall1.getCoordinate(1), wall2.getCoordinate(1), wall1.getCoordinate(0)})) && (CGAlgorithms.isCCW(new Coordinate[]{wall2.getCoordinate(0), wall2.getCoordinate(1), wall1.getCoordinate(0), wall2.getCoordinate(0)}) || CGAlgorithms.isCCW(new Coordinate[]{wall2.getCoordinate(0), wall2.getCoordinate(1), wall1.getCoordinate(1), wall2.getCoordinate(0)})));
-    }
-
-    /**
-     * Occlusion test on two walls. Segments are CCW oriented.
-     *
-     * @param wall1
-     * @param pt
-     * @return True if the wall is oriented to the point
-     */
-    static public boolean wallPointTest(LineSegment wall1, Coordinate pt) {
-        return CGAlgorithms.isCCW(new Coordinate[]{wall1.getCoordinate(0), wall1.getCoordinate(1), pt, wall1.getCoordinate(0)});
-    }
-
-    /**
      * Recursive method to feed mirrored receiver position on walls. No
      * obstruction test is done.
      *
@@ -143,12 +121,11 @@ public class PropagationProcess implements Runnable {
                 //If the triangle formed by two point of the wall + the receiver is CCW then the wall is oriented toward the point.
                 boolean isCCW;
                 if (lastResult == -1) { //If the receiverCoord is not an image
-                    isCCW = wallPointTest(wall, receiverCoord);
+                    isCCW = MirrorReceiverIterator.wallPointTest(wall, receiverCoord);
                 } else {
                     //Call wall visibility test
-                    isCCW = wallWallTest(nearBuildingsWalls.get(exceptionWallId), wall);
+                    isCCW = MirrorReceiverIterator.wallWallTest(nearBuildingsWalls.get(exceptionWallId), wall);
                 }
-
                 if (isCCW) {
                     Coordinate intersectionPt = wall.project(receiverCoord);
                     if (wall.distance(srcReceiver) < distanceLimitation) // Test maximum distance constraint
@@ -158,7 +135,7 @@ public class PropagationProcess implements Runnable {
                                 - receiverCoord.y, receiverCoord.z);
                         if(srcReceiver.p0.distance(mirrored) < data.maxSrcDist) {
                             receiversImage.add(new MirrorReceiverResult(mirrored,
-                                    lastResult, wallId, wall.getBuildingId()));
+                                    lastResult == -1 ? null : receiversImage.get(lastResult), wallId, wall.getBuildingId()));
                             if (depth > 0) {
                                 feedMirroredReceiverResults(receiversImage, mirrored,
                                         receiversImage.size() - 1, nearBuildingsWalls,
@@ -301,7 +278,7 @@ public class PropagationProcess implements Runnable {
                     propagationDebugInfo = new PropagationDebugInfo(new LinkedList<>(Arrays.asList(srcCoord)), new double[data.freq_lvl.size()]);
                 }
                 // While there is a reflection point on another wall. And intersection point is in the wall z bounds.
-                while (linters.hasIntersection() && PropagationProcess.wallPointTest(seg, destinationPt))
+                while (linters.hasIntersection() && MirrorReceiverIterator.wallPointTest(seg, destinationPt))
                 {
                     reflectionOrderCounter++;
                     // There are a probable reflection point on the
@@ -343,7 +320,7 @@ public class PropagationProcess implements Runnable {
                             propagationDebugInfo.getPropagationPath().add(0, reflectionPt);
                         }
                         if (receiverReflectionCursor
-                                .getMirrorResultId() == -1) { // Direct
+                                .getParentMirror() == null) { // Direct
                             // to
                             // the
                             // receiver
@@ -356,9 +333,7 @@ public class PropagationProcess implements Runnable {
                             destinationPt.setCoordinate(reflectionPt);
                             // Move reflection information cursor to a
                             // reflection closer
-                            receiverReflectionCursor = mirroredReceiver
-                                    .get(receiverReflectionCursor
-                                            .getMirrorResultId());
+                            receiverReflectionCursor = receiverReflectionCursor.getParentMirror();
                             // Update intersection data
                             seg = nearBuildingsWalls
                                     .get(receiverReflectionCursor
