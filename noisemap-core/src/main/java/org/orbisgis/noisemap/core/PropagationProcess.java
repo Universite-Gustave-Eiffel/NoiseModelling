@@ -141,7 +141,7 @@ public class PropagationProcess implements Runnable {
                 //Counter ClockWise test. Walls vertices are CCW oriented.
                 //This help to test if a wall could see a point or another wall
                 //If the triangle formed by two point of the wall + the receiver is CCW then the wall is oriented toward the point.
-                boolean isCCW = false;
+                boolean isCCW;
                 if (lastResult == -1) { //If the receiverCoord is not an image
                     isCCW = wallPointTest(wall, receiverCoord);
                 } else {
@@ -981,10 +981,8 @@ public class PropagationProcess implements Runnable {
         double srcEnergeticSum = BASE_LVL; //Global energetic sum of all sources processed
         List<FastObstructionTest.Wall> nearBuildingsWalls = null;
         if (data.reflexionOrder > 0) {
-            nearBuildingsWalls = new ArrayList<>(
-                    data.freeFieldFinder.getLimitsInRange(
-                            data.maxSrcDist, receiverCoord)
-            );
+            nearBuildingsWalls = new ArrayList<>(data.freeFieldFinder.getLimitsInRange(
+                            data.maxSrcDist, receiverCoord, false));
         }
         // Source search by multiple range query
         HashSet<Integer> processedLineSources = new HashSet<Integer>(); //Already processed Raw source (line and/or points)

@@ -483,7 +483,7 @@ public class FastObstructionTest {
      * @return List of segment
      */
     public LinkedList<Wall> getLimitsInRange(double maxDist,
-                                                    Coordinate p1) {
+                                                    Coordinate p1, boolean goThroughWalls) {
         LinkedList<Wall> walls = new LinkedList<>();
         int curTri = getTriangleIdByCoordinate(p1);
         int nextTri = -1;
@@ -526,7 +526,7 @@ public class FastObstructionTest {
                         if (wall.getBuildingId() >= 1) {
                             walls.add(wall);
                         }
-                        if(!navigationHistory.contains(neighbors.get(sideId))) {
+                        if((goThroughWalls || wall.getBuildingId() < 1) && !navigationHistory.contains(neighbors.get(sideId))) {
                             // Store currentTriangle Id. This is where to go
                             // back when there is no more navigable neighbors at
                             // the next triangle
