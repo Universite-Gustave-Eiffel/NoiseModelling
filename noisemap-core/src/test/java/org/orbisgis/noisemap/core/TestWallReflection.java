@@ -130,7 +130,7 @@ public class TestWallReflection extends TestCase {
         Coordinate source = new Coordinate(9, 4);
 
         MirrorReceiverIterator.It mirrorReceiverResults =
-                new MirrorReceiverIterator.It(receiver, walls, new LineSegment(source, receiver), 20, 2);
+                new MirrorReceiverIterator.It(receiver, walls, new LineSegment(source, receiver), 20, 2, 40);
         Iterator<MirrorReceiverResult> it = mirrorReceiverResults.iterator();
         wallTest(new Coordinate(0, 2), new int[]{0}, it.next());
         wallTest(new Coordinate(6, 2), new int[]{0, 4}, it.next());

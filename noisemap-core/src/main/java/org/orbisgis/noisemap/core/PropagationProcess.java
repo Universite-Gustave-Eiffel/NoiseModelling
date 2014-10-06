@@ -92,81 +92,6 @@ public class PropagationProcess implements Runnable {
         return globlvl;
     }
 
-    /**
-     * Recursive method to feed mirrored receiver position on walls. No
-     * obstruction test is done.
-     *
-     * @param receiversImage     Add receiver image here
-     * @param receiverCoord      Receiver coordinate or precedent mirrored coordinate
-     * @param lastResult         Last row index. -1 if first reflexion
-     * @param nearBuildingsWalls Walls to be reflected on
-     * @param depth              Depth of reflection TODO Use segment orientation to filter
-     *                           wall list
-     */
-    private void feedMirroredReceiverResults(
-            List<MirrorReceiverResult> receiversImage,
-            Coordinate receiverCoord, int lastResult,
-            List<FastObstructionTest.Wall> nearBuildingsWalls, int depth, LineSegment srcReceiver,
-            double distanceLimitation) {
-        // For each wall (except parent wall) compute the mirrored coordinate
-        int exceptionWallId = -1;
-        if (lastResult != -1) {
-            exceptionWallId = receiversImage.get(lastResult).getWallId();
-        }
-        int wallId = 0;
-        for (FastObstructionTest.Wall wall : nearBuildingsWalls) {
-            if (wallId != exceptionWallId) {
-                //Counter ClockWise test. Walls vertices are CCW oriented.
-                //This help to test if a wall could see a point or another wall
-                //If the triangle formed by two point of the wall + the receiver is CCW then the wall is oriented toward the point.
-                boolean isCCW;
-                if (lastResult == -1) { //If the receiverCoord is not an image
-                    isCCW = MirrorReceiverIterator.wallPointTest(wall, receiverCoord);
-                } else {
-                    //Call wall visibility test
-                    isCCW = MirrorReceiverIterator.wallWallTest(nearBuildingsWalls.get(exceptionWallId), wall);
-                }
-                if (isCCW) {
-                    Coordinate intersectionPt = wall.project(receiverCoord);
-                    if (wall.distance(srcReceiver) < distanceLimitation) // Test maximum distance constraint
-                    {
-                        Coordinate mirrored = new Coordinate(2 * intersectionPt.x
-                                - receiverCoord.x, 2 * intersectionPt.y
-                                - receiverCoord.y, receiverCoord.z);
-                        if(srcReceiver.p0.distance(mirrored) < data.maxSrcDist) {
-                            receiversImage.add(new MirrorReceiverResult(mirrored,
-                                    lastResult == -1 ? null : receiversImage.get(lastResult), wallId, wall.getBuildingId()));
-                            if (depth > 0) {
-                                feedMirroredReceiverResults(receiversImage, mirrored,
-                                        receiversImage.size() - 1, nearBuildingsWalls,
-                                        depth - 1, srcReceiver, distanceLimitation);
-                            }
-                        }
-                    }
-                }
-            }
-            wallId++;
-        }
-    }
-
-    /**
-     * Compute all receiver position mirrored by specified segments
-     *
-     * @param receiverCoord      Position of the original receiver
-     * @param nearBuildingsWalls Segments to mirror to
-     * @param order              Order of reflections 1 to a limited number
-     * @param distanceLimitation Limitation of searching mirrored receivers
-     * @return List of possible reflections
-     */
-    private List<MirrorReceiverResult> getMirroredReceiverResults(
-            Coordinate receiverCoord, List<FastObstructionTest.Wall> nearBuildingsWalls,
-            int order, LineSegment srcReceiver, double distanceLimitation) {
-        List<MirrorReceiverResult> receiversImage = new ArrayList<>();
-        feedMirroredReceiverResults(receiversImage, receiverCoord, -1,
-                nearBuildingsWalls, order - 1, srcReceiver, distanceLimitation);
-        return receiversImage;
-    }
-
     public PropagationProcess(PropagationProcessData data,
                               PropagationProcessOut dataOut) {
         thread = new Thread(this);
@@ -252,132 +177,130 @@ public class PropagationProcess implements Runnable {
                                  double[] energeticSum, List<PropagationDebugInfo> debugInfo) {
         // Compute receiver mirror
         LineSegment srcReceiver = new LineSegment(srcCoord, receiverCoord);
-        List<MirrorReceiverResult> mirroredReceiver = getMirroredReceiverResults(receiverCoord,
-                nearBuildingsWalls, data.reflexionOrder,srcReceiver,
-                data.maxRefDist);
-        this.dataOut.appendImageReceiver(mirroredReceiver.size());
         NonRobustLineIntersector linters = new NonRobustLineIntersector();
         LineSegment propaLine = new LineSegment(receiverCoord, srcCoord);
-        for (MirrorReceiverResult receiverReflection : mirroredReceiver) {
+        long imageReceiver = 0;
+        MirrorReceiverIterator.It mirroredReceivers = new MirrorReceiverIterator.It(receiverCoord, nearBuildingsWalls,
+                srcReceiver, data.maxRefDist, data.reflexionOrder, data.maxSrcDist);
+        for (MirrorReceiverResult receiverReflection : mirroredReceivers) {
             double ReflectedSrcReceiverDistance = receiverReflection.getReceiverPos().distance(srcCoord);
-            double distanceWall = nearBuildingsWalls.get(receiverReflection.getWallId()).distance(propaLine);
-            if (ReflectedSrcReceiverDistance < data.maxSrcDist && distanceWall <= data.maxRefDist) {
-                boolean validReflection = false;
-                int reflectionOrderCounter = 0;
-                MirrorReceiverResult receiverReflectionCursor = receiverReflection;
-                // Test whether intersection point is on the wall
-                // segment or not
-                Coordinate destinationPt = new Coordinate(srcCoord);
-                FastObstructionTest.Wall seg = nearBuildingsWalls
-                        .get(receiverReflection.getWallId());
-                linters.computeIntersection(seg.p0, seg.p1,
-                        receiverReflection.getReceiverPos(),
-                        destinationPt);
-                PropagationDebugInfo propagationDebugInfo = null;
-                if(debugInfo != null) {
-                    propagationDebugInfo = new PropagationDebugInfo(new LinkedList<>(Arrays.asList(srcCoord)), new double[data.freq_lvl.size()]);
-                }
-                // While there is a reflection point on another wall. And intersection point is in the wall z bounds.
-                while (linters.hasIntersection() && MirrorReceiverIterator.wallPointTest(seg, destinationPt))
-                {
-                    reflectionOrderCounter++;
-                    // There are a probable reflection point on the
-                    // segment
-                    Coordinate reflectionPt = new Coordinate(
-                            linters.getIntersection(0));
-                    // Translate reflection point by epsilon value to
-                    // increase computation robustness
-                    Coordinate vec_epsilon = new Coordinate(
-                            reflectionPt.x - destinationPt.x,
-                            reflectionPt.y - destinationPt.y);
-                    double length = vec_epsilon
-                            .distance(new Coordinate(0., 0., 0.));
-                    // Normalize vector
-                    vec_epsilon.x /= length;
-                    vec_epsilon.y /= length;
-                    // Multiply by epsilon in meter
-                    vec_epsilon.x *= 0.01;
-                    vec_epsilon.y *= 0.01;
-                    // Translate reflection pt by epsilon to get outside
-                    // the wall
-                    reflectionPt.x -= vec_epsilon.x;
-                    reflectionPt.y -= vec_epsilon.y;
-                    // Compute Z interpolation
-                    reflectionPt.setOrdinate(Coordinate.Z, Vertex.interpolateZ(linters.getIntersection(0),
-                            receiverReflectionCursor.getReceiverPos(), destinationPt));
+            imageReceiver++;
+            boolean validReflection = false;
+            int reflectionOrderCounter = 0;
+            MirrorReceiverResult receiverReflectionCursor = receiverReflection;
+            // Test whether intersection point is on the wall
+            // segment or not
+            Coordinate destinationPt = new Coordinate(srcCoord);
+            FastObstructionTest.Wall seg = nearBuildingsWalls
+                    .get(receiverReflection.getWallId());
+            linters.computeIntersection(seg.p0, seg.p1,
+                    receiverReflection.getReceiverPos(),
+                    destinationPt);
+            PropagationDebugInfo propagationDebugInfo = null;
+            if(debugInfo != null) {
+                propagationDebugInfo = new PropagationDebugInfo(new LinkedList<>(Arrays.asList(srcCoord)), new double[data.freq_lvl.size()]);
+            }
+            // While there is a reflection point on another wall. And intersection point is in the wall z bounds.
+            while (linters.hasIntersection() && MirrorReceiverIterator.wallPointTest(seg, destinationPt))
+            {
+                reflectionOrderCounter++;
+                // There are a probable reflection point on the
+                // segment
+                Coordinate reflectionPt = new Coordinate(
+                        linters.getIntersection(0));
+                // Translate reflection point by epsilon value to
+                // increase computation robustness
+                Coordinate vec_epsilon = new Coordinate(
+                        reflectionPt.x - destinationPt.x,
+                        reflectionPt.y - destinationPt.y);
+                double length = vec_epsilon
+                        .distance(new Coordinate(0., 0., 0.));
+                // Normalize vector
+                vec_epsilon.x /= length;
+                vec_epsilon.y /= length;
+                // Multiply by epsilon in meter
+                vec_epsilon.x *= 0.01;
+                vec_epsilon.y *= 0.01;
+                // Translate reflection pt by epsilon to get outside
+                // the wall
+                reflectionPt.x -= vec_epsilon.x;
+                reflectionPt.y -= vec_epsilon.y;
+                // Compute Z interpolation
+                reflectionPt.setOrdinate(Coordinate.Z, Vertex.interpolateZ(linters.getIntersection(0),
+                        receiverReflectionCursor.getReceiverPos(), destinationPt));
 
-                    // Test if there is no obstacles between the
-                    // reflection point and old reflection pt (or source
-                    // position)
-                    validReflection = (Double.isNaN(receiverReflectionCursor.getReceiverPos().z) ||
-                            Double.isNaN(destinationPt.z) || seg.getBuildingId() == 0
-                            || reflectionPt.z < data.freeFieldFinder.getBuildingRoofZ(seg.getBuildingId()))
-                            && data.freeFieldFinder.isFreeField(reflectionPt, destinationPt);
-                    if (validReflection) // Reflection point can see
-                    // source or its image
-                    {
-                        if(propagationDebugInfo != null) {
-                            propagationDebugInfo.getPropagationPath().add(0, reflectionPt);
-                        }
-                        if (receiverReflectionCursor
-                                .getParentMirror() == null) { // Direct
-                            // to
-                            // the
-                            // receiver
-                            validReflection = data.freeFieldFinder
-                                    .isFreeField(reflectionPt,
-                                            receiverCoord);
-                            break; // That was the last reflection
-                        } else {
-                            // There is another reflection
-                            destinationPt.setCoordinate(reflectionPt);
-                            // Move reflection information cursor to a
-                            // reflection closer
-                            receiverReflectionCursor = receiverReflectionCursor.getParentMirror();
-                            // Update intersection data
-                            seg = nearBuildingsWalls
-                                    .get(receiverReflectionCursor
-                                            .getWallId());
-                            linters.computeIntersection(seg.p0, seg.p1,
-                                    receiverReflectionCursor
-                                            .getReceiverPos(),
-                                    destinationPt
-                            );
-                            validReflection = false;
-                        }
+                // Test if there is no obstacles between the
+                // reflection point and old reflection pt (or source
+                // position)
+                validReflection = (Double.isNaN(receiverReflectionCursor.getReceiverPos().z) ||
+                        Double.isNaN(destinationPt.z) || seg.getBuildingId() == 0
+                        || reflectionPt.z < data.freeFieldFinder.getBuildingRoofZ(seg.getBuildingId()))
+                        && data.freeFieldFinder.isFreeField(reflectionPt, destinationPt);
+                if (validReflection) // Reflection point can see
+                // source or its image
+                {
+                    if(propagationDebugInfo != null) {
+                        propagationDebugInfo.getPropagationPath().add(0, reflectionPt);
+                    }
+                    if (receiverReflectionCursor
+                            .getParentMirror() == null) { // Direct
+                        // to
+                        // the
+                        // receiver
+                        validReflection = data.freeFieldFinder
+                                .isFreeField(reflectionPt,
+                                        receiverCoord);
+                        break; // That was the last reflection
                     } else {
-                        break;
+                        // There is another reflection
+                        destinationPt.setCoordinate(reflectionPt);
+                        // Move reflection information cursor to a
+                        // reflection closer
+                        receiverReflectionCursor = receiverReflectionCursor.getParentMirror();
+                        // Update intersection data
+                        seg = nearBuildingsWalls
+                                .get(receiverReflectionCursor
+                                        .getWallId());
+                        linters.computeIntersection(seg.p0, seg.p1,
+                                receiverReflectionCursor
+                                        .getReceiverPos(),
+                                destinationPt
+                        );
+                        validReflection = false;
+                    }
+                } else {
+                    break;
+                }
+            }
+            if (validReflection) {
+                if(propagationDebugInfo != null) {
+                    propagationDebugInfo.getPropagationPath().add(0, receiverCoord);
+                }
+                // A path has been found
+                refpathcount += 1;
+                for (int idfreq = 0; idfreq < wj.size(); idfreq++) {
+                    // Geometric dispersion
+                    double AttenuatedWj = attDistW(wj.get(idfreq),
+                            ReflectedSrcReceiverDistance);
+                    // Apply wall material attenuation
+                    AttenuatedWj *= Math.pow((1 - data.wallAlpha),
+                            reflectionOrderCounter);
+                    // Apply atmospheric absorption and ground
+                    AttenuatedWj = attAtmW(
+                            AttenuatedWj,
+                            ReflectedSrcReceiverDistance,
+                            alpha_atmo[idfreq]);
+                    energeticSum[idfreq] += AttenuatedWj;
+                    if(propagationDebugInfo != null) {
+                        propagationDebugInfo.addNoiseContribution(idfreq, AttenuatedWj);
                     }
                 }
-                if (validReflection) {
-                    if(propagationDebugInfo != null) {
-                        propagationDebugInfo.getPropagationPath().add(0, receiverCoord);
-                    }
-                    // A path has been found
-                    refpathcount += 1;
-                    for (int idfreq = 0; idfreq < wj.size(); idfreq++) {
-                        // Geometric dispersion
-                        double AttenuatedWj = attDistW(wj.get(idfreq),
-                                ReflectedSrcReceiverDistance);
-                        // Apply wall material attenuation
-                        AttenuatedWj *= Math.pow((1 - data.wallAlpha),
-                                reflectionOrderCounter);
-                        // Apply atmospheric absorption and ground
-                        AttenuatedWj = attAtmW(
-                                AttenuatedWj,
-                                ReflectedSrcReceiverDistance,
-                                alpha_atmo[idfreq]);
-                        energeticSum[idfreq] += AttenuatedWj;
-                        if(propagationDebugInfo != null) {
-                            propagationDebugInfo.addNoiseContribution(idfreq, AttenuatedWj);
-                        }
-                    }
-                    if(propagationDebugInfo != null && debugInfo != null) {
-                        debugInfo.add(propagationDebugInfo);
-                    }
+                if(propagationDebugInfo != null && debugInfo != null) {
+                    debugInfo.add(propagationDebugInfo);
                 }
             }
         }
+        this.dataOut.appendImageReceiver(imageReceiver);
     }
     /**
      * Add vertical edge diffraction noise contribution to energetic sum.
