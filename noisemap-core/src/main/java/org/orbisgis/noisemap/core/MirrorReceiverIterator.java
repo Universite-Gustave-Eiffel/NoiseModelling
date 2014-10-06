@@ -22,7 +22,6 @@ public class MirrorReceiverIterator implements Iterator<MirrorReceiverResult> {
     private final double sourceDistanceLimitation;
     // Wall stack
     private CrossTableIterator wallIdentifierIt;
-    private MirrorReceiverResult parent = null;
     private MirrorReceiverResult current = null;
 
     private MirrorReceiverIterator(Coordinate receiverCoord, List<FastObstructionTest.Wall> nearBuildingsWalls,
@@ -42,40 +41,45 @@ public class MirrorReceiverIterator implements Iterator<MirrorReceiverResult> {
     }
 
     private void fetchNext() {
+        boolean skip = false;
         if(!wallIdentifierIt.hasNext()) {
             current = null;
         }
         while(wallIdentifierIt.hasNext()) {
             List<Integer> currentWall = wallIdentifierIt.next();
-            wallIdentifierIt.setSkipLevel(true);
+            MirrorReceiverResult parent = fetchParent(current, currentWall);
             int wallId = currentWall.get(currentWall.size() - 1);
             FastObstructionTest.Wall wall = nearBuildingsWalls.get(wallId);
             //Counter ClockWise test. Walls vertices are CCW oriented.
             //This help to test if a wall could see a point or another wall
             //If the triangle formed by two point of the wall + the receiver is CCW then the wall is oriented toward the point.
             boolean isCCW;
+            Coordinate receiverIm;
             if (parent == null) { //If it is the first depth wall
                 isCCW = MirrorReceiverIterator.wallPointTest(wall, receiverCoord);
+                receiverIm = receiverCoord;
             } else {
                 //Call wall visibility test
+                receiverIm = parent.getReceiverPos();
                 isCCW = MirrorReceiverIterator.wallWallTest(nearBuildingsWalls.get(parent.getWallId()), wall);
             }
             if (isCCW) {
-                Coordinate intersectionPt = wall.project(receiverCoord);
+                Coordinate intersectionPt = wall.project(receiverIm);
                 if (wall.distance(srcReceiver) < distanceLimitation) // Test maximum distance constraint
                 {
                     Coordinate mirrored = new Coordinate(2 * intersectionPt.x
-                            - receiverCoord.x, 2 * intersectionPt.y
-                            - receiverCoord.y, receiverCoord.z);
+                            - receiverIm.x, 2 * intersectionPt.y
+                            - receiverIm.y, receiverIm.z);
                     if (srcReceiver.p0.distance(mirrored) < sourceDistanceLimitation) {
-                        parent = fetchParent(current, currentWall);
                         current = new MirrorReceiverResult(mirrored,
-                                parent , wallId, wall.getBuildingId());
-                        wallIdentifierIt.setSkipLevel(false);
+                                parent, wallId, wall.getBuildingId());
                         break;
                     }
                 }
             }
+            // MirrorReceiverResult has not been found with this wall
+            // Do not fetch sub-reflections
+            wallIdentifierIt.skipLevel();
         }
     }
 
@@ -164,7 +168,6 @@ public class MirrorReceiverIterator implements Iterator<MirrorReceiverResult> {
         private final int maxDepth;
         private final int wallCount;
         private List<Integer> current;
-        private boolean skipLevel = false;
 
         public CrossTableIterator(int maxDepth, int wallCount) {
             this.maxDepth = maxDepth;
@@ -175,8 +178,11 @@ public class MirrorReceiverIterator implements Iterator<MirrorReceiverResult> {
             }
         }
 
-        public void setSkipLevel(boolean skipLevel) {
-            this.skipLevel = skipLevel;
+        public void skipLevel() {
+            if(!current.isEmpty()) {
+                current.set(current.size() - 1, wallCount - 1);
+                next();
+            }
         }
 
         @Override
@@ -196,11 +202,9 @@ public class MirrorReceiverIterator implements Iterator<MirrorReceiverResult> {
         public List<Integer> next() {
             List<Integer> currentIndex = new ArrayList<>(current);
             // Go to next value
-            if(current.size() < maxDepth && !skipLevel) {
-                skipLevel = false;
+            if(current.size() < maxDepth) {
                 current.add(nextVal(-1, current.get(current.size() - 1)));
             } else {
-                skipLevel = false;
                 do {
                     current.set(current.size() - 1, nextVal(current.get(current.size() - 1),
                             current.size() > 1 ? current.get(current.size() - 2) : -1) );

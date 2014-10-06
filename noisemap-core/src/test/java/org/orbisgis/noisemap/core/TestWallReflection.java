@@ -129,15 +129,16 @@ public class TestWallReflection extends TestCase {
 
         MirrorReceiverIterator.It mirrorReceiverResults =
                 new MirrorReceiverIterator.It(receiver, walls, new LineSegment(source, receiver), 20, 2);
-        Set<Coordinate> result = new HashSet<>();
-        for(MirrorReceiverResult res : mirrorReceiverResults) {
-            result.add(res.getReceiverPos());
-        }
-        assertTrue(result.contains(new Coordinate(0, 6)));
-        assertTrue(result.contains(new Coordinate(0, 2)));
-        assertTrue(result.contains(new Coordinate(6, 4)));
-        assertTrue(result.contains(new Coordinate(4, 4)));
-        assertTrue(result.contains(new Coordinate(0, 0)));
+        Iterator<MirrorReceiverResult> it = mirrorReceiverResults.iterator();
+        assertEquals(new Coordinate(0,2),it.next().getReceiverPos());
+        assertEquals(new Coordinate(4,4),it.next().getReceiverPos());
+        assertEquals(new Coordinate(6,4),it.next().getReceiverPos());
+        assertEquals(new Coordinate(6,2),it.next().getReceiverPos());
+        assertEquals(new Coordinate(0,6),it.next().getReceiverPos());
+        assertEquals(new Coordinate(0,0),it.next().getReceiverPos());
+        assertEquals(new Coordinate(12,6),it.next().getReceiverPos());
+        assertEquals(new Coordinate(12,6),it.next().getReceiverPos());
+        assertFalse(it.hasNext());
     }
 
     private void equalsTest(int[] expected, List<Integer> result) {
@@ -158,6 +159,20 @@ public class TestWallReflection extends TestCase {
         equalsTest(new int[]{2}, it.next());
         equalsTest(new int[]{2,0}, it.next());
         equalsTest(new int[]{2,1}, it.next());
+        assertFalse(it.hasNext());
+    }
+
+
+    public void testWallIndexItSkip() {
+        MirrorReceiverIterator.CrossTableIterator it = new MirrorReceiverIterator.CrossTableIterator(2, 3);
+        equalsTest(new int[]{0}, it.next());
+        equalsTest(new int[]{0,1}, it.next());
+        equalsTest(new int[]{0, 2}, it.next());
+        equalsTest(new int[]{1}, it.next());
+        it.skipLevel();
+        equalsTest(new int[]{2}, it.next());
+        equalsTest(new int[]{2, 0}, it.next());
+        it.skipLevel();
         assertFalse(it.hasNext());
     }
 }
