@@ -23,6 +23,7 @@ public class MirrorReceiverIterator implements Iterator<MirrorReceiverResult> {
     // Wall stack
     private CrossTableIterator wallIdentifierIt;
     private MirrorReceiverResult current = null;
+    private final int maxDepth;
 
     private MirrorReceiverIterator(Coordinate receiverCoord, List<FastObstructionTest.Wall> nearBuildingsWalls,
                                   LineSegment srcReceiver, double distanceLimitation, int maxDepth) {
@@ -32,6 +33,7 @@ public class MirrorReceiverIterator implements Iterator<MirrorReceiverResult> {
         this.distanceLimitation = distanceLimitation;
         this.wallIdentifierIt = new CrossTableIterator(maxDepth, nearBuildingsWalls.size());
         this.sourceDistanceLimitation = 200;
+        this.maxDepth = maxDepth;
         fetchNext();
     }
 
@@ -41,10 +43,10 @@ public class MirrorReceiverIterator implements Iterator<MirrorReceiverResult> {
     }
 
     private void fetchNext() {
-        boolean skip = false;
         if(!wallIdentifierIt.hasNext()) {
             current = null;
         }
+        MirrorReceiverResult next = null;
         while(wallIdentifierIt.hasNext()) {
             List<Integer> currentWall = wallIdentifierIt.next();
             MirrorReceiverResult parent = fetchParent(current, currentWall);
@@ -61,7 +63,8 @@ public class MirrorReceiverIterator implements Iterator<MirrorReceiverResult> {
             } else {
                 //Call wall visibility test
                 receiverIm = parent.getReceiverPos();
-                isCCW = MirrorReceiverIterator.wallWallTest(nearBuildingsWalls.get(parent.getWallId()), wall);
+                isCCW = MirrorReceiverIterator.wallWallTest(nearBuildingsWalls.get(parent.getWallId()), wall)
+                         && MirrorReceiverIterator.wallPointTest(wall, receiverCoord);
             }
             if (isCCW) {
                 Coordinate intersectionPt = wall.project(receiverIm);
@@ -71,7 +74,7 @@ public class MirrorReceiverIterator implements Iterator<MirrorReceiverResult> {
                             - receiverIm.x, 2 * intersectionPt.y
                             - receiverIm.y, receiverIm.z);
                     if (srcReceiver.p0.distance(mirrored) < sourceDistanceLimitation) {
-                        current = new MirrorReceiverResult(mirrored,
+                        next = new MirrorReceiverResult(mirrored,
                                 parent, wallId, wall.getBuildingId());
                         break;
                     }
@@ -79,8 +82,11 @@ public class MirrorReceiverIterator implements Iterator<MirrorReceiverResult> {
             }
             // MirrorReceiverResult has not been found with this wall
             // Do not fetch sub-reflections
-            wallIdentifierIt.skipLevel();
+            if(currentWall.size() < maxDepth) {
+                wallIdentifierIt.skipLevel();
+            }
         }
+        current = next;
     }
 
     private static MirrorReceiverResult fetchParent(MirrorReceiverResult lastOne, List<Integer> currentWall) {

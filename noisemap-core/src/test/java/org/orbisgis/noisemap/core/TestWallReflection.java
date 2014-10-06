@@ -45,6 +45,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import static org.junit.Assert.assertArrayEquals;
+
 public class TestWallReflection extends TestCase {
 
 	public void testWallVisibility () {
@@ -130,15 +132,30 @@ public class TestWallReflection extends TestCase {
         MirrorReceiverIterator.It mirrorReceiverResults =
                 new MirrorReceiverIterator.It(receiver, walls, new LineSegment(source, receiver), 20, 2);
         Iterator<MirrorReceiverResult> it = mirrorReceiverResults.iterator();
-        assertEquals(new Coordinate(0,2),it.next().getReceiverPos());
-        assertEquals(new Coordinate(4,4),it.next().getReceiverPos());
-        assertEquals(new Coordinate(6,4),it.next().getReceiverPos());
-        assertEquals(new Coordinate(6,2),it.next().getReceiverPos());
-        assertEquals(new Coordinate(0,6),it.next().getReceiverPos());
-        assertEquals(new Coordinate(0,0),it.next().getReceiverPos());
-        assertEquals(new Coordinate(12,6),it.next().getReceiverPos());
-        assertEquals(new Coordinate(12,6),it.next().getReceiverPos());
+        wallTest(new Coordinate(0, 2), new int[]{0}, it.next());
+        wallTest(new Coordinate(6, 2), new int[]{0, 4}, it.next());
+        wallTest(new Coordinate(0, 8), new int[]{0, 5}, it.next());
+        wallTest(new Coordinate(4, 4), new int[]{3}, it.next());
+        wallTest(new Coordinate(6, 4), new int[]{4}, it.next());
+        wallTest(new Coordinate(6, 2), new int[]{4, 0}, it.next());
+        wallTest(new Coordinate(0, 6), new int[]{5}, it.next());
+        wallTest(new Coordinate(0, 0), new int[]{5, 0}, it.next());
         assertFalse(it.hasNext());
+    }
+
+    private void wallTest(Coordinate expectedCoordinate,int[] expectedWalls,MirrorReceiverResult res) {
+        int[] resultWalls = new int[expectedWalls.length];
+        int id = 0;
+        MirrorReceiverResult cursor = res;
+        while(cursor != null) {
+            if(expectedWalls.length - 1 - id >= 0) {
+                resultWalls[expectedWalls.length - 1 - id] = cursor.getWallId();
+            }
+            cursor = cursor.getParentMirror();
+            id++;
+        }
+        assertArrayEquals(expectedWalls, resultWalls);
+        assertEquals(expectedCoordinate, res.getReceiverPos());
     }
 
     private void equalsTest(int[] expected, List<Integer> result) {
