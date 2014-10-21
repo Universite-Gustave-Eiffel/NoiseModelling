@@ -60,6 +60,8 @@ import org.h2gis.h2spatialapi.ProgressVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.orbisgis.noisemap.core.FastObstructionTest.*;
+
 /**
  * @author Nicolas Fortin
  */
@@ -191,7 +193,7 @@ public class PropagationProcess implements Runnable {
             // Test whether intersection point is on the wall
             // segment or not
             Coordinate destinationPt = new Coordinate(srcCoord);
-            FastObstructionTest.Wall seg = nearBuildingsWalls
+            Wall seg = nearBuildingsWalls
                     .get(receiverReflection.getWallId());
             linters.computeIntersection(seg.p0, seg.p1,
                     receiverReflection.getReceiverPos(),
@@ -877,10 +879,12 @@ public class PropagationProcess implements Runnable {
     public void computeSoundLevelAtPosition(Coordinate receiverCoord, double energeticSum[], List<PropagationDebugInfo> debugInfo) {
         // List of walls within maxReceiverSource distance
         double srcEnergeticSum = BASE_LVL; //Global energetic sum of all sources processed
-        List<FastObstructionTest.Wall> nearBuildingsWalls = null;
+        STRtree walls = new STRtree();
         if (data.reflexionOrder > 0) {
-            nearBuildingsWalls = new ArrayList<>(data.freeFieldFinder.getLimitsInRange(
-                            data.maxSrcDist, receiverCoord, false));
+            for(Wall wall : data.freeFieldFinder.getLimitsInRange(
+                            data.maxSrcDist, receiverCoord, false)) {
+                walls.insert(new Envelope(wall.p0, wall.p1), wall);
+            }
         }
         // Source search by multiple range query
         HashSet<Integer> processedLineSources = new HashSet<Integer>(); //Already processed Raw source (line and/or points)
@@ -939,9 +943,12 @@ public class PropagationProcess implements Runnable {
                 srcEnergeticSum += wAttDistSource;
                 if (Math.abs(wToDba(wAttDistSource + allreceiverfreqlvl) - wToDba(allreceiverfreqlvl)) > DBA_FORGET_SOURCE) {
                     sourceCount++;
+                    Envelope query = new Envelope(receiverCoord, srcCoord);
+                    query.expandBy(Math.min(data.maxRefDist, srcCoord.distance(receiverCoord)));
+                    List queryResult = walls.query(query);
                     receiverSourcePropa(srcCoord, receiverCoord, energeticSum,
                             alpha_atmo, wj,
-                            nearBuildingsWalls, freq_lambda, debugInfo);
+                            (List<FastObstructionTest.Wall>)queryResult, freq_lambda, debugInfo);
                 }
             }
             //srcEnergeticSum=GetGlobalLevel(nbfreq,energeticSum);
