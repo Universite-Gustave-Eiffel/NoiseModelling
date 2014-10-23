@@ -72,7 +72,8 @@ public class PropagationProcess implements Runnable {
     private final static double DBA_FORGET_SOURCE = 0.03;
     private final static double FIRST_STEP_RANGE = 90;
     private final static double W_RANGE = Math.pow(10, 94. / 10.); //94 dB(A) range search. Max iso level is >75 dB(a).
-    private final static double CEL = 344.23935;
+    // NMPB states Celerity of the sound in the air, taken equal to 340 m/s.
+    private final static double CEL = 340;
     private Thread thread;
     private PropagationProcessData data;
     private PropagationProcessOut dataOut;
@@ -304,6 +305,174 @@ public class PropagationProcess implements Runnable {
         }
         this.dataOut.appendImageReceiver(imageReceiver);
     }
+
+
+    public void computeHorizontalEdgeDiffraction(boolean somethingHideReceiver, Coordinate receiverCoord,
+                                                 Coordinate srcCoord, List<Double> wj,
+                                                 List<PropagationDebugInfo> debugInfo, double[] energeticSum) {
+        DiffractionWithSoilEffetZone diffDataWithSoilEffet = data.freeFieldFinder.getPath(receiverCoord, srcCoord);
+        GeometryFactory factory = new GeometryFactory();
+        Double[] diffractiondata = diffDataWithSoilEffet.getDiffractionData();
+
+        double deltadistance = diffractiondata[DiffractionWithSoilEffetZone.DELTA_DISTANCE];
+        double e = diffractiondata[DiffractionWithSoilEffetZone.E_LENGTH];
+        double fulldistance = diffractiondata[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE];
+
+        //delta diffraction
+        if (Double.compare(deltadistance, -1.) != 0 && Double.compare(e, -1.) != 0 &&
+                Double.compare(fulldistance, -1.) != 0 && somethingHideReceiver) {
+            PropagationDebugInfo propagationDebugInfo = null;
+            if(debugInfo != null) {
+                propagationDebugInfo = new PropagationDebugInfo(Arrays.asList(receiverCoord,
+                        diffDataWithSoilEffet.getROZone().p1,
+                        diffDataWithSoilEffet.getOSZone().p0, srcCoord),
+                        new double[data.freq_lvl.size()]);
+            }
+            double totRODistance = 0.;
+            double totOSDistance = 0.;
+            double SoilSOAttenuation = 0.;
+            double SoilORAttenuation = 0.;
+            double gPathRO = 0;
+            double gPathOS= 0;
+            double gPathPrimeRO = 0;
+            double gPathPrimeOS = 0;
+            double ASoilOSMin = 0;
+            double ASoilROMin = 0;
+            LineSegment ROZone = diffDataWithSoilEffet.getROZone();
+            LineSegment OSZone = diffDataWithSoilEffet.getOSZone();
+            if (data.geoWithSoilType != null) {
+                //test intersection with GeoSoil
+                List<EnvelopeWithIndex<Integer>> resultZ0 = rTreeOfGeoSoil.query(new Envelope(ROZone.p0, ROZone.p1));
+                List<EnvelopeWithIndex<Integer>> resultZ1 = rTreeOfGeoSoil.query(new Envelope(OSZone.p0, OSZone.p1));
+                //if receiver-first intersection part has intersection(s)
+                if (!resultZ0.isEmpty()) {
+                    //get every envelope intersected
+                    for (EnvelopeWithIndex<Integer> envel : resultZ0) {
+                        //get the geo intersected
+                        Geometry geoInter = ROZone.toGeometry(factory).intersection(data.geoWithSoilType.get(envel.getId()).getGeo());
+
+                        //add the intersected distance with ground effect
+                        totRODistance += getIntersectedDistance(geoInter) * this.data.geoWithSoilType.get(envel.getId()).getType();
+                    }
+
+                }
+                //if last intersection-source part has intersection(s)
+                if (!resultZ1.isEmpty()) {
+                    //get every envelope intersected
+                    for (EnvelopeWithIndex<Integer> envel : resultZ1) {
+                        //get the geo intersected
+                        Geometry geoInter = OSZone.toGeometry(factory).intersection(this.data.geoWithSoilType.get(envel.getId()).getGeo());
+                        //add the intersected distance with ground effect
+                        totOSDistance += getIntersectedDistance(geoInter) * this.data.geoWithSoilType.get(envel.getId()).getType();
+                    }
+                }
+
+                //NF S 31-133 page 40
+                gPathRO = totRODistance / ROZone.getLength();
+                gPathOS = totOSDistance / OSZone.getLength();
+                //NF S 31-133 page 39
+                double testFormROZone = ROZone.getLength() / (30 * (receiverCoord.z + ROZone.p1.z));
+                double testFormOSZone = OSZone.getLength() / (30 * (OSZone.p0.z + srcCoord.z));
+                if (testFormROZone <= 1) {
+                    gPathPrimeRO = testFormROZone * gPathRO;
+                } else {
+                    gPathPrimeRO = gPathRO;
+                }
+
+                if (testFormOSZone <= 1) {
+                    gPathPrimeOS = testFormOSZone * gPathOS;
+                } else {
+                    gPathPrimeOS = gPathOS;
+                }
+
+                //NF S 31-133 page 41 and page 40
+                ASoilOSMin = -3 * (1 - gPathPrimeOS);
+                ASoilROMin = -3 * (1 - gPathPrimeRO);
+            }
+            for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
+
+                double cprime;
+                //C" NMPB 2008 P.33
+                //Multiple diffraction
+                //CPRIME=( 1+(5*gamma)^2)/((1/3)+(5*gamma)^2)
+                double gammapart = Math.pow((5 * freq_lambda[idfreq]) / e, 2);
+                //NFS 31-133 page 46
+                if (e > 0.3) {
+                    cprime = (1. + gammapart) / (ONETHIRD + gammapart);
+                } else {
+                    cprime = 1.;
+                }
+
+                //(7.11) NMP2008 P.32
+                double testForm = (40 / freq_lambda[idfreq])
+                        * cprime * deltadistance;
+                double DiffractionAttenuation = 0.;
+                if (testForm >= -2.) {
+                    DiffractionAttenuation = 10 * Math
+                            .log10(3 + testForm);
+                }
+                // Limit to 0<=DiffractionAttenuation
+                DiffractionAttenuation = Math.max(0,
+                        DiffractionAttenuation);
+                //NF S 31-133 page 46
+                //if delta diffraction > 25 we take 25dB for delta diffraction
+                DiffractionAttenuation = Math.min(25., DiffractionAttenuation);
+                double AttenuatedWj = wj.get(idfreq);
+                // Geometric dispersion
+                //fulldistance-deltdistance is the distance direct between source and receiver
+                AttenuatedWj = attDistW(AttenuatedWj, fulldistance - deltadistance);
+
+
+                //if we add Ground effect
+                //delta soil
+
+                double deltSoilSO = 0.;
+                double deltaSoilOR = 0.;
+                if (data.geoWithSoilType != null) {
+
+                    //NF S 31-133 page 41
+                    if (Double.compare(gPathRO, 0.) == 0) {
+                        SoilORAttenuation = -3.;
+                    } else {
+                        SoilORAttenuation = getASoil(ROZone.p1.z, ROZone.p0.z, ROZone.getLength(), gPathRO, data.freq_lvl.get(idfreq), ASoilROMin);
+                    }
+                    //NF S 31-133 page 41
+                    if (Double.compare(gPathOS, 0.) == 0) {
+                        SoilSOAttenuation = -3.;
+                    } else {
+                        SoilSOAttenuation = getASoil(OSZone.p1.z, OSZone.p0.z, OSZone.getLength(), gPathPrimeOS, data.freq_lvl.get(idfreq), ASoilOSMin);
+
+                    }
+
+                    deltSoilSO = getDeltaSoil(SoilSOAttenuation);
+                    deltaSoilOR = getDeltaSoil(SoilORAttenuation);
+                }
+
+                //delta sol finished
+
+
+                // Apply diffraction attenuation with ground effect if necessary
+                AttenuatedWj = dbaToW(wToDba(AttenuatedWj)
+                        - DiffractionAttenuation - deltSoilSO - deltaSoilOR);
+
+
+                // Apply atmospheric absorption and ground
+                AttenuatedWj = attAtmW(
+                        AttenuatedWj,
+                        fulldistance - deltadistance,
+                        alpha_atmo[idfreq]);
+
+                energeticSum[idfreq] += AttenuatedWj;
+                if(propagationDebugInfo != null) {
+                    propagationDebugInfo.addNoiseContribution(idfreq, AttenuatedWj);
+                }
+            }
+            if(propagationDebugInfo != null && debugInfo != null) {
+                debugInfo.add(propagationDebugInfo);
+            }
+        }
+    }
+
     /**
      * Add vertical edge diffraction noise contribution to energetic sum.
      * @param regionCorners
@@ -635,163 +804,7 @@ public class PropagationProcess implements Runnable {
             }
             //Process diffraction 3D
             if( data.computeVerticalDiffraction) {
-                DiffractionWithSoilEffetZone diffDataWithSoilEffet = data.freeFieldFinder.getPath(receiverCoord, srcCoord);
-                Double[] diffractiondata = diffDataWithSoilEffet.getDiffractionData();
-
-                double deltadistance = diffractiondata[DiffractionWithSoilEffetZone.DELTA_DISTANCE];
-                double e = diffractiondata[DiffractionWithSoilEffetZone.E_LENGTH];
-                double fulldistance = diffractiondata[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE];
-
-                //delta diffraction
-                if (Double.compare(deltadistance, -1.) != 0 && Double.compare(e, -1.) != 0 && Double.compare(fulldistance, -1.) != 0 && somethingHideReceiver) {
-                    PropagationDebugInfo propagationDebugInfo = null;
-                    if(debugInfo != null) {
-                        propagationDebugInfo = new PropagationDebugInfo(Arrays.asList(receiverCoord,
-                                diffDataWithSoilEffet.getROZone().p1,
-                                diffDataWithSoilEffet.getOSZone().p0, srcCoord),
-                                new double[freqcount]);
-                    }
-                    for (int idfreq = 0; idfreq < freqcount; idfreq++) {
-
-                        double cprime;
-                        //C" NMPB 2008 P.33
-                        //Multiple diffraction
-                        //CPRIME=( 1+(5*gamma)^2)/((1/3)+(5*gamma)^2)
-                        double gammapart = Math.pow((5 * freq_lambda[idfreq]) / e, 2);
-                        //NFS 31-133 page 46
-                        if (e > 0.3) {
-                            cprime = (1. + gammapart) / (ONETHIRD + gammapart);
-                        } else {
-                            cprime = 1.;
-                        }
-
-                        //(7.11) NMP2008 P.32
-                        double testForm = (40 / freq_lambda[idfreq])
-                                * cprime * deltadistance;
-                        double DiffractionAttenuation = 0.;
-                        if (testForm >= -2.) {
-                            DiffractionAttenuation = 10 * Math
-                                    .log10(3 + testForm);
-                        }
-                        // Limit to 0<=DiffractionAttenuation
-                        DiffractionAttenuation = Math.max(0,
-                                DiffractionAttenuation);
-                        //NF S 31-133 page 46
-                        //if delta diffraction > 25 we take 25dB for delta diffraction
-                        DiffractionAttenuation = Math.min(25., DiffractionAttenuation);
-                        double AttenuatedWj = wj.get(idfreq);
-                        // Geometric dispersion
-                        //fulldistance-deltdistance is the distance direct between source and receiver
-                        AttenuatedWj = attDistW(AttenuatedWj, fulldistance - deltadistance);
-
-
-                        //if we add Ground effect
-                        //delta soil
-
-                        double deltSoilSO = 0.;
-                        double deltaSoilOR = 0.;
-                        if (data.geoWithSoilType != null) {
-                            double SoilSOAttenuation = 0.;
-                            double SoilORAttenuation = 0.;
-                            double gPathRO;
-                            double gPathOS;
-                            double gPathPrimeRO;
-                            double gPathPrimeOS;
-                            LineSegment ROZone = diffDataWithSoilEffet.getROZone();
-                            LineSegment OSZone = diffDataWithSoilEffet.getOSZone();
-                            double totRODistance = 0.;
-                            double totOSDistance = 0.;
-                            if (!rTreeOfGeoSoil.isEmpty()) {
-                                //test intersection with GeoSoil
-                                List<EnvelopeWithIndex<Integer>> resultZ0 = rTreeOfGeoSoil.query(new Envelope(ROZone.p0, ROZone.p1));
-                                List<EnvelopeWithIndex<Integer>> resultZ1 = rTreeOfGeoSoil.query(new Envelope(OSZone.p0, OSZone.p1));
-                                //if receiver-first intersection part has intersection(s)
-                                if (!resultZ0.isEmpty()) {
-                                    //get every envelope intersected
-                                    for (EnvelopeWithIndex<Integer> envel : resultZ0) {
-                                        //get the geo intersected
-                                        Geometry geoInter = ROZone.toGeometry(factory).intersection(data.geoWithSoilType.get(envel.getId()).getGeo());
-
-                                        //add the intersected distance with ground effect
-                                        totRODistance += getIntersectedDistance(geoInter) * this.data.geoWithSoilType.get(envel.getId()).getType();
-                                    }
-
-                                }
-                                //if last intersection-source part has intersection(s)
-                                if (!resultZ1.isEmpty()) {
-                                    //get every envelope intersected
-                                    for (EnvelopeWithIndex<Integer> envel : resultZ1) {
-                                        //get the geo intersected
-                                        Geometry geoInter = OSZone.toGeometry(factory).intersection(this.data.geoWithSoilType.get(envel.getId()).getGeo());
-                                        //add the intersected distance with ground effect
-                                        totOSDistance += getIntersectedDistance(geoInter) * this.data.geoWithSoilType.get(envel.getId()).getType();
-                                    }
-                                }
-                            }
-
-                            //NF S 31-133 page 40
-                            gPathRO = totRODistance / ROZone.getLength();
-                            gPathOS = totOSDistance / OSZone.getLength();
-                            //NF S 31-133 page 39
-                            double testFormROZone = ROZone.getLength() / (30 * (receiverCoord.z + ROZone.p1.z));
-                            double testFormOSZone = OSZone.getLength() / (30 * (OSZone.p0.z + srcCoord.z));
-                            if (testFormROZone <= 1) {
-                                gPathPrimeRO = testFormROZone * gPathRO;
-                            } else {
-                                gPathPrimeRO = gPathRO;
-                            }
-
-                            if (testFormOSZone <= 1) {
-                                gPathPrimeOS = testFormOSZone * gPathOS;
-                            } else {
-                                gPathPrimeOS = gPathOS;
-                            }
-
-                            //NF S 31-133 page 41 and page 40
-                            double ASoilOSMin = -3 * (1 - gPathPrimeOS);
-                            double ASoilROMin = -3 * (1 - gPathPrimeRO);
-
-                            //NF S 31-133 page 41
-                            if (Double.compare(gPathRO, 0.) == 0) {
-                                SoilORAttenuation = -3.;
-                            } else {
-                                SoilORAttenuation = getASoil(ROZone.p1.z, ROZone.p0.z, ROZone.getLength(), gPathRO, data.freq_lvl.get(idfreq), ASoilROMin);
-                            }
-                            //NF S 31-133 page 41
-                            if (Double.compare(gPathOS, 0.) == 0) {
-                                SoilSOAttenuation = -3.;
-                            } else {
-                                SoilSOAttenuation = getASoil(OSZone.p1.z, OSZone.p0.z, OSZone.getLength(), gPathPrimeOS, data.freq_lvl.get(idfreq), ASoilOSMin);
-
-                            }
-
-                            deltSoilSO = getDeltaSoil(SoilSOAttenuation);
-                            deltaSoilOR = getDeltaSoil(SoilORAttenuation);
-                        }
-
-                        //delta sol finished
-
-
-                        // Apply diffraction attenuation with ground effect if necessary
-                        AttenuatedWj = dbaToW(wToDba(AttenuatedWj)
-                                - DiffractionAttenuation - deltSoilSO - deltaSoilOR);
-
-
-                        // Apply atmospheric absorption and ground
-                        AttenuatedWj = attAtmW(
-                                AttenuatedWj,
-                                fulldistance - deltadistance,
-                                alpha_atmo[idfreq]);
-
-                        energeticSum[idfreq] += AttenuatedWj;
-                        if(propagationDebugInfo != null) {
-                            propagationDebugInfo.addNoiseContribution(idfreq, AttenuatedWj);
-                        }
-                    }
-                    if(propagationDebugInfo != null && debugInfo != null) {
-                        debugInfo.add(propagationDebugInfo);
-                    }
-                }
+                computeHorizontalEdgeDiffraction(somethingHideReceiver, receiverCoord, srcCoord, wj, debugInfo, energeticSum);
             }
             // Process specular reflection
             if (data.reflexionOrder > 0) {
