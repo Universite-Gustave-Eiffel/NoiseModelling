@@ -682,10 +682,6 @@ public class FastObstructionTest {
         GeometryFactory factory = new GeometryFactory();
         LineSegment rOZone = new LineSegment(new Coordinate(-1, -1), new Coordinate(-1, -1));
         LineSegment sOZone = new LineSegment(new Coordinate(-1, -1), new Coordinate(-1, -1));
-        Double[] data = new Double[3];
-        data[DiffractionWithSoilEffetZone.DELTA_DISTANCE] = -1.;
-        data[DiffractionWithSoilEffetZone.E_LENGTH] = -1.;
-        data[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE] = -1.;
         List<TriIdWithIntersection> allInterPoints = new ArrayList<>();
         computePropagationPath(p1, p2, false, allInterPoints);
         List<TriIdWithIntersection> interPoints = new ArrayList<>();
@@ -703,7 +699,7 @@ public class FastObstructionTest {
             interPoints.add(updateZ(lastInter));
         }
         //set default data
-        DiffractionWithSoilEffetZone totData = new DiffractionWithSoilEffetZone(data, rOZone, sOZone);
+        DiffractionWithSoilEffetZone totData = new DiffractionWithSoilEffetZone(rOZone, sOZone, -1, -1, -1);
         if(!hasBuildingWithHeight) {
             // Cannot compute envelope is building height is not available
             return totData;
@@ -785,10 +781,6 @@ public class FastObstructionTest {
             double e = pathDistance - path.getFirst().getLength() - path.getLast().getLength();//distance without first part path and last part path
             double deltaDistance = pathDistance - distanceRandS;                                //delta distance
 
-            data[DiffractionWithSoilEffetZone.DELTA_DISTANCE] = deltaDistance;
-            data[DiffractionWithSoilEffetZone.E_LENGTH] = e;
-            data[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE] = pathDistance;
-
             //if we have soil data
             Coordinate[] firstPart = new Coordinate[2];
             Coordinate[] lastPart = new Coordinate[2];
@@ -804,7 +796,7 @@ public class FastObstructionTest {
             //last intersection-source zone aims to calculate ground effect (between rOZone and sOZone we ignore ground effect)
             sOZone = new LineSegment(lastPart[0], lastPart[1]);
 
-            totData = new DiffractionWithSoilEffetZone(data, rOZone, sOZone);
+            totData = new DiffractionWithSoilEffetZone(rOZone, sOZone, deltaDistance, e, pathDistance);
             return totData;
         }
     }

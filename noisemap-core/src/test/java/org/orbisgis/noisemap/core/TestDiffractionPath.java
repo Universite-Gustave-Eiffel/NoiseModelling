@@ -39,12 +39,12 @@ public class TestDiffractionPath {
                 CGAlgorithms3D.distance(new Coordinate(15, 20, height), new Coordinate(30, 20 ,height)) +
                 CGAlgorithms3D.distance(new Coordinate(30, 20, height), p2);
         DiffractionWithSoilEffetZone diff = manager.getPath(p1, p2);
-        assertEquals(expectedLength, diff.getDiffractionData()[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE], 1e-3);
+        assertEquals(expectedLength, diff.getFullDiffractionDistance(), 1e-3);
         assertEquals(height, diff.getROZone().p1.z, 1e-12);
         assertEquals(height, diff.getOSZone().p0.z, 1e-12);
         // Do other way
         diff = manager.getPath(p2, p1);
-        assertEquals(expectedLength, diff.getDiffractionData()[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE], 1e-3);
+        assertEquals(expectedLength, diff.getFullDiffractionDistance(), 1e-3);
         assertEquals(height, diff.getROZone().p1.z, 1e-12);
         assertEquals(height, diff.getOSZone().p0.z, 1e-12);
     }
@@ -83,10 +83,10 @@ public class TestDiffractionPath {
                 CGAlgorithms3D.distance(new Coordinate(15, 20, height), new Coordinate(30, 20 ,height)) +
                 CGAlgorithms3D.distance(new Coordinate(30, 20, height), p2);
         DiffractionWithSoilEffetZone diff = manager.getPath(p1, p2);
-        assertEquals(expectedLength, diff.getDiffractionData()[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE], 1e-3);
+        assertEquals(expectedLength, diff.getFullDiffractionDistance(), 1e-3);
 
         // Do other way
         diff = manager.getPath(p2, p1);
-        assertEquals(expectedLength, diff.getDiffractionData()[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE], 1e-3);
+        assertEquals(expectedLength, diff.getFullDiffractionDistance(), 1e-3);
     }
 }

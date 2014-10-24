@@ -37,10 +37,6 @@ import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Polygon;
-
-import static junit.framework.Assert.assertTrue;
-
-
 import junit.framework.TestCase;
 
 /**
@@ -50,65 +46,37 @@ import junit.framework.TestCase;
 public class TestSoundPropagationIn3DWithNewFunction extends TestCase {
 
 
-    public void testDiffraction3DNormailBuilding() throws LayerDelaunayError{
-    
-           GeometryFactory factory = new GeometryFactory();
-           Coordinate[] building1Coords = { new Coordinate(15., 5.,0.),
-				new Coordinate(15., 30.,0.), new Coordinate(30., 30.,0.),
-				new Coordinate(30., 5.,0.), new Coordinate(15., 5.,0.) };
-           Coordinate[] building2Coords = { new Coordinate(40., 5.,0.),
-				new Coordinate(45., 5.,0.), new Coordinate(45., 30.,0.),
-				new Coordinate(40., 30.,0.), new Coordinate(40., 5.,0.) };
-                  
-           Polygon building1 = factory.createPolygon(
-			factory.createLinearRing(building1Coords), null);
-           Polygon building2 = factory.createPolygon(
-			factory.createLinearRing(building2Coords), null); 
-          
-           MeshBuilder mesh= new MeshBuilder();          
+    public void testDiffraction3DNormailBuilding() throws LayerDelaunayError {
+
+        GeometryFactory factory = new GeometryFactory();
+        Coordinate[] building1Coords = {new Coordinate(15., 5., 0.),
+                new Coordinate(15., 30., 0.), new Coordinate(30., 30., 0.),
+                new Coordinate(30., 5., 0.), new Coordinate(15., 5., 0.)};
+        Coordinate[] building2Coords = {new Coordinate(40., 5., 0.),
+                new Coordinate(45., 5., 0.), new Coordinate(45., 30., 0.),
+                new Coordinate(40., 30., 0.), new Coordinate(40., 5., 0.)};
+
+        Polygon building1 = factory.createPolygon(
+                factory.createLinearRing(building1Coords), null);
+        Polygon building2 = factory.createPolygon(
+                factory.createLinearRing(building2Coords), null);
+
+        MeshBuilder mesh = new MeshBuilder();
 
 
-           mesh.addGeometry(building1,5.);
-           mesh.addGeometry(building2,4.);
+        mesh.addGeometry(building1, 5.);
+        mesh.addGeometry(building2, 4.);
 
-           mesh.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(60., 60.,0.)));
-           FastObstructionTest ft=new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());           
-           
-           System.out.println("----------------TEST 1 test path between source and receiver----------------");
-           System.out.println("-----no building but have one cross triangle-----");
-           DiffractionWithSoilEffetZone diffraData=ft.getPath(new Coordinate(5,15,1.5), new Coordinate(10,15,0.5));
-           Double[]lt=diffraData.getDiffractionData();
-           System.out.println("----deltadistance----");
-           System.out.println(lt[DiffractionWithSoilEffetZone.DELTA_DISTANCE]);
-           System.out.println("----e----");
-           System.out.println(lt[DiffractionWithSoilEffetZone.E_LENGTH]);
-           System.out.println("----distancepath----");
-           System.out.println(lt[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE]);
-           
-           System.out.println("-----no building but have one cross triangle finished-----");
-           
-           System.out.println("----------TEST diffraction with 2 buildings(building1 and building2)----- ");
-           diffraData=ft.getPath(new Coordinate(48,25,0.5), new Coordinate(5,15,1.5));
-           lt=diffraData.getDiffractionData();
-           System.out.println("----deltadistance----");
-           System.out.println(lt[DiffractionWithSoilEffetZone.DELTA_DISTANCE]);
-           System.out.println("----e----");
-           System.out.println(lt[DiffractionWithSoilEffetZone.E_LENGTH]);
-           System.out.println("----distancepath----");
-           System.out.println(lt[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE]);
-           System.out.println("-----------exchange source receiver------------");
-           diffraData=ft.getPath(new Coordinate(5,15,1.5), new Coordinate(48,25,0.5));
-           Double[]lt1=diffraData.getDiffractionData();
-           System.out.println("----deltadistance----");
-           System.out.println(lt1[DiffractionWithSoilEffetZone.DELTA_DISTANCE]);
-           System.out.println("----e----");
-           System.out.println(lt1[DiffractionWithSoilEffetZone.E_LENGTH]);
-           System.out.println("----distancepath----");
-           System.out.println(lt1[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE]);
-           assertTrue("Exchange source receiver got the different resultat",lt[DiffractionWithSoilEffetZone.DELTA_DISTANCE]-lt1[DiffractionWithSoilEffetZone.DELTA_DISTANCE]<=FastObstructionTest.epsilon
-                      &&lt[DiffractionWithSoilEffetZone.E_LENGTH]-lt1[DiffractionWithSoilEffetZone.E_LENGTH]<=FastObstructionTest.epsilon&&lt[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE]-lt1[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE]<=FastObstructionTest.epsilon);
-           System.out.println("----------TEST diffraction with 2 buildings(building1 and building2) finished----- ");
-           }
+        mesh.finishPolygonFeeding(new Envelope(new Coordinate(0., 0., 0.), new Coordinate(60., 60., 0.)));
+        FastObstructionTest ft = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(), mesh.getTriNeighbors(), mesh.getVertices());
+        DiffractionWithSoilEffetZone diffraData = ft.getPath(new Coordinate(5, 15, 1.5), new Coordinate(10, 15, 0.5));
+        diffraData = ft.getPath(new Coordinate(48, 25, 0.5), new Coordinate(5, 15, 1.5));
+        DiffractionWithSoilEffetZone diffraData2 = ft.getPath(new Coordinate(5, 15, 1.5), new Coordinate(48, 25, 0.5));
+        assertTrue("Exchange source receiver got the different resultat",
+                diffraData.getDeltaDistance() - diffraData2.getDeltaDistance() <= FastObstructionTest.epsilon
+                        && diffraData.geteLength() - diffraData2.geteLength() <= FastObstructionTest.epsilon
+                        && diffraData.getFullDiffractionDistance() - diffraData2.getFullDiffractionDistance() <= FastObstructionTest.epsilon);
+    }
    
     public void testDiffraction3DSpecialBuilding() throws LayerDelaunayError{
            GeometryFactory factory = new GeometryFactory();
@@ -128,36 +96,18 @@ public class TestSoundPropagationIn3DWithNewFunction extends TestCase {
 
            mesh.addGeometry(building1,5.);
            mesh.addGeometry(building2,4.);
-           System.out.println("----------------TEST  buildings are glued----------------");
-           mesh.testMergeGetPolygonWithHeight(); 
-           System.out.println("----------------TEST  buildings are glued Finished----------------");
-           
-           System.out.println("----------------TEST  buildings are glued and get the path----------------");
+           mesh.testMergeGetPolygonWithHeight();
+
            mesh.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(60., 60.,0.)));
            FastObstructionTest ft= new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());           
            
            DiffractionWithSoilEffetZone diffraData=ft.getPath(new Coordinate(48,25,0.5), new Coordinate(5,15,1.5));
-           Double[]lt=diffraData.getDiffractionData();
-           System.out.println("----deltadistance----");
-           System.out.println(lt[DiffractionWithSoilEffetZone.DELTA_DISTANCE]);
-           System.out.println("----e----");
-           System.out.println(lt[DiffractionWithSoilEffetZone.E_LENGTH]);
-           System.out.println("----distancepath----");
-           System.out.println(lt[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE]);
-           System.out.println("-----------exchange source receiver------------");
-           diffraData=ft.getPath(new Coordinate(5,15,1.5), new Coordinate(48,25,0.5));
-           Double[]lt1=diffraData.getDiffractionData();
-           System.out.println("----deltadistance----");
-           System.out.println(lt1[DiffractionWithSoilEffetZone.DELTA_DISTANCE]);
-           System.out.println("----e----");
-           System.out.println(lt1[DiffractionWithSoilEffetZone.E_LENGTH]);
-           System.out.println("----distancepath----");
-           System.out.println(lt1[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE]);
-           assertTrue("Exchange source receiver got the different resultat",lt[DiffractionWithSoilEffetZone.DELTA_DISTANCE]-lt1[DiffractionWithSoilEffetZone.DELTA_DISTANCE]<=FastObstructionTest.epsilon
-                      &&lt[DiffractionWithSoilEffetZone.E_LENGTH]-lt1[DiffractionWithSoilEffetZone.E_LENGTH]<=FastObstructionTest.epsilon&&lt[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE]-lt1[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE]<=FastObstructionTest.epsilon);
+           DiffractionWithSoilEffetZone diffraData2=ft.getPath(new Coordinate(5,15,1.5), new Coordinate(48,25,0.5));
+
+           assertTrue("Exchange source receiver got the different resultat",
+                diffraData.getDeltaDistance() - diffraData2.getDeltaDistance() <= FastObstructionTest.epsilon
+                        && diffraData.geteLength() - diffraData2.geteLength() <= FastObstructionTest.epsilon
+                        && diffraData.getFullDiffractionDistance() - diffraData2.getFullDiffractionDistance() <= FastObstructionTest.epsilon);
            
-           }
-    
-    
-    
+    }
 }

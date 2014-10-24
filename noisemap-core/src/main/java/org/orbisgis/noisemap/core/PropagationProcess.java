@@ -305,18 +305,45 @@ public class PropagationProcess implements Runnable {
         }
         this.dataOut.appendImageReceiver(imageReceiver);
     }
+    public double computeDeltaDiffraction(int idfreq, double eLength, double deltaDistance) {
+        double cprime;
+        //C" NMPB 2008 P.33
+        //Multiple diffraction
+        //CPRIME=( 1+(5*gamma)^2)/((1/3)+(5*gamma)^2)
+        double gammapart = Math.pow((5 * freq_lambda[idfreq]) / eLength, 2);
+        //NFS 31-133 page 46
+        if (eLength > 0.3) {
+            cprime = (1. + gammapart) / (ONETHIRD + gammapart);
+        } else {
+            cprime = 1.;
+        }
 
+        //(7.11) NMP2008 P.32
+        double testForm = (40 / freq_lambda[idfreq])
+                * cprime * deltaDistance;
+        double DiffractionAttenuation = 0.;
+        if (testForm >= -2.) {
+            DiffractionAttenuation = 10 * Math
+                    .log10(3 + testForm);
+        }
+        // Limit to 0<=DiffractionAttenuation
+        DiffractionAttenuation = Math.max(0,
+                DiffractionAttenuation);
+        //NF S 31-133 page 46
+        //if delta diffraction > 25 we take 25dB for delta diffraction
+        return Math.min(25., DiffractionAttenuation);
+    }
 
     public void computeHorizontalEdgeDiffraction(boolean somethingHideReceiver, Coordinate receiverCoord,
                                                  Coordinate srcCoord, List<Double> wj,
                                                  List<PropagationDebugInfo> debugInfo, double[] energeticSum) {
         DiffractionWithSoilEffetZone diffDataWithSoilEffet = data.freeFieldFinder.getPath(receiverCoord, srcCoord);
         GeometryFactory factory = new GeometryFactory();
-        Double[] diffractiondata = diffDataWithSoilEffet.getDiffractionData();
 
-        double deltadistance = diffractiondata[DiffractionWithSoilEffetZone.DELTA_DISTANCE];
-        double e = diffractiondata[DiffractionWithSoilEffetZone.E_LENGTH];
-        double fulldistance = diffractiondata[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE];
+
+        double deltadistance = diffDataWithSoilEffet.getDeltaDistance();
+        double e = diffDataWithSoilEffet.geteLength();
+        double fulldistance = diffDataWithSoilEffet.getFullDiffractionDistance();
 
         //delta diffraction
         if (Double.compare(deltadistance, -1.) != 0 && Double.compare(e, -1.) != 0 &&
@@ -330,11 +357,8 @@ public class PropagationProcess implements Runnable {
             }
             double totRODistance = 0.;
             double totOSDistance = 0.;
-            double SoilSOAttenuation = 0.;
-            double SoilORAttenuation = 0.;
             double gPathRO = 0;
             double gPathOS= 0;
-            double gPathPrimeRO = 0;
             double gPathPrimeOS = 0;
             double ASoilOSMin = 0;
             double ASoilROMin = 0;
@@ -371,13 +395,7 @@ public class PropagationProcess implements Runnable {
                 gPathRO = totRODistance / ROZone.getLength();
                 gPathOS = totOSDistance / OSZone.getLength();
                 //NF S 31-133 page 39
-                double testFormROZone = ROZone.getLength() / (30 * (receiverCoord.z + ROZone.p1.z));
                 double testFormOSZone = OSZone.getLength() / (30 * (OSZone.p0.z + srcCoord.z));
-                if (testFormROZone <= 1) {
-                    gPathPrimeRO = testFormROZone * gPathRO;
-                } else {
-                    gPathPrimeRO = gPathRO;
-                }
 
                 if (testFormOSZone <= 1) {
                     gPathPrimeOS = testFormOSZone * gPathOS;
@@ -387,36 +405,25 @@ public class PropagationProcess implements Runnable {
 
                 //NF S 31-133 page 41 and page 40
                 ASoilOSMin = -3 * (1 - gPathPrimeOS);
-                ASoilROMin = -3 * (1 - gPathPrimeRO);
+                // NMPB 2008
+                // There is no call here to take into account the correction G'trajet as the source considered is
+                // no longer the road itself but the diffraction point. It is therefore clearly Gtrajet which must
+                // be used in calculating the ground effects, including for the lower bound term of the formula
+                // which becomes -3 (1-Gtrajet).
+                ASoilROMin = -3 * (1 - gPathRO);
             }
+            // TODO compute mean ground planes (S,O) and (O,R)
+            // R' is the projection of R on the mean ground plane (O,R)
+            // S' is the projection of R on the mean ground plane (S,O)
+            Double[] diffractionDataORPrime = new Double[3];
+
             for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
+                double deltaDiffSR = computeDeltaDiffraction(idfreq, e, deltadistance);
+                // Compute diffraction data for deltaDiffS'R
 
-                double cprime;
-                //C" NMPB 2008 P.33
-                //Multiple diffraction
-                //CPRIME=( 1+(5*gamma)^2)/((1/3)+(5*gamma)^2)
-                double gammapart = Math.pow((5 * freq_lambda[idfreq]) / e, 2);
-                //NFS 31-133 page 46
-                if (e > 0.3) {
-                    cprime = (1. + gammapart) / (ONETHIRD + gammapart);
-                } else {
-                    cprime = 1.;
-                }
 
-                //(7.11) NMP2008 P.32
-                double testForm = (40 / freq_lambda[idfreq])
-                        * cprime * deltadistance;
-                double DiffractionAttenuation = 0.;
-                if (testForm >= -2.) {
-                    DiffractionAttenuation = 10 * Math
-                            .log10(3 + testForm);
-                }
-                // Limit to 0<=DiffractionAttenuation
-                DiffractionAttenuation = Math.max(0,
-                        DiffractionAttenuation);
-                //NF S 31-133 page 46
-                //if delta diffraction > 25 we take 25dB for delta diffraction
-                DiffractionAttenuation = Math.min(25., DiffractionAttenuation);
+                //Compute diffraction data for deltaDiffSR'
+
                 double AttenuatedWj = wj.get(idfreq);
                 // Geometric dispersion
                 //fulldistance-deltdistance is the distance direct between source and receiver
@@ -429,11 +436,10 @@ public class PropagationProcess implements Runnable {
                 double deltSoilSO = 0.;
                 double deltaSoilOR = 0.;
                 if (data.geoWithSoilType != null) {
-
+                    double SoilSOAttenuation;
+                    double SoilORAttenuation= 0;
                     //NF S 31-133 page 41
-                    if (Double.compare(gPathRO, 0.) == 0) {
-                        SoilORAttenuation = -3.;
-                    } else {
+                    if (gPathRO > 0) {
                         SoilORAttenuation = getASoil(ROZone.p1.z, ROZone.p0.z, ROZone.getLength(), gPathRO, data.freq_lvl.get(idfreq), ASoilROMin);
                     }
                     //NF S 31-133 page 41
@@ -441,11 +447,10 @@ public class PropagationProcess implements Runnable {
                         SoilSOAttenuation = -3.;
                     } else {
                         SoilSOAttenuation = getASoil(OSZone.p1.z, OSZone.p0.z, OSZone.getLength(), gPathPrimeOS, data.freq_lvl.get(idfreq), ASoilOSMin);
-
                     }
-
-                    deltSoilSO = getDeltaSoil(SoilSOAttenuation);
-                    deltaSoilOR = getDeltaSoil(SoilORAttenuation);
+                    // TODO use deltaDiffSprimR and deltaDiffSRprim
+                    deltSoilSO = getDeltaSoil(SoilSOAttenuation,deltaDiffSR,deltaDiffSR);
+                    deltaSoilOR = getDeltaSoil(SoilORAttenuation,deltaDiffSR,deltaDiffSR);
                 }
 
                 //delta sol finished
@@ -453,7 +458,7 @@ public class PropagationProcess implements Runnable {
 
                 // Apply diffraction attenuation with ground effect if necessary
                 AttenuatedWj = dbaToW(wToDba(AttenuatedWj)
-                        - DiffractionAttenuation - deltSoilSO - deltaSoilOR);
+                        - deltaDiffSR - deltSoilSO - deltaSoilOR);
 
 
                 // Apply atmospheric absorption and ground
@@ -1098,9 +1103,15 @@ public class PropagationProcess implements Runnable {
     }
 
 
-    private double getDeltaSoil(double ASoil) {
-
-        return -20 * Math.log10(1 + (Math.pow(10, -ASoil / 20) - 1));
+    /**
+     * Formulae 7.18 and 7.20
+     * @param aSoil Asol(O,R) or Asol(S,O) (sol mean ground)
+     * @param deltaDifPrim Δdif(S,R') if Asol(S,O) is given or Δdif(S', R) if Asol(O,R)
+     * @param deltaDif Δdif(S, R)
+     * @return Δsol(S,O) if Asol(S,O) is given or Δsol(O,R) if Asol(O,R) is given
+     */
+    private double getDeltaSoil(double aSoil, double deltaDifPrim, double deltaDif) {
+        return -20 * Math.log10(1 + (Math.pow(10, -aSoil / 20) - 1)) * Math.pow(10, -(deltaDifPrim - deltaDif)/20);
     }
 
 }

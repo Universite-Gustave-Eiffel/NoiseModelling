@@ -42,22 +42,35 @@ import com.vividsolutions.jts.geom.LineString;
  * @author SU Qi
  */
 public class DiffractionWithSoilEffetZone {
-    public static final int DELTA_DISTANCE = 0;//delta distance;
-    public static final int E_LENGTH = 1;//e length
-    public static final int FULL_DIFFRACTION_DISTANCE = 2;//the full distance of diffraction path
-    private Double[] diffractionData = new Double[3]; //3D diffraction data
+    //public static final int DELTA_DISTANCE = 0;//delta distance;
+    //public static final int E_LENGTH = 1;//e length
+    //public static final int FULL_DIFFRACTION_DISTANCE = 2;//the full distance of diffraction path
+    //private Double[] diffractionData = new Double[3]; //3D diffraction data
     private LineSegment rOZone;//receiver-first intersection zone for 3D diffraction
     private LineSegment oSZone;//last intersection-source zone for 3D diffraction
+    private double deltaDistance;
+    private double eLength;
+    private double fullDiffractionDistance;
 
-    public DiffractionWithSoilEffetZone(Double[] diffractionData, LineSegment rOZone, LineSegment oSZone) {
-        this.diffractionData = diffractionData;
+    public DiffractionWithSoilEffetZone(LineSegment rOZone, LineSegment oSZone,
+                                        double deltaDistance, double eLength, double fullDiffractionDistance) {
         this.rOZone = rOZone;
         this.oSZone = oSZone;
+        this.deltaDistance = deltaDistance;
+        this.eLength = eLength;
+        this.fullDiffractionDistance = fullDiffractionDistance;
     }
 
-    public Double[] getDiffractionData() {
+    public double getDeltaDistance() {
+        return deltaDistance;
+    }
 
-        return this.diffractionData;
+    public double geteLength() {
+        return eLength;
+    }
+
+    public double getFullDiffractionDistance() {
+        return fullDiffractionDistance;
     }
 
     public LineSegment getROZone() {

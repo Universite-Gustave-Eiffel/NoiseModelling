@@ -73,36 +73,14 @@ public class TestMeshAndTopoDiffraction extends TestCase{
 
             mesh.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(60., 60.,0.)));
             FastObstructionTest nfot= new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
-            System.out.println("----------TEST#1 diffraction with 2 buildings(building1 and building2)----- ");
-            
+
             DiffractionWithSoilEffetZone diffraData=nfot.getPath(new Coordinate(48,25,7), new Coordinate(5,15,8));
-            Double[]lt=diffraData.getDiffractionData();
-            System.out.println("----deltadistance----");
-            System.out.println(lt[DiffractionWithSoilEffetZone.DELTA_DISTANCE]);
-            System.out.println("----e----");
-            System.out.println(lt[DiffractionWithSoilEffetZone.E_LENGTH]);
-            System.out.println("----distancepath----");
-            System.out.println(lt[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE]);
-            
-            
-            
-            System.out.println("-----------exchange source receiver------------");
-            diffraData=nfot.getPath(new Coordinate(5,15,8), new Coordinate(48,25,7));
-            Double[]lt1=diffraData.getDiffractionData();
-            System.out.println("----deltadistance----");
-            System.out.println(lt1[DiffractionWithSoilEffetZone.DELTA_DISTANCE]);
-            System.out.println("----e----");
-            System.out.println(lt1[DiffractionWithSoilEffetZone.E_LENGTH]);
-            System.out.println("----distancepath----");
-            System.out.println(lt1[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE]);
-            
-            
+            DiffractionWithSoilEffetZone diffraData2=nfot.getPath(new Coordinate(5,15,8), new Coordinate(48,25,7));
+
             assertTrue("Exchange source receiver got the different resultat",
-                    lt[DiffractionWithSoilEffetZone.DELTA_DISTANCE]-lt1[DiffractionWithSoilEffetZone.DELTA_DISTANCE]<=FastObstructionTest.epsilon
-                       &&lt[DiffractionWithSoilEffetZone.E_LENGTH]-lt1[DiffractionWithSoilEffetZone.E_LENGTH]<=FastObstructionTest.epsilon&&lt[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE]-lt1[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE]<=FastObstructionTest.epsilon);
-            System.out.println("----------TEST#1 diffraction with 2 buildings(building1 and building2) finished----- ");
-
-
+                    diffraData.getDeltaDistance() - diffraData2.getDeltaDistance() <= FastObstructionTest.epsilon
+                       && diffraData.geteLength() - diffraData2.geteLength() <= FastObstructionTest.epsilon
+                       && diffraData.getFullDiffractionDistance() - diffraData2.getFullDiffractionDistance() <= FastObstructionTest.epsilon);
          }
          public void testTopoPointsBlockSourceAndReceiver() throws LayerDelaunayError{
             
@@ -124,13 +102,11 @@ public class TestMeshAndTopoDiffraction extends TestCase{
              mesh.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(60., 60.,0.)));
              FastObstructionTest nfot= new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
              DiffractionWithSoilEffetZone diffraData=nfot.getPath(new Coordinate(48,25,4), new Coordinate(5,15,3.7));
-             Double[] lt=diffraData.getDiffractionData();
-             diffraData=nfot.getPath(new Coordinate(5,15,3.7), new Coordinate(48,25,4));
-             Double[]lt1=diffraData.getDiffractionData();
-             assertEquals(lt[DiffractionWithSoilEffetZone.DELTA_DISTANCE], lt1[DiffractionWithSoilEffetZone.DELTA_DISTANCE], 1e-16);
-             assertEquals(lt[DiffractionWithSoilEffetZone.E_LENGTH], lt1[DiffractionWithSoilEffetZone.E_LENGTH], 1e-16);
-             assertEquals(lt[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE], lt1[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE], 1e-16);
-             assertEquals(-1, lt[DiffractionWithSoilEffetZone.DELTA_DISTANCE], 1e-16);
+             DiffractionWithSoilEffetZone diffraData2=nfot.getPath(new Coordinate(5,15,3.7), new Coordinate(48,25,4));
+             assertEquals(diffraData.getDeltaDistance(), diffraData2.getDeltaDistance(), 1e-16);
+             assertEquals(diffraData.geteLength(), diffraData2.geteLength(), 1e-16);
+             assertEquals(diffraData.getFullDiffractionDistance(), diffraData2.getFullDiffractionDistance(), 1e-16);
+             assertEquals(-1, diffraData.getDeltaDistance(), 1e-16);
             
 
          }
@@ -160,33 +136,12 @@ public class TestMeshAndTopoDiffraction extends TestCase{
 
              mesh.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(60., 60.,0.)));
              FastObstructionTest nfot= new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
-             System.out.println("----------TEST#3 diffraction with 2 buildings(building1 and building2)----- ");
              DiffractionWithSoilEffetZone diffraData=nfot.getPath(new Coordinate(48,25,1.5), new Coordinate(5,15,2));
-             Double[] lt=diffraData.getDiffractionData();
-             System.out.println("----deltadistance----");
-             System.out.println(lt[DiffractionWithSoilEffetZone.DELTA_DISTANCE]);
-             System.out.println("----e----");
-             System.out.println(lt[DiffractionWithSoilEffetZone.E_LENGTH]);
-             System.out.println("----distancepath----");
-             System.out.println(lt[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE]);
-             
-            
-            
-            
-             System.out.println("-----------exchange source receiver------------");
-             diffraData=nfot.getPath(new Coordinate(5,15,2), new Coordinate(48,25,1.5));
-             Double[]lt1=diffraData.getDiffractionData();
-             System.out.println("----deltadistance----");
-             System.out.println(lt1[DiffractionWithSoilEffetZone.DELTA_DISTANCE]);
-             System.out.println("----e----");
-             System.out.println(lt1[DiffractionWithSoilEffetZone.E_LENGTH]);
-             System.out.println("----distancepath----");
-             System.out.println(lt1[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE]);
-            
-             assertEquals(lt[DiffractionWithSoilEffetZone.DELTA_DISTANCE], lt1[DiffractionWithSoilEffetZone.DELTA_DISTANCE], 1e-12);
-             assertEquals(lt[DiffractionWithSoilEffetZone.E_LENGTH], lt1[DiffractionWithSoilEffetZone.E_LENGTH], 1e-12);
-             assertEquals(lt[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE], lt1[DiffractionWithSoilEffetZone.FULL_DIFFRACTION_DISTANCE], 1e-12);
-             assertEquals(-1.0,lt[DiffractionWithSoilEffetZone.DELTA_DISTANCE], 1e-12);
+             DiffractionWithSoilEffetZone diffraData2=nfot.getPath(new Coordinate(5,15,2), new Coordinate(48,25,1.5));
+             assertEquals(diffraData.getDeltaDistance(), diffraData2.getDeltaDistance(), 1e-12);
+             assertEquals(diffraData.geteLength(), diffraData2.geteLength(), 1e-12);
+             assertEquals(diffraData.getFullDiffractionDistance(), diffraData2.getFullDiffractionDistance(), 1e-12);
+             assertEquals(-1.0,diffraData.getDeltaDistance(), 1e-12);
          }
              
          public void testPointsVisible() throws LayerDelaunayError{
@@ -227,17 +182,8 @@ public class TestMeshAndTopoDiffraction extends TestCase{
              mesh.addTopographicPoint(topoPoint1);
              mesh.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(60., 60.,0.)));
              FastObstructionTest nfot= new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
-             
-             
-             System.out.println("---------------------Test#5 isFreeField blocked by TopoPoint----------------------");
              assertFalse("isFreeField Failed",nfot.isFreeField(new Coordinate(40.,3.,2.), new Coordinate(39.,50.,3.)));
-
              assertTrue("isFreeField Failed",nfot.isFreeField(new Coordinate(40.,3.,9.), new Coordinate(40.,50.,10.)));
-             System.out.println("---------------------Test#5 isFreeField blocked by TopoPoint finished----------------------");
-             
-             
-            
-            
          }         
          
 }
