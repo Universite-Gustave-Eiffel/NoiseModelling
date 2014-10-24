@@ -40,18 +40,23 @@ import com.vividsolutions.jts.geom.LineString;
  * aims to keep the 3D diffraction, first diffraction zone and last diffraction zone data, 
  * to give them to propagation process data
  * @author SU Qi
+ * @author Nicolas Fortin
  */
 public class DiffractionWithSoilEffetZone {
-    //public static final int DELTA_DISTANCE = 0;//delta distance;
-    //public static final int E_LENGTH = 1;//e length
-    //public static final int FULL_DIFFRACTION_DISTANCE = 2;//the full distance of diffraction path
-    //private Double[] diffractionData = new Double[3]; //3D diffraction data
     private LineSegment rOZone;//receiver-first intersection zone for 3D diffraction
     private LineSegment oSZone;//last intersection-source zone for 3D diffraction
     private double deltaDistance;
     private double eLength;
     private double fullDiffractionDistance;
 
+    /**
+     *
+     * @param rOZone Segment from receiver to first diffraction corner
+     * @param oSZone Segment from last diffraction corner to source
+     * @param deltaDistance Direct field distance between R and S minus fullDiffractionDistance
+     * @param eLength Length from first diffraction corner to last diffraction corner
+     * @param fullDiffractionDistance Full path distance from receiver to source
+     */
     public DiffractionWithSoilEffetZone(LineSegment rOZone, LineSegment oSZone,
                                         double deltaDistance, double eLength, double fullDiffractionDistance) {
         this.rOZone = rOZone;
@@ -61,22 +66,37 @@ public class DiffractionWithSoilEffetZone {
         this.fullDiffractionDistance = fullDiffractionDistance;
     }
 
+    /**
+     * @return Direct field distance between R and S minus fullDiffractionDistance
+     */
     public double getDeltaDistance() {
         return deltaDistance;
     }
 
+    /**
+     * @return Length from first diffraction corner to last diffraction corner
+     */
     public double geteLength() {
         return eLength;
     }
 
+    /**
+     * @return Full path distance from receiver to source
+     */
     public double getFullDiffractionDistance() {
         return fullDiffractionDistance;
     }
 
+    /**
+     * @return Segment from receiver to first diffraction corner
+     */
     public LineSegment getROZone() {
         return this.rOZone;
     }
 
+    /**
+     * @return Segment from last diffraction corner to source
+     */
     public LineSegment getOSZone() {
         return this.oSZone;
     }

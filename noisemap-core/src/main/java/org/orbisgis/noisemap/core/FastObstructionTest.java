@@ -770,13 +770,6 @@ public class FastObstructionTest {
                 return totData;
             }
             //we used coordinate after change coordinate system to get the right distance.
-            /*
-                            double dx = path.getFirst().p0.x-path.getLast().p1.x;
-            double dy = path.getFirst().p0.y-path.getLast().p1.y;
-            double dz = path.getFirst().p0.z-path.getLast().p1.z;
-
-            double distanceRandS =  Math.sqrt(dx*dx+dy*dy+dz*dz);
-             */
             double distanceRandS = path.getFirst().p0.distance(path.getLast().p1);              //distance of receiver and source
             double e = pathDistance - path.getFirst().getLength() - path.getLast().getLength();//distance without first part path and last part path
             double deltaDistance = pathDistance - distanceRandS;                                //delta distance

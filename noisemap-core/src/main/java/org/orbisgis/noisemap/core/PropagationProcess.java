@@ -414,16 +414,20 @@ public class PropagationProcess implements Runnable {
             }
             // TODO compute mean ground planes (S,O) and (O,R)
             // R' is the projection of R on the mean ground plane (O,R)
+            double directDistanceSR = CGAlgorithms3D.distance(srcCoord, receiverCoord);
+            Coordinate rPrim = new Coordinate(receiverCoord.x, receiverCoord.y, -receiverCoord.z);
+            Coordinate sPrim = new Coordinate(srcCoord.x, srcCoord.y, -srcCoord.z);
+            double deltaDistanceORprim = (fulldistance - CGAlgorithms3D.distance(ROZone.p0,ROZone.p1)
+                    + CGAlgorithms3D.distance(rPrim,ROZone.p1)) - CGAlgorithms3D.distance(srcCoord, rPrim);
             // S' is the projection of R on the mean ground plane (S,O)
-            Double[] diffractionDataORPrime = new Double[3];
-
+            double deltaDistanceSprimO = (fulldistance - CGAlgorithms3D.distance(OSZone.p0,OSZone.p1)
+                    + CGAlgorithms3D.distance(OSZone.p0,sPrim)) - CGAlgorithms3D.distance(sPrim, receiverCoord);
             for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
                 double deltaDiffSR = computeDeltaDiffraction(idfreq, e, deltadistance);
                 // Compute diffraction data for deltaDiffS'R
-
-
+                double deltaDiffSprimR = computeDeltaDiffraction(idfreq, e, deltaDistanceSprimO);
                 //Compute diffraction data for deltaDiffSR'
-
+                double deltaDiffSRprim = computeDeltaDiffraction(idfreq, e, deltaDistanceORprim);
                 double AttenuatedWj = wj.get(idfreq);
                 // Geometric dispersion
                 //fulldistance-deltdistance is the distance direct between source and receiver
@@ -449,8 +453,8 @@ public class PropagationProcess implements Runnable {
                         SoilSOAttenuation = getASoil(OSZone.p1.z, OSZone.p0.z, OSZone.getLength(), gPathPrimeOS, data.freq_lvl.get(idfreq), ASoilOSMin);
                     }
                     // TODO use deltaDiffSprimR and deltaDiffSRprim
-                    deltSoilSO = getDeltaSoil(SoilSOAttenuation,deltaDiffSR,deltaDiffSR);
-                    deltaSoilOR = getDeltaSoil(SoilORAttenuation,deltaDiffSR,deltaDiffSR);
+                    deltSoilSO = getDeltaSoil(SoilSOAttenuation,deltaDiffSprimR,deltaDiffSR);
+                    deltaSoilOR = getDeltaSoil(SoilORAttenuation,deltaDiffSRprim,deltaDiffSR);
                 }
 
                 //delta sol finished
