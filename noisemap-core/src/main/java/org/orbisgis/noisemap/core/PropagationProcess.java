@@ -181,7 +181,6 @@ public class PropagationProcess implements Runnable {
         // Compute receiver mirror
         LineSegment srcReceiver = new LineSegment(srcCoord, receiverCoord);
         NonRobustLineIntersector linters = new NonRobustLineIntersector();
-        LineSegment propaLine = new LineSegment(receiverCoord, srcCoord);
         long imageReceiver = 0;
         MirrorReceiverIterator.It mirroredReceivers = new MirrorReceiverIterator.It(receiverCoord, nearBuildingsWalls,
                 srcReceiver, data.maxRefDist, data.reflexionOrder, data.maxSrcDist);
@@ -310,10 +309,10 @@ public class PropagationProcess implements Runnable {
         //C" NMPB 2008 P.33
         //Multiple diffraction
         //CPRIME=( 1+(5*gamma)^2)/((1/3)+(5*gamma)^2)
-        double gammapart = Math.pow((5 * freq_lambda[idfreq]) / eLength, 2);
+        double gammaPart = Math.pow((5 * freq_lambda[idfreq]) / eLength, 2);
         //NFS 31-133 page 46
         if (eLength > 0.3) {
-            cprime = (1. + gammapart) / (ONETHIRD + gammapart);
+            cprime = (1. + gammaPart) / (ONETHIRD + gammaPart);
         } else {
             cprime = 1.;
         }
@@ -321,17 +320,17 @@ public class PropagationProcess implements Runnable {
         //(7.11) NMP2008 P.32
         double testForm = (40 / freq_lambda[idfreq])
                 * cprime * deltaDistance;
-        double DiffractionAttenuation = 0.;
+        double diffractionAttenuation = 0.;
         if (testForm >= -2.) {
-            DiffractionAttenuation = 10 * Math
+            diffractionAttenuation = 10 * Math
                     .log10(3 + testForm);
         }
         // Limit to 0<=DiffractionAttenuation
-        DiffractionAttenuation = Math.max(0,
-                DiffractionAttenuation);
+        diffractionAttenuation = Math.max(0,
+                diffractionAttenuation);
         //NF S 31-133 page 46
         //if delta diffraction > 25 we take 25dB for delta diffraction
-        return Math.min(25., DiffractionAttenuation);
+        return Math.min(25., diffractionAttenuation);
     }
 
     public void computeHorizontalEdgeDiffraction(boolean somethingHideReceiver, Coordinate receiverCoord,
@@ -339,7 +338,7 @@ public class PropagationProcess implements Runnable {
                                                  List<PropagationDebugInfo> debugInfo, double[] energeticSum) {
         DiffractionWithSoilEffetZone diffDataWithSoilEffet = data.freeFieldFinder.getPath(receiverCoord, srcCoord);
         GeometryFactory factory = new GeometryFactory();
-
+        boolean singleDiffraction = diffDataWithSoilEffet.geteLength() < epsilon;
 
         double deltadistance = diffDataWithSoilEffet.getDeltaDistance();
         double e = diffDataWithSoilEffet.geteLength();
@@ -414,7 +413,6 @@ public class PropagationProcess implements Runnable {
             }
             // TODO compute mean ground planes (S,O) and (O,R)
             // R' is the projection of R on the mean ground plane (O,R)
-            double directDistanceSR = CGAlgorithms3D.distance(srcCoord, receiverCoord);
             Coordinate rPrim = new Coordinate(receiverCoord.x, receiverCoord.y, -receiverCoord.z);
             Coordinate sPrim = new Coordinate(srcCoord.x, srcCoord.y, -srcCoord.z);
             double deltaDistanceORprim = (fulldistance - CGAlgorithms3D.distance(ROZone.p0,ROZone.p1)
@@ -540,43 +538,22 @@ public class PropagationProcess implements Runnable {
                             propagationDebugInfo = new PropagationDebugInfo(path, new double[freqcount]);
                         }
                         for (int idfreq = 0; idfreq < freqcount; idfreq++) {
-
-                            double cprime;
-                            //C" NMPB 2008 P.33
-                            if (curCorner.size() == 1) {
-                                cprime = 1; //Single diffraction cprime=1
-                            } else {
-                                //Multiple diffraction
-                                //CPRIME=( 1+(5*gamma)^2)/((1/3)+(5*gamma)^2)
-                                double gammapart = Math.pow((5 * freq_lambda[idfreq]) / diffractionFullDistance, 2);
-                                cprime = (1. + gammapart) / (ONETHIRD + gammapart);
-                            }
-                            //(7.11) NMP2008 P.32
-                            double testForm = (40 / freq_lambda[idfreq])
-                                    * cprime * delta;
-                            double diffractionAttenuation = 0.;
-                            if (testForm >= -2.) {
-                                diffractionAttenuation = 10 * Math
-                                        .log10(3 + testForm);
-                            }
-                            // Limit to 0<=DiffractionAttenuation
-                            diffractionAttenuation = Math.max(0,
-                                    diffractionAttenuation);
-                            double AttenuatedWj = wj.get(idfreq);
+                            double diffractionAttenuation = computeDeltaDiffraction(idfreq, diffractionFullDistance, delta);
+                            double attenuatedWj = wj.get(idfreq);
                             // Geometric dispersion
-                            AttenuatedWj = attDistW(AttenuatedWj, SrcReceiverDistance);
+                            attenuatedWj = attDistW(attenuatedWj, SrcReceiverDistance);
                             // Apply diffraction attenuation
-                            AttenuatedWj = dbaToW(wToDba(AttenuatedWj)
+                            attenuatedWj = dbaToW(wToDba(attenuatedWj)
                                     - diffractionAttenuation);
                             // Apply atmospheric absorption and ground
-                            AttenuatedWj = attAtmW(
-                                    AttenuatedWj,
+                            attenuatedWj = attAtmW(
+                                    attenuatedWj,
                                     diffractionFullDistance,
                                     alpha_atmo[idfreq]);
 
-                            energeticSum[idfreq] += AttenuatedWj;
+                            energeticSum[idfreq] += attenuatedWj;
                             if(propagationDebugInfo != null) {
-                                propagationDebugInfo.addNoiseContribution(idfreq, AttenuatedWj);
+                                propagationDebugInfo.addNoiseContribution(idfreq, attenuatedWj);
                             }
                         }
                         if(debugInfo != null) {
