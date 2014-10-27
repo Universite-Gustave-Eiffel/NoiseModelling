@@ -333,50 +333,6 @@ public class PropagationProcess implements Runnable {
         return Math.min(25., diffractionAttenuation);
     }
 
-    /**
-     * Compute a and b linear function of the line p1 p2
-     * @param p1 p1
-     * @param p2 p2 with p2.x != p1.x
-     * @return [a,b] linear function parameters.
-     */
-    public static double[] getLinearFunction(Coordinate p1, Coordinate p2) {
-        if(Double.compare(p1.x, p2.x) == 0) {
-            throw new IllegalArgumentException("X value must be different to compute linear function parameters");
-        }
-        double a = (p2.y - p1.y) / (p2.x - p1.x);
-        double b = (p2.x * p1.y - p1.x * p2.y) / (p2.x - p1.x);
-        return new double[]{a, b};
-    }
-
-    /**
-     * NFS 31-133 P.69 Annex E
-     * @param inputLine Line coordinates in the same plan of the line formed by the first and the last point.
-     *                           X must be incremental.
-     * @return [a,b] Linear function parameters produced by least square regression of provided points.
-     */
-    public static double[] getLinearRegressionPolyline(List<Coordinate> inputLine) {
-        // Compute ZX coordinates
-        List<Coordinate> xzList = FastObstructionTest.getNewCoordinateSystem(inputLine);
-        // Linear regression
-        double A1 = 0, A2 = 0, B1 = 0, B2 = 0;
-        for(int i=0;i<xzList.size()-1;i++) {
-            final Coordinate p = xzList.get(i);
-            final Coordinate p1 = xzList.get(i + 1);
-            double ab[] = getLinearFunction(p, p1);
-            A1 += ab[0] * (Math.pow(p1.x, 3) - Math.pow(p.x, 3));
-            A2 += ab[1] * (Math.pow(p1.x, 2) - Math.pow(p.x, 2));
-            B1 += ab[0] * (Math.pow(p1.x, 2) - Math.pow(p.x, 2));
-            B2 += ab[1] * (p1.x - p.x);
-        }
-        final double A = (2. / 3) * A1 + A2;
-        final double B = B1 + 2 * B2;
-        final double XN = xzList.get(xzList.size() - 1).x;
-        final double X1 = xzList.get(0).x;
-        final double XN_X1 = XN - X1;
-        final double XN_X1_3 = Math.pow(XN_X1, 3);
-        return new double[]{(3*(2*A-B*(XN+X1)))/XN_X1_3,
-                ((2*(Math.pow(XN, 3) - Math.pow(X1, 3)))/Math.pow(XN-X1, 4)) * B - ((3*(XN+X1)) / XN_X1_3) * A};
-    }
 
     public void computeHorizontalEdgeDiffraction(boolean somethingHideReceiver, Coordinate receiverCoord,
                                                  Coordinate srcCoord, List<Double> wj,

@@ -35,7 +35,11 @@ package org.orbisgis.noisemap.core;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.LineSegment;
 import com.vividsolutions.jts.geom.LineString;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author Nicolas Fortin
@@ -119,5 +123,72 @@ public class JTSUtility {
             distToNextPt = ModifiedDelta;
         }
         return deltaPoints;
+    }
+
+    /**
+     * Compute a and b linear function of the line p1 p2
+     * @param p1 p1
+     * @param p2 p2 with p2.x != p1.x
+     * @return [a,b] linear function parameters.
+     */
+    public static double[] getLinearFunction(Coordinate p1, Coordinate p2) {
+        if(Double.compare(p1.x, p2.x) == 0) {
+            throw new IllegalArgumentException("X value must be different to compute linear function parameters");
+        }
+        double a = (p2.y - p1.y) / (p2.x - p1.x);
+        double b = (p2.x * p1.y - p1.x * p2.y) / (p2.x - p1.x);
+        return new double[]{a, b};
+    }
+
+    /**
+     * NFS 31-133 P.69 Annex E
+     * @param xzList Line coordinates in the same plan of the line formed by the first and the last point.
+     *                           X must be incremental.
+     * @return [a,b] Linear function parameters produced by least square regression of provided points.
+     */
+    public static double[] getLinearRegressionPolyline(List<Coordinate> xzList) {
+        // Linear regression
+        double A1 = 0, A2 = 0, B1 = 0, B2 = 0;
+        for(int i=0;i<xzList.size()-1;i++) {
+            final Coordinate p = xzList.get(i);
+            final Coordinate p1 = xzList.get(i + 1);
+            double ab[] = getLinearFunction(p, p1);
+            A1 += ab[0] * (Math.pow(p1.x, 3d) - Math.pow(p.x, 3d));
+            A2 += ab[1] * (Math.pow(p1.x, 2d) - Math.pow(p.x, 2d));
+            B1 += ab[0] * (Math.pow(p1.x, 2d) - Math.pow(p.x, 2d));
+            B2 += ab[1] * (p1.x - p.x);
+        }
+        final double A = (2d / 3d) * A1 + A2;
+        final double B = B1 + 2d * B2;
+        final double XN = xzList.get(xzList.size() - 1).x;
+        final double X1 = xzList.get(0).x;
+        final double XN_X1 = XN - X1;
+        final double XN_X1_3 = Math.pow(XN_X1, 3d);
+        return new double[]{(3d*(2d*A-B*(XN+X1)))/XN_X1_3,
+                ((2d*(Math.pow(XN, 3d) - Math.pow(X1, 3d)))/Math.pow(XN-X1, 4d)) * B - ((3d*(XN+X1)) / XN_X1_3) * A};
+    }
+
+    /**
+     * ChangeCoordinateSystem, use original coordinate in 3D to change into a new markland in 2D with new x' computed by algorithm and y' is original height of point.
+     * Attention this function can just be used when the points in the same plane.
+     * {@link "http://en.wikipedia.org/wiki/Rotation_matrix"}
+     * @param  listPoints X Y Z points, all should be on the same plane as first and last points.
+     * @return X Z projected points
+     */
+    public static List<Coordinate> getNewCoordinateSystem(List<Coordinate> listPoints) {
+        List<Coordinate> newCoord = new ArrayList<>(listPoints.size());
+        //get angle by ray source-receiver with the X-axis.
+        double angle = new LineSegment(listPoints.get(0), listPoints.get(listPoints.size() - 1)).angle();
+        double sin = Math.sin(angle);
+        double cos = Math.cos(angle);
+
+        for (Coordinate listPoint : listPoints) {
+            double newX = (listPoint.x - listPoints.get(0).x) * cos +
+                    (listPoint.y - listPoints.get(0).y) * sin;
+            // Read Z from building height, keep z for source and receiver
+            double z = listPoint.z;
+            newCoord.add(new Coordinate(newX, z));
+        }
+        return newCoord;
     }
 }

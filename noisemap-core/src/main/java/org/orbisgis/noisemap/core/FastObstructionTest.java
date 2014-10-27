@@ -711,7 +711,7 @@ public class FastObstructionTest {
         interPoints.add(0, new TriIdWithIntersection(-1, receiver));
         interPoints.add(new TriIdWithIntersection(-1, source));
         //change Coordinate system from 3D to 2D
-        List<Coordinate> newPoints = getNewCoordinateSystem(new ArrayList<Coordinate>(interPoints));
+        List<Coordinate> newPoints = JTSUtility.getNewCoordinateSystem(new ArrayList<Coordinate>(interPoints));
 
         double[] pointsX;
         pointsX = new double[newPoints.size()];
@@ -825,30 +825,6 @@ public class FastObstructionTest {
                     roGround, oSGround);
             return totData;
         }
-    }
-
-    /**
-     * ChangeCoordinateSystem, use original coordinate in 3D to change into a new markland in 2D with new x' computed by algorithm and y' is original height of point.
-     * Attention this function can just be used when the points in the same plane.
-     * {@link "http://en.wikipedia.org/wiki/Rotation_matrix"}
-     * @param  listPoints X Y Z points, all should be on the same plane as first and last points.
-     * @return X Z projected points
-     */
-    public static List<Coordinate> getNewCoordinateSystem(List<Coordinate> listPoints) {
-        List<Coordinate> newCoord = new ArrayList<>(listPoints.size());
-        //get angle by ray source-receiver with the X-axis.
-        double angle = new LineSegment(listPoints.get(0), listPoints.get(listPoints.size() - 1)).angle();
-        double sin = Math.sin(angle);
-        double cos = Math.cos(angle);
-
-        for (Coordinate listPoint : listPoints) {
-            double newX = (listPoint.x - listPoints.get(0).x) * cos +
-                    (listPoint.y - listPoints.get(0).y) * sin;
-            // Read Z from building height, keep z for source and receiver
-            double z = listPoint.z;
-            newCoord.add(new Coordinate(newX, z));
-        }
-        return newCoord;
     }
 
 
