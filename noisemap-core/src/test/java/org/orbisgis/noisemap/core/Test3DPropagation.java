@@ -40,15 +40,19 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Polygon;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.LinkedList;
 import java.util.Stack;
 import static junit.framework.Assert.assertFalse;
 
 import static junit.framework.Assert.assertTrue;
+import static org.junit.Assert.assertArrayEquals;
 
 
 import junit.framework.TestCase;
+import org.junit.Test;
+import org.omg.CORBA.PUBLIC_MEMBER;
 
 /**
  *
@@ -103,5 +107,17 @@ public class Test3DPropagation extends TestCase{
         FastObstructionTest manager=new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
         manager.getPath(new Coordinate(19.99292893234268, 20.007071067966407, 0.0), new Coordinate(125.0, 44.5, 3.0));
         manager.isFreeField(new Coordinate(19.99292893234268, 20.007071067966407, 0.0), new Coordinate(125.0, 44.5, 3.0));
+    }
+
+    public void testLinearRegression() {
+        double ab[] = PropagationProcess.getLinearRegressionPolyline(Arrays.asList(new Coordinate(5, 5, 5),
+                new Coordinate(10, 5, 5)));
+        assertArrayEquals(new double[]{0, 5}, ab, 1e-12);
+        ab = PropagationProcess.getLinearRegressionPolyline(Arrays.asList(new Coordinate(10, 5, 5),
+                new Coordinate(5, 5, 5)));
+        assertArrayEquals(new double[]{0, 5}, ab, 1e-12);
+        ab = PropagationProcess.getLinearRegressionPolyline(Arrays.asList(new Coordinate(5, 5, 5),
+                new Coordinate(10, 5, 10)));
+        assertArrayEquals(new double[]{1, 5}, ab, 1e-12);
     }
 }
