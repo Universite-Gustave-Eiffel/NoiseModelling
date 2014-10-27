@@ -40,25 +40,24 @@ import com.vividsolutions.jts.geom.Coordinate;
  * @author SU Qi
  * @author Nicolas Fortin
  */
-public class TriIdWithIntersection {
+public class TriIdWithIntersection extends Coordinate {
 
     private int triID;//triangle id
-    private Coordinate coorIntersection;//intersection coordinate
     private final boolean intersectionOnBuilding;//if this intersection is on building
     private final boolean intersectionOnTopography;
     private final int buildingId;
 
     public TriIdWithIntersection(int triID, Coordinate coorIntersection, boolean intersectionOnBuilding, boolean intersectionOnTopography, int buildingId) {
+        super(coorIntersection);
         this.triID = triID;
-        this.coorIntersection = coorIntersection;
         this.intersectionOnBuilding = intersectionOnBuilding;
         this.intersectionOnTopography = intersectionOnTopography;
         this.buildingId = buildingId;
     }
 
     public TriIdWithIntersection(int triID, Coordinate coorIntersection) {
+        super(coorIntersection);
         this.triID = triID;
-        this.coorIntersection = coorIntersection;
         intersectionOnBuilding = false;
         intersectionOnTopography = false;
         buildingId = 0;
@@ -76,7 +75,7 @@ public class TriIdWithIntersection {
      * @return Intersection coordinate
      */
     public Coordinate getCoorIntersection() {
-        return this.coorIntersection;
+        return this;
     }
 
     public boolean isIntersectionOnBuilding() {

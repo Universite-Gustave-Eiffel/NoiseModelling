@@ -34,6 +34,7 @@
 package org.orbisgis.noisemap.core;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -663,8 +664,8 @@ public class FastObstructionTest {
      * Get the distance of all intersections (after the filtration by algorithm Jarvis March)  between the source and the receiver to compute vertical diffraction
      * Must called after finishPolygonFeeding
      *
-     * @param p1 Coordinate receiver
-     * @param p2 Coordinate source
+     * @param receiver Coordinate receiver
+     * @param source Coordinate source
      * @return DiffractionWithSoilEffectZone
      * Double list=DiffractionWithSoilEffectZone.diffractionData : data prepared to compute diffraction
      * Double[DELTA_DISTANCE]:delta distance;
@@ -673,7 +674,7 @@ public class FastObstructionTest {
      * if Double[DELTA_DISTANCE],Double[E_LENGTH],Double[FULL_DIFFRACTION_DISTANCE],Double[Full_Distance_With_Soil_Effect] are -1. then no useful intersections.
      */
     @SuppressWarnings("unchecked")
-    public DiffractionWithSoilEffetZone getPath(Coordinate p1, Coordinate p2) {
+    public DiffractionWithSoilEffetZone getPath(Coordinate receiver, Coordinate source) {
         /*
         data for calculate 3D diffraction,éé
         first Coordinate is the coordinate after the modification coordinate system,
@@ -683,7 +684,7 @@ public class FastObstructionTest {
         LineSegment rOZone = new LineSegment(new Coordinate(-1, -1), new Coordinate(-1, -1));
         LineSegment sOZone = new LineSegment(new Coordinate(-1, -1), new Coordinate(-1, -1));
         List<TriIdWithIntersection> allInterPoints = new ArrayList<>();
-        computePropagationPath(p1, p2, false, allInterPoints);
+        computePropagationPath(receiver, source, false, allInterPoints);
         List<TriIdWithIntersection> interPoints = new ArrayList<>();
         // Keep only intersection between land and buildings.
         TriIdWithIntersection lastInter = null;
@@ -699,7 +700,8 @@ public class FastObstructionTest {
             interPoints.add(updateZ(lastInter));
         }
         //set default data
-        DiffractionWithSoilEffetZone totData = new DiffractionWithSoilEffetZone(rOZone, sOZone, -1, -1, -1);
+        DiffractionWithSoilEffetZone totData = new DiffractionWithSoilEffetZone(rOZone, sOZone, -1, -1, -1,
+                new ArrayList<LineSegment>(), new ArrayList<LineSegment>());
         if(!hasBuildingWithHeight) {
             // Cannot compute envelope is building height is not available
             return totData;
@@ -707,10 +709,11 @@ public class FastObstructionTest {
 
         //add point receiver and point source into list head and tail.
 
-        interPoints.add(0, new TriIdWithIntersection(-1, p1));
-        interPoints.add(new TriIdWithIntersection(-1, p2));
+        interPoints.add(0, new TriIdWithIntersection(-1, receiver));
+        interPoints.add(new TriIdWithIntersection(-1, source));
         //change Coordinate system from 3D to 2D
-        List<Coordinate> newPoints = getNewCoordinateSystem(interPoints);
+        // Ok cast work, it is ugly but it cost less than rewrite a new arraylist
+        List<Coordinate> newPoints = getNewCoordinateSystem((List<Coordinate>)(List<?>)interPoints);
 
         double[] pointsX;
         pointsX = new double[newPoints.size()];
@@ -777,19 +780,51 @@ public class FastObstructionTest {
             //if we have soil data
             Coordinate[] firstPart = new Coordinate[2];
             Coordinate[] lastPart = new Coordinate[2];
-            firstPart[0] = p1;
+            firstPart[0] = receiver;
             //get original coordinate for first intersection with building
             firstPart[1] = interPoints.get(1).getCoorIntersection();
 
             //get original coordinate for last intersection with building
             lastPart[0] = interPoints.get(interPoints.size() - 2).getCoorIntersection();
-            lastPart[1] = p2;
+            lastPart[1] = source;
             //receiver-first intersection zone aims to calculate ground effect
             rOZone = new LineSegment(firstPart[0], firstPart[1]);
             //last intersection-source zone aims to calculate ground effect (between rOZone and sOZone we ignore ground effect)
             sOZone = new LineSegment(lastPart[0], lastPart[1]);
-
-            totData = new DiffractionWithSoilEffetZone(rOZone, sOZone, deltaDistance, e, pathDistance);
+            // Compute ground projected path in order to compute mean ground formulae later
+            // receiver part
+            List<LineSegment> roGround = new ArrayList<>();
+            Coordinate lastCoord = new Coordinate(receiver.x, receiver.y, getHeightAtPosition(receiver));
+            for(TriIdWithIntersection tri : allInterPoints) {
+                Triangle triangle = triVertices.get(tri.getTriID());
+                double zTri = getTopoZByGiven3Points(vertices.get(triangle.getA()), vertices.get(triangle.getB()),
+                        vertices.get(triangle.getC()), tri.getCoorIntersection());
+                Coordinate groundPt = new Coordinate(tri.getCoorIntersection().x,
+                        tri.getCoorIntersection().y, zTri);
+                roGround.add(new LineSegment(lastCoord, groundPt));
+                lastCoord = groundPt;
+                if(tri.isIntersectionOnBuilding()) {
+                    break;
+                }
+            }
+            // Source part
+            List<LineSegment> oSGround = new ArrayList<>();
+            lastCoord = new Coordinate(source.x, source.y, getHeightAtPosition(source));
+            for(int index = allInterPoints.size() - 1; index >= 0; index--) {
+                TriIdWithIntersection tri = allInterPoints.get(index);
+                Triangle triangle = triVertices.get(tri.getTriID());
+                double zTri = getTopoZByGiven3Points(vertices.get(triangle.getA()), vertices.get(triangle.getB()),
+                        vertices.get(triangle.getC()), tri.getCoorIntersection());
+                Coordinate groundPt = new Coordinate(tri.getCoorIntersection().x,
+                        tri.getCoorIntersection().y, zTri);
+                oSGround.add(new LineSegment(lastCoord, groundPt));
+                lastCoord = groundPt;
+                if(tri.isIntersectionOnBuilding()) {
+                    break;
+                }
+            }
+            totData = new DiffractionWithSoilEffetZone(rOZone, sOZone, deltaDistance, e, pathDistance,
+                    roGround, oSGround);
             return totData;
         }
     }
@@ -799,18 +834,18 @@ public class FastObstructionTest {
      * Attention this function can just be used when the points in the same plane.
      * {@link "http://en.wikipedia.org/wiki/Rotation_matrix"}
      */
-    private List<Coordinate> getNewCoordinateSystem(List<TriIdWithIntersection> listPoints) {
+    private List<Coordinate> getNewCoordinateSystem(List<Coordinate> listPoints) {
         List<Coordinate> newCoord = new ArrayList<>(listPoints.size());
         //get angle by ray source-receiver with the X-axis.
-        double angle = new LineSegment(listPoints.get(0).getCoorIntersection(), listPoints.get(listPoints.size() - 1).getCoorIntersection()).angle();
+        double angle = new LineSegment(listPoints.get(0), listPoints.get(listPoints.size() - 1)).angle();
         double sin = Math.sin(angle);
         double cos = Math.cos(angle);
 
-        for (TriIdWithIntersection listPoint : listPoints) {
-            double newX = (listPoint.getCoorIntersection().x - listPoints.get(0).getCoorIntersection().x) * cos +
-                    (listPoint.getCoorIntersection().y - listPoints.get(0).getCoorIntersection().y) * sin;
+        for (Coordinate listPoint : listPoints) {
+            double newX = (listPoint.x - listPoints.get(0).x) * cos +
+                    (listPoint.y - listPoints.get(0).y) * sin;
             // Read Z from building height, keep z for source and receiver
-            double z = listPoint.getCoorIntersection().z;
+            double z = listPoint.z;
             newCoord.add(new Coordinate(newX, z));
         }
         return newCoord;

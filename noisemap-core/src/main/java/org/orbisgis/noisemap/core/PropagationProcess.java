@@ -338,8 +338,6 @@ public class PropagationProcess implements Runnable {
                                                  List<PropagationDebugInfo> debugInfo, double[] energeticSum) {
         DiffractionWithSoilEffetZone diffDataWithSoilEffet = data.freeFieldFinder.getPath(receiverCoord, srcCoord);
         GeometryFactory factory = new GeometryFactory();
-        boolean singleDiffraction = diffDataWithSoilEffet.geteLength() < epsilon;
-
         double deltadistance = diffDataWithSoilEffet.getDeltaDistance();
         double e = diffDataWithSoilEffet.geteLength();
         double fulldistance = diffDataWithSoilEffet.getFullDiffractionDistance();
@@ -681,12 +679,7 @@ public class PropagationProcess implements Runnable {
      * of sound wave.
      */
     public static double attDistW(double Wj, double distance) {
-        if (distance < 1.) // No infinite sound level
-        {
-            return Wj / (4 * Math.PI);
-        } else {
-            return Wj / (4 * Math.PI * distance * distance);
-        }
+        return Wj / (4 * Math.PI * Math.max(1, distance * distance));
     }
 
     /**

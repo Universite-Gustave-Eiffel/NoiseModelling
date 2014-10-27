@@ -35,6 +35,10 @@ package org.orbisgis.noisemap.core;
 
 import com.vividsolutions.jts.geom.LineSegment;
 import com.vividsolutions.jts.geom.LineString;
+
+import java.util.Collections;
+import java.util.List;
+
 /**
  * DiffractionWithGroundEffectZone work for FastObstructionTest,
  * aims to keep the 3D diffraction, first diffraction zone and last diffraction zone data, 
@@ -48,6 +52,8 @@ public class DiffractionWithSoilEffetZone {
     private double deltaDistance;
     private double eLength;
     private double fullDiffractionDistance;
+    private List<LineSegment> rOgroundSegments;
+    private List<LineSegment> oSgroundSegments;
 
     /**
      *
@@ -58,12 +64,29 @@ public class DiffractionWithSoilEffetZone {
      * @param fullDiffractionDistance Full path distance from receiver to source
      */
     public DiffractionWithSoilEffetZone(LineSegment rOZone, LineSegment oSZone,
-                                        double deltaDistance, double eLength, double fullDiffractionDistance) {
+                                        double deltaDistance, double eLength, double fullDiffractionDistance,
+                                        List<LineSegment> rOgroundSegments, List<LineSegment> oSgroundSegments) {
         this.rOZone = rOZone;
         this.oSZone = oSZone;
         this.deltaDistance = deltaDistance;
         this.eLength = eLength;
         this.fullDiffractionDistance = fullDiffractionDistance;
+        this.rOgroundSegments = rOgroundSegments;
+        this.oSgroundSegments = oSgroundSegments;
+    }
+
+    /**
+     * @return Ground segments between Receiver and first diffraction. The first coordinate is the receiver ground position.
+     */
+    public List<LineSegment> getrOgroundSegments() {
+        return rOgroundSegments;
+    }
+
+    /**
+     * @return Ground segments between first diffraction and source. The last coordinate is the source ground position.
+     */
+    public List<LineSegment> getoSgroundSegments() {
+        return oSgroundSegments;
     }
 
     /**
