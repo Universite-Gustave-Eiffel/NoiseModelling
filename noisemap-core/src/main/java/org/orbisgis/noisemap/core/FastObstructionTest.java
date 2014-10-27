@@ -261,7 +261,7 @@ public class FastObstructionTest {
             }
         } else {
             return new TriIdWithIntersection(-1,
-                    null,
+                    new Coordinate(),
                     false,false, 0);
         }
     }

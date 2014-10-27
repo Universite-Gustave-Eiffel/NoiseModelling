@@ -778,7 +778,7 @@ public class PropagationProcess implements Runnable {
                         propagationDebugInfo.addNoiseContribution(idfreq, AttenuatedWj);
                     }
                 }
-                if(propagationDebugInfo != null && debugInfo != null) {
+                if(propagationDebugInfo != null) {
                     debugInfo.add(propagationDebugInfo);
                 }
             }
@@ -905,7 +905,7 @@ public class PropagationProcess implements Runnable {
                     Geometry source = data.sourceGeometries.get(srcIndex);
                     List<Double> wj = data.wj_sources.get(srcIndex); // DbaToW(sdsSources.getDouble(srcIndex,dbField
                     if (source instanceof Point) {
-                        Coordinate ptpos = ((Point) source).getCoordinate();
+                        Coordinate ptpos = source.getCoordinate();
                         insertPtSource(receiverCoord, ptpos, wj, 1., srcPos, srcWj, sourcesMerger, srcSortByDist, srcDist);
                         // Compute li to equation 4.1 NMPB 2008 (June 2009)
                     } else {
