@@ -33,6 +33,7 @@
  */
 package org.orbisgis.noisemap.core;
 
+import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.LineSegment;
 import com.vividsolutions.jts.geom.LineString;
 
@@ -52,8 +53,8 @@ public class DiffractionWithSoilEffetZone {
     private double deltaDistance;
     private double eLength;
     private double fullDiffractionDistance;
-    private List<LineSegment> rOgroundSegments;
-    private List<LineSegment> oSgroundSegments;
+    private List<Coordinate> rOgroundSegments;
+    private List<Coordinate> oSgroundSegments;
 
     /**
      *
@@ -65,7 +66,7 @@ public class DiffractionWithSoilEffetZone {
      */
     public DiffractionWithSoilEffetZone(LineSegment rOZone, LineSegment oSZone,
                                         double deltaDistance, double eLength, double fullDiffractionDistance,
-                                        List<LineSegment> rOgroundSegments, List<LineSegment> oSgroundSegments) {
+                                        List<Coordinate> rOgroundSegments, List<Coordinate> oSgroundSegments) {
         this.rOZone = rOZone;
         this.oSZone = oSZone;
         this.deltaDistance = deltaDistance;
@@ -78,14 +79,14 @@ public class DiffractionWithSoilEffetZone {
     /**
      * @return Ground segments between Receiver and first diffraction. The first coordinate is the receiver ground position.
      */
-    public List<LineSegment> getrOgroundSegments() {
+    public List<Coordinate> getrOgroundSegments() {
         return rOgroundSegments;
     }
 
     /**
      * @return Ground segments between first diffraction and source. The last coordinate is the source ground position.
      */
-    public List<LineSegment> getoSgroundSegments() {
+    public List<Coordinate> getoSgroundSegments() {
         return oSgroundSegments;
     }
 

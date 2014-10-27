@@ -700,7 +700,7 @@ public class FastObstructionTest {
         }
         //set default data
         DiffractionWithSoilEffetZone totData = new DiffractionWithSoilEffetZone(rOZone, sOZone, -1, -1, -1,
-                new ArrayList<LineSegment>(), new ArrayList<LineSegment>());
+                new ArrayList<Coordinate>(), new ArrayList<Coordinate>());
         if(!hasBuildingWithHeight) {
             // Cannot compute envelope is building height is not available
             return totData;
@@ -791,32 +791,26 @@ public class FastObstructionTest {
             sOZone = new LineSegment(lastPart[0], lastPart[1]);
             // Compute ground projected path in order to compute mean ground formulae later
             // receiver part
-            List<LineSegment> roGround = new ArrayList<>();
-            Coordinate lastCoord = new Coordinate(receiver.x, receiver.y, getHeightAtPosition(receiver));
+            List<Coordinate> roGround = new ArrayList<>();
+            roGround.add(new Coordinate(receiver.x, receiver.y, getHeightAtPosition(receiver)));
             for(TriIdWithIntersection tri : allInterPoints) {
                 Triangle triangle = triVertices.get(tri.getTriID());
                 double zTri = getTopoZByGiven3Points(vertices.get(triangle.getA()), vertices.get(triangle.getB()),
                         vertices.get(triangle.getC()), tri.getCoorIntersection());
-                Coordinate groundPt = new Coordinate(tri.getCoorIntersection().x,
-                        tri.getCoorIntersection().y, zTri);
-                roGround.add(new LineSegment(lastCoord, groundPt));
-                lastCoord = groundPt;
+                roGround.add(new Coordinate(tri.getCoorIntersection().x, tri.getCoorIntersection().y, zTri));
                 if(tri.isIntersectionOnBuilding()) {
                     break;
                 }
             }
             // Source part
-            List<LineSegment> oSGround = new ArrayList<>();
-            lastCoord = new Coordinate(source.x, source.y, getHeightAtPosition(source));
+            List<Coordinate> oSGround = new ArrayList<>();
+            oSGround.add(new Coordinate(source.x, source.y, getHeightAtPosition(source)));
             for(int index = allInterPoints.size() - 1; index >= 0; index--) {
                 TriIdWithIntersection tri = allInterPoints.get(index);
                 Triangle triangle = triVertices.get(tri.getTriID());
                 double zTri = getTopoZByGiven3Points(vertices.get(triangle.getA()), vertices.get(triangle.getB()),
                         vertices.get(triangle.getC()), tri.getCoorIntersection());
-                Coordinate groundPt = new Coordinate(tri.getCoorIntersection().x,
-                        tri.getCoorIntersection().y, zTri);
-                oSGround.add(new LineSegment(lastCoord, groundPt));
-                lastCoord = groundPt;
+                oSGround.add(new Coordinate(tri.getCoorIntersection().x, tri.getCoorIntersection().y, zTri));
                 if(tri.isIntersectionOnBuilding()) {
                     break;
                 }
