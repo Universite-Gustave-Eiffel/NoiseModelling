@@ -431,7 +431,6 @@ public class PropagationProcess implements Runnable {
             // Compute source and receiver image on ground
             Coordinate rPrim = JTSUtility.makePointImage(rOFuncParam[0], rOFuncParam[1], rotatedReceiver);
             Coordinate sPrim = JTSUtility.makePointImage(oSFuncParam[0], oSFuncParam[1], rotatedSource);
-            // todo rotatedSource in OR plane
             double deltaDistanceORprim = (fulldistance - CGAlgorithms3D.distance(ROZone.p0,ROZone.p1)
                     + rPrim.distance(rotatedOr)) - rPrim.distance(rotatedSource);
             // S' is the projection of R on the mean ground plane (S,O)
