@@ -815,6 +815,8 @@ public class FastObstructionTest {
                     break;
                 }
             }
+            // As the insertion was done reversed this is actually sOGround, reverse again in order to fit with variable name
+            Collections.reverse(oSGround);
             totData = new DiffractionWithSoilEffetZone(rOZone, sOZone, deltaDistance, e, pathDistance,
                     roGround, oSGround);
             return totData;

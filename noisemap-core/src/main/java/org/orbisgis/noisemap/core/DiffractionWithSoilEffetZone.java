@@ -35,9 +35,7 @@ package org.orbisgis.noisemap.core;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.LineSegment;
-import com.vividsolutions.jts.geom.LineString;
 
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -53,8 +51,8 @@ public class DiffractionWithSoilEffetZone {
     private double deltaDistance;
     private double eLength;
     private double fullDiffractionDistance;
-    private List<Coordinate> rOgroundSegments;
-    private List<Coordinate> oSgroundSegments;
+    private List<Coordinate> rOgroundCoordinates;
+    private List<Coordinate> oSgroundCoordinates;
 
     /**
      *
@@ -66,28 +64,28 @@ public class DiffractionWithSoilEffetZone {
      */
     public DiffractionWithSoilEffetZone(LineSegment rOZone, LineSegment oSZone,
                                         double deltaDistance, double eLength, double fullDiffractionDistance,
-                                        List<Coordinate> rOgroundSegments, List<Coordinate> oSgroundSegments) {
+                                        List<Coordinate> rOgroundCoordinates, List<Coordinate> oSgroundCoordinates) {
         this.rOZone = rOZone;
         this.oSZone = oSZone;
         this.deltaDistance = deltaDistance;
         this.eLength = eLength;
         this.fullDiffractionDistance = fullDiffractionDistance;
-        this.rOgroundSegments = rOgroundSegments;
-        this.oSgroundSegments = oSgroundSegments;
+        this.rOgroundCoordinates = rOgroundCoordinates;
+        this.oSgroundCoordinates = oSgroundCoordinates;
     }
 
     /**
      * @return Ground segments between Receiver and first diffraction. The first coordinate is the receiver ground position.
      */
-    public List<Coordinate> getrOgroundSegments() {
-        return rOgroundSegments;
+    public List<Coordinate> getrOgroundCoordinates() {
+        return rOgroundCoordinates;
     }
 
     /**
      * @return Ground segments between first diffraction and source. The last coordinate is the source ground position.
      */
-    public List<Coordinate> getoSgroundSegments() {
-        return oSgroundSegments;
+    public List<Coordinate> getoSgroundCoordinates() {
+        return oSgroundCoordinates;
     }
 
     /**

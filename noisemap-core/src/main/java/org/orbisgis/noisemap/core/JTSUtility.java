@@ -168,6 +168,13 @@ public class JTSUtility {
                 ((2d*(Math.pow(XN, 3d) - Math.pow(X1, 3d)))/Math.pow(XN-X1, 4d)) * B - ((3d*(XN+X1)) / XN_X1_3) * A};
     }
 
+    public static Coordinate makePointImage(double a, double b, Coordinate point) {
+        LineSegment plane = new LineSegment(new Coordinate(point.x - 1,
+                a*(point.x - 1)+b),new Coordinate(point.x + 1,a*(point.x + 1)+b));
+        LineSegment pointPlane = new LineSegment(point, plane.project(point));
+        return pointPlane.pointAlong(2);
+    }
+
     /**
      * ChangeCoordinateSystem, use original coordinate in 3D to change into a new markland in 2D with new x' computed by algorithm and y' is original height of point.
      * Attention this function can just be used when the points in the same plane.
@@ -185,9 +192,7 @@ public class JTSUtility {
         for (Coordinate listPoint : listPoints) {
             double newX = (listPoint.x - listPoints.get(0).x) * cos +
                     (listPoint.y - listPoints.get(0).y) * sin;
-            // Read Z from building height, keep z for source and receiver
-            double z = listPoint.z;
-            newCoord.add(new Coordinate(newX, z));
+            newCoord.add(new Coordinate(newX, listPoint.z));
         }
         return newCoord;
     }

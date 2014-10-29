@@ -109,6 +109,19 @@ public class Test3DPropagation extends TestCase{
         manager.isFreeField(new Coordinate(19.99292893234268, 20.007071067966407, 0.0), new Coordinate(125.0, 44.5, 3.0));
     }
 
+    public void testChangePlan() {
+        GeometryFactory factory = new GeometryFactory();
+        List<Coordinate> coords = JTSUtility.getNewCoordinateSystem(Arrays.asList(new Coordinate(5, 5, 5), new Coordinate(10, 5, 6)));
+        List<Coordinate> coordsInv = JTSUtility.getNewCoordinateSystem(Arrays.asList(new Coordinate(10, 5, 6), new Coordinate(5, 5, 5)));
+        assertEquals(coords.get(0).y, coordsInv.get(1).y);
+        assertEquals(factory.createLineString(coords.toArray(new Coordinate[coords.size()])).getLength(),
+                factory.createLineString(coordsInv.toArray(new Coordinate[coordsInv.size()])).getLength(), 1e-12);
+        coords = JTSUtility.getNewCoordinateSystem(Arrays.asList(new Coordinate(5, 5, 5), new Coordinate(6, 5, 5.5), new Coordinate(10, 5, 6)));
+        coordsInv = JTSUtility.getNewCoordinateSystem(Arrays.asList(new Coordinate(10, 5, 6), new Coordinate(6, 5, 5.5), new Coordinate(5, 5, 5)));
+        assertEquals(factory.createLineString(coords.toArray(new Coordinate[coords.size()])).getLength(),
+                factory.createLineString(coordsInv.toArray(new Coordinate[coordsInv.size()])).getLength(), 1e-12);
+    }
+
     public void testLinearRegression() {
         double ab[] = JTSUtility.getLinearRegressionPolyline(JTSUtility.getNewCoordinateSystem(Arrays.asList(new Coordinate(5, 5, 5),
                 new Coordinate(10, 5, 5))));

@@ -44,7 +44,6 @@ import java.util.List;
 
 import com.vividsolutions.jts.algorithm.CGAlgorithms3D;
 import com.vividsolutions.jts.algorithm.NonRobustLineIntersector;
-import com.vividsolutions.jts.algorithm.CGAlgorithms;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
@@ -410,15 +409,34 @@ public class PropagationProcess implements Runnable {
                 // which becomes -3 (1-Gtrajet).
                 ASoilROMin = -3 * (1 - gPathRO);
             }
-            // TODO compute mean ground planes (S,O) and (O,R)
             // R' is the projection of R on the mean ground plane (O,R)
-            Coordinate rPrim = new Coordinate(receiverCoord.x, receiverCoord.y, -receiverCoord.z);
-            Coordinate sPrim = new Coordinate(srcCoord.x, srcCoord.y, -srcCoord.z);
+            List<Coordinate> planeCoordinates = new ArrayList<>(diffDataWithSoilEffet.getrOgroundCoordinates());
+            planeCoordinates.addAll(diffDataWithSoilEffet.getoSgroundCoordinates());
+            planeCoordinates = JTSUtility.getNewCoordinateSystem(planeCoordinates);
+            List<Coordinate> rOPlaneCoordinates = planeCoordinates.subList(0, diffDataWithSoilEffet.getrOgroundCoordinates().size());
+            List<Coordinate> oSPlaneCoordinates = planeCoordinates.subList(rOPlaneCoordinates.size(), planeCoordinates.size());
+            // Compute source position using new plane system
+            Coordinate rotatedSource = new Coordinate(oSPlaneCoordinates.get(oSPlaneCoordinates.size() - 1));
+            rotatedSource.setOrdinate(1, srcCoord.z);
+            Coordinate rotatedOs = new Coordinate(oSPlaneCoordinates.get(0));
+            rotatedOs.setOrdinate(1, OSZone.getCoordinate(0).z);
+            // Compute receiver position using new plane system
+            Coordinate rotatedReceiver = new Coordinate(rOPlaneCoordinates.get(0));
+            rotatedReceiver.setOrdinate(1, receiverCoord.z);
+            Coordinate rotatedOr = new Coordinate(rOPlaneCoordinates.get(rOPlaneCoordinates.size() - 1));
+            rotatedOr.setOrdinate(1, ROZone.getCoordinate(1).z);
+            // Compute mean ground plane
+            final double[] oSFuncParam = JTSUtility.getLinearRegressionPolyline(oSPlaneCoordinates);
+            final double[] rOFuncParam = JTSUtility.getLinearRegressionPolyline(rOPlaneCoordinates);
+            // Compute source and receiver image on ground
+            Coordinate rPrim = JTSUtility.makePointImage(rOFuncParam[0], rOFuncParam[1], rotatedReceiver);
+            Coordinate sPrim = JTSUtility.makePointImage(oSFuncParam[0], oSFuncParam[1], rotatedSource);
+            // todo rotatedSource in OR plane
             double deltaDistanceORprim = (fulldistance - CGAlgorithms3D.distance(ROZone.p0,ROZone.p1)
-                    + CGAlgorithms3D.distance(rPrim,ROZone.p1)) - CGAlgorithms3D.distance(srcCoord, rPrim);
+                    + rPrim.distance(rotatedOr)) - rPrim.distance(rotatedSource);
             // S' is the projection of R on the mean ground plane (S,O)
             double deltaDistanceSprimO = (fulldistance - CGAlgorithms3D.distance(OSZone.p0,OSZone.p1)
-                    + CGAlgorithms3D.distance(OSZone.p0,sPrim)) - CGAlgorithms3D.distance(sPrim, receiverCoord);
+                    + sPrim.distance(rotatedOs)) - sPrim.distance(rotatedReceiver);
             for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
                 double deltaDiffSR = computeDeltaDiffraction(idfreq, e, deltadistance);
                 // Compute diffraction data for deltaDiffS'R
@@ -449,7 +467,6 @@ public class PropagationProcess implements Runnable {
                     } else {
                         SoilSOAttenuation = getASoil(OSZone.p1.z, OSZone.p0.z, OSZone.getLength(), gPathPrimeOS, data.freq_lvl.get(idfreq), ASoilOSMin);
                     }
-                    // TODO use deltaDiffSprimR and deltaDiffSRprim
                     deltSoilSO = getDeltaSoil(SoilSOAttenuation,deltaDiffSprimR,deltaDiffSR);
                     deltaSoilOR = getDeltaSoil(SoilORAttenuation,deltaDiffSRprim,deltaDiffSR);
                 }
