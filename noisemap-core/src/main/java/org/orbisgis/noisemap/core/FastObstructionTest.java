@@ -582,7 +582,7 @@ public class FastObstructionTest {
      * compute diffraction.
      */
     public boolean isFreeField(Coordinate p1, Coordinate p2) {
-        return computePropagationPath(p1, p2, true, null);
+        return computePropagationPath(p1, p2, true, null, false);
     }
 
     /**
@@ -590,10 +590,11 @@ public class FastObstructionTest {
      * @param p1 Start propagation path
      * @param p2 End propagation path
      * @param stopOnIntersection Stop if the segment between p1 and p2 intersects with topography or buildings
-     * @param path Intersection list with triangle sides.
+     * @param path [out] Intersection list with triangle sides.
+     * @param includePoints Include p1 and p2 into path output
      * @return True if the propagation goes from p1 to p2 without intersection.
      */
-    private boolean computePropagationPath(Coordinate p1, Coordinate p2, boolean stopOnIntersection, List<TriIdWithIntersection> path) {
+    public boolean computePropagationPath(Coordinate p1, Coordinate p2, boolean stopOnIntersection, List<TriIdWithIntersection> path, boolean includePoints) {
         nbObstructionTest++;
         LineSegment propaLine = new LineSegment(p1, p2);
         //get receiver triangle id
@@ -620,33 +621,41 @@ public class FastObstructionTest {
         }
         double zTopoP1 = getTopoZByGiven3Points(triP1[0], triP1[1], triP1[2], p1);
         double zTopoP2 = getTopoZByGiven3Points(triP2[0], triP2[1], triP2[2], p2);
+        if(includePoints) {
+            path.add(new TriIdWithIntersection(curTriP1, new Coordinate(p1.x, p1.z, zTopoP1)));
+        }
+        try {
+            if ((!Double.isNaN(p1.z) && p1.z + epsilon < zTopoP1)
+                    || (!Double.isNaN(p2.z) && p2.z + epsilon < zTopoP2)) {
+                //Z value of origin or destination is lower than topography. FreeField is always false in this case
+                return false;
+            }
 
-        if ((!Double.isNaN(p1.z) && p1.z + epsilon < zTopoP1)
-                || (!Double.isNaN(p2.z) && p2.z + epsilon < zTopoP2)) {
-            //Z value of origin or destination is lower than topography. FreeField is always false in this case
+            HashSet<Integer> navigationHistory = new HashSet<Integer>();
+            int navigationTri = curTriP1;
+            while (navigationTri != -1) {
+                navigationHistory.add(navigationTri);
+                Coordinate[] tri = getTriangle(navigationTri);
+                if (dotInTri(p2, tri[0], tri[1], tri[2])) {
+                    return true;
+                }
+                TriIdWithIntersection propaTri = this.getNextTri(navigationTri, propaLine, navigationHistory);
+                if (path != null) {
+                    path.add(propaTri);
+                }
+                if (!stopOnIntersection || !propaTri.isIntersectionOnBuilding() && !propaTri.isIntersectionOnTopography()) {
+                    navigationTri = propaTri.getTriID();
+                } else {
+                    navigationTri = -1;
+                }
+            }
+            // Can't find a way to p2
             return false;
-        }
-
-        HashSet<Integer> navigationHistory = new HashSet<Integer>();
-        int navigationTri = curTriP1;
-        while (navigationTri != -1) {
-            navigationHistory.add(navigationTri);
-            Coordinate[] tri = getTriangle(navigationTri);
-            if (dotInTri(p2, tri[0], tri[1], tri[2])) {
-                return true;
-            }
-            TriIdWithIntersection propaTri = this.getNextTri(navigationTri, propaLine, navigationHistory);
-            if(path != null) {
-                path.add(propaTri);
-            }
-            if(!stopOnIntersection || !propaTri.isIntersectionOnBuilding() && !propaTri.isIntersectionOnTopography()) {
-                navigationTri = propaTri.getTriID();
-            } else {
-                navigationTri = -1;
+        } finally {
+            if(includePoints) {
+                path.add(new TriIdWithIntersection(curTriP2, new Coordinate(p2.x, p2.z, zTopoP2)));
             }
         }
-        // Can't find a way to p2
-        return false;
     }
 
     private TriIdWithIntersection updateZ(TriIdWithIntersection pt) {
@@ -658,6 +667,23 @@ public class FastObstructionTest {
         } else {
             return pt;
         }
+    }
+
+    /**
+     * @param allInterPoints Path between two points
+     * {@link #computePropagationPath(com.vividsolutions.jts.geom.Coordinate, com.vividsolutions.jts.geom.Coordinate,
+     * boolean, java.util.List, boolean)}
+     * @return Ground position of provided line path.
+     */
+    public List<Coordinate> getGroundProfile(List<TriIdWithIntersection> allInterPoints) {
+        List<Coordinate> groundProfile = new ArrayList<>(allInterPoints.size());
+        for(TriIdWithIntersection tri : allInterPoints) {
+            Triangle triangle = triVertices.get(tri.getTriID());
+            double zTri = getTopoZByGiven3Points(vertices.get(triangle.getA()), vertices.get(triangle.getB()),
+                    vertices.get(triangle.getC()), tri.getCoorIntersection());
+            groundProfile.add(new Coordinate(tri.getCoorIntersection().x, tri.getCoorIntersection().y, zTri));
+        }
+        return groundProfile;
     }
 
     /**
@@ -683,7 +709,7 @@ public class FastObstructionTest {
         LineSegment rOZone = new LineSegment(new Coordinate(-1, -1), new Coordinate(-1, -1));
         LineSegment sOZone = new LineSegment(new Coordinate(-1, -1), new Coordinate(-1, -1));
         List<TriIdWithIntersection> allInterPoints = new ArrayList<>();
-        computePropagationPath(receiver, source, false, allInterPoints);
+        computePropagationPath(receiver, source, false, allInterPoints, false);
         List<TriIdWithIntersection> interPoints = new ArrayList<>();
         // Keep only intersection between land and buildings.
         TriIdWithIntersection lastInter = null;
@@ -793,30 +819,28 @@ public class FastObstructionTest {
             // receiver part
             List<Coordinate> roGround = new ArrayList<>();
             roGround.add(new Coordinate(receiver.x, receiver.y, getHeightAtPosition(receiver)));
+            // Compute ground profile from R to first O (first building corner)
+            int rOIndex = 0;
             for(TriIdWithIntersection tri : allInterPoints) {
-                Triangle triangle = triVertices.get(tri.getTriID());
-                double zTri = getTopoZByGiven3Points(vertices.get(triangle.getA()), vertices.get(triangle.getB()),
-                        vertices.get(triangle.getC()), tri.getCoorIntersection());
-                roGround.add(new Coordinate(tri.getCoorIntersection().x, tri.getCoorIntersection().y, zTri));
-                if(tri.isIntersectionOnBuilding()) {
+                if (tri.isIntersectionOnBuilding()) {
                     break;
                 }
+                rOIndex++;
             }
+            roGround.addAll(getGroundProfile(allInterPoints.subList(0, rOIndex + 1)));
             // Source part
-            List<Coordinate> oSGround = new ArrayList<>();
-            oSGround.add(new Coordinate(source.x, source.y, getHeightAtPosition(source)));
+            // Compute ground profile from last O to S (last building corner)
+            int sOIndex = allInterPoints.size() - 1;
             for(int index = allInterPoints.size() - 1; index >= 0; index--) {
                 TriIdWithIntersection tri = allInterPoints.get(index);
-                Triangle triangle = triVertices.get(tri.getTriID());
-                double zTri = getTopoZByGiven3Points(vertices.get(triangle.getA()), vertices.get(triangle.getB()),
-                        vertices.get(triangle.getC()), tri.getCoorIntersection());
-                oSGround.add(new Coordinate(tri.getCoorIntersection().x, tri.getCoorIntersection().y, zTri));
-                if(tri.isIntersectionOnBuilding()) {
+                sOIndex = index;
+                if (tri.isIntersectionOnBuilding()) {
                     break;
                 }
             }
+            List<Coordinate> oSGround = getGroundProfile(allInterPoints.subList(sOIndex, allInterPoints.size()));
+            oSGround.add(new Coordinate(source.x, source.y, getHeightAtPosition(source)));
             // As the insertion was done reversed this is actually sOGround, reverse again in order to fit with variable name
-            Collections.reverse(oSGround);
             totData = new DiffractionWithSoilEffetZone(rOZone, sOZone, deltaDistance, e, pathDistance,
                     roGround, oSGround);
             return totData;

@@ -721,14 +721,12 @@ public class PropagationProcess implements Runnable {
      * @param[in] wj Source sound pressure level dB(A) by frequency band
      * @param[in] nearBuildingsWalls Walls within maxsrcdist
      * from receiver
-     * @param[in] freq_lambda Array of sound wave lambda value by frequency band
      */
     @SuppressWarnings("unchecked")
     private void receiverSourcePropa(Coordinate srcCoord,
                                      Coordinate receiverCoord, double energeticSum[],
                                      double[] alpha_atmo, List<Double> wj,
-                                     List<FastObstructionTest.Wall> nearBuildingsWalls,
-                                     double[] freq_lambda, List<PropagationDebugInfo> debugInfo) {
+                                     List<FastObstructionTest.Wall> nearBuildingsWalls, List<PropagationDebugInfo> debugInfo) {
         GeometryFactory factory = new GeometryFactory();
 
         List<Coordinate> regionCorners = fetchRegionCorners(new LineSegment(srcCoord, receiverCoord),data.maxRefDist);
@@ -773,7 +771,14 @@ public class PropagationProcess implements Runnable {
                     }
                     gPath = totRSDistance / SrcReceiverDistance;
                     //NF S 31-133 page 39
-                    double testForm = SrcReceiverDistance / (30 * (receiverCoord.z + srcCoord.z));
+                    List<TriIdWithIntersection> inters = new ArrayList<>();
+                    data.freeFieldFinder.computePropagationPath(receiverCoord, srcCoord, false, inters, true);
+                    List<Coordinate> ground = data.freeFieldFinder.getGroundProfile(inters);
+                    // Compute mean ground plan
+                    double[] ab = JTSUtility.getLinearRegressionPolyline(ground);
+                    double zs = srcCoord.z;
+                    double zr = receiverCoord.z;
+                    double testForm = SrcReceiverDistance / (30 * (zs + zr));
                     if (testForm <= 1) {
                         gPathPrime = testForm * gPath;
                     } else {
@@ -969,7 +974,7 @@ public class PropagationProcess implements Runnable {
                     List queryResult = walls.query(query);
                     receiverSourcePropa(srcCoord, receiverCoord, energeticSum,
                             alpha_atmo, wj,
-                            (List<FastObstructionTest.Wall>)queryResult, freq_lambda, debugInfo);
+                            (List<FastObstructionTest.Wall>)queryResult, debugInfo);
                 }
             }
             //srcEnergeticSum=GetGlobalLevel(nbfreq,energeticSum);
