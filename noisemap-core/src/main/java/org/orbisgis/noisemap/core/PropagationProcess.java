@@ -773,11 +773,16 @@ public class PropagationProcess implements Runnable {
                     //NF S 31-133 page 39
                     List<TriIdWithIntersection> inters = new ArrayList<>();
                     data.freeFieldFinder.computePropagationPath(receiverCoord, srcCoord, false, inters, true);
-                    List<Coordinate> ground = data.freeFieldFinder.getGroundProfile(inters);
+                    List<Coordinate> rSground = data.freeFieldFinder.getGroundProfile(inters);
+                    rSground = JTSUtility.getNewCoordinateSystem(rSground);
                     // Compute mean ground plan
-                    double[] ab = JTSUtility.getLinearRegressionPolyline(ground);
-                    double zs = srcCoord.z;
-                    double zr = receiverCoord.z;
+                    double[] ab = JTSUtility.getLinearRegressionPolyline(rSground);
+                    Coordinate rotatedReceiver = new Coordinate(rSground.get(0));
+                    rotatedReceiver.setOrdinate(1, receiverCoord.z);
+                    Coordinate rotatedSource = new Coordinate(rSground.get(rSground.size() - 1));
+                    rotatedSource.setOrdinate(1, srcCoord.z);
+                    double zr = rotatedReceiver.distance(JTSUtility.makeProjectedPoint(ab[0], ab[1], rotatedReceiver));
+                    double zs = rotatedSource.distance(JTSUtility.makeProjectedPoint(ab[0], ab[1], rotatedSource));
                     double testForm = SrcReceiverDistance / (30 * (zs + zr));
                     if (testForm <= 1) {
                         gPathPrime = testForm * gPath;

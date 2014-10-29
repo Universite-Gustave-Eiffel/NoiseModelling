@@ -168,10 +168,28 @@ public class JTSUtility {
                 ((2d*(Math.pow(XN, 3d) - Math.pow(X1, 3d)))/Math.pow(XN-X1, 4d)) * B - ((3d*(XN+X1)) / XN_X1_3) * A};
     }
 
-    public static Coordinate makePointImage(double a, double b, Coordinate point) {
+    /**
+     * Project point on y=ax+b plane
+     * @param a a plane parameter
+     * @param b b plane parameter
+     * @param point Point to project
+     * @return Projected point
+     */
+    public static Coordinate makeProjectedPoint(double a, double b, Coordinate point) {
         LineSegment plane = new LineSegment(new Coordinate(point.x - 1,
                 a*(point.x - 1)+b),new Coordinate(point.x + 1,a*(point.x + 1)+b));
-        LineSegment pointPlane = new LineSegment(point, plane.project(point));
+        return plane.project(point);
+    }
+
+    /**
+     * Make image (like line y=ax+b would be a mirror) of point
+     * @param a a linear parameter
+     * @param b b linear parameter
+     * @param point Point to project
+     * @return Mirrored point position
+     */
+    public static Coordinate makePointImage(double a, double b, Coordinate point) {
+        LineSegment pointPlane = new LineSegment(point, makeProjectedPoint(a,b, point));
         return pointPlane.pointAlong(2);
     }
 
