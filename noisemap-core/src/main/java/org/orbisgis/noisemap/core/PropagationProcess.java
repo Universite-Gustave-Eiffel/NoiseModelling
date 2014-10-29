@@ -332,6 +332,41 @@ public class PropagationProcess implements Runnable {
         return Math.min(25., diffractionAttenuation);
     }
 
+    private double[] computeDeltaDistance(DiffractionWithSoilEffetZone diffDataWithSoilEffet) {
+        final Coordinate srcCoord = diffDataWithSoilEffet.getOSZone().getCoordinate(1);
+        final Coordinate receiverCoord = diffDataWithSoilEffet.getROZone().getCoordinate(0);
+        final LineSegment OSZone = diffDataWithSoilEffet.getOSZone();
+        final LineSegment ROZone = diffDataWithSoilEffet.getROZone();
+        final double fulldistance = diffDataWithSoilEffet.getFullDiffractionDistance();
+        // R' is the projection of R on the mean ground plane (O,R)
+        List<Coordinate> planeCoordinates = new ArrayList<>(diffDataWithSoilEffet.getrOgroundCoordinates());
+        planeCoordinates.addAll(diffDataWithSoilEffet.getoSgroundCoordinates());
+        planeCoordinates = JTSUtility.getNewCoordinateSystem(planeCoordinates);
+        List<Coordinate> rOPlaneCoordinates = planeCoordinates.subList(0, diffDataWithSoilEffet.getrOgroundCoordinates().size());
+        List<Coordinate> oSPlaneCoordinates = planeCoordinates.subList(rOPlaneCoordinates.size(), planeCoordinates.size());
+        // Compute source position using new plane system
+        Coordinate rotatedSource = new Coordinate(oSPlaneCoordinates.get(oSPlaneCoordinates.size() - 1));
+        rotatedSource.setOrdinate(1, srcCoord.z);
+        Coordinate rotatedOs = new Coordinate(oSPlaneCoordinates.get(0));
+        rotatedOs.setOrdinate(1, OSZone.getCoordinate(0).z);
+        // Compute receiver position using new plane system
+        Coordinate rotatedReceiver = new Coordinate(rOPlaneCoordinates.get(0));
+        rotatedReceiver.setOrdinate(1, receiverCoord.z);
+        Coordinate rotatedOr = new Coordinate(rOPlaneCoordinates.get(rOPlaneCoordinates.size() - 1));
+        rotatedOr.setOrdinate(1, ROZone.getCoordinate(1).z);
+        // Compute mean ground plane
+        final double[] oSFuncParam = JTSUtility.getLinearRegressionPolyline(oSPlaneCoordinates);
+        final double[] rOFuncParam = JTSUtility.getLinearRegressionPolyline(rOPlaneCoordinates);
+        // Compute source and receiver image on ground
+        Coordinate rPrim = JTSUtility.makePointImage(rOFuncParam[0], rOFuncParam[1], rotatedReceiver);
+        Coordinate sPrim = JTSUtility.makePointImage(oSFuncParam[0], oSFuncParam[1], rotatedSource);
+        double deltaDistanceORprim = (fulldistance - CGAlgorithms3D.distance(ROZone.p0, ROZone.p1)
+                + rPrim.distance(rotatedOr)) - rPrim.distance(rotatedSource);
+        // S' is the projection of R on the mean ground plane (S,O)
+        double deltaDistanceSprimO = (fulldistance - CGAlgorithms3D.distance(OSZone.p0, OSZone.p1)
+                + sPrim.distance(rotatedOs)) - sPrim.distance(rotatedReceiver);
+        return new double[] {deltaDistanceSprimO, deltaDistanceORprim};
+    }
 
     public void computeHorizontalEdgeDiffraction(boolean somethingHideReceiver, Coordinate receiverCoord,
                                                  Coordinate srcCoord, List<Double> wj,
@@ -352,20 +387,25 @@ public class PropagationProcess implements Runnable {
                         diffDataWithSoilEffet.getOSZone().p0, srcCoord),
                         new double[data.freq_lvl.size()]);
             }
-            double totRODistance = 0.;
-            double totOSDistance = 0.;
             double gPathRO = 0;
             double gPathOS= 0;
             double gPathPrimeOS = 0;
             double ASoilOSMin = 0;
             double ASoilROMin = 0;
+            double deltaDistanceORprim = 0;
+            double deltaDistanceSprimO = 0;
             LineSegment ROZone = diffDataWithSoilEffet.getROZone();
             LineSegment OSZone = diffDataWithSoilEffet.getOSZone();
             if (data.geoWithSoilType != null) {
+                double[] deltaDist = computeDeltaDistance(diffDataWithSoilEffet);
+                deltaDistanceSprimO = deltaDist[0];
+                deltaDistanceORprim = deltaDist[1];
                 //test intersection with GeoSoil
                 List<EnvelopeWithIndex<Integer>> resultZ0 = rTreeOfGeoSoil.query(new Envelope(ROZone.p0, ROZone.p1));
                 List<EnvelopeWithIndex<Integer>> resultZ1 = rTreeOfGeoSoil.query(new Envelope(OSZone.p0, OSZone.p1));
                 //if receiver-first intersection part has intersection(s)
+                double totRODistance = 0.;
+                double totOSDistance = 0.;
                 if (!resultZ0.isEmpty()) {
                     //get every envelope intersected
                     for (EnvelopeWithIndex<Integer> envel : resultZ0) {
@@ -409,39 +449,7 @@ public class PropagationProcess implements Runnable {
                 // which becomes -3 (1-Gtrajet).
                 ASoilROMin = -3 * (1 - gPathRO);
             }
-            // R' is the projection of R on the mean ground plane (O,R)
-            List<Coordinate> planeCoordinates = new ArrayList<>(diffDataWithSoilEffet.getrOgroundCoordinates());
-            planeCoordinates.addAll(diffDataWithSoilEffet.getoSgroundCoordinates());
-            planeCoordinates = JTSUtility.getNewCoordinateSystem(planeCoordinates);
-            List<Coordinate> rOPlaneCoordinates = planeCoordinates.subList(0, diffDataWithSoilEffet.getrOgroundCoordinates().size());
-            List<Coordinate> oSPlaneCoordinates = planeCoordinates.subList(rOPlaneCoordinates.size(), planeCoordinates.size());
-            // Compute source position using new plane system
-            Coordinate rotatedSource = new Coordinate(oSPlaneCoordinates.get(oSPlaneCoordinates.size() - 1));
-            rotatedSource.setOrdinate(1, srcCoord.z);
-            Coordinate rotatedOs = new Coordinate(oSPlaneCoordinates.get(0));
-            rotatedOs.setOrdinate(1, OSZone.getCoordinate(0).z);
-            // Compute receiver position using new plane system
-            Coordinate rotatedReceiver = new Coordinate(rOPlaneCoordinates.get(0));
-            rotatedReceiver.setOrdinate(1, receiverCoord.z);
-            Coordinate rotatedOr = new Coordinate(rOPlaneCoordinates.get(rOPlaneCoordinates.size() - 1));
-            rotatedOr.setOrdinate(1, ROZone.getCoordinate(1).z);
-            // Compute mean ground plane
-            final double[] oSFuncParam = JTSUtility.getLinearRegressionPolyline(oSPlaneCoordinates);
-            final double[] rOFuncParam = JTSUtility.getLinearRegressionPolyline(rOPlaneCoordinates);
-            // Compute source and receiver image on ground
-            Coordinate rPrim = JTSUtility.makePointImage(rOFuncParam[0], rOFuncParam[1], rotatedReceiver);
-            Coordinate sPrim = JTSUtility.makePointImage(oSFuncParam[0], oSFuncParam[1], rotatedSource);
-            double deltaDistanceORprim = (fulldistance - CGAlgorithms3D.distance(ROZone.p0,ROZone.p1)
-                    + rPrim.distance(rotatedOr)) - rPrim.distance(rotatedSource);
-            // S' is the projection of R on the mean ground plane (S,O)
-            double deltaDistanceSprimO = (fulldistance - CGAlgorithms3D.distance(OSZone.p0,OSZone.p1)
-                    + sPrim.distance(rotatedOs)) - sPrim.distance(rotatedReceiver);
             for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
-                double deltaDiffSR = computeDeltaDiffraction(idfreq, e, deltadistance);
-                // Compute diffraction data for deltaDiffS'R
-                double deltaDiffSprimR = computeDeltaDiffraction(idfreq, e, deltaDistanceSprimO);
-                //Compute diffraction data for deltaDiffSR'
-                double deltaDiffSRprim = computeDeltaDiffraction(idfreq, e, deltaDistanceORprim);
                 double AttenuatedWj = wj.get(idfreq);
                 // Geometric dispersion
                 //fulldistance-deltdistance is the distance direct between source and receiver
@@ -449,10 +457,9 @@ public class PropagationProcess implements Runnable {
 
 
                 //if we add Ground effect
-                //delta soil
-
-                double deltSoilSO = 0.;
+                double deltSoilSO = -3;
                 double deltaSoilOR = 0.;
+                double deltaDiffSR = computeDeltaDiffraction(idfreq, e, deltadistance);
                 if (data.geoWithSoilType != null) {
                     double SoilSOAttenuation;
                     double SoilORAttenuation= 0;
@@ -466,6 +473,11 @@ public class PropagationProcess implements Runnable {
                     } else {
                         SoilSOAttenuation = getASoil(OSZone.p1.z, OSZone.p0.z, OSZone.getLength(), gPathPrimeOS, data.freq_lvl.get(idfreq), ASoilOSMin);
                     }
+                    //delta soil
+                    // Compute diffraction data for deltaDiffS'R
+                    double deltaDiffSprimR = computeDeltaDiffraction(idfreq, e, deltaDistanceSprimO);
+                    //Compute diffraction data for deltaDiffSR'
+                    double deltaDiffSRprim = computeDeltaDiffraction(idfreq, e, deltaDistanceORprim);
                     deltSoilSO = getDeltaSoil(SoilSOAttenuation,deltaDiffSprimR,deltaDiffSR);
                     deltaSoilOR = getDeltaSoil(SoilORAttenuation,deltaDiffSRprim,deltaDiffSR);
                 }
