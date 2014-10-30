@@ -43,6 +43,17 @@
             <groupId>org.orbisgis</groupId>
             <artifactId>h2spatial</artifactId>
             <version>${h2gis-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.orbisgis</groupId>
+            <artifactId>h2spatial-ext</artifactId>
+            <version>${h2gis-version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>1.7.4</version>
             <scope>test</scope>
         </dependency>
         <dependency>

@@ -33,11 +33,26 @@
  */
 package org.orbisgis.noisemap.h2;
 
+import org.h2.tools.SimpleResultSet;
+import org.h2.tools.SimpleRowSource;
+import org.h2.value.ValueDouble;
+import org.h2.value.ValueInt;
+import org.h2.value.ValueLong;
+import org.h2gis.h2spatial.TableFunctionUtil;
 import org.h2gis.h2spatialapi.AbstractFunction;
+import org.h2gis.h2spatialapi.EmptyProgressVisitor;
 import org.h2gis.h2spatialapi.ScalarFunction;
+import org.h2gis.utilities.SFSUtilities;
+import org.h2gis.utilities.TableLocation;
+import org.orbisgis.noisemap.core.PropagationResultPtRecord;
+import org.orbisgis.noisemap.core.jdbc.PointNoiseMap;
 
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
+import java.util.ArrayDeque;
+import java.util.Deque;
 
 /**
  * Sound propagation from ponctual sound sources to ponctual receivers created by a delaunay triangulation of specified
@@ -46,9 +61,11 @@ import java.sql.SQLException;
  * @author SU Qi
  */
 public class BR_PtGrid extends AbstractFunction implements ScalarFunction {
+    private static final int COLUMN_COUNT = 3;
+
     public BR_PtGrid() {
-        addProperty(PROP_REMARKS , "Sound propagation from ponctual sound sources to defined ponctual receivers.\n" +
-                "CALL BR_PtGridBR_PtGrid(buildings VARCHAR,sources VARCHAR,receivers_table VARCHAR," +
+        addProperty(PROP_REMARKS , "Sound propagation from punctual sound sources to defined punctual receivers.\n" +
+                "select * from BR_PtGridBR_PtGrid(buildings VARCHAR,sources VARCHAR,receivers_table VARCHAR," +
                 "sound_lvl_field VARCHAR,maximum_propagation_distance DOUBLE(meter)," +
                 "maximum_reflection_distance DOUBLE(meter),subdivision_level int," +
                 " sound_reflection_order int, sound_diffraction_order int, wall_absorption double)");
@@ -59,15 +76,108 @@ public class BR_PtGrid extends AbstractFunction implements ScalarFunction {
         return "noisePropagation";
     }
 
-    public static void noisePropagation(Connection connection, String destinationTable, String buildings ,
+    /**
+     * Construct a ResultSet using parameter and core noise-map.
+     * @param connection Active connection, never closed (provided and hidden by H2)
+     * @param buildings Buildings table name (polygons)
+     * @param sources Source table table (linestring or point)
+     * @param receivers_table Receiver table, has a numeric primary key (optional) and a point column.
+     * @param sound_lvl_field Field name to extract from sources table. Frequency is added on right.
+     * @param maximum_propagation_distance Propagation distance limitation.
+     * @param maximum_reflection_distance Maximum reflection distance from the source-receiver propagation line.
+     * @param sound_reflection_order Sound reflection order on walls.
+     * @param sound_diffraction_order Source diffraction order on corners.
+     * @param wall_absorption Wall absorption coefficient.
+     * @return A table with 3 columns GID(extracted from receivers table), W energy receiver by receiver, cellid cell identifier.
+     * @throws SQLException
+     */
+    public static ResultSet noisePropagation(Connection connection, String buildings ,
                                         String sources,String receivers_table,String sound_lvl_field,
                                         double maximum_propagation_distance, double maximum_reflection_distance,
-                                        int subdivision_level, int sound_reflection_order,int sound_diffraction_order,
+                                        int sound_reflection_order,int sound_diffraction_order,
                                         double wall_absorption) throws SQLException {
         if(maximum_propagation_distance < maximum_reflection_distance) {
             throw new SQLException(new IllegalArgumentException(
                     "Maximum wall seeking distance cannot be superior than maximum propagation distance"));
         }
+        SimpleResultSet rs;
+        if(TableFunctionUtil.isColumnListConnection(connection)) {
+            // Only rs columns is necessary
+            rs = new SimpleResultSet();
+            feedColumns(rs);
+        } else {
+            connection = SFSUtilities.wrapConnection(connection);
+                    PointNoiseMap noiseMap = new PointNoiseMap(TableLocation.capsIdentifier(buildings, true),
+                            TableLocation.capsIdentifier(sources, true), TableLocation.capsIdentifier(receivers_table, true));
+            noiseMap.setSound_lvl_field(sound_lvl_field);
+            noiseMap.setMaximumPropagationDistance(maximum_propagation_distance);
+            noiseMap.setMaximumReflectionDistance(maximum_reflection_distance);
+            noiseMap.setSoundReflectionOrder(sound_reflection_order);
+            noiseMap.setSoundDiffractionOrder(sound_diffraction_order);
+            noiseMap.setWallAbsorption(wall_absorption);
+            noiseMap.initialize(connection, new EmptyProgressVisitor());
+            rs = new SimpleResultSet(new PointRowSource(noiseMap, connection));
+            feedColumns(rs);
+        }
+        return rs;
+    }
 
+    private static void feedColumns(SimpleResultSet rs) {
+        rs.addColumn("GID", Types.BIGINT, 19, 20);
+        rs.addColumn("W", Types.DOUBLE, 17, 24);
+        rs.addColumn("CELL_ID", Types.INTEGER, 10, 11);
+    }
+
+    private static class PointRowSource implements SimpleRowSource {
+        private Deque<PropagationResultPtRecord> output = new ArrayDeque<PropagationResultPtRecord>();
+        private int cellI = -1;
+        private int cellJ = 0;
+        private PointNoiseMap noiseMap;
+        private Connection connection;
+
+        private PointRowSource(PointNoiseMap noiseMap, Connection connection) {
+            this.noiseMap = noiseMap;
+            this.connection = connection;
+        }
+
+        @Override
+        public Object[] readRow() throws SQLException {
+            if(output.isEmpty()) {
+                do {
+                    // Increment ids
+                    if (cellI + 1 < noiseMap.getGridDim()) {
+                        cellI++;
+                    } else {
+                        if (cellJ + 1 < noiseMap.getGridDim()) {
+                            cellI = 0;
+                            cellJ++;
+                        } else {
+                            return null;
+                        }
+                    }
+                    // Fetch next cell
+                    output.addAll(noiseMap.evaluateCell(connection, cellI, cellJ, new EmptyProgressVisitor()));
+                } while (output.isEmpty());
+            }
+            // Consume cell
+            PropagationResultPtRecord record = output.pop();
+            Object[] row = new Object[COLUMN_COUNT];
+            row[0] = ValueLong.get(record.getReceiverRecordRow());
+            row[1] = ValueDouble.get(record.getReceiverLvl());
+            row[2] = ValueInt.get(record.getCellId());
+            return row;
+        }
+
+        @Override
+        public void close() {
+            output.clear();
+        }
+
+        @Override
+        public void reset() throws SQLException {
+            cellI = -1;
+            cellJ = 0;
+            output.clear();
+        }
     }
 }
