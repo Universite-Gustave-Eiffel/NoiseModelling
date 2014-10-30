@@ -757,6 +757,8 @@ public class PropagationProcess implements Runnable {
                 double gPath = 0;
                 double gPathPrime = 0;
                 double totRSDistance = 0.;
+                double zr = receiverCoord.z;
+                double zs = srcCoord.z;
                 //will give a flag here for soil effect
                 if (data.geoWithSoilType != null) {
                     LineString RSZone = factory.createLineString(new Coordinate[]{receiverCoord, srcCoord});
@@ -781,8 +783,8 @@ public class PropagationProcess implements Runnable {
                     rotatedReceiver.setOrdinate(1, receiverCoord.z);
                     Coordinate rotatedSource = new Coordinate(rSground.get(rSground.size() - 1));
                     rotatedSource.setOrdinate(1, srcCoord.z);
-                    double zr = rotatedReceiver.distance(JTSUtility.makeProjectedPoint(ab[0], ab[1], rotatedReceiver));
-                    double zs = rotatedSource.distance(JTSUtility.makeProjectedPoint(ab[0], ab[1], rotatedSource));
+                    zr = rotatedReceiver.distance(JTSUtility.makeProjectedPoint(ab[0], ab[1], rotatedReceiver));
+                    zs = rotatedSource.distance(JTSUtility.makeProjectedPoint(ab[0], ab[1], rotatedSource));
                     double testForm = SrcReceiverDistance / (30 * (zs + zr));
                     if (testForm <= 1) {
                         gPathPrime = testForm * gPath;
@@ -801,7 +803,7 @@ public class PropagationProcess implements Runnable {
                     if (data.geoWithSoilType != null) {
                         if (Double.compare(gPath, 0) != 0) {
                             //get contribution of Ground Effect, ASoil will be a negative number so it's mean a contribution effect
-                            ASoil = getASoil(srcCoord.z, receiverCoord.z, SrcReceiverDistance, gPathPrime, data.freq_lvl.get(idfreq), ASoilmin);
+                            ASoil = getASoil(zs, zr, SrcReceiverDistance, gPathPrime, data.freq_lvl.get(idfreq), ASoilmin);
                         } else {
                             //NF S 31-133 page 41 if gPath=0 we will add 3dB for the receiver point, -3 means it's a contribution effect
                             ASoil = -3;
