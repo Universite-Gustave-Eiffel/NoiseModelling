@@ -44,9 +44,9 @@ public class PropagationResultTriRecord {
 
     private Geometry triangle;
     private double v1,v2,v3;
-    private long cellId,triId;
+    private int cellId,triId;
 
-    public PropagationResultTriRecord(Geometry triangle, double v1, double v2, double v3, long cellId, long triId) {
+    public PropagationResultTriRecord(Geometry triangle, double v1, double v2, double v3, int cellId, int triId) {
         this.triangle = triangle;
         this.v1 = v1;
         this.v2 = v2;
@@ -55,11 +55,11 @@ public class PropagationResultTriRecord {
         this.triId = triId;
     }
 
-    public long getCellId() {
+    public int getCellId() {
         return cellId;
     }
 
-    public long getTriId() {
+    public int getTriId() {
         return triId;
     }
 

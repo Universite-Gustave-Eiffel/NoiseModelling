@@ -27,7 +27,7 @@ public class PTGridTest {
 
     @BeforeClass
     public static void tearUpClass() throws Exception {
-        connection = SFSUtilities.wrapConnection(SpatialH2UT.createSpatialDataBase(TriGridTest.class.getSimpleName(), false));
+        connection = SFSUtilities.wrapConnection(SpatialH2UT.createSpatialDataBase(PTGridTest.class.getSimpleName(), false));
         org.h2gis.h2spatialext.CreateSpatialExtension.initSpatialExtension(connection);
         CreateSpatialExtension.registerFunction(connection.createStatement(), new BR_PtGrid(), "");
         CreateSpatialExtension.registerFunction(connection.createStatement(), new BR_SpectrumRepartition(), "");

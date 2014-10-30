@@ -33,8 +33,10 @@
  */
 package org.orbisgis.noisemap.h2;
 
+import com.vividsolutions.jts.geom.Polygon;
 import org.h2gis.h2spatial.CreateSpatialExtension;
 import org.h2gis.h2spatial.ut.SpatialH2UT;
+import org.h2gis.utilities.SFSUtilities;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -42,8 +44,12 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Nicolas Fortin
@@ -54,7 +60,8 @@ public class TriGridTest {
 
     @BeforeClass
     public static void tearUpClass() throws Exception {
-        connection = SpatialH2UT.createSpatialDataBase(TriGridTest.class.getSimpleName(), true);
+        connection = SFSUtilities.wrapConnection(SpatialH2UT.createSpatialDataBase(TriGridTest.class.getSimpleName(), false));
+        org.h2gis.h2spatialext.CreateSpatialExtension.initSpatialExtension(connection);
         CreateSpatialExtension.registerFunction(connection.createStatement(), new BR_TriGrid(), "");
         CreateSpatialExtension.registerFunction(connection.createStatement(), new BR_SpectrumRepartition(), "");
     }
@@ -108,6 +115,18 @@ public class TriGridTest {
                 "BR_SpectrumRepartition(4000,1,db_m) as db_m4000,\n" +
                 "BR_SpectrumRepartition(5000,1,db_m) as db_m5000 from roads_src_global;");
         // Compute noise map
-        st.execute("CREATE TABLE TEST AS SELECT * FROM BR_TRIGRID('buildings', 'road_src', 'DB_M', 50, 50,1000,4,1,100,0,0,0.2)");
+        ResultSet rs = st.executeQuery("SELECT * FROM BR_TRIGRID('buildings', 'roads_src', 'DB_M', 50, 50,1,3,50,2,1,0.2)");
+        try {
+            assertTrue(rs.next());
+            do {
+                assertTrue(rs.getDouble("W_V1") > 1);
+                assertTrue(rs.getDouble("W_V2") > 1);
+                assertTrue(rs.getDouble("W_V3") > 1);
+                assertNotNull(rs.getObject("THE_GEOM"));
+                assertTrue(rs.getObject("THE_GEOM") instanceof Polygon);
+            } while (rs.next());
+        } finally {
+            rs.close();
+        }
     }
 }

@@ -34,12 +34,22 @@
 package org.orbisgis.noisemap.h2;
 
 import org.h2.tools.SimpleResultSet;
+import org.h2.tools.SimpleRowSource;
+import org.h2gis.h2spatial.TableFunctionUtil;
 import org.h2gis.h2spatialapi.AbstractFunction;
+import org.h2gis.h2spatialapi.EmptyProgressVisitor;
 import org.h2gis.h2spatialapi.ScalarFunction;
+import org.h2gis.utilities.SFSUtilities;
+import org.h2gis.utilities.TableLocation;
+import org.orbisgis.noisemap.core.PropagationResultTriRecord;
+import org.orbisgis.noisemap.core.jdbc.TriangleNoiseMap;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
+import java.util.ArrayDeque;
+import java.util.Deque;
 
 /**
  * Sound propagation from ponctual sound sources to ponctual receivers created by a delaunay triangulation of specified
@@ -48,6 +58,8 @@ import java.sql.SQLException;
  * @author SU Qi
  */
 public class BR_TriGrid extends AbstractFunction implements ScalarFunction {
+    private static final int COLUMN_COUNT = 6;
+
     public BR_TriGrid() {
         addProperty(PROP_REMARKS , "Sound propagation from ponctual sound sources to ponctual receivers created by a " +
                 "delaunay triangulation of specified buildings geometry.\n" +
@@ -61,47 +73,116 @@ public class BR_TriGrid extends AbstractFunction implements ScalarFunction {
     public String getJavaStaticMethod() {
         return "noisePropagation";
     }
-    /*
-    public static void noisePropagation(Connection connection, String destinationTable, String buildingsTable, String sourcesTable, String sourcesTableSoundFieldName,
-                                        double maximumPropagationDistance , double maximumWallSeekingDistance,
-                                        double cellWidth, double roadsWidth, double receiversDensification,
-                                        double maximumAreaOfTriangle, int  soundReflectionOrder,
-                                        double soundDiffractionOrder, double wallAlpha ) throws SQLException {
-        if(maximumPropagationDistance < maximumWallSeekingDistance) {
-            throw new SQLException(new IllegalArgumentException(
-                    "Maximum wall seeking distance cannot be superior than maximum propagation distance"));
-        }
-
-    }
-    */
 
     /**
-     * Advantage of returning a result set is to cancel the statement
-     * @param connection
-     * @param buildingsTable
-     * @param sourcesTable
-     * @param sourcesTableSoundFieldName
-     * @param maximumPropagationDistance
-     * @param maximumWallSeekingDistance
-     * @param cellWidth
-     * @param roadsWidth
-     * @param receiversDensification
-     * @param maximumAreaOfTriangle
-     * @param soundReflectionOrder
-     * @param soundDiffractionOrder
-     * @param wallAlpha
-     * @return
+     * Construct a ResultSet using parameter and core noise-map.
+     * @param connection Active connection, never closed (provided and hidden by H2)
+     * @param buildingsTable Buildings table name (polygons)
+     * @param sourcesTable Source table table (linestring or point)
+     * @param sourcesTableSoundFieldName Field name to extract from sources table. Frequency is added on right.
+     * @param maximumPropagationDistance Propagation distance limitation.
+     * @param maximumWallSeekingDistance Maximum reflection distance from the source-receiver propagation line.
+     * @param roadsWidth Buffer without receivers applied on roads on final noise map.
+     * @param soundReflectionOrder Sound reflection order on walls.
+     * @param soundDiffractionOrder Source diffraction order on corners.
+     * @param wallAlpha Wall absorption coefficient.
+     * @return A table with 3 columns GID(extracted from receivers table), W energy receiver by receiver, cellid cell identifier.
      * @throws SQLException
      */
     public static ResultSet noisePropagation(Connection connection, String buildingsTable, String sourcesTable, String sourcesTableSoundFieldName,
                                              double maximumPropagationDistance , double maximumWallSeekingDistance,
-                                             double cellWidth, double roadsWidth, double receiversDensification,
+                                             double roadsWidth, double receiversDensification,
                                              double maximumAreaOfTriangle, int  soundReflectionOrder,
-                                             double soundDiffractionOrder, double wallAlpha ) throws SQLException {
+                                             int soundDiffractionOrder, double wallAlpha ) throws SQLException {
         if(maximumPropagationDistance < maximumWallSeekingDistance) {
             throw new SQLException(new IllegalArgumentException(
                     "Maximum wall seeking distance cannot be superior than maximum propagation distance"));
+        }        SimpleResultSet rs;
+        if(TableFunctionUtil.isColumnListConnection(connection)) {
+            // Only rs columns is necessary
+            rs = new SimpleResultSet();
+            feedColumns(rs);
+        } else {
+            connection = SFSUtilities.wrapConnection(connection);
+            TriangleNoiseMap noiseMap = new TriangleNoiseMap(TableLocation.capsIdentifier(buildingsTable, true),
+                    TableLocation.capsIdentifier(sourcesTable, true));
+            noiseMap.setSound_lvl_field(sourcesTableSoundFieldName);
+            noiseMap.setMaximumPropagationDistance(maximumPropagationDistance);
+            noiseMap.setMaximumReflectionDistance(maximumWallSeekingDistance);
+            noiseMap.setSoundReflectionOrder(soundReflectionOrder);
+            noiseMap.setSoundDiffractionOrder(soundDiffractionOrder);
+            noiseMap.setMaximumArea(maximumAreaOfTriangle);
+            noiseMap.setSourceDensification(receiversDensification);
+            noiseMap.setRoadWidth(roadsWidth);
+            noiseMap.setWallAbsorption(wallAlpha);
+            noiseMap.initialize(connection, new EmptyProgressVisitor());
+            rs = new SimpleResultSet(new TriangleRowSource(noiseMap, connection));
+            feedColumns(rs);
         }
-        return new SimpleResultSet();
+        return rs;
+    }
+    private static void feedColumns(SimpleResultSet rs) {
+        rs.addColumn("TRI_ID", Types.INTEGER, 10, 11);
+        rs.addColumn("THE_GEOM", Types.JAVA_OBJECT, "GEOMETRY", 0, 0);
+        rs.addColumn("W_V1", Types.DOUBLE, 17, 24);
+        rs.addColumn("W_V2", Types.DOUBLE, 17, 24);
+        rs.addColumn("W_V3", Types.DOUBLE, 17, 24);
+        rs.addColumn("CELL_ID", Types.INTEGER, 10, 11);
+    }
+
+    private static class TriangleRowSource implements SimpleRowSource {
+        private Deque<PropagationResultTriRecord> records = new ArrayDeque<PropagationResultTriRecord>();
+        private int cellI = -1;
+        private int cellJ = 0;
+        private TriangleNoiseMap noiseMap;
+        private Connection connection;
+
+        private TriangleRowSource(TriangleNoiseMap noiseMap, Connection connection) {
+            this.noiseMap = noiseMap;
+            this.connection = connection;
+        }
+
+        @Override
+        public Object[] readRow() throws SQLException {
+            if(records.isEmpty()) {
+                do {
+                    // Increment ids
+                    if (cellI + 1 < noiseMap.getGridDim()) {
+                        cellI++;
+                    } else {
+                        if (cellJ + 1 < noiseMap.getGridDim()) {
+                            cellI = 0;
+                            cellJ++;
+                        } else {
+                            return null;
+                        }
+                    }
+                    // Fetch next cell
+                    records.addAll(noiseMap.evaluateCell(connection, cellI, cellJ, new EmptyProgressVisitor()));
+                } while (records.isEmpty());
+            }
+            // Consume cell
+            PropagationResultTriRecord record = records.pop();
+            Object[] row = new Object[COLUMN_COUNT];
+            row[0] = record.getTriId();
+            row[1] = record.getTriangle();
+            row[2] = record.getV1();
+            row[3] = record.getV2();
+            row[4] = record.getV3();
+            row[5] = record.getCellId();
+            return row;
+        }
+
+        @Override
+        public void close() {
+            records.clear();
+        }
+
+        @Override
+        public void reset() throws SQLException {
+            cellI = -1;
+            cellJ = 0;
+            records.clear();
+        }
     }
 }

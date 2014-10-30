@@ -35,9 +35,6 @@ package org.orbisgis.noisemap.h2;
 
 import org.h2.tools.SimpleResultSet;
 import org.h2.tools.SimpleRowSource;
-import org.h2.value.ValueDouble;
-import org.h2.value.ValueInt;
-import org.h2.value.ValueLong;
 import org.h2gis.h2spatial.TableFunctionUtil;
 import org.h2gis.h2spatialapi.AbstractFunction;
 import org.h2gis.h2spatialapi.EmptyProgressVisitor;
@@ -162,9 +159,9 @@ public class BR_PtGrid extends AbstractFunction implements ScalarFunction {
             // Consume cell
             PropagationResultPtRecord record = output.pop();
             Object[] row = new Object[COLUMN_COUNT];
-            row[0] = ValueLong.get(record.getReceiverRecordRow());
-            row[1] = ValueDouble.get(record.getReceiverLvl());
-            row[2] = ValueInt.get(record.getCellId());
+            row[0] = record.getReceiverRecordRow();
+            row[1] = record.getReceiverLvl();
+            row[2] = record.getCellId();
             return row;
         }
 

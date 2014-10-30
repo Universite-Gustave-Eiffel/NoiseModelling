@@ -47,7 +47,6 @@ import java.util.Stack;
  * @author SU Qi
  */
 public class TriangleNoiseMap extends JdbcNoiseMap {
-    private String destinationTable = "";
     private final static double BUILDING_BUFFER = 0.5;
     private Logger logger = LoggerFactory.getLogger(TriangleNoiseMap.class);
     private double roadWidth = 2;
@@ -58,14 +57,11 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
 
 
     /**
-     *
-     * @param destinationTable Where to write result
      * @param buildingsTableName Buildings table
      * @param sourcesTableName Source table name
      */
-    public TriangleNoiseMap(String destinationTable, String buildingsTableName, String sourcesTableName) {
+    public TriangleNoiseMap(String buildingsTableName, String sourcesTableName) {
         super(buildingsTableName, sourcesTableName);
-        this.destinationTable = destinationTable;
     }
 
     private void explodeAndAddPolygon(Geometry intersectedGeometry,
@@ -113,7 +109,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         }
         // Reduce small artifacts to avoid, shortest geometry to be
         // over-triangulated
-        LinkedList<Geometry> toUniteFinal = new LinkedList<Geometry>();
+        LinkedList<Geometry> toUniteFinal = new LinkedList<>();
         if (!toUnite.isEmpty()) {
             Geometry bufferBuildings = merge(toUnite, BUILDING_BUFFER);
             // Remove small artifacts due to buildingsTableName buffer
@@ -295,7 +291,6 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
             translatedVertex.setOrdinate(2, z);
             vertices.add(translatedVertex);
         }
-        // TODO use topographic data to define Z of receivers (offset defined by user default to )
         List<Triangle> triangles = new ArrayList<>();
         for(Triangle triangle : cellMesh.getTriangles()) {
             if(triangle.getBuidlingID() == 0) {
