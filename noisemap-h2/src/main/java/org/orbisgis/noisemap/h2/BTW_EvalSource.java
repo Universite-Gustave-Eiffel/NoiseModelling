@@ -34,16 +34,13 @@
 package org.orbisgis.noisemap.h2;
 
 import org.h2gis.h2spatialapi.DeterministicScalarFunction;
-import org.h2gis.h2spatialapi.Function;
 import org.orbisgis.noisemap.core.EvalTramwaySource;
-import org.osgi.service.component.annotations.Component;
 
 /**
  * Return the dB(A) value corresponding to real speed in km/h (not commercial speed),tramway by hour parameters.
  * Ground category is one of theses (0:Grass,1:Rigid).Anti-vibration system can be floating panels placed under railways.
  * @author Nicolas Fortin
  */
-@Component(service = Function.class)
 public class BTW_EvalSource extends DeterministicScalarFunction {
 
     public BTW_EvalSource() {

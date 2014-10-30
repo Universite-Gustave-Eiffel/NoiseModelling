@@ -34,16 +34,13 @@
 package org.orbisgis.noisemap.h2;
 
 import org.h2gis.h2spatialapi.DeterministicScalarFunction;
-import org.h2gis.h2spatialapi.Function;
 import org.orbisgis.noisemap.core.EvaluateRoadSource;
 import org.orbisgis.noisemap.core.EvaluateRoadSourceParameter;
-import org.osgi.service.component.annotations.Component;
 
 /**
  * Return the dB(A) value corresponding to the parameters.You can specify from 3 to 10 parameters.
  * @author Nicolas Fortin
  */
-@Component(service = Function.class)
 public class BR_EvalSource extends DeterministicScalarFunction {
 
     public BR_EvalSource() {

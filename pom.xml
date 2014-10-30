@@ -25,6 +25,7 @@
     <modules>
         <module>noisemap-core</module>
         <module>noisemap-h2</module>
+        <module>noisemap-h2-osgi</module>
   </modules>
     <scm>
         <connection>scm:git:https://github.com/irstv/noisemap.git</connection>

@@ -6,9 +6,9 @@
     <groupId>org.orbisgis</groupId>
     <version>1.2.0-SNAPSHOT</version>
   </parent>
-    <artifactId>noisemap-h2</artifactId>
-    <name>noisemap-h2</name>
-    <description>Produce noise maps using the French method NMPB 2008. This bundle is the h2 database declaration</description>
+    <artifactId>noisemap-h2-osgi</artifactId>
+    <name>noisemap-h2-osgi</name>
+    <description>Declare sql methods in OSGi</description>
     <packaging>bundle</packaging>
     <build>
         <plugins>
@@ -19,7 +19,7 @@
                 <extensions>true</extensions>
                 <configuration>
                     <instructions>
-                        <Fragment-Host>org.h2</Fragment-Host>
+                        <Bundle-Activator>org.orbisgis.noisemap.h2osgi.Activator</Bundle-Activator>
                     </instructions>
                 </configuration>
             </plugin>
@@ -31,30 +31,14 @@
     <dependencies>
         <dependency>
             <groupId>org.orbisgis</groupId>
-            <artifactId>noisemap-core</artifactId>
+            <artifactId>noisemap-h2</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.orbisgis</groupId>
-            <artifactId>h2spatial-api</artifactId>
-            <version>${h2gis-version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.orbisgis</groupId>
-            <artifactId>h2spatial</artifactId>
-            <version>${h2gis-version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.10</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <version>${h2-version}</version>
+            <groupId>org.osgi</groupId>
+            <artifactId>org.osgi.core</artifactId>
+            <version>4.3.1</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 </project>

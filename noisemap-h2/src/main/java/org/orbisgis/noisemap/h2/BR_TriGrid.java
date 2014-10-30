@@ -35,9 +35,7 @@ package org.orbisgis.noisemap.h2;
 
 import org.h2.tools.SimpleResultSet;
 import org.h2gis.h2spatialapi.AbstractFunction;
-import org.h2gis.h2spatialapi.Function;
 import org.h2gis.h2spatialapi.ScalarFunction;
-import org.osgi.service.component.annotations.Component;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -49,7 +47,6 @@ import java.sql.SQLException;
  * @author Nicolas Fortin
  * @author SU Qi
  */
-@Component(service = Function.class)
 public class BR_TriGrid extends AbstractFunction implements ScalarFunction {
     public BR_TriGrid() {
         addProperty(PROP_REMARKS , "Sound propagation from ponctual sound sources to ponctual receivers created by a " +

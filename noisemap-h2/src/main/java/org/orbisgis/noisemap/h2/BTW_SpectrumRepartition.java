@@ -34,15 +34,12 @@
 package org.orbisgis.noisemap.h2;
 
 import org.h2gis.h2spatialapi.DeterministicScalarFunction;
-import org.h2gis.h2spatialapi.Function;
 import org.orbisgis.noisemap.core.TramSpectrumRepartition;
-import org.osgi.service.component.annotations.Component;
 
 /**
  * Return the dB(A) value corresponding to the parameters.
  * @author Nicolas Fortin
  */
-@Component(service = Function.class)
 public class BTW_SpectrumRepartition extends DeterministicScalarFunction {
 
     public BTW_SpectrumRepartition() {
