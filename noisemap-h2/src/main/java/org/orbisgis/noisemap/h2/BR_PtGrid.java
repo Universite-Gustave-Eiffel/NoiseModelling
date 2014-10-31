@@ -52,7 +52,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 
 /**
- * Sound propagation from ponctual sound sources to ponctual receivers created by a delaunay triangulation of specified
+ * Sound propagation from punctual sound sources to punctual receivers created by a delaunay triangulation of specified
  * buildings geometry
  * @author Nicolas Fortin
  * @author SU Qi
