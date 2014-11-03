@@ -89,7 +89,7 @@ public class PTGridTest {
         st.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT(15 0)')");
         // Compute noise map
         st.execute("DROP TABLE IF EXISTS TEST");
-        ResultSet rs = st.executeQuery("SELECT * FROM BR_PTGRID('buildings', 'roads_src','receivers', 'DB_M', 50,50, 2,2,0.2)");
+        ResultSet rs = st.executeQuery("SELECT * FROM BR_PTGRID('buildings', 'roads_src','receivers', 'DB_M','', 50,50, 2,2,0.2)");
         try {
             assertTrue(rs.next());
             assertEquals(1l, rs.getLong("GID"));

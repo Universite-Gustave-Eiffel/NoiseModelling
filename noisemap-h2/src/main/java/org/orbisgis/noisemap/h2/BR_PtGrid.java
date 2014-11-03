@@ -63,7 +63,7 @@ public class BR_PtGrid extends AbstractFunction implements ScalarFunction {
     public BR_PtGrid() {
         addProperty(PROP_REMARKS , "Sound propagation from punctual sound sources to defined punctual receivers.\n" +
                 "select * from BR_PtGridBR_PtGrid(buildings VARCHAR,sources VARCHAR,receivers_table VARCHAR," +
-                "sound_lvl_field VARCHAR,maximum_propagation_distance DOUBLE(meter)," +
+                "sound_lvl_field VARCHAR,ground_type_table VARCHAR, maximum_propagation_distance DOUBLE(meter)," +
                 "maximum_reflection_distance DOUBLE(meter),subdivision_level int," +
                 " sound_reflection_order int, sound_diffraction_order int, wall_absorption double)");
     }
@@ -75,24 +75,27 @@ public class BR_PtGrid extends AbstractFunction implements ScalarFunction {
 
     /**
      * Construct a ResultSet using parameter and core noise-map.
-     * @param connection Active connection, never closed (provided and hidden by H2)
-     * @param buildings Buildings table name (polygons)
-     * @param sources Source table table (linestring or point)
-     * @param receivers_table Receiver table, has a numeric primary key (optional) and a point column.
-     * @param sound_lvl_field Field name to extract from sources table. Frequency is added on right.
+     *
+     * @param connection                   Active connection, never closed (provided and hidden by H2)
+     * @param buildings                    Buildings table name (polygons)
+     * @param sources                      Source table table (linestring or point)
+     * @param receivers_table              Receiver table, has a numeric primary key (optional) and a point column.
+     * @param sound_lvl_field              Field name to extract from sources table. Frequency is added on right.
+     * @param ground_type                  Soil category. Table with polygon and a numeric column 'G'
      * @param maximum_propagation_distance Propagation distance limitation.
-     * @param maximum_reflection_distance Maximum reflection distance from the source-receiver propagation line.
-     * @param sound_reflection_order Sound reflection order on walls.
-     * @param sound_diffraction_order Source diffraction order on corners.
-     * @param wall_absorption Wall absorption coefficient.
-     * @return A table with 3 columns GID(extracted from receivers table), W energy receiver by receiver, cellid cell identifier.
+     * @param maximum_reflection_distance  Maximum reflection distance from the source-receiver propagation line.
+     * @param sound_reflection_order       Sound reflection order on walls.
+     * @param sound_diffraction_order      Source diffraction order on corners.
+     * @param wall_absorption              Wall absorption coefficient.
+     * @return A table with 3 columns GID(extracted from receivers table), W energy receiver by receiver,
+     * cellid cell identifier.
      * @throws SQLException
      */
-    public static ResultSet noisePropagation(Connection connection, String buildings ,
-                                        String sources,String receivers_table,String sound_lvl_field,
-                                        double maximum_propagation_distance, double maximum_reflection_distance,
-                                        int sound_reflection_order,int sound_diffraction_order,
-                                        double wall_absorption) throws SQLException {
+    public static ResultSet noisePropagation(Connection connection, String buildings, String sources,
+                                             String receivers_table, String sound_lvl_field, String ground_type,
+                                             double maximum_propagation_distance, double maximum_reflection_distance,
+                                             int sound_reflection_order, int sound_diffraction_order,
+                                             double wall_absorption) throws SQLException {
         if(maximum_propagation_distance < maximum_reflection_distance) {
             throw new SQLException(new IllegalArgumentException(
                     "Maximum wall seeking distance cannot be superior than maximum propagation distance"));
@@ -108,6 +111,7 @@ public class BR_PtGrid extends AbstractFunction implements ScalarFunction {
                             TableLocation.capsIdentifier(sources, true), TableLocation.capsIdentifier(receivers_table, true));
             noiseMap.setSound_lvl_field(sound_lvl_field);
             noiseMap.setMaximumPropagationDistance(maximum_propagation_distance);
+            noiseMap.setSoilTableName(ground_type);
             noiseMap.setMaximumReflectionDistance(maximum_reflection_distance);
             noiseMap.setSoundReflectionOrder(sound_reflection_order);
             noiseMap.setSoundDiffractionOrder(sound_diffraction_order);

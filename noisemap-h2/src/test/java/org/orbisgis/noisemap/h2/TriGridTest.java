@@ -134,7 +134,7 @@ public class TriGridTest {
     public void testMultipleBuildings() throws SQLException {
         st.execute("RUNSCRIPT FROM '"+TriGridTest.class.getResource("multiple_buildings.sql").getFile()+"'");
         st.execute("drop table if exists tri_lvl");
-        ResultSet rs = st.executeQuery("select * from BR_TRIGRID('BUILDINGS', 'SOUND_SOURCE', 'DB_M', 1000, 100, 2, 3, 0, 2, 1, 0.2)");
+        ResultSet rs = st.executeQuery("select * from BR_TRIGRID('BUILDINGS', 'SOUND_SOURCE', 'DB_M', '', 1000, 100, 2, 3, 0, 2, 1, 0.2)");
         try {
             assertTrue(rs.next());
             do {

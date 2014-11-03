@@ -12,6 +12,7 @@ import java.util.List;
 
 /**
  * Iterator through mirrored receiver
+ * TODO Use Binary Space Partitioning in order to optimise wall orientation filter.
  * @author Nicolas Fortin
  */
 public class MirrorReceiverIterator implements Iterator<MirrorReceiverResult> {

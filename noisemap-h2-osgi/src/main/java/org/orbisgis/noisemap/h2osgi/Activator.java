@@ -5,6 +5,7 @@ import org.orbisgis.noisemap.h2.BR_EvalSource;
 import org.orbisgis.noisemap.h2.BR_PtGrid;
 import org.orbisgis.noisemap.h2.BR_SpectrumRepartition;
 import org.orbisgis.noisemap.h2.BR_TriGrid;
+import org.orbisgis.noisemap.h2.BR_TriGrid3D;
 import org.orbisgis.noisemap.h2.BTW_EvalSource;
 import org.orbisgis.noisemap.h2.BTW_SpectrumRepartition;
 import org.osgi.framework.BundleActivator;
@@ -21,6 +22,7 @@ public class Activator implements BundleActivator {
         reg(ctx, new BR_EvalSource());
         reg(ctx, new BR_SpectrumRepartition());
         reg(ctx, new BR_TriGrid());
+        reg(ctx, new BR_TriGrid3D());
         reg(ctx, new BTW_EvalSource());
         reg(ctx, new BTW_SpectrumRepartition());
     }
