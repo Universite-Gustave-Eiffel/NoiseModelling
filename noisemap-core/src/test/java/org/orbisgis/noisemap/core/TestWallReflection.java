@@ -192,4 +192,10 @@ public class TestWallReflection extends TestCase {
         it.skipLevel();
         assertFalse(it.hasNext());
     }
+
+    public void testSingleWall() {
+        MirrorReceiverIterator.CrossTableIterator it = new MirrorReceiverIterator.CrossTableIterator(2, 1);
+        equalsTest(new int[]{0}, it.next());
+        assertFalse(it.hasNext());
+    }
 }

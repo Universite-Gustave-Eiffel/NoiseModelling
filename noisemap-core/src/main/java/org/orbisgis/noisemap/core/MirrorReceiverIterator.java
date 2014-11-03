@@ -211,7 +211,7 @@ public class MirrorReceiverIterator implements Iterator<MirrorReceiverResult> {
         public List<Integer> next() {
             List<Integer> currentIndex = new ArrayList<>(current);
             // Go to next value
-            if(current.size() < maxDepth) {
+            if(current.size() < maxDepth && wallCount > 1) {
                 current.add(nextVal(-1, current.get(current.size() - 1)));
             } else {
                 do {

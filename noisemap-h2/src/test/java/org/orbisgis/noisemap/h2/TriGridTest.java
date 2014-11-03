@@ -60,7 +60,7 @@ public class TriGridTest {
 
     @BeforeClass
     public static void tearUpClass() throws Exception {
-        connection = SFSUtilities.wrapConnection(SpatialH2UT.createSpatialDataBase(TriGridTest.class.getSimpleName(), false));
+        connection = SFSUtilities.wrapConnection(SpatialH2UT.createSpatialDataBase(TriGridTest.class.getSimpleName(), false, "MV_STORE=FALSE"));
         org.h2gis.h2spatialext.CreateSpatialExtension.initSpatialExtension(connection);
         CreateSpatialExtension.registerFunction(connection.createStatement(), new BR_TriGrid(), "");
         CreateSpatialExtension.registerFunction(connection.createStatement(), new BR_SpectrumRepartition(), "");
@@ -115,13 +115,32 @@ public class TriGridTest {
                 "BR_SpectrumRepartition(4000,1,db_m) as db_m4000,\n" +
                 "BR_SpectrumRepartition(5000,1,db_m) as db_m5000 from roads_src_global;");
         // Compute noise map
-        ResultSet rs = st.executeQuery("SELECT * FROM BR_TRIGRID('buildings', 'roads_src', 'DB_M', 50, 50,1,3,50,2,1,0.2)");
+        ResultSet rs = st.executeQuery("SELECT * FROM BR_TRIGRID('buildings', 'roads_src', 'DB_M', 700, 100,1,3,50,2,1,0.2)");
         try {
             assertTrue(rs.next());
             do {
                 assertTrue(rs.getDouble("W_V1") > 1);
                 assertTrue(rs.getDouble("W_V2") > 1);
                 assertTrue(rs.getDouble("W_V3") > 1);
+                assertNotNull(rs.getObject("THE_GEOM"));
+                assertTrue(rs.getObject("THE_GEOM") instanceof Polygon);
+            } while (rs.next());
+        } finally {
+            rs.close();
+        }
+    }
+
+    @Test
+    public void testMultipleBuildings() throws SQLException {
+        st.execute("RUNSCRIPT FROM '"+TriGridTest.class.getResource("multiple_buildings.sql").getFile()+"'");
+        st.execute("drop table if exists tri_lvl");
+        ResultSet rs = st.executeQuery("select * from BR_TRIGRID('BUILDINGS', 'SOUND_SOURCE', 'DB_M', 1000, 100, 2, 3, 0, 2, 1, 0.2)");
+        try {
+            assertTrue(rs.next());
+            do {
+                assertTrue("Expected > 1 get "+rs.getDouble("W_V2"),rs.getDouble("W_V1") > 1);
+                assertTrue("Expected > 1 get "+rs.getDouble("W_V2"),rs.getDouble("W_V2") > 1);
+                assertTrue("Expected > 1 get "+rs.getDouble("W_V2"),rs.getDouble("W_V3") > 1);
                 assertNotNull(rs.getObject("THE_GEOM"));
                 assertTrue(rs.getObject("THE_GEOM") instanceof Polygon);
             } while (rs.next());

@@ -231,15 +231,21 @@ public class MeshBuilder {
             if(mergedBuilding instanceof Polygon) {
                 List polyInters = buildingsRtree.query(mergedBuilding.getEnvelopeInternal());
                 double minHeight = Double.MAX_VALUE;
+                boolean foundHeight = false;
                 for (Object id : polyInters) {
                     if (id instanceof Integer) {
                         PolygonWithHeight inPoly = polygonWithHeight.get((int) id);
-                        if (inPoly.getGeometry().intersects(mergedBuilding)) {
+                        if (inPoly.hasHeight && inPoly.getGeometry().intersects(mergedBuilding)) {
                             minHeight = Math.min(minHeight, inPoly.getHeight());
+                            foundHeight = true;
                         }
                     }
                 }
-                mergedPolygonWithHeight.add(new PolygonWithHeight(mergedBuilding, minHeight));
+                if(foundHeight) {
+                    mergedPolygonWithHeight.add(new PolygonWithHeight(mergedBuilding, minHeight));
+                } else {
+                    mergedPolygonWithHeight.add(new PolygonWithHeight(mergedBuilding));
+                }
             }
         }
         polygonWithHeight = mergedPolygonWithHeight;
