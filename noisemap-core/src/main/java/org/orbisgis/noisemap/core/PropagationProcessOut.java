@@ -56,6 +56,10 @@ public class PropagationProcessOut {
         this.verticesSoundLevel = verticesSoundLevel;
     }
 
+    public void setVerticeSoundLevel(int receiverId, double value) {
+        verticesSoundLevel[receiverId] = value;
+    }
+
 	public synchronized long getNb_couple_receiver_src() {
 		return nb_couple_receiver_src;
 	}

@@ -218,6 +218,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         } else {
             cellMesh.finishPolygonFeeding(cellEnvelope);
         }
+        logger.info("End delaunay");
     }
 
     public Collection<PropagationResultTriRecord> evaluateCell(Connection connection,int cellI, int cellJ, ProgressVisitor progression) throws SQLException {

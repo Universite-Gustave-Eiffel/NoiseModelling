@@ -41,6 +41,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import com.vividsolutions.jts.algorithm.CGAlgorithms3D;
 import com.vividsolutions.jts.algorithm.NonRobustLineIntersector;
@@ -1038,30 +1039,30 @@ public class PropagationProcess implements Runnable {
             initStructures();
 
             // Computed sound level of vertices
-            double verticesSoundLevel[] = new double[data.receivers.size()];
+            dataOut.setVerticesSoundLevel(new double[data.receivers.size()]);
 
             // For each vertices, find sources where the distance is within
             // maxSrcDist meters
             ProgressVisitor propaProcessProgression = data.cellProg;
-            int idReceiver = 0;
-            for (Coordinate receiverCoord : data.receivers) {
-                double energeticSum[] = new double[data.freq_lvl.size()];
-                for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
-                    energeticSum[idfreq] = 0.0;
-                }
-                computeSoundLevelAtPosition(receiverCoord, energeticSum, debugInfo);
-                // Save the sound level at this receiver
-                // Do the sum of all frequency bands
-                double allfreqlvl = 0;
-                for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
-                    allfreqlvl += energeticSum[idfreq];
-                }
-                allfreqlvl = Math.max(allfreqlvl, BASE_LVL);
-                verticesSoundLevel[idReceiver] = allfreqlvl;
-                propaProcessProgression.endStep();
-                idReceiver++;
+
+
+            Runtime runtime = Runtime.getRuntime();
+            int splitCount = runtime.availableProcessors();
+            ThreadPool threadManager = new ThreadPool(
+                    splitCount,
+                    splitCount + 1, Long.MAX_VALUE,
+                    TimeUnit.SECONDS);
+            int maximumReceiverBatch = (int)Math.ceil(data.receivers.size() / (double)splitCount);
+            int endReceiverRange = 0;
+            while(endReceiverRange < data.receivers.size()) {
+                int newEndReceiver = Math.min(endReceiverRange + maximumReceiverBatch, data.receivers.size());
+                RangeReceiversComputation batchThread = new RangeReceiversComputation(endReceiverRange,
+                        newEndReceiver, this, propaProcessProgression, debugInfo);
+                threadManager.executeBlocking(batchThread);
+                endReceiverRange = newEndReceiver;
             }
-            dataOut.setVerticesSoundLevel(verticesSoundLevel);
+            threadManager.shutdown();
+            threadManager.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
             dataOut.appendFreeFieldTestCount(data.freeFieldFinder.getNbObstructionTest());
             dataOut.appendCellComputed();
             dataOut.appendDiffractionPath(diffractionPathCount);
@@ -1129,4 +1130,38 @@ public class PropagationProcess implements Runnable {
         return -20 * Math.log10(1 + (Math.pow(10, -aSoil / 20) - 1)) * Math.pow(10, -(deltaDifPrim - deltaDif)/20);
     }
 
+    private static class RangeReceiversComputation implements Runnable {
+        private final int startReceiver; // Included
+        private final int endReceiver; // Excluded
+        private PropagationProcess propagationProcess;
+        private List<PropagationDebugInfo> debugInfo;
+        private ProgressVisitor progressVisitor;
+
+        private RangeReceiversComputation(int startReceiver, int endReceiver, PropagationProcess propagationProcess, ProgressVisitor progressVisitor, List<PropagationDebugInfo> debugInfo) {
+            this.startReceiver = startReceiver;
+            this.endReceiver = endReceiver;
+            this.propagationProcess = propagationProcess;
+            this.debugInfo = debugInfo;
+            this.progressVisitor = progressVisitor;
+        }
+
+        @Override
+        public void run() {
+            for (int idReceiver = startReceiver; idReceiver < endReceiver; idReceiver++) {
+                Coordinate receiverCoord = propagationProcess.data.receivers.get(idReceiver);
+                double energeticSum[] = new double[propagationProcess.data.freq_lvl.size()];
+                Arrays.fill(energeticSum, 0d);
+                propagationProcess.computeSoundLevelAtPosition(receiverCoord, energeticSum, debugInfo);
+                // Save the sound level at this receiver
+                // Do the sum of all frequency bands
+                double allfreqlvl = 0d;
+                for (double anEnergeticSum : energeticSum) {
+                    allfreqlvl += anEnergeticSum;
+                }
+                allfreqlvl = Math.max(allfreqlvl, BASE_LVL);
+                propagationProcess.dataOut.setVerticeSoundLevel(idReceiver,allfreqlvl);
+                progressVisitor.endStep();
+            }
+        }
+    }
 }
