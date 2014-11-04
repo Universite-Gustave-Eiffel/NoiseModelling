@@ -46,7 +46,6 @@ import java.sql.SQLException;
  * @author SU Qi
  */
 public class BR_TriGrid extends AbstractFunction implements ScalarFunction {
-    private static final int COLUMN_COUNT = 6;
 
     public BR_TriGrid() {
         addProperty(PROP_REMARKS , "Sound propagation from ponctual sound sources to ponctual receivers created by a " +

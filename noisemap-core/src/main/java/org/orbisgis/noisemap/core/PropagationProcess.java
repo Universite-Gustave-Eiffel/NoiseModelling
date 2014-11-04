@@ -1045,7 +1045,6 @@ public class PropagationProcess implements Runnable {
             ProgressVisitor propaProcessProgression = data.cellProg;
             int idReceiver = 0;
             for (Coordinate receiverCoord : data.receivers) {
-                propaProcessProgression.endStep();
                 double energeticSum[] = new double[data.freq_lvl.size()];
                 for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
                     energeticSum[idfreq] = 0.0;
@@ -1059,6 +1058,7 @@ public class PropagationProcess implements Runnable {
                 }
                 allfreqlvl = Math.max(allfreqlvl, BASE_LVL);
                 verticesSoundLevel[idReceiver] = allfreqlvl;
+                propaProcessProgression.endStep();
                 idReceiver++;
             }
             dataOut.setVerticesSoundLevel(verticesSoundLevel);

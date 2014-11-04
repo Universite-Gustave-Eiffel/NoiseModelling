@@ -43,6 +43,8 @@ import org.h2gis.utilities.SFSUtilities;
 import org.h2gis.utilities.TableLocation;
 import org.orbisgis.noisemap.core.PropagationResultTriRecord;
 import org.orbisgis.noisemap.core.jdbc.TriangleNoiseMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -59,6 +61,7 @@ import java.util.Deque;
  */
 public class BR_TriGrid3D extends AbstractFunction implements ScalarFunction {
     private static final int COLUMN_COUNT = 6;
+    private static final Logger LOGGER = LoggerFactory.getLogger("gui."+BR_TriGrid3D.class);
 
     public BR_TriGrid3D() {
         addProperty(PROP_REMARKS , "Sound propagation from ponctual sound sources to ponctual receivers created by a " +
@@ -167,7 +170,9 @@ public class BR_TriGrid3D extends AbstractFunction implements ScalarFunction {
                         }
                     }
                     // Fetch next cell
-                    records.addAll(noiseMap.evaluateCell(connection, cellI, cellJ, new EmptyProgressVisitor()));
+                    LOGGER.info("Evaluate cell " + (cellI + cellJ * noiseMap.getGridDim() + 1) + "/" + ((int)Math.pow
+                            (noiseMap.getGridDim(), 2)));
+                    records.addAll(noiseMap.evaluateCell(connection, cellI, cellJ, new ProgressLogger()));
                 } while (records.isEmpty());
             }
             // Consume cell

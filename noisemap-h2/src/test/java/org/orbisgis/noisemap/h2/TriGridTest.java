@@ -48,6 +48,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -115,15 +116,16 @@ public class TriGridTest {
                 "BR_SpectrumRepartition(4000,1,db_m) as db_m4000,\n" +
                 "BR_SpectrumRepartition(5000,1,db_m) as db_m5000 from roads_src_global;");
         // Compute noise map
-        ResultSet rs = st.executeQuery("SELECT * FROM BR_TRIGRID('buildings', 'roads_src', 'DB_M', 700, 100,1,3,50,2,1,0.2)");
+        ResultSet rs = st.executeQuery("SELECT * FROM BR_TRIGRID('buildings', 'roads_src', 'DB_M','', 700, 100,1,3,50,2,1,0.2)");
         try {
             assertTrue(rs.next());
             do {
-                assertTrue(rs.getDouble("W_V1") > 1);
-                assertTrue(rs.getDouble("W_V2") > 1);
-                assertTrue(rs.getDouble("W_V3") > 1);
+                assertTrue(rs.getDouble("W_V1") >= 1);
+                assertTrue(rs.getDouble("W_V2") >= 1);
+                assertTrue(rs.getDouble("W_V3") >= 1);
                 assertNotNull(rs.getObject("THE_GEOM"));
                 assertTrue(rs.getObject("THE_GEOM") instanceof Polygon);
+                assertEquals(4, ((Polygon) rs.getObject("THE_GEOM")).getNumPoints());
             } while (rs.next());
         } finally {
             rs.close();
@@ -138,11 +140,12 @@ public class TriGridTest {
         try {
             assertTrue(rs.next());
             do {
-                assertTrue("Expected > 1 get "+rs.getDouble("W_V2"),rs.getDouble("W_V1") > 1);
-                assertTrue("Expected > 1 get "+rs.getDouble("W_V2"),rs.getDouble("W_V2") > 1);
-                assertTrue("Expected > 1 get "+rs.getDouble("W_V2"),rs.getDouble("W_V3") > 1);
+                assertTrue(rs.getDouble("W_V1") >= 1);
+                assertTrue(rs.getDouble("W_V2") >= 1);
+                assertTrue(rs.getDouble("W_V3") >= 1);
                 assertNotNull(rs.getObject("THE_GEOM"));
                 assertTrue(rs.getObject("THE_GEOM") instanceof Polygon);
+                assertEquals(4, ((Polygon) rs.getObject("THE_GEOM")).getNumPoints());
             } while (rs.next());
         } finally {
             rs.close();

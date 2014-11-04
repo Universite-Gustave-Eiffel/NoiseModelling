@@ -3,6 +3,7 @@ package org.orbisgis.noisemap.h2osgi;
 import org.h2gis.h2spatialapi.Function;
 import org.orbisgis.noisemap.h2.BR_EvalSource;
 import org.orbisgis.noisemap.h2.BR_PtGrid;
+import org.orbisgis.noisemap.h2.BR_PtGrid3D;
 import org.orbisgis.noisemap.h2.BR_SpectrumRepartition;
 import org.orbisgis.noisemap.h2.BR_TriGrid;
 import org.orbisgis.noisemap.h2.BR_TriGrid3D;
@@ -19,6 +20,7 @@ public class Activator implements BundleActivator {
     @Override
     public void start(BundleContext ctx) throws Exception {
         reg(ctx, new BR_PtGrid());
+        reg(ctx, new BR_PtGrid3D());
         reg(ctx, new BR_EvalSource());
         reg(ctx, new BR_SpectrumRepartition());
         reg(ctx, new BR_TriGrid());
