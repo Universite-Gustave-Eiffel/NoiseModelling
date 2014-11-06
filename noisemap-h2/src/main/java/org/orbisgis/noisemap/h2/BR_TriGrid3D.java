@@ -67,8 +67,8 @@ public class BR_TriGrid3D extends AbstractFunction implements ScalarFunction {
         addProperty(PROP_REMARKS , "Sound propagation from ponctual sound sources to ponctual receivers created by a " +
                 "delaunay triangulation of specified buildings geometry.\n" +
                 "CALL BR_TriGrid3D(buildingsTable VARCHAR,buildingsHeightFieldName VARCHAR ,sourcesTable VARCHAR," +
-                " sourcesTableSoundFieldName VARCHAR, maximumPropagationDistance DOUBLE," +
-                " maximumWallSeekingDistance DOUBLE, cellWidth DOUBLE, roadsWidth DOUBLE," +
+                " sourcesTableSoundFieldName VARCHAR,g_table VARCHAR,dem_table VARCHAR,  maximumPropagationDistance DOUBLE," +
+                " maximumWallSeekingDistance DOUBLE, roadsWidth DOUBLE," +
                 " receiversDensification DOUBLE, maximumAreaOfTriangle DOUBLE, soundReflectionOrder INT," +
                 " soundDiffractionOrder DOUBLE, wallAlpha DOUBLE)");
     }

@@ -50,8 +50,8 @@ public class BR_TriGrid extends AbstractFunction implements ScalarFunction {
     public BR_TriGrid() {
         addProperty(PROP_REMARKS , "Sound propagation from ponctual sound sources to ponctual receivers created by a " +
                 "delaunay triangulation of specified buildings geometry.\n" +
-                "CALL BR_TriGrid(buildingsTable VARCHAR, sourcesTable VARCHAR, sourcesTableSoundFieldName VARCHAR," +
-                " maximumPropagationDistance DOUBLE, maximumWallSeekingDistance DOUBLE, cellWidth DOUBLE," +
+                "CALL BR_TriGrid(buildingsTable VARCHAR, sourcesTable VARCHAR, sourcesTableSoundFieldName VARCHAR,G_TABLE VARCHAR, " +
+                " maximumPropagationDistance DOUBLE, maximumWallSeekingDistance DOUBLE," +
                 " roadsWidth DOUBLE, receiversDensification DOUBLE, maximumAreaOfTriangle DOUBLE," +
                 " soundReflectionOrder INT, soundDiffractionOrder DOUBLE, wallAlpha DOUBLE)");
     }

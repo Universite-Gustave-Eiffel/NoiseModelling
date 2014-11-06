@@ -822,12 +822,12 @@ public class FastObstructionTest {
             // Compute ground profile from R to first O (first building corner)
             int rOIndex = 0;
             for(TriIdWithIntersection tri : allInterPoints) {
+                rOIndex++;
                 if (tri.isIntersectionOnBuilding()) {
                     break;
                 }
-                rOIndex++;
             }
-            roGround.addAll(getGroundProfile(allInterPoints.subList(0, rOIndex + 1)));
+            roGround.addAll(getGroundProfile(allInterPoints.subList(0, rOIndex)));
             // Source part
             // Compute ground profile from last O to S (last building corner)
             int sOIndex = allInterPoints.size() - 1;

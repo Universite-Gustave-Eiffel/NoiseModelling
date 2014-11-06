@@ -2,10 +2,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-    <artifactId>noisemap-parent</artifactId>
-    <groupId>org.orbisgis</groupId>
-    <version>1.2.0-SNAPSHOT</version>
-  </parent>
+        <artifactId>noisemap-parent</artifactId>
+        <groupId>org.orbisgis</groupId>
+        <version>2.0.0-SNAPSHOT</version>
+        <relativePath>../</relativePath>
+    </parent>
     <artifactId>noisemap-h2</artifactId>
     <name>noisemap-h2</name>
     <description>Produce noise maps using the French method NMPB 2008. This bundle is the h2 database declaration</description>
