@@ -117,6 +117,8 @@ public class BR_PtGrid3D extends AbstractFunction implements ScalarFunction {
             noiseMap.setSound_lvl_field(sound_lvl_field);
             noiseMap.setMaximumPropagationDistance(maximum_propagation_distance);
             noiseMap.setSoilTableName(ground_type);
+            noiseMap.setHeightField(buildings_height_field);
+            noiseMap.setDemTable(dem_table);
             noiseMap.setMaximumReflectionDistance(maximum_reflection_distance);
             noiseMap.setSoundReflectionOrder(sound_reflection_order);
             noiseMap.setSoundDiffractionOrder(sound_diffraction_order);

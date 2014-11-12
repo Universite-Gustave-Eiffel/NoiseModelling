@@ -517,23 +517,23 @@ public class PropagationProcess implements Runnable {
      * @param alpha_atmo
      * @param wj
      */
-    public void computeVerticalEdgeDiffraction(List<Coordinate> regionCorners
-            ,Coordinate srcCoord, Coordinate receiverCoord, double energeticSum[], double[] alpha_atmo, List<Double> wj,
-                                               List<PropagationDebugInfo> debugInfo) {
+    public void computeVerticalEdgeDiffraction(List<Coordinate> regionCorners, Coordinate srcCoord,
+                                               Coordinate receiverCoord, double energeticSum[], double[] alpha_atmo,
+                                               List<Double> wj, List<PropagationDebugInfo> debugInfo) {
+        final LineSegment receiverSrc = new LineSegment(receiverCoord, srcCoord);
         final double SrcReceiverDistance = CGAlgorithms3D.distance(srcCoord, receiverCoord);
         // Get the first valid receiver->corner
         int freqcount = data.freq_lvl.size();
         List<Integer> curCorner = new ArrayList<>();
-        int firstCorner = nextFreeFieldNode(regionCorners, receiverCoord, curCorner, 0, data.freeFieldFinder);
+        int firstCorner = nextFreeFieldNode(regionCorners, receiverCoord, receiverSrc, curCorner, 0, data.freeFieldFinder);
         if (firstCorner != -1) {
             // History of propagation through corners
             curCorner.add(firstCorner);
             while (!curCorner.isEmpty()) {
-                Coordinate lastCorner = regionCorners.get(curCorner
-                        .get(curCorner.size() - 1));
+                Coordinate lastCorner = getProjectedZCoordinate(regionCorners.get(curCorner.get(curCorner.size() - 1)
+                ), receiverSrc);
                 // Test Path is free to the source
-                if (data.freeFieldFinder.isFreeField(lastCorner,
-                        srcCoord)) {
+                if (data.freeFieldFinder.isFreeField(lastCorner, srcCoord)) {
                     // True then the path is clear
                     // Compute attenuation level
                     double eLength = 0;
@@ -541,22 +541,21 @@ public class PropagationProcess implements Runnable {
                     for (int ie = 1; ie < curCorner.size(); ie++) {
                         Coordinate cornerA = regionCorners.get(curCorner.get(ie));
                         Coordinate cornerB = regionCorners.get(curCorner.get(ie - 1));
-                        eLength +=  CGAlgorithms3D.distance(cornerA,cornerB);
+                        eLength += CGAlgorithms3D.distance(cornerA, cornerB);
                     }
                     // delta=SO^1+O^nO^(n+1)+O^nnR
                     double receiverCornerDistance = CGAlgorithms3D.distance(receiverCoord,
                             regionCorners.get(curCorner.get(0)));
                     double sourceCornerDistance = CGAlgorithms3D.distance(srcCoord,
                             regionCorners.get(curCorner.get(curCorner.size() - 1)));
-                    double diffractionFullDistance = receiverCornerDistance
-                            + eLength                                                                           //Corner to corner distance
+                    double diffractionFullDistance = receiverCornerDistance + eLength
+                                                               //Corner to corner distance
                             + sourceCornerDistance;
                     if (diffractionFullDistance < data.maxSrcDist) {
                         diffractionPathCount++;
-                        double delta = diffractionFullDistance
-                                - SrcReceiverDistance;
+                        double delta = diffractionFullDistance - SrcReceiverDistance;
                         PropagationDebugInfo propagationDebugInfo = null;
-                        if(debugInfo != null) {
+                        if (debugInfo != null) {
                             List<Coordinate> path = new ArrayList<>(curCorner.size() + 2);
                             path.add(receiverCoord);
                             for (Integer aCurCorner : curCorner) {
@@ -566,25 +565,22 @@ public class PropagationProcess implements Runnable {
                             propagationDebugInfo = new PropagationDebugInfo(path, new double[freqcount]);
                         }
                         for (int idfreq = 0; idfreq < freqcount; idfreq++) {
-                            double diffractionAttenuation = computeDeltaDiffraction(idfreq, diffractionFullDistance, delta);
+                            double diffractionAttenuation = computeDeltaDiffraction(idfreq, diffractionFullDistance,
+                                    delta);
                             double attenuatedWj = wj.get(idfreq);
                             // Geometric dispersion
                             attenuatedWj = attDistW(attenuatedWj, SrcReceiverDistance);
                             // Apply diffraction attenuation
-                            attenuatedWj = dbaToW(wToDba(attenuatedWj)
-                                    - diffractionAttenuation);
+                            attenuatedWj = dbaToW(wToDba(attenuatedWj) - diffractionAttenuation);
                             // Apply atmospheric absorption and ground
-                            attenuatedWj = attAtmW(
-                                    attenuatedWj,
-                                    diffractionFullDistance,
-                                    alpha_atmo[idfreq]);
+                            attenuatedWj = attAtmW(attenuatedWj, diffractionFullDistance, alpha_atmo[idfreq]);
 
                             energeticSum[idfreq] += attenuatedWj;
-                            if(propagationDebugInfo != null) {
+                            if (propagationDebugInfo != null) {
                                 propagationDebugInfo.addNoiseContribution(idfreq, attenuatedWj);
                             }
                         }
-                        if(debugInfo != null) {
+                        if (debugInfo != null) {
                             debugInfo.add(propagationDebugInfo);
                         }
                     }
@@ -593,8 +589,7 @@ public class PropagationProcess implements Runnable {
                 int nextCorner = -1;
                 if (data.diffractionOrder > curCorner.size()) {
                     // Continue to next order valid corner
-                    nextCorner = nextFreeFieldNode(regionCorners,
-                            lastCorner, curCorner, 0,
+                    nextCorner = nextFreeFieldNode(regionCorners, lastCorner, receiverSrc, curCorner, 0,
                             data.freeFieldFinder);
                     if (nextCorner != -1) {
                         curCorner.add(nextCorner);
@@ -602,17 +597,12 @@ public class PropagationProcess implements Runnable {
                 }
                 while (nextCorner == -1 && !curCorner.isEmpty()) {
                     Coordinate startPoint = receiverCoord;
-                    if(curCorner.size() > 1) {
-                        startPoint = regionCorners.get(curCorner
-                                .get(curCorner.size() - 2));
+                    if (curCorner.size() > 1) {
+                        startPoint = regionCorners.get(curCorner.get(curCorner.size() - 2));
                     }
                     // Next free field corner
-                    nextCorner = nextFreeFieldNode(regionCorners,
-                            startPoint,
-                            curCorner, curCorner.get(curCorner
-                                    .size() - 1),
-                            data.freeFieldFinder
-                    );
+                    nextCorner = nextFreeFieldNode(regionCorners, startPoint, receiverSrc, curCorner,
+                            curCorner.get(curCorner.size() - 1), data.freeFieldFinder);
                     if (nextCorner != -1) {
                         curCorner.set(curCorner.size() - 1, nextCorner);
                     } else {
@@ -684,13 +674,13 @@ public class PropagationProcess implements Runnable {
         }
     }
 
-    private int nextFreeFieldNode(List<Coordinate> nodes, Coordinate startPt,
+    private int nextFreeFieldNode(List<Coordinate> nodes, Coordinate startPt,LineSegment segmentConstraint,
                                   List<Integer> NodeExceptions, int firstTestNode,
                                   FastObstructionTest freeFieldFinder) {
         int validNode = firstTestNode;
         while (NodeExceptions.contains(validNode)
-                || (validNode < nodes.size() && !freeFieldFinder.isFreeField(
-                startPt, nodes.get(validNode)))) {
+                || (validNode < nodes.size() && (Math.abs(segmentConstraint.projectionFactor(nodes.get(validNode))) > 1 || !freeFieldFinder.isFreeField(
+                startPt, getProjectedZCoordinate(nodes.get(validNode),segmentConstraint))))) {
             validNode++;
         }
         if (validNode >= nodes.size()) {

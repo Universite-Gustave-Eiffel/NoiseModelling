@@ -27,7 +27,7 @@ public class PTGridTest {
 
     @BeforeClass
     public static void tearUpClass() throws Exception {
-        connection = SFSUtilities.wrapConnection(SpatialH2UT.createSpatialDataBase(PTGridTest.class.getSimpleName(), false));
+        connection = SFSUtilities.wrapConnection(SpatialH2UT.createSpatialDataBase(PTGridTest.class.getSimpleName(), false, "MV_STORE=FALSE"));
         org.h2gis.h2spatialext.CreateSpatialExtension.initSpatialExtension(connection);
         CreateSpatialExtension.registerFunction(connection.createStatement(), new BR_PtGrid3D(), "");
         CreateSpatialExtension.registerFunction(connection.createStatement(), new BR_PtGrid(), "");
@@ -104,6 +104,32 @@ public class PTGridTest {
             assertEquals(3l, rs.getLong("GID"));
             assertEquals(0, rs.getInt("CELL_ID"));
             assertEquals(50.3, 10*Math.log10(rs.getDouble("W")), 0.01);
+            assertFalse(rs.next());
+        } finally {
+            rs.close();
+        }
+    }
+
+
+    @Test
+    public void testDem() throws SQLException {
+        st.execute("RUNSCRIPT FROM '"+PTGridTest.class.getResource("dem.sql").getFile()+"'");
+        st.execute("drop table if exists pt_lvl");
+        // Create receivers points
+        st.execute("DROP TABLE IF EXISTS RECEIVERS");
+        st.execute("CREATE TABLE RECEIVERS(ID SERIAL, THE_GEOM POINT)");
+        st.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT (-250.56607923708552 106.76760851263573 1.6)')");
+        st.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT (-250.56607923708552 106.76760851263573 25)')");
+        ResultSet rs = st.executeQuery("select * from BR_PTGRID3D('BUILDINGS', 'HEIGHT', 'SOUND_SOURCE','RECEIVERS', 'DB_M', ''," +
+                "'DEM' ,1000,500, 2, 1, 0.2)");
+        //  W must be equal to 1
+        try {
+            assertTrue(rs.next());
+            // First receiver is hidden by the hill
+            assertEquals(1, rs.getDouble("W"), 0.01);
+            // Second receiver is higher than the hill
+            assertTrue(rs.next());
+            assertEquals(52.5, 10 * Math.log10(rs.getDouble("W")), 0.1);
             assertFalse(rs.next());
         } finally {
             rs.close();
