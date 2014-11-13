@@ -7,6 +7,8 @@ It can be freely used either for research and education, as well as by experts i
 
 This plugin is distributed under GPL 3 license and is developed by the 'Atelier SIG' team from the [IRSTV](http://www.irstv.fr) Institute (FR CNRS 2488) and by the [Environmental Acoustics Laboratory](http://www.lae.ifsttar.fr) (Ifsttar).
 
+:warning: The version 2.0.0 may contain error in the computation of the ground attenuation. The unit test 10 of NMPB have an error of 3.2 dB(A).
+
 For more information:
 * about NoiseM@p, [see the NoiseM@p website] (http://noisemap.orbisGIS.org),
 * about the code, [read the wiki] (https://github.com/irstv/noisemap/wiki),
