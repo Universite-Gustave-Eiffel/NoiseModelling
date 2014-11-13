@@ -1,113 +1,86 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-        <modelVersion>4.0.0</modelVersion>
-        <version>1.1.1</version>
-        <properties>
-                <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        </properties>
-        <packaging>bundle</packaging>
-        <name>noisemap</name>
-        <groupId>org.noisemap</groupId>
-        <artifactId>noisemap</artifactId>
-        <parent>
-            <groupId>org.orbisgis</groupId>
-            <artifactId>orbisgis-nexus</artifactId>
-            <version>1</version>
-        </parent>
-        <url>https://github.com/irstv/noisemap/wiki</url>
-        <description>Translate light vehicle, heavy vehicle, public bus, tramway traffic into linear noise source. Then compute sound propagation and iso surface.</description>
-        <dependencies>
-                <dependency>
-                        <groupId>org.apache.commons</groupId>
-                        <artifactId>commons-math</artifactId>
-                        <version>2.2</version>
-                        <scope>provided</scope>
-                </dependency>
-                <dependency>
-                        <groupId>junit</groupId>
-                        <artifactId>junit</artifactId>
-                        <version>4.10</version>
-                        <scope>test</scope>
-                </dependency>
-                <dependency>
-                        <groupId>org.gdms</groupId>
-                        <artifactId>gdms</artifactId>
-                        <version>2.0-SNAPSHOT</version>
-                </dependency>
-                <dependency>
-                        <groupId>commons-collections</groupId>
-                        <artifactId>commons-collections</artifactId>
-                        <version>3.2.1</version>
-                        <scope>provided</scope>
-                </dependency>
-                <dependency>
-                    <groupId>org.osgi</groupId>
-                    <artifactId>org.osgi.core</artifactId>
-                    <version>4.3.1</version>
-                    <scope>provided</scope>
-                </dependency>
-                <dependency>
-                  <groupId>com.vividsolutions</groupId>
-                  <artifactId>jts</artifactId>
-                  <version>1.12</version>
-                </dependency>
-        </dependencies>
-
-        <build>
-                <plugins>
-                        <plugin>
-                            <groupId>org.apache.felix</groupId>
-                            <artifactId>maven-bundle-plugin</artifactId>
-                            <version>2.3.7</version>
-                            <extensions>true</extensions>
-                            <configuration>
-                                <instructions>
-                                    <Bundle-Activator>org.noisemap.plugin.Activator</Bundle-Activator>
-                                    <Private-Package>org.noisemap.*</Private-Package>
-                                    <Bundle-Vendor>IFSTTAR, IRSTV - FR CNRS 2488</Bundle-Vendor>
-                                    <Bundle-Category>gdms,sql,OrbisGIS</Bundle-Category>
-                                    <Bundle-Icon>icon.png;size=32</Bundle-Icon>
-                                </instructions>
-                            </configuration>
-                        </plugin>
-                        <plugin>
-                                <groupId>org.apache.maven.plugins</groupId>
-                                <artifactId>maven-compiler-plugin</artifactId>
-                                <version>3.0</version>
-                                <configuration>
-                                        <source>1.6</source>
-                                        <target>1.6</target>
-                                </configuration>
-                        </plugin>
-                        <plugin>
-                                <groupId>org.codehaus.mojo</groupId>
-                                <artifactId>exec-maven-plugin</artifactId>
-                                <version>1.2.1</version>
-                                <configuration>
-                                        <executable>java</executable>
-                                        <classpathScope>runtime</classpathScope>
-                                        <arguments>
-                                                <argument>-classpath</argument>
-                                                <classpath />
-                                                <argument>org.orbisgis.core.Main</argument>
-                                                <argument>-pluginDir</argument>
-                                                <argument>target</argument>
-                                        </arguments>
-                                </configuration>
-                        </plugin>
-                </plugins>
-        </build>
-        <repositories>
-                <repository>
-                        <id>IRSTV</id>
-                        <name>IRSTV repository</name>
-                        <url>http://repo.orbisgis.org</url>
-                </repository>
-                <repository>
-                        <id>repo2.maven.org</id>
-                        <name>Maven2 repository 2</name>
-                        <url>http://repo2.maven.org/maven2</url>
-                </repository>
-        </repositories>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>noisemap-parent</artifactId>
+    <packaging>pom</packaging>
+    <version>2.0.0-SNAPSHOT</version>
+    <name>noisemap-parent</name>
+    <description>H2GIS is a spatial extension of the H2 database engine in the spirit of PostGIS.  It adds support for the Open Geospatial Consortium (OGC) Simple Features for SQL (SFSQL) functions.</description>
+    <organization>
+        <name>IRSTV CNRS-FR-2488</name>
+        <url>http://www.irstv.fr/</url>
+    </organization>
+    <url>http://github.com/irstv/H2GIS</url>
+    <licenses>
+        <license>
+            <name>GNU General Public License (GPLV3+)</name>
+            <url>http://www.gnu.org/licenses/gpl-3.0.html</url>
+        </license>
+    </licenses>
+    <properties>
+        <jts-version>1.13</jts-version>
+        <h2-version>1.4.182</h2-version>
+        <h2gis-version>1.1.1-SNAPSHOT</h2gis-version>
+    </properties>
+    <modules>
+        <module>noisemap-core</module>
+        <module>noisemap-h2</module>
+        <module>noisemap-h2-osgi</module>
+  </modules>
+    <scm>
+        <connection>scm:git:https://github.com/irstv/noisemap.git</connection>
+        <developerConnection>scm:git:https://github.com/irstv/noisemap.git</developerConnection>
+        <url>git@github.com:irstv/noisemap.git</url>
+    </scm>
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.3.2</version>
+                <configuration>
+                    <source>1.6</source>
+                    <target>1.6</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>2.4</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                        </manifest>
+                        <manifestEntries>
+                            <Specification-Vendor-URL>${project.organization.url}</Specification-Vendor-URL>
+                            <Specification-URL>${project.url}</Specification-URL>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+    <developers>
+        <developer>
+            <name>Nicolas Fortin</name>
+            <organization>IRSTV CNRS-FR-2488</organization>
+            <url>https://github.com/nicolas-f</url>
+        </developer>
+        <developer>
+            <name>Qi Su</name>
+            <url>https://github.com/sqi0081</url>
+        </developer>
+    </developers>
+    <repositories>
+        <repository>
+            <id>IRSTV</id>
+            <name>IRSTV repository</name>
+            <url>http://repo.orbisgis.org</url>
+        </repository>
+    </repositories>
+    <parent>
+        <groupId>org.orbisgis</groupId>
+        <artifactId>orbisgis-nexus</artifactId>
+        <version>1</version>
+    </parent>
 </project>
