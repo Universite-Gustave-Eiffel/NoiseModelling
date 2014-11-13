@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="description" content="Noise map computation software">
+        <meta name="author" content="Erwan Bocher && Gwendall Petit">
+        <link rel="shortcut icon" href="assets/ico/favicon.png">
+
+        <title>NoiseM@p website</title>
+
+        <!-- Bootstrap core CSS -->
+        <link href="assets/css/bootstrap.css" rel="stylesheet">
+
+        <!-- Custom styles for this template -->
+        <link href="assets/css/main.css" rel="stylesheet">
+        <link rel="stylesheet" href="assets/css/icomoon.css">
+        <link href="assets/css/animate-custom.css" rel="stylesheet">
+
+
+
+        <link href='http://fonts.googleapis.com/css?family=Lato:300,400,700,300italic,400italic' rel='stylesheet' type='text/css'>
+        <link href='http://fonts.googleapis.com/css?family=Raleway:400,300,700' rel='stylesheet' type='text/css'>
+
+        <script src="assets/js/jquery.min.js"></script>
+        <script type="text/javascript" src="assets/js/modernizr.custom.js"></script>
+
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+          <script src="assets/js/html5shiv.js"></script>
+          <script src="assets/js/respond.min.js"></script>
+        <![endif]-->
+    </head>
+
+    <body data-spy="scroll" data-offset="0" data-target="#navbar-main">
+
+
+        <div id="navbar-main">
+            <!-- Fixed navbar -->
+            <div class="navbar navbar-inverse navbar-fixed-top">
+                <div class="container">
+                    <div class="navbar-header">
+                        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                            <span class="icon icon-globe" style="font-size:30px; color:#3498db;"></span>
+                        </button>
+                        <!--<a class="navbar-brand hidden-xs hidden-sm" href="#home"><span style="font-size:18px; color:#3498db;"></span></a>-->
+                    </div>
+                    <div class="navbar-collapse collapse">
+                        <ul class="nav navbar-nav">
+                            <li><a href="#home" class="smoothScroll">Home</a></li>
+                            <li> <a href="#about" class="smoothScroll"> Project</a></li>
+                            <li> <a href="#methods" class="smoothScroll"> Methods</a></li>
+                            <li> <a href="#architecture" class="smoothScroll"> Architecture</a></li>
+                            <li> <a href="#community" class="smoothScroll"> Community</a></li>
+                            <li> <a href="#references" class="smoothScroll"> References</a></li>
+                            <li> <a href="#portfolio" class="smoothScroll"> Portfolio</a></li>
+                            <li> <a href="#more" class="smoothScroll"> More</a></li>			
+                            <li> <a href="#contact" class="smoothScroll"> Contact</a></li>
+                            <li> <a href="http://webcarto.orbisgis.org/noisemap.html" target="blank"><b>DEMO</b></a></li>
+
+                    </div><!--/.nav-collapse -->
+                </div>
+            </div>
+        </div>
+
+
+
+        <!-- ==== HEADERWRAP ==== -->
+        <div id="headerwrap" id="home" name="home">
+            <header class="clearfix">
+                <img class="img-responsive" style="display: inline;" src="assets/img/logo_noismap_cercle.png" alt="logo" /></h1>
+                <p style="font-size:30px; color:#333;"><b>Compute the noise level in your city</b></p>
+                <p style="font-size:30px; color:#333;">The NoiseM@p experience...</p>
+            </header>	    
+        </div><!-- /headerwrap -->
+
+        <!-- ==== GREYWRAP ==== -->
+        <div id="greywrap">
+            <div class="row">
+                <div class="col-lg-4 callout">
+                    <span class="icon icon-pencil"></span>
+                    <h2>Made by research</h2>
+                    <p align="justify">The NoiseM@p project is led by two French research teams, internationally recognized in their field of expertise, the Atelier SIG (<a href="http://irstv.fr/">IRSTV</a> FR CNRS 2488) for geospatial research and the Environmental Acoustics Laboratory (<a href="http://www.ifsttar.fr/">Ifsttar</a>) for environmental noise research.</p>
+                </div><!-- col-lg-4 -->	
+                <div class="col-lg-4 callout">
+                    <span class="icon icon-stack"></span>
+                    <h2>Designed for GIS</h2>
+                    <p align="justify">NoiseM@ap is a fully GIS-implemented environmental noise calculation model, as a plugin of the <a href="http://www.orbisgis.org/">OrbisGIS</a> software. </p>
+                </div><!-- col-lg-4 -->
+
+                <div class="col-lg-4 callout">
+                    <span class="icon icon-rocket"></span>
+                    <h2>Free to use</h2>
+                    <p align="justify">NoiseM@ap is distributed under the <a href="http://gplv3.fsf.org/">GPL 3</a> license and can be freely used whatever the field of application (research, education, business...).</p>
+                </div><!-- col-lg-4 -->	
+            </div><!-- row -->
+        </div><!-- greywrap -->
+
+        <!-- ==== PROJECT ==== -->
+        <div class="container" id="about" name="about">
+            <div class="row white">
+                <h1 class="centered"><img class="img-responsive" style="display: inline;" src="assets/img/logo_noisemap_alone_small.png" alt="logo" />THE PROJECT</h1>
+                <hr>
+                <div class="col-lg-6">
+                    <p align="justify">The NoiseM@ap project started within the reasearch project <a href="http://www.agence-nationale-recherche.fr/projet-anr/?tx_lwmsuivibilan_pi2%5BCODE%5D=ANR-08-VILL-0005">Eval-PDU</a>, funded by the French National Research Agency (<a href="http://www.agence-nationale-recherche.fr/">ANR</a>) in 2009. During the project, it was decided to produce a tool that would be fully implemented in a GIS software, in order to produce noise maps for evaluating the noise impact on urban mobility plans. It was expected to propose an alternative of commercial software, as a free tool, which will be able to produce environmental noise maps on very large urban areas, requiring few computational resources, while providing relevant results. This tool was integrated in the <a href="http://www.orbisgis.org/">OrbisGIS</a> software and applied with success to the study the noise effect of several mobility plans of the <a href="http://www.nantesmetropole.fr/homepage-23363.kjsp?RH=WEB_FR&RF=WEB_EN">Nantes metropolis</a>.
+                    </p>
+                    <p align="justify">    
+                        Since this first study, many developments have been focused on NoiseM@ap, in order to enhance both the noise calculation method and its integration within a full and simple system dedicating to environmental noise evaluation (data managing, noise exposure calculation, interactive noise maps...).
+                        The future of NoiseM@ap is to become a reference tool for a large community (researchers, students, teachers, engineers...) in order to predict, to manage, to study... environmental noise.</p>
+                </div><!-- col-lg-6 -->
+
+                <div class="col-lg-6">
+                    <br>
+                    <p><img class="img-responsive" src="assets/img/screen4_final.jpg" alt=""></p>
+                </div><!-- col-lg-6 -->
+            </div><!-- row -->
+        </div><!-- container -->
+
+        <!-- ==== SECTION DIVIDER1 -->
+        <section class="section-divider textdivider divider1">
+            <div class="container">
+                <h1>DESIGNED FOR ACOUSTICIANS, RESEARCHERS, TEACHERS AND STUDENTS</h1>
+                <hr>
+                <p align="justify">Because NoiseM@p is easy to use and opensource, it is a perfect tool for the noise assessment in urban areas in the context of the european directive 2002/49/EC. In addition, it can be an excellent support for academic training, as well as for research.</p>
+            </div><!-- container -->
+        </section><!-- section -->
+
+
+        <!-- ==== METHODS ==== -->
+        <div class="container" id="methods" name="methods">
+            <br>
+            <br>
+            <div class="row">
+                <h1 class="centered">METHODS</h1>
+                <hr>
+
+                <br>
+                <div class="col-lg-offset-2 col-lg-8">
+                    <p align="justify">The noise calculation method implemented within the NoiseM@ap plugin is based on the standard French method called NMPB 2008, as a reference method to be used under the Directive 2002/49/EC relating to the assessment and management of environmental noise <a href="http://eur-lex.europa.eu/LexUriServ/LexUriServ.do?uri=OJ:L:2002:189:0012:0025:EN:PDF" target="blank" class="icon icon-link"> (Read More)</a>. In order to limit the overall computational time, the current version of NoiseM@ap implements a simplified 2D approach of the NMPB 2008 for the sound propagation calculation <a href="http://www.setra.developpement-durable.gouv.fr/IMG/pdf/US_0957-2A_Road_noise_predictionDTRF.pdf" target="blank" class="icon icon-link"> (Read More)</a>, as well as, a simplification of the noise emission <a href="http://www.setra.developpement-durable.gouv.fr/IMG/pdf/0924-1A_Road_noise_prediction_v1.pdf" target="blank" class="icon icon-link"> (Read More)</a>. It must be noted that the current development of NoiseM@ap is aimed at full integration of the NMPB 2008, including all 3D propagation phenomena, such as ground effect and horizontal scattering by building edges. Most of algorithms within the NoiseM@ap plugin, mainly for the calculation of the sound propagation, are based on spatial analysis methods  which allow to optimize and to reduce the complexity of the sound propagation path search in urban areas. Each part of the computation process has been splitted in several SQL functions thanks to the <a href="http://www.h2gis.org/">H2GIS</a> datatabase available within OrbisGIS. This open tool-box help the user to produce noise maps beyond the limitation of a monolithic computation software. However,  the GIS environment allows to produce noise results with a high level of graphical representation, by coupling if necessary with other geospatial databases such as demographic data. Using GIS analysis methods, the user can easily compute a map of population exposure. This map is estimated by determining the number of residential units for each building and the number of inhabitants by units such as french statistical population units (<a href="http://www.insee.fr/en/default.asp" target="blank">INSEE</a>) or cities boundaries.</p>
+                </div><!-- col-lg -->
+
+                <br>
+
+                <br>
+                <br>
+            </div><!-- row -->
+        </div><!-- container -->
+
+
+        <!-- ==== ARCHITECTURE ==== -->
+        <div class="container" id="architecture" name="architecture">
+            <br>
+            <br>
+            <div class="row">
+                <h1 class="centered">ARCHITECTURE</h1>
+                <hr>
+
+                <br>
+                <div class="col-lg-offset-2 col-lg-8">
+                    <p align="justify"><b>NoiseM@p</b> consists of two separated parts : <b>NoiseM@p core</b> and <b>MoiseM@p plugin</b>.</p>
+                    <p><img class="img-responsive" src="assets/img/noisemap_architecture.jpg" alt=""></p>
+                    <h3>NoiseM@p core</h3>
+                    <p style="margin:1px 0 0 0;" align="justify">This module contains the main processes to compute the sound level and to produce noise maps. The first part is related to the evaluation of the noise emission, by considering light and heavy vehicles, as well as trolley cars (road noise). The second part consists in evaluating the noise propagation from sources to receivers, according to the standard model described below. The main inputs of the propagation model are :</p>
+                    <ul style="list-style-type:disc;">
+                        <li>an array of sounds sources defined by a geometry (lines or points) and a sound power for each third octave band from 100 Hz to 5000 Hz,</li>
+                        <li>an array of buildings (2 D geometry), </li>
+                        <li>a list of parameters, like the order of reflexion and diffraction, wall absorption, maximum propagation distance... that are needed for the calculation of the sound attenuation between sources and the receivers. </li>
+                    </ul>
+                    <p style="margin:1px 0 0 0;" align="justify">This module written in JAVA is exposed as a set of SQL  functions to the OrbisGIS software.  It uses the relational database management system (RDMS) <a href=" http://www.h2database.com/" target="blank"> H2</a> and its spatial extension called H2GIS.</p>
+                    <h3>NoiseM@p plugin</h3>
+                    <p style="margin:1px 0 0 0;" align="justify">The <b>NoiseM@p plugin</b> offers an unique way to connect the <b>NoiseM@p core</b> processes within the OrbisGIS software, available as SQL functions. These functions are manipulated in a graphical user interface  console that enables you to execute NoiseM@p commands. This console also proposes a number of features for helping with, code formatting, code writting (auto-completion, tooltips)…</p>
+                    <p style="margin:1px 0 0 0;" align="justify">However, the main added value is related to the GIS capabilities - map viewing, cartography, data edition, database access - that permit to interact with the input and output data. For example, the user can easily post-process the output data  through the built-ins OrbisGIS functions, in order to :</p>
+                    <ul style="list-style-type:disc;">
+                        <li>interpolate the receivers levels to build a continuous noise map (ISO levels),</li>
+                        <li style="list-style-type:disc;">establish a spatial statistical study of the results in association with external data to compute population exposure, </li>
+                        <li style="list-style-type:disc;">publish intermediate or final results as files and/or over networks services thanks to the OGC standards supported by OrbisGIS. </li>
+                    </ul>
+                </div><!-- col-lg -->
+
+                <br>
+
+                <br>
+                <br>
+            </div><!-- row -->
+        </div><!-- container -->
+
+
+        <!-- ==== COMMUNITY ==== -->
+        <div class="container" id="community" name="community">
+            <div class="row">
+                <br>
+                <br>
+                <h1 class="centered">COMMUNITY</h1>
+                <hr>
+                <br>
+                <!-- ==== GREYWRAP ==== -->
+                <div id="greywrap">
+                    <div class="container">
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <h2>Documentation</h2>
+                                <p style = "margin:1px 0 0 0" align="justify">Your wiki pages contain some tutorials which should help you getting started with NoiseM@p.</p>
+                                <a style="margin-top:1em"  href="https://github.com/irstv/noisemap/wiki" target="blank" class="btn btn-success">Go to the wiki</a>
+                                <hr>
+                                <h2>Mailing lists</h2>
+                                <p style = "margin:1px 0 0 0" align="justify">We also provide different mailing lists according to the level of involvement (user or developer) to post a question and discuss different topics of using NoiseM@p and the OrbisGIS software.</p>
+                                <a  href="http://orbisgis.3871844.n2.nabble.com/" target="blank" class="btn btn-success">Join the mailling list</a>
+                            </div>
+                            <div class="col-lg-6">
+                                <h2>Contributing</h2>
+                                <p style="margin:1px 0 0 0;"  align="justify">As NoiseM@ap exits for and by users, you can contribute in different ways mainly because we are using a modern web-based hosting service for the NoiseM@p project. The NoiseM@p team takes profit from the OrbisGIS GitHub platform that allows : code sharing and publishing service. It’s a social networking site for users and programmers. Each and every one of you is welcome to :</p>
+                                <p  style="margin:1px 0 0 0;" align="justify">- report an issue, a bug, an enhancement. <a  href="https://github.com/irstv/noisemap/issues" target="blank" class="btn btn-success">Report</a><p>                                
+                                <p  style = "margin:1px 0 0 0" align="justify">- contribute to the source code.  <a  href="https://github.com/irstv/noisemap" target="blank" class="btn btn-success">Source code</a><p>
+                            </div>
+                            <p style = "margin:1px 0 0 0" align="center"><img style="display: inline;"  class="img-responsive" src="assets/img/logo_orbisgis.png" alt="logo" /><a  href="http://www.orbisgis.org" target="blank" class="btn btn-primary">Learn more about OrbisGIS</a></p>		
+                        </div><!-- row -->
+                    </div>
+                    <br>
+                    <br>
+                </div><!-- greywrap -->
+                <br>
+            </div><!-- /row -->
+        </div>
+
+
+        <!-- ==== SECTION DIVIDER3 -->
+        <section class="section-divider textdivider divider3">
+            <div class="container">
+                <h1 style="color:grey; text-shadow:3px 3px 2px white";>OPEN FOR SUSTAINABLE DEVELOPMENT</h1>
+                <hr>
+                <p style="color:grey; text-shadow:3px 3px 2px white";><b>An opensource software dedicated to noise simulation in a context of sustainable development.</b></p>
+            </div><!-- container -->
+        </section><!-- section -->
+
+
+        <!-- ==== REFERENCES ==== -->
+        <div class="container" id="references" name="references">
+            <br>
+            <div class="row">
+                <br>
+                <h1 class="centered">REFERENCES</h1>
+                <hr>
+                <br>
+            </div><!-- /row -->
+
+            <div class="row">
+                <div class="col-lg-6">
+                    <h2>Scientific communications</h2>
+                    <p align="justify">FORTIN N., BOCHER E., PICAUT J., PETIT G., DUTILLEUX G. « An opensource tool to build urban noise maps in a GIS ». In : Open Source Geospatial Research and Education Symposium. Open Source Geospatial Research and Education Symposium. Yverdon-les-Bains, Suisse : [s.n.], 2012. p. 227‑235. <a href="http://hal.archives-ouvertes.fr/hal-00845701" target="blank" class="icon icon-link"> Read More</a></p>
+                    <p align="justify">PICAUT J., FORTIN N. « Approche simplifiée de la réalisation de cartographies sonores de grandes agglomérations à l’aide d’un logiciel SIG ». RéférenceS. september 2012. p. 232‑23 (in french) </p>
+                    <p align="justify">FORTIN N., PICAUT J., BOCHER E., PETIT G., GUÉGANNO A., DUTILLEUX G. « A simple approach for making noise maps within a GIS software ». In : Acoustics 2012 Nantes. Nantes, France : Société Française d’Acoustique, 2012. <a href="http://hal.archives-ouvertes.fr/hal-00810892" target="blank" class="icon icon-link"> Read More</a></p>
+                    <p align="justify">PICAUT J., FORTIN N. « Approche simplifiée de la réalisation de cartographies sonores de grandes agglomérations à l’aide d’un logiciel SIG ». In : Colloque GIS Modélisation urbaine « La modélisation de la ville : du modèle au projet urbain ». Colloque GIS Modélisation urbaine « La modélisation de la ville : du modèle au projet urbain ». Marne la Vallée, France : [s.n.], 2011.(in french)</p>
+                    <p>PICAUT J., FORTIN N., DUTILLEUX G. « A simplified approach for making soundmaps within a GIS software ». In : INTER-NOISE and NOISE-CON Congress and Conference Proceedings. Inter-Noise 2011. Osaka, Japan: [s.n.], 2011. p. 147‑152. <a href="http://www.ingentaconnect.com/content/ince/incecp/2011/00002011/00000008/art00022 " target="blank" class="icon icon-link"> Read More</a></p>
+                    <p align="justify">MESTAYER P., ABIDI A., ANDRÉ M., BOCHER E., BOUGNOL J., BOURGES B., BRÉCARD D., BROC J.-S., BULTEAU J., FADET P. Y., FABUREL G., FIALAIRE J., FORTIN N., FRENEAU A., FRITSCH B., HERBEZ P., JOURMARD R., LEDUC T., LE PEN Y., LÉPICIER V., LEVEAUX S., ORFEUIL J. P., PENVEN F., PETIT G., PICAUT J., REBOURS A. « Urban mobility plan environmental impacts assessment: a methodology including socio-economic consequences ». In : 10th Urban Environment Symposium. Gothenburg, Sweden: [s.n.], 2010. <a href="http://hal.archives-ouvertes.fr/hal-00614951 " target="blank" class="icon icon-link"> Read More</a></p>
+
+
+                </div><!-- /col -->
+
+
+                <div class="col-lg-6">
+
+
+                    <h2>Workshops - Schools</h2>
+                    <p align="justify">FORTIN N., BOCHER E.,Petit G.« SIG et cartographie sonore avec OrbisGIS»., Ecole d'automne "Ville et Accoustique", 21 au 25 octobre 2013, Nantes (FR).</p>
+                    <br>
+                    <h2>Technical reports</h2>
+                    <p align="justify">PICAUT J., FORTIN N., DUTILLEUX G., BOCHER E., PETIT G., GUÉGANNO A. « Une méthode simplifiée pour la réalisation de cartes de bruit avec un logiciel SIG ». In : Évaluation environnementale des plans de déplacements urbains. Séminaire final de restitution du programme Eval-PDU. Évaluation environnementale des plans de déplacements urbains. Nantes, France : IRSTV, 2012. <a href="http://hal.archives-ouvertes.fr/hal-00845760" target="blank" class="icon icon-link"> Read More</a> (in french)</p>
+                    <p align="justify">PICAUT J., FORTIN N., BOCHER E., DUTILLEUX G. Rapport final. Projet Eval-PDU – Tâche 4 « Développement d’une méthode simplifiée sous SIG pour la production de cartes de bruit de grandes agglomérations ». Nantes, France : Ifsttar, 2012. (ANR Eval-PDU - programme Ville Durable VD08_321250). (in french)</p>
+                    <p align="justify">PICAUT J., FORTIN N. Approche simplifiée de prévision acoustique en milieu urbain. Intégration dans le logiciel OrbisGIS. Nantes, France : Ifsttar, 2012. (ANR Eval-PDU - programme Ville Durable VD08_321250).(in french)</p>
+                    <br>
+                </div><!-- /col -->
+            </div><!-- /row -->
+            <br>
+            <br>
+        </div><!-- /container -->
+
+
+        <!-- ==== PORTFOLIO ==== -->
+        <div class="container" id="portfolio" name="portfolio">
+            <br>
+            <div class="row">
+                <br>
+                <h1 class="centered">NOISE MAP IN ACTION</h1>
+                <hr>
+                <br>
+            </div><!-- /row -->
+            <div class="container">
+                <div class="row">	
+
+                    <!-- PORTFOLIO IMAGE 1 -->
+                    <div class="col-md-4">
+                        <div class="grid mask">
+                            <figure>
+                                <img class="img-responsive" src="assets/img/portfolio/NantesSubdivWithObj.jpg" alt="">
+                                <figcaption>
+                                    <h5>DOMAIN</h5>
+                                    <a data-toggle="modal" href="#myModal_1" class="btn btn-primary btn-lg">Read More</a>
+                                </figcaption><!-- /figcaption -->
+                            </figure><!-- /figure -->
+                        </div><!-- /grid-mask -->
+                    </div><!-- /col -->
+
+                    <!-- MODAL SHOW THE PORTFOLIO IMAGE. In this demo, all links point to this modal. You should create
+                                                                         a modal for each of your projects. -->
+
+                    <div class="modal fade" id="myModal_1" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                                    <h4 class="modal-title">DOMAIN CALCULATION</h4>
+                                </div>
+                                <div class="modal-body">
+                                    <p><img class="img-responsive" src="assets/img/portfolio/NantesSubdivWithObj.jpg" alt=""></p>
+                                    <p align="justify">An entire region of more than 500 square kilometers can be computed at once on a standard personal computer thanks to the area subdivision step (sub-domains). The separation of data between threads and the limited usage of synchronisation provide a good exploitation of the multi-core technology.</p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                                </div>
+                            </div><!-- /.modal-content -->
+                        </div><!-- /.modal-dialog -->
+                    </div><!-- /.modal -->
+
+
+                    <!-- PORTFOLIO IMAGE 2 -->
+                    <div class="col-md-4">
+                        <div class="grid mask">
+                            <figure>
+                                <img class="img-responsive" src="assets/img/portfolio/CellMeshReceivers.jpg" alt="">
+                                <figcaption>
+                                    <h5>MESHING</h5>
+                                    <a data-toggle="modal" href="#myModal_2" class="btn btn-primary btn-lg">Read More</a>
+                                </figcaption><!-- /figcaption -->
+                            </figure><!-- /figure -->
+                        </div><!-- /grid-mask -->
+                    </div><!-- /col -->
+
+                    <!-- MODAL SHOW THE PORTFOLIO IMAGE. In this demo, all links point to this modal. You should create
+                                                                         a modal for each of your projects. -->
+
+                    <div class="modal fade" id="myModal_2" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                                    <h4 class="modal-title">SUB-DOMAIN MESHING</h4>
+                                </div>
+                                <div class="modal-body">
+                                    <p><img class="img-responsive" src="assets/img/portfolio/CellMeshReceivers.jpg" alt=""></p>
+                                    <p align="justify">For each sub-area an extended sub-area box is defined by appending the maximum propagation distance. This extended envelope collect all sounds-sources and buildings in intersection. An union of theses buildings and sources are meshed thanks to a Constrained Delaunay triangulation. This mesh provides an optimal spatial distribution of receivers points. Furthermore the connection between the receivers reduces drastically the error introduced later by the interpolation in comparison with traditional grid receivers.</p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                                </div>
+                            </div><!-- /.modal-content -->
+                        </div><!-- /.modal-dialog -->
+                    </div><!-- /.modal -->
+
+                    <!-- PORTFOLIO IMAGE 3 -->
+                    <div class="col-md-4">
+                        <div class="grid mask">
+                            <figure>
+                                <img class="img-responsive" src="assets/img/portfolio/CellMeshFirstRefl.png" alt="">
+                                <figcaption>
+                                    <h5>PROPAGATION</h5>
+                                    <a data-toggle="modal" href="#myModal_3" class="btn btn-primary btn-lg">Read More</a>
+                                </figcaption><!-- /figcaption -->
+                            </figure><!-- /figure -->
+                        </div><!-- /grid-mask -->
+                    </div><!-- /col -->
+
+                    <!-- MODAL SHOW THE PORTFOLIO IMAGE. In this demo, all links point to this modal. You should create
+                                                                         a modal for each of your projects. -->
+
+                    <div class="modal fade" id="myModal_3" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                                    <h4 class="modal-title">SOUND PROPAGATION</h4>
+                                </div>
+                                <div class="modal-body">
+                                    <p ><img class="img-responsive" src="assets/img/portfolio/CellMeshFirstRefl.png" alt=""></p>
+                                    <p align="justify">At this step, the computation sub-area has all needed information: a propagation domain, a list of sound-sources and receivers coordinates. Each receiver seek for line sources in a range equal to the maximum propagation distance parameter; then each line source is subdivided into point sources with a space interval that depends on the receiver distance. When all point source locations are available, the propagation paths from the receiver to the sources are computed, by considering the direct, the reflected (order n) and the diffracted (order m) fields. For each path, the contribution of the sound source level is calculated, and then energetically summed into the corresponding receiver. All receivers are returned as an array of triangle where each vertex contains a receiver level.</p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                                </div>
+                            </div><!-- /.modal-content -->
+                        </div><!-- /.modal-dialog -->
+                    </div><!-- /.modal -->
+
+                </div><!-- /row -->
+
+                <!-- PORTFOLIO IMAGE 4 -->
+                <div class="col-md-4 ">
+                    <div class="grid mask">
+                        <figure>
+                            <img class="img-responsive" src="assets/img/portfolio/LDEN_2002_Routier_CUnantes.jpg" alt="">
+                            <figcaption>
+                                <h5>NOISE MAP</h5>
+                                <a data-toggle="modal" href="#myModal_4" class="btn btn-primary btn-lg">Read More</a>
+                            </figcaption><!-- /figcaption -->
+                        </figure><!-- /figure -->
+                    </div><!-- /grid-mask -->
+                </div><!-- /col -->
+
+
+                <!-- MODAL SHOW THE PORTFOLIO IMAGE. In this demo, all links point to this modal. You should create
+                     a modal for each of your projects. -->
+
+                <div class="modal fade" id="myModal_4" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                                <h4 class="modal-title">Noise map</h4>
+                            </div>
+                            <div class="modal-body">
+                                <p><img class="img-responsive" src="assets/img/portfolio/LDEN_2002_Routier_CUnantes.jpg" alt=""></p>
+                                <p align="justify">The Decibel (dB) is a unit of measurement used to quantify the intensity or magnitude of sound. A 10 dB change is generally perceived by the human ear as a doubling of noise.  Lden – is the A-weighted long-term average sound level for the day-evening-night noise indicator in decibels (24 hours).</p>
+                                <p>The delaunay triangulation is used for color contour maps for day and night or the Lden. A noise contour is extract from the delaunay triangulation. It shows the dB values using color bands or the dB value itself, corresponding to LDEN standard.</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                            </div>
+                        </div><!-- /.modal-content -->
+                    </div><!-- /.modal-dialog -->
+                </div><!-- /.modal -->
+
+                <!-- PORTFOLIO IMAGE 5 -->
+                <div class="col-md-4">
+                    <div class="grid mask">
+                        <figure>
+                            <img class="img-responsive" src="assets/img/portfolio/LDEN_population.jpg" alt="">
+                            <figcaption>
+                                <h5>POPULATION</h5>
+                                <a data-toggle="modal" href="#myModal_5" class="btn btn-primary btn-lg">Read More</a>
+                            </figcaption><!-- /figcaption -->
+                        </figure><!-- /figure -->
+                    </div><!-- /grid-mask -->
+                </div><!-- /col -->
+
+                <!-- MODAL SHOW THE PORTFOLIO IMAGE. In this demo, all links point to this modal. You should create
+                                                                     a modal for each of your projects. -->
+
+                <div class="modal fade" id="myModal_5" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                                <h4 class="modal-title">Exposed population</h4>
+                            </div>
+                            <div class="modal-body">
+                                <p><img class="img-responsive" src="assets/img/portfolio/LDEN_population.jpg" alt=""></p>
+                                <p align="justify">One of the main tasks of the noise computation is the estimation of the number of people in an agglomeration that are exposed to specific noise levels. For this it is necessary to push in the model all the buildings of the agglomeration with the estimated number of people living in them.</p> <p align="justify">This map measures the percent of the population living in an area with a LDN of greater than 68dB.</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                            </div>
+                        </div><!-- /.modal-content -->
+                    </div><!-- /.modal-dialog -->
+                </div><!-- /.modal -->
+
+                <!-- PORTFOLIO IMAGE 6 -->
+                <div class="col-md-4">
+                    <div class="grid mask">
+                        <figure>
+                            <img class="img-responsive" src="assets/img/portfolio/noisemap_3d.png" alt="">
+                            <figcaption>
+                                <h5>3D MAP</h5>
+                                <a data-toggle="modal" href="#myModal_6" class="btn btn-primary btn-lg">Read More</a>
+                            </figcaption><!-- /figcaption -->
+                        </figure><!-- /figure -->
+                    </div><!-- /grid-mask -->
+                </div><!-- /col -->
+                <!-- MODAL SHOW THE PORTFOLIO IMAGE. In this demo, all links point to this modal. You should create
+                                                                     a modal for each of your projects. -->
+
+                <div class="modal fade" id="myModal_6" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                                <h4 class="modal-title">PSEUDO 3D MAP</h4>
+                            </div>
+                            <div class="modal-body">
+                                <p><img class="img-responsive" src="assets/img/portfolio/noisemap_3d.png" alt=""></p>
+                                <p align="justify">NoiseM@p is able to place and calculate receivers along the façades of buildings.Receivers are placed on the floor with either a fixed number of receivers per façade or a set spacing between them. Receivers are located thanks to spatial analysis functions in OrbisGIS.</p>
+                                <p align="justify">The facade noise map is rendered withing a pseudo 3D model. This map is dynamically available via an INSPIRE compliant geoservice. See the DEMO section of this website.</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                            </div>
+                        </div><!-- /.modal-content -->
+                    </div><!-- /.modal-dialog -->
+                </div><!-- /.modal -->
+            </div><!-- /row -->
+            <br>
+            <br>
+        </div><!-- /row -->
+    </div><!-- /container -->
+
+
+
+    <!-- ==== MORE ==== -->
+    <div class="container" id="more" name="more">
+        <br>
+        <div class="row">
+            <br>
+            <h1 class="centered">MORE</h1>
+            <hr>
+            <div class="col-lg-6">
+                <h2>NoiseM@p for research</h2>
+                <p>NoiseM@p is currently supported by research projects from <a  href="http://www.agence-nationale-recherche.fr/en/" target="blank">French National Research Agency</a>.</p>
+                <p>Eval-PDU : urban traffic and its environmental impacts modelling to assess Urban Mobility Plan. Conception of a methodology based on the Nantes case. <a href="http://www.agence-nationale-recherche.fr/projet-anr/?tx_lwmsuivibilan_pi2[CODE]=ANR-08-VILL-0005" target="blank" class="icon icon-link"> (Read More)</a> </p>
+                <p>Eurequa : multidisciplinary assessment and environmental improvement of neighborhoods.<a href="http://www.agence-nationale-recherche.fr/en/anr-funded-project/?tx_lwmsuivibilan_pi2[CODE]=ANR-11-VILD-0006" target="blank" class="icon icon-link"> (Read More)</a> </p>
+
+            </div>
+            <div class="col-lg-6">
+                <h2>NoiseM@p for education</h2>
+                <p align="justify">NoiseM@p is used  at both a Bachelor's and a Master's level, traditionally embedded in the surveying curriculum.</p>
+                <p align="justify">Master in Transportation Acoustics, the City and the Environment (MP ATVE), Université du Maine (France) <a href="http://sciences.univ-lemans.fr/master-acoustique/spip.php?article80" target="blank" class="icon icon-link"> Read More</a></p>
+                <p align="justify">Centrale Nantes Engineer Training, 2d year, OGIS courses <a href="http://www.ec-nantes.fr/version-anglaise/" target="blank" class="icon icon-link"> Read More</a></p>
+            </div>
+        </div><!-- /row -->
+
+        <div class="row white">
+            <h2 style="text-align: center;">Future</h2>
+            <div class="col-lg-6">
+                <p align="justify">NoiseM@p is a high performance computational and programming tool to access the outdoor noise exposition in urban areas, as well as to realize researches and courses on the noise problematic. Because of many partners want to use NoiseM@p, new features will be added in the next months thanks to research projects like ENERGIC-OD. </p>
+                <ul style="list-style-type:disc;">
+                    <li>the use of NoiseM@p by experts will be improved by developing user interfaces: one can add, for example, specific tools for manipulating input data and for producing standard noise indicators automatically,</li>
+                    <li>NoiseM@p will take advantage of its modular architecture to be pushing on cloud-enabled system. We attempt to provide a design and architectural framework for web applications based on open geospatial standards. The NoiseM@p processes could be executed through a <a href="http://www.opengeospatial.org/standards/wps" target="blank">WPS</a> implementation and the involved spatial data conform to the standards of an SDI to meet their <a href="http://inspire.ec.europa.eu/" target="blank">INSPIRE</a> obligations (web services).</li>
+                    <li>the use of Open Data (such as road traffic), could be both a simple and a low-cost solution for cities to produce noise maps in "real-time" and to communicate with citizens on their urban soundscape.</li>
+                </ul>
+            </div><!-- col-lg-6 -->
+
+            <div class="col-lg-6">
+                <br>
+                <p><img class="img-responsive" src="assets/img/schema_future.jpg" alt=""></p>
+            </div><!-- col-lg-6 -->
+        </div><!-- row -->
+
+
+
+        <p align="justify">Many applications of NoiseM@p are also possible in order to reduce the noise exposition of citizens...  The new features and applications are in progress. So keep in touch and <a href="#contact">follow us</a>.</p>
+
+    </div>
+
+
+
+    <!-- ==== CONTACT US ==== -->
+    <div class="container" id="contact" name="contact">
+        <section class="section-divider">
+            <div class="row">
+                <h1 class="centered">NEWS & CONTACT</h1>
+                <hr><br>
+
+                <p align="center">
+                    <a class="twitter-timeline"  height="300" href="https://twitter.com/NoiseGIS"  data-widget-id="488948527607717888">Tweets de @NoiseGIS</a>
+                    <script>!function(d, s, id) {
+                            var js, fjs = d.getElementsByTagName(s)[0], p = /^http:/.test(d.location) ? 'http' : 'https';
+                            if (!d.getElementById(id)) {
+                                js = d.createElement(s);
+                                js.id = id;
+                                js.src = p + "://platform.twitter.com/widgets.js";
+                                fjs.parentNode.insertBefore(js, fjs);
+                            }
+                        }(document, "script", "twitter-wjs");</script>
+                </p>
+                <div class="col-lg-6">
+                    <img class="img img-circle" src="assets/img/team/team01.jpg" height="120px" width="120px" alt="">
+                    <br>
+                    <h3>IFSTTAR</h3>
+                    <p><span class="icon icon-home"></span> Laboratoire d'Acoustique Environnementale<br/>
+                        <span class="icon icon-phone"></span> +33 (0)240 845 789 <br/>
+                        <span class="icon icon-envelop"></span> <a href="mailto:judicael.picaut@ifsttar.fr">Judicael Picaut</a><br/>
+                        <span class="icon icon-website"></span> <a href="http://www.lae.ifsttar.fr/"> www.lae.ifsttar.fr </a> <br/>
+                        <span class="icon icon-twitter"></span> <a href="https://twitter.com/NoiseGIS"> @NoiseGIS </a> <br/>
+                    </p>
+                </div><!-- col-lg-3 -->
+
+                <div class="col-lg-6">
+                    <img class="img img-circle" src="assets/img/team/team02.jpg" height="120px" width="120px" alt="">
+                    <br>
+                    <h3>Atelier SIG - IRSTV FR CNRS 2488</h3>
+                    <p><span class="icon icon-home"></span> Ecole Centrale de Nantes<br/>
+                        <span class="icon icon-phone"></span> +33 (0)240 376 867 <br/>
+                        <span class="icon icon-envelop"></span> <a href="mailto:erwan.bocher@ec-nantes.fr">Erwan Bocher</a> <br/>
+                        <span class="icon icon-website"></span> <a href="http://www.orbisgis.org/"> www.orbisgis.org </a> <br/>
+                        <span class="icon icon-twitter"></span> <a href="https://twitter.com/OrbisGIS"> @OrbisGIS </a> <br/>
+                    </p>
+                </div><!-- col-lg-3 -->
+                <!-- ==== SECTION DIVIDER6 ==== -->
+                <section class="section-divider textdivider divider6">
+                    <!--<div class="container">-->
+
+                    <p></p>					
+                    <p></p>
+                    <p></p>
+                    <p></p>
+
+                    <!--</div> container -->
+                </section><!-- section -->
+
+
+            </div><!-- row -->
+        </section><!-- section -->
+    </div><!-- container -->
+
+
+
+
+
+    <div id="footerwrap">
+        <div class="container">
+            <h4>Created by <a href="http://www.irstv.fr">Atelier SIG | IFSTTAR</a> <a data-toggle="modal" href="#credits"> - Credits</a></h4>
+        </div>
+
+        <div class="modal fade" id="credits" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                        <h4 class="modal-title">CREDITS</h4>
+                    </div>
+                    <div class="modal-body">
+
+
+                        <h3>Photo credit</h3>
+
+                        <p>Photos from Nantes made by <a href="https://www.flickr.com/photos/abelard/">Arnaud Abélard</a>, avalaible <a href="https://www.flickr.com/photos/abelard/7550603378/in/photolist-cvdPjS-fuVpUE-hNPrEU-5XDB2t-f9BB5h-9yC4ro-cvdLGW-62D644-fagTc8-a9Tg86-dzGjAS-mQhojy-4Bxkbq-8iUTrf-a7bjLe-jyJTjM-mc7sNB-64g9oR-62B5zx-cvejy9-68B4Hh-6B5v8P-f476fb-9LWxn7-aJhrj8-6LSHdW-68wQKe-4Bt46a-jSmPB2-cMRLu7-63gMtU-4BxkjW-f7qQaJ-68Pcut-cUDXeq-f3ZXNu-f3tX9H-kqc4h7-9xMdGp-7mFega-kqf26D-8g1r35-mc88jH-4StBie-kqbeVV-4Bt3CP-61aURn-62XRwY-4Br6B3-cbwDrC">here</a> under Creative Commons licence (<a href="https://creativecommons.org/licenses/by-nc-sa/2.0/deed.fr">CC BY-NC-SA 2.0</a>)</p>
+
+
+                        <h3>Website theme</h3>
+
+                        <p>
+                            Theme Boostrap 3 based on <a href="http://www.blacktie.co/demo/shield/">Shield</a>, created by <a href="http://www.blacktie.co/">BlackTie.co</a>
+                        </p>
+
+
+                        <h3>Other credits</h3>
+
+                        <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png" /></a><br />All other documents and ressources are produced by Atelier SIG & IFSTTAR and are credited under a <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License</a>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    </div>
+                </div><!-- /.modal-content -->
+            </div><!-- /.modal-dialog -->
+        </div><!-- /.modal -->
+    </div>
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+
+
+    <script type="text/javascript" src="assets/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="assets/js/retina.js"></script>
+    <script type="text/javascript" src="assets/js/jquery.easing.1.3.js"></script>
+    <script type="text/javascript" src="assets/js/smoothscroll.js"></script>
+    <script type="text/javascript" src="assets/js/jquery-func.js"></script>
+</body>
+</html>
