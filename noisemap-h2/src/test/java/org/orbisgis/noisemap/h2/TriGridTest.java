@@ -156,8 +156,14 @@ public class TriGridTest {
 
     @Test
     public void testGroundRelfectionPropagation() throws SQLException {
+        st.execute("DROP TABLE IF EXISTS LANDCOVER2000");
         st.execute("CALL SHPREAD('"+TriGridTest.class.getResource("landcover2000.shp").getFile()+"', 'LANDCOVER2000')");
         st.execute("RUNSCRIPT FROM '"+TriGridTest.class.getResource("ground-effect.sql").getFile()+"'");
-
+        ResultSet rs = st.executeQuery("SELECT W_V1,W_V2,W_V3 FROM TRI_LVL WHERE ST_DISTANCE(THE_GEOM, 'POINT (183960.66 2429061.15)') < 1 ");
+        assertTrue(rs.next());
+        assertEquals(52.79,10*Math.log10(rs.getDouble(3)), 0.1);
+        rs = st.executeQuery("SELECT W_V1,W_V2,W_V3 FROM TRI_LVL WHERE ST_DISTANCE(THE_GEOM, 'POINT (183935.34 2428982.84)') < 1 ");
+        assertTrue(rs.next());
+        assertEquals(50.47,10*Math.log10(rs.getDouble(3)), 0.1);
     }
 }
