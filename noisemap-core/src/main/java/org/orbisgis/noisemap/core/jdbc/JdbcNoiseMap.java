@@ -105,7 +105,7 @@ public class JdbcNoiseMap {
             String soilGeomName = SFSUtilities.getGeometryFields(connection,
                     TableLocation.parse(soilTableName)).get(0);
             try (PreparedStatement st = connection.prepareStatement(
-                    "SELECT " + TableLocation.quoteIdentifier(soilGeomName) + " FROM " +
+                    "SELECT " + TableLocation.quoteIdentifier(soilGeomName) + ", G FROM " +
                             soilTableName + " WHERE " +
                             TableLocation.quoteIdentifier(soilGeomName) + " && ?")) {
                 st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));

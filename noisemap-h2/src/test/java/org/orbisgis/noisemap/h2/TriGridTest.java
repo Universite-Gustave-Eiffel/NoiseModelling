@@ -64,6 +64,8 @@ public class TriGridTest {
         connection = SFSUtilities.wrapConnection(SpatialH2UT.createSpatialDataBase(TriGridTest.class.getSimpleName(), false, "MV_STORE=FALSE"));
         org.h2gis.h2spatialext.CreateSpatialExtension.initSpatialExtension(connection);
         CreateSpatialExtension.registerFunction(connection.createStatement(), new BR_TriGrid(), "");
+        CreateSpatialExtension.registerFunction(connection.createStatement(), new BR_TriGrid3D(), "");
+        CreateSpatialExtension.registerFunction(connection.createStatement(), new BR_EvalSource(), "");
         CreateSpatialExtension.registerFunction(connection.createStatement(), new BR_SpectrumRepartition(), "");
     }
 
@@ -150,5 +152,12 @@ public class TriGridTest {
         } finally {
             rs.close();
         }
+    }
+
+    @Test
+    public void testGroundRelfectionPropagation() throws SQLException {
+        st.execute("CALL SHPREAD('"+TriGridTest.class.getResource("landcover2000.shp").getFile()+"', 'LANDCOVER2000')");
+        st.execute("RUNSCRIPT FROM '"+TriGridTest.class.getResource("ground-effect.sql").getFile()+"'");
+
     }
 }

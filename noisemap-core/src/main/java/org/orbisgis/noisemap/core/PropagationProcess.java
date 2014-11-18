@@ -132,17 +132,19 @@ public class PropagationProcess implements Runnable {
         // Find the position of the closest point
         Coordinate[] points = geom.getCoordinates();
         // For each segments
-        Double closestPtDist = Double.MAX_VALUE;
+        Double bestClosestPtDist = Double.MAX_VALUE;
         Coordinate closestPt = null;
         double roadLength = 0.;
         for (int i = 1; i < points.length; i++) {
             LineSegment seg = new LineSegment(points[i - 1], points[i]);
             roadLength += seg.getLength();
-            Coordinate SegClosest = seg.closestPoint(startPt);
-            double segcdist = SegClosest.distance(startPt);
-            if (segcdist < closestPtDist) {
-                closestPtDist = segcdist;
-                closestPt = SegClosest;
+            Coordinate ptClosest = seg.closestPoint(startPt);
+            // Interpolate Z value
+            ptClosest.setOrdinate(2, Vertex.interpolateZ(ptClosest, seg.p0, seg.p1));
+            double closestDist = CGAlgorithms3D.distance(startPt, ptClosest);
+            if (closestDist < bestClosestPtDist) {
+                bestClosestPtDist = closestDist;
+                closestPt = ptClosest;
             }
         }
         if (closestPt == null) {
@@ -153,11 +155,11 @@ public class PropagationProcess implements Runnable {
         // receiver is smaller than the minimum distance constraint then the
         // discretization parameter is changed
         // Delta must not not too small to avoid memory overhead.
-        if (closestPtDist < minRecDist) {
-            closestPtDist = minRecDist;
+        if (bestClosestPtDist < minRecDist) {
+            bestClosestPtDist = minRecDist;
         }
-        if (closestPtDist / 2 < delta) {
-            delta = closestPtDist / 2;
+        if (bestClosestPtDist / 2 < delta) {
+            delta = bestClosestPtDist / 2;
         }
         pts.add(closestPt);
         Coordinate[] splitedPts = JTSUtility
