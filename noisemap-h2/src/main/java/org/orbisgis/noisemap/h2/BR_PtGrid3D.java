@@ -61,11 +61,41 @@ public class BR_PtGrid3D extends AbstractFunction implements ScalarFunction {
     private static final int COLUMN_COUNT = 3;
 
     public BR_PtGrid3D() {
-        addProperty(PROP_REMARKS , "Sound propagation from punctual sound sources to defined punctual receivers.\n" +
-                "select * from BR_PtGridBR_PtGrid(buildings VARCHAR,sources VARCHAR,receivers_table VARCHAR," +
-                "sound_lvl_field VARCHAR,ground_type_table VARCHAR, maximum_propagation_distance DOUBLE(meter)," +
-                "maximum_reflection_distance DOUBLE(meter),subdivision_level int," +
-                " sound_reflection_order int, sound_diffraction_order int, wall_absorption double)");
+        addProperty(PROP_REMARKS , "\n" +
+                "## BR_PtGrid3D\n" +
+                "\n" +
+                "BR_PtGrid3D(String buildingsTable, String heightFieldName,String sourcesTable, String receiversTable, String sourcesTableSoundFieldName, String groundTypeTable, double maximumPropagationDistance, double maximumWallSeekingDistance, int soundReflectionOrder, int soundDiffractionOrder, double wallAlpha)\n" +
+                "\n" +
+                " - **buildingsTable** table identifier that contain a geometry column of type POLYGON.\n" +
+                " - **heightFieldName** column identifier in the buildings table that hold building height in meter. " +
+                "\n" +
+                " - **sourcesTable** table identifier that contain a geometry column of type POINT or LINESTRING.The " +
+                "table must contain the sound emission level in dB(A).\n" +
+                " - **receiversTable** table identifier that contain the list of evaluation point of sound level. " +
+                "This table must contains only POINT. And optionally an integer primary key.\n" +
+                " - **sourcesTableSoundFieldName** prefix identifier of the emission level column. ex 'DB_M' for " +
+                "columns 'DB_M100' to 'DB_M5000'.  \n" +
+                " - **groundTypeTable** table identifier of the ground category table. This table must contain a " +
+                "geometry field of type POLYGON. And a column 'G' of type double between 0 and 1.\n" +
+                " dimensionless coefficient G:\n" +
+                "    - Law, meadow, field of cereals G=1\n" +
+                "    - Undergrowth (resinous or decidious) G=1\n" +
+                "    - non-compacted earth G=0.7\n" +
+                "    - Compacted earth, track G=0.3\n" +
+                "    - Road surface G=0\n" +
+                "    - Smooth concrete G=0\n" +
+                " - **maximumPropagationDistance** From a receiver, each source that are farther than this parameter " +
+                "are ignored. Recommended value, greater or equal to 750 meters. Greatly impacts performance and " +
+                "memory usage.\n" +
+                " - **maximumWallSeekingDistance** From the direct propagation line source-receiver, " +
+                "wall farther than this parameter are ignored for reflection and diffraction. Greatly impacts " +
+                "performance.\n" +
+                " - **soundReflectionOrder** Maximum depth of wall reflection. Greatly impacts performance. " +
+                "Recommended value is 2.\n" +
+                " - **soundDiffractionOrder** Maximum depth of sound diffraction. Impacts performance. Recommended " +
+                "value is 1.\n" +
+                " - **wallAlpha** Wall absorption value. Between 0 and 1. Recommended value is 0.23 for concrete." +
+                "");
     }
 
     @Override

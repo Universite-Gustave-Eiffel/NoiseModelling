@@ -48,12 +48,47 @@ import java.sql.SQLException;
 public class BR_TriGrid extends AbstractFunction implements ScalarFunction {
 
     public BR_TriGrid() {
-        addProperty(PROP_REMARKS , "Sound propagation from ponctual sound sources to ponctual receivers created by a " +
-                "delaunay triangulation of specified buildings geometry.\n" +
-                "CALL BR_TriGrid(buildingsTable VARCHAR, sourcesTable VARCHAR, sourcesTableSoundFieldName VARCHAR,G_TABLE VARCHAR, " +
-                " maximumPropagationDistance DOUBLE, maximumWallSeekingDistance DOUBLE," +
-                " roadsWidth DOUBLE, receiversDensification DOUBLE, maximumAreaOfTriangle DOUBLE," +
-                " soundReflectionOrder INT, soundDiffractionOrder DOUBLE, wallAlpha DOUBLE)");
+        addProperty(PROP_REMARKS , "## BR_TriGrid\n" +
+                "\n" +
+                "Table function.Sound propagation in 2 dimension. Return 6 columns. TRI_ID integer,THE_GEOM polygon,W_V1 double,W_V2 double,W_V3 double,CELL_ID integer.\n" +
+                " \n" +
+                "BR_TriGrid(VARCHAR buildingsTable, VARCHAR sourcesTable,VARCHAR sourcesTableSoundFieldName, " +
+                "VARCHAR groundTypeTable, double maximumPropagationDistance, double maximumWallSeekingDistance, " +
+                "double roadsWidth, double receiversDensification, double maximumAreaOfTriangle, " +
+                "int soundReflectionOrder, int soundDiffractionOrder, double wallAlpha)\n" +
+                " \n" +
+                " - **buildingsTable** table identifier that contain a geometry column of type POLYGON.\n" +
+                " - **sourcesTable** table identifier that contain a geometry column of type POINT or LINESTRING.The " +
+                "table must contain the sound emission level in dB(A).\n" +
+                " - **sourcesTableSoundFieldName** prefix identifier of the emission level column. ex 'DB_M' for " +
+                "columns 'DB_M100' to 'DB_M5000'.  \n" +
+                " - **groundTypeTable** table identifier of the ground category table. This table must contain a " +
+                "geometry field of type POLYGON. And a column 'G' of type double between 0 and 1.\n" +
+                " dimensionless coefficient G:\n" +
+                "    - Law, meadow, field of cereals G=1\n" +
+                "    - Undergrowth (resinous or decidious) G=1\n" +
+                "    - non-compacted earth G=0.7\n" +
+                "    - Compacted earth, track G=0.3\n" +
+                "    - Road surface G=0\n" +
+                "    - Smooth concrete G=0\n" +
+                " - **maximumPropagationDistance** From a receiver, each source that are farther than this parameter " +
+                "are ignored. Recommended value, greater or equal to 750 meters. Greatly impacts performance and " +
+                "memory usage.\n" +
+                " - **maximumWallSeekingDistance** From the direct propagation line source-receiver, " +
+                "wall farther than this parameter are ignored for reflection and diffraction. Greatly impacts " +
+                "performance.\n" +
+                " - **roadsWidth** Start creating receivers from this distance. Should be superior than 1 meter.\n" +
+                " - **receiversDensification** Create additional receivers at this distance from sources. (0 to " +
+                "disable)\n" +
+                " - **maximumAreaOfTriangle** Maximum area for noise map triangular mesh. Smaller area means more " +
+                "receivers. Impacts performance.\n" +
+                " - **soundReflectionOrder** Maximum depth of wall reflection. Greatly impacts performance. " +
+                "Recommended value is 2.\n" +
+                " - **soundDiffractionOrder** Maximum depth of sound diffraction. Impacts performance. Recommended " +
+                "value is 1.\n" +
+                " - **wallAlpha** Wall absorption value. Between 0 and 1. Recommended value is 0.23 for concrete.\n" +
+                " " +
+                "");
     }
 
     @Override

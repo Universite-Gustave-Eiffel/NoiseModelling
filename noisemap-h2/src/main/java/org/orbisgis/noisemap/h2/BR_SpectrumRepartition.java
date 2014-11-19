@@ -43,10 +43,13 @@ import org.orbisgis.noisemap.core.VehicleSpectrumRepartition;
 public class BR_SpectrumRepartition extends DeterministicScalarFunction {
 
     public BR_SpectrumRepartition() {
-        addProperty(PROP_REMARKS, "Return the dB(A) value corresponding to the the third octave frequency band." +
-                " First parameter is Frequency band one of [100,125,160,200,250,315,400,500,630,800,1000,1250,1600,2000," +
-                "2500,3150,4000,5000], second parameter is the category of the road surface [0:Pervious,1:Non Pervious]," +
-                " third parameter is the global dB(A) Spl Value.");
+        addProperty(PROP_REMARKS, "## BR_SpectrumRepartition\n"+
+                "Return the dB(A) level of third-octave frequency band using light/heavy vehicle emission spectrum.\n" +
+                "1. BR_SpectrumRepartition(int freqBand, int roadSurf, double level)\n" +
+                " - **freqBand** One of 100,125,160,200,250,315,400,500,630,800,1000,1250,1600,2000,2500,3150,4000," +
+                "5000\n" +
+                " - **roadSurf** Only surface 1 is handled\n" +
+                " - **level** Global dB(A) value");
     }
 
     @Override

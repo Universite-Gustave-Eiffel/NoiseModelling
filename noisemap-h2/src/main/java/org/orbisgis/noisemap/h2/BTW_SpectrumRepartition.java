@@ -43,10 +43,13 @@ import org.orbisgis.noisemap.core.TramSpectrumRepartition;
 public class BTW_SpectrumRepartition extends DeterministicScalarFunction {
 
     public BTW_SpectrumRepartition() {
-        addProperty(PROP_REMARKS, "Return the dB(A) value corresponding to the the third octave frequency band." +
-                " First parameter is Frequency band one of [100,125,160,200,250,315,400,500,630,800,1000,1250,1600,2000," +
-                "2500,3150,4000,5000], second parameter is the category of the road surface [1:Pervious,2:Non Pervious]," +
-                " third parameter is the global dB(A) Spl Value.");
+        addProperty(PROP_REMARKS, "\n" +
+                "## BTW_SpectrumRepartition\n" +
+                "Return the dB(A) level of third-octave frequency band using tramway emission spectrum.\n" +
+                "BTW_SpectrumRepartition(int freqBand, double level)\n" +
+                " - **freqBand** One of 100,125,160,200,250,315,400,500,630,800,1000,1250,1600,2000,2500,3150,4000," +
+                "5000\n" +
+                " - **level** Global dB(A) value\n");
     }
 
     @Override

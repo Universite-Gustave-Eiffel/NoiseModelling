@@ -44,9 +44,16 @@ import org.orbisgis.noisemap.core.EvalTramwaySource;
 public class BTW_EvalSource extends DeterministicScalarFunction {
 
     public BTW_EvalSource() {
-        addProperty(PROP_REMARKS, "Return the dB(A) value corresponding to real speed in km/h (not commercial speed),tramway by hour parameters.\n" +
-                "Ground category is one of theses (0:Grass,1:Rigid).Anti-vibration system can be floating panels placed under railways.\n" +
-                "SELECT BTW_EvalSource(loadSpeed,tramway_count_per_hour,ground_category,has_anti_vibration_system)");
+        addProperty(PROP_REMARKS, "## BTW_EvalSource\n" +
+                "\n" +
+                "Return the dB(A) global value of equivalent source power of tramway traffic.\n" +
+                "\n" +
+                "1. BTW_EvalSource(double speed, double tw_per_hour, int groundType, boolean has_anti_vibration)\n" +
+                "\n" +
+                " - **speed** Average speed\n" +
+                " - **tw_per_hour** Average tramway by hour\n" +
+                " - **groundType** Ground type 0:Grass 1:Rigid\n" +
+                " - **has_anti_vibration** True if Anti-vibration system is installed");
     }
 
     @Override
