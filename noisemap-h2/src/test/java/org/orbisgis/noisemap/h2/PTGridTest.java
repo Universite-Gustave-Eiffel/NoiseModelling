@@ -32,6 +32,8 @@ public class PTGridTest {
         CreateSpatialExtension.registerFunction(connection.createStatement(), new BR_PtGrid3D(), "");
         CreateSpatialExtension.registerFunction(connection.createStatement(), new BR_PtGrid(), "");
         CreateSpatialExtension.registerFunction(connection.createStatement(), new BR_SpectrumRepartition(), "");
+        CreateSpatialExtension.registerFunction(connection.createStatement(), new BR_EvalSource(), "");
+        CreateSpatialExtension.registerFunction(connection.createStatement(), new BR_SpectrumRepartition(), "");
     }
 
     @AfterClass
@@ -134,5 +136,20 @@ public class PTGridTest {
         } finally {
             rs.close();
         }
+    }
+
+    @Test
+    public void testGroundReflectionPropagation() throws SQLException {
+        st.execute("DROP TABLE IF EXISTS LANDCOVER2000");
+        st.execute("CALL SHPREAD('"+TriGridTest.class.getResource("landcover2000.shp").getFile()+"', 'LANDCOVER2000')");
+        st.execute("RUNSCRIPT FROM '"+TriGridTest.class.getResource("ground-effect.sql").getFile()+"'");
+        ResultSet rs = st.executeQuery("SELECT * FROM PT_LVL");
+        assertTrue(rs.next());
+        assertEquals(1, rs.getInt("GID"));
+        assertEquals(51.98,10*Math.log10(rs.getDouble("W")), 0.1);
+        assertTrue(rs.next());
+        assertEquals(2, rs.getInt("GID"));
+        assertEquals(50.28,10*Math.log10(rs.getDouble("W")), 0.1);
+        assertFalse(rs.next());
     }
 }

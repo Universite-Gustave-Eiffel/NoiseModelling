@@ -11,9 +11,9 @@ create table land_g as select the_geom, CASEWHEN(TYPE='built up areas', 0, CASEW
 -- Make roads table (just geometries and road type)
 drop table if exists roads_geom;
 create table roads_geom ( the_geom GEOMETRY, NUM INTEGER, node_from INTEGER, node_to INTEGER, road_type INTEGER );
-INSERT INTO roads_geom (the_geom,NUM,node_from,node_to,road_type) VALUES (ST_GeomFromText('LINESTRING (183817 2429175 0, 183810 2429142 0,183827 2429103 0,183822 2429055 0)'),0,0,1,53);
-INSERT INTO roads_geom (the_geom,NUM,node_from,node_to,road_type) VALUES (ST_GeomFromText('LINESTRING (183822 2429055 0,183841 2429054 0,183872 2429072 0,183892 2429073 0, 184013 2428992 0,184062 2428974 0)'),1,1,2,53);
-INSERT INTO roads_geom (the_geom,NUM,node_from,node_to,road_type) VALUES (ST_GeomFromText('LINESTRING (183822 2429055 0, 183805 2429031 0, 183792 2428986 0, 183783 2428945 0, 183789 2428889 0)'),2,2,3,53);
+INSERT INTO roads_geom (the_geom,NUM,node_from,node_to,road_type) VALUES (ST_GeomFromText('LINESTRING (183817 2429175 0.2, 183810 2429142 0.2,183827 2429103 0.2,183822 2429055 0.2)'),0,0,1,53);
+INSERT INTO roads_geom (the_geom,NUM,node_from,node_to,road_type) VALUES (ST_GeomFromText('LINESTRING (183822 2429055 0.2,183841 2429054 0.2,183872 2429072 0.2,183892 2429073 0.2, 184013 2428992 0.2,184062 2428974 0.2)'),1,1,2,53);
+INSERT INTO roads_geom (the_geom,NUM,node_from,node_to,road_type) VALUES (ST_GeomFromText('LINESTRING (183822 2429055 0.2, 183805 2429031 0.2, 183792 2428986 0.2, 183783 2428945 0.2, 183789 2428889 0.2)'),2,2,3,53);
 
 -- Make traffic information table
 drop table if exists roads_traffic;
@@ -60,6 +60,10 @@ BR_SpectrumRepartition(3150,1,db_m) as db_m3150,
 BR_SpectrumRepartition(4000,1,db_m) as db_m4000,
 BR_SpectrumRepartition(5000,1,db_m) as db_m5000 from roads_src_global;
 
+DROP TABLE IF EXISTS RECEIVERS;
+CREATE TABLE RECEIVERS(gid serial, the_geom point);
+INSERT INTO RECEIVERS VALUES (NULL, 'POINT (183960.66 2429061.15 1.6)'), (NULL, 'POINT (183935.34 2428982.84 1.6)');
+
 -- Sound propagation from sources through buildings reflecting on ground
-drop table if exists tri_lvl;
-create table tri_lvl as SELECT * from BR_TriGrid3D('BUILDINGS','HEIGHT','ROADS_SRC','DB_M','LAND_G','',750,50,1.5,2.8,300,2,1,0.23);
+drop table if exists pt_lvl;
+create table pt_lvl as SELECT * from BR_PtGrid3D('BUILDINGS','HEIGHT','ROADS_SRC','RECEIVERS','DB_M','LAND_G','',750,50,2,1,0.23);
