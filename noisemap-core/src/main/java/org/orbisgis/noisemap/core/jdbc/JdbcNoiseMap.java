@@ -12,7 +12,6 @@ import org.h2gis.utilities.TableLocation;
 import org.orbisgis.noisemap.core.GeoWithSoilType;
 import org.orbisgis.noisemap.core.MeshBuilder;
 import org.orbisgis.noisemap.core.QueryGeometryStructure;
-import org.orbisgis.noisemap.core.ThreadPool;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -25,7 +24,7 @@ import java.util.List;
  * Common attributes for propagation of sound sources.
  * @author Nicolas Fortin
  */
-public class JdbcNoiseMap {
+public abstract class JdbcNoiseMap {
     // When computing cell size, try to keep propagation distance away from the cell
     // inferior to this ratio (in comparison with cell width)
     protected static final double MINIMAL_BUFFER_RATIO = 0.3;
@@ -197,6 +196,9 @@ public class JdbcNoiseMap {
     protected static Double DbaToW(Double dBA) {
         return Math.pow(10., dBA / 10.);
     }
+
+    abstract protected Envelope getComputationEnvelope(Connection connection) throws SQLException;
+
     /**
      * Fetch scene attributes, compute best computation cell size.
      * @param connection Active connection
@@ -210,7 +212,6 @@ public class JdbcNoiseMap {
         if(sourcesTableName.isEmpty()) {
             throw new SQLException("A sound source table must be provided");
         }
-        ThreadPool threadManager = null;
         // Steps of execution
         // Evaluation of the main bounding box (sourcesTableName+buildingsTableName)
         // Split domain into 4^subdiv cells
@@ -232,7 +233,7 @@ public class JdbcNoiseMap {
         // receiver
         // Save the triangle geometry with the db_m value of the 3 vertices
         // 1 Step - Evaluation of the main bounding box (sources)
-        setMainEnvelope(SFSUtilities.getTableEnvelope(connection, TableLocation.parse(sourcesTableName), ""));
+        setMainEnvelope(getComputationEnvelope(connection));
 
         // Initialization frequency declared in source Table
         db_field_ids = new ArrayList<>();

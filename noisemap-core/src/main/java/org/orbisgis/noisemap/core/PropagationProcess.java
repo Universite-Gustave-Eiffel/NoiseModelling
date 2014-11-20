@@ -371,7 +371,7 @@ public class PropagationProcess implements Runnable {
         return new double[] {deltaDistanceSprimO, deltaDistanceORprim};
     }
 
-    public void computeHorizontalEdgeDiffraction(boolean somethingHideReceiver, Coordinate receiverCoord,
+    public void computeHorizontalEdgeDiffraction(Coordinate receiverCoord,
                                                  Coordinate srcCoord, List<Double> wj,
                                                  List<PropagationDebugInfo> debugInfo, double[] energeticSum) {
         DiffractionWithSoilEffetZone diffDataWithSoilEffet = data.freeFieldFinder.getPath(receiverCoord, srcCoord);
@@ -382,7 +382,7 @@ public class PropagationProcess implements Runnable {
 
         //delta diffraction
         if (Double.compare(deltadistance, -1.) != 0 && Double.compare(e, -1.) != 0 &&
-                Double.compare(fulldistance, -1.) != 0 && somethingHideReceiver) {
+                Double.compare(fulldistance, -1.) != 0) {
             PropagationDebugInfo propagationDebugInfo = null;
             if(debugInfo != null) {
                 propagationDebugInfo = new PropagationDebugInfo(Arrays.asList(receiverCoord,
@@ -733,10 +733,29 @@ public class PropagationProcess implements Runnable {
             // Then, check if the source is visible from the receiver (not
             // hidden by a building)
             // Create the direct Line
-            boolean somethingHideReceiver;
-            somethingHideReceiver = !data.freeFieldFinder.isFreeField(
-                    receiverCoord, srcCoord);
+            boolean somethingHideReceiver = false;
+            boolean buildingOnPath = false;
 
+            if(!data.computeVerticalDiffraction || !data.freeFieldFinder.isHasBuildingWithHeight()) {
+                somethingHideReceiver = !data.freeFieldFinder.isFreeField(receiverCoord, srcCoord);
+            } else {
+                List<TriIdWithIntersection> propagationPath = new ArrayList<>();
+               if(!data.freeFieldFinder.computePropagationPath(receiverCoord, srcCoord, false, propagationPath, false)) {
+                   // Propagation path not found, there is not direct field
+                   somethingHideReceiver = true;
+               } else {
+                   if (!propagationPath.isEmpty()) {
+                       for (TriIdWithIntersection inter : propagationPath) {
+                           if (inter.isIntersectionOnBuilding() || inter.isIntersectionOnTopography()) {
+                               somethingHideReceiver = true;
+                           }
+                           if (inter.getBuildingId() != 0) {
+                               buildingOnPath = true;
+                           }
+                       }
+                   }
+               }
+            }
             double SrcReceiverDistance = CGAlgorithms3D.distance(srcCoord, receiverCoord);
 
 // todo insert the condition delta < lambda/20 if Atalus (the attenuation from a possible bank source side) is used
@@ -816,8 +835,8 @@ public class PropagationProcess implements Runnable {
                 }
             }
             //Process diffraction 3D
-            if( data.computeVerticalDiffraction) {
-                computeHorizontalEdgeDiffraction(somethingHideReceiver, receiverCoord, srcCoord, wj, debugInfo, energeticSum);
+            if( data.computeVerticalDiffraction && buildingOnPath) {
+                computeHorizontalEdgeDiffraction(receiverCoord, srcCoord, wj, debugInfo, energeticSum);
             }
             // Process specular reflection
             if (data.reflexionOrder > 0) {
