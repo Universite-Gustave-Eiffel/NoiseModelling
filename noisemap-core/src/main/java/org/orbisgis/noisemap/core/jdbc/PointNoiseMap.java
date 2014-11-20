@@ -136,6 +136,11 @@ public class PointNoiseMap extends JdbcNoiseMap {
                 progression.subProcess(receivers.size()), geoWithSoil, computeVerticalDiffraction);
     }
 
+    @Override
+    protected Envelope getComputationEnvelope(Connection connection) throws SQLException {
+        return SFSUtilities.getTableEnvelope(connection, TableLocation.parse(receiverTableName), "");
+    }
+
     /**
      * Launch sound propagation
      * @param connection

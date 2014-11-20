@@ -132,17 +132,19 @@ public class PropagationProcess implements Runnable {
         // Find the position of the closest point
         Coordinate[] points = geom.getCoordinates();
         // For each segments
-        Double closestPtDist = Double.MAX_VALUE;
+        Double bestClosestPtDist = Double.MAX_VALUE;
         Coordinate closestPt = null;
         double roadLength = 0.;
         for (int i = 1; i < points.length; i++) {
             LineSegment seg = new LineSegment(points[i - 1], points[i]);
             roadLength += seg.getLength();
-            Coordinate SegClosest = seg.closestPoint(startPt);
-            double segcdist = SegClosest.distance(startPt);
-            if (segcdist < closestPtDist) {
-                closestPtDist = segcdist;
-                closestPt = SegClosest;
+            Coordinate ptClosest = seg.closestPoint(startPt);
+            // Interpolate Z value
+            ptClosest.setOrdinate(2, Vertex.interpolateZ(ptClosest, seg.p0, seg.p1));
+            double closestDist = CGAlgorithms3D.distance(startPt, ptClosest);
+            if (closestDist < bestClosestPtDist) {
+                bestClosestPtDist = closestDist;
+                closestPt = ptClosest;
             }
         }
         if (closestPt == null) {
@@ -153,11 +155,11 @@ public class PropagationProcess implements Runnable {
         // receiver is smaller than the minimum distance constraint then the
         // discretization parameter is changed
         // Delta must not not too small to avoid memory overhead.
-        if (closestPtDist < minRecDist) {
-            closestPtDist = minRecDist;
+        if (bestClosestPtDist < minRecDist) {
+            bestClosestPtDist = minRecDist;
         }
-        if (closestPtDist / 2 < delta) {
-            delta = closestPtDist / 2;
+        if (bestClosestPtDist / 2 < delta) {
+            delta = bestClosestPtDist / 2;
         }
         pts.add(closestPt);
         Coordinate[] splitedPts = JTSUtility
@@ -369,7 +371,7 @@ public class PropagationProcess implements Runnable {
         return new double[] {deltaDistanceSprimO, deltaDistanceORprim};
     }
 
-    public void computeHorizontalEdgeDiffraction(boolean somethingHideReceiver, Coordinate receiverCoord,
+    public void computeHorizontalEdgeDiffraction(boolean obstructedSourceReceiver,Coordinate receiverCoord,
                                                  Coordinate srcCoord, List<Double> wj,
                                                  List<PropagationDebugInfo> debugInfo, double[] energeticSum) {
         DiffractionWithSoilEffetZone diffDataWithSoilEffet = data.freeFieldFinder.getPath(receiverCoord, srcCoord);
@@ -380,7 +382,7 @@ public class PropagationProcess implements Runnable {
 
         //delta diffraction
         if (Double.compare(deltadistance, -1.) != 0 && Double.compare(e, -1.) != 0 &&
-                Double.compare(fulldistance, -1.) != 0 && somethingHideReceiver) {
+                Double.compare(fulldistance, -1.) != 0) {
             PropagationDebugInfo propagationDebugInfo = null;
             if(debugInfo != null) {
                 propagationDebugInfo = new PropagationDebugInfo(Arrays.asList(receiverCoord,
@@ -460,7 +462,9 @@ public class PropagationProcess implements Runnable {
                 //if we add Ground effect
                 double deltSoilSO = -3;
                 double deltaSoilOR = 0.;
-                double deltaDiffSR = computeDeltaDiffraction(idfreq, e, deltadistance);
+                // NF S 31-133 page 47 9.4.3.1
+                // δ if negative if S R are not obstructed
+                double deltaDiffSR = computeDeltaDiffraction(idfreq, e, obstructedSourceReceiver? deltadistance : -deltadistance);
                 if (data.geoWithSoilType != null) {
                     double SoilSOAttenuation;
                     double SoilORAttenuation= 0;
@@ -474,7 +478,7 @@ public class PropagationProcess implements Runnable {
                     } else {
                         SoilSOAttenuation = getASoil(OSZone.p1.z, OSZone.p0.z, OSZone.getLength(), gPathPrimeOS, data.freq_lvl.get(idfreq), ASoilOSMin);
                     }
-                    //delta soil
+                    // delta soil
                     // Compute diffraction data for deltaDiffS'R
                     double deltaDiffSprimR = computeDeltaDiffraction(idfreq, e, deltaDistanceSprimO);
                     //Compute diffraction data for deltaDiffSR'
@@ -731,10 +735,29 @@ public class PropagationProcess implements Runnable {
             // Then, check if the source is visible from the receiver (not
             // hidden by a building)
             // Create the direct Line
-            boolean somethingHideReceiver;
-            somethingHideReceiver = !data.freeFieldFinder.isFreeField(
-                    receiverCoord, srcCoord);
+            boolean somethingHideReceiver = false;
+            boolean buildingOnPath = false;
 
+            if(!data.computeVerticalDiffraction || !data.freeFieldFinder.isHasBuildingWithHeight()) {
+                somethingHideReceiver = !data.freeFieldFinder.isFreeField(receiverCoord, srcCoord);
+            } else {
+                List<TriIdWithIntersection> propagationPath = new ArrayList<>();
+               if(!data.freeFieldFinder.computePropagationPath(receiverCoord, srcCoord, false, propagationPath, false)) {
+                   // Propagation path not found, there is not direct field
+                   somethingHideReceiver = true;
+               } else {
+                   if (!propagationPath.isEmpty()) {
+                       for (TriIdWithIntersection inter : propagationPath) {
+                           if (inter.isIntersectionOnBuilding() || inter.isIntersectionOnTopography()) {
+                               somethingHideReceiver = true;
+                           }
+                           if (inter.getBuildingId() != 0) {
+                               buildingOnPath = true;
+                           }
+                       }
+                   }
+               }
+            }
             double SrcReceiverDistance = CGAlgorithms3D.distance(srcCoord, receiverCoord);
 
 // todo insert the condition delta < lambda/20 if Atalus (the attenuation from a possible bank source side) is used
@@ -814,8 +837,8 @@ public class PropagationProcess implements Runnable {
                 }
             }
             //Process diffraction 3D
-            if( data.computeVerticalDiffraction) {
-                computeHorizontalEdgeDiffraction(somethingHideReceiver, receiverCoord, srcCoord, wj, debugInfo, energeticSum);
+            if( data.computeVerticalDiffraction && buildingOnPath) {
+                computeHorizontalEdgeDiffraction(somethingHideReceiver ,receiverCoord, srcCoord, wj, debugInfo, energeticSum);
             }
             // Process specular reflection
             if (data.reflexionOrder > 0) {

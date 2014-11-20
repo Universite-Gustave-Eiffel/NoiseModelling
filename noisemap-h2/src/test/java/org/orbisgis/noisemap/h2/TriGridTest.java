@@ -64,6 +64,8 @@ public class TriGridTest {
         connection = SFSUtilities.wrapConnection(SpatialH2UT.createSpatialDataBase(TriGridTest.class.getSimpleName(), false, "MV_STORE=FALSE"));
         org.h2gis.h2spatialext.CreateSpatialExtension.initSpatialExtension(connection);
         CreateSpatialExtension.registerFunction(connection.createStatement(), new BR_TriGrid(), "");
+        CreateSpatialExtension.registerFunction(connection.createStatement(), new BR_TriGrid3D(), "");
+        CreateSpatialExtension.registerFunction(connection.createStatement(), new BR_EvalSource(), "");
         CreateSpatialExtension.registerFunction(connection.createStatement(), new BR_SpectrumRepartition(), "");
     }
 

@@ -32,6 +32,8 @@ public class PTGridTest {
         CreateSpatialExtension.registerFunction(connection.createStatement(), new BR_PtGrid3D(), "");
         CreateSpatialExtension.registerFunction(connection.createStatement(), new BR_PtGrid(), "");
         CreateSpatialExtension.registerFunction(connection.createStatement(), new BR_SpectrumRepartition(), "");
+        CreateSpatialExtension.registerFunction(connection.createStatement(), new BR_EvalSource(), "");
+        CreateSpatialExtension.registerFunction(connection.createStatement(), new BR_SpectrumRepartition(), "");
     }
 
     @AfterClass
@@ -113,6 +115,20 @@ public class PTGridTest {
 
     @Test
     public void testDem() throws SQLException {
+        st.execute("drop table if exists sound_source;\n" +
+                "create table sound_source(the_geom geometry, db_m100 double,db_m125 double,db_m160 double," +
+                "db_m200 double,db_m250 double,db_m315 double,db_m400 double,db_m500 double,db_m630 double,\n" +
+                "db_m800 double,db_m1000 double,db_m1250 double,db_m1600 double,db_m2000 double,db_m2500 double," +
+                "db_m3150 double,db_m4000 double,db_m5000 double);\n" +
+                "insert into sound_source VALUES ('POINT(55 60 1)', 100, 100, 100, 100, 100, 100, 100, 100, 100, 100," +
+                " 100, 100, 100, 100, 100, 100, 100, 100);\n" +
+                "INSERT INTO sound_source VALUES ('POINT( -300 -300 0 )',Log10(0),Log10(0),Log10(0),Log10(0)," +
+                "Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0)," +
+                "Log10(0),Log10(0),Log10(0));\n" +
+                "INSERT INTO sound_source VALUES ('POINT( 500 500 0 )',Log10(0),Log10(0),Log10(0),Log10(0),Log10(0)," +
+                "Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0)," +
+                "Log10(0),Log10(0));" +
+                "");
         st.execute("RUNSCRIPT FROM '"+PTGridTest.class.getResource("dem.sql").getFile()+"'");
         st.execute("drop table if exists pt_lvl");
         // Create receivers points
@@ -120,8 +136,7 @@ public class PTGridTest {
         st.execute("CREATE TABLE RECEIVERS(ID SERIAL, THE_GEOM POINT)");
         st.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT (-250.56607923708552 106.76760851263573 1.6)')");
         st.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT (-250.56607923708552 106.76760851263573 25)')");
-        ResultSet rs = st.executeQuery("select * from BR_PTGRID3D('BUILDINGS', 'HEIGHT', 'SOUND_SOURCE','RECEIVERS', 'DB_M', ''," +
-                "'DEM' ,1000,500, 2, 1, 0.2)");
+        ResultSet rs = st.executeQuery("select * from BR_PTGRID3D('BUILDINGS', 'HEIGHT', 'SOUND_SOURCE','RECEIVERS', 'DB_M', '','DEM' ,1000,500, 2, 1, 0.2)");
         //  W must be equal to 1
         try {
             assertTrue(rs.next());
@@ -134,5 +149,58 @@ public class PTGridTest {
         } finally {
             rs.close();
         }
+    }
+
+    @Test
+    public void testDemTopBuilding() throws SQLException {
+        st.execute("RUNSCRIPT FROM '"+PTGridTest.class.getResource("dem.sql").getFile()+"'");
+        st.execute("drop table if exists sound_source;\n" +
+                "create table sound_source(the_geom geometry, db_m100 double,db_m125 double,db_m160 double," +
+                "db_m200 double,db_m250 double,db_m315 double,db_m400 double,db_m500 double,db_m630 double,\n" +
+                "db_m800 double,db_m1000 double,db_m1250 double,db_m1600 double,db_m2000 double,db_m2500 double," +
+                "db_m3150 double,db_m4000 double,db_m5000 double);\n" +
+                "insert into sound_source VALUES ('POINT(68 60 5.5)', 100, 100, 100, 100, 100, 100, 100, 100, 100, 100," +
+                " 100, 100, 100, 100, 100, 100, 100, 100);");
+        st.execute("drop table if exists pt_lvl");
+        // Create receivers points
+        st.execute("DROP TABLE IF EXISTS RECEIVERS");
+        st.execute("CREATE TABLE RECEIVERS(ID SERIAL, THE_GEOM POINT)");
+        st.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT (-157 60 1.)')");
+        st.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT (-157 60 0.2)')");
+        st.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT (-157 60 11.6)')");
+        st.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT (59 60 1.6)')");
+        ResultSet rs = st.executeQuery("select * from BR_PTGRID3D('BUILDINGS', 'HEIGHT', 'SOUND_SOURCE','RECEIVERS', 'DB_M', '','DEM' ,1000,500, 2, 1, 0.2)");
+        //  W must be equal to 1
+        try {
+            assertTrue(rs.next());
+            // First receiver is hidden by the hill
+            assertEquals(1, rs.getDouble("W"), 0.01);
+            assertTrue(rs.next());
+            // Second receiver is under the ground
+            assertEquals(1, rs.getDouble("W"), 0.01);
+            // Third receiver is higher than the hill
+            assertTrue(rs.next());
+            assertEquals(28.24, 10 * Math.log10(rs.getDouble("W")), 0.1);
+            // Fourth receiver is just behind the wall of building. Only horizontal diffraction on edge is contributing
+            assertTrue(rs.next());
+            assertEquals(65.63, 10 * Math.log10(rs.getDouble("W")), 0.1);
+            assertFalse(rs.next());
+        } finally {
+            rs.close();
+        }
+    }
+    @Test
+    public void testGroundReflectionPropagation() throws SQLException {
+        st.execute("DROP TABLE IF EXISTS LANDCOVER2000");
+        st.execute("CALL SHPREAD('"+TriGridTest.class.getResource("landcover2000.shp").getFile()+"', 'LANDCOVER2000')");
+        st.execute("RUNSCRIPT FROM '"+TriGridTest.class.getResource("ground-effect.sql").getFile()+"'");
+        ResultSet rs = st.executeQuery("SELECT * FROM PT_LVL");
+        assertTrue(rs.next());
+        assertEquals(1, rs.getInt("GID"));
+        assertEquals(51.98,10*Math.log10(rs.getDouble("W")), 0.1);
+        assertTrue(rs.next());
+        assertEquals(2, rs.getInt("GID"));
+        assertEquals(50.28,10*Math.log10(rs.getDouble("W")), 0.1);
+        assertFalse(rs.next());
     }
 }

@@ -44,11 +44,62 @@ import org.orbisgis.noisemap.core.EvaluateRoadSourceParameter;
 public class BR_EvalSource extends DeterministicScalarFunction {
 
     public BR_EvalSource() {
-        addProperty(PROP_REMARKS, "Return the dB(A) value corresponding to the parameters.\n" +
-                "SELECT BR_EvalSource(loadSpeed,lightVehicleCount,heavyVehicleCount);\n" +
-                "SELECT BR_EvalSource(loadSpeed,lightVehicleCount,heavyVehicleCount,Zbegin,Zend,roadLength);\n" +
-                "SELECT BR_EvalSource(lightVehicleSpeed,heavyVehicleSpeed,lightVehicleCount,heavyVehicleCount,Zbegin,Zend,roadLength);\n" +
-                "SELECT BR_EvalSource(loadSpeed,lightVehicleCount,heavyVehicleCount,junction speed,speedMax,roadType,Zbegin,Zend,roadLength,isQueue);");
+        addProperty(PROP_REMARKS, "## BR_EvalSource\n" +
+                "\n" +
+                "Return the dB(A) global value of equivalent source power of combined light and heavy traffic.\n" +
+                "\n" +
+                "1. BR_EvalSource(double speed_load, int vl_per_hour, int pl_per_hour)\n" +
+                "2. BR_EvalSource(double speed_load, int vl_per_hour, int pl_per_hour, double beginZ, double endZ,double road_length_2d)\n" +
+                "3. BR_EvalSource(double speed_load, int vl_per_hour, int pl_per_hour, double speed_junction, " +
+                "double speed_max,int copound_roadtype,  double beginZ, double endZ, double roadLength2d, " +
+                "boolean isQueue)\n" +
+                "4. BR_EvalSource(double lv_speed, double hv_speed,int vl_per_hour, int pl_per_hour, double beginZ, " +
+                "double endZ,double road_length_2d)\n" +
+                "\n" +
+                "The function 3 evaluate the hv_speed using speed_junction, speed_max, " +
+                "copound_roadtype and isQueue.\n" +
+                "\n" +
+                "The function 4 is the complete evaluation function without default parameters.\n" +
+                "\n" +
+                "Parameters:\n" +
+                "\n" +
+                " - **speed_load** Average speed of vehicles.\n" +
+                " - **vl_per_hour** Average light vehicle by hour\n" +
+                " - **pl_per_hour** Average heavy vehicle by hour\n" +
+                " - **beginZ** Beginning of road height. Used to compute slope.\n" +
+                " - **endZ** End of road height. Used to compute slope.\n" +
+                " - **road_length_2d** 2D length of road. Used to compute slope.\n" +
+                " - **speed_junction** Speed of vehicle at road junction.\n" +
+                " - **speed_max** Legal maximum speed of the road.\n" +
+                " - **copound_roadtype** Road type:\n" +
+                "`10` Highway 2x2 130 km/h\n" +
+                "`21` 2x2 way 110 km/h\n" +
+                "`22` 2x2 way 90km/h off belt-way\n" +
+                "`23` Belt-way\n" +
+                "`31` Interchange ramp\n" +
+                "`32` Off boulevard roundabout circular junction\n" +
+                "`37` Inside-boulevard roundabout circular junction\n" +
+                "`41` lower level 2x1 way 7m 90km/h\n" +
+                "`42` Standard 2x1 way 90km/h\n" +
+                "`43` 2x1 way\n" +
+                "`51` extra boulevard 70km/h\n" +
+                "`52` extra boulevard 50km/h\n" +
+                "`53` extra boulevard Street 50km/h\n" +
+                "`54` extra boulevard Street <50km/h\n" +
+                "`56` in boulevard 70km/h\n" +
+                "`57` in boulevard 50km/h\n" +
+                "`58` in boulevard Street 50km/h\n" +
+                "`59` in boulevard Street <50km/h\n" +
+                "`61` Bus-way boulevard 70km/h\n" +
+                "`62` Bus-way boulevard 50km/h\n" +
+                "`63` Bus-way extra boulevard Street\n" +
+                "`64` Bus-way extra boulevard Street\n" +
+                "`68` Bus-way in boulevard Street 50km/h\n" +
+                "`69` Bus-way in boulevard Street <50km/h\n" +
+                " - **isQueue** If this segment of road is behind a traffic light. If vehicles behavior is to stop at" +
+                " the end of the road.\n" +
+                " - **lv_speed** Average light vehicle speed\n" +
+                " - **hv_speed** Average heavy vehicle speed\n");
     }
 
     @Override

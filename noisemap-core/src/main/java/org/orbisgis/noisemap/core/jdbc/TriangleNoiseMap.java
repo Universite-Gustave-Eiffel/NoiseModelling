@@ -221,6 +221,11 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         logger.info("End delaunay");
     }
 
+    @Override
+    protected Envelope getComputationEnvelope(Connection connection) throws SQLException {
+        return SFSUtilities.getTableEnvelope(connection, TableLocation.parse(sourcesTableName), "");
+    }
+
     public Collection<PropagationResultTriRecord> evaluateCell(Connection connection,int cellI, int cellJ, ProgressVisitor progression) throws SQLException {
         PropagationProcessOut threadDataOut = new PropagationProcessOut();
         MeshBuilder mesh = new MeshBuilder();

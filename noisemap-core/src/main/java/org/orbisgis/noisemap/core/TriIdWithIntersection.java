@@ -63,6 +63,14 @@ public class TriIdWithIntersection extends Coordinate {
         buildingId = 0;
     }
 
+    public TriIdWithIntersection(TriIdWithIntersection other, Coordinate coorIntersection) {
+        super(coorIntersection);
+        this.triID = other.getTriID();
+        this.intersectionOnBuilding = other.isIntersectionOnBuilding();
+        this.intersectionOnTopography = other.isIntersectionOnTopography();
+        this.buildingId = other.getBuildingId();
+    }
+
     /**
      * @return Triangle ID
      */

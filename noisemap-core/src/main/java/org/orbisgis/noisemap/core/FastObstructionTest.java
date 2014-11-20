@@ -121,6 +121,12 @@ public class FastObstructionTest {
         setAverageBuildingHeight(this.polygonWithHeight);
     }
 
+    /**
+     * @return True if buildings height is given
+     */
+    public boolean isHasBuildingWithHeight() {
+        return hasBuildingWithHeight;
+    }
 
     public long getNbObstructionTest() {
         return nbObstructionTest;
@@ -592,7 +598,7 @@ public class FastObstructionTest {
      * @param stopOnIntersection Stop if the segment between p1 and p2 intersects with topography or buildings
      * @param path [out] Intersection list with triangle sides.
      * @param includePoints Include p1 and p2 into path output
-     * @return True if the propagation goes from p1 to p2 without intersection.
+     * @return True if the propagation goes from p1 to p2.
      */
     public boolean computePropagationPath(Coordinate p1, Coordinate p2, boolean stopOnIntersection, List<TriIdWithIntersection> path, boolean includePoints) {
         nbObstructionTest++;
@@ -622,7 +628,7 @@ public class FastObstructionTest {
         double zTopoP1 = getTopoZByGiven3Points(triP1[0], triP1[1], triP1[2], p1);
         double zTopoP2 = getTopoZByGiven3Points(triP2[0], triP2[1], triP2[2], p2);
         if(includePoints) {
-            path.add(new TriIdWithIntersection(curTriP1, new Coordinate(p1.x, p1.z, zTopoP1)));
+            path.add(new TriIdWithIntersection(curTriP1, new Coordinate(p1.x, p1.y, zTopoP1)));
         }
         try {
             if ((!Double.isNaN(p1.z) && p1.z + epsilon < zTopoP1)
@@ -653,7 +659,8 @@ public class FastObstructionTest {
             return false;
         } finally {
             if(includePoints) {
-                path.add(new TriIdWithIntersection(curTriP2, new Coordinate(p2.x, p2.z, zTopoP2)));
+                path.add(new TriIdWithIntersection(curTriP2, new Coordinate(p2.x, p2.y, zTopoP2), false, false,
+                        buildingP2.getBuidlingID()));
             }
         }
     }
@@ -701,6 +708,9 @@ public class FastObstructionTest {
      */
     @SuppressWarnings("unchecked")
     public DiffractionWithSoilEffetZone getPath(Coordinate receiver, Coordinate source) {
+        //set default data
+        DiffractionWithSoilEffetZone totData = new DiffractionWithSoilEffetZone(null, null, -1, -1, -1,
+                new ArrayList<Coordinate>(), new ArrayList<Coordinate>());
         /*
         data for calculate 3D diffraction,éé
         first Coordinate is the coordinate after the modification coordinate system,
@@ -709,11 +719,14 @@ public class FastObstructionTest {
         LineSegment rOZone = new LineSegment(new Coordinate(-1, -1), new Coordinate(-1, -1));
         LineSegment sOZone = new LineSegment(new Coordinate(-1, -1), new Coordinate(-1, -1));
         List<TriIdWithIntersection> allInterPoints = new ArrayList<>();
-        computePropagationPath(receiver, source, false, allInterPoints, false);
+        computePropagationPath(receiver, source, false, allInterPoints, true);
+        if(allInterPoints.isEmpty()) {
+            return totData;
+        }
         List<TriIdWithIntersection> interPoints = new ArrayList<>();
         // Keep only intersection between land and buildings.
         TriIdWithIntersection lastInter = null;
-        for(TriIdWithIntersection inter : allInterPoints) {
+        for(TriIdWithIntersection inter : allInterPoints.subList(1,allInterPoints.size() - 1)) {
             if(inter.getBuildingId() > 0 && (lastInter == null || lastInter.getBuildingId() == 0)) {
                 interPoints.add(updateZ(inter));
             } else if(lastInter != null && inter.getBuildingId() == 0 && lastInter.getBuildingId() > 0) {
@@ -724,18 +737,15 @@ public class FastObstructionTest {
         if(lastInter != null && lastInter.getBuildingId() > 0) {
             interPoints.add(updateZ(lastInter));
         }
-        //set default data
-        DiffractionWithSoilEffetZone totData = new DiffractionWithSoilEffetZone(rOZone, sOZone, -1, -1, -1,
-                new ArrayList<Coordinate>(), new ArrayList<Coordinate>());
         if(!hasBuildingWithHeight) {
             // Cannot compute envelope is building height is not available
             return totData;
         }
 
         //add point receiver and point source into list head and tail.
-
-        interPoints.add(0, new TriIdWithIntersection(-1, receiver));
-        interPoints.add(new TriIdWithIntersection(-1, source));
+        // Change from ground height for receiver and source to real receiver and source height
+        interPoints.add(0, new TriIdWithIntersection(allInterPoints.get(0), receiver));
+        interPoints.add(new TriIdWithIntersection(allInterPoints.get(allInterPoints.size() - 1), source));
         //change Coordinate system from 3D to 2D
         List<Coordinate> newPoints = JTSUtility.getNewCoordinateSystem(new ArrayList<Coordinate>(interPoints));
 
@@ -763,12 +773,14 @@ public class FastObstructionTest {
             //after jarvis march if we get the length of list of points less than 2, so we have no useful points
             return totData;
         } else {
+            Coordinate osCorner = interPoints.get(interPoints.size() - 2).getCoorIntersection();
             LinkedList<LineSegment> path = new LinkedList<>();
             for (int i = 0; i < points.x.length - 1; i++) {
                 if(!(points.x[i] > points.x[i + 1])) {
                     path.add(new LineSegment(new Coordinate(points.x[i], points.y[i]), new Coordinate(points.x[i + 1], points.y[i + 1])));
                     // FreeField test
                     TriIdWithIntersection interBegin = interPoints.get(pointsId.get(i));
+                    osCorner = interBegin;
                     TriIdWithIntersection interEnd = interPoints.get(pointsId.get(i + 1));
                     if (interBegin.getBuildingId() != interEnd.getBuildingId()) {
                         Coordinate testPBegin = new Coordinate(interBegin.getCoorIntersection());
@@ -809,7 +821,7 @@ public class FastObstructionTest {
             firstPart[1] = interPoints.get(1).getCoorIntersection();
 
             //get original coordinate for last intersection with building
-            lastPart[0] = interPoints.get(interPoints.size() - 2).getCoorIntersection();
+            lastPart[0] = osCorner;
             lastPart[1] = source;
             //receiver-first intersection zone aims to calculate ground effect
             rOZone = new LineSegment(firstPart[0], firstPart[1]);
@@ -818,7 +830,6 @@ public class FastObstructionTest {
             // Compute ground projected path in order to compute mean ground formulae later
             // receiver part
             List<Coordinate> roGround = new ArrayList<>();
-            roGround.add(new Coordinate(receiver.x, receiver.y, getHeightAtPosition(receiver)));
             // Compute ground profile from R to first O (first building corner)
             int rOIndex = 0;
             for(TriIdWithIntersection tri : allInterPoints) {
@@ -839,7 +850,6 @@ public class FastObstructionTest {
                 }
             }
             List<Coordinate> oSGround = getGroundProfile(allInterPoints.subList(sOIndex, allInterPoints.size()));
-            oSGround.add(new Coordinate(source.x, source.y, getHeightAtPosition(source)));
             // As the insertion was done reversed this is actually sOGround, reverse again in order to fit with variable name
             totData = new DiffractionWithSoilEffetZone(rOZone, sOZone, deltaDistance, e, pathDistance,
                     roGround, oSGround);
