@@ -371,7 +371,7 @@ public class PropagationProcess implements Runnable {
         return new double[] {deltaDistanceSprimO, deltaDistanceORprim};
     }
 
-    public void computeHorizontalEdgeDiffraction(Coordinate receiverCoord,
+    public void computeHorizontalEdgeDiffraction(boolean obstructedSourceReceiver,Coordinate receiverCoord,
                                                  Coordinate srcCoord, List<Double> wj,
                                                  List<PropagationDebugInfo> debugInfo, double[] energeticSum) {
         DiffractionWithSoilEffetZone diffDataWithSoilEffet = data.freeFieldFinder.getPath(receiverCoord, srcCoord);
@@ -462,7 +462,9 @@ public class PropagationProcess implements Runnable {
                 //if we add Ground effect
                 double deltSoilSO = -3;
                 double deltaSoilOR = 0.;
-                double deltaDiffSR = computeDeltaDiffraction(idfreq, e, deltadistance);
+                // NF S 31-133 page 47 9.4.3.1
+                // δ if negative if S R are not obstructed
+                double deltaDiffSR = computeDeltaDiffraction(idfreq, e, obstructedSourceReceiver? deltadistance : -deltadistance);
                 if (data.geoWithSoilType != null) {
                     double SoilSOAttenuation;
                     double SoilORAttenuation= 0;
@@ -476,7 +478,7 @@ public class PropagationProcess implements Runnable {
                     } else {
                         SoilSOAttenuation = getASoil(OSZone.p1.z, OSZone.p0.z, OSZone.getLength(), gPathPrimeOS, data.freq_lvl.get(idfreq), ASoilOSMin);
                     }
-                    //delta soil
+                    // delta soil
                     // Compute diffraction data for deltaDiffS'R
                     double deltaDiffSprimR = computeDeltaDiffraction(idfreq, e, deltaDistanceSprimO);
                     //Compute diffraction data for deltaDiffSR'
@@ -836,7 +838,7 @@ public class PropagationProcess implements Runnable {
             }
             //Process diffraction 3D
             if( data.computeVerticalDiffraction && buildingOnPath) {
-                computeHorizontalEdgeDiffraction(receiverCoord, srcCoord, wj, debugInfo, energeticSum);
+                computeHorizontalEdgeDiffraction(somethingHideReceiver ,receiverCoord, srcCoord, wj, debugInfo, energeticSum);
             }
             // Process specular reflection
             if (data.reflexionOrder > 0) {
