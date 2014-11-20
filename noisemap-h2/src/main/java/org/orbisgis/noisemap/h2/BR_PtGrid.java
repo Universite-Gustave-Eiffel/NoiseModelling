@@ -49,10 +49,9 @@ import java.sql.SQLException;
 public class BR_PtGrid extends AbstractFunction implements ScalarFunction {
 
     public BR_PtGrid() {
-        addProperty(PROP_REMARKS , "\n" +
-                "## BR_PtGrid\n" +
+        addProperty(PROP_REMARKS , "## BR_PtGrid\n" +
                 "\n" +
-                "BR_PtGrid(String buildingsTable,String sourcesTable, String receiversTable, String sourcesTableSoundFieldName, String groundTypeTable,String demTable, double maximumPropagationDistance, double maximumWallSeekingDistance, int soundReflectionOrder, int soundDiffractionOrder, double wallAlpha)\n" +
+                "BR_PtGrid(String buildingsTable,String sourcesTable, String receiversTable, String sourcesTableSoundFieldName, String groundTypeTable, double maximumPropagationDistance, double maximumWallSeekingDistance, int soundReflectionOrder, int soundDiffractionOrder, double wallAlpha)\n" +
                 "\n" +
                 " - **buildingsTable** table identifier that contain a geometry column of type POLYGON.\n" +
                 " - **sourcesTable** table identifier that contain a geometry column of type POINT or LINESTRING.The " +
@@ -70,8 +69,6 @@ public class BR_PtGrid extends AbstractFunction implements ScalarFunction {
                 "    - Compacted earth, track G=0.3\n" +
                 "    - Road surface G=0\n" +
                 "    - Smooth concrete G=0\n" +
-                " - **demTable** table identifier that contain the digital elevation model. A geometry column of type" +
-                " POINT with X,Y and Z value.    \n" +
                 " - **maximumPropagationDistance** From a receiver, each source that are farther than this parameter " +
                 "are ignored. Recommended value, greater or equal to 750 meters. Greatly impacts performance and " +
                 "memory usage.\n" +
