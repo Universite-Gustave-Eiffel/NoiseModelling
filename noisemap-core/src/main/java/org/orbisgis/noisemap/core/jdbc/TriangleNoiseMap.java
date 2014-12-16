@@ -15,7 +15,6 @@ import com.vividsolutions.jts.operation.buffer.BufferParameters;
 import com.vividsolutions.jts.simplify.TopologyPreservingSimplifier;
 import org.h2gis.h2spatialapi.ProgressVisitor;
 import org.h2gis.utilities.SFSUtilities;
-import org.h2gis.utilities.SpatialResultSet;
 import org.h2gis.utilities.TableLocation;
 import org.orbisgis.noisemap.core.FastObstructionTest;
 import org.orbisgis.noisemap.core.GeoWithSoilType;
@@ -33,7 +32,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -161,10 +159,10 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
      * @param maximumArea Maximum area of triangles
      * @throws LayerDelaunayError
      */
-    public void computeFirstPassDelaunay(MeshBuilder cellMesh,
-                                         Envelope mainEnvelope, int cellI, int cellJ, double maxSrcDist,
-                                         Collection<Geometry> buildings, Collection<Geometry> sources,
-                                         double minRecDist, double srcPtDist, double maximumArea)
+    public void computeDelaunay(MeshBuilder cellMesh,
+                                Envelope mainEnvelope, int cellI, int cellJ, double maxSrcDist,
+                                Collection<Geometry> buildings, Collection<Geometry> sources,
+                                double minRecDist, double srcPtDist, double maximumArea)
             throws LayerDelaunayError {
 
         Envelope cellEnvelope = getCellEnv(mainEnvelope, cellI, cellJ,
@@ -260,12 +258,14 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
 
         // //////////////////////////////////////////////////////
         // Make source index for optimization
+        ArrayList<Geometry> sourceDelaunayGeometries = new ArrayList<>();
         ArrayList<Geometry> sourceGeometries = new ArrayList<>();
         ArrayList<ArrayList<Double>> wj_sources = new ArrayList<>();
         QueryGeometryStructure sourcesIndex = new QueryQuadTree();
 
         // Fetch all source located in expandedCellEnvelop
-        fetchCellSource(connection, expandedCellEnvelop, sourceGeometries, wj_sources, sourcesIndex);
+        fetchCellSource(connection, expandedCellEnvelop, sourceDelaunayGeometries, sourceGeometries, wj_sources,
+                sourcesIndex);
         // Compute the first pass delaunay mesh
         // The first pass doesn't take account of additional
         // vertices of neighbor cells at the borders
@@ -273,13 +273,14 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         // border of cell
         MeshBuilder cellMesh = new MeshBuilder();
         try {
-            computeFirstPassDelaunay(cellMesh, mainEnvelope, cellI,
+            computeDelaunay(cellMesh, mainEnvelope, cellI,
                     cellJ,
-                    maximumPropagationDistance, buildingsGeometries, sourceGeometries, roadWidth,
+                    maximumPropagationDistance, buildingsGeometries, sourceDelaunayGeometries, roadWidth,
                     sourceDensification, maximumArea);
         } catch (LayerDelaunayError err) {
             throw new SQLException(err.getLocalizedMessage(), err);
         }
+        sourceDelaunayGeometries.clear();
         // Make a structure to keep the following information
         // Triangle list with 3 vertices(int), and 3 neighbor
         // triangle ID

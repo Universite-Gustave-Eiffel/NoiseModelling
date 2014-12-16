@@ -33,6 +33,7 @@
  */
 package org.orbisgis.noisemap.h2;
 
+import com.vividsolutions.jts.geom.Geometry;
 import org.h2.tools.SimpleResultSet;
 import org.h2.tools.SimpleRowSource;
 import org.h2gis.h2spatial.TableFunctionUtil;
@@ -118,19 +119,20 @@ public class BR_TriGrid3D extends AbstractFunction implements ScalarFunction {
 
     /**
      * Construct a ResultSet using parameter and core noise-map.
-     * @param connection Active connection, never closed (provided and hidden by H2)
-     * @param buildingsTable Buildings table name (polygons)
-     * @param heightFieldName Optional (empty if not available) Field name of building height on buildingsTable
-     * @param sourcesTable Source table table (linestring or point)
+     *
+     * @param connection                 Active connection, never closed (provided and hidden by H2)
+     * @param buildingsTable             Buildings table name (polygons)
+     * @param heightFieldName            Optional (empty if not available) Field name of building height on buildingsTable
+     * @param sourcesTable               Source table table (linestring or point)
      * @param sourcesTableSoundFieldName Field name to extract from sources table. Frequency is added on right.
-     * @param groundTypeTable Optional (empty if not available) Soil category. This is a table with a polygon column and a column 'G' double.
-     * @param demTable Optional (empty if not available) Point table of digital elevation model.
+     * @param groundTypeTable            Optional (empty if not available) Soil category. This is a table with a polygon column and a column 'G' double.
+     * @param demTable                   Optional (empty if not available) Point table of digital elevation model.
      * @param maximumPropagationDistance Propagation distance limitation.
      * @param maximumWallSeekingDistance Maximum reflection distance from the source-receiver propagation line.
-     * @param roadsWidth Buffer without receivers applied on roads on final noise map.
-     * @param soundReflectionOrder Sound reflection order on walls.
-     * @param soundDiffractionOrder Source diffraction order on corners.
-     * @param wallAlpha Wall absorption coefficient.
+     * @param roadsWidth                 Buffer without receivers applied on roads on final noise map.
+     * @param soundReflectionOrder       Sound reflection order on walls.
+     * @param soundDiffractionOrder      Source diffraction order on corners.
+     * @param wallAlpha                  Wall absorption coefficient.
      * @return A table with 3 columns GID(extracted from receivers table), W energy receiver by receiver, cellid cell identifier.
      * @throws java.sql.SQLException
      */
@@ -171,6 +173,66 @@ public class BR_TriGrid3D extends AbstractFunction implements ScalarFunction {
         }
         return rs;
     }
+
+    /**
+     * Construct a ResultSet using parameter and core noise-map.
+     *
+     * @param connection                 Active connection, never closed (provided and hidden by H2)
+     * @param computationEnvelope        Computation area
+     * @param buildingsTable             Buildings table name (polygons)
+     * @param heightFieldName            Optional (empty if not available) Field name of building height on buildingsTable
+     * @param sourcesTable               Source table table (linestring or point)
+     * @param sourcesTableSoundFieldName Field name to extract from sources table. Frequency is added on right.
+     * @param groundTypeTable            Optional (empty if not available) Soil category. This is a table with a polygon column and a column 'G' double.
+     * @param demTable                   Optional (empty if not available) Point table of digital elevation model.
+     * @param maximumPropagationDistance Propagation distance limitation.
+     * @param maximumWallSeekingDistance Maximum reflection distance from the source-receiver propagation line.
+     * @param roadsWidth                 Buffer without receivers applied on roads on final noise map.
+     * @param soundReflectionOrder       Sound reflection order on walls.
+     * @param soundDiffractionOrder      Source diffraction order on corners.
+     * @param wallAlpha                  Wall absorption coefficient.
+     * @return A table with 3 columns GID(extracted from receivers table), W energy receiver by receiver, cellid cell identifier.
+     * @throws java.sql.SQLException
+     */
+    public static ResultSet noisePropagation(Connection connection,Geometry computationEnvelope, String buildingsTable, String heightFieldName,
+                                             String sourcesTable, String sourcesTableSoundFieldName,
+                                             String groundTypeTable, String demTable,
+                                             double maximumPropagationDistance, double maximumWallSeekingDistance,
+                                             double roadsWidth, double receiversDensification,
+                                             double maximumAreaOfTriangle, int soundReflectionOrder,
+                                             int soundDiffractionOrder, double wallAlpha) throws SQLException {
+        if (maximumPropagationDistance < maximumWallSeekingDistance) {
+            throw new SQLException(new IllegalArgumentException(
+                    "Maximum wall seeking distance cannot be superior than maximum propagation distance"));
+        }        SimpleResultSet rs;
+        if(TableFunctionUtil.isColumnListConnection(connection)) {
+            // Only rs columns is necessary
+            rs = new SimpleResultSet();
+            feedColumns(rs);
+        } else {
+            connection = SFSUtilities.wrapConnection(connection);
+            TriangleNoiseMap noiseMap = new TriangleNoiseMap(TableLocation.capsIdentifier(buildingsTable, true),
+                    TableLocation.capsIdentifier(sourcesTable, true));
+            noiseMap.setMainEnvelope(computationEnvelope.getEnvelopeInternal());
+            noiseMap.setHeightField(heightFieldName);
+            noiseMap.setSoilTableName(groundTypeTable);
+            noiseMap.setDemTable(demTable);
+            noiseMap.setSound_lvl_field(sourcesTableSoundFieldName);
+            noiseMap.setMaximumPropagationDistance(maximumPropagationDistance);
+            noiseMap.setMaximumReflectionDistance(maximumWallSeekingDistance);
+            noiseMap.setSoundReflectionOrder(soundReflectionOrder);
+            noiseMap.setSoundDiffractionOrder(soundDiffractionOrder);
+            noiseMap.setMaximumArea(maximumAreaOfTriangle);
+            noiseMap.setSourceDensification(receiversDensification);
+            noiseMap.setRoadWidth(roadsWidth);
+            noiseMap.setWallAbsorption(wallAlpha);
+            noiseMap.initialize(connection, new EmptyProgressVisitor());
+            rs = new SimpleResultSet(new TriangleRowSource(noiseMap, connection));
+            feedColumns(rs);
+        }
+        return rs;
+    }
+
     private static void feedColumns(SimpleResultSet rs) {
         rs.addColumn("TRI_ID", Types.INTEGER, 10, 11);
         rs.addColumn("THE_GEOM", Types.JAVA_OBJECT, "GEOMETRY", 0, 0);
