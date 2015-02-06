@@ -197,10 +197,10 @@ public class PTGridTest {
         ResultSet rs = st.executeQuery("SELECT * FROM PT_LVL");
         assertTrue(rs.next());
         assertEquals(1, rs.getInt("GID"));
-        assertEquals(51.98,10*Math.log10(rs.getDouble("W")), 0.1);
+        assertEquals(56.91,10*Math.log10(rs.getDouble("W")), 0.1);
         assertTrue(rs.next());
         assertEquals(2, rs.getInt("GID"));
-        assertEquals(50.28,10*Math.log10(rs.getDouble("W")), 0.1);
+        assertEquals(55.21,10*Math.log10(rs.getDouble("W")), 0.1);
         assertFalse(rs.next());
     }
 }

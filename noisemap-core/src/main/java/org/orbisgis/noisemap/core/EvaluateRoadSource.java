@@ -42,7 +42,7 @@ public class EvaluateRoadSource {
 
     private static Double getNoiseLvl(Double base, Double adj, Double speed,
                                Double speedBase) {
-        return base + adj * Math.log(speed / speedBase);
+        return base + adj * Math.log10(speed / speedBase);
     }
 
     private static Double sumDba(Double dBA1, Double dBA2) {
