@@ -33,10 +33,16 @@
  */
 package org.noisemap.core;
 
-import com.vividsolutions.jts.geom.*;
-import com.vividsolutions.jts.operation.predicate.RectangleIntersects;
 import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+
+import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.Envelope;
+import com.vividsolutions.jts.geom.Geometry;
 import junit.framework.TestCase;
 import org.gdms.data.DataSource;
 import org.gdms.data.DataSourceCreationException;

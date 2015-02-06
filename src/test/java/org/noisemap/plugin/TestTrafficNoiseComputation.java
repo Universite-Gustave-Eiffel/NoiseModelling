@@ -51,11 +51,11 @@ public class TestTrafficNoiseComputation extends TestCase {
 		//3 Components traffic information
 		BR_EvalSource noiseEval=new BR_EvalSource();
 		double value=noiseEval.evaluate(null, ValueFactory.createValue(50.),ValueFactory.createValue(1.),ValueFactory.createValue(0.)).getAsDouble();
-		doSplAssert("1 vl/h @ 50km/h",45.573,value);
+		doSplAssert("1 vl/h @ 50km/h",50.858,value);
 		value=noiseEval.evaluate(null, ValueFactory.createValue(50.),ValueFactory.createValue(0.),ValueFactory.createValue(0.)).getAsDouble();
 		doSplAssert("0 tv/h",Double.NEGATIVE_INFINITY,value);
 		value=noiseEval.evaluate(null, ValueFactory.createValue(50.),ValueFactory.createValue(0.),ValueFactory.createValue(1.)).getAsDouble();
-		doSplAssert("1 pl/h @ 50km/h",57.162,value);
+		doSplAssert("1 pl/h @ 50km/h",60.002,value);
 		
 		//6 Components traffic information 
 		value=noiseEval.evaluate(null, ValueFactory.createValue(40.),ValueFactory.createValue(100.),ValueFactory.createValue(0.),ValueFactory.createValue(32),ValueFactory.createValue(50),ValueFactory.createValue(53)).getAsDouble();

@@ -51,7 +51,7 @@ import org.gdms.sql.function.ScalarArgument;
 public class BR_EvalSource  extends AbstractScalarFunction {
 	private Double getNoiseLvl(Double base, Double adj, Double speed,
 			Double speedBase) {
-		return base + adj * Math.log(speed / speedBase);
+		return base + adj * Math.log10(speed / speedBase);
 	}
 
 
