@@ -84,35 +84,35 @@ public class ScalarFunctionTest {
     public void testBR_EvalSource() throws SQLException {
         ResultSet rs = st.executeQuery("SELECT BR_EvalSource(50, 1500, 15)");
         assertTrue(rs.next());
-        assertEquals(77.91, rs.getDouble(1), 0.01);
+        assertEquals(82.96, rs.getDouble(1), 0.01);
     }
 
     @Test
     public void testBR_EvalSource6Up() throws SQLException {
         ResultSet rs = st.executeQuery("SELECT BR_EvalSource(50, 1500, 15,0, 15, 50)");
         assertTrue(rs.next());
-        assertEquals(79.21, rs.getDouble(1), 0.01);
+        assertEquals(83.21, rs.getDouble(1), 0.01);
     }
 
     @Test
     public void testBR_EvalSource6Down() throws SQLException {
         ResultSet rs = st.executeQuery("SELECT BR_EvalSource(50, 1500, 15, 15, 0, 50)");
         assertTrue(rs.next());
-        assertEquals(78.32, rs.getDouble(1), 0.01);
+        assertEquals(83.03, rs.getDouble(1), 0.01);
     }
 
     @Test
     public void testBR_EvalSource7Up() throws SQLException {
         ResultSet rs = st.executeQuery("SELECT BR_EvalSource(50, 30, 1500, 15,0, 15, 50)");
         assertTrue(rs.next());
-        assertEquals(81.36, rs.getDouble(1), 0.01);
+        assertEquals(83.23, rs.getDouble(1), 0.01);
     }
 
     @Test
     public void testBR_EvalSource10Up() throws SQLException {
         ResultSet rs = st.executeQuery("SELECT BR_EvalSource(50, 1500, 15, 15, 50, 52, 0, 15, 50, false)");
         assertTrue(rs.next());
-        assertEquals(79.21, rs.getDouble(1), 0.01);
+        assertEquals(83.21, rs.getDouble(1), 0.01);
     }
 
     @Test
