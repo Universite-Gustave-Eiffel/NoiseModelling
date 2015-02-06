@@ -155,8 +155,18 @@ public abstract class JdbcNoiseMap {
     }
 
 
-    protected void fetchCellSource(Connection connection,Envelope fetchEnvelope, List<Geometry> sourceGeometries,
-                                   List<ArrayList<Double>> wj_sources, QueryGeometryStructure sourcesIndex)
+    /**
+     * Fetch source geometries and power
+     * @param connection Active connection
+     * @param fetchEnvelope Fetch envelope
+     * @param allSourceGeometries All source geometries, may be null
+     * @param sourceGeometries Source geometries of source with power > -Inf dB(A)
+     * @param wj_sources Power of source, same size as sourceGeometries
+     * @param sourcesIndex source with power > -Inf dB(A) are inserted in this index.
+     * @throws SQLException
+     */
+    protected void fetchCellSource(Connection connection,Envelope fetchEnvelope, List<Geometry> allSourceGeometries,
+                                   List<Geometry> sourceGeometries, List<ArrayList<Double>> wj_sources, QueryGeometryStructure sourcesIndex)
             throws SQLException {
         int idSource = 0;
         TableLocation sourceTableIdentifier = TableLocation.parse(sourcesTableName);
@@ -168,16 +178,24 @@ public abstract class JdbcNoiseMap {
                 while (rs.next()) {
                     Geometry geo = rs.getGeometry();
                     if (geo != null) {
-                        sourcesIndex.appendGeometry(geo, idSource);
                         ArrayList<Double> wj_spectrum = new ArrayList<>();
                         wj_spectrum.ensureCapacity(db_field_ids.size());
+                        double sumPow = 0;
                         for (Integer idcol : db_field_ids) {
+                            double wj = DbaToW(rs.getDouble(idcol));
                             wj_spectrum
-                                    .add(DbaToW(rs.getDouble(idcol)));
+                                    .add(wj);
+                            sumPow += wj;
                         }
-                        wj_sources.add(wj_spectrum);
-                        sourceGeometries.add(geo);
-                        idSource++;
+                        if(allSourceGeometries != null) {
+                            allSourceGeometries.add(geo);
+                        }
+                        if(sumPow > 0) {
+                            wj_sources.add(wj_spectrum);
+                            sourcesIndex.appendGeometry(geo, idSource);
+                            sourceGeometries.add(geo);
+                            idSource++;
+                        }
                     }
                 }
             }
@@ -232,8 +250,10 @@ public abstract class JdbcNoiseMap {
         // if not then append the distance attenuated sound level to the
         // receiver
         // Save the triangle geometry with the db_m value of the 3 vertices
-        // 1 Step - Evaluation of the main bounding box (sources)
-        setMainEnvelope(getComputationEnvelope(connection));
+        if(mainEnvelope.isNull()) {
+            // 1 Step - Evaluation of the main bounding box (sources)
+            setMainEnvelope(getComputationEnvelope(connection));
+        }
 
         // Initialization frequency declared in source Table
         db_field_ids = new ArrayList<>();

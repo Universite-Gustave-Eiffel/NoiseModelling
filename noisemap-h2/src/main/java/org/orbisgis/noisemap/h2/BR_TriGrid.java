@@ -33,6 +33,7 @@
  */
 package org.orbisgis.noisemap.h2;
 
+import com.vividsolutions.jts.geom.Geometry;
 import org.h2gis.h2spatialapi.AbstractFunction;
 import org.h2gis.h2spatialapi.ScalarFunction;
 import java.sql.Connection;
@@ -122,6 +123,39 @@ public class BR_TriGrid extends AbstractFunction implements ScalarFunction {
                                              double maximumAreaOfTriangle, int soundReflectionOrder,
                                              int soundDiffractionOrder, double wallAlpha) throws SQLException {
         return BR_TriGrid3D.noisePropagation(connection, buildingsTable, "", sourcesTable,
+                sourcesTableSoundFieldName, groundTypeTable, "", maximumPropagationDistance,
+                maximumWallSeekingDistance, roadsWidth, receiversDensification, maximumAreaOfTriangle,
+                soundReflectionOrder, soundDiffractionOrder, wallAlpha);
+    }
+
+
+    /**
+     * Construct a ResultSet using parameter and core noise-map.
+     *
+     * @param connection                 Active connection, never closed (provided and hidden by H2)
+     * @param computationEnvelope        Computation area
+     * @param buildingsTable             Buildings table name (polygons)
+     * @param sourcesTable               Source table table (linestring or point)
+     * @param sourcesTableSoundFieldName Field name to extract from sources table. Frequency is added on right.
+     * @param groundTypeTable            Optional (empty if not available) Soil category. This is a table with a
+     *                                   polygon column and a column 'G' [0-1] double.
+     * @param maximumPropagationDistance Propagation distance limitation.
+     * @param maximumWallSeekingDistance Maximum reflection distance from the source-receiver propagation line.
+     * @param roadsWidth                 Buffer without receivers applied on roads on final noise map.
+     * @param soundReflectionOrder       Sound reflection order on walls.
+     * @param soundDiffractionOrder      Source diffraction order on corners.
+     * @param wallAlpha                  Wall absorption coefficient.
+     * @return A table with 3 columns GID(extracted from receivers table), W energy receiver by receiver,
+     * cellid cell identifier.
+     * @throws SQLException
+     */
+    public static ResultSet noisePropagation(Connection connection,Geometry computationEnvelope, String buildingsTable, String sourcesTable,
+                                             String sourcesTableSoundFieldName, String groundTypeTable,
+                                             double maximumPropagationDistance, double maximumWallSeekingDistance,
+                                             double roadsWidth, double receiversDensification,
+                                             double maximumAreaOfTriangle, int soundReflectionOrder,
+                                             int soundDiffractionOrder, double wallAlpha) throws SQLException {
+        return BR_TriGrid3D.noisePropagation(connection, computationEnvelope, buildingsTable, "", sourcesTable,
                 sourcesTableSoundFieldName, groundTypeTable, "", maximumPropagationDistance,
                 maximumWallSeekingDistance, roadsWidth, receiversDensification, maximumAreaOfTriangle,
                 soundReflectionOrder, soundDiffractionOrder, wallAlpha);

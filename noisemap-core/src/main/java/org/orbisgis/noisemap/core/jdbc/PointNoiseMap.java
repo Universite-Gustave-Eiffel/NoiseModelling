@@ -91,7 +91,7 @@ public class PointNoiseMap extends JdbcNoiseMap {
         QueryGeometryStructure sourcesIndex = new QueryQuadTree();
 
         // Fetch all source located in expandedCellEnvelop
-        fetchCellSource(connection, expandedCellEnvelop, sourceGeometries, wj_sources, sourcesIndex);
+        fetchCellSource(connection, expandedCellEnvelop, null, sourceGeometries, wj_sources, sourcesIndex);
 
         // Fetch soil areas
         List<GeoWithSoilType> geoWithSoil = new ArrayList<>();
