@@ -77,7 +77,7 @@ public class EvalTramwaySource {
         }
         // ///////////////////////
         // Noise Tramway
-        return a_factor * Math.log(speed / speed_reference) +
+        return a_factor * Math.log10(speed / speed_reference) +
                 b_factor +
                 delta_corr +
                 Math.log10(tw_per_hour);
