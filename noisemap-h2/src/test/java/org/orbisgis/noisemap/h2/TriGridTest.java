@@ -34,6 +34,7 @@
 package org.orbisgis.noisemap.h2;
 
 import com.vividsolutions.jts.geom.Polygon;
+import org.h2.util.StringUtils;
 import org.h2gis.h2spatial.CreateSpatialExtension;
 import org.h2gis.h2spatial.ut.SpatialH2UT;
 import org.h2gis.utilities.SFSUtilities;
@@ -43,6 +44,8 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.File;
+import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -58,6 +61,12 @@ import static org.junit.Assert.assertTrue;
 public class TriGridTest {
     private static Connection connection;
     private Statement st;
+
+
+    private static String getRunScriptRes(String fileName) throws URISyntaxException {
+        File resourceFile = new File(TriGridTest.class.getResource(fileName).toURI());
+        return "RUNSCRIPT FROM "+ StringUtils.quoteStringSQL(resourceFile.getPath());
+    }
 
     @BeforeClass
     public static void tearUpClass() throws Exception {
@@ -135,8 +144,8 @@ public class TriGridTest {
     }
 
     @Test
-    public void testMultipleBuildings() throws SQLException {
-        st.execute("RUNSCRIPT FROM '"+TriGridTest.class.getResource("multiple_buildings.sql").getFile()+"'");
+    public void testMultipleBuildings() throws Exception {
+        st.execute(getRunScriptRes("multiple_buildings.sql"));
         st.execute("drop table if exists tri_lvl");
         ResultSet rs = st.executeQuery("select * from BR_TRIGRID('BUILDINGS', 'SOUND_SOURCE', 'DB_M', '', 1000, 100, 2, 3, 0, 2, 1, 0.2)");
         try {

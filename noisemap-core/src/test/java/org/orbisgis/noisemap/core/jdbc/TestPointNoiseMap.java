@@ -1,14 +1,11 @@
 package org.orbisgis.noisemap.core.jdbc;
 
-import com.vividsolutions.jts.geom.Coordinate;
 import org.h2.util.StringUtils;
 import org.h2gis.h2spatial.ut.SpatialH2UT;
 import org.h2gis.h2spatialapi.EmptyProgressVisitor;
 import org.h2gis.h2spatialext.CreateSpatialExtension;
-import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SFSUtilities;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.orbisgis.noisemap.core.PropagationDebugInfo;
@@ -17,13 +14,12 @@ import org.orbisgis.noisemap.core.PropagationProcessData;
 import org.orbisgis.noisemap.core.PropagationProcessOut;
 import org.orbisgis.noisemap.core.PropagationResultPtRecord;
 
-import javax.sql.DataSource;
-import java.net.URL;
+import java.io.File;
+import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -36,7 +32,7 @@ public class TestPointNoiseMap {
 
     @BeforeClass
     public static void tearUp() throws Exception {
-        connection = SFSUtilities.wrapConnection(SpatialH2UT.createSpatialDataBase(TestPointNoiseMap.class.getSimpleName(), false));
+        connection = SFSUtilities.wrapConnection(SpatialH2UT.createSpatialDataBase(TestPointNoiseMap.class.getSimpleName(), false, ""));
         CreateSpatialExtension.initSpatialExtension(connection);
     }
 
@@ -47,15 +43,19 @@ public class TestPointNoiseMap {
         }
     }
 
+    private static String getRunScriptRes(String fileName) throws URISyntaxException {
+        File resourceFile = new File(TestPointNoiseMap.class.getResource(fileName).toURI());
+        return "RUNSCRIPT FROM "+StringUtils.quoteStringSQL(resourceFile.getPath());
+    }
+
     /**
      * DEM is 22m height between sources and receiver. Sound level should be 0 dB(A) in direct field.
      * @throws SQLException
      */
     @Test
-    public void testDem() throws SQLException {
+    public void testDem() throws Exception {
         try(Statement st = connection.createStatement()) {
-            URL scriptPath = TestPointNoiseMap.class.getResource("scene_with_dem.sql");
-            st.execute("RUNSCRIPT FROM "+StringUtils.quoteStringSQL(scriptPath.toString()));
+            st.execute(getRunScriptRes("scene_with_dem.sql"));
             st.execute("DELETE FROM sound_source WHERE GID = 1");
             st.execute("UPDATE sound_source SET THE_GEOM = 'POINT(120 -18 1.6)' WHERE GID = 2");
             st.execute("DROP TABLE IF EXISTS RECEIVERS");
@@ -81,10 +81,9 @@ public class TestPointNoiseMap {
      * @throws SQLException
      */
     @Test
-    public void testDemTopOfBuilding() throws SQLException {
+    public void testDemTopOfBuilding() throws Exception {
         try(Statement st = connection.createStatement()) {
-            URL scriptPath = TestPointNoiseMap.class.getResource("scene_with_dem.sql");
-            st.execute("RUNSCRIPT FROM "+StringUtils.quoteStringSQL(scriptPath.toString()));
+            st.execute(getRunScriptRes("scene_with_dem.sql"));
             st.execute("TRUNCATE TABLE BUILDINGS");
             st.execute("INSERT INTO buildings VALUES (" +
                     "'MULTIPOLYGON (((80 -30 0,80 90 0,-10 90 0,-10 70 0,60 70 0,60 -30 0,80 -30 0)))',4)");
@@ -116,10 +115,9 @@ public class TestPointNoiseMap {
      * @throws SQLException
      */
     @Test
-    public void testReflectionZBounds() throws SQLException {
+    public void testReflectionZBounds() throws Exception {
         try(Statement st = connection.createStatement()) {
-            URL scriptPath = TestPointNoiseMap.class.getResource("scene_with_dem.sql");
-            st.execute("RUNSCRIPT FROM "+StringUtils.quoteStringSQL(scriptPath.toString()));
+            st.execute(getRunScriptRes("scene_with_dem.sql"));
             st.execute("TRUNCATE TABLE BUILDINGS");
             st.execute("INSERT INTO buildings VALUES (" +
                     "'MULTIPOLYGON (((80 -30 0,80 90 0,-10 90 0,-10 70 0,60 70 0,60 -30 0,80 -30 0)))',4)");
@@ -147,10 +145,9 @@ public class TestPointNoiseMap {
     }
 
     @Test
-    public void testReflection() throws SQLException {
+    public void testReflection() throws Exception {
         try(Statement st = connection.createStatement()) {
-            URL scriptPath = TestPointNoiseMap.class.getResource("scene_without_dem.sql");
-            st.execute("RUNSCRIPT FROM "+StringUtils.quoteStringSQL(scriptPath.toString()));
+            st.execute(getRunScriptRes("scene_without_dem.sql"));
             PointNoiseMap nm = new PointNoiseMap("BUILDINGS", "SOUND_SOURCE", "RECEIVERS");
             nm.setHeightField("HEIGHT");
             nm.setSoundDiffractionOrder(0);
