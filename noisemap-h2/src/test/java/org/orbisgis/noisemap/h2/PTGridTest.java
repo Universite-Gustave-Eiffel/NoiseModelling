@@ -1,5 +1,6 @@
 package org.orbisgis.noisemap.h2;
 
+import org.h2.util.StringUtils;
 import org.h2gis.h2spatial.CreateSpatialExtension;
 import org.h2gis.h2spatial.ut.SpatialH2UT;
 import org.h2gis.utilities.SFSUtilities;
@@ -9,6 +10,8 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.File;
+import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -49,6 +52,12 @@ public class PTGridTest {
     @After
     public void tearDown() throws Exception {
         st.close();
+    }
+
+
+    private static String getRunScriptRes(String fileName) throws URISyntaxException {
+        File resourceFile = new File(PTGridTest.class.getResource(fileName).toURI());
+        return "RUNSCRIPT FROM "+ StringUtils.quoteStringSQL(resourceFile.getPath());
     }
 
     @Test
@@ -114,7 +123,7 @@ public class PTGridTest {
 
 
     @Test
-    public void testDem() throws SQLException {
+    public void testDem() throws Exception {
         st.execute("drop table if exists sound_source;\n" +
                 "create table sound_source(the_geom geometry, db_m100 double,db_m125 double,db_m160 double," +
                 "db_m200 double,db_m250 double,db_m315 double,db_m400 double,db_m500 double,db_m630 double,\n" +
@@ -129,7 +138,7 @@ public class PTGridTest {
                 "Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0)," +
                 "Log10(0),Log10(0));" +
                 "");
-        st.execute("RUNSCRIPT FROM '"+PTGridTest.class.getResource("dem.sql").getFile()+"'");
+        st.execute(getRunScriptRes("dem.sql"));
         st.execute("drop table if exists pt_lvl");
         // Create receivers points
         st.execute("DROP TABLE IF EXISTS RECEIVERS");
@@ -152,8 +161,8 @@ public class PTGridTest {
     }
 
     @Test
-    public void testDemTopBuilding() throws SQLException {
-        st.execute("RUNSCRIPT FROM '"+PTGridTest.class.getResource("dem.sql").getFile()+"'");
+    public void testDemTopBuilding() throws Exception {
+        st.execute(getRunScriptRes("dem.sql"));
         st.execute("drop table if exists sound_source;\n" +
                 "create table sound_source(the_geom geometry, db_m100 double,db_m125 double,db_m160 double," +
                 "db_m200 double,db_m250 double,db_m315 double,db_m400 double,db_m500 double,db_m630 double,\n" +
@@ -190,10 +199,10 @@ public class PTGridTest {
         }
     }
     @Test
-    public void testGroundReflectionPropagation() throws SQLException {
+    public void testGroundReflectionPropagation() throws Exception {
         st.execute("DROP TABLE IF EXISTS LANDCOVER2000");
         st.execute("CALL SHPREAD('"+TriGridTest.class.getResource("landcover2000.shp").getFile()+"', 'LANDCOVER2000')");
-        st.execute("RUNSCRIPT FROM '"+TriGridTest.class.getResource("ground-effect.sql").getFile()+"'");
+        st.execute(getRunScriptRes("ground-effect.sql"));
         ResultSet rs = st.executeQuery("SELECT * FROM PT_LVL");
         assertTrue(rs.next());
         assertEquals(1, rs.getInt("GID"));
