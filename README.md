@@ -1,4 +1,5 @@
-NoiseM@p
+[![Build Status](https://travis-ci.org/Ifsttar/NoiseMap.svg?branch=master)](https://travis-ci.org/Ifsttar/NoiseMap) 
+NoiseM@p 
 ======
 
 NoiseM@ap is a plugin of the [OrbisGIS](http://www.orbisgis.org) software (an open-source geographic information system) that able to produce noise maps of cities, according to the french standard method for the road noise [emission][nmpb_E] and using the [NMPB][nmpb_P] method for the sound propagation.
