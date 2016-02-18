@@ -70,8 +70,7 @@ public class RSParameters {
     private double slopePercentage = 0;
     private double speedLv;
     private double speedHgv;
-    private EngineState lvState = EngineState.SteadySpeed;
-    private EngineState hgvState = EngineState.SteadySpeed;
+    private EngineState flowState = EngineState.SteadySpeed;
 
     private static double getVPl(double sLv, double speedmax, int type, int subtype) throws IllegalArgumentException {
         switch (type) {
@@ -240,12 +239,12 @@ public class RSParameters {
         this.speedHgv = speedHgv;
     }
 
-    public void setLvState(EngineState lvState) {
-        this.lvState = lvState;
-    }
-
-    public void setHgvState(EngineState hgvState) {
-        this.hgvState = hgvState;
+    /**
+     * Set the engine state for vehicle.
+     * @param flowState enum
+     */
+    public void setFlowState(EngineState flowState) {
+        this.flowState = flowState;
     }
 
     public double getSpeedLoad() {
@@ -276,12 +275,7 @@ public class RSParameters {
         return speedHgv;
     }
 
-    public EngineState getLvState() {
-        return lvState;
+    public EngineState getFlowState() {
+        return flowState;
     }
-
-    public EngineState getHgvState() {
-        return hgvState;
-    }
-
 }
