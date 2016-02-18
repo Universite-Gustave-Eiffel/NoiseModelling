@@ -35,7 +35,7 @@ package org.orbisgis.noisemap.h2;
 
 import org.h2gis.h2spatialapi.DeterministicScalarFunction;
 import org.orbisgis.noisemap.core.EvaluateRoadSource;
-import org.orbisgis.noisemap.core.EvaluateRoadSourceParameter;
+import org.orbisgis.noisemap.core.RSParameters;
 
 /**
  * Return the dB(A) value corresponding to the parameters.You can specify from 3 to 10 parameters.
@@ -115,7 +115,7 @@ public class BR_EvalSource extends DeterministicScalarFunction {
      * @return Noise level in dB(A)
      */
     public static double evalSource(double speed_load, int vl_per_hour, int pl_per_hour) {
-        return EvaluateRoadSource.evaluate(new EvaluateRoadSourceParameter(speed_load, vl_per_hour, pl_per_hour));
+        return EvaluateRoadSource.evaluate(new RSParameters(speed_load, vl_per_hour, pl_per_hour));
     }
 
     /**
@@ -130,9 +130,9 @@ public class BR_EvalSource extends DeterministicScalarFunction {
      */
     public static double evalSource(double speed_load, int vl_per_hour, int pl_per_hour, double beginZ, double endZ,
                                     double road_length_2d) {
-        EvaluateRoadSourceParameter evaluateRoadSourceParameter = new EvaluateRoadSourceParameter(speed_load, vl_per_hour, pl_per_hour);
-        evaluateRoadSourceParameter.setSlopePercentage(EvaluateRoadSourceParameter.computeSlope(beginZ, endZ, road_length_2d));
-        return EvaluateRoadSource.evaluate(evaluateRoadSourceParameter);
+        RSParameters RSParameters = new RSParameters(speed_load, vl_per_hour, pl_per_hour);
+        RSParameters.setSlopePercentage(RSParameters.computeSlope(beginZ, endZ, road_length_2d));
+        return EvaluateRoadSource.evaluate(RSParameters);
     }
 
     /**
@@ -147,10 +147,10 @@ public class BR_EvalSource extends DeterministicScalarFunction {
      */
     public static double evalSource(double lv_speed, double hv_speed,int vl_per_hour, int pl_per_hour, double beginZ, double endZ,
                                     double road_length_2d) {
-        EvaluateRoadSourceParameter evaluateRoadSourceParameter = new EvaluateRoadSourceParameter(lv_speed, vl_per_hour, pl_per_hour);
-        evaluateRoadSourceParameter.setSlopePercentage(EvaluateRoadSourceParameter.computeSlope(beginZ, endZ, road_length_2d));
-        evaluateRoadSourceParameter.setSpeedHgv(hv_speed);
-        return EvaluateRoadSource.evaluate(evaluateRoadSourceParameter);
+        RSParameters RSParameters = new RSParameters(lv_speed, vl_per_hour, pl_per_hour);
+        RSParameters.setSlopePercentage(RSParameters.computeSlope(beginZ, endZ, road_length_2d));
+        RSParameters.setSpeedHgv(hv_speed);
+        return EvaluateRoadSource.evaluate(RSParameters);
     }
 
 
@@ -170,9 +170,9 @@ public class BR_EvalSource extends DeterministicScalarFunction {
      */
     public static double evalSource(double speed_load, int vl_per_hour, int pl_per_hour, double speed_junction, double speed_max,
                                     int copound_roadtype,  double beginZ, double endZ, double roadLength2d, boolean isQueue) {
-        EvaluateRoadSourceParameter srcParameters = new EvaluateRoadSourceParameter(speed_load, vl_per_hour, pl_per_hour);
+        RSParameters srcParameters = new RSParameters(speed_load, vl_per_hour, pl_per_hour);
         srcParameters.setSpeedFromRoadCaracteristics(speed_junction, isQueue, speed_max, copound_roadtype);
-        srcParameters.setSlopePercentage(EvaluateRoadSourceParameter.computeSlope(beginZ, endZ, roadLength2d));
+        srcParameters.setSlopePercentage(RSParameters.computeSlope(beginZ, endZ, roadLength2d));
         return EvaluateRoadSource.evaluate(srcParameters);
     }
 }

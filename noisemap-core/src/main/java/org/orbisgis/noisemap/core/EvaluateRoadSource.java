@@ -54,7 +54,16 @@ public class EvaluateRoadSource {
      * @param parameters Noise emission parameters
      * @return Noise level in dB(A)
      */
-    public static double evaluate(EvaluateRoadSourceParameter parameters) {
+    public static double evaluate(RSParameters parameters) {
+        // Fix vehicle speed to validity domains
+        // Validity discussed 3.5.3.2 - Speed validity of results P.45 of Road Noise Prediction
+        parameters.setSpeedLv(Math.min(130,
+                Math.max(parameters.getLvState() == RSParameters.EngineState.SteadySpeed ? 20 : 5,
+                        parameters.getSpeedLv())));
+        // Validity discussed 3.5.3.2 - Speed validity of results P.45 of Road Noise Prediction
+        parameters.setSpeedHgv(Math.min(100,
+                Math.max(parameters.getHgvState() == RSParameters.EngineState.SteadySpeed ? 20 : 5,
+                        parameters.getSpeedHgv())));
         // ///////////////////////
         // Noise road/tire
         // cf. NMPB 2008 1 - Calculating sound emissions from road traffic
@@ -66,7 +75,7 @@ public class EvaluateRoadSource {
         double hgvRoadLvl;
 
         // surface category -> R1
-        if (parameters.getSurfaceCategory() == EvaluateRoadSourceParameter.SurfaceCategory.R1){
+        if (parameters.getSurfaceCategory() == RSParameters.SurfaceCategory.R1){
             lvRoadLvl = getNoiseLvl(53.4, 21., parameters.getSpeedLv(), 90.);
             hgvRoadLvl = getNoiseLvl(61.5, 20., parameters.getSpeedHgv(), 80.);
             // check surface age
@@ -79,7 +88,7 @@ public class EvaluateRoadSource {
             }
         }
         // surface category -> R3
-        else if (parameters.getSurfaceCategory() == EvaluateRoadSourceParameter.SurfaceCategory.R3){
+        else if (parameters.getSurfaceCategory() == RSParameters.SurfaceCategory.R3){
             lvRoadLvl = getNoiseLvl(57.5, 21.4, parameters.getSpeedLv(), 90.);
             hgvRoadLvl = getNoiseLvl(64.2, 20., parameters.getSpeedHgv(), 80.);
             // check surface age
@@ -108,26 +117,29 @@ public class EvaluateRoadSource {
         // Noise motor
         // Calculate the emission powers of motors lights vehicles.
         double lvMotorLvl = 0.;
-
-        if (parameters.getSpeedLv() < 25.) {                  // check speed the lvl.
-            if (parameters.getLvState() == EvaluateRoadSourceParameter.EngineState.Deceleration){     // stopping condition.
+        // See 2.7.1.2 - Special case: "starting" and "stopping" sections
+        // Speed lower than 25 km/h are considered as starting sections
+        if (parameters.getSpeedLv() < 25. ||
+                parameters.getLvState() == RSParameters.EngineState.Starting ||
+                parameters.getLvState() == RSParameters.EngineState.Stopping) {
+            if (parameters.getLvState() == RSParameters.EngineState.Stopping){
                 lvMotorLvl = 44.5;
-            } else {                        // default or starting condition.
+            } else {
+                // Starting condition.
                 lvMotorLvl = 51.1;
             }
         } else {
             // check speed the lvl.
             // TODO can initialize default at 25 km/h ?
-            if (parameters.getLvState() == EvaluateRoadSourceParameter.EngineState.Acceleration){
+            if (parameters.getLvState() == RSParameters.EngineState.Acceleration){
                 // accelerated pace.
                 if (parameters.getSpeedLv() <= 100.) {         // check again the speed lvl.
                     lvMotorLvl = getNoiseLvl(46.1, -10., Math.max(20, parameters.getSpeedLv()), 90.);
-                    // TODO Math.max(20, speed) -> max(25, speed) ?
                 } else {
                     // default speed lvl for accelerated pace
                     lvMotorLvl = getNoiseLvl(44.3, 28.6, parameters.getSpeedLv(), 90.);
                 }
-            } else if (parameters.getLvState() == EvaluateRoadSourceParameter.EngineState.Deceleration){
+            } else if (parameters.getLvState() == RSParameters.EngineState.Deceleration){
                 // decelerated pace.
                 if (parameters.getSpeedLv() <= 80.) {          // check again the speed lvl.
                     lvMotorLvl = getNoiseLvl(42.1, -4.5, Math.max(20, parameters.getSpeedLv()), 90.);
@@ -157,7 +169,7 @@ public class EvaluateRoadSource {
 
         if (parameters.getSpeedHgv() <= 25.) {
             // TODO initialize default speed
-            if (parameters.getHgvState() == EvaluateRoadSourceParameter.EngineState.Deceleration){
+            if (parameters.getHgvState() == RSParameters.EngineState.Deceleration){
                 // stopping condition
                 if (parameters.getSlopePercentage() < 2){
                     // downward slope
@@ -177,19 +189,19 @@ public class EvaluateRoadSource {
         } else if(parameters.getSpeedHgv() <= 70.) {
             hgvMotorLvl = getNoiseLvl(49.6, -10., Math.max(20, parameters.getSpeedHgv()), 80.);
             if (parameters.getSlopePercentage() < 0){
-                if (parameters.getHgvState() == EvaluateRoadSourceParameter.EngineState.Acceleration){
+                if (parameters.getHgvState() == RSParameters.EngineState.Acceleration){
                     hgvMotorLvl = hgvMotorLvl + 5 ;
                 } else {
                     hgvMotorLvl = hgvMotorLvl + 1*(-parameters.getSlopePercentage() -2);
                 }
             } else if (parameters.getSlopePercentage() > 2){
-                if (parameters.getHgvState() == EvaluateRoadSourceParameter.EngineState.Acceleration){
+                if (parameters.getHgvState() == RSParameters.EngineState.Acceleration){
                     hgvMotorLvl = hgvMotorLvl + 5 + Math.max(2*(parameters.getSlopePercentage()-4.5),0) ;
-                } else if(parameters.getHgvState() == EvaluateRoadSourceParameter.EngineState.SteadySpeed) {
+                } else if(parameters.getHgvState() == RSParameters.EngineState.SteadySpeed) {
                     hgvMotorLvl = hgvMotorLvl + 2 * (parameters.getSlopePercentage() - 2);
                 }
             } else {
-                if (parameters.getHgvState() == EvaluateRoadSourceParameter.EngineState.Acceleration){
+                if (parameters.getHgvState() == RSParameters.EngineState.Acceleration){
                     hgvMotorLvl = hgvMotorLvl + 5.;
                 }
             }
@@ -198,15 +210,15 @@ public class EvaluateRoadSource {
             // Table 2.11
             hgvMotorLvl = getNoiseLvl(50.4, 3., parameters.getSpeedHgv(), 80.);
             if(parameters.getSlopePercentage() < 2) {
-                if (parameters.getHgvState() == EvaluateRoadSourceParameter.EngineState.Acceleration){
+                if (parameters.getHgvState() == RSParameters.EngineState.Acceleration){
                     hgvMotorLvl = hgvMotorLvl + 5 ;
                 } else if(parameters.getSlopePercentage() <= -2) {
                     hgvMotorLvl = hgvMotorLvl + (-parameters.getSlopePercentage() -2);
                 }
             } else {
-                if (parameters.getHgvState() == EvaluateRoadSourceParameter.EngineState.Acceleration){
+                if (parameters.getHgvState() == RSParameters.EngineState.Acceleration){
                     hgvMotorLvl = hgvMotorLvl + 5 + Math.max(2*(parameters.getSlopePercentage()-4.5),0) ;
-                } else if(parameters.getHgvState() == EvaluateRoadSourceParameter.EngineState.SteadySpeed) {
+                } else if(parameters.getHgvState() == RSParameters.EngineState.SteadySpeed) {
                     hgvMotorLvl = hgvMotorLvl + 2 * (parameters.getSlopePercentage() - 2);
                 }
             }

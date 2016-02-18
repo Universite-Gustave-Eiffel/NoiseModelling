@@ -36,7 +36,7 @@ package org.orbisgis.noisemap.core;
 /**
  * @author Nicolas Fortin
  */
-public class EvaluateRoadSourceParameter {
+public class RSParameters {
     private final double speedLoad;
     private final int lvPerHour;
     private final int hgvPerHour;
@@ -60,7 +60,9 @@ public class EvaluateRoadSourceParameter {
     public enum EngineState {
         SteadySpeed,
         Acceleration,
-        Deceleration
+        Deceleration,
+        Starting,
+        Stopping
     }
 
     private SurfaceCategory surfaceCategory = SurfaceCategory.R2;
@@ -159,8 +161,8 @@ public class EvaluateRoadSourceParameter {
     }
 
     /**
-     * Compute {@link EvaluateRoadSourceParameter#speedHgv}
-     * and {@link EvaluateRoadSourceParameter#speedLv} from theses parameters
+     * Compute {@link RSParameters#speedHgv}
+     * and {@link RSParameters#speedLv} from theses parameters
      * @param speed_junction Speed in the junction section
      * @param speed_max Maximum speed authorized
      * @param copound_roadtype Road surface type.
@@ -218,7 +220,7 @@ public class EvaluateRoadSourceParameter {
      * @param lvPerHour Average light vehicle per hour
      * @param hgvPerHour Average heavy vehicle per hour
      */
-    public EvaluateRoadSourceParameter(double speedLoad, int lvPerHour, int hgvPerHour) {
+    public RSParameters(double speedLoad, int lvPerHour, int hgvPerHour) {
         this.speedLoad = speedLoad;
         this.lvPerHour = lvPerHour;
         this.hgvPerHour = hgvPerHour;
@@ -231,13 +233,11 @@ public class EvaluateRoadSourceParameter {
     }
 
     public void setSpeedLv(double speedLv) {
-        // Validity discussed 3.5.3.2 - Speed validity of results P.45 of Road Noise Prediction
-        this.speedLv = Math.min(130, Math.max(5, speedLv));
+        this.speedLv = speedLv;
     }
 
     public void setSpeedHgv(double speedHgv) {
-        // Validity discussed 3.5.3.2 - Speed validity of results P.45 of Road Noise Prediction
-        this.speedHgv = Math.min(100, Math.max(5, speedHgv));
+        this.speedHgv = speedHgv;
     }
 
     public void setLvState(EngineState lvState) {
