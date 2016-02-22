@@ -140,7 +140,7 @@ public class BR_EvalSource extends DeterministicScalarFunction {
      * @return Noise level in dB(A)
      */
     public static double evalSource(double speed_load, int vl_per_hour, int pl_per_hour) {
-        return EvaluateRoadSource.evaluate(new RSParameters(speed_load, vl_per_hour, pl_per_hour));
+        return EvaluateRoadSource.evaluate(new RSParameters(speed_load,speed_load, vl_per_hour, pl_per_hour));
     }
 
     /**
@@ -155,7 +155,7 @@ public class BR_EvalSource extends DeterministicScalarFunction {
      */
     public static double evalSource(double speed_load, int vl_per_hour, int pl_per_hour, double beginZ, double endZ,
                                     double road_length_2d) {
-        RSParameters RSParameters = new RSParameters(speed_load, vl_per_hour, pl_per_hour);
+        RSParameters RSParameters = new RSParameters(speed_load,speed_load, vl_per_hour, pl_per_hour);
         RSParameters.setSlopePercentage(RSParameters.computeSlope(beginZ, endZ, road_length_2d));
         return EvaluateRoadSource.evaluate(RSParameters);
     }
@@ -172,10 +172,9 @@ public class BR_EvalSource extends DeterministicScalarFunction {
      */
     public static double evalSource(double lv_speed, double hv_speed,int vl_per_hour, int pl_per_hour, double beginZ, double endZ,
                                     double road_length_2d) {
-        RSParameters RSParameters = new RSParameters(lv_speed, vl_per_hour, pl_per_hour);
-        RSParameters.setSlopePercentage(RSParameters.computeSlope(beginZ, endZ, road_length_2d));
-        RSParameters.setSpeedHgv(hv_speed);
-        return EvaluateRoadSource.evaluate(RSParameters);
+        RSParameters rsParameters = new RSParameters(lv_speed, hv_speed, vl_per_hour, pl_per_hour);
+        rsParameters.setSlopePercentage(RSParameters.computeSlope(beginZ, endZ, road_length_2d));
+        return EvaluateRoadSource.evaluate(rsParameters);
     }
 
 
@@ -195,8 +194,8 @@ public class BR_EvalSource extends DeterministicScalarFunction {
      */
     public static double evalSource(double speed_load, int vl_per_hour, int pl_per_hour, double speed_junction, double speed_max,
                                     int copound_roadtype,  double beginZ, double endZ, double roadLength2d, boolean isQueue) {
-        RSParameters srcParameters = new RSParameters(speed_load, vl_per_hour, pl_per_hour);
-        srcParameters.setSpeedFromRoadCaracteristics(speed_junction, isQueue, speed_max, copound_roadtype);
+        RSParameters srcParameters = new RSParameters(speed_load,speed_load, vl_per_hour, pl_per_hour);
+        srcParameters.setSpeedFromRoadCaracteristics(speed_load, speed_junction, isQueue, speed_max, copound_roadtype);
         srcParameters.setSlopePercentage(RSParameters.computeSlope(beginZ, endZ, roadLength2d));
         return EvaluateRoadSource.evaluate(srcParameters);
     }
@@ -220,7 +219,7 @@ public class BR_EvalSource extends DeterministicScalarFunction {
      */
     public static double evalSource(double speed_load, int vl_per_hour, int pl_per_hour, int roadSurface, String flowState) {
         checkRoadSurface(roadSurface);
-        RSParameters rsParameters = new RSParameters(speed_load, vl_per_hour, pl_per_hour);
+        RSParameters rsParameters = new RSParameters(speed_load,speed_load, vl_per_hour, pl_per_hour);
         rsParameters.setFlowState(engineStateFromString(flowState));
         rsParameters.setSurfaceCategory(RSParameters.SurfaceCategory.values()[roadSurface - 1]);
         return EvaluateRoadSource.evaluate(rsParameters);
@@ -241,7 +240,7 @@ public class BR_EvalSource extends DeterministicScalarFunction {
     public static double evalSource(double speed_load, int vl_per_hour, int pl_per_hour, double beginZ, double endZ,
                                     double road_length_2d, int roadSurface, String flowState) {
         checkRoadSurface(roadSurface);
-        RSParameters rsParameters = new RSParameters(speed_load, vl_per_hour, pl_per_hour);
+        RSParameters rsParameters = new RSParameters(speed_load,speed_load, vl_per_hour, pl_per_hour);
         rsParameters.setSlopePercentage(RSParameters.computeSlope(beginZ, endZ, road_length_2d));
         rsParameters.setFlowState(engineStateFromString(flowState));
         rsParameters.setSurfaceCategory(RSParameters.SurfaceCategory.values()[roadSurface - 1]);
@@ -263,11 +262,10 @@ public class BR_EvalSource extends DeterministicScalarFunction {
     public static double evalSource(double lv_speed, double hv_speed,int vl_per_hour, int pl_per_hour, double beginZ, double endZ,
                                     double road_length_2d, int roadSurface, String flowState) {
         checkRoadSurface(roadSurface);
-        RSParameters rsParameters = new RSParameters(lv_speed, vl_per_hour, pl_per_hour);
+        RSParameters rsParameters = new RSParameters(lv_speed,hv_speed, vl_per_hour, pl_per_hour);
         rsParameters.setSlopePercentage(RSParameters.computeSlope(beginZ, endZ, road_length_2d));
         rsParameters.setFlowState(engineStateFromString(flowState));
         rsParameters.setSurfaceCategory(RSParameters.SurfaceCategory.values()[roadSurface - 1]);
-        rsParameters.setSpeedHgv(hv_speed);
         return EvaluateRoadSource.evaluate(rsParameters);
     }
 
@@ -292,8 +290,8 @@ public class BR_EvalSource extends DeterministicScalarFunction {
                                     int copound_roadtype,  double beginZ, double endZ, double roadLength2d, boolean isQueue,
                                     int roadSurface, String flowState) {
         checkRoadSurface(roadSurface);
-        RSParameters srcParameters = new RSParameters(speed_load, vl_per_hour, pl_per_hour);
-        srcParameters.setSpeedFromRoadCaracteristics(speed_junction, isQueue, speed_max, copound_roadtype);
+        RSParameters srcParameters = new RSParameters(speed_load,speed_load, vl_per_hour, pl_per_hour);
+        srcParameters.setSpeedFromRoadCaracteristics(speed_load, speed_junction, isQueue, speed_max, copound_roadtype);
         srcParameters.setSlopePercentage(RSParameters.computeSlope(beginZ, endZ, roadLength2d));
         srcParameters.setFlowState(engineStateFromString(flowState));
         srcParameters.setSurfaceCategory(RSParameters.SurfaceCategory.values()[roadSurface - 1]);

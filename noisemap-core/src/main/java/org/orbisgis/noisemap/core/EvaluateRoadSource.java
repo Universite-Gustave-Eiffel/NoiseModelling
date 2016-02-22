@@ -34,8 +34,9 @@
 package org.orbisgis.noisemap.core;
 
 /**
- * Return the dB(A) value corresponding to the parameters.You can specify from 3 to 10 parameters.
- * loadSpeed,lightVehicleCount,heavyVehicleCount[,junction speed,speedMax,roadType[,Zbegin,Zend,roadLength[,isqueue]]]
+ * Return the dB(A) value corresponding to the parameters
+ * Reference document is reference 0924-1A - © 2011 Sétra - ISRN No. : EQ-SETRA--11-ED13--FR+ENG
+ * http://www.setra.developpement-durable.gouv.fr/IMG/pdf/0924-1A_Road_noise_prediction_v1.pdf
  * @author Nicolas Fortin
  */
 public class EvaluateRoadSource {

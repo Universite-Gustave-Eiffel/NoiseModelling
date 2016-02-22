@@ -37,9 +37,8 @@ package org.orbisgis.noisemap.core;
  * @author Nicolas Fortin
  */
 public class RSParameters {
-    private final double speedLoad;
-    private final int lvPerHour;
-    private final int hgvPerHour;
+    private final double lvPerHour;
+    private final double hgvPerHour;
 
     /**
      * BBTS means very thin asphalt concrete.
@@ -167,7 +166,7 @@ public class RSParameters {
      * @param copound_roadtype Road surface type.
      * @param is_queue If true use speed_junction in speedLoad
      */
-    public void setSpeedFromRoadCaracteristics(double speed_junction, boolean is_queue, double speed_max,int copound_roadtype) {
+    public void setSpeedFromRoadCaracteristics(double speedLoad, double speed_junction, boolean is_queue, double speed_max,int copound_roadtype) {
         // Separation of main index and sub index
         final int roadtype = copound_roadtype / 10;
         final int roadSubType = copound_roadtype - (roadtype * 10);
@@ -215,16 +214,16 @@ public class RSParameters {
 
     /**
      * Simplest road noise evaluation
-     * @param speedLoad Average vehicle speed
+     * @param lv_speed Average light vehicle speed
+     * @param lv_speed Average heavy goods vehicle speed
      * @param lvPerHour Average light vehicle per hour
      * @param hgvPerHour Average heavy vehicle per hour
      */
-    public RSParameters(double speedLoad, int lvPerHour, int hgvPerHour) {
-        this.speedLoad = speedLoad;
+    public RSParameters(double lv_speed, double hgv_speed, double lvPerHour, double hgvPerHour) {
         this.lvPerHour = lvPerHour;
         this.hgvPerHour = hgvPerHour;
-        setSpeedLv(speedLoad);
-        setSpeedHgv(speedLoad);
+        setSpeedLv(lv_speed);
+        setSpeedHgv(hgv_speed);
     }
 
     public void setSurfaceCategory(SurfaceCategory surfaceCategory) {
@@ -247,15 +246,11 @@ public class RSParameters {
         this.flowState = flowState;
     }
 
-    public double getSpeedLoad() {
-        return speedLoad;
-    }
-
-    public int getLvPerHour() {
+    public double getLvPerHour() {
         return lvPerHour;
     }
 
-    public int getHgvPerHour() {
+    public double getHgvPerHour() {
         return hgvPerHour;
     }
 
