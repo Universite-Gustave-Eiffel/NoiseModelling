@@ -2,7 +2,7 @@
 NoiseModelling (formerly NoiseM@p)
 ======
 
-NoiseModelling (formely NoiseM@ap) is a plugin of the [OrbisGIS](http://www.orbisgis.org) software (an open-source geographic information system) that able to produce noise maps of cities, according to the french standard method for the road noise [emission][nmpb_E] and using the [NMPB][nmpb_P] method for the sound propagation.
+NoiseModelling (formerly NoiseM@ap) is a plugin of the [OrbisGIS](http://www.orbisgis.org) software (an open-source geographic information system) that able to produce noise maps of cities, according to the french standard method for the road noise [emission][nmpb_E] and using the [NMPB][nmpb_P] method for the sound propagation.
 
 It can be freely used either for research and education, as well as by experts in a professional use.
 
