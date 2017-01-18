@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/Ifsttar/NoiseMap.svg?branch=master)](https://travis-ci.org/Ifsttar/NoiseMap) 
+[![Build Status](https://travis-ci.org/Ifsttar/NoiseModelling.svg?branch=master)](https://travis-ci.org/Ifsttar/NoiseModelling)
 NoiseModelling (formely NoiseM@p)
 ======
 
