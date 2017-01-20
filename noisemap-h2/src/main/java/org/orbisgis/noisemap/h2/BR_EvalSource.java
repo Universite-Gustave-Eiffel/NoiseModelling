@@ -35,7 +35,7 @@ package org.orbisgis.noisemap.h2;
 
 import org.h2gis.h2spatialapi.DeterministicScalarFunction;
 import org.orbisgis.noisemap.core.EvaluateRoadSource;
-import org.orbisgis.noisemap.core.EvaluateRoadSourceParameter;
+import org.orbisgis.noisemap.core.RSParameters;
 
 /**
  * Return the dB(A) value corresponding to the parameters.You can specify from 3 to 10 parameters.
@@ -48,11 +48,12 @@ public class BR_EvalSource extends DeterministicScalarFunction {
                 "\n" +
                 "Return the dB(A) global value of equivalent source power of combined light and heavy traffic.\n" +
                 "\n" +
-                "1. BR_EvalSource(double speed_load, int vl_per_hour, int pl_per_hour)\n" +
-                "2. BR_EvalSource(double speed_load, int vl_per_hour, int pl_per_hour, double beginZ, double endZ,double road_length_2d)\n" +
+                "1. BR_EvalSource(double speed_load, int vl_per_hour, int pl_per_hour, [SurfacingCategory, engineState])\n" +
+                "2. BR_EvalSource(double speed_load, int vl_per_hour, int pl_per_hour, double beginZ, double endZ," +
+                "double road_length_2d, [SurfacingCategory, engineState)\n" +
                 "3. BR_EvalSource(double speed_load, int vl_per_hour, int pl_per_hour, double speed_junction, " +
-                "double speed_max,int copound_roadtype,  double beginZ, double endZ, double roadLength2d, " +
-                "boolean isQueue)\n" +
+                "double speed_max,int compound_road_type,  double beginZ, double endZ, double road_length_2d, " +
+                "boolean isQueue, [SurfacingCategory, engineState)\n" +
                 "4. BR_EvalSource(double lv_speed, double hv_speed,int vl_per_hour, int pl_per_hour, double beginZ, " +
                 "double endZ,double road_length_2d)\n" +
                 "\n" +
@@ -99,12 +100,36 @@ public class BR_EvalSource extends DeterministicScalarFunction {
                 " - **isQueue** If this segment of road is behind a traffic light. If vehicles behavior is to stop at" +
                 " the end of the road.\n" +
                 " - **lv_speed** Average light vehicle speed\n" +
-                " - **hv_speed** Average heavy vehicle speed\n");
+                " - **hv_speed** Average heavy vehicle speed\n" +
+                " - **SurfacingCategory** 1 to 3 :" +
+                "        `R1` Less noisy, BRUM 0/6 or BBDR0/10 or BBTM 0/6 or BBTM 0/10\n" +
+                "        `R2` Average noisy BBSG 0/10 BBTL 0/10 - type 1 or BRUM 0/10 or ECF\n" +
+                "        `R3` Much noisy BBDG 0/14 or BBTM 0/14 or E S6/10 or BC or ES 10/14" +
+                " - **engineState** Traffic flow type. One of SteadySpeed, Acceleration, Deceleration, Starting, Stopping.\n" +
+                "                    Note that Starting, Stopping states does not use the speed and surfacing category\n");
     }
 
     @Override
     public String getJavaStaticMethod() {
         return "evalSource";
+    }
+
+    private static RSParameters.EngineState engineStateFromString(String flowState) throws IllegalArgumentException {
+        flowState = flowState.trim().toLowerCase();
+        if(flowState.startsWith("ste")) {
+            return RSParameters.EngineState.SteadySpeed;
+        } else if(flowState.startsWith("acc")) {
+            return RSParameters.EngineState.Acceleration;
+        } else if(flowState.startsWith("dec")) {
+            return RSParameters.EngineState.Deceleration;
+        } else if(flowState.startsWith("sta")) {
+            return RSParameters.EngineState.Starting;
+        } else if(flowState.startsWith("sto")) {
+            return RSParameters.EngineState.Stopping;
+        } else {
+            throw new IllegalArgumentException("Got traffic flow type "+flowState+", it must be one of SteadySpeed," +
+                    " Acceleration, Deceleration, Starting, Stopping.");
+        }
     }
 
     /**
@@ -115,7 +140,7 @@ public class BR_EvalSource extends DeterministicScalarFunction {
      * @return Noise level in dB(A)
      */
     public static double evalSource(double speed_load, int vl_per_hour, int pl_per_hour) {
-        return EvaluateRoadSource.evaluate(new EvaluateRoadSourceParameter(speed_load, vl_per_hour, pl_per_hour));
+        return EvaluateRoadSource.evaluate(new RSParameters(speed_load,speed_load, vl_per_hour, pl_per_hour));
     }
 
     /**
@@ -130,9 +155,9 @@ public class BR_EvalSource extends DeterministicScalarFunction {
      */
     public static double evalSource(double speed_load, int vl_per_hour, int pl_per_hour, double beginZ, double endZ,
                                     double road_length_2d) {
-        EvaluateRoadSourceParameter evaluateRoadSourceParameter = new EvaluateRoadSourceParameter(speed_load, vl_per_hour, pl_per_hour);
-        evaluateRoadSourceParameter.setSlopePercentage(EvaluateRoadSourceParameter.computeSlope(beginZ, endZ, road_length_2d));
-        return EvaluateRoadSource.evaluate(evaluateRoadSourceParameter);
+        RSParameters RSParameters = new RSParameters(speed_load,speed_load, vl_per_hour, pl_per_hour);
+        RSParameters.setSlopePercentage(RSParameters.computeSlope(beginZ, endZ, road_length_2d));
+        return EvaluateRoadSource.evaluate(RSParameters);
     }
 
     /**
@@ -147,10 +172,9 @@ public class BR_EvalSource extends DeterministicScalarFunction {
      */
     public static double evalSource(double lv_speed, double hv_speed,int vl_per_hour, int pl_per_hour, double beginZ, double endZ,
                                     double road_length_2d) {
-        EvaluateRoadSourceParameter evaluateRoadSourceParameter = new EvaluateRoadSourceParameter(lv_speed, vl_per_hour, pl_per_hour);
-        evaluateRoadSourceParameter.setSlopePercentage(EvaluateRoadSourceParameter.computeSlope(beginZ, endZ, road_length_2d));
-        evaluateRoadSourceParameter.setSpeedHgv(hv_speed);
-        return EvaluateRoadSource.evaluate(evaluateRoadSourceParameter);
+        RSParameters rsParameters = new RSParameters(lv_speed, hv_speed, vl_per_hour, pl_per_hour);
+        rsParameters.setSlopePercentage(RSParameters.computeSlope(beginZ, endZ, road_length_2d));
+        return EvaluateRoadSource.evaluate(rsParameters);
     }
 
 
@@ -170,9 +194,107 @@ public class BR_EvalSource extends DeterministicScalarFunction {
      */
     public static double evalSource(double speed_load, int vl_per_hour, int pl_per_hour, double speed_junction, double speed_max,
                                     int copound_roadtype,  double beginZ, double endZ, double roadLength2d, boolean isQueue) {
-        EvaluateRoadSourceParameter srcParameters = new EvaluateRoadSourceParameter(speed_load, vl_per_hour, pl_per_hour);
-        srcParameters.setSpeedFromRoadCaracteristics(speed_junction, isQueue, speed_max, copound_roadtype);
-        srcParameters.setSlopePercentage(EvaluateRoadSourceParameter.computeSlope(beginZ, endZ, roadLength2d));
+        RSParameters srcParameters = new RSParameters(speed_load,speed_load, vl_per_hour, pl_per_hour);
+        srcParameters.setSpeedFromRoadCaracteristics(speed_load, speed_junction, isQueue, speed_max, copound_roadtype);
+        srcParameters.setSlopePercentage(RSParameters.computeSlope(beginZ, endZ, roadLength2d));
+        return EvaluateRoadSource.evaluate(srcParameters);
+    }
+
+    private static void checkRoadSurface(int roadSurface) {
+        if(roadSurface < 1 || roadSurface > RSParameters.SurfaceCategory.values().length) {
+            throw new IllegalArgumentException("Road surface must be between 1 and 3");
+        }
+    }
+
+
+
+    /**
+     * Simplest road noise evaluation
+     * @param speed_load Average vehicle speed
+     * @param vl_per_hour Average light vehicle per hour
+     * @param pl_per_hour Average heavy vehicle per hour
+     * @param roadSurface Road surface between 1 and 3
+     * @param flowState Flow state. One of SteadySpeed, Acceleration, Deceleration, Starting, Stopping.
+     * @return Noise level in dB(A)
+     */
+    public static double evalSource(double speed_load, int vl_per_hour, int pl_per_hour, int roadSurface, String flowState) {
+        checkRoadSurface(roadSurface);
+        RSParameters rsParameters = new RSParameters(speed_load,speed_load, vl_per_hour, pl_per_hour);
+        rsParameters.setFlowState(engineStateFromString(flowState));
+        rsParameters.setSurfaceCategory(RSParameters.SurfaceCategory.values()[roadSurface - 1]);
+        return EvaluateRoadSource.evaluate(rsParameters);
+    }
+
+    /**
+     *
+     * @param speed_load Average vehicle speed
+     * @param vl_per_hour Average light vehicle per hour
+     * @param pl_per_hour Average heavy vehicle per hour
+     * @param beginZ Road start height
+     * @param endZ Road end height
+     * @param road_length_2d Road length (do not take account of Z)
+     * @param roadSurface Road surface between 1 and 3
+     * @param flowState Flow state. One of SteadySpeed, Acceleration, Deceleration, Starting, Stopping.
+     * @return Noise emission dB(A)
+     */
+    public static double evalSource(double speed_load, int vl_per_hour, int pl_per_hour, double beginZ, double endZ,
+                                    double road_length_2d, int roadSurface, String flowState) {
+        checkRoadSurface(roadSurface);
+        RSParameters rsParameters = new RSParameters(speed_load,speed_load, vl_per_hour, pl_per_hour);
+        rsParameters.setSlopePercentage(RSParameters.computeSlope(beginZ, endZ, road_length_2d));
+        rsParameters.setFlowState(engineStateFromString(flowState));
+        rsParameters.setSurfaceCategory(RSParameters.SurfaceCategory.values()[roadSurface - 1]);
+        return EvaluateRoadSource.evaluate(rsParameters);
+    }
+
+    /**
+     * @param lv_speed Average light vehicle speed
+     * @param hv_speed Average heavy vehicle speed
+     * @param vl_per_hour Average light vehicle per hour
+     * @param pl_per_hour Average heavy vehicle per hour
+     * @param beginZ Road start height
+     * @param endZ Road end height
+     * @param road_length_2d Road length (do not take account of Z)
+     * @param roadSurface Road surface between 1 and 3
+     * @param flowState Flow state. One of SteadySpeed, Acceleration, Deceleration, Starting, Stopping.
+     * @return Noise emission dB(A)
+     */
+    public static double evalSource(double lv_speed, double hv_speed,int vl_per_hour, int pl_per_hour, double beginZ, double endZ,
+                                    double road_length_2d, int roadSurface, String flowState) {
+        checkRoadSurface(roadSurface);
+        RSParameters rsParameters = new RSParameters(lv_speed,hv_speed, vl_per_hour, pl_per_hour);
+        rsParameters.setSlopePercentage(RSParameters.computeSlope(beginZ, endZ, road_length_2d));
+        rsParameters.setFlowState(engineStateFromString(flowState));
+        rsParameters.setSurfaceCategory(RSParameters.SurfaceCategory.values()[roadSurface - 1]);
+        return EvaluateRoadSource.evaluate(rsParameters);
+    }
+
+
+    /**
+     * Road noise evaluation.Evaluate speed of heavy vehicle.
+     * @param speed_load Average vehicle speed
+     * @param vl_per_hour Average light vehicle per hour
+     * @param pl_per_hour Average heavy vehicle per hour
+     * @param speed_junction Speed in the junction section
+     * @param speed_max Maximum speed authorized
+     * @param copound_roadtype Road surface type.
+     * @param beginZ Road start height
+     * @param endZ Road end height
+     * @param roadLength2d Road length (do not take account of Z)
+     * @param isQueue If true use speed_junction in speed_load
+     * @param roadSurface Road surface between 1 and 3
+     * @param flowState Flow state. One of SteadySpeed, Acceleration, Deceleration, Starting, Stopping.
+     * @return Noise level in dB(A)
+     */
+    public static double evalSource(double speed_load, int vl_per_hour, int pl_per_hour, double speed_junction, double speed_max,
+                                    int copound_roadtype,  double beginZ, double endZ, double roadLength2d, boolean isQueue,
+                                    int roadSurface, String flowState) {
+        checkRoadSurface(roadSurface);
+        RSParameters srcParameters = new RSParameters(speed_load,speed_load, vl_per_hour, pl_per_hour);
+        srcParameters.setSpeedFromRoadCaracteristics(speed_load, speed_junction, isQueue, speed_max, copound_roadtype);
+        srcParameters.setSlopePercentage(RSParameters.computeSlope(beginZ, endZ, roadLength2d));
+        srcParameters.setFlowState(engineStateFromString(flowState));
+        srcParameters.setSurfaceCategory(RSParameters.SurfaceCategory.values()[roadSurface - 1]);
         return EvaluateRoadSource.evaluate(srcParameters);
     }
 }

@@ -10,7 +10,7 @@
     </parent>
     <artifactId>noisemap-h2-osgi</artifactId>
     <name>noisemap-h2-osgi</name>
-    <description>Declare sql methods in OSGi</description>
+    <description>Declare sql methods in OSGi. You have to restart OrbisGIS in order to install the plugin</description>
     <packaging>bundle</packaging>
     <build>
         <plugins>

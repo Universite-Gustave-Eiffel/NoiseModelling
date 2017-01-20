@@ -36,10 +36,9 @@ package org.orbisgis.noisemap.core;
 /**
  * @author Nicolas Fortin
  */
-public class EvaluateRoadSourceParameter {
-    private final double speedLoad;
-    private final int lvPerHour;
-    private final int hgvPerHour;
+public class RSParameters {
+    private final double lvPerHour;
+    private final double hgvPerHour;
 
     /**
      * BBTS means very thin asphalt concrete.
@@ -60,7 +59,9 @@ public class EvaluateRoadSourceParameter {
     public enum EngineState {
         SteadySpeed,
         Acceleration,
-        Deceleration
+        Deceleration,
+        Starting,
+        Stopping
     }
 
     private SurfaceCategory surfaceCategory = SurfaceCategory.R2;
@@ -68,8 +69,7 @@ public class EvaluateRoadSourceParameter {
     private double slopePercentage = 0;
     private double speedLv;
     private double speedHgv;
-    private EngineState lvState = EngineState.SteadySpeed;
-    private EngineState hgvState = EngineState.SteadySpeed;
+    private EngineState flowState = EngineState.SteadySpeed;
 
     private static double getVPl(double sLv, double speedmax, int type, int subtype) throws IllegalArgumentException {
         switch (type) {
@@ -159,14 +159,14 @@ public class EvaluateRoadSourceParameter {
     }
 
     /**
-     * Compute {@link EvaluateRoadSourceParameter#speedHgv}
-     * and {@link EvaluateRoadSourceParameter#speedLv} from theses parameters
+     * Compute {@link RSParameters#speedHgv}
+     * and {@link RSParameters#speedLv} from theses parameters
      * @param speed_junction Speed in the junction section
      * @param speed_max Maximum speed authorized
      * @param copound_roadtype Road surface type.
      * @param is_queue If true use speed_junction in speedLoad
      */
-    public void setSpeedFromRoadCaracteristics(double speed_junction, boolean is_queue, double speed_max,int copound_roadtype) {
+    public void setSpeedFromRoadCaracteristics(double speedLoad, double speed_junction, boolean is_queue, double speed_max,int copound_roadtype) {
         // Separation of main index and sub index
         final int roadtype = copound_roadtype / 10;
         final int roadSubType = copound_roadtype - (roadtype * 10);
@@ -214,16 +214,16 @@ public class EvaluateRoadSourceParameter {
 
     /**
      * Simplest road noise evaluation
-     * @param speedLoad Average vehicle speed
+     * @param lv_speed Average light vehicle speed
+     * @param lv_speed Average heavy goods vehicle speed
      * @param lvPerHour Average light vehicle per hour
      * @param hgvPerHour Average heavy vehicle per hour
      */
-    public EvaluateRoadSourceParameter(double speedLoad, int lvPerHour, int hgvPerHour) {
-        this.speedLoad = speedLoad;
+    public RSParameters(double lv_speed, double hgv_speed, double lvPerHour, double hgvPerHour) {
         this.lvPerHour = lvPerHour;
         this.hgvPerHour = hgvPerHour;
-        setSpeedLv(speedLoad);
-        setSpeedHgv(speedLoad);
+        setSpeedLv(lv_speed);
+        setSpeedHgv(hgv_speed);
     }
 
     public void setSurfaceCategory(SurfaceCategory surfaceCategory) {
@@ -231,32 +231,26 @@ public class EvaluateRoadSourceParameter {
     }
 
     public void setSpeedLv(double speedLv) {
-        // Validity discussed 3.5.3.2 - Speed validity of results P.45 of Road Noise Prediction
-        this.speedLv = Math.min(130, Math.max(5, speedLv));
+        this.speedLv = speedLv;
     }
 
     public void setSpeedHgv(double speedHgv) {
-        // Validity discussed 3.5.3.2 - Speed validity of results P.45 of Road Noise Prediction
-        this.speedHgv = Math.min(100, Math.max(5, speedHgv));
+        this.speedHgv = speedHgv;
     }
 
-    public void setLvState(EngineState lvState) {
-        this.lvState = lvState;
+    /**
+     * Set the engine state for vehicle.
+     * @param flowState enum
+     */
+    public void setFlowState(EngineState flowState) {
+        this.flowState = flowState;
     }
 
-    public void setHgvState(EngineState hgvState) {
-        this.hgvState = hgvState;
-    }
-
-    public double getSpeedLoad() {
-        return speedLoad;
-    }
-
-    public int getLvPerHour() {
+    public double getLvPerHour() {
         return lvPerHour;
     }
 
-    public int getHgvPerHour() {
+    public double getHgvPerHour() {
         return hgvPerHour;
     }
 
@@ -276,12 +270,7 @@ public class EvaluateRoadSourceParameter {
         return speedHgv;
     }
 
-    public EngineState getLvState() {
-        return lvState;
+    public EngineState getFlowState() {
+        return flowState;
     }
-
-    public EngineState getHgvState() {
-        return hgvState;
-    }
-
 }
