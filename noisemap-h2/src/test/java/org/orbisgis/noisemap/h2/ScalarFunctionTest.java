@@ -51,6 +51,7 @@ import static org.junit.Assert.assertTrue;
 
 /**
  * @author Nicolas Fortin
+ * @author Pierre Aumond 09/05/2017
  */
 public class ScalarFunctionTest {
     private static Connection connection;
@@ -60,6 +61,7 @@ public class ScalarFunctionTest {
     public static void tearUpClass() throws Exception {
         connection = SpatialH2UT.createSpatialDataBase(ScalarFunctionTest.class.getSimpleName(), true);
         CreateSpatialExtension.registerFunction(connection.createStatement(), new BR_EvalSource(), "");
+        CreateSpatialExtension.registerFunction(connection.createStatement(), new BR_EvalSourceC(), "");
         CreateSpatialExtension.registerFunction(connection.createStatement(), new BR_SpectrumRepartition(), "");
         CreateSpatialExtension.registerFunction(connection.createStatement(), new BTW_EvalSource(), "");
         CreateSpatialExtension.registerFunction(connection.createStatement(), new BTW_SpectrumRepartition(), "");
@@ -82,9 +84,23 @@ public class ScalarFunctionTest {
 
     @Test
     public void testBR_EvalSource() throws SQLException {
-        ResultSet rs = st.executeQuery("SELECT BR_EvalSource(50, 1500, 15)");
+        ResultSet rs = st.executeQuery("SELECT BR_EvalSource(70, 1000, 0)");
         assertTrue(rs.next());
-        assertEquals(82.96, rs.getDouble(1), 0.01);
+        assertEquals(83.53, rs.getDouble(1), 0.01);
+    }
+
+    @Test
+    public void testBR_EvalSourceC() throws SQLException {
+        ResultSet rs = st.executeQuery("SELECT 10*LOG10(POWER(10,BR_EvalSourceC(70,70,70,70,70,1000,0,0,0,0,0,false,90, 43, 0,0,1, 0,20,63)/10)" +
+                "+POWER(10,BR_EvalSourceC(70,70,70,70,70,1000,0,0,0,0,0,false,90, 43, 0,0,1, 0,20,125)/10)" +
+                "+POWER(10,BR_EvalSourceC(70,70,70,70,70,1000,0,0,0,0,0,false,90, 43, 0,0,1, 0,20,250)/10)" +
+                "+POWER(10,BR_EvalSourceC(70,70,70,70,70,1000,0,0,0,0,0,false,90, 43, 0,0,1, 0,20,500)/10)" +
+                "+POWER(10,BR_EvalSourceC(70,70,70,70,70,1000,0,0,0,0,0,false,90, 43, 0,0,1, 0,20,1000)/10)" +
+                "+POWER(10,BR_EvalSourceC(70,70,70,70,70,1000,0,0,0,0,0,false,90, 43, 0,0,1, 0,20,2000)/10)" +
+                "+POWER(10,BR_EvalSourceC(70,70,70,70,70,1000,0,0,0,0,0,false,90, 43, 0,0,1, 0,20,4000)/10)" +
+                "+POWER(10,BR_EvalSourceC(70,70,70,70,70,1000,0,0,0,0,0,false,90, 43, 0,0,1, 0,20,8000)/10))");
+        assertTrue(rs.next());
+        assertEquals(83.47, rs.getDouble(1), 0.01);
     }
 
     @Test
@@ -114,6 +130,7 @@ public class ScalarFunctionTest {
         assertTrue(rs.next());
         assertEquals(83.21, rs.getDouble(1), 0.01);
     }
+
 
     @Test
     public void testBR_SpectrumRepartition() throws SQLException {
