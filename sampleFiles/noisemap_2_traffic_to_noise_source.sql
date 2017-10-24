@@ -9,7 +9,7 @@ CREATE TABLE roads_geo_and_traffic AS select * from roads_dir_one UNION select *
 
 -- Compute the sound level for each segment of roads
 drop table if exists roads_src_global;
-CREATE TABLE roads_src_global AS SELECT the_geom,BR_EvalSource(load_speed,lightVehicleCount,heavyVehicleCount,junction_speed,max_speed,road_type,ST_Z(ST_GeometryN(ST_ToMultiPoint(the_geom),0)),ST_Z(ST_GeometryN(ST_ToMultiPoint(the_geom),1)),ST_Length(the_geom),False) as db_m from roads_geo_and_traffic;
+CREATE TABLE roads_src_global AS SELECT the_geom,BR_EvalSource(load_speed,lightVehicleCount,heavyVehicleCount,junction_speed,max_speed,road_type,ST_Z(ST_GeometryN(ST_ToMultiPoint(the_geom),1)),ST_Z(ST_GeometryN(ST_ToMultiPoint(the_geom),2)),ST_Length(the_geom),False) as db_m from roads_geo_and_traffic;
 
 -- Apply frequency repartition of road noise level
 drop table if exists roads_src;
