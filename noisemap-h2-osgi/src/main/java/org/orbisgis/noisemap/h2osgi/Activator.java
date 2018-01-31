@@ -1,6 +1,6 @@
 package org.orbisgis.noisemap.h2osgi;
 
-import org.h2gis.h2spatialapi.Function;
+import org.h2gis.api.Function;
 import org.orbisgis.noisemap.h2.BR_EvalSource;
 import org.orbisgis.noisemap.h2.BR_PtGrid;
 import org.orbisgis.noisemap.h2.BR_PtGrid3D;

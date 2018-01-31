@@ -33,8 +33,8 @@
  */
 package org.orbisgis.noisemap.h2;
 
-import org.h2gis.h2spatial.CreateSpatialExtension;
-import org.h2gis.h2spatial.ut.SpatialH2UT;
+import org.h2gis.functions.factory.H2GISDBFactory;
+import org.h2gis.functions.factory.H2GISFunctions;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -58,11 +58,11 @@ public class ScalarFunctionTest {
 
     @BeforeClass
     public static void tearUpClass() throws Exception {
-        connection = SpatialH2UT.createSpatialDataBase(ScalarFunctionTest.class.getSimpleName(), true);
-        CreateSpatialExtension.registerFunction(connection.createStatement(), new BR_EvalSource(), "");
-        CreateSpatialExtension.registerFunction(connection.createStatement(), new BR_SpectrumRepartition(), "");
-        CreateSpatialExtension.registerFunction(connection.createStatement(), new BTW_EvalSource(), "");
-        CreateSpatialExtension.registerFunction(connection.createStatement(), new BTW_SpectrumRepartition(), "");
+        connection = H2GISDBFactory.createSpatialDataBase(ScalarFunctionTest.class.getSimpleName(), true);
+        H2GISFunctions.registerFunction(connection.createStatement(), new BR_EvalSource(), "");
+        H2GISFunctions.registerFunction(connection.createStatement(), new BR_SpectrumRepartition(), "");
+        H2GISFunctions.registerFunction(connection.createStatement(), new BTW_EvalSource(), "");
+        H2GISFunctions.registerFunction(connection.createStatement(), new BTW_SpectrumRepartition(), "");
     }
 
     @AfterClass

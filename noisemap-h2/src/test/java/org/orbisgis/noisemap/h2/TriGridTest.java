@@ -35,8 +35,8 @@ package org.orbisgis.noisemap.h2;
 
 import com.vividsolutions.jts.geom.Polygon;
 import org.h2.util.StringUtils;
-import org.h2gis.h2spatial.CreateSpatialExtension;
-import org.h2gis.h2spatial.ut.SpatialH2UT;
+import org.h2gis.functions.factory.H2GISDBFactory;
+import org.h2gis.functions.factory.H2GISFunctions;
 import org.h2gis.utilities.SFSUtilities;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -70,12 +70,12 @@ public class TriGridTest {
 
     @BeforeClass
     public static void tearUpClass() throws Exception {
-        connection = SFSUtilities.wrapConnection(SpatialH2UT.createSpatialDataBase(TriGridTest.class.getSimpleName(), false, "MV_STORE=FALSE"));
-        org.h2gis.h2spatialext.CreateSpatialExtension.initSpatialExtension(connection);
-        CreateSpatialExtension.registerFunction(connection.createStatement(), new BR_TriGrid(), "");
-        CreateSpatialExtension.registerFunction(connection.createStatement(), new BR_TriGrid3D(), "");
-        CreateSpatialExtension.registerFunction(connection.createStatement(), new BR_EvalSource(), "");
-        CreateSpatialExtension.registerFunction(connection.createStatement(), new BR_SpectrumRepartition(), "");
+        connection = SFSUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(TriGridTest.class.getSimpleName(), false, "MV_STORE=FALSE"));
+        org.h2gis.functions.factory.H2GISFunctions.load(connection);
+        H2GISFunctions.registerFunction(connection.createStatement(), new BR_TriGrid(), "");
+        H2GISFunctions.registerFunction(connection.createStatement(), new BR_TriGrid3D(), "");
+        H2GISFunctions.registerFunction(connection.createStatement(), new BR_EvalSource(), "");
+        H2GISFunctions.registerFunction(connection.createStatement(), new BR_SpectrumRepartition(), "");
     }
 
     @AfterClass

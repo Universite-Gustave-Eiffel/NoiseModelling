@@ -33,8 +33,8 @@
  */
 package org.orbisgis.noisemap.h2;
 
-import org.h2gis.h2spatialapi.AbstractFunction;
-import org.h2gis.h2spatialapi.ScalarFunction;
+import org.h2gis.api.AbstractFunction;
+import org.h2gis.api.ScalarFunction;
 
 import java.sql.Connection;
 import java.sql.ResultSet;

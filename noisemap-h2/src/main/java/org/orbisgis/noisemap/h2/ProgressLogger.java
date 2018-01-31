@@ -1,6 +1,6 @@
 package org.orbisgis.noisemap.h2;
 
-import org.h2gis.h2spatialapi.ProgressVisitor;
+import org.h2gis.api.ProgressVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -3,7 +3,7 @@ package org.orbisgis.noisemap.core.jdbc;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
-import org.h2gis.h2spatialapi.ProgressVisitor;
+import org.h2gis.api.ProgressVisitor;
 import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SFSUtilities;
 import org.h2gis.utilities.SpatialResultSet;

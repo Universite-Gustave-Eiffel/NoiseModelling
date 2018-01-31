@@ -33,7 +33,7 @@
  */
 package org.orbisgis.noisemap.h2;
 
-import org.h2gis.h2spatialapi.DeterministicScalarFunction;
+import org.h2gis.api.DeterministicScalarFunction;
 import org.orbisgis.noisemap.core.EvaluateRoadSource;
 import org.orbisgis.noisemap.core.RSParameters;
 

@@ -13,7 +13,7 @@ import com.vividsolutions.jts.geom.Polygon;
 import com.vividsolutions.jts.operation.buffer.BufferOp;
 import com.vividsolutions.jts.operation.buffer.BufferParameters;
 import com.vividsolutions.jts.simplify.TopologyPreservingSimplifier;
-import org.h2gis.h2spatialapi.ProgressVisitor;
+import org.h2gis.api.ProgressVisitor;
 import org.h2gis.utilities.SFSUtilities;
 import org.h2gis.utilities.TableLocation;
 import org.orbisgis.noisemap.core.FastObstructionTest;

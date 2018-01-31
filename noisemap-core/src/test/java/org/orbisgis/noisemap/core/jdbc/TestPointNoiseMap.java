@@ -1,9 +1,10 @@
 package org.orbisgis.noisemap.core.jdbc;
 
 import org.h2.util.StringUtils;
-import org.h2gis.h2spatial.ut.SpatialH2UT;
-import org.h2gis.h2spatialapi.EmptyProgressVisitor;
-import org.h2gis.h2spatialext.CreateSpatialExtension;
+import org.h2gis.functions.factory.H2GISDBFactory;
+import org.h2gis.functions.factory.H2GISFunctions;
+import org.h2gis.api.EmptyProgressVisitor;
+
 import org.h2gis.utilities.SFSUtilities;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -32,8 +33,8 @@ public class TestPointNoiseMap {
 
     @BeforeClass
     public static void tearUp() throws Exception {
-        connection = SFSUtilities.wrapConnection(SpatialH2UT.createSpatialDataBase(TestPointNoiseMap.class.getSimpleName(), false, ""));
-        CreateSpatialExtension.initSpatialExtension(connection);
+        connection = SFSUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(TestPointNoiseMap.class.getSimpleName(), false, ""));
+        H2GISFunctions.load(connection);
     }
 
     @AfterClass

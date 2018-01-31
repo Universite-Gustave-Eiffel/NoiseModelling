@@ -56,7 +56,7 @@ import com.vividsolutions.jts.index.quadtree.Quadtree;
 import com.vividsolutions.jts.index.strtree.STRtree;
 import com.vividsolutions.jts.operation.buffer.BufferParameters;
 import com.vividsolutions.jts.triangulate.quadedge.Vertex;
-import org.h2gis.h2spatialapi.ProgressVisitor;
+import org.h2gis.api.ProgressVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
