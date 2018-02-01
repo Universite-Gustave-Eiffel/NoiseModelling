@@ -36,10 +36,10 @@ package org.orbisgis.noisemap.h2;
 import com.vividsolutions.jts.geom.Geometry;
 import org.h2.tools.SimpleResultSet;
 import org.h2.tools.SimpleRowSource;
-import org.h2gis.h2spatial.TableFunctionUtil;
-import org.h2gis.h2spatialapi.AbstractFunction;
-import org.h2gis.h2spatialapi.EmptyProgressVisitor;
-import org.h2gis.h2spatialapi.ScalarFunction;
+import org.h2gis.utilities.TableUtilities;
+import org.h2gis.api.AbstractFunction;
+import org.h2gis.api.EmptyProgressVisitor;
+import org.h2gis.api.ScalarFunction;
 import org.h2gis.utilities.SFSUtilities;
 import org.h2gis.utilities.TableLocation;
 import org.orbisgis.noisemap.core.PropagationResultTriRecord;
@@ -147,7 +147,7 @@ public class BR_TriGrid3D extends AbstractFunction implements ScalarFunction {
             throw new SQLException(new IllegalArgumentException(
                     "Maximum wall seeking distance cannot be superior than maximum propagation distance"));
         }        SimpleResultSet rs;
-        if(TableFunctionUtil.isColumnListConnection(connection)) {
+        if(TableUtilities.isColumnListConnection(connection)) {
             // Only rs columns is necessary
             rs = new SimpleResultSet();
             feedColumns(rs);
@@ -205,7 +205,7 @@ public class BR_TriGrid3D extends AbstractFunction implements ScalarFunction {
             throw new SQLException(new IllegalArgumentException(
                     "Maximum wall seeking distance cannot be superior than maximum propagation distance"));
         }        SimpleResultSet rs;
-        if(TableFunctionUtil.isColumnListConnection(connection)) {
+        if(TableUtilities.isColumnListConnection(connection)) {
             // Only rs columns is necessary
             rs = new SimpleResultSet();
             feedColumns(rs);
