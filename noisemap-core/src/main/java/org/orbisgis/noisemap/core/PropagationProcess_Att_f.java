@@ -3,30 +3,30 @@
  * evaluate the noise impact on urban mobility plans. This model is
  * based on the French standard method NMPB2008. It includes traffic-to-noise
  * sources evaluation and sound propagation processing.
- *
+ * <p>
  * This version is developed at French IRSTV Institute and at IFSTTAR
  * (http://www.ifsttar.fr/) as part of the Eval-PDU project, funded by the
  * French Agence Nationale de la Recherche (ANR) under contract ANR-08-VILL-0005-01.
- *
+ * <p>
  * Noisemap is distributed under GPL 3 license. Its reference contact is Judicaël
  * Picaut <judicael.picaut@ifsttar.fr>. It is maintained by Nicolas Fortin
  * as part of the "Atelier SIG" team of the IRSTV Institute <http://www.irstv.fr/>.
- *
+ * <p>
  * Copyright (C) 2011 IFSTTAR
  * Copyright (C) 2011-2012 IRSTV (FR CNRS 2488)
- *
+ * <p>
  * Noisemap is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option) any later
  * version.
- *
+ * <p>
  * Noisemap is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
  * A PARTICULAR PURPOSE. See the GNU General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU General Public License along with
  * Noisemap. If not, see <http://www.gnu.org/licenses/>.
- *
+ * <p>
  * For more information, please consult: <http://www.orbisgis.org/>
  * or contact directly:
  * info_at_ orbisgis.org
@@ -34,24 +34,9 @@
 package org.orbisgis.noisemap.core;
 
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
 import com.vividsolutions.jts.algorithm.CGAlgorithms3D;
 import com.vividsolutions.jts.algorithm.NonRobustLineIntersector;
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.Envelope;
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.LineSegment;
-import com.vividsolutions.jts.geom.LineString;
-import com.vividsolutions.jts.geom.Point;
+import com.vividsolutions.jts.geom.*;
 import com.vividsolutions.jts.index.quadtree.Quadtree;
 import com.vividsolutions.jts.index.strtree.STRtree;
 import com.vividsolutions.jts.operation.buffer.BufferParameters;
@@ -60,12 +45,16 @@ import org.h2gis.api.ProgressVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.orbisgis.noisemap.core.FastObstructionTest.*;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+
+import static org.orbisgis.noisemap.core.FastObstructionTest.Wall;
 
 /**
  * @author Nicolas Fortin
+ * @author Pierre Aumond 07/06/2016
  */
-public class PropagationProcess implements Runnable {
+public class PropagationProcess_Att_f implements Runnable {
     private final static double BASE_LVL = 1.; // 0dB lvl
     private final static double ONETHIRD = 1. / 3.;
     private final static double MERGE_SRC_DIST = 1.;
@@ -75,8 +64,8 @@ public class PropagationProcess implements Runnable {
     // NMPB states Celerity of the sound in the air, taken equal to 340 m/s.
     private final static double CEL = 340;
     private Thread thread;
-    private PropagationProcessData data;
-    private PropagationProcessOut dataOut;
+    private PropagationProcessData_Att data;
+    private PropagationProcessOut_Att_f dataOut;
     private Quadtree cornersQuad;
     private int nbfreq;
     private long diffractionPathCount = 0;
@@ -84,8 +73,18 @@ public class PropagationProcess implements Runnable {
     private double[] alpha_atmo;
     private double[] freq_lambda;
     private STRtree rTreeOfGeoSoil;
-    private final static Logger LOGGER = LoggerFactory.getLogger(PropagationProcess.class);
+    private final static Logger LOGGER = LoggerFactory.getLogger(PropagationProcess_Att_f.class);
 
+
+
+    public static final class energeticSource { // Class energy by sources
+        public final int sourceId;
+        public final double[] freqs;
+        energeticSource(int sourceId, double[] freqs) {
+            this.sourceId = sourceId;
+            this.freqs = freqs;
+        }
+    }
 
     private static double GetGlobalLevel(int nbfreq, double energeticSum[]) {
         double globlvl = 0;
@@ -95,8 +94,8 @@ public class PropagationProcess implements Runnable {
         return globlvl;
     }
 
-    public PropagationProcess(PropagationProcessData data,
-                              PropagationProcessOut dataOut) {
+    public PropagationProcess_Att_f(PropagationProcessData_Att data,
+                                    PropagationProcessOut_Att_f dataOut) {
         thread = new Thread(this);
         this.dataOut = dataOut;
         this.data = data;
@@ -178,7 +177,7 @@ public class PropagationProcess implements Runnable {
 
 
     public void computeReflexion(Coordinate receiverCoord,
-                                 Coordinate srcCoord,List<Double> wj, List<FastObstructionTest.Wall> nearBuildingsWalls,
+                                 Coordinate srcCoord, List<Double> wj, List<Wall> nearBuildingsWalls,
                                  double[] energeticSum, List<PropagationDebugInfo> debugInfo) {
         // Compute receiver mirror
         LineSegment srcReceiver = new LineSegment(srcCoord, receiverCoord);
@@ -201,12 +200,11 @@ public class PropagationProcess implements Runnable {
                     receiverReflection.getReceiverPos(),
                     destinationPt);
             PropagationDebugInfo propagationDebugInfo = null;
-            if(debugInfo != null) {
+            if (debugInfo != null) {
                 propagationDebugInfo = new PropagationDebugInfo(new LinkedList<>(Arrays.asList(srcCoord)), new double[data.freq_lvl.size()]);
             }
             // While there is a reflection point on another wall. And intersection point is in the wall z bounds.
-            while (linters.hasIntersection() && MirrorReceiverIterator.wallPointTest(seg, destinationPt))
-            {
+            while (linters.hasIntersection() && MirrorReceiverIterator.wallPointTest(seg, destinationPt)) {
                 reflectionOrderCounter++;
                 // There are a probable reflection point on the
                 // segment
@@ -243,7 +241,7 @@ public class PropagationProcess implements Runnable {
                 if (validReflection) // Reflection point can see
                 // source or its image
                 {
-                    if(propagationDebugInfo != null) {
+                    if (propagationDebugInfo != null) {
                         propagationDebugInfo.getPropagationPath().add(0, reflectionPt);
                     }
                     if (receiverReflectionCursor
@@ -277,7 +275,7 @@ public class PropagationProcess implements Runnable {
                 }
             }
             if (validReflection) {
-                if(propagationDebugInfo != null) {
+                if (propagationDebugInfo != null) {
                     propagationDebugInfo.getPropagationPath().add(0, receiverCoord);
                 }
                 // A path has been found
@@ -295,17 +293,18 @@ public class PropagationProcess implements Runnable {
                             ReflectedSrcReceiverDistance,
                             alpha_atmo[idfreq]);
                     energeticSum[idfreq] += AttenuatedWj;
-                    if(propagationDebugInfo != null) {
+                    if (propagationDebugInfo != null) {
                         propagationDebugInfo.addNoiseContribution(idfreq, AttenuatedWj);
                     }
                 }
-                if(propagationDebugInfo != null && debugInfo != null) {
+                if (propagationDebugInfo != null && debugInfo != null) {
                     debugInfo.add(propagationDebugInfo);
                 }
             }
         }
         this.dataOut.appendImageReceiver(imageReceiver);
     }
+
     public double computeDeltaDiffraction(int idfreq, double eLength, double deltaDistance) {
         double cprime;
         //C" NMPB 2008 P.33
@@ -368,10 +367,10 @@ public class PropagationProcess implements Runnable {
         // S' is the projection of R on the mean ground plane (S,O)
         double deltaDistanceSprimO = (fulldistance - CGAlgorithms3D.distance(OSZone.p0, OSZone.p1)
                 + sPrim.distance(rotatedOs)) - sPrim.distance(rotatedReceiver);
-        return new double[] {deltaDistanceSprimO, deltaDistanceORprim};
+        return new double[]{deltaDistanceSprimO, deltaDistanceORprim};
     }
 
-    public void computeHorizontalEdgeDiffraction(boolean obstructedSourceReceiver,Coordinate receiverCoord,
+    public void computeHorizontalEdgeDiffraction(boolean obstructedSourceReceiver, Coordinate receiverCoord,
                                                  Coordinate srcCoord, List<Double> wj,
                                                  List<PropagationDebugInfo> debugInfo, double[] energeticSum) {
         DiffractionWithSoilEffetZone diffDataWithSoilEffet = data.freeFieldFinder.getPath(receiverCoord, srcCoord);
@@ -384,14 +383,14 @@ public class PropagationProcess implements Runnable {
         if (Double.compare(deltadistance, -1.) != 0 && Double.compare(e, -1.) != 0 &&
                 Double.compare(fulldistance, -1.) != 0) {
             PropagationDebugInfo propagationDebugInfo = null;
-            if(debugInfo != null) {
+            if (debugInfo != null) {
                 propagationDebugInfo = new PropagationDebugInfo(Arrays.asList(receiverCoord,
                         diffDataWithSoilEffet.getROZone().p1,
                         diffDataWithSoilEffet.getOSZone().p0, srcCoord),
                         new double[data.freq_lvl.size()]);
             }
             double gPathRO = 0;
-            double gPathOS= 0;
+            double gPathOS = 0;
             double gPathPrimeOS = 0;
             double ASoilOSMin = 0;
             double ASoilROMin = 0;
@@ -464,10 +463,10 @@ public class PropagationProcess implements Runnable {
                 double deltaSoilOR = 0.;
                 // NF S 31-133 page 47 9.4.3.1
                 // δ if negative if S R are not obstructed
-                double deltaDiffSR = computeDeltaDiffraction(idfreq, e, obstructedSourceReceiver? deltadistance : -deltadistance);
+                double deltaDiffSR = computeDeltaDiffraction(idfreq, e, obstructedSourceReceiver ? deltadistance : -deltadistance);
                 if (data.geoWithSoilType != null) {
                     double SoilSOAttenuation;
-                    double SoilORAttenuation= 0;
+                    double SoilORAttenuation = 0;
                     //NF S 31-133 page 41
                     if (gPathRO > 0) {
                         SoilORAttenuation = getASoil(ROZone.p1.z, ROZone.p0.z, ROZone.getLength(), gPathRO, data.freq_lvl.get(idfreq), ASoilROMin);
@@ -483,8 +482,8 @@ public class PropagationProcess implements Runnable {
                     double deltaDiffSprimR = computeDeltaDiffraction(idfreq, e, deltaDistanceSprimO);
                     //Compute diffraction data for deltaDiffSR'
                     double deltaDiffSRprim = computeDeltaDiffraction(idfreq, e, deltaDistanceORprim);
-                    deltSoilSO = getDeltaSoil(SoilSOAttenuation,deltaDiffSprimR,deltaDiffSR);
-                    deltaSoilOR = getDeltaSoil(SoilORAttenuation,deltaDiffSRprim,deltaDiffSR);
+                    deltSoilSO = getDeltaSoil(SoilSOAttenuation, deltaDiffSprimR, deltaDiffSR);
+                    deltaSoilOR = getDeltaSoil(SoilORAttenuation, deltaDiffSRprim, deltaDiffSR);
                 }
 
                 //delta sol finished
@@ -502,11 +501,11 @@ public class PropagationProcess implements Runnable {
                         alpha_atmo[idfreq]);
 
                 energeticSum[idfreq] += AttenuatedWj;
-                if(propagationDebugInfo != null) {
+                if (propagationDebugInfo != null) {
                     propagationDebugInfo.addNoiseContribution(idfreq, AttenuatedWj);
                 }
             }
-            if(propagationDebugInfo != null && debugInfo != null) {
+            if (propagationDebugInfo != null && debugInfo != null) {
                 debugInfo.add(propagationDebugInfo);
             }
         }
@@ -553,7 +552,7 @@ public class PropagationProcess implements Runnable {
                     double sourceCornerDistance = CGAlgorithms3D.distance(srcCoord,
                             regionCorners.get(curCorner.get(curCorner.size() - 1)));
                     double diffractionFullDistance = receiverCornerDistance + eLength
-                                                               //Corner to corner distance
+                            //Corner to corner distance
                             + sourceCornerDistance;
                     if (diffractionFullDistance < data.maxSrcDist) {
                         diffractionPathCount++;
@@ -637,6 +636,12 @@ public class PropagationProcess implements Runnable {
      */
     private static double getAlpha(int freq) {
         switch (freq) {
+            case 50:
+                return 0.07;
+            case 63:
+                return 0.10;
+            case 80:
+                return 0.16;
             case 100:
                 return 0.25;
             case 125:
@@ -673,18 +678,24 @@ public class PropagationProcess implements Runnable {
                 return 26.4;
             case 5000:
                 return 39.9;
+            case 6300:
+                return 61.1;
+            case 8000:
+                return 93.7;
+            case 10000:
+                return 144;
             default:
                 return 0.;
         }
     }
 
-    private int nextFreeFieldNode(List<Coordinate> nodes, Coordinate startPt,LineSegment segmentConstraint,
+    private int nextFreeFieldNode(List<Coordinate> nodes, Coordinate startPt, LineSegment segmentConstraint,
                                   List<Integer> NodeExceptions, int firstTestNode,
                                   FastObstructionTest freeFieldFinder) {
         int validNode = firstTestNode;
         while (NodeExceptions.contains(validNode)
                 || (validNode < nodes.size() && (Math.abs(segmentConstraint.projectionFactor(nodes.get(validNode))) > 1 || !freeFieldFinder.isFreeField(
-                startPt, getProjectedZCoordinate(nodes.get(validNode),segmentConstraint))))) {
+                startPt, getProjectedZCoordinate(nodes.get(validNode), segmentConstraint))))) {
             validNode++;
         }
         if (validNode >= nodes.size()) {
@@ -721,10 +732,10 @@ public class PropagationProcess implements Runnable {
     private void receiverSourcePropa(Coordinate srcCoord,
                                      Coordinate receiverCoord, double energeticSum[],
                                      double[] alpha_atmo, List<Double> wj,
-                                     List<FastObstructionTest.Wall> nearBuildingsWalls, List<PropagationDebugInfo> debugInfo) {
+                                     List<Wall> nearBuildingsWalls, List<PropagationDebugInfo> debugInfo) {
         GeometryFactory factory = new GeometryFactory();
 
-        List<Coordinate> regionCorners = fetchRegionCorners(new LineSegment(srcCoord, receiverCoord),data.maxRefDist);
+        List<Coordinate> regionCorners = fetchRegionCorners(new LineSegment(srcCoord, receiverCoord), data.maxRefDist);
 
         // Build mirrored receiver list from wall list
 
@@ -738,25 +749,25 @@ public class PropagationProcess implements Runnable {
             boolean somethingHideReceiver = false;
             boolean buildingOnPath = false;
 
-            if(!data.computeVerticalDiffraction || !data.freeFieldFinder.isHasBuildingWithHeight()) {
+            if (!data.computeVerticalDiffraction || !data.freeFieldFinder.isHasBuildingWithHeight()) {
                 somethingHideReceiver = !data.freeFieldFinder.isFreeField(receiverCoord, srcCoord);
             } else {
                 List<TriIdWithIntersection> propagationPath = new ArrayList<>();
-               if(!data.freeFieldFinder.computePropagationPath(receiverCoord, srcCoord, false, propagationPath, false)) {
-                   // Propagation path not found, there is not direct field
-                   somethingHideReceiver = true;
-               } else {
-                   if (!propagationPath.isEmpty()) {
-                       for (TriIdWithIntersection inter : propagationPath) {
-                           if (inter.isIntersectionOnBuilding() || inter.isIntersectionOnTopography()) {
-                               somethingHideReceiver = true;
-                           }
-                           if (inter.getBuildingId() != 0) {
-                               buildingOnPath = true;
-                           }
-                       }
-                   }
-               }
+                if (!data.freeFieldFinder.computePropagationPath(receiverCoord, srcCoord, false, propagationPath, false)) {
+                    // Propagation path not found, there is not direct field
+                    somethingHideReceiver = true;
+                } else {
+                    if (!propagationPath.isEmpty()) {
+                        for (TriIdWithIntersection inter : propagationPath) {
+                            if (inter.isIntersectionOnBuilding() || inter.isIntersectionOnTopography()) {
+                                somethingHideReceiver = true;
+                            }
+                            if (inter.getBuildingId() != 0) {
+                                buildingOnPath = true;
+                            }
+                        }
+                    }
+                }
             }
             double SrcReceiverDistance = CGAlgorithms3D.distance(srcCoord, receiverCoord);
 
@@ -808,7 +819,7 @@ public class PropagationProcess implements Runnable {
                     ASoilmin = -3 * (1 - gPathPrime);
                 }
                 PropagationDebugInfo propagationDebugInfo = null;
-                if(debugInfo != null) {
+                if (debugInfo != null) {
                     propagationDebugInfo = new PropagationDebugInfo(Arrays.asList(receiverCoord, srcCoord), new double[freqcount]);
                 }
                 for (int idfreq = 0; idfreq < freqcount; idfreq++) {
@@ -828,17 +839,17 @@ public class PropagationProcess implements Runnable {
                             SrcReceiverDistance,
                             alpha_atmo[idfreq]);
                     energeticSum[idfreq] += AttenuatedWj;
-                    if(propagationDebugInfo != null) {
+                    if (propagationDebugInfo != null) {
                         propagationDebugInfo.addNoiseContribution(idfreq, AttenuatedWj);
                     }
                 }
-                if(propagationDebugInfo != null) {
+                if (propagationDebugInfo != null) {
                     debugInfo.add(propagationDebugInfo);
                 }
             }
             //Process diffraction 3D
-            if( data.computeVerticalDiffraction && buildingOnPath) {
-                computeHorizontalEdgeDiffraction(somethingHideReceiver ,receiverCoord, srcCoord, wj, debugInfo, energeticSum);
+            if (data.computeVerticalDiffraction && buildingOnPath) {
+                computeHorizontalEdgeDiffraction(somethingHideReceiver, receiverCoord, srcCoord, wj, debugInfo, energeticSum);
             }
             // Process specular reflection
             if (data.reflexionOrder > 0) {
@@ -852,7 +863,7 @@ public class PropagationProcess implements Runnable {
         }
     }
 
-    private static void insertPtSource(Coordinate receiverPos, Coordinate ptpos, List<Double> wj, double li, List<Coordinate> srcPos, List<ArrayList<Double>> srcWj, PointsMerge sourcesMerger, List<Integer> srcSortedIndex, List<Double> srcDistSorted) {
+    private static void insertPtSource(Coordinate receiverPos, Coordinate ptpos, List<Double> wj, double li, List<Coordinate> srcPos, List<ArrayList<Double>> srcWj, PointsMerge sourcesMerger, List<Integer> srcSortedIndex, List<Double> srcDistSorted, List<Integer> SrcTable, int srcIndex) {
         int mergedSrcIndex = sourcesMerger.getOrAppendVertex(ptpos);
         if (mergedSrcIndex < srcPos.size()) {
             ArrayList<Double> mergedWj = srcWj.get(mergedSrcIndex);
@@ -868,12 +879,12 @@ public class PropagationProcess implements Runnable {
             }
             srcPos.add(ptpos);
             srcWj.add(liWj);
+            SrcTable.add(srcIndex);
+            double dx = ptpos.x - receiverPos.x;
+            double dy = ptpos.y - receiverPos.y;
+            double dz = ptpos.z - receiverPos.z;
 
-            double dx = ptpos.x-receiverPos.x;
-            double dy = ptpos.y-receiverPos.y;
-            double dz = ptpos.z-receiverPos.z;
-
-            double distanceSrcPt = Math.sqrt(dx*dx+dy*dy+dz*dz);// TODO i have change like line 384
+            double distanceSrcPt = Math.sqrt(dx * dx + dy * dy + dz * dz);// TODO i have change like line 384
 
             int index = Collections.binarySearch(srcDistSorted, distanceSrcPt);
             if (index >= 0) {
@@ -917,25 +928,54 @@ public class PropagationProcess implements Runnable {
         return cornerQuery.getItems();
     }
 
+
+    public static final class SrcIndexTable {
+        public final int ID;
+        public final int SrcIndex;
+        public final int SrcMergedIndex;
+
+        SrcIndexTable(int ID, int SrcIndex, int SrcMergedIndex) {
+            this.ID = ID;
+            this.SrcIndex = SrcIndex;
+            this.SrcMergedIndex = SrcMergedIndex;
+        }
+
+
+
+
+    }
+
+    public static double[] subtraction2array(double[] a, double[] b) { //, instead of ;
+        //instead of int sum = new sum[a.length];
+        double[] subtraction = new double[a.length];
+
+        //i < a.length isntead of a.length
+        for (int i = 0; i < a.length; i++) {
+            subtraction[i] = a[i] - b[i];
+        }
+        return subtraction;
+    }
+
     /**
      * Compute sound level by frequency band at this receiver position
      *
      * @param receiverCoord
      * @param energeticSum
      */
-    public void computeSoundLevelAtPosition(Coordinate receiverCoord, double energeticSum[], List<PropagationDebugInfo> debugInfo) {
+    public void computeSoundLevelAtPosition(Coordinate receiverCoord, double energeticSum[], List<energeticSource> energeticId, List<PropagationDebugInfo> debugInfo) {
         // List of walls within maxReceiverSource distance
         double srcEnergeticSum = BASE_LVL; //Global energetic sum of all sources processed
+
         STRtree walls = new STRtree();
         if (data.reflexionOrder > 0) {
-            for(Wall wall : data.freeFieldFinder.getLimitsInRange(
-                            data.maxSrcDist, receiverCoord, false)) {
+            for (Wall wall : data.freeFieldFinder.getLimitsInRange(
+                    data.maxSrcDist, receiverCoord, false)) {
                 walls.insert(new Envelope(wall.p0, wall.p1), wall);
             }
         }
         // Source search by multiple range query
         HashSet<Integer> processedLineSources = new HashSet<Integer>(); //Already processed Raw source (line and/or points)
-        double[] ranges = new double[]{Math.min(FIRST_STEP_RANGE,data.maxSrcDist / 6) , data.maxSrcDist / 5, data.maxSrcDist / 4, data.maxSrcDist / 2, data.maxSrcDist};
+        double[] ranges = new double[]{Math.min(FIRST_STEP_RANGE, data.maxSrcDist / 6), data.maxSrcDist / 5, data.maxSrcDist / 4, data.maxSrcDist / 2, data.maxSrcDist};
         long sourceCount = 0;
 
         for (double searchSourceDistance : ranges) {
@@ -949,18 +989,22 @@ public class PropagationProcess implements Runnable {
 
             PointsMerge sourcesMerger = new PointsMerge(MERGE_SRC_DIST);
             List<Integer> srcSortByDist = new ArrayList<Integer>();
+            List<Integer> SrcTable2 = new ArrayList<Integer>();
             List<Double> srcDist = new ArrayList<Double>();
             List<Coordinate> srcPos = new ArrayList<Coordinate>();
             List<ArrayList<Double>> srcWj = new ArrayList<ArrayList<Double>>();
+
             while (regionSourcesLst.hasNext()) {
                 Integer srcIndex = regionSourcesLst.next();
+
                 if (!processedLineSources.contains(srcIndex)) {
                     processedLineSources.add(srcIndex);
                     Geometry source = data.sourceGeometries.get(srcIndex);
                     List<Double> wj = data.wj_sources.get(srcIndex); // DbaToW(sdsSources.getDouble(srcIndex,dbField
                     if (source instanceof Point) {
                         Coordinate ptpos = source.getCoordinate();
-                        insertPtSource(receiverCoord, ptpos, wj, 1., srcPos, srcWj, sourcesMerger, srcSortByDist, srcDist);
+                        insertPtSource(receiverCoord, ptpos, wj, 1., srcPos, srcWj, sourcesMerger, srcSortByDist, srcDist, SrcTable2, srcIndex);
+
                         // Compute li to equation 4.1 NMPB 2008 (June 2009)
                     } else {
                         // Discretization of line into multiple point
@@ -970,7 +1014,7 @@ public class PropagationProcess implements Runnable {
                         double li = splitLineStringIntoPoints(source, receiverCoord,
                                 pts, data.minRecDist);
                         for (Coordinate pt : pts) {
-                            insertPtSource(receiverCoord, pt, wj, li, srcPos, srcWj, sourcesMerger, srcSortByDist, srcDist);
+                            insertPtSource(receiverCoord, pt, wj, li, srcPos, srcWj, sourcesMerger, srcSortByDist, srcDist, SrcTable2, srcIndex);
                         }
                         // Compute li to equation 4.1 NMPB 2008 (June 2009)
                     }
@@ -981,27 +1025,38 @@ public class PropagationProcess implements Runnable {
                 // For each Pt Source - Pt Receiver
                 Coordinate srcCoord = srcPos.get(mergedSrcId);
                 ArrayList<Double> wj = srcWj.get(mergedSrcId);
+                int src = SrcTable2.get(mergedSrcId);
                 double allreceiverfreqlvl = GetGlobalLevel(nbfreq, energeticSum);
                 double allsourcefreqlvl = 0;
+                double[] energeticSum_before_sound_source = new double[nbfreq];
+
+
                 for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
                     allsourcefreqlvl += wj.get(idfreq);
+                    energeticSum_before_sound_source[idfreq] = energeticSum[idfreq];
                 }
                 double wAttDistSource = attDistW(allsourcefreqlvl, CGAlgorithms3D.distance(srcCoord, receiverCoord));
                 srcEnergeticSum += wAttDistSource;
+
                 if (Math.abs(wToDba(wAttDistSource + allreceiverfreqlvl) - wToDba(allreceiverfreqlvl)) > DBA_FORGET_SOURCE) {
                     sourceCount++;
                     Envelope query = new Envelope(receiverCoord, srcCoord);
                     query.expandBy(Math.min(data.maxRefDist, srcCoord.distance(receiverCoord)));
                     List queryResult = walls.query(query);
+
                     receiverSourcePropa(srcCoord, receiverCoord, energeticSum,
                             alpha_atmo, wj,
-                            (List<FastObstructionTest.Wall>)queryResult, debugInfo);
+                            (List<Wall>) queryResult, debugInfo);
+                    energeticId.add(new energeticSource(src, subtraction2array(energeticSum, energeticSum_before_sound_source)));
+
                 }
+
+
             }
             //srcEnergeticSum=GetGlobalLevel(nbfreq,energeticSum);
-            if (Math.abs(wToDba(attDistW(W_RANGE, searchSourceDistance) + srcEnergeticSum) - wToDba(srcEnergeticSum)) < DBA_FORGET_SOURCE) {
-                break; //Stop search for fartest sources
-            }
+            //if (Math.abs(wToDba(attDistW(W_RANGE, searchSourceDistance) + srcEnergeticSum) - wToDba(srcEnergeticSum)) < DBA_FORGET_SOURCE) {
+            //    break; //Stop search for fartest sources
+            //}
         }
         dataOut.appendSourceCount(sourceCount);
     }
@@ -1052,7 +1107,7 @@ public class PropagationProcess implements Runnable {
             initStructures();
 
             // Computed sound level of vertices
-            dataOut.setVerticesSoundLevel(new double[data.receivers.size()]);
+            //dataOut.setVerticesSoundLevel();
 
             // For each vertices, find sources where the distance is within
             // maxSrcDist meters
@@ -1065,9 +1120,9 @@ public class PropagationProcess implements Runnable {
                     splitCount,
                     splitCount + 1, Long.MAX_VALUE,
                     TimeUnit.SECONDS);
-            int maximumReceiverBatch = (int)Math.ceil(data.receivers.size() / (double)splitCount);
+            int maximumReceiverBatch = (int) Math.ceil(data.receivers.size() / (double) splitCount);
             int endReceiverRange = 0;
-            while(endReceiverRange < data.receivers.size()) {
+            while (endReceiverRange < data.receivers.size()) {
                 int newEndReceiver = Math.min(endReceiverRange + maximumReceiverBatch, data.receivers.size());
                 RangeReceiversComputation batchThread = new RangeReceiversComputation(endReceiverRange,
                         newEndReceiver, this, propaProcessProgression, debugInfo);
@@ -1137,20 +1192,20 @@ public class PropagationProcess implements Runnable {
      * @param aSoil Asol(O,R) or Asol(S,O) (sol mean ground)
      * @param deltaDifPrim Δdif(S,R') if Asol(S,O) is given or Δdif(S', R) if Asol(O,R)
      * @param deltaDif Δdif(S, R)
-     * @return Δsol(S,O) if Asol(S,O) is given or Δsol(O,R) if Asol(O,R) is given
+     * @return Δsol(S, O) if Asol(S,O) is given or Δsol(O,R) if Asol(O,R) is given
      */
     private double getDeltaSoil(double aSoil, double deltaDifPrim, double deltaDif) {
-        return -20 * Math.log10(1 + (Math.pow(10, -aSoil / 20) - 1)) * Math.pow(10, -(deltaDifPrim - deltaDif)/20);
+        return -20 * Math.log10(1 + (Math.pow(10, -aSoil / 20) - 1)) * Math.pow(10, -(deltaDifPrim - deltaDif) / 20);
     }
 
     private static class RangeReceiversComputation implements Runnable {
         private final int startReceiver; // Included
         private final int endReceiver; // Excluded
-        private PropagationProcess propagationProcess;
+        private PropagationProcess_Att_f propagationProcess;
         private List<PropagationDebugInfo> debugInfo;
         private ProgressVisitor progressVisitor;
 
-        private RangeReceiversComputation(int startReceiver, int endReceiver, PropagationProcess propagationProcess, ProgressVisitor progressVisitor, List<PropagationDebugInfo> debugInfo) {
+        private RangeReceiversComputation(int startReceiver, int endReceiver, PropagationProcess_Att_f propagationProcess, ProgressVisitor progressVisitor, List<PropagationDebugInfo> debugInfo) {
             this.startReceiver = startReceiver;
             this.endReceiver = endReceiver;
             this.propagationProcess = propagationProcess;
@@ -1158,23 +1213,68 @@ public class PropagationProcess implements Runnable {
             this.progressVisitor = progressVisitor;
         }
 
+        private static class EnergeticSourceComparator implements Comparator<energeticSource>
+        {
+            public int compare(energeticSource a, energeticSource b)
+            {
+                return a.sourceId - b.sourceId;
+            }
+        }
+
         @Override
         public void run() {
+
+
             for (int idReceiver = startReceiver; idReceiver < endReceiver; idReceiver++) {
                 Coordinate receiverCoord = propagationProcess.data.receivers.get(idReceiver);
                 double energeticSum[] = new double[propagationProcess.data.freq_lvl.size()];
+                ArrayList<energeticSource> energeticId = new ArrayList<>();
                 Arrays.fill(energeticSum, 0d);
-                propagationProcess.computeSoundLevelAtPosition(receiverCoord, energeticSum, debugInfo);
-                // Save the sound level at this receiver
-                // Do the sum of all frequency bands
-                double allfreqlvl = 0d;
-                for (double anEnergeticSum : energeticSum) {
-                    allfreqlvl += anEnergeticSum;
-                }
 
-                allfreqlvl = Math.max(allfreqlvl, BASE_LVL);
-                propagationProcess.dataOut.setVerticeSoundLevel(idReceiver,allfreqlvl);
+                propagationProcess.computeSoundLevelAtPosition(receiverCoord, energeticSum, energeticId, debugInfo);
+                energeticId.sort(new EnergeticSourceComparator());
+                int s_Id_t0=0;
+                int s_Id_t1=0;
+                double[] allfreqs = new double[9];
+
+                for (energeticSource source : energeticId) {
+                    s_Id_t1 = source.sourceId;
+                    // Save the sound level at this receiver
+                    // Do the sum of all frequency bands
+
+                    double reference = 10000000000.; // TODO make a general reference
+
+
+                     allfreqs[0] = allfreqs[0]+ source.freqs[0]+source.freqs[1]+source.freqs[2]+source.freqs[3]+source.freqs[4]+source.freqs[5]+source.freqs[6]+source.freqs[7];
+                     allfreqs[1] = allfreqs[1]+  source.freqs[0];
+                     allfreqs[2] = allfreqs[2]+  source.freqs[1];
+                     allfreqs[3] = allfreqs[3]+  source.freqs[2];
+                     allfreqs[4] = allfreqs[4]+  source.freqs[3];
+                     allfreqs[5] = allfreqs[5]+  source.freqs[4];
+                     allfreqs[6] = allfreqs[6]+  source.freqs[5];
+                     allfreqs[7] = allfreqs[7]+  source.freqs[6];
+                     allfreqs[8] = allfreqs[8]+  source.freqs[7];
+
+                    if (s_Id_t1!=s_Id_t0){
+                        allfreqs[0] = Math.max(-100,wToDba(allfreqs[0])-wToDba(8.*reference));
+                        allfreqs[1] = Math.max(-100,wToDba(allfreqs[1])-wToDba(reference));
+                        allfreqs[2] = Math.max( -100,wToDba(allfreqs[2])-wToDba(reference));
+                        allfreqs[3] = Math.max(-100,wToDba(allfreqs[3])-wToDba(reference));
+                        allfreqs[4] = Math.max(-100,wToDba(allfreqs[4])-wToDba(reference));
+                        allfreqs[5] = Math.max(-100,wToDba(allfreqs[5])-wToDba(reference));
+                        allfreqs[6] = Math.max(-100,wToDba(allfreqs[6])-wToDba(reference));
+                        allfreqs[7] = Math.max(-100,wToDba(allfreqs[7])-wToDba(reference));
+                        allfreqs[8] = Math.max(-100,wToDba(allfreqs[8])-wToDba(reference));
+
+                        propagationProcess.dataOut.setVerticeSoundLevel(idReceiver, source.sourceId, allfreqs);
+
+                        allfreqs = new double[9];
+                    }
+                    s_Id_t0 = source.sourceId;
+
+                }
                 progressVisitor.endStep();
+
             }
         }
     }

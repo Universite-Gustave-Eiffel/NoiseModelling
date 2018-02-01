@@ -8,16 +8,7 @@ import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SFSUtilities;
 import org.h2gis.utilities.SpatialResultSet;
 import org.h2gis.utilities.TableLocation;
-import org.orbisgis.noisemap.core.FastObstructionTest;
-import org.orbisgis.noisemap.core.GeoWithSoilType;
-import org.orbisgis.noisemap.core.LayerDelaunayError;
-import org.orbisgis.noisemap.core.MeshBuilder;
-import org.orbisgis.noisemap.core.PropagationProcess;
-import org.orbisgis.noisemap.core.PropagationProcessData;
-import org.orbisgis.noisemap.core.PropagationProcessOut;
-import org.orbisgis.noisemap.core.PropagationResultPtRecord;
-import org.orbisgis.noisemap.core.QueryGeometryStructure;
-import org.orbisgis.noisemap.core.QueryQuadTree;
+import org.orbisgis.noisemap.core.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,14 +23,17 @@ import java.util.Stack;
 /**
  * Compute noise propagation at specified receiver points.
  * @author Nicolas Fortin
+ * @author Pierre Aumond 07/06/2016
  */
-public class PointNoiseMap extends JdbcNoiseMap {
+public class PointNoiseMap_Att_f extends JdbcNoiseMap {
     private final String receiverTableName;
-    private Logger logger = LoggerFactory.getLogger(PointNoiseMap.class);
+    private final String sourcesTableName;
+    private Logger logger = LoggerFactory.getLogger(PointNoiseMap_Att_f.class);
 
-    public PointNoiseMap(String buildingsTableName, String sourcesTableName, String receiverTableName) {
+    public PointNoiseMap_Att_f(String buildingsTableName, String sourcesTableName, String receiverTableName) {
         super(buildingsTableName, sourcesTableName);
         this.receiverTableName = receiverTableName;
+        this.sourcesTableName = sourcesTableName;
     }
 
     /**
@@ -52,8 +46,8 @@ public class PointNoiseMap extends JdbcNoiseMap {
      * @return Data input for cell evaluation
      * @throws SQLException
      */
-    public PropagationProcessData prepareCell(Connection connection,int cellI, int cellJ,
-                                              ProgressVisitor progression, List<Long> receiversPk) throws SQLException {
+    public PropagationProcessData_Att prepareCell(Connection connection,int cellI, int cellJ,
+                                              ProgressVisitor progression, List<Long> receiversPk, List<Long> sourcePk) throws SQLException {
         MeshBuilder mesh = new MeshBuilder();
         int ij = cellI * gridDim + cellJ;
         logger.info("Begin processing of cell " + (cellI + 1) + ","
@@ -74,11 +68,11 @@ public class PointNoiseMap extends JdbcNoiseMap {
         fetchCellBuildings(connection, expandedCellEnvelop, buildingsGeometries, mesh);
         //if we have topographic points data
         fetchCellDem(connection, expandedCellEnvelop, mesh);
+
         // Data fetching for collision test is done.
         try {
             mesh.finishPolygonFeeding(expandedCellEnvelop);
         } catch (LayerDelaunayError ex) {
-            logger.info("ICI " + expandedCellEnvelop + " build");
             throw new SQLException(ex.getLocalizedMessage(), ex);
         }
         FastObstructionTest freeFieldFinder = new FastObstructionTest(mesh.getPolygonWithHeight(),
@@ -91,7 +85,7 @@ public class PointNoiseMap extends JdbcNoiseMap {
         QueryGeometryStructure sourcesIndex = new QueryQuadTree();
 
         // Fetch all source located in expandedCellEnvelop
-        fetchCellSource(connection, expandedCellEnvelop, null, sourceGeometries, wj_sources, sourcesIndex);
+        fetchCellSource_withindex(connection, expandedCellEnvelop, null, sourceGeometries, sourcePk, wj_sources, sourcesIndex);
 
         // Fetch soil areas
         List<GeoWithSoilType> geoWithSoil = new ArrayList<>();
@@ -101,7 +95,6 @@ public class PointNoiseMap extends JdbcNoiseMap {
         }
 
         // Fetch receivers
-
         List<Coordinate> receivers = new ArrayList<>();
         String receiverGeomName = SFSUtilities.getGeometryFields(connection,
                 TableLocation.parse(receiverTableName)).get(0);
@@ -123,12 +116,16 @@ public class PointNoiseMap extends JdbcNoiseMap {
                     }
                     if(!pkSelect.isEmpty()) {
                         receiversPk.add(rs.getLong(2));
+
                     }
                 }
             }
         }
 
-        return new PropagationProcessData(
+
+
+
+        return new PropagationProcessData_Att(
                 receivers, freeFieldFinder, sourcesIndex,
                 sourceGeometries, wj_sources, db_field_freq,
                 soundReflectionOrder, soundDiffractionOrder, maximumPropagationDistance, maximumReflectionDistance,
@@ -150,31 +147,38 @@ public class PointNoiseMap extends JdbcNoiseMap {
      * @return
      * @throws SQLException
      */
-    public Collection<PropagationResultPtRecord> evaluateCell(Connection connection,int cellI, int cellJ,
+    public Collection<PropagationResultPtRecord_Att_f> evaluateCell(Connection connection,int cellI, int cellJ,
                                                               ProgressVisitor progression) throws SQLException {
-        PropagationProcessOut threadDataOut = new PropagationProcessOut();
+        PropagationProcessOut_Att_f threadDataOut = new PropagationProcessOut_Att_f();
         List<Long> receiversPk = new ArrayList<>();
-        PropagationProcessData threadData = prepareCell(connection, cellI, cellJ, progression, receiversPk);
+        List<Long> sourcesPk = new ArrayList<>();
 
-        PropagationProcess propaProcess = new PropagationProcess(
+        PropagationProcessData_Att threadData = prepareCell(connection, cellI, cellJ, progression, receiversPk, sourcesPk);
+
+        PropagationProcess_Att_f propaProcess = new PropagationProcess_Att_f(
                 threadData, threadDataOut);
+
         propaProcess.run();
+        List<PropagationProcessOut_Att_f.verticeSL> verticesSoundLevel = threadDataOut.getVerticesSoundLevel();
 
+        Stack<PropagationResultPtRecord_Att_f> toDriver = new Stack<>();
 
-        double[] verticesSoundLevel = threadDataOut.getVerticesSoundLevel();
-
-
-        Stack<PropagationResultPtRecord> toDriver = new Stack<>();
         //Vertices output type
         if(receiversPk.isEmpty()) {
-            for (int receiverId = 0; receiverId < threadData.receivers.size(); receiverId++) {
-                toDriver.add(new PropagationResultPtRecord(receiverId, threadData.cellId, verticesSoundLevel[receiverId]));
+            for (PropagationProcessOut_Att_f.verticeSL result : verticesSoundLevel) {
+                toDriver.add(new PropagationResultPtRecord_Att_f(result.receiverId, result.sourceId, threadData.cellId, result.value[0],
+                        result.value[1], result.value[2], result.value[3], result.value[4], result.value[5], result.value[6], result.value[7],
+                        result.value[8]));
             }
         } else {
-            for (int receiverId = 0; receiverId < threadData.receivers.size(); receiverId++) {
-                toDriver.add(new PropagationResultPtRecord(receiversPk.get(receiverId), threadData.cellId, verticesSoundLevel[receiverId]));
+            for (PropagationProcessOut_Att_f.verticeSL result : verticesSoundLevel) {
+                toDriver.add(new PropagationResultPtRecord_Att_f(receiversPk.get(result.receiverId), sourcesPk.get(result.sourceId), threadData.cellId, result.value[0],
+                        result.value[1], result.value[2], result.value[3], result.value[4], result.value[5], result.value[6], result.value[7],
+                        result.value[8]));
             }
         }
+
+
         return toDriver;
     }
 }

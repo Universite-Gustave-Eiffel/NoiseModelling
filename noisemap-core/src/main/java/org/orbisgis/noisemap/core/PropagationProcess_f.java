@@ -34,24 +34,9 @@
 package org.orbisgis.noisemap.core;
 
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
 import com.vividsolutions.jts.algorithm.CGAlgorithms3D;
 import com.vividsolutions.jts.algorithm.NonRobustLineIntersector;
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.Envelope;
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.LineSegment;
-import com.vividsolutions.jts.geom.LineString;
-import com.vividsolutions.jts.geom.Point;
+import com.vividsolutions.jts.geom.*;
 import com.vividsolutions.jts.index.quadtree.Quadtree;
 import com.vividsolutions.jts.index.strtree.STRtree;
 import com.vividsolutions.jts.operation.buffer.BufferParameters;
@@ -60,12 +45,15 @@ import org.h2gis.api.ProgressVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.orbisgis.noisemap.core.FastObstructionTest.*;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+
+import static org.orbisgis.noisemap.core.FastObstructionTest.Wall;
 
 /**
  * @author Nicolas Fortin
  */
-public class PropagationProcess implements Runnable {
+public class PropagationProcess_f implements Runnable {
     private final static double BASE_LVL = 1.; // 0dB lvl
     private final static double ONETHIRD = 1. / 3.;
     private final static double MERGE_SRC_DIST = 1.;
@@ -76,7 +64,7 @@ public class PropagationProcess implements Runnable {
     private final static double CEL = 340;
     private Thread thread;
     private PropagationProcessData data;
-    private PropagationProcessOut dataOut;
+    private PropagationProcessOut_f dataOut;
     private Quadtree cornersQuad;
     private int nbfreq;
     private long diffractionPathCount = 0;
@@ -84,7 +72,7 @@ public class PropagationProcess implements Runnable {
     private double[] alpha_atmo;
     private double[] freq_lambda;
     private STRtree rTreeOfGeoSoil;
-    private final static Logger LOGGER = LoggerFactory.getLogger(PropagationProcess.class);
+    private final static Logger LOGGER = LoggerFactory.getLogger(PropagationProcess_f.class);
 
 
     private static double GetGlobalLevel(int nbfreq, double energeticSum[]) {
@@ -95,8 +83,8 @@ public class PropagationProcess implements Runnable {
         return globlvl;
     }
 
-    public PropagationProcess(PropagationProcessData data,
-                              PropagationProcessOut dataOut) {
+    public PropagationProcess_f(PropagationProcessData data,
+                                PropagationProcessOut_f dataOut) {
         thread = new Thread(this);
         this.dataOut = dataOut;
         this.data = data;
@@ -178,7 +166,7 @@ public class PropagationProcess implements Runnable {
 
 
     public void computeReflexion(Coordinate receiverCoord,
-                                 Coordinate srcCoord,List<Double> wj, List<FastObstructionTest.Wall> nearBuildingsWalls,
+                                 Coordinate srcCoord,List<Double> wj, List<Wall> nearBuildingsWalls,
                                  double[] energeticSum, List<PropagationDebugInfo> debugInfo) {
         // Compute receiver mirror
         LineSegment srcReceiver = new LineSegment(srcCoord, receiverCoord);
@@ -637,6 +625,12 @@ public class PropagationProcess implements Runnable {
      */
     private static double getAlpha(int freq) {
         switch (freq) {
+            case 50:
+                return 0.07;
+            case 63:
+                return 0.10;
+            case 80:
+                return 0.16;
             case 100:
                 return 0.25;
             case 125:
@@ -673,6 +667,12 @@ public class PropagationProcess implements Runnable {
                 return 26.4;
             case 5000:
                 return 39.9;
+            case 6300:
+                return 61.1;
+            case 8000:
+                return 93.7;
+            case 10000:
+                return 144;
             default:
                 return 0.;
         }
@@ -721,7 +721,7 @@ public class PropagationProcess implements Runnable {
     private void receiverSourcePropa(Coordinate srcCoord,
                                      Coordinate receiverCoord, double energeticSum[],
                                      double[] alpha_atmo, List<Double> wj,
-                                     List<FastObstructionTest.Wall> nearBuildingsWalls, List<PropagationDebugInfo> debugInfo) {
+                                     List<Wall> nearBuildingsWalls, List<PropagationDebugInfo> debugInfo) {
         GeometryFactory factory = new GeometryFactory();
 
         List<Coordinate> regionCorners = fetchRegionCorners(new LineSegment(srcCoord, receiverCoord),data.maxRefDist);
@@ -995,7 +995,7 @@ public class PropagationProcess implements Runnable {
                     List queryResult = walls.query(query);
                     receiverSourcePropa(srcCoord, receiverCoord, energeticSum,
                             alpha_atmo, wj,
-                            (List<FastObstructionTest.Wall>)queryResult, debugInfo);
+                            (List<Wall>)queryResult, debugInfo);
                 }
             }
             //srcEnergeticSum=GetGlobalLevel(nbfreq,energeticSum);
@@ -1053,6 +1053,14 @@ public class PropagationProcess implements Runnable {
 
             // Computed sound level of vertices
             dataOut.setVerticesSoundLevel(new double[data.receivers.size()]);
+            dataOut.setVerticesSoundLevel63(new double[data.receivers.size()]);
+            dataOut.setVerticesSoundLevel125(new double[data.receivers.size()]);
+            dataOut.setVerticesSoundLevel250(new double[data.receivers.size()]);
+            dataOut.setVerticesSoundLevel500(new double[data.receivers.size()]);
+            dataOut.setVerticesSoundLevel1000(new double[data.receivers.size()]);
+            dataOut.setVerticesSoundLevel2000(new double[data.receivers.size()]);
+            dataOut.setVerticesSoundLevel4000(new double[data.receivers.size()]);
+            dataOut.setVerticesSoundLevel8000(new double[data.receivers.size()]);
 
             // For each vertices, find sources where the distance is within
             // maxSrcDist meters
@@ -1146,11 +1154,11 @@ public class PropagationProcess implements Runnable {
     private static class RangeReceiversComputation implements Runnable {
         private final int startReceiver; // Included
         private final int endReceiver; // Excluded
-        private PropagationProcess propagationProcess;
+        private PropagationProcess_f propagationProcess;
         private List<PropagationDebugInfo> debugInfo;
         private ProgressVisitor progressVisitor;
 
-        private RangeReceiversComputation(int startReceiver, int endReceiver, PropagationProcess propagationProcess, ProgressVisitor progressVisitor, List<PropagationDebugInfo> debugInfo) {
+        private RangeReceiversComputation(int startReceiver, int endReceiver, PropagationProcess_f propagationProcess, ProgressVisitor progressVisitor, List<PropagationDebugInfo> debugInfo) {
             this.startReceiver = startReceiver;
             this.endReceiver = endReceiver;
             this.propagationProcess = propagationProcess;
@@ -1168,12 +1176,36 @@ public class PropagationProcess implements Runnable {
                 // Save the sound level at this receiver
                 // Do the sum of all frequency bands
                 double allfreqlvl = 0d;
+                double freq63lvl = 0d;
+                double freq125lvl = 0d;
+                double freq250lvl = 0d;
+                double freq500lvl = 0d;
+                double freq1000lvl = 0d;
+                double freq2000lvl = 0d;
+                double freq4000lvl = 0d;
+                double freq8000lvl = 0d;
                 for (double anEnergeticSum : energeticSum) {
                     allfreqlvl += anEnergeticSum;
                 }
+                freq63lvl = Math.max(energeticSum[0], BASE_LVL);
+                freq125lvl = Math.max(energeticSum[1], BASE_LVL);
+                freq250lvl = Math.max(energeticSum[2], BASE_LVL);
+                freq500lvl = Math.max(energeticSum[3], BASE_LVL);
+                freq1000lvl = Math.max(energeticSum[4], BASE_LVL);
+                freq2000lvl = Math.max(energeticSum[5], BASE_LVL);
+                freq4000lvl = Math.max(energeticSum[6], BASE_LVL);
+                freq8000lvl = Math.max(energeticSum[7], BASE_LVL);
 
                 allfreqlvl = Math.max(allfreqlvl, BASE_LVL);
-                propagationProcess.dataOut.setVerticeSoundLevel(idReceiver,allfreqlvl);
+                propagationProcess.dataOut.setVerticeSoundLevel(idReceiver,allfreqlvl,0);
+                propagationProcess.dataOut.setVerticeSoundLevel(idReceiver,freq63lvl,63);
+                propagationProcess.dataOut.setVerticeSoundLevel(idReceiver,freq125lvl,125);
+                propagationProcess.dataOut.setVerticeSoundLevel(idReceiver,freq250lvl,250);
+                propagationProcess.dataOut.setVerticeSoundLevel(idReceiver,freq500lvl,500);
+                propagationProcess.dataOut.setVerticeSoundLevel(idReceiver,freq1000lvl,1000);
+                propagationProcess.dataOut.setVerticeSoundLevel(idReceiver,freq2000lvl,2000);
+                propagationProcess.dataOut.setVerticeSoundLevel(idReceiver,freq4000lvl,4000);
+                propagationProcess.dataOut.setVerticeSoundLevel(idReceiver,freq8000lvl,8000);
                 progressVisitor.endStep();
             }
         }

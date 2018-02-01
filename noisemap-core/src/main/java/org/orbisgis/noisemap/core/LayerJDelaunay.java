@@ -276,7 +276,7 @@ public class LayerJDelaunay implements LayerDelaunay {
                             if(potentialBuildingID>=1){
                                 //get the Barycenter of the triangle so we can sure this point is in this triangle and we will check if the building contain this point
 
-                                if(this.buildingWithID.get(potentialBuildingID).isTriangleInBuilding(triangle.getBarycenter())){
+                                if(this.buildingWithID.get(potentialBuildingID) != null && this.buildingWithID.get(potentialBuildingID).isTriangleInBuilding(triangle.getBarycenter())){
                                     propertyBulidingID=potentialBuildingID;
                                     break;
                                 }
@@ -316,7 +316,7 @@ public class LayerJDelaunay implements LayerDelaunay {
                                     for (int j = 0; j <= 2; j++) {
                                         int potentialNeighBuildingID = neighTriangle.getPoint(j).getProperty();
                                         if (potentialNeighBuildingID >= 1) {
-                                            if (this.buildingWithID.get(potentialNeighBuildingID).isTriangleInBuilding(neighTriangle.getBarycenter())) {
+                                            if(this.buildingWithID.get(potentialNeighBuildingID) != null && this.buildingWithID.get(potentialNeighBuildingID).isTriangleInBuilding(triangle.getBarycenter())){
                                                 neighBuildingID = potentialNeighBuildingID;
                                                 break;
                                             }

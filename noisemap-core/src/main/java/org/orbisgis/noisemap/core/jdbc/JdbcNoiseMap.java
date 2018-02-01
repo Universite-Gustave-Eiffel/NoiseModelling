@@ -5,7 +5,7 @@ import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Polygon;
-import org.h2gis.h2spatialapi.ProgressVisitor;
+import org.h2gis.api.ProgressVisitor;
 import org.h2gis.utilities.SFSUtilities;
 import org.h2gis.utilities.SpatialResultSet;
 import org.h2gis.utilities.TableLocation;
@@ -203,6 +203,44 @@ public abstract class JdbcNoiseMap {
 
     }
 
+    protected void fetchCellSource_withindex(Connection connection,Envelope fetchEnvelope, List<Geometry> allSourceGeometries,
+                                   List<Geometry> sourceGeometries, List<Long> sourcePk, List<ArrayList<Double>> wj_sources, QueryGeometryStructure sourcesIndex)
+            throws SQLException {
+        int idSource = 0;
+        TableLocation sourceTableIdentifier = TableLocation.parse(sourcesTableName);
+        String sourceGeomName = SFSUtilities.getGeometryFields(connection, sourceTableIdentifier).get(0);
+        try (PreparedStatement st = connection.prepareStatement("SELECT * FROM " + sourcesTableName + " WHERE "
+                + TableLocation.quoteIdentifier(sourceGeomName) + " && ?")) {
+            st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
+            try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
+                while (rs.next()) {
+                    Geometry geo = rs.getGeometry();
+                    sourcePk.add(rs.getLong(1));
+                    if (geo != null) {
+                        ArrayList<Double> wj_spectrum = new ArrayList<>();
+                        wj_spectrum.ensureCapacity(db_field_ids.size());
+                        double sumPow = 0;
+                        for (Integer idcol : db_field_ids) {
+                            double wj = DbaToW(rs.getDouble(idcol));
+                            wj_spectrum
+                                    .add(wj);
+                            sumPow += wj;
+                        }
+                        if(allSourceGeometries != null) {
+                            allSourceGeometries.add(geo);
+                        }
+                        if(sumPow > 0) {
+                            wj_sources.add(wj_spectrum);
+                            sourcesIndex.appendGeometry(geo, idSource);
+                            sourceGeometries.add(geo);
+                            idSource++;
+                        }
+                    }
+                }
+            }
+        }
+
+    }
 
     protected double getCellWidth() {
         return mainEnvelope.getWidth() / gridDim;

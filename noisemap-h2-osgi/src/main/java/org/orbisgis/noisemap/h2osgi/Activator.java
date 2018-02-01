@@ -1,10 +1,14 @@
 package org.orbisgis.noisemap.h2osgi;
 
-import org.h2gis.h2spatialapi.Function;
+import org.h2gis.api.Function;
 import org.orbisgis.noisemap.h2.BR_EvalSource;
 import org.orbisgis.noisemap.h2.BR_EvalSourceC;
 import org.orbisgis.noisemap.h2.BR_PtGrid;
+import org.orbisgis.noisemap.h2.BR_PtGrid_f;
 import org.orbisgis.noisemap.h2.BR_PtGrid3D;
+import org.orbisgis.noisemap.h2.BR_PtGrid3D_f;
+import org.orbisgis.noisemap.h2.BR_PtGrid_Att_f;
+import org.orbisgis.noisemap.h2.BR_PtGrid3D_Att_f;
 import org.orbisgis.noisemap.h2.BR_SpectrumRepartition;
 import org.orbisgis.noisemap.h2.BR_TriGrid;
 import org.orbisgis.noisemap.h2.BR_TriGrid3D;
@@ -22,6 +26,10 @@ public class Activator implements BundleActivator {
     public void start(BundleContext ctx) throws Exception {
         reg(ctx, new BR_PtGrid());
         reg(ctx, new BR_PtGrid3D());
+        reg(ctx, new BR_PtGrid_f());
+        reg(ctx, new BR_PtGrid3D_f());
+        reg(ctx, new BR_PtGrid_Att_f());
+        reg(ctx, new BR_PtGrid3D_Att_f());
         reg(ctx, new BR_EvalSource());
         reg(ctx, new BR_EvalSourceC());
         reg(ctx, new BR_SpectrumRepartition());

@@ -272,6 +272,7 @@ public class EvaluateRoadSourceCnossos {
     /** Get a Road Coeff by Freq **/
     public static Double getA_Roadcoeff(int Freq, int VehCat, int RoadSurface) { //CNOSSOS-EU_Road_Catalogue_Final - 01April2014.xlsx - https://circabc.europa.eu/webdav/CircaBC/env/noisedir/Library/Public/cnossos-eu/Final_methods%26software
         int Freq_ind;
+        int VehCat_ind;
         double out_value;
         switch (Freq) {
             case 63:
@@ -301,49 +302,71 @@ public class EvaluateRoadSourceCnossos {
             default:
                 Freq_ind=0;
         }
+        switch (VehCat) {
+            case 1:
+                VehCat_ind=0;
+                break;
+            case 2:
+                VehCat_ind=1;
+                break;
+            case 3:
+                VehCat_ind=2;
+                break;
+            case 41:
+                VehCat_ind=3;
+                break;
+            case 42:
+                VehCat_ind=4;
+                break;
+            case 5:
+                VehCat_ind=5;
+                break;
+            default:
+                VehCat_ind=0;
+        }
 
         switch (RoadSurface) {
             case 1:
-                out_value=RoadCoeff_NL01[Freq_ind][VehCat];
+                out_value=RoadCoeff_NL01[Freq_ind][VehCat_ind];
                 break;
             case 2:
-                out_value=RoadCoeff_NL02[Freq_ind][VehCat];
+                out_value=RoadCoeff_NL02[Freq_ind][VehCat_ind];
                 break;
             case 3:
-                out_value=RoadCoeff_NL03[Freq_ind][VehCat];
+                out_value=RoadCoeff_NL03[Freq_ind][VehCat_ind];
                 break;
             case 4:
-                out_value=RoadCoeff_NL04[Freq_ind][VehCat];
+                out_value=RoadCoeff_NL04[Freq_ind][VehCat_ind];
                 break;
             case 5:
-                out_value=RoadCoeff_NL05[Freq_ind][VehCat];
+                out_value=RoadCoeff_NL05[Freq_ind][VehCat_ind];
                 break;
             case 6:
-                out_value=RoadCoeff_NL06[Freq_ind][VehCat];
+                out_value=RoadCoeff_NL06[Freq_ind][VehCat_ind];
                 break;
             case 7:
-                out_value=RoadCoeff_NL07[Freq_ind][VehCat];
+                out_value=RoadCoeff_NL07[Freq_ind][VehCat_ind];
                 break;
             case 8:
-                out_value=RoadCoeff_NL08[Freq_ind][VehCat];
+                out_value=RoadCoeff_NL08[Freq_ind][VehCat_ind];
                 break;
             case 9:
-                out_value=RoadCoeff_NL09[Freq_ind][VehCat];
+                out_value=RoadCoeff_NL09[Freq_ind][VehCat_ind];
                 break;
             case 10:
-                out_value=RoadCoeff_NL10[Freq_ind][VehCat];
+                out_value=RoadCoeff_NL10[Freq_ind][VehCat_ind];
                 break;
             case 11:
-                out_value=RoadCoeff_NL11[Freq_ind][VehCat];
+                out_value=RoadCoeff_NL11[Freq_ind][VehCat_ind];
                 break;
             case 12:
-                out_value=RoadCoeff_NL12[Freq_ind][VehCat];
+                out_value=RoadCoeff_NL12[Freq_ind][VehCat_ind];
                 break;
             case 13:
-                out_value=RoadCoeff_NL13[Freq_ind][VehCat];
+                out_value=RoadCoeff_NL13[Freq_ind][VehCat_ind];
                 break;
             case 14:
-                out_value=RoadCoeff_NL14[Freq_ind][VehCat];
+                out_value=RoadCoeff_NL14[Freq_ind][VehCat_ind];
                 break;
             default :
                 out_value=0;
@@ -355,48 +378,72 @@ public class EvaluateRoadSourceCnossos {
     /** Get b Road Coeff by Freq **/
     public static Double getB_Roadcoeff(int VehCat, int RoadSurface) { //CNOSSOS-EU_Road_Catalogue_Final - 01April2014.xlsx - https://circabc.europa.eu/webdav/CircaBC/env/noisedir/Library/Public/cnossos-eu/Final_methods%26software
         double out_value;
-        switch (RoadSurface) {
+        int VehCat_ind;
+        switch (VehCat) {
             case 1:
-                out_value=RoadCoeff_NL01[8][VehCat];
+                VehCat_ind=0;
                 break;
             case 2:
-                out_value=RoadCoeff_NL02[8][VehCat];
+                VehCat_ind=1;
                 break;
             case 3:
-                out_value=RoadCoeff_NL03[8][VehCat];
+                VehCat_ind=2;
                 break;
-            case 4:
-                out_value=RoadCoeff_NL04[8][VehCat];
+            case 41:
+                VehCat_ind=3;
+                break;
+            case 42:
+                VehCat_ind=4;
                 break;
             case 5:
-                out_value=RoadCoeff_NL05[8][VehCat];
+                VehCat_ind=5;
+                break;
+            default:
+                VehCat_ind=0;
+        }
+
+        switch (RoadSurface) {
+            case 1:
+                out_value=RoadCoeff_NL01[8][VehCat_ind];
+                break;
+            case 2:
+                out_value=RoadCoeff_NL02[8][VehCat_ind];
+                break;
+            case 3:
+                out_value=RoadCoeff_NL03[8][VehCat_ind];
+                break;
+            case 4:
+                out_value=RoadCoeff_NL04[8][VehCat_ind];
+                break;
+            case 5:
+                out_value=RoadCoeff_NL05[8][VehCat_ind];
                 break;
             case 6:
-                out_value=RoadCoeff_NL06[8][VehCat];
+                out_value=RoadCoeff_NL06[8][VehCat_ind];
                 break;
             case 7:
-                out_value=RoadCoeff_NL07[8][VehCat];
+                out_value=RoadCoeff_NL07[8][VehCat_ind];
                 break;
             case 8:
-                out_value=RoadCoeff_NL08[8][VehCat];
+                out_value=RoadCoeff_NL08[8][VehCat_ind];
                 break;
             case 9:
-                out_value=RoadCoeff_NL09[8][VehCat];
+                out_value=RoadCoeff_NL09[8][VehCat_ind];
                 break;
             case 10:
-                out_value=RoadCoeff_NL10[8][VehCat];
+                out_value=RoadCoeff_NL10[8][VehCat_ind];
                 break;
             case 11:
-                out_value=RoadCoeff_NL11[8][VehCat];
+                out_value=RoadCoeff_NL11[8][VehCat_ind];
                 break;
             case 12:
-                out_value=RoadCoeff_NL12[8][VehCat];
+                out_value=RoadCoeff_NL12[8][VehCat_ind];
                 break;
             case 13:
-                out_value=RoadCoeff_NL13[8][VehCat];
+                out_value=RoadCoeff_NL13[8][VehCat_ind];
                 break;
             case 14:
-                out_value=RoadCoeff_NL14[8][VehCat];
+                out_value=RoadCoeff_NL14[8][VehCat_ind];
                 break;
             default :
                 out_value=0;

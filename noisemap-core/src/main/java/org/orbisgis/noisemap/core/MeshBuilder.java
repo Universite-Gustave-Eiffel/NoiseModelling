@@ -52,10 +52,13 @@ import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.PrecisionModel;
 import com.vividsolutions.jts.index.quadtree.Quadtree;
 import com.vividsolutions.jts.index.strtree.STRtree;
+import com.vividsolutions.jts.io.WKTWriter;
 import com.vividsolutions.jts.operation.buffer.BufferParameters;
 import com.vividsolutions.jts.precision.GeometryPrecisionReducer;
 import com.vividsolutions.jts.precision.PrecisionReducerCoordinateOperation;
 import org.jdelaunay.delaunay.evaluator.InsertionEvaluator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -72,6 +75,7 @@ import java.util.List;
 
 
 public class MeshBuilder {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MeshBuilder.class);
     private List<Triangle> triVertices;
     private List<Coordinate> vertices;
     private List<Triangle> triNeighbors; // Neighbors
@@ -219,10 +223,19 @@ public class MeshBuilder {
             i++;
         }
         Geometry geomCollection = factory.createGeometryCollection(toUnion);
+
+
         PrecisionModel pm = new PrecisionModel(Math.pow(10.0, EPSILON_MESH));
         GeometryPrecisionReducer geometryPrecisionReducer = new GeometryPrecisionReducer(pm);
         geomCollection = geometryPrecisionReducer.reduce(geomCollection);
-        geomCollection = geomCollection.buffer(0, 0, BufferParameters.CAP_SQUARE );
+        try {
+            geomCollection = geomCollection.buffer(0, 0, BufferParameters.CAP_SQUARE);
+        } catch (Exception ex) {
+            LOGGER.error(new WKTWriter().write(geomCollection));
+            return;
+        }
+
+
         List<PolygonWithHeight> mergedPolygonWithHeight = new ArrayList<>(geomCollection.getNumGeometries());
         // For each merged buildings fetch all contained buildings and take the minimal height then insert into mergedPolygonWithHeight
         for(int idGeom = 0; idGeom < geomCollection.getNumGeometries(); idGeom++) {

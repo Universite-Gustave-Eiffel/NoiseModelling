@@ -33,7 +33,7 @@
  */
 package org.orbisgis.noisemap.h2;
 
-import org.h2gis.h2spatialapi.DeterministicScalarFunction;
+import org.h2gis.api.DeterministicScalarFunction;
 import org.orbisgis.noisemap.core.EvaluateRoadSourceCnossos;
 import org.orbisgis.noisemap.core.RSParametersCnossos;
 
@@ -135,8 +135,8 @@ public class BR_EvalSourceC extends DeterministicScalarFunction {
      * @param lv_speed Average vehicle speed
      * @param mv_speed Average vehicle speed
      * @param hv_speed Average vehicle speed
-     * @param wav_speed Average vehicle speed
-     * @param wbv_speed Average vehicle speed
+     * @param wav_speed Average light 2w vehicle speed
+     * @param wbv_speed Average heavy 2w  vehicle speed
      * @param vl_per_hour Average light vehicle per hour
      * @param ml_per_hour Average medium vehicle per hour
      * @param pl_per_hour Average heavy vehicle per hour

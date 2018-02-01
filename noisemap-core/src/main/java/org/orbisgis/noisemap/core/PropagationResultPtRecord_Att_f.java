@@ -37,19 +37,39 @@ package org.orbisgis.noisemap.core;
  * Results of BR_PtGrid.
  * 
  * @author Nicolas Fortin
+ * @author Pierre Aumond 07/06/2016
  */
-public class PropagationResultPtRecord {
+//TODO Pass int to long
+public class PropagationResultPtRecord_Att_f {
     private long receiverRecordRow;
+    private long sourceRecordRow;
     private int cellId;
     private double receiverLvl;
+    private double receiverLvl63;
+    private double receiverLvl125;
+    private double receiverLvl250;
+    private double receiverLvl500;
+    private double receiverLvl1000;
+    private double receiverLvl2000;
+    private double receiverLvl4000;
+    private double receiverLvl8000;
 
 
-
-    public PropagationResultPtRecord(long receiverRecordRow, int cellId,double receiverLvl) {
+    public PropagationResultPtRecord_Att_f(long receiverRecordRow,long sourceRecordRow, int cellId, double receiverLvl,
+                                           double receiverLvl63, double receiverLvl125, double receiverLvl250, double receiverLvl500,
+                                           double receiverLvl1000, double receiverLvl2000, double receiverLvl4000, double receiverLvl8000) {
         this.receiverRecordRow = receiverRecordRow;
+        this.sourceRecordRow = sourceRecordRow;
         this.cellId = cellId;
         this.receiverLvl = receiverLvl;
-
+        this.receiverLvl63 = receiverLvl63;
+        this.receiverLvl125 = receiverLvl125;
+        this.receiverLvl250 = receiverLvl250;
+        this.receiverLvl500 = receiverLvl500;
+        this.receiverLvl1000 = receiverLvl1000;
+        this.receiverLvl2000 = receiverLvl2000;
+        this.receiverLvl4000 = receiverLvl4000;
+        this.receiverLvl8000 = receiverLvl8000;
     }
 
     public int getCellId() {
@@ -60,7 +80,35 @@ public class PropagationResultPtRecord {
         this.cellId = cellId;
     }
 
-    public double getReceiverLvl() {
+    public double getReceiverLvl(int freq) {
+        switch (freq) {
+            case 63:
+                receiverLvl=receiverLvl63;
+                break;
+            case 125:
+                receiverLvl=receiverLvl125;
+                break;
+            case 250:
+                receiverLvl=receiverLvl250;
+                break;
+            case 500:
+                receiverLvl=receiverLvl500;
+                break;
+            case 1000:
+                receiverLvl=receiverLvl1000;
+                break;
+            case 2000:
+                receiverLvl=receiverLvl2000;
+                break;
+            case 4000:
+                receiverLvl=receiverLvl4000;
+                break;
+            case 8000:
+                receiverLvl=receiverLvl8000;
+                break;
+            default:
+                receiverLvl=receiverLvl;
+        }
         return receiverLvl;
     }
 
@@ -69,11 +117,19 @@ public class PropagationResultPtRecord {
     }
 
     public long getReceiverRecordRow() {
+
         return receiverRecordRow;
+    }
+    public long getSourceRecordRow() {
+        return sourceRecordRow;
     }
 
     public void setReceiverRecordRow(long receiverRecordRow) {
         this.receiverRecordRow = receiverRecordRow;
+    }
+
+    public void setSourceRecordRow(long sourceRecordRow) {
+        this.sourceRecordRow = sourceRecordRow;
     }
 
 

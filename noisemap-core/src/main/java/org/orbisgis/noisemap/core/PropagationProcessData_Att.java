@@ -44,8 +44,9 @@ import java.util.List;
  * Data input for a propagation process (SubEnveloppe of BR_TriGrid).
  *
  * @author Nicolas Fortin
+ * @author Pierre Aumond 07/06/2016
  */
-public class PropagationProcessData {
+public class PropagationProcessData_Att {
     /** Coordinate of receivers */
     public List<Coordinate> receivers;
     /** FreeField test */
@@ -79,12 +80,12 @@ public class PropagationProcessData {
     /** True will compute vertical diffraction */
     public boolean computeVerticalDiffraction;
 
-    public PropagationProcessData(List<Coordinate> receivers, FastObstructionTest freeFieldFinder,
-                                  QueryGeometryStructure sourcesIndex, List<Geometry> sourceGeometries,
-                                  List<ArrayList<Double>> wj_sources, List<Integer> freq_lvl, int reflexionOrder,
-                                  int diffractionOrder, double maxSrcDist, double maxRefDist, double minRecDist,
-                                  double wallAlpha, int cellId, ProgressVisitor cellProg,
-                                  List<GeoWithSoilType> geoWithSoilType, boolean computeVerticalDiffraction) {
+    public PropagationProcessData_Att(List<Coordinate> receivers, FastObstructionTest freeFieldFinder,
+                                      QueryGeometryStructure sourcesIndex, List<Geometry> sourceGeometries,
+                                      List<ArrayList<Double>> wj_sources, List<Integer> freq_lvl, int reflexionOrder,
+                                      int diffractionOrder, double maxSrcDist, double maxRefDist, double minRecDist,
+                                      double wallAlpha, int cellId, ProgressVisitor cellProg,
+                                      List<GeoWithSoilType> geoWithSoilType, boolean computeVerticalDiffraction) {
         this.receivers = receivers;
         this.freeFieldFinder = freeFieldFinder;
         this.sourcesIndex = sourcesIndex;

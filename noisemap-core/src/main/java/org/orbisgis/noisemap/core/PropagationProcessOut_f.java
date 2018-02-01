@@ -38,27 +38,117 @@ package org.orbisgis.noisemap.core;
  * Multiple threads use the same Out, then all methods has been synchronized
  * 
  * @author Nicolas Fortin
+ *
  */
-public class PropagationProcessOut {
+public class PropagationProcessOut_f {
+	private double verticesSoundLevelreturn[];
     private double verticesSoundLevel[];
+	private double verticesSoundLevel63[];
+	private double verticesSoundLevel125[];
+	private double verticesSoundLevel250[];
+	private double verticesSoundLevel500[];
+	private double verticesSoundLevel1000[];
+	private double verticesSoundLevel2000[];
+	private double verticesSoundLevel4000[];
+	private double verticesSoundLevel8000[];
 	private long nb_couple_receiver_src = 0;
 	private long nb_obstr_test = 0;
 	private long nb_image_receiver = 0;
 	private long nb_reflexion_path = 0;
     private long nb_diffraction_path = 0;
 	private long cellComputed = 0;
+	private int freq;
 
-    public double[] getVerticesSoundLevel() {
-        return verticesSoundLevel;
+    public double[] getVerticesSoundLevel(int freq) {
+		switch (freq) {
+			case 63:
+				verticesSoundLevelreturn=verticesSoundLevel63;
+		break;
+		case 125:
+			verticesSoundLevelreturn=verticesSoundLevel125;
+		break;
+		case 250:
+			verticesSoundLevelreturn=verticesSoundLevel250;
+		break;
+		case 500:
+			verticesSoundLevelreturn=verticesSoundLevel500;
+		break;
+		case 1000:
+			verticesSoundLevelreturn=verticesSoundLevel1000;
+		break;
+		case 2000:
+			verticesSoundLevelreturn=verticesSoundLevel2000;
+		break;
+		case 4000:
+			verticesSoundLevelreturn=verticesSoundLevel4000;
+		break;
+		case 8000:
+			verticesSoundLevelreturn=verticesSoundLevel8000;
+		break;
+		default:
+			verticesSoundLevelreturn=verticesSoundLevel;
+	}
+        return verticesSoundLevelreturn;
     }
 
     public void setVerticesSoundLevel(double[] verticesSoundLevel) {
 		this.verticesSoundLevel = verticesSoundLevel;
     }
+	public void setVerticesSoundLevel63(double[] verticesSoundLevel) {
+		this.verticesSoundLevel63 = verticesSoundLevel;
+	}
+	public void setVerticesSoundLevel125(double[] verticesSoundLevel) {
+		this.verticesSoundLevel125 = verticesSoundLevel;
+	}
+	public void setVerticesSoundLevel250(double[] verticesSoundLevel) {
+		this.verticesSoundLevel250 = verticesSoundLevel;
+	}
+	public void setVerticesSoundLevel500(double[] verticesSoundLevel) {
+		this.verticesSoundLevel500 = verticesSoundLevel;
+	}
+	public void setVerticesSoundLevel1000(double[] verticesSoundLevel) {
+		this.verticesSoundLevel1000 = verticesSoundLevel;
+	}
+	public void setVerticesSoundLevel2000(double[] verticesSoundLevel) {
+		this.verticesSoundLevel2000 = verticesSoundLevel;
+	}
+	public void setVerticesSoundLevel4000(double[] verticesSoundLevel) {
+		this.verticesSoundLevel4000 = verticesSoundLevel;
+	}
+	public void setVerticesSoundLevel8000(double[] verticesSoundLevel) {
+		this.verticesSoundLevel8000 = verticesSoundLevel;
+	}
 
-
-    public void setVerticeSoundLevel(int receiverId, double value) {
+    public void setVerticeSoundLevel(int receiverId, double value, int freq) {
+		switch (freq) {
+			case 63:
+				verticesSoundLevel63[receiverId] = value;
+				break;
+			case 125:
+				verticesSoundLevel125[receiverId] = value;
+				break;
+			case 250:
+				verticesSoundLevel250[receiverId] = value;
+				break;
+			case 500:
+				verticesSoundLevel500[receiverId] = value;
+				break;
+			case 1000:
+				verticesSoundLevel1000[receiverId] = value;
+				break;
+			case 2000:
+				verticesSoundLevel2000[receiverId] = value;
+				break;
+			case 4000:
+				verticesSoundLevel4000[receiverId] = value;
+				break;
+			case 8000:
+				verticesSoundLevel8000[receiverId] = value;
+				break;
+			default:
 				verticesSoundLevel[receiverId] = value;
+		}
+
     }
 
 

@@ -41,8 +41,8 @@ import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.api.ScalarFunction;
 import org.h2gis.utilities.SFSUtilities;
 import org.h2gis.utilities.TableLocation;
-import org.orbisgis.noisemap.core.PropagationResultPtRecord;
-import org.orbisgis.noisemap.core.jdbc.PointNoiseMap;
+import org.orbisgis.noisemap.core.PropagationResultPtRecord_Att_f;
+import org.orbisgis.noisemap.core.jdbc.PointNoiseMap_Att_f;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -56,14 +56,15 @@ import java.util.Deque;
  * buildings geometry
  * @author Nicolas Fortin
  * @author SU Qi
+ * @author Pierre Aumond 07/06/2016
  */
-public class BR_PtGrid3D extends AbstractFunction implements ScalarFunction {
-    private static final int COLUMN_COUNT = 3;
+public class BR_PtGrid3D_Att_f extends AbstractFunction implements ScalarFunction {
+    private static final int COLUMN_COUNT = 12;
 
-    public BR_PtGrid3D() {
-        addProperty(PROP_REMARKS , "## BR_PtGrid3D\n" +
+    public BR_PtGrid3D_Att_f() {
+        addProperty(PROP_REMARKS , "## BR_PtGrid3D_f\n" +
                 "\n" +
-                "BR_PtGrid3D(String buildingsTable, String heightFieldName,String sourcesTable, String receiversTable, String sourcesTableSoundFieldName, String groundTypeTable, String demTable, double maximumPropagationDistance, double maximumWallSeekingDistance, int soundReflectionOrder, int soundDiffractionOrder, double wallAlpha)\n" +
+                "BR_PtGrid3D_f(String buildingsTable, String heightFieldName,String sourcesTable, String receiversTable, String sourcesTableSoundFieldName, String groundTypeTable, String demTable, double maximumPropagationDistance, double maximumWallSeekingDistance, int soundReflectionOrder, int soundDiffractionOrder, double wallAlpha)\n" +
                 "\n" +
                 " - **buildingsTable** table identifier that contain a geometry column of type POLYGON.\n" +
                 " - **heightFieldName** column identifier in the buildings table that hold building height in meter. " +
@@ -73,7 +74,7 @@ public class BR_PtGrid3D extends AbstractFunction implements ScalarFunction {
                 " - **receiversTable** table identifier that contain the list of evaluation point of sound level. " +
                 "This table must contains only POINT. And optionally an integer primary key.\n" +
                 " - **sourcesTableSoundFieldName** prefix identifier of the emission level column. ex 'DB_M' for " +
-                "columns 'DB_M100' to 'DB_M5000'.  \n" +
+                "columns 'DB_M63' to 'DB_M8000 OCTAVE BAND'.  \n" +
                 " - **groundTypeTable** table identifier of the ground category table. This table must contain a " +
                 "geometry field of type POLYGON. And a column 'G' of type double between 0 and 1.\n" +
                 " dimensionless coefficient G:\n" +
@@ -143,7 +144,7 @@ public class BR_PtGrid3D extends AbstractFunction implements ScalarFunction {
             feedColumns(rs);
         } else {
             connection = SFSUtilities.wrapConnection(connection);
-                    PointNoiseMap noiseMap = new PointNoiseMap(TableLocation.capsIdentifier(buildings, true),
+                    PointNoiseMap_Att_f noiseMap = new PointNoiseMap_Att_f(TableLocation.capsIdentifier(buildings, true),
                             TableLocation.capsIdentifier(sources, true), TableLocation.capsIdentifier(receivers_table, true));
             noiseMap.setSound_lvl_field(sound_lvl_field);
             noiseMap.setMaximumPropagationDistance(maximum_propagation_distance);
@@ -162,19 +163,30 @@ public class BR_PtGrid3D extends AbstractFunction implements ScalarFunction {
     }
 
     private static void feedColumns(SimpleResultSet rs) {
-        rs.addColumn("GID", Types.BIGINT, 19, 20);
-        rs.addColumn("W", Types.DOUBLE, 17, 24);
+        rs.addColumn("IDRECEPTEUR", Types.BIGINT, 19, 20);
+        rs.addColumn("IDSOURCE", Types.BIGINT, 19, 20);
         rs.addColumn("CELL_ID", Types.INTEGER, 10, 11);
+        rs.addColumn("ATT", Types.DOUBLE, 17, 24);
+        rs.addColumn("ATT63", Types.DOUBLE, 17, 24);
+        rs.addColumn("ATT125", Types.DOUBLE, 17, 24);
+        rs.addColumn("ATT250", Types.DOUBLE, 17, 24);
+        rs.addColumn("ATT500", Types.DOUBLE, 17, 24);
+        rs.addColumn("ATT1000", Types.DOUBLE, 17, 24);
+        rs.addColumn("ATT2000", Types.DOUBLE, 17, 24);
+        rs.addColumn("ATT4000", Types.DOUBLE, 17, 24);
+        rs.addColumn("ATT8000", Types.DOUBLE, 17, 24);
+
+
     }
 
     private static class PointRowSource implements SimpleRowSource {
-        private Deque<PropagationResultPtRecord> output = new ArrayDeque<PropagationResultPtRecord>();
+        private Deque<PropagationResultPtRecord_Att_f> output = new ArrayDeque<PropagationResultPtRecord_Att_f>();
         private int cellI = -1;
         private int cellJ = 0;
-        private PointNoiseMap noiseMap;
+        private PointNoiseMap_Att_f noiseMap;
         private Connection connection;
 
-        private PointRowSource(PointNoiseMap noiseMap, Connection connection) {
+        private PointRowSource(PointNoiseMap_Att_f noiseMap, Connection connection) {
             this.noiseMap = noiseMap;
             this.connection = connection;
         }
@@ -187,6 +199,7 @@ public class BR_PtGrid3D extends AbstractFunction implements ScalarFunction {
                     if (cellI + 1 < noiseMap.getGridDim()) {
                         cellI++;
                     } else {
+
                         if (cellJ + 1 < noiseMap.getGridDim()) {
                             cellI = 0;
                             cellJ++;
@@ -195,15 +208,24 @@ public class BR_PtGrid3D extends AbstractFunction implements ScalarFunction {
                         }
                     }
                     // Fetch next cell
-                    output.addAll(noiseMap.evaluateCell(connection, cellI, cellJ, new ProgressLogger()));
+                   output.addAll(noiseMap.evaluateCell(connection, cellI, cellJ, new ProgressLogger()));
                 } while (output.isEmpty());
             }
             // Consume cell
-            PropagationResultPtRecord record = output.pop();
+            PropagationResultPtRecord_Att_f record = output.pop();
             Object[] row = new Object[COLUMN_COUNT];
             row[0] = record.getReceiverRecordRow();
-            row[1] = record.getReceiverLvl();
+            row[1] = record.getSourceRecordRow();
             row[2] = record.getCellId();
+            row[3] = record.getReceiverLvl(0);
+            row[4] = record.getReceiverLvl(63);
+            row[5] = record.getReceiverLvl(125);
+            row[6] = record.getReceiverLvl(250);
+            row[7] = record.getReceiverLvl(500);
+            row[8] = record.getReceiverLvl(1000);
+            row[9] = record.getReceiverLvl(2000);
+            row[10] = record.getReceiverLvl(4000);
+            row[11] = record.getReceiverLvl(8000);
             return row;
         }
 
