@@ -87,14 +87,20 @@ public class LayerJDelaunay implements LayerDelaunay {
     /** insertion point minimal distance, in meter */
     private static final double EPSILON_INSERTION_POINT = 1;
 
+    public static Coordinate DPointToCoordiate(DPoint pt) {
+        return new Coordinate(pt.getX(), pt.getY(), pt.getZ());
+    }
 
-    private static DTriangle findTriByCoordinate(Coordinate pos,List<DTriangle> trilst) throws DelaunayError {
-        DPoint pt;
+
+    public static DPoint CoordinateToDPoint(Coordinate pos) throws DelaunayError {
         if(Double.isNaN(pos.z)) {
-            pt=new DPoint(pos.x,pos.y,0);
+            return new DPoint(pos.x,pos.y,0);
         } else {
-            pt=new DPoint(pos);
+            return new DPoint(pos.x, pos.y, pos.z);
         }
+    }
+    private static DTriangle findTriByCoordinate(Coordinate pos,List<DTriangle> trilst) throws DelaunayError {
+        DPoint pt = CoordinateToDPoint(pos);
         Element foundEl=trilst.get(trilst.size()/2).searchPointContainer(pt);
         if(foundEl instanceof DTriangle) {
             return (DTriangle)foundEl;
@@ -150,7 +156,7 @@ public class LayerJDelaunay implements LayerDelaunay {
 
         public boolean isTriangleInBuilding(DPoint point)
         {
-            return this.building.intersects(FACTORY.createPoint(point.getCoordinate()));
+            return this.building.intersects(FACTORY.createPoint(DPointToCoordiate(point)));
         }
 
 
@@ -225,7 +231,7 @@ public class LayerJDelaunay implements LayerDelaunay {
                         WKTWriter wktWriter = new WKTWriter(3);
                         // write pts
                         for(DPoint pt : ptToInsert) {
-                            Geometry geom = factory.createPoint(pt.getCoordinate());
+                            Geometry geom = factory.createPoint(DPointToCoordiate(pt));
                             out.append("INSERT INTO DEBUG_DATA VALUES ('");
                             out.append(wktWriter.write(geom));
                             out.append("');\n");
@@ -234,7 +240,7 @@ public class LayerJDelaunay implements LayerDelaunay {
                         for(DEdge edge : constraintEdge) {
                             DPoint pt=edge.getStartPoint();
                             DPoint pt2=edge.getEndPoint();
-                            Geometry geom = factory.createLineString(new Coordinate[]{pt.getCoordinate(), pt2.getCoordinate()});
+                            Geometry geom = factory.createLineString(new Coordinate[]{DPointToCoordiate(pt), DPointToCoordiate(pt2)});
                             out.append("INSERT INTO DEBUG_DATA VALUES ('");
                             out.append(wktWriter.write(geom));
                             out.append("');\n");
@@ -266,7 +272,10 @@ public class LayerJDelaunay implements LayerDelaunay {
 
 
                 for (DTriangle triangle : trianglesDelaunay) {
-                    Coordinate [] ring = new Coordinate [] {triangle.getPoint(0).getCoordinate(),triangle.getPoint(1).getCoordinate(),triangle.getPoint(2).getCoordinate(),triangle.getPoint(0).getCoordinate()};
+                    Coordinate [] ring = new Coordinate [] {DPointToCoordiate(triangle.getPoint(0)),
+                            DPointToCoordiate(triangle.getPoint(1)),
+                            DPointToCoordiate(triangle.getPoint(2)),
+                            DPointToCoordiate(triangle.getPoint(0))};
                     boolean orientationReversed=false;
                     //if one of three vertices have buildingID and buildingID>=1
                     if(triangle.getPoint(0).getProperty()>=1||triangle.getPoint(1).getProperty()>=1||triangle.getPoint(2).getProperty()>=1){
@@ -493,8 +502,8 @@ public class LayerJDelaunay implements LayerDelaunay {
         Coordinate[] coords = lineToProcess.getCoordinates();
         try {
             for (int ind = 1; ind < coords.length; ind++) {
-                this.constraintEdge.add(new DEdge(new DPoint(coords[ind - 1]),
-                        new DPoint(coords[ind])));
+                this.constraintEdge.add(new DEdge(CoordinateToDPoint(coords[ind - 1]),
+                        CoordinateToDPoint(coords[ind])));
             }
         } catch (DelaunayError e) {
             throw new LayerDelaunayError(e.getMessage());
@@ -507,8 +516,8 @@ public class LayerJDelaunay implements LayerDelaunay {
         Coordinate[] coords = lineToProcess.getCoordinates();
         try {
             for (int ind = 1; ind < coords.length; ind++) {
-                DPoint point1=new DPoint(coords[ind - 1]);
-                DPoint point2=new DPoint(coords[ind]);
+                DPoint point1=new DPoint(CoordinateToDPoint(coords[ind - 1]));
+                DPoint point2=new DPoint(CoordinateToDPoint(coords[ind]));
                 point1.setProperty(buildingID);
                 point2.setProperty(buildingID);
                 DEdge edge=new DEdge(point1,
@@ -525,7 +534,7 @@ public class LayerJDelaunay implements LayerDelaunay {
     public void addTopoPoint(Coordinate point)
             throws LayerDelaunayError{
         try{
-            DPoint topoPoint=new DPoint(point);
+            DPoint topoPoint=CoordinateToDPoint(point);
             topoPoint.setProperty(0);
             this.ptToInsert.add(topoPoint);
         }catch (DelaunayError e) {
