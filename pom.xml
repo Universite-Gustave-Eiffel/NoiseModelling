@@ -5,12 +5,12 @@
     <packaging>pom</packaging>
     <version>2.1.0-SNAPSHOT</version>
     <name>noisemap-parent</name>
-    <description>H2GIS is a spatial extension of the H2 database engine in the spirit of PostGIS. It adds support for the Open Geospatial Consortium (OGC) Simple Features for SQL (SFSQL) functions.</description>
+    <description>NoiseModelling is an extension of H2GIS </description>
     <organization>
-        <name>IRSTV CNRS-FR-2488</name>
-        <url>http://www.irstv.fr/</url>
+        <name>Lab-STICC - UMR CNRS 6285</name>
+        <url>http://www.labsticc.fr/</url>
     </organization>
-    <url>http://github.com/irstv/H2GIS</url>
+    <url>http://noise-planet.org/noisemodelling.html</url>
     <licenses>
         <license>
             <name>GNU General Public License (GPLV3+)</name>
@@ -28,9 +28,9 @@
         <module>noisemap-h2-osgi</module>
   </modules>
     <scm>
-        <connection>scm:git:https://github.com/irstv/noisemap.git</connection>
-        <developerConnection>scm:git:https://github.com/irstv/noisemap.git</developerConnection>
-        <url>git@github.com:irstv/noisemap.git</url>
+        <connection>scm:git:https://github.com/Ifsttar/NoiseModelling.git</connection>
+        <developerConnection>scm:git:https://github.com/Ifsttar/NoiseModelling.git</developerConnection>
+        <url>git@github.com:Ifsttar/NoiseModelling.git</url>
     </scm>
     <build>
         <plugins>
@@ -72,13 +72,25 @@
         </developer>
     </developers>
     <repositories>
-        <repository>
-            <id>IRSTV</id>
-            <name>IRSTV repository</name>
-            <url>http://repo.orbisgis.org</url>
-        </repository>
+            <repository>
+                    <id>osgi-maven-5.1</id>
+                    <url>http://nexus.orbisgis.org/content/repositories/osgi-maven-5.1</url>
+            </repository>
+            <repository>
+                    <id>osgi-maven-5.1-snapshot</id>
+                    <url>http://nexus.orbisgis.org/content/repositories/osgi-maven-5.1-snapshot</url>
+            </repository>
     </repositories>
-
+    <pluginRepositories>
+            <pluginRepository>
+                    <id>osgi-maven-5.1</id>
+                    <url>http://nexus.orbisgis.org/content/repositories/osgi-maven-5.1</url>
+            </pluginRepository>
+            <pluginRepository>
+                    <id>osgi-maven-5.1-snapshot</id>
+                    <url>http://nexus.orbisgis.org/content/repositories/osgi-maven-5.1-snapshot</url>
+            </pluginRepository>
+    </pluginRepositories>
     <parent>
         <groupId>org.orbisgis</groupId>
         <artifactId>orbisgis-nexus</artifactId>
