@@ -78,9 +78,10 @@
             <url>http://repo.orbisgis.org</url>
         </repository>
     </repositories>
+
     <parent>
         <groupId>org.orbisgis</groupId>
         <artifactId>orbisgis-nexus</artifactId>
-        <version>1</version>
+        <version>5.1.0</version>
     </parent>
 </project>
