@@ -36,7 +36,7 @@
         <dependency>
             <groupId>org.orbisgis</groupId>
             <artifactId>jdelaunay</artifactId>
-            <version>0.5.3</version>
+            <version>1.0.1</version>
         </dependency>
         <dependency>
             <groupId>org.orbisgis</groupId>

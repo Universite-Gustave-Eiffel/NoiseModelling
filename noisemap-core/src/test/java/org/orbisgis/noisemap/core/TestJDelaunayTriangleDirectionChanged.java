@@ -36,7 +36,10 @@ public class TestJDelaunayTriangleDirectionChanged extends TestCase{
            //2 one building, triangles have different directions
            int ccw=-1;                                
            for(DTriangle t:triangle){
-               Coordinate [] ring = new Coordinate []{t.getPoint(0).getCoordinate(),t.getPoint(1).getCoordinate(),t.getPoint(2).getCoordinate(),t.getPoint(0).getCoordinate()};
+               Coordinate [] ring = new Coordinate []{LayerJDelaunay.DPointToCoordiate(t.getPoint(0)),
+                       LayerJDelaunay.DPointToCoordiate(t.getPoint(1)),
+                       LayerJDelaunay.DPointToCoordiate(t.getPoint(2)),
+                       LayerJDelaunay.DPointToCoordiate(t.getPoint(0))};
                if(ccw==-1){
                    if(CGAlgorithms.isCCW(ring)){
                        ccw=0;
