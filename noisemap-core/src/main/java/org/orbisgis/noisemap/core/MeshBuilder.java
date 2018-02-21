@@ -34,29 +34,20 @@
 package org.orbisgis.noisemap.core;
 
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.LinkedList;
-import java.util.List;
-
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryCollection;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
-import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Polygon;
-import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.PrecisionModel;
-import com.vividsolutions.jts.index.quadtree.Quadtree;
 import com.vividsolutions.jts.index.strtree.STRtree;
 import com.vividsolutions.jts.operation.buffer.BufferParameters;
 import com.vividsolutions.jts.precision.GeometryPrecisionReducer;
-import com.vividsolutions.jts.precision.PrecisionReducerCoordinateOperation;
-import org.jdelaunay.delaunay.evaluator.InsertionEvaluator;
 
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 
@@ -75,7 +66,6 @@ public class MeshBuilder {
     private List<Triangle> triVertices;
     private List<Coordinate> vertices;
     private List<Triangle> triNeighbors; // Neighbors
-    private InsertionEvaluator insertionEvaluator;
     private static final int BUILDING_COUNT_HINT = 1500; // 2-3 km² average buildings
     private List<PolygonWithHeight> polygonWithHeight = new ArrayList<>(BUILDING_COUNT_HINT);//list polygon with height
     private Envelope geometriesBoundingBox = null;
@@ -122,15 +112,6 @@ public class MeshBuilder {
         public boolean hasHeight() {
             return hasHeight;
         }
-    }
-
-    /**
-     * Triangle refinement
-     *
-     * @param insertionEvaluator
-     */
-    public void setInsertionEvaluator(InsertionEvaluator insertionEvaluator) {
-        this.insertionEvaluator = insertionEvaluator;
     }
 
     public MeshBuilder() {
@@ -296,10 +277,10 @@ public class MeshBuilder {
             this.geometriesBoundingBox = boundingBoxGeom.getEnvelopeInternal();
         }
 
-        LayerDelaunay delaunayTool = new LayerJDelaunay();
+        LayerDelaunay delaunayTool = new LayerPoly2Tri();
         //merge buildings
         mergeBuildings();
-        //add buildings to JDelaunay
+        //add buildings to delaunay triangulation
         int i = 1;
         for (PolygonWithHeight polygon : polygonWithHeight) {
             explodeAndAddPolygon(polygon.getGeometry(), delaunayTool, i);
@@ -309,7 +290,7 @@ public class MeshBuilder {
         //no check if the point in the building
         if (!topoPoints.isEmpty()) {
             for (Coordinate topoPoint : topoPoints) {
-                delaunayTool.addTopoPoint(topoPoint);
+                delaunayTool.addVertex(topoPoint);
             }
         }
 
@@ -329,11 +310,7 @@ public class MeshBuilder {
         if(maximumArea > 0) {
             delaunayTool.setMaxArea(maximumArea);
         }
-        if(insertionEvaluator != null) {
-            delaunayTool.processDelaunay(0.1, insertionEvaluator);
-        } else {
-            delaunayTool.processDelaunay();
-        }
+        delaunayTool.processDelaunay();
         // Get results
         this.triVertices = delaunayTool.getTriangles();
         this.vertices = delaunayTool.getVertices();

@@ -110,7 +110,7 @@ public class LayerPoly2Tri implements LayerDelaunay {
 
     @Override
     public void addPolygon(Polygon newPoly, boolean isEmpty) throws LayerDelaunayError {
-        org.poly2tri.geometry.polygon.Polygon
+
     }
 
     @Override
@@ -124,7 +124,7 @@ public class LayerPoly2Tri implements LayerDelaunay {
     }
 
     @Override
-    public void addLineString(LineString line) throws LayerDelaunayError {
+    public void addLineString(LineString line, int attribute) throws LayerDelaunayError {
 
     }
 
@@ -167,8 +167,6 @@ public class LayerPoly2Tri implements LayerDelaunay {
     public void setRetrieveNeighbors(boolean retrieve) {
 
     }
-
-
 
     private static class PointHandler implements CoordinateFilter {
         private LayerPoly2Tri delaunayData;

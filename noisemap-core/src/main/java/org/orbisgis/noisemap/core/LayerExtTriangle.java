@@ -684,11 +684,14 @@ public class LayerExtTriangle implements LayerDelaunay {
 		getOrAppendVertices(vertexCoordinate, vertices);
 	}
 
-	// @SuppressWarnings("unchecked")
-	@Override
+
 	public void addLineString(LineString lineToProcess)
 			throws LayerDelaunayError {
+		addLineString(lineToProcess, 0);
+	}
 
+	@Override
+	public void addLineString(LineString lineToProcess, int attribute) throws LayerDelaunayError {
 		Coordinate[] coords = lineToProcess.getCoordinates();
 		for (int ind = 1; ind < coords.length; ind++) {
 			int firstVertIndex = getOrAppendVertices(coords[ind - 1], vertices);
@@ -696,6 +699,7 @@ public class LayerExtTriangle implements LayerDelaunay {
 			IntSegment newSeg = new IntSegment(firstVertIndex, secondVertIndex);
 			segments.add(newSeg);
 		}
+
 	}
 
 	public void setRetrieveNeighbors(boolean retrieve) {
