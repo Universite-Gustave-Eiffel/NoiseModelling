@@ -266,13 +266,13 @@ public class MeshBuilder {
         }
     }
 
-    private void addPolygon(Polygon newpoly, LayerJDelaunay delaunayTool,
+    private void addPolygon(Polygon newpoly, LayerDelaunay delaunayTool,
                             int buildingID) throws LayerDelaunayError {
         delaunayTool.addPolygon(newpoly, true, buildingID);
     }
 
     private void explodeAndAddPolygon(Geometry intersectedGeometry,
-                                      LayerJDelaunay delaunayTool, int buildingID)
+                                      LayerDelaunay delaunayTool, int buildingID)
             throws LayerDelaunayError {
 
         if (intersectedGeometry instanceof GeometryCollection) {
@@ -296,7 +296,7 @@ public class MeshBuilder {
             this.geometriesBoundingBox = boundingBoxGeom.getEnvelopeInternal();
         }
 
-        LayerJDelaunay delaunayTool = new LayerJDelaunay();
+        LayerDelaunay delaunayTool = new LayerJDelaunay();
         //merge buildings
         mergeBuildings();
         //add buildings to JDelaunay

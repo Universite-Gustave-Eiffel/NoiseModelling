@@ -35,13 +35,13 @@
         </dependency>
         <dependency>
             <groupId>org.orbisgis</groupId>
-            <artifactId>jdelaunay</artifactId>
-            <version>1.0.2</version>
+            <artifactId>h2gis-utilities</artifactId>
+            <version>${h2gis-version}</version>
         </dependency>
         <dependency>
             <groupId>org.orbisgis</groupId>
-            <artifactId>h2gis-utilities</artifactId>
-            <version>${h2gis-version}</version>
+            <artifactId>poly2tri-core</artifactId>
+            <version>0.1.2</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>

@@ -75,7 +75,7 @@ public interface LayerDelaunay {
      *            be inserted as holes.
      * @param[in] isEmpty This polygon is a hole. If yes, only the external ring
      *            is used.
-     * @param[in] attribute Polygon attribute. {@link Triangle#getBuidlingID()}
+     * @param[in] attribute Polygon attribute. {@link Triangle#getAttribute()}
      */
     void addPolygon(Polygon newPoly, boolean isEmpty,int attribute) throws LayerDelaunayError;
 
@@ -92,7 +92,7 @@ public interface LayerDelaunay {
 	 * @param[in] a Coordinate of the segment start
 	 * @param[in] b Coordinate of the segment end
 	 */
-	void addLineString(LineString line) throws LayerDelaunayError;
+	void addLineString(LineString line, int attribute) throws LayerDelaunayError;
 
 	/**
 	 * Set the minimum angle, if you wish to enforce the quality of the delaunay

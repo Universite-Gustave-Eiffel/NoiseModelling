@@ -300,7 +300,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         }
         List<Triangle> triangles = new ArrayList<>();
         for(Triangle triangle : cellMesh.getTriangles()) {
-            if(triangle.getBuidlingID() == 0) {
+            if(triangle.getAttribute() == 0) {
                 triangles.add(triangle);
             }
         }
