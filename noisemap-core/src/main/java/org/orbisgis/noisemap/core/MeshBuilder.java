@@ -249,7 +249,9 @@ public class MeshBuilder {
 
     private void addPolygon(Polygon newpoly, LayerDelaunay delaunayTool,
                             int buildingID) throws LayerDelaunayError {
-        delaunayTool.addPolygon(newpoly, true, buildingID);
+        // Fix clock wise orientation of the polygon and inner holes
+        newpoly.normalize();
+        delaunayTool.addPolygon(newpoly, buildingID);
     }
 
     private void explodeAndAddPolygon(Geometry intersectedGeometry,
@@ -273,6 +275,10 @@ public class MeshBuilder {
     }
 
     public void finishPolygonFeeding(Geometry boundingBoxGeom) throws LayerDelaunayError {
+        // Insert the main rectangle
+        if (!(boundingBoxGeom instanceof Polygon)) {
+          return;
+        }
         if (boundingBoxGeom != null) {
             this.geometriesBoundingBox = boundingBoxGeom.getEnvelopeInternal();
         }
@@ -280,6 +286,7 @@ public class MeshBuilder {
         LayerDelaunay delaunayTool = new LayerPoly2Tri();
         //merge buildings
         mergeBuildings();
+
         //add buildings to delaunay triangulation
         int i = 1;
         for (PolygonWithHeight polygon : polygonWithHeight) {
@@ -294,12 +301,10 @@ public class MeshBuilder {
             }
         }
 
-        // Insert the main rectangle
-        if (!(boundingBoxGeom instanceof Polygon)) {
-            return;
+        // And envelope 4 points
+        for(Coordinate coord : boundingBoxGeom.getCoordinates()) {
+          delaunayTool.addVertex(coord);
         }
-        delaunayTool.addPolygon((Polygon) boundingBoxGeom, false);
-        //explodeAndAddPolygon(allbuilds, delaunayTool);
         //Process delaunay Triangulation
         delaunayTool.setMinAngle(0.);
         //computeNeighbors

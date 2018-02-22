@@ -37,8 +37,10 @@
 
 package org.orbisgis.noisemap.core;
 
+import com.vividsolutions.jts.algorithm.ConvexHull;
 import com.vividsolutions.jts.geom.*;
 
+import com.vividsolutions.jts.io.WKTWriter;
 import org.poly2tri.Poly2Tri;
 import org.poly2tri.geometry.polygon.PolygonPoint;
 import org.poly2tri.triangulation.Triangulatable;
@@ -47,9 +49,12 @@ import org.poly2tri.triangulation.TriangulationPoint;
 import org.poly2tri.triangulation.delaunay.DelaunayTriangle;
 import org.poly2tri.triangulation.point.TPoint;
 import org.poly2tri.triangulation.sets.ConstrainedPointSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -59,6 +64,7 @@ public class LayerPoly2Tri implements LayerDelaunay {
     private MathContext mathContext = MathContext.DECIMAL64;
     private GeometryFactory gf;
     private Triangulatable convertedInput = null;
+    private static final Logger LOGGER = LoggerFactory.getLogger(LayerPoly2Tri.class);
 
 
     private org.poly2tri.geometry.polygon.Polygon makePolygon(LineString lineString) {
@@ -109,23 +115,23 @@ public class LayerPoly2Tri implements LayerDelaunay {
     }
 
     @Override
-    public void addPolygon(Polygon newPoly, boolean isEmpty) throws LayerDelaunayError {
-
-    }
-
-    @Override
-    public void addPolygon(Polygon newPoly, boolean isEmpty, int attribute) throws LayerDelaunayError {
-
+    public void addPolygon(Polygon newPoly, int attribute) throws LayerDelaunayError {
+        // Convert into linestring
+        addLineString(newPoly.getExteriorRing(), attribute);
+        for (int i = 0; i < newPoly.getNumInteriorRing(); i++) {
+            addLineString(newPoly.getInteriorRingN(i), attribute);
+        }
+        //LOGGER.info(String.format("INSERT INTO DEBUG VALUES ('%s');", new WKTWriter().write(newPoly)));
     }
 
     @Override
     public void addVertex(Coordinate vertexCoordinate) throws LayerDelaunayError {
-
+        //LOGGER.info(String.format("INSERT INTO DEBUG VALUES ('%s');", new WKTWriter().write(gf.createPoint(vertexCoordinate))));
     }
 
     @Override
     public void addLineString(LineString line, int attribute) throws LayerDelaunayError {
-
+        //LOGGER.info(String.format("INSERT INTO DEBUG VALUES ('%s');", new WKTWriter().write(line)));
     }
 
     @Override
@@ -140,22 +146,29 @@ public class LayerPoly2Tri implements LayerDelaunay {
 
     @Override
     public void processDelaunay() throws LayerDelaunayError {
+        // Add convexhull
 
+      // Workaround for issue 105 "Poly2Tri does not make a valid convexHull for points and linestrings delaunay
+      // https://code.google.com/p/poly2tri/issues/detail?id=105
+      Geometry convexHull = new ConvexHull()
+      if(convexHull instanceof Polygon && convexHull.isValid()) {
+
+      }
     }
 
     @Override
     public List<Coordinate> getVertices() throws LayerDelaunayError {
-        return null;
+        return new ArrayList<>();
     }
 
     @Override
     public List<Triangle> getTriangles() throws LayerDelaunayError {
-        return null;
+        return new ArrayList<>();
     }
 
     @Override
     public List<Triangle> getNeighbors() throws LayerDelaunayError {
-        return null;
+        return new ArrayList<>();
     }
 
     @Override
