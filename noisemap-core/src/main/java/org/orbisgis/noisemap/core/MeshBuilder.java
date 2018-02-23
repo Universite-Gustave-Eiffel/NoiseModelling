@@ -68,6 +68,7 @@ public class MeshBuilder {
     private List<Triangle> triNeighbors; // Neighbors
     private static final int BUILDING_COUNT_HINT = 1500; // 2-3 km² average buildings
     private List<PolygonWithHeight> polygonWithHeight = new ArrayList<>(BUILDING_COUNT_HINT);//list polygon with height
+    private List<LineString> envelopeSplited = new ArrayList<>();
     private Envelope geometriesBoundingBox = null;
     private List<Coordinate> topoPoints = new LinkedList<Coordinate>();
     private boolean computeNeighbors = true;
@@ -180,13 +181,10 @@ public class MeshBuilder {
         addGeometry(new PolygonWithHeight(obstructionPoly, heightofBuilding));
     }
 
-    public void mergeBuildings() {
-        if(polygonWithHeight.isEmpty()) {
-            return;
-        }
+    public void mergeBuildings(Geometry boundingBoxGeom) {
         // Delaunay triangulation request good quality input data
         // We have to merge buildings that may overlap
-        Geometry[] toUnion = new Geometry[polygonWithHeight.size()];
+        Geometry[] toUnion = new Geometry[polygonWithHeight.size() + 1];
         STRtree buildingsRtree;
         if(toUnion.length > 10) {
             buildingsRtree = new STRtree(toUnion.length);
@@ -199,34 +197,43 @@ public class MeshBuilder {
             buildingsRtree.insert(poly.getGeometry().getEnvelopeInternal(), i);
             i++;
         }
+        if(boundingBoxGeom instanceof Polygon) {
+          // Add envelope to union of geometry
+          toUnion[i] = ((Polygon)(boundingBoxGeom)).getExteriorRing();
+        } else {
+          toUnion[i] = factory.createPolygon(new Coordinate[0]);
+        }
         Geometry geomCollection = factory.createGeometryCollection(toUnion);
         PrecisionModel pm = new PrecisionModel(Math.pow(10.0, EPSILON_MESH));
         GeometryPrecisionReducer geometryPrecisionReducer = new GeometryPrecisionReducer(pm);
         geomCollection = geometryPrecisionReducer.reduce(geomCollection);
-        geomCollection = geomCollection.buffer(0, 0, BufferParameters.CAP_SQUARE );
+        geomCollection = geomCollection.union();
         List<PolygonWithHeight> mergedPolygonWithHeight = new ArrayList<>(geomCollection.getNumGeometries());
         // For each merged buildings fetch all contained buildings and take the minimal height then insert into mergedPolygonWithHeight
         for(int idGeom = 0; idGeom < geomCollection.getNumGeometries(); idGeom++) {
             //fetch all contained buildings
-            Geometry mergedBuilding = geomCollection.getGeometryN(idGeom);
-            if(mergedBuilding instanceof Polygon) {
-                List polyInters = buildingsRtree.query(mergedBuilding.getEnvelopeInternal());
+            Geometry geometryN = geomCollection.getGeometryN(idGeom);
+            if(geometryN instanceof Polygon) {
+                List polyInters = buildingsRtree.query(geometryN.getEnvelopeInternal());
                 double minHeight = Double.MAX_VALUE;
                 boolean foundHeight = false;
                 for (Object id : polyInters) {
                     if (id instanceof Integer) {
                         PolygonWithHeight inPoly = polygonWithHeight.get((int) id);
-                        if (inPoly.hasHeight && inPoly.getGeometry().intersects(mergedBuilding)) {
+                        if (inPoly.hasHeight && inPoly.getGeometry().intersects(geometryN)) {
                             minHeight = Math.min(minHeight, inPoly.getHeight());
                             foundHeight = true;
                         }
                     }
                 }
                 if(foundHeight) {
-                    mergedPolygonWithHeight.add(new PolygonWithHeight(mergedBuilding, minHeight));
+                    mergedPolygonWithHeight.add(new PolygonWithHeight(geometryN, minHeight));
                 } else {
-                    mergedPolygonWithHeight.add(new PolygonWithHeight(mergedBuilding));
+                    mergedPolygonWithHeight.add(new PolygonWithHeight(geometryN));
                 }
+            } else if(geometryN instanceof LineString) {
+              // Exterior envelope
+              envelopeSplited.add((LineString)geometryN);
             }
         }
         polygonWithHeight = mergedPolygonWithHeight;
@@ -285,7 +292,7 @@ public class MeshBuilder {
 
         LayerDelaunay delaunayTool = new LayerPoly2Tri();
         //merge buildings
-        mergeBuildings();
+        mergeBuildings(boundingBoxGeom);
 
         //add buildings to delaunay triangulation
         int i = 1;
@@ -293,17 +300,15 @@ public class MeshBuilder {
             explodeAndAddPolygon(polygon.getGeometry(), delaunayTool, i);
             i++;
         }
+        for (LineString lineString : envelopeSplited) {
+          delaunayTool.addLineString(lineString, -1);
+        }
         //add topoPoints to JDelaunay
         //no check if the point in the building
         if (!topoPoints.isEmpty()) {
             for (Coordinate topoPoint : topoPoints) {
                 delaunayTool.addVertex(topoPoint);
             }
-        }
-
-        // And envelope 4 points
-        for(Coordinate coord : boundingBoxGeom.getCoordinates()) {
-          delaunayTool.addVertex(coord);
         }
         //Process delaunay Triangulation
         delaunayTool.setMinAngle(0.);

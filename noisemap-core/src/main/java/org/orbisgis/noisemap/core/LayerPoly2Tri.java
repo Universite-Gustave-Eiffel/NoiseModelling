@@ -158,15 +158,21 @@ public class LayerPoly2Tri implements LayerDelaunay {
     }
   }
 
+  private static int getTriangleIndex(Map<DelaunayTriangle, Integer> index, DelaunayTriangle instance) {
+    if (instance == null) {
+      return -1;
+    } else {
+      Integer res = index.get(instance);
+      if (res == null) {
+        return -1;
+      } else {
+        return res;
+      }
+    }
+  }
+
   @Override
   public void processDelaunay() throws LayerDelaunayError {
-    // Add convex hull of points as a segment constraint
-    ConvexHull convexHull = new ConvexHull(pointHandler.getPoints(), FACTORY);
-    Geometry hull = convexHull.getConvexHull();
-    if(!(hull instanceof Polygon)){
-      throw new LayerDelaunayError("Not enough points");
-    }
-    addLineString(((Polygon) hull).getExteriorRing(), -1);
     // Create input data for Poly2Tri
     int[] index = new int[segments.size()];
     for(int i = 0; i < index.length; i++) {
@@ -184,9 +190,15 @@ public class LayerPoly2Tri implements LayerDelaunay {
 
       List<DelaunayTriangle> trianglesDelaunay = convertedInput.getTriangles();
       List<Integer> triangleAttribute = Arrays.asList(new Integer[trianglesDelaunay.size()]);
-      // memory
-      HashMap<Integer, Integer> gidToIndex = new HashMap<Integer, Integer>();
-      ArrayList<Triangle> gidTriangle = new ArrayList<Triangle>(trianglesDelaunay.size());
+      // Create an index of triangles instance for fast neighbors search
+      Map<DelaunayTriangle, Integer> triangleSearch = new HashMap<>(trianglesDelaunay.size());
+      int triangleIndex = 0;
+      if(computeNeighbors) {
+        for (DelaunayTriangle triangle : trianglesDelaunay) {
+          triangleSearch.put(triangle, triangleIndex);
+          triangleIndex++;
+        }
+      }
 
       //Build ArrayList for binary search
       //test add height
@@ -224,9 +236,9 @@ public class LayerPoly2Tri implements LayerDelaunay {
         triangles.add(new Triangle(a, b, c, triangleAttribute.get(triangleId)));
         if(computeNeighbors) {
           // Compute neighbors index
-          neighbors.add(new Triangle(trianglesDelaunay.indexOf(triangle.neighborAcross(triangle.points[0])),
-                  trianglesDelaunay.indexOf(triangle.neighborAcross(triangle.points[1])),
-                  trianglesDelaunay.indexOf(triangle.neighborAcross(triangle.points[2]))));
+          neighbors.add(new Triangle(getTriangleIndex(triangleSearch,triangle.neighborAcross(triangle.points[0])),
+                  getTriangleIndex(triangleSearch,triangle.neighborAcross(triangle.points[1])),
+                  getTriangleIndex(triangleSearch,triangle.neighborAcross(triangle.points[2]))));
         }
         triangleId++;
       }

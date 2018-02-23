@@ -45,11 +45,45 @@ import static junit.framework.Assert.assertTrue;
 
 import junit.framework.TestCase;
 
+import java.util.List;
+
 /**
  *
  * @author SU Qi
+ * @author Nicolas Fortin (Ifsttar)
  */
 public class TestMeshAndTopoDiffraction extends TestCase{
+
+        public void testAreaConstraint() throws LayerDelaunayError {
+            double maxArea = 75;
+            GeometryFactory factory = new GeometryFactory();
+            Coordinate[] building1Coords = { new Coordinate(15., 5.,2.),
+                    new Coordinate(15., 30.,3.), new Coordinate(30., 30.,5.),
+                    new Coordinate(30., 5.,2.), new Coordinate(15., 5.,2.) };
+            Coordinate[] building2Coords = { new Coordinate(40., 5.,2.),
+                    new Coordinate(45., 5.,3.), new Coordinate(45., 45.,5.),
+                    new Coordinate(40., 45.,2.), new Coordinate(40., 5.,2.) };
+
+            Polygon building1 = factory.createPolygon(
+                    factory.createLinearRing(building1Coords), null);
+            Polygon building2 = factory.createPolygon(
+                    factory.createLinearRing(building2Coords), null);
+            MeshBuilder mesh= new MeshBuilder();
+            mesh.addGeometry(building1,4.0);
+            mesh.addGeometry(building2,5.0);
+            mesh.setMaximumArea(maxArea);
+
+            mesh.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(60., 60.,0.)));
+            FastObstructionTest fastObstructionTest= new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
+
+            List<Triangle> triangles = fastObstructionTest.getTriangles();
+            List<Coordinate> vertices = fastObstructionTest.getVertices();
+            for(Triangle triangle : triangles) {
+                com.vividsolutions.jts.geom.Triangle t = new com.vividsolutions.jts.geom.Triangle(vertices.get(triangle.getA()), vertices.get(triangle.getB()), vertices.get(triangle.getC()));
+                assertTrue(String.format("Expected %.1f m² got %.1f m²",maxArea, t.area()) , t.area() <= maxArea);
+            }
+        }
+
     
         public void testMergeBuildingAndTopoPoints() throws LayerDelaunayError{
             
