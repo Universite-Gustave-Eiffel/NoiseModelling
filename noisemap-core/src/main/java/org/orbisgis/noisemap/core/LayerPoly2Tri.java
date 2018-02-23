@@ -46,6 +46,7 @@ import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Polygon;
+import com.vividsolutions.jts.index.strtree.*;
 import org.poly2tri.Poly2Tri;
 import org.poly2tri.geometry.polygon.PolygonPoint;
 import org.poly2tri.triangulation.Triangulatable;
@@ -197,17 +198,46 @@ public class LayerPoly2Tri implements LayerDelaunay {
     List<TriangulationPoint> meshPoints = new ArrayList<>(Arrays.asList(ptsArray));
     ConstrainedPointSet convertedInput = new ConstrainedPointSet(meshPoints, index);
 
+
+    STRtree buildingsRtree = null;
+    if(maxArea > 0) {
+      buildingsRtree = new STRtree(buildingWithID.size());
+      for (Map.Entry<Integer, BuildingWithID> buildingWithIDEntry : buildingWithID.entrySet()) {
+        buildingsRtree.insert(buildingWithIDEntry.getValue().building.getEnvelopeInternal(), buildingWithIDEntry.getKey());
+      }
+    }
+
     boolean refine;
     do {
+      // Triangulate
       Poly2Tri.triangulate(TriangulationAlgorithm.DTSweep, convertedInput);
       refine = false;
-      if(maxArea > 0) {
+
+      // Will triangulate multiple time if refinement is necessary
+      if(buildingsRtree != null && maxArea > 0) {
         List<DelaunayTriangle> trianglesDelaunay = convertedInput.getTriangles();
         for (DelaunayTriangle triangle : trianglesDelaunay) {
           if(triangle.area() > maxArea) {
             // Insert steiner point in centroid
-            meshPoints.add(triangle.centroid());
-            refine = true;
+            TPoint centroid = triangle.centroid();
+            // Do not add steiner points into buildings
+            Envelope searchEnvelope = new Envelope(TPointToCoordinate(centroid));
+            searchEnvelope.expandBy(1.);
+            List polyInters = buildingsRtree.query(searchEnvelope);
+            boolean inBuilding = false;
+            for (Object id : polyInters) {
+              if (id instanceof Integer) {
+                BuildingWithID inPoly = buildingWithID.get(id);
+                if (inPoly.building.contains(FACTORY.createPoint(TPointToCoordinate(centroid)))) {
+                    inBuilding = true;
+                    break;
+                }
+              }
+            }
+            if(!inBuilding) {
+              meshPoints.add(centroid);
+              refine = true;
+            }
           }
         }
         if(refine) {

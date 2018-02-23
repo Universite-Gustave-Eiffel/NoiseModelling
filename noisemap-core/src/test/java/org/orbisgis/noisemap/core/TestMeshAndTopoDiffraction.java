@@ -80,7 +80,7 @@ public class TestMeshAndTopoDiffraction extends TestCase{
             List<Coordinate> vertices = fastObstructionTest.getVertices();
             for(Triangle triangle : triangles) {
                 com.vividsolutions.jts.geom.Triangle t = new com.vividsolutions.jts.geom.Triangle(vertices.get(triangle.getA()), vertices.get(triangle.getB()), vertices.get(triangle.getC()));
-                assertTrue(String.format("Expected %.1f m² got %.1f m²",maxArea, t.area()) , t.area() <= maxArea);
+                assertTrue(String.format("Expected %.1f m² got %.1f m²",maxArea, t.area()) , t.area() <= maxArea || triangle.getAttribute() >= 1);
             }
         }
 
