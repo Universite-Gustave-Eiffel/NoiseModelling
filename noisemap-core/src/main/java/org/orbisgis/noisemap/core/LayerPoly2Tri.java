@@ -232,7 +232,37 @@ public class LayerPoly2Tri implements LayerDelaunay {
       }
   }
 
+  private static class SetZFilter implements CoordinateSequenceFilter {
+    private boolean done = false;
 
+    @Override
+    public void filter(CoordinateSequence seq, int i) {
+      double x = seq.getX(i);
+      double y = seq.getY(i);
+      double z = seq.getOrdinate(i, 2);
+      seq.setOrdinate(i, 0, x);
+      seq.setOrdinate(i, 1, y);
+      if(Double.isNaN(z)){
+        seq.setOrdinate(i, 2, 0);
+      }
+      else{
+        seq.setOrdinate(i, 2, z);
+      }
+      if (i == seq.size()) {
+        done = true;
+      }
+    }
+
+    @Override
+    public boolean isDone() {
+      return done;
+    }
+
+    @Override
+    public boolean isGeometryChanged() {
+      return true;
+    }
+  }
   /**
    * Add height of building
    *
@@ -242,8 +272,8 @@ public class LayerPoly2Tri implements LayerDelaunay {
   public void addPolygon(Polygon newPoly, int buildingId) throws LayerDelaunayError {
 
     //// To avoid errors we set the Z coordinate to 0.
-    //SetZFilter zFilter = new SetZFilter();
-    //newPoly.apply(zFilter);
+    SetZFilter zFilter = new SetZFilter();
+    newPoly.apply(zFilter);
     GeometryFactory factory = new GeometryFactory();
     final Coordinate[] coordinates = newPoly.getExteriorRing().getCoordinates();
     if (coordinates.length > 1) {
