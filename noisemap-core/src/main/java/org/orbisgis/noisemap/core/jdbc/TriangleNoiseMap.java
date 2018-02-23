@@ -27,7 +27,6 @@ import org.orbisgis.noisemap.core.PropagationResultTriRecord;
 import org.orbisgis.noisemap.core.QueryGeometryStructure;
 import org.orbisgis.noisemap.core.QueryQuadTree;
 import org.orbisgis.noisemap.core.Triangle;
-import org.orbisgis.noisemap.core.TriangleConstraint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -210,7 +209,6 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         cellMesh.setComputeNeighbors(false);
         if (maximumArea > 1) {
             cellMesh.setMaximumArea(maximumArea);
-            cellMesh.setInsertionEvaluator(new TriangleConstraint(maximumArea));
             Geometry densifiedEnvelope = Densifier.densify(new GeometryFactory().toGeometry(cellEnvelope), triangleSide);
             cellMesh.finishPolygonFeeding(densifiedEnvelope);
         } else {
@@ -300,7 +298,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         }
         List<Triangle> triangles = new ArrayList<>();
         for(Triangle triangle : cellMesh.getTriangles()) {
-            if(triangle.getBuidlingID() == 0) {
+            if(triangle.getAttribute() == 0) {
                 triangles.add(triangle);
             }
         }

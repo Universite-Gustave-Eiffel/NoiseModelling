@@ -58,26 +58,14 @@ public interface LayerDelaunay {
 	void hintInit(Envelope boundingBox, long polygonCount, long verticesCount)
 			throws LayerDelaunayError;
 
-	/**
-	 * Append a polygon into the triangulation
-	 * 
-	 * @param[in] newPoly Polygon to append into the mesh, internal rings will
-	 *            be inserted as holes.
-	 * @param[in] isEmpty This polygon is a hole. If yes, only the external ring
-	 *            is used.
-	 */
-	void addPolygon(Polygon newPoly, boolean isEmpty) throws LayerDelaunayError;
-
     /**
      * Append a polygon into the triangulation
      *
      * @param[in] newPoly Polygon to append into the mesh, internal rings will
      *            be inserted as holes.
-     * @param[in] isEmpty This polygon is a hole. If yes, only the external ring
-     *            is used.
-     * @param[in] attribute Polygon attribute. {@link Triangle#getBuidlingID()}
+     * @param[in] attribute Polygon attribute. {@link Triangle#getAttribute()}
      */
-    void addPolygon(Polygon newPoly, boolean isEmpty,int attribute) throws LayerDelaunayError;
+    void addPolygon(Polygon newPoly,int attribute) throws LayerDelaunayError;
 
 	/**
 	 * Append a vertex into the triangulation
@@ -91,8 +79,9 @@ public interface LayerDelaunay {
 	 * 
 	 * @param[in] a Coordinate of the segment start
 	 * @param[in] b Coordinate of the segment end
+	 * @param attribute Associated attribute that will be available on points
 	 */
-	void addLineString(LineString line) throws LayerDelaunayError;
+	void addLineString(LineString line, int attribute) throws LayerDelaunayError;
 
 	/**
 	 * Set the minimum angle, if you wish to enforce the quality of the delaunay
