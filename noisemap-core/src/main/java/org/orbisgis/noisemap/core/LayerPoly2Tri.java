@@ -38,13 +38,16 @@
 package org.orbisgis.noisemap.core;
 
 import com.vividsolutions.jts.algorithm.CGAlgorithms;
-import com.vividsolutions.jts.algorithm.ConvexHull;
-import com.vividsolutions.jts.geom.*;
-
-import com.vividsolutions.jts.io.WKTWriter;
+import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.CoordinateFilter;
+import com.vividsolutions.jts.geom.CoordinateSequence;
+import com.vividsolutions.jts.geom.CoordinateSequenceFilter;
+import com.vividsolutions.jts.geom.Envelope;
+import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.LineString;
+import com.vividsolutions.jts.geom.Polygon;
 import org.poly2tri.Poly2Tri;
 import org.poly2tri.geometry.polygon.PolygonPoint;
-import org.poly2tri.geometry.primitives.Edge;
 import org.poly2tri.triangulation.Triangulatable;
 import org.poly2tri.triangulation.TriangulationAlgorithm;
 import org.poly2tri.triangulation.TriangulationPoint;
@@ -56,13 +59,19 @@ import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class LayerPoly2Tri implements LayerDelaunay {
   // Precision
   private MathContext mathContext = MathContext.DECIMAL64;
   private static final Logger LOGGER = LoggerFactory.getLogger(LayerPoly2Tri.class);
+
   private double r(double v) {
     return new BigDecimal(v).round(mathContext).doubleValue();
   }
@@ -74,12 +83,13 @@ public class LayerPoly2Tri implements LayerDelaunay {
   private LineStringHandler lineStringHandler = new LineStringHandler(this, pts, pointsCount, segments);
   private List<Coordinate> vertices = new ArrayList<Coordinate>();
   private HashMap<Integer, BuildingWithID> buildingWithID = new HashMap<Integer, BuildingWithID>();
-  private boolean debugMode = false; //output primitives in a text file
+
   private boolean computeNeighbors = false;
   private List<Triangle> triangles = new ArrayList<Triangle>();
   private List<Triangle> neighbors = new ArrayList<Triangle>(); // The first neighbor triangle is opposite the first corner of triangle  i
   private HashMap<Integer, LinkedList<Integer>> hashOfArrayIndex = new HashMap<Integer, LinkedList<Integer>>();
-  //triangletest is for JDeLaunayTriangleDirectionChange to test triangle direction
+  private double maxArea = 0;
+
   private static GeometryFactory FACTORY = new GeometryFactory();
 
   private static Coordinate TPointToCoordinate(TriangulationPoint tPoint) {
@@ -151,8 +161,8 @@ public class LayerPoly2Tri implements LayerDelaunay {
   }
 
   private static int getPointAttribute(TriangulationPoint p) {
-    if(p instanceof PointWithAttribute) {
-      return ((PointWithAttribute)p).getAttribute();
+    if (p instanceof PointWithAttribute) {
+      return ((PointWithAttribute) p).getAttribute();
     } else {
       return -1;
     }
@@ -175,7 +185,7 @@ public class LayerPoly2Tri implements LayerDelaunay {
   public void processDelaunay() throws LayerDelaunayError {
     // Create input data for Poly2Tri
     int[] index = new int[segments.size()];
-    for(int i = 0; i < index.length; i++) {
+    for (int i = 0; i < index.length; i++) {
       index[i] = segments.get(i);
     }
     // Construct final points array by reversing key,value of hash map
@@ -184,64 +194,81 @@ public class LayerPoly2Tri implements LayerDelaunay {
       ptsArray[entry.getValue()] = entry.getKey();
     }
     pts.clear();
-    Triangulatable convertedInput = new ConstrainedPointSet(Arrays.asList(ptsArray), index);
-    Poly2Tri.triangulate(TriangulationAlgorithm.DTSweep, convertedInput);
+    List<TriangulationPoint> meshPoints = new ArrayList<>(Arrays.asList(ptsArray));
+    ConstrainedPointSet convertedInput = new ConstrainedPointSet(meshPoints, index);
 
-
-      List<DelaunayTriangle> trianglesDelaunay = convertedInput.getTriangles();
-      List<Integer> triangleAttribute = Arrays.asList(new Integer[trianglesDelaunay.size()]);
-      // Create an index of triangles instance for fast neighbors search
-      Map<DelaunayTriangle, Integer> triangleSearch = new HashMap<>(trianglesDelaunay.size());
-      int triangleIndex = 0;
-      if(computeNeighbors) {
+    boolean refine;
+    do {
+      Poly2Tri.triangulate(TriangulationAlgorithm.DTSweep, convertedInput);
+      refine = false;
+      if(maxArea > 0) {
+        List<DelaunayTriangle> trianglesDelaunay = convertedInput.getTriangles();
         for (DelaunayTriangle triangle : trianglesDelaunay) {
-          triangleSearch.put(triangle, triangleIndex);
-          triangleIndex++;
+          if(triangle.area() > maxArea) {
+            // Insert steiner point in centroid
+            meshPoints.add(triangle.centroid());
+            refine = true;
+          }
+        }
+        if(refine) {
+          convertedInput = new ConstrainedPointSet(meshPoints, index);
         }
       }
+    } while (refine);
 
-      //Build ArrayList for binary search
-      //test add height
-      int triangleId = 0;
+
+    List<DelaunayTriangle> trianglesDelaunay = convertedInput.getTriangles();
+    List<Integer> triangleAttribute = Arrays.asList(new Integer[trianglesDelaunay.size()]);
+    // Create an index of triangles instance for fast neighbors search
+    Map<DelaunayTriangle, Integer> triangleSearch = new HashMap<>(trianglesDelaunay.size());
+    int triangleIndex = 0;
+    if (computeNeighbors) {
       for (DelaunayTriangle triangle : trianglesDelaunay) {
-        Coordinate[] ring = new Coordinate[]{TPointToCoordinate(triangle.points[0]), TPointToCoordinate(triangle.points[1]), TPointToCoordinate(triangle.points[2]), TPointToCoordinate(triangle.points[0])};
-        //if one of three vertices have buildingID and buildingID>=1
-        if (getPointAttribute(triangle.points[0]) >= 1 || getPointAttribute(triangle.points[1]) >= 1 || getPointAttribute(triangle.points[2]) >= 1) {
-          int propertyBulidingID = 0;
-          for (int i = 0; i <= 2; i++) {
-            int potentialBuildingID = getPointAttribute(triangle.points[i]);
-            if (potentialBuildingID >= 1) {
-              //get the Barycenter of the triangle so we can sure this point is in this triangle and we will check if the building contain this point
-              if (this.buildingWithID.get(potentialBuildingID).isTriangleInBuilding(triangle.centroid())) {
-                propertyBulidingID = potentialBuildingID;
-                break;
-              }
+        triangleSearch.put(triangle, triangleIndex);
+        triangleIndex++;
+      }
+    }
+
+    //Build ArrayList for binary search
+    //test add height
+    int triangleId = 0;
+    for (DelaunayTriangle triangle : trianglesDelaunay) {
+      Coordinate[] ring = new Coordinate[]{TPointToCoordinate(triangle.points[0]), TPointToCoordinate(triangle.points[1]), TPointToCoordinate(triangle.points[2]), TPointToCoordinate(triangle.points[0])};
+      //if one of three vertices have buildingID and buildingID>=1
+      if (getPointAttribute(triangle.points[0]) >= 1 || getPointAttribute(triangle.points[1]) >= 1 || getPointAttribute(triangle.points[2]) >= 1) {
+        int propertyBulidingID = 0;
+        for (int i = 0; i <= 2; i++) {
+          int potentialBuildingID = getPointAttribute(triangle.points[i]);
+          if (potentialBuildingID >= 1) {
+            //get the Barycenter of the triangle so we can sure this point is in this triangle and we will check if the building contain this point
+            if (this.buildingWithID.get(potentialBuildingID).isTriangleInBuilding(triangle.centroid())) {
+              propertyBulidingID = potentialBuildingID;
+              break;
             }
           }
-          triangleAttribute.set(triangleId, propertyBulidingID);
-        } else {
-          //if there are less than 3 points have buildingID this triangle is out of building
-          triangleAttribute.set(triangleId, 0);
         }
-
-        if (!CGAlgorithms.isCCW(ring)) {
-          Coordinate tmp = new Coordinate(ring[0]);
-          ring[0] = ring[2];
-          ring[2] = tmp;
-        }
-
-        int a = getOrAppendVertices(ring[0], vertices, hashOfArrayIndex);
-        int b = getOrAppendVertices(ring[1], vertices, hashOfArrayIndex);
-        int c = getOrAppendVertices(ring[2], vertices, hashOfArrayIndex);
-        triangles.add(new Triangle(a, b, c, triangleAttribute.get(triangleId)));
-        if(computeNeighbors) {
-          // Compute neighbors index
-          neighbors.add(new Triangle(getTriangleIndex(triangleSearch,triangle.neighborAcross(triangle.points[0])),
-                  getTriangleIndex(triangleSearch,triangle.neighborAcross(triangle.points[1])),
-                  getTriangleIndex(triangleSearch,triangle.neighborAcross(triangle.points[2]))));
-        }
-        triangleId++;
+        triangleAttribute.set(triangleId, propertyBulidingID);
+      } else {
+        //if there are less than 3 points have buildingID this triangle is out of building
+        triangleAttribute.set(triangleId, 0);
       }
+
+      if (!CGAlgorithms.isCCW(ring)) {
+        Coordinate tmp = new Coordinate(ring[0]);
+        ring[0] = ring[2];
+        ring[2] = tmp;
+      }
+
+      int a = getOrAppendVertices(ring[0], vertices, hashOfArrayIndex);
+      int b = getOrAppendVertices(ring[1], vertices, hashOfArrayIndex);
+      int c = getOrAppendVertices(ring[2], vertices, hashOfArrayIndex);
+      triangles.add(new Triangle(a, b, c, triangleAttribute.get(triangleId)));
+      if (computeNeighbors) {
+        // Compute neighbors index
+        neighbors.add(new Triangle(getTriangleIndex(triangleSearch, triangle.neighborAcross(triangle.points[0])), getTriangleIndex(triangleSearch, triangle.neighborAcross(triangle.points[1])), getTriangleIndex(triangleSearch, triangle.neighborAcross(triangle.points[2]))));
+      }
+      triangleId++;
+    }
   }
 
   private static class SetZFilter implements CoordinateSequenceFilter {
@@ -254,10 +281,9 @@ public class LayerPoly2Tri implements LayerDelaunay {
       double z = seq.getOrdinate(i, 2);
       seq.setOrdinate(i, 0, x);
       seq.setOrdinate(i, 1, y);
-      if(Double.isNaN(z)){
+      if (Double.isNaN(z)) {
         seq.setOrdinate(i, 2, 0);
-      }
-      else{
+      } else {
         seq.setOrdinate(i, 2, z);
       }
       if (i == seq.size()) {
@@ -275,6 +301,7 @@ public class LayerPoly2Tri implements LayerDelaunay {
       return true;
     }
   }
+
   /**
    * Add height of building
    *
@@ -339,7 +366,7 @@ public class LayerPoly2Tri implements LayerDelaunay {
 
   @Override
   public void setMaxArea(Double maxArea) throws LayerDelaunayError {
-
+      this.maxArea = Math.max(0, maxArea);
   }
 
   //add buildingID to edge property and to points property
@@ -372,8 +399,6 @@ public class LayerPoly2Tri implements LayerDelaunay {
   }
 
 
-
-
   private static class PointHandler implements CoordinateFilter {
     private LayerPoly2Tri delaunayData;
     private Map<TriangulationPoint, Integer> pts;
@@ -388,7 +413,7 @@ public class LayerPoly2Tri implements LayerDelaunay {
     public Coordinate[] getPoints() {
       Coordinate[] ret = new Coordinate[pts.size()];
       int i = 0;
-      for(TriangulationPoint pt : pts.keySet()) {
+      for (TriangulationPoint pt : pts.keySet()) {
         ret[i] = TPointToCoordinate(pt);
         i++;
       }
