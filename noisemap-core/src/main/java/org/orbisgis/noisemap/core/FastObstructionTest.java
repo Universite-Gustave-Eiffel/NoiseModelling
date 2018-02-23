@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Stack;
 
 import com.vividsolutions.jts.algorithm.Angle;
+import com.vividsolutions.jts.io.WKTWriter;
 import com.vividsolutions.jts.math.Vector2D;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
@@ -930,5 +931,38 @@ public class FastObstructionTest {
         public int getBuildingId() {
             return buildingId;
         }
+    }
+
+
+    /**
+     * Convert triangle mesh to sql instructions for debug purposes
+     * @return
+     */
+    public String dumpMesh() {
+        StringBuilder sb = new StringBuilder();
+        // Dump Triangles
+        sb.append("DROP TABLE IF EXISTS TRIANGLES, TRI_NEIGHBOURS;\n");
+        sb.append("CREATE TABLE TRIANGLES(id serial, the_geom POLYGON);\n");
+        sb.append("CREATE TABLE TRI_NEIGHBOURS(id serial, the_geom LINESTRING);\n");
+        GeometryFactory gf = new GeometryFactory();
+        WKTWriter wktWriter = new WKTWriter(3);
+        int idTriangle = 0;
+        for( Triangle t : triVertices) {
+            Coordinate[] line = new Coordinate[] {vertices.get(t.getA()), vertices.get(t.getB()), vertices.get(t.getC()), vertices.get(t.getA())};
+            sb.append(String.format("INSERT INTO TRIANGLES(THE_GEOM) VALUES ('%s');\n", gf.createPolygon(line)));
+            Coordinate from = new com.vividsolutions.jts.geom.Triangle(vertices.get(t.getA()), vertices.get(t.getB()), vertices.get(t.getC())).centroid();
+            // Dump neighbours links
+            Triangle neigh = triNeighbors.get(idTriangle);
+            for(int n = 0; n < 3; n++) {
+                int vIndex = neigh.get(n);
+                if(vIndex >= 0) {
+                    Triangle tn = triVertices.get(vIndex);
+                    Coordinate to = new com.vividsolutions.jts.geom.Triangle(vertices.get(tn.getA()), vertices.get(tn.getB()), vertices.get(tn.getC())).centroid();
+                    sb.append(String.format("INSERT INTO TRI_NEIGHBOURS(THE_GEOM) VALUES ('%s');\n", gf.createLineString(new Coordinate[]{from, to})));
+                }
+            }
+            idTriangle++;
+        }
+        return sb.toString();
     }
 }

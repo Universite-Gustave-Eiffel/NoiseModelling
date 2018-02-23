@@ -160,7 +160,13 @@ public class LayerPoly2Tri implements LayerDelaunay {
 
   @Override
   public void processDelaunay() throws LayerDelaunayError {
-
+    // Add convex hull of points as a segment constraint
+    ConvexHull convexHull = new ConvexHull(pointHandler.getPoints(), FACTORY);
+    Geometry hull = convexHull.getConvexHull();
+    if(!(hull instanceof Polygon)){
+      throw new LayerDelaunayError("Not enough points");
+    }
+    addLineString(((Polygon) hull).getExteriorRing(), -1);
     // Create input data for Poly2Tri
     int[] index = new int[segments.size()];
     for(int i = 0; i < index.length; i++) {
@@ -335,6 +341,16 @@ public class LayerPoly2Tri implements LayerDelaunay {
       this.delaunayData = delaunayData;
       this.pts = pts;
       this.maxIndex = maxIndex;
+    }
+
+    public Coordinate[] getPoints() {
+      Coordinate[] ret = new Coordinate[pts.size()];
+      int i = 0;
+      for(TriangulationPoint pt : pts.keySet()) {
+        ret[i] = TPointToCoordinate(pt);
+        i++;
+      }
+      return ret;
     }
 
     protected int addPt(Coordinate coordinate, int attribute) {
