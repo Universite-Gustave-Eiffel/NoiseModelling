@@ -63,22 +63,24 @@ public class PropagationProcessOut_Att_f {
     private long nb_reflexion_path = 0;
     private long nb_diffraction_path = 0;
     private long cellComputed = 0;
-    ArrayList<PropagationProcessOut_Att_f.verticeSL> VerticeSoundLevel = new ArrayList<>();
-
+    List<PropagationProcessOut_Att_f.verticeSL> VerticeSoundLevel = new ArrayList<>();
 
     public List<verticeSL> getVerticesSoundLevel() {
         return VerticeSoundLevel;
     }
 
+    public void setVerticeSoundLevel(List<verticeSL> verticeSoundLevel) {
+        VerticeSoundLevel = verticeSoundLevel;
+    }
 
-    //public void setVerticesSoundLevel(setVerticeSoundLevel) {
+//public void setVerticesSoundLevel(setVerticeSoundLevel) {
     //	ArrayList<verticeSoundLevel> setVerticeSoundLevel = new ArrayList<>();
     //}
 
-    public void setVerticeSoundLevel(int receiverId, int sourceId, double[] value) {
-        VerticeSoundLevel.add(new verticeSL(receiverId, sourceId, value));
-
-    }
+//    public void setVerticeSoundLevel(int receiverId, int sourceId, double[] value) {
+//        VerticeSoundLevel.add(new verticeSL(receiverId, sourceId, value));
+//
+//    }
 
 
     public synchronized long getNb_couple_receiver_src() {

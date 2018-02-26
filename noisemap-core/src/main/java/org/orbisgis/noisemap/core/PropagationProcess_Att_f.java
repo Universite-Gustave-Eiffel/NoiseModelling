@@ -1038,7 +1038,7 @@ public class PropagationProcess_Att_f implements Runnable {
                 double wAttDistSource = attDistW(allsourcefreqlvl, CGAlgorithms3D.distance(srcCoord, receiverCoord));
                 srcEnergeticSum += wAttDistSource;
 
-                if (Math.abs(wToDba(wAttDistSource + allreceiverfreqlvl) - wToDba(allreceiverfreqlvl)) > DBA_FORGET_SOURCE) {
+               // if (Math.abs(wToDba(wAttDistSource + allreceiverfreqlvl) - wToDba(allreceiverfreqlvl)) > DBA_FORGET_SOURCE) {
                     sourceCount++;
                     Envelope query = new Envelope(receiverCoord, srcCoord);
                     query.expandBy(Math.min(data.maxRefDist, srcCoord.distance(receiverCoord)));
@@ -1049,7 +1049,7 @@ public class PropagationProcess_Att_f implements Runnable {
                             (List<Wall>) queryResult, debugInfo);
                     energeticId.add(new energeticSource(src, subtraction2array(energeticSum, energeticSum_before_sound_source)));
 
-                }
+              //  }
 
 
             }
@@ -1224,6 +1224,7 @@ public class PropagationProcess_Att_f implements Runnable {
         @Override
         public void run() {
 
+            List<PropagationProcessOut_Att_f.verticeSL> VerticeSoundLevel = new ArrayList<>();
 
             for (int idReceiver = startReceiver; idReceiver < endReceiver; idReceiver++) {
                 Coordinate receiverCoord = propagationProcess.data.receivers.get(idReceiver);
@@ -1266,16 +1267,20 @@ public class PropagationProcess_Att_f implements Runnable {
                         allfreqs[7] = Math.max(-100,wToDba(allfreqs[7])-wToDba(reference));
                         allfreqs[8] = Math.max(-100,wToDba(allfreqs[8])-wToDba(reference));
 
-                        propagationProcess.dataOut.setVerticeSoundLevel(idReceiver, source.sourceId, allfreqs);
+
+
 
                         allfreqs = new double[9];
                     }
+                    VerticeSoundLevel.add(new PropagationProcessOut_Att_f.verticeSL(idReceiver, source.sourceId, allfreqs));
                     s_Id_t0 = source.sourceId;
 
                 }
                 progressVisitor.endStep();
 
             }
+
+            propagationProcess.dataOut.setVerticeSoundLevel(VerticeSoundLevel);
         }
     }
 }
