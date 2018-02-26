@@ -1267,20 +1267,15 @@ public class PropagationProcess_Att_f implements Runnable {
                         allfreqs[7] = Math.max(-100,wToDba(allfreqs[7])-wToDba(reference));
                         allfreqs[8] = Math.max(-100,wToDba(allfreqs[8])-wToDba(reference));
 
-
-
+                        propagationProcess.dataOut.addVerticeSoundLevel(idReceiver, source.sourceId, allfreqs);
 
                         allfreqs = new double[9];
                     }
-                    VerticeSoundLevel.add(new PropagationProcessOut_Att_f.verticeSL(idReceiver, source.sourceId, allfreqs));
                     s_Id_t0 = source.sourceId;
 
                 }
                 progressVisitor.endStep();
-
             }
-
-            propagationProcess.dataOut.setVerticeSoundLevel(VerticeSoundLevel);
         }
     }
 }

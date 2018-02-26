@@ -33,7 +33,10 @@
  */
 package org.orbisgis.noisemap.core;
 
+import org.apache.commons.collections.list.SynchronizedList;
+
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -63,24 +66,16 @@ public class PropagationProcessOut_Att_f {
     private long nb_reflexion_path = 0;
     private long nb_diffraction_path = 0;
     private long cellComputed = 0;
-    List<PropagationProcessOut_Att_f.verticeSL> VerticeSoundLevel = new ArrayList<>();
+    private List<PropagationProcessOut_Att_f.verticeSL> verticeSoundLevel =
+            Collections.synchronizedList(new ArrayList<PropagationProcessOut_Att_f.verticeSL>());
 
     public List<verticeSL> getVerticesSoundLevel() {
-        return VerticeSoundLevel;
+        return verticeSoundLevel;
     }
 
-    public void setVerticeSoundLevel(List<verticeSL> verticeSoundLevel) {
-        VerticeSoundLevel = verticeSoundLevel;
+    public void addVerticeSoundLevel(int receiverId, int sourceId, double[] value) {
+        verticeSoundLevel.add(new verticeSL(receiverId, sourceId, value));
     }
-
-//public void setVerticesSoundLevel(setVerticeSoundLevel) {
-    //	ArrayList<verticeSoundLevel> setVerticeSoundLevel = new ArrayList<>();
-    //}
-
-//    public void setVerticeSoundLevel(int receiverId, int sourceId, double[] value) {
-//        VerticeSoundLevel.add(new verticeSL(receiverId, sourceId, value));
-//
-//    }
 
 
     public synchronized long getNb_couple_receiver_src() {
