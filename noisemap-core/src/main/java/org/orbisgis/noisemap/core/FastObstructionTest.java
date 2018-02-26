@@ -34,7 +34,6 @@
 package org.orbisgis.noisemap.core;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -42,12 +41,12 @@ import java.util.List;
 import java.util.Stack;
 
 import com.vividsolutions.jts.algorithm.Angle;
+import com.vividsolutions.jts.io.WKTWriter;
 import com.vividsolutions.jts.math.Vector2D;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineSegment;
-import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Polygon;
 import com.vividsolutions.jts.triangulate.quadedge.Vertex;
 
@@ -228,12 +227,12 @@ public class FastObstructionTest {
             //get this point Z using propagation line
             zPropagationRayIntersection = calculateLinearInterpolation(propagationLine.p0, propagationLine.p1, intersection);
             // Manage blocking buildings
-            int neightBuildingId = this.triVertices.get(triNeighbors.get(nearestIntersectionSide)).getBuidlingID();
+            int neightBuildingId = this.triVertices.get(triNeighbors.get(nearestIntersectionSide)).getAttribute();
             int rayBuildingId = 0;
             // Current tri is in building
-            if(tri.getBuidlingID() != 0) {
-                rayBuildingId = tri.getBuidlingID();
-                MeshBuilder.PolygonWithHeight building = polygonWithHeight.get(tri.getBuidlingID() - 1);
+            if(tri.getAttribute() != 0) {
+                rayBuildingId = tri.getAttribute();
+                MeshBuilder.PolygonWithHeight building = polygonWithHeight.get(tri.getAttribute() - 1);
                 // Stop propagation if ray collide with the building
                 if(!building.hasHeight() || Double.isNaN(zPropagationRayIntersection) || zPropagationRayIntersection < building.getHeight()) {
                     return new TriIdWithIntersection(triNeighbors.get(nearestIntersectionSide),
@@ -421,7 +420,7 @@ public class FastObstructionTest {
 
 
             for (Triangle tri : this.triVertices) {
-                if (tri.getBuidlingID() < 1) {
+                if (tri.getAttribute() < 1) {
                     // Compute angle at each corner, then add to vertices angle
                     // array
                     Coordinate triA = vertices.get(tri.getA());
@@ -519,8 +518,8 @@ public class FastObstructionTest {
                         .getSegment(sideId);
                 int wallBuildingId = 0;
                 if(neighbors.get(sideId) != -1
-                        && tri.getBuidlingID() == 0) {
-                    wallBuildingId = triVertices.get(neighbors.get(sideId)).getBuidlingID();
+                        && tri.getAttribute() == 0) {
+                    wallBuildingId = triVertices.get(neighbors.get(sideId)).getAttribute();
                 }
                 Wall wall = new Wall(
                         this.vertices.get(segVerticesIndex.getA()),
@@ -611,15 +610,15 @@ public class FastObstructionTest {
         Coordinate[] triP2 = getTriangle(curTriP2);
         Triangle buildingP1 = this.triVertices.get(curTriP1);
         Triangle buildingP2 = this.triVertices.get(curTriP2);
-        if (buildingP1.getBuidlingID() >= 1) {
-            MeshBuilder.PolygonWithHeight building = polygonWithHeight.get(buildingP1.getBuidlingID() - 1);
+        if (buildingP1.getAttribute() >= 1) {
+            MeshBuilder.PolygonWithHeight building = polygonWithHeight.get(buildingP1.getAttribute() - 1);
             if(!building.hasHeight() || Double.isNaN(p1.z) || building.getHeight() >= p1.z) {
                 //receiver is in the building so this propagation line is invisible
                 return false;
             }
         }
-        if (buildingP2.getBuidlingID() >= 1) {
-            MeshBuilder.PolygonWithHeight building = polygonWithHeight.get(buildingP2.getBuidlingID() - 1);
+        if (buildingP2.getAttribute() >= 1) {
+            MeshBuilder.PolygonWithHeight building = polygonWithHeight.get(buildingP2.getAttribute() - 1);
             if(!building.hasHeight() || Double.isNaN(p2.z) || building.getHeight() >= p2.z) {
                 //receiver is in the building so this propagation line is invisible
                 return false;
@@ -660,7 +659,7 @@ public class FastObstructionTest {
         } finally {
             if(includePoints) {
                 path.add(new TriIdWithIntersection(curTriP2, new Coordinate(p2.x, p2.y, zTopoP2), false, false,
-                        buildingP2.getBuidlingID()));
+                        buildingP2.getAttribute()));
             }
         }
     }
@@ -932,5 +931,38 @@ public class FastObstructionTest {
         public int getBuildingId() {
             return buildingId;
         }
+    }
+
+
+    /**
+     * Convert triangle mesh to sql instructions for debug purposes
+     * @return
+     */
+    public String dumpMesh() {
+        StringBuilder sb = new StringBuilder();
+        // Dump Triangles
+        sb.append("DROP TABLE IF EXISTS TRIANGLES, TRI_NEIGHBOURS;\n");
+        sb.append("CREATE TABLE TRIANGLES(id serial, the_geom POLYGON);\n");
+        sb.append("CREATE TABLE TRI_NEIGHBOURS(id serial, the_geom LINESTRING);\n");
+        GeometryFactory gf = new GeometryFactory();
+        WKTWriter wktWriter = new WKTWriter(3);
+        int idTriangle = 0;
+        for( Triangle t : triVertices) {
+            Coordinate[] line = new Coordinate[] {vertices.get(t.getA()), vertices.get(t.getB()), vertices.get(t.getC()), vertices.get(t.getA())};
+            sb.append(String.format("INSERT INTO TRIANGLES(THE_GEOM) VALUES ('%s');\n", gf.createPolygon(line)));
+            Coordinate from = new com.vividsolutions.jts.geom.Triangle(vertices.get(t.getA()), vertices.get(t.getB()), vertices.get(t.getC())).centroid();
+            // Dump neighbours links
+            Triangle neigh = triNeighbors.get(idTriangle);
+            for(int n = 0; n < 3; n++) {
+                int vIndex = neigh.get(n);
+                if(vIndex >= 0) {
+                    Triangle tn = triVertices.get(vIndex);
+                    Coordinate to = new com.vividsolutions.jts.geom.Triangle(vertices.get(tn.getA()), vertices.get(tn.getB()), vertices.get(tn.getC())).centroid();
+                    sb.append(String.format("INSERT INTO TRI_NEIGHBOURS(THE_GEOM) VALUES ('%s');\n", gf.createLineString(new Coordinate[]{from, to})));
+                }
+            }
+            idTriangle++;
+        }
+        return sb.toString();
     }
 }
