@@ -201,7 +201,8 @@ public class LayerPoly2Tri implements LayerDelaunay {
 
     STRtree buildingsRtree = null;
     if(maxArea > 0) {
-      buildingsRtree = new STRtree(buildingWithID.size());
+      // STRtree minimal size is 2
+      buildingsRtree = new STRtree(Math.max(10, buildingWithID.size()));
       for (Map.Entry<Integer, BuildingWithID> buildingWithIDEntry : buildingWithID.entrySet()) {
         buildingsRtree.insert(buildingWithIDEntry.getValue().building.getEnvelopeInternal(), buildingWithIDEntry.getKey());
       }
