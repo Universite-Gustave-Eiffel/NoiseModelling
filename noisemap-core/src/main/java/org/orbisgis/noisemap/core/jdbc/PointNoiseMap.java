@@ -24,10 +24,7 @@ import org.slf4j.LoggerFactory;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Stack;
+import java.util.*;
 
 /**
  * Compute noise propagation at specified receiver points.
@@ -53,7 +50,7 @@ public class PointNoiseMap extends JdbcNoiseMap {
      * @throws SQLException
      */
     public PropagationProcessData prepareCell(Connection connection,int cellI, int cellJ,
-                                              ProgressVisitor progression, List<Long> receiversPk) throws SQLException {
+                                              ProgressVisitor progression, List<Long> receiversPk, Set<Long> skipReceivers) throws SQLException {
         MeshBuilder mesh = new MeshBuilder();
         int ij = cellI * gridDim + cellJ;
         logger.info("Begin processing of cell " + (cellI + 1) + ","
@@ -117,12 +114,16 @@ public class PointNoiseMap extends JdbcNoiseMap {
             st.setObject(1, geometryFactory.toGeometry(cellEnvelope));
             try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
                 while (rs.next()) {
+                    if(!pkSelect.isEmpty()) {
+                        long receiverPk = rs.getLong(2);
+                        if(skipReceivers.contains(receiverPk)) {
+                            continue;
+                        }
+                        receiversPk.add(receiverPk);
+                    }
                     Geometry pt = rs.getGeometry();
                     if(pt != null) {
                         receivers.add(pt.getCoordinate());
-                    }
-                    if(!pkSelect.isEmpty()) {
-                        receiversPk.add(rs.getLong(2));
                     }
                 }
             }
@@ -150,11 +151,11 @@ public class PointNoiseMap extends JdbcNoiseMap {
      * @return
      * @throws SQLException
      */
-    public Collection<PropagationResultPtRecord> evaluateCell(Connection connection,int cellI, int cellJ,
-                                                              ProgressVisitor progression) throws SQLException {
+    public Collection<PropagationResultPtRecord> evaluateCell(Connection connection, int cellI, int cellJ,
+                                                              ProgressVisitor progression, Set<Long> skipReceivers) throws SQLException {
         PropagationProcessOut threadDataOut = new PropagationProcessOut();
         List<Long> receiversPk = new ArrayList<>();
-        PropagationProcessData threadData = prepareCell(connection, cellI, cellJ, progression, receiversPk);
+        PropagationProcessData threadData = prepareCell(connection, cellI, cellJ, progression, receiversPk, skipReceivers);
 
         PropagationProcess propaProcess = new PropagationProcess(
                 threadData, threadDataOut);

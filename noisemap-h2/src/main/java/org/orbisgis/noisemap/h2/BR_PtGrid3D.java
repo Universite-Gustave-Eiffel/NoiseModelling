@@ -50,6 +50,7 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.HashSet;
 
 /**
  * Sound propagation from punctual sound sources to punctual receivers created by a delaunay triangulation of specified
@@ -181,6 +182,7 @@ public class BR_PtGrid3D extends AbstractFunction implements ScalarFunction {
 
         @Override
         public Object[] readRow() throws SQLException {
+            HashSet<Long> processedReceivers = new HashSet<Long>();
             if(output.isEmpty()) {
                 do {
                     // Increment ids
@@ -195,13 +197,14 @@ public class BR_PtGrid3D extends AbstractFunction implements ScalarFunction {
                         }
                     }
                     // Fetch next cell
-                    output.addAll(noiseMap.evaluateCell(connection, cellI, cellJ, new ProgressLogger()));
+                    output.addAll(noiseMap.evaluateCell(connection, cellI, cellJ, new ProgressLogger(), processedReceivers));
                 } while (output.isEmpty());
             }
             // Consume cell
             PropagationResultPtRecord record = output.pop();
             Object[] row = new Object[COLUMN_COUNT];
             row[0] = record.getReceiverRecordRow();
+            processedReceivers.add(record.getReceiverRecordRow());
             row[1] = record.getReceiverLvl();
             row[2] = record.getCellId();
             return row;
