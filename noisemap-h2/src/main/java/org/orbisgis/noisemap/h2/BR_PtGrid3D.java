@@ -170,6 +170,7 @@ public class BR_PtGrid3D extends AbstractFunction implements ScalarFunction {
 
     private static class PointRowSource implements SimpleRowSource {
         private Deque<PropagationResultPtRecord> output = new ArrayDeque<PropagationResultPtRecord>();
+        HashSet<Long> processedReceivers = new HashSet<Long>();
         private int cellI = -1;
         private int cellJ = 0;
         private PointNoiseMap noiseMap;
@@ -182,7 +183,6 @@ public class BR_PtGrid3D extends AbstractFunction implements ScalarFunction {
 
         @Override
         public Object[] readRow() throws SQLException {
-            HashSet<Long> processedReceivers = new HashSet<Long>();
             if(output.isEmpty()) {
                 do {
                     // Increment ids
