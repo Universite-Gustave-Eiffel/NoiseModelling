@@ -43,14 +43,8 @@
         </dependency>
         <dependency>
             <groupId>org.orbisgis</groupId>
-            <artifactId>h2gis-functions</artifactId>
+            <artifactId>h2gis</artifactId>
             <version>${h2gis-version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.orbisgis</groupId>
-            <artifactId>h2gis-ext</artifactId>
-            <version>${h2gis-version}</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>

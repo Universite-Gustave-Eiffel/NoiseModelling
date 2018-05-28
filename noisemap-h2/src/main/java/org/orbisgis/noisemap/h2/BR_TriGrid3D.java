@@ -33,7 +33,7 @@
  */
 package org.orbisgis.noisemap.h2;
 
-import com.vividsolutions.jts.geom.Geometry;
+import org.locationtech.jts.geom.Geometry;
 import org.h2.tools.SimpleResultSet;
 import org.h2.tools.SimpleRowSource;
 import org.h2gis.utilities.TableUtilities;

@@ -33,7 +33,7 @@
  */
 package org.orbisgis.noisemap.h2;
 
-import com.vividsolutions.jts.geom.Geometry;
+import org.locationtech.jts.geom.Geometry;
 import org.h2gis.api.AbstractFunction;
 import org.h2gis.api.ScalarFunction;
 import java.sql.Connection;

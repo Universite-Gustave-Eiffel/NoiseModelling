@@ -33,7 +33,7 @@
  */
 package org.orbisgis.noisemap.core;
 
-import com.vividsolutions.jts.geom.*;
+import org.locationtech.jts.geom.*;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;

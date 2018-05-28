@@ -43,19 +43,20 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import com.vividsolutions.jts.algorithm.CGAlgorithms3D;
-import com.vividsolutions.jts.algorithm.NonRobustLineIntersector;
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.Envelope;
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.LineSegment;
-import com.vividsolutions.jts.geom.LineString;
-import com.vividsolutions.jts.geom.Point;
-import com.vividsolutions.jts.index.quadtree.Quadtree;
-import com.vividsolutions.jts.index.strtree.STRtree;
-import com.vividsolutions.jts.operation.buffer.BufferParameters;
-import com.vividsolutions.jts.triangulate.quadedge.Vertex;
+import org.locationtech.jts.algorithm.CGAlgorithms3D;
+import org.locationtech.jts.algorithm.LineIntersector;
+import org.locationtech.jts.algorithm.RobustLineIntersector;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Envelope;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.LineSegment;
+import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.index.quadtree.Quadtree;
+import org.locationtech.jts.index.strtree.STRtree;
+import org.locationtech.jts.operation.buffer.BufferParameters;
+import org.locationtech.jts.triangulate.quadedge.Vertex;
 import org.h2gis.api.ProgressVisitor;
 import org.h2gis.utilities.jts_utils.CoordinateUtils;
 import org.slf4j.Logger;
@@ -183,7 +184,7 @@ public class PropagationProcess implements Runnable {
                                  double[] energeticSum, List<PropagationDebugInfo> debugInfo) {
         // Compute receiver mirror
         LineSegment srcReceiver = new LineSegment(srcCoord, receiverCoord);
-        NonRobustLineIntersector linters = new NonRobustLineIntersector();
+        LineIntersector linters = new RobustLineIntersector();
         long imageReceiver = 0;
         MirrorReceiverIterator.It mirroredReceivers = new MirrorReceiverIterator.It(receiverCoord, nearBuildingsWalls,
                 srcReceiver, data.maxRefDist, data.reflexionOrder, data.maxSrcDist);

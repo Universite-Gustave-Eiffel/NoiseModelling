@@ -33,7 +33,7 @@
  */
 package org.orbisgis.noisemap.core;
 
-import com.vividsolutions.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Coordinate;
 /**
  * TriIdWithIntersection work for FastObstructionTest, 
  * aims to keep the interested points coordinate and check if this point in building

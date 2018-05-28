@@ -29,7 +29,7 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.vividsolutions</groupId>
+            <groupId>${jts-core-groupId}</groupId>
             <artifactId>jts-core</artifactId>
             <version>${jts-core-version}</version>
         </dependency>
@@ -50,13 +50,7 @@
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>h2gis-functions</artifactId>
-            <version>${h2gis-version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>h2gis-ext</artifactId>
+            <artifactId>h2gis</artifactId>
             <version>${h2gis-version}</version>
             <scope>test</scope>
         </dependency>
