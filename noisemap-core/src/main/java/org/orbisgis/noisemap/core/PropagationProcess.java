@@ -57,6 +57,7 @@ import com.vividsolutions.jts.index.strtree.STRtree;
 import com.vividsolutions.jts.operation.buffer.BufferParameters;
 import com.vividsolutions.jts.triangulate.quadedge.Vertex;
 import org.h2gis.api.ProgressVisitor;
+import org.h2gis.utilities.jts_utils.CoordinateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -335,6 +336,11 @@ public class PropagationProcess implements Runnable {
         return Math.min(25., diffractionAttenuation);
     }
 
+    private static List<Coordinate> removeDuplicates(List<Coordinate> coordinates) {
+        return Arrays.asList(CoordinateUtils.removeDuplicatedCoordinates(
+                coordinates.toArray(new Coordinate[coordinates.size()]), false));
+    }
+
     private double[] computeDeltaDistance(DiffractionWithSoilEffetZone diffDataWithSoilEffet) {
         final Coordinate srcCoord = diffDataWithSoilEffet.getOSZone().getCoordinate(1);
         final Coordinate receiverCoord = diffDataWithSoilEffet.getROZone().getCoordinate(0);
@@ -358,8 +364,8 @@ public class PropagationProcess implements Runnable {
         Coordinate rotatedOr = new Coordinate(rOPlaneCoordinates.get(rOPlaneCoordinates.size() - 1));
         rotatedOr.setOrdinate(1, ROZone.getCoordinate(1).z);
         // Compute mean ground plane
-        final double[] oSFuncParam = JTSUtility.getLinearRegressionPolyline(oSPlaneCoordinates);
-        final double[] rOFuncParam = JTSUtility.getLinearRegressionPolyline(rOPlaneCoordinates);
+        final double[] oSFuncParam = JTSUtility.getLinearRegressionPolyline(removeDuplicates(oSPlaneCoordinates));
+        final double[] rOFuncParam = JTSUtility.getLinearRegressionPolyline(removeDuplicates(rOPlaneCoordinates));
         // Compute source and receiver image on ground
         Coordinate rPrim = JTSUtility.makePointImage(rOFuncParam[0], rOFuncParam[1], rotatedReceiver);
         Coordinate sPrim = JTSUtility.makePointImage(oSFuncParam[0], oSFuncParam[1], rotatedSource);
@@ -403,10 +409,10 @@ public class PropagationProcess implements Runnable {
                 double[] deltaDist = computeDeltaDistance(diffDataWithSoilEffet);
                 deltaDistanceSprimO = deltaDist[0];
                 deltaDistanceORprim = deltaDist[1];
-                //test intersection with GeoSoil
+                // test intersection with GeoSoil
                 List<EnvelopeWithIndex<Integer>> resultZ0 = rTreeOfGeoSoil.query(new Envelope(ROZone.p0, ROZone.p1));
                 List<EnvelopeWithIndex<Integer>> resultZ1 = rTreeOfGeoSoil.query(new Envelope(OSZone.p0, OSZone.p1));
-                //if receiver-first intersection part has intersection(s)
+                // if receiver-first intersection part has intersection(s)
                 double totRODistance = 0.;
                 double totOSDistance = 0.;
                 if (!resultZ0.isEmpty()) {
@@ -792,7 +798,7 @@ public class PropagationProcess implements Runnable {
                     List<Coordinate> rSground = data.freeFieldFinder.getGroundProfile(inters);
                     rSground = JTSUtility.getNewCoordinateSystem(rSground);
                     // Compute mean ground plan
-                    double[] ab = JTSUtility.getLinearRegressionPolyline(rSground);
+                    double[] ab = JTSUtility.getLinearRegressionPolyline(removeDuplicates(rSground));
                     Coordinate rotatedReceiver = new Coordinate(rSground.get(0));
                     rotatedReceiver.setOrdinate(1, receiverCoord.z);
                     Coordinate rotatedSource = new Coordinate(rSground.get(rSground.size() - 1));
@@ -1071,6 +1077,7 @@ public class PropagationProcess implements Runnable {
                 int newEndReceiver = Math.min(endReceiverRange + maximumReceiverBatch, data.receivers.size());
                 RangeReceiversComputation batchThread = new RangeReceiversComputation(endReceiverRange,
                         newEndReceiver, this, propaProcessProgression, debugInfo);
+                //batchThread.run();
                 threadManager.executeBlocking(batchThread);
                 endReceiverRange = newEndReceiver;
             }

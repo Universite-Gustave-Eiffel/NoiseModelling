@@ -21,6 +21,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -70,7 +71,7 @@ public class TestPointNoiseMap {
             pointNoiseMap.setDemTable("DEM");
             pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
             List<PropagationResultPtRecord> result =
-                    new ArrayList<>(pointNoiseMap.evaluateCell(connection, 0, 0, new EmptyProgressVisitor()));
+                    new ArrayList<>(pointNoiseMap.evaluateCell(connection, 0, 0, new EmptyProgressVisitor(), new HashSet<Long>()));
             assertEquals(2, result.size());
             assertEquals(47.75, 10*Math.log10(result.get(0).getReceiverLvl()), 1e-2);
             assertEquals(0, 10*Math.log10(result.get(1).getReceiverLvl()), 1e-2);
@@ -103,7 +104,7 @@ public class TestPointNoiseMap {
             pointNoiseMap.setComputeVerticalDiffraction(false);
             pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
             List<PropagationResultPtRecord> result =
-                    new ArrayList<>(pointNoiseMap.evaluateCell(connection, 0, 0, new EmptyProgressVisitor()));
+                    new ArrayList<>(pointNoiseMap.evaluateCell(connection, 0, 0, new EmptyProgressVisitor(), new HashSet<Long>()));
             assertEquals(3, result.size());
             assertEquals(51.20, 10*Math.log10(result.get(0).getReceiverLvl()), 1e-2);
             assertEquals(0, 10*Math.log10(result.get(1).getReceiverLvl()), 1e-2);
@@ -137,7 +138,7 @@ public class TestPointNoiseMap {
             pointNoiseMap.setComputeVerticalDiffraction(false);
             pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
             List<PropagationResultPtRecord> result =
-                    new ArrayList<>(pointNoiseMap.evaluateCell(connection, 0, 0, new EmptyProgressVisitor()));
+                    new ArrayList<>(pointNoiseMap.evaluateCell(connection, 0, 0, new EmptyProgressVisitor(), new HashSet<Long>()));
             assertEquals(3, result.size());
             assertEquals(51.20, 10*Math.log10(result.get(0).getReceiverLvl()), 1e-2);
             assertEquals(0, 10*Math.log10(result.get(1).getReceiverLvl()), 1e-2);
@@ -156,7 +157,7 @@ public class TestPointNoiseMap {
             nm.setComputeVerticalDiffraction(false);
             List<PropagationDebugInfo> debugInfo = new ArrayList<>();
             nm.initialize(connection, new EmptyProgressVisitor());
-            PropagationProcessData propInput = nm.prepareCell(connection, 0, 0, new EmptyProgressVisitor(), new ArrayList<Long>());
+            PropagationProcessData propInput = nm.prepareCell(connection, 0, 0, new EmptyProgressVisitor(), new ArrayList<Long>(), new HashSet<Long>());
             PropagationProcessOut threadDataOut = new PropagationProcessOut();
             PropagationProcess propaProcess = new PropagationProcess(
                     propInput, threadDataOut);
