@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <artifactId>noisemap-parent</artifactId>
     <packaging>pom</packaging>
     <version>2.1.1-SNAPSHOT</version>
     <name>noisemap-parent</name>
-    <description>NoiseModelling is an extension of H2GIS </description>
+    <description>NoiseModelling is an extension of H2GIS</description>
     <organization>
         <name>Lab-STICC - UMR CNRS 6285</name>
         <url>http://www.labsticc.fr/</url>
@@ -18,16 +19,18 @@
         </license>
     </licenses>
     <properties>
-        <jts-core-version>1.14.0</jts-core-version>
+        <jts-core-groupId>org.orbisgis.jts</jts-core-groupId>
+        <jts-core-version>1.15.1</jts-core-version>
+        <jts-io-version>1.15.1</jts-io-version>
         <h2-version>1.4.198</h2-version>
         <h2-group>org.orbisgis</h2-group>
-        <h2gis-version>1.3.2</h2gis-version>
+        <h2gis-version>1.5.0-SNAPSHOT</h2gis-version>
     </properties>
     <modules>
         <module>noisemap-core</module>
         <module>noisemap-h2</module>
         <module>noisemap-h2-osgi</module>
-  </modules>
+    </modules>
     <scm>
         <connection>scm:git:https://github.com/Ifsttar/NoiseModelling.git</connection>
         <developerConnection>scm:git:https://github.com/Ifsttar/NoiseModelling.git</developerConnection>
@@ -73,24 +76,34 @@
         </developer>
     </developers>
     <repositories>
-            <repository>
-                    <id>osgi-maven-5.1</id>
-                    <url>http://nexus.orbisgis.org/content/repositories/osgi-maven-5.1</url>
-            </repository>
-            <repository>
-                    <id>osgi-maven-5.1-snapshot</id>
-                    <url>http://nexus.orbisgis.org/content/repositories/osgi-maven-5.1-snapshot</url>
-            </repository>
+        <repository>
+            <id>repo2.maven.org</id>
+            <name>Maven2 repository 2</name>
+            <url>http://repo2.maven.org/maven2</url>
+        </repository>
+        <repository>
+            <id>osgi-maven</id>
+            <url>http://nexus.orbisgis.org/content/repositories/osgi-maven-snapshot</url>
+        </repository>
+        <repository>
+            <id>osgi-maven-5.1</id>
+            <url>http://nexus.orbisgis.org/content/repositories/osgi-maven-5.1</url>
+        </repository>
+        <repository>
+            <id>osgi-maven-5.1-snapshot</id>
+            <url>http://nexus.orbisgis.org/content/repositories/osgi-maven-5.1-snapshot</url>
+        </repository>
     </repositories>
+
     <pluginRepositories>
-            <pluginRepository>
-                    <id>osgi-maven-5.1</id>
-                    <url>http://nexus.orbisgis.org/content/repositories/osgi-maven-5.1</url>
-            </pluginRepository>
-            <pluginRepository>
-                    <id>osgi-maven-5.1-snapshot</id>
-                    <url>http://nexus.orbisgis.org/content/repositories/osgi-maven-5.1-snapshot</url>
-            </pluginRepository>
+        <pluginRepository>
+            <id>osgi-maven-5.1</id>
+            <url>http://nexus.orbisgis.org/content/repositories/osgi-maven-5.1</url>
+        </pluginRepository>
+        <pluginRepository>
+            <id>osgi-maven-5.1-snapshot</id>
+            <url>http://nexus.orbisgis.org/content/repositories/osgi-maven-5.1-snapshot</url>
+        </pluginRepository>
     </pluginRepositories>
     <parent>
         <groupId>org.orbisgis</groupId>

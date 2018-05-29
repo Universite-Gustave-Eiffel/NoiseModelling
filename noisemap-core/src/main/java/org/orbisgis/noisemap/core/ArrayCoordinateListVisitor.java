@@ -35,10 +35,10 @@ package org.orbisgis.noisemap.core;
 
 import java.util.ArrayList;
 
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.index.ItemVisitor;
-import com.vividsolutions.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.index.ItemVisitor;
+import org.locationtech.jts.geom.Coordinate;
 
 /**
  * Used to fetch items in JTS Index for vertical diffraction corners
