@@ -33,7 +33,7 @@
  */
 package org.orbisgis.noisemap.h2;
 
-import com.vividsolutions.jts.geom.Polygon;
+import org.locationtech.jts.geom.Polygon;
 import org.h2.util.StringUtils;
 import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.functions.factory.H2GISFunctions;

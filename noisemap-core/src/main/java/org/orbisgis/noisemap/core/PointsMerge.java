@@ -34,9 +34,9 @@
 package org.orbisgis.noisemap.core;
 
 import java.util.List;
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.Envelope;
-import com.vividsolutions.jts.index.quadtree.Quadtree;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Envelope;
+import org.locationtech.jts.index.quadtree.Quadtree;
 
 /**
  * @brief Sources merging This class can merge source point by a

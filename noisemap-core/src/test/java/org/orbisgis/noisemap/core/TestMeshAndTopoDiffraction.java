@@ -34,10 +34,10 @@
  */
 package org.orbisgis.noisemap.core;
 
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.Envelope;
-import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.Polygon;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Envelope;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Polygon;
 import static junit.framework.Assert.assertFalse;
 
 import static junit.framework.Assert.assertTrue;
@@ -79,7 +79,7 @@ public class TestMeshAndTopoDiffraction extends TestCase{
             List<Triangle> triangles = fastObstructionTest.getTriangles();
             List<Coordinate> vertices = fastObstructionTest.getVertices();
             for(Triangle triangle : triangles) {
-                com.vividsolutions.jts.geom.Triangle t = new com.vividsolutions.jts.geom.Triangle(vertices.get(triangle.getA()), vertices.get(triangle.getB()), vertices.get(triangle.getC()));
+                org.locationtech.jts.geom.Triangle t = new org.locationtech.jts.geom.Triangle(vertices.get(triangle.getA()), vertices.get(triangle.getB()), vertices.get(triangle.getC()));
                 assertTrue(String.format("Expected %.1f m² got %.1f m²",maxArea, t.area()) , t.area() <= maxArea || triangle.getAttribute() >= 1);
             }
         }

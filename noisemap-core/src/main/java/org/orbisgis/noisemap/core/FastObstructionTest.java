@@ -40,15 +40,15 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Stack;
 
-import com.vividsolutions.jts.algorithm.Angle;
-import com.vividsolutions.jts.io.WKTWriter;
-import com.vividsolutions.jts.math.Vector2D;
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.Envelope;
-import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.LineSegment;
-import com.vividsolutions.jts.geom.Polygon;
-import com.vividsolutions.jts.triangulate.quadedge.Vertex;
+import org.locationtech.jts.algorithm.Angle;
+import org.locationtech.jts.io.WKTWriter;
+import org.locationtech.jts.math.Vector2D;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Envelope;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.LineSegment;
+import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.triangulate.quadedge.Vertex;
 
 /**
  * FastObstructionTest speed up the search of
@@ -565,8 +565,8 @@ public class FastObstructionTest {
         int curTri = getTriangleIdByCoordinate(p1);
         if(curTri >= 0) {
             Triangle triangle = triVertices.get(curTri);
-            com.vividsolutions.jts.geom.Triangle tri =
-                    new com.vividsolutions.jts.geom.Triangle(vertices.get(triangle.getA()),
+            org.locationtech.jts.geom.Triangle tri =
+                    new org.locationtech.jts.geom.Triangle(vertices.get(triangle.getA()),
                             vertices.get(triangle.getB()),vertices.get(triangle.getC()));
 
             return tri.interpolateZ(p1);
@@ -677,7 +677,7 @@ public class FastObstructionTest {
 
     /**
      * @param allInterPoints Path between two points
-     * {@link #computePropagationPath(com.vividsolutions.jts.geom.Coordinate, com.vividsolutions.jts.geom.Coordinate,
+     * {@link #computePropagationPath(org.locationtech.jts.geom.Coordinate, org.locationtech.jts.geom.Coordinate,
      * boolean, java.util.List, boolean)}
      * @return Ground position of provided line path.
      */
@@ -950,14 +950,14 @@ public class FastObstructionTest {
         for( Triangle t : triVertices) {
             Coordinate[] line = new Coordinate[] {vertices.get(t.getA()), vertices.get(t.getB()), vertices.get(t.getC()), vertices.get(t.getA())};
             sb.append(String.format("INSERT INTO TRIANGLES(THE_GEOM) VALUES ('%s');\n", gf.createPolygon(line)));
-            Coordinate from = new com.vividsolutions.jts.geom.Triangle(vertices.get(t.getA()), vertices.get(t.getB()), vertices.get(t.getC())).centroid();
+            Coordinate from = new org.locationtech.jts.geom.Triangle(vertices.get(t.getA()), vertices.get(t.getB()), vertices.get(t.getC())).centroid();
             // Dump neighbours links
             Triangle neigh = triNeighbors.get(idTriangle);
             for(int n = 0; n < 3; n++) {
                 int vIndex = neigh.get(n);
                 if(vIndex >= 0) {
                     Triangle tn = triVertices.get(vIndex);
-                    Coordinate to = new com.vividsolutions.jts.geom.Triangle(vertices.get(tn.getA()), vertices.get(tn.getB()), vertices.get(tn.getC())).centroid();
+                    Coordinate to = new org.locationtech.jts.geom.Triangle(vertices.get(tn.getA()), vertices.get(tn.getB()), vertices.get(tn.getC())).centroid();
                     sb.append(String.format("INSERT INTO TRI_NEIGHBOURS(THE_GEOM) VALUES ('%s');\n", gf.createLineString(new Coordinate[]{from, to})));
                 }
             }

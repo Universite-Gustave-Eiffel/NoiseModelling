@@ -33,8 +33,8 @@
  */
 package org.orbisgis.noisemap.core;
 
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.Envelope;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Envelope;
 
 /**
  * This class append an index to the envelope class

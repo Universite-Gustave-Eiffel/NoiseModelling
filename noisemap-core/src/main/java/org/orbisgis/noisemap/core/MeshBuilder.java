@@ -34,17 +34,14 @@
 package org.orbisgis.noisemap.core;
 
 
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.Envelope;
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.GeometryCollection;
-import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.LineString;
-import com.vividsolutions.jts.geom.Polygon;
-import com.vividsolutions.jts.geom.PrecisionModel;
-import com.vividsolutions.jts.index.strtree.STRtree;
-import com.vividsolutions.jts.operation.buffer.BufferParameters;
-import com.vividsolutions.jts.precision.GeometryPrecisionReducer;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Envelope;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.GeometryCollection;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.index.strtree.STRtree;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -204,9 +201,6 @@ public class MeshBuilder {
           toUnion[i] = factory.createPolygon(new Coordinate[0]);
         }
         Geometry geomCollection = factory.createGeometryCollection(toUnion);
-        PrecisionModel pm = new PrecisionModel(Math.pow(10.0, EPSILON_MESH));
-        GeometryPrecisionReducer geometryPrecisionReducer = new GeometryPrecisionReducer(pm);
-        geomCollection = geometryPrecisionReducer.reduce(geomCollection);
         geomCollection = geomCollection.union();
         List<PolygonWithHeight> mergedPolygonWithHeight = new ArrayList<>(geomCollection.getNumGeometries());
         // For each merged buildings fetch all contained buildings and take the minimal height then insert into mergedPolygonWithHeight
