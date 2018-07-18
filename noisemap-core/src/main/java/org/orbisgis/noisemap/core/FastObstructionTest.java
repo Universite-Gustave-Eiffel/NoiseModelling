@@ -39,6 +39,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Stack;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.locationtech.jts.algorithm.Angle;
 import org.locationtech.jts.io.WKTWriter;
@@ -61,7 +62,6 @@ import org.locationtech.jts.triangulate.quadedge.Vertex;
 public class FastObstructionTest {
     public static final double epsilon = 1e-7;
     public static final double wideAngleTranslationEpsilon = 0.01;
-    public static final double receiverDefaultHeight = 1.6;
     private long nbObstructionTest = 0;
     private List<Triangle> triVertices;
     private List<Coordinate> vertices;
@@ -271,6 +271,10 @@ public class FastObstructionTest {
         }
     }
 
+    private boolean dotInTri(Coordinate p, Coordinate a, Coordinate b,
+                             Coordinate c) {
+        return dotInTri(p, a, b, c, null);
+    }
     /**
      * Fast dot in triangle test
      * <p/>
@@ -283,7 +287,7 @@ public class FastObstructionTest {
      * @return True if dot is in triangle
      */
     private boolean dotInTri(Coordinate p, Coordinate a, Coordinate b,
-                             Coordinate c) {
+                             Coordinate c, AtomicReference<Double> error) {
         Vector2D v0 = new Vector2D(c.x - a.x, c.y - a.y);
         Vector2D v1 = new Vector2D(b.x - a.x, b.y - a.y);
         Vector2D v2 = new Vector2D(p.x - a.x, p.y - a.y);
@@ -299,6 +303,14 @@ public class FastObstructionTest {
         double invDenom = 1 / (dot00 * dot11 - dot01 * dot01);
         double u = (dot11 * dot02 - dot01 * dot12) * invDenom;
         double v = (dot00 * dot12 - dot01 * dot02) * invDenom;
+
+        if(error != null) {
+            double err = 0;
+            err += Math.max(0, -u);
+            err += Math.max(0, -v);
+            err += Math.max(0, (u + v) - 1);
+            error.set(err);
+        }
 
         // Check if point is in triangle
         return (u > (0. - epsilon)) && (v > (0. - epsilon))
@@ -322,14 +334,18 @@ public class FastObstructionTest {
     private int getTriangleIdByCoordinate(Coordinate pt) {
         Envelope ptEnv = new Envelope(pt);
         Iterator<Integer> res = triIndex.query(new Envelope(ptEnv));
+        double minDistance = Double.MAX_VALUE;
+        int minDistanceTriangle = -1;
         while (res.hasNext()) {
             int triId = res.next();
             Coordinate[] tri = getTriangle(triId);
-            if (dotInTri(pt, tri[0], tri[1], tri[2])) {
-                return triId;
+            AtomicReference<Double> err = new AtomicReference<>(0.);
+            if (dotInTri(pt, tri[0], tri[1], tri[2], err) && err.get() < minDistance) {
+                minDistance = err.get();
+                minDistanceTriangle = triId;
             }
         }
-        return -1;
+        return minDistanceTriangle;
     }
 
     /**

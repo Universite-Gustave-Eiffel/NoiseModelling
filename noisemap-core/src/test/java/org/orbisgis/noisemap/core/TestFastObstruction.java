@@ -46,6 +46,8 @@ import org.locationtech.jts.index.quadtree.Quadtree;
 
 import junit.framework.TestCase;
 import org.junit.Test;
+import org.locationtech.jts.io.ParseException;
+import org.locationtech.jts.io.WKTReader;
 
 public class TestFastObstruction extends TestCase {
 
@@ -275,4 +277,28 @@ public class TestFastObstruction extends TestCase {
         assertFalse(manager.isFreeField(new Coordinate(5, 20, 1), new Coordinate(40, 20, 9)));
 
     }
+	/**
+	 * Sound propagation path over a building
+	 * @throws LayerDelaunayError
+	 */
+	public void testOverBuilding2() throws LayerDelaunayError, ParseException {
+
+		WKTReader wktReader = new WKTReader();
+		Geometry building1 = wktReader.read("MULTIPOLYGON (((223245.10954126046 6757870.685251366, 223254.3576750219 6757883.725402858, 223265.81413628225 6757875.6004328905, 223256.56738751417 6757862.559298952, 223245.10954126046 6757870.685251366)))");
+		Geometry building2 = wktReader.read("MULTIPOLYGON (((223243.47480791857 6757871.842867576, 223178.29477526256 6757917.929971755, 223183.61783164035 6757925.556583197, 223248.83068443503 6757879.444709641, 223243.47480791857 6757871.842867576)))");
+
+		MeshBuilder mesh = new MeshBuilder();
+		mesh.addGeometry(building1, 14);
+		mesh.addGeometry(building2, 14);
+
+		mesh.finishPolygonFeeding(new Envelope(new Coordinate(223127.3190158577, 6757833.636902214),
+				new Coordinate(223340.4209403399, 6757947.187562704)));
+		FastObstructionTest manager=new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
+
+		// Over building
+		assertTrue(manager.isFreeField(new Coordinate(223245.77914329473, 6757881.602448081, 14.0000001), new Coordinate(223230.85137195565, 6757927.403564689, 0.050000100000000006)));
+
+
+	}
+
 }
