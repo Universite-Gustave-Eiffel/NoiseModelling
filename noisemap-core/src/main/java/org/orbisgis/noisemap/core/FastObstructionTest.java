@@ -62,6 +62,7 @@ public class FastObstructionTest {
     public static final double epsilon = 1e-7;
     public static final double wideAngleTranslationEpsilon = 0.01;
     public static final double receiverDefaultHeight = 1.6;
+    private  GeometryFactory factory;
     private long nbObstructionTest = 0;
     private List<Triangle> triVertices;
     private List<Coordinate> vertices;
@@ -96,7 +97,7 @@ public class FastObstructionTest {
                 polygonWithHeightArray.add(new MeshBuilder.PolygonWithHeight(poly.getGeometry()));
             }
         }
-        GeometryFactory factory = new GeometryFactory();
+        factory = new GeometryFactory();
         this.polygonWithHeight = polygonWithHeightArray;
         this.triVertices = triangles;
         this.triNeighbors = triNeighbors;
@@ -322,14 +323,18 @@ public class FastObstructionTest {
     private int getTriangleIdByCoordinate(Coordinate pt) {
         Envelope ptEnv = new Envelope(pt);
         Iterator<Integer> res = triIndex.query(new Envelope(ptEnv));
+        double minDistance = Double.MAX_VALUE;
+        int minDistanceTriangle = -1;
         while (res.hasNext()) {
             int triId = res.next();
             Coordinate[] tri = getTriangle(triId);
-            if (dotInTri(pt, tri[0], tri[1], tri[2])) {
-                return triId;
+            double distance = factory.createPolygon(new Coordinate[] {tri[0], tri[1], tri[2], tri[0]}).distance(factory.createPoint(pt));
+            if (dotInTri(pt, tri[0], tri[1], tri[2]) && distance < minDistance) {
+                minDistance = distance;
+                minDistanceTriangle = triId;
             }
         }
-        return -1;
+        return minDistanceTriangle;
     }
 
     /**
