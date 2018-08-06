@@ -31,6 +31,8 @@
  * or contact directly:
  * info_at_ orbisgis.org
  */
+
+// todo copy modifications from PropagationProcess (meteo, etc.)
 package org.orbisgis.noisemap.core;
 
 

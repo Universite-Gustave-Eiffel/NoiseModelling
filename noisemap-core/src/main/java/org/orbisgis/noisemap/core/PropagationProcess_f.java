@@ -60,6 +60,7 @@ import static org.orbisgis.noisemap.core.FastObstructionTest.Wall;
 /**
  * @author Nicolas Fortin
  */
+// todo copy modifications from PropagationProcess (meteo, etc.)
 public class PropagationProcess_f implements Runnable {
     private final static double BASE_LVL = 1.; // 0dB lvl
     private final static double ONETHIRD = 1. / 3.;
