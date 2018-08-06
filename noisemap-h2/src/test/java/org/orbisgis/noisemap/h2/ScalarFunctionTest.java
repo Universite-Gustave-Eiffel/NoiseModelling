@@ -60,6 +60,7 @@ public class ScalarFunctionTest {
     public static void tearUpClass() throws Exception {
         connection = H2GISDBFactory.createSpatialDataBase(ScalarFunctionTest.class.getSimpleName(), true);
         H2GISFunctions.registerFunction(connection.createStatement(), new BR_EvalSource(), "");
+        H2GISFunctions.registerFunction(connection.createStatement(), new BR_EvalSourceC(), "");
         H2GISFunctions.registerFunction(connection.createStatement(), new BR_SpectrumRepartition(), "");
         H2GISFunctions.registerFunction(connection.createStatement(), new BTW_EvalSource(), "");
         H2GISFunctions.registerFunction(connection.createStatement(), new BTW_SpectrumRepartition(), "");
@@ -163,6 +164,17 @@ public class ScalarFunctionTest {
     @Test(expected = SQLException.class)
     public void testBTW_SpectrumRepartitionErr() throws SQLException {
         st.executeQuery("SELECT BR_SpectrumRepartition(1001,83)");
+    }
+
+    /** Test BR_EVALSOURCEC **/
+    @Test
+    public void testEvalSourceCnossos() throws SQLException {
+        ResultSet rs = st.executeQuery("SELECT BR_EvalsourceC(50, 0, 50, 0, 0,\n" +
+                "                                     50, 0, 50,0, 0,\n" +
+                "                                      0,  0,  10,\n" +
+                "                                      1,  15,  4,  0.5,   200,  1,  1000)");
+        assertTrue(rs.next());
+        assertEquals(67.69, rs.getDouble(1), 0.01);
     }
 
 }

@@ -49,30 +49,40 @@ public class DiffractionWithSoilEffetZone {
     private LineSegment rOZone;//receiver-first intersection zone for 3D diffraction
     private LineSegment oSZone;//last intersection-source zone for 3D diffraction
     private double deltaDistance;
+    private double deltaDistancefav;
     private double eLength;
     private double fullDiffractionDistance;
+    private double fullDiffractionDistancefav;
     private List<Coordinate> rOgroundCoordinates;
     private List<Coordinate> oSgroundCoordinates;
+    private double pointHeight;
 
     /**
      *
      * @param rOZone Segment from receiver to first diffraction corner
      * @param oSZone Segment from last diffraction corner to source
      * @param deltaDistance Direct field distance between R and S minus fullDiffractionDistance
+     * @param deltaDistancefav Direct field distance between R and S minus fullDiffractionDistance in favourable condition
      * @param eLength Length from first diffraction corner to last diffraction corner
      * @param fullDiffractionDistance Full path distance from receiver to source
+     * @param fullDiffractionDistancefav Full path distance from receiver to source
+     * @param pointHeight Heighest Point
      */
     public DiffractionWithSoilEffetZone(LineSegment rOZone, LineSegment oSZone,
-                                        double deltaDistance, double eLength, double fullDiffractionDistance,
-                                        List<Coordinate> rOgroundCoordinates, List<Coordinate> oSgroundCoordinates) {
+                                        double deltaDistance,double deltaDistancefav, double eLength, double fullDiffractionDistance, double fullDiffractionDistancefav,
+                                        List<Coordinate> rOgroundCoordinates, List<Coordinate> oSgroundCoordinates, double pointHeight) {
         this.rOZone = rOZone;
         this.oSZone = oSZone;
         this.deltaDistance = deltaDistance;
+        this.deltaDistancefav = deltaDistancefav;
         this.eLength = eLength;
         this.fullDiffractionDistance = fullDiffractionDistance;
+        this.fullDiffractionDistancefav = fullDiffractionDistancefav;
         this.rOgroundCoordinates = rOgroundCoordinates;
         this.oSgroundCoordinates = oSgroundCoordinates;
+        this.pointHeight = pointHeight;
     }
+
 
     /**
      * @return Ground segments between Receiver and first diffraction. The first coordinate is the receiver ground position.
@@ -94,7 +104,12 @@ public class DiffractionWithSoilEffetZone {
     public double getDeltaDistance() {
         return deltaDistance;
     }
-
+    /**
+     * @return Direct field distance between R and S minus fullDiffractionDistance in favourable condition
+     */
+    public double getDeltaDistancefav() {
+        return deltaDistancefav;
+    }
     /**
      * @return Length from first diffraction corner to last diffraction corner
      */
@@ -103,10 +118,23 @@ public class DiffractionWithSoilEffetZone {
     }
 
     /**
+     * @return Point Height
+     */
+    public double getpointHeight() {
+        return pointHeight;
+    }
+
+    /**
      * @return Full path distance from receiver to source
      */
     public double getFullDiffractionDistance() {
         return fullDiffractionDistance;
+    }
+    /**
+     * @return Full path distance from receiver to source
+     */
+    public double getFullDiffractionDistancefav() {
+        return fullDiffractionDistancefav;
     }
 
     /**

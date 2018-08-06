@@ -41,6 +41,7 @@ public abstract class JdbcNoiseMap {
     protected int soundDiffractionOrder = 1;
     protected boolean computeVerticalDiffraction = true;
     protected double wallAbsorption = 0.05;
+    protected double fav_probability = 0;
     protected String heightField = "";
     protected GeometryFactory geometryFactory = new GeometryFactory();
     protected boolean doMultiThreading = true;

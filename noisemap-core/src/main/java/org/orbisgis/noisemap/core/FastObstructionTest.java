@@ -39,6 +39,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Stack;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.locationtech.jts.algorithm.Angle;
 import org.locationtech.jts.io.WKTWriter;
@@ -48,6 +49,7 @@ import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineSegment;
 import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.triangulate.Segment;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
 
 /**
@@ -61,7 +63,6 @@ import org.locationtech.jts.triangulate.quadedge.Vertex;
 public class FastObstructionTest {
     public static final double epsilon = 1e-7;
     public static final double wideAngleTranslationEpsilon = 0.01;
-    public static final double receiverDefaultHeight = 1.6;
     private long nbObstructionTest = 0;
     private List<Triangle> triVertices;
     private List<Coordinate> vertices;
@@ -159,8 +160,8 @@ public class FastObstructionTest {
      * triangle neighbor.
      */
     private TriIdWithIntersection getNextTri(final int triIndex,
-                           final LineSegment propagationLine,
-                           HashSet<Integer> navigationHistory) {
+                                             final LineSegment propagationLine,
+                                             HashSet<Integer> navigationHistory) {
         final Triangle tri = this.triVertices.get(triIndex);
         final Triangle triNeighbors = this.triNeighbors.get(triIndex);
         int nearestIntersectionSide = -1;
@@ -271,6 +272,10 @@ public class FastObstructionTest {
         }
     }
 
+    private boolean dotInTri(Coordinate p, Coordinate a, Coordinate b,
+                             Coordinate c) {
+        return dotInTri(p, a, b, c, null);
+    }
     /**
      * Fast dot in triangle test
      * <p/>
@@ -283,7 +288,7 @@ public class FastObstructionTest {
      * @return True if dot is in triangle
      */
     private boolean dotInTri(Coordinate p, Coordinate a, Coordinate b,
-                             Coordinate c) {
+                             Coordinate c, AtomicReference<Double> error) {
         Vector2D v0 = new Vector2D(c.x - a.x, c.y - a.y);
         Vector2D v1 = new Vector2D(b.x - a.x, b.y - a.y);
         Vector2D v2 = new Vector2D(p.x - a.x, p.y - a.y);
@@ -299,6 +304,14 @@ public class FastObstructionTest {
         double invDenom = 1 / (dot00 * dot11 - dot01 * dot01);
         double u = (dot11 * dot02 - dot01 * dot12) * invDenom;
         double v = (dot00 * dot12 - dot01 * dot02) * invDenom;
+
+        if(error != null) {
+            double err = 0;
+            err += Math.max(0, -u);
+            err += Math.max(0, -v);
+            err += Math.max(0, (u + v) - 1);
+            error.set(err);
+        }
 
         // Check if point is in triangle
         return (u > (0. - epsilon)) && (v > (0. - epsilon))
@@ -322,14 +335,18 @@ public class FastObstructionTest {
     private int getTriangleIdByCoordinate(Coordinate pt) {
         Envelope ptEnv = new Envelope(pt);
         Iterator<Integer> res = triIndex.query(new Envelope(ptEnv));
+        double minDistance = Double.MAX_VALUE;
+        int minDistanceTriangle = -1;
         while (res.hasNext()) {
             int triId = res.next();
             Coordinate[] tri = getTriangle(triId);
-            if (dotInTri(pt, tri[0], tri[1], tri[2])) {
-                return triId;
+            AtomicReference<Double> err = new AtomicReference<>(0.);
+            if (dotInTri(pt, tri[0], tri[1], tri[2], err) && err.get() < minDistance) {
+                minDistance = err.get();
+                minDistanceTriangle = triId;
             }
         }
-        return -1;
+        return minDistanceTriangle;
     }
 
     /**
@@ -489,7 +506,7 @@ public class FastObstructionTest {
      * @return List of segment
      */
     public LinkedList<Wall> getLimitsInRange(double maxDist,
-                                                    Coordinate p1, boolean goThroughWalls) {
+                                             Coordinate p1, boolean goThroughWalls) {
         LinkedList<Wall> walls = new LinkedList<>();
         int curTri = getTriangleIdByCoordinate(p1);
         int nextTri = -1;
@@ -554,6 +571,18 @@ public class FastObstructionTest {
             curTri = nextTri;
         }
         return walls;
+    }
+
+    /**
+     * Get ray curve length from homogeneous CNOSSOS p .94
+     * @param MN distance between M and N
+     * @param Gamma curve radius
+     * @return MNFav, Distance ray curve
+     */
+    public double getRayCurveLength(double MN, double Gamma) {
+
+        return 2*Gamma*Math.asin(MN/(2*Gamma));
+
     }
 
     /**
@@ -630,11 +659,12 @@ public class FastObstructionTest {
             path.add(new TriIdWithIntersection(curTriP1, new Coordinate(p1.x, p1.y, zTopoP1)));
         }
         try {
-            if ((!Double.isNaN(p1.z) && p1.z + epsilon < zTopoP1)
+            // todo doit être commenté pour les sources primes mais pas pour les autres !
+            /*if ((!Double.isNaN(p1.z) && p1.z + epsilon < zTopoP1)
                     || (!Double.isNaN(p2.z) && p2.z + epsilon < zTopoP2)) {
                 //Z value of origin or destination is lower than topography. FreeField is always false in this case
                 return false;
-            }
+            }*/
 
             HashSet<Integer> navigationHistory = new HashSet<Integer>();
             int navigationTri = curTriP1;
@@ -648,7 +678,9 @@ public class FastObstructionTest {
                 if (path != null) {
                     path.add(propaTri);
                 }
-                if (!stopOnIntersection || !propaTri.isIntersectionOnBuilding() && !propaTri.isIntersectionOnTopography()) {
+                if (!stopOnIntersection || !propaTri.isIntersectionOnBuilding() && !propaTri.isIntersectionOnTopography()) { // todo ICI ON INTEGRE LES TRIANGLES BUILDINGS AU SOL AUSSI
+
+                //    if (!stopOnIntersection || !propaTri.isIntersectionOnBuilding() && !propaTri.isIntersectionOnTopography()) {
                     navigationTri = propaTri.getTriID();
                 } else {
                     navigationTri = -1;
@@ -708,15 +740,17 @@ public class FastObstructionTest {
     @SuppressWarnings("unchecked")
     public DiffractionWithSoilEffetZone getPath(Coordinate receiver, Coordinate source) {
         //set default data
-        DiffractionWithSoilEffetZone totData = new DiffractionWithSoilEffetZone(null, null, -1, -1, -1,
-                new ArrayList<Coordinate>(), new ArrayList<Coordinate>());
+        DiffractionWithSoilEffetZone totData = new DiffractionWithSoilEffetZone(null, null, -1,-1, -1, -1,-1,
+                new ArrayList<Coordinate>(), new ArrayList<Coordinate>(),0);
         /*
-        data for calculate 3D diffraction,éé
+        data for calculate 3D diffraction,
         first Coordinate is the coordinate after the modification coordinate system,
         the second parameter will keep the data of original coordinate system
         */
+
         LineSegment rOZone = new LineSegment(new Coordinate(-1, -1), new Coordinate(-1, -1));
         LineSegment sOZone = new LineSegment(new Coordinate(-1, -1), new Coordinate(-1, -1));
+
         List<TriIdWithIntersection> allInterPoints = new ArrayList<>();
         computePropagationPath(receiver, source, false, allInterPoints, true);
         if(allInterPoints.isEmpty()) {
@@ -774,32 +808,81 @@ public class FastObstructionTest {
         } else {
             Coordinate osCorner = interPoints.get(interPoints.size() - 2).getCoorIntersection();
             LinkedList<LineSegment> path = new LinkedList<>();
-            for (int i = 0; i < points.x.length - 1; i++) {
-                if(!(points.x[i] > points.x[i + 1])) {
-                    path.add(new LineSegment(new Coordinate(points.x[i], points.y[i]), new Coordinate(points.x[i + 1], points.y[i + 1])));
-                    // FreeField test
-                    TriIdWithIntersection interBegin = interPoints.get(pointsId.get(i));
-                    osCorner = interBegin;
-                    TriIdWithIntersection interEnd = interPoints.get(pointsId.get(i + 1));
-                    if (interBegin.getBuildingId() != interEnd.getBuildingId()) {
-                        Coordinate testPBegin = new Coordinate(interBegin.getCoorIntersection());
-                        Coordinate testPEnd = new Coordinate(interEnd.getCoorIntersection());
-                        testPBegin.setOrdinate(Coordinate.Z, points.y[i] + epsilon);
-                        testPEnd.setOrdinate(Coordinate.Z, points.y[i + 1] + epsilon);
-                        if (!isFreeField(testPBegin, testPEnd)) {
-                            return totData;
-                        }
+            if (points.x[2] < points.x[1])
+            {
+                path.add(new LineSegment(new Coordinate(points.x[0], points.y[0]), new Coordinate(points.x[points.x.length-1], points.y[points.x.length-1])));
+                // FreeField test
+                TriIdWithIntersection interBegin = interPoints.get(pointsId.get(0));
+                osCorner = interBegin;
+                TriIdWithIntersection interEnd = interPoints.get(pointsId.get(points.x.length-1));
+                if (interBegin.getBuildingId() != interEnd.getBuildingId()) {
+                    Coordinate testPBegin = new Coordinate(interBegin.getCoorIntersection());
+                    Coordinate testPEnd = new Coordinate(interEnd.getCoorIntersection());
+                    testPBegin.setOrdinate(Coordinate.Z, points.y[0] + epsilon);
+                    testPEnd.setOrdinate(Coordinate.Z, points.y[points.x.length-1] + epsilon);
+                    if (!isFreeField(testPBegin, testPEnd)) {
+                        return totData;
                     }
-                } else {
-                    break;
+                }
+                for (int i = points.x.length-2; i > 0 ; i--) {
+                    if (!(points.x[i+1] > points.x[i])) {
+                        path.add(new LineSegment(new Coordinate(points.x[i+1], points.y[i+1]), new Coordinate(points.x[i], points.y[i])));
+                        // FreeField test
+                        interBegin = interPoints.get(pointsId.get(i+1));
+                        osCorner = interBegin;
+                        interEnd = interPoints.get(pointsId.get(i ));
+                        if (interBegin.getBuildingId() != interEnd.getBuildingId()) {
+                            Coordinate testPBegin = new Coordinate(interBegin.getCoorIntersection());
+                            Coordinate testPEnd = new Coordinate(interEnd.getCoorIntersection());
+                            testPBegin.setOrdinate(Coordinate.Z, points.y[i+1] + epsilon);
+                            testPEnd.setOrdinate(Coordinate.Z, points.y[i ] + epsilon);
+                            if (!isFreeField(testPBegin, testPEnd)) {
+                                return totData;
+                            }
+                        }
+                    } else {
+                        break;
+                    }
+                }
+
+            }else {
+                for (int i = 0; i < points.x.length - 1; i++) {
+                    if (!(points.x[i] > points.x[i + 1])) {
+                        path.add(new LineSegment(new Coordinate(points.x[i], points.y[i]), new Coordinate(points.x[i + 1], points.y[i + 1])));
+                        // FreeField test
+                        TriIdWithIntersection interBegin = interPoints.get(pointsId.get(i));
+                        osCorner = interBegin;
+                        TriIdWithIntersection interEnd = interPoints.get(pointsId.get(i + 1));
+                        if (interBegin.getBuildingId() != interEnd.getBuildingId()) {
+                            Coordinate testPBegin = new Coordinate(interBegin.getCoorIntersection());
+                            Coordinate testPEnd = new Coordinate(interEnd.getCoorIntersection());
+                            testPBegin.setOrdinate(Coordinate.Z, points.y[i] + epsilon);
+                            testPEnd.setOrdinate(Coordinate.Z, points.y[i + 1] + epsilon);
+                            if (!isFreeField(testPBegin, testPEnd)) {
+                                return totData;
+                            }
+                        }
+                    } else {
+                        break;
+                    }
                 }
             }
+
+
+            //we used coordinate after change coordinate system to get the right distance.
+            double distanceRandS = path.getFirst().p0.distance(path.getLast().p1);              //distance of receiver and source
+
+            // Get fullpathdistance in favourable condition p.94
+            double Gamma = Math.max(1000,8*distanceRandS);
+            double pathDistancefav=0.0;
+
             double pathDistance = 0.0;//distance of path
             //prepare data to compute pure diffraction
             //h0 in expression diffraction:the highest point intersection
             double pointHeight = 0.0;
             for(LineSegment aPath : path) {
                 pathDistance = aPath.getLength() + pathDistance;
+                pathDistancefav=pathDistancefav + getRayCurveLength(aPath.getLength(), Gamma);
                 if (aPath.p0.y > pointHeight) {
                     pointHeight = aPath.p0.y;
                 }
@@ -807,10 +890,11 @@ public class FastObstructionTest {
             if (Double.isInfinite(pathDistance)) {
                 return totData;
             }
-            //we used coordinate after change coordinate system to get the right distance.
-            double distanceRandS = path.getFirst().p0.distance(path.getLast().p1);              //distance of receiver and source
             double e = pathDistance - path.getFirst().getLength() - path.getLast().getLength();//distance without first part path and last part path
             double deltaDistance = pathDistance - distanceRandS;                                //delta distance
+            double deltaDistancefav = pathDistancefav - getRayCurveLength(distanceRandS, Gamma);                                //delta distance favourable
+
+            //todo cas FIGURE VI.10 p. 93 Third case
 
             //if we have soil data
             Coordinate[] firstPart = new Coordinate[2];
@@ -826,6 +910,8 @@ public class FastObstructionTest {
             rOZone = new LineSegment(firstPart[0], firstPart[1]);
             //last intersection-source zone aims to calculate ground effect (between rOZone and sOZone we ignore ground effect)
             sOZone = new LineSegment(lastPart[0], lastPart[1]);
+
+
             // Compute ground projected path in order to compute mean ground formulae later
             // receiver part
             List<Coordinate> roGround = new ArrayList<>();
@@ -850,8 +936,242 @@ public class FastObstructionTest {
             }
             List<Coordinate> oSGround = getGroundProfile(allInterPoints.subList(sOIndex, allInterPoints.size()));
             // As the insertion was done reversed this is actually sOGround, reverse again in order to fit with variable name
-            totData = new DiffractionWithSoilEffetZone(rOZone, sOZone, deltaDistance, e, pathDistance,
-                    roGround, oSGround);
+            totData = new DiffractionWithSoilEffetZone(rOZone, sOZone, deltaDistance,deltaDistancefav, e, pathDistance,pathDistancefav,
+                    roGround, oSGround,pointHeight);
+            return totData;
+        }
+    }
+
+    /**
+     * Get the distance of all intersections between the source and the receiver to compute vertical diffraction when source and receiver see them
+     * Must called after finishPolygonFeeding
+     *
+     * @param receiver Coordinate receiver
+     * @param source Coordinate source
+     * @return DiffractionWithSoilEffectZone
+     * Double list=DiffractionWithSoilEffectZone.diffractionData : data prepared to compute diffraction
+     * Double[DELTA_DISTANCE]:delta distance;
+     * Double[E_LENGTH]:e;
+     * Double[FULL_DIFFRACTION_DISTANCE]:the full distance of diffraction path
+     * if Double[DELTA_DISTANCE],Double[E_LENGTH],Double[FULL_DIFFRACTION_DISTANCE],Double[Full_Distance_With_Soil_Effect] are -1. then no useful intersections.
+     */
+    @SuppressWarnings("unchecked")
+    public DiffractionWithSoilEffetZone getPathInverse(Coordinate receiver, Coordinate source) {
+        //set default data
+        DiffractionWithSoilEffetZone totData = new DiffractionWithSoilEffetZone(null, null, -1,-1, -1, -1,-1,
+                new ArrayList<Coordinate>(), new ArrayList<Coordinate>(),0);
+        /*
+        data for calculate 3D diffraction,
+        first Coordinate is the coordinate after the modification coordinate system,
+        the second parameter will keep the data of original coordinate system
+        */
+
+        LineSegment rOZone = new LineSegment(new Coordinate(-1, -1), new Coordinate(-1, -1));
+        LineSegment sOZone = new LineSegment(new Coordinate(-1, -1), new Coordinate(-1, -1));
+
+        List<TriIdWithIntersection> allInterPoints = new ArrayList<>();
+        computePropagationPath(receiver, source, false, allInterPoints, true);
+        if(allInterPoints.isEmpty()) {
+            return totData;
+        }
+        List<TriIdWithIntersection> interPoints = new ArrayList<>();
+        // Keep only intersection between land and buildings.
+        TriIdWithIntersection lastInter = null;
+        for(TriIdWithIntersection inter : allInterPoints.subList(1,allInterPoints.size() - 1)) {
+            if(inter.getBuildingId() > 0 && (lastInter == null || lastInter.getBuildingId() == 0)) {
+                interPoints.add(updateZ(inter));
+            } else if(lastInter != null && inter.getBuildingId() == 0 && lastInter.getBuildingId() > 0) {
+                interPoints.add(updateZ(lastInter));
+            }
+            lastInter = inter;
+        }
+        if(lastInter != null && lastInter.getBuildingId() > 0) {
+            interPoints.add(updateZ(lastInter));
+        }
+        if(!hasBuildingWithHeight) {
+            // Cannot compute envelope is building height is not available
+            return totData;
+        }
+
+        //add point receiver and point source into list head and tail.
+        // Change from ground height for receiver and source to real receiver and source height
+        interPoints.add(0, new TriIdWithIntersection(allInterPoints.get(0), receiver));
+        interPoints.add(new TriIdWithIntersection(allInterPoints.get(allInterPoints.size() - 1), source));
+        //change Coordinate system from 3D to 2D
+        List<Coordinate> newPoints = JTSUtility.getNewCoordinateSystem(new ArrayList<Coordinate>(interPoints));
+
+        double[] pointsX;
+        pointsX = new double[newPoints.size()];
+        double[] pointsY;
+        pointsY = new double[newPoints.size()];
+
+        for (int i = 0; i < newPoints.size(); i++) {
+            pointsX[i] = newPoints.get(i).x;
+            if (!Double.isNaN(newPoints.get(i).y)) {
+                pointsY[i] = newPoints.get(i).y;
+            } else {
+                pointsY[i] = 0.;
+            }
+            newPoints.get(i).setCoordinate(new Coordinate(pointsX[i], pointsY[i]));
+        }
+        //algorithm JarvisMarch to get the convex hull
+        JarvisMarch jm = new JarvisMarch(new JarvisMarch.Points(pointsX, pointsY));
+        JarvisMarch.Points points = jm.calculateSmallestTriangle();
+        JarvisMarch.Points pointsA = jm.calculateSmallestTriangle();
+
+        double a = (points.y[2]-points.y[0])/(points.x[2]-points.x[0]);
+        pointsA.y[1]=pointsA.x[1]*a+(points.y[0]-a*points.x[0]);
+
+        List<Integer> pointsId = jm.getHullPointId();
+
+        //if there are no useful intersection
+        if (points.x.length <= 2) {
+            //after jarvis march if we get the length of list of points less than 2, so we have no useful points
+            return totData;
+        } else {
+            Coordinate osCorner = interPoints.get(interPoints.size() - 2).getCoorIntersection();
+            LinkedList<LineSegment> path = new LinkedList<>();
+            LinkedList<LineSegment> pathA = new LinkedList<>();
+            if (points.x[2] < points.x[1])
+            {
+                path.add(new LineSegment(new Coordinate(points.x[0], points.y[0]), new Coordinate(points.x[points.x.length-1], points.y[points.x.length-1])));
+                path.add(new LineSegment(new Coordinate(pointsA.x[0], pointsA.y[0]), new Coordinate(pointsA.x[points.x.length-1], pointsA.y[points.x.length-1])));
+                // FreeField test
+                TriIdWithIntersection interBegin = interPoints.get(pointsId.get(0));
+                osCorner = interBegin;
+                TriIdWithIntersection interEnd = interPoints.get(pointsId.get(points.x.length-1));
+                if (interBegin.getBuildingId() != interEnd.getBuildingId()) {
+                    Coordinate testPBegin = new Coordinate(interBegin.getCoorIntersection());
+                    Coordinate testPEnd = new Coordinate(interEnd.getCoorIntersection());
+                    testPBegin.setOrdinate(Coordinate.Z, points.y[0] + epsilon);
+                    testPEnd.setOrdinate(Coordinate.Z, points.y[points.x.length-1] + epsilon);
+                    if (!isFreeField(testPBegin, testPEnd)) {
+                        return totData;
+                    }
+                }
+                for (int i = points.x.length-2; i > 0 ; i--) {
+                    if (!(points.x[i+1] > points.x[i])) {
+                        path.add(new LineSegment(new Coordinate(points.x[i+1], points.y[i+1]), new Coordinate(points.x[i], points.y[i])));
+                        pathA.add(new LineSegment(new Coordinate(pointsA.x[i+1], pointsA.y[i+1]), new Coordinate(pointsA.x[i], pointsA.y[i])));
+                        // FreeField test
+                        interBegin = interPoints.get(pointsId.get(i+1));
+                        osCorner = interBegin;
+                        interEnd = interPoints.get(pointsId.get(i ));
+                        if (interBegin.getBuildingId() != interEnd.getBuildingId()) {
+                            Coordinate testPBegin = new Coordinate(interBegin.getCoorIntersection());
+                            Coordinate testPEnd = new Coordinate(interEnd.getCoorIntersection());
+                            testPBegin.setOrdinate(Coordinate.Z, points.y[i+1] + epsilon);
+                            testPEnd.setOrdinate(Coordinate.Z, points.y[i ] + epsilon);
+                            if (!isFreeField(testPBegin, testPEnd)) {
+                                return totData;
+                            }
+                        }
+                    } else {
+                        break;
+                    }
+                }
+
+            }else {
+                for (int i = 0; i < points.x.length - 1; i++) {
+                    if (!(points.x[i] > points.x[i + 1])) {
+                        path.add(new LineSegment(new Coordinate(points.x[i], points.y[i]), new Coordinate(points.x[i + 1], points.y[i + 1])));
+                        pathA.add(new LineSegment(new Coordinate(pointsA.x[i], pointsA.y[i]), new Coordinate(pointsA.x[i + 1], pointsA.y[i + 1])));
+
+                        // FreeField test
+                        TriIdWithIntersection interBegin = interPoints.get(pointsId.get(i));
+                        osCorner = interBegin;
+                        TriIdWithIntersection interEnd = interPoints.get(pointsId.get(i + 1));
+                        if (interBegin.getBuildingId() != interEnd.getBuildingId()) {
+                            Coordinate testPBegin = new Coordinate(interBegin.getCoorIntersection());
+                            Coordinate testPEnd = new Coordinate(interEnd.getCoorIntersection());
+                            testPBegin.setOrdinate(Coordinate.Z, points.y[i] + epsilon);
+                            testPEnd.setOrdinate(Coordinate.Z, points.y[i + 1] + epsilon);
+                            if (!isFreeField(testPBegin, testPEnd)) {
+                                return totData;
+                            }
+                        }
+                    } else {
+                        break;
+                    }
+                }
+            }
+
+
+            //we used coordinate after change coordinate system to get the right distance.
+            double distanceRandS = path.getFirst().p0.distance(path.getLast().p1);              //distance of receiver and source
+
+            // Get fullpathdistance in favourable condition p.94
+            double Gamma = Math.max(1000,8*distanceRandS);
+            double pathDistancefav=0.0;
+            double pathDistance = 0.0;//distance of path
+            //prepare data to compute pure diffraction
+            //h0 in expression diffraction:the highest point intersection
+            double pointHeight = 0.0;
+            for(LineSegment aPath : path) {
+                pathDistance = aPath.getLength() + pathDistance;
+                pathDistancefav=pathDistancefav + getRayCurveLength(aPath.getLength(), Gamma);
+                if (aPath.p0.y > pointHeight) {
+                    pointHeight = aPath.p0.y;
+                }
+            }
+
+            // Path distance using poitn A p94 CNOSSOS VI-27
+            double pathDistanceA = 0.0;//distance of path
+            for(LineSegment aPath : pathA) {
+                pathDistanceA = pathDistanceA + getRayCurveLength(aPath.getLength(), Gamma);
+            }
+
+            if (Double.isInfinite(pathDistance)) {
+                return totData;
+            }
+            double e = pathDistance - path.getFirst().getLength() - path.getLast().getLength();//distance without first part path and last part path
+            double deltaDistance = -pathDistance + distanceRandS;                                //delta distance
+            double deltaDistancefav = 2*pathDistanceA - pathDistancefav - getRayCurveLength(distanceRandS, Gamma);                                //delta distance favourable
+
+            //todo cas FIGURE VI.10 p. 93 Third case
+
+            //if we have soil data
+            Coordinate[] firstPart = new Coordinate[2];
+            Coordinate[] lastPart = new Coordinate[2];
+            firstPart[0] = receiver;
+            //get original coordinate for first intersection with building
+            firstPart[1] = interPoints.get(pointsId.get(1)).getCoorIntersection();
+
+            //get original coordinate for last intersection with building
+            lastPart[0] = interPoints.get(pointsId.get(1)).getCoorIntersection();
+            lastPart[1] = source;
+            //receiver-first intersection zone aims to calculate ground effect
+            rOZone = new LineSegment(firstPart[0], firstPart[1]);
+            //last intersection-source zone aims to calculate ground effect (between rOZone and sOZone we ignore ground effect)
+            sOZone = new LineSegment(lastPart[0], lastPart[1]);
+
+
+            // Compute ground projected path in order to compute mean ground formulae later
+            // receiver part
+            List<Coordinate> roGround = new ArrayList<>();
+            // Compute ground profile from R to first O (first building corner)
+            int rOIndex = 0;
+            for(TriIdWithIntersection tri : allInterPoints) {
+                rOIndex++;
+                if (tri.isIntersectionOnBuilding()) {
+                    break;
+                }
+            }
+            roGround.addAll(getGroundProfile(allInterPoints.subList(0, rOIndex)));
+            // Source part
+            // Compute ground profile from last O to S (last building corner)
+            int sOIndex = allInterPoints.size() - 1;
+            for(int index = allInterPoints.size() - 1; index >= 0; index--) {
+                TriIdWithIntersection tri = allInterPoints.get(index);
+                sOIndex = index;
+                if (tri.isIntersectionOnBuilding()) {
+                    break;
+                }
+            }
+            List<Coordinate> oSGround = getGroundProfile(allInterPoints.subList(sOIndex, allInterPoints.size()));
+            // As the insertion was done reversed this is actually sOGround, reverse again in order to fit with variable name
+            totData = new DiffractionWithSoilEffetZone(rOZone, sOZone, deltaDistance,deltaDistancefav, e, pathDistance,pathDistancefav,
+                    roGround, oSGround,pointHeight);
             return totData;
         }
     }
@@ -888,6 +1208,51 @@ public class FastObstructionTest {
             polygon.setHeight(averageBuildingHeight + buildingHeight);
         }
 
+    }
+
+    /**
+     * https://stackoverflow.com/questions/9970281/java-calculating-the-angle-between-two-points-in-degrees
+     * Calculates the angle from centerPt to targetPt in degrees.
+     * The return should range from [0,360), rotating CLOCKWISE,
+     * 0 and 360 degrees represents NORTH,
+     * 90 degrees represents EAST, etc...
+     *
+     * Assumes all points are in the same coordinate space.  If they are not,
+     * you will need to call SwingUtilities.convertPointToScreen or equivalent
+     * on all arguments before passing them  to this function.
+     *
+     * @param centerPt   Point we are rotating around.
+     * @param targetPt   Point we want to calcuate the angle to.
+     * @return angle in degrees.  This is the angle from centerPt to targetPt.
+     */
+    public static double calcRotationAngleInDegrees(Coordinate centerPt, Coordinate targetPt)
+    {
+        // calculate the angle theta from the deltaY and deltaX values
+        // (atan2 returns radians values from [-PI,PI])
+        // 0 currently points EAST.
+        // NOTE: By preserving Y and X param order to atan2,  we are expecting
+        // a CLOCKWISE angle direction.
+        double theta = Math.atan2(targetPt.y - centerPt.y, targetPt.x - centerPt.x);
+
+        // rotate the theta angle clockwise by 90 degrees
+        // (this makes 0 point NORTH)
+        // NOTE: adding to an angle rotates it clockwise.
+        // subtracting would rotate it counter-clockwise
+        theta += Math.PI/2.0;
+
+        // convert from radians to degrees
+        // this will give you an angle from [0->270],[-180,0]
+        double angle = Math.toDegrees(theta);
+
+        // convert to positive range [0-360)
+        // since we want to prevent negative angles, adjust them now.
+        // we can assume that atan2 will not return a negative value
+        // greater than one partial rotation
+        if (angle < 0) {
+            angle += 360;
+        }
+
+        return angle;
     }
 
     /**

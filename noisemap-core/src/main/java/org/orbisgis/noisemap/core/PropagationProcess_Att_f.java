@@ -33,6 +33,17 @@
  */
 package org.orbisgis.noisemap.core;
 
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Comparator;
+import java.util.concurrent.TimeUnit;
+
 import org.locationtech.jts.algorithm.CGAlgorithms3D;
 import org.locationtech.jts.algorithm.LineIntersector;
 import org.locationtech.jts.algorithm.RobustLineIntersector;
@@ -48,13 +59,11 @@ import org.locationtech.jts.index.strtree.STRtree;
 import org.locationtech.jts.operation.buffer.BufferParameters;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
 import org.h2gis.api.ProgressVisitor;
+import org.h2gis.utilities.jts_utils.CoordinateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-
-import static org.orbisgis.noisemap.core.FastObstructionTest.Wall;
+import static org.orbisgis.noisemap.core.FastObstructionTest.*;
 
 /**
  * @author Nicolas Fortin
@@ -183,7 +192,7 @@ public class PropagationProcess_Att_f implements Runnable {
 
 
     public void computeReflexion(Coordinate receiverCoord,
-                                 Coordinate srcCoord, List<Double> wj, List<Wall> nearBuildingsWalls,
+                                 Coordinate srcCoord,List<Double> wj, List<FastObstructionTest.Wall> nearBuildingsWalls,
                                  double[] energeticSum, List<PropagationDebugInfo> debugInfo) {
         // Compute receiver mirror
         LineSegment srcReceiver = new LineSegment(srcCoord, receiverCoord);
@@ -206,11 +215,12 @@ public class PropagationProcess_Att_f implements Runnable {
                     receiverReflection.getReceiverPos(),
                     destinationPt);
             PropagationDebugInfo propagationDebugInfo = null;
-            if (debugInfo != null) {
+            if(debugInfo != null) {
                 propagationDebugInfo = new PropagationDebugInfo(new LinkedList<>(Arrays.asList(srcCoord)), new double[data.freq_lvl.size()]);
             }
             // While there is a reflection point on another wall. And intersection point is in the wall z bounds.
-            while (linters.hasIntersection() && MirrorReceiverIterator.wallPointTest(seg, destinationPt)) {
+            while (linters.hasIntersection() && MirrorReceiverIterator.wallPointTest(seg, destinationPt))
+            {
                 reflectionOrderCounter++;
                 // There are a probable reflection point on the
                 // segment
@@ -247,7 +257,7 @@ public class PropagationProcess_Att_f implements Runnable {
                 if (validReflection) // Reflection point can see
                 // source or its image
                 {
-                    if (propagationDebugInfo != null) {
+                    if(propagationDebugInfo != null) {
                         propagationDebugInfo.getPropagationPath().add(0, reflectionPt);
                     }
                     if (receiverReflectionCursor
@@ -281,7 +291,7 @@ public class PropagationProcess_Att_f implements Runnable {
                 }
             }
             if (validReflection) {
-                if (propagationDebugInfo != null) {
+                if(propagationDebugInfo != null) {
                     propagationDebugInfo.getPropagationPath().add(0, receiverCoord);
                 }
                 // A path has been found
@@ -299,18 +309,17 @@ public class PropagationProcess_Att_f implements Runnable {
                             ReflectedSrcReceiverDistance,
                             alpha_atmo[idfreq]);
                     energeticSum[idfreq] += AttenuatedWj;
-                    if (propagationDebugInfo != null) {
+                    if(propagationDebugInfo != null) {
                         propagationDebugInfo.addNoiseContribution(idfreq, AttenuatedWj);
                     }
                 }
-                if (propagationDebugInfo != null && debugInfo != null) {
+                if(propagationDebugInfo != null && debugInfo != null) {
                     debugInfo.add(propagationDebugInfo);
                 }
             }
         }
         this.dataOut.appendImageReceiver(imageReceiver);
     }
-
     public double computeDeltaDiffraction(int idfreq, double eLength, double deltaDistance) {
         double cprime;
         //C" NMPB 2008 P.33
@@ -340,6 +349,11 @@ public class PropagationProcess_Att_f implements Runnable {
         return Math.min(25., diffractionAttenuation);
     }
 
+    private static List<Coordinate> removeDuplicates(List<Coordinate> coordinates) {
+        return Arrays.asList(CoordinateUtils.removeDuplicatedCoordinates(
+                coordinates.toArray(new Coordinate[coordinates.size()]), false));
+    }
+
     private double[] computeDeltaDistance(DiffractionWithSoilEffetZone diffDataWithSoilEffet) {
         final Coordinate srcCoord = diffDataWithSoilEffet.getOSZone().getCoordinate(1);
         final Coordinate receiverCoord = diffDataWithSoilEffet.getROZone().getCoordinate(0);
@@ -363,8 +377,8 @@ public class PropagationProcess_Att_f implements Runnable {
         Coordinate rotatedOr = new Coordinate(rOPlaneCoordinates.get(rOPlaneCoordinates.size() - 1));
         rotatedOr.setOrdinate(1, ROZone.getCoordinate(1).z);
         // Compute mean ground plane
-        final double[] oSFuncParam = JTSUtility.getLinearRegressionPolyline(oSPlaneCoordinates);
-        final double[] rOFuncParam = JTSUtility.getLinearRegressionPolyline(rOPlaneCoordinates);
+        final double[] oSFuncParam = JTSUtility.getLinearRegressionPolyline(removeDuplicates(oSPlaneCoordinates));
+        final double[] rOFuncParam = JTSUtility.getLinearRegressionPolyline(removeDuplicates(rOPlaneCoordinates));
         // Compute source and receiver image on ground
         Coordinate rPrim = JTSUtility.makePointImage(rOFuncParam[0], rOFuncParam[1], rotatedReceiver);
         Coordinate sPrim = JTSUtility.makePointImage(oSFuncParam[0], oSFuncParam[1], rotatedSource);
@@ -373,13 +387,14 @@ public class PropagationProcess_Att_f implements Runnable {
         // S' is the projection of R on the mean ground plane (S,O)
         double deltaDistanceSprimO = (fulldistance - CGAlgorithms3D.distance(OSZone.p0, OSZone.p1)
                 + sPrim.distance(rotatedOs)) - sPrim.distance(rotatedReceiver);
-        return new double[]{deltaDistanceSprimO, deltaDistanceORprim};
+        return new double[] {deltaDistanceSprimO, deltaDistanceORprim};
     }
 
-    public void computeHorizontalEdgeDiffraction(boolean obstructedSourceReceiver, Coordinate receiverCoord,
+    public void computeHorizontalEdgeDiffraction(boolean obstructedSourceReceiver,Coordinate receiverCoord,
                                                  Coordinate srcCoord, List<Double> wj,
                                                  List<PropagationDebugInfo> debugInfo, double[] energeticSum) {
         DiffractionWithSoilEffetZone diffDataWithSoilEffet = data.freeFieldFinder.getPath(receiverCoord, srcCoord);
+
         GeometryFactory factory = new GeometryFactory();
         double deltadistance = diffDataWithSoilEffet.getDeltaDistance();
         double e = diffDataWithSoilEffet.geteLength();
@@ -389,14 +404,14 @@ public class PropagationProcess_Att_f implements Runnable {
         if (Double.compare(deltadistance, -1.) != 0 && Double.compare(e, -1.) != 0 &&
                 Double.compare(fulldistance, -1.) != 0) {
             PropagationDebugInfo propagationDebugInfo = null;
-            if (debugInfo != null) {
+            if(debugInfo != null) {
                 propagationDebugInfo = new PropagationDebugInfo(Arrays.asList(receiverCoord,
                         diffDataWithSoilEffet.getROZone().p1,
                         diffDataWithSoilEffet.getOSZone().p0, srcCoord),
                         new double[data.freq_lvl.size()]);
             }
             double gPathRO = 0;
-            double gPathOS = 0;
+            double gPathOS= 0;
             double gPathPrimeOS = 0;
             double ASoilOSMin = 0;
             double ASoilROMin = 0;
@@ -408,10 +423,10 @@ public class PropagationProcess_Att_f implements Runnable {
                 double[] deltaDist = computeDeltaDistance(diffDataWithSoilEffet);
                 deltaDistanceSprimO = deltaDist[0];
                 deltaDistanceORprim = deltaDist[1];
-                //test intersection with GeoSoil
+                // test intersection with GeoSoil
                 List<EnvelopeWithIndex<Integer>> resultZ0 = rTreeOfGeoSoil.query(new Envelope(ROZone.p0, ROZone.p1));
                 List<EnvelopeWithIndex<Integer>> resultZ1 = rTreeOfGeoSoil.query(new Envelope(OSZone.p0, OSZone.p1));
-                //if receiver-first intersection part has intersection(s)
+                // if receiver-first intersection part has intersection(s)
                 double totRODistance = 0.;
                 double totOSDistance = 0.;
                 if (!resultZ0.isEmpty()) {
@@ -469,10 +484,10 @@ public class PropagationProcess_Att_f implements Runnable {
                 double deltaSoilOR = 0.;
                 // NF S 31-133 page 47 9.4.3.1
                 // δ if negative if S R are not obstructed
-                double deltaDiffSR = computeDeltaDiffraction(idfreq, e, obstructedSourceReceiver ? deltadistance : -deltadistance);
+                double deltaDiffSR = computeDeltaDiffraction(idfreq, e, obstructedSourceReceiver? deltadistance : -deltadistance);
                 if (data.geoWithSoilType != null) {
                     double SoilSOAttenuation;
-                    double SoilORAttenuation = 0;
+                    double SoilORAttenuation= 0;
                     //NF S 31-133 page 41
                     if (gPathRO > 0) {
                         SoilORAttenuation = getASoil(ROZone.p1.z, ROZone.p0.z, ROZone.getLength(), gPathRO, data.freq_lvl.get(idfreq), ASoilROMin);
@@ -488,8 +503,8 @@ public class PropagationProcess_Att_f implements Runnable {
                     double deltaDiffSprimR = computeDeltaDiffraction(idfreq, e, deltaDistanceSprimO);
                     //Compute diffraction data for deltaDiffSR'
                     double deltaDiffSRprim = computeDeltaDiffraction(idfreq, e, deltaDistanceORprim);
-                    deltSoilSO = getDeltaSoil(SoilSOAttenuation, deltaDiffSprimR, deltaDiffSR);
-                    deltaSoilOR = getDeltaSoil(SoilORAttenuation, deltaDiffSRprim, deltaDiffSR);
+                    deltSoilSO = getDeltaSoil(SoilSOAttenuation,deltaDiffSprimR,deltaDiffSR);
+                    deltaSoilOR = getDeltaSoil(SoilORAttenuation,deltaDiffSRprim,deltaDiffSR);
                 }
 
                 //delta sol finished
@@ -507,11 +522,11 @@ public class PropagationProcess_Att_f implements Runnable {
                         alpha_atmo[idfreq]);
 
                 energeticSum[idfreq] += AttenuatedWj;
-                if (propagationDebugInfo != null) {
+                if(propagationDebugInfo != null) {
                     propagationDebugInfo.addNoiseContribution(idfreq, AttenuatedWj);
                 }
             }
-            if (propagationDebugInfo != null && debugInfo != null) {
+            if(propagationDebugInfo != null && debugInfo != null) {
                 debugInfo.add(propagationDebugInfo);
             }
         }
@@ -695,13 +710,13 @@ public class PropagationProcess_Att_f implements Runnable {
         }
     }
 
-    private int nextFreeFieldNode(List<Coordinate> nodes, Coordinate startPt, LineSegment segmentConstraint,
+    private int nextFreeFieldNode(List<Coordinate> nodes, Coordinate startPt,LineSegment segmentConstraint,
                                   List<Integer> NodeExceptions, int firstTestNode,
                                   FastObstructionTest freeFieldFinder) {
         int validNode = firstTestNode;
         while (NodeExceptions.contains(validNode)
                 || (validNode < nodes.size() && (Math.abs(segmentConstraint.projectionFactor(nodes.get(validNode))) > 1 || !freeFieldFinder.isFreeField(
-                startPt, getProjectedZCoordinate(nodes.get(validNode), segmentConstraint))))) {
+                startPt, getProjectedZCoordinate(nodes.get(validNode),segmentConstraint))))) {
             validNode++;
         }
         if (validNode >= nodes.size()) {
@@ -738,10 +753,10 @@ public class PropagationProcess_Att_f implements Runnable {
     private void receiverSourcePropa(Coordinate srcCoord,
                                      Coordinate receiverCoord, double energeticSum[],
                                      double[] alpha_atmo, List<Double> wj,
-                                     List<Wall> nearBuildingsWalls, List<PropagationDebugInfo> debugInfo) {
+                                     List<FastObstructionTest.Wall> nearBuildingsWalls, List<PropagationDebugInfo> debugInfo) {
         GeometryFactory factory = new GeometryFactory();
 
-        List<Coordinate> regionCorners = fetchRegionCorners(new LineSegment(srcCoord, receiverCoord), data.maxRefDist);
+        List<Coordinate> regionCorners = fetchRegionCorners(new LineSegment(srcCoord, receiverCoord),data.maxRefDist);
 
         // Build mirrored receiver list from wall list
 
@@ -755,11 +770,11 @@ public class PropagationProcess_Att_f implements Runnable {
             boolean somethingHideReceiver = false;
             boolean buildingOnPath = false;
 
-            if (!data.computeVerticalDiffraction || !data.freeFieldFinder.isHasBuildingWithHeight()) {
+            if(!data.computeVerticalDiffraction || !data.freeFieldFinder.isHasBuildingWithHeight()) {
                 somethingHideReceiver = !data.freeFieldFinder.isFreeField(receiverCoord, srcCoord);
             } else {
                 List<TriIdWithIntersection> propagationPath = new ArrayList<>();
-                if (!data.freeFieldFinder.computePropagationPath(receiverCoord, srcCoord, false, propagationPath, false)) {
+                if(!data.freeFieldFinder.computePropagationPath(receiverCoord, srcCoord, false, propagationPath, false)) {
                     // Propagation path not found, there is not direct field
                     somethingHideReceiver = true;
                 } else {
@@ -809,7 +824,7 @@ public class PropagationProcess_Att_f implements Runnable {
                     List<Coordinate> rSground = data.freeFieldFinder.getGroundProfile(inters);
                     rSground = JTSUtility.getNewCoordinateSystem(rSground);
                     // Compute mean ground plan
-                    double[] ab = JTSUtility.getLinearRegressionPolyline(rSground);
+                    double[] ab = JTSUtility.getLinearRegressionPolyline(removeDuplicates(rSground));
                     Coordinate rotatedReceiver = new Coordinate(rSground.get(0));
                     rotatedReceiver.setOrdinate(1, receiverCoord.z);
                     Coordinate rotatedSource = new Coordinate(rSground.get(rSground.size() - 1));
@@ -825,7 +840,7 @@ public class PropagationProcess_Att_f implements Runnable {
                     ASoilmin = -3 * (1 - gPathPrime);
                 }
                 PropagationDebugInfo propagationDebugInfo = null;
-                if (debugInfo != null) {
+                if(debugInfo != null) {
                     propagationDebugInfo = new PropagationDebugInfo(Arrays.asList(receiverCoord, srcCoord), new double[freqcount]);
                 }
                 for (int idfreq = 0; idfreq < freqcount; idfreq++) {
@@ -845,17 +860,17 @@ public class PropagationProcess_Att_f implements Runnable {
                             SrcReceiverDistance,
                             alpha_atmo[idfreq]);
                     energeticSum[idfreq] += AttenuatedWj;
-                    if (propagationDebugInfo != null) {
+                    if(propagationDebugInfo != null) {
                         propagationDebugInfo.addNoiseContribution(idfreq, AttenuatedWj);
                     }
                 }
-                if (propagationDebugInfo != null) {
+                if(propagationDebugInfo != null) {
                     debugInfo.add(propagationDebugInfo);
                 }
             }
             //Process diffraction 3D
-            if (data.computeVerticalDiffraction && buildingOnPath) {
-                computeHorizontalEdgeDiffraction(somethingHideReceiver, receiverCoord, srcCoord, wj, debugInfo, energeticSum);
+            if( data.computeVerticalDiffraction && buildingOnPath) {
+                computeHorizontalEdgeDiffraction(somethingHideReceiver ,receiverCoord, srcCoord, wj, debugInfo, energeticSum);
             }
             // Process specular reflection
             if (data.reflexionOrder > 0) {
@@ -886,11 +901,12 @@ public class PropagationProcess_Att_f implements Runnable {
             srcPos.add(ptpos);
             srcWj.add(liWj);
             SrcTable.add(srcIndex);
-            double dx = ptpos.x - receiverPos.x;
-            double dy = ptpos.y - receiverPos.y;
-            double dz = ptpos.z - receiverPos.z;
 
-            double distanceSrcPt = Math.sqrt(dx * dx + dy * dy + dz * dz);// TODO i have change like line 384
+            double dx = ptpos.x-receiverPos.x;
+            double dy = ptpos.y-receiverPos.y;
+            double dz = ptpos.z-receiverPos.z;
+
+            double distanceSrcPt = Math.sqrt(dx*dx+dy*dy+dz*dz);// TODO i have change like line 384
 
             int index = Collections.binarySearch(srcDistSorted, distanceSrcPt);
             if (index >= 0) {
@@ -934,7 +950,6 @@ public class PropagationProcess_Att_f implements Runnable {
         return cornerQuery.getItems();
     }
 
-
     public static final class SrcIndexTable {
         public final int ID;
         public final int SrcIndex;
@@ -945,10 +960,6 @@ public class PropagationProcess_Att_f implements Runnable {
             this.SrcIndex = SrcIndex;
             this.SrcMergedIndex = SrcMergedIndex;
         }
-
-
-
-
     }
 
     public static double[] subtraction2array(double[] a, double[] b) { //, instead of ;
@@ -971,99 +982,95 @@ public class PropagationProcess_Att_f implements Runnable {
     public void computeSoundLevelAtPosition(Coordinate receiverCoord, double energeticSum[], List<energeticSource> energeticId, List<PropagationDebugInfo> debugInfo) {
         // List of walls within maxReceiverSource distance
         double srcEnergeticSum = BASE_LVL; //Global energetic sum of all sources processed
-
         STRtree walls = new STRtree();
         if (data.reflexionOrder > 0) {
-            for (Wall wall : data.freeFieldFinder.getLimitsInRange(
+            for(Wall wall : data.freeFieldFinder.getLimitsInRange(
                     data.maxSrcDist, receiverCoord, false)) {
                 walls.insert(new Envelope(wall.p0, wall.p1), wall);
             }
         }
         // Source search by multiple range query
         HashSet<Integer> processedLineSources = new HashSet<Integer>(); //Already processed Raw source (line and/or points)
-        double[] ranges = new double[]{Math.min(FIRST_STEP_RANGE, data.maxSrcDist / 6), data.maxSrcDist / 5, data.maxSrcDist / 4, data.maxSrcDist / 2, data.maxSrcDist};
+        double[] ranges = new double[]{Math.min(FIRST_STEP_RANGE,data.maxSrcDist / 6) , data.maxSrcDist / 5, data.maxSrcDist / 4, data.maxSrcDist / 2, data.maxSrcDist};
         long sourceCount = 0;
+        double searchSourceDistance = ranges[ranges.length-1];
+        //for (double searchSourceDistance : ranges) {
+        Envelope receiverSourceRegion = new Envelope(receiverCoord.x
+                - searchSourceDistance, receiverCoord.x + searchSourceDistance,
+                receiverCoord.y - searchSourceDistance, receiverCoord.y
+                + searchSourceDistance
+        );
+        Iterator<Integer> regionSourcesLst = data.sourcesIndex
+                .query(receiverSourceRegion);
 
-        for (double searchSourceDistance : ranges) {
-            Envelope receiverSourceRegion = new Envelope(receiverCoord.x
-                    - searchSourceDistance, receiverCoord.x + searchSourceDistance,
-                    receiverCoord.y - searchSourceDistance, receiverCoord.y
-                    + searchSourceDistance
-            );
-            Iterator<Integer> regionSourcesLst = data.sourcesIndex
-                    .query(receiverSourceRegion);
-
-            PointsMerge sourcesMerger = new PointsMerge(MERGE_SRC_DIST);
-            List<Integer> srcSortByDist = new ArrayList<Integer>();
-            List<Integer> SrcTable2 = new ArrayList<Integer>();
-            List<Double> srcDist = new ArrayList<Double>();
-            List<Coordinate> srcPos = new ArrayList<Coordinate>();
-            List<ArrayList<Double>> srcWj = new ArrayList<ArrayList<Double>>();
-
-            while (regionSourcesLst.hasNext()) {
-                Integer srcIndex = regionSourcesLst.next();
-
-                if (!processedLineSources.contains(srcIndex)) {
-                    processedLineSources.add(srcIndex);
-                    Geometry source = data.sourceGeometries.get(srcIndex);
-                    List<Double> wj = data.wj_sources.get(srcIndex); // DbaToW(sdsSources.getDouble(srcIndex,dbField
-                    if (source instanceof Point) {
-                        Coordinate ptpos = source.getCoordinate();
-                        insertPtSource(receiverCoord, ptpos, wj, 1., srcPos, srcWj, sourcesMerger, srcSortByDist, srcDist, SrcTable2, srcIndex);
-
-                        // Compute li to equation 4.1 NMPB 2008 (June 2009)
-                    } else {
-                        // Discretization of line into multiple point
-                        // First point is the closest point of the LineString from
-                        // the receiver
-                        ArrayList<Coordinate> pts = new ArrayList<Coordinate>();
-                        double li = splitLineStringIntoPoints(source, receiverCoord,
-                                pts, data.minRecDist);
-                        for (Coordinate pt : pts) {
-                            insertPtSource(receiverCoord, pt, wj, li, srcPos, srcWj, sourcesMerger, srcSortByDist, srcDist, SrcTable2, srcIndex);
-                        }
-                        // Compute li to equation 4.1 NMPB 2008 (June 2009)
+        PointsMerge sourcesMerger = new PointsMerge(MERGE_SRC_DIST);
+        List<Integer> srcSortByDist = new ArrayList<Integer>();
+        List<Integer> SrcTable2 = new ArrayList<Integer>();
+        List<Double> srcDist = new ArrayList<Double>();
+        List<Coordinate> srcPos = new ArrayList<Coordinate>();
+        List<ArrayList<Double>> srcWj = new ArrayList<ArrayList<Double>>();
+        while (regionSourcesLst.hasNext()) {
+            Integer srcIndex = regionSourcesLst.next();
+            if (!processedLineSources.contains(srcIndex)) {
+                processedLineSources.add(srcIndex);
+                Geometry source = data.sourceGeometries.get(srcIndex);
+                List<Double> wj = data.wj_sources.get(srcIndex); // DbaToW(sdsSources.getDouble(srcIndex,dbField
+                if (source instanceof Point) {
+                    Coordinate ptpos = source.getCoordinate();
+                    insertPtSource(receiverCoord, ptpos, wj, 1., srcPos, srcWj, sourcesMerger, srcSortByDist, srcDist, SrcTable2, srcIndex);
+                    // Compute li to equation 4.1 NMPB 2008 (June 2009)
+                } else {
+                    // Discretization of line into multiple point
+                    // First point is the closest point of the LineString from
+                    // the receiver
+                    ArrayList<Coordinate> pts = new ArrayList<Coordinate>();
+                    double li = splitLineStringIntoPoints(source, receiverCoord,
+                            pts, data.minRecDist);
+                    for (Coordinate pt : pts) {
+                        insertPtSource(receiverCoord, pt, wj, li, srcPos, srcWj, sourcesMerger, srcSortByDist, srcDist, SrcTable2, srcIndex);
                     }
+                    // Compute li to equation 4.1 NMPB 2008 (June 2009)
                 }
             }
-            //Iterate over source point sorted by their distance from the receiver
-            for (int mergedSrcId : srcSortByDist) {
-                // For each Pt Source - Pt Receiver
-                Coordinate srcCoord = srcPos.get(mergedSrcId);
-                ArrayList<Double> wj = srcWj.get(mergedSrcId);
-                int src = SrcTable2.get(mergedSrcId);
-                double allreceiverfreqlvl = GetGlobalLevel(nbfreq, energeticSum);
-                double allsourcefreqlvl = 0;
-                double[] energeticSum_before_sound_source = new double[nbfreq];
-
-
-                for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
-                    allsourcefreqlvl += wj.get(idfreq);
-                    energeticSum_before_sound_source[idfreq] = energeticSum[idfreq];
-                }
-                double wAttDistSource = attDistW(allsourcefreqlvl, CGAlgorithms3D.distance(srcCoord, receiverCoord));
-                srcEnergeticSum += wAttDistSource;
-
-               // if (Math.abs(wToDba(wAttDistSource + allreceiverfreqlvl) - wToDba(allreceiverfreqlvl)) > DBA_FORGET_SOURCE) {
-                    sourceCount++;
-                    Envelope query = new Envelope(receiverCoord, srcCoord);
-                    query.expandBy(Math.min(data.maxRefDist, srcCoord.distance(receiverCoord)));
-                    List queryResult = walls.query(query);
-
-                    receiverSourcePropa(srcCoord, receiverCoord, energeticSum,
-                            alpha_atmo, wj,
-                            (List<Wall>) queryResult, debugInfo);
-                    energeticId.add(new energeticSource(src, subtraction2array(energeticSum, energeticSum_before_sound_source)));
-
-              //  }
-
-
-            }
-            //srcEnergeticSum=GetGlobalLevel(nbfreq,energeticSum);
-            //if (Math.abs(wToDba(attDistW(W_RANGE, searchSourceDistance) + srcEnergeticSum) - wToDba(srcEnergeticSum)) < DBA_FORGET_SOURCE) {
-            //    break; //Stop search for fartest sources
-            //}
         }
+        //Iterate over source point sorted by their distance from the receiver
+        for (int mergedSrcId : srcSortByDist) {
+            // For each Pt Source - Pt Receiver
+            Coordinate srcCoord = srcPos.get(mergedSrcId);
+            ArrayList<Double> wj = srcWj.get(mergedSrcId);
+            int src = SrcTable2.get(mergedSrcId);
+            double allreceiverfreqlvl = GetGlobalLevel(nbfreq, energeticSum);
+            double allsourcefreqlvl = 0;
+            double[] energeticSum_before_sound_source = new double[nbfreq];
+
+            for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
+                allsourcefreqlvl += wj.get(idfreq);
+                energeticSum_before_sound_source[idfreq] = energeticSum[idfreq];
+            }
+            double wAttDistSource = attDistW(allsourcefreqlvl, CGAlgorithms3D.distance(srcCoord, receiverCoord));
+            srcEnergeticSum += wAttDistSource;
+            // ICI IL FAUT Y REFLECHIR !!!
+            //if (Math.abs(wToDba(wAttDistSource + allreceiverfreqlvl) - wToDba(allreceiverfreqlvl)) > DBA_FORGET_SOURCE) {
+            sourceCount++;
+            Envelope query = new Envelope(receiverCoord, srcCoord);
+            query.expandBy(Math.min(data.maxRefDist, srcCoord.distance(receiverCoord)));
+            List queryResult = walls.query(query);
+
+            receiverSourcePropa(srcCoord, receiverCoord, energeticSum,
+                    alpha_atmo, wj,
+                    (List<FastObstructionTest.Wall>) queryResult, debugInfo);
+            energeticId.add(new energeticSource(src, subtraction2array(energeticSum, energeticSum_before_sound_source)));
+
+            //}
+
+
+        }
+        // ICI IL FAUT Y REFLECHIR !!!
+        srcEnergeticSum=GetGlobalLevel(nbfreq,energeticSum);
+        //if (Math.abs(wToDba(attDistW(W_RANGE, searchSourceDistance) + srcEnergeticSum) - wToDba(srcEnergeticSum)) < DBA_FORGET_SOURCE) {
+        //    break; //Stop search for fartest sources
+        // }
+        //}
         dataOut.appendSourceCount(sourceCount);
     }
 
@@ -1126,12 +1133,13 @@ public class PropagationProcess_Att_f implements Runnable {
                     splitCount,
                     splitCount + 1, Long.MAX_VALUE,
                     TimeUnit.SECONDS);
-            int maximumReceiverBatch = (int) Math.ceil(data.receivers.size() / (double) splitCount);
+            int maximumReceiverBatch = (int)Math.ceil(data.receivers.size() / (double)splitCount);
             int endReceiverRange = 0;
-            while (endReceiverRange < data.receivers.size()) {
+            while(endReceiverRange < data.receivers.size()) {
                 int newEndReceiver = Math.min(endReceiverRange + maximumReceiverBatch, data.receivers.size());
                 RangeReceiversComputation batchThread = new RangeReceiversComputation(endReceiverRange,
                         newEndReceiver, this, propaProcessProgression, debugInfo);
+                //batchThread.run();
                 threadManager.executeBlocking(batchThread);
                 endReceiverRange = newEndReceiver;
             }
@@ -1198,10 +1206,10 @@ public class PropagationProcess_Att_f implements Runnable {
      * @param aSoil Asol(O,R) or Asol(S,O) (sol mean ground)
      * @param deltaDifPrim Δdif(S,R') if Asol(S,O) is given or Δdif(S', R) if Asol(O,R)
      * @param deltaDif Δdif(S, R)
-     * @return Δsol(S, O) if Asol(S,O) is given or Δsol(O,R) if Asol(O,R) is given
+     * @return Δsol(S,O) if Asol(S,O) is given or Δsol(O,R) if Asol(O,R) is given
      */
     private double getDeltaSoil(double aSoil, double deltaDifPrim, double deltaDif) {
-        return -20 * Math.log10(1 + (Math.pow(10, -aSoil / 20) - 1)) * Math.pow(10, -(deltaDifPrim - deltaDif) / 20);
+        return -20 * Math.log10(1 + (Math.pow(10, -aSoil / 20) - 1)) * Math.pow(10, -(deltaDifPrim - deltaDif)/20);
     }
 
     private static class RangeReceiversComputation implements Runnable {
@@ -1239,46 +1247,84 @@ public class PropagationProcess_Att_f implements Runnable {
                 Arrays.fill(energeticSum, 0d);
 
                 propagationProcess.computeSoundLevelAtPosition(receiverCoord, energeticSum, energeticId, debugInfo);
+                //  long startTime = System.nanoTime();
+
                 energeticId.sort(new EnergeticSourceComparator());
+                // ICI CEST POUR SOMMER LES PT SOURCES DUNE LIGNE SOURCE
                 int s_Id_t0=0;
                 int s_Id_t1=0;
-                double[] allfreqs = new double[9];
+                int max=0;
+                int len=energeticId.size();
+                for(int i=0; i<len; i++) {
+                    if (energeticId.get(i).sourceId > max) {
+                        max = energeticId.get(i).sourceId;
+                    }
+                }
 
+                double[][] allfreqs = new double[max+1][9];
+                double reference = 10000000000.; // TODO make a general reference
                 for (energeticSource source : energeticId) {
                     s_Id_t1 = source.sourceId;
                     // Save the sound level at this receiver
                     // Do the sum of all frequency bands
 
-                    double reference = 10000000000.; // TODO make a general reference
 
 
-                     allfreqs[0] = allfreqs[0]+ source.freqs[0]+source.freqs[1]+source.freqs[2]+source.freqs[3]+source.freqs[4]+source.freqs[5]+source.freqs[6]+source.freqs[7];
-                     allfreqs[1] = allfreqs[1]+  source.freqs[0];
-                     allfreqs[2] = allfreqs[2]+  source.freqs[1];
-                     allfreqs[3] = allfreqs[3]+  source.freqs[2];
-                     allfreqs[4] = allfreqs[4]+  source.freqs[3];
-                     allfreqs[5] = allfreqs[5]+  source.freqs[4];
-                     allfreqs[6] = allfreqs[6]+  source.freqs[5];
-                     allfreqs[7] = allfreqs[7]+  source.freqs[6];
-                     allfreqs[8] = allfreqs[8]+  source.freqs[7];
 
-                    if (s_Id_t1!=s_Id_t0){
-                        allfreqs[0] = Math.max(-100,wToDba(allfreqs[0])-wToDba(8.*reference));
-                        allfreqs[1] = Math.max(-100,wToDba(allfreqs[1])-wToDba(reference));
-                        allfreqs[2] = Math.max( -100,wToDba(allfreqs[2])-wToDba(reference));
-                        allfreqs[3] = Math.max(-100,wToDba(allfreqs[3])-wToDba(reference));
-                        allfreqs[4] = Math.max(-100,wToDba(allfreqs[4])-wToDba(reference));
-                        allfreqs[5] = Math.max(-100,wToDba(allfreqs[5])-wToDba(reference));
-                        allfreqs[6] = Math.max(-100,wToDba(allfreqs[6])-wToDba(reference));
-                        allfreqs[7] = Math.max(-100,wToDba(allfreqs[7])-wToDba(reference));
-                        allfreqs[8] = Math.max(-100,wToDba(allfreqs[8])-wToDba(reference));
+                    //   if (s_Id_t1!=s_Id_t0){
+                    // SAUVE SUR LES POINTS SOURCES DE LA LIGNE OU SUR UN POINT SOURCE
+                    //      allfreqs[0] = Math.max(-100,wToDba(allfreqs[0])-wToDba(8.*reference));
+//                        allfreqs[1] = Math.max(-100,wToDba(allfreqs[1])-wToDba(reference));
+//                        allfreqs[2] = Math.max(-100,wToDba(allfreqs[2])-wToDba(reference));
+//                        allfreqs[3] = Math.max(-100,wToDba(allfreqs[3])-wToDba(reference));
+//                        allfreqs[4] = Math.max(-100,wToDba(allfreqs[4])-wToDba(reference));
+//                        allfreqs[5] = Math.max(-100,wToDba(allfreqs[5])-wToDba(reference));
+//                        allfreqs[6] = Math.max(-100,wToDba(allfreqs[6])-wToDba(reference));
+//                        allfreqs[7] = Math.max(-100,wToDba(allfreqs[7])-wToDba(reference));
+//                        allfreqs[8] = Math.max(-100,wToDba(allfreqs[8])-wToDba(reference));
+//
+//                        propagationProcess.dataOut.addVerticeSoundLevel(idReceiver, source.sourceId, allfreqs);
+//
+//                        allfreqs = new double[9];
+//                    }
+                    // SOMME SUR LES POINTS SOURCES DE LA LIGNE OU SUR UN POINT SOURCE
+                    allfreqs[source.sourceId][0] = allfreqs[source.sourceId][0]+ source.freqs[0]+source.freqs[1]+source.freqs[2]+source.freqs[3]+source.freqs[4]+source.freqs[5]+source.freqs[6]+source.freqs[7];
+                    allfreqs[source.sourceId][1] = allfreqs[source.sourceId][1] + source.freqs[0];
+                    allfreqs[source.sourceId][2] = allfreqs[source.sourceId][2]+ source.freqs[1];
+                    allfreqs[source.sourceId][3] = allfreqs[source.sourceId][3] + source.freqs[2];
+                    allfreqs[source.sourceId][4] = allfreqs[source.sourceId][4]+ source.freqs[3];
+                    allfreqs[source.sourceId][5] = allfreqs[source.sourceId][5] + source.freqs[4];
+                    allfreqs[source.sourceId][6] = allfreqs[source.sourceId][6]+ source.freqs[5];
+                    allfreqs[source.sourceId][7] = allfreqs[source.sourceId][7] + source.freqs[6];
+                    allfreqs[source.sourceId][8] = allfreqs[source.sourceId][8] + source.freqs[7];
 
-                        propagationProcess.dataOut.addVerticeSoundLevel(idReceiver, source.sourceId, allfreqs);
-
-                        allfreqs = new double[9];
-                    }
                     s_Id_t0 = source.sourceId;
 
+
+                }
+                // long elapsedTimeNs = System.nanoTime() - startTime;
+                // System.out.println(elapsedTimeNs);
+                // SAUVE SUR LES POINTS SOURCES DE LA LIGNE OU SUR UN POINT SOURCE
+//                allfreqs[0] = Math.max(-100,wToDba(allfreqs[0])-wToDba(8.*reference));
+//                allfreqs[1] = Math.max(-100,wToDba(allfreqs[1])-wToDba(reference));
+//                allfreqs[2] = Math.max(-100,wToDba(allfreqs[2])-wToDba(reference));
+//                allfreqs[3] = Math.max(-100,wToDba(allfreqs[3])-wToDba(reference));
+//                allfreqs[4] = Math.max(-100,wToDba(allfreqs[4])-wToDba(reference));
+//                allfreqs[5] = Math.max(-100,wToDba(allfreqs[5])-wToDba(reference));
+//                allfreqs[6] = Math.max(-100,wToDba(allfreqs[6])-wToDba(reference));
+//                allfreqs[7] = Math.max(-100,wToDba(allfreqs[7])-wToDba(reference));
+//                allfreqs[8] = Math.max(-100,wToDba(allfreqs[8])-wToDba(reference));
+                for(int i=0; i<=max; i++) {
+                    allfreqs[i][0] = Math.max(-100,wToDba(allfreqs[i][0])-wToDba(8.*reference));
+                    allfreqs[i][1] = Math.max(-100,wToDba(allfreqs[i][1])-wToDba(reference));
+                    allfreqs[i][2] = Math.max(-100,wToDba(allfreqs[i][2])-wToDba(reference));
+                    allfreqs[i][3] = Math.max(-100,wToDba(allfreqs[i][3])-wToDba(reference));
+                    allfreqs[i][4] = Math.max(-100,wToDba(allfreqs[i][4])-wToDba(reference));
+                    allfreqs[i][5] = Math.max(-100,wToDba(allfreqs[i][5])-wToDba(reference));
+                    allfreqs[i][6] = Math.max(-100,wToDba(allfreqs[i][6])-wToDba(reference));
+                    allfreqs[i][7] = Math.max(-100,wToDba(allfreqs[i][7])-wToDba(reference));
+                    allfreqs[i][8] = Math.max(-100,wToDba(allfreqs[i][8])-wToDba(reference));
+                    propagationProcess.dataOut.addVerticeSoundLevel(idReceiver, i, allfreqs[i]);
                 }
                 progressVisitor.endStep();
             }

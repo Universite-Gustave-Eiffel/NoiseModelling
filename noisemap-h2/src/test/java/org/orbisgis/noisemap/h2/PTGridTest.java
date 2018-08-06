@@ -33,6 +33,7 @@ public class PTGridTest {
         connection = SFSUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(PTGridTest.class.getSimpleName(), false, "MV_STORE=FALSE"));
         org.h2gis.functions.factory.H2GISFunctions.load(connection);
         H2GISFunctions.registerFunction(connection.createStatement(), new BR_PtGrid3D(), "");
+        H2GISFunctions.registerFunction(connection.createStatement(), new BR_PtGrid3D_Att_f(), "");
         H2GISFunctions.registerFunction(connection.createStatement(), new BR_PtGrid(), "");
         H2GISFunctions.registerFunction(connection.createStatement(), new BR_SpectrumRepartition(), "");
         H2GISFunctions.registerFunction(connection.createStatement(), new BR_EvalSource(), "");
@@ -59,6 +60,53 @@ public class PTGridTest {
         File resourceFile = new File(PTGridTest.class.getResource(fileName).toURI());
         return "RUNSCRIPT FROM "+ StringUtils.quoteStringSQL(resourceFile.getPath());
     }
+
+
+
+    @Test
+    public void testatt() throws Exception {
+        // Create a single sound source
+        st.execute("DROP TABLE IF EXISTS roads_src_global");
+        st.execute("CREATE TEMPORARY TABLE roads_src_global(the_geom POINT)");
+        st.execute("INSERT INTO roads_src_global VALUES ('POINT(0 0)'::geometry, 85)");
+        // INSERT 2 points to set the computation area
+        st.execute("INSERT INTO roads_src_global VALUES ('POINT(-20 -20)'::geometry, 0)");
+        st.execute("INSERT INTO roads_src_global VALUES ('POINT(20 20)'::geometry, 0)");
+
+        //ResultSet rs = st.executeQuery("select * from test_LEQ l, recepteur r where l.GID = r.ID");
+        ResultSet rs = st.executeQuery("SELECT * \n" +
+                "        from ATT_CARS l;");
+        try {
+
+            assertTrue(rs.next());
+            //   assertTrue(rs2.next());
+            //   assertEquals(rs2.getDouble("DB"), rs.getDouble("DB"));
+            assertFalse(rs.next());
+        } finally {
+            rs.close();
+            //   rs2.close();
+        }
+    }
+
+    @Test
+    public void comparemethods() throws Exception {
+        st.execute(getRunScriptRes("test_comparemethods2.sql"));
+        //ResultSet rs = st.executeQuery("select * from test_LEQ l, recepteur r where l.GID = r.ID");
+        ResultSet rs = st.executeQuery("SELECT * \n" +
+                "        from test_LEQ_ATT l;");
+        try {
+
+            assertTrue(rs.next());
+         //   assertTrue(rs2.next());
+         //   assertEquals(rs2.getDouble("DB"), rs.getDouble("DB"));
+            assertFalse(rs.next());
+        } finally {
+            rs.close();
+         //   rs2.close();
+        }
+    }
+
+
 
     @Test
     public void testFreeField() throws SQLException {
@@ -178,7 +226,7 @@ public class PTGridTest {
         st.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT (-157 60 0.2)')");
         st.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT (-157 60 11.6)')");
         st.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT (59 60 1.6)')");
-        ResultSet rs = st.executeQuery("select * from BR_PTGRID3D('BUILDINGS', 'HEIGHT', 'SOUND_SOURCE','RECEIVERS', 'DB_M', '','DEM' ,1000,500, 2, 1, 0.2)");
+        ResultSet rs = st.executeQuery("select * from BR_PTGRID3D_ATT_f('BUILDINGS', 'HEIGHT', 'SOUND_SOURCE','RECEIVERS', 'DB_M', '','DEM' ,1000,500, 2, 1, 0.2)");
         //  W must be equal to 1
         try {
             assertTrue(rs.next());
@@ -210,6 +258,25 @@ public class PTGridTest {
         assertTrue(rs.next());
         assertEquals(2, rs.getInt("GID"));
         assertEquals(55.21,10*Math.log10(rs.getDouble("W")), 0.1);
+        assertFalse(rs.next());
+    }
+
+
+
+    @Test
+    public void CompareFunction() throws Exception {
+        st.execute("DROP TABLE IF EXISTS CARS_100");
+        st.execute("CALL SHPREAD('"+TriGridTest.class.getResource("cars_100.shp").getFile()+"', 'CARS_100')");
+
+        st.execute("DROP TABLE IF EXISTS RECEIVERS");
+        st.execute("CALL SHPREAD('"+TriGridTest.class.getResource("receivers.shp").getFile()+"', 'RECEIVERS')");
+
+        st.execute("DROP TABLE IF EXISTS Buildings_zone_capteur");
+        st.execute("CALL SHPREAD('"+TriGridTest.class.getResource("Buildings_zone_capteur.shp").getFile()+"', 'Buildings_zone_capteur')");
+
+        st.execute("drop table if exists DUMMY");
+        ResultSet rs = st.executeQuery("SELECT * FROM BR_PTGRID3D('buildings_zone_capteur', 'HAUTEUR', 'CARS_100', 'receivers', 'DB_M','', '', 250, 50, 1, 1, 0.1)");
+        assertTrue(rs.next());
         assertFalse(rs.next());
     }
 }

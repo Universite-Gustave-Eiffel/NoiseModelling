@@ -46,6 +46,10 @@ public class RSParametersCnossos {
     private final int FreqParam;
     private final double Temperature;
     private final int RoadSurface;
+    private final double Ts_stud;
+    private final double Pm_stud;
+    private final double Junc_dist;
+    private final int Junc_type;
     /**
      * BBTS means very thin asphalt concrete.
      * BBUM means ultra-thin asphalt concrete
@@ -65,8 +69,8 @@ public class RSParametersCnossos {
         Stopping
     }
 
-    private int surfaceAge = 10; // Default value means no correction of road level
-    private double slopePercentage = 0;
+    private int surfaceAge;
+    private double slopePercentage;
     private double speedLv;
     private double speedMv;
     private double speedHgv;
@@ -194,6 +198,13 @@ public class RSParametersCnossos {
     }
 
     /**
+     * @param slopePercentage Gradient percentage of road from -6 % to 6 %
+     */
+    public void setSlopePercentage_without_limit(double slopePercentage) {
+        this.slopePercentage = slopePercentage;
+    }
+
+    /**
      * Compute the slope
      * @param beginZ Z start
      * @param endZ Z end
@@ -233,8 +244,12 @@ public class RSParametersCnossos {
      * @param FreqParam Studied Frequency
      * @param Temperature Temperature (Celsius)
      * @param RoadSurface RoadSurface (0=default, 1= NL01 (1-layer ZOAB), etc.)
+     * @param Ts_stud A limited period Ts (in months) over the year where a average proportion pm of light vehicles are equipped with studded tyres and during .
+     * @param Pm_stud Average proportion of vehicles equipped with studded tyres
+     * @param Junc_dist Distance to junction
+     * @param Junc_type Type of junction ((k = 1 for a crossing with traffic lights ; k = 2 for a roundabout)
      */
-    public RSParametersCnossos(double lv_speed, double mv_speed, double hgv_speed, double wav_speed, double wbv_speed, double lvPerHour, double mvPerHour, double hgvPerHour, double wavPerHour, double wbvPerHour, int FreqParam, double Temperature, int RoadSurface ) {
+    public RSParametersCnossos(double lv_speed, double mv_speed, double hgv_speed, double wav_speed, double wbv_speed, double lvPerHour, double mvPerHour, double hgvPerHour, double wavPerHour, double wbvPerHour, int FreqParam, double Temperature, int RoadSurface, double Ts_stud, double Pm_stud, double Junc_dist, int Junc_type) {
         this.lvPerHour = lvPerHour;
         this.mvPerHour = mvPerHour;
         this.hgvPerHour = hgvPerHour;
@@ -243,6 +258,10 @@ public class RSParametersCnossos {
         this.FreqParam = FreqParam;
         this.Temperature = Temperature;
         this.RoadSurface = RoadSurface;
+        this.Ts_stud = Ts_stud;
+        this.Pm_stud = Pm_stud;
+        this.Junc_dist = Junc_dist;
+        this.Junc_type = Junc_type;
         setSpeedLv(lv_speed);
         setSpeedMv(mv_speed);
         setSpeedHgv(hgv_speed);
@@ -319,8 +338,13 @@ public class RSParametersCnossos {
 
     public int getRoadSurface() {return RoadSurface;}
 
-    public EngineState getFlowState() {
-        return flowState;
-    }
+    public double getTs_stud() {return Ts_stud;}
+
+    public double getPm_stud() {return Pm_stud;}
+
+    public double getJunc_dist() {return Junc_dist;}
+
+    public int getJunc_type() {return Junc_type;}
+
 }
 

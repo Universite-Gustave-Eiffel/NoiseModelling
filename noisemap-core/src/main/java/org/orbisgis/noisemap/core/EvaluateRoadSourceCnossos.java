@@ -45,11 +45,12 @@ package org.orbisgis.noisemap.core;
 public class EvaluateRoadSourceCnossos {
 
    /** acceleration coeff **/
-   private static final double[][] Coeff_Acc={ {-4.5,5.5,-4.4,3.1,0,0}, //Table III.A.6 p.44 - Confirm data with CNOSSOS-EU phase B p.44
-            {-4.0,9,-2.3,6.7,0,0},
-            {-4.0,9,-2.3,6.7,0,0},
-            {0,0,0,0,0,0},
-            {0,0,0,0,0,0}};
+   private static final double[][] Coeff_Acc={
+           {-4.5,5.5,-4.4,3.1}, //Table III.A.6 p.44 - Confirm data with CNOSSOS-EU phase B p.44
+            {-4.0,9,-2.3,6.7},
+            {-4.0,9,-2.3,6.7},
+            {0,0,0,0},
+            {0,0,0,0}};
 
     /** Road Categories -  All surface are from CNOSSOS-EU_Road_Catalogue_Final - 01April2014.xlsx **/
 
@@ -619,6 +620,17 @@ public class EvaluateRoadSourceCnossos {
         return base + adj * Math.log10(speed / speedBase);
     }
 
+    /** compute Noise Level from flow_rate and speed **/
+    private static Double Vperhour2NoiseLevel(Double NoiseLevel, Double vperhour, Double speed) {
+        if (speed > 0) {
+            return NoiseLevel + 10 * Math.log10(vperhour / (1000 * speed));
+        }else{
+            return 0.;
+        }
+    }
+
+
+    ;
     /** get sum dBa **/
     private static Double sumDba(Double dBA1, Double dBA2) {
         return PropagationProcess.wToDba(PropagationProcess.dbaToW(dBA1) + PropagationProcess.dbaToW(dBA2));
@@ -642,8 +654,13 @@ public class EvaluateRoadSourceCnossos {
         int FreqParam = parameters.getFreqParam();
         double Temperature = parameters.getTemperature();
         int RoadSurface = parameters.getRoadSurface();
-
-        // Fix vehicle speed to validity domains
+        double Ts_stud = parameters.getTs_stud();
+        double Pm_stud = parameters.getPm_stud();
+        double Junc_dist = parameters.getJunc_dist();
+        int Junc_type = parameters.getJunc_type();
+        double a = Junc_type*0.;
+        double aa = Junc_dist*0.;
+       /* // Fix vehicle speed to validity domains
         // Validity discussed 3.5.3.2 - Speed validity of results P.45 of Road Noise Prediction NMPB
         parameters.setSpeedLv(Math.min(getRoadSpeedMax(RoadSurface),
                 Math.max(parameters.getFlowState() == RSParametersCnossos.EngineState.SteadySpeed ? getRoadSpeedMin(RoadSurface) : 5,
@@ -654,7 +671,10 @@ public class EvaluateRoadSourceCnossos {
                         parameters.getSpeedHgv())));
         // P 108. D.2.5 - Starting and stopping sections
         // There is no breakdown into engine and rolling noise components, the values below are expressed
-        // directly in Lw/m(1 veh/h)
+        // directly in Lw/m(1 veh/h)*/
+
+        parameters.setSpeedLv(parameters.getSpeedLv());
+        parameters.setSpeedHgv(parameters.getSpeedHgv());
 
         // In CNOSSOS Only steadyState
         /**if(parameters.getFlowState() == RSParametersCnossos.EngineState.Starting ||
@@ -693,19 +713,30 @@ public class EvaluateRoadSourceCnossos {
         medRoadLvl = getNoiseLvl(getCoeff(0, FreqParam , 2  ), getCoeff(1, FreqParam , 2  ), parameters.getSpeedMv(), 70.);
         hgvRoadLvl = getNoiseLvl(getCoeff(0, FreqParam , 3  ), getCoeff(1, FreqParam , 3  ), parameters.getSpeedHgv(), 70.);
         wheelaRoadLvl = getNoiseLvl(getCoeff(0, FreqParam , 41  ), getCoeff(1, FreqParam , 41  ), parameters.getSpeedWav(), 70.);
-        wheelbRoadLvl = getNoiseLvl(getCoeff(0, FreqParam , 42  ), getCoeff(1, FreqParam , 41  ), parameters.getSpeedWbv(), 70.);
+        wheelbRoadLvl = getNoiseLvl(getCoeff(0, FreqParam , 42  ), getCoeff(1, FreqParam , 42  ), parameters.getSpeedWbv(), 70.);
 
         // Correction by temperature p. 36
         lvRoadLvl = lvRoadLvl+ 0.08*(20-Temperature); // K = 0.08  p. 36
         medRoadLvl = medRoadLvl + 0.04*(20-Temperature); // K = 0.04 p. 36
         hgvRoadLvl = hgvRoadLvl + 0.04*(20-Temperature); // K = 0.04 p. 36
 
-        // Correction acceleration p. 39 // TODO Add correction acceleration default crossing, but how to do with roundabout
-        //lvRoadLvl = lvRoadLvl + Coeff_Acc[0][0] * Math.max(1-x/100,0) ;
-        //medRoadLvl = medRoadLvl + Coeff_Acc[2][0]  * Math.max(1-x/100,0);
-        //hgvRoadLvl = hgvRoadLvl + Coeff_Acc[2][0]  * Math.max(1-x/100,0);
 
-        //Studied tyres // TODO Add studded tyres
+        // Rolling noise acceleration correction
+        int indJunc = (Junc_type ==2) ? 2 : 0;
+        lvRoadLvl = lvRoadLvl + Coeff_Acc[0][0+indJunc] * Math.max(1-Math.abs(Junc_dist)/100,0) ;
+        medRoadLvl = medRoadLvl + Coeff_Acc[1][0+indJunc]  * Math.max(1-Math.abs(Junc_dist)/100,0);
+        hgvRoadLvl = hgvRoadLvl + Coeff_Acc[2][0+indJunc]  * Math.max(1-Math.abs(Junc_dist)/100,0);
+
+        //Studied tyres
+        if (Pm_stud >0 && Ts_stud > 0) {
+            double deltastud = 0;
+            double speed = parameters.getSpeedLv();
+            double ps = Pm_stud * Ts_stud / 12; //yearly average proportion of vehicles equipped with studded tyres
+            speed = (speed >= 90) ? 90 : speed;
+            speed = (speed <= 50) ? 50 : speed;
+            deltastud = getNoiseLvl(getCoeff(4, FreqParam, 1), getCoeff(5, FreqParam, 1), speed, 70.);
+            lvRoadLvl = lvRoadLvl + 10 * Math.log10((1 - ps) + ps * Math.pow(10, deltastud / 10));
+        }
 
         //Road surface correction on rolling noise
         lvRoadLvl = lvRoadLvl+ getNoiseLvl(getA_Roadcoeff(FreqParam ,1,RoadSurface), getB_Roadcoeff(1,RoadSurface), parameters.getSpeedLv(), 70.);
@@ -731,25 +762,25 @@ public class EvaluateRoadSourceCnossos {
         wheelbMotorLvl =  getCoeff(2, FreqParam , 42  ) + getCoeff(3, FreqParam , 42  ) * (parameters.getSpeedWbv()-70)/70 ;
 
 
-        // Correction road on propulsion noise
-        lvRoadLvl = lvRoadLvl+ Math.min(getA_Roadcoeff(FreqParam ,1,RoadSurface), 0.);
-        medRoadLvl = medRoadLvl + Math.min(getA_Roadcoeff(FreqParam ,2,RoadSurface), 0.);
-        hgvRoadLvl = hgvRoadLvl + Math.min(getA_Roadcoeff(FreqParam ,3,RoadSurface), 0.);
-        wheelaRoadLvl = wheelaRoadLvl + Math.min(getA_Roadcoeff(FreqParam ,41,RoadSurface), 0.);
-        wheelbRoadLvl = wheelbRoadLvl + Math.min(getA_Roadcoeff(FreqParam ,42,RoadSurface), 0.);
+        // Propulsion noise acceleration correction
+
+        lvMotorLvl = lvMotorLvl + Coeff_Acc[0][1+indJunc] * Math.max(1-Math.abs(Junc_dist)/100,0) ;
+        medMotorLvl = medMotorLvl + Coeff_Acc[1][1+indJunc]  * Math.max(1-Math.abs(Junc_dist)/100,0);
+        hgvMotorLvl = hgvMotorLvl + Coeff_Acc[2][1+indJunc]  * Math.max(1-Math.abs(Junc_dist)/100,0);
+
 
         // Correction gradient for light vehicle
         if (parameters.getSlopePercentage() < -6) {
             // downwards 2% <= p <= 6%
             // Steady and deceleration, the same formulae
-            lvMotorLvl = lvMotorLvl + (Math.min(12,-1*parameters.getSlopePercentage())-6)/1;
+            lvMotorLvl = lvMotorLvl + (Math.min(12,-parameters.getSlopePercentage())-6)/1;
         }
         else if (parameters.getSlopePercentage() <= 2) {
             // 0% <= p <= 2%
             lvMotorLvl = lvMotorLvl + 0.;
         } else {
             // upwards 2% <= p <= 6%
-            lvMotorLvl = lvMotorLvl + (parameters.getSpeedLv()/100) * (Math.min(12,parameters.getSlopePercentage())-2)/1.5;
+            lvMotorLvl = lvMotorLvl + ((parameters.getSpeedLv()/100) * ((Math.min(12,parameters.getSlopePercentage())-2)/1.5));
         }
         // Correction gradient for trucks
         if (parameters.getSlopePercentage() < -4) {
@@ -764,6 +795,15 @@ public class EvaluateRoadSourceCnossos {
             medMotorLvl = medMotorLvl + (parameters.getSpeedMv()/100) * (Math.min(12,parameters.getSlopePercentage()))/1;
             hgvMotorLvl = hgvMotorLvl + (parameters.getSpeedHgv()/100) * (Math.min(12,parameters.getSlopePercentage()))/0.8;
         }
+
+        // Correction road on propulsion noise
+        lvMotorLvl = lvMotorLvl+ Math.min(getA_Roadcoeff(FreqParam ,1,RoadSurface), 0.);
+        medMotorLvl = medMotorLvl + Math.min(getA_Roadcoeff(FreqParam ,2,RoadSurface), 0.);
+        hgvMotorLvl = hgvMotorLvl + Math.min(getA_Roadcoeff(FreqParam ,3,RoadSurface), 0.);
+        wheelaMotorLvl = wheelaMotorLvl + Math.min(getA_Roadcoeff(FreqParam ,41,RoadSurface), 0.);
+        wheelbMotorLvl = wheelbMotorLvl + Math.min(getA_Roadcoeff(FreqParam ,42,RoadSurface), 0.);
+
+
         lvCompound = sumDba(lvRoadLvl, lvMotorLvl);
         medCompound = sumDba(medRoadLvl, medMotorLvl);
         hgvCompound = sumDba(hgvRoadLvl, hgvMotorLvl);
@@ -773,18 +813,16 @@ public class EvaluateRoadSourceCnossos {
         /**}**/
 
 
+
+
         // ////////////////////////
         // Lw/m (1 veh/h) to ?
-        double lvLvl = lvCompound  + 10
-                * Math.log10(parameters.getLvPerHour()/(1000*parameters.getSpeedLv()));
-        double medLvl = hgvCompound + 10
-                * Math.log10(parameters.getMvPerHour()/(1000*parameters.getSpeedMv()));
-        double hgvLvl = hgvCompound + 10
-                * Math.log10(parameters.getHgvPerHour()/(1000*parameters.getSpeedHgv()));
-        double wheelaLvl = hgvCompound + 10
-                * Math.log10(parameters.getWavPerHour()/(1000*parameters.getSpeedWav()));
-        double wheelbLvl = hgvCompound + 10
-                * Math.log10(parameters.getWbvPerHour()/(1000*parameters.getSpeedWbv()));
+
+        double lvLvl = Vperhour2NoiseLevel(lvCompound , parameters.getLvPerHour(), parameters.getSpeedLv());
+        double medLvl =Vperhour2NoiseLevel(medCompound , parameters.getMvPerHour(), parameters.getSpeedMv());
+        double hgvLvl =Vperhour2NoiseLevel(hgvCompound , parameters.getHgvPerHour(), parameters.getSpeedHgv());
+        double wheelaLvl =Vperhour2NoiseLevel(wheelaCompound , parameters.getWavPerHour(), parameters.getSpeedWav());
+        double wheelbLvl =Vperhour2NoiseLevel(wheelbCompound , parameters.getWbvPerHour(), parameters.getSpeedWbv());
         return sumDba_5(lvLvl, medLvl, hgvLvl, wheelaLvl, wheelbLvl);
     }
 }

@@ -118,7 +118,7 @@ public class TestSoundPropagationValidation extends TestCase {
                 mesh.getTriNeighbors(), mesh.getVertices());
 
 		PropagationProcessData propData=new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 200,200, 1., 0., 0, null,geoWithSoilTypeList, false);
+                freqLvl, 0, 0, 200,200, 1., 0., 0,0, null,geoWithSoilTypeList, false);
 		PropagationProcessOut propDataOut=new PropagationProcessOut();
 		PropagationProcess propManager=new PropagationProcess(propData, propDataOut);
 		propManager.initStructures();
@@ -173,7 +173,7 @@ public class TestSoundPropagationValidation extends TestCase {
 
         //TODO clarify, is the unit test result require the computation of Vertical diffraction + Horizontal diffraction ?
         PropagationProcessData propData=new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 200,200, 1., 0., 0, null,geoWithSoilTypeList, true);
+                freqLvl, 0, 0, 200,200, 1., 0.,0, 0, null,geoWithSoilTypeList, true);
         PropagationProcessOut propDataOut=new PropagationProcessOut();
         PropagationProcess propManager=new PropagationProcess(propData, propDataOut);
         propManager.initStructures();
@@ -228,7 +228,7 @@ public class TestSoundPropagationValidation extends TestCase {
                 mesh.getTriNeighbors(), mesh.getVertices());
 
         PropagationProcessData propData=new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 200,200, 1., 0., 0, null,geoWithSoilTypeList, true);
+                freqLvl, 0, 0, 200,200, 1., 0., 0,0, null,geoWithSoilTypeList, true);
         PropagationProcessOut propDataOut=new PropagationProcessOut();
         PropagationProcess propManager=new PropagationProcess(propData, propDataOut);
         propManager.initStructures();
@@ -306,7 +306,7 @@ public class TestSoundPropagationValidation extends TestCase {
                 mesh.getTriNeighbors(), mesh.getVertices());
 
         PropagationProcessData propData=new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 200,200, 1., 0., 0, null,geoWithSoilTypeList, true);
+                freqLvl, 0, 0, 200,200, 1., 0., 0,0, null,geoWithSoilTypeList, true);
         PropagationProcessOut propDataOut=new PropagationProcessOut();
         PropagationProcess propManager=new PropagationProcess(propData, propDataOut);
         propManager.initStructures();

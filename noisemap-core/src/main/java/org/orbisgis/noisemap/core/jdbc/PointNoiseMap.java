@@ -133,7 +133,7 @@ public class PointNoiseMap extends JdbcNoiseMap {
                 receivers, freeFieldFinder, sourcesIndex,
                 sourceGeometries, wj_sources, db_field_freq,
                 soundReflectionOrder, soundDiffractionOrder, maximumPropagationDistance, maximumReflectionDistance,
-                0, wallAbsorption, ij,
+                0, wallAbsorption, fav_probability, ij,
                 progression.subProcess(receivers.size()), geoWithSoil, computeVerticalDiffraction);
     }
 

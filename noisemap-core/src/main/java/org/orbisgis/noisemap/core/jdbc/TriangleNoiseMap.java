@@ -315,7 +315,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
                 vertices, freeFieldFinder, sourcesIndex,
                 sourceGeometries, wj_sources, db_field_freq,
                 soundReflectionOrder, soundDiffractionOrder, maximumPropagationDistance, maximumReflectionDistance,
-                roadWidth, wallAbsorption, ij,
+                roadWidth, wallAbsorption,fav_probability, ij,
                 progression.subProcess(vertices.size()), geoWithSoil, computeVerticalDiffraction);
         PropagationProcess propaProcess = new PropagationProcess(
                 threadData, threadDataOut);

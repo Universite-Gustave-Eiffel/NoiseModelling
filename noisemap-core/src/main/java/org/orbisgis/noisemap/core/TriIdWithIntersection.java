@@ -43,7 +43,7 @@ import org.locationtech.jts.geom.Coordinate;
 public class TriIdWithIntersection extends Coordinate {
 
     private int triID;//triangle id
-    private final boolean intersectionOnBuilding;//if this intersection is on building
+    private final boolean intersectionOnBuilding; //if this intersection is on building
     private final boolean intersectionOnTopography;
     private final int buildingId;
 
