@@ -116,9 +116,11 @@ public class TestSoundPropagationValidation extends TestCase {
 		List<Coordinate> vert=mesh.getVertices();
         FastObstructionTest manager=new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
                 mesh.getTriNeighbors(), mesh.getVertices());
+        // rose of favourable conditions
+        double[] favrose = new double[]{0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.};
 
 		PropagationProcessData propData=new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 200,200, 1., 0., 0,0, null,geoWithSoilTypeList, false);
+                freqLvl, 0, 0, 200,200, 1., 0., favrose,0, null,geoWithSoilTypeList, false);
 		PropagationProcessOut propDataOut=new PropagationProcessOut();
 		PropagationProcess propManager=new PropagationProcess(propData, propDataOut);
 		propManager.initStructures();
@@ -170,10 +172,12 @@ public class TestSoundPropagationValidation extends TestCase {
         List<Coordinate> vert=mesh.getVertices();
         FastObstructionTest manager=new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
                 mesh.getTriNeighbors(), mesh.getVertices());
+        // rose of favourable conditions
+        double[] favrose = new double[]{0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.};
 
         //TODO clarify, is the unit test result require the computation of Vertical diffraction + Horizontal diffraction ?
         PropagationProcessData propData=new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 200,200, 1., 0.,0, 0, null,geoWithSoilTypeList, true);
+                freqLvl, 0, 0, 200,200, 1., 0.,favrose, 0, null,geoWithSoilTypeList, true);
         PropagationProcessOut propDataOut=new PropagationProcessOut();
         PropagationProcess propManager=new PropagationProcess(propData, propDataOut);
         propManager.initStructures();
@@ -226,9 +230,11 @@ public class TestSoundPropagationValidation extends TestCase {
         List<Coordinate> vert=mesh.getVertices();
         FastObstructionTest manager=new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
                 mesh.getTriNeighbors(), mesh.getVertices());
+        // rose of favourable conditions
+        double[] favrose = new double[]{0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.};
 
         PropagationProcessData propData=new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 200,200, 1., 0., 0,0, null,geoWithSoilTypeList, true);
+                freqLvl, 0, 0, 200,200, 1., 0., favrose,0, null,geoWithSoilTypeList, true);
         PropagationProcessOut propDataOut=new PropagationProcessOut();
         PropagationProcess propManager=new PropagationProcess(propData, propDataOut);
         propManager.initStructures();
@@ -299,6 +305,8 @@ public class TestSoundPropagationValidation extends TestCase {
         mesh.addTopographicPoint(new Coordinate(100,-100, groundHeight));
         // Triangulation of scenery
         mesh.finishPolygonFeeding(cellEnvelope);
+        // rose of favourable conditions
+        double[] favrose = new double[]{0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.};
 
         //Retrieve Delaunay triangulation of scene
         List<Coordinate> vert=mesh.getVertices();
@@ -306,7 +314,7 @@ public class TestSoundPropagationValidation extends TestCase {
                 mesh.getTriNeighbors(), mesh.getVertices());
 
         PropagationProcessData propData=new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 200,200, 1., 0., 0,0, null,geoWithSoilTypeList, true);
+                freqLvl, 0, 0, 200,200, 1., 0., favrose,0, null,geoWithSoilTypeList, true);
         PropagationProcessOut propDataOut=new PropagationProcessOut();
         PropagationProcess propManager=new PropagationProcess(propData, propDataOut);
         propManager.initStructures();

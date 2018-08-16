@@ -11,7 +11,6 @@ import static org.orbisgis.noisemap.core.EvaluateRoadSourceCnossos.*;
 
 public class EvaluateRoadSourceCnossosTest {
     private static final double EPSILON_TEST1 = 0.01;
-    // TODO Add more unitary tests
     @Test
     public void testRoadNoise1() {
         double lv_speed = 20;

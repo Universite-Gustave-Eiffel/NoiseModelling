@@ -45,7 +45,7 @@ import java.util.Collections;
 import java.util.List;
 
 /***
- * Sound propagation evaluation using NMPB validation scenarios
+ * Sound propagation evaluation using NMPB validation scenarios Doesn't work !!
  */
 public class TestISO17534 extends TestCase {
     private static final List<Integer> freqLvl= Collections.unmodifiableList(Arrays.asList(100, 125, 160, 200, 250, 315,
@@ -115,9 +115,11 @@ public class TestISO17534 extends TestCase {
         List<Coordinate> vert=mesh.getVertices();
         FastObstructionTest manager=new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
                 mesh.getTriNeighbors(), mesh.getVertices());
+        // rose of favourable conditions
+        double[] favrose = new double[]{0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25};
 
         PropagationProcessData propData=new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 250,250, 1., 0.,0.25, 0, null,geoWithSoilTypeList, true);
+                freqLvl, 0, 0, 250,250, 1., 0.,favrose, 0, null,geoWithSoilTypeList, true);
         PropagationProcessOut propDataOut=new PropagationProcessOut();
         PropagationProcess propManager=new PropagationProcess(propData, propDataOut);
         propManager.initStructures();
@@ -161,9 +163,11 @@ public class TestISO17534 extends TestCase {
         List<Coordinate> vert=mesh.getVertices();
         FastObstructionTest manager=new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
                 mesh.getTriNeighbors(), mesh.getVertices());
+        // rose of favourable conditions
+        double[] favrose = new double[]{0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.};
 
         PropagationProcessData propData=new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 250,250, 1., 0., 0,0, null,geoWithSoilTypeList, true);
+                freqLvl, 0, 0, 250,250, 1., 0., favrose,0, null,geoWithSoilTypeList, true);
         PropagationProcessOut propDataOut=new PropagationProcessOut();
         PropagationProcess propManager=new PropagationProcess(propData, propDataOut);
         propManager.initStructures();
@@ -207,9 +211,11 @@ public class TestISO17534 extends TestCase {
         List<Coordinate> vert=mesh.getVertices();
         FastObstructionTest manager=new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
                 mesh.getTriNeighbors(), mesh.getVertices());
+        // rose of favourable conditions
+        double[] favrose = new double[]{0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25};
 
         PropagationProcessData propData=new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 250,250, 1., 0., 0.25,0, null,geoWithSoilTypeList, true);
+                freqLvl, 0, 0, 250,250, 1., 0., favrose,0, null,geoWithSoilTypeList, true);
         PropagationProcessOut propDataOut=new PropagationProcessOut();
         PropagationProcess propManager=new PropagationProcess(propData, propDataOut);
         propManager.initStructures();
@@ -253,9 +259,11 @@ public class TestISO17534 extends TestCase {
         List<Coordinate> vert=mesh.getVertices();
         FastObstructionTest manager=new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
                 mesh.getTriNeighbors(), mesh.getVertices());
+        // rose of favourable conditions
+        double[] favrose = new double[]{0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25};
 
         PropagationProcessData propData=new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 250,250, 1., 0., 0.25,0, null,geoWithSoilTypeList, true);
+                freqLvl, 0, 0, 250,250, 1., 0., favrose,0, null,geoWithSoilTypeList, true);
         PropagationProcessOut propDataOut=new PropagationProcessOut();
         PropagationProcess propManager=new PropagationProcess(propData, propDataOut);
         propManager.initStructures();
@@ -301,9 +309,11 @@ public class TestISO17534 extends TestCase {
         List<Coordinate> vert=mesh.getVertices();
         FastObstructionTest manager=new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
                 mesh.getTriNeighbors(), mesh.getVertices());
+        // rose of favourable conditions
+        double[] favrose = new double[]{0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25};
 
         PropagationProcessData propData=new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 250,250, 1., 0., 0.25,0, null,geoWithSoilTypeList, true);
+                freqLvl, 0, 0, 250,250, 1., 0., favrose,0, null,geoWithSoilTypeList, true);
         PropagationProcessOut propDataOut=new PropagationProcessOut();
         PropagationProcess propManager=new PropagationProcess(propData, propDataOut);
         propManager.initStructures();
@@ -355,9 +365,11 @@ public class TestISO17534 extends TestCase {
         List<Coordinate> vert=mesh.getVertices();
         FastObstructionTest manager=new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
                 mesh.getTriNeighbors(), mesh.getVertices());
+        // rose of favourable conditions
+        double[] favrose = new double[]{0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25};
 
         PropagationProcessData propData=new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 250,250, 1., 0., 0.25,0, null,geoWithSoilTypeList, true);
+                freqLvl, 0, 0, 250,250, 1., 0., favrose,0, null,geoWithSoilTypeList, true);
         PropagationProcessOut propDataOut=new PropagationProcessOut();
         PropagationProcess propManager=new PropagationProcess(propData, propDataOut);
         propManager.initStructures();
@@ -410,9 +422,11 @@ public class TestISO17534 extends TestCase {
         List<Coordinate> vert=mesh.getVertices();
         FastObstructionTest manager=new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
                 mesh.getTriNeighbors(), mesh.getVertices());
+        // rose of favourable conditions
+        double[] favrose = new double[]{0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25};
 
         PropagationProcessData propData=new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 250,250, 1., 0., 0.25,0, null,geoWithSoilTypeList, true);
+                freqLvl, 0, 0, 250,250, 1., 0., favrose,0, null,geoWithSoilTypeList, true);
         PropagationProcessOut propDataOut=new PropagationProcessOut();
         PropagationProcess propManager=new PropagationProcess(propData, propDataOut);
         propManager.initStructures();
@@ -459,6 +473,8 @@ public class TestISO17534 extends TestCase {
                 new Coordinate(15.5, 0, 0),
                 new Coordinate(15.5, 20, 0)}), 1.5);
         mesh.finishPolygonFeeding(cellEnvelope);
+        // rose of favourable conditions
+        double[] favrose = new double[]{0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25};
 
         //Retrieve Delaunay triangulation of scene
         List<Coordinate> vert=mesh.getVertices();
@@ -466,7 +482,7 @@ public class TestISO17534 extends TestCase {
                 mesh.getTriNeighbors(), mesh.getVertices());
 
         PropagationProcessData propData=new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 250,250, 1., 0., 0.25,0, null,geoWithSoilTypeList, true);
+                freqLvl, 0, 0, 250,250, 1., 0., favrose,0, null,geoWithSoilTypeList, true);
         PropagationProcessOut propDataOut=new PropagationProcessOut();
         PropagationProcess propManager=new PropagationProcess(propData, propDataOut);
         propManager.initStructures();
@@ -513,6 +529,8 @@ public class TestISO17534 extends TestCase {
                 new Coordinate(15.5, 0, 0),
                 new Coordinate(15.5, 20, 0)}), 1.5);
         mesh.finishPolygonFeeding(cellEnvelope);
+        // rose of favourable conditions
+        double[] favrose = new double[]{0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25};
 
         //Retrieve Delaunay triangulation of scene
         List<Coordinate> vert=mesh.getVertices();
@@ -520,7 +538,7 @@ public class TestISO17534 extends TestCase {
                 mesh.getTriNeighbors(), mesh.getVertices());
 
         PropagationProcessData propData=new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 250,250, 1., 0., 0.25,0, null,geoWithSoilTypeList, true);
+                freqLvl, 0, 0, 250,250, 1., 0., favrose,0, null,geoWithSoilTypeList, true);
         PropagationProcessOut propDataOut=new PropagationProcessOut();
         PropagationProcess propManager=new PropagationProcess(propData, propDataOut);
         propManager.initStructures();
@@ -551,6 +569,9 @@ public class TestISO17534 extends TestCase {
         geoWithSoilTypeList.add(new GeoWithSoilType(factory.toGeometry(new Envelope(0,250,-20,40)),1.));
         //Build query structure for sources
         QueryGeometryStructure sourcesIndex = new QueryQuadTree();
+        // rose of favourable conditions
+        double[] favrose = new double[]{0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25};
+
         int idsrc=0;
         for(Geometry src : srclst) {
             sourcesIndex.appendGeometry(src, idsrc);
@@ -572,7 +593,7 @@ public class TestISO17534 extends TestCase {
                 mesh.getTriNeighbors(), mesh.getVertices());
 
         PropagationProcessData propData=new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 250,250, 1., 0., 0.25,0, null,geoWithSoilTypeList, true);
+                freqLvl, 0, 0, 250,250, 1., 0., favrose,0, null,geoWithSoilTypeList, true);
         PropagationProcessOut propDataOut=new PropagationProcessOut();
         PropagationProcess propManager=new PropagationProcess(propData, propDataOut);
         propManager.initStructures();
@@ -601,6 +622,9 @@ public class TestISO17534 extends TestCase {
         // GeometrySoilType
         List<GeoWithSoilType> geoWithSoilTypeList = new ArrayList<>();
         geoWithSoilTypeList.add(new GeoWithSoilType(factory.toGeometry(new Envelope(0,250,-250,50)),1.));
+        // rose of favourable conditions
+        double[] favrose = new double[]{0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25};
+
         //Build query structure for sources
         QueryGeometryStructure sourcesIndex = new QueryQuadTree();
         int idsrc=0;
@@ -624,7 +648,7 @@ public class TestISO17534 extends TestCase {
                 mesh.getTriNeighbors(), mesh.getVertices());
 
         PropagationProcessData propData=new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 1, 250,250, 1., 0., 0.25,0, null,geoWithSoilTypeList, false);
+                freqLvl, 0, 1, 250,250, 1., 0., favrose,0, null,geoWithSoilTypeList, false);
         PropagationProcessOut propDataOut=new PropagationProcessOut();
         PropagationProcess propManager=new PropagationProcess(propData, propDataOut);
         propManager.initStructures();
@@ -632,8 +656,6 @@ public class TestISO17534 extends TestCase {
         //Run test
         splCompare(splCompute(propManager, new Coordinate(200, 10, 4)), "Test T14", new double[]{-28.53, -27.56, -25.6, -22.65, -20.72, -19.79, -19.23, -17.83, -20.1, -19.7, -20.49, -21.97, -22.97, -24.4 ,-26, -29.22, -34.08, -38.92}, ERROR_EPSILON_TEST_T);
     }
-
-
 
 
     /**
@@ -657,7 +679,10 @@ public class TestISO17534 extends TestCase {
         List<GeoWithSoilType> geoWithSoilTypeList = new ArrayList<>();
         geoWithSoilTypeList.add(new GeoWithSoilType(factory.toGeometry(new Envelope(-50,50,-50,50)),0.6));
         geoWithSoilTypeList.add(new GeoWithSoilType(factory.toGeometry(new Envelope(50,100,-50,50)),0.9));
-		//Build query structure for sources
+        // rose of favourable conditions
+        double[] favrose = new double[]{0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.};
+
+        //Build query structure for sources
 		QueryGeometryStructure sourcesIndex = new QueryQuadTree();
 		int idsrc=0;
 		for(Geometry src : srclst) {
@@ -674,7 +699,7 @@ public class TestISO17534 extends TestCase {
                 mesh.getTriNeighbors(), mesh.getVertices());
 
 		PropagationProcessData propData=new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 200,200, 1., 0.,0, 0, null,geoWithSoilTypeList, false);
+                freqLvl, 0, 0, 200,200, 1., 0.,favrose, 0, null,geoWithSoilTypeList, false);
 		PropagationProcessOut propDataOut=new PropagationProcessOut();
 		PropagationProcess propManager=new PropagationProcess(propData, propDataOut);
 		propManager.initStructures();
@@ -705,6 +730,9 @@ public class TestISO17534 extends TestCase {
         List<GeoWithSoilType> geoWithSoilTypeList = new ArrayList<>();
         geoWithSoilTypeList.add(new GeoWithSoilType(factory.toGeometry(new Envelope(-50,35,-100,100)),0));
         geoWithSoilTypeList.add(new GeoWithSoilType(factory.toGeometry(new Envelope(35,100,-100,100)),1));
+        // rose of favourable conditions
+        double[] favrose = new double[]{0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.};
+
         //Build query structure for sources
         QueryGeometryStructure sourcesIndex = new QueryQuadTree();
         int idsrc=0;
@@ -741,7 +769,7 @@ public class TestISO17534 extends TestCase {
 
         //TODO clarify, is the unit test result require the computation of Vertical diffraction + Horizontal diffraction ?
         PropagationProcessData propData=new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 200,200, 1., 0., 0,0, null,geoWithSoilTypeList, true);
+                freqLvl, 0, 0, 200,200, 1., 0., favrose,0, null,geoWithSoilTypeList, true);
         PropagationProcessOut propDataOut=new PropagationProcessOut();
         PropagationProcess propManager=new PropagationProcess(propData, propDataOut);
         propManager.initStructures();
@@ -789,6 +817,8 @@ public class TestISO17534 extends TestCase {
                 new Coordinate(15, 30, 0),
                 new Coordinate(15, 10, 0)}), 5);
         mesh.finishPolygonFeeding(cellEnvelope);
+        // rose of favourable conditions
+        double[] favrose = new double[]{0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.};
 
         //Retrieve Delaunay triangulation of scene
         List<Coordinate> vert=mesh.getVertices();
@@ -796,7 +826,7 @@ public class TestISO17534 extends TestCase {
                 mesh.getTriNeighbors(), mesh.getVertices());
 
         PropagationProcessData propData=new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 200,200, 1., 0., 0, 0, null,geoWithSoilTypeList, true);
+                freqLvl, 0, 0, 200,200, 1., 0., favrose, 0, null,geoWithSoilTypeList, true);
         PropagationProcessOut propDataOut=new PropagationProcessOut();
         PropagationProcess propManager=new PropagationProcess(propData, propDataOut);
         propManager.initStructures();
@@ -867,6 +897,8 @@ public class TestISO17534 extends TestCase {
         mesh.addTopographicPoint(new Coordinate(100,-100, groundHeight));
         // Triangulation of scenery
         mesh.finishPolygonFeeding(cellEnvelope);
+        // rose of favourable conditions
+        double[] favrose = new double[]{0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.};
 
         //Retrieve Delaunay triangulation of scene
         List<Coordinate> vert=mesh.getVertices();
@@ -874,7 +906,7 @@ public class TestISO17534 extends TestCase {
                 mesh.getTriNeighbors(), mesh.getVertices());
 
         PropagationProcessData propData=new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 200,200, 1., 0., 0,0, null,geoWithSoilTypeList, true);
+                freqLvl, 0, 0, 200,200, 1., 0., favrose,0, null,geoWithSoilTypeList, true);
         PropagationProcessOut propDataOut=new PropagationProcessOut();
         PropagationProcess propManager=new PropagationProcess(propData, propDataOut);
         propManager.initStructures();

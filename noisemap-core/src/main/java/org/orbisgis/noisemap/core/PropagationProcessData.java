@@ -71,7 +71,7 @@ public class PropagationProcessData {
     /** Wall alpha [0-1] */
     public double wallAlpha;
     /** probability occurence favourable condition */
-    public double fav_probability;
+    public double[] favrose;
     /** cellId only used in output data */
     public int cellId;
     /** Progression information */
@@ -85,7 +85,7 @@ public class PropagationProcessData {
                                   QueryGeometryStructure sourcesIndex, List<Geometry> sourceGeometries,
                                   List<ArrayList<Double>> wj_sources, List<Integer> freq_lvl, int reflexionOrder,
                                   int diffractionOrder, double maxSrcDist, double maxRefDist, double minRecDist,
-                                  double wallAlpha, double fav_probability, int cellId, ProgressVisitor cellProg,
+                                  double wallAlpha, double[] favrose, int cellId, ProgressVisitor cellProg,
                                   List<GeoWithSoilType> geoWithSoilType, boolean computeVerticalDiffraction) {
         this.receivers = receivers;
         this.freeFieldFinder = freeFieldFinder;
@@ -99,7 +99,7 @@ public class PropagationProcessData {
         this.maxRefDist = maxRefDist;
         this.minRecDist = minRecDist;
         this.wallAlpha = wallAlpha;
-        this.fav_probability = fav_probability;
+        this.favrose = favrose;
         this.cellId = cellId;
         this.cellProg = cellProg;
         this.geoWithSoilType = geoWithSoilType;

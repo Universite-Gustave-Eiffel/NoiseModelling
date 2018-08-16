@@ -986,7 +986,7 @@ public class PropagationProcess implements Runnable {
     @SuppressWarnings("unchecked")
     private void receiverSourcePropa(Coordinate srcCoord,
                                      Coordinate receiverCoord, double energeticSum[],
-                                     double[] alpha_atmo, List<Double> wj, double fav_probability,
+                                     double[] alpha_atmo, List<Double> wj, double[] favrose,
                                      List<FastObstructionTest.Wall> nearBuildingsWalls, List<PropagationDebugInfo> debugInfo) {
 
 
@@ -1024,8 +1024,7 @@ public class PropagationProcess implements Runnable {
                 }
             }
             double SrcReceiverDistance = CGAlgorithms3D.distance(srcCoord, receiverCoord);
-            double SrcReceiverAngle = calcRotationAngleInDegrees(receiverCoord,srcCoord );
-
+            double fav_probability = favrose[(int)(Math.round(calcRotationAngleInDegrees(srcCoord,receiverCoord)/30))];
 
             if (!somethingHideReceiver  && !buildingOnPath) {
                 computeFreefield(receiverCoord, srcCoord, SrcReceiverDistance, fav_probability, freqcut, wj, debugInfo, energeticSum);
@@ -1191,7 +1190,7 @@ public class PropagationProcess implements Runnable {
                     query.expandBy(Math.min(data.maxRefDist, srcCoord.distance(receiverCoord)));
                     List queryResult = walls.query(query);
                     receiverSourcePropa(srcCoord, receiverCoord, energeticSum,
-                            alpha_atmo, wj, data.fav_probability,
+                            alpha_atmo, wj, data.favrose,
                             (List<FastObstructionTest.Wall>) queryResult, debugInfo);
                 }
             }
