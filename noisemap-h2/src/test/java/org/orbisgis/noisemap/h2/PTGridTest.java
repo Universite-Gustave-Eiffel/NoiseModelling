@@ -174,9 +174,9 @@ public class PTGridTest {
         // Create receivers points
         st.execute("DROP TABLE IF EXISTS RECEIVERS");
         st.execute("CREATE TABLE RECEIVERS(ID SERIAL, THE_GEOM POINT)");
-        st.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT (-157 60 1.)')");
-        st.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT (-157 60 0.2)')");
-        st.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT (-157 60 11.6)')");
+        st.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT (-157 60 0.438205)')");
+        st.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT (-157 60 -0.361795)')");
+        st.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT (-157 60 11.038205)')");
         st.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT (59 60 1.6)')");
         ResultSet rs = st.executeQuery("select * from BR_PTGRID3D('BUILDINGS', 'HEIGHT', 'SOUND_SOURCE','RECEIVERS', 'DB_M', '','DEM' ,1000,500, 2, 1, 0.2)");
         //  W must be equal to 1

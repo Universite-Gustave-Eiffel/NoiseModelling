@@ -34,6 +34,8 @@ public abstract class JdbcNoiseMap {
     // Digital elevation model table. (Contains points or triangles)
     protected String demTable = "";
     protected String sound_lvl_field = "DB_M";
+    // True if Z of sound source and receivers are relative to the ground
+    protected boolean absoluteZCoordinates = false;
     protected double maximumPropagationDistance = 750;
     protected double maximumReflectionDistance = 100;
     protected int subdivisionLevel = -1; // TODO Guess it from maximumPropagationDistance and source extent
@@ -316,6 +318,21 @@ public abstract class JdbcNoiseMap {
         return soilTableName;
     }
 
+    /**
+     * @return True if provided Z value of receivers and sources are relative to the ground level.
+     * False (sea level) otherwise
+     */
+    public boolean isAbsoluteZCoordinates() {
+        return absoluteZCoordinates;
+    }
+
+    /**
+     * True if provided Z value of receivers and sources are relative to the ground level.
+     * False (sea level) otherwise
+     */
+    public void setAbsoluteZCoordinates(boolean absoluteZCoordinates) {
+        this.absoluteZCoordinates = absoluteZCoordinates;
+    }
 
     /**
      * Extracted from NMPB 2008-2 7.3.2
