@@ -319,6 +319,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
                 progression.subProcess(vertices.size()), geoWithSoil, computeVerticalDiffraction);
         PropagationProcess propaProcess = new PropagationProcess(
                 threadData, threadDataOut);
+        propaProcess.makeRelativeZToAbsolute();
         propaProcess.run();
         Stack<PropagationResultTriRecord> toDriver = new Stack<>();
         int tri_id = 0;
