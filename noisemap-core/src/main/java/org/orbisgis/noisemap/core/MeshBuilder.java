@@ -77,6 +77,7 @@ public class MeshBuilder {
         private final Geometry geo;
         //If we add the topographic, the building height will be the average ToPo Height+ Building Height of all vertices
         private double height;
+        private double alpha = 0.23;
         private final boolean hasHeight;
 
         public PolygonWithHeight(Geometry geo) {
@@ -91,9 +92,30 @@ public class MeshBuilder {
             this.hasHeight = true;
         }
 
+        public PolygonWithHeight(Geometry geo, double height, double alpha) {
+            this.geo = geo;
+            this.height = height;
+            this.hasHeight = true;
+            this.alpha = alpha;
+        }
+
         public Geometry getGeometry() {
 
             return this.geo;
+        }
+
+        /**
+         * @return Get absorption coefficient of walls
+         */
+        public double getAlpha() {
+            return alpha;
+        }
+
+        /**
+         * @param alpha Set absorption coefficient of walls
+         */
+        public void setAlpha(double alpha) {
+            this.alpha = alpha;
         }
 
         public double getHeight() {
