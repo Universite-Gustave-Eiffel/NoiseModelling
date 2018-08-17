@@ -77,7 +77,7 @@ public class MeshBuilder {
         private final Geometry geo;
         //If we add the topographic, the building height will be the average ToPo Height+ Building Height of all vertices
         private double height;
-        private double alpha = 0.23;
+        private double alpha = Double.NaN;
         private final boolean hasHeight;
 
         public PolygonWithHeight(Geometry geo) {
@@ -89,13 +89,13 @@ public class MeshBuilder {
         public PolygonWithHeight(Geometry geo, double height) {
             this.geo = geo;
             this.height = height;
-            this.hasHeight = true;
+            this.hasHeight = height < Double.MAX_VALUE;
         }
 
         public PolygonWithHeight(Geometry geo, double height, double alpha) {
             this.geo = geo;
             this.height = height;
-            this.hasHeight = true;
+            this.hasHeight = height < Double.MAX_VALUE;
             this.alpha = alpha;
         }
 
@@ -195,9 +195,20 @@ public class MeshBuilder {
      * @param obstructionPoly  building's Geometry
      * @param heightofBuilding building's Height
      */
-    @SuppressWarnings("unchecked")
     public void addGeometry(Geometry obstructionPoly, double heightofBuilding) {
         addGeometry(new PolygonWithHeight(obstructionPoly, heightofBuilding));
+    }
+
+    /**
+     * Add a new building with height and merge this new building with existing buildings if they have intersections
+     * When we merge the buildings, we will use The shortest height to new building
+     *
+     * @param obstructionPoly  building's Geometry
+     * @param heightofBuilding building's Height
+     * @param alpha Wall absorption coefficient
+     */
+    public void addGeometry(Geometry obstructionPoly, double heightofBuilding, double alpha) {
+        addGeometry(new PolygonWithHeight(obstructionPoly, heightofBuilding, alpha));
     }
 
     public void mergeBuildings(Geometry boundingBoxGeom) {

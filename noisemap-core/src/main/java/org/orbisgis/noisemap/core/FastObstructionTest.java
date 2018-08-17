@@ -599,6 +599,10 @@ public class FastObstructionTest {
         return polygonWithHeight.get(buildingId - 1).getHeight();
     }
 
+    public double getBuildingAlpha(int buildingId) {
+        return polygonWithHeight.get(buildingId - 1).getAlpha();
+    }
+
     /*
      * compute diffraction.
      */

@@ -211,7 +211,7 @@ public class PropagationProcess implements Runnable {
             double ReflectedSrcReceiverDistance = receiverReflection.getReceiverPos().distance(srcCoord);
             imageReceiver++;
             boolean validReflection = false;
-            int reflectionOrderCounter = 0;
+            double reflectionAlpha = 1;
             MirrorReceiverResult receiverReflectionCursor = receiverReflection;
             // Test whether intersection point is on the wall
             // segment or not
@@ -228,7 +228,8 @@ public class PropagationProcess implements Runnable {
             // While there is a reflection point on another wall. And intersection point is in the wall z bounds.
             while (linters.hasIntersection() && MirrorReceiverIterator.wallPointTest(seg, destinationPt))
             {
-                reflectionOrderCounter++;
+                Double buildingAlpha = data.freeFieldFinder.getBuildingAlpha(seg.getBuildingId());
+                reflectionAlpha *= 1 - (buildingAlpha.isNaN() ? data.wallAlpha : buildingAlpha);
                 // There are a probable reflection point on the
                 // segment
                 Coordinate reflectionPt = new Coordinate(
@@ -308,8 +309,7 @@ public class PropagationProcess implements Runnable {
                     double AttenuatedWj = attDistW(wj.get(idfreq),
                             ReflectedSrcReceiverDistance);
                     // Apply wall material attenuation
-                    AttenuatedWj *= Math.pow((1 - data.wallAlpha),
-                            reflectionOrderCounter);
+                    AttenuatedWj *= reflectionAlpha;
                     // Apply atmospheric absorption and ground
                     AttenuatedWj = attAtmW(
                             AttenuatedWj,
