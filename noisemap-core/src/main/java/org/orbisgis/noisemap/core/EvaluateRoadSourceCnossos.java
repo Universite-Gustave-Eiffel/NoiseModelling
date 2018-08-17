@@ -208,7 +208,13 @@ public class EvaluateRoadSourceCnossos {
             {-3.3,-0.2,-0.2,0.,0.,0.},
             {-1.5,0.5,0.5,0.,0.,0.},{40,130}};
     /** French road pavement "Matching directive 2015/996/EC (CNOSSOS-EU)
-     and the French emission model for road pavements", Dutilleux, Soldano, Euronoise 2018**/
+     and the French emission model for road pavements", Dutilleux, Soldano, Euronoise 2018
+     R1 (high acoustic performance): BBTM 0/6 types 1 et 2 - BBUM 0/6 - BBDr 0/10 - BBTM 0/10 type 2
+     R2 (medium acoustic performance): BBTM 0/10 type 1 - BBSG 0/10 - ECF - BBUM 0/10
+     R3 (low acoustic performance): BC - BBTM 0/14 - BBSG 0/14 - ES 6/10 - ES 10/14
+     Drainant = Dr after the name
+     **/
+
      private static final double[][] RoadCoeff_FR1={ // R1 drainant (ajustement composante totale, Rapport Cerema 2016)
             {13.9,23.3,19,0.,0.,0.},
             {14,19.4,15.5,0.,0.,0.},
