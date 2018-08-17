@@ -89,12 +89,8 @@ public class FastObstructionTest {
         List<MeshBuilder.PolygonWithHeight> polygonWithHeightArray = new ArrayList<MeshBuilder.PolygonWithHeight>(buildings.size());
         hasBuildingWithHeight = false;
         for(MeshBuilder.PolygonWithHeight poly : buildings) {
-            if(poly.hasHeight()) {
-                hasBuildingWithHeight = true;
-                polygonWithHeightArray.add(new MeshBuilder.PolygonWithHeight(poly.getGeometry(), poly.getHeight()));
-            } else {
-                polygonWithHeightArray.add(new MeshBuilder.PolygonWithHeight(poly.getGeometry()));
-            }
+            polygonWithHeightArray.add(new MeshBuilder.PolygonWithHeight(poly.getGeometry(), poly.getHeight(), poly.getAlpha()));
+            hasBuildingWithHeight = hasBuildingWithHeight || poly.hasHeight();
         }
         GeometryFactory factory = new GeometryFactory();
         this.polygonWithHeight = polygonWithHeightArray;

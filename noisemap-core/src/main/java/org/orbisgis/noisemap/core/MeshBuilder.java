@@ -96,7 +96,7 @@ public class MeshBuilder {
             this.geo = geo;
             this.height = height;
             this.hasHeight = height < Double.MAX_VALUE;
-            this.alpha = alpha;
+            this.alpha = Math.min(1, Math.max(0, alpha));
         }
 
         public Geometry getGeometry() {
@@ -243,21 +243,22 @@ public class MeshBuilder {
             if(geometryN instanceof Polygon) {
                 List polyInters = buildingsRtree.query(geometryN.getEnvelopeInternal());
                 double minHeight = Double.MAX_VALUE;
-                boolean foundHeight = false;
+                double minAlpha = Double.MAX_VALUE;
                 for (Object id : polyInters) {
                     if (id instanceof Integer) {
                         PolygonWithHeight inPoly = polygonWithHeight.get((int) id);
-                        if (inPoly.hasHeight && inPoly.getGeometry().intersects(geometryN)) {
-                            minHeight = Math.min(minHeight, inPoly.getHeight());
-                            foundHeight = true;
+                        if (inPoly.getGeometry().intersects(geometryN)) {
+                            if(inPoly.hasHeight) {
+                                minHeight = Math.min(minHeight, inPoly.getHeight());
+                            }
+                            if(!Double.isNaN(inPoly.getAlpha())) {
+                                minAlpha = Math.min(minAlpha, inPoly.getAlpha());
+                            }
+                            break;
                         }
                     }
                 }
-                if(foundHeight) {
-                    mergedPolygonWithHeight.add(new PolygonWithHeight(geometryN, minHeight));
-                } else {
-                    mergedPolygonWithHeight.add(new PolygonWithHeight(geometryN));
-                }
+                mergedPolygonWithHeight.add(new PolygonWithHeight(geometryN, minHeight, minAlpha > 1 ? Double.NaN : minAlpha));
             } else if(geometryN instanceof LineString) {
               // Exterior envelope
               envelopeSplited.add((LineString)geometryN);

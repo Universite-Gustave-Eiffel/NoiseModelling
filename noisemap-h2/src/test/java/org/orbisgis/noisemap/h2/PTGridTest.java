@@ -16,6 +16,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -30,7 +31,7 @@ public class PTGridTest {
 
     @BeforeClass
     public static void tearUpClass() throws Exception {
-        connection = SFSUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(PTGridTest.class.getSimpleName(), false, "MV_STORE=FALSE"));
+        connection = SFSUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(PTGridTest.class.getSimpleName() + UUID.randomUUID(), false, "MV_STORE=FALSE"));
         org.h2gis.functions.factory.H2GISFunctions.load(connection);
         H2GISFunctions.registerFunction(connection.createStatement(), new BR_PtGrid3D(), "");
         H2GISFunctions.registerFunction(connection.createStatement(), new BR_PtGrid(), "");
@@ -211,5 +212,60 @@ public class PTGridTest {
         assertEquals(2, rs.getInt("GID"));
         assertEquals(55.21,10*Math.log10(rs.getDouble("W")), 0.1);
         assertFalse(rs.next());
+    }
+
+
+
+    @Test
+    public void testAlphaColumn() throws SQLException {
+        // Create empty buildings table
+        st.execute("DROP TABLE IF EXISTS BUILDINGS");
+        st.execute("CREATE TABLE BUILDINGS(the_geom POLYGON, HEIGHT double, ALPHA double)");
+        st.execute("INSERT INTO BUILDINGS VALUES ('POLYGON ((12.2 14.6, 11.5 37.3, 72.8 37.3, 71.5 12.9, 12.2 14.6))', 4, 0.28)");
+        st.execute("INSERT INTO BUILDINGS VALUES ('POLYGON ((84.4 -29.8, 87.8 -10.8, 179.3 -12.2, 173.9 -32.5, 84.4 -29.8))', 4, 0.12)");
+        // Create a single sound source
+        st.execute("DROP TABLE IF EXISTS roads_src_global");
+        st.execute("CREATE TEMPORARY TABLE roads_src_global(the_geom POINT, db_m double)");
+        st.execute("INSERT INTO roads_src_global VALUES ('POINT(0 0)'::geometry, 85)");
+        // INSERT 2 points to set the computation area
+        st.execute("INSERT INTO roads_src_global VALUES ('POINT(-100 -100)'::geometry, 0)");
+        st.execute("INSERT INTO roads_src_global VALUES ('POINT(100 100)'::geometry, 0)");
+        // Compute spectrum repartition
+        st.execute("drop table if exists roads_src;\n" +
+                "CREATE TABLE roads_src AS SELECT the_geom,\n" +
+                "BR_SpectrumRepartition(100,1,db_m) as db_m100,\n" +
+                "BR_SpectrumRepartition(125,1,db_m) as db_m125,\n" +
+                "BR_SpectrumRepartition(160,1,db_m) as db_m160,\n" +
+                "BR_SpectrumRepartition(200,1,db_m) as db_m200,\n" +
+                "BR_SpectrumRepartition(250,1,db_m) as db_m250,\n" +
+                "BR_SpectrumRepartition(315,1,db_m) as db_m315,\n" +
+                "BR_SpectrumRepartition(400,1,db_m) as db_m400,\n" +
+                "BR_SpectrumRepartition(500,1,db_m) as db_m500,\n" +
+                "BR_SpectrumRepartition(630,1,db_m) as db_m630,\n" +
+                "BR_SpectrumRepartition(800,1,db_m) as db_m800,\n" +
+                "BR_SpectrumRepartition(1000,1,db_m) as db_m1000,\n" +
+                "BR_SpectrumRepartition(1250,1,db_m) as db_m1250,\n" +
+                "BR_SpectrumRepartition(1600,1,db_m) as db_m1600,\n" +
+                "BR_SpectrumRepartition(2000,1,db_m) as db_m2000,\n" +
+                "BR_SpectrumRepartition(2500,1,db_m) as db_m2500,\n" +
+                "BR_SpectrumRepartition(3150,1,db_m) as db_m3150,\n" +
+                "BR_SpectrumRepartition(4000,1,db_m) as db_m4000,\n" +
+                "BR_SpectrumRepartition(5000,1,db_m) as db_m5000 from roads_src_global;");
+        // Create receivers points
+        st.execute("DROP TABLE IF EXISTS RECEIVERS");
+        st.execute("CREATE TABLE RECEIVERS(ID SERIAL, THE_GEOM POINT)");
+        st.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT(167.7 8.13)')");
+        // Compute noise map
+        st.execute("DROP TABLE IF EXISTS TEST");
+        ResultSet rs = st.executeQuery("SELECT * FROM BR_PTGRID('buildings', 'roads_src','receivers', 'DB_M','', 400,400, 2,0,0.2)");
+        try {
+            assertTrue(rs.next());
+            assertEquals(1l, rs.getLong("GID"));
+            assertEquals(0, rs.getInt("CELL_ID"));
+            assertEquals(30.5, 10*Math.log10(rs.getDouble("W")), 0.1);
+            assertFalse(rs.next());
+        } finally {
+            rs.close();
+        }
     }
 }
