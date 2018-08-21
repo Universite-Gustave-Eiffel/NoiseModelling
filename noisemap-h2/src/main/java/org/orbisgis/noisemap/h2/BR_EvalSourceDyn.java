@@ -66,7 +66,8 @@ public class BR_EvalSourceDyn extends DeterministicScalarFunction {
                 "     * @param Ts_stud A limited period Ts (in months) over the year where a average proportion pm of light vehicles are equipped with studded tyres and during .\n" +
                 "     * @param Pm_stud Average proportion of vehicles equipped with studded tyres\n" +
                 "     * @param Junc_dist Distance to junction (optional, used when acc_type = 1)\n" +
-                "     * @param Junc_type Type of junction; k = 1 for a crossing with traffic lights ; k = 2 for a roundabout (optional, used when acc_type = 1)");
+                "     * @param Junc_type Type of junction; k = 1 for a crossing with traffic lights ; k = 2 for a roundabout (optional, used when acc_type = 1)\n" +
+                "     * @param LwStd Standard Deviation of Lw");
     }
 
     @Override
@@ -91,13 +92,14 @@ public class BR_EvalSourceDyn extends DeterministicScalarFunction {
      * @param Pm_stud      Average proportion of vehicles equipped with studded tyres
      * @param Junc_dist    Distance to junction
      * @param Junc_type    Type of junction ((k = 1 for a crossing with traffic lights ; k = 2 for a roundabout)
+     * @param LwStd Standard Deviation of Lw
      * @return Noise level in dB
      */
     public static double evalSourceDyn(double speed, double acceleration, int veh_type, double beginZ, double endZ, double roadLength2d,
-                                       int RoadSurface, double Temperature, double Ts_stud, double Pm_stud, int acc_type, double Junc_dist, int Junc_type, int FreqParam) {
+                                       int RoadSurface, double Temperature, double Ts_stud, double Pm_stud, int acc_type, double Junc_dist, int Junc_type, int FreqParam, double LwStd) {
         //checkRoadSurface(roadSurface);
         RSParametersDynamic srcParameters = new RSParametersDynamic(speed, acceleration, veh_type, acc_type,
-                FreqParam, Temperature, RoadSurface, Ts_stud, Pm_stud, Junc_dist, Junc_type);
+                FreqParam, Temperature, RoadSurface, Ts_stud, Pm_stud, Junc_dist, Junc_type, LwStd);
         srcParameters.setSlopePercentage(RSParametersDynamic.computeSlope(beginZ, endZ, roadLength2d));
         return EvaluateRoadSourceDynamic.evaluate(srcParameters);
     }

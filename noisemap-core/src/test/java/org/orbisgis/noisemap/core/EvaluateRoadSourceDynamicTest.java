@@ -10,7 +10,7 @@ import static org.orbisgis.noisemap.core.EvaluateRoadSourceCnossos.getCoeff;
  */
 
 public class EvaluateRoadSourceDynamicTest {
-    private static final double EPSILON_TEST1 = 0.01;
+    private static final double EPSILON_TEST1 = 0;
 
     @Test
     public void testRoadNoise1() {
@@ -25,7 +25,8 @@ public class EvaluateRoadSourceDynamicTest {
         int Junc_type = 1;
         int veh_type = 3;
         int acc_type= 1;
-        RSParametersDynamic rsParameters = new RSParametersDynamic(speed,  acc,  veh_type, acc_type, FreqParam,  Temperature,  RoadSurface,Ts_stud, Pm_stud , Junc_dist, Junc_type);
+        double LwStd= 5;
+        RSParametersDynamic rsParameters = new RSParametersDynamic(speed,  acc,  veh_type, acc_type, FreqParam,  Temperature,  RoadSurface,Ts_stud, Pm_stud , Junc_dist, Junc_type,LwStd);
         rsParameters.setSlopePercentage(0);
         //System.out.println(EvaluateRoadSourceCnossos.evaluate(rsParameters));
         assertEquals(102.960, EvaluateRoadSourceDynamic.evaluate(rsParameters), EPSILON_TEST1);

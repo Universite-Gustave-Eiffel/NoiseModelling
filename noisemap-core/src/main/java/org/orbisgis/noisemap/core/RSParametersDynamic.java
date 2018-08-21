@@ -50,6 +50,8 @@ public class RSParametersDynamic {
     private final double Pm_stud;
     private final double Junc_dist;
     private final int Junc_type;
+    private final double LwStd;
+
     /**
      * BBTS means very thin asphalt concrete.
      * BBUM means ultra-thin asphalt concrete
@@ -242,8 +244,9 @@ public class RSParametersDynamic {
      * @param Pm_stud Average proportion of vehicles equipped with studded tyres
      * @param Junc_dist Distance to junction
      * @param Junc_type Type of junction ((k = 1 for a crossing with traffic lights ; k = 2 for a roundabout)
+     * @param LwStd Standard Deviation of Lw
      */
-    public RSParametersDynamic(double speed, double acceleration, int veh_type, int acc_type, int FreqParam, double Temperature, int RoadSurface, double Ts_stud, double Pm_stud, double Junc_dist, int Junc_type) {
+    public RSParametersDynamic(double speed, double acceleration, int veh_type, int acc_type, int FreqParam, double Temperature, int RoadSurface, double Ts_stud, double Pm_stud, double Junc_dist, int Junc_type, double LwStd) {
         this.speed = speed;
         this.acceleration = acceleration;
         this.veh_type = veh_type;
@@ -255,6 +258,7 @@ public class RSParametersDynamic {
         this.Pm_stud = Pm_stud;
         this.Junc_dist = Junc_dist;
         this.Junc_type = Junc_type;
+        this.LwStd = LwStd;
 
     }
 
@@ -266,7 +270,9 @@ public class RSParametersDynamic {
         this.flowState = flowState;
     }
 
-
+    public double getLwStd() {
+        return LwStd;
+    }
 
     public double getSlopePercentage() {
         return slopePercentage;

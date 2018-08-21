@@ -32,6 +32,7 @@
  * info_at_ orbisgis.org
  */
 package org.orbisgis.noisemap.core;
+import java.util.Random;
 
 /**
  * Return the dB value corresponding to the parameters
@@ -986,8 +987,9 @@ public class EvaluateRoadSourceDynamic {
 
         // Correction road on propulsion noise
         MotorLvl = MotorLvl + Math.min(getA_Roadcoeff(FreqParam, veh_type, RoadSurface), 0.);
-
-        Compound = sumDba(RoadLvl, MotorLvl);
+        Random r = new Random();
+        double deltaLwdistrib = 0.115*Math.pow(parameters.getLwStd(),2.0); // Ask Arnaud and Pierre !
+        Compound = sumDba(RoadLvl, MotorLvl) - deltaLwdistrib +  r.nextGaussian()*parameters.getLwStd();
 
         return Compound;
     }
