@@ -538,7 +538,24 @@ public class EvaluateRoadSourceDynamic {
             case 14:
                 out_value = RoadCoeff_NL14[8][VehCat_ind];
                 break;
-            // todo add French pavements Dynamic
+            case 15:
+                out_value = RoadCoeff_FR1[8][VehCat_ind];
+                break;
+            case 16:
+                out_value = RoadCoeff_FR2[8][VehCat_ind];
+                break;
+            case 17:
+                out_value = RoadCoeff_FR3[8][VehCat_ind];
+                break;
+            case 18:
+                out_value = RoadCoeff_FR4[8][VehCat_ind];
+                break;
+            case 19:
+                out_value = RoadCoeff_FR5[8][VehCat_ind];
+                break;
+            case 20:
+                out_value = RoadCoeff_FR6[8][VehCat_ind];
+                break;
             default:
                 out_value = 0;
                 break;
@@ -592,7 +609,24 @@ public class EvaluateRoadSourceDynamic {
             case 14:
                 out_value = RoadCoeff_NL14[9][0];
                 break;
-            // todo add French pavements Dynamic
+            case 15:
+                out_value = RoadCoeff_FR1[9][0];
+                break;
+            case 16:
+                out_value = RoadCoeff_FR2[9][0];
+                break;
+            case 17:
+                out_value = RoadCoeff_FR3[9][0];
+                break;
+            case 18:
+                out_value = RoadCoeff_FR4[9][0];
+                break;
+            case 19:
+                out_value = RoadCoeff_FR5[9][0];
+                break;
+            case 20:
+                out_value = RoadCoeff_FR6[9][0];
+                break;
             default:
                 out_value = 20;
                 break;
@@ -646,7 +680,24 @@ public class EvaluateRoadSourceDynamic {
             case 14:
                 out_value = RoadCoeff_NL14[9][1];
                 break;
-            // todo add French pavements Dynamic
+            case 15:
+                out_value = RoadCoeff_FR1[9][1];
+                break;
+            case 16:
+                out_value = RoadCoeff_FR2[9][1];
+                break;
+            case 17:
+                out_value = RoadCoeff_FR3[9][1];
+                break;
+            case 18:
+                out_value = RoadCoeff_FR4[9][1];
+                break;
+            case 19:
+                out_value = RoadCoeff_FR5[9][1];
+                break;
+            case 20:
+                out_value = RoadCoeff_FR6[9][1];
+                break;
             default:
                 out_value = 130;
                 break;
