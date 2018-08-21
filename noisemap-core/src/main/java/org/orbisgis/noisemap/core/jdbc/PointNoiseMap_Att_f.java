@@ -15,10 +15,7 @@ import org.slf4j.LoggerFactory;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Stack;
+import java.util.*;
 
 /**
  * Compute noise propagation at specified receiver points.
@@ -43,11 +40,12 @@ public class PointNoiseMap_Att_f extends JdbcNoiseMap {
      * @param cellJ Cell J [0-{@link #getGridDim()}]
      * @param progression Progression info
      * @param receiversPk [out] receivers primary key extraction
+     * @param sourcePk [out] sources primary key extraction
      * @return Data input for cell evaluation
      * @throws SQLException
      */
     public PropagationProcessData_Att prepareCell(Connection connection,int cellI, int cellJ,
-                                              ProgressVisitor progression, List<Long> receiversPk, List<Long> sourcePk) throws SQLException {
+                                              ProgressVisitor progression, List<Long> receiversPk, List<Long> sourcePk, Set<Long> skipReceivers) throws SQLException {
         MeshBuilder mesh = new MeshBuilder();
         int ij = cellI * gridDim + cellJ;
         logger.info("Begin processing of cell " + (cellI + 1) + ","
@@ -73,6 +71,7 @@ public class PointNoiseMap_Att_f extends JdbcNoiseMap {
         try {
             mesh.finishPolygonFeeding(expandedCellEnvelop);
         } catch (LayerDelaunayError ex) {
+            logger.info("ICI " + expandedCellEnvelop + " build");
             throw new SQLException(ex.getLocalizedMessage(), ex);
         }
         FastObstructionTest freeFieldFinder = new FastObstructionTest(mesh.getPolygonWithHeight(),
@@ -110,14 +109,18 @@ public class PointNoiseMap_Att_f extends JdbcNoiseMap {
             st.setObject(1, geometryFactory.toGeometry(cellEnvelope));
             try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
                 while (rs.next()) {
+                    if(!pkSelect.isEmpty()) {
+                        long receiverPk = rs.getLong(2);
+                        if(skipReceivers.contains(receiverPk)) {
+                            continue;
+                        }
+                        receiversPk.add(receiverPk);
+                    }
                     Geometry pt = rs.getGeometry();
                     if(pt != null) {
                         receivers.add(pt.getCoordinate());
                     }
-                    if(!pkSelect.isEmpty()) {
-                        receiversPk.add(rs.getLong(2));
 
-                    }
                 }
             }
         }
@@ -148,12 +151,12 @@ public class PointNoiseMap_Att_f extends JdbcNoiseMap {
      * @throws SQLException
      */
     public Collection<PropagationResultPtRecord_Att_f> evaluateCell(Connection connection,int cellI, int cellJ,
-                                                              ProgressVisitor progression) throws SQLException {
+                                                              ProgressVisitor progression, Set<Long> skipReceivers) throws SQLException {
         PropagationProcessOut_Att_f threadDataOut = new PropagationProcessOut_Att_f();
         List<Long> receiversPk = new ArrayList<>();
         List<Long> sourcesPk = new ArrayList<>();
 
-        PropagationProcessData_Att threadData = prepareCell(connection, cellI, cellJ, progression, receiversPk, sourcesPk);
+        PropagationProcessData_Att threadData = prepareCell(connection, cellI, cellJ, progression, receiversPk, sourcesPk,skipReceivers);
 
         PropagationProcess_Att_f propaProcess = new PropagationProcess_Att_f(
                 threadData, threadDataOut);

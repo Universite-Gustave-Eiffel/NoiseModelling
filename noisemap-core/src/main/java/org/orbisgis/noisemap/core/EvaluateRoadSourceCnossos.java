@@ -537,6 +537,8 @@ public class EvaluateRoadSourceCnossos {
             case 14:
                 out_value=RoadCoeff_NL14[8][VehCat_ind];
                 break;
+
+            // todo add French pavements Cnossos
             default :
                 out_value=0;
                 break;
@@ -590,6 +592,7 @@ public class EvaluateRoadSourceCnossos {
             case 14:
                 out_value=RoadCoeff_NL14[9][0];
                 break;
+            // todo add French pavements Dynamic
             default :
                 out_value=20;
                 break;
@@ -643,6 +646,7 @@ public class EvaluateRoadSourceCnossos {
             case 14:
                 out_value=RoadCoeff_NL14[9][1];
                 break;
+            // todo add French pavements Dynamic
             default :
                 out_value=130;
                 break;
@@ -721,7 +725,7 @@ public class EvaluateRoadSourceCnossos {
     }
 
 
-    ;
+
     /** get sum dBa **/
     private static Double sumDba(Double dBA1, Double dBA2) {
         return PropagationProcess.wToDba(PropagationProcess.dbaToW(dBA1) + PropagationProcess.dbaToW(dBA2));
@@ -749,47 +753,12 @@ public class EvaluateRoadSourceCnossos {
         double Pm_stud = parameters.getPm_stud();
         double Junc_dist = parameters.getJunc_dist();
         int Junc_type = parameters.getJunc_type();
-        double a = Junc_type*0.;
-        double aa = Junc_dist*0.;
-       /* // Fix vehicle speed to validity domains
-        // Validity discussed 3.5.3.2 - Speed validity of results P.45 of Road Noise Prediction NMPB
-        parameters.setSpeedLv(Math.min(getRoadSpeedMax(RoadSurface),
-                Math.max(parameters.getFlowState() == RSParametersCnossos.EngineState.SteadySpeed ? getRoadSpeedMin(RoadSurface) : 5,
-                        parameters.getSpeedLv())));
-        // Validity discussed 3.5.3.2 - Speed validity of results P.45 of Road Noise Prediction NMPB
-        parameters.setSpeedHgv(Math.min(getRoadSpeedMax(RoadSurface),
-                Math.max(parameters.getFlowState() == RSParametersCnossos.EngineState.SteadySpeed ? getRoadSpeedMin(RoadSurface) : 5,
-                        parameters.getSpeedHgv())));
-        // P 108. D.2.5 - Starting and stopping sections
-        // There is no breakdown into engine and rolling noise components, the values below are expressed
-        // directly in Lw/m(1 veh/h)*/
+
+
 
         parameters.setSpeedLv(parameters.getSpeedLv());
         parameters.setSpeedHgv(parameters.getSpeedHgv());
 
-        // In CNOSSOS Only steadyState
-        /**if(parameters.getFlowState() == RSParametersCnossos.EngineState.Starting ||
-                parameters.getFlowState() == RSParametersCnossos.EngineState.Stopping) {
-            // Starting or stopping section
-            if (parameters.getFlowState() == RSParametersCnossos.EngineState.Stopping){
-                lvCompound = 44.5;
-                if (parameters.getSlopePercentage() < 2) {
-                    // downward slope
-                    hgvCompound = 58.0 + (-parameters.getSlopePercentage() - 2);
-                } else {
-                    hgvCompound = 58.0;
-                }
-            } else {
-                // Starting condition.
-                lvCompound = 51.1;
-                if (parameters.getSlopePercentage() < 2) {
-                    // downward slope
-                    hgvCompound = 62.4;
-                } else {
-                    hgvCompound = 62.4 + Math.max(0, 2 * (parameters.getSlopePercentage() - 4.5));
-                }
-            }
-        } else {**/
 
         // ///////////////////////
         // Noise road/tire CNOSSOS
@@ -813,7 +782,7 @@ public class EvaluateRoadSourceCnossos {
 
 
         // Rolling noise acceleration correction
-        int indJunc = (Junc_type ==2) ? 2 : 0;
+        int indJunc = (Junc_type ==2) ? 2 : 0; // because my table is not very smart
         lvRoadLvl = lvRoadLvl + Coeff_Acc[0][0+indJunc] * Math.max(1-Math.abs(Junc_dist)/100,0) ;
         medRoadLvl = medRoadLvl + Coeff_Acc[1][0+indJunc]  * Math.max(1-Math.abs(Junc_dist)/100,0);
         hgvRoadLvl = hgvRoadLvl + Coeff_Acc[2][0+indJunc]  * Math.max(1-Math.abs(Junc_dist)/100,0);

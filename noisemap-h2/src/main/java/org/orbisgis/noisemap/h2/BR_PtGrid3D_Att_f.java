@@ -48,8 +48,8 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.util.ArrayDeque;
-import java.util.Deque;
+import java.util.*;
+
 
 /**
  * Sound propagation from punctual sound sources to punctual receivers created by a delaunay triangulation of specified
@@ -195,6 +195,7 @@ public class BR_PtGrid3D_Att_f extends AbstractFunction implements ScalarFunctio
         public Object[] readRow() throws SQLException {
             if(output.isEmpty()) {
                 do {
+                    Set<Long> computedReceivers = new HashSet<Long>();
                     // Increment ids
                     if (cellI + 1 < noiseMap.getGridDim()) {
                         cellI++;
@@ -208,7 +209,7 @@ public class BR_PtGrid3D_Att_f extends AbstractFunction implements ScalarFunctio
                         }
                     }
                     // Fetch next cell
-                   output.addAll(noiseMap.evaluateCell(connection, cellI, cellJ, new ProgressLogger()));
+                   output.addAll(noiseMap.evaluateCell(connection, cellI, cellJ, new ProgressLogger(), computedReceivers));
                 } while (output.isEmpty());
             }
             // Consume cell
