@@ -783,8 +783,7 @@ public class EvaluateRoadSourceDynamic {
         int FreqParam = parameters.getFreqParam();
         double Temperature = parameters.getTemperature();
         int RoadSurface = parameters.getRoadSurface();
-        double Ts_stud = parameters.getTs_stud();
-        double Pm_stud = parameters.getPm_stud();
+        boolean Stud = parameters.getStud();
         double Junc_dist = parameters.getJunc_dist();
         int Junc_type = parameters.getJunc_type();
         int acc_type = parameters.getAcc_type();
@@ -827,14 +826,13 @@ public class EvaluateRoadSourceDynamic {
 
         //Studied tyres
         if (veh_type == 1) { // because studded tyres are only on Cat 1 vehicle
-            if (Pm_stud > 0 && Ts_stud > 0) {
+            if (Stud) {
                 double deltastud = 0;
                 double speed = parameters.getSpeed();
-                double ps = Pm_stud * Ts_stud / 12; //yearly average proportion of vehicles equipped with studded tyres
                 speed = (speed >= 90) ? 90 : speed;
                 speed = (speed <= 50) ? 50 : speed;
                 deltastud = getNoiseLvl(getCoeff(4, FreqParam, 1), getCoeff(5, FreqParam, 1), speed, 70.);
-                RoadLvl = RoadLvl + 10 * Math.log10((1 - ps) + ps * Math.pow(10, deltastud / 10));
+                RoadLvl = RoadLvl + Math.pow(10, deltastud / 10);
             }
         }
 

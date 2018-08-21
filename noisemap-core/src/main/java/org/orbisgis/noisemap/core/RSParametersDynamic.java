@@ -46,8 +46,7 @@ public class RSParametersDynamic {
     private final int FreqParam;
     private final double Temperature;
     private final int RoadSurface;
-    private final double Ts_stud;
-    private final double Pm_stud;
+    private final boolean Stud ;
     private final double Junc_dist;
     private final int Junc_type;
     private final double LwStd;
@@ -240,13 +239,12 @@ public class RSParametersDynamic {
      * @param FreqParam Studied Frequency
      * @param Temperature Temperature(Celsius)
      * @param RoadSurface Road surface between 0 and 14
-     * @param Ts_stud A limited period Ts (in months) over the year where a average proportion pm of light vehicles are equipped with studded tyres and during .
-     * @param Pm_stud Average proportion of vehicles equipped with studded tyres
+     * @param Stud True = equipped with studded tyres
      * @param Junc_dist Distance to junction
      * @param Junc_type Type of junction ((k = 1 for a crossing with traffic lights ; k = 2 for a roundabout)
      * @param LwStd Standard Deviation of Lw
      */
-    public RSParametersDynamic(double speed, double acceleration, int veh_type, int acc_type, int FreqParam, double Temperature, int RoadSurface, double Ts_stud, double Pm_stud, double Junc_dist, int Junc_type, double LwStd) {
+    public RSParametersDynamic(double speed, double acceleration, int veh_type, int acc_type, int FreqParam, double Temperature, int RoadSurface, boolean Stud, double Junc_dist, int Junc_type, double LwStd) {
         this.speed = speed;
         this.acceleration = acceleration;
         this.veh_type = veh_type;
@@ -254,8 +252,7 @@ public class RSParametersDynamic {
         this.FreqParam = FreqParam;
         this.Temperature = Temperature;
         this.RoadSurface = RoadSurface;
-        this.Ts_stud = Ts_stud;
-        this.Pm_stud = Pm_stud;
+        this.Stud = Stud;
         this.Junc_dist = Junc_dist;
         this.Junc_type = Junc_type;
         this.LwStd = LwStd;
@@ -302,9 +299,8 @@ public class RSParametersDynamic {
 
     public int getRoadSurface() {return RoadSurface;}
 
-    public double getTs_stud() {return Ts_stud;}
+    public boolean getStud() {return Stud;}
 
-    public double getPm_stud() {return Pm_stud;}
 
     public double getJunc_dist() {return Junc_dist;}
 
