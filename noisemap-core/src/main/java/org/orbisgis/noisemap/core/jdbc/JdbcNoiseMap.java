@@ -86,7 +86,7 @@ public abstract class JdbcNoiseMap {
             try (PreparedStatement st = connection.prepareStatement(
                     "SELECT " + TableLocation.quoteIdentifier(topoGeomName) + " FROM " +
                             demTable + " WHERE " +
-                            TableLocation.quoteIdentifier(topoGeomName) + " && ?")) {
+                            TableLocation.quoteIdentifier(topoGeomName) + " && ?::geometry")) {
                 st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
                 try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
                     while (rs.next()) {
@@ -108,7 +108,7 @@ public abstract class JdbcNoiseMap {
             try (PreparedStatement st = connection.prepareStatement(
                     "SELECT " + TableLocation.quoteIdentifier(soilGeomName) + ", G FROM " +
                             soilTableName + " WHERE " +
-                            TableLocation.quoteIdentifier(soilGeomName) + " && ?")) {
+                            TableLocation.quoteIdentifier(soilGeomName) + " && ?::geometry")) {
                 st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
                 try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
                     while (rs.next()) {
@@ -134,7 +134,7 @@ public abstract class JdbcNoiseMap {
         try (PreparedStatement st = connection.prepareStatement(
                 "SELECT " + TableLocation.quoteIdentifier(buildingGeomName) + queryHeight + " FROM " +
                         buildingsTableName + " WHERE " +
-                        TableLocation.quoteIdentifier(buildingGeomName) + " && ?")) {
+                        TableLocation.quoteIdentifier(buildingGeomName) + " && ?::geometry")) {
             st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
             try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
                 while (rs.next()) {
@@ -174,7 +174,7 @@ public abstract class JdbcNoiseMap {
         TableLocation sourceTableIdentifier = TableLocation.parse(sourcesTableName);
         String sourceGeomName = SFSUtilities.getGeometryFields(connection, sourceTableIdentifier).get(0);
         try (PreparedStatement st = connection.prepareStatement("SELECT * FROM " + sourcesTableName + " WHERE "
-                + TableLocation.quoteIdentifier(sourceGeomName) + " && ?")) {
+                + TableLocation.quoteIdentifier(sourceGeomName) + " && ?::geometry")) {
             st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
             try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
                 while (rs.next()) {
@@ -212,7 +212,7 @@ public abstract class JdbcNoiseMap {
         TableLocation sourceTableIdentifier = TableLocation.parse(sourcesTableName);
         String sourceGeomName = SFSUtilities.getGeometryFields(connection, sourceTableIdentifier).get(0);
         try (PreparedStatement st = connection.prepareStatement("SELECT * FROM " + sourcesTableName + " WHERE "
-                + TableLocation.quoteIdentifier(sourceGeomName) + " && ?")) {
+                + TableLocation.quoteIdentifier(sourceGeomName) + " && ?::geometry")) {
             st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
             try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
                 while (rs.next()) {

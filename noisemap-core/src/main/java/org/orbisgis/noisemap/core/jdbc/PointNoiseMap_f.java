@@ -105,7 +105,7 @@ public class PointNoiseMap_f extends JdbcNoiseMap {
         try (PreparedStatement st = connection.prepareStatement(
                 "SELECT " + TableLocation.quoteIdentifier(receiverGeomName) + pkSelect + " FROM " +
                         receiverTableName + " WHERE " +
-                        TableLocation.quoteIdentifier(receiverGeomName) + " && ?")) {
+                        TableLocation.quoteIdentifier(receiverGeomName) + " && ?::geometry")) {
             st.setObject(1, geometryFactory.toGeometry(cellEnvelope));
             try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
                 while (rs.next()) {
