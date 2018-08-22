@@ -788,6 +788,7 @@ public class EvaluateRoadSourceDynamic {
         int Junc_type = parameters.getJunc_type();
         int acc_type = parameters.getAcc_type();
         int veh_type = parameters.getVeh_type();
+        int VehId = parameters.getVehId();
         double acceleration = parameters.getAcceleration();
 
         // ///////////////////////
@@ -985,7 +986,7 @@ public class EvaluateRoadSourceDynamic {
 
         // Correction road on propulsion noise
         MotorLvl = MotorLvl + Math.min(getA_Roadcoeff(FreqParam, veh_type, RoadSurface), 0.);
-        Random r = new Random();
+        Random r = new Random(VehId);
         double deltaLwdistrib = 0.115*Math.pow(parameters.getLwStd(),2.0); // Ask Arnaud and Pierre !
         Compound = sumDba(RoadLvl, MotorLvl) - deltaLwdistrib +  r.nextGaussian()*parameters.getLwStd();
 

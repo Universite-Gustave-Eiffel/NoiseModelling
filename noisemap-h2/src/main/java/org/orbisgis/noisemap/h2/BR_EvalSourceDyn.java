@@ -91,13 +91,14 @@ public class BR_EvalSourceDyn extends DeterministicScalarFunction {
      * @param Junc_dist    Distance to junction
      * @param Junc_type    Type of junction ((k = 1 for a crossing with traffic lights ; k = 2 for a roundabout)
      * @param LwStd Standard Deviation of Lw
+     * @param VehId Vehicle ID used as a seed for LwStd
      * @return Noise level in dB
      */
     public static double evalSourceDyn(double speed, double acceleration, int veh_type, int acc_type, double beginZ, double endZ, double roadLength2d,
-            int FreqParam, double Temperature, int RoadSurface, boolean Stud, double Junc_dist, int Junc_type, double LwStd) {
+            int FreqParam, double Temperature, int RoadSurface, boolean Stud, double Junc_dist, int Junc_type, double LwStd, int VehId) {
         //checkRoadSurface(roadSurface);
         RSParametersDynamic srcParameters = new RSParametersDynamic(speed, acceleration, veh_type, acc_type,
-                FreqParam, Temperature, RoadSurface, Stud, Junc_dist, Junc_type, LwStd);
+                FreqParam, Temperature, RoadSurface, Stud, Junc_dist, Junc_type, LwStd, VehId);
         srcParameters.setSlopePercentage(RSParametersDynamic.computeSlope(beginZ, endZ, roadLength2d));
         return EvaluateRoadSourceDynamic.evaluate(srcParameters);
     }

@@ -24,11 +24,12 @@ public class EvaluateRoadSourceDynamicTest {
         int Junc_type = 1;
         int veh_type = 1;
         int acc_type= 1;
-        double LwStd= 0;
-        RSParametersDynamic rsParameters = new RSParametersDynamic(speed,  acc,  veh_type, acc_type, FreqParam,  Temperature,  RoadSurface,Stud, Junc_dist, Junc_type,LwStd);
+        double LwStd= 1;
+        int VehId = 10;
+        RSParametersDynamic rsParameters = new RSParametersDynamic(speed,  acc,  veh_type, acc_type, FreqParam,  Temperature,  RoadSurface,Stud, Junc_dist, Junc_type,LwStd,VehId);
         rsParameters.setSlopePercentage(0);
         //System.out.println(EvaluateRoadSourceCnossos.evaluate(rsParameters));
-        assertEquals(90.95, EvaluateRoadSourceDynamic.evaluate(rsParameters), EPSILON_TEST1);
+        assertEquals(91.71, EvaluateRoadSourceDynamic.evaluate(rsParameters), EPSILON_TEST1);
     }
 
 

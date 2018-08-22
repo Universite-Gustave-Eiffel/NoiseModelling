@@ -50,34 +50,11 @@ public class RSParametersDynamic {
     private final double Junc_dist;
     private final int Junc_type;
     private final double LwStd;
+    private final int VehId;
 
-    /**
-     * BBTS means very thin asphalt concrete.
-     * BBUM means ultra-thin asphalt concrete
-     * BBDR means drainage asphalt concrete
-     * BBSG means dense asphalt concrete
-     * ECF means cold mix
-     * BC means cement concrete
-     * ES is surface dressing
-     * @link Setra Road_noise_prediction - Calculating sound emissions from road traffic - Figure 2.2 P.18
-     */
-
-    public enum EngineState {
-        SteadySpeed,
-        Acceleration,
-        Deceleration,
-        Starting,
-        Stopping
-    }
 
     private int surfaceAge;
     private double slopePercentage;
-    private double speedLv;
-    private double speedMv;
-    private double speedHgv;
-    private double speedWav;
-    private double speedWbv;
-    private EngineState flowState = EngineState.SteadySpeed;
 
     private static double getVPl(double sLv, double speedmax, int type, int subtype) throws IllegalArgumentException {
         switch (type) {
@@ -166,30 +143,7 @@ public class RSParametersDynamic {
                 + type + ",subtype=" + subtype + ").");
     }
 
-    /**
-     * Compute {@link RSParametersDynamic#speedHgv}
-     * and {@link RSParametersDynamic#speedLv} from theses parameters
-     * @param speed_junction Speed in the junction section
-     * @param speed_max Maximum speed authorized
-     * @param copound_roadtype Road surface type.
-     * @param is_queue If true use speed_junction in speedLoad
-     */
-    public void setSpeedFromRoadCaracteristics(double speedLoad, double speed_junction, boolean is_queue, double speed_max,int copound_roadtype) {
-        // Separation of main index and sub index
-        final int roadtype = copound_roadtype / 10;
-        final int roadSubType = copound_roadtype - (roadtype * 10);
-        if (speed_junction > 0. && is_queue) {
-            speedLv = speed_junction;
-        } else if (speedLoad > 0.) {
-            speedLv = speedLoad;
-        } else {
-            speedLv = speed_max;
-        }
-        speedHgv = getVPl(speedLv, speed_max, roadtype, roadSubType);
-        speedMv = getVPl(speedLv, speed_max, roadtype, roadSubType);
-        speedWav = getVPl(speedLv, speed_max, roadtype, roadSubType);
-        speedWbv = getVPl(speedLv, speed_max, roadtype, roadSubType);
-    }
+
 
     /**
      * @param slopePercentage Gradient percentage of road from -6 % to 6 %
@@ -243,8 +197,9 @@ public class RSParametersDynamic {
      * @param Junc_dist Distance to junction
      * @param Junc_type Type of junction ((k = 1 for a crossing with traffic lights ; k = 2 for a roundabout)
      * @param LwStd Standard Deviation of Lw
+     * @param VehId Vehicle ID used as a seed for LwStd
      */
-    public RSParametersDynamic(double speed, double acceleration, int veh_type, int acc_type, int FreqParam, double Temperature, int RoadSurface, boolean Stud, double Junc_dist, int Junc_type, double LwStd) {
+    public RSParametersDynamic(double speed, double acceleration, int veh_type, int acc_type, int FreqParam, double Temperature, int RoadSurface, boolean Stud, double Junc_dist, int Junc_type, double LwStd, int VehId) {
         this.speed = speed;
         this.acceleration = acceleration;
         this.veh_type = veh_type;
@@ -256,19 +211,16 @@ public class RSParametersDynamic {
         this.Junc_dist = Junc_dist;
         this.Junc_type = Junc_type;
         this.LwStd = LwStd;
+        this.VehId = VehId;
 
-    }
-
-    /**
-     * Set the engine state for vehicle.
-     * @param flowState enum
-     */
-    public void setFlowState(EngineState flowState) {
-        this.flowState = flowState;
     }
 
     public double getLwStd() {
         return LwStd;
+    }
+
+    public int getVehId() {
+        return VehId;
     }
 
     public double getSlopePercentage() {
