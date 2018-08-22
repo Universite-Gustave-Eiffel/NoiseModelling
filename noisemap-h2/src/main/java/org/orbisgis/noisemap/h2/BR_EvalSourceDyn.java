@@ -66,7 +66,8 @@ public class BR_EvalSourceDyn extends DeterministicScalarFunction {
                 "     * @param Stud true = equipped with studded tyres\n" +
                 "     * @param Junc_dist Distance to junction (optional, used when acc_type = 1)\n" +
                 "     * @param Junc_type Type of junction; k = 1 for a crossing with traffic lights ; k = 2 for a roundabout (optional, used when acc_type = 1)\n" +
-                "     * @param LwStd Standard Deviation of Lw");
+                "     * @param LwStd Standard Deviation of Lw\n" +
+                "     * @param VehId Vehicle ID used as a seed for LwStd");
     }
 
     @Override

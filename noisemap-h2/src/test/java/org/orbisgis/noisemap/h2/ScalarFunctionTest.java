@@ -61,6 +61,7 @@ public class ScalarFunctionTest {
         connection = H2GISDBFactory.createSpatialDataBase(ScalarFunctionTest.class.getSimpleName(), true);
         H2GISFunctions.registerFunction(connection.createStatement(), new BR_EvalSource(), "");
         H2GISFunctions.registerFunction(connection.createStatement(), new BR_EvalSourceC(), "");
+        H2GISFunctions.registerFunction(connection.createStatement(), new BR_EvalSourceDyn(), "");
         H2GISFunctions.registerFunction(connection.createStatement(), new BR_SpectrumRepartition(), "");
         H2GISFunctions.registerFunction(connection.createStatement(), new BTW_EvalSource(), "");
         H2GISFunctions.registerFunction(connection.createStatement(), new BTW_SpectrumRepartition(), "");
@@ -175,6 +176,14 @@ public class ScalarFunctionTest {
                 "                                      1,  15,  4,  0.5,   200,  1,  1000)");
         assertTrue(rs.next());
         assertEquals(67.69, rs.getDouble(1), 0.01);
+    }
+
+    /** Test BR_EVALSOURCEDyn **/
+    @Test
+    public void testEvalSourceDynamic() throws SQLException {
+        ResultSet rs = st.executeQuery("SELECT BR_EvalsourceDyn(70,0,1,2,0,0,100,1000,20,1,false,10,1,0,10)");
+        assertTrue(rs.next());
+        assertEquals(96.207, rs.getDouble(1), 0.01);
     }
 
 }
