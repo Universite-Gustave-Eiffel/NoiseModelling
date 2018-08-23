@@ -102,7 +102,7 @@ public class PTGridTest {
         st.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT(15 0)')");
         // Compute noise map
         st.execute("DROP TABLE IF EXISTS TEST");
-        ResultSet rs = st.executeQuery("SELECT * FROM BR_PTGRID('buildings', 'roads_src','receivers', 'DB_M','', 50,50, 2,2,0.2)");
+        ResultSet rs = st.executeQuery("SELECT * FROM BR_PTGRID('buildings', 'roads_src','receivers', '', 50,50, 2,2,0.2)");
         try {
             assertTrue(rs.next());
             assertEquals(1l, rs.getLong("GID"));
@@ -146,7 +146,7 @@ public class PTGridTest {
         st.execute("CREATE TABLE RECEIVERS(ID SERIAL, THE_GEOM POINT)");
         st.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT (-250.56607923708552 106.76760851263573 1.6)')");
         st.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT (-250.56607923708552 106.76760851263573 25)')");
-        ResultSet rs = st.executeQuery("select * from BR_PTGRID3D('BUILDINGS', 'HEIGHT', 'SOUND_SOURCE','RECEIVERS', 'DB_M', '','DEM' ,1000,500, 2, 1, 0.2)");
+        ResultSet rs = st.executeQuery("select * from BR_PTGRID3D('BUILDINGS', 'SOUND_SOURCE','RECEIVERS', '','DEM' ,1000,500, 2, 1, 0.2)");
         //  W must be equal to 1
         try {
             assertTrue(rs.next());
@@ -179,7 +179,7 @@ public class PTGridTest {
         st.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT (-157 60 -0.361795)')");
         st.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT (-157 60 11.038205)')");
         st.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT (59 60 1.6)')");
-        ResultSet rs = st.executeQuery("select * from BR_PTGRID3D('BUILDINGS', 'HEIGHT', 'SOUND_SOURCE','RECEIVERS', 'DB_M', '','DEM' ,1000,500, 2, 1, 0.2)");
+        ResultSet rs = st.executeQuery("select * from BR_PTGRID3D('BUILDINGS', 'SOUND_SOURCE','RECEIVERS', '','DEM' ,1000,500, 2, 1, 0.2)");
         //  W must be equal to 1
         try {
             assertTrue(rs.next());
@@ -257,7 +257,7 @@ public class PTGridTest {
         st.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT(167.7 8.13)')");
         // Compute noise map
         st.execute("DROP TABLE IF EXISTS TEST");
-        ResultSet rs = st.executeQuery("SELECT * FROM BR_PTGRID('buildings', 'roads_src','receivers', 'DB_M','', 400,400, 2,0,0.2)");
+        ResultSet rs = st.executeQuery("SELECT * FROM BR_PTGRID('buildings', 'roads_src','receivers','', 400,400, 2,0,0.2)");
         try {
             assertTrue(rs.next());
             assertEquals(1l, rs.getLong("GID"));

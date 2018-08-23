@@ -110,11 +110,8 @@ public class BR_PtGrid3D extends AbstractFunction implements ScalarFunction {
      *
      * @param connection                   Active connection, never closed (provided and hidden by H2)
      * @param buildings                    Buildings table name (polygons)
-     * @param buildings_height_field       Optional (empty if not available) Field name of building height on
-     *                                     buildingsTable
      * @param sources                      Source table table (linestring or point)
      * @param receivers_table              Receiver table, has a numeric primary key (optional) and a point column.
-     * @param sound_lvl_field              Field name to extract from sources table. Frequency is added on right.
      * @param ground_type                  Optional (empty if not available) Soil category. This is a table with a
      *                                     polygon column and a column 'G' double.
      * @param dem_table                    Optional (empty if not available) Point table of digital elevation model.
@@ -127,8 +124,7 @@ public class BR_PtGrid3D extends AbstractFunction implements ScalarFunction {
      * cellid cell identifier.
      * @throws SQLException
      */
-    public static ResultSet noisePropagation(Connection connection, String buildings, String buildings_height_field,
-                                             String sources, String receivers_table, String sound_lvl_field,
+    public static ResultSet noisePropagation(Connection connection, String buildings, String sources, String receivers_table,
                                              String ground_type, String dem_table,
                                              double maximum_propagation_distance, double maximum_reflection_distance,
                                              int sound_reflection_order, int sound_diffraction_order,
@@ -146,10 +142,10 @@ public class BR_PtGrid3D extends AbstractFunction implements ScalarFunction {
             connection = SFSUtilities.wrapConnection(connection);
                     PointNoiseMap noiseMap = new PointNoiseMap(TableLocation.capsIdentifier(buildings, true),
                             TableLocation.capsIdentifier(sources, true), TableLocation.capsIdentifier(receivers_table, true));
-            noiseMap.setSound_lvl_field(sound_lvl_field);
+            noiseMap.setSound_lvl_field("DB_M");
             noiseMap.setMaximumPropagationDistance(maximum_propagation_distance);
             noiseMap.setSoilTableName(ground_type);
-            noiseMap.setHeightField(buildings_height_field);
+            noiseMap.setHeightField("HEIGHT");
             noiseMap.setDemTable(dem_table);
             noiseMap.setMaximumReflectionDistance(maximum_reflection_distance);
             noiseMap.setSoundReflectionOrder(sound_reflection_order);
@@ -162,13 +158,13 @@ public class BR_PtGrid3D extends AbstractFunction implements ScalarFunction {
         return rs;
     }
 
-    private static void feedColumns(SimpleResultSet rs) {
+    static void feedColumns(SimpleResultSet rs) {
         rs.addColumn("GID", Types.BIGINT, 19, 20);
         rs.addColumn("W", Types.DOUBLE, 17, 24);
         rs.addColumn("CELL_ID", Types.INTEGER, 10, 11);
     }
 
-    private static class PointRowSource implements SimpleRowSource {
+    static class PointRowSource implements SimpleRowSource {
         private Deque<PropagationResultPtRecord> output = new ArrayDeque<PropagationResultPtRecord>();
         HashSet<Long> processedReceivers = new HashSet<Long>();
         private int cellI = -1;
@@ -176,7 +172,7 @@ public class BR_PtGrid3D extends AbstractFunction implements ScalarFunction {
         private PointNoiseMap noiseMap;
         private Connection connection;
 
-        private PointRowSource(PointNoiseMap noiseMap, Connection connection) {
+        PointRowSource(PointNoiseMap noiseMap, Connection connection) {
             this.noiseMap = noiseMap;
             this.connection = connection;
         }

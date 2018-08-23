@@ -50,6 +50,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -70,7 +71,7 @@ public class TriGridTest {
 
     @BeforeClass
     public static void tearUpClass() throws Exception {
-        connection = SFSUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(TriGridTest.class.getSimpleName(), false, "MV_STORE=FALSE"));
+        connection = SFSUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(TriGridTest.class.getSimpleName() + UUID.randomUUID(), false, "MV_STORE=FALSE"));
         org.h2gis.functions.factory.H2GISFunctions.load(connection);
         H2GISFunctions.registerFunction(connection.createStatement(), new BR_TriGrid(), "");
         H2GISFunctions.registerFunction(connection.createStatement(), new BR_TriGrid3D(), "");
@@ -127,7 +128,7 @@ public class TriGridTest {
                 "BR_SpectrumRepartition(4000,1,db_m) as db_m4000,\n" +
                 "BR_SpectrumRepartition(5000,1,db_m) as db_m5000 from roads_src_global;");
         // Compute noise map
-        ResultSet rs = st.executeQuery("SELECT * FROM BR_TRIGRID('buildings', 'roads_src', 'DB_M','', 700, 100,1,3,50,2,1,0.2)");
+        ResultSet rs = st.executeQuery("SELECT * FROM BR_TRIGRID('buildings', 'roads_src','', 700, 100,1,3,50,2,1,0.2)");
         try {
             assertTrue(rs.next());
             do {
@@ -175,7 +176,7 @@ public class TriGridTest {
                 "BR_SpectrumRepartition(4000,1,db_m) as db_m4000,\n" +
                 "BR_SpectrumRepartition(5000,1,db_m) as db_m5000 from roads_src_global;");
         // Compute noise map
-        ResultSet rs = st.executeQuery("SELECT * FROM BR_TRIGRID((SELECT ST_ENVELOPE(the_geom) from buildings),'buildings', 'roads_src', 'DB_M','', 700, 100,1,3,50,2,1,0.2)");
+        ResultSet rs = st.executeQuery("SELECT * FROM BR_TRIGRID((SELECT ST_ENVELOPE(the_geom) from buildings),'buildings', 'roads_src','', 700, 100,1,3,50,2,1,0.2)");
         try {
             assertTrue(rs.next());
             do {
@@ -194,7 +195,7 @@ public class TriGridTest {
     public void testMultipleBuildings() throws Exception {
         st.execute(getRunScriptRes("multiple_buildings.sql"));
         st.execute("drop table if exists tri_lvl");
-        ResultSet rs = st.executeQuery("select * from BR_TRIGRID('BUILDINGS', 'SOUND_SOURCE', 'DB_M', '', 1000, 100, 2, 3, 0, 2, 1, 0.2)");
+        ResultSet rs = st.executeQuery("select * from BR_TRIGRID('BUILDINGS', 'SOUND_SOURCE', '', 1000, 100, 2, 3, 0, 2, 1, 0.2)");
         try {
             assertTrue(rs.next());
             do {

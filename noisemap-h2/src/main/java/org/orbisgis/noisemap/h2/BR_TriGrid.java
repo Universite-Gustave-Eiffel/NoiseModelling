@@ -33,9 +33,16 @@
  */
 package org.orbisgis.noisemap.h2;
 
+import org.h2.tools.SimpleResultSet;
+import org.h2gis.api.EmptyProgressVisitor;
+import org.h2gis.utilities.SFSUtilities;
+import org.h2gis.utilities.TableLocation;
+import org.h2gis.utilities.TableUtilities;
 import org.locationtech.jts.geom.Geometry;
 import org.h2gis.api.AbstractFunction;
 import org.h2gis.api.ScalarFunction;
+import org.orbisgis.noisemap.core.jdbc.TriangleNoiseMap;
+
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -51,7 +58,8 @@ public class BR_TriGrid extends AbstractFunction implements ScalarFunction {
     public BR_TriGrid() {
         addProperty(PROP_REMARKS , "## BR_TriGrid\n" +
                 "\n" +
-                "Table function.Sound propagation in 2 dimension. Return 6 columns. TRI_ID integer,THE_GEOM polygon,W_V1 double,W_V2 double,W_V3 double,CELL_ID integer.\n" +
+                "Table function.Sound propagation in 2 dimension. Return 6 columns. TRI_ID integer,THE_GEOM polygon," +
+                "W_V1 double,W_V2 double,W_V3 double,CELL_ID integer.\n" +
                 " \n" +
                 "BR_TriGrid(VARCHAR buildingsTable, VARCHAR sourcesTable,VARCHAR sourcesTableSoundFieldName, " +
                 "VARCHAR groundTypeTable, double maximumPropagationDistance, double maximumWallSeekingDistance, " +
@@ -87,7 +95,8 @@ public class BR_TriGrid extends AbstractFunction implements ScalarFunction {
                 "Recommended value is 2.\n" +
                 " - **soundDiffractionOrder** Maximum depth of sound diffraction. Impacts performance. Recommended " +
                 "value is 1.\n" +
-                " - **wallAlpha** Wall absorption value. Between 0 and 1. Recommended value is 0.23 for concrete.\n" +
+                " - **wallAlpha** Default wall absorption value. Between 0 and 1. Recommended value is 0.23 for " +
+                "concrete. Specific absorption value can be specified in the ALPHA column of building table.\n" +
                 " " +
                 "");
     }
@@ -103,7 +112,6 @@ public class BR_TriGrid extends AbstractFunction implements ScalarFunction {
      * @param connection                 Active connection, never closed (provided and hidden by H2)
      * @param buildingsTable             Buildings table name (polygons)
      * @param sourcesTable               Source table table (linestring or point)
-     * @param sourcesTableSoundFieldName Field name to extract from sources table. Frequency is added on right.
      * @param groundTypeTable            Optional (empty if not available) Soil category. This is a table with a
      *                                   polygon column and a column 'G' [0-1] double.
      * @param maximumPropagationDistance Propagation distance limitation.
@@ -111,21 +119,46 @@ public class BR_TriGrid extends AbstractFunction implements ScalarFunction {
      * @param roadsWidth                 Buffer without receivers applied on roads on final noise map.
      * @param soundReflectionOrder       Sound reflection order on walls.
      * @param soundDiffractionOrder      Source diffraction order on corners.
-     * @param wallAlpha                  Wall absorption coefficient.
+     * @param wallAlpha                  Wall absorption coefficient. Specific absorption value can be specified in
+     *                                   the ALPHA column of building table.
      * @return A table with 3 columns GID(extracted from receivers table), W energy receiver by receiver,
      * cellid cell identifier.
      * @throws SQLException
      */
     public static ResultSet noisePropagation(Connection connection, String buildingsTable, String sourcesTable,
-                                             String sourcesTableSoundFieldName, String groundTypeTable,
+                                             String groundTypeTable,
                                              double maximumPropagationDistance, double maximumWallSeekingDistance,
                                              double roadsWidth, double receiversDensification,
                                              double maximumAreaOfTriangle, int soundReflectionOrder,
                                              int soundDiffractionOrder, double wallAlpha) throws SQLException {
-        return BR_TriGrid3D.noisePropagation(connection, buildingsTable, "", sourcesTable,
-                sourcesTableSoundFieldName, groundTypeTable, "", maximumPropagationDistance,
-                maximumWallSeekingDistance, roadsWidth, receiversDensification, maximumAreaOfTriangle,
-                soundReflectionOrder, soundDiffractionOrder, wallAlpha);
+
+        if (maximumPropagationDistance < maximumWallSeekingDistance) {
+            throw new SQLException(new IllegalArgumentException(
+                    "Maximum wall seeking distance cannot be superior than maximum propagation distance"));
+        }        SimpleResultSet rs;
+        if(TableUtilities.isColumnListConnection(connection)) {
+            // Only rs columns is necessary
+            rs = new SimpleResultSet();
+            BR_TriGrid3D.feedColumns(rs);
+        } else {
+            connection = SFSUtilities.wrapConnection(connection);
+            TriangleNoiseMap noiseMap = new TriangleNoiseMap(TableLocation.capsIdentifier(buildingsTable, true),
+                    TableLocation.capsIdentifier(sourcesTable, true));
+            noiseMap.setSoilTableName(groundTypeTable);
+            noiseMap.setSound_lvl_field("DB_M");
+            noiseMap.setMaximumPropagationDistance(maximumPropagationDistance);
+            noiseMap.setMaximumReflectionDistance(maximumWallSeekingDistance);
+            noiseMap.setSoundReflectionOrder(soundReflectionOrder);
+            noiseMap.setSoundDiffractionOrder(soundDiffractionOrder);
+            noiseMap.setMaximumArea(maximumAreaOfTriangle);
+            noiseMap.setSourceDensification(receiversDensification);
+            noiseMap.setRoadWidth(roadsWidth);
+            noiseMap.setWallAbsorption(wallAlpha);
+            noiseMap.initialize(connection, new EmptyProgressVisitor());
+            rs = new SimpleResultSet(new BR_TriGrid3D.TriangleRowSource(noiseMap, connection));
+            BR_TriGrid3D.feedColumns(rs);
+        }
+        return rs;
     }
 
 
@@ -136,7 +169,6 @@ public class BR_TriGrid extends AbstractFunction implements ScalarFunction {
      * @param computationEnvelope        Computation area
      * @param buildingsTable             Buildings table name (polygons)
      * @param sourcesTable               Source table table (linestring or point)
-     * @param sourcesTableSoundFieldName Field name to extract from sources table. Frequency is added on right.
      * @param groundTypeTable            Optional (empty if not available) Soil category. This is a table with a
      *                                   polygon column and a column 'G' [0-1] double.
      * @param maximumPropagationDistance Propagation distance limitation.
@@ -144,20 +176,46 @@ public class BR_TriGrid extends AbstractFunction implements ScalarFunction {
      * @param roadsWidth                 Buffer without receivers applied on roads on final noise map.
      * @param soundReflectionOrder       Sound reflection order on walls.
      * @param soundDiffractionOrder      Source diffraction order on corners.
-     * @param wallAlpha                  Wall absorption coefficient.
+     * @param wallAlpha                  Wall absorption coefficient. Specific absorption value can be specified in the
+     *                                   ALPHA column of building table.
      * @return A table with 3 columns GID(extracted from receivers table), W energy receiver by receiver,
      * cellid cell identifier.
      * @throws SQLException
      */
     public static ResultSet noisePropagation(Connection connection,Geometry computationEnvelope, String buildingsTable, String sourcesTable,
-                                             String sourcesTableSoundFieldName, String groundTypeTable,
+                                             String groundTypeTable,
                                              double maximumPropagationDistance, double maximumWallSeekingDistance,
                                              double roadsWidth, double receiversDensification,
                                              double maximumAreaOfTriangle, int soundReflectionOrder,
                                              int soundDiffractionOrder, double wallAlpha) throws SQLException {
-        return BR_TriGrid3D.noisePropagation(connection, computationEnvelope, buildingsTable, "", sourcesTable,
-                sourcesTableSoundFieldName, groundTypeTable, "", maximumPropagationDistance,
-                maximumWallSeekingDistance, roadsWidth, receiversDensification, maximumAreaOfTriangle,
-                soundReflectionOrder, soundDiffractionOrder, wallAlpha);
+
+        if (maximumPropagationDistance < maximumWallSeekingDistance) {
+            throw new SQLException(new IllegalArgumentException(
+                    "Maximum wall seeking distance cannot be superior than maximum propagation distance"));
+        }        SimpleResultSet rs;
+        if(TableUtilities.isColumnListConnection(connection)) {
+            // Only rs columns is necessary
+            rs = new SimpleResultSet();
+            BR_TriGrid3D.feedColumns(rs);
+        } else {
+            connection = SFSUtilities.wrapConnection(connection);
+            TriangleNoiseMap noiseMap = new TriangleNoiseMap(TableLocation.capsIdentifier(buildingsTable, true),
+                    TableLocation.capsIdentifier(sourcesTable, true));
+            noiseMap.setMainEnvelope(computationEnvelope.getEnvelopeInternal());
+            noiseMap.setSoilTableName(groundTypeTable);
+            noiseMap.setSound_lvl_field("DB_M");
+            noiseMap.setMaximumPropagationDistance(maximumPropagationDistance);
+            noiseMap.setMaximumReflectionDistance(maximumWallSeekingDistance);
+            noiseMap.setSoundReflectionOrder(soundReflectionOrder);
+            noiseMap.setSoundDiffractionOrder(soundDiffractionOrder);
+            noiseMap.setMaximumArea(maximumAreaOfTriangle);
+            noiseMap.setSourceDensification(receiversDensification);
+            noiseMap.setRoadWidth(roadsWidth);
+            noiseMap.setWallAbsorption(wallAlpha);
+            noiseMap.initialize(connection, new EmptyProgressVisitor());
+            rs = new SimpleResultSet(new BR_TriGrid3D.TriangleRowSource(noiseMap, connection));
+            BR_TriGrid3D.feedColumns(rs);
+        }
+        return rs;
     }
 }
