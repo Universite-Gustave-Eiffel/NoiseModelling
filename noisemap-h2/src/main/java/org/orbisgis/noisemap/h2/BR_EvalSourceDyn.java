@@ -50,11 +50,11 @@ public class BR_EvalSourceDyn extends DeterministicScalarFunction {
                 "\n" +
                 "Return the dB value per frequency of equivalent source power of an individual vehicle (light, medium, heavy, light and heavy two-wheels traffic).\n" +
                 "\n" +
-                "1. BR_EvalSourceDyn(double speed, double acceleration, int veh_type, double beginZ, double endZ, double roadLength2d,\n" +
-                "                                       int RoadSurface, double Temperature, double Ts_stud, double Pm_stud, int acc_type, double Junc_dist, int Junc_type, int FreqParam)\n" +
+                "1. BR_EvalSourceDyn(double speed, double acceleration, int veh_type, int acc_type, double beginZ, double endZ, double roadLength2d,\n" +
+                "            int FreqParam, double Temperature, int RoadSurface, boolean Stud, double Junc_dist, int Junc_type, double LwStd, int VehId)\n" +
                 "\n" +
-                "     * @param speed Vehicle speed\n" +
-                "     * @param acceleration Vehicle acceleration (optional, used when acc_type > 1) \n" +
+                "     * @param speed Vehicle speed (km/h)\n" +
+                "     * @param acceleration Vehicle acceleration (m/s) (optional, used when acc_type > 1) \n" +
                 "     * @param veh_type Vehicle type (CNOSSOS categories)\n" +
                 "     * @param acc_type Acceleration mode (1 = Distance to Junction (CNOSSOS), 2= Correction from IMAGINE with bounds , 3 = Correction from IMAGINE without bounds)\n" +
                 "     * @param beginZ Road start height\n" +
