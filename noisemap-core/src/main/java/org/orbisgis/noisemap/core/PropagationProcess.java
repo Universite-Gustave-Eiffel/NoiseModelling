@@ -3,30 +3,30 @@
  * evaluate the noise impact on urban mobility plans. This model is
  * based on the French standard method NMPB2008. It includes traffic-to-noise
  * sources evaluation and sound propagation processing.
- * <p>
+ *
  * This version is developed at French IRSTV Institute and at IFSTTAR
  * (http://www.ifsttar.fr/) as part of the Eval-PDU project, funded by the
  * French Agence Nationale de la Recherche (ANR) under contract ANR-08-VILL-0005-01.
- * <p>
+ *
  * Noisemap is distributed under GPL 3 license. Its reference contact is Judicaël
  * Picaut <judicael.picaut@ifsttar.fr>. It is maintained by Nicolas Fortin
  * as part of the "Atelier SIG" team of the IRSTV Institute <http://www.irstv.fr/>.
- * <p>
+ *
  * Copyright (C) 2011 IFSTTAR
  * Copyright (C) 2011-2012 IRSTV (FR CNRS 2488)
- * <p>
+ *
  * Noisemap is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option) any later
  * version.
- * <p>
+ *
  * Noisemap is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
  * A PARTICULAR PURPOSE. See the GNU General Public License for more details.
- * <p>
+ *
  * You should have received a copy of the GNU General Public License along with
  * Noisemap. If not, see <http://www.gnu.org/licenses/>.
- * <p>
+ *
  * For more information, please consult: <http://www.orbisgis.org/>
  * or contact directly:
  * info_at_ orbisgis.org
@@ -42,17 +42,21 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.locationtech.jts.algorithm.CGAlgorithms3D;
 import org.locationtech.jts.algorithm.LineIntersector;
 import org.locationtech.jts.algorithm.RobustLineIntersector;
 import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.CoordinateSequence;
+import org.locationtech.jts.geom.CoordinateSequenceFilter;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineSegment;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.impl.CoordinateArraySequence;
 import org.locationtech.jts.index.quadtree.Quadtree;
 import org.locationtech.jts.index.strtree.STRtree;
 import org.locationtech.jts.operation.buffer.BufferParameters;
@@ -105,6 +109,21 @@ public class PropagationProcess implements Runnable {
         thread = new Thread(this);
         this.dataOut = dataOut;
         this.data = data;
+    }
+
+    /**
+     * Update ground Z coordinates of sound sources and receivers absolute to sea levels
+     */
+    public void makeRelativeZToAbsolute() {
+        AbsoluteCoordinateSequenceFilter filter = new AbsoluteCoordinateSequenceFilter(data.freeFieldFinder);
+        for(Geometry source : data.sourceGeometries) {
+            source.apply(filter);
+        }
+        CoordinateSequence sequence = new CoordinateArraySequence(data.receivers.toArray(new Coordinate[data.receivers.size()]));
+        for(int i=0; i < sequence.size(); i++) {
+            filter.filter(sequence, i);
+        }
+        data.receivers = Arrays.asList(sequence.toCoordinateArray());
     }
 
     public void start() {
@@ -183,7 +202,7 @@ public class PropagationProcess implements Runnable {
 
 
     public void computeReflexion(Coordinate receiverCoord,
-                                 Coordinate srcCoord, List<Double> wj, List<FastObstructionTest.Wall> nearBuildingsWalls,
+                                 Coordinate srcCoord,List<Double> wj, List<FastObstructionTest.Wall> nearBuildingsWalls,
                                  double[] energeticSum, List<PropagationDebugInfo> debugInfo) {
         // Compute receiver mirror
         LineSegment srcReceiver = new LineSegment(srcCoord, receiverCoord);
@@ -195,7 +214,7 @@ public class PropagationProcess implements Runnable {
             double ReflectedSrcReceiverDistance = receiverReflection.getReceiverPos().distance(srcCoord);
             imageReceiver++;
             boolean validReflection = false;
-            int reflectionOrderCounter = 0;
+            double reflectionAlpha = 1;
             MirrorReceiverResult receiverReflectionCursor = receiverReflection;
             // Test whether intersection point is on the wall
             // segment or not
@@ -206,12 +225,14 @@ public class PropagationProcess implements Runnable {
                     receiverReflection.getReceiverPos(),
                     destinationPt);
             PropagationDebugInfo propagationDebugInfo = null;
-            if (debugInfo != null) {
+            if(debugInfo != null) {
                 propagationDebugInfo = new PropagationDebugInfo(new LinkedList<>(Arrays.asList(srcCoord)), new double[data.freq_lvl.size()]);
             }
             // While there is a reflection point on another wall. And intersection point is in the wall z bounds.
-            while (linters.hasIntersection() && MirrorReceiverIterator.wallPointTest(seg, destinationPt)) {
-                reflectionOrderCounter++;
+            while (linters.hasIntersection() && MirrorReceiverIterator.wallPointTest(seg, destinationPt))
+            {
+                Double buildingAlpha = data.freeFieldFinder.getBuildingAlpha(seg.getBuildingId());
+                reflectionAlpha *= 1 - (buildingAlpha.isNaN() ? data.wallAlpha : buildingAlpha);
                 // There are a probable reflection point on the
                 // segment
                 Coordinate reflectionPt = new Coordinate(
@@ -247,7 +268,7 @@ public class PropagationProcess implements Runnable {
                 if (validReflection) // Reflection point can see
                 // source or its image
                 {
-                    if (propagationDebugInfo != null) {
+                    if(propagationDebugInfo != null) {
                         propagationDebugInfo.getPropagationPath().add(0, reflectionPt);
                     }
                     if (receiverReflectionCursor
@@ -281,7 +302,7 @@ public class PropagationProcess implements Runnable {
                 }
             }
             if (validReflection) {
-                if (propagationDebugInfo != null) {
+                if(propagationDebugInfo != null) {
                     propagationDebugInfo.getPropagationPath().add(0, receiverCoord);
                 }
                 // A path has been found
@@ -291,19 +312,18 @@ public class PropagationProcess implements Runnable {
                     double AttenuatedWj = attDistW(wj.get(idfreq),
                             ReflectedSrcReceiverDistance);
                     // Apply wall material attenuation
-                    AttenuatedWj *= Math.pow((1 - data.wallAlpha),
-                            reflectionOrderCounter);
+                    AttenuatedWj *= reflectionAlpha;
                     // Apply atmospheric absorption and ground
                     AttenuatedWj = attAtmW(
                             AttenuatedWj,
                             ReflectedSrcReceiverDistance,
                             alpha_atmo[idfreq]);
                     energeticSum[idfreq] += AttenuatedWj;
-                    if (propagationDebugInfo != null) {
+                    if(propagationDebugInfo != null) {
                         propagationDebugInfo.addNoiseContribution(idfreq, AttenuatedWj);
                     }
                 }
-                if (propagationDebugInfo != null && debugInfo != null) {
+                if(propagationDebugInfo != null && debugInfo != null) {
                     debugInfo.add(propagationDebugInfo);
                 }
             }
@@ -774,7 +794,6 @@ public class PropagationProcess implements Runnable {
 
     /**
      * Add vertical edge diffraction noise contribution to energetic sum.
-     *
      * @param regionCorners
      * @param srcCoord
      * @param receiverCoord
@@ -884,9 +903,8 @@ public class PropagationProcess implements Runnable {
 
     /**
      * Compute project Z coordinate between p0 p1 of x,y.
-     *
      * @param coordinateWithoutZ Coordinate to set the Z value from Z interpolation of line
-     * @param line               Extract Z values of this segment
+     * @param line Extract Z values of this segment
      * @return coordinateWithoutZ with Z value computed from line.
      */
     private static Coordinate getProjectedZCoordinate(Coordinate coordinateWithoutZ, LineSegment line) {
@@ -988,9 +1006,9 @@ public class PropagationProcess implements Runnable {
                                      Coordinate receiverCoord, double energeticSum[],
                                      double[] alpha_atmo, List<Double> wj, double[] favrose,
                                      List<FastObstructionTest.Wall> nearBuildingsWalls, List<PropagationDebugInfo> debugInfo) {
+        GeometryFactory factory = new GeometryFactory();
 
-
-        List<Coordinate> regionCorners = fetchRegionCorners(new LineSegment(srcCoord, receiverCoord), data.maxRefDist);
+        List<Coordinate> regionCorners = fetchRegionCorners(new LineSegment(srcCoord, receiverCoord),data.maxRefDist);
 
         // Build mirrored receiver list from wall list
         int freqcut = 0;
@@ -1034,7 +1052,6 @@ public class PropagationProcess implements Runnable {
             if (data.computeVerticalDiffraction && buildingOnPath) {
                 computeHorizontalEdgeDiffraction(somethingHideReceiver, receiverCoord, srcCoord, SrcReceiverDistance, fav_probability, wj, debugInfo, energeticSum);
             }
-
             // Process specular reflection
             if (data.reflexionOrder > 0) {
                 computeReflexion(receiverCoord, srcCoord, wj, nearBuildingsWalls, energeticSum, debugInfo);
@@ -1095,8 +1112,7 @@ public class PropagationProcess implements Runnable {
 
     /**
      * Use {@link #cornersQuad} to fetch all region corners in max ref dist
-     *
-     * @param fetchLine   Compute distance from this line (Propagation line)
+     * @param fetchLine Compute distance from this line (Propagation line)
      * @param maxDistance Maximum distance to fetch corners (m)
      * @return Filtered corner index list
      */
@@ -1408,6 +1424,38 @@ public class PropagationProcess implements Runnable {
                 propagationProcess.dataOut.setVerticeSoundLevel(idReceiver, allfreqlvl);
                 progressVisitor.endStep();
             }
+        }
+    }
+
+    /**
+     * Offset de Z coordinates by the height of the ground
+     */
+    private static final class AbsoluteCoordinateSequenceFilter implements CoordinateSequenceFilter {
+        AtomicBoolean geometryChanged = new AtomicBoolean(false);
+        FastObstructionTest fastObstructionTest;
+
+        public AbsoluteCoordinateSequenceFilter(FastObstructionTest fastObstructionTest) {
+            this.fastObstructionTest = fastObstructionTest;
+        }
+
+        @Override
+        public void filter(CoordinateSequence coordinateSequence, int i) {
+            Coordinate pt = coordinateSequence.getCoordinate(i);
+            Double zGround = fastObstructionTest.getHeightAtPosition(pt);
+            if(!zGround.isNaN()) {
+                pt.setOrdinate(2, zGround + pt.getOrdinate(2));
+                geometryChanged.set(true);
+            }
+        }
+
+        @Override
+        public boolean isDone() {
+            return false;
+        }
+
+        @Override
+        public boolean isGeometryChanged() {
+            return geometryChanged.get();
         }
     }
 }

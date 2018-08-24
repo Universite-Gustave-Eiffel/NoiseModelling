@@ -77,6 +77,7 @@ public class MeshBuilder {
         private final Geometry geo;
         //If we add the topographic, the building height will be the average ToPo Height+ Building Height of all vertices
         private double height;
+        private double alpha = Double.NaN;
         private final boolean hasHeight;
 
         public PolygonWithHeight(Geometry geo) {
@@ -88,12 +89,33 @@ public class MeshBuilder {
         public PolygonWithHeight(Geometry geo, double height) {
             this.geo = geo;
             this.height = height;
-            this.hasHeight = true;
+            this.hasHeight = height < Double.MAX_VALUE;
+        }
+
+        public PolygonWithHeight(Geometry geo, double height, double alpha) {
+            this.geo = geo;
+            this.height = height;
+            this.hasHeight = height < Double.MAX_VALUE;
+            this.alpha = Math.min(1, Math.max(0, alpha));
         }
 
         public Geometry getGeometry() {
 
             return this.geo;
+        }
+
+        /**
+         * @return Get absorption coefficient of walls
+         */
+        public double getAlpha() {
+            return alpha;
+        }
+
+        /**
+         * @param alpha Set absorption coefficient of walls
+         */
+        public void setAlpha(double alpha) {
+            this.alpha = alpha;
         }
 
         public double getHeight() {
@@ -173,9 +195,20 @@ public class MeshBuilder {
      * @param obstructionPoly  building's Geometry
      * @param heightofBuilding building's Height
      */
-    @SuppressWarnings("unchecked")
     public void addGeometry(Geometry obstructionPoly, double heightofBuilding) {
         addGeometry(new PolygonWithHeight(obstructionPoly, heightofBuilding));
+    }
+
+    /**
+     * Add a new building with height and merge this new building with existing buildings if they have intersections
+     * When we merge the buildings, we will use The shortest height to new building
+     *
+     * @param obstructionPoly  building's Geometry
+     * @param heightofBuilding building's Height
+     * @param alpha Wall absorption coefficient
+     */
+    public void addGeometry(Geometry obstructionPoly, double heightofBuilding, double alpha) {
+        addGeometry(new PolygonWithHeight(obstructionPoly, heightofBuilding, alpha));
     }
 
     public void mergeBuildings(Geometry boundingBoxGeom) {
@@ -210,21 +243,22 @@ public class MeshBuilder {
             if(geometryN instanceof Polygon) {
                 List polyInters = buildingsRtree.query(geometryN.getEnvelopeInternal());
                 double minHeight = Double.MAX_VALUE;
-                boolean foundHeight = false;
+                double minAlpha = Double.MAX_VALUE;
                 for (Object id : polyInters) {
                     if (id instanceof Integer) {
                         PolygonWithHeight inPoly = polygonWithHeight.get((int) id);
-                        if (inPoly.hasHeight && inPoly.getGeometry().intersects(geometryN)) {
-                            minHeight = Math.min(minHeight, inPoly.getHeight());
-                            foundHeight = true;
+                        if (inPoly.getGeometry().intersects(geometryN)) {
+                            if(inPoly.hasHeight) {
+                                minHeight = Math.min(minHeight, inPoly.getHeight());
+                            }
+                            if(!Double.isNaN(inPoly.getAlpha())) {
+                                minAlpha = Math.min(minAlpha, inPoly.getAlpha());
+                            }
+                            break;
                         }
                     }
                 }
-                if(foundHeight) {
-                    mergedPolygonWithHeight.add(new PolygonWithHeight(geometryN, minHeight));
-                } else {
-                    mergedPolygonWithHeight.add(new PolygonWithHeight(geometryN));
-                }
+                mergedPolygonWithHeight.add(new PolygonWithHeight(geometryN, minHeight, minAlpha > 1 ? Double.NaN : minAlpha));
             } else if(geometryN instanceof LineString) {
               // Exterior envelope
               envelopeSplited.add((LineString)geometryN);

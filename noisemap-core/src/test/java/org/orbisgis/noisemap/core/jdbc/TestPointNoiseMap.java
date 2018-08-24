@@ -101,6 +101,7 @@ public class TestPointNoiseMap {
             pointNoiseMap.setSoundReflectionOrder(0);
             pointNoiseMap.setHeightField("HEIGHT");
             pointNoiseMap.setDemTable("DEM");
+            pointNoiseMap.setAbsoluteZCoordinates(true);
             pointNoiseMap.setComputeVerticalDiffraction(false);
             pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
             List<PropagationResultPtRecord> result =
@@ -135,6 +136,7 @@ public class TestPointNoiseMap {
             pointNoiseMap.setSoundReflectionOrder(0);
             pointNoiseMap.setHeightField("HEIGHT");
             pointNoiseMap.setDemTable("DEM");
+            pointNoiseMap.setAbsoluteZCoordinates(true);
             pointNoiseMap.setComputeVerticalDiffraction(false);
             pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
             List<PropagationResultPtRecord> result =

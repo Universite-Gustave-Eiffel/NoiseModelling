@@ -66,4 +66,4 @@ INSERT INTO RECEIVERS VALUES (NULL, 'POINT (183960.66 2429061.15 1.6)'), (NULL, 
 
 -- Sound propagation from sources through buildings reflecting on ground
 drop table if exists pt_lvl;
-create table pt_lvl as SELECT * from BR_PtGrid3D('BUILDINGS','HEIGHT','ROADS_SRC','RECEIVERS','DB_M','LAND_G','',750,50,2,1,0.23);
+create table pt_lvl as SELECT * from BR_PtGrid3D('BUILDINGS','ROADS_SRC','RECEIVERS','LAND_G','',750,50,2,1,0.23);
