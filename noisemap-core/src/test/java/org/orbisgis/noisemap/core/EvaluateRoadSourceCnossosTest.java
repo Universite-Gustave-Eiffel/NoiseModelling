@@ -11,30 +11,6 @@ import static org.orbisgis.noisemap.core.EvaluateRoadSourceCnossos.*;
 
 public class EvaluateRoadSourceCnossosTest {
     private static final double EPSILON_TEST1 = 0.01;
-    @Test
-    public void testRoadNoise1() {
-        double lv_speed = 20;
-        int lv_per_hour = 1000;
-        double mv_speed = 4;
-        int mv_per_hour = 4;
-        double hgv_speed = 1;
-        int hgv_per_hour = 1;
-        double wav_speed = 30;
-        int wav_per_hour = 10;
-        double wbv_speed = 30;
-        int wbv_per_hour = 20;
-        int FreqParam = 125;
-        double Temperature = 0;
-        int RoadSurface = 0;
-        double Pm_stud = 0;
-        double Ts_stud = 3;
-        double Junc_dist = 200;
-        int Junc_type = 1;
-        RSParametersCnossos rsParameters = new RSParametersCnossos(lv_speed,  mv_speed,  hgv_speed,  wav_speed,  wbv_speed,  lv_per_hour,  mv_per_hour,  hgv_per_hour,  wav_per_hour,  wbv_per_hour,  FreqParam,  Temperature,  RoadSurface,Ts_stud, Pm_stud , Junc_dist, Junc_type);
-        rsParameters.setSlopePercentage(-15);
-        //System.out.println(EvaluateRoadSourceCnossos.evaluate(rsParameters));
-        assertEquals(74.57 , EvaluateRoadSourceCnossos.evaluate(rsParameters), EPSILON_TEST1);
-    }
 
     /** based on CNOSSOS_Road_Output.csv and the CNOSSOS_DLL_CONSOLE.exe**/
     @Test

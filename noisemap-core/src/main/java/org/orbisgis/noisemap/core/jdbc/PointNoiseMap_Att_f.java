@@ -160,6 +160,9 @@ public class PointNoiseMap_Att_f extends JdbcNoiseMap {
 
         PropagationProcess_Att_f propaProcess = new PropagationProcess_Att_f(
                 threadData, threadDataOut);
+                if(!absoluteZCoordinates) {
+                    propaProcess.makeRelativeZToAbsolute();
+                }
 
         propaProcess.run();
         List<PropagationProcessOut_Att_f.verticeSL> verticesSoundLevel = threadDataOut.getVerticesSoundLevel();

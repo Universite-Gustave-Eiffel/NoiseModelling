@@ -45,17 +45,21 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Comparator;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.locationtech.jts.algorithm.CGAlgorithms3D;
 import org.locationtech.jts.algorithm.LineIntersector;
 import org.locationtech.jts.algorithm.RobustLineIntersector;
 import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.CoordinateSequence;
+import org.locationtech.jts.geom.CoordinateSequenceFilter;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineSegment;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.impl.CoordinateArraySequence;
 import org.locationtech.jts.index.quadtree.Quadtree;
 import org.locationtech.jts.index.strtree.STRtree;
 import org.locationtech.jts.operation.buffer.BufferParameters;
@@ -89,6 +93,8 @@ public class PropagationProcess_Att_f implements Runnable {
     private long refpathcount = 0;
     private double[] alpha_atmo;
     private double[] freq_lambda;
+    // todo implement this next variable as input parameter
+    private double gS = 0; // 0 si route, 1 si ballast
     private STRtree rTreeOfGeoSoil;
     private final static Logger LOGGER = LoggerFactory.getLogger(PropagationProcess_Att_f.class);
 
@@ -116,6 +122,21 @@ public class PropagationProcess_Att_f implements Runnable {
         thread = new Thread(this);
         this.dataOut = dataOut;
         this.data = data;
+    }
+
+/**
+     * Update ground Z coordinates of sound sources and receivers absolute to sea levels
+     */
+    public void makeRelativeZToAbsolute() {
+        AbsoluteCoordinateSequenceFilter filter = new AbsoluteCoordinateSequenceFilter(data.freeFieldFinder);
+        for(Geometry source : data.sourceGeometries) {
+            source.apply(filter);
+        }
+        CoordinateSequence sequence = new CoordinateArraySequence(data.receivers.toArray(new Coordinate[data.receivers.size()]));
+        for(int i=0; i < sequence.size(); i++) {
+            filter.filter(sequence, i);
+        }
+        data.receivers = Arrays.asList(sequence.toCoordinateArray());
     }
 
     public void start() {
@@ -206,7 +227,7 @@ public class PropagationProcess_Att_f implements Runnable {
             double ReflectedSrcReceiverDistance = receiverReflection.getReceiverPos().distance(srcCoord);
             imageReceiver++;
             boolean validReflection = false;
-            int reflectionOrderCounter = 0;
+            double reflectionAlpha = 1;
             MirrorReceiverResult receiverReflectionCursor = receiverReflection;
             // Test whether intersection point is on the wall
             // segment or not
@@ -223,7 +244,8 @@ public class PropagationProcess_Att_f implements Runnable {
             // While there is a reflection point on another wall. And intersection point is in the wall z bounds.
             while (linters.hasIntersection() && MirrorReceiverIterator.wallPointTest(seg, destinationPt))
             {
-                reflectionOrderCounter++;
+                Double buildingAlpha = data.freeFieldFinder.getBuildingAlpha(seg.getBuildingId());
+                reflectionAlpha *= 1 - (buildingAlpha.isNaN() ? data.wallAlpha : buildingAlpha);
                 // There are a probable reflection point on the
                 // segment
                 Coordinate reflectionPt = new Coordinate(
@@ -303,8 +325,7 @@ public class PropagationProcess_Att_f implements Runnable {
                     double AttenuatedWj = attDistW(wj.get(idfreq),
                             ReflectedSrcReceiverDistance);
                     // Apply wall material attenuation
-                    AttenuatedWj *= Math.pow((1 - data.wallAlpha),
-                            reflectionOrderCounter);
+                    AttenuatedWj *= reflectionAlpha;
                     // Apply atmospheric absorption and ground
                     AttenuatedWj = attAtmW(
                             AttenuatedWj,
@@ -1330,6 +1351,37 @@ public class PropagationProcess_Att_f implements Runnable {
                 }
                 progressVisitor.endStep();
             }
+        }
+    }
+        /**
+     * Offset de Z coordinates by the height of the ground
+     */
+    private static final class AbsoluteCoordinateSequenceFilter implements CoordinateSequenceFilter {
+        AtomicBoolean geometryChanged = new AtomicBoolean(false);
+        FastObstructionTest fastObstructionTest;
+
+        public AbsoluteCoordinateSequenceFilter(FastObstructionTest fastObstructionTest) {
+            this.fastObstructionTest = fastObstructionTest;
+        }
+
+        @Override
+        public void filter(CoordinateSequence coordinateSequence, int i) {
+            Coordinate pt = coordinateSequence.getCoordinate(i);
+            Double zGround = fastObstructionTest.getHeightAtPosition(pt);
+            if(!zGround.isNaN()) {
+                pt.setOrdinate(2, zGround + pt.getOrdinate(2));
+                geometryChanged.set(true);
+            }
+        }
+
+        @Override
+        public boolean isDone() {
+            return false;
+        }
+
+        @Override
+        public boolean isGeometryChanged() {
+            return geometryChanged.get();
         }
     }
 }

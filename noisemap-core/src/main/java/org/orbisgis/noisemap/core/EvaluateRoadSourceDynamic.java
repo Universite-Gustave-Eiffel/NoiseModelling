@@ -790,6 +790,8 @@ public class EvaluateRoadSourceDynamic {
         int veh_type = parameters.getVeh_type();
         int VehId = parameters.getVehId();
         double acceleration = parameters.getAcceleration();
+        double speed = parameters.getSpeed();
+
 
         // ///////////////////////
         // Noise road/tire CNOSSOS
@@ -829,10 +831,9 @@ public class EvaluateRoadSourceDynamic {
         if (veh_type == 1) { // because studded tyres are only on Cat 1 vehicle
             if (Stud) {
                 double deltastud = 0;
-                double speed = parameters.getSpeed();
-                speed = (speed >= 90) ? 90 : speed;
-                speed = (speed <= 50) ? 50 : speed;
-                deltastud = getNoiseLvl(getCoeff(4, FreqParam, 1), getCoeff(5, FreqParam, 1), speed, 70.);
+                double speedstud  = (speed >= 90) ? 90 : speed;
+                speedstud = (speedstud <= 50) ? 50 : speedstud;
+                deltastud = getNoiseLvl(getCoeff(4, FreqParam, 1), getCoeff(5, FreqParam, 1), speedstud, 70.);
                 RoadLvl = RoadLvl + Math.pow(10, deltastud / 10);
             }
         }
@@ -844,9 +845,10 @@ public class EvaluateRoadSourceDynamic {
         // Noise motor
         // Calculate the emission powers of motors lights vehicles and heavies goods vehicles.
         double MotorLvl;
-
+        RoadLvl = (speed <= 20) ? 0 : RoadLvl;
+        speed = (speed <= 20) ? 20 : speed; // Because when vehicles are stopped they still emit motor sounds.
         // default or steady speed.
-        MotorLvl = getCoeff(2, FreqParam, veh_type) + getCoeff(3, FreqParam, veh_type) * (parameters.getSpeed() - 70) / 70;
+        MotorLvl = getCoeff(2, FreqParam, veh_type) + getCoeff(3, FreqParam, veh_type) * (speed - 70) / 70;
 
         // Propulsion noise acceleration correction
         double amax=0;
@@ -955,28 +957,28 @@ public class EvaluateRoadSourceDynamic {
                     MotorLvl = MotorLvl + 0.;
                 } else {
                     // upwards 2% <= p <= 6%
-                    MotorLvl = MotorLvl + ((parameters.getSpeed() / 100) * ((Math.min(12, parameters.getSlopePercentage()) - 2) / 1.5));
+                    MotorLvl = MotorLvl + ((speed / 100) * ((Math.min(12, parameters.getSlopePercentage()) - 2) / 1.5));
                 }
                 break;
             case 2:
                 if (parameters.getSlopePercentage() < -4) {
                     // Steady and deceleration, the same formulae
-                    MotorLvl = MotorLvl + ((parameters.getSpeed() - 20) / 100) * (Math.min(12, -1 * parameters.getSlopePercentage()) - 4) / 0.7;
+                    MotorLvl = MotorLvl + ((speed - 20) / 100) * (Math.min(12, -1 * parameters.getSlopePercentage()) - 4) / 0.7;
                 } else if (parameters.getSlopePercentage() <= 0) {
                     MotorLvl = MotorLvl + 0.;
 
                 } else {
-                    MotorLvl = MotorLvl + (parameters.getSpeed() / 100) * (Math.min(12, parameters.getSlopePercentage())) / 1;
+                    MotorLvl = MotorLvl + (speed / 100) * (Math.min(12, parameters.getSlopePercentage())) / 1;
                 }
                 break;
             case 3:
                 if (parameters.getSlopePercentage() < -4) {
                     // Steady and deceleration, the same formulae
-                    MotorLvl = MotorLvl + ((parameters.getSpeed() - 10) / 100) * (Math.min(12, -1 * parameters.getSlopePercentage()) - 4) / 0.5;
+                    MotorLvl = MotorLvl + ((speed - 10) / 100) * (Math.min(12, -1 * parameters.getSlopePercentage()) - 4) / 0.5;
                 } else if (parameters.getSlopePercentage() <= 0) {
                     MotorLvl = MotorLvl + 0.;
                 } else {
-                    MotorLvl = MotorLvl + (parameters.getSpeed() / 100) * (Math.min(12, parameters.getSlopePercentage())) / 0.8;
+                    MotorLvl = MotorLvl + (speed / 100) * (Math.min(12, parameters.getSlopePercentage())) / 0.8;
                 }
                 break;
             default:
