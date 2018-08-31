@@ -223,6 +223,7 @@ public abstract class JdbcNoiseMap {
             try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
                 while (rs.next()) {
                     Geometry geo = rs.getGeometry();
+                    // todo get primarykey
                     sourcePk.add(rs.getLong(1));
                     if (geo != null) {
                         ArrayList<Double> wj_spectrum = new ArrayList<>();

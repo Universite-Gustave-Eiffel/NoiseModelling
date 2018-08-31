@@ -128,6 +128,56 @@ public class TestISO17534 extends TestCase {
         splCompare(splCompute(propManager, new Coordinate(200, 50, 4)), "Test T01", new double[]{20.09, 23.06, 25.72, 28.18 ,30.42, 32.34, 34.06, 35.58 ,36.78, 37.78 ,38.44, 38.85, 38.97, 38.74, 38.17, 37 ,35.11, 31.99}, ERROR_EPSILON_TEST_T);
     }
 
+
+    /**
+     * Sound propagation
+     * testTMarieAgnes
+     * Horizontal ground with homogeneous properties, close receiver - Reflective ground (G=0)
+     * @throws LayerDelaunayError
+     */
+    public void testTMarieAgnes() throws LayerDelaunayError {
+        GeometryFactory factory = new GeometryFactory();
+        ////////////////////////////////////////////////////////////////////////////
+        //Add road source as one point
+        List<Geometry> srclst=new ArrayList<Geometry>();
+        srclst.add(factory.createPoint(new Coordinate(10, 10, 0.05)));
+        //Scene dimension
+        Envelope cellEnvelope=new Envelope(new Coordinate(-250., -250.,0.),new Coordinate(250, 250,0.));
+        //Add source sound level
+        List<ArrayList<Double>> srcSpectrum=new ArrayList<ArrayList<Double>>();
+        srcSpectrum.add(asW(73.9, 76.9, 79.6, 82.1, 84.4, 86.4, 88.2, 89.8, 91.1, 92.2, 93., 93.6, 94., 94.2, 94.3,
+                94.2, 94,93.5));
+        // GeometrySoilType
+        List<GeoWithSoilType> geoWithSoilTypeList = new ArrayList<>();
+        geoWithSoilTypeList.add(new GeoWithSoilType(factory.toGeometry(new Envelope(-50,250,-50,50)),0.));
+        //Build query structure for sources
+        QueryGeometryStructure sourcesIndex = new QueryQuadTree();
+        int idsrc=0;
+        for(Geometry src : srclst) {
+            sourcesIndex.appendGeometry(src, idsrc);
+            idsrc++;
+        }
+        //Create obstruction test object
+        MeshBuilder mesh = new MeshBuilder();
+        mesh.finishPolygonFeeding(cellEnvelope);
+
+        //Retrieve Delaunay triangulation of scene
+        List<Coordinate> vert=mesh.getVertices();
+        FastObstructionTest manager=new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+                mesh.getTriNeighbors(), mesh.getVertices());
+        // rose of favourable conditions
+        double[] favrose = new double[]{0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.};
+
+        PropagationProcessData propData=new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
+                freqLvl, 0, 0, 250,250, 0., 0.,favrose, 0, null,geoWithSoilTypeList, true);
+        PropagationProcessOut propDataOut=new PropagationProcessOut();
+        PropagationProcess propManager=new PropagationProcess(propData, propDataOut);
+        propManager.initStructures();
+
+        //Run test
+        splCompare(splCompute(propManager, new Coordinate(60, 10, 2)), "Test TMA", new double[]{20.09, 23.06, 25.72, 28.18 ,30.42, 32.34, 34.06, 35.58 ,36.78, 37.78 ,38.44, 38.85, 38.97, 38.74, 38.17, 37 ,35.11, 31.99}, ERROR_EPSILON_TEST_T);
+    }
+
     /**
      * Sound propagation
      * T03

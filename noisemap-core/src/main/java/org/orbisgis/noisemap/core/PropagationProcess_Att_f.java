@@ -79,7 +79,7 @@ public class PropagationProcess_Att_f implements Runnable {
     private final static double BASE_LVL = 1.; // 0dB lvl
     private final static double ONETHIRD = 1. / 3.;
     private final static double MERGE_SRC_DIST = 1.;
-    private final static double DBA_FORGET_SOURCE = 0.03;
+    private final static double DBA_FORGET_SOURCE = 1; // 0.03
     private final static double FIRST_STEP_RANGE = 90;
     private final static double W_RANGE = Math.pow(10, 94. / 10.); //94 dB(A) range search. Max iso level is >75 dB(a).
     // NMPB states Celerity of the sound in the air, taken equal to 340 m/s.
@@ -1073,7 +1073,7 @@ public class PropagationProcess_Att_f implements Runnable {
             double wAttDistSource = attDistW(allsourcefreqlvl, CGAlgorithms3D.distance(srcCoord, receiverCoord));
             srcEnergeticSum += wAttDistSource;
             // ICI IL FAUT Y REFLECHIR !!!
-            //if (Math.abs(wToDba(wAttDistSource + allreceiverfreqlvl) - wToDba(allreceiverfreqlvl)) > DBA_FORGET_SOURCE) {
+            if (Math.abs(wToDba(wAttDistSource + allreceiverfreqlvl) - wToDba(allreceiverfreqlvl)) > DBA_FORGET_SOURCE) {
             sourceCount++;
             Envelope query = new Envelope(receiverCoord, srcCoord);
             query.expandBy(Math.min(data.maxRefDist, srcCoord.distance(receiverCoord)));
@@ -1084,7 +1084,7 @@ public class PropagationProcess_Att_f implements Runnable {
                     (List<FastObstructionTest.Wall>) queryResult, debugInfo);
             energeticId.add(new energeticSource(src, subtraction2array(energeticSum, energeticSum_before_sound_source)));
 
-            //}
+            }
 
 
         }
@@ -1276,7 +1276,7 @@ public class PropagationProcess_Att_f implements Runnable {
                 // ICI CEST POUR SOMMER LES PT SOURCES DUNE LIGNE SOURCE
                 int s_Id_t0=0;
                 int s_Id_t1=0;
-                int max=0;
+                int max=-1;
                 int len=energeticId.size();
                 for(int i=0; i<len; i++) {
                     if (energeticId.get(i).sourceId > max) {
@@ -1338,15 +1338,16 @@ public class PropagationProcess_Att_f implements Runnable {
 //                allfreqs[7] = Math.max(-100,wToDba(allfreqs[7])-wToDba(reference));
 //                allfreqs[8] = Math.max(-100,wToDba(allfreqs[8])-wToDba(reference));
                 for(int i=0; i<=max; i++) {
-                    allfreqs[i][0] = Math.max(-100,wToDba(allfreqs[i][0])-wToDba(8.*reference));
-                    allfreqs[i][1] = Math.max(-100,wToDba(allfreqs[i][1])-wToDba(reference));
-                    allfreqs[i][2] = Math.max(-100,wToDba(allfreqs[i][2])-wToDba(reference));
-                    allfreqs[i][3] = Math.max(-100,wToDba(allfreqs[i][3])-wToDba(reference));
-                    allfreqs[i][4] = Math.max(-100,wToDba(allfreqs[i][4])-wToDba(reference));
-                    allfreqs[i][5] = Math.max(-100,wToDba(allfreqs[i][5])-wToDba(reference));
-                    allfreqs[i][6] = Math.max(-100,wToDba(allfreqs[i][6])-wToDba(reference));
-                    allfreqs[i][7] = Math.max(-100,wToDba(allfreqs[i][7])-wToDba(reference));
-                    allfreqs[i][8] = Math.max(-100,wToDba(allfreqs[i][8])-wToDba(reference));
+                   //
+                    allfreqs[i][0] = Math.max(-100,wToDba(allfreqs[i][0])-wToDba(propagationProcess.data.wj_sources.get(i).get(0)+propagationProcess.data.wj_sources.get(i).get(1)+propagationProcess.data.wj_sources.get(i).get(2)+propagationProcess.data.wj_sources.get(i).get(3)+propagationProcess.data.wj_sources.get(i).get(4)+propagationProcess.data.wj_sources.get(i).get(5)+propagationProcess.data.wj_sources.get(i).get(6)+propagationProcess.data.wj_sources.get(i).get(7)));
+                    allfreqs[i][1] = Math.max(-100,wToDba(allfreqs[i][1])-wToDba(propagationProcess.data.wj_sources.get(i).get(0)));
+                    allfreqs[i][2] = Math.max(-100,wToDba(allfreqs[i][2])-wToDba(propagationProcess.data.wj_sources.get(i).get(1)));
+                    allfreqs[i][3] = Math.max(-100,wToDba(allfreqs[i][3])-wToDba(propagationProcess.data.wj_sources.get(i).get(2)));
+                    allfreqs[i][4] = Math.max(-100,wToDba(allfreqs[i][4])-wToDba(propagationProcess.data.wj_sources.get(i).get(3)));
+                    allfreqs[i][5] = Math.max(-100,wToDba(allfreqs[i][5])-wToDba(propagationProcess.data.wj_sources.get(i).get(4)));
+                    allfreqs[i][6] = Math.max(-100,wToDba(allfreqs[i][6])-wToDba(propagationProcess.data.wj_sources.get(i).get(5)));
+                    allfreqs[i][7] = Math.max(-100,wToDba(allfreqs[i][7])-wToDba(propagationProcess.data.wj_sources.get(i).get(6)));
+                    allfreqs[i][8] = Math.max(-100,wToDba(allfreqs[i][8])-wToDba(propagationProcess.data.wj_sources.get(i).get(7)));
                     propagationProcess.dataOut.addVerticeSoundLevel(idReceiver, i, allfreqs[i]);
                 }
                 progressVisitor.endStep();
