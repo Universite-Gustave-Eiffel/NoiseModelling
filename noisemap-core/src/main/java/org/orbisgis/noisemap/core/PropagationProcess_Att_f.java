@@ -1338,17 +1338,19 @@ public class PropagationProcess_Att_f implements Runnable {
 //                allfreqs[7] = Math.max(-100,wToDba(allfreqs[7])-wToDba(reference));
 //                allfreqs[8] = Math.max(-100,wToDba(allfreqs[8])-wToDba(reference));
                 for(int i=0; i<=max; i++) {
-                   //
-                    allfreqs[i][0] = Math.max(-100,wToDba(allfreqs[i][0])-wToDba(propagationProcess.data.wj_sources.get(i).get(0)+propagationProcess.data.wj_sources.get(i).get(1)+propagationProcess.data.wj_sources.get(i).get(2)+propagationProcess.data.wj_sources.get(i).get(3)+propagationProcess.data.wj_sources.get(i).get(4)+propagationProcess.data.wj_sources.get(i).get(5)+propagationProcess.data.wj_sources.get(i).get(6)+propagationProcess.data.wj_sources.get(i).get(7)));
-                    allfreqs[i][1] = Math.max(-100,wToDba(allfreqs[i][1])-wToDba(propagationProcess.data.wj_sources.get(i).get(0)));
-                    allfreqs[i][2] = Math.max(-100,wToDba(allfreqs[i][2])-wToDba(propagationProcess.data.wj_sources.get(i).get(1)));
-                    allfreqs[i][3] = Math.max(-100,wToDba(allfreqs[i][3])-wToDba(propagationProcess.data.wj_sources.get(i).get(2)));
-                    allfreqs[i][4] = Math.max(-100,wToDba(allfreqs[i][4])-wToDba(propagationProcess.data.wj_sources.get(i).get(3)));
-                    allfreqs[i][5] = Math.max(-100,wToDba(allfreqs[i][5])-wToDba(propagationProcess.data.wj_sources.get(i).get(4)));
-                    allfreqs[i][6] = Math.max(-100,wToDba(allfreqs[i][6])-wToDba(propagationProcess.data.wj_sources.get(i).get(5)));
-                    allfreqs[i][7] = Math.max(-100,wToDba(allfreqs[i][7])-wToDba(propagationProcess.data.wj_sources.get(i).get(6)));
-                    allfreqs[i][8] = Math.max(-100,wToDba(allfreqs[i][8])-wToDba(propagationProcess.data.wj_sources.get(i).get(7)));
-                    propagationProcess.dataOut.addVerticeSoundLevel(idReceiver, i, allfreqs[i]);
+                    //
+                    allfreqs[i][0] =  wToDba(allfreqs[i][0]) - wToDba(propagationProcess.data.wj_sources.get(i).get(0) + propagationProcess.data.wj_sources.get(i).get(1) + propagationProcess.data.wj_sources.get(i).get(2) + propagationProcess.data.wj_sources.get(i).get(3) + propagationProcess.data.wj_sources.get(i).get(4) + propagationProcess.data.wj_sources.get(i).get(5) + propagationProcess.data.wj_sources.get(i).get(6) + propagationProcess.data.wj_sources.get(i).get(7));
+                    allfreqs[i][1] =  wToDba(allfreqs[i][1]) - wToDba(propagationProcess.data.wj_sources.get(i).get(0));
+                    allfreqs[i][2] =  wToDba(allfreqs[i][2]) - wToDba(propagationProcess.data.wj_sources.get(i).get(1));
+                    allfreqs[i][3] =  wToDba(allfreqs[i][3]) - wToDba(propagationProcess.data.wj_sources.get(i).get(2));
+                    allfreqs[i][4] =  wToDba(allfreqs[i][4]) - wToDba(propagationProcess.data.wj_sources.get(i).get(3));
+                    allfreqs[i][5] =  wToDba(allfreqs[i][5]) - wToDba(propagationProcess.data.wj_sources.get(i).get(4));
+                    allfreqs[i][6] =  wToDba(allfreqs[i][6]) - wToDba(propagationProcess.data.wj_sources.get(i).get(5));
+                    allfreqs[i][7] =  wToDba(allfreqs[i][7]) - wToDba(propagationProcess.data.wj_sources.get(i).get(6));
+                    allfreqs[i][8] =  wToDba(allfreqs[i][8]) - wToDba(propagationProcess.data.wj_sources.get(i).get(7));
+                    if (allfreqs[i][0] > -90){
+                        propagationProcess.dataOut.addVerticeSoundLevel(idReceiver, i, allfreqs[i]);
+                    }
                 }
                 progressVisitor.endStep();
             }

@@ -604,7 +604,8 @@ public class PropagationProcess implements Runnable {
             // todo different if deltadistance or deltadistancefav
             int freqcut = 0;
             for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
-                if (deltadistance >= -((CEL / data.freq_lvl.get(idfreq)) / 20)) {
+                double deltadistancestar = 0;
+                if (deltadistance >= -((CEL / data.freq_lvl.get(idfreq)) / 20) && deltadistancestar >= (((CEL / data.freq_lvl.get(idfreq)) / 4)-deltadistancestar)) {
                     freqcut = idfreq + 1;
                 }
             }
@@ -1270,7 +1271,7 @@ public class PropagationProcess implements Runnable {
             // maxSrcDist meters
             ProgressVisitor propaProcessProgression = data.cellProg;
 
-
+            // todo check if db_d as values inside table if false then send error
             Runtime runtime = Runtime.getRuntime();
             int splitCount = runtime.availableProcessors();
             ThreadPool threadManager = new ThreadPool(
