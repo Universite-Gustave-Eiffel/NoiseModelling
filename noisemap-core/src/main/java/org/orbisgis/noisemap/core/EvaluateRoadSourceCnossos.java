@@ -411,7 +411,7 @@ public class EvaluateRoadSourceCnossos {
 
     /**
      * Vehicle emission values coefficients
-     * @param coeff ar,br,a,bp,a,b
+     * @param coeff ar,br,ap,bp,a,b
      * @param freq 0 = 63 Hz, 1 = 125 Hz, etc.
      * @param vehicleCategory 1,2,3,4a,4b..
      * @return
@@ -500,7 +500,7 @@ public class EvaluateRoadSourceCnossos {
 
         // Noise level
         lvRoadLvl = getNoiseLvl(getCoeff("ar", freqParam , "1"  ), getCoeff("br", freqParam , "1"  ), parameters.getSpeedLv(), 70.);
-        medRoadLvl = getNoiseLvl(getCoeff("ar", freqParam , "1"  ), getCoeff("br", freqParam , "2"  ), parameters.getSpeedMv(), 70.);
+        medRoadLvl = getNoiseLvl(getCoeff("ar", freqParam , "2"  ), getCoeff("br", freqParam , "2"  ), parameters.getSpeedMv(), 70.);
         hgvRoadLvl = getNoiseLvl(getCoeff("ar", freqParam , "3"  ), getCoeff("br", freqParam , "3"  ), parameters.getSpeedHgv(), 70.);
         wheelaRoadLvl = getNoiseLvl(getCoeff("ar", freqParam , "4a"  ), getCoeff("br", freqParam , "4a"  ), parameters.getSpeedWav(), 70.);
         wheelbRoadLvl = getNoiseLvl(getCoeff("ar", freqParam , "4b"  ), getCoeff("br", freqParam , "4b"  ), parameters.getSpeedWbv(), 70.);
@@ -512,7 +512,6 @@ public class EvaluateRoadSourceCnossos {
 
 
         // Rolling noise acceleration correction
-        int indJunc = (Junc_type ==2) ? 2 : 0; // because my table is not very smart
         lvRoadLvl = lvRoadLvl + getCr("1", Junc_type) * Math.max(1-Math.abs(Junc_dist)/100,0) ;
         medRoadLvl = medRoadLvl + getCr("2", Junc_type)  * Math.max(1-Math.abs(Junc_dist)/100,0);
         hgvRoadLvl = hgvRoadLvl + getCr("3", Junc_type)  * Math.max(1-Math.abs(Junc_dist)/100,0);
@@ -540,18 +539,18 @@ public class EvaluateRoadSourceCnossos {
         // Calculate the emission powers of motors lights vehicles and heavies goods vehicles.
 
         // default or steady speed.
-        double lvMotorLvl = getCoeff("br", freqParam , "1"  ) + getCoeff("ap", freqParam , "1"  ) * (parameters.getSpeedLv()-70)/70 ;
-        double medMotorLvl =  getCoeff("br", freqParam , "2"  ) + getCoeff("ap", freqParam , "2"  ) * (parameters.getSpeedMv()-70)/70 ;
-        double hgvMotorLvl =  getCoeff("br", freqParam , "3"  ) + getCoeff("ap", freqParam , "3"  ) * (parameters.getSpeedHgv()-70)/70 ;
-        double wheelaMotorLvl =  getCoeff("br", freqParam , "4a"  ) + getCoeff("ap", freqParam , "4a"  ) * (parameters.getSpeedWav()-70)/70 ;
-        double wheelbMotorLvl =  getCoeff("br", freqParam , "4b"  ) + getCoeff("ap", freqParam , "4b"  ) * (parameters.getSpeedWbv()-70)/70 ;
+        double lvMotorLvl = getCoeff("ap", freqParam , "1"  ) + getCoeff("bp", freqParam , "1"  ) * (parameters.getSpeedLv()-70)/70 ;
+        double medMotorLvl =  getCoeff("ap", freqParam , "2"  ) + getCoeff("bp", freqParam , "2"  ) * (parameters.getSpeedMv()-70)/70 ;
+        double hgvMotorLvl =  getCoeff("ap", freqParam , "3"  ) + getCoeff("bp", freqParam , "3"  ) * (parameters.getSpeedHgv()-70)/70 ;
+        double wheelaMotorLvl =  getCoeff("ap", freqParam , "4a"  ) + getCoeff("bp", freqParam , "4a"  ) * (parameters.getSpeedWav()-70)/70 ;
+        double wheelbMotorLvl =  getCoeff("ap", freqParam , "4b"  ) + getCoeff("bp", freqParam , "4b"  ) * (parameters.getSpeedWbv()-70)/70 ;
 
 
         // Propulsion noise acceleration correction
 
-        lvMotorLvl = lvMotorLvl + getCp("1", indJunc) * Math.max(1-Math.abs(Junc_dist)/100,0) ;
-        medMotorLvl = medMotorLvl + getCp("2", indJunc)  * Math.max(1-Math.abs(Junc_dist)/100,0);
-        hgvMotorLvl = hgvMotorLvl + getCp("3", indJunc)  * Math.max(1-Math.abs(Junc_dist)/100,0);
+        lvMotorLvl = lvMotorLvl + getCp("1", Junc_type) * Math.max(1-Math.abs(Junc_dist)/100,0) ;
+        medMotorLvl = medMotorLvl + getCp("2", Junc_type)  * Math.max(1-Math.abs(Junc_dist)/100,0);
+        hgvMotorLvl = hgvMotorLvl + getCp("3", Junc_type)  * Math.max(1-Math.abs(Junc_dist)/100,0);
 
 
         // Correction gradient for light vehicle
