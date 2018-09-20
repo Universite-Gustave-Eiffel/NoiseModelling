@@ -44,6 +44,7 @@ import static org.orbisgis.noisemap.core.EvaluateRoadSourceCnossos.*;
 
 public class EvaluateRoadSourceCnossosTest {
     private static final double EPSILON_TEST1 = 0.01;
+    private static final int[] FREQUENCIES = new int[] {63,125,250,500,1000,2000,4000,8000};
 
     /** based on CNOSSOS_Road_Output.csv and the CNOSSOS_DLL_CONSOLE.exe**/
     @Test
@@ -185,4 +186,28 @@ public class EvaluateRoadSourceCnossosTest {
 
     }
 
+
+    @Test
+    public void CnossosEmissionTest() {
+        String vehCat="1";
+        double vehiclePerHour = 1000;
+        double vehicleSpeed = 20;
+        double tsStud = 0.5;
+        String surfRef = "NL01";
+        double temperature = -5;
+        double pmStud = 1.5;
+        double slope = -15;
+        double juncDist = 200;
+        int juncType = 1;
+        double[] expectedValues = new double[]{88.421,77.1136,75.5712,75.6919,73.6689,71.3471,68.1195,63.4796};
+        for(int idFreq = 3; idFreq < FREQUENCIES.length; idFreq++) {
+            RSParametersCnossos rsParameters = new RSParametersCnossos(vehicleSpeed, vehicleSpeed, vehicleSpeed,
+                    vehicleSpeed, vehicleSpeed, "1".equals(vehCat) ? vehiclePerHour : 0,
+                    "2".equals(vehCat) ? vehiclePerHour : 0, "3".equals(vehCat) ? vehiclePerHour : 0,
+                    "4a".equals(vehCat) ? vehiclePerHour : 0, "4b".equals(vehCat) ? vehiclePerHour : 0,
+                    FREQUENCIES[idFreq], temperature, surfRef, tsStud, pmStud, juncDist, juncType);
+            rsParameters.setSlopePercentage(slope);
+            assertEquals(String.format("%d Hz", FREQUENCIES[idFreq]), expectedValues[idFreq], EvaluateRoadSourceCnossos.evaluate(rsParameters), EPSILON_TEST1);
+        }
+    }
 }

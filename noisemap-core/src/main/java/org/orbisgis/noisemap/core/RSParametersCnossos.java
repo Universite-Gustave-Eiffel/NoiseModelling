@@ -171,14 +171,14 @@ public class RSParametersCnossos {
     }
 
     /**
-     * @param slopePercentage Gradient percentage of road from -6 % to 6 %
+     * @param slopePercentage Gradient percentage of road from -12 % to 12 %
      */
     public void setSlopePercentage(double slopePercentage) {
-        this.slopePercentage = Math.min(6., Math.max(-6., slopePercentage));
+        this.slopePercentage = Math.min(12., Math.max(-12., slopePercentage));
     }
 
     /**
-     * @param slopePercentage Gradient percentage of road from -6 % to 6 %
+     * @param slopePercentage Gradient percentage of road from -12 % to 12 %
      */
     public void setSlopePercentage_without_limit(double slopePercentage) {
         this.slopePercentage = slopePercentage;
