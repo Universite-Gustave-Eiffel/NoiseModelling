@@ -173,7 +173,6 @@ public class EvaluateRoadSourceCnossosTest {
         int Junc_type = 2;
         RSParametersCnossos rsParameters = new RSParametersCnossos(lv_speed,  mv_speed,  hgv_speed,  wav_speed,  wbv_speed,  lv_per_hour,  mv_per_hour,  hgv_per_hour,  wav_per_hour,  wbv_per_hour,  FreqParam,  Temperature,  RoadSurface,Ts_stud, Pm_stud, Junc_dist, Junc_type );
         rsParameters.setSlopePercentage_without_limit(10);
-        //System.out.println(EvaluateRoadSourceCnossos.evaluate(rsParameters));
         assertEquals(85.4991 , EvaluateRoadSourceCnossos.evaluate(rsParameters), EPSILON_TEST1);
     }
 

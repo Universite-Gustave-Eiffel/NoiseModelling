@@ -40,11 +40,14 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.orbisgis.noisemap.core.EvaluateRoadSourceCnossos;
+import org.orbisgis.noisemap.core.RSParametersCnossos;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Locale;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -63,6 +66,7 @@ public class ScalarFunctionTest {
         H2GISFunctions.registerFunction(connection.createStatement(), new BR_SpectrumRepartition(), "");
         H2GISFunctions.registerFunction(connection.createStatement(), new BTW_EvalSource(), "");
         H2GISFunctions.registerFunction(connection.createStatement(), new BTW_SpectrumRepartition(), "");
+        H2GISFunctions.registerFunction(connection.createStatement(), new BR_EvalSourceC(), "");
     }
 
     @AfterClass
@@ -163,6 +167,37 @@ public class ScalarFunctionTest {
     @Test(expected = SQLException.class)
     public void testBTW_SpectrumRepartitionErr() throws SQLException {
         st.executeQuery("SELECT BR_SpectrumRepartition(1001,83)");
+    }
+
+    @Test
+    public void testEvalSourceCnossos1() throws SQLException {
+        double lv_speed = 70;
+        int lv_per_hour = 1000;
+        double mv_speed = 70;
+        int mv_per_hour = 1000;
+        double hgv_speed = 70;
+        int hgv_per_hour = 1000;
+        double wav_speed = 70;
+        int wav_per_hour = 1000;
+        double wbv_speed = 70;
+        int wbv_per_hour = 1000;
+        int FreqParam = 4000;
+        double Temperature = 15;
+        String RoadSurface = "NL01";
+        double Pm_stud = 0.5;
+        double Ts_stud = 4.;
+        double Junc_dist = 30;
+        int Junc_type = 2;
+        double beginZ = 0;
+        double endZ = 1;
+        double roadLength2d = 10;
+
+        ResultSet rs = st.executeQuery(String.format(Locale.ROOT,"SELECT BR_EvalSourceC(%g, %g, %g, %g, %g, %d, %d, %d, %d, %d," +
+                        "%g,  %g,  %g, '%s', %g, %g, %g, %g, %d, %d)",lv_speed, mv_speed, hgv_speed, wav_speed,
+                wbv_speed, lv_per_hour,  mv_per_hour,  hgv_per_hour,  wav_per_hour,  wbv_per_hour, beginZ,  endZ,
+                roadLength2d, RoadSurface,  Temperature,  Ts_stud,  Pm_stud,  Junc_dist,  Junc_type,  FreqParam));
+        assertTrue(rs.next());
+        assertEquals(85.4991, rs.getDouble(1), 0.01);
     }
 
 }
