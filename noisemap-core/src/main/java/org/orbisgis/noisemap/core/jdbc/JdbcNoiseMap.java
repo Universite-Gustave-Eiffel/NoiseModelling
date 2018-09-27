@@ -1,5 +1,6 @@
 package org.orbisgis.noisemap.core.jdbc;
 
+import org.h2gis.utilities.JDBCUtilities;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
@@ -28,12 +29,15 @@ public abstract class JdbcNoiseMap {
     // When computing cell size, try to keep propagation distance away from the cell
     // inferior to this ratio (in comparison with cell width)
     protected static final double MINIMAL_BUFFER_RATIO = 0.3;
+    private static final String ALPHA_FIELD_NAME = "ALPHA";
     protected final String buildingsTableName;
     protected final String sourcesTableName;
     protected String soilTableName = "";
     // Digital elevation model table. (Contains points or triangles)
     protected String demTable = "";
     protected String sound_lvl_field = "DB_M";
+    // True if Z of sound source and receivers are relative to the ground
+    protected boolean absoluteZCoordinates = false;
     protected double maximumPropagationDistance = 750;
     protected double maximumReflectionDistance = 100;
     protected int subdivisionLevel = -1; // TODO Guess it from maximumPropagationDistance and source extent
@@ -123,14 +127,18 @@ public abstract class JdbcNoiseMap {
     protected void fetchCellBuildings(Connection connection, Envelope fetchEnvelope, List<Geometry> buildingsGeometries,
                                       MeshBuilder mesh) throws SQLException {
         Geometry envGeo = geometryFactory.toGeometry(fetchEnvelope);
-        String queryHeight = "";
+        boolean fetchAlpha = JDBCUtilities.hasField(connection, buildingsTableName, ALPHA_FIELD_NAME);
+        String additionalQuery = "";
         if(!heightField.isEmpty()) {
-            queryHeight = ", " + TableLocation.quoteIdentifier(heightField);
+            additionalQuery = ", " + TableLocation.quoteIdentifier(heightField);
+        }
+        if(fetchAlpha) {
+            additionalQuery = ", " + ALPHA_FIELD_NAME;
         }
         String buildingGeomName = SFSUtilities.getGeometryFields(connection,
                 TableLocation.parse(buildingsTableName)).get(0);
         try (PreparedStatement st = connection.prepareStatement(
-                "SELECT " + TableLocation.quoteIdentifier(buildingGeomName) + queryHeight + " FROM " +
+                "SELECT " + TableLocation.quoteIdentifier(buildingGeomName) + additionalQuery + " FROM " +
                         buildingsTableName + " WHERE " +
                         TableLocation.quoteIdentifier(buildingGeomName) + " && ?")) {
             st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
@@ -142,11 +150,9 @@ public abstract class JdbcNoiseMap {
                         buildingsGeometries.add(building);
                         Geometry intersectedGeometry = building.intersection(envGeo);
                         if(intersectedGeometry instanceof Polygon || intersectedGeometry instanceof MultiPolygon) {
-                            if (heightField.isEmpty()) {
-                                mesh.addGeometry(intersectedGeometry);
-                            } else {
-                                mesh.addGeometry(intersectedGeometry, rs.getDouble(heightField));
-                            }
+                            mesh.addGeometry(intersectedGeometry,
+                                    heightField.isEmpty() ? Double.MAX_VALUE : rs.getDouble(heightField),
+                                    fetchAlpha ? rs.getDouble(ALPHA_FIELD_NAME) : wallAbsorption);
                         }
                     }
                 }
@@ -316,6 +322,21 @@ public abstract class JdbcNoiseMap {
         return soilTableName;
     }
 
+    /**
+     * @return True if provided Z value of receivers and sources are relative to the ground level.
+     * False (sea level) otherwise
+     */
+    public boolean isAbsoluteZCoordinates() {
+        return absoluteZCoordinates;
+    }
+
+    /**
+     * True if provided Z value of receivers and sources are relative to the ground level.
+     * False (sea level) otherwise
+     */
+    public void setAbsoluteZCoordinates(boolean absoluteZCoordinates) {
+        this.absoluteZCoordinates = absoluteZCoordinates;
+    }
 
     /**
      * Extracted from NMPB 2008-2 7.3.2

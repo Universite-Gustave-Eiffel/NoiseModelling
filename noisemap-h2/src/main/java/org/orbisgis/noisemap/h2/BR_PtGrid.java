@@ -33,8 +33,14 @@
  */
 package org.orbisgis.noisemap.h2;
 
+import org.h2.tools.SimpleResultSet;
 import org.h2gis.api.AbstractFunction;
+import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.api.ScalarFunction;
+import org.h2gis.utilities.SFSUtilities;
+import org.h2gis.utilities.TableLocation;
+import org.h2gis.utilities.TableUtilities;
+import org.orbisgis.noisemap.core.jdbc.PointNoiseMap;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -95,7 +101,6 @@ public class BR_PtGrid extends AbstractFunction implements ScalarFunction {
      * @param buildings                    Buildings table name (polygons)
      * @param sources                      Source table table (linestring or point)
      * @param receivers_table              Receiver table, has a numeric primary key (optional) and a point column.
-     * @param sound_lvl_field              Field name to extract from sources table. Frequency is added on right.
      * @param ground_type                  Optional (empty if not available) Soil category. This is a table with a
      *                                     polygon column and a column 'G' double.
      * @param maximum_propagation_distance Propagation distance limitation.
@@ -108,12 +113,37 @@ public class BR_PtGrid extends AbstractFunction implements ScalarFunction {
      * @throws java.sql.SQLException
      */
     public static ResultSet noisePropagation(Connection connection, String buildings,
-                                             String sources, String receivers_table, String sound_lvl_field,
+                                             String sources, String receivers_table,
                                              String ground_type, double maximum_propagation_distance, double maximum_reflection_distance,
                                              int sound_reflection_order, int sound_diffraction_order,
                                              double wall_absorption) throws SQLException {
-        return BR_PtGrid3D.noisePropagation(connection, buildings, "", sources, receivers_table, sound_lvl_field,
-                ground_type,"", maximum_propagation_distance, maximum_reflection_distance, sound_reflection_order,
-                sound_diffraction_order, wall_absorption);
+
+        if (maximum_propagation_distance < maximum_reflection_distance) {
+            throw new SQLException(new IllegalArgumentException(
+                    "Maximum wall seeking distance cannot be superior than maximum propagation distance"));
+        }
+        SimpleResultSet rs;
+        if(TableUtilities.isColumnListConnection(connection)) {
+            // Only rs columns is necessary
+            rs = new SimpleResultSet();
+            BR_PtGrid3D.feedColumns(rs);
+        } else {
+            connection = SFSUtilities.wrapConnection(connection);
+            PointNoiseMap noiseMap = new PointNoiseMap(TableLocation.capsIdentifier(buildings, true),
+                    TableLocation.capsIdentifier(sources, true), TableLocation.capsIdentifier(receivers_table, true));
+            noiseMap.setSound_lvl_field("DB_M");
+            noiseMap.setMaximumPropagationDistance(maximum_propagation_distance);
+            noiseMap.setSoilTableName(ground_type);
+            noiseMap.setHeightField("");
+            noiseMap.setDemTable("");
+            noiseMap.setMaximumReflectionDistance(maximum_reflection_distance);
+            noiseMap.setSoundReflectionOrder(sound_reflection_order);
+            noiseMap.setSoundDiffractionOrder(sound_diffraction_order);
+            noiseMap.setWallAbsorption(wall_absorption);
+            noiseMap.initialize(connection, new EmptyProgressVisitor());
+            rs = new SimpleResultSet(new BR_PtGrid3D.PointRowSource(noiseMap, connection));
+            BR_PtGrid3D.feedColumns(rs);
+        }
+        return rs;
     }
 }

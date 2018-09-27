@@ -68,6 +68,8 @@ public class BR_TriGrid3D extends AbstractFunction implements ScalarFunction {
         addProperty(PROP_REMARKS , "## BR_TriGrid3D\n" +
                 "\n" +
                 "Table function.Sound propagation in 3 dimension. Return 6 columns. TRI_ID integer,THE_GEOM polygon,W_V1 double,W_V2 double,W_V3 double,CELL_ID integer.\n" +
+                "The field HEIGHT in the buildings table hold building height in meter\n" +
+                "The columns 'DB_M100' to 'DB_M5000' give the sound levels for each third octave.\n" +
                 "\n" +
                 "BR_TriGrid3D(String buildingsTable, String heightFieldName, String sourcesTable, " +
                 "String sourcesTableSoundFieldName, String groundTypeTable, String demTable, " +
@@ -77,12 +79,8 @@ public class BR_TriGrid3D extends AbstractFunction implements ScalarFunction {
                 " \n" +
                 " - **buildingsTable** table identifier that contain a geometry column of type POLYGON. Polygon Z " +
                 "value is the ground level.\n" +
-                " - **heightFieldName** column identifier in the buildings table that hold building height in meter" +
-                ".\n" +
                 " - **sourcesTable** table identifier that contain a geometry column of type POINT or LINESTRING.The " +
                 "table must contain the sound emission level in dB(A).\n" +
-                " - **sourcesTableSoundFieldName** prefix identifier of the emission level column. ex 'DB_M' for " +
-                "columns 'DB_M100' to 'DB_M5000'.  \n" +
                 " - **groundTypeTable** table identifier of the ground category table. This table must contain a " +
                 "geometry field of type POLYGON. And a column 'G' of type double between 0 and 1.\n" +
                 " dimensionless coefficient G:\n" +
@@ -109,7 +107,7 @@ public class BR_TriGrid3D extends AbstractFunction implements ScalarFunction {
                 "Recommended value is 2.\n" +
                 " - **soundDiffractionOrder** Maximum depth of sound diffraction. Impacts performance. Recommended " +
                 "value is 1.\n" +
-                " - **wallAlpha** Wall absorption value. Between 0 and 1. Recommended value is 0.23 for concrete.");
+                " - **wallAlpha** Wall absorption value. Between 0 and 1. Recommended value is 0.23 for concrete. Specific absorption value can be specified in the ALPHA column of building table.");
     }
 
     @Override
@@ -122,9 +120,7 @@ public class BR_TriGrid3D extends AbstractFunction implements ScalarFunction {
      *
      * @param connection                 Active connection, never closed (provided and hidden by H2)
      * @param buildingsTable             Buildings table name (polygons)
-     * @param heightFieldName            Optional (empty if not available) Field name of building height on buildingsTable
      * @param sourcesTable               Source table table (linestring or point)
-     * @param sourcesTableSoundFieldName Field name to extract from sources table. Frequency is added on right.
      * @param groundTypeTable            Optional (empty if not available) Soil category. This is a table with a polygon column and a column 'G' double.
      * @param demTable                   Optional (empty if not available) Point table of digital elevation model.
      * @param maximumPropagationDistance Propagation distance limitation.
@@ -132,12 +128,12 @@ public class BR_TriGrid3D extends AbstractFunction implements ScalarFunction {
      * @param roadsWidth                 Buffer without receivers applied on roads on final noise map.
      * @param soundReflectionOrder       Sound reflection order on walls.
      * @param soundDiffractionOrder      Source diffraction order on corners.
-     * @param wallAlpha                  Wall absorption coefficient.
+     * @param wallAlpha                  Wall absorption coefficient. Specific absorption value can be specified in the ALPHA column of building table.
      * @return A table with 3 columns GID(extracted from receivers table), W energy receiver by receiver, cellid cell identifier.
      * @throws java.sql.SQLException
      */
-    public static ResultSet noisePropagation(Connection connection, String buildingsTable, String heightFieldName,
-                                             String sourcesTable, String sourcesTableSoundFieldName,
+    public static ResultSet noisePropagation(Connection connection, String buildingsTable,
+                                             String sourcesTable,
                                              String groundTypeTable, String demTable,
                                              double maximumPropagationDistance, double maximumWallSeekingDistance,
                                              double roadsWidth, double receiversDensification,
@@ -155,10 +151,10 @@ public class BR_TriGrid3D extends AbstractFunction implements ScalarFunction {
             connection = SFSUtilities.wrapConnection(connection);
             TriangleNoiseMap noiseMap = new TriangleNoiseMap(TableLocation.capsIdentifier(buildingsTable, true),
                     TableLocation.capsIdentifier(sourcesTable, true));
-            noiseMap.setHeightField(heightFieldName);
+            noiseMap.setHeightField("HEIGHT");
             noiseMap.setSoilTableName(groundTypeTable);
             noiseMap.setDemTable(demTable);
-            noiseMap.setSound_lvl_field(sourcesTableSoundFieldName);
+            noiseMap.setSound_lvl_field("DB_M");
             noiseMap.setMaximumPropagationDistance(maximumPropagationDistance);
             noiseMap.setMaximumReflectionDistance(maximumWallSeekingDistance);
             noiseMap.setSoundReflectionOrder(soundReflectionOrder);
@@ -180,9 +176,7 @@ public class BR_TriGrid3D extends AbstractFunction implements ScalarFunction {
      * @param connection                 Active connection, never closed (provided and hidden by H2)
      * @param computationEnvelope        Computation area
      * @param buildingsTable             Buildings table name (polygons)
-     * @param heightFieldName            Optional (empty if not available) Field name of building height on buildingsTable
      * @param sourcesTable               Source table table (linestring or point)
-     * @param sourcesTableSoundFieldName Field name to extract from sources table. Frequency is added on right.
      * @param groundTypeTable            Optional (empty if not available) Soil category. This is a table with a polygon column and a column 'G' double.
      * @param demTable                   Optional (empty if not available) Point table of digital elevation model.
      * @param maximumPropagationDistance Propagation distance limitation.
@@ -190,12 +184,12 @@ public class BR_TriGrid3D extends AbstractFunction implements ScalarFunction {
      * @param roadsWidth                 Buffer without receivers applied on roads on final noise map.
      * @param soundReflectionOrder       Sound reflection order on walls.
      * @param soundDiffractionOrder      Source diffraction order on corners.
-     * @param wallAlpha                  Wall absorption coefficient.
+     * @param wallAlpha                  Wall absorption coefficient. Specific absorption value can be specified in the ALPHA column of building table.
      * @return A table with 3 columns GID(extracted from receivers table), W energy receiver by receiver, cellid cell identifier.
      * @throws java.sql.SQLException
      */
-    public static ResultSet noisePropagation(Connection connection,Geometry computationEnvelope, String buildingsTable, String heightFieldName,
-                                             String sourcesTable, String sourcesTableSoundFieldName,
+    public static ResultSet noisePropagation(Connection connection,Geometry computationEnvelope, String buildingsTable,
+                                             String sourcesTable,
                                              String groundTypeTable, String demTable,
                                              double maximumPropagationDistance, double maximumWallSeekingDistance,
                                              double roadsWidth, double receiversDensification,
@@ -214,10 +208,10 @@ public class BR_TriGrid3D extends AbstractFunction implements ScalarFunction {
             TriangleNoiseMap noiseMap = new TriangleNoiseMap(TableLocation.capsIdentifier(buildingsTable, true),
                     TableLocation.capsIdentifier(sourcesTable, true));
             noiseMap.setMainEnvelope(computationEnvelope.getEnvelopeInternal());
-            noiseMap.setHeightField(heightFieldName);
+            noiseMap.setHeightField("HEIGHT");
             noiseMap.setSoilTableName(groundTypeTable);
             noiseMap.setDemTable(demTable);
-            noiseMap.setSound_lvl_field(sourcesTableSoundFieldName);
+            noiseMap.setSound_lvl_field("DB_M");
             noiseMap.setMaximumPropagationDistance(maximumPropagationDistance);
             noiseMap.setMaximumReflectionDistance(maximumWallSeekingDistance);
             noiseMap.setSoundReflectionOrder(soundReflectionOrder);
@@ -233,7 +227,7 @@ public class BR_TriGrid3D extends AbstractFunction implements ScalarFunction {
         return rs;
     }
 
-    private static void feedColumns(SimpleResultSet rs) {
+    static void feedColumns(SimpleResultSet rs) {
         rs.addColumn("TRI_ID", Types.INTEGER, 10, 11);
         rs.addColumn("THE_GEOM", Types.JAVA_OBJECT, "GEOMETRY", 0, 0);
         rs.addColumn("W_V1", Types.DOUBLE, 17, 24);
@@ -242,14 +236,14 @@ public class BR_TriGrid3D extends AbstractFunction implements ScalarFunction {
         rs.addColumn("CELL_ID", Types.INTEGER, 10, 11);
     }
 
-    private static class TriangleRowSource implements SimpleRowSource {
+    static class TriangleRowSource implements SimpleRowSource {
         private Deque<PropagationResultTriRecord> records = new ArrayDeque<PropagationResultTriRecord>();
         private int cellI = -1;
         private int cellJ = 0;
         private TriangleNoiseMap noiseMap;
         private Connection connection;
 
-        private TriangleRowSource(TriangleNoiseMap noiseMap, Connection connection) {
+        TriangleRowSource(TriangleNoiseMap noiseMap, Connection connection) {
             this.noiseMap = noiseMap;
             this.connection = connection;
         }

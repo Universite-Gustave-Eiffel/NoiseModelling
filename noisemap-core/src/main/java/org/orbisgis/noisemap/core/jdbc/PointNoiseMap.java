@@ -159,6 +159,9 @@ public class PointNoiseMap extends JdbcNoiseMap {
 
         PropagationProcess propaProcess = new PropagationProcess(
                 threadData, threadDataOut);
+        if(!absoluteZCoordinates) {
+            propaProcess.makeRelativeZToAbsolute();
+        }
         propaProcess.run();
 
 
