@@ -40,9 +40,10 @@ import java.util.*;
  * Imagine wrapping a string around a set of nails in a board.  Tie the string to the leftmost nail
  * and hold the string vertical.  Now move the string clockwise until you hit the next, then the next, then
  * the next.  When the string is vertical again, you will have found the hull.
- *  
+ *
  * @link http://butunclebob.com/ArticleS.UncleBob.ConvexHullTiming
  * @author UncleBob
+ * @author Pierre Aumond
  */
 
 public class JarvisMarch {
@@ -52,20 +53,19 @@ public class JarvisMarch {
   private List<Double> hx;
   private List<Integer> hi;
   private int startingPoint;
+  private int endingPoint;
   private double currentAngle;
   private static final double MAX_ANGLE = 4;
 
   public JarvisMarch(Points pts) {
     this.pts = pts;
   }
- 
+
 
   public Points calculateHull() {
     initializeHull();
-
-    startingPoint = getStartingPoint();
     currentAngle = 0;
-
+    startingPoint = getStartingPoint();
     addToHull(startingPoint);
     for (int p = getNextPoint(startingPoint); p != startingPoint; p = getNextPoint(p))
       addToHull(p);
@@ -74,14 +74,31 @@ public class JarvisMarch {
     return this.hullPoints;
   }
 
+    public Points calculateSmallestTriangle() {
+        initializeHull();
+
+        startingPoint = getStartingPoint();
+        endingPoint = getEndingPoint();
+        addToHull(startingPoint);
+        int p = getSmallestPerim();
+        addToHull(p);
+        addToHull(endingPoint);
+        buildHullPoints();
+        return this.hullPoints;
+    }
+
   public int getStartingPoint() {
-    return pts.startingPoint();
-  }
+        return pts.startingPoint();
+    }
+
+    public int getEndingPoint() {
+        return pts.endingPoint();
+    }
 
   private int getNextPoint(int p) {
-    double minAngle = MAX_ANGLE;
+    double minAngle= MAX_ANGLE;
     int minP = startingPoint;
-    for (int i = 0; i < pts.x.length; i++) {
+    for (int i = 0 ; i < pts.x.length ; i++) {
       if (i != p) {
         double thisAngle = relativeAngle(i, p);
         if (thisAngle >= currentAngle && thisAngle <= minAngle) {
@@ -94,7 +111,27 @@ public class JarvisMarch {
     return minP;
   }
 
+    private int getSmallestPerim() {
+        double minPerim= 9999;
+        int minI = startingPoint;
+        int st = startingPoint;
+        int en = endingPoint;
+        for (int i = 0 ; i < pts.x.length   ; i++) {
+            double a=0;
+            if (i !=st && i != en) {
+                double thisPerim = relativeLength(i, st) + relativeLength(i, en) + relativeLength(st, en);
+                if (thisPerim <= minPerim) {
+                    minI = i;
+                    minPerim = thisPerim;
+                }
+            }
+        }
+        return minI;
+    }
+
   private double relativeAngle(int i, int p) {return pseudoAngle(pts.x[i] - pts.x[p], pts.y[i] - pts.y[p]);}
+
+  private double relativeLength(int i, int p) {return Math.sqrt(Math.pow(pts.x[i] - pts.x[p],2)+ Math.pow(pts.y[i] - pts.y[p],2));}
 
   private void initializeHull() {
     hx = new LinkedList<Double>();
@@ -165,7 +202,7 @@ public class JarvisMarch {
     // With ties going to the lowest Y.  This guarantees
     // that the next point over is clockwise.
     int startingPoint() {
-      double minY = y[0];  
+      double minY = y[0];
       double minX = x[0];
       int iMin = 0;
       for (int i = 1; i < x.length; i++) {
@@ -179,6 +216,26 @@ public class JarvisMarch {
       }
       return iMin;
     }
+
+      // The ending point is the point with the highest X
+      // With ties going to the highest Y.
+      int endingPoint() {
+          double maxY = y[0];
+          double maxX = x[0];
+          int iMax = 0;
+          for (int i = 1; i < x.length; i++) {
+              if (x[i] > maxX) {
+                  maxX = x[i];
+                  iMax = i;
+              } else if (maxX == x[i] && y[i] > maxY) {
+                  maxY = y[i];
+                  iMax = i;
+              }
+          }
+          return iMax;
+      }
+
+
 
   }
 }

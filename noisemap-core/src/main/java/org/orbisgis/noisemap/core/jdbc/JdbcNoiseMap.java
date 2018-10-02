@@ -45,6 +45,9 @@ public abstract class JdbcNoiseMap {
     protected int soundDiffractionOrder = 1;
     protected boolean computeVerticalDiffraction = true;
     protected double wallAbsorption = 0.05;
+    // wind rose [0-30,30-60,60-90,90-120,120-150,150-180,180-210,210-240,240-270,270-300,300-330,330-360]
+    public static final double[] DEFAULT_WIND_ROSE = new double[]{0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25};
+    public static final double[] STATIONARY_WIND_ROSE = new double[]{0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.};
     protected String heightField = "";
     protected GeometryFactory geometryFactory = new GeometryFactory();
     protected boolean doMultiThreading = true;
@@ -88,7 +91,7 @@ public abstract class JdbcNoiseMap {
             try (PreparedStatement st = connection.prepareStatement(
                     "SELECT " + TableLocation.quoteIdentifier(topoGeomName) + " FROM " +
                             demTable + " WHERE " +
-                            TableLocation.quoteIdentifier(topoGeomName) + " && ?")) {
+                            TableLocation.quoteIdentifier(topoGeomName) + " && ?::geometry")) {
                 st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
                 try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
                     while (rs.next()) {
@@ -110,7 +113,7 @@ public abstract class JdbcNoiseMap {
             try (PreparedStatement st = connection.prepareStatement(
                     "SELECT " + TableLocation.quoteIdentifier(soilGeomName) + ", G FROM " +
                             soilTableName + " WHERE " +
-                            TableLocation.quoteIdentifier(soilGeomName) + " && ?")) {
+                            TableLocation.quoteIdentifier(soilGeomName) + " && ?::geometry")) {
                 st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
                 try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
                     while (rs.next()) {
@@ -140,7 +143,7 @@ public abstract class JdbcNoiseMap {
         try (PreparedStatement st = connection.prepareStatement(
                 "SELECT " + TableLocation.quoteIdentifier(buildingGeomName) + additionalQuery + " FROM " +
                         buildingsTableName + " WHERE " +
-                        TableLocation.quoteIdentifier(buildingGeomName) + " && ?")) {
+                        TableLocation.quoteIdentifier(buildingGeomName) + " && ?::geometry")) {
             st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
             try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
                 while (rs.next()) {
@@ -178,7 +181,7 @@ public abstract class JdbcNoiseMap {
         TableLocation sourceTableIdentifier = TableLocation.parse(sourcesTableName);
         String sourceGeomName = SFSUtilities.getGeometryFields(connection, sourceTableIdentifier).get(0);
         try (PreparedStatement st = connection.prepareStatement("SELECT * FROM " + sourcesTableName + " WHERE "
-                + TableLocation.quoteIdentifier(sourceGeomName) + " && ?")) {
+                + TableLocation.quoteIdentifier(sourceGeomName) + " && ?::geometry")) {
             st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
             try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
                 while (rs.next()) {
@@ -209,6 +212,45 @@ public abstract class JdbcNoiseMap {
 
     }
 
+    protected void fetchCellSource_withindex(Connection connection,Envelope fetchEnvelope, List<Geometry> allSourceGeometries,
+                                   List<Geometry> sourceGeometries, List<Long> sourcePk, List<ArrayList<Double>> wj_sources, QueryGeometryStructure sourcesIndex)
+            throws SQLException {
+        int idSource = 0;
+        TableLocation sourceTableIdentifier = TableLocation.parse(sourcesTableName);
+        String sourceGeomName = SFSUtilities.getGeometryFields(connection, sourceTableIdentifier).get(0);
+        try (PreparedStatement st = connection.prepareStatement("SELECT * FROM " + sourcesTableName + " WHERE "
+                + TableLocation.quoteIdentifier(sourceGeomName) + " && ?::geometry")) {
+            st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
+            try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
+                while (rs.next()) {
+                    Geometry geo = rs.getGeometry();
+                    // todo get primarykey
+                    sourcePk.add(rs.getLong(1));
+                    if (geo != null) {
+                        ArrayList<Double> wj_spectrum = new ArrayList<>();
+                        wj_spectrum.ensureCapacity(db_field_ids.size());
+                        double sumPow = 0;
+                        for (Integer idcol : db_field_ids) {
+                            double wj = DbaToW(rs.getDouble(idcol));
+                            wj_spectrum
+                                    .add(wj);
+                            sumPow += wj;
+                        }
+                        if(allSourceGeometries != null) {
+                            allSourceGeometries.add(geo);
+                        }
+                        if(sumPow > 0) {
+                            wj_sources.add(wj_spectrum);
+                            sourcesIndex.appendGeometry(geo, idSource);
+                            sourceGeometries.add(geo);
+                            idSource++;
+                        }
+                    }
+                }
+            }
+        }
+
+    }
 
     protected double getCellWidth() {
         return mainEnvelope.getWidth() / gridDim;

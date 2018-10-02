@@ -194,12 +194,12 @@ public class EvaluateRoadSourceCnossosTest {
         double tsStud = 0.5;
         String surfRef = "NL01";
         double temperature = -5;
-        double pmStud = 1.5;
+        double pmStud = 1;
         double slope = -15;
         double juncDist = 200;
         int juncType = 1;
         double[] expectedValues = new double[]{88.421,77.1136,75.5712,75.6919,73.6689,71.3471,68.1195,63.4796};
-        for(int idFreq = 3; idFreq < FREQUENCIES.length; idFreq++) {
+        for(int idFreq = 1; idFreq < FREQUENCIES.length; idFreq++) {
             RSParametersCnossos rsParameters = new RSParametersCnossos(vehicleSpeed, vehicleSpeed, vehicleSpeed,
                     vehicleSpeed, vehicleSpeed, "1".equals(vehCat) ? vehiclePerHour : 0,
                     "2".equals(vehCat) ? vehiclePerHour : 0, "3".equals(vehCat) ? vehiclePerHour : 0,

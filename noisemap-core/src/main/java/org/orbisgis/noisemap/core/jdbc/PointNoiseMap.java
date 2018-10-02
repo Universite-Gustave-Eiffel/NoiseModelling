@@ -110,7 +110,7 @@ public class PointNoiseMap extends JdbcNoiseMap {
         try (PreparedStatement st = connection.prepareStatement(
                 "SELECT " + TableLocation.quoteIdentifier(receiverGeomName) + pkSelect + " FROM " +
                         receiverTableName + " WHERE " +
-                        TableLocation.quoteIdentifier(receiverGeomName) + " && ?")) {
+                        TableLocation.quoteIdentifier(receiverGeomName) + " && ?::geometry")) {
             st.setObject(1, geometryFactory.toGeometry(cellEnvelope));
             try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
                 while (rs.next()) {
@@ -133,7 +133,7 @@ public class PointNoiseMap extends JdbcNoiseMap {
                 receivers, freeFieldFinder, sourcesIndex,
                 sourceGeometries, wj_sources, db_field_freq,
                 soundReflectionOrder, soundDiffractionOrder, maximumPropagationDistance, maximumReflectionDistance,
-                0, wallAbsorption, ij,
+                0, wallAbsorption, DEFAULT_WIND_ROSE, ij,
                 progression.subProcess(receivers.size()), geoWithSoil, computeVerticalDiffraction);
     }
 

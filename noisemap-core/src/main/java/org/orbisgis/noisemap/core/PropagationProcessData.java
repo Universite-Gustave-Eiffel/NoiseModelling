@@ -44,6 +44,7 @@ import java.util.List;
  * Data input for a propagation process (SubEnveloppe of BR_TriGrid).
  *
  * @author Nicolas Fortin
+ * @author Pierre Aumond
  */
 public class PropagationProcessData {
     /** Coordinate of receivers */
@@ -70,6 +71,8 @@ public class PropagationProcessData {
     public double minRecDist;
     /** Wall alpha [0-1] */
     public double wallAlpha;
+    /** probability occurence favourable condition */
+    public double[] windRose;
     /** cellId only used in output data */
     public int cellId;
     /** Progression information */
@@ -83,7 +86,7 @@ public class PropagationProcessData {
                                   QueryGeometryStructure sourcesIndex, List<Geometry> sourceGeometries,
                                   List<ArrayList<Double>> wj_sources, List<Integer> freq_lvl, int reflexionOrder,
                                   int diffractionOrder, double maxSrcDist, double maxRefDist, double minRecDist,
-                                  double wallAlpha, int cellId, ProgressVisitor cellProg,
+                                  double wallAlpha, double[] windRose, int cellId, ProgressVisitor cellProg,
                                   List<GeoWithSoilType> geoWithSoilType, boolean computeVerticalDiffraction) {
         this.receivers = receivers;
         this.freeFieldFinder = freeFieldFinder;
@@ -97,6 +100,7 @@ public class PropagationProcessData {
         this.maxRefDist = maxRefDist;
         this.minRecDist = minRecDist;
         this.wallAlpha = wallAlpha;
+        this.windRose = windRose;
         this.cellId = cellId;
         this.cellProg = cellProg;
         this.geoWithSoilType = geoWithSoilType;
