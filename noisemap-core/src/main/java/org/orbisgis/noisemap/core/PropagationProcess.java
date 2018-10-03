@@ -79,8 +79,6 @@ public class PropagationProcess implements Runnable {
     private final static double DBA_FORGET_SOURCE = 0.03;
     private final static double FIRST_STEP_RANGE = 90;
     private final static double W_RANGE = Math.pow(10, 94. / 10.); //94 dB(A) range search. Max iso level is >75 dB(a).
-    // NMPB states Celerity of the sound in the air, taken equal to 340 m/s.
-    private final static double CEL = 340;
     private Thread thread;
     private PropagationProcessData data;
     private PropagationProcessOut dataOut;
@@ -95,6 +93,7 @@ public class PropagationProcess implements Runnable {
 
     private STRtree rTreeOfGeoSoil;
     private final static Logger LOGGER = LoggerFactory.getLogger(PropagationProcess.class);
+
 
 
     private static double GetGlobalLevel(int nbfreq, double energeticSum[]) {
@@ -338,7 +337,7 @@ public class PropagationProcess implements Runnable {
         //Multiple diffraction
         //CPRIME=( 1+(5*gamma)^2)/((1/3)+(5*gamma)^2)
         double gammaPart = Math.pow((5 * freq_lambda[idfreq]) / eLength, 2);
-        double Ch=Math.min(h0*(CEL/freq_lambda[idfreq])/250,1);
+        double Ch=Math.min(h0*(data.celerity/freq_lambda[idfreq])/250,1);
         //NFS 31-133 page 46
         if (eLength > 0.3) {
             cprime = (1. + gammaPart) / (ONETHIRD + gammaPart);
@@ -533,7 +532,7 @@ public class PropagationProcess implements Runnable {
             if (data.geoWithSoilType != null) {
                 if (Double.compare(gPath, 0) != 0) {
                     //get contribution of Ground Effect, ASoil will be a negative number so it's mean a contribution effect
-                    ASoil = getASoil(zs, zr, SrcReceiverDistance, gPath, data.freq_lvl.get(idfreq), ASoilmin);
+                    ASoil = getASoil(zs, zr, SrcReceiverDistance, gPath, data.freq_lvl.get(idfreq), ASoilmin, data.celerity);
                     // todo Gpath ou Gpathprime ?!? Gpath pour T08
                 } else {
                     //NF S 31-133 page 41 if gPath=0 we will add 3dB for the receiver point, -3 means it's a contribution effect
@@ -541,7 +540,7 @@ public class PropagationProcess implements Runnable {
                 }
                 if (Double.compare(gPath, 0) != 0) {
                     //get contribution of Ground Effect, ASoil will be a negative number so it's mean a contribution effect
-                    AGroundF = getAGroundF(zs, zr, SrcReceiverDistance, gPath, data.freq_lvl.get(idfreq), AGroundFmin);
+                    AGroundF = getAGroundF(zs, zr, SrcReceiverDistance, gPath, data.freq_lvl.get(idfreq), AGroundFmin, data.celerity);
                 // todo Gpath ou Gpathprime ?!? Gpath pour T08
                 } else {
                     //CNOSSOS page 89 ??????
@@ -606,7 +605,7 @@ public class PropagationProcess implements Runnable {
             int freqcut = 0;
             for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
                 double deltadistancestar = 0;
-                if (deltadistance >= -((CEL / data.freq_lvl.get(idfreq)) / 20) && deltadistancestar >= (((CEL / data.freq_lvl.get(idfreq)) / 4)-deltadistancestar)) {
+                if (deltadistance >= -((data.celerity / data.freq_lvl.get(idfreq)) / 20) && deltadistancestar >= (((data.celerity / data.freq_lvl.get(idfreq)) / 4)-deltadistancestar)) {
                     freqcut = idfreq + 1;
                 }
             }
@@ -731,8 +730,8 @@ public class PropagationProcess implements Runnable {
                     double SoilORAttenuationF = 0;
                     //NF S 31-133 page 41
                     if (gPathRO > 0) {
-                        SoilORAttenuation = getASoil(ROZone.p1.z, ROZone.p0.z, ROZone.getLength(), gPathRO, data.freq_lvl.get(idfreq), ASoilROMin);
-                        SoilORAttenuationF = getAGroundF(ROZone.p1.z, ROZone.p0.z, ROZone.getLength(), gPathRO, data.freq_lvl.get(idfreq), AGroundFROmin);
+                        SoilORAttenuation = getASoil(ROZone.p1.z, ROZone.p0.z, ROZone.getLength(), gPathRO, data.freq_lvl.get(idfreq), ASoilROMin, data.celerity);
+                        SoilORAttenuationF = getAGroundF(ROZone.p1.z, ROZone.p0.z, ROZone.getLength(), gPathRO, data.freq_lvl.get(idfreq), AGroundFROmin, data.celerity);
 
                     }
                     //NF S 31-133 page 41
@@ -743,8 +742,8 @@ public class PropagationProcess implements Runnable {
                        // SoilSOAttenuationF =AGroundFOSmin;
                         SoilSOAttenuationF =-3;
                     } else {
-                        SoilSOAttenuation = getASoil(OSZone.p1.z, OSZone.p0.z, OSZone.getLength(), gPathOS, data.freq_lvl.get(idfreq), ASoilOSMin);
-                        SoilSOAttenuationF = getAGroundF(OSZone.p1.z, OSZone.p0.z, OSZone.getLength(), gPathOS, data.freq_lvl.get(idfreq), AGroundFOSmin);
+                        SoilSOAttenuation = getASoil(OSZone.p1.z, OSZone.p0.z, OSZone.getLength(), gPathOS, data.freq_lvl.get(idfreq), ASoilOSMin, data.celerity);
+                        SoilSOAttenuationF = getAGroundF(OSZone.p1.z, OSZone.p0.z, OSZone.getLength(), gPathOS, data.freq_lvl.get(idfreq), AGroundFOSmin, data.celerity);
                     }
 
                     // delta soil
@@ -916,52 +915,15 @@ public class PropagationProcess implements Runnable {
     }
 
     /**
-     * ISO-9613 p1 - At 15°C 70% humidity
-     *
-     * @param freq Third octave frequency
+     * ISO-9613 p1
+     * @param frequency acoustic frequency (Hz)
+     * @param temperature Temperative in celsius
+     * @param pressure atmospheric pressure (in Pa)
+     * @param humidity relative humidity (in %)
      * @return Attenuation coefficient dB/KM
      */
-    private static double getAlpha(int freq) {
-        switch (freq) {
-            case 100:
-                return 0.25;
-            case 125:
-                return 0.38;
-            case 160:
-                return 0.57;
-            case 200:
-                return 0.82;
-            case 250:
-                return 1.13;
-            case 315:
-                return 1.51;
-            case 400:
-                return 1.92;
-            case 500:
-                return 2.36;
-            case 630:
-                return 2.84;
-            case 800:
-                return 3.38;
-            case 1000:
-                return 4.08;
-            case 1250:
-                return 5.05;
-            case 1600:
-                return 6.51;
-            case 2000:
-                return 8.75;
-            case 2500:
-                return 12.2;
-            case 3150:
-                return 17.7;
-            case 4000:
-                return 26.4;
-            case 5000:
-                return 39.9;
-            default:
-                return 0.;
-        }
+    public static double getAlpha(double frequency, double temperature, double pressure, double humidity) {
+        return PropagationProcessData.getCoefAttAtmos(frequency, humidity, pressure, temperature + PropagationProcessData.K_0);
     }
 
     private int nextFreeFieldNode(List<Coordinate> nodes, Coordinate startPt, LineSegment segmentConstraint,
@@ -1229,7 +1191,7 @@ public class PropagationProcess implements Runnable {
         freq_lambda = new double[nbfreq];
         for (int idf = 0; idf < nbfreq; idf++) {
             if (data.freq_lvl.get(idf) > 0) {
-                freq_lambda[idf] = CEL / data.freq_lvl.get(idf);
+                freq_lambda[idf] = data.celerity / data.freq_lvl.get(idf);
             } else {
                 freq_lambda[idf] = 1;
             }
@@ -1237,7 +1199,7 @@ public class PropagationProcess implements Runnable {
         // Compute atmospheric alpha value by specified frequency band
         alpha_atmo = new double[data.freq_lvl.size()];
         for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
-            alpha_atmo[idfreq] = getAlpha(data.freq_lvl.get(idfreq));
+            alpha_atmo[idfreq] = getAlpha(data.freq_lvl.get(idfreq), data.temperature, data.pressure, data.humidity);
         }
         // /////////////////////////////////////////////
         // Search diffraction corners
@@ -1328,11 +1290,12 @@ public class PropagationProcess implements Runnable {
      * @param gw       Gw
      * @param fm       frequency
      * @param aSoilMin min ASoil
+     * @param cel      sound celerity m/s
      * @return ASoil
      */
-    private static double getASoil(double zs, double zr, double dp, double gw, int fm, double aSoilMin) {
+    private static double getASoil(double zs, double zr, double dp, double gw, int fm, double aSoilMin, double cel) {
         //NF S 31-133 page 41 c
-        double k = 2 * Math.PI * fm / CEL;
+        double k = 2 * Math.PI * fm / cel;
         //NF S 31-113 page 41 w
         double w = 0.0185 * Math.pow(fm, 2.5) * Math.pow(gw, 2.6) /
                 (Math.pow(fm, 1.5) * Math.pow(gw, 2.6) + 1.3 * Math.pow(10, 3) * Math.pow(fm, 0.75) * Math.pow(gw, 1.3) + 1.16 * Math.pow(10, 6));
@@ -1355,9 +1318,10 @@ public class PropagationProcess implements Runnable {
      * @param gw          Gw
      * @param fm          frequency
      * @param AGroundFMin min ASoil
+     * @param cel         Sound celerity m/s
      * @return AGroundF
      */
-    private static double getAGroundF(double zs, double zr, double dp, double gw, int fm, double AGroundFMin) {
+    private static double getAGroundF(double zs, double zr, double dp, double gw, int fm, double AGroundFMin, double cel) {
         // CNOSSOS p89
         double alpha0 = 2 * Math.pow(10, -4);
         double deltazt = 6 * Math.pow(10, -3) * dp / (zs + zr);
@@ -1367,7 +1331,7 @@ public class PropagationProcess implements Runnable {
         double zr2 = zr + deltazr + deltazt;
 
         //NF S 31-133 page 41 c
-        double k = 2 * Math.PI * fm / CEL;
+        double k = 2 * Math.PI * fm / cel;
         //NF S 31-113 page 41 w
         double w = 0.0185 * Math.pow(fm, 2.5) * Math.pow(gw, 2.6) /
                 (Math.pow(fm, 1.5) * Math.pow(gw, 2.6) + 1.3 * Math.pow(10, 3) * Math.pow(fm, 0.75) * Math.pow(gw, 1.3) + 1.16 * Math.pow(10, 6));

@@ -47,6 +47,16 @@ import java.util.List;
  * @author Pierre Aumond
  */
 public class PropagationProcessData {
+    // Thermodynamic constants
+	static final double K_0 = 273.15;	// Absolute zero in Celsius
+    static final  double Pref = 101325;	// Standard atmosphere atm (Pa)
+    static final  double Kref = 293.15;	// Reference ambient atmospheric temperature (K)
+    static final  double FmolO = 0.209;	// Mole fraction of oxygen
+    static final  double FmolN = 0.781;	// Mole fraction of nitrogen
+    static final  double KvibO = 2239.1;// Vibrational temperature of oxygen (K)
+    static final  double KvibN = 3352.0;// Vibrational temperature of the nitrogen (K)
+    static final  double K01 = 273.16;  // Isothermal temperature at the triple point (K)
+
     /** Coordinate of receivers */
     public List<Coordinate> receivers;
     /** FreeField test */
@@ -81,6 +91,11 @@ public class PropagationProcessData {
     public List<GeoWithSoilType> geoWithSoilType;
     /** True will compute vertical diffraction */
     public boolean computeVerticalDiffraction;
+    /** Temperature in celsius */
+    double temperature = 15;
+    double celerity = 340;
+    double humidity = 0.7;
+    double pressure = Pref;
 
     public PropagationProcessData(List<Coordinate> receivers, FastObstructionTest freeFieldFinder,
                                   QueryGeometryStructure sourcesIndex, List<Geometry> sourceGeometries,
@@ -105,5 +120,68 @@ public class PropagationProcessData {
         this.cellProg = cellProg;
         this.geoWithSoilType = geoWithSoilType;
         this.computeVerticalDiffraction = computeVerticalDiffraction;
+    }
+
+    public void setHumidity(double humidity) {
+        this.humidity = humidity;
+    }
+
+    public void setPressure(double pressure) {
+        this.pressure = pressure;
+    }
+
+    /**
+     * Compute sound celerity in air ISO 9613-1:1993(F)
+     * @param k Temperature in kelvin
+     * @return Sound celerity in m/s
+     */
+    static double computeCelerity(double k) {
+        return 343.2 * Math.sqrt(k/Kref);
+    }
+
+    /**
+     * @param temperature Temperature in ° celsius
+     */
+    public void setTemperature(double temperature) {
+        this.temperature = temperature;
+        this.celerity = computeCelerity(temperature + K_0);
+    }
+
+    /**
+     * This function calculates the atmospheric attenuation coefficient of sound in air
+     * ISO 9613-1:1993(F)
+     * @param frequency acoustic frequency (Hz)
+     * @param humidity relative humidity (in %)
+     * @param pressure atmospheric pressure (in Pa)
+     * @param tempKelvin Temperature in Kelvin (in K)
+     * @return atmospheric attenuation coefficient (db/km)
+     * @author Judicaël Picaut, UMRAE
+     */
+    public static double getCoefAttAtmos(double frequency, double humidity, double pressure, double tempKelvin) {
+        // Sound celerity
+        double cson = computeCelerity(tempKelvin);
+
+        // Calculation of the molar fraction of water vapour
+        double C = -6.8346 * Math.pow(K01 / tempKelvin, 1.261) + 4.6151;
+        double Ps = Pref * Math.pow(10., C);
+        double hmol = humidity * Ps / Pref;
+
+        // Classic and rotational absorption
+        double Acr = (Pref / pressure) * (1.60E-10) * Math.sqrt(tempKelvin / Kref) * Math.pow(frequency, 2);
+
+        // Vibratory oxygen absorption:!!123
+        double Fr = (pressure / Pref) * (24. + 4.04E4 * hmol * (0.02 + hmol) / (0.391 + hmol));
+        double Am = 1.559 * PropagationProcessData.FmolO * Math.exp(-KvibO / tempKelvin) * Math.pow(KvibO / tempKelvin, 2);
+        double AvibO = Am * (frequency / cson) * 2. * (frequency / Fr) / (1 + Math.pow(frequency / Fr, 2));
+
+        // Vibratory nitrogen absorption
+        Fr = (pressure / Pref) * Math.sqrt(Kref / tempKelvin) * (9. + 280. * hmol * Math.exp(-4.170 * (Math.pow(tempKelvin / Kref, -1. / 3.) - 1)));
+        Am = 1.559 * FmolN * Math.exp(-KvibN / tempKelvin) * Math.pow(KvibN / tempKelvin, 2);
+        double AvibN = Am * (frequency / cson) * 2. * (frequency / Fr) / (1 + Math.pow(frequency / Fr, 2));
+
+        // Total absorption in dB/m
+        double alpha = (Acr + AvibO + AvibN);
+
+        return alpha * 1000;
     }
 }
