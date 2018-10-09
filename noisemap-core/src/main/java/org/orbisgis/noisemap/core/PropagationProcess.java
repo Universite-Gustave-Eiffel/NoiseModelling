@@ -919,7 +919,7 @@ public class PropagationProcess implements Runnable {
      * @param frequency acoustic frequency (Hz)
      * @param temperature Temperative in celsius
      * @param pressure atmospheric pressure (in Pa)
-     * @param humidity relative humidity (in %)
+     * @param humidity relative humidity (in %) (0-100)
      * @return Attenuation coefficient dB/KM
      */
     public static double getAlpha(double frequency, double temperature, double pressure, double humidity) {

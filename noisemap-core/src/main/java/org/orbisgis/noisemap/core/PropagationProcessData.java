@@ -94,7 +94,7 @@ public class PropagationProcessData {
     /** Temperature in celsius */
     double temperature = 15;
     double celerity = 340;
-    double humidity = 0.7;
+    double humidity = 70;
     double pressure = Pref;
 
     public PropagationProcessData(List<Coordinate> receivers, FastObstructionTest freeFieldFinder,
@@ -120,12 +120,20 @@ public class PropagationProcessData {
         this.cellProg = cellProg;
         this.geoWithSoilType = geoWithSoilType;
         this.computeVerticalDiffraction = computeVerticalDiffraction;
+        this.celerity = computeCelerity(temperature+K_0);
     }
 
+    /**
+     * Set relative humidity in percentage.
+     * @param humidity relative humidity in percentage. 0-100
+     */
     public void setHumidity(double humidity) {
         this.humidity = humidity;
     }
 
+    /**
+     * @param pressure Atmospheric pressure in pa. 1 atm is PropagationProcessData.Pref
+     */
     public void setPressure(double pressure) {
         this.pressure = pressure;
     }
@@ -142,16 +150,17 @@ public class PropagationProcessData {
     /**
      * @param temperature Temperature in ° celsius
      */
-    public void setTemperature(double temperature) {
+    public PropagationProcessData setTemperature(double temperature) {
         this.temperature = temperature;
         this.celerity = computeCelerity(temperature + K_0);
+        return this;
     }
 
     /**
      * This function calculates the atmospheric attenuation coefficient of sound in air
      * ISO 9613-1:1993(F)
      * @param frequency acoustic frequency (Hz)
-     * @param humidity relative humidity (in %)
+     * @param humidity relative humidity (in %) (0-100)
      * @param pressure atmospheric pressure (in Pa)
      * @param tempKelvin Temperature in Kelvin (in K)
      * @return atmospheric attenuation coefficient (db/km)
