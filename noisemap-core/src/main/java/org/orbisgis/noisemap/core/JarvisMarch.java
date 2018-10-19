@@ -43,6 +43,7 @@ import java.util.*;
  *
  * @link http://butunclebob.com/ArticleS.UncleBob.ConvexHullTiming
  * @author UncleBob
+ * @author Pierre Aumond
  */
 
 public class JarvisMarch {

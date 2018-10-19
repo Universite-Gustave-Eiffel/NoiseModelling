@@ -45,38 +45,18 @@ public class RSParametersCnossos {
     private final double wbvPerHour;
     private final int FreqParam;
     private final double Temperature;
-    private final int RoadSurface;
+    private final String roadSurface;
     private final double Ts_stud;
     private final double Pm_stud;
     private final double Junc_dist;
     private final int Junc_type;
-    /**
-     * BBTS means very thin asphalt concrete.
-     * BBUM means ultra-thin asphalt concrete
-     * BBDR means drainage asphalt concrete
-     * BBSG means dense asphalt concrete
-     * ECF means cold mix
-     * BC means cement concrete
-     * ES is surface dressing
-     * @link Setra Road_noise_prediction - Calculating sound emissions from road traffic - Figure 2.2 P.18
-     */
 
-    public enum EngineState {
-        SteadySpeed,
-        Acceleration,
-        Deceleration,
-        Starting,
-        Stopping
-    }
-
-    private int surfaceAge;
     private double slopePercentage;
     private double speedLv;
     private double speedMv;
     private double speedHgv;
     private double speedWav;
     private double speedWbv;
-    private EngineState flowState = EngineState.SteadySpeed;
 
     private static double getVPl(double sLv, double speedmax, int type, int subtype) throws IllegalArgumentException {
         switch (type) {
@@ -191,14 +171,14 @@ public class RSParametersCnossos {
     }
 
     /**
-     * @param slopePercentage Gradient percentage of road from -6 % to 6 %
+     * @param slopePercentage Gradient percentage of road from -12 % to 12 %
      */
     public void setSlopePercentage(double slopePercentage) {
-        this.slopePercentage = Math.min(6., Math.max(-6., slopePercentage));
+        this.slopePercentage = Math.min(12., Math.max(-12., slopePercentage));
     }
 
     /**
-     * @param slopePercentage Gradient percentage of road from -6 % to 6 %
+     * @param slopePercentage Gradient percentage of road from -12 % to 12 %
      */
     public void setSlopePercentage_without_limit(double slopePercentage) {
         this.slopePercentage = slopePercentage;
@@ -216,21 +196,13 @@ public class RSParametersCnossos {
     }
 
     /**
-     * @param surfaceAge Road surface age in years, from 1 to 10 years.
-     */
-    public void setSurfaceAge(int surfaceAge) {
-        this.surfaceAge = Math.max(1, Math.min(10, surfaceAge));
-    }
-
-    /**
-     * @return Road surface age
-     */
-    public int getSurfaceAge() {
-        return surfaceAge;
-    }
-
-    /**
      * Simplest road noise evaluation
+     * Vehicles category Table 3 P.31 CNOSSOS_EU_JRC_REFERENCE_REPORT
+     * lv : Passenger cars, delivery vans ≤ 3.5 tons, SUVs , MPVs including trailers and caravans
+     * mv: Medium heavy vehicles, delivery vans > 3.5 tons,  buses, touring cars, etc. with two axles and twin tyre mounting on rear axle
+     * hgv: Heavy duty vehicles, touring cars, buses, with three or more axles
+     * wav:  mopeds, tricycles or quads ≤ 50 cc
+     * wbv:  motorcycles, tricycles or quads > 50 cc
      * @param lv_speed Average light vehicle speed
      * @param mv_speed Average medium vehicle speed
      * @param hgv_speed Average heavy goods vehicle speed
@@ -238,18 +210,18 @@ public class RSParametersCnossos {
      * @param wbv_speed Average heavy 2 wheels vehicle speed
      * @param lvPerHour Average light vehicle per hour
      * @param mvPerHour Average heavy vehicle per hour
-    * @param hgvPerHour Average heavy vehicle per hour
-    * @param wavPerHour Average heavy vehicle per hour
-    * @param wbvPerHour Average heavy vehicle per hour
+     * @param hgvPerHour Average heavy vehicle per hour
+     * @param wavPerHour Average heavy vehicle per hour
+     * @param wbvPerHour Average heavy vehicle per hour
      * @param FreqParam Studied Frequency
      * @param Temperature Temperature (Celsius)
-     * @param RoadSurface RoadSurface (0=default, 1= NL01 (1-layer ZOAB), etc.)
+     * @param roadSurface roadSurface empty default, NL01 FR01 ..
      * @param Ts_stud A limited period Ts (in months) over the year where a average proportion pm of light vehicles are equipped with studded tyres and during .
      * @param Pm_stud Average proportion of vehicles equipped with studded tyres
      * @param Junc_dist Distance to junction
      * @param Junc_type Type of junction ((k = 1 for a crossing with traffic lights ; k = 2 for a roundabout)
      */
-    public RSParametersCnossos(double lv_speed, double mv_speed, double hgv_speed, double wav_speed, double wbv_speed, double lvPerHour, double mvPerHour, double hgvPerHour, double wavPerHour, double wbvPerHour, int FreqParam, double Temperature, int RoadSurface, double Ts_stud, double Pm_stud, double Junc_dist, int Junc_type) {
+    public RSParametersCnossos(double lv_speed, double mv_speed, double hgv_speed, double wav_speed, double wbv_speed, double lvPerHour, double mvPerHour, double hgvPerHour, double wavPerHour, double wbvPerHour, int FreqParam, double Temperature, String roadSurface, double Ts_stud, double Pm_stud, double Junc_dist, int Junc_type) {
         this.lvPerHour = lvPerHour;
         this.mvPerHour = mvPerHour;
         this.hgvPerHour = hgvPerHour;
@@ -257,7 +229,7 @@ public class RSParametersCnossos {
         this.wbvPerHour = wbvPerHour;
         this.FreqParam = FreqParam;
         this.Temperature = Temperature;
-        this.RoadSurface = RoadSurface;
+        this.roadSurface = roadSurface;
         this.Ts_stud = Ts_stud;
         this.Pm_stud = Pm_stud;
         this.Junc_dist = Junc_dist;
@@ -283,15 +255,6 @@ public class RSParametersCnossos {
     }
     public void setSpeedWbv(double speedWbv) {
         this.speedWbv = speedWbv;
-    }
-
-
-    /**
-     * Set the engine state for vehicle.
-     * @param flowState enum
-     */
-    public void setFlowState(EngineState flowState) {
-        this.flowState = flowState;
     }
 
     public double getLvPerHour() {
@@ -336,7 +299,7 @@ public class RSParametersCnossos {
 
     public double getTemperature() { return Temperature;}
 
-    public int getRoadSurface() {return RoadSurface;}
+    public String getRoadSurface() {return roadSurface;}
 
     public double getTs_stud() {return Ts_stud;}
 

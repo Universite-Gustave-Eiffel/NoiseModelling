@@ -1,3 +1,36 @@
+/**
+ * NoiseMap is a scientific computation plugin for OrbisGIS developed in order to
+ * evaluate the noise impact on urban mobility plans. This model is
+ * based on the French standard method NMPB2008. It includes traffic-to-noise
+ * sources evaluation and sound propagation processing.
+ *
+ * This version is developed at French IRSTV Institute and at IFSTTAR
+ * (http://www.ifsttar.fr/) as part of the Eval-PDU project, funded by the
+ * French Agence Nationale de la Recherche (ANR) under contract ANR-08-VILL-0005-01.
+ *
+ * Noisemap is distributed under GPL 3 license. Its reference contact is Judicaël
+ * Picaut <judicael.picaut@ifsttar.fr>. It is maintained by Nicolas Fortin
+ * as part of the "Atelier SIG" team of the IRSTV Institute <http://www.irstv.fr/>.
+ *
+ * Copyright (C) 2011 IFSTTAR
+ * Copyright (C) 2011-2012 IRSTV (FR CNRS 2488)
+ *
+ * Noisemap is free software: you can redistribute it and/or modify it under the
+ * terms of the GNU General Public License as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option) any later
+ * version.
+ *
+ * Noisemap is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * Noisemap. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * For more information, please consult: <http://www.orbisgis.org/>
+ * or contact directly:
+ * info_at_ orbisgis.org
+ */
 package org.orbisgis.noisemap.core;
 
 import org.junit.Test;
@@ -11,6 +44,7 @@ import static org.orbisgis.noisemap.core.EvaluateRoadSourceCnossos.*;
 
 public class EvaluateRoadSourceCnossosTest {
     private static final double EPSILON_TEST1 = 0.01;
+    private static final int[] FREQUENCIES = new int[] {63,125,250,500,1000,2000,4000,8000};
 
     /** based on CNOSSOS_Road_Output.csv and the CNOSSOS_DLL_CONSOLE.exe**/
     @Test
@@ -27,7 +61,7 @@ public class EvaluateRoadSourceCnossosTest {
         int wbv_per_hour = 1000;
         int FreqParam = 8000;
         double Temperature = 15;
-        int RoadSurface = 1;
+        String RoadSurface = "NL01";
         double Pm_stud = 0.5;
         double Ts_stud = 4;
         double Junc_dist = 200;
@@ -53,7 +87,7 @@ public class EvaluateRoadSourceCnossosTest {
         int wbv_per_hour = 1100;
         int FreqParam = 1000;
         double Temperature = 5;
-        int RoadSurface = 2;
+        String RoadSurface = "NL02";
         double Pm_stud = 0.5;
         double Ts_stud = 4;
         double Junc_dist = 200;
@@ -79,7 +113,7 @@ public class EvaluateRoadSourceCnossosTest {
         int wbv_per_hour = 100;
         int FreqParam = 8000;
         double Temperature = -5;
-        int RoadSurface = 3;
+        String RoadSurface = "NL03";
         double Pm_stud = 0.5;
         double Ts_stud = 4.;
         double Junc_dist = 200;
@@ -106,7 +140,7 @@ public class EvaluateRoadSourceCnossosTest {
         int wbv_per_hour = 100;
         int FreqParam = 63;
         double Temperature = -5;
-        int RoadSurface = 3;
+        String RoadSurface = "NL03";
         double Pm_stud = 0.5;
         double Ts_stud = 4.;
         double Junc_dist = 50;
@@ -132,26 +166,47 @@ public class EvaluateRoadSourceCnossosTest {
         int wbv_per_hour = 1000;
         int FreqParam = 4000;
         double Temperature = 15;
-        int RoadSurface = 1;
+        String RoadSurface = "NL01";
         double Pm_stud = 0.5;
         double Ts_stud = 4.;
         double Junc_dist = 30;
         int Junc_type = 2;
         RSParametersCnossos rsParameters = new RSParametersCnossos(lv_speed,  mv_speed,  hgv_speed,  wav_speed,  wbv_speed,  lv_per_hour,  mv_per_hour,  hgv_per_hour,  wav_per_hour,  wbv_per_hour,  FreqParam,  Temperature,  RoadSurface,Ts_stud, Pm_stud, Junc_dist, Junc_type );
         rsParameters.setSlopePercentage_without_limit(10);
-        //System.out.println(EvaluateRoadSourceCnossos.evaluate(rsParameters));
         assertEquals(85.4991 , EvaluateRoadSourceCnossos.evaluate(rsParameters), EPSILON_TEST1);
     }
 
     @Test
     public void TestTableIII() {
         int Freq = 125;
-        int VehCat = 2;
-        int Coeff = 0;
-        final Double coeff = getCoeff(Coeff,Freq, VehCat);
-        //System.out.println(coeff);
+        String VehCat = "2";
+        final Double coeff = getCoeff("ar",Freq, VehCat);
         assertEquals(88.7 , coeff, EPSILON_TEST1);
 
     }
 
+
+    @Test
+    public void CnossosEmissionTest() {
+        String vehCat="1";
+        double vehiclePerHour = 1000;
+        double vehicleSpeed = 20;
+        double tsStud = 0.5;
+        String surfRef = "NL01";
+        double temperature = -5;
+        double pmStud = 1;
+        double slope = -15;
+        double juncDist = 200;
+        int juncType = 1;
+        double[] expectedValues = new double[]{88.421,77.1136,75.5712,75.6919,73.6689,71.3471,68.1195,63.4796};
+        for(int idFreq = 1; idFreq < FREQUENCIES.length; idFreq++) {
+            RSParametersCnossos rsParameters = new RSParametersCnossos(vehicleSpeed, vehicleSpeed, vehicleSpeed,
+                    vehicleSpeed, vehicleSpeed, "1".equals(vehCat) ? vehiclePerHour : 0,
+                    "2".equals(vehCat) ? vehiclePerHour : 0, "3".equals(vehCat) ? vehiclePerHour : 0,
+                    "4a".equals(vehCat) ? vehiclePerHour : 0, "4b".equals(vehCat) ? vehiclePerHour : 0,
+                    FREQUENCIES[idFreq], temperature, surfRef, tsStud, pmStud, juncDist, juncType);
+            rsParameters.setSlopePercentage(slope);
+            assertEquals(String.format("%d Hz", FREQUENCIES[idFreq]), expectedValues[idFreq], EvaluateRoadSourceCnossos.evaluate(rsParameters), EPSILON_TEST1);
+        }
+    }
 }

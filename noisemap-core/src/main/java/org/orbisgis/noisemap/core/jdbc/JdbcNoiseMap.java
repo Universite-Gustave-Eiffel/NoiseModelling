@@ -46,7 +46,8 @@ public abstract class JdbcNoiseMap {
     protected boolean computeVerticalDiffraction = true;
     protected double wallAbsorption = 0.05;
     // wind rose [0-30,30-60,60-90,90-120,120-150,150-180,180-210,210-240,240-270,270-300,300-330,330-360]
-    protected double[] favrose = new double[]{0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25};
+    public static final double[] DEFAULT_WIND_ROSE = new double[]{0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25};
+    public static final double[] STATIONARY_WIND_ROSE = new double[]{0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.};
     protected String heightField = "";
     protected GeometryFactory geometryFactory = new GeometryFactory();
     protected boolean doMultiThreading = true;

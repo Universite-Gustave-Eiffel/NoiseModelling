@@ -44,6 +44,7 @@ import java.util.List;
  * to give them to propagation process data
  * @author SU Qi
  * @author Nicolas Fortin
+ * @author Pierre Aumond
  */
 public class DiffractionWithSoilEffetZone {
     private LineSegment rOZone;//receiver-first intersection zone for 3D diffraction

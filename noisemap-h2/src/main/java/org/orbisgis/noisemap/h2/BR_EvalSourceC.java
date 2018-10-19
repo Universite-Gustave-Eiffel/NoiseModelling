@@ -39,6 +39,7 @@ import org.orbisgis.noisemap.core.RSParametersCnossos;
 
 /**
  * Return the dB value corresponding to the parameters using the CNOSSOS Method.
+ *
  * @author Nicolas Fortin
  * @author Pierre Aumond 06/08/2018
  */
@@ -67,11 +68,11 @@ public class BR_EvalSourceC extends DeterministicScalarFunction {
                 "* @param beginZ Road start height\n" +
                 "* @param endZ Road end height\n" +
                 "* @param roadLength2d Road length (do not take account of Z)\n" +
-     "* @param FreqParam Studied Frequency\n" +
-               " * @param Temperature Temperature(Celsius)\n" +
-               " * @param RoadSurface Road surface between 0 and 14\n" +
-               " * @param Ts_stud A limited period Ts (in months) over the year where a average proportion pm of light vehicles are equipped with studded tyres and during .\n" +
-     "* @param Pm_stud Average proportion of vehicles equipped with studded tyres\n" +
+                "* @param FreqParam Studied Frequency\n" +
+                " * @param Temperature Temperature(Celsius)\n" +
+                " * @param RoadSurface Road surface between 0 and 14\n" +
+                " * @param Ts_stud A limited period Ts (in months) over the year where a average proportion pm of light vehicles are equipped with studded tyres and during .\n" +
+                "* @param Pm_stud Average proportion of vehicles equipped with studded tyres\n" +
                 "* @param Junc_dist Distance to junction\n" +
                 "* @param Junc_type Type of junction ((k = 1 for a crossing with traffic lights ; k = 2 for a roundabout)");
     }
@@ -83,37 +84,37 @@ public class BR_EvalSourceC extends DeterministicScalarFunction {
 
     /**
      * Road noise evaluation.Evaluate speed of heavy vehicle.
-     * @param lv_speed Average vehicle speed
-     * @param mv_speed Average vehicle speed
-     * @param hv_speed Average vehicle speed
-     * @param wav_speed Average light 2w vehicle speed
-     * @param wbv_speed Average heavy 2w  vehicle speed
-     * @param vl_per_hour Average light vehicle per hour
-     * @param ml_per_hour Average medium vehicle per hour
-     * @param pl_per_hour Average heavy vehicle per hour
-     * @param wa_per_hour Average light 2w vehicle per hour
-     * @param wb_per_hour Average heavy 2w vehicle per hour
-     * @param beginZ Road start height
-     * @param endZ Road end height
+     *
+     * @param lv_speed     Average vehicle speed
+     * @param mv_speed     Average vehicle speed
+     * @param hv_speed     Average vehicle speed
+     * @param wav_speed    Average light 2w vehicle speed
+     * @param wbv_speed    Average heavy 2w  vehicle speed
+     * @param vl_per_hour  Average light vehicle per hour
+     * @param ml_per_hour  Average medium vehicle per hour
+     * @param pl_per_hour  Average heavy vehicle per hour
+     * @param wa_per_hour  Average light 2w vehicle per hour
+     * @param wb_per_hour  Average heavy 2w vehicle per hour
+     * @param beginZ       Road start height
+     * @param endZ         Road end height
      * @param roadLength2d Road length (do not take account of Z)
-     * @param FreqParam Studied Frequency
-     * @param Temperature Temperature(Celsius)
-     * @param RoadSurface Road surface between 0 and 14
-     * @param Ts_stud A limited period Ts (in months) over the year where a average proportion pm of light vehicles are equipped with studded tyres and during .
-     * @param Pm_stud Average proportion of vehicles equipped with studded tyres
-     * @param Junc_dist Distance to junction
-     * @param Junc_type Type of junction ((k = 1 for a crossing with traffic lights ; k = 2 for a roundabout)
+     * @param FreqParam    Studied Frequency
+     * @param Temperature  Temperature(Celsius)
+     * @param RoadSurface  Road surface name ex: NL01
+     * @param Ts_stud      A limited period Ts (in months) over the year where a average proportion pm of light vehicles are equipped with studded tyres and during .
+     * @param Pm_stud      Average proportion of vehicles equipped with studded tyres
+     * @param Junc_dist    Distance to junction
+     * @param Junc_type    Type of junction ((k = 1 for a crossing with traffic lights ; k = 2 for a roundabout)
      * @return Noise level in dB
      */
     public static double evalSourceC(double lv_speed, double mv_speed, double hv_speed, double wav_speed, double wbv_speed,
                                      int vl_per_hour, int ml_per_hour, int pl_per_hour, int wa_per_hour, int wb_per_hour,
                                      double beginZ, double endZ, double roadLength2d,
-                                     int RoadSurface, double Temperature, double Ts_stud, double Pm_stud,  double Junc_dist, int Junc_type, int FreqParam) {
-        //checkRoadSurface(roadSurface);
+                                     String RoadSurface, double Temperature, double Ts_stud, double Pm_stud, double Junc_dist, int Junc_type, int FreqParam) {
         RSParametersCnossos srcParameters = new RSParametersCnossos(lv_speed, mv_speed, hv_speed, wav_speed, wbv_speed,
                 vl_per_hour, ml_per_hour, pl_per_hour, wa_per_hour, wb_per_hour,
                 FreqParam, Temperature, RoadSurface, Ts_stud, Pm_stud, Junc_dist, Junc_type);
-         srcParameters.setSlopePercentage(RSParametersCnossos.computeSlope(beginZ, endZ, roadLength2d));
+        srcParameters.setSlopePercentage(RSParametersCnossos.computeSlope(beginZ, endZ, roadLength2d));
         return EvaluateRoadSourceCnossos.evaluate(srcParameters);
     }
 }

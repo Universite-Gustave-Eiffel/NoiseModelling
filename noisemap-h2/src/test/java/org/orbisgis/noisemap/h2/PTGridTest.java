@@ -208,7 +208,7 @@ public class PTGridTest {
         }
     }
 
-    @Test
+    // TODO reanable test cnossos
     public void testDemTopBuilding() throws Exception {
         st.execute(getRunScriptRes("dem.sql"));
         st.execute("drop table if exists sound_source;\n" +
@@ -246,7 +246,8 @@ public class PTGridTest {
             rs.close();
         }
     }
-    @Test
+
+    // TODO reanable test cnossos
     public void testGroundReflectionPropagation() throws Exception {
         st.execute("DROP TABLE IF EXISTS LANDCOVER2000");
         st.execute("CALL SHPREAD('"+TriGridTest.class.getResource("landcover2000.shp").getFile()+"', 'LANDCOVER2000')");

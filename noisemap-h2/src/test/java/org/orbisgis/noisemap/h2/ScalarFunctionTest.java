@@ -40,11 +40,14 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.orbisgis.noisemap.core.EvaluateRoadSourceCnossos;
+import org.orbisgis.noisemap.core.RSParametersCnossos;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Locale;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -60,11 +63,10 @@ public class ScalarFunctionTest {
     public static void tearUpClass() throws Exception {
         connection = H2GISDBFactory.createSpatialDataBase(ScalarFunctionTest.class.getSimpleName(), true);
         H2GISFunctions.registerFunction(connection.createStatement(), new BR_EvalSource(), "");
-        H2GISFunctions.registerFunction(connection.createStatement(), new BR_EvalSourceC(), "");
-        H2GISFunctions.registerFunction(connection.createStatement(), new BR_EvalSourceDyn(), "");
         H2GISFunctions.registerFunction(connection.createStatement(), new BR_SpectrumRepartition(), "");
         H2GISFunctions.registerFunction(connection.createStatement(), new BTW_EvalSource(), "");
         H2GISFunctions.registerFunction(connection.createStatement(), new BTW_SpectrumRepartition(), "");
+        H2GISFunctions.registerFunction(connection.createStatement(), new BR_EvalSourceC(), "");
     }
 
     @AfterClass
@@ -167,23 +169,35 @@ public class ScalarFunctionTest {
         st.executeQuery("SELECT BR_SpectrumRepartition(1001,83)");
     }
 
-    /** Test BR_EVALSOURCEC **/
     @Test
-    public void testEvalSourceCnossos() throws SQLException {
-        ResultSet rs = st.executeQuery("SELECT BR_EvalsourceC(50, 0, 50, 0, 0,\n" +
-                "                                     50, 0, 50,0, 0,\n" +
-                "                                      0,  0,  10,\n" +
-                "                                      1,  15,  4,  0.5,   200,  1,  1000)");
-        assertTrue(rs.next());
-        assertEquals(67.69, rs.getDouble(1), 0.01);
-    }
+    public void testEvalSourceCnossos1() throws SQLException {
+        double lv_speed = 70;
+        int lv_per_hour = 1000;
+        double mv_speed = 70;
+        int mv_per_hour = 1000;
+        double hgv_speed = 70;
+        int hgv_per_hour = 1000;
+        double wav_speed = 70;
+        int wav_per_hour = 1000;
+        double wbv_speed = 70;
+        int wbv_per_hour = 1000;
+        int FreqParam = 4000;
+        double Temperature = 15;
+        String RoadSurface = "NL01";
+        double Pm_stud = 0.5;
+        double Ts_stud = 4.;
+        double Junc_dist = 30;
+        int Junc_type = 2;
+        double beginZ = 0;
+        double endZ = 1;
+        double roadLength2d = 10;
 
-    /** Test BR_EVALSOURCEDyn **/
-    @Test
-    public void testEvalSourceDynamic() throws SQLException {
-        ResultSet rs = st.executeQuery("SELECT BR_EvalsourceDyn(70,0,1,2,0,0,100,1000,20,1,false,10,1,0,10)");
+        ResultSet rs = st.executeQuery(String.format(Locale.ROOT,"SELECT BR_EvalSourceC(%g, %g, %g, %g, %g, %d, %d, %d, %d, %d," +
+                        "%g,  %g,  %g, '%s', %g, %g, %g, %g, %d, %d)",lv_speed, mv_speed, hgv_speed, wav_speed,
+                wbv_speed, lv_per_hour,  mv_per_hour,  hgv_per_hour,  wav_per_hour,  wbv_per_hour, beginZ,  endZ,
+                roadLength2d, RoadSurface,  Temperature,  Ts_stud,  Pm_stud,  Junc_dist,  Junc_type,  FreqParam));
         assertTrue(rs.next());
-        assertEquals(96.207, rs.getDouble(1), 0.01);
+        assertEquals(85.4991, rs.getDouble(1), 0.01);
     }
 
 }

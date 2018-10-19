@@ -59,6 +59,7 @@ import org.locationtech.jts.triangulate.quadedge.Vertex;
  *
  * @author Nicolas Fortin
  * @author SU Qi
+ * @author Pierre Aumond
  */
 public class FastObstructionTest {
     public static final double epsilon = 1e-7;
@@ -873,7 +874,7 @@ public class FastObstructionTest {
             double distanceRandS = path.getFirst().p0.distance(path.getLast().p1);              //distance of receiver and source
 
             // Get fullpathdistance in favourable condition p.94
-            double Gamma = Math.max(1000,distanceRandS); // todo decide 8*distance (p.94) or distance (Dirk document) ??
+            double Gamma = Math.max(1000,8*distanceRandS);
             double pathDistancefav=0.0;
 
             double pathDistance = 0.0;//distance of path
@@ -892,9 +893,7 @@ public class FastObstructionTest {
             }
             double e = pathDistance - path.getFirst().getLength() - path.getLast().getLength();//distance without first part path and last part path
             double deltaDistance = pathDistance - distanceRandS;                                //delta distance
-            // delta distance favourable
-            double deltaDistancefav = pathDistancefav - getRayCurveLength(distanceRandS, Gamma);// + Math.min(0,2*deltaDistance); // todo decide if keep min from Dirk document here or like in Directive in PathInverse
-
+            double deltaDistancefav = pathDistancefav - getRayCurveLength(distanceRandS, Gamma);                                //delta distance favourable
 
             //todo cas FIGURE VI.10 p. 93 Third case
 

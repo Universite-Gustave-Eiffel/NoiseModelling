@@ -71,11 +71,11 @@ public class PointNoiseMap extends JdbcNoiseMap {
         fetchCellBuildings(connection, expandedCellEnvelop, buildingsGeometries, mesh);
         //if we have topographic points data
         fetchCellDem(connection, expandedCellEnvelop, mesh);
+
         // Data fetching for collision test is done.
         try {
             mesh.finishPolygonFeeding(expandedCellEnvelop);
         } catch (LayerDelaunayError ex) {
-            logger.info("ICI " + expandedCellEnvelop + " build");
             throw new SQLException(ex.getLocalizedMessage(), ex);
         }
         FastObstructionTest freeFieldFinder = new FastObstructionTest(mesh.getPolygonWithHeight(),
@@ -133,7 +133,7 @@ public class PointNoiseMap extends JdbcNoiseMap {
                 receivers, freeFieldFinder, sourcesIndex,
                 sourceGeometries, wj_sources, db_field_freq,
                 soundReflectionOrder, soundDiffractionOrder, maximumPropagationDistance, maximumReflectionDistance,
-                0, wallAbsorption, favrose, ij,
+                0, wallAbsorption, DEFAULT_WIND_ROSE, ij,
                 progression.subProcess(receivers.size()), geoWithSoil, computeVerticalDiffraction);
     }
 
@@ -166,8 +166,6 @@ public class PointNoiseMap extends JdbcNoiseMap {
 
 
         double[] verticesSoundLevel = threadDataOut.getVerticesSoundLevel();
-
-
         Stack<PropagationResultPtRecord> toDriver = new Stack<>();
         //Vertices output type
         if(receiversPk.isEmpty()) {
