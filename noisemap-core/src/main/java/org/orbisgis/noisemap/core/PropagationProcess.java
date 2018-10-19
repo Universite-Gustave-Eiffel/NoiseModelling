@@ -451,6 +451,17 @@ public class PropagationProcess implements Runnable {
     }
 
 
+    /**
+     *
+     * @param receiverCoord
+     * @param srcCoord
+     * @param SrcReceiverDistance Source Receiver distance in m, 3D cartesian distance
+     * @param fav_probability
+     * @param freqcut
+     * @param wj
+     * @param debugInfo
+     * @param energeticSum
+     */
     public void computeFreefield(Coordinate receiverCoord,
                                  Coordinate srcCoord, double SrcReceiverDistance, double fav_probability, int freqcut, List<Double> wj,
                                  List<PropagationDebugInfo> debugInfo, double[] energeticSum) {
@@ -480,7 +491,8 @@ public class PropagationProcess implements Runnable {
                     totRSDistance += getIntersectedDistance(geoInter) * this.data.geoWithSoilType.get(envel.getId()).getType();
                 }
             }
-            gPath = totRSDistance / SrcReceiverDistance;
+            // Compute GPath using 2D Length TODO validation Pierre
+            gPath = totRSDistance / RSZone.getLength();
             //NF S 31-133 page 39
             List<TriIdWithIntersection> inters = new ArrayList<>();
             data.freeFieldFinder.computePropagationPath(receiverCoord, srcCoord, false, inters, true);

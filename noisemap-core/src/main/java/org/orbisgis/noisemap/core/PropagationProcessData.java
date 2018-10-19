@@ -81,7 +81,7 @@ public class PropagationProcessData {
     public double minRecDist;
     /** Wall alpha [0-1] */
     public double wallAlpha;
-    /** probability occurence favourable condition */
+    /** probability occurrence favourable condition */
     public double[] windRose;
     /** cellId only used in output data */
     public int cellId;
