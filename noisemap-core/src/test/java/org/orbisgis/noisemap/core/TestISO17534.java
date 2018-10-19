@@ -50,7 +50,7 @@ import java.util.List;
 public class TestISO17534 extends TestCase {
     private static final List<Integer> freqLvl= Collections.unmodifiableList(Arrays.asList(63, 125, 250, 500,1000, 2000,
             4000, 8000));
-    private static final double ERROR_EPSILON_TEST_T = 0.2;
+    private static final double ERROR_EPSILON_TEST_T = 0.05;
     private static final double ERROR_EPSILON_TEST7 = 0.57;
     private static final double ERROR_EPSILON_TEST8 = 0.79;
     private static final double ERROR_EPSILON_TEST9 = 0.59;
@@ -326,26 +326,25 @@ public class TestISO17534 extends TestCase {
 
     /**
      * Sound propagation
-     * T09
+     * T05
      * Ground with spatially varying heights and acoustic properties - Strong enbankment - Slope reflection
      * @throws LayerDelaunayError
      */
-    public void testT09() throws LayerDelaunayError {
+    public void testT05() throws LayerDelaunayError {
         GeometryFactory factory = new GeometryFactory();
         ////////////////////////////////////////////////////////////////////////////
         //Add road source as one point
         List<Geometry> srclst=new ArrayList<Geometry>();
-        srclst.add(factory.createPoint(new Coordinate(3.5, 10, 0.05)));
+        srclst.add(factory.createPoint(new Coordinate(0, 0, 0.05)));
         //Scene dimension
         Envelope cellEnvelope=new Envelope(new Coordinate(-250., -250.,0.),new Coordinate(250, 250,0.));
         //Add source sound level
         List<ArrayList<Double>> srcSpectrum=new ArrayList<ArrayList<Double>>();
-        srcSpectrum.add(asW(53.1, 54.1, 56.1, 59.1, 61.1, 64.1, 66.1, 69.1, 69.1, 72.1, 73.1, 72.1, 70.1, 67.1, 64.1, 62.1, 59.1, 57.1));
+        srcSpectrum.add(asW(80.0, 90.0, 95.0, 100.0, 100.0, 100.0, 95.0 ,90.0));
         // GeometrySoilType
         List<GeoWithSoilType> geoWithSoilTypeList = new ArrayList<>();
-        geoWithSoilTypeList.add(new GeoWithSoilType(factory.toGeometry(new Envelope(0,9.5,0,20)),0.));
-        geoWithSoilTypeList.add(new GeoWithSoilType(factory.toGeometry(new Envelope(9.5,15.5,0,20)),1.));
-        geoWithSoilTypeList.add(new GeoWithSoilType(factory.toGeometry(new Envelope(15.5,60,0,20)),1.));
+        geoWithSoilTypeList.add(new GeoWithSoilType(factory.toGeometry(new Envelope(0,5,0,20)),0.));
+        geoWithSoilTypeList.add(new GeoWithSoilType(factory.toGeometry(new Envelope(5,200,0,20)),1.));
         //Build query structure for sources
         QueryGeometryStructure sourcesIndex = new QueryQuadTree();
         int idsrc=0;
@@ -360,7 +359,7 @@ public class TestISO17534 extends TestCase {
                 new Coordinate(60, 20, 0),
                 new Coordinate(60, 0, 0),
                 new Coordinate(15.5, 0, 0),
-                new Coordinate(15.5, 20, 0)}), 4);
+                new Coordinate(15.5, 20, 0)}), 2);
         mesh.finishPolygonFeeding(cellEnvelope);
 
         //Retrieve Delaunay triangulation of scene
