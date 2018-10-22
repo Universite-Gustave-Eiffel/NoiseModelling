@@ -533,19 +533,19 @@ public class PropagationProcess implements Runnable {
 
             double AttenuatedWjH ; // Homogeneous
             double AttenuatedWjF ; // Favourable
-
+            //double test = AttenuatedWj; // to test AttAtm
             AttenuatedWj = attAtmW(AttenuatedWj,
                     SrcReceiverDistance,
                     alpha_atmo[idfreq]);
-
+            //double testA = -(wToDba(AttenuatedWj))+wToDba(test); // to test AttAtm
             AttenuatedWjH=AttenuatedWj;
             AttenuatedWjF=AttenuatedWj;
 
             if (data.geoWithSoilType != null) {
                 if (Double.compare(gPath, 0) != 0) {
                     //get contribution of Ground Effect, ASoil will be a negative number so it's mean a contribution effect
-                    ASoil = getASoil(zs, zr, SrcReceiverDistance, gPath, data.freq_lvl.get(idfreq), ASoilmin, data.celerity);
-                    // todo Gpath ou Gpathprime ?!? Gpath pour T08
+                    ASoil = getASoil(zs, zr, SrcReceiverDistance, gPathPrime, data.freq_lvl.get(idfreq), ASoilmin, data.celerity);
+                    // todo Gpath ou Gpathprime ?!? Gpath pour T08, GpathPrime pour T04
                 } else {
                     //NF S 31-133 page 41 if gPath=0 we will add 3dB for the receiver point, -3 means it's a contribution effect
                     ASoil = -3;
@@ -562,6 +562,7 @@ public class PropagationProcess implements Runnable {
                 }
                 AttenuatedWjF = dbaToW(wToDba(AttenuatedWjF) - AGroundF);
                 AttenuatedWjH = dbaToW(wToDba(AttenuatedWjH) - ASoil);
+
             }
 
 
