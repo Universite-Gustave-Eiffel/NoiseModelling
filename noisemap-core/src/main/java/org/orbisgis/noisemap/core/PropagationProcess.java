@@ -618,7 +618,7 @@ public class PropagationProcess implements Runnable {
             int freqcut = 0;
             for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
                 double deltadistancestar = 0;
-                if (deltadistance >= -((data.celerity / data.freq_lvl.get(idfreq)) / 20) && deltadistancestar >= (((data.celerity / data.freq_lvl.get(idfreq)) / 4)-deltadistancestar)) {
+                if (deltadistance >= -((data.celerity / data.freq_lvl.get(idfreq)) / 20)){// && deltadistancestar >= (((data.celerity / data.freq_lvl.get(idfreq)) / 4)-deltadistancestar)) {
                     freqcut = idfreq + 1;
                 }
             }
@@ -733,19 +733,27 @@ public class PropagationProcess implements Runnable {
                 // δ if negative if S R are not obstructed
                 //NF S 31-133 page 46
                 //if delta diffraction > 25 we take 25dB for delta diffraction
-                double deltaDiffSR = Math.min(25.,computeDeltaDiffraction(idfreq, e, deltadistance ,pointHeight));
-                double deltaDiffSRF = Math.min(25.,computeDeltaDiffraction(idfreq, e,  deltadistancefav ,pointHeight));
-
+                double deltaDiffSR = computeDeltaDiffraction(idfreq, e, deltadistance ,pointHeight);
+                double deltaDiffSRF = computeDeltaDiffraction(idfreq, e,  deltadistancefav ,pointHeight);
+                double deltaDiffSR_pure =  Math.min(25.,deltaDiffSR); // todo comprendre ce truc - see line 616 code cnossos
+                double deltaDiffSRF_pure = Math.min(25.,deltaDiffSRF);
                 if (data.geoWithSoilType != null) {
                     double SoilSOAttenuation;
                     double SoilSOAttenuationF;
-                    double SoilORAttenuation = 0;
-                    double SoilORAttenuationF = 0;
+                    double SoilORAttenuation;
+                    double SoilORAttenuationF;
                     //NF S 31-133 page 41
                     if (gPathRO > 0) {
                         SoilORAttenuation = getASoil(ROZone.p1.z, ROZone.p0.z, ROZone.getLength(), gPathRO, data.freq_lvl.get(idfreq), ASoilROMin, data.celerity);
                         SoilORAttenuationF = getAGroundF(ROZone.p1.z, ROZone.p0.z, ROZone.getLength(), gPathRO, data.freq_lvl.get(idfreq), AGroundFROmin, data.celerity);
 
+                    }
+                    else{
+                        SoilORAttenuation = -3.;
+                        // ICI JE NE SAIS PAS VOIR CNOSSOS p.89
+                        // todo comprendre ce truc
+                        // SoilSOAttenuationF =AGroundFOSmin;
+                        SoilORAttenuationF =-3;
                     }
                     //NF S 31-133 page 41
                     if (Double.compare(gPathOS, 0.) == 0) {
@@ -780,11 +788,8 @@ public class PropagationProcess implements Runnable {
 
 
                 // Apply diffraction attenuation with ground effect if necessary
-                AttenuatedWjH = dbaToW(wToDba(AttenuatedWjH)
-                        - deltaDiffSR - deltSoilSO - deltaSoilOR);
-                AttenuatedWjF = dbaToW(wToDba(AttenuatedWjF)
-                        - deltaDiffSRF - deltSoilSOF - deltaSoilORF);
-
+                AttenuatedWjH = dbaToW(wToDba(AttenuatedWjH) - (deltaDiffSR_pure + deltSoilSO + deltaSoilOR));
+                AttenuatedWjF = dbaToW(wToDba(AttenuatedWjF) - (deltaDiffSRF_pure+ deltSoilSOF+ deltaSoilORF));
                 double AttenuatedWj = fav_probability * AttenuatedWjF + (1 - fav_probability) * AttenuatedWjH;
 
 

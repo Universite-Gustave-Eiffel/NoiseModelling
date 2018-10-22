@@ -329,7 +329,7 @@ public class TestISO17534 extends TestCase {
         propManager.initStructures();
 
         //Run test
-        splCompare(splCompute(propManager, new Coordinate(50, 0, 2)), "Test T04F", new double[]{36.9, 46.9, 51.8, 56.8, 56.7, 53.3, 48.8, 42.1}, ERROR_EPSILON_TEST_T);
+        splCompare(splCompute(propManager, new Coordinate(50, 0, 2)), "Test T04F", new double[]{36.9, 46.9, 51.8, 56.8, 56.7, 53.3, 48.8, 42.1}, 0.1);
     }
 
     /**
@@ -352,8 +352,7 @@ public class TestISO17534 extends TestCase {
         srcSpectrum.add(asW(80.0, 90.0, 95.0, 100.0, 100.0, 100.0, 95.0, 90.0));
         // GeometrySoilType
         List<GeoWithSoilType> geoWithSoilTypeList = new ArrayList<>();
-        geoWithSoilTypeList.add(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 5, 0, 20)), 0.));
-        geoWithSoilTypeList.add(new GeoWithSoilType(factory.toGeometry(new Envelope(5, 200, 0, 20)), 1.));
+        geoWithSoilTypeList.add(new GeoWithSoilType(factory.toGeometry(new Envelope(-250, 250, -250, 250)), 0.));
         //Build query structure for sources
         QueryGeometryStructure sourcesIndex = new QueryQuadTree();
         int idsrc = 0;
@@ -364,11 +363,11 @@ public class TestISO17534 extends TestCase {
         //Create obstruction test object
         MeshBuilder mesh = new MeshBuilder();
         mesh.addGeometry(factory.createPolygon(new Coordinate[]{
-                new Coordinate(15.5, 20, 0),
-                new Coordinate(60, 20, 0),
-                new Coordinate(60, 0, 0),
-                new Coordinate(15.5, 0, 0),
-                new Coordinate(15.5, 20, 0)}), 2);
+                new Coordinate(50, 250, 0),
+                new Coordinate(100, 250, 0),
+                new Coordinate(100, -250, 0),
+                new Coordinate(50, -250, 0),
+                new Coordinate(50, 250, 0)}), 10);
         mesh.finishPolygonFeeding(cellEnvelope);
 
         //Retrieve Delaunay triangulation of scene
@@ -385,7 +384,7 @@ public class TestISO17534 extends TestCase {
         propManager.initStructures();
 
         //Run test
-        splCompare(splCompute(propManager, new Coordinate(20, 10, 9)), "Test T09", new double[]{20.02, 21.09, 23.16, 26.23, 28.22, 31.21, 33.2, 36.18, 36.17, 39.15, 40.13, 39.1, 37.06, 34.01, 30.93, 28.81, 25.63, 23.36}, ERROR_EPSILON_TEST_T);
+        splCompare(splCompute(propManager, new Coordinate(150, 0, 2)), "Test T05", new double[]{16.7, 22.9, 24.5, 26.2, 25.4, 24.7, 17.0, 1.8}, ERROR_EPSILON_TEST_T);
     }
 
     /**
