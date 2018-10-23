@@ -392,7 +392,7 @@ public class TestISO17534 extends TestCase {
     /**
      * Sound propagation
      * T06
-     * Horizontal ground with homogeneous properties, road source - Non compacted ground (G=0.7) with a slope (test relief)
+     * Horizontal ground with homogeneous properties, road source - Non compacted ground (G=0.7) with a small slope (test relief)
      *
      * @throws LayerDelaunayError
      */
@@ -409,7 +409,7 @@ public class TestISO17534 extends TestCase {
         srcSpectrum.add(asW(80.0, 90.0, 95.0, 100.0, 100.0, 100.0, 95.0, 90.0));
         // GeometrySoilType
         List<GeoWithSoilType> geoWithSoilTypeList = new ArrayList<>();
-        geoWithSoilTypeList.add(new GeoWithSoilType(factory.toGeometry(new Envelope(-50, 250, -50, 50)), 0.7));
+        geoWithSoilTypeList.add(new GeoWithSoilType(factory.toGeometry(new Envelope(-50, 250, -250, 250)), 0.7));
         //Build query structure for sources
         QueryGeometryStructure sourcesIndex = new QueryQuadTree();
         int idsrc = 0;
@@ -419,6 +419,11 @@ public class TestISO17534 extends TestCase {
         }
         //Create obstruction test object
         MeshBuilder mesh = new MeshBuilder();
+        // Add topo
+        mesh.addTopographicPoint(new Coordinate(0, -250, 0));
+        mesh.addTopographicPoint(new Coordinate(0, 250, 0));
+        mesh.addTopographicPoint(new Coordinate(150, -250, 2));
+        mesh.addTopographicPoint(new Coordinate(150, 250, 2));
         mesh.finishPolygonFeeding(cellEnvelope);
 
         //Retrieve Delaunay triangulation of scene
@@ -429,7 +434,7 @@ public class TestISO17534 extends TestCase {
         double[] favrose = new double[]{0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
 
         PropagationProcessData propData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 250, 250, 1., 0., favrose, 0, null, geoWithSoilTypeList, true);
+                freqLvl, 0, 0, 250, 250, 1., 0.7, favrose, 0, null, geoWithSoilTypeList, true);
         propData.setTemperature(15);
         propData.setHumidity(70);
         PropagationProcessOut propDataOut = new PropagationProcessOut();
@@ -437,7 +442,7 @@ public class TestISO17534 extends TestCase {
         propManager.initStructures();
 
         //Run test
-        splCompare(splCompute(propManager, new Coordinate(150, 0, 4)), "Test T06", new double[]{26.4, 36.3, 41.2, 45.3, 41.2, 37.5, 34.5, 19.5}, 0.1);
+        splCompare(splCompute(propManager, new Coordinate(150, 0, 10)), "Test T06", new double[]{27.1, 37.1, 42.0, 46.8, 46.5, 43.4, 35.9, 20.8}, 0.1);
     }
 
     /**

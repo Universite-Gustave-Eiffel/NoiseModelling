@@ -473,7 +473,7 @@ public class PropagationProcess implements Runnable {
         // Evaluation of energy at receiver
         // add=wj/(4*pi*distance²)
         //add ground effect if necessary
-        double ASoilmin = 0;
+        double AGroundHmin = 0;
         double AGroundFmin = 0;
         double ASoil;
         double AGroundF;
@@ -483,6 +483,8 @@ public class PropagationProcess implements Runnable {
         double zr = receiverCoord.z;
         double zs = srcCoord.z;
         double dp = SrcReceiverDistance;
+        double Gm = 0;
+        double Gw = 0;
         //will give a flag here for soil effect
         if (data.geoWithSoilType != null) {
             LineString RSZone = factory.createLineString(new Coordinate[]{receiverCoord, srcCoord});
@@ -519,7 +521,9 @@ public class PropagationProcess implements Runnable {
                 gPathPrime = gPath;
             }
 
-            ASoilmin = -3 * (1 - gPathPrime);
+            Gm = gPathPrime;
+
+            AGroundHmin = -3 * (1 - Gm);
 
 
 
@@ -546,7 +550,7 @@ public class PropagationProcess implements Runnable {
             if (data.geoWithSoilType != null) {
                 if (Double.compare(gPath, 0) != 0) {
                     //get contribution of Ground Effect, ASoil will be a negative number so it's mean a contribution effect
-                    ASoil = getASoil(zs, zr, dp, gPathPrime, data.freq_lvl.get(idfreq), ASoilmin, data.celerity);
+                    ASoil = getASoil(zs, zr, dp, gPathPrime, data.freq_lvl.get(idfreq), AGroundHmin, data.celerity);
                     // todo Gpath ou Gpathprime ?!? Gpath pour T08, GpathPrime pour T04
                 } else {
                     //NF S 31-133 page 41 if gPath=0 we will add 3dB for the receiver point, -3 means it's a contribution effect
@@ -1324,11 +1328,11 @@ public class PropagationProcess implements Runnable {
      * @param dp       dp in equation
      * @param gw       Gw
      * @param fm       frequency
-     * @param aSoilMin min ASoil
+     * @param AGroundHmin min ASoil
      * @param cel      sound celerity m/s
      * @return ASoil
      */
-    private static double getASoil(double zs, double zr, double dp, double gw, int fm, double aSoilMin, double cel) {
+    private static double getASoil(double zs, double zr, double dp, double gw, int fm, double AGroundHmin, double cel) {
         //NF S 31-133 page 41 c
         double k = 2 * Math.PI * fm / cel;
         //NF S 31-113 page 41 w
@@ -1339,7 +1343,7 @@ public class PropagationProcess implements Runnable {
         //NF S 31-113 page 41 A sol
         double ASoil = -10 * Math.log10(4 * Math.pow(k, 2) / Math.pow(dp, 2) *
                 (Math.pow(zs, 2) - Math.sqrt(2 * cf / k) * zs + cf / k) * (Math.pow(zr, 2) - Math.sqrt(2 * cf / k) * zr + cf / k));
-        ASoil = Math.max(ASoil, aSoilMin);
+        ASoil = Math.max(ASoil, AGroundHmin);
         return ASoil;
 
     }
