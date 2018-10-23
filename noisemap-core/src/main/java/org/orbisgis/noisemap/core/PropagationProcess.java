@@ -401,6 +401,9 @@ public class PropagationProcess implements Runnable {
         return new double[]{deltaDistanceSprimO, deltaDistanceORprim};
     }
 
+
+
+
     private double[] computeCoordprime(DiffractionWithSoilEffetZone diffDataWithSoilEffet, boolean obstructedSourceReceiver) {
         final Coordinate srcCoord = diffDataWithSoilEffet.getOSZone().getCoordinate(1);
         final Coordinate receiverCoord = diffDataWithSoilEffet.getROZone().getCoordinate(0);
@@ -479,6 +482,7 @@ public class PropagationProcess implements Runnable {
         double totRSDistance = 0.;
         double zr = receiverCoord.z;
         double zs = srcCoord.z;
+        double dp = SrcReceiverDistance;
         //will give a flag here for soil effect
         if (data.geoWithSoilType != null) {
             LineString RSZone = factory.createLineString(new Coordinate[]{receiverCoord, srcCoord});
@@ -506,7 +510,9 @@ public class PropagationProcess implements Runnable {
             rotatedSource.setOrdinate(1, srcCoord.z);
             zr = rotatedReceiver.distance(JTSUtility.makeProjectedPoint(ab[0], ab[1], rotatedReceiver));
             zs = rotatedSource.distance(JTSUtility.makeProjectedPoint(ab[0], ab[1], rotatedSource));
-            double testForm = SrcReceiverDistance / (30 * (zs + zr));
+            dp = rotatedSource.x  - rotatedReceiver.x ;
+            double testForm = dp / (30 * (zs + zr));
+            // todo dp = SrcReceiverDistance or dp = SrcReceiverDistance on floor ?
             if (testForm <= 1) {
                 gPathPrime = testForm * gPath + (1 - testForm) * gS;
             } else {
@@ -515,11 +521,7 @@ public class PropagationProcess implements Runnable {
 
             ASoilmin = -3 * (1 - gPathPrime);
 
-            if (testForm <= 1) {
-                AGroundFmin = -3 * (1 - gPathPrime);
-            } else {
-                AGroundFmin = -3 * (1 - gPathPrime) * (1 + 2 * (1 - (1 / testForm)));
-            }
+
 
         }
         PropagationDebugInfo propagationDebugInfo = null;
@@ -544,7 +546,7 @@ public class PropagationProcess implements Runnable {
             if (data.geoWithSoilType != null) {
                 if (Double.compare(gPath, 0) != 0) {
                     //get contribution of Ground Effect, ASoil will be a negative number so it's mean a contribution effect
-                    ASoil = getASoil(zs, zr, SrcReceiverDistance, gPathPrime, data.freq_lvl.get(idfreq), ASoilmin, data.celerity);
+                    ASoil = getASoil(zs, zr, dp, gPathPrime, data.freq_lvl.get(idfreq), ASoilmin, data.celerity);
                     // todo Gpath ou Gpathprime ?!? Gpath pour T08, GpathPrime pour T04
                 } else {
                     //NF S 31-133 page 41 if gPath=0 we will add 3dB for the receiver point, -3 means it's a contribution effect
@@ -552,8 +554,22 @@ public class PropagationProcess implements Runnable {
                 }
                 if (Double.compare(gPath, 0) != 0) {
                     //get contribution of Ground Effect, ASoil will be a negative number so it's mean a contribution effect
-                    AGroundF = getAGroundF(zs, zr, SrcReceiverDistance, gPath, data.freq_lvl.get(idfreq), AGroundFmin, data.celerity);
-                // todo Gpath ou Gpathprime ?!? Gpath pour T08
+                    double alpha0 = 2 * Math.pow(10, -4);
+                    double deltazt = 6 * Math.pow(10, -3) * dp / (zs + zr);
+                    double deltazs = alpha0 * Math.pow((zs / (zs + zr)), 2) * (Math.pow(dp, 2) / 2);
+                    double deltazr = alpha0 * Math.pow((zr / (zs + zr)), 2) * (Math.pow(dp, 2) / 2);
+                    double zs2 = zs + deltazs + deltazt;
+                    double zr2 = zr + deltazr + deltazt;
+                    double testForm = dp / (30 * (zs2 + zr2));
+                    if (testForm <= 1) {
+                        AGroundFmin = -3 * (1 - gPathPrime);
+                    } else {
+                        AGroundFmin = -3 * (1 - gPathPrime) * (1 + 2 * (1 - (1 / testForm)));
+                    }
+
+                    AGroundF = getAGroundF(zs2, zr2, dp, gPath, data.freq_lvl.get(idfreq), AGroundFmin, data.celerity);
+                    // todo Gpath ou Gpathprime ?!? Gpath pour T08
+                    // todo remove AgroundFmin or calcul better before
                 } else {
                     //CNOSSOS page 89 ??????
                   // AGroundF = AGroundFmin;
@@ -1024,6 +1040,7 @@ public class PropagationProcess implements Runnable {
                 }
             }
             double SrcReceiverDistance = CGAlgorithms3D.distance(srcCoord, receiverCoord);
+
             double fav_probability = favrose[(int)(Math.round(calcRotationAngleInDegrees(srcCoord,receiverCoord)/30))];
 
             if (!somethingHideReceiver  && !buildingOnPath) {
@@ -1341,12 +1358,7 @@ public class PropagationProcess implements Runnable {
      */
     private static double getAGroundF(double zs, double zr, double dp, double gw, int fm, double AGroundFMin, double cel) {
         // CNOSSOS p89
-        double alpha0 = 2 * Math.pow(10, -4);
-        double deltazt = 6 * Math.pow(10, -3) * dp / (zs + zr);
-        double deltazs = alpha0 * Math.pow((zs / (zs + zr)), 2) * (Math.pow(dp, 2) / 2);
-        double deltazr = alpha0 * Math.pow((zr / (zs + zr)), 2) * (Math.pow(dp, 2) / 2);
-        double zs2 = zs + deltazs + deltazt;
-        double zr2 = zr + deltazr + deltazt;
+
 
         //NF S 31-133 page 41 c
         double k = 2 * Math.PI * fm / cel;
@@ -1357,7 +1369,7 @@ public class PropagationProcess implements Runnable {
         double cf = dp * (1 + 3 * w * dp * Math.pow(Math.E, -Math.sqrt(w * dp))) / (1 + w * dp);
         //NF S 31-113 page 41 A sol
         double AGroundF = -10 * Math.log10(4 * Math.pow(k, 2) / Math.pow(dp, 2) *
-                (Math.pow(zs2, 2) - Math.sqrt(2 * cf / k) * zs2 + cf / k) * (Math.pow(zr2, 2) - Math.sqrt(2 * cf / k) * zr2 + cf / k));
+                (Math.pow(zs, 2) - Math.sqrt(2 * cf / k) * zs + cf / k) * (Math.pow(zr, 2) - Math.sqrt(2 * cf / k) * zr + cf / k));
         AGroundF = Math.max(AGroundF, AGroundFMin);
         return AGroundF;
 
