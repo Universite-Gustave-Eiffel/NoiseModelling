@@ -419,11 +419,71 @@ public class TestISO17534 extends TestCase {
         }
         //Create obstruction test object
         MeshBuilder mesh = new MeshBuilder();
+
         // Add topo
         mesh.addTopographicPoint(new Coordinate(0, -250, 0));
         mesh.addTopographicPoint(new Coordinate(0, 250, 0));
         mesh.addTopographicPoint(new Coordinate(150, -250, 2));
         mesh.addTopographicPoint(new Coordinate(150, 250, 2));
+        mesh.finishPolygonFeeding(cellEnvelope);
+
+        //Retrieve Delaunay triangulation of scene
+        List<Coordinate> vert = mesh.getVertices();
+        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+                mesh.getTriNeighbors(), mesh.getVertices());
+        // rose of favourable conditions
+        double[] favrose = new double[]{0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
+
+        PropagationProcessData propData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
+                freqLvl, 0, 0, 400, 400, 1., 0., favrose, 0, null, geoWithSoilTypeList, true);
+        propData.setTemperature(15);
+        propData.setHumidity(70);
+        PropagationProcessOut propDataOut = new PropagationProcessOut();
+        PropagationProcess propManager = new PropagationProcess(propData, propDataOut);
+        propManager.initStructures();
+
+        //Run test
+        splCompare(splCompute(propManager, new Coordinate(150, 0, 10)), "Test T06", new double[]{27.1, 37.1, 42.0, 46.8, 46.5, 43.4, 35.9, 20.8}, 0.1);
+    }
+
+    /**
+     * Sound propagation
+     * T07
+     * Diff juste au dessus de l'arrête
+     *
+     * @throws LayerDelaunayError
+     */
+    public void testT07() throws LayerDelaunayError {
+        GeometryFactory factory = new GeometryFactory();
+        ////////////////////////////////////////////////////////////////////////////
+        //Add road source as one point
+        List<Geometry> srclst = new ArrayList<Geometry>();
+        srclst.add(factory.createPoint(new Coordinate(0, 0, 1)));
+        //Scene dimension
+        Envelope cellEnvelope = new Envelope(new Coordinate(-250., -250., 0.), new Coordinate(250, 250, 0.));
+        //Add source sound level
+        List<ArrayList<Double>> srcSpectrum = new ArrayList<ArrayList<Double>>();
+        srcSpectrum.add(asW(80.0, 90.0, 95.0, 100.0, 100.0, 100.0, 95.0, 90.0));
+        // GeometrySoilType
+        List<GeoWithSoilType> geoWithSoilTypeList = new ArrayList<>();
+        geoWithSoilTypeList.add(new GeoWithSoilType(factory.toGeometry(new Envelope(-50, 250, -250, 250)), 0.7));
+        //Build query structure for sources
+        QueryGeometryStructure sourcesIndex = new QueryQuadTree();
+        int idsrc = 0;
+        for (Geometry src : srclst) {
+            sourcesIndex.appendGeometry(src, idsrc);
+            idsrc++;
+        }
+        //Create obstruction test object
+        MeshBuilder mesh = new MeshBuilder();
+        // Add building
+        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+                new Coordinate(50, 250, 0),
+                new Coordinate(100, 250, 0),
+                new Coordinate(100, -250, 0),
+                new Coordinate(50, -250, 0),
+                new Coordinate(50, 250, 0)}), 0.1);
+
         mesh.finishPolygonFeeding(cellEnvelope);
 
         //Retrieve Delaunay triangulation of scene
@@ -442,7 +502,66 @@ public class TestISO17534 extends TestCase {
         propManager.initStructures();
 
         //Run test
-        splCompare(splCompute(propManager, new Coordinate(150, 0, 10)), "Test T06", new double[]{27.1, 37.1, 42.0, 46.8, 46.5, 43.4, 35.9, 20.8}, 0.1);
+        splCompare(splCompute(propManager, new Coordinate(150, 0, 120)), "Test T07", new double[]{26.3, 36.3, 41.1, 45.9, 45.6, 44.7, 36.2, 18.2}, 0.1);
+    }
+
+    /**
+     * Sound propagation
+     * T08
+     * Reflexion
+     *
+     * @throws LayerDelaunayError
+     */
+    public void testT08() throws LayerDelaunayError {
+        GeometryFactory factory = new GeometryFactory();
+        ////////////////////////////////////////////////////////////////////////////
+        //Add road source as one point
+        List<Geometry> srclst = new ArrayList<Geometry>();
+        srclst.add(factory.createPoint(new Coordinate(0, 0, 4)));
+        //Scene dimension
+        Envelope cellEnvelope = new Envelope(new Coordinate(-250., -250., 0.), new Coordinate(250, 250, 0.));
+        //Add source sound level
+        List<ArrayList<Double>> srcSpectrum = new ArrayList<ArrayList<Double>>();
+        srcSpectrum.add(asW(80.0, 90.0, 95.0, 100.0, 100.0, 100.0, 95.0, 90.0));
+        // GeometrySoilType
+        List<GeoWithSoilType> geoWithSoilTypeList = new ArrayList<>();
+        geoWithSoilTypeList.add(new GeoWithSoilType(factory.toGeometry(new Envelope(-250, 250, -250, 250)), 0.));
+        //Build query structure for sources
+        QueryGeometryStructure sourcesIndex = new QueryQuadTree();
+        int idsrc = 0;
+        for (Geometry src : srclst) {
+            sourcesIndex.appendGeometry(src, idsrc);
+            idsrc++;
+        }
+        //Create obstruction test object
+        MeshBuilder mesh = new MeshBuilder();
+        // Add building
+        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+                new Coordinate(74.9, 20.0, 0),
+                new Coordinate(75.1, 20.0, 0),
+                new Coordinate(75.1, 20.1, 0),
+                new Coordinate(74.9, 20.1, 0),
+                new Coordinate(74.9, 20.0, 0)}), 100);
+
+        mesh.finishPolygonFeeding(cellEnvelope);
+
+        //Retrieve Delaunay triangulation of scene
+        List<Coordinate> vert = mesh.getVertices();
+        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+                mesh.getTriNeighbors(), mesh.getVertices());
+        // rose of favourable conditions
+        double[] favrose = new double[]{0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
+
+        PropagationProcessData propData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
+                freqLvl, 1, 0, 250, 250, 1., 0.3, favrose, 0, null, geoWithSoilTypeList, true);
+        propData.setTemperature(15);
+        propData.setHumidity(70);
+        PropagationProcessOut propDataOut = new PropagationProcessOut();
+        PropagationProcess propManager = new PropagationProcess(propData, propDataOut);
+        propManager.initStructures();
+
+        //Run test
+        splCompare(splCompute(propManager, new Coordinate(150, 0., 4.)), "Test T08", new double[]{30.66, 40.6, 45.5, 50.3, 50.1, 49.4, 41.6, 26.2}, 0.1);
     }
 
     /**
@@ -494,7 +613,7 @@ public class TestISO17534 extends TestCase {
         double[] favrose = new double[]{0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25};
 
         PropagationProcessData propData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 250, 250, 1., 0., favrose, 0, null, geoWithSoilTypeList, true);
+                freqLvl, 1, 0, 250, 250, 1., 0., favrose, 0, null, geoWithSoilTypeList, true);
         PropagationProcessOut propDataOut = new PropagationProcessOut();
         PropagationProcess propManager = new PropagationProcess(propData, propDataOut);
         propManager.initStructures();

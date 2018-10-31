@@ -203,6 +203,7 @@ public class PropagationProcess implements Runnable {
 
     public void computeReflexion(Coordinate receiverCoord,
                                  Coordinate srcCoord,List<Double> wj, List<FastObstructionTest.Wall> nearBuildingsWalls,
+                                 double[] favrose,
                                  double[] energeticSum, List<PropagationDebugInfo> debugInfo) {
         // Compute receiver mirror
         LineSegment srcReceiver = new LineSegment(srcCoord, receiverCoord);
@@ -259,8 +260,7 @@ public class PropagationProcess implements Runnable {
                         receiverReflectionCursor.getReceiverPos(), destinationPt));
 
                 // Test if there is no obstacles between the
-                // reflection point and old reflection pt (or source
-                // position)
+                // reflection point and old reflection pt (or source position)
                 validReflection = (Double.isNaN(receiverReflectionCursor.getReceiverPos().z) ||
                         Double.isNaN(destinationPt.z) || seg.getBuildingId() == 0
                         || reflectionPt.z < data.freeFieldFinder.getBuildingRoofZ(seg.getBuildingId()))
@@ -272,10 +272,7 @@ public class PropagationProcess implements Runnable {
                         propagationDebugInfo.getPropagationPath().add(0, reflectionPt);
                     }
                     if (receiverReflectionCursor
-                            .getParentMirror() == null) { // Direct
-                        // to
-                        // the
-                        // receiver
+                            .getParentMirror() == null) { // Direct to the receiver
                         validReflection = data.freeFieldFinder
                                 .isFreeField(reflectionPt,
                                         receiverCoord);
@@ -307,22 +304,33 @@ public class PropagationProcess implements Runnable {
                 }
                 // A path has been found
                 refpathcount += 1;
-                for (int idfreq = 0; idfreq < wj.size(); idfreq++) {
+
+                double fav_probability = favrose[(int)(Math.round(calcRotationAngleInDegrees(srcCoord,receiverCoord)/30))];
+                computeFreefield_ref(receiverCoord, srcCoord, ReflectedSrcReceiverDistance, fav_probability,  reflectionAlpha, 0, wj, debugInfo, energeticSum);
+
+               /*for (int idfreq = 0; idfreq < wj.size(); idfreq++) {
+
                     // Geometric dispersion
                     double AttenuatedWj = attDistW(wj.get(idfreq),
                             ReflectedSrcReceiverDistance);
                     // Apply wall material attenuation
-                    AttenuatedWj *= reflectionAlpha;
+                    AttenuatedWj += dbaToW(10*Math.log10(reflectionAlpha));
                     // Apply atmospheric absorption and ground
+                    // todo where ground ?
+                    AttenuatedWj +=AttenuatedWj;
+
                     AttenuatedWj = attAtmW(
                             AttenuatedWj,
                             ReflectedSrcReceiverDistance,
                             alpha_atmo[idfreq]);
+
+
+
                     energeticSum[idfreq] += AttenuatedWj;
                     if(propagationDebugInfo != null) {
                         propagationDebugInfo.addNoiseContribution(idfreq, AttenuatedWj);
                     }
-                }
+                }*/
                 if(propagationDebugInfo != null && debugInfo != null) {
                     debugInfo.add(propagationDebugInfo);
                 }
@@ -588,6 +596,153 @@ public class PropagationProcess implements Runnable {
 
             AttenuatedWj = fav_probability * AttenuatedWjF + (1 - fav_probability) * AttenuatedWjH;
 
+            energeticSum[idfreq] += AttenuatedWj;
+            if (propagationDebugInfo != null) {
+                propagationDebugInfo.addNoiseContribution(idfreq, AttenuatedWj);
+            }
+        }
+        if (propagationDebugInfo != null) {
+            debugInfo.add(propagationDebugInfo);
+        }
+
+
+    }
+
+    /**
+     *
+     * @param receiverCoord
+     * @param srcCoord
+     * @param SrcReceiverDistance Source Receiver distance in m, 3D cartesian distance
+     * @param fav_probability
+     * @param freqcut
+     * @param wj
+     * @param debugInfo
+     * @param energeticSum
+     */
+    public void computeFreefield_ref(Coordinate receiverCoord,
+                                 Coordinate srcCoord, double SrcReceiverDistance, double fav_probability, double reflectionAlpha, int freqcut, List<Double> wj,
+                                 List<PropagationDebugInfo> debugInfo, double[] energeticSum) {
+
+        GeometryFactory factory = new GeometryFactory();
+        // Evaluation of energy at receiver
+        // add=wj/(4*pi*distance²)
+        //add ground effect if necessary
+        double AGroundHmin = 0;
+        double AGroundFmin = 0;
+        double ASoil;
+        double AGroundF;
+        double gPath = 0;
+        double gPathPrime = 0;
+        double totRSDistance = 0.;
+        double zr = receiverCoord.z;
+        double zs = srcCoord.z;
+        double dp = SrcReceiverDistance;
+        double Gm = 0;
+        double Gw = 0;
+        //will give a flag here for soil effect
+        if (data.geoWithSoilType != null) {
+            LineString RSZone = factory.createLineString(new Coordinate[]{receiverCoord, srcCoord});
+            List<EnvelopeWithIndex<Integer>> resultZ0 = rTreeOfGeoSoil.query(RSZone.getEnvelopeInternal());
+            if (!resultZ0.isEmpty()) {
+                for (EnvelopeWithIndex<Integer> envel : resultZ0) {
+                    //get the geo intersected
+                    Geometry geoInter = RSZone.intersection(data.geoWithSoilType.get(envel.getId()).getGeo());
+                    //add the intersected distance with ground effect
+                    totRSDistance += getIntersectedDistance(geoInter) * this.data.geoWithSoilType.get(envel.getId()).getType();
+                }
+            }
+            // Compute GPath using 2D Length TODO validation Pierre
+            gPath = totRSDistance / RSZone.getLength();
+            //NF S 31-133 page 39
+            List<TriIdWithIntersection> inters = new ArrayList<>();
+            data.freeFieldFinder.computePropagationPath(receiverCoord, srcCoord, false, inters, true);
+            List<Coordinate> rSground = data.freeFieldFinder.getGroundProfile(inters);
+            rSground = JTSUtility.getNewCoordinateSystem(rSground);
+            // Compute mean ground plan
+            double[] ab = JTSUtility.getLinearRegressionPolyline(removeDuplicates(rSground));
+            Coordinate rotatedReceiver = new Coordinate(rSground.get(0));
+            rotatedReceiver.setOrdinate(1, receiverCoord.z);
+            Coordinate rotatedSource = new Coordinate(rSground.get(rSground.size() - 1));
+            rotatedSource.setOrdinate(1, srcCoord.z);
+            zr = rotatedReceiver.distance(JTSUtility.makeProjectedPoint(ab[0], ab[1], rotatedReceiver));
+            zs = rotatedSource.distance(JTSUtility.makeProjectedPoint(ab[0], ab[1], rotatedSource));
+            dp = rotatedSource.x  - rotatedReceiver.x ;
+            double testForm = dp / (30 * (zs + zr));
+            // todo dp = SrcReceiverDistance or dp = SrcReceiverDistance on floor ?
+            if (testForm <= 1) {
+                gPathPrime = testForm * gPath + (1 - testForm) * gS;
+            } else {
+                gPathPrime = gPath;
+            }
+
+            Gm = gPathPrime;
+
+            AGroundHmin = -3 * (1 - Gm);
+
+
+
+        }
+        PropagationDebugInfo propagationDebugInfo = null;
+        if (debugInfo != null) {
+            propagationDebugInfo = new PropagationDebugInfo(Arrays.asList(receiverCoord, srcCoord), new double[data.freq_lvl.size()]);
+        }
+
+        for (int idfreq = freqcut; idfreq < data.freq_lvl.size(); idfreq++) {
+            double AttenuatedWj = attDistW(wj.get(idfreq),
+                    SrcReceiverDistance);
+
+
+            double AttenuatedWjH ; // Homogeneous
+            double AttenuatedWjF ; // Favourable
+            //double test = AttenuatedWj; // to test AttAtm
+            AttenuatedWj = attAtmW(AttenuatedWj,
+                    SrcReceiverDistance,
+                    alpha_atmo[idfreq]);
+            //double testA = -(wToDba(AttenuatedWj))+wToDba(test); // to test AttAtm
+            AttenuatedWjH=AttenuatedWj;
+            AttenuatedWjF=AttenuatedWj;
+
+            if (data.geoWithSoilType != null) {
+                if (Double.compare(gPath, 0) != 0) {
+                    //get contribution of Ground Effect, ASoil will be a negative number so it's mean a contribution effect
+                    ASoil = getASoil(zs, zr, dp, gPathPrime, data.freq_lvl.get(idfreq), AGroundHmin, data.celerity);
+                    // todo Gpath ou Gpathprime ?!? Gpath pour T08, GpathPrime pour T04
+                } else {
+                    //NF S 31-133 page 41 if gPath=0 we will add 3dB for the receiver point, -3 means it's a contribution effect
+                    ASoil = -3;
+                }
+                if (Double.compare(gPath, 0) != 0) {
+                    //get contribution of Ground Effect, ASoil will be a negative number so it's mean a contribution effect
+                    double alpha0 = 2 * Math.pow(10, -4);
+                    double deltazt = 6 * Math.pow(10, -3) * dp / (zs + zr);
+                    double deltazs = alpha0 * Math.pow((zs / (zs + zr)), 2) * (Math.pow(dp, 2) / 2);
+                    double deltazr = alpha0 * Math.pow((zr / (zs + zr)), 2) * (Math.pow(dp, 2) / 2);
+                    double zs2 = zs + deltazs + deltazt;
+                    double zr2 = zr + deltazr + deltazt;
+                    double testForm = dp / (30 * (zs2 + zr2));
+                    if (testForm <= 1) {
+                        AGroundFmin = -3 * (1 - gPathPrime);
+                    } else {
+                        AGroundFmin = -3 * (1 - gPathPrime) * (1 + 2 * (1 - (1 / testForm)));
+                    }
+
+                    AGroundF = getAGroundF(zs2, zr2, dp, gPath, data.freq_lvl.get(idfreq), AGroundFmin, data.celerity);
+                    // todo Gpath ou Gpathprime ?!? Gpath pour T08
+                    // todo remove AgroundFmin or calcul better before
+                } else {
+                    //CNOSSOS page 89 ??????
+                    // AGroundF = AGroundFmin;
+                    // todo comprendre ce truc
+                    AGroundF = -3;
+                }
+                AttenuatedWjF = dbaToW(wToDba(AttenuatedWjF) - AGroundF);
+                AttenuatedWjH = dbaToW(wToDba(AttenuatedWjH) - ASoil);
+
+            }
+
+
+            AttenuatedWj = fav_probability * AttenuatedWjF + (1 - fav_probability) * AttenuatedWjH;
+            AttenuatedWj *= reflectionAlpha;
             energeticSum[idfreq] += AttenuatedWj;
             if (propagationDebugInfo != null) {
                 propagationDebugInfo.addNoiseContribution(idfreq, AttenuatedWj);
@@ -1057,7 +1212,7 @@ public class PropagationProcess implements Runnable {
             }
             // Process specular reflection
             if (data.reflexionOrder > 0) {
-                computeReflexion(receiverCoord, srcCoord, wj, nearBuildingsWalls, energeticSum, debugInfo);
+                computeReflexion(receiverCoord, srcCoord, wj, nearBuildingsWalls,favrose, energeticSum, debugInfo);
             } // End reflexion
             // ///////////
             // Process diffraction paths
