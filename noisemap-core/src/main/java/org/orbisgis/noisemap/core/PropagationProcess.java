@@ -1370,7 +1370,7 @@ public class PropagationProcess implements Runnable {
             }
             //srcEnergeticSum=GetGlobalLevel(nbfreq,energeticSum);
             if (Math.abs(wToDba(attDistW(W_RANGE, searchSourceDistance) + srcEnergeticSum) - wToDba(srcEnergeticSum)) < DBA_FORGET_SOURCE) {
-                break; //Stop search for fartest sources
+                break; //Stop search for furthest sources
             }
         }
         dataOut.appendSourceCount(sourceCount);
