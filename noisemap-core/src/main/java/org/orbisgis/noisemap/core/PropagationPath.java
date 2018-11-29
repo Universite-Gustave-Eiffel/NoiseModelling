@@ -66,40 +66,43 @@ public class PropagationPath {
         public final double height;
         public final double gs;
         public final double alphaWall;
-        public final boolean diffration;
+        public final boolean diffraction;
 
         /**
          * @param coordinate
          * @param height
          * @param gs
          * @param alphaWall
-         * @param diffration
+         * @param diffraction
          */
-        public PointPath(org.locationtech.jts.geom.Coordinate coordinate, double height, double gs, double alphaWall, boolean diffration) {
+        public PointPath(org.locationtech.jts.geom.Coordinate coordinate, double height, double gs, double alphaWall, boolean diffraction) {
             this.coordinate = coordinate;
             this.height = height;
             this.gs = gs;
             this.alphaWall = alphaWall;
-            this.diffration = diffration;
+            this.diffraction = diffraction;
         }
     }
 
     public static class SegmentPath {
         public final double gPath;
-        public final double gPathPrime;
 
         /**
          * @param gPath
-         * @param gPathPrime
          */
-        public SegmentPath(double gPath, double gPathPrime) {
+        public SegmentPath(double gPath) {
             this.gPath = gPath;
-            this.gPathPrime = gPathPrime;
         }
     }
 
+
+
     public List<PointPath> getPointList() {
         return pointList;
+    }
+
+    public List<SegmentPath> getSegmentList() {
+        return segmentList;
     }
 
     public PropagationPath(List<SegmentPath> segmentList) {

@@ -132,15 +132,24 @@ public class EvaluateAttenuationCnossos {
         return 0;
     }
 
-    public static double getADif(double dp, double zs, double zr, double gS, double gPath, double gPathPrime) {
+    public static double setGPathPrime(double dp, double zs, double zr, double gS, double gPath) {
 
         double testForm = dp / (30 * (zs + zr));
-
+        double gPathPrime;
         if (testForm <= 1) {
             gPathPrime = testForm * gPath + (1 - testForm) * gS;
         } else {
             gPathPrime = gPath;
         }
+
+
+
+        return 0;
+    }
+
+
+
+    public static double getADif(double gPathPrime) {
 
         double Gm = gPathPrime;
         double AGroundHmin = -3 * (1 - Gm);
@@ -149,11 +158,26 @@ public class EvaluateAttenuationCnossos {
         return 0;
     }
 
-    private double getABoundary() {
-        double AGround = getAGround();
-        double ADif= getADif(200,10,10,0, 0,0 );
+    private double[] getABoundary(PropagationPath.Distances distances, PropagationPath propagationPath,  List<Integer> freq_lvl) {
+        List<PropagationPath.PointPath> pointPath = propagationPath.getPointList();
+        List<PropagationPath.SegmentPath> segmentPath = propagationPath.getSegmentList();
+        double[] aDifFreq = new double[data.freq_lvl.size()];
+        double aDif ;
+        double aGround = getAGround();
 
-        return 0;
+        if (pointPath.size() == 2) {
+            double gPathPrime = setGPathPrime(distances.distancePath, pointPath.get(0).height, pointPath.get(pointPath.size() - 1).height, pointPath.get(0).gs, segmentPath.get(0).gPath);
+            aDif= getADif(gPathPrime);
+
+            for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
+                aDifFreq[idfreq] =  aDif;
+            }
+        }
+            // if not direct ...
+
+
+
+        return aDifFreq;
     }
 
 
@@ -165,13 +189,10 @@ public class EvaluateAttenuationCnossos {
 
         // init
         aGlobal = new double[data.freq_lvl.size()];
+        double[] aBoundary ;
         nbfreq = data.freq_lvl.size();
         alpha_atmo = data.getAlpha_atmo();
-        double distancePath = propagationPath.getDistances(propagationPath).distancePath;
-        double distanceDirect = propagationPath.getDistances(propagationPath).distanceDirect;
-        double eLength = propagationPath.getDistances(propagationPath).eLength;
-
-
+        PropagationPath.Distances distances = propagationPath.getDistances(propagationPath);
 
         // Init wave length for each frequency
         freq_lambda = new double[nbfreq];
@@ -185,15 +206,16 @@ public class EvaluateAttenuationCnossos {
 
 
         // divergence
-        double aDiv = getADiv(distancePath);
+        double aDiv = getADiv(distances.distancePath);
+
+        aBoundary = getABoundary(distances, propagationPath,data.freq_lvl);
 
         for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
             // atm
-            double aAtm = getAAtm(distancePath,alpha_atmo[idfreq]);
-            double aBoundary = getABoundary();
+            double aAtm = getAAtm(distances.distancePath,alpha_atmo[idfreq]);
 
 
-            aGlobal[idfreq] = wToDba(aDiv)+wToDba(aAtm) + wToDba(aBoundary);
+            aGlobal[idfreq] = wToDba(aDiv)+wToDba(aAtm) + wToDba(aBoundary[idfreq]);
 
         }
         return aGlobal;
