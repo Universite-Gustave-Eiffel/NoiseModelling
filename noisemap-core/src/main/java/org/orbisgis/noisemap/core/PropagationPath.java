@@ -35,55 +35,65 @@ package org.orbisgis.noisemap.core;
 
 import org.locationtech.jts.geom.Coordinate;
 
+import java.util.List;
+
 /**
- *  Information for Receiver image.
+ * PropagationPath work for FastObstructionTest,
  * @author Nicolas Fortin
+ * @author Pierre Aumond
  */
-public class MirrorReceiverResult {
-
-	private final Coordinate receiverPos;
-	private final MirrorReceiverResult parentMirror;
-	private final int wallId; // Wall index of the last mirrored processed
-    private final int buildingId; // building that belongs to this wall
+public class PropagationPath {
+    private boolean favorable;
+    private List<PointPath> pointList;
+    private List<SegmentPath> segmentList;
 
     /**
-     * @return coordinate of mirrored receiver
+     * @param favorable
+     * @param pointList
+     * @param segmentList
      */
-	public Coordinate getReceiverPos() {
-		return receiverPos;
-	}
-
-    /**
-     * @return Other MirrorReceiverResult index, -1 for the first reflexion
-     */
-	public MirrorReceiverResult getParentMirror() {
-		return parentMirror;
-	}
-
-    /**
-     * @return Wall index of the last mirrored processed
-     */
-	public int getWallId() {
-		return wallId;
-	}
-
-    /**
-     * @return building that belongs to this wall
-     */
-    public int getBuildingId() {
-        return buildingId;
+    public PropagationPath(boolean favorable, List<PointPath> pointList, List<SegmentPath> segmentList) {
+        this.favorable = favorable;
+        this.pointList = pointList;
+        this.segmentList = segmentList;
     }
 
-    /**
-     * @param receiverPos coordinate of mirrored receiver
-     * @param mirrorResultId Other MirrorReceiverResult index, -1 for the first reflexion
-     * @param wallId Wall index of the last mirrored processed
-     * @param buildingId building that belongs to this wall
-     */
-    public MirrorReceiverResult(Coordinate receiverPos, MirrorReceiverResult parentMirror, int wallId, int buildingId) {
-        this.receiverPos = receiverPos;
-        this.parentMirror = parentMirror;
-        this.wallId = wallId;
-        this.buildingId = buildingId;
+    public static class PointPath {
+        public final Coordinate coordinate;
+        public final double height;
+        public final double gs;
+        public final double alphaWall;
+        public final boolean diffration;
+
+        /**
+         * @param coordinate
+         * @param height
+         * @param gs
+         * @param alphaWall
+         * @param diffration
+         */
+        public PointPath(org.locationtech.jts.geom.Coordinate coordinate, double height, double gs, double alphaWall, boolean diffration) {
+            this.coordinate = coordinate;
+            this.height = height;
+            this.gs = gs;
+            this.alphaWall = alphaWall;
+            this.diffration = diffration;
+        }
     }
+
+    public static class SegmentPath {
+        public final double gPath;
+        public final double gPathPrime;
+
+        /**
+         * @param gPath
+         * @param gPathPrime
+         */
+        public SegmentPath(double gPath, double gPathPrime) {
+            this.gPath = gPath;
+            this.gPathPrime = gPathPrime;
+        }
+    }
+
+
 }

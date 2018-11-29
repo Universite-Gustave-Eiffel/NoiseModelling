@@ -53,30 +53,30 @@ public class EvaluateRoadSourceDynamicTest {
     }
 
 
-//    @Test
-//    public void testRoadNoise3_speed0() {
-//        //int FreqParam = 8000;
-//        int[] f = {63, 125, 250, 500,1000,2000,4000,8000};
-//        for (int FreqParam : f ) {
-//                    double speed = 50;
-//            int acc = 0;
-//
-//            double Temperature = 15;
-//            int RoadSurface = 0;
-//            boolean Stud = false;
-//            double Junc_dist = 200;
-//            int Junc_type = 1;
-//            int veh_type = 1;
-//            int acc_type = 1;
-//            double LwStd = 0;
-//            int VehId = 1;
-//            RSParametersDynamic rsParameters = new RSParametersDynamic(speed, acc, veh_type, acc_type, FreqParam, Temperature, RoadSurface, Stud, Junc_dist, Junc_type, LwStd, VehId);
-//            rsParameters.setSlopePercentage(0);
-//            System.out.println(EvaluateRoadSourceDynamic.evaluate(rsParameters));
-//            //EvaluateRoadSourceDynamic.evaluate(rsParameters);
-//            //assertEquals(98.18, EvaluateRoadSourceDynamic.evaluate(rsParameters), EPSILON_TEST1);
-//        }
-  //  }
+    /*@Test
+    public void testRoadNoise3_speed0() {
+        //int FreqParam = 8000;
+        int[] f = {63, 125, 250, 500,1000,2000,4000,8000};
+        for (int FreqParam : f ) {
+                    double speed = 60;
+            int acc = 0;
+
+            double Temperature = 15;
+            int RoadSurface = 5;
+            boolean Stud = false;
+            double Junc_dist = 200;
+            int Junc_type = 1;
+            int veh_type = 1;
+            int acc_type = 1;
+            double LwStd = 0;
+            int VehId = 1;
+            RSParametersDynamic rsParameters = new RSParametersDynamic(speed, acc, veh_type, acc_type, FreqParam, Temperature, RoadSurface, Stud, Junc_dist, Junc_type, LwStd, VehId);
+            rsParameters.setSlopePercentage(0);
+            System.out.println(EvaluateRoadSourceDynamic.evaluate(rsParameters));
+            //EvaluateRoadSourceDynamic.evaluate(rsParameters);
+            //assertEquals(98.18, EvaluateRoadSourceDynamic.evaluate(rsParameters), EPSILON_TEST1);
+        }
+    }*/
 
 
 

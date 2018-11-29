@@ -76,7 +76,6 @@ public class PropagationProcess implements Runnable {
     private final static double BASE_LVL = 1.; // 0dB lvl
     private final static double ONETHIRD = 1. / 3.;
     private final static double MERGE_SRC_DIST = 1.;
-    private final static double DBA_FORGET_SOURCE = 0.03;
     private final static double FIRST_STEP_RANGE = 90;
     private final static double W_RANGE = Math.pow(10, 94. / 10.); //94 dB(A) range search. Max iso level is >75 dB(a).
     private Thread thread;
@@ -573,6 +572,7 @@ public class PropagationProcess implements Runnable {
                     double zs2 = zs + deltazs + deltazt;
                     double zr2 = zr + deltazr + deltazt;
                     double testForm = dp / (30 * (zs2 + zr2));
+
                     if (testForm <= 1) {
                         AGroundFmin = -3 * (1 - gPathPrime);
                     } else {
@@ -583,10 +583,17 @@ public class PropagationProcess implements Runnable {
                     // todo Gpath ou Gpathprime ?!? Gpath pour T08
                     // todo remove AgroundFmin or calcul better before
                 } else {
-                    //CNOSSOS page 89 ??????
-                  // AGroundF = AGroundFmin;
-                    // todo comprendre ce truc
-                    AGroundF = -3;
+
+                    // Pour que ça passe avec CadnaA
+                    /*double testForm = dp / (30 * (zs + zr));
+                    if (testForm <= 1) {
+                        AGroundF = -3;
+                    } else {
+                        AGroundF = getAGroundF(zs, zr, dp, gPath, data.freq_lvl.get(idfreq), AGroundFmin, data.celerity);
+                    }*/
+
+                    // Pour que ça passe avec Dirk
+                   AGroundF = -3;
                 }
                 AttenuatedWjF = dbaToW(wToDba(AttenuatedWjF) - AGroundF);
                 AttenuatedWjH = dbaToW(wToDba(AttenuatedWjH) - ASoil);
@@ -670,9 +677,9 @@ public class PropagationProcess implements Runnable {
             double testForm = dp / (30 * (zs + zr));
             // todo dp = SrcReceiverDistance or dp = SrcReceiverDistance on floor ?
             if (testForm <= 1) {
-                gPathPrime = testForm * gPath + (1 - testForm) * gS;
-            } else {
                 gPathPrime = gPath;
+            } else {
+                gPathPrime = testForm * gPath + (1 - testForm) * gS;
             }
 
             Gm = gPathPrime;
@@ -1097,7 +1104,7 @@ public class PropagationProcess implements Runnable {
 
     /**
      * Compute project Z coordinate between p0 p1 of x,y.
-     * @param coordinateWithoutZ Coordinate to set the Z value from Z interpolation of line
+     * @param coordinateWithoutZ coordinate to set the Z value from Z interpolation of line
      * @param line Extract Z values of this segment
      * @return coordinateWithoutZ with Z value computed from line.
      */
@@ -1150,8 +1157,8 @@ public class PropagationProcess implements Runnable {
     /**
      * Source-Receiver Direct+Reflection+Diffraction computation
      *
-     * @param[in] srcCoord Coordinate of source
-     * @param[in] receiverCoord Coordinate of receiver
+     * @param[in] srcCoord coordinate of source
+     * @param[in] receiverCoord coordinate of receiver
      * @param[out] energeticSum Energy by frequency band
      * @param[in] alpha_atmo Atmospheric absorption by frequency band
      * @param[in] wj Source sound pressure level dB(A) by frequency band
@@ -1163,8 +1170,8 @@ public class PropagationProcess implements Runnable {
                                      Coordinate receiverCoord, double energeticSum[],
                                      double[] alpha_atmo, List<Double> wj, double[] favrose,
                                      List<FastObstructionTest.Wall> nearBuildingsWalls, List<PropagationDebugInfo> debugInfo) {
-        GeometryFactory factory = new GeometryFactory();
 
+        GeometryFactory factory = new GeometryFactory();
         List<Coordinate> regionCorners = fetchRegionCorners(new LineSegment(srcCoord, receiverCoord),data.maxRefDist);
 
         // Build mirrored receiver list from wall list
@@ -1176,13 +1183,14 @@ public class PropagationProcess implements Runnable {
             // hidden by a building)
             // Create the direct Line
             boolean somethingHideReceiver = false;
+            boolean buildingInArea = false;
             boolean buildingOnPath = false;
 
             if (!data.computeVerticalDiffraction || !data.freeFieldFinder.isHasBuildingWithHeight()) {
                 somethingHideReceiver = !data.freeFieldFinder.isFreeField(receiverCoord, srcCoord);
             } else {
                 List<TriIdWithIntersection> propagationPath = new ArrayList<>();
-                if (!data.freeFieldFinder.computePropagationPath(receiverCoord, srcCoord, false, propagationPath, false)) {
+                if (!data.freeFieldFinder.computePropagationPaths(receiverCoord, srcCoord, nearBuildingsWalls, false, propagationPath, false)) {
                     // Propagation path not found, there is not direct field
                     somethingHideReceiver = true;
                 } else {
@@ -1358,7 +1366,7 @@ public class PropagationProcess implements Runnable {
                 }
                 double wAttDistSource = attDistW(allsourcefreqlvl, CGAlgorithms3D.distance(srcCoord, receiverCoord));
                 srcEnergeticSum += wAttDistSource;
-                if (Math.abs(wToDba(wAttDistSource + allreceiverfreqlvl) - wToDba(allreceiverfreqlvl)) > DBA_FORGET_SOURCE) {
+                if (Math.abs(wToDba(wAttDistSource + allreceiverfreqlvl) - wToDba(allreceiverfreqlvl)) > data.forgetSource) {
                     sourceCount++;
                     Envelope query = new Envelope(receiverCoord, srcCoord);
                     query.expandBy(Math.min(data.maxRefDist, srcCoord.distance(receiverCoord)));
@@ -1369,7 +1377,7 @@ public class PropagationProcess implements Runnable {
                 }
             }
             //srcEnergeticSum=GetGlobalLevel(nbfreq,energeticSum);
-            if (Math.abs(wToDba(attDistW(W_RANGE, searchSourceDistance) + srcEnergeticSum) - wToDba(srcEnergeticSum)) < DBA_FORGET_SOURCE) {
+            if (Math.abs(wToDba(attDistW(W_RANGE, searchSourceDistance) + srcEnergeticSum) - wToDba(srcEnergeticSum)) < data.forgetSource) {
                 break; //Stop search for furthest sources
             }
         }

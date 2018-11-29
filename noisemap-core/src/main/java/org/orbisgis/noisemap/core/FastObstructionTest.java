@@ -75,7 +75,7 @@ public class FastObstructionTest {
     private List<Coordinate> verticesOpenAngleTranslated = null; /*Open angle*/
     private boolean hasBuildingWithHeight;
     //data for calculate 3D diffraction,
-    //first Coordinate is the coordinate after the changing coordinate system, the second parameter will keep the data of original coordinate system
+    //first coordinate is the coordinate after the changing coordinate system, the second parameter will keep the data of original coordinate system
     /**
      * New constructor, initialize buildings, triangles and points from mesh data
      *
@@ -278,10 +278,10 @@ public class FastObstructionTest {
      * <p/>
      * {@see http://www.blackpawn.com/texts/pointinpoly/default.html}
      *
-     * @param p Coordinate of the point
-     * @param a Coordinate of the A vertex of triangle
-     * @param b Coordinate of the B vertex of triangle
-     * @param c Coordinate of the C vertex of triangle
+     * @param p coordinate of the point
+     * @param a coordinate of the A vertex of triangle
+     * @param b coordinate of the B vertex of triangle
+     * @param c coordinate of the C vertex of triangle
      * @return True if dot is in triangle
      */
     private boolean dotInTri(Coordinate p, Coordinate a, Coordinate b,
@@ -351,7 +351,7 @@ public class FastObstructionTest {
      * exists)
      *
      * @param vertexId         Index of vertex in the verticesAngle array
-     * @param vertexCoordinate Coordinate of the vertex
+     * @param vertexCoordinate coordinate of the vertex
      * @param left             CCW Neighbor 1 of vertex (open angle)
      * @param right            CCW Neighbor 2 of vertex (open angle)
      * @param verticesAngle    Array of Array of open angle
@@ -697,6 +697,87 @@ public class FastObstructionTest {
         }
     }
 
+    /**
+     *
+     * @param p1 Start propagation path
+     * @param p2 End propagation path
+     * @param nearBuildingsWalls BuildingWalls
+     * @param stopOnIntersection Stop if the segment between p1 and p2 intersects with topography or buildings
+     * @param path [out] Intersection list with triangle sides.
+     * @param includePoints Include p1 and p2 into path output
+     * @return True if the propagation goes from p1 to p2.
+     */
+    public boolean computePropagationPaths(Coordinate p1, Coordinate p2, List<FastObstructionTest.Wall> nearBuildingsWalls, boolean stopOnIntersection, List<TriIdWithIntersection> path, boolean includePoints) {
+        nbObstructionTest++;
+        LineSegment propaLine = new LineSegment(p1, p2);
+        //get receiver triangle id
+        int curTriP1 = getTriangleIdByCoordinate(p1);
+        //get source triangle id
+        int curTriP2 = getTriangleIdByCoordinate(p2);
+        Coordinate[] triP1 = getTriangle(curTriP1);
+        Coordinate[] triP2 = getTriangle(curTriP2);
+        Triangle buildingP1 = this.triVertices.get(curTriP1);
+        Triangle buildingP2 = this.triVertices.get(curTriP2);
+        // Test if source or receiver is inside a building
+        if (buildingP1.getAttribute() >= 1) {
+            MeshBuilder.PolygonWithHeight building = polygonWithHeight.get(buildingP1.getAttribute() - 1);
+            if(!building.hasHeight() || Double.isNaN(p1.z) || building.getHeight() >= p1.z) {
+                //receiver is in the building so this propagation line is invisible
+                return false;
+            }
+        }
+        if (buildingP2.getAttribute() >= 1) {
+            MeshBuilder.PolygonWithHeight building = polygonWithHeight.get(buildingP2.getAttribute() - 1);
+            if(!building.hasHeight() || Double.isNaN(p2.z) || building.getHeight() >= p2.z) {
+                //receiver is in the building so this propagation line is invisible
+                return false;
+            }
+        }
+
+
+        double zTopoP1 = getTopoZByGiven3Points(triP1[0], triP1[1], triP1[2], p1);
+        double zTopoP2 = getTopoZByGiven3Points(triP2[0], triP2[1], triP2[2], p2);
+        if(includePoints) {
+            path.add(new TriIdWithIntersection(curTriP1, new Coordinate(p1.x, p1.y, zTopoP1)));
+        }
+        try {
+            // if point is "inside" topography
+            if ((!Double.isNaN(p1.z) && p1.z + epsilon < zTopoP1)
+                    || (!Double.isNaN(p2.z) && p2.z + epsilon < zTopoP2)) {
+                //Z value of origin or destination is lower than topography. FreeField is always false in this case
+                return false;
+            }
+
+            HashSet<Integer> navigationHistory = new HashSet<Integer>();
+            int navigationTri = curTriP1;
+            while (navigationTri != -1) {
+                navigationHistory.add(navigationTri);
+                Coordinate[] tri = getTriangle(navigationTri);
+                if (dotInTri(p2, tri[0], tri[1], tri[2])) {
+                    return true;
+                }
+                TriIdWithIntersection propaTri = this.getNextTri(navigationTri, propaLine, navigationHistory);
+                if (path != null) {
+                    path.add(propaTri);
+                }
+                if (!stopOnIntersection || !propaTri.isIntersectionOnBuilding() && !propaTri.isIntersectionOnTopography()) {
+                    // todo ICI ON INTEGRE LES TRIANGLES BUILDINGS AU SOL AUSSI
+
+                    navigationTri = propaTri.getTriID();
+                } else {
+                    navigationTri = -1;
+                }
+            }
+            // Can't find a way to p2
+            return false;
+        } finally {
+            if(includePoints) {
+                path.add(new TriIdWithIntersection(curTriP2, new Coordinate(p2.x, p2.y, zTopoP2), false, false,
+                        buildingP2.getAttribute()));
+            }
+        }
+    }
+
     private TriIdWithIntersection updateZ(TriIdWithIntersection pt) {
         if(pt.getBuildingId() > 0) {
             return new TriIdWithIntersection(pt.getTriID(),
@@ -729,8 +810,8 @@ public class FastObstructionTest {
      * Get the distance of all intersections (after the filtration by algorithm Jarvis March)  between the source and the receiver to compute vertical diffraction
      * Must called after finishPolygonFeeding
      *
-     * @param receiver Coordinate receiver
-     * @param source Coordinate source
+     * @param receiver coordinate receiver
+     * @param source coordinate source
      * @return DiffractionWithSoilEffectZone
      * Double list=DiffractionWithSoilEffectZone.diffractionData : data prepared to compute diffraction
      * Double[DELTA_DISTANCE]:delta distance;
@@ -745,7 +826,7 @@ public class FastObstructionTest {
                 new ArrayList<Coordinate>(), new ArrayList<Coordinate>(),0);
         /*
         data for calculate 3D diffraction,
-        first Coordinate is the coordinate after the modification coordinate system,
+        first coordinate is the coordinate after the modification coordinate system,
         the second parameter will keep the data of original coordinate system
         */
 
@@ -780,7 +861,7 @@ public class FastObstructionTest {
         // Change from ground height for receiver and source to real receiver and source height
         interPoints.add(0, new TriIdWithIntersection(allInterPoints.get(0), receiver));
         interPoints.add(new TriIdWithIntersection(allInterPoints.get(allInterPoints.size() - 1), source));
-        //change Coordinate system from 3D to 2D
+        //change coordinate system from 3D to 2D
         List<Coordinate> newPoints = JTSUtility.getNewCoordinateSystem(new ArrayList<Coordinate>(interPoints));
 
         double[] pointsX;
@@ -947,8 +1028,8 @@ public class FastObstructionTest {
      * Get the distance of all intersections between the source and the receiver to compute vertical diffraction when source and receiver see them
      * Must called after finishPolygonFeeding
      *
-     * @param receiver Coordinate receiver
-     * @param source Coordinate source
+     * @param receiver coordinate receiver
+     * @param source coordinate source
      * @return DiffractionWithSoilEffectZone
      * Double list=DiffractionWithSoilEffectZone.diffractionData : data prepared to compute diffraction
      * Double[DELTA_DISTANCE]:delta distance;
@@ -963,7 +1044,7 @@ public class FastObstructionTest {
                 new ArrayList<Coordinate>(), new ArrayList<Coordinate>(),0);
         /*
         data for calculate 3D diffraction,
-        first Coordinate is the coordinate after the modification coordinate system,
+        first coordinate is the coordinate after the modification coordinate system,
         the second parameter will keep the data of original coordinate system
         */
 
@@ -998,7 +1079,7 @@ public class FastObstructionTest {
         // Change from ground height for receiver and source to real receiver and source height
         interPoints.add(0, new TriIdWithIntersection(allInterPoints.get(0), receiver));
         interPoints.add(new TriIdWithIntersection(allInterPoints.get(allInterPoints.size() - 1), source));
-        //change Coordinate system from 3D to 2D
+        //change coordinate system from 3D to 2D
         List<Coordinate> newPoints = JTSUtility.getNewCoordinateSystem(new ArrayList<Coordinate>(interPoints));
 
         double[] pointsX;

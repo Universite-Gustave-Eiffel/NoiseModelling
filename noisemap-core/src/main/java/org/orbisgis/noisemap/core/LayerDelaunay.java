@@ -70,15 +70,15 @@ public interface LayerDelaunay {
 	/**
 	 * Append a vertex into the triangulation
 	 * 
-	 * @param[in] vertexCoordinate Coordinate of the new vertex
+	 * @param[in] vertexCoordinate coordinate of the new vertex
 	 */
 	void addVertex(Coordinate vertexCoordinate) throws LayerDelaunayError;
 
 	/**
 	 * Append a LineString into the triangulation
 	 * 
-	 * @param[in] a Coordinate of the segment start
-	 * @param[in] b Coordinate of the segment end
+	 * @param[in] a coordinate of the segment start
+	 * @param[in] b coordinate of the segment end
 	 * @param attribute Associated attribute that will be available on points
 	 */
 	void addLineString(LineString line, int attribute) throws LayerDelaunayError;

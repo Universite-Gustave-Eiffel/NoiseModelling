@@ -125,7 +125,7 @@ public class CnossosTest {
     List<Coordinate> vert = mesh.getVertices();
     FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(), mesh.getTriNeighbors(), mesh.getVertices());
 
-    PropagationProcessData propData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum, freqLvl, 0, 0, 200, 200, 1., 0., WIND_ROSE, 0, null, soil, false);
+    PropagationProcessData propData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum, freqLvl, 0, 0, 200, 200, 1., 0., WIND_ROSE,0, 0, null, soil, false);
     propData.setTemperature(temperature);
     propData.setHumidity(humidity);
     PropagationProcessOut propDataOut = new PropagationProcessOut();
@@ -180,7 +180,7 @@ public class CnossosTest {
     List<Coordinate> vert = mesh.getVertices();
     FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(), mesh.getTriNeighbors(), mesh.getVertices());
 
-    PropagationProcessData propData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum, freqLvl, 0, 0, 200, 200, 1., 0., WIND_ROSE, 0, null, soil, false);
+    PropagationProcessData propData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum, freqLvl, 0, 0, 200, 200, 1., 0., WIND_ROSE, 0,0, null, soil, false);
     propData.setTemperature(temperature);
     propData.setHumidity(humidity);
     PropagationProcessOut propDataOut = new PropagationProcessOut();

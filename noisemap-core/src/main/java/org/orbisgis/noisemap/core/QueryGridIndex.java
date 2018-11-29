@@ -89,7 +89,7 @@ public class QueryGridIndex implements QueryGeometryStructure {
         }
         /**
          * Convert coordinate to i,j index
-         * @param coord Coordinate to convert
+         * @param coord coordinate to convert
          * @return [i,j] array
          */
         private int[] getIndexByCoordinate(Coordinate coord) {

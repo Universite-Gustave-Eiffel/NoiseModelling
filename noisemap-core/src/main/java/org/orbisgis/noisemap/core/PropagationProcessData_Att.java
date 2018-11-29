@@ -48,7 +48,7 @@ import java.util.List;
  * @author Pierre Aumond 07/06/2016
  */
 public class PropagationProcessData_Att {
-    /** Coordinate of receivers */
+    /** coordinate of receivers */
     public List<Coordinate> receivers;
     /** FreeField test */
     public FastObstructionTest freeFieldFinder;

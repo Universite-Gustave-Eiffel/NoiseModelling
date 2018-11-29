@@ -48,6 +48,7 @@ public abstract class JdbcNoiseMap {
     // wind rose [0-30,30-60,60-90,90-120,120-150,150-180,180-210,210-240,240-270,270-300,300-330,330-360]
     public static final double[] DEFAULT_WIND_ROSE = new double[]{0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25};
     public static final double[] STATIONARY_WIND_ROSE = new double[]{0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.};
+    protected double forgetSource = 0.1;
     protected String heightField = "";
     protected GeometryFactory geometryFactory = new GeometryFactory();
     protected boolean doMultiThreading = true;
@@ -444,6 +445,22 @@ public abstract class JdbcNoiseMap {
      */
     public void setMaximumPropagationDistance(double maximumPropagationDistance) {
         this.maximumPropagationDistance = maximumPropagationDistance;
+    }
+
+    /**
+     * @return forgetSource value below which sound sources can be ignored.
+     * value below which sound sources can be ignored.
+     */
+    public double getForgetSource() {
+        return forgetSource;
+    }
+
+    /**
+     * @param forgetSource  value below which sound sources can be ignored.
+     * value below which sound sources can be ignored.
+     */
+    public void setForgetSource(double forgetSource) {
+        this.maximumPropagationDistance = forgetSource;
     }
 
     /**

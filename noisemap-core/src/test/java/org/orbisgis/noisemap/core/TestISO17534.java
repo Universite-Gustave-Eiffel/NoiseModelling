@@ -76,6 +76,7 @@ public class TestISO17534 extends TestCase {
         return ret;
     }
 
+
     /**
      * Sound propagation
      * T01
@@ -116,7 +117,7 @@ public class TestISO17534 extends TestCase {
         double[] favrose = new double[]{0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25};
 
         PropagationProcessData propData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 250, 250, 1., 0., favrose, 0, null, geoWithSoilTypeList, true);
+                freqLvl, 0, 0, 250, 250, 1., 0., favrose,0.1, 0, null, geoWithSoilTypeList, true);
         propData.setTemperature(15);
         propData.setHumidity(70);
         PropagationProcessOut propDataOut = new PropagationProcessOut();
@@ -168,7 +169,7 @@ public class TestISO17534 extends TestCase {
         double[] favrose = new double[]{0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
 
         PropagationProcessData propData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 250, 250, 1., 0., favrose, 0, null, geoWithSoilTypeList, true);
+                freqLvl, 0, 0, 250, 250, 1., 0., favrose,0.1,0, null, geoWithSoilTypeList, true);
         PropagationProcessOut propDataOut = new PropagationProcessOut();
         PropagationProcess propManager = new PropagationProcess(propData, propDataOut);
         propManager.initStructures();
@@ -217,7 +218,7 @@ public class TestISO17534 extends TestCase {
         double[] favrose = new double[]{0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
 
         PropagationProcessData propData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 250, 250, 1., 0., favrose, 0, null, geoWithSoilTypeList, true);
+                freqLvl, 0, 0, 250, 250, 1., 0., favrose,0.1, 0, null, geoWithSoilTypeList, true);
         PropagationProcessOut propDataOut = new PropagationProcessOut();
         PropagationProcess propManager = new PropagationProcess(propData, propDataOut);
         propManager.initStructures();
@@ -268,7 +269,7 @@ public class TestISO17534 extends TestCase {
         double[] favrose = new double[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
         PropagationProcessData propData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 250, 250, 1., 0., favrose, 0, null, geoWithSoilTypeList, true);
+                freqLvl, 0, 0, 250, 250, 1., 0., favrose,0.1, 0, null, geoWithSoilTypeList, true);
         propData.setTemperature(15);
         propData.setHumidity(70);
         PropagationProcessOut propDataOut = new PropagationProcessOut();
@@ -321,7 +322,7 @@ public class TestISO17534 extends TestCase {
         double[] favrose = new double[]{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 
         PropagationProcessData propData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 250, 250, 1., 0., favrose, 0, null, geoWithSoilTypeList, true);
+                freqLvl, 0, 0, 250, 250, 1., 0., favrose,0.1, 0, null, geoWithSoilTypeList, true);
         propData.setTemperature(15);
         propData.setHumidity(70);
         PropagationProcessOut propDataOut = new PropagationProcessOut();
@@ -335,7 +336,7 @@ public class TestISO17534 extends TestCase {
     /**
      * Sound propagation
      * T05
-     * Diffraction on vertical adges - building
+     * Diffraction on horizontal edges - building
      *
      * @throws LayerDelaunayError
      */
@@ -378,7 +379,7 @@ public class TestISO17534 extends TestCase {
         double[] favrose = new double[]{0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25};
 
         PropagationProcessData propData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 250, 250, 1., 0., favrose, 0, null, geoWithSoilTypeList, true);
+                freqLvl, 0, 0, 250, 250, 1., 0., favrose,0.1, 0, null, geoWithSoilTypeList, true);
         propData.setTemperature(15);
         propData.setHumidity(70);
         PropagationProcessOut propDataOut = new PropagationProcessOut();
@@ -435,7 +436,7 @@ public class TestISO17534 extends TestCase {
         double[] favrose = new double[]{0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
 
         PropagationProcessData propData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 400, 400, 1., 0., favrose, 0, null, geoWithSoilTypeList, true);
+                freqLvl, 0, 0, 400, 400, 1., 0., favrose,0.1, 0, null, geoWithSoilTypeList, true);
         propData.setTemperature(15);
         propData.setHumidity(70);
         PropagationProcessOut propDataOut = new PropagationProcessOut();
@@ -494,7 +495,7 @@ public class TestISO17534 extends TestCase {
         double[] favrose = new double[]{0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
 
         PropagationProcessData propData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 250, 250, 1., 0.7, favrose, 0, null, geoWithSoilTypeList, true);
+                freqLvl, 0, 0, 250, 250, 1., 0.7, favrose,0.1, 0, null, geoWithSoilTypeList, true);
         propData.setTemperature(15);
         propData.setHumidity(70);
         PropagationProcessOut propDataOut = new PropagationProcessOut();
@@ -553,7 +554,7 @@ public class TestISO17534 extends TestCase {
         double[] favrose = new double[]{0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
 
         PropagationProcessData propData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 1, 0, 250, 250, 1., 0.3, favrose, 0, null, geoWithSoilTypeList, true);
+                freqLvl, 1, 0, 250, 250, 1., 0.3, favrose,0.1, 0, null, geoWithSoilTypeList, true);
         propData.setTemperature(15);
         propData.setHumidity(70);
         PropagationProcessOut propDataOut = new PropagationProcessOut();
@@ -564,15 +565,74 @@ public class TestISO17534 extends TestCase {
         splCompare(splCompute(propManager, new Coordinate(150, 0., 4.)), "Test T08", new double[]{30.66, 40.6, 45.5, 50.3, 50.1, 49.4, 41.6, 26.2}, 0.1);
     }
 
+
+
     /**
      * Sound propagation
      * T10
+     * Diffraction on horizontal edges - building
+     *
+     * @throws LayerDelaunayError
+     */
+    public void testT10() throws LayerDelaunayError {
+        GeometryFactory factory = new GeometryFactory();
+        ////////////////////////////////////////////////////////////////////////////
+        //Add road source as one point
+        List<Geometry> srclst = new ArrayList<Geometry>();
+        srclst.add(factory.createPoint(new Coordinate(0, 0, 0.05)));
+        //Scene dimension
+        Envelope cellEnvelope = new Envelope(new Coordinate(-250., -250., 0.), new Coordinate(250, 250, 0.));
+        //Add source sound level
+        List<ArrayList<Double>> srcSpectrum = new ArrayList<ArrayList<Double>>();
+        srcSpectrum.add(asW(80.0, 90.0, 95.0, 100.0, 100.0, 100.0, 95.0, 90.0));
+        // GeometrySoilType
+        List<GeoWithSoilType> geoWithSoilTypeList = new ArrayList<>();
+        geoWithSoilTypeList.add(new GeoWithSoilType(factory.toGeometry(new Envelope(-250, 250, -250, 250)), 0.));
+        //Build query structure for sources
+        QueryGeometryStructure sourcesIndex = new QueryQuadTree();
+        int idsrc = 0;
+        for (Geometry src : srclst) {
+            sourcesIndex.appendGeometry(src, idsrc);
+            idsrc++;
+        }
+        //Create obstruction test object
+        MeshBuilder mesh = new MeshBuilder();
+        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+                new Coordinate(70, -10, 0),
+                new Coordinate(70, 10, 0),
+                new Coordinate(80, 10, 0),
+                new Coordinate(80, -10, 0),
+                new Coordinate(70, -10, 0)
+        }), 100);
+        mesh.finishPolygonFeeding(cellEnvelope);
+
+        //Retrieve Delaunay triangulation of scene
+        List<Coordinate> vert = mesh.getVertices();
+        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+                mesh.getTriNeighbors(), mesh.getVertices());
+        // rose of favourable conditions
+        double[] favrose = new double[]{0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25};
+
+        PropagationProcessData propData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
+                freqLvl, 0, 2, 250, 250, 1., 0., favrose,0.1, 0, null, geoWithSoilTypeList, false);
+        propData.setTemperature(15);
+        propData.setHumidity(70);
+        PropagationProcessOut propDataOut = new PropagationProcessOut();
+        PropagationProcess propManager = new PropagationProcess(propData, propDataOut);
+        propManager.initStructures();
+
+        //Run test
+        splCompare(splCompute(propManager, new Coordinate(150, 0, 2)), "Test T10", new double[]{20.6, 28.3, 29.6, 30.5, 26.7, 22.9, 12.2, -6.1}, ERROR_EPSILON_TEST_T);
+    }
+    /**
+     * Sound propagation
+     * T910
      * Ground with spatially varying heights and acoustic properties - Strong enbankment - Slope Attenuation
      *
      * @throws LayerDelaunayError
      */
 
-    public void testT10() throws LayerDelaunayError {
+    public void testT910() throws LayerDelaunayError {
         GeometryFactory factory = new GeometryFactory();
         ////////////////////////////////////////////////////////////////////////////
         //Add road source as one point
@@ -613,23 +673,23 @@ public class TestISO17534 extends TestCase {
         double[] favrose = new double[]{0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25};
 
         PropagationProcessData propData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 1, 0, 250, 250, 1., 0., favrose, 0, null, geoWithSoilTypeList, true);
+                freqLvl, 1, 0, 250, 250, 1., 0., favrose,0.1, 0, null, geoWithSoilTypeList, true);
         PropagationProcessOut propDataOut = new PropagationProcessOut();
         PropagationProcess propManager = new PropagationProcess(propData, propDataOut);
         propManager.initStructures();
 
         //Run test
-        splCompare(splCompute(propManager, new Coordinate(40, 10, 9)), "Test T10", new double[]{10.59, 11.59, 13.58, 16.57, 18.56, 21.54, 23.53, 26.51, 26.49, 29.47, 30.45, 29.41, 27.36, 24.27, 21.14, 18.94, 15.61, 13.1}, ERROR_EPSILON_TEST_T);
+        splCompare(splCompute(propManager, new Coordinate(40, 10, 9)), "Test T910", new double[]{10.59, 11.59, 13.58, 16.57, 18.56, 21.54, 23.53, 26.51, 26.49, 29.47, 30.45, 29.41, 27.36, 24.27, 21.14, 18.94, 15.61, 13.1}, ERROR_EPSILON_TEST_T);
     }
 
     /**
      * Sound propagation
-     * T11
+     * T911
      * Ground with spatially varying heights and acoustic properties - Strong enbankment - Ground effect
      *
      * @throws LayerDelaunayError
      */
-    public void testT11() throws LayerDelaunayError {
+    public void testT911() throws LayerDelaunayError {
         GeometryFactory factory = new GeometryFactory();
         ////////////////////////////////////////////////////////////////////////////
         //Add road source as one point
@@ -670,23 +730,23 @@ public class TestISO17534 extends TestCase {
                 mesh.getTriNeighbors(), mesh.getVertices());
 
         PropagationProcessData propData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 250, 250, 1., 0., favrose, 0, null, geoWithSoilTypeList, true);
+                freqLvl, 0, 0, 250, 250, 1., 0., favrose,0.1, 0, null, geoWithSoilTypeList, true);
         PropagationProcessOut propDataOut = new PropagationProcessOut();
         PropagationProcess propManager = new PropagationProcess(propData, propDataOut);
         propManager.initStructures();
 
         //Run test
-        splCompare(splCompute(propManager, new Coordinate(20, 10, 6.5)), "Test T11", new double[]{19.98, 20.98, 22.98, 25.97, 27.97, 30.96, 32.95, 35.94, 35.94, 38.93, 39.91, 38.9, 36.87, 33.83, 30.77, 28.67, 25.52, 23.28}, ERROR_EPSILON_TEST_T);
+        splCompare(splCompute(propManager, new Coordinate(20, 10, 6.5)), "Test T911", new double[]{19.98, 20.98, 22.98, 25.97, 27.97, 30.96, 32.95, 35.94, 35.94, 38.93, 39.91, 38.9, 36.87, 33.83, 30.77, 28.67, 25.52, 23.28}, ERROR_EPSILON_TEST_T);
     }
 
     /**
      * Sound propagation
-     * T12
+     * T912
      * Ground with spatially varying heights and acoustic properties - Strong enbankment - Ground and diffraction effect
      *
      * @throws LayerDelaunayError
      */
-    public void testT12() throws LayerDelaunayError {
+    public void testT912() throws LayerDelaunayError {
         GeometryFactory factory = new GeometryFactory();
         ////////////////////////////////////////////////////////////////////////////
         //Add road source as one point
@@ -727,23 +787,23 @@ public class TestISO17534 extends TestCase {
                 mesh.getTriNeighbors(), mesh.getVertices());
 
         PropagationProcessData propData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 250, 250, 1., 0., favrose, 0, null, geoWithSoilTypeList, true);
+                freqLvl, 0, 0, 250, 250, 1., 0., favrose,0.1, 0, null, geoWithSoilTypeList, true);
         PropagationProcessOut propDataOut = new PropagationProcessOut();
         PropagationProcess propManager = new PropagationProcess(propData, propDataOut);
         propManager.initStructures();
 
         //Run test
-        splCompare(splCompute(propManager, new Coordinate(40, 10, 6.5)), "Test T12", new double[]{7.97, 9.07, 11.26, 14.52, 16.86, 20.2, 22.73, 26.48, 27.94, 32.1, 33.07, 32.04, 29.98, 26.9, 23.6, 20.89, 16.32, 12.93}, ERROR_EPSILON_TEST_T);
+        splCompare(splCompute(propManager, new Coordinate(40, 10, 6.5)), "Test T912", new double[]{7.97, 9.07, 11.26, 14.52, 16.86, 20.2, 22.73, 26.48, 27.94, 32.1, 33.07, 32.04, 29.98, 26.9, 23.6, 20.89, 16.32, 12.93}, ERROR_EPSILON_TEST_T);
     }
 
     /**
      * Sound propagation
-     * T13
+     * T913
      * Site with a flat ground having homogeneous properties and a long barrier
      *
      * @throws LayerDelaunayError
      */
-    public void testT13() throws LayerDelaunayError {
+    public void testT913() throws LayerDelaunayError {
         GeometryFactory factory = new GeometryFactory();
         ////////////////////////////////////////////////////////////////////////////
         //Add road source as one point
@@ -783,23 +843,23 @@ public class TestISO17534 extends TestCase {
                 mesh.getTriNeighbors(), mesh.getVertices());
 
         PropagationProcessData propData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 250, 250, 1., 0., favrose, 0, null, geoWithSoilTypeList, true);
+                freqLvl, 0, 0, 250, 250, 1., 0., favrose,0.1, 0, null, geoWithSoilTypeList, true);
         PropagationProcessOut propDataOut = new PropagationProcessOut();
         PropagationProcess propManager = new PropagationProcess(propData, propDataOut);
         propManager.initStructures();
 
         //Run test
-        splCompare(splCompute(propManager, new Coordinate(200, 10, 4)), "Test T13", new double[]{-9.57, -8.89, -7.3, -4.74, -3.23, -0.81, 0.54, 2.87, 1.42, 1.01, -1.16, -4.87, -8.94, -12.61, -15.34, -16.92, -22.06, -27.36}, ERROR_EPSILON_TEST_T);
+        splCompare(splCompute(propManager, new Coordinate(200, 10, 4)), "Test T913", new double[]{-9.57, -8.89, -7.3, -4.74, -3.23, -0.81, 0.54, 2.87, 1.42, 1.01, -1.16, -4.87, -8.94, -12.61, -15.34, -16.92, -22.06, -27.36}, ERROR_EPSILON_TEST_T);
     }
 
     /**
      * Sound propagation
-     * T14
+     * T914
      * Site with homogeneous ground properties and a large and tall building
      *
      * @throws LayerDelaunayError
      */
-    public void testT14() throws LayerDelaunayError {
+    public void testT914() throws LayerDelaunayError {
         GeometryFactory factory = new GeometryFactory();
         ////////////////////////////////////////////////////////////////////////////
         //Add road source as one point
@@ -839,13 +899,13 @@ public class TestISO17534 extends TestCase {
                 mesh.getTriNeighbors(), mesh.getVertices());
 
         PropagationProcessData propData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 1, 250, 250, 1., 0., favrose, 0, null, geoWithSoilTypeList, false);
+                freqLvl, 0, 1, 250, 250, 1., 0., favrose,0.1, 0, null, geoWithSoilTypeList, false);
         PropagationProcessOut propDataOut = new PropagationProcessOut();
         PropagationProcess propManager = new PropagationProcess(propData, propDataOut);
         propManager.initStructures();
 
         //Run test
-        splCompare(splCompute(propManager, new Coordinate(200, 10, 4)), "Test T14", new double[]{-28.53, -27.56, -25.6, -22.65, -20.72, -19.79, -19.23, -17.83, -20.1, -19.7, -20.49, -21.97, -22.97, -24.4, -26, -29.22, -34.08, -38.92}, ERROR_EPSILON_TEST_T);
+        splCompare(splCompute(propManager, new Coordinate(200, 10, 4)), "Test T914", new double[]{-28.53, -27.56, -25.6, -22.65, -20.72, -19.79, -19.23, -17.83, -20.1, -19.7, -20.49, -21.97, -22.97, -24.4, -26, -29.22, -34.08, -38.92}, ERROR_EPSILON_TEST_T);
     }
 
 
@@ -891,7 +951,7 @@ public class TestISO17534 extends TestCase {
                 mesh.getTriNeighbors(), mesh.getVertices());
 
         PropagationProcessData propData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 200, 200, 1., 0., favrose, 0, null, geoWithSoilTypeList, false);
+                freqLvl, 0, 0, 200, 200, 1., 0., favrose,0.1, 0, null, geoWithSoilTypeList, false);
         PropagationProcessOut propDataOut = new PropagationProcessOut();
         PropagationProcess propManager = new PropagationProcess(propData, propDataOut);
         propManager.initStructures();
@@ -962,7 +1022,7 @@ public class TestISO17534 extends TestCase {
 
         //TODO clarify, is the unit test result require the computation of Vertical diffraction + Horizontal diffraction ?
         PropagationProcessData propData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 200, 200, 1., 0., favrose, 0, null, geoWithSoilTypeList, true);
+                freqLvl, 0, 0, 200, 200, 1., 0., favrose,0.1, 0, null, geoWithSoilTypeList, true);
         PropagationProcessOut propDataOut = new PropagationProcessOut();
         PropagationProcess propManager = new PropagationProcess(propData, propDataOut);
         propManager.initStructures();
@@ -1020,7 +1080,7 @@ public class TestISO17534 extends TestCase {
                 mesh.getTriNeighbors(), mesh.getVertices());
 
         PropagationProcessData propData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 200, 200, 1., 0., favrose, 0, null, geoWithSoilTypeList, true);
+                freqLvl, 0, 0, 200, 200, 1., 0., favrose,0.1, 0, null, geoWithSoilTypeList, true);
         PropagationProcessOut propDataOut = new PropagationProcessOut();
         PropagationProcess propManager = new PropagationProcess(propData, propDataOut);
         propManager.initStructures();
@@ -1101,7 +1161,7 @@ public class TestISO17534 extends TestCase {
                 mesh.getTriNeighbors(), mesh.getVertices());
 
         PropagationProcessData propData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 200, 200, 1., 0., favrose, 0, null, geoWithSoilTypeList, true);
+                freqLvl, 0, 0, 200, 200, 1., 0., favrose,0.1, 0, null, geoWithSoilTypeList, true);
         PropagationProcessOut propDataOut = new PropagationProcessOut();
         PropagationProcess propManager = new PropagationProcess(propData, propDataOut);
         propManager.initStructures();

@@ -33,20 +33,18 @@
  */
 package org.orbisgis.noisemap.core;
 
+import org.h2gis.api.ProgressVisitor;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
-import org.h2gis.api.ProgressVisitor;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Data input for a propagation process (SubEnveloppe of BR_TriGrid).
- *
- * @author Nicolas Fortin
- * @author Pierre Aumond
+ * Data input for a propagation Path process.
+ *@author Pierre Aumond
  */
-public class PropagationProcessData {
+public class PropagationProcessPathData {
     // Thermodynamic constants
 	static final double K_0 = 273.15;	// Absolute zero in Celsius
     static final  double Pref = 101325;	// Standard atmosphere atm (Pa)
@@ -56,74 +54,16 @@ public class PropagationProcessData {
     static final  double KvibO = 2239.1;// Vibrational temperature of oxygen (K)
     static final  double KvibN = 3352.0;// Vibrational temperature of the nitrogen (K)
     static final  double K01 = 273.16;  // Isothermal temperature at the triple point (K)
-
-    /** coordinate of receivers */
-    public List<Coordinate> receivers;
-    /** FreeField test */
-    public FastObstructionTest freeFieldFinder;
-    /** Source Index */
-    public QueryGeometryStructure sourcesIndex;
-    /** Sources geometries. Can be LINESTRING or POINT */
-    public List<Geometry> sourceGeometries;
-    /** Sound level of source. By frequency band, energetic */
-    public List<ArrayList<Double>> wj_sources;
     /** Frequency bands values, by third octave */
     public List<Integer> freq_lvl;
-    /** Maximum reflexion order */
-    public int reflexionOrder;
-    /** Maximum diffraction order */
-    public int diffractionOrder;
-    /** Maximum source distance */
-    public double maxSrcDist;
-    /** Maximum reflection wall distance from receiver->source line */
-    public double maxRefDist;
-    /** Minimum distance between source and receiver */
-    public double minRecDist;
-    /** Wall alpha [0-1] */
-    public double wallAlpha;
-    /** probability occurrence favourable condition */
-    public double[] windRose;
-    /** Forget Sound Source in dB */
-    public double forgetSource;
-    /** cellId only used in output data */
-    public int cellId;
-    /** Progression information */
-    public ProgressVisitor cellProg;
-    /** list Geometry of soil and the type of this soil */
-    public List<GeoWithSoilType> geoWithSoilType;
-    /** True will compute vertical diffraction */
-    public boolean computeVerticalDiffraction;
     /** Temperature in celsius */
     double temperature = 15;
     double celerity = 340;
     double humidity = 70;
     double pressure = Pref;
 
-    public PropagationProcessData(List<Coordinate> receivers, FastObstructionTest freeFieldFinder,
-                                  QueryGeometryStructure sourcesIndex, List<Geometry> sourceGeometries,
-                                  List<ArrayList<Double>> wj_sources, List<Integer> freq_lvl, int reflexionOrder,
-                                  int diffractionOrder, double maxSrcDist, double maxRefDist, double minRecDist,
-                                  double wallAlpha, double[] windRose, double forgetSource, int cellId, ProgressVisitor cellProg,
-                                  List<GeoWithSoilType> geoWithSoilType, boolean computeVerticalDiffraction) {
-        this.receivers = receivers;
-        this.freeFieldFinder = freeFieldFinder;
-        this.sourcesIndex = sourcesIndex;
-        this.sourceGeometries = sourceGeometries;
-        this.wj_sources = wj_sources;
+    public PropagationProcessPathData(List<Integer> freq_lvl) {
         this.freq_lvl = freq_lvl;
-        this.reflexionOrder = reflexionOrder;
-        this.diffractionOrder = diffractionOrder;
-        this.maxSrcDist = maxSrcDist;
-        this.maxRefDist = maxRefDist;
-        this.minRecDist = minRecDist;
-        this.wallAlpha = wallAlpha;
-        this.windRose = windRose;
-        this.forgetSource = forgetSource;
-        this.cellId = cellId;
-        this.cellProg = cellProg;
-        this.geoWithSoilType = geoWithSoilType;
-        this.computeVerticalDiffraction = computeVerticalDiffraction;
-        this.celerity = computeCelerity(temperature+K_0);
     }
 
     /**
@@ -153,7 +93,7 @@ public class PropagationProcessData {
     /**
      * @param temperature Temperature in ° celsius
      */
-    public PropagationProcessData setTemperature(double temperature) {
+    public PropagationProcessPathData setTemperature(double temperature) {
         this.temperature = temperature;
         this.celerity = computeCelerity(temperature + K_0);
         return this;
@@ -183,7 +123,7 @@ public class PropagationProcessData {
 
         // Vibratory oxygen absorption:!!123
         double Fr = (pressure / Pref) * (24. + 4.04E4 * hmol * (0.02 + hmol) / (0.391 + hmol));
-        double Am = 1.559 * PropagationProcessData.FmolO * Math.exp(-KvibO / tempKelvin) * Math.pow(KvibO / tempKelvin, 2);
+        double Am = 1.559 * PropagationProcessPathData.FmolO * Math.exp(-KvibO / tempKelvin) * Math.pow(KvibO / tempKelvin, 2);
         double AvibO = Am * (frequency / cson) * 2. * (frequency / Fr) / (1 + Math.pow(frequency / Fr, 2));
 
         // Vibratory nitrogen absorption

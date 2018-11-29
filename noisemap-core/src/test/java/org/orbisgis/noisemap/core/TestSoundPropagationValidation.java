@@ -116,7 +116,7 @@ public class TestSoundPropagationValidation extends TestCase {
                 mesh.getTriNeighbors(), mesh.getVertices());
 
 		PropagationProcessData propData=new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 200,200, 1., 0., JdbcNoiseMap.STATIONARY_WIND_ROSE, 0, null,geoWithSoilTypeList, false);
+                freqLvl, 0, 0, 200,200, 1., 0., JdbcNoiseMap.STATIONARY_WIND_ROSE,0.1, 0, null,geoWithSoilTypeList, false);
 		PropagationProcessOut propDataOut=new PropagationProcessOut();
 		PropagationProcess propManager=new PropagationProcess(propData, propDataOut);
 		propManager.initStructures();

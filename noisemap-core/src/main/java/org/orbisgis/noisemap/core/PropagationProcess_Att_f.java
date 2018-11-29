@@ -662,7 +662,7 @@ public class PropagationProcess_Att_f implements Runnable {
 
     /**
      * Compute project Z coordinate between p0 p1 of x,y.
-     * @param coordinateWithoutZ Coordinate to set the Z value from Z interpolation of line
+     * @param coordinateWithoutZ coordinate to set the Z value from Z interpolation of line
      * @param line Extract Z values of this segment
      * @return coordinateWithoutZ with Z value computed from line.
      */
@@ -764,8 +764,8 @@ public class PropagationProcess_Att_f implements Runnable {
     /**
      * Source-Receiver Direct+Reflection+Diffraction computation
      *
-     * @param[in] srcCoord Coordinate of source
-     * @param[in] receiverCoord Coordinate of receiver
+     * @param[in] srcCoord coordinate of source
+     * @param[in] receiverCoord coordinate of receiver
      * @param[out] energeticSum Energy by frequency band
      * @param[in] alpha_atmo Atmospheric absorption by frequency band
      * @param[in] wj Source sound pressure level dB(A) by frequency band
