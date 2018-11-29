@@ -32,8 +32,6 @@ public class PropagationPathTest {
         propData.setTemperature(15);
         propData.setHumidity(70);
 
-
-
         EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
         evaluateAttenuationCnossos.evaluate(propagationPath, propData);
 

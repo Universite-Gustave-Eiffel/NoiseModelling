@@ -171,9 +171,6 @@ public class PropagationProcessPathData {
         return alpha_atmo;
     }
 
-    public PropagationProcessPathData setAtmoCoeff() {
-        this.alpha_atmo = getAtmoCoeffArray(freq_lvl,  temperature,  pressure,  humidity);
-        return this;
-    }
+
 
 }
