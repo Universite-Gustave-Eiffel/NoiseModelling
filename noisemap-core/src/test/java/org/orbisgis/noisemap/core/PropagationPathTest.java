@@ -20,7 +20,9 @@ public class PropagationPathTest {
         List<PropagationPath.SegmentPath>  segments = new ArrayList<PropagationPath.SegmentPath>();
 
         points.add(new PropagationPath.PointPath(new Coordinate(0,0,0),1,0,Double.NaN,true));
-        points.add(new PropagationPath.PointPath(new Coordinate(10,10,0),1,0,Double.NaN,true));
+        points.add(new PropagationPath.PointPath(new Coordinate(10,0,0),1,Double.NaN,0.5,true));
+        points.add(new PropagationPath.PointPath(new Coordinate(20,0,0),1,Double.NaN,0.5,true));
+        points.add(new PropagationPath.PointPath(new Coordinate(30,30,0),1,0,Double.NaN,true));
         segments.add(new PropagationPath.SegmentPath(1,0));
         segments.add(new PropagationPath.SegmentPath(1,0));
 

@@ -49,6 +49,7 @@ public class EvaluateAttenuationCnossos {
     private final static double BASE_LVL = 1.; // 0dB lvl
     private final static double ONETHIRD = 1. / 3.;
     private PropagationProcessPathData data;
+    private PropagationPath propagationPath;
     private int nbfreq;
     private double[] alpha_atmo;
     private double[] freq_lambda;
@@ -114,6 +115,7 @@ public class EvaluateAttenuationCnossos {
         return  diffractionAttenuation;
     }
 
+
     /**
      * Compute attenuation of sound energy by distance. Minimum distance is one
      * meter.
@@ -168,6 +170,7 @@ public class EvaluateAttenuationCnossos {
 
 
 
+
     public double[] evaluate(PropagationPath propagationPath, PropagationProcessPathData data) {
         // todo Add dist
         // init
@@ -191,7 +194,7 @@ public class EvaluateAttenuationCnossos {
         }
 
         // divergence
-        double aDiv = getADiv(200);
+        double aDiv = getADiv(propagationPath.getDistances(propagationPath).distancePath);
 
         for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
             // atm

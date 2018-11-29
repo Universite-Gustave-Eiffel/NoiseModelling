@@ -33,9 +33,12 @@
  */
 package org.orbisgis.noisemap.core;
 
+import org.locationtech.jts.algorithm.CGAlgorithms3D;
 import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Point;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * PropagationPath work for FastObstructionTest,
@@ -95,5 +98,39 @@ public class PropagationPath {
         }
     }
 
+    public List<PointPath> getPointList() {
+        return pointList;
+    }
 
+    public PropagationPath(List<SegmentPath> segmentList) {
+        this.segmentList = segmentList;
+    }
+
+    public boolean isFavorable() {
+        return favorable;
+    }
+
+    public Distances getDistances(PropagationPath propagationPath) {
+        List<PointPath> path = propagationPath.getPointList();
+        double distancePath = 0;
+        for(int idPoint = 1; idPoint < path.size(); idPoint++) {
+            distancePath += CGAlgorithms3D.distance(path.get(idPoint-1).coordinate, path.get(idPoint).coordinate);
+        }
+        double distanceDirect = CGAlgorithms3D.distance(path.get(0).coordinate, path.get(path.size()-1).coordinate);
+
+        return new Distances(distancePath,distanceDirect);
+    }
+
+    public static class Distances {
+        public final double distancePath;
+        public final double distanceDirect;
+        public final double eLength;
+
+        public Distances(double distancePath, double distanceDirect, double eLength) {
+            this.distancePath = distancePath;
+            this.distanceDirect = distanceDirect;
+            this.eLength = eLength;
+        }
+
+    }
 }
