@@ -64,17 +64,7 @@ public class EvaluateAttenuationCnossos {
         return globlvl;
     }
 
-    /**
-     * ISO-9613 p1
-     * @param frequency acoustic frequency (Hz)
-     * @param temperature Temperative in celsius
-     * @param pressure atmospheric pressure (in Pa)
-     * @param humidity relative humidity (in %) (0-100)
-     * @return Attenuation coefficient dB/KM
-     */
-    public static double getAlpha(double frequency, double temperature, double pressure, double humidity) {
-        return PropagationProcessData.getCoefAttAtmos(frequency, humidity, pressure, temperature + PropagationProcessData.K_0);
-    }
+
 
     public static double dbaToW(double dBA) {
         return Math.pow(10., dBA / 10.);
@@ -172,10 +162,16 @@ public class EvaluateAttenuationCnossos {
 
 
     public double[] evaluate(PropagationPath propagationPath, PropagationProcessPathData data) {
-        // todo Add dist
+
         // init
         aGlobal = new double[data.freq_lvl.size()];
         nbfreq = data.freq_lvl.size();
+        alpha_atmo = data.getAlpha_atmo();
+        double distancePath = propagationPath.getDistances(propagationPath).distancePath;
+        double distanceDirect = propagationPath.getDistances(propagationPath).distanceDirect;
+        double eLength = propagationPath.getDistances(propagationPath).eLength;
+
+
 
         // Init wave length for each frequency
         freq_lambda = new double[nbfreq];
@@ -187,18 +183,13 @@ public class EvaluateAttenuationCnossos {
             }
         }
 
-        // Compute atmospheric alpha value by specified frequency band
-        alpha_atmo = new double[data.freq_lvl.size()];
-        for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
-            alpha_atmo[idfreq] = getAlpha(data.freq_lvl.get(idfreq), data.temperature, data.pressure, data.humidity);
-        }
 
         // divergence
-        double aDiv = getADiv(propagationPath.getDistances(propagationPath).distancePath);
+        double aDiv = getADiv(distancePath);
 
         for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
             // atm
-            double aAtm = getAAtm(200,alpha_atmo[idfreq]);
+            double aAtm = getAAtm(distancePath,alpha_atmo[idfreq]);
             double aBoundary = getABoundary();
 
 

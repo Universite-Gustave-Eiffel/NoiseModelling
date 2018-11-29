@@ -196,4 +196,6 @@ public class PropagationProcessData {
 
         return alpha * 1000;
     }
+
+
 }

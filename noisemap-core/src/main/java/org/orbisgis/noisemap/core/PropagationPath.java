@@ -117,8 +117,8 @@ public class PropagationPath {
             distancePath += CGAlgorithms3D.distance(path.get(idPoint-1).coordinate, path.get(idPoint).coordinate);
         }
         double distanceDirect = CGAlgorithms3D.distance(path.get(0).coordinate, path.get(path.size()-1).coordinate);
-
-        return new Distances(distancePath,distanceDirect);
+        double eLength = distancePath - distanceDirect;
+        return new Distances(distancePath,distanceDirect, eLength);
     }
 
     public static class Distances {

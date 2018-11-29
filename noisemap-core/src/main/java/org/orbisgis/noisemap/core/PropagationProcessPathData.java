@@ -61,6 +61,7 @@ public class PropagationProcessPathData {
     double celerity = 340;
     double humidity = 70;
     double pressure = Pref;
+    double[] alpha_atmo = getAtmoCoeffArray(freq_lvl,  temperature,  pressure,  humidity);
 
     public PropagationProcessPathData(List<Integer> freq_lvl) {
         this.freq_lvl = freq_lvl;
@@ -70,15 +71,20 @@ public class PropagationProcessPathData {
      * Set relative humidity in percentage.
      * @param humidity relative humidity in percentage. 0-100
      */
-    public void setHumidity(double humidity) {
+    public PropagationProcessPathData setHumidity(double humidity) {
+
         this.humidity = humidity;
+        this.alpha_atmo = getAtmoCoeffArray(freq_lvl,  temperature,  pressure,  humidity);
+        return this;
     }
 
     /**
      * @param pressure Atmospheric pressure in pa. 1 atm is PropagationProcessData.Pref
      */
-    public void setPressure(double pressure) {
+    public PropagationProcessPathData setPressure(double pressure) {
         this.pressure = pressure;
+        this.alpha_atmo = getAtmoCoeffArray(freq_lvl,  temperature,  pressure,  humidity);
+        return this;
     }
 
     /**
@@ -96,6 +102,7 @@ public class PropagationProcessPathData {
     public PropagationProcessPathData setTemperature(double temperature) {
         this.temperature = temperature;
         this.celerity = computeCelerity(temperature + K_0);
+        this.alpha_atmo = getAtmoCoeffArray(freq_lvl,  temperature,  pressure,  humidity);
         return this;
     }
 
@@ -136,4 +143,37 @@ public class PropagationProcessPathData {
 
         return alpha * 1000;
     }
+
+    /**
+     * ISO-9613 p1
+     * @param frequency acoustic frequency (Hz)
+     * @param temperature Temperative in celsius
+     * @param pressure atmospheric pressure (in Pa)
+     * @param humidity relative humidity (in %) (0-100)
+     * @return Attenuation coefficient dB/KM
+     */
+    public static double getAlpha(double frequency, double temperature, double pressure, double humidity) {
+        return PropagationProcessData.getCoefAttAtmos(frequency, humidity, pressure, temperature + PropagationProcessData.K_0);
+    }
+
+    public static double[] getAtmoCoeffArray(List<Integer> freq_lvl, double temperature, double pressure, double humidity){
+        double[] alpha_atmo;
+        // Compute atmospheric alpha value by specified frequency band
+        alpha_atmo = new double[freq_lvl.size()];
+        for (int idfreq = 0; idfreq < freq_lvl.size()-1; idfreq++) {
+            alpha_atmo[idfreq] = getAlpha(freq_lvl.get(idfreq), temperature, pressure, humidity);
+        }
+        return alpha_atmo;
+    }
+
+
+    public double[] getAlpha_atmo() {
+        return alpha_atmo;
+    }
+
+    public PropagationProcessPathData setAtmoCoeff() {
+        this.alpha_atmo = getAtmoCoeffArray(freq_lvl,  temperature,  pressure,  humidity);
+        return this;
+    }
+
 }
