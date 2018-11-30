@@ -49,8 +49,10 @@ public class PropagationPath {
     private boolean favorable;
     private List<PointPath> pointList;
     private List<SegmentPath> segmentList;
-    public Double distancePath = null;
-    public Double distanceDirect = null;
+
+    public Double distancePath = null; // pass by points
+    public Double distanceDirect = null; // direct ray
+    public Double distanceSR = null; // direct ray sensible to meteorological conditions
     public Double eLength = null;
 
 
@@ -95,7 +97,11 @@ public class PropagationPath {
         private Double gm = null;
         public Double zs = null;
         public Double zr = null;
-
+        public Double zsPrime = null;
+        public Double zrPrime = null;
+        // todo compute distances for segments, direct without conditions and direct with conditions
+        public Double distanceDirect = null; // direct ray
+        public Double distanceSR = null; // direct ray sensible to meteorological conditions
 
         /**
          * @param gPath
@@ -141,6 +147,20 @@ public class PropagationPath {
             return zr;
         }
 
+        public Double getZsPrime(PropagationPath path, SegmentPath segmentPath) {
+            if(zsPrime == null) {
+                zsPrime = path.computeZsPrime(path,segmentPath);
+            }
+            return zsPrime;
+        }
+
+        public Double getZrPrime(PropagationPath path, SegmentPath segmentPath) {
+            if(zrPrime == null) {
+                zrPrime = path.computeZrPrime(path,segmentPath);
+            }
+            return zrPrime;
+        }
+
 
     }
 
@@ -164,38 +184,58 @@ public class PropagationPath {
     }
 
 
-    public Double getDistancePath() {
+    public Double getDistancePath(PropagationPath path) {
         if(distancePath == null) {
-            computeDistances();
+            computeDistances(path);
         }
         return distancePath;
     }
 
-    public Double getDistanceDirect() {
+    public Double getDistanceDirect(PropagationPath path) {
         if(distanceDirect == null) {
-            computeDistances();
+            computeDistances(path);
         }
         return distanceDirect;
     }
 
-    public Double geteLength() {
+    public Double getDistanceSR(PropagationPath path) {
+        if(distanceSR == null) {
+            computeDistances(path);
+        }
+        return distanceSR;
+    }
+
+    public Double geteLength(PropagationPath path) {
         if(eLength == null) {
-            computeDistances();
+            computeDistances(path);
         }
         return eLength;
     }
 
-    public void computeDistances() {
+    public void computeDistances(PropagationPath path) {
         List<PropagationPath.PointPath> pointPath = getPointList();
-        double distancePath = 0;
-        for(int idPoint = 1; idPoint < pointPath.size(); idPoint++) {
 
-            distancePath += CGAlgorithms3D.distance(pointPath.get(idPoint-1).coordinate, pointPath.get(idPoint).coordinate);
-        }
+        double distancePath = 0;
+        double distanceSR = 0;
         double distanceDirect = CGAlgorithms3D.distance(pointPath.get(0).coordinate, pointPath.get(pointPath.size()-1).coordinate);
+        if (!path.favorable){
+            for (int idPoint = 1; idPoint < pointPath.size(); idPoint++) {
+                distancePath += CGAlgorithms3D.distance(pointPath.get(idPoint - 1).coordinate, pointPath.get(idPoint).coordinate);
+            }
+            distanceSR = distanceDirect;
+        }
+        else
+        {
+            for (int idPoint = 1; idPoint < pointPath.size(); idPoint++) {
+                distancePath += getRayCurveLength(CGAlgorithms3D.distance(pointPath.get(idPoint - 1).coordinate, pointPath.get(idPoint).coordinate));
+            }
+            distanceSR = getRayCurveLength(distanceDirect);
+        }
+
         double eLength = distancePath - distanceDirect;
         this.distancePath = distancePath;
         this.distanceDirect = distanceDirect;
+        this.distanceSR = distanceSR;
         this.eLength = eLength;
     }
 
@@ -226,8 +266,27 @@ public class PropagationPath {
         return zr;
     }
 
+    private double computeZsPrime(PropagationPath path, SegmentPath segmentPath) {
+        double alpha0 = 2 * Math.pow(10, -4);
+        double deltazt = 6 * Math.pow(10, -3) * path.distanceDirect / (segmentPath.zs + segmentPath.zr);
+        double deltazs = alpha0 * Math.pow((segmentPath.zs / (segmentPath.zs + segmentPath.zr)), 2) * (Math.pow(path.distanceDirect, 2) / 2);
+        return segmentPath.zs + deltazs + deltazt;
+    }
+
+    private double computeZrPrime(PropagationPath path, SegmentPath segmentPath) {
+        double alpha0 = 2 * Math.pow(10, -4);
+        double deltazt = 6 * Math.pow(10, -3) * path.distanceDirect / (segmentPath.zs + segmentPath.zr);
+        double deltazr = alpha0 * Math.pow((segmentPath.zr / (segmentPath.zs + segmentPath.zr)), 2) * (Math.pow(path.distanceDirect, 2) / 2);
+        return segmentPath.zr + deltazr + deltazt;
+    }
 
 
+    private double getRayCurveLength(double d) {
+
+        double gamma = Math.max(1000,8*d);
+        return 2*gamma*Math.asin(d/(2*gamma));
+
+    }
 
 
 }
