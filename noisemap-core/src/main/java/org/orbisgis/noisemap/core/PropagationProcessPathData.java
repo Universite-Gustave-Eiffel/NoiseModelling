@@ -38,6 +38,8 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -55,7 +57,8 @@ public class PropagationProcessPathData {
     static final  double KvibN = 3352.0;// Vibrational temperature of the nitrogen (K)
     static final  double K01 = 273.16;  // Isothermal temperature at the triple point (K)
     /** Frequency bands values, by third octave */
-    public List<Integer> freq_lvl;
+    static final List<Integer> freq_lvl = Arrays.asList(63, 125, 250, 500, 1000, 2000, 4000, 8000);
+
     /** Temperature in celsius */
     double temperature = 15;
     double celerity = 340;
@@ -63,9 +66,6 @@ public class PropagationProcessPathData {
     double pressure = Pref;
     double[] alpha_atmo = getAtmoCoeffArray(freq_lvl,  temperature,  pressure,  humidity);
 
-    public PropagationProcessPathData(List<Integer> freq_lvl) {
-        this.freq_lvl = freq_lvl;
-    }
 
     /**
      * Set relative humidity in percentage.
@@ -160,7 +160,7 @@ public class PropagationProcessPathData {
         double[] alpha_atmo;
         // Compute atmospheric alpha value by specified frequency band
         alpha_atmo = new double[freq_lvl.size()];
-        for (int idfreq = 0; idfreq < freq_lvl.size()-1; idfreq++) {
+        for (int idfreq = 0; idfreq < freq_lvl.size(); idfreq++) {
             alpha_atmo[idfreq] = getAlpha(freq_lvl.get(idfreq), temperature, pressure, humidity);
         }
         return alpha_atmo;

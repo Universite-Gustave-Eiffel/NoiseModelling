@@ -49,6 +49,10 @@ public class PropagationPath {
     private boolean favorable;
     private List<PointPath> pointList;
     private List<SegmentPath> segmentList;
+    public Double distancePath = null;
+    public Double distanceDirect = null;
+    public Double eLength = null;
+
 
     /**
      * @param favorable
@@ -63,21 +67,21 @@ public class PropagationPath {
 
     public static class PointPath {
         public final Coordinate coordinate;
-        public final double height;
+        public final double altitude;
         public final double gs;
         public final double alphaWall;
         public final boolean diffraction;
 
         /**
          * @param coordinate
-         * @param height
+         * @param altitude
          * @param gs
          * @param alphaWall
          * @param diffraction
          */
-        public PointPath(org.locationtech.jts.geom.Coordinate coordinate, double height, double gs, double alphaWall, boolean diffraction) {
+        public PointPath(org.locationtech.jts.geom.Coordinate coordinate, double altitude, double gs, double alphaWall, boolean diffraction) {
             this.coordinate = coordinate;
-            this.height = height;
+            this.altitude = altitude;
             this.gs = gs;
             this.alphaWall = alphaWall;
             this.diffraction = diffraction;
@@ -86,6 +90,12 @@ public class PropagationPath {
 
     public static class SegmentPath {
         public final double gPath;
+        private Double gPathPrime = null;
+        private Double gw = null;
+        private Double gm = null;
+        public Double zs = null;
+        public Double zr = null;
+
 
         /**
          * @param gPath
@@ -93,7 +103,47 @@ public class PropagationPath {
         public SegmentPath(double gPath) {
             this.gPath = gPath;
         }
+
+        public void setGw(double g) {
+            this.gw = g;
+        }
+
+        public void setGm(double g) {
+            this.gm = g;
+        }
+
+        public Double getgPathPrime(PropagationPath path) {
+            if(gPathPrime == null) {
+                gPathPrime = path.computeGPathPrime(path,this);
+            }
+            return gPathPrime;
+        }
+
+        public Double getGw() {
+            return gw;
+        }
+
+        public Double getGm() {
+            return gm;
+        }
+
+        public Double getZs(PropagationPath path) {
+            if(zs == null) {
+                zs = path.computeZs(path.pointList);
+            }
+            return zs;
+        }
+
+        public Double getZr(PropagationPath path) {
+            if(zr == null) {
+                zr = path.computeZr(path.pointList);
+            }
+            return zr;
+        }
+
+
     }
+
 
 
 
@@ -113,27 +163,71 @@ public class PropagationPath {
         return favorable;
     }
 
-    public Distances getDistances(PropagationPath propagationPath) {
-        List<PointPath> path = propagationPath.getPointList();
+
+    public Double getDistancePath() {
+        if(distancePath == null) {
+            computeDistances();
+        }
+        return distancePath;
+    }
+
+    public Double getDistanceDirect() {
+        if(distanceDirect == null) {
+            computeDistances();
+        }
+        return distanceDirect;
+    }
+
+    public Double geteLength() {
+        if(eLength == null) {
+            computeDistances();
+        }
+        return eLength;
+    }
+
+    public void computeDistances() {
+        List<PropagationPath.PointPath> pointPath = getPointList();
         double distancePath = 0;
-        for(int idPoint = 1; idPoint < path.size(); idPoint++) {
-            distancePath += CGAlgorithms3D.distance(path.get(idPoint-1).coordinate, path.get(idPoint).coordinate);
+        for(int idPoint = 1; idPoint < pointPath.size(); idPoint++) {
+
+            distancePath += CGAlgorithms3D.distance(pointPath.get(idPoint-1).coordinate, pointPath.get(idPoint).coordinate);
         }
-        double distanceDirect = CGAlgorithms3D.distance(path.get(0).coordinate, path.get(path.size()-1).coordinate);
+        double distanceDirect = CGAlgorithms3D.distance(pointPath.get(0).coordinate, pointPath.get(pointPath.size()-1).coordinate);
         double eLength = distancePath - distanceDirect;
-        return new Distances(distancePath,distanceDirect, eLength);
+        this.distancePath = distancePath;
+        this.distanceDirect = distanceDirect;
+        this.eLength = eLength;
     }
 
-    public static class Distances {
-        public final double distancePath;
-        public final double distanceDirect;
-        public final double eLength;
+    private double computeGPathPrime(PropagationPath path, SegmentPath segmentPath) {
 
-        public Distances(double distancePath, double distanceDirect, double eLength) {
-            this.distancePath = distancePath;
-            this.distanceDirect = distanceDirect;
-            this.eLength = eLength;
+        double dp = distancePath;
+        double zs = segmentPath.getZs(path);
+        double zr = segmentPath.getZr(path);
+        double gs = pointList.get(0).gs;
+        double testForm = dp / (30 * (zs + zr));
+        double gPathPrime;
+
+        if (testForm <= 1) {
+            gPathPrime = testForm * segmentPath.gPath + (1 - testForm) * gs;
+        } else {
+            gPathPrime = segmentPath.gPath;
         }
-
+        return gPathPrime;
     }
+
+    private double computeZs(List<PointPath> pointList) {
+        double zs = pointList.get(0).altitude+ pointList.get(0).coordinate.z;
+        return zs;
+    }
+
+    private double computeZr(List<PointPath> pointList) {
+        double zr = pointList.get(pointList.size()-1).altitude+ pointList.get(pointList.size()-1).coordinate.z;
+        return zr;
+    }
+
+
+
+
+
 }
