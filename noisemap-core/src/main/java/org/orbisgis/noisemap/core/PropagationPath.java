@@ -50,9 +50,10 @@ public class PropagationPath {
     private List<PointPath> pointList;
     private List<SegmentPath> segmentList;
 
-    public Double distancePath = null; // pass by points
-    public Double distanceDirect = null; // direct ray
-    public Double distanceSR = null; // direct ray sensible to meteorological conditions
+    public Double dPath = null; // pass by points
+    public Double d = null; // direct ray
+    public Double dc = null; // direct ray sensible to meteorological conditions (can be curve)
+    public Double dp = null; // distance on mean plane
     public Double eLength = null;
 
 
@@ -100,8 +101,8 @@ public class PropagationPath {
         public Double zsPrime = null;
         public Double zrPrime = null;
         // todo compute distances for segments, direct without conditions and direct with conditions
-        public Double distanceDirect = null; // direct ray
-        public Double distanceSR = null; // direct ray sensible to meteorological conditions
+        public Double d = null; // direct ray
+        public Double dc = null; // direct ray sensible to meteorological conditions
 
         /**
          * @param gPath
@@ -161,6 +162,20 @@ public class PropagationPath {
             return zrPrime;
         }
 
+        public Double getD(PropagationPath path, SegmentPath segmentPath) {
+            if(d == null) {
+                d = path.computeDistanceD(path,segmentPath);
+            }
+            return d;
+        }
+
+        public Double getDc(PropagationPath path, SegmentPath segmentPath) {
+            if(dc == null) {
+                dc = path.computeDistanceC(path,segmentPath);
+            }
+            return dc;
+        }
+
 
     }
 
@@ -184,25 +199,32 @@ public class PropagationPath {
     }
 
 
-    public Double getDistancePath(PropagationPath path) {
-        if(distancePath == null) {
+    public Double getDPath(PropagationPath path) {
+        if(dPath == null) {
             computeDistances(path);
         }
-        return distancePath;
+        return dPath;
     }
 
-    public Double getDistanceDirect(PropagationPath path) {
-        if(distanceDirect == null) {
+    public Double getD(PropagationPath path) {
+        if(d == null) {
             computeDistances(path);
         }
-        return distanceDirect;
+        return d;
     }
 
-    public Double getDistanceSR(PropagationPath path) {
-        if(distanceSR == null) {
+    public Double getDc(PropagationPath path) {
+        if(dc == null) {
             computeDistances(path);
         }
-        return distanceSR;
+        return dc;
+    }
+
+    public Double getDp(PropagationPath path) {
+        if(dp == null) {
+            computeDistances(path);
+        }
+        return dp;
     }
 
     public Double geteLength(PropagationPath path) {
@@ -214,38 +236,50 @@ public class PropagationPath {
 
     public void computeDistances(PropagationPath path) {
         List<PropagationPath.PointPath> pointPath = getPointList();
+        double dPath = 0;
+        double dc = 0;
+        double zs = pointList.get(0).altitude+ pointList.get(0).coordinate.z;
+        double zr = pointList.get(pointList.size()-1).altitude+ pointList.get(pointList.size()-1).coordinate.z;
 
-        double distancePath = 0;
-        double distanceSR = 0;
-        double distanceDirect = CGAlgorithms3D.distance(pointPath.get(0).coordinate, pointPath.get(pointPath.size()-1).coordinate);
+        Coordinate SGround = pointPath.get(0).coordinate;
+        Coordinate RGround = pointPath.get(pointPath.size()-1).coordinate;
+        Coordinate S = pointPath.get(0).coordinate;
+        Coordinate R = pointPath.get(pointPath.size()-1).coordinate;
+        SGround.z = SGround.z - zs;
+        RGround.z = RGround.z - zr;
+
+        double dp = CGAlgorithms3D.distance(SGround, RGround);
+        double d = CGAlgorithms3D.distance(S, R);
+
         if (!path.favorable){
             for (int idPoint = 1; idPoint < pointPath.size(); idPoint++) {
-                distancePath += CGAlgorithms3D.distance(pointPath.get(idPoint - 1).coordinate, pointPath.get(idPoint).coordinate);
+                dPath += CGAlgorithms3D.distance(pointPath.get(idPoint - 1).coordinate, pointPath.get(idPoint).coordinate);
             }
-            distanceSR = distanceDirect;
+            dc = d;
         }
         else
         {
             for (int idPoint = 1; idPoint < pointPath.size(); idPoint++) {
-                distancePath += getRayCurveLength(CGAlgorithms3D.distance(pointPath.get(idPoint - 1).coordinate, pointPath.get(idPoint).coordinate));
+                dPath += getRayCurveLength(CGAlgorithms3D.distance(pointPath.get(idPoint - 1).coordinate, pointPath.get(idPoint).coordinate));
             }
-            distanceSR = getRayCurveLength(distanceDirect);
+            dc = getRayCurveLength(d);
         }
 
-        double eLength = distancePath - distanceDirect;
-        this.distancePath = distancePath;
-        this.distanceDirect = distanceDirect;
-        this.distanceSR = distanceSR;
+        // todo compute eLength
+        double eLength = dPath;
+        this.dPath = dPath;
+        this.d = d;
+        this.dc = dc;
+        this.dp = dp;
         this.eLength = eLength;
     }
 
     private double computeGPathPrime(PropagationPath path, SegmentPath segmentPath) {
 
-        double dp = distancePath;
         double zs = segmentPath.getZs(path);
         double zr = segmentPath.getZr(path);
         double gs = pointList.get(0).gs;
-        double testForm = dp / (30 * (zs + zr));
+        double testForm = path.dp / (30 * (zs + zr));
         double gPathPrime;
 
         if (testForm <= 1) {
@@ -268,16 +302,24 @@ public class PropagationPath {
 
     private double computeZsPrime(PropagationPath path, SegmentPath segmentPath) {
         double alpha0 = 2 * Math.pow(10, -4);
-        double deltazt = 6 * Math.pow(10, -3) * path.distanceDirect / (segmentPath.zs + segmentPath.zr);
-        double deltazs = alpha0 * Math.pow((segmentPath.zs / (segmentPath.zs + segmentPath.zr)), 2) * (Math.pow(path.distanceDirect, 2) / 2);
+        double deltazt = 6 * Math.pow(10, -3) * path.dp / (segmentPath.zs + segmentPath.zr);
+        double deltazs = alpha0 * Math.pow((segmentPath.zs / (segmentPath.zs + segmentPath.zr)), 2) * (Math.pow(path.dp, 2) / 2);
         return segmentPath.zs + deltazs + deltazt;
     }
 
     private double computeZrPrime(PropagationPath path, SegmentPath segmentPath) {
         double alpha0 = 2 * Math.pow(10, -4);
-        double deltazt = 6 * Math.pow(10, -3) * path.distanceDirect / (segmentPath.zs + segmentPath.zr);
-        double deltazr = alpha0 * Math.pow((segmentPath.zr / (segmentPath.zs + segmentPath.zr)), 2) * (Math.pow(path.distanceDirect, 2) / 2);
+        double deltazt = 6 * Math.pow(10, -3) * path.dp / (segmentPath.zs + segmentPath.zr);
+        double deltazr = alpha0 * Math.pow((segmentPath.zr / (segmentPath.zs + segmentPath.zr)), 2) * (Math.pow(path.dp, 2) / 2);
         return segmentPath.zr + deltazr + deltazt;
+    }
+
+    // todo compute distance of segments
+    private double computeDistanceD(PropagationPath path, SegmentPath segmentPath) {
+        return 0;
+    }
+    private double computeDistanceC(PropagationPath path, SegmentPath segmentPath) {
+        return 0;
     }
 
 
