@@ -133,4 +133,50 @@ public class PropagationPathTest {
         splCompare(evaluateAttenuationCnossos.evaluate(propagationPath, propData), "Test T02F", new double[]{-57, -57.1, -57.2, -58.5, -65.8, -60.4, -62.3, -76.0}, ERROR_EPSILON_TEST_T);
     }
 
+    /**
+     * Sound propagation
+     * T03F
+     * Horizontal ground with homogeneous properties, road source - Absorbing ground (G=0.7)
+     */
+    @Test
+    public void T03F() throws LayerDelaunayError {
+        List<PropagationPath.PointPath> points = new ArrayList<PropagationPath.PointPath>();
+        List<PropagationPath.SegmentPath> segments = new ArrayList<PropagationPath.SegmentPath>();
+
+        points.add(new PropagationPath.PointPath(new Coordinate(0, 0, 0), 0.05, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.SRCE));
+        points.add(new PropagationPath.PointPath(new Coordinate(200, 0, 0), 4, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.RECV));
+        segments.add(new PropagationPath.SegmentPath(0.7));
+
+        PropagationPath propagationPath = new PropagationPath(true, points, segments);
+        PropagationProcessPathData propData = new PropagationProcessPathData();
+        propData.setTemperature(15);
+        propData.setHumidity(70);
+
+        EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
+        splCompare(evaluateAttenuationCnossos.evaluate(propagationPath, propData), "Test T03F", new double[]{-56.1, -56.2, -56.3, -56.6, -61.6, -61.1, -61.4, -75.1}, ERROR_EPSILON_TEST_T);
+    }
+
+    /**
+     * Sound propagation
+     * T03H
+     * Horizontal ground with homogeneous properties, road source - Absorbing ground (G=0.7)
+     */
+    @Test
+    public void T03H() throws LayerDelaunayError {
+        List<PropagationPath.PointPath> points = new ArrayList<PropagationPath.PointPath>();
+        List<PropagationPath.SegmentPath> segments = new ArrayList<PropagationPath.SegmentPath>();
+
+        points.add(new PropagationPath.PointPath(new Coordinate(0, 0, 0), 0.05, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.SRCE));
+        points.add(new PropagationPath.PointPath(new Coordinate(200, 0, 0), 4, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.RECV));
+        segments.add(new PropagationPath.SegmentPath(0.7));
+
+        PropagationPath propagationPath = new PropagationPath(false, points, segments);
+        PropagationProcessPathData propData = new PropagationProcessPathData();
+        propData.setTemperature(15);
+        propData.setHumidity(70);
+
+        EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
+        splCompare(evaluateAttenuationCnossos.evaluate(propagationPath, propData), "Test T03H", new double[]{-56.1, -56.2, -56.3, -60.6, -66.0, -72.6, -80.8, -88.8}, ERROR_EPSILON_TEST_T);
+    }
+
 }
