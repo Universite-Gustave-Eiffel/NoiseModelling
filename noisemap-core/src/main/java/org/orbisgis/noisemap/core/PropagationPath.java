@@ -35,10 +35,8 @@ package org.orbisgis.noisemap.core;
 
 import org.locationtech.jts.algorithm.CGAlgorithms3D;
 import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.Point;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * PropagationPath work for FastObstructionTest,
@@ -46,18 +44,22 @@ import java.util.Map;
  * @author Pierre Aumond
  */
 public class PropagationPath {
-    private boolean favorable;
+    // given by user
     private List<PointPath> pointList;
     private List<SegmentPath> segmentList;
+    private boolean favorable;
 
+    // computed in Augmented Path
     public Double dPath = null; // pass by points
-    public Double d = null; // direct ray
-    public Double dc = null; // direct ray sensible to meteorological conditions (can be curve)
-    public Double dp = null; // distance on mean plane
-    public Double eLength = null;
+    public Double d = null; // direct ray between source and receiver
+    public Double dc = null; // direct ray sensible to meteorological conditions (can be curve) between source and receiver
+    public Double dp = null; // distance on mean plane between source and receiver
+    public Double eLength = null; // distance between first and last diffraction point
+    public Double delta = null; // distance between first and last diffraction point
 
 
     /**
+     * parameters given by user
      * @param favorable
      * @param pointList
      * @param segmentList
@@ -69,40 +71,62 @@ public class PropagationPath {
     }
 
     public static class PointPath {
+        // given by user
         public final Coordinate coordinate;
         public final double altitude;
         public final double gs;
         public final double alphaWall;
-        public final boolean diffraction;
+        public final POINT_TYPE type;
+        public enum POINT_TYPE {
+            SRCE,
+            REFL,
+            DIFV,
+            DIFH,
+            RECV
+        }
+
+        // computed in Augmented Points
+        //public final Coordinate coordinateprime = null;
+        //public final double sigma;
+        //public final double[] impedance = null;
 
         /**
+         * parameters given by user
          * @param coordinate
          * @param altitude
          * @param gs
          * @param alphaWall
-         * @param diffraction
+         * @param type
          */
-        public PointPath(org.locationtech.jts.geom.Coordinate coordinate, double altitude, double gs, double alphaWall, boolean diffraction) {
+        public PointPath(org.locationtech.jts.geom.Coordinate coordinate, double altitude, double gs, double alphaWall, POINT_TYPE type) {
             this.coordinate = coordinate;
             this.altitude = altitude;
             this.gs = gs;
             this.alphaWall = alphaWall;
-            this.diffraction = diffraction;
+            this.type = type;
         }
     }
 
     public static class SegmentPath {
+        //  given by user
         public final double gPath;
-        private Double gPathPrime = null;
-        private Double gw = null;
-        private Double gm = null;
+
+        // computed in Augmented Segments
+        public int idPtStart;
+        public int idPtFinal;
+
+        public Double gPathPrime = null;
+        public Double gw = null;
+        public Double gm = null;
         public Double zs = null;
         public Double zr = null;
         public Double zsPrime = null;
         public Double zrPrime = null;
-        // todo compute distances for segments, direct without conditions and direct with conditions
+        public Double testForm = null;
+        public Double testFormPrime = null;
         public Double d = null; // direct ray
         public Double dc = null; // direct ray sensible to meteorological conditions
+        public Double dp = null; // direct ray sensible to meteorological conditions
 
         /**
          * @param gPath
@@ -121,7 +145,7 @@ public class PropagationPath {
 
         public Double getgPathPrime(PropagationPath path) {
             if(gPathPrime == null) {
-                gPathPrime = path.computeGPathPrime(path,this);
+                path.computeAugmentedSegments();
             }
             return gPathPrime;
         }
@@ -134,61 +158,40 @@ public class PropagationPath {
             return gm;
         }
 
-        public Double getZs(PropagationPath path) {
+        public Double getZs(PropagationPath path, SegmentPath segmentPath) {
             if(zs == null) {
-                zs = path.computeZs(path.pointList);
+                zs = path.computeZs(segmentPath);
             }
             return zs;
         }
 
-        public Double getZr(PropagationPath path) {
+        public Double getZr(PropagationPath path, SegmentPath segmentPath) {
             if(zr == null) {
-                zr = path.computeZr(path.pointList);
+                zr = path.computeZr(segmentPath);
             }
             return zr;
         }
 
         public Double getZsPrime(PropagationPath path, SegmentPath segmentPath) {
             if(zsPrime == null) {
-                zsPrime = path.computeZsPrime(path,segmentPath);
+                zsPrime = path.computeZsPrime(segmentPath);
             }
             return zsPrime;
         }
 
         public Double getZrPrime(PropagationPath path, SegmentPath segmentPath) {
             if(zrPrime == null) {
-                zrPrime = path.computeZrPrime(path,segmentPath);
+                zrPrime = path.computeZrPrime(segmentPath);
             }
             return zrPrime;
         }
 
-        public Double getD(PropagationPath path, SegmentPath segmentPath) {
-            if(d == null) {
-                d = path.computeDistanceD(path,segmentPath);
-            }
-            return d;
-        }
-
-        public Double getDc(PropagationPath path, SegmentPath segmentPath) {
-            if(dc == null) {
-                dc = path.computeDistanceC(path,segmentPath);
-            }
-            return dc;
-        }
-
-
     }
 
 
+    public List<PointPath> getPointList() {return pointList;}
 
-
-    public List<PointPath> getPointList() {
-        return pointList;
-    }
-
-    public List<SegmentPath> getSegmentList() {
-        return segmentList;
-    }
+    public List<SegmentPath> getSegmentList() {return segmentList;}
 
     public PropagationPath(List<SegmentPath> segmentList) {
         this.segmentList = segmentList;
@@ -199,127 +202,159 @@ public class PropagationPath {
     }
 
 
-    public Double getDPath(PropagationPath path) {
-        if(dPath == null) {
-            computeDistances(path);
-        }
-        return dPath;
-    }
+    public void computeAugmentedPath() {
+        double dPath =0;
+        double eLength=0;
+        double dc;
 
-    public Double getD(PropagationPath path) {
-        if(d == null) {
-            computeDistances(path);
-        }
-        return d;
-    }
 
-    public Double getDc(PropagationPath path) {
-        if(dc == null) {
-            computeDistances(path);
-        }
-        return dc;
-    }
-
-    public Double getDp(PropagationPath path) {
-        if(dp == null) {
-            computeDistances(path);
-        }
-        return dp;
-    }
-
-    public Double geteLength(PropagationPath path) {
-        if(eLength == null) {
-            computeDistances(path);
-        }
-        return eLength;
-    }
-
-    public void computeDistances(PropagationPath path) {
-        List<PropagationPath.PointPath> pointPath = getPointList();
-        double dPath = 0;
-        double dc = 0;
-        double zs = pointList.get(0).altitude+ pointList.get(0).coordinate.z;
+        double zs = pointList.get(0).altitude + pointList.get(0).coordinate.z;
         double zr = pointList.get(pointList.size()-1).altitude+ pointList.get(pointList.size()-1).coordinate.z;
 
-        Coordinate SGround = pointPath.get(0).coordinate;
-        Coordinate RGround = pointPath.get(pointPath.size()-1).coordinate;
-        Coordinate S = pointPath.get(0).coordinate;
-        Coordinate R = pointPath.get(pointPath.size()-1).coordinate;
+
+        Coordinate SGround = (Coordinate) pointList.get(0).coordinate.clone();
+        Coordinate RGround = (Coordinate)  pointList.get(pointList.size()-1).coordinate.clone();
+        Coordinate S = (Coordinate)  pointList.get(0).coordinate.clone();
+        Coordinate R = (Coordinate)  pointList.get(pointList.size()-1).coordinate.clone();
         SGround.z = SGround.z - zs;
         RGround.z = RGround.z - zr;
 
         double dp = CGAlgorithms3D.distance(SGround, RGround);
         double d = CGAlgorithms3D.distance(S, R);
 
-        if (!path.favorable){
-            for (int idPoint = 1; idPoint < pointPath.size(); idPoint++) {
-                dPath += CGAlgorithms3D.distance(pointPath.get(idPoint - 1).coordinate, pointPath.get(idPoint).coordinate);
+        if (!this.favorable){
+            for (int idPoint = 1; idPoint < pointList.size(); idPoint++) {
+                dPath += CGAlgorithms3D.distance(pointList.get(idPoint - 1).coordinate, pointList.get(idPoint).coordinate);
             }
             dc = d;
         }
         else
         {
-            for (int idPoint = 1; idPoint < pointPath.size(); idPoint++) {
-                dPath += getRayCurveLength(CGAlgorithms3D.distance(pointPath.get(idPoint - 1).coordinate, pointPath.get(idPoint).coordinate));
+            for (int idPoint = 1; idPoint < pointList.size(); idPoint++) {
+                dPath += getRayCurveLength(CGAlgorithms3D.distance(pointList.get(idPoint - 1).coordinate, pointList.get(idPoint).coordinate));
+            }
+            if (pointList.size()>2){
+                eLength = dPath
+                        - getRayCurveLength(CGAlgorithms3D.distance(pointList.get(0).coordinate, pointList.get(1).coordinate))
+                        - getRayCurveLength(CGAlgorithms3D.distance(pointList.get(pointList.size()-2).coordinate, pointList.get(pointList.size()-1).coordinate));
             }
             dc = getRayCurveLength(d);
         }
 
-        // todo compute eLength
-        double eLength = dPath;
+        this.delta = dPath - dc;
+        this.eLength = eLength;
         this.dPath = dPath;
         this.d = d;
         this.dc = dc;
         this.dp = dp;
-        this.eLength = eLength;
     }
 
-    private double computeGPathPrime(PropagationPath path, SegmentPath segmentPath) {
+    public void initPropagationPath() {
+        computeAugmentedPath();
+        computeAugmentedSegments();
+        computeAugmentedPoints();
+    }
 
-        double zs = segmentPath.getZs(path);
-        double zr = segmentPath.getZr(path);
-        double gs = pointList.get(0).gs;
-        double testForm = path.dp / (30 * (zs + zr));
-        double gPathPrime;
 
-        if (testForm <= 1) {
-            gPathPrime = testForm * segmentPath.gPath + (1 - testForm) * gs;
-        } else {
-            gPathPrime = segmentPath.gPath;
+    private void computeAugmentedSegments() {
+        for (int idSegment = 0; idSegment < segmentList.size(); idSegment++) {
+
+            this.segmentList.get(idSegment).idPtStart = idSegment;
+            this.segmentList.get(idSegment).idPtFinal = idSegment+1;
+
+            double zs= segmentList.get(idSegment).getZs(this, this.segmentList.get(idSegment));
+            this.segmentList.get(idSegment).zs  =zs;
+
+            double zr = segmentList.get(idSegment).getZr(this, this.segmentList.get(idSegment));
+            this.segmentList.get(idSegment).zr = zr;
+
+            Coordinate SGround = pointList.get(idSegment).coordinate;
+            Coordinate RGround = pointList.get(idSegment+1).coordinate;
+            Coordinate S = pointList.get(idSegment).coordinate;
+            Coordinate R = pointList.get(idSegment+1).coordinate;
+            SGround.z = SGround.z - zs;
+            RGround.z = RGround.z - zr;
+
+            double dp = CGAlgorithms3D.distance(SGround, RGround);
+            this.segmentList.get(idSegment).dp = dp;
+
+            double d = CGAlgorithms3D.distance(S, R);
+            this.segmentList.get(idSegment).d = d;
+
+            if (!this.favorable){
+                dc = d;
+                this.segmentList.get(idSegment).dc = dc;
+            }
+            else
+            {
+                dc = getRayCurveLength(d);
+                this.segmentList.get(idSegment).dc = dc;
+            }
+
+            double gs = pointList.get(0).gs;
+
+
+            double testForm = dp / (30 * (zs + zr));
+            this.segmentList.get(idSegment).testForm = testForm;
+
+
+            // Compute PRIME zs, zr and testForm
+            double zsPrime= segmentList.get(idSegment).getZsPrime(this,this.segmentList.get(idSegment) );
+            this.segmentList.get(idSegment).zs  =zs;
+
+            double zrPrime = segmentList.get(idSegment).getZrPrime(this, this.segmentList.get(idSegment));
+            this.segmentList.get(idSegment).zr = zr;
+
+            double testFormPrime = dp / (30 * (zsPrime + zrPrime));
+            this.segmentList.get(idSegment).testFormPrime = testFormPrime;
+
+            double gPathPrime;
+
+
+            if (testForm <= 1) {
+                gPathPrime = testForm * segmentList.get(idSegment).gPath + (1 - testForm) * gs;
+            } else {
+                gPathPrime = segmentList.get(idSegment).gPath;
+            }
+            this.segmentList.get(idSegment).gPathPrime = gPathPrime;
+
         }
-        return gPathPrime;
+
     }
 
-    private double computeZs(List<PointPath> pointList) {
-        double zs = pointList.get(0).altitude+ pointList.get(0).coordinate.z;
+    private void computeAugmentedPoints() {
+        for (int idPoint = 0; idPoint < pointList.size(); idPoint++) {
+
+
+           // this. pointList.get(idPoint).altitude ;
+
+        }
+
+    }
+
+
+    private double computeZs(SegmentPath segmentPath) {
+        double zs = pointList.get(segmentPath.idPtStart).altitude + pointList.get(segmentPath.idPtStart).coordinate.z;
         return zs;
     }
 
-    private double computeZr(List<PointPath> pointList) {
-        double zr = pointList.get(pointList.size()-1).altitude+ pointList.get(pointList.size()-1).coordinate.z;
+    private double computeZr(SegmentPath segmentPath) {
+        double zr = pointList.get(segmentPath.idPtFinal).altitude+ pointList.get(segmentPath.idPtFinal).coordinate.z;
         return zr;
     }
 
-    private double computeZsPrime(PropagationPath path, SegmentPath segmentPath) {
+    private double computeZsPrime(SegmentPath segmentPath) {
         double alpha0 = 2 * Math.pow(10, -4);
-        double deltazt = 6 * Math.pow(10, -3) * path.dp / (segmentPath.zs + segmentPath.zr);
-        double deltazs = alpha0 * Math.pow((segmentPath.zs / (segmentPath.zs + segmentPath.zr)), 2) * (Math.pow(path.dp, 2) / 2);
+        double deltazt = 6 * Math.pow(10, -3) * segmentPath.dp / (segmentPath.zs + segmentPath.zr);
+        double deltazs = alpha0 * Math.pow((segmentPath.zs / (segmentPath.zs + segmentPath.zr)), 2) * (Math.pow(segmentPath.dp, 2) / 2);
         return segmentPath.zs + deltazs + deltazt;
     }
 
-    private double computeZrPrime(PropagationPath path, SegmentPath segmentPath) {
+    private double computeZrPrime(SegmentPath segmentPath) {
         double alpha0 = 2 * Math.pow(10, -4);
-        double deltazt = 6 * Math.pow(10, -3) * path.dp / (segmentPath.zs + segmentPath.zr);
-        double deltazr = alpha0 * Math.pow((segmentPath.zr / (segmentPath.zs + segmentPath.zr)), 2) * (Math.pow(path.dp, 2) / 2);
+        double deltazt = 6 * Math.pow(10, -3) * segmentPath.dp / (segmentPath.zs + segmentPath.zr);
+        double deltazr = alpha0 * Math.pow((segmentPath.zr / (segmentPath.zs + segmentPath.zr)), 2) * (Math.pow(segmentPath.dp, 2) / 2);
         return segmentPath.zr + deltazr + deltazt;
-    }
-
-    // todo compute distance of segments
-    private double computeDistanceD(PropagationPath path, SegmentPath segmentPath) {
-        return 0;
-    }
-    private double computeDistanceC(PropagationPath path, SegmentPath segmentPath) {
-        return 0;
     }
 
 
@@ -329,6 +364,10 @@ public class PropagationPath {
         return 2*gamma*Math.asin(d/(2*gamma));
 
     }
+
+
+
+
 
 
 }

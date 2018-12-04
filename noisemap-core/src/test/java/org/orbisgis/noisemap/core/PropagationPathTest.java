@@ -45,10 +45,10 @@ public class PropagationPathTest {
         List<PropagationPath.PointPath> points = new ArrayList<PropagationPath.PointPath>();
         List<PropagationPath.SegmentPath>  segments = new ArrayList<PropagationPath.SegmentPath>();
 
-        points.add(new PropagationPath.PointPath(new Coordinate(0,0,0),1,0,Double.NaN,true));
-        points.add(new PropagationPath.PointPath(new Coordinate(10,0,0),1,Double.NaN,0.5,true));
-        points.add(new PropagationPath.PointPath(new Coordinate(20,0,0),1,Double.NaN,0.5,true));
-        points.add(new PropagationPath.PointPath(new Coordinate(30,30,0),1,0,Double.NaN,true));
+        points.add(new PropagationPath.PointPath(new Coordinate(0,0,0),1,0,Double.NaN,PropagationPath.PointPath.POINT_TYPE.SRCE));
+        points.add(new PropagationPath.PointPath(new Coordinate(10,0,0),1,Double.NaN,0.5,PropagationPath.PointPath.POINT_TYPE.DIFH));
+        points.add(new PropagationPath.PointPath(new Coordinate(20,0,0),1,Double.NaN,0.5,PropagationPath.PointPath.POINT_TYPE.DIFH));
+        points.add(new PropagationPath.PointPath(new Coordinate(30,30,0),1,0,Double.NaN,PropagationPath.PointPath.POINT_TYPE.RECV));
         segments.add(new PropagationPath.SegmentPath(1));
         segments.add(new PropagationPath.SegmentPath(1));
 
@@ -72,8 +72,8 @@ public class PropagationPathTest {
         List<PropagationPath.PointPath> points = new ArrayList<PropagationPath.PointPath>();
         List<PropagationPath.SegmentPath>  segments = new ArrayList<PropagationPath.SegmentPath>();
 
-        points.add(new PropagationPath.PointPath(new Coordinate(0,0,0),1,0,Double.NaN,true));
-        points.add(new PropagationPath.PointPath(new Coordinate(200,0,0),4,0,Double.NaN,true));
+        points.add(new PropagationPath.PointPath(new Coordinate(0,0,1),0,0,Double.NaN,PropagationPath.PointPath.POINT_TYPE.SRCE));
+        points.add(new PropagationPath.PointPath(new Coordinate(200,0,4),0,0,Double.NaN,PropagationPath.PointPath.POINT_TYPE.RECV));
         segments.add(new PropagationPath.SegmentPath(0));
 
         PropagationPath propagationPath = new PropagationPath(favorable,points,segments);
@@ -94,15 +94,14 @@ public class PropagationPathTest {
      */
     @Test
     public void T02H() throws LayerDelaunayError {
-        boolean favorable = false;
         List<PropagationPath.PointPath> points = new ArrayList<PropagationPath.PointPath>();
         List<PropagationPath.SegmentPath> segments = new ArrayList<PropagationPath.SegmentPath>();
 
-        points.add(new PropagationPath.PointPath(new Coordinate(0, 0, 0.05), 0, 0, Double.NaN, true));
-        points.add(new PropagationPath.PointPath(new Coordinate(200, 0, 4), 0, 0, Double.NaN, true));
+        points.add(new PropagationPath.PointPath(new Coordinate(0, 0, 0.05), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.SRCE));
+        points.add(new PropagationPath.PointPath(new Coordinate(200, 0, 4), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.RECV));
         segments.add(new PropagationPath.SegmentPath(1));
 
-        PropagationPath propagationPath = new PropagationPath(favorable, points, segments);
+        PropagationPath propagationPath = new PropagationPath(false, points, segments);
         PropagationProcessPathData propData = new PropagationProcessPathData();
         propData.setTemperature(15);
         propData.setHumidity(70);
@@ -118,15 +117,14 @@ public class PropagationPathTest {
      */
     @Test
     public void T02F() throws LayerDelaunayError {
-        boolean favorable = true;
         List<PropagationPath.PointPath> points = new ArrayList<PropagationPath.PointPath>();
         List<PropagationPath.SegmentPath> segments = new ArrayList<PropagationPath.SegmentPath>();
 
-        points.add(new PropagationPath.PointPath(new Coordinate(0, 0, 0), 0.05, 0, Double.NaN, true));
-        points.add(new PropagationPath.PointPath(new Coordinate(200, 0, 0), 4, 0, Double.NaN, true));
+        points.add(new PropagationPath.PointPath(new Coordinate(0, 0, 0), 0.05, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.SRCE));
+        points.add(new PropagationPath.PointPath(new Coordinate(200, 0, 0), 4, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.RECV));
         segments.add(new PropagationPath.SegmentPath(1));
 
-        PropagationPath propagationPath = new PropagationPath(favorable, points, segments);
+        PropagationPath propagationPath = new PropagationPath(true, points, segments);
         PropagationProcessPathData propData = new PropagationProcessPathData();
         propData.setTemperature(15);
         propData.setHumidity(70);
