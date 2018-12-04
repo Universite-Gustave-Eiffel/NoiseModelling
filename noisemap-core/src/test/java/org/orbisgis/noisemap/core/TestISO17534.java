@@ -230,7 +230,7 @@ public class TestISO17534 extends TestCase {
     /**
      * Sound propagation
      * T04H
-     * Horizontal ground with homogeneous acoustic properties Homogeneous Meteo
+     * Horizontal ground with spatially varying acoustic properties Homogeneous Meteo
      *
      * @throws LayerDelaunayError
      */

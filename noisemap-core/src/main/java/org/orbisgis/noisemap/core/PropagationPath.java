@@ -36,6 +36,8 @@ package org.orbisgis.noisemap.core;
 import org.locationtech.jts.algorithm.CGAlgorithms3D;
 import org.locationtech.jts.geom.Coordinate;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -45,18 +47,10 @@ import java.util.List;
  */
 public class PropagationPath {
     // given by user
+    private List<SRPath> srList;
     private List<PointPath> pointList;
     private List<SegmentPath> segmentList;
     private boolean favorable;
-
-    // computed in Augmented Path
-    public Double dPath = null; // pass by points
-    public Double d = null; // direct ray between source and receiver
-    public Double dc = null; // direct ray sensible to meteorological conditions (can be curve) between source and receiver
-    public Double dp = null; // distance on mean plane between source and receiver
-    public Double eLength = null; // distance between first and last diffraction point
-    public Double delta = null; // distance between first and last diffraction point
-
 
     /**
      * parameters given by user
@@ -68,6 +62,7 @@ public class PropagationPath {
         this.favorable = favorable;
         this.pointList = pointList;
         this.segmentList = segmentList;
+        this.srList = new ArrayList<SRPath>();
     }
 
     public static class PointPath {
@@ -106,6 +101,27 @@ public class PropagationPath {
             this.type = type;
         }
     }
+
+    public static class SRPath {
+        // computed in Augmented Path
+        public Double dPath; // pass by points
+        public Double d ; // direct ray between source and receiver
+        public Double dc; // direct ray sensible to meteorological conditions (can be curve) between source and receiver
+        public Double dp; // distance on mean plane between source and receiver
+        public Double eLength; // distance between first and last diffraction point
+        public Double delta; // distance between first and last diffraction point
+
+        public SRPath(double dPath, double d, double dc, double dp, double eLength, double delta) {
+            this.dPath = dPath;
+            this.d = d ;
+            this.dc = dc;
+            this.dp = dp;
+            this.eLength = eLength;
+            this.delta = delta;
+
+        }
+    }
+
 
     public static class SegmentPath {
         //  given by user
@@ -193,6 +209,8 @@ public class PropagationPath {
 
     public List<SegmentPath> getSegmentList() {return segmentList;}
 
+    public List<SRPath> getSRList() {return srList;}
+
     public PropagationPath(List<SegmentPath> segmentList) {
         this.segmentList = segmentList;
     }
@@ -206,7 +224,6 @@ public class PropagationPath {
         double dPath =0;
         double eLength=0;
         double dc;
-
 
         double zs = pointList.get(0).altitude + pointList.get(0).coordinate.z;
         double zr = pointList.get(pointList.size()-1).altitude+ pointList.get(pointList.size()-1).coordinate.z;
@@ -241,12 +258,15 @@ public class PropagationPath {
             dc = getRayCurveLength(d);
         }
 
-        this.delta = dPath - dc;
-        this.eLength = eLength;
-        this.dPath = dPath;
-        this.d = d;
-        this.dc = dc;
-        this.dp = dp;
+
+        SRPath SR = new SRPath(dPath,d,dc,dp,eLength,dPath - dc);
+        SRPath SRp = new SRPath(dPath,d,dc,dp,eLength,dPath - dc);
+        SRPath SpR = new SRPath(dPath,d,dc,dp,eLength,dPath - dc);
+
+        this.srList.add(SR);
+        this.srList.add(SRp);
+        this.srList.add(SpR);
+
     }
 
     public void initPropagationPath() {
@@ -282,13 +302,11 @@ public class PropagationPath {
             this.segmentList.get(idSegment).d = d;
 
             if (!this.favorable){
-                dc = d;
-                this.segmentList.get(idSegment).dc = dc;
+                this.segmentList.get(idSegment).dc = d;
             }
             else
             {
-                dc = getRayCurveLength(d);
-                this.segmentList.get(idSegment).dc = dc;
+                this.segmentList.get(idSegment).dc = getRayCurveLength(d);
             }
 
             double gs = pointList.get(0).gs;

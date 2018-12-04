@@ -73,41 +73,40 @@ public class EvaluateAttenuationCnossos {
     }
 
 
-    /**
-     *
-     * @param idfreq
-     * @param eLength
-     * @param deltaDistance
-     * @param h0
-     * @return
-     */
-    public double computeDeltaDiffraction(int idfreq, double eLength, double deltaDistance, double h0) {
+
+    public double[][] getDeltaDif(PropagationPath path, PropagationProcessPathData data) {
+        double[][] DeltaDif = new double[data.freq_lvl.size()][3];
         double cprime;
-        //C" NMPB 2008 P.33
-        //Multiple diffraction
-        //CPRIME=( 1+(5*gamma)^2)/((1/3)+(5*gamma)^2)
-        double gammaPart = Math.pow((5 * freq_lambda[idfreq]) / eLength, 2);
-        double Ch=Math.min(h0*(data.celerity/freq_lambda[idfreq])/250,1);
-        //NFS 31-133 page 46
-        if (eLength > 0.3) {
-            cprime = (1. + gammaPart) / (ONETHIRD + gammaPart);
-        } else {
-            cprime = 1.;
-        }
 
-        //(7.11) NMP2008 P.32
-        double testForm = (40 / freq_lambda[idfreq])
-                * cprime * deltaDistance;
-        double diffractionAttenuation = 0.;
-        if (testForm >= -2.) {
-            diffractionAttenuation = 10*Ch * Math
-                    .log10(3 + testForm);
-        }
-        // Limit to 0<=DiffractionAttenuation
-        diffractionAttenuation = Math.max(0,
-                diffractionAttenuation);
+        for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
 
-        return  diffractionAttenuation;
+            double gammaPart = Math.pow((5 * freq_lambda[idfreq]) / path.getSRList().get(0).eLength, 2);
+            double Ch = 1;// Math.min(h0 * (data.celerity / freq_lambda[idfreq]) / 250, 1);
+
+            if (path.getSRList().get(0).eLength > 0.3) {
+                cprime = (1. + gammaPart) / (ONETHIRD + gammaPart);
+            } else {
+                cprime = 1.;
+            }
+
+            //(7.11) NMP2008 P.32
+            double testForm = (40 / freq_lambda[idfreq])
+                    * cprime * path.getSRList().get(0).delta;
+
+            double deltaDif= 0.;
+
+            if (testForm >= -2.) {
+                deltaDif = 10 * Ch * Math
+                        .log10(3 + testForm);
+            }
+            // todo upper bound 25 dB
+            DeltaDif[idfreq][0] = Math.max(0,deltaDif);
+            DeltaDif[idfreq][1] = Math.max(0,deltaDif);
+            DeltaDif[idfreq][2] = Math.max(0,deltaDif);
+
+        }
+        return  DeltaDif;
+
     }
 
 
@@ -190,6 +189,10 @@ public class EvaluateAttenuationCnossos {
         List<PropagationPath.SegmentPath> segmentPath = path.getSegmentList();
 
         double[] aGround = new double[data.freq_lvl.size()];
+        double[] aDif = new double[data.freq_lvl.size()];
+        double[] aBoundary = new double[data.freq_lvl.size()];
+
+
 
         if (segmentPath.size() == 1) {
             segmentPath.get(0).setGm(segmentPath.get(0).getgPathPrime(path));
@@ -212,10 +215,17 @@ public class EvaluateAttenuationCnossos {
                 java.util.Arrays.fill(aGround, aGroundmin);
             }
 
+            aBoundary = aGround;
+        }else{
+            double[][] DeltaDif = new double[data.freq_lvl.size()][3];
 
+            DeltaDif = getDeltaDif(path, data);
+
+
+            aBoundary = aDif;
         }
 
-        return aGround;
+        return aBoundary;
     }
 
 
@@ -245,13 +255,13 @@ public class EvaluateAttenuationCnossos {
 
 
         // divergence
-        double aDiv = getADiv(path.d);
+        double aDiv = getADiv(path.getSRList().get(0).d);
 
         aBoundary = getABoundary(path,data);
 
         for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
             // atm
-            double aAtm = getAAtm(path.d,alpha_atmo[idfreq]);
+            double aAtm = getAAtm(path.getSRList().get(0).d,alpha_atmo[idfreq]);
 
 
             aGlobal[idfreq] = -(aDiv + aAtm + aBoundary[idfreq]);
