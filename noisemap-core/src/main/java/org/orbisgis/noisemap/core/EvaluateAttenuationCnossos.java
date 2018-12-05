@@ -177,6 +177,18 @@ public class EvaluateAttenuationCnossos {
         return aGround;
     }
 
+    /**
+     * Formulae 7.18 and 7.20
+     *
+     * @param aGround        Asol(O,R) or Asol(S,O) (sol mean ground)
+     * @param deltaDifPrim Δdif(S,R') if Asol(S,O) is given or Δdif(S', R) if Asol(O,R)
+     * @param deltaDif     Δdif(S, R)
+     * @return Δsol(S, O) if Asol(S,O) is given or Δsol(O,R) if Asol(O,R) is given
+     */
+    private double getDeltaGround(double aGround, double deltaDifPrim, double deltaDif) {
+        return -20 * Math.log10(1 + (Math.pow(10, -aGround / 20) - 1) * Math.pow(10, -(deltaDifPrim - deltaDif) / 20));
+    }
+
 
     private double[] getAGround(PropagationPath.SegmentPath segmentPath,PropagationPath path, PropagationProcessPathData data) {
         double[] aGround = new double[data.freq_lvl.size()];
@@ -230,8 +242,9 @@ public class EvaluateAttenuationCnossos {
             DeltaDifSpR = getDeltaDif(path.getSRList().get(1), data);
             DeltaDifSRp = getDeltaDif(path.getSRList().get(2), data);
             aGroundFinal = getAGround(segmentPath.get(segmentPath.size()-1), path,data);
-
-
+            for (int idf = 0; idf < nbfreq; idf++) {
+                aGroundFinal[idf]=getDeltaGround(aGround[idf], DeltaDifSpR[idf], DeltaDifSR[idf]);
+            }
 
             aBoundary =  aGroundFinal;
         }
