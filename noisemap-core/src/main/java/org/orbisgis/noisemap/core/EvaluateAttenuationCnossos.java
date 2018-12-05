@@ -74,16 +74,16 @@ public class EvaluateAttenuationCnossos {
 
 
 
-    public double[][] getDeltaDif(PropagationPath path, PropagationProcessPathData data) {
-        double[][] DeltaDif = new double[data.freq_lvl.size()][3];
+    public double[] getDeltaDif(PropagationPath.SRPath srpath, PropagationProcessPathData data) {
+        double[] DeltaDif = new double[data.freq_lvl.size()];
         double cprime;
 
         for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
 
-            double gammaPart = Math.pow((5 * freq_lambda[idfreq]) / path.getSRList().get(0).eLength, 2);
+            double gammaPart = Math.pow((5 * freq_lambda[idfreq]) / srpath.eLength, 2);
             double Ch = 1;// Math.min(h0 * (data.celerity / freq_lambda[idfreq]) / 250, 1);
 
-            if (path.getSRList().get(0).eLength > 0.3) {
+            if (srpath.eLength > 0.3) {
                 cprime = (1. + gammaPart) / (ONETHIRD + gammaPart);
             } else {
                 cprime = 1.;
@@ -91,7 +91,7 @@ public class EvaluateAttenuationCnossos {
 
             //(7.11) NMP2008 P.32
             double testForm = (40 / freq_lambda[idfreq])
-                    * cprime * path.getSRList().get(0).delta;
+                    * cprime * srpath.delta;
 
             double deltaDif= 0.;
 
@@ -100,9 +100,7 @@ public class EvaluateAttenuationCnossos {
                         .log10(3 + testForm);
             }
             // todo upper bound 25 dB
-            DeltaDif[idfreq][0] = Math.max(0,deltaDif);
-            DeltaDif[idfreq][1] = Math.max(0,deltaDif);
-            DeltaDif[idfreq][2] = Math.max(0,deltaDif);
+            DeltaDif[idfreq] = Math.max(0,deltaDif);
 
         }
         return  DeltaDif;
@@ -135,7 +133,7 @@ public class EvaluateAttenuationCnossos {
      *
      * @return
      */
-    public static double[] getAGround(PropagationPath path, PropagationPath.SegmentPath segmentPath, PropagationProcessPathData data) {
+    public static double[] getAGroundCore(PropagationPath path, PropagationPath.SegmentPath segmentPath, PropagationProcessPathData data) {
 
         double[] aGround = new double[data.freq_lvl.size()];
         double aGroundmin;
@@ -179,6 +177,33 @@ public class EvaluateAttenuationCnossos {
         return aGround;
     }
 
+
+    private double[] getAGround(PropagationPath.SegmentPath segmentPath,PropagationPath path, PropagationProcessPathData data) {
+        double[] aGround = new double[data.freq_lvl.size()];
+
+
+        segmentPath.setGm(segmentPath.getgPathPrime(path));
+        if (path.isFavorable()) {
+            segmentPath.setGw(segmentPath.getgPathPrime(path));
+        } else {
+            segmentPath.setGw(segmentPath.gPath);
+        }
+        // Here there is a debate if use this condition or not
+        if (segmentPath.gPath != 0) {
+            aGround = getAGroundCore(path, segmentPath, data);
+        } else {
+            double aGroundmin;
+            if (path.isFavorable()) {
+                aGroundmin = -3;
+            } else {
+                aGroundmin = -3 * (1 - segmentPath.getGm());
+            }
+            java.util.Arrays.fill(aGround, aGroundmin);
+        }
+
+        return aGround;
+    }
+
     /**
      *
      * @param path
@@ -192,37 +217,23 @@ public class EvaluateAttenuationCnossos {
         double[] aDif = new double[data.freq_lvl.size()];
         double[] aBoundary = new double[data.freq_lvl.size()];
 
+        aGround = getAGround(segmentPath.get(0), path,data);
+        aBoundary = aGround;
+
+        if (segmentPath.size() > 1) {
+            double[] DeltaDifSR = new double[data.freq_lvl.size()];
+            double[] DeltaDifSpR = new double[data.freq_lvl.size()];
+            double[] DeltaDifSRp = new double[data.freq_lvl.size()];
+            double[] aGroundFinal = new double[data.freq_lvl.size()];
+
+            DeltaDifSR = getDeltaDif(path.getSRList().get(0), data);
+            DeltaDifSpR = getDeltaDif(path.getSRList().get(1), data);
+            DeltaDifSRp = getDeltaDif(path.getSRList().get(2), data);
+            aGroundFinal = getAGround(segmentPath.get(segmentPath.size()-1), path,data);
 
 
-        if (segmentPath.size() == 1) {
-            segmentPath.get(0).setGm(segmentPath.get(0).getgPathPrime(path));
-            if (path.isFavorable()){
-                segmentPath.get(0).setGw(segmentPath.get(0).getgPathPrime(path));
-            }else{
-                segmentPath.get(0).setGw(segmentPath.get(0).gPath);
-            }
-            // Here there is a debate if use this condition or not
-            if (segmentPath.get(0).gPath!=0) {
-                aGround = getAGround(path, segmentPath.get(0), data);
-            }
-            else{
-                double aGroundmin;
-                if (path.isFavorable()) {
-                    aGroundmin = -3;
-                }else{
-                    aGroundmin = -3 * (1 - segmentPath.get(0).getGm());
-                }
-                java.util.Arrays.fill(aGround, aGroundmin);
-            }
 
-            aBoundary = aGround;
-        }else{
-            double[][] DeltaDif = new double[data.freq_lvl.size()][3];
-
-            DeltaDif = getDeltaDif(path, data);
-
-
-            aBoundary = aDif;
+            aBoundary =  aGroundFinal;
         }
 
         return aBoundary;

@@ -5,7 +5,7 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.LineSegment;
+import org.locationtech.jts.math.Vector3D;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,7 +46,7 @@ public class PropagationPathTest {
         List<PropagationPath.PointPath> points = new ArrayList<PropagationPath.PointPath>();
         List<PropagationPath.SegmentPath>  segments = new ArrayList<PropagationPath.SegmentPath>();
         List<PropagationPath.SRPath> srPath = new ArrayList<PropagationPath.SRPath>();
-        LineSegment flatTopography = new LineSegment(new Coordinate(0,0,0),new Coordinate(0,0,0));
+        Vector3D flatTopography = new Vector3D(new Coordinate(0,0,0),new Coordinate(0,0,0));
 
         points.add(new PropagationPath.PointPath(new Coordinate(0,0,0),1,0,Double.NaN,PropagationPath.PointPath.POINT_TYPE.SRCE));
         points.add(new PropagationPath.PointPath(new Coordinate(10,0,0),1,Double.NaN,0.5,PropagationPath.PointPath.POINT_TYPE.DIFH));
@@ -76,7 +76,7 @@ public class PropagationPathTest {
         List<PropagationPath.PointPath> points = new ArrayList<PropagationPath.PointPath>();
         List<PropagationPath.SegmentPath>  segments = new ArrayList<PropagationPath.SegmentPath>();
         List<PropagationPath.SRPath> srPath = new ArrayList<PropagationPath.SRPath>();
-        LineSegment flatTopography = new LineSegment(new Coordinate(0,0,0),new Coordinate(0,0,0));
+        Vector3D flatTopography = new Vector3D(new Coordinate(0,0,0),new Coordinate(0,0,0));
 
         points.add(new PropagationPath.PointPath(new Coordinate(0,0,1),0,0,Double.NaN,PropagationPath.PointPath.POINT_TYPE.SRCE));
         points.add(new PropagationPath.PointPath(new Coordinate(200,0,4),0,0,Double.NaN,PropagationPath.PointPath.POINT_TYPE.RECV));
@@ -104,7 +104,7 @@ public class PropagationPathTest {
         List<PropagationPath.PointPath> points = new ArrayList<PropagationPath.PointPath>();
         List<PropagationPath.SegmentPath> segments = new ArrayList<PropagationPath.SegmentPath>();
         List<PropagationPath.SRPath> srPath = new ArrayList<PropagationPath.SRPath>();
-        LineSegment flatTopography = new LineSegment(new Coordinate(0,0,0),new Coordinate(0,0,0));
+        Vector3D flatTopography = new Vector3D(new Coordinate(0,0,0),new Coordinate(200,0,0));
 
         points.add(new PropagationPath.PointPath(new Coordinate(0, 0, 0.05), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.SRCE));
         points.add(new PropagationPath.PointPath(new Coordinate(200, 0, 4), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.RECV));
@@ -130,7 +130,7 @@ public class PropagationPathTest {
         List<PropagationPath.PointPath> points = new ArrayList<PropagationPath.PointPath>();
         List<PropagationPath.SegmentPath> segments = new ArrayList<PropagationPath.SegmentPath>();
         List<PropagationPath.SRPath> srPath = new ArrayList<PropagationPath.SRPath>();
-        LineSegment flatTopography = new LineSegment(new Coordinate(0,0,0),new Coordinate(0,0,0));
+        Vector3D flatTopography = new Vector3D(new Coordinate(0,0,0),new Coordinate(200,0,0));
 
         points.add(new PropagationPath.PointPath(new Coordinate(0, 0, 0.05), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.SRCE));
         points.add(new PropagationPath.PointPath(new Coordinate(200, 0, 4), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.RECV));
@@ -156,7 +156,7 @@ public class PropagationPathTest {
         List<PropagationPath.PointPath> points = new ArrayList<PropagationPath.PointPath>();
         List<PropagationPath.SegmentPath> segments = new ArrayList<PropagationPath.SegmentPath>();
         List<PropagationPath.SRPath> srPath = new ArrayList<PropagationPath.SRPath>();
-        LineSegment flatTopography = new LineSegment(new Coordinate(0,0,0),new Coordinate(0,0,0));
+        Vector3D flatTopography = new Vector3D(new Coordinate(0,0,0),new Coordinate(200,0,0));
 
         points.add(new PropagationPath.PointPath(new Coordinate(0, 0, 0.05), 0.0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.SRCE));
         points.add(new PropagationPath.PointPath(new Coordinate(200, 0, 4.), 0., 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.RECV));
@@ -182,7 +182,7 @@ public class PropagationPathTest {
         List<PropagationPath.PointPath> points = new ArrayList<PropagationPath.PointPath>();
         List<PropagationPath.SegmentPath> segments = new ArrayList<PropagationPath.SegmentPath>();
         List<PropagationPath.SRPath> srPath = new ArrayList<PropagationPath.SRPath>();
-        LineSegment flatTopography = new LineSegment(new Coordinate(0,0,0),new Coordinate(0,0,0));
+        Vector3D flatTopography = new Vector3D(new Coordinate(0,0,0),new Coordinate(200,0,0));
 
         points.add(new PropagationPath.PointPath(new Coordinate(0, 0, 0.05), 0., 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.SRCE));
         points.add(new PropagationPath.PointPath(new Coordinate(200, 0, 4.), 0., 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.RECV));
@@ -212,12 +212,14 @@ public class PropagationPathTest {
         List<PropagationPath.PointPath> points = new ArrayList<PropagationPath.PointPath>();
         List<PropagationPath.SegmentPath> segments = new ArrayList<PropagationPath.SegmentPath>();
         List<PropagationPath.SRPath> srPath = new ArrayList<PropagationPath.SRPath>();
-        LineSegment flatTopography = new LineSegment(new Coordinate(0,0,0),new Coordinate(0,0,0));
+        Vector3D flatTopography = new Vector3D(new Coordinate(0,0,0),new Coordinate(150,0,0));
 
         points.add(new PropagationPath.PointPath(new Coordinate(0, 0, 0.05), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.SRCE));
         points.add(new PropagationPath.PointPath(new Coordinate(50, 0, 10.0), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.DIFH));
         points.add(new PropagationPath.PointPath(new Coordinate(100, 0, 10.0), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.DIFH));
         points.add(new PropagationPath.PointPath(new Coordinate(150, 0, 2.0), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.RECV));
+        segments.add(new PropagationPath.SegmentPath(0, flatTopography));
+        segments.add(new PropagationPath.SegmentPath(0, flatTopography));
         segments.add(new PropagationPath.SegmentPath(0, flatTopography));
         srPath.add(new PropagationPath.SRPath(flatTopography));
 
