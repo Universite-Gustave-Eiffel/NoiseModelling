@@ -35,7 +35,7 @@ package org.orbisgis.noisemap.core;
 
 import org.locationtech.jts.algorithm.CGAlgorithms3D;
 import org.locationtech.jts.geom.Coordinate;
-
+import org.locationtech.jts.geom.LineSegment;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -46,7 +46,6 @@ import java.util.List;
  * @author Pierre Aumond
  */
 public class PropagationPath {
-    // given by user
     private List<SRPath> srList;
     private List<PointPath> pointList;
     private List<SegmentPath> segmentList;
@@ -58,11 +57,11 @@ public class PropagationPath {
      * @param pointList
      * @param segmentList
      */
-    public PropagationPath(boolean favorable, List<PointPath> pointList, List<SegmentPath> segmentList) {
+    public PropagationPath(boolean favorable, List<PointPath> pointList, List<SegmentPath> segmentList , List<SRPath> srList) {
         this.favorable = favorable;
         this.pointList = pointList;
         this.segmentList = segmentList;
-        this.srList = new ArrayList<SRPath>();
+        this.srList = srList;
     }
 
     public static class PointPath {
@@ -93,9 +92,9 @@ public class PropagationPath {
          * @param alphaWall
          * @param type
          */
-        public PointPath(org.locationtech.jts.geom.Coordinate coordinate, double altitude, double gs, double alphaWall, POINT_TYPE type) {
-            this.coordinate = coordinate;
-            this.altitude = altitude;
+        public PointPath(Coordinate coordinate, double altitude, double gs, double alphaWall, POINT_TYPE type) {
+            this.coordinate = coordinate; // absolute coordinates
+            this.altitude = altitude; // floor
             this.gs = gs;
             this.alphaWall = alphaWall;
             this.type = type;
@@ -103,7 +102,11 @@ public class PropagationPath {
     }
 
     public static class SRPath {
-        // computed in Augmented Path
+
+        // given by user
+        public final LineSegment lineSegment;
+
+        // computed in AugmentedSRPath
         public Double dPath; // pass by points
         public Double d ; // direct ray between source and receiver
         public Double dc; // direct ray sensible to meteorological conditions (can be curve) between source and receiver
@@ -111,23 +114,20 @@ public class PropagationPath {
         public Double eLength; // distance between first and last diffraction point
         public Double delta; // distance between first and last diffraction point
 
-        public SRPath(double dPath, double d, double dc, double dp, double eLength, double delta) {
-            this.dPath = dPath;
-            this.d = d ;
-            this.dc = dc;
-            this.dp = dp;
-            this.eLength = eLength;
-            this.delta = delta;
-
+        public SRPath(LineSegment lineSegment) {
+            this.lineSegment = lineSegment;
         }
+
+
     }
 
 
     public static class SegmentPath {
         //  given by user
         public final double gPath;
+        public final LineSegment lineSegment;
 
-        // computed in Augmented Segments
+        // computed in AugmentedSegments
         public int idPtStart;
         public int idPtFinal;
 
@@ -147,9 +147,11 @@ public class PropagationPath {
         /**
          * @param gPath
          */
-        public SegmentPath(double gPath) {
+        public SegmentPath(double gPath, LineSegment lineSegment) {
             this.gPath = gPath;
+            this.lineSegment = lineSegment;
         }
+
 
         public void setGw(double g) {
             this.gw = g;
@@ -220,59 +222,99 @@ public class PropagationPath {
     }
 
 
-    public void computeAugmentedPath() {
-        double dPath =0;
-        double eLength=0;
-        double dc;
+    public void computeAugmentedSRPath() {
+        double dPath =0 ;
 
-        double zs = pointList.get(0).altitude + pointList.get(0).coordinate.z;
-        double zr = pointList.get(pointList.size()-1).altitude+ pointList.get(pointList.size()-1).coordinate.z;
+        SRPath SR = this.srList.get(0);
 
 
-        Coordinate SGround = (Coordinate) pointList.get(0).coordinate.clone();
-        Coordinate RGround = (Coordinate)  pointList.get(pointList.size()-1).coordinate.clone();
-        Coordinate S = (Coordinate)  pointList.get(0).coordinate.clone();
-        Coordinate R = (Coordinate)  pointList.get(pointList.size()-1).coordinate.clone();
-        SGround.z = SGround.z - zs;
-        RGround.z = RGround.z - zr;
+        // Projected source and receiver on MeanPlane
+        Coordinate SGround = srList.get(0).lineSegment.project(pointList.get(0).coordinate);
+        Coordinate RGround = srList.get(0).lineSegment.project(pointList.get(pointList.size()-1).coordinate);
 
-        double dp = CGAlgorithms3D.distance(SGround, RGround);
-        double d = CGAlgorithms3D.distance(S, R);
+        // Original absolute coordinates
+        Coordinate S = pointList.get(0).coordinate;
+        Coordinate R= pointList.get(pointList.size()-1).coordinate;
+
+        // Symmetric coordinates
+        Coordinate Sprime = new Coordinate(2*SGround.x - S.x,2*SGround.y - S.y,2*SGround.z - S.z);
+        Coordinate Rprime = new Coordinate(2*RGround.x - R.x,2*RGround.y - R.y,2*RGround.z - R.z);
+
+        SRPath SRp = new SRPath(new LineSegment(S,Rprime));
+        SRPath SpR = new SRPath(new LineSegment(Sprime,R));
+
+        SpR.d = CGAlgorithms3D.distance(Sprime, R);
+        SRp.d = CGAlgorithms3D.distance(S, Rprime);
+        SR.d = CGAlgorithms3D.distance(S, R);
+
+        SpR.dp = CGAlgorithms3D.distance(SGround, RGround);
+        SRp.dp = SpR.dp;
+        SR.dp = SpR.dp;
 
         if (!this.favorable){
-            for (int idPoint = 1; idPoint < pointList.size(); idPoint++) {
+            for (int idPoint = 2; idPoint < pointList.size()-1; idPoint++) {
                 dPath += CGAlgorithms3D.distance(pointList.get(idPoint - 1).coordinate, pointList.get(idPoint).coordinate);
             }
-            dc = d;
+            if (pointList.size()>3){
+                SR.eLength = dPath;
+                SpR.eLength = dPath;
+                SRp.eLength = dPath;
+            }
+            SR.dPath = dPath
+                    + CGAlgorithms3D.distance(S, pointList.get(1).coordinate)
+                    + CGAlgorithms3D.distance(pointList.get(pointList.size()-2).coordinate,R);
+            SpR.dPath = dPath
+                    + CGAlgorithms3D.distance(Sprime, pointList.get(1).coordinate)
+                    + CGAlgorithms3D.distance(pointList.get(pointList.size()-2).coordinate,R);
+            SRp.dPath = dPath
+                    + CGAlgorithms3D.distance(S, pointList.get(1).coordinate)
+                    + CGAlgorithms3D.distance(pointList.get(pointList.size()-2).coordinate,Rprime);
+
+            SpR.dc = SpR.d;
+            SRp.dc = SRp.d;
+            SR.dc = SR.d;
+
         }
         else
         {
-            for (int idPoint = 1; idPoint < pointList.size(); idPoint++) {
+            for (int idPoint = 2; idPoint < pointList.size()-1; idPoint++) {
                 dPath += getRayCurveLength(CGAlgorithms3D.distance(pointList.get(idPoint - 1).coordinate, pointList.get(idPoint).coordinate));
             }
             if (pointList.size()>2){
-                eLength = dPath
-                        - getRayCurveLength(CGAlgorithms3D.distance(pointList.get(0).coordinate, pointList.get(1).coordinate))
-                        - getRayCurveLength(CGAlgorithms3D.distance(pointList.get(pointList.size()-2).coordinate, pointList.get(pointList.size()-1).coordinate));
+                SR.eLength = dPath;
+                SpR.eLength = dPath;
+                SRp.eLength = dPath;
             }
-            dc = getRayCurveLength(d);
+
+            SR.dPath = dPath
+                    + getRayCurveLength(CGAlgorithms3D.distance(S, pointList.get(1).coordinate))
+                    + getRayCurveLength(CGAlgorithms3D.distance(pointList.get(pointList.size()-2).coordinate, R));
+            SpR.dPath = dPath
+                    + getRayCurveLength(CGAlgorithms3D.distance(Sprime, pointList.get(1).coordinate))
+                    + getRayCurveLength(CGAlgorithms3D.distance(pointList.get(pointList.size()-2).coordinate, R));
+            SRp.dPath = dPath
+                    + getRayCurveLength(CGAlgorithms3D.distance(S, pointList.get(1).coordinate))
+                    + getRayCurveLength(CGAlgorithms3D.distance(pointList.get(pointList.size()-2).coordinate, Rprime));
+
+            SR.dc = getRayCurveLength(SR.d);
+            SpR.dc = getRayCurveLength(SpR.d);
+            SRp.dc = getRayCurveLength(SRp.d);
         }
 
 
-        SRPath SR = new SRPath(dPath,d,dc,dp,eLength,dPath - dc);
-        SRPath SRp = new SRPath(dPath,d,dc,dp,eLength,dPath - dc);
-        SRPath SpR = new SRPath(dPath,d,dc,dp,eLength,dPath - dc);
+        SR.delta = SR.dPath - SR.dc;
+        SRp.delta = SRp.dPath - SRp.dc;
+        SpR.delta = SpR.dPath - SpR.dc;
 
-        this.srList.add(SR);
         this.srList.add(SRp);
         this.srList.add(SpR);
 
     }
 
     public void initPropagationPath() {
-        computeAugmentedPath();
         computeAugmentedSegments();
         computeAugmentedPoints();
+        computeAugmentedSRPath();
     }
 
 
@@ -341,6 +383,7 @@ public class PropagationPath {
     }
 
     private void computeAugmentedPoints() {
+
         for (int idPoint = 0; idPoint < pointList.size(); idPoint++) {
 
 

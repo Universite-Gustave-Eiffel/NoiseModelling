@@ -5,6 +5,7 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.LineSegment;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -44,15 +45,18 @@ public class PropagationPathTest {
         boolean favorable = true;
         List<PropagationPath.PointPath> points = new ArrayList<PropagationPath.PointPath>();
         List<PropagationPath.SegmentPath>  segments = new ArrayList<PropagationPath.SegmentPath>();
+        List<PropagationPath.SRPath> srPath = new ArrayList<PropagationPath.SRPath>();
+        LineSegment flatTopography = new LineSegment(new Coordinate(0,0,0),new Coordinate(0,0,0));
 
         points.add(new PropagationPath.PointPath(new Coordinate(0,0,0),1,0,Double.NaN,PropagationPath.PointPath.POINT_TYPE.SRCE));
         points.add(new PropagationPath.PointPath(new Coordinate(10,0,0),1,Double.NaN,0.5,PropagationPath.PointPath.POINT_TYPE.DIFH));
         points.add(new PropagationPath.PointPath(new Coordinate(20,0,0),1,Double.NaN,0.5,PropagationPath.PointPath.POINT_TYPE.DIFH));
         points.add(new PropagationPath.PointPath(new Coordinate(30,30,0),1,0,Double.NaN,PropagationPath.PointPath.POINT_TYPE.RECV));
-        segments.add(new PropagationPath.SegmentPath(1));
-        segments.add(new PropagationPath.SegmentPath(1));
+        segments.add(new PropagationPath.SegmentPath(1, flatTopography));
+        segments.add(new PropagationPath.SegmentPath(1, flatTopography));
+        srPath.add(new PropagationPath.SRPath(flatTopography));
 
-        PropagationPath propagationPath = new PropagationPath(favorable,points,segments);
+        PropagationPath propagationPath = new PropagationPath(favorable,points,segments,srPath);
         PropagationProcessPathData propData = new PropagationProcessPathData();
         propData.setTemperature(15);
         propData.setHumidity(70);
@@ -71,12 +75,15 @@ public class PropagationPathTest {
         boolean favorable = false;
         List<PropagationPath.PointPath> points = new ArrayList<PropagationPath.PointPath>();
         List<PropagationPath.SegmentPath>  segments = new ArrayList<PropagationPath.SegmentPath>();
+        List<PropagationPath.SRPath> srPath = new ArrayList<PropagationPath.SRPath>();
+        LineSegment flatTopography = new LineSegment(new Coordinate(0,0,0),new Coordinate(0,0,0));
 
         points.add(new PropagationPath.PointPath(new Coordinate(0,0,1),0,0,Double.NaN,PropagationPath.PointPath.POINT_TYPE.SRCE));
         points.add(new PropagationPath.PointPath(new Coordinate(200,0,4),0,0,Double.NaN,PropagationPath.PointPath.POINT_TYPE.RECV));
-        segments.add(new PropagationPath.SegmentPath(0));
+        segments.add(new PropagationPath.SegmentPath(0, flatTopography));
+        srPath.add(new PropagationPath.SRPath(flatTopography));
 
-        PropagationPath propagationPath = new PropagationPath(favorable,points,segments);
+        PropagationPath propagationPath = new PropagationPath(favorable,points,segments, srPath);
         PropagationProcessPathData propData = new PropagationProcessPathData();
         propData.setTemperature(15);
         propData.setHumidity(70);
@@ -96,12 +103,15 @@ public class PropagationPathTest {
     public void T02H() throws LayerDelaunayError {
         List<PropagationPath.PointPath> points = new ArrayList<PropagationPath.PointPath>();
         List<PropagationPath.SegmentPath> segments = new ArrayList<PropagationPath.SegmentPath>();
+        List<PropagationPath.SRPath> srPath = new ArrayList<PropagationPath.SRPath>();
+        LineSegment flatTopography = new LineSegment(new Coordinate(0,0,0),new Coordinate(0,0,0));
 
         points.add(new PropagationPath.PointPath(new Coordinate(0, 0, 0.05), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.SRCE));
         points.add(new PropagationPath.PointPath(new Coordinate(200, 0, 4), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.RECV));
-        segments.add(new PropagationPath.SegmentPath(1));
+        segments.add(new PropagationPath.SegmentPath(1, flatTopography));
+        srPath.add(new PropagationPath.SRPath(flatTopography));
 
-        PropagationPath propagationPath = new PropagationPath(false, points, segments);
+        PropagationPath propagationPath = new PropagationPath(false,points,segments, srPath);
         PropagationProcessPathData propData = new PropagationProcessPathData();
         propData.setTemperature(15);
         propData.setHumidity(70);
@@ -119,12 +129,15 @@ public class PropagationPathTest {
     public void T02F() throws LayerDelaunayError {
         List<PropagationPath.PointPath> points = new ArrayList<PropagationPath.PointPath>();
         List<PropagationPath.SegmentPath> segments = new ArrayList<PropagationPath.SegmentPath>();
+        List<PropagationPath.SRPath> srPath = new ArrayList<PropagationPath.SRPath>();
+        LineSegment flatTopography = new LineSegment(new Coordinate(0,0,0),new Coordinate(0,0,0));
 
         points.add(new PropagationPath.PointPath(new Coordinate(0, 0, 0.05), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.SRCE));
         points.add(new PropagationPath.PointPath(new Coordinate(200, 0, 4), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.RECV));
-        segments.add(new PropagationPath.SegmentPath(1));
+        segments.add(new PropagationPath.SegmentPath(1, flatTopography));
+        srPath.add(new PropagationPath.SRPath(flatTopography));
 
-        PropagationPath propagationPath = new PropagationPath(true, points, segments);
+        PropagationPath propagationPath = new PropagationPath(true,points,segments, srPath);
         PropagationProcessPathData propData = new PropagationProcessPathData();
         propData.setTemperature(15);
         propData.setHumidity(70);
@@ -142,12 +155,15 @@ public class PropagationPathTest {
     public void T03F() throws LayerDelaunayError {
         List<PropagationPath.PointPath> points = new ArrayList<PropagationPath.PointPath>();
         List<PropagationPath.SegmentPath> segments = new ArrayList<PropagationPath.SegmentPath>();
+        List<PropagationPath.SRPath> srPath = new ArrayList<PropagationPath.SRPath>();
+        LineSegment flatTopography = new LineSegment(new Coordinate(0,0,0),new Coordinate(0,0,0));
 
         points.add(new PropagationPath.PointPath(new Coordinate(0, 0, 0.05), 0.0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.SRCE));
         points.add(new PropagationPath.PointPath(new Coordinate(200, 0, 4.), 0., 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.RECV));
-        segments.add(new PropagationPath.SegmentPath(0.7));
+        segments.add(new PropagationPath.SegmentPath(0.7, flatTopography));
+        srPath.add(new PropagationPath.SRPath(flatTopography));
 
-        PropagationPath propagationPath = new PropagationPath(true, points, segments);
+        PropagationPath propagationPath = new PropagationPath(true,points,segments, srPath);
         PropagationProcessPathData propData = new PropagationProcessPathData();
         propData.setTemperature(15);
         propData.setHumidity(70);
@@ -165,12 +181,15 @@ public class PropagationPathTest {
     public void T03H() throws LayerDelaunayError {
         List<PropagationPath.PointPath> points = new ArrayList<PropagationPath.PointPath>();
         List<PropagationPath.SegmentPath> segments = new ArrayList<PropagationPath.SegmentPath>();
+        List<PropagationPath.SRPath> srPath = new ArrayList<PropagationPath.SRPath>();
+        LineSegment flatTopography = new LineSegment(new Coordinate(0,0,0),new Coordinate(0,0,0));
 
         points.add(new PropagationPath.PointPath(new Coordinate(0, 0, 0.05), 0., 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.SRCE));
         points.add(new PropagationPath.PointPath(new Coordinate(200, 0, 4.), 0., 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.RECV));
-        segments.add(new PropagationPath.SegmentPath(0.7));
+        segments.add(new PropagationPath.SegmentPath(0.7, flatTopography));
+        srPath.add(new PropagationPath.SRPath(flatTopography));
 
-        PropagationPath propagationPath = new PropagationPath(false, points, segments);
+        PropagationPath propagationPath = new PropagationPath(false,points,segments, srPath);
         PropagationProcessPathData propData = new PropagationProcessPathData();
         propData.setTemperature(15);
         propData.setHumidity(70);
@@ -190,17 +209,19 @@ public class PropagationPathTest {
     @Test
     public void T05H() throws LayerDelaunayError {
 
-
         List<PropagationPath.PointPath> points = new ArrayList<PropagationPath.PointPath>();
         List<PropagationPath.SegmentPath> segments = new ArrayList<PropagationPath.SegmentPath>();
+        List<PropagationPath.SRPath> srPath = new ArrayList<PropagationPath.SRPath>();
+        LineSegment flatTopography = new LineSegment(new Coordinate(0,0,0),new Coordinate(0,0,0));
 
         points.add(new PropagationPath.PointPath(new Coordinate(0, 0, 0.05), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.SRCE));
         points.add(new PropagationPath.PointPath(new Coordinate(50, 0, 10.0), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.DIFH));
         points.add(new PropagationPath.PointPath(new Coordinate(100, 0, 10.0), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.DIFH));
         points.add(new PropagationPath.PointPath(new Coordinate(150, 0, 2.0), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.RECV));
-        segments.add(new PropagationPath.SegmentPath(0));
+        segments.add(new PropagationPath.SegmentPath(0, flatTopography));
+        srPath.add(new PropagationPath.SRPath(flatTopography));
 
-        PropagationPath propagationPath = new PropagationPath(false, points, segments);
+        PropagationPath propagationPath = new PropagationPath(false,points,segments, srPath);
         PropagationProcessPathData propData = new PropagationProcessPathData();
         propData.setTemperature(15);
         propData.setHumidity(70);
