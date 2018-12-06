@@ -178,7 +178,7 @@ public class EvaluateAttenuationCnossos {
     }
 
     /**
-     * Formulae 7.18 and 7.20
+     * Formulae Eq. 2.5.31 - Eq. 2.5.32
      *
      * @param aGround        Asol(O,R) or Asol(S,O) (sol mean ground)
      * @param deltaDifPrim Δdif(S,R') if Asol(S,O) is given or Δdif(S', R) if Asol(O,R)
@@ -194,12 +194,7 @@ public class EvaluateAttenuationCnossos {
         double[] aGround = new double[data.freq_lvl.size()];
 
 
-        segmentPath.setGm(segmentPath.getgPathPrime(path));
-        if (path.isFavorable()) {
-            segmentPath.setGw(segmentPath.getgPathPrime(path));
-        } else {
-            segmentPath.setGw(segmentPath.gPath);
-        }
+
         // Here there is a debate if use this condition or not
         if (segmentPath.gPath != 0) {
             aGround = getAGroundCore(path, segmentPath, data);
@@ -225,28 +220,61 @@ public class EvaluateAttenuationCnossos {
     private double[] getABoundary(PropagationPath path, PropagationProcessPathData data) {
         List<PropagationPath.SegmentPath> segmentPath = path.getSegmentList();
 
-        double[] aGround = new double[data.freq_lvl.size()];
+        double[] aGround;
+        double[] aBoundary ;
         double[] aDif = new double[data.freq_lvl.size()];
-        double[] aBoundary = new double[data.freq_lvl.size()];
+
+        // Set Gm and Gw for AGround SR - Table 2.5.b
+        if (path.isFavorable()) {
+            segmentPath.get(0).setGw(segmentPath.get(0).gPath);
+            segmentPath.get(0).setGm(segmentPath.get(0).gPathPrime);
+        } else {
+            segmentPath.get(0).setGw(segmentPath.get(0).gPathPrime);
+            segmentPath.get(0).setGm(segmentPath.get(0).gPathPrime);
+        }
 
         aGround = getAGround(segmentPath.get(0), path,data);
         aBoundary = aGround;
 
-        if (segmentPath.size() > 1) {
-            double[] DeltaDifSR = new double[data.freq_lvl.size()];
-            double[] DeltaDifSpR = new double[data.freq_lvl.size()];
-            double[] DeltaDifSRp = new double[data.freq_lvl.size()];
-            double[] aGroundFinal = new double[data.freq_lvl.size()];
+        if (path.difPoints.size() > 0) {
+            double[] DeltaDifSR;
+            double[] DeltaDifSpR;
+            double[] DeltaDifSRp;
+            double[] aGroundSO;
+            double[] aGroundOR;
 
             DeltaDifSR = getDeltaDif(path.getSRList().get(0), data);
             DeltaDifSpR = getDeltaDif(path.getSRList().get(1), data);
             DeltaDifSRp = getDeltaDif(path.getSRList().get(2), data);
-            aGroundFinal = getAGround(segmentPath.get(segmentPath.size()-1), path,data);
+
+            // Set Gm and Gw for AGround SO - Table 2.5.b
+            if (path.isFavorable()) {
+                segmentPath.get(0).setGw(segmentPath.get(0).gPath);
+                segmentPath.get(0).setGm(segmentPath.get(0).gPathPrime);
+            } else {
+                segmentPath.get(0).setGw(segmentPath.get(0).gPathPrime);
+                segmentPath.get(0).setGm(segmentPath.get(0).gPathPrime);
+            }
+            // todo zr = zos ?
+            aGroundSO = getAGround(segmentPath.get(0), path,data);
+
+            // Set Gm and Gw for AGround OR - Table 2.5.b
+            if (path.isFavorable()) {
+                segmentPath.get(0).setGw(segmentPath.get(0).gPath);
+                segmentPath.get(0).setGm(segmentPath.get(0).gPath);
+            } else {
+                segmentPath.get(0).setGw(segmentPath.get(0).gPath);
+                segmentPath.get(0).setGm(segmentPath.get(0).gPath);
+            }
+            aGroundOR = getAGround(segmentPath.get(segmentPath.size()-1), path,data);
+
+
+            // Eq 2.5.30 - Eq. 2.5.31 - Eq. 2.5.32
             for (int idf = 0; idf < nbfreq; idf++) {
-                aGroundFinal[idf]=getDeltaGround(aGround[idf], DeltaDifSpR[idf], DeltaDifSR[idf]);
+                aDif[idf]=DeltaDifSR[idf]+getDeltaGround(aGroundSO[idf], DeltaDifSpR[idf], DeltaDifSR[idf]) + getDeltaGround(aGroundOR[idf], DeltaDifSRp[idf], DeltaDifSR[idf]);
             }
 
-            aBoundary =  aGroundFinal;
+            aBoundary =  aDif;
         }
 
         return aBoundary;
