@@ -66,9 +66,9 @@ public class PropagationProcessPathData {
     double pressure = Pref;
     double[] alpha_atmo = getAtmoCoeffArray(freq_lvl,  temperature,  pressure,  humidity);
 
-    /** choose between accept G discontinuity or not **/
-    boolean gDisc = true;
-    boolean prime2520 = true;
+
+    boolean gDisc = true;     // choose between accept G discontinuity or not
+    boolean prime2520 = false; // choose to use prime values to compute eq. 2.5.20
 
     /**
      * Set relative humidity in percentage.

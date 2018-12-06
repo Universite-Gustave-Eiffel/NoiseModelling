@@ -40,20 +40,24 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * PropagationPath work for FastObstructionTest,
+ * PropagationPath
  * @author Nicolas Fortin
  * @author Pierre Aumond
  */
+
+// todo get out all the useless computations and functions
+// todo please revise public, private, etc.
+
 public class PropagationPath {
     // given by user
-    private List<SegmentPath> srList;
-    private List<PointPath> pointList;
-    private List<SegmentPath> segmentList;
-    private boolean favorable;
+    private List<SegmentPath> srList; // list of source-receiver path (including prime path)
+    private List<PointPath> pointList; // list of points (source, receiver or diffraction and reflection points)
+    private List<SegmentPath> segmentList; // list of segments (only first and last ones are necessary)
+    private boolean favorable; // if true, favorable meteorological condition path
 
     // computed in Augmented Path
-    public List<Integer> difPoints = new ArrayList<Integer>(); // diffraction points
-    public List<Integer> refPoints = new ArrayList<Integer>(); // reflection points
+    public List<Integer> difPoints = new ArrayList<Integer>(); // diffraction points indices
+    public List<Integer> refPoints = new ArrayList<Integer>(); // reflection points indices
 
     /**
      * parameters given by user
@@ -70,11 +74,11 @@ public class PropagationPath {
 
     public static class PointPath {
         // given by user
-        public final Coordinate coordinate;
-        public final double altitude;
-        public final double gs;
-        public final double alphaWall;
-        public final POINT_TYPE type;
+        public final Coordinate coordinate; // coordinate (absolute)
+        public final double altitude; // altitude of relief (exact)
+        public final double gs;       // only if POINT_TYPE = SRCE or RECV, G coefficient right above the point
+        public final double alphaWall; // only if POINT_TYPE = RECV, alpha coefficient todo potentially compute using EN 1793-1:2013 if alphaWall > 1 (and so is considered as sigma)
+        public final POINT_TYPE type; // type of point
         public enum POINT_TYPE {
             SRCE,
             REFL,
@@ -82,12 +86,6 @@ public class PropagationPath {
             DIFH,
             RECV
         }
-
-        // computed in Augmented Points
-        //public final Coordinate coordinateprime = null;
-        //public final double sigma;
-        //public final double[] impedance = null;
-
 
         /**
          * parameters given by user
@@ -98,8 +96,8 @@ public class PropagationPath {
          * @param type
          */
         public PointPath(Coordinate coordinate, double altitude, double gs, double alphaWall, POINT_TYPE type) {
-            this.coordinate = coordinate; // absolute coordinates
-            this.altitude = altitude; // floor
+            this.coordinate = coordinate;
+            this.altitude = altitude;
             this.gs = gs;
             this.alphaWall = alphaWall;
             this.type = type;
@@ -108,14 +106,14 @@ public class PropagationPath {
 
     public static class SegmentPath {
         //  given by user
-        public final double gPath;
-        public final Vector3D vector3D;
+        public final double gPath;          // G coefficient for the considered path segment
+        public final Vector3D vector3D;     // mean Plane for the considered path segment
 
         // computed in AugmentedSegments
-        public int idPtStart;
-        public int idPtFinal;
+        public int idPtStart;               //start point indice for the considered path segment
+        public int idPtFinal;               //final point indice for the considered path segment
 
-        public Double gPathPrime = null;
+        public Double gPathPrime = null;    //Gpath prime , calculated from Gpath and geometry
         public Double gw = null;
         public Double gm = null;
         public Double zs = null;
@@ -482,7 +480,6 @@ public class PropagationPath {
 
 
     private double getRayCurveLength(double d) {
-
         double gamma = Math.max(1000,8*d);
         return 2*gamma*Math.asin(d/(2*gamma));
 

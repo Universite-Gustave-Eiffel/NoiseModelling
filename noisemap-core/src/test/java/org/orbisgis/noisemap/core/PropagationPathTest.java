@@ -2,9 +2,6 @@ package org.orbisgis.noisemap.core;
 
 import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.Envelope;
-import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.math.Vector3D;
 
 import java.util.ArrayList;
