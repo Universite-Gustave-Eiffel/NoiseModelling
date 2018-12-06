@@ -53,6 +53,7 @@ public class PropagationPath {
 
     // computed in Augmented Path
     public List<Integer> difPoints = new ArrayList<Integer>(); // diffraction points
+    public List<Integer> refPoints = new ArrayList<Integer>(); // reflection points
 
     /**
      * parameters given by user
@@ -249,6 +250,7 @@ public class PropagationPath {
             for (int idPoint = 1; idPoint < pointList.size(); idPoint++) {
                 dPath += CGAlgorithms3D.distance(pointList.get(idPoint - 1).coordinate, pointList.get(idPoint).coordinate);
             }
+            SR.dPath = dPath;
         }
         if (!this.favorable){
             SR.dc = SR.d;
@@ -444,6 +446,11 @@ public class PropagationPath {
             if (pointList.get(idPoint).type==PointPath.POINT_TYPE.DIFH || pointList.get(idPoint).type==PointPath.POINT_TYPE.DIFV)
             {
                 difPoints.add(idPoint);
+            }
+
+            if (pointList.get(idPoint).type==PointPath.POINT_TYPE.REFL)
+            {
+                refPoints.add(idPoint);
             }
 
         }

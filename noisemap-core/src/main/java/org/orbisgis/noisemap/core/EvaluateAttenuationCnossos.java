@@ -197,6 +197,18 @@ public class EvaluateAttenuationCnossos {
     }
 
 
+    private double[] getARef(PropagationPath path, PropagationProcessPathData data) {
+        double[] aRef = new double[data.freq_lvl.size()];
+
+        for (int idf = 0; idf < nbfreq; idf++) {
+            for (int idRef = 0; idRef < path.refPoints.size(); idRef++) {
+                aRef[idf] += - 10 * Math.log10(path.getPointList().get(path.refPoints.get(idRef)).alphaWall);
+            }
+        }
+        return aRef ;
+    }
+
+
     private double[] getAGround(PropagationPath.SegmentPath segmentPath,PropagationPath path, PropagationProcessPathData data) {
         double[] aGround = new double[data.freq_lvl.size()];
         double aGroundmin;
@@ -306,11 +318,8 @@ public class EvaluateAttenuationCnossos {
         // init
         aGlobal = new double[data.freq_lvl.size()];
         double[] aBoundary ;
+        double[] aRef ;
         nbfreq = data.freq_lvl.size();
-        alpha_atmo = data.getAlpha_atmo();
-
-        // init evolved path
-        path.initPropagationPath();
 
         // Init wave length for each frequency
         freq_lambda = new double[nbfreq];
@@ -322,18 +331,28 @@ public class EvaluateAttenuationCnossos {
             }
         }
 
+        // init evolved path
+        path.initPropagationPath();
+
+        // init atmosphere
+        alpha_atmo = data.getAlpha_atmo();
+
 
         // divergence
-        double aDiv = getADiv(path.getSRList().get(0).d);
+        double aDiv = getADiv(path.getSRList().get(0).dPath);
 
+        // boundary (ground + diffration)
         aBoundary = getABoundary(path,data);
+
+        // reflections
+        aRef = getARef(path,data);
 
         for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
             // atm
-            double aAtm = getAAtm(path.getSRList().get(0).d,alpha_atmo[idfreq]);
+            double aAtm = getAAtm(path.getSRList().get(0).dPath,alpha_atmo[idfreq]);
 
 
-            aGlobal[idfreq] = -(aDiv + aAtm + aBoundary[idfreq]);
+            aGlobal[idfreq] = -(aDiv + aAtm + aBoundary[idfreq] + aRef[idfreq]);
 
         }
         return aGlobal;

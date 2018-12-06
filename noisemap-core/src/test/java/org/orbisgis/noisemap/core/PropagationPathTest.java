@@ -265,6 +265,100 @@ public class PropagationPathTest {
     }
 
 
+
+    /**
+     * Sound propagation
+     * T06H
+     * Horizontal ground with homogeneous properties, road source - Non compacted ground (G=0.7) with a small slope (test relief)
+     *
+     * @throws LayerDelaunayError
+     */
+    @Test
+    public void T06H() throws LayerDelaunayError {
+        List<PropagationPath.PointPath> points = new ArrayList<PropagationPath.PointPath>();
+        List<PropagationPath.SegmentPath> segments = new ArrayList<PropagationPath.SegmentPath>();
+        List<PropagationPath.SegmentPath> srPath = new ArrayList<PropagationPath.SegmentPath>();
+        Vector3D smallSlope = new Vector3D(new Coordinate(0,0,0),new Coordinate(150,0,2));
+
+        points.add(new PropagationPath.PointPath(new Coordinate(0, 0, 0.05), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.SRCE));
+        points.add(new PropagationPath.PointPath(new Coordinate(150, 0, 10.0), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.RECV));
+        // only first and last segment are necessary, even if it is possible to add more.
+        srPath.add(new PropagationPath.SegmentPath(0.7,smallSlope));
+
+        PropagationPath propagationPath = new PropagationPath(false,points,segments, srPath);
+        PropagationProcessPathData propData = new PropagationProcessPathData();
+        propData.setTemperature(15);
+        propData.setHumidity(70);
+        propData.setPrime2520(true);
+
+        EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
+        splCompare(evaluateAttenuationCnossos.evaluate(propagationPath, propData), "Test T06H", new double[]{-52.9, -52.9, -53.0, -53.2, -53.5, -54.9, -64.0, -73.6}, ERROR_EPSILON_TEST_T);
+    }
+
+    /**
+     * Sound propagation
+     * T06H
+     * Horizontal ground with homogeneous properties, road source - Non compacted ground (G=0.7) with a small slope (test relief)
+     *
+     * @throws LayerDelaunayError
+     */
+    @Test
+    public void T06F() throws LayerDelaunayError {
+        List<PropagationPath.PointPath> points = new ArrayList<PropagationPath.PointPath>();
+        List<PropagationPath.SegmentPath> segments = new ArrayList<PropagationPath.SegmentPath>();
+        List<PropagationPath.SegmentPath> srPath = new ArrayList<PropagationPath.SegmentPath>();
+        Vector3D smallSlope = new Vector3D(new Coordinate(0,0,0),new Coordinate(150,0,2));
+
+        points.add(new PropagationPath.PointPath(new Coordinate(0, 0, 0.05), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.SRCE));
+        points.add(new PropagationPath.PointPath(new Coordinate(150, 0, 10.0), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.RECV));
+        // only first and last segment are necessary, even if it is possible to add more.
+        srPath.add(new PropagationPath.SegmentPath(0.7,smallSlope));
+
+        PropagationPath propagationPath = new PropagationPath(true,points,segments, srPath);
+        PropagationProcessPathData propData = new PropagationProcessPathData();
+        propData.setTemperature(15);
+        propData.setHumidity(70);
+        propData.setPrime2520(true);
+
+        EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
+        splCompare(evaluateAttenuationCnossos.evaluate(propagationPath, propData), "Test T06F", new double[]{-52.9, -52.9, -53.0, -53.2, -53.5, -59.6, -56.8, -67.1}, ERROR_EPSILON_TEST_T);
+    }
+
+    /**
+     * Sound propagation
+     * T08H
+     * Reflexion
+     *
+     * @throws LayerDelaunayError
+     */
+    @Test
+    public void T08H() throws LayerDelaunayError {
+        List<PropagationPath.PointPath> points = new ArrayList<PropagationPath.PointPath>();
+        List<PropagationPath.SegmentPath> segments = new ArrayList<PropagationPath.SegmentPath>();
+        List<PropagationPath.SegmentPath> srPath = new ArrayList<PropagationPath.SegmentPath>();
+        Vector3D flatTopography = new Vector3D(new Coordinate(0,0,0),new Coordinate(150,0,0));
+
+        points.add(new PropagationPath.PointPath(new Coordinate(0, 0, 4), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.SRCE));
+        points.add(new PropagationPath.PointPath(new Coordinate(75, 20, 4), 0, Double.NaN, 0.7, PropagationPath.PointPath.POINT_TYPE.REFL));
+        points.add(new PropagationPath.PointPath(new Coordinate(150, 0, 4), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.RECV));
+        // only first and last segment are necessary, even if it is possible to add more.
+        srPath.add(new PropagationPath.SegmentPath(0.,flatTopography));
+
+        PropagationPath propagationPath = new PropagationPath(false,points,segments, srPath);
+        PropagationProcessPathData propData = new PropagationProcessPathData();
+        propData.setTemperature(15);
+        propData.setHumidity(70);
+        propData.setPrime2520(true);
+
+        EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
+        splCompare(evaluateAttenuationCnossos.evaluate(propagationPath, propData), "Test T08H", new double[]{-53.4, -53.4, -53.5, -53.7, -54.0, -54.7, -57.5, -68.1}, ERROR_EPSILON_TEST_T);
+    }
+
+
+
+
+
+
     /**
      * Sound propagation
      * TC01
