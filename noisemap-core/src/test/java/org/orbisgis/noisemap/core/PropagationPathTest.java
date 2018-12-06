@@ -45,7 +45,7 @@ public class PropagationPathTest {
         boolean favorable = true;
         List<PropagationPath.PointPath> points = new ArrayList<PropagationPath.PointPath>();
         List<PropagationPath.SegmentPath>  segments = new ArrayList<PropagationPath.SegmentPath>();
-        List<PropagationPath.SRPath> srPath = new ArrayList<PropagationPath.SRPath>();
+        List<PropagationPath.SegmentPath> srPath = new ArrayList<PropagationPath.SegmentPath>();
         Vector3D flatTopography = new Vector3D(new Coordinate(0,0,0),new Coordinate(0,0,0));
 
         points.add(new PropagationPath.PointPath(new Coordinate(0,0,0),1,0,Double.NaN,PropagationPath.PointPath.POINT_TYPE.SRCE));
@@ -54,7 +54,7 @@ public class PropagationPathTest {
         points.add(new PropagationPath.PointPath(new Coordinate(30,30,0),1,0,Double.NaN,PropagationPath.PointPath.POINT_TYPE.RECV));
         segments.add(new PropagationPath.SegmentPath(1, flatTopography));
         segments.add(new PropagationPath.SegmentPath(1, flatTopography));
-        srPath.add(new PropagationPath.SRPath(flatTopography));
+        srPath.add(new PropagationPath.SegmentPath(1,flatTopography));
 
         PropagationPath propagationPath = new PropagationPath(favorable,points,segments,srPath);
         PropagationProcessPathData propData = new PropagationProcessPathData();
@@ -75,13 +75,13 @@ public class PropagationPathTest {
         boolean favorable = false;
         List<PropagationPath.PointPath> points = new ArrayList<PropagationPath.PointPath>();
         List<PropagationPath.SegmentPath>  segments = new ArrayList<PropagationPath.SegmentPath>();
-        List<PropagationPath.SRPath> srPath = new ArrayList<PropagationPath.SRPath>();
+        List<PropagationPath.SegmentPath> srPath = new ArrayList<PropagationPath.SegmentPath>();
         Vector3D flatTopography = new Vector3D(new Coordinate(0,0,0),new Coordinate(0,0,0));
 
         points.add(new PropagationPath.PointPath(new Coordinate(0,0,1),0,0,Double.NaN,PropagationPath.PointPath.POINT_TYPE.SRCE));
         points.add(new PropagationPath.PointPath(new Coordinate(200,0,4),0,0,Double.NaN,PropagationPath.PointPath.POINT_TYPE.RECV));
         segments.add(new PropagationPath.SegmentPath(0, flatTopography));
-        srPath.add(new PropagationPath.SRPath(flatTopography));
+        srPath.add(new PropagationPath.SegmentPath(0,flatTopography));
 
         PropagationPath propagationPath = new PropagationPath(favorable,points,segments, srPath);
         PropagationProcessPathData propData = new PropagationProcessPathData();
@@ -103,13 +103,12 @@ public class PropagationPathTest {
     public void T02H() throws LayerDelaunayError {
         List<PropagationPath.PointPath> points = new ArrayList<PropagationPath.PointPath>();
         List<PropagationPath.SegmentPath> segments = new ArrayList<PropagationPath.SegmentPath>();
-        List<PropagationPath.SRPath> srPath = new ArrayList<PropagationPath.SRPath>();
+        List<PropagationPath.SegmentPath> srPath = new ArrayList<PropagationPath.SegmentPath>();
         Vector3D flatTopography = new Vector3D(new Coordinate(0,0,0),new Coordinate(200,0,0));
 
         points.add(new PropagationPath.PointPath(new Coordinate(0, 0, 0.05), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.SRCE));
         points.add(new PropagationPath.PointPath(new Coordinate(200, 0, 4), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.RECV));
-        segments.add(new PropagationPath.SegmentPath(1, flatTopography));
-        srPath.add(new PropagationPath.SRPath(flatTopography));
+        srPath.add(new PropagationPath.SegmentPath(1,flatTopography));
 
         PropagationPath propagationPath = new PropagationPath(false,points,segments, srPath);
         PropagationProcessPathData propData = new PropagationProcessPathData();
@@ -129,13 +128,12 @@ public class PropagationPathTest {
     public void T02F() throws LayerDelaunayError {
         List<PropagationPath.PointPath> points = new ArrayList<PropagationPath.PointPath>();
         List<PropagationPath.SegmentPath> segments = new ArrayList<PropagationPath.SegmentPath>();
-        List<PropagationPath.SRPath> srPath = new ArrayList<PropagationPath.SRPath>();
+        List<PropagationPath.SegmentPath> srPath = new ArrayList<PropagationPath.SegmentPath>();
         Vector3D flatTopography = new Vector3D(new Coordinate(0,0,0),new Coordinate(200,0,0));
 
         points.add(new PropagationPath.PointPath(new Coordinate(0, 0, 0.05), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.SRCE));
         points.add(new PropagationPath.PointPath(new Coordinate(200, 0, 4), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.RECV));
-        segments.add(new PropagationPath.SegmentPath(1, flatTopography));
-        srPath.add(new PropagationPath.SRPath(flatTopography));
+        srPath.add(new PropagationPath.SegmentPath(1,flatTopography));
 
         PropagationPath propagationPath = new PropagationPath(true,points,segments, srPath);
         PropagationProcessPathData propData = new PropagationProcessPathData();
@@ -155,18 +153,18 @@ public class PropagationPathTest {
     public void T03F() throws LayerDelaunayError {
         List<PropagationPath.PointPath> points = new ArrayList<PropagationPath.PointPath>();
         List<PropagationPath.SegmentPath> segments = new ArrayList<PropagationPath.SegmentPath>();
-        List<PropagationPath.SRPath> srPath = new ArrayList<PropagationPath.SRPath>();
+        List<PropagationPath.SegmentPath> srPath = new ArrayList<PropagationPath.SegmentPath>();
         Vector3D flatTopography = new Vector3D(new Coordinate(0,0,0),new Coordinate(200,0,0));
 
         points.add(new PropagationPath.PointPath(new Coordinate(0, 0, 0.05), 0.0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.SRCE));
         points.add(new PropagationPath.PointPath(new Coordinate(200, 0, 4.), 0., 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.RECV));
-        segments.add(new PropagationPath.SegmentPath(0.7, flatTopography));
-        srPath.add(new PropagationPath.SRPath(flatTopography));
+        srPath.add(new PropagationPath.SegmentPath(0.7,flatTopography));
 
         PropagationPath propagationPath = new PropagationPath(true,points,segments, srPath);
         PropagationProcessPathData propData = new PropagationProcessPathData();
         propData.setTemperature(15);
         propData.setHumidity(70);
+        propData.setPrime2520(true);
 
         EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
         splCompare(evaluateAttenuationCnossos.evaluate(propagationPath, propData), "Test T03F", new double[]{-56.1, -56.2, -56.3, -56.6, -61.6, -61.1, -61.4, -75.1}, ERROR_EPSILON_TEST_T);
@@ -181,19 +179,18 @@ public class PropagationPathTest {
     public void T03H() throws LayerDelaunayError {
         List<PropagationPath.PointPath> points = new ArrayList<PropagationPath.PointPath>();
         List<PropagationPath.SegmentPath> segments = new ArrayList<PropagationPath.SegmentPath>();
-        List<PropagationPath.SRPath> srPath = new ArrayList<PropagationPath.SRPath>();
+        List<PropagationPath.SegmentPath> srPath = new ArrayList<PropagationPath.SegmentPath>();
         Vector3D flatTopography = new Vector3D(new Coordinate(0,0,0),new Coordinate(200,0,0));
 
         points.add(new PropagationPath.PointPath(new Coordinate(0, 0, 0.05), 0., 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.SRCE));
         points.add(new PropagationPath.PointPath(new Coordinate(200, 0, 4.), 0., 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.RECV));
-        segments.add(new PropagationPath.SegmentPath(0.7, flatTopography));
-        srPath.add(new PropagationPath.SRPath(flatTopography));
+        srPath.add(new PropagationPath.SegmentPath(0.7,flatTopography));
 
         PropagationPath propagationPath = new PropagationPath(false,points,segments, srPath);
         PropagationProcessPathData propData = new PropagationProcessPathData();
         propData.setTemperature(15);
         propData.setHumidity(70);
-
+        propData.setGDisc(true);
         EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
         splCompare(evaluateAttenuationCnossos.evaluate(propagationPath, propData), "Test T03H", new double[]{-56.1, -56.2, -56.3, -60.6, -66.0, -72.6, -80.8, -88.8}, ERROR_EPSILON_TEST_T);
     }
@@ -211,17 +208,17 @@ public class PropagationPathTest {
 
         List<PropagationPath.PointPath> points = new ArrayList<PropagationPath.PointPath>();
         List<PropagationPath.SegmentPath> segments = new ArrayList<PropagationPath.SegmentPath>();
-        List<PropagationPath.SRPath> srPath = new ArrayList<PropagationPath.SRPath>();
+        List<PropagationPath.SegmentPath> srPath = new ArrayList<PropagationPath.SegmentPath>();
         Vector3D flatTopography = new Vector3D(new Coordinate(0,0,0),new Coordinate(150,0,0));
 
         points.add(new PropagationPath.PointPath(new Coordinate(0, 0, 0.05), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.SRCE));
         points.add(new PropagationPath.PointPath(new Coordinate(50, 0, 10.0), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.DIFH));
         points.add(new PropagationPath.PointPath(new Coordinate(100, 0, 10.0), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.DIFH));
         points.add(new PropagationPath.PointPath(new Coordinate(150, 0, 2.0), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.RECV));
+        // only first and last segment are necessary, even if it is possible to add more.
         segments.add(new PropagationPath.SegmentPath(0, flatTopography));
         segments.add(new PropagationPath.SegmentPath(0, flatTopography));
-        segments.add(new PropagationPath.SegmentPath(0, flatTopography));
-        srPath.add(new PropagationPath.SRPath(flatTopography));
+        srPath.add(new PropagationPath.SegmentPath(0,flatTopography));
 
         PropagationPath propagationPath = new PropagationPath(false,points,segments, srPath);
         PropagationProcessPathData propData = new PropagationProcessPathData();
@@ -232,5 +229,97 @@ public class PropagationPathTest {
         splCompare(evaluateAttenuationCnossos.evaluate(propagationPath, propData), "Test T05H", new double[]{-63.4, -67.2, -70.6, -73.9, -74.6, -75.3, -78.0, -88.2}, ERROR_EPSILON_TEST_T);
 
   }
+
+    /**
+     * Sound propagation
+     * T05
+     * Diffraction on horizontal edges - building
+     *
+     * @throws LayerDelaunayError
+     */
+    @Test
+    public void T05F() throws LayerDelaunayError {
+
+        List<PropagationPath.PointPath> points = new ArrayList<PropagationPath.PointPath>();
+        List<PropagationPath.SegmentPath> segments = new ArrayList<PropagationPath.SegmentPath>();
+        List<PropagationPath.SegmentPath> srPath = new ArrayList<PropagationPath.SegmentPath>();
+        Vector3D flatTopography = new Vector3D(new Coordinate(0,0,0),new Coordinate(150,0,0));
+
+        points.add(new PropagationPath.PointPath(new Coordinate(0, 0, 0.05), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.SRCE));
+        points.add(new PropagationPath.PointPath(new Coordinate(50, 0, 10.0), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.DIFH));
+        points.add(new PropagationPath.PointPath(new Coordinate(100, 0, 10.0), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.DIFH));
+        points.add(new PropagationPath.PointPath(new Coordinate(150, 0, 2.0), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.RECV));
+        // only first and last segment are necessary, even if it is possible to add more.
+        segments.add(new PropagationPath.SegmentPath(0.0, flatTopography));
+        segments.add(new PropagationPath.SegmentPath(0.0, flatTopography));
+        srPath.add(new PropagationPath.SegmentPath(0.0,flatTopography));
+
+        PropagationPath propagationPath = new PropagationPath(true,points,segments, srPath);
+        PropagationProcessPathData propData = new PropagationProcessPathData();
+        propData.setTemperature(15);
+        propData.setHumidity(70);
+
+        EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
+        splCompare(evaluateAttenuationCnossos.evaluate(propagationPath, propData), "Test T05F", new double[]{-63.2, -67.0, -70.4, -73.6, -74.6, -75.3, -78.0, -88.3}, ERROR_EPSILON_TEST_T);
+
+    }
+
+
+    /**
+     * Sound propagation
+     * TC01
+     *
+     * @throws LayerDelaunayError
+     */
+    @Test
+    public void TC01H() throws LayerDelaunayError {
+
+        List<PropagationPath.PointPath> points = new ArrayList<PropagationPath.PointPath>();
+        List<PropagationPath.SegmentPath> segments = new ArrayList<PropagationPath.SegmentPath>();
+        List<PropagationPath.SegmentPath> srPath = new ArrayList<PropagationPath.SegmentPath>();
+
+        Vector3D flatTopography = new Vector3D(new Coordinate(10,10,0),new Coordinate(200,50,0));
+        points.add(new PropagationPath.PointPath(new Coordinate(10, 10, 1), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.SRCE));
+        points.add(new PropagationPath.PointPath(new Coordinate(200, 50, 4), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.RECV));
+        segments.add(new PropagationPath.SegmentPath(0, flatTopography));
+        srPath.add(new PropagationPath.SegmentPath(0,flatTopography));
+
+        PropagationPath propagationPath = new PropagationPath(false,points,segments, srPath);
+        PropagationProcessPathData propData = new PropagationProcessPathData();
+        propData.setTemperature(10);
+        propData.setHumidity(70);
+
+        splCompare(new EvaluateAttenuationCnossos().evaluate(propagationPath, propData), "Test TC01H", new double[]{39.21-93, 39.16-93, 39.03-93, 38.86-93, 38.53-93, 37.36-93, 32.87-93, 16.54-93}, ERROR_EPSILON_TEST_T);
+
+    }
+
+    /**
+     * Sound propagation
+     * TC01
+     *
+     * @throws LayerDelaunayError
+     */
+    @Test
+    public void TC01F() throws LayerDelaunayError {
+
+        List<PropagationPath.PointPath> points = new ArrayList<PropagationPath.PointPath>();
+        List<PropagationPath.SegmentPath> segments = new ArrayList<PropagationPath.SegmentPath>();
+        List<PropagationPath.SegmentPath> srPath = new ArrayList<PropagationPath.SegmentPath>();
+        Vector3D flatTopography = new Vector3D(new Coordinate(10,10,0),new Coordinate(200,50,0));
+
+        points.add(new PropagationPath.PointPath(new Coordinate(10, 10, 1), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.SRCE));
+        points.add(new PropagationPath.PointPath(new Coordinate(200, 50, 4), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.RECV));
+        segments.add(new PropagationPath.SegmentPath(0, flatTopography));
+        srPath.add(new PropagationPath.SegmentPath(0,flatTopography));
+
+        PropagationPath propagationPath = new PropagationPath(true,points,segments, srPath);
+        PropagationProcessPathData propData = new PropagationProcessPathData();
+        propData.setTemperature(10);
+        propData.setHumidity(70);
+
+        EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
+        splCompare(evaluateAttenuationCnossos.evaluate(propagationPath, propData), "Test TC01F", new double[]{40.58-93, 40.52-93, 40.40-93, 40.23-93, 39.89-93, 38.72-93, 34.24-93, 17.90-93}, ERROR_EPSILON_TEST_T);
+
+    }
 
 }

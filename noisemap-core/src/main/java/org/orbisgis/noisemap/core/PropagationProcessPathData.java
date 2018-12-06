@@ -66,6 +66,9 @@ public class PropagationProcessPathData {
     double pressure = Pref;
     double[] alpha_atmo = getAtmoCoeffArray(freq_lvl,  temperature,  pressure,  humidity);
 
+    /** choose between accept G discontinuity or not **/
+    boolean gDisc = true;
+    boolean prime2520 = true;
 
     /**
      * Set relative humidity in percentage.
@@ -84,6 +87,16 @@ public class PropagationProcessPathData {
     public PropagationProcessPathData setPressure(double pressure) {
         this.pressure = pressure;
         this.alpha_atmo = getAtmoCoeffArray(freq_lvl,  temperature,  pressure,  humidity);
+        return this;
+    }
+
+    public PropagationProcessPathData setGDisc(boolean gDisc) {
+        this.gDisc = gDisc;
+        return this;
+    }
+
+    public PropagationProcessPathData setPrime2520(boolean prime2520) {
+        this.prime2520 = prime2520;
         return this;
     }
 

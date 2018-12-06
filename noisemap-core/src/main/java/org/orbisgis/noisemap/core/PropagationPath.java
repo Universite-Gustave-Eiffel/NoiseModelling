@@ -37,9 +37,7 @@ import org.locationtech.jts.algorithm.CGAlgorithms3D;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.math.Vector3D;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Vector;
 
 /**
  * PropagationPath work for FastObstructionTest,
@@ -48,7 +46,7 @@ import java.util.Vector;
  */
 public class PropagationPath {
     // given by user
-    private List<SRPath> srList;
+    private List<SegmentPath> srList;
     private List<PointPath> pointList;
     private List<SegmentPath> segmentList;
     private boolean favorable;
@@ -62,7 +60,7 @@ public class PropagationPath {
      * @param pointList
      * @param segmentList
      */
-    public PropagationPath(boolean favorable, List<PointPath> pointList, List<SegmentPath> segmentList , List<SRPath> srList) {
+    public PropagationPath(boolean favorable, List<PointPath> pointList, List<SegmentPath> segmentList , List<SegmentPath> srList) {
         this.favorable = favorable;
         this.pointList = pointList;
         this.segmentList = segmentList;
@@ -107,27 +105,6 @@ public class PropagationPath {
         }
     }
 
-    public static class SRPath {
-
-        // given by user
-        public final Vector3D vector3D;
-
-        // computed in AugmentedSRPath
-        public Double dPath; // pass by points
-        public Double d ; // direct ray between source and receiver
-        public Double dc; // direct ray sensible to meteorological conditions (can be curve) between source and receiver
-        public Double dp; // distance on mean plane between source and receiver
-        public Double eLength; // distance between first and last diffraction point
-        public Double delta; // distance between first and last diffraction point
-
-        public SRPath(Vector3D vector3D) {
-            this.vector3D = vector3D;
-        }
-
-
-    }
-
-
     public static class SegmentPath {
         //  given by user
         public final double gPath;
@@ -146,17 +123,23 @@ public class PropagationPath {
         public Double zrPrime = null;
         public Double testForm = null;
         public Double testFormPrime = null;
-        public Double d = null; // direct ray
-        public Double dc = null; // direct ray sensible to meteorological conditions
-        public Double dp = null; // direct ray sensible to meteorological conditions
+
+        public Double dPath; // pass by points
+        public Double d ; // direct ray between source and receiver
+        public Double dc; // direct ray sensible to meteorological conditions (can be curve) between source and receiver
+        public Double dp; // distance on mean plane between source and receiver
+        public Double eLength; // distance between first and last diffraction point
+        public Double delta; // distance between first and last diffraction point
 
         /**
          * @param gPath
          */
-        public SegmentPath(double gPath,Vector3D vector3D) {
+
+        public SegmentPath(double gPath, Vector3D vector3D) {
             this.gPath = gPath;
             this.vector3D = vector3D;
         }
+
 
 
         public void setGw(double g) {
@@ -217,7 +200,7 @@ public class PropagationPath {
 
     public List<SegmentPath> getSegmentList() {return segmentList;}
 
-    public List<SRPath> getSRList() {return srList;}
+    public List<SegmentPath> getSRList() {return srList;}
 
     public PropagationPath(List<SegmentPath> segmentList) {
         this.segmentList = segmentList;
@@ -238,7 +221,6 @@ public class PropagationPath {
     public void initPropagationPath() {
         computeAugmentedPath();
         computeAugmentedSegments();
-        //computeAugmentedPoints();
         computeAugmentedSRPath();
     }
 
@@ -246,7 +228,10 @@ public class PropagationPath {
     public void computeAugmentedSRPath() {
         double dPath =0 ;
 
-        SRPath SR = this.srList.get(0);
+        SegmentPath SR = this.srList.get(0);
+
+        SR.idPtStart = 0;
+        SR.idPtFinal = pointList.size()-1;
 
         // Original absolute coordinates
         Coordinate S = (Coordinate) pointList.get(0).coordinate.clone();
@@ -276,9 +261,9 @@ public class PropagationPath {
             // Symmetric coordinates
             Coordinate Sprime = new Coordinate(2 * SGround.x - S.x, 2 * SGround.y - S.y, 2 * SGround.z - S.z);
             Coordinate Rprime = new Coordinate(2 * RGround.x - R.x, 2 * RGround.y - R.y, 2 * RGround.z - R.z);
-
-            SRPath SRp = new SRPath(new Vector3D(S, Rprime));
-            SRPath SpR = new SRPath(new Vector3D(Sprime, R));
+            double gpath = SR.gPath;
+            SegmentPath SRp = new SegmentPath(gpath, new Vector3D(S, Rprime));
+            SegmentPath SpR = new SegmentPath(gpath, new Vector3D(Sprime, R));
 
             SpR.d = CGAlgorithms3D.distance(Sprime, R);
             SRp.d = CGAlgorithms3D.distance(S, Rprime);
@@ -360,11 +345,34 @@ public class PropagationPath {
                     SpR.delta = SpR.dPath - SpR.dc;
                 }
             }
-
-
             this.srList.add(SpR);
             this.srList.add(SRp);
         }
+
+
+        SR.zs  =SR.getZs(this, SR);
+        SR.zr  =SR.getZr(this, SR);
+
+        double gs = pointList.get(0).gs;
+
+        double testForm = SR.dp / (30 * (SR.zs + SR.zr));
+        SR.testForm = testForm;
+
+        // Compute PRIME zs, zr and testForm
+        double zsPrime= SR.getZsPrime(this,SR );
+        double zrPrime = SR.getZrPrime(this, SR);
+        double testFormPrime = SR.dp / (30 * (zsPrime + zrPrime));
+        SR.testFormPrime = testFormPrime;
+
+        double gPathPrime;
+        if (testForm <= 1) {
+            gPathPrime = testForm * SR.gPath + (1 - testForm) * gs;
+        } else {
+            gPathPrime = SR.gPath;
+        }
+        SR.gPathPrime = gPathPrime;
+
+
     }
 
 
@@ -445,7 +453,6 @@ public class PropagationPath {
 
     private double computeZs(SegmentPath segmentPath) {
         return pointList.get(segmentPath.idPtStart).coordinate.z - projectPointonVector(pointList.get(segmentPath.idPtStart).coordinate,segmentPath.vector3D).z;
-               // - srList.get(0).vector3D.project(pointList.get(segmentPath.idPtStart).coordinate).z;
     }
 
     private double computeZr(SegmentPath segmentPath) {
