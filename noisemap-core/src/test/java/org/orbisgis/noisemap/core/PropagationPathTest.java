@@ -188,6 +188,7 @@ public class PropagationPathTest {
         propData.setTemperature(15);
         propData.setHumidity(70);
         propData.setGDisc(true);
+
         EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
         splCompare(evaluateAttenuationCnossos.evaluate(propagationPath, propData), "Test T03H", new double[]{-56.1, -56.2, -56.3, -60.6, -66.0, -72.6, -80.8, -88.8}, ERROR_EPSILON_TEST_T);
     }

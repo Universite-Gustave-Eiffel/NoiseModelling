@@ -52,7 +52,7 @@ public class PropagationPath {
     // given by user
     private List<SegmentPath> srList; // list of source-receiver path (including prime path)
     private List<PointPath> pointList; // list of points (source, receiver or diffraction and reflection points)
-    private List<SegmentPath> segmentList; // list of segments (only first and last ones are necessary)
+    private List<SegmentPath> segmentList; // list of segments [S,O1] and [On-1,R] (O1 and On-1 are respectively the first diffraction point and On-1 the last diffration point)
     private boolean favorable; // if true, favorable meteorological condition path
 
     // computed in Augmented Path
