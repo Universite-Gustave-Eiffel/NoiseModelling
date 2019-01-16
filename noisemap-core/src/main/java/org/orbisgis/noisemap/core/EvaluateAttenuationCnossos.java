@@ -261,8 +261,20 @@ public class EvaluateAttenuationCnossos {
 
         aGround = getAGround(srPath.get(0), path,data);
         aBoundary = aGround;
+        if (path.difVPoints.size() > 0) {
+            List<PropagationPath.SegmentPath> segmentPath = path.getSegmentList();
+            double[] DeltaDifSR;
+            DeltaDifSR = getDeltaDif(path.getSRList().get(0), data);
 
-        if (path.difPoints.size() > 0) {
+            // Eq 2.5.30 - Eq. 2.5.31 - Eq. 2.5.32
+            for (int idf = 0; idf < nbfreq; idf++) {
+                aDif[idf]=DeltaDifSR[idf];
+                aBoundary[idf] = aDif[idf] + aGround[idf];
+            }
+
+             ;
+        }
+        if (path.difHPoints.size() > 0) {
             List<PropagationPath.SegmentPath> segmentPath = path.getSegmentList();
 
             double[] DeltaDifSR;
@@ -349,8 +361,12 @@ public class EvaluateAttenuationCnossos {
 
         for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
             // atm
-            double aAtm = getAAtm(path.getSRList().get(0).dPath,alpha_atmo[idfreq]);
-
+            double aAtm;
+            if (path.difVPoints.size() > 0) {
+                aAtm = getAAtm(path.getSRList().get(0).dPath, alpha_atmo[idfreq]);
+            }else{
+                aAtm = getAAtm(path.getSRList().get(0).d, alpha_atmo[idfreq]);
+            }
 
             aGlobal[idfreq] = -(aDiv + aAtm + aBoundary[idfreq] + aRef[idfreq]);
 
