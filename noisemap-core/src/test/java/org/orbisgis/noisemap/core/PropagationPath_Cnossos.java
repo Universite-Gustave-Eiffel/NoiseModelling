@@ -11,7 +11,7 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
-public class PropagationPathTest {
+public class PropagationPath_Cnossos {
 
     private static final double ERROR_EPSILON_TEST_T = 0.2;
     private static final List<Integer> freqLvl = Collections.unmodifiableList(Arrays.asList(63, 125, 250, 500, 1000, 2000,
@@ -411,6 +411,40 @@ public class PropagationPathTest {
 
         EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
         splCompare(evaluateAttenuationCnossos.evaluate(propagationPath, propData), "Test TC01F", new double[]{40.58-93, 40.52-93, 40.40-93, 40.23-93, 39.89-93, 38.72-93, 34.24-93, 17.90-93}, ERROR_EPSILON_TEST_T);
+
+    }
+
+
+
+    /**
+     * Sound propagation
+     * T14
+     * Site with homogeneous ground properties and a large and tall building
+     *
+     * @throws LayerDelaunayError
+     */
+    @Test
+    public void T14H() throws LayerDelaunayError {
+
+        List<PropagationPath.PointPath> points = new ArrayList<PropagationPath.PointPath>();
+        List<PropagationPath.SegmentPath> segments = new ArrayList<PropagationPath.SegmentPath>();
+        List<PropagationPath.SegmentPath> srPath = new ArrayList<PropagationPath.SegmentPath>();
+
+        points.add(new PropagationPath.PointPath(new Coordinate(10, 10, 4.0), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.SRCE));
+        points.add(new PropagationPath.PointPath(new Coordinate(175, 50, 4.0), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.DIFV));
+        points.add(new PropagationPath.PointPath(new Coordinate(200, 10, 4.0), 0, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.RECV));
+        // only first and last segment are necessary, even if it is possible to add more.
+        segments.add(new PropagationPath.SegmentPath(0.0, new Vector3D(new Coordinate(10,10,0),new Coordinate(175,50,0))));
+        segments.add(new PropagationPath.SegmentPath(0.0, new Vector3D(new Coordinate(175,50,0),new Coordinate(200,10,0))));
+        srPath.add(new PropagationPath.SegmentPath(0.0,new Vector3D(new Coordinate(10,10,0),new Coordinate(200,10,0))));
+
+        PropagationPath propagationPath = new PropagationPath(false,points,segments, srPath);
+        PropagationProcessPathData propData = new PropagationProcessPathData();
+        propData.setTemperature(15);
+        propData.setHumidity(70);
+
+        EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
+        splCompare(evaluateAttenuationCnossos.evaluate(propagationPath, propData), "Test T14H", new double[]{-76.7, -79.7, -82.8, -86.1, -89.5, -93.5, -100.4, -118.2}, ERROR_EPSILON_TEST_T);
 
     }
 

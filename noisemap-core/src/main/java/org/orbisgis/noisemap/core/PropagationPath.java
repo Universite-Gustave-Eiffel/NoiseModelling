@@ -231,7 +231,7 @@ public class PropagationPath {
 
         SR.idPtStart = 0;
         SR.idPtFinal = pointList.size()-1;
-
+        SR.eLength = 0.0 ;
         // Original absolute coordinates
         Coordinate S = (Coordinate) pointList.get(0).coordinate.clone();
         Coordinate R = (Coordinate) pointList.get(pointList.size()-1).coordinate.clone();

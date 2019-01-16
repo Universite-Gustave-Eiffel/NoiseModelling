@@ -80,10 +80,10 @@ public class EvaluateAttenuationCnossos {
 
         for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
 
-            double gammaPart = Math.pow((5 * freq_lambda[idfreq]) / srpath.eLength, 2);
             double Ch = 1;// Math.min(h0 * (data.celerity / freq_lambda[idfreq]) / 250, 1);
 
             if (srpath.eLength > 0.3) {
+                double gammaPart = Math.pow((5 * freq_lambda[idfreq]) / srpath.eLength, 2);
                 cprime = (1. + gammaPart) / (ONETHIRD + gammaPart);
             } else {
                 cprime = 1.;
@@ -339,7 +339,7 @@ public class EvaluateAttenuationCnossos {
 
 
         // divergence
-        double aDiv = getADiv(path.getSRList().get(0).dPath);
+        double aDiv = getADiv(path.getSRList().get(0).d); // TODO If d 08H doesn't pass but T05F pass !
 
         // boundary (ground + diffration)
         aBoundary = getABoundary(path,data);
