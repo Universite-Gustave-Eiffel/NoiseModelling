@@ -40,11 +40,14 @@ import org.h2gis.api.ProgressVisitor;
 import java.util.ArrayList;
 import java.util.List;
 
+
+
 /**
  * Data input for a propagation process (SubEnveloppe of BR_TriGrid).
  *
  * @author Nicolas Fortin
  * @author Pierre Aumond
+ * @author Adrien Le Bellec
  */
 public class PropagationProcessData {
     // Thermodynamic constants
@@ -198,4 +201,62 @@ public class PropagationProcessData {
     }
 
 
+
+    /**
+     * Set WallAlpha
+     */
+    public static double[] getWallAlpha(double WallAlpha, List<Integer> freq_lvl)
+    {
+        double sigma = 0;
+        if(WallAlpha >= 0 && WallAlpha <= 1) {
+            sigma = 20000 * Math.pow (10., -2 * Math.pow (WallAlpha, 3./5.)) ; // TODO convert G to sigma
+        }else if (WallAlpha >= 200 && WallAlpha <= 20000){
+            sigma = WallAlpha;
+        }
+        double[] value = GetWallImpedance(sigma,freq_lvl);
+        return value;
+
+    }
+
+    static double[] GetWallImpedance(double sigma, List<Integer> freq_l)            // TODO convert sigma to impedance
+    {
+        double[] alpha = new double[freq_l.size()];
+        for (int i=0 ; i < freq_l.size() ; ++i)
+        {
+            double s = Math.log(freq_l.get(i) / sigma);
+            double x = 1. + 9.08 * Math.exp(-.75 * s);
+            double y = 11.9 * Math.exp(-0.73 * s);
+            ComplexNumber Z = new ComplexNumber(x, y);
+            /*double layer = 0.05; // Let user Choose
+            if (layer > 0 && sigma < 1000)
+            {
+                s = 1000 * sigma / freq;
+                double c = 340;
+                double RealK= 2 * Math.PI * freq / c *(1 + 0.0858 * Math.pow(s, 0.70));
+                double ImgK=2 * Math.PI * freq / c *(0.175 * Math.pow(s, 0.59));
+                ComplexNumber k = ComplexNumber.multiply(new ComplexNumber(2 * Math.PI * freq / c,0) , new ComplexNumber(1 + 0.0858 * Math.pow(s, 0.70),0.175 * Math.pow(s, 0.59)));
+                ComplexNumber j = new ComplexNumber(-0, -1);
+                ComplexNumber m = ComplexNumber.multiply(j,k);
+                Z[i] = ComplexNumber.divide(Z[i], (ComplexNumber.exp(m)));
+            }*/
+            alpha[i]=GetTrueWallAlpha(Z);
+        }
+        return alpha;
+    }
+
+   static double GetTrueWallAlpha(ComplexNumber impedance)         // TODO convert impedance to alpha
+    {
+        double alpha ;
+        ComplexNumber z = ComplexNumber.divide(new ComplexNumber(1.0,0), impedance) ;
+        double x = z.getRe();
+        double y = z.getIm();
+        double a1 = (x * x - y * y) / y ;
+        double a2 = y / (x * x + y * y + x) ;
+        double a3 = ((x + 1) *(x + 1) + y * y) / (x * x + y * y) ;
+        alpha = 8 * x * (1 + a1 * Math.atan(a2) - x * Math.log(a3)) ;
+        return alpha ;
+    }
+
 }
+
+

@@ -68,9 +68,12 @@ import org.slf4j.LoggerFactory;
 
 import static org.orbisgis.noisemap.core.FastObstructionTest.*;
 
+
+
 /**
  * @author Nicolas Fortin
  * @author Pierre Aumond
+ * @author Adrien Le Bellec
  */
 public class PropagationProcess implements Runnable {
     private final static double BASE_LVL = 1.; // 0dB lvl
@@ -204,6 +207,8 @@ public class PropagationProcess implements Runnable {
                                  Coordinate srcCoord,List<Double> wj, List<FastObstructionTest.Wall> nearBuildingsWalls,
                                  double[] favrose,
                                  double[] energeticSum, List<PropagationDebugInfo> debugInfo) {
+
+
         // Compute receiver mirror
         LineSegment srcReceiver = new LineSegment(srcCoord, receiverCoord);
         LineIntersector linters = new RobustLineIntersector();
@@ -231,7 +236,9 @@ public class PropagationProcess implements Runnable {
             // While there is a reflection point on another wall. And intersection point is in the wall z bounds.
             while (linters.hasIntersection() && MirrorReceiverIterator.wallPointTest(seg, destinationPt))
             {
+
                 Double buildingAlpha = data.freeFieldFinder.getBuildingAlpha(seg.getBuildingId());
+                double[] CorrectionWallALpha = PropagationProcessData.getWallAlpha(data.wallAlpha,data.freq_lvl); // TODO Adrien
                 reflectionAlpha *= 1 - (buildingAlpha.isNaN() ? data.wallAlpha : buildingAlpha);
                 // There are a probable reflection point on the
                 // segment

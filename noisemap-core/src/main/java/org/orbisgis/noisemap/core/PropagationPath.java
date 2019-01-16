@@ -127,7 +127,7 @@ public class PropagationPath {
         public Double d ; // direct ray between source and receiver
         public Double dc; // direct ray sensible to meteorological conditions (can be curve) between source and receiver
         public Double dp; // distance on mean plane between source and receiver
-        public Double eLength; // distance between first and last diffraction point
+        public Double eLength = 0.0; // distance between first and last diffraction point
         public Double delta; // distance between first and last diffraction point
 
         /**
@@ -231,7 +231,7 @@ public class PropagationPath {
 
         SR.idPtStart = 0;
         SR.idPtFinal = pointList.size()-1;
-        SR.eLength = 0.0 ;
+
         // Original absolute coordinates
         Coordinate S = (Coordinate) pointList.get(0).coordinate.clone();
         Coordinate R = (Coordinate) pointList.get(pointList.size()-1).coordinate.clone();
