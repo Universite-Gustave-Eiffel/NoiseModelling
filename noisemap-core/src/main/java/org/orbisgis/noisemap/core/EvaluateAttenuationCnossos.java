@@ -349,9 +349,14 @@ public class EvaluateAttenuationCnossos {
         // init atmosphere
         alpha_atmo = data.getAlpha_atmo();
 
-
+        double aDiv;
         // divergence
-        double aDiv = getADiv(path.getSRList().get(0).d); // TODO If d 08H doesn't pass but T05F pass !
+        if (path.refPoints.size() > 0) {
+            aDiv = getADiv(path.getSRList().get(0).dPath);
+        }else{
+            aDiv = getADiv(path.getSRList().get(0).d);
+        }
+
 
         // boundary (ground + diffration)
         aBoundary = getABoundary(path,data);
@@ -362,7 +367,7 @@ public class EvaluateAttenuationCnossos {
         for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
             // atm
             double aAtm;
-            if (path.difVPoints.size() > 0) {
+            if (path.difVPoints.size() > 0 || path.refPoints.size() > 0) {
                 aAtm = getAAtm(path.getSRList().get(0).dPath, alpha_atmo[idfreq]);
             }else{
                 aAtm = getAAtm(path.getSRList().get(0).d, alpha_atmo[idfreq]);
