@@ -74,7 +74,7 @@ public class MeshBuilder {
     private static final int EPSILON_MESH = 2; //Decimal value, Used for merged geometry precision
 
     public static class PolygonWithHeight {
-        private final Geometry geo;
+        protected final Geometry geo;
         //If we add the topographic, the building height will be the average ToPo Height+ Building Height of all vertices
         private double height;
         private double alpha = Double.NaN;

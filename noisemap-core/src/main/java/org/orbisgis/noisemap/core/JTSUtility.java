@@ -214,4 +214,44 @@ public class JTSUtility {
         }
         return newCoord;
     }
+
+    /**
+     * ChangeCoordinateSystem, use original coordinate in 3D to change into a new markland in 2D with new x' computed by algorithm and y' is original height of point.
+     * Attention this function can just be used when the points in the same plane.
+     * {@link "http://en.wikipedia.org/wiki/Rotation_matrix"}
+     * @param  listPoints X Y Z points, all should be on the same plane as first and last points.
+     * @return X Z projected points
+     */
+    public static List<Coordinate> getOldCoordinateSystemList(List<Coordinate> listPoints, double angle) {
+        List<Coordinate> newCoord = new ArrayList<>(listPoints.size());
+        //get angle by ray source-receiver with the X-axis.
+        double sin = Math.sin(angle);
+        double cos = Math.cos(angle);
+
+        for (Coordinate listPoint : listPoints) {
+            double newX = (listPoint.x - listPoints.get(listPoints.size()-1).x) *-cos;
+            double newY = (listPoint.x - listPoints.get(listPoints.size()-1).x) *sin;
+
+            newCoord.add(new Coordinate(newX,newY, listPoint.y));
+        }
+        return newCoord;
+    }
+
+
+    /**
+     * ChangeCoordinateSystem, use original coordinate in 3D to change into a new markland in 2D with new x' computed by algorithm and y' is original height of point.
+     * Attention this function can just be used when the points in the same plane.
+     * {@link "http://en.wikipedia.org/wiki/Rotation_matrix"}
+     * @param  Point X Y Z points, all should be on the same plane as first and last points.
+     * @return X Z projected points
+     */
+    public static Coordinate getOldCoordinateSystem(Coordinate Point, double angle) {
+        //get angle by ray source-receiver with the X-axis.
+        double sin = Math.sin(angle);
+        double cos = Math.cos(angle);
+
+        return new Coordinate( (Point.x ) *cos, (Point.x ) *sin, Point.y);
+    }
+
+
 }

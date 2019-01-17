@@ -660,12 +660,11 @@ public class FastObstructionTest {
             path.add(new TriIdWithIntersection(curTriP1, new Coordinate(p1.x, p1.y, zTopoP1)));
         }
         try {
-            // todo doit être commenté pour les sources primes mais pas pour les autres !
-            /*if ((!Double.isNaN(p1.z) && p1.z + epsilon < zTopoP1)
+            if ((!Double.isNaN(p1.z) && p1.z + epsilon < zTopoP1)
                     || (!Double.isNaN(p2.z) && p2.z + epsilon < zTopoP2)) {
                 //Z value of origin or destination is lower than topography. FreeField is always false in this case
                 return false;
-            }*/
+            }
 
             HashSet<Integer> navigationHistory = new HashSet<Integer>();
             int navigationTri = curTriP1;

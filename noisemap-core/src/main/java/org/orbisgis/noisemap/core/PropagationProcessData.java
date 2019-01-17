@@ -98,7 +98,7 @@ public class PropagationProcessData {
     public boolean computeVerticalDiffraction;
     /** Temperature in celsius */
     double temperature = 15;
-    double celerity = 340;
+    double celerity ;
     double humidity = 70;
     double pressure = Pref;
 

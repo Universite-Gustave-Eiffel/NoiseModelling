@@ -33,13 +33,17 @@
  */
 package org.orbisgis.noisemap.core;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Way to store data computed by thread.
  * Multiple threads use the same Out, then all methods has been synchronized
  * 
  * @author Nicolas Fortin
+ * @author Pierre Aumond
  */
-public class PropagationProcessOut {
+public class ComputeRaysOut {
     private double verticesSoundLevel[];
 	private long nb_couple_receiver_src = 0;
 	private long nb_obstr_test = 0;
@@ -47,8 +51,15 @@ public class PropagationProcessOut {
 	private long nb_reflexion_path = 0;
     private long nb_diffraction_path = 0;
 	private long cellComputed = 0;
+	List<PropagationPath> propagationPaths = new ArrayList<PropagationPath>();
 
-    public double[] getVerticesSoundLevel() {
+
+	public void addPropagationPath(PropagationPath propagationPath){
+
+		propagationPaths.add(propagationPath);
+	}
+
+	public double[] getVerticesSoundLevel() {
         return verticesSoundLevel;
     }
 
@@ -76,7 +87,7 @@ public class PropagationProcessOut {
 		nb_diffraction_path+=added;
 	}
 
-        public synchronized long getNb_diffraction_path() {
+    public synchronized long getNb_diffraction_path() {
             return nb_diffraction_path;
         }
 	public synchronized void appendImageReceiver(long added) {
@@ -112,6 +123,5 @@ public class PropagationProcessOut {
 	public synchronized long getCellComputed() {
 		return cellComputed;
 	}
-
 
 }
