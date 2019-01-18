@@ -103,27 +103,37 @@ public class TestComputeRays {
         fileWriter.write("PropagationPath\n");
         fileWriter.write("ASCII\n");
         fileWriter.write("DATASET POLYDATA\n");
-        fileWriter.write("POINTS " + String.valueOf(propDataOut.propagationPaths.get(0).getPointList().size()) +  " float\n");
+        int nbPoints = 0;
+        for (int j=0;j <propDataOut.propagationPaths.size(); j++) {
+            nbPoints=nbPoints+propDataOut.propagationPaths.get(j).getPointList().size();
+        }
+        fileWriter.write("\n");
+        fileWriter.write("POINTS " + String.valueOf(nbPoints) +  " float\n");
 
         GeometryFactory geometryFactory = new GeometryFactory();
         List<Coordinate> coordinates = new ArrayList<>();
-        for (PropagationPath.PointPath p:propDataOut.propagationPaths.get(0).getPointList())
-        {
-            coordinates.add(p.coordinate);
-            fileWriter.write(String.valueOf(p.coordinate.x)+" "+String.valueOf(p.coordinate.y)+ " "+ String.valueOf(p.coordinate.z)+"\n");
+        for (int j=0;j <propDataOut.propagationPaths.size(); j++) {
+            for (PropagationPath.PointPath p : propDataOut.propagationPaths.get(j).getPointList()) {
+                coordinates.add(p.coordinate);
+                fileWriter.write(String.valueOf(p.coordinate.x) + " " + String.valueOf(p.coordinate.y) + " " + String.valueOf(p.coordinate.z) + "\n");
+            }
         }
         LineString factoryLineString = geometryFactory.createLineString(coordinates.toArray(new Coordinate[coordinates.size()]));
         WKTWriter wktWriter = new WKTWriter(3);
         out.println(wktWriter.write(factoryLineString));
-
-        fileWriter.write("LINES 1\n");
-        fileWriter.write(String.valueOf(propDataOut.propagationPaths.get(0).getPointList().size()));
-        int i=0;
-        for (PropagationPath.PointPath p:propDataOut.propagationPaths.get(0).getPointList()) {
-            fileWriter.write(" " + String.valueOf(i));
-            i++;
-        }
         fileWriter.write("\n");
+        fileWriter.write("LINES "+ String.valueOf(propDataOut.propagationPaths.size())+ " "+String.valueOf(nbPoints+propDataOut.propagationPaths.size()) +"\n");
+        int i = 0;
+        for (int j=0;j <propDataOut.propagationPaths.size(); j++) {
+            fileWriter.write(String.valueOf(propDataOut.propagationPaths.get(j).getPointList().size()));
+
+            for (PropagationPath.PointPath p : propDataOut.propagationPaths.get(j).getPointList()) {
+                fileWriter.write(" " + String.valueOf(i));
+                i++;
+            }
+            fileWriter.write("\n");
+        }
+
 
 
         fileWriter.close();
@@ -388,11 +398,11 @@ public class TestComputeRays {
         MeshBuilder mesh = new MeshBuilder();
         // Add building
         mesh.addGeometry(factory.createPolygon(new Coordinate[]{
-                new Coordinate(0, 0, 0),
-                new Coordinate(250, 0, 0),
+                new Coordinate(0, 20, 0),
+                new Coordinate(250, 20, 0),
                 new Coordinate(250, 40, 0),
                 new Coordinate(0, 40, 0),
-                new Coordinate(0, 0, 0)}), 100);
+                new Coordinate(0, 20, 0)}), 100);
 
         mesh.finishPolygonFeeding(cellEnvelope);
 
@@ -404,7 +414,7 @@ public class TestComputeRays {
         double[] favrose = new double[]{0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
 
         PropagationProcessData propData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 1, 0, 250, 250, 1., 0.3, favrose,0.1, 0, null, geoWithSoilTypeList, true);
+                freqLvl, 2, 2, 250, 250, 1., 0.3, favrose,0.1, 0, null, geoWithSoilTypeList, true);
         propData.setTemperature(15);
         propData.setHumidity(70);
 

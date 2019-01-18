@@ -195,10 +195,22 @@ public class ComputeRays implements Runnable {
         LineSegment srcReceiver = new LineSegment(srcCoord, receiverCoord);
         LineIntersector linters = new RobustLineIntersector();
         long imageReceiver = 0;
+
+        double altR = 0;
+        double altS = 0;
+        Coordinate projReceiver;
+        Coordinate projSource;
+        GeometryFactory factory = new GeometryFactory();
+        double gPath = 0;
+        double totRSDistance = 0.;
+
+
         List<PropagationPath.PointPath> points = new ArrayList<PropagationPath.PointPath>();
         List<PropagationPath.SegmentPath>  segments = new ArrayList<PropagationPath.SegmentPath>();
         List<PropagationPath.SegmentPath> srPath = new ArrayList<PropagationPath.SegmentPath>();
         Coordinate reflectionPt = new Coordinate();
+
+
 
         MirrorReceiverIterator.It mirroredReceivers = new MirrorReceiverIterator.It(receiverCoord, nearBuildingsWalls,
                 srcReceiver, data.maxRefDist, data.reflexionOrder, data.maxSrcDist);
@@ -214,8 +226,6 @@ public class ComputeRays implements Runnable {
             // segment or not
             Coordinate destinationPt = new Coordinate(srcCoord);
 
-            points.add(new PropagationPath.PointPath(srcCoord,1,gS,Double.NaN,PropagationPath.PointPath.POINT_TYPE.SRCE));
-
             Wall seg = nearBuildingsWalls
                     .get(receiverReflection.getWallId());
             linters.computeIntersection(seg.p0, seg.p1,
@@ -230,9 +240,7 @@ public class ComputeRays implements Runnable {
                     linters.getIntersection(0));
             while (linters.hasIntersection() && MirrorReceiverIterator.wallPointTest(seg, destinationPt))
             {
-                Double buildingAlpha = data.freeFieldFinder.getBuildingAlpha(seg.getBuildingId());
-                reflectionAlpha *= 1 - (buildingAlpha.isNaN() ? data.wallAlpha : buildingAlpha);
-                // There are a probable reflection point on the
+               // There are a probable reflection point on the
                 // segment
 
                 // Translate reflection point by epsilon value to
@@ -303,21 +311,90 @@ public class ComputeRays implements Runnable {
 
                 // A path has been found
                 refpathcount += 1;
+
+                // TODO Faire une fonction avec ca
+                //will give a flag here for soil effect
+                if (data.geoWithSoilType != null) {
+                    LineString RSZone = factory.createLineString(new Coordinate[]{destinationPt, reflectionPt});
+                    List<EnvelopeWithIndex<Integer>> resultZ0 = rTreeOfGeoSoil.query(RSZone.getEnvelopeInternal());
+                    if (!resultZ0.isEmpty()) {
+                        for (EnvelopeWithIndex<Integer> envel : resultZ0) {
+                            //get the geo intersected
+                            Geometry geoInter = RSZone.intersection(data.geoWithSoilType.get(envel.getId()).getGeo());
+                            //add the intersected distance with ground effect
+                            totRSDistance += getIntersectedDistance(geoInter) * this.data.geoWithSoilType.get(envel.getId()).getType();
+                        }
+                    }
+                    // Compute GPath using 2D Length
+                    gPath = totRSDistance / RSZone.getLength();
+
+                    List<TriIdWithIntersection> inters = new ArrayList<>();
+                    data.freeFieldFinder.computePropagationPath(srcCoord, receiverCoord, false, inters, true);
+                    List<Coordinate> rSground = data.freeFieldFinder.getGroundProfile(inters);
+                    altR = rSground.get(inters.size() - 1).z;    // altitude Receiver
+                    altS = rSground.get(0).z; // altitude Source
+                    double angle = new LineSegment(rSground.get(0), rSground.get(rSground.size() - 1)).angle();
+                    rSground = JTSUtility.getNewCoordinateSystem(rSground);
+
+                    // Compute mean ground plan
+                    double[] ab = JTSUtility.getLinearRegressionPolyline(removeDuplicates(rSground));
+                    Coordinate rotatedReceiver = new Coordinate(rSground.get(rSground.size() - 1));
+                    rotatedReceiver.setOrdinate(1, receiverCoord.z);
+                    Coordinate rotatedSource = new Coordinate(rSground.get(0));
+                    rotatedSource.setOrdinate(1, srcCoord.z);
+                    projReceiver = JTSUtility.makeProjectedPoint(ab[0], ab[1], rotatedReceiver);
+                    projSource = JTSUtility.makeProjectedPoint(ab[0], ab[1], rotatedSource);
+
+                    //projReceiver.x = rSground.get(rSground.size() - 1).x - projReceiver.x ;
+                    //projSource.x = rSground.get(rSground.size() - 1).x - projSource.x ;
+
+                    projReceiver = JTSUtility.getOldCoordinateSystem(projReceiver, angle);
+                    projSource = JTSUtility.getOldCoordinateSystem(projSource, angle);
+
+                    projReceiver.x = srcCoord.x + projReceiver.x ;
+                    projSource.x = srcCoord.x + projSource.x ;
+                    projReceiver.y = srcCoord.y + projReceiver.y ;
+                    projSource.y = srcCoord.y + projSource.y ;
+
+                    List<Coordinate> Test = new ArrayList<Coordinate>();
+                    Test.add(projSource);
+                    Test.add(projReceiver);
+
+                    JTSUtility.getLinearRegressionPolyline(removeDuplicates(JTSUtility.getNewCoordinateSystem(Test)));
+                    //double zr = rotatedReceiver.distance(JTSUtility.makeProjectedPoint(ab[0], ab[1], rotatedReceiver));
+                    //double zs = rotatedSource.distance(JTSUtility.makeProjectedPoint(ab[0], ab[1], rotatedSource));
+
+                    srPath.add(new PropagationPath.SegmentPath(gPath,new Vector3D(projSource,projReceiver)));
+
+                }
+
+
+
+                if (refpathcount==1) {
+                    points.add(new PropagationPath.PointPath(srcCoord, 1, gS, Double.NaN, PropagationPath.PointPath.POINT_TYPE.SRCE));
+                }
+
                 points.add(new PropagationPath.PointPath(reflectionPt,1,0,reflectionAlpha,PropagationPath.PointPath.POINT_TYPE.REFL));
 
                 if(propagationDebugInfo != null && debugInfo != null) {
                     debugInfo.add(propagationDebugInfo);
                 }
+
+
             }
         }
-        Vector3D Topography = new Vector3D(new Coordinate(0,0,0),new Coordinate(200,0,0));
-        double[] ab = {0,0};
-        points.add(new PropagationPath.PointPath(receiverCoord,1,0,Double.NaN,PropagationPath.PointPath.POINT_TYPE.RECV));
-        srPath.add(new PropagationPath.SegmentPath(1,Topography));
-        this.dataOut.addPropagationPath(new PropagationPath(true,points,segments,srPath)) ;
-        this.dataOut.addPropagationPath(new PropagationPath(false,points,segments,srPath)) ;
+        if (refpathcount>0) {
+            Vector3D Topography = new Vector3D(new Coordinate(0, 0, 0), new Coordinate(200, 0, 0));
+            points.add(new PropagationPath.PointPath(receiverCoord, 1, 0, Double.NaN, PropagationPath.PointPath.POINT_TYPE.RECV));
+            srPath.add(new PropagationPath.SegmentPath(1, Topography));
+            segments.add(new PropagationPath.SegmentPath(1, Topography));
+            this.dataOut.addPropagationPath(new PropagationPath(true, points, segments, srPath));
+            this.dataOut.addPropagationPath(new PropagationPath(false, points, segments, srPath));
+        }
         this.dataOut.appendImageReceiver(imageReceiver);
     }
+
+
 
     public double computeDeltaDiffraction(int idfreq, double eLength, double deltaDistance, double h0) {
         double cprime;
@@ -1142,11 +1219,13 @@ public class ComputeRays implements Runnable {
             if (data.computeVerticalDiffraction && buildingOnPath) {
                 computeHorizontalEdgeDiffraction(somethingHideReceiver, receiverCoord, srcCoord, SrcReceiverDistance, fav_probability, wj, debugInfo, energeticSum);
             }*/
+
             // Process specular reflection
-            /*if (data.reflexionOrder > 0) {
+            if (data.reflexionOrder > 0) {
                 computeReflexion(receiverCoord, srcCoord, fav_probability, nearBuildingsWalls, debugInfo);
-            } */// End reflexion
+            } // End reflexion
             // ///////////
+
             // Process diffraction paths
             /*
             if (somethingHideReceiver && data.diffractionOrder > 0) {
