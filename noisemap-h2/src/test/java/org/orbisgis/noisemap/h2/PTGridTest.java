@@ -21,6 +21,7 @@ import java.util.UUID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.orbisgis.noisemap.h2.BR_EvalSourceC.evalSourceC;
 
 /**
  * @author Nicolas Fortin
@@ -60,6 +61,11 @@ public class PTGridTest {
     private static String getRunScriptRes(String fileName) throws URISyntaxException {
         File resourceFile = new File(PTGridTest.class.getResource(fileName).toURI());
         return "RUNSCRIPT FROM "+ StringUtils.quoteStringSQL(resourceFile.getPath());
+    }
+
+    @Test
+    public void testForAntoine(){
+        evalSourceC(14.0, 0.0, 22.0, 0.0, 0.0, 7, 0, 0, 0, 0, 0.0, 0.0, 55.96996083076022, "FR_R2", 15.0, 0.0, 0.0, 200.0, 1, 63);
     }
 
     @Test

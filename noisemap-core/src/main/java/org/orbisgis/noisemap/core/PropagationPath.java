@@ -73,13 +73,17 @@ public class PropagationPath {
         this.srList = srList;
     }
 
+    public PropagationPath() {
+
+    }
+
     public static class PointPath {
         // given by user
         public final Coordinate coordinate; // coordinate (absolute)
         public final double altitude; // altitude of relief (exact)
         public final double gs;       // only if POINT_TYPE = SRCE or RECV, G coefficient right above the point
         public final double alphaWall; // only if POINT_TYPE = RECV, alpha coefficient todo potentially compute using EN 1793-1:2013 if alphaWall > 1 (and so is considered as sigma)
-        public final POINT_TYPE type; // type of point
+        public POINT_TYPE type; // type of point
         public enum POINT_TYPE {
             SRCE,
             REFL,
@@ -102,6 +106,10 @@ public class PropagationPath {
             this.gs = gs;
             this.alphaWall = alphaWall;
             this.type = type;
+        }
+
+        public void setType(POINT_TYPE type) {
+            this.type =  type;
         }
     }
 
@@ -209,6 +217,12 @@ public class PropagationPath {
     public boolean isFavorable() {
         return favorable;
     }
+
+    public void setFavorable(boolean favorable) {
+        this.favorable =  favorable;
+    }
+
+
 
     public Coordinate projectPointonVector(Coordinate P, Vector3D vector) {
         Coordinate A = new Coordinate(0, 0,0);

@@ -58,6 +58,10 @@ public class ComputeRaysOut {
 
 		propagationPaths.add(propagationPath);
 	}
+	public void addPropagationPaths(List<PropagationPath> propagationPath){
+
+		propagationPaths.addAll(propagationPath);
+	}
 
 	public double[] getVerticesSoundLevel() {
         return verticesSoundLevel;

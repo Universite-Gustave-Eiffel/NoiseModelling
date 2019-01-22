@@ -117,4 +117,7 @@ public class BR_EvalSourceC extends DeterministicScalarFunction {
         srcParameters.setSlopePercentage(RSParametersCnossos.computeSlope(beginZ, endZ, roadLength2d));
         return EvaluateRoadSourceCnossos.evaluate(srcParameters);
     }
+
+    
+
 }

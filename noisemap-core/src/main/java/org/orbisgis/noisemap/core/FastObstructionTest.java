@@ -631,7 +631,9 @@ public class FastObstructionTest {
      */
     public boolean computePropagationPath(Coordinate p1, Coordinate p2, boolean stopOnIntersection, List<TriIdWithIntersection> path, boolean includePoints) {
         nbObstructionTest++;
+
         LineSegment propaLine = new LineSegment(p1, p2);
+
         //get receiver triangle id
         int curTriP1 = getTriangleIdByCoordinate(p1);
         //get source triangle id
@@ -679,8 +681,6 @@ public class FastObstructionTest {
                     path.add(propaTri);
                 }
                 if (!stopOnIntersection || !propaTri.isIntersectionOnBuilding() && !propaTri.isIntersectionOnTopography()) { // todo ICI ON INTEGRE LES TRIANGLES BUILDINGS AU SOL AUSSI
-
-                //    if (!stopOnIntersection || !propaTri.isIntersectionOnBuilding() && !propaTri.isIntersectionOnTopography()) {
                     navigationTri = propaTri.getTriID();
                 } else {
                     navigationTri = -1;
@@ -709,6 +709,10 @@ public class FastObstructionTest {
     public boolean computePropagationPaths(Coordinate p1, Coordinate p2, List<FastObstructionTest.Wall> nearBuildingsWalls, boolean stopOnIntersection, List<TriIdWithIntersection> path, boolean includePoints) {
         nbObstructionTest++;
         LineSegment propaLine = new LineSegment(p1, p2);
+
+
+
+
         //get receiver triangle id
         int curTriP1 = getTriangleIdByCoordinate(p1);
         //get source triangle id
