@@ -79,7 +79,7 @@ public class PropagationPath {
 
     public static class PointPath {
         // given by user
-        public final Coordinate coordinate; // coordinate (absolute)
+        public Coordinate coordinate; // coordinate (absolute)
         public final double altitude; // altitude of relief (exact)
         public final double gs;       // only if POINT_TYPE = SRCE or RECV, G coefficient right above the point
         public final double alphaWall; // only if POINT_TYPE = RECV, alpha coefficient todo potentially compute using EN 1793-1:2013 if alphaWall > 1 (and so is considered as sigma)
@@ -110,6 +110,10 @@ public class PropagationPath {
 
         public void setType(POINT_TYPE type) {
             this.type =  type;
+        }
+
+        public void setCoordinate(Coordinate coordinate) {
+            this.coordinate =  coordinate;
         }
     }
 

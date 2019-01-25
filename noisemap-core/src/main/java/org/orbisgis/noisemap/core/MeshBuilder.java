@@ -44,6 +44,7 @@ import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.index.strtree.STRtree;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -173,6 +174,13 @@ public class MeshBuilder {
 
     }
 
+    public List<Coordinate> getBuildingCoordinates() {
+        List<Coordinate>  coordinates = new ArrayList<>();
+        for (int i=0;i<polygonWithHeight.size();i++){
+            coordinates.addAll(Arrays.asList(polygonWithHeight.get(i).geo.getCoordinates()));
+        }
+        return coordinates;
+    }
 
     public void addGeometry(Geometry obstructionPoly) {
         addGeometry(new PolygonWithHeight(obstructionPoly));
@@ -305,6 +313,18 @@ public class MeshBuilder {
         }
     }
 
+    public void convertBuildtoTopoPoint() throws LayerDelaunayError {
+        List<Coordinate> coordinates = new ArrayList<>();
+        for (PolygonWithHeight polygon : polygonWithHeight) {
+            coordinates = Arrays.asList(polygon.getGeometry().getCoordinates());
+            for (int i =0; i< coordinates.size() ;i++) {
+                this.topoPoints.add(new Coordinate(0.99*coordinates.get(i).x,0.99*coordinates.get(i).y, polygon.getHeight()));
+            }
+        }
+
+
+    }
+
     public void finishPolygonFeeding(Envelope boundingBoxFilter) throws LayerDelaunayError {
         finishPolygonFeeding(new GeometryFactory().toGeometry(boundingBoxFilter));
     }
@@ -337,7 +357,10 @@ public class MeshBuilder {
             for (Coordinate topoPoint : topoPoints) {
                 delaunayTool.addVertex(topoPoint);
             }
+
         }
+
+
         //Process delaunay Triangulation
         delaunayTool.setMinAngle(0.);
         //computeNeighbors
@@ -352,6 +375,7 @@ public class MeshBuilder {
         // Get results
         this.triVertices = delaunayTool.getTriangles();
         this.vertices = delaunayTool.getVertices();
+
         if(computeNeighbors) {
             this.triNeighbors = delaunayTool.getNeighbors();
         }

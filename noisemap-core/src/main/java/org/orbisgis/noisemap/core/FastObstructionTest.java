@@ -42,13 +42,9 @@ import java.util.Stack;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.locationtech.jts.algorithm.Angle;
+import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.WKTWriter;
 import org.locationtech.jts.math.Vector2D;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.Envelope;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.LineSegment;
-import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.triangulate.Segment;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
 
@@ -128,6 +124,8 @@ public class FastObstructionTest {
     public long getNbObstructionTest() {
         return nbObstructionTest;
     }
+
+
 
     /**
      * Retrieve triangle list, only for debug and unit test purpose
@@ -496,6 +494,36 @@ public class FastObstructionTest {
     }
 
     /**
+     * @param minAngle Minimum angle [0-2Pi]
+     * @param maxAngle Maximum angle [0-2Pi]
+     * @return List of corners within parameters range
+     */
+    public List<Coordinate> getWideAnglePointsByBuilding(int build, double minAngle, double maxAngle) {
+
+        HashSet<Integer> triVerticesBuilding = new HashSet<>();
+        for (Triangle tri : this.triVertices) {
+            if (tri.getAttribute()==build) {
+                triVerticesBuilding.add(tri.getA());
+                triVerticesBuilding.add(tri.getB());
+                triVerticesBuilding.add(tri.getC());
+            }
+        }
+
+        List <Coordinate> verticesBuilding = new ArrayList<>();
+
+        for (Integer tri: triVerticesBuilding){
+          verticesBuilding.add(verticesOpenAngleTranslated.get(tri));
+        }
+        for (Integer tri: triVerticesBuilding){
+            verticesBuilding.add(verticesOpenAngleTranslated.get(tri));
+            break;
+        }
+
+        List<Coordinate> wideAnglePts = verticesBuilding;
+        return wideAnglePts;
+    }
+
+    /**
      * Compute the list of segments corresponding to holes and domain limitation
      *
      * @param maxDist Maximum distance from origin to segments
@@ -613,6 +641,11 @@ public class FastObstructionTest {
         return polygonWithHeight.get(buildingId - 1).getAlpha();
     }
 
+    public Polygon getBuilding(int buildingId) {
+        return (Polygon) polygonWithHeight.get(buildingId - 1).geo;
+    }
+
+
     /*
      * compute diffraction.
      */
@@ -709,9 +742,6 @@ public class FastObstructionTest {
     public boolean computePropagationPaths(Coordinate p1, Coordinate p2, List<FastObstructionTest.Wall> nearBuildingsWalls, boolean stopOnIntersection, List<TriIdWithIntersection> path, boolean includePoints) {
         nbObstructionTest++;
         LineSegment propaLine = new LineSegment(p1, p2);
-
-
-
 
         //get receiver triangle id
         int curTriP1 = getTriangleIdByCoordinate(p1);
@@ -826,7 +856,8 @@ public class FastObstructionTest {
     public DiffractionWithSoilEffetZone getPath(Coordinate receiver, Coordinate source) {
         //set default data
         DiffractionWithSoilEffetZone totData = new DiffractionWithSoilEffetZone(null, null, -1,-1, -1, -1,-1,
-                new ArrayList<Coordinate>(), new ArrayList<Coordinate>(),0);
+                new ArrayList<Coordinate>(), new ArrayList<Coordinate>(),new ArrayList<Coordinate>(),0);
+
         /*
         data for calculate 3D diffraction,
         first coordinate is the coordinate after the modification coordinate system,
@@ -864,6 +895,7 @@ public class FastObstructionTest {
         // Change from ground height for receiver and source to real receiver and source height
         interPoints.add(0, new TriIdWithIntersection(allInterPoints.get(0), receiver));
         interPoints.add(new TriIdWithIntersection(allInterPoints.get(allInterPoints.size() - 1), source));
+        double angle = new LineSegment(source, receiver).angle();
         //change coordinate system from 3D to 2D
         List<Coordinate> newPoints = JTSUtility.getNewCoordinateSystem(new ArrayList<Coordinate>(interPoints));
 
@@ -953,6 +985,20 @@ public class FastObstructionTest {
                 }
             }
 
+            List<Coordinate> path3D = new ArrayList<>();
+            Coordinate coordinate = new Coordinate();
+            int i =0;
+            for (i =0; i<path.size();i++) {
+                coordinate = JTSUtility.getOldCoordinateSystem(path.get(i).p0, angle);
+                coordinate.x = receiver.x-coordinate.x;
+                coordinate.y = receiver.y-coordinate.y;
+                path3D.add(coordinate);
+            }
+            i--;
+            coordinate = JTSUtility.getOldCoordinateSystem(path.get(i).p1, angle);
+            coordinate.x = receiver.x-coordinate.x;
+            coordinate.y = receiver.y-coordinate.y;
+            path3D.add(coordinate);
 
             //we used coordinate after change coordinate system to get the right distance.
             double distanceRandS = path.getFirst().p0.distance(path.getLast().p1);              //distance of receiver and source
@@ -1022,7 +1068,7 @@ public class FastObstructionTest {
             List<Coordinate> oSGround = getGroundProfile(allInterPoints.subList(sOIndex, allInterPoints.size()));
             // As the insertion was done reversed this is actually sOGround, reverse again in order to fit with variable name
             totData = new DiffractionWithSoilEffetZone(rOZone, sOZone, deltaDistance,deltaDistancefav, e, pathDistance,pathDistancefav,
-                    roGround, oSGround,pointHeight);
+                    roGround, oSGround,path3D,pointHeight);
             return totData;
         }
     }
@@ -1044,7 +1090,7 @@ public class FastObstructionTest {
     public DiffractionWithSoilEffetZone getPathInverse(Coordinate receiver, Coordinate source) {
         //set default data
         DiffractionWithSoilEffetZone totData = new DiffractionWithSoilEffetZone(null, null, -1,-1, -1, -1,-1,
-                new ArrayList<Coordinate>(), new ArrayList<Coordinate>(),0);
+                new ArrayList<Coordinate>(), new ArrayList<Coordinate>(), new ArrayList<Coordinate>(),0);
         /*
         data for calculate 3D diffraction,
         first coordinate is the coordinate after the modification coordinate system,
@@ -1256,7 +1302,7 @@ public class FastObstructionTest {
             List<Coordinate> oSGround = getGroundProfile(allInterPoints.subList(sOIndex, allInterPoints.size()));
             // As the insertion was done reversed this is actually sOGround, reverse again in order to fit with variable name
             totData = new DiffractionWithSoilEffetZone(rOZone, sOZone, deltaDistance,deltaDistancefav, e, pathDistance,pathDistancefav,
-                    roGround, oSGround,pointHeight);
+                    roGround, oSGround, oSGround,pointHeight);
             return totData;
         }
     }

@@ -56,6 +56,7 @@ public class DiffractionWithSoilEffetZone {
     private double fullDiffractionDistancefav;
     private List<Coordinate> rOgroundCoordinates;
     private List<Coordinate> oSgroundCoordinates;
+    private List<Coordinate> path;
     private double pointHeight;
 
     /**
@@ -71,7 +72,7 @@ public class DiffractionWithSoilEffetZone {
      */
     public DiffractionWithSoilEffetZone(LineSegment rOZone, LineSegment oSZone,
                                         double deltaDistance,double deltaDistancefav, double eLength, double fullDiffractionDistance, double fullDiffractionDistancefav,
-                                        List<Coordinate> rOgroundCoordinates, List<Coordinate> oSgroundCoordinates, double pointHeight) {
+                                        List<Coordinate> rOgroundCoordinates, List<Coordinate> oSgroundCoordinates,List<Coordinate> path, double pointHeight) {
         this.rOZone = rOZone;
         this.oSZone = oSZone;
         this.deltaDistance = deltaDistance;
@@ -81,6 +82,7 @@ public class DiffractionWithSoilEffetZone {
         this.fullDiffractionDistancefav = fullDiffractionDistancefav;
         this.rOgroundCoordinates = rOgroundCoordinates;
         this.oSgroundCoordinates = oSgroundCoordinates;
+        this.path = path;
         this.pointHeight = pointHeight;
     }
 
@@ -91,6 +93,14 @@ public class DiffractionWithSoilEffetZone {
     public List<Coordinate> getrOgroundCoordinates() {
         return rOgroundCoordinates;
     }
+
+    /**
+     * @return Ground segments between Receiver and first diffraction. The first coordinate is the receiver ground position.
+     */
+    public List<Coordinate> getPath() {
+        return path;
+    }
+
 
     /**
      * @return Ground segments between first diffraction and source. The last coordinate is the source ground position.
