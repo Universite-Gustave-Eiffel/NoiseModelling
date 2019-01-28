@@ -43,7 +43,6 @@ import org.locationtech.jts.index.quadtree.Quadtree;
 import org.locationtech.jts.index.strtree.STRtree;
 import org.locationtech.jts.math.Vector3D;
 import org.locationtech.jts.operation.buffer.BufferParameters;
-import org.locationtech.jts.operation.distance.DistanceOp;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -250,8 +249,7 @@ public class ComputeRays implements Runnable {
                 // reflection point and old reflection pt (or source position)
                 validReflection = (Double.isNaN(receiverReflectionCursor.getReceiverPos().z) ||
                         Double.isNaN(destinationPt.z) || seg.getBuildingId() == 0
-                        || reflectionPt.z < data.freeFieldFinder.getBuildingRoofZ(seg.getBuildingId()))
-                        && data.freeFieldFinder.isFreeField(reflectionPt, destinationPt);
+                        || reflectionPt.z < data.freeFieldFinder.getBuildingRoofZ(seg.getBuildingId()));
                 if (validReflection) // Reflection point can see
                 // source or its image
                 {
@@ -294,14 +292,17 @@ public class ComputeRays implements Runnable {
 
                 // A path has been found
                 refpathcount += 1;
-                List<PropagationPath> propagationPaths = directPath(destinationPt,reflectionPt,nearBuildingsWalls, debugInfo);
+                List<PropagationPath> propagationPaths = directPath(destinationPt,reflectionPt,nearBuildingsWalls,false, debugInfo);
                 propagationPath = propagationPaths.get(0);
-                if (refpathcount == 1) {
-                    points.add(propagationPath.getPointList().get(0));
+                propagationPath.getPointList().get(propagationPath.getPointList().size()-1).setType(PropagationPath.PointPath.POINT_TYPE.REFL);
+                propagationPath.getPointList().get(propagationPath.getPointList().size()-1).setBuildingId(receiverReflection.getBuildingId());
+                if (refpathcount > 1) {
+                    propagationPath.getPointList().remove(0);
                 }
-                propagationPath.getPointList().get(1).setType(PropagationPath.PointPath.POINT_TYPE.REFL);
-                points.add(propagationPath.getPointList().get(1));
-                segments.add(propagationPath.getSegmentList().get(0));
+                points.addAll(propagationPath.getPointList());
+                segments.addAll(propagationPath.getSegmentList());
+
+
                 if (propagationDebugInfo != null && debugInfo != null) {
                     debugInfo.add(propagationDebugInfo);
                 }
@@ -310,11 +311,26 @@ public class ComputeRays implements Runnable {
             }
         }
         if (refpathcount > 0) {
-            List<PropagationPath> propagationPaths = directPath(lastPoint,receiverCoord,nearBuildingsWalls, debugInfo);
+            List<PropagationPath> propagationPaths = directPath(lastPoint,receiverCoord,nearBuildingsWalls,false, debugInfo);
             propagationPath = propagationPaths.get(0);
-            points.add(propagationPath.getPointList().get(1));
-            segments.add(propagationPath.getSegmentList().get(0));
-            srPath.add(propagationPath.getSRList().get(0));
+            propagationPath.getPointList().remove(0);
+            points.addAll(propagationPath.getPointList());
+            segments.addAll(propagationPath.getSegmentList());
+
+
+            for (int i = 1; i< points.size();i++){
+                if (points.get(i).type == PropagationPath.PointPath.POINT_TYPE.REFL){
+                    points.get(i).coordinate.z = Vertex.interpolateZ(points.get(i).coordinate,points.get(i-1).coordinate, points.get(i+1).coordinate);
+                    //check if in building
+                    if (points.get(i).coordinate.z > data.freeFieldFinder.getBuildingRoofZ(points.get(i).getBuildingId())){
+                        points.clear();
+                        segments.clear();
+                    }
+
+                }
+            }
+
+
         }
         this.dataOut.appendImageReceiver(imageReceiver);
         return new PropagationPath(favorable, points, segments, srPath);
@@ -520,8 +536,8 @@ public class ComputeRays implements Runnable {
 
         }
 
-        points.add(new PropagationPath.PointPath(srcCoord, altS, gS, Double.NaN, PropagationPath.PointPath.POINT_TYPE.SRCE));
-        points.add(new PropagationPath.PointPath(receiverCoord, altR, gS, Double.NaN, PropagationPath.PointPath.POINT_TYPE.RECV));
+        points.add(new PropagationPath.PointPath(srcCoord, altS, gS, Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.SRCE));
+        points.add(new PropagationPath.PointPath(receiverCoord, altR, gS, Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.RECV));
 
         PropagationDebugInfo propagationDebugInfo = null;
         if (debugInfo != null) {
@@ -876,19 +892,12 @@ public class ComputeRays implements Runnable {
         return Wj / (4 * Math.PI * Math.max(1, distance * distance));
     }
 
-    private List<PropagationPath> directPath(Coordinate srcCoord,
-                            Coordinate receiverCoord, List<Wall> nearBuildingsWalls, List<PropagationDebugInfo> debugInfo){
+    private boolean[]  findBuildingOnPath(Coordinate srcCoord,
+                                         Coordinate receiverCoord, List<Wall> nearBuildingsWalls){
 
-
-        List<PropagationPath> propagationPaths = new ArrayList<>();
-
-        // Then, check if the source is visible from the receiver (not
-        // hidden by a building)
-        // Create the direct Line
         boolean somethingHideReceiver = false;
-        boolean buildingInArea = false;
         boolean buildingOnPath = false;
-
+        boolean[] somethingOnPath = new boolean[2];
         if (!data.computeVerticalDiffraction || !data.freeFieldFinder.isHasBuildingWithHeight()) {
             somethingHideReceiver = !data.freeFieldFinder.isFreeField(receiverCoord, srcCoord);
         } else {
@@ -909,6 +918,25 @@ public class ComputeRays implements Runnable {
                 }
             }
         }
+        somethingOnPath[0] = somethingHideReceiver;
+        somethingOnPath[1] = buildingOnPath;
+        return somethingOnPath;
+    }
+
+    private List<PropagationPath> directPath(Coordinate srcCoord,
+                            Coordinate receiverCoord, List<Wall> nearBuildingsWalls, boolean vertivalDiffraction, List<PropagationDebugInfo> debugInfo){
+
+
+        List<PropagationPath> propagationPaths = new ArrayList<>();
+
+        // Then, check if the source is visible from the receiver (not
+        // hidden by a building)
+        // Create the direct Line
+        boolean buildingInArea = false;
+
+        boolean[] somethingOnPath = findBuildingOnPath( srcCoord,  receiverCoord,  nearBuildingsWalls);
+        boolean somethingHideReceiver = somethingOnPath[0];
+        boolean buildingOnPath = somethingOnPath[1];
 
        // double fav_probability = favrose[(int) (Math.round(calcRotationAngleInDegrees(srcCoord, receiverCoord) / 30))];
 
@@ -927,7 +955,7 @@ public class ComputeRays implements Runnable {
             propagationPaths.add(propagationPath);
         }
 
-        if (somethingHideReceiver && data.diffractionOrder > 0) {
+        if (somethingHideReceiver && data.diffractionOrder > 0 && vertivalDiffraction ) {
 
             PropagationPath propagationPath = new PropagationPath();
             PropagationPath propagationPath2 = new PropagationPath();
@@ -1013,7 +1041,7 @@ public class ComputeRays implements Runnable {
 
         double PropaDistance = srcCoord.distance(receiverCoord);
         if (PropaDistance < data.maxSrcDist) {
-            propagationPaths = directPath(srcCoord,receiverCoord,nearBuildingsWalls, debugInfo);
+            propagationPaths = directPath(srcCoord,receiverCoord,nearBuildingsWalls,true, debugInfo);
             if (propagationPaths.size()>0) {
                 dataOut.addPropagationPaths(propagationPaths);
             }
