@@ -72,7 +72,9 @@ public class EvaluateAttenuationCnossos {
         return 10 * Math.log10(w);
     }
 
-
+    public double[] getaGlobal() {
+        return aGlobal;
+    }
 
     public double[] getDeltaDif(PropagationPath.SegmentPath srpath, PropagationProcessPathData data) {
         double[] DeltaDif = new double[data.freq_lvl.size()];

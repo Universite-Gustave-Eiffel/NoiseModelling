@@ -1,37 +1,43 @@
 package org.orbisgis.noisemap.core;
 
-import org.h2gis.functions.spatial.create.ST_Extrude;
-import org.h2gis.functions.spatial.distance.ST_ClosestPoint;
-import org.h2gis.functions.spatial.properties.ST_Explode;
 import org.h2gis.functions.spatial.volume.GeometryExtrude;
 import org.junit.Test;
 import org.locationtech.jts.geom.*;
-import org.locationtech.jts.geom.Point;
-import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.io.WKTWriter;
-import org.locationtech.jts.math.Vector3D;
-import org.locationtech.jts.operation.distance.DistanceOp;
 
-import java.applet.Applet;
-import java.awt.*;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseMotionAdapter;
-import java.io.*;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.*;
-import java.util.List;
-
-import javax.swing.*;
 
 import static java.lang.System.out;
 import static org.junit.Assert.assertEquals;
+import static org.orbisgis.noisemap.core.ComputeRays.dbaToW;
+import static org.orbisgis.noisemap.core.ComputeRays.wToDba;
 
 
-public class TestComputeRays {
+public class TestComputeRaysIso17534 {
     private static final List<Integer> freqLvl = Collections.unmodifiableList(Arrays.asList(63, 125, 250, 500, 1000, 2000,
             4000, 8000));
 
     private static final double ERROR_EPSILON_TEST_T = 0.2;
 
+    private double[] sumArray(double[] array1, double[] array2, double p) {
+        double[] sum = new double[array1.length];
+        for (int i = 0; i < array1.length; i++) {
+            sum[i] = wToDba(p*dbaToW(array1[i])+ (1-p)*dbaToW(array2[i]));
+        }
+        return sum;
+    }
+
+    private double[] computeWithMeteo(PropagationProcessPathData propData,ComputeRaysOut propDataOut, double p) {
+        EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
+        double[] aGlobal = new double[8];
+        evaluateAttenuationCnossos.evaluate(propDataOut.propagationPaths.get(0), propData);
+        aGlobal = evaluateAttenuationCnossos.getaGlobal();
+        propDataOut.propagationPaths.get(0).setFavorable(true);
+        evaluateAttenuationCnossos.evaluate(propDataOut.propagationPaths.get(0), propData);
+        return sumArray(aGlobal, evaluateAttenuationCnossos.getaGlobal(),p);
+    }
 
     private void splCompare(double[] resultW, String testName, double[] expectedLevel, double splEpsilon) {
         for (int i = 0; i < resultW.length; i++) {
@@ -219,15 +225,16 @@ public class TestComputeRays {
     }
 
     /**
-     * Test Direct Field
+     * TC01-TC03 - Flat ground with homogeneous acoustic properties
      */
     @Test
-    public void DirectRay() throws LayerDelaunayError, IOException {
+    public void TC01() throws LayerDelaunayError, IOException {
         GeometryFactory factory = new GeometryFactory();
         ////////////////////////////////////////////////////////////////////////////
         //Add road source as one point
         List<Geometry> srclst = new ArrayList<Geometry>();
-        srclst.add(factory.createPoint(new Coordinate(0, 0, 1)));
+        double p = 0.5; // probability favourable conditions
+        srclst.add(factory.createPoint(new Coordinate(10, 10, 1)));
         //Scene dimension
         Envelope cellEnvelope = new Envelope(new Coordinate(-250., -250., 0.), new Coordinate(250, 250, 0.));
         //Add source sound level
@@ -265,21 +272,132 @@ public class TestComputeRays {
 
         double energeticSum[] = new double[freqLvl.size()];
         List<PropagationDebugInfo> debug = new ArrayList<>();
-        computeRays.computeRaysAtPosition(new Coordinate(200, 0, 4), energeticSum, debug);
+        computeRays.computeRaysAtPosition(new Coordinate(200, 50, 4), energeticSum, debug);
 
 
-        /*PropagationProcessPathData propData = new PropagationProcessPathData();
-        propData.setTemperature(15);
+        PropagationProcessPathData propData = new PropagationProcessPathData();
+        propData.setTemperature(10);
         propData.setHumidity(70);
-        EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
-        splCompare(evaluateAttenuationCnossos.evaluate(propDataOut.propagationPaths.get(0), propData), "Test T01", new double[]{-54, -54.1, -54.2, -54.5, -54.8, -55.8, -59.3, -73.0}, ERROR_EPSILON_TEST_T);
-*/
-        String filename = "D:/aumond/Desktop/test.vtk";
-        try {
-            writeVTK(filename, propDataOut);
-        } catch (IOException e) {
-            e.printStackTrace();
+
+        double[] aGlobal = computeWithMeteo(propData, propDataOut, p);
+
+        splCompare(aGlobal, "Test T01", new double[]{-53.05,-53.11,-53.23,-53.4,-53.74,-54.91,-59.39,-75.73}, ERROR_EPSILON_TEST_T);
+
+    }
+
+    @Test
+    public void TC02() throws LayerDelaunayError, IOException {
+        GeometryFactory factory = new GeometryFactory();
+        ////////////////////////////////////////////////////////////////////////////
+        //Add road source as one point
+        List<Geometry> srclst = new ArrayList<Geometry>();
+        double p = 0.5; // probability favourable conditions
+        srclst.add(factory.createPoint(new Coordinate(10, 10, 1)));
+        //Scene dimension
+        Envelope cellEnvelope = new Envelope(new Coordinate(-250., -250., 0.), new Coordinate(250, 250, 0.));
+        //Add source sound level
+        List<ArrayList<Double>> srcSpectrum = new ArrayList<ArrayList<Double>>();
+        srcSpectrum.add(asW(80.0, 90.0, 95.0, 100.0, 100.0, 100.0, 95.0, 90.0));
+        // GeometrySoilType
+        List<GeoWithSoilType> geoWithSoilTypeList = new ArrayList<>();
+        geoWithSoilTypeList.add(new GeoWithSoilType(factory.toGeometry(new Envelope(-250, 250, -250, 50)), 0.5));
+
+        //Build query structure for sources
+        QueryGeometryStructure sourcesIndex = new QueryQuadTree();
+        int idsrc = 0;
+        for (Geometry src : srclst) {
+            sourcesIndex.appendGeometry(src, idsrc);
+            idsrc++;
         }
+        //Create obstruction test object
+        MeshBuilder mesh = new MeshBuilder();
+        mesh.finishPolygonFeeding(cellEnvelope);
+
+        //Retrieve Delaunay triangulation of scene
+        List<Coordinate> vert = mesh.getVertices();
+        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+                mesh.getTriNeighbors(), mesh.getVertices());
+        // rose of favourable conditions
+        double[] favrose = new double[]{0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25};
+
+        PropagationProcessData rayData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
+                freqLvl, 0, 0, 400, 400, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
+
+        ComputeRaysOut propDataOut = new ComputeRaysOut();
+        ComputeRays computeRays = new ComputeRays(rayData, propDataOut);
+
+        computeRays.initStructures();
+
+        double energeticSum[] = new double[freqLvl.size()];
+        List<PropagationDebugInfo> debug = new ArrayList<>();
+        computeRays.computeRaysAtPosition(new Coordinate(200, 50, 4), energeticSum, debug);
+
+
+        PropagationProcessPathData propData = new PropagationProcessPathData();
+        propData.setTemperature(10);
+        propData.setHumidity(70);
+
+        double[] aGlobal = computeWithMeteo(propData, propDataOut, p);
+
+        splCompare(aGlobal, "Test T02", new double[]{-54.93,-54.99,-55.11,-56.21,-58.71,-56.79,-61.27,-77.61}, ERROR_EPSILON_TEST_T);
+
+    }
+
+    @Test
+    public void TC03() throws LayerDelaunayError, IOException {
+        GeometryFactory factory = new GeometryFactory();
+        ////////////////////////////////////////////////////////////////////////////
+        //Add road source as one point
+        List<Geometry> srclst = new ArrayList<Geometry>();
+        double p = 0.5; // probability favourable conditions
+        srclst.add(factory.createPoint(new Coordinate(10, 10, 1)));
+        //Scene dimension
+        Envelope cellEnvelope = new Envelope(new Coordinate(-250., -250., 0.), new Coordinate(250, 250, 0.));
+        //Add source sound level
+        List<ArrayList<Double>> srcSpectrum = new ArrayList<ArrayList<Double>>();
+        srcSpectrum.add(asW(80.0, 90.0, 95.0, 100.0, 100.0, 100.0, 95.0, 90.0));
+        // GeometrySoilType
+        List<GeoWithSoilType> geoWithSoilTypeList = new ArrayList<>();
+        geoWithSoilTypeList.add(new GeoWithSoilType(factory.toGeometry(new Envelope(-250, 250, -250, 50)), 1));
+
+        //Build query structure for sources
+        QueryGeometryStructure sourcesIndex = new QueryQuadTree();
+        int idsrc = 0;
+        for (Geometry src : srclst) {
+            sourcesIndex.appendGeometry(src, idsrc);
+            idsrc++;
+        }
+        //Create obstruction test object
+        MeshBuilder mesh = new MeshBuilder();
+        mesh.finishPolygonFeeding(cellEnvelope);
+
+        //Retrieve Delaunay triangulation of scene
+        List<Coordinate> vert = mesh.getVertices();
+        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+                mesh.getTriNeighbors(), mesh.getVertices());
+        // rose of favourable conditions
+        double[] favrose = new double[]{0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25};
+
+        PropagationProcessData rayData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
+                freqLvl, 0, 0, 400, 400, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
+
+        ComputeRaysOut propDataOut = new ComputeRaysOut();
+        ComputeRays computeRays = new ComputeRays(rayData, propDataOut);
+
+        computeRays.initStructures();
+
+        double energeticSum[] = new double[freqLvl.size()];
+        List<PropagationDebugInfo> debug = new ArrayList<>();
+        computeRays.computeRaysAtPosition(new Coordinate(200, 50, 4), energeticSum, debug);
+
+
+        PropagationProcessPathData propData = new PropagationProcessPathData();
+        propData.setTemperature(10);
+        propData.setHumidity(70);
+
+        double[] aGlobal = computeWithMeteo(propData, propDataOut, p);
+
+        splCompare(aGlobal, "Test T02", new double[]{-56.79,-56.84,-57.69,-63.29,-59.3,-58.64,-63.13,-79.46}, ERROR_EPSILON_TEST_T);
     }
 
 

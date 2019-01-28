@@ -252,6 +252,7 @@ public class ComputeRays implements Runnable {
                         || reflectionPt.z < data.freeFieldFinder.getBuildingRoofZ(seg.getBuildingId()));
                 if (validReflection) // Reflection point can see
                 // source or its image
+                // source or its image
                 {
 
                     if (propagationDebugInfo != null) {
@@ -964,7 +965,7 @@ public class ComputeRays implements Runnable {
             List<List<Coordinate>> diffractedPaths = computeVerticalEdgeDiffraction( srcCoord, receiverCoord,  nearBuildingsWalls,debugInfo);
             List<Coordinate> coordinates = diffractedPaths.get(0);
             Collections.reverse(coordinates);
-            if (coordinates.size()>0) {
+            if (coordinates.size()>1) {
                 Coordinate bufferedCoordinate;
                 bufferedCoordinate = addBuffer(coordinates.get(1), coordinates.get(0),true);
                 propagationPath = computeFreefield(bufferedCoordinate,coordinates.get(0), true, debugInfo);
@@ -988,7 +989,7 @@ public class ComputeRays implements Runnable {
             // Left hand
             coordinates = diffractedPaths.get(1);
             //Collections.reverse(coordinates);
-            if (coordinates.size()>0) {
+            if (coordinates.size()>1) {
                 Coordinate bufferedCoordinate;
                 bufferedCoordinate = addBuffer(coordinates.get(1), coordinates.get(0),true);
                 propagationPath = computeFreefield(bufferedCoordinate,coordinates.get(0), true, debugInfo);
