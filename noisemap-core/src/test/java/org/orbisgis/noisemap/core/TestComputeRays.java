@@ -368,7 +368,8 @@ public class TestComputeRays {
     }
 
     /**
-     * Test TC06 -- ???
+     * Test TC06 -- Reduced receiver height to include diffraction in some frequency bands
+     * This test
      */
     @Test
     public void TC06() throws LayerDelaunayError {
@@ -494,7 +495,7 @@ public class TestComputeRays {
         double[] favrose = new double[]{0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25};
 
         PropagationProcessData rayData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 1, 1, 250, 250, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
+                freqLvl, 1, 0, 250, 250, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
 
         ComputeRaysOut propDataOut = new ComputeRaysOut();
         ComputeRays computeRays = new ComputeRays(rayData, propDataOut);

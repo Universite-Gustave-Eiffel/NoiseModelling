@@ -239,7 +239,18 @@ public class PropagationPath {
     }
 
 
-
+    public Coordinate projectPointonSegment(Coordinate P, Vector3D vector, Coordinate Pinit) {
+        Coordinate A = new Coordinate(0, 0,0);
+        Coordinate B = new Coordinate(vector.getX(), vector.getY(),vector.getZ());
+        // convert vector to segment
+        A.x+=Pinit.x;
+        A.y+=Pinit.y;
+        B.x+=Pinit.x;
+        B.y+=Pinit.y;
+        return new Coordinate(A.x+(Vector3D.dot(A,P,A,B) / Vector3D.dot(A,B,A,B))*vector.getX(),
+                A.y+(Vector3D.dot(A,P,A,B) / Vector3D.dot(A,B,A,B))*vector.getY(),
+                A.z+(Vector3D.dot(A,P,A,B) / Vector3D.dot(A,B,A,B))*vector.getZ());
+    }
     public Coordinate projectPointonVector(Coordinate P, Vector3D vector) {
         Coordinate A = new Coordinate(0, 0,0);
         Coordinate B = new Coordinate(vector.getX(), vector.getY(),vector.getZ());
@@ -510,11 +521,11 @@ public class PropagationPath {
 
 
     private double computeZs(SegmentPath segmentPath) {
-        return pointList.get(segmentPath.idPtStart).coordinate.z - projectPointonVector(pointList.get(segmentPath.idPtStart).coordinate,segmentPath.vector3D).z;
+        return pointList.get(segmentPath.idPtStart).coordinate.z - projectPointonSegment(pointList.get(segmentPath.idPtStart).coordinate,segmentPath.vector3D,pointList.get(segmentPath.idPtStart).coordinate).z;
     }
 
     private double computeZr(SegmentPath segmentPath) {
-        return pointList.get(segmentPath.idPtFinal).coordinate.z - projectPointonVector(pointList.get(segmentPath.idPtFinal).coordinate,segmentPath.vector3D).z;
+        return pointList.get(segmentPath.idPtFinal).coordinate.z - projectPointonSegment(pointList.get(segmentPath.idPtFinal).coordinate,segmentPath.vector3D,pointList.get(segmentPath.idPtStart).coordinate).z;
     }
 
     private double computeZsPrime(SegmentPath segmentPath) {

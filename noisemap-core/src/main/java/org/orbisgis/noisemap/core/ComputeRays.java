@@ -944,16 +944,20 @@ public class ComputeRays implements Runnable {
         if (!somethingHideReceiver && !buildingOnPath) {
             PropagationPath propagationPath = computeFreefield(receiverCoord, srcCoord, true, debugInfo);
             propagationPaths.add(propagationPath);
-            propagationPath.setFavorable(false);
-            propagationPaths.add(propagationPath);
+            //propagationPath.setFavorable(false);
+            //propagationPaths.add(propagationPath);
         }
 
         //Process diffraction 3D
         if (data.computeVerticalDiffraction && buildingOnPath) {
+            PropagationPath propagationPath3 = computeFreefield(receiverCoord, srcCoord, true, debugInfo);
             PropagationPath propagationPath =  computeHorizontalEdgeDiffraction(somethingHideReceiver, receiverCoord, srcCoord, true, debugInfo);
+            propagationPath.getSRList().addAll(propagationPath3.getSRList());
             propagationPaths.add(propagationPath);
-            propagationPath.setFavorable(false);
-            propagationPaths.add(propagationPath);
+            //propagationPath.setFavorable(false);
+            //propagationPaths.add(propagationPath);
+
+
         }
 
         if (somethingHideReceiver && data.diffractionOrder > 0 && vertivalDiffraction ) {
@@ -1012,6 +1016,9 @@ public class ComputeRays implements Runnable {
             }
 
 
+
+
+
         }
 
 
@@ -1052,7 +1059,7 @@ public class ComputeRays implements Runnable {
                 PropagationPath propagationPath = computeReflexion(receiverCoord, srcCoord, true, nearBuildingsWalls, debugInfo);
                 if (propagationPath.getPointList().size()>0) {
                     dataOut.addPropagationPath(propagationPath);
-                    propagationPath.setFavorable(false);
+                    //propagationPath.setFavorable(false);
                     dataOut.addPropagationPath(propagationPath);
                 }
             } // End reflexion

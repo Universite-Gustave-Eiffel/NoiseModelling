@@ -21,7 +21,7 @@ public class TestComputeRaysIso17534 {
 
     private static final double ERROR_EPSILON_TEST_T = 0.2;
 
-    private double[] sumArray(double[] array1, double[] array2, double p) {
+    private double[] sumArrayWithPonderation(double[] array1, double[] array2, double p) {
         double[] sum = new double[array1.length];
         for (int i = 0; i < array1.length; i++) {
             sum[i] = wToDba(p*dbaToW(array1[i])+ (1-p)*dbaToW(array2[i]));
@@ -29,14 +29,28 @@ public class TestComputeRaysIso17534 {
         return sum;
     }
 
+    private double[] sumArray(double[] array1, double[] array2) {
+        double[] sum = new double[array1.length];
+        for (int i = 0; i < array1.length; i++) {
+            sum[i] = wToDba(dbaToW(array1[i])+ dbaToW(array2[i]));
+        }
+        return sum;
+    }
+
     private double[] computeWithMeteo(PropagationProcessPathData propData,ComputeRaysOut propDataOut, double p) {
         EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
-        double[] aGlobal = new double[8];
-        evaluateAttenuationCnossos.evaluate(propDataOut.propagationPaths.get(0), propData);
-        aGlobal = evaluateAttenuationCnossos.getaGlobal();
-        propDataOut.propagationPaths.get(0).setFavorable(true);
-        evaluateAttenuationCnossos.evaluate(propDataOut.propagationPaths.get(0), propData);
-        return sumArray(aGlobal, evaluateAttenuationCnossos.getaGlobal(),p);
+        double[] aGlobalMeteo = new double[8];
+        double[] aGlobal = new double[]{-10^1000,-10^1000,-10^1000,-10^1000,-10^1000,-10^1000,-10^1000,-10^1000};
+        for (PropagationPath propath:propDataOut.propagationPaths) {
+            propath.setFavorable(false);
+            evaluateAttenuationCnossos.evaluate(propath, propData);
+            aGlobalMeteo = evaluateAttenuationCnossos.getaGlobal();
+            propath.setFavorable(true);
+            evaluateAttenuationCnossos.evaluate(propath, propData);
+            aGlobalMeteo = sumArrayWithPonderation(aGlobalMeteo, evaluateAttenuationCnossos.getaGlobal(),p);
+            aGlobal = sumArray(aGlobal,aGlobalMeteo);
+        }
+        return aGlobal;
     }
 
     private void splCompare(double[] resultW, String testName, double[] expectedLevel, double splEpsilon) {
@@ -397,10 +411,72 @@ public class TestComputeRaysIso17534 {
 
         double[] aGlobal = computeWithMeteo(propData, propDataOut, p);
 
-        splCompare(aGlobal, "Test T02", new double[]{-56.79,-56.84,-57.69,-63.29,-59.3,-58.64,-63.13,-79.46}, ERROR_EPSILON_TEST_T);
+        splCompare(aGlobal, "Test T03", new double[]{-56.79,-56.84,-57.69,-63.29,-59.3,-58.64,-63.13,-79.46}, ERROR_EPSILON_TEST_T);
     }
 
+    /**
+     * Test TC04 -- Flat ground with spatially varying acoustic properties
+     * The aim
+     */
+    @Test
+    public void TC04() throws LayerDelaunayError, IOException {
+        GeometryFactory factory = new GeometryFactory();
+        double p = 0.5; // probability favourable conditions
+        ////////////////////////////////////////////////////////////////////////////
+        //Add road source as one point
+        List<Geometry> srclst = new ArrayList<Geometry>();
+        srclst.add(factory.createPoint(new Coordinate(10, 10, 1)));
+        //Scene dimension
+        Envelope cellEnvelope = new Envelope(new Coordinate(-250., -250., 0.), new Coordinate(250, 250, 0.));
+        //Add source sound level
+        List<ArrayList<Double>> srcSpectrum = new ArrayList<ArrayList<Double>>();
+        srcSpectrum.add(asW(80.0, 90.0, 95.0, 100.0, 100.0, 100.0, 95.0, 90.0));
+        // GeometrySoilType
+        List<GeoWithSoilType> geoWithSoilTypeList = new ArrayList<>();
+        geoWithSoilTypeList.add(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -20, 80)), 0.2));
+        geoWithSoilTypeList.add(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -20, 80)), 0.5));
+        geoWithSoilTypeList.add(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -20, 80)), 0.9));
 
+        //Build query structure for sources
+        QueryGeometryStructure sourcesIndex = new QueryQuadTree();
+        int idsrc = 0;
+        for (Geometry src : srclst) {
+            sourcesIndex.appendGeometry(src, idsrc);
+            idsrc++;
+        }
+        //Create obstruction test object
+        MeshBuilder mesh = new MeshBuilder();
+
+
+        mesh.finishPolygonFeeding(cellEnvelope);
+
+        //Retrieve Delaunay triangulation of scene
+        List<Coordinate> vert = mesh.getVertices();
+        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+                mesh.getTriNeighbors(), mesh.getVertices());
+        // rose of favourable conditions
+        double[] favrose = new double[]{0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25};
+
+        PropagationProcessData rayData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
+                freqLvl, 0, 0, 400, 400, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
+
+        ComputeRaysOut propDataOut = new ComputeRaysOut();
+        ComputeRays computeRays = new ComputeRays(rayData, propDataOut);
+
+        computeRays.initStructures();
+
+        double energeticSum[] = new double[freqLvl.size()];
+        List<PropagationDebugInfo> debug = new ArrayList<>();
+        computeRays.computeRaysAtPosition(new Coordinate(200, 50, 4), energeticSum, debug);
+
+        PropagationProcessPathData propData = new PropagationProcessPathData();
+        propData.setTemperature(10);
+        propData.setHumidity(70);
+
+        double[] aGlobal = computeWithMeteo(propData, propDataOut, p);
+        splCompare(aGlobal, "Test T04", new double[]{-55.09,-55.15,-55.27,-56.63,-58.77,-56.94,-61.43,-77.76}, ERROR_EPSILON_TEST_T);
+
+    }
     /**
      * Test TC05 -- Reduced receiver height to include diffraction in some frequency bands
      */
@@ -472,21 +548,26 @@ public class TestComputeRaysIso17534 {
 
         double energeticSum[] = new double[freqLvl.size()];
         List<PropagationDebugInfo> debug = new ArrayList<>();
-        computeRays.computeRaysAtPosition(new Coordinate(200, 50, 14), energeticSum, debug);
+        computeRays.computeRaysAtPosition(new Coordinate(200, 10, 14), energeticSum, debug);
 
-        String filename = "D:/aumond/Desktop/T05.vtk";
-        String filename2 = "D:/aumond/Desktop/T05.ply";
-        try {
-            writeVTK(filename, propDataOut);
-            writePLY(filename2, mesh);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+
+        double p = 0.5; // probability favourable conditions
+        PropagationProcessPathData propData = new PropagationProcessPathData();
+        propData.setTemperature(10);
+        propData.setHumidity(70);
+        propData.setPrime2520(true);
+
+        double[] aGlobal = computeWithMeteo(propData, propDataOut, p);
+        splCompare(aGlobal, "Test T05", new double[]{-55.74,-55.79,-55.92,-56.09,-56.43,-57.59,-62.09,-78.46}, ERROR_EPSILON_TEST_T);
+        // not the same definition of the mean plane (from where to where ?)... Also ISO keep the vertical for zs but in directive "The  equivalent height of a  point is  its  orthogonal
+        //height in  relation to the mean ground plane".
+
 
     }
 
     /**
-     * Test TC06 -- ???
+     * Test TC06 -- Reduced receiver height to include diffraction in some frequency bands
+     * This test
      */
     @Test
     public void TC06() throws LayerDelaunayError {
@@ -612,7 +693,7 @@ public class TestComputeRaysIso17534 {
         double[] favrose = new double[]{0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25};
 
         PropagationProcessData rayData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 1, 1, 250, 250, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
+                freqLvl, 1, 0, 250, 250, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
 
         ComputeRaysOut propDataOut = new ComputeRaysOut();
         ComputeRays computeRays = new ComputeRays(rayData, propDataOut);
@@ -623,14 +704,14 @@ public class TestComputeRaysIso17534 {
         List<PropagationDebugInfo> debug = new ArrayList<>();
         computeRays.computeRaysAtPosition(new Coordinate(200, 50, 4), energeticSum, debug);
 
-        String filename = "D:/aumond/Desktop/T07.vtk";
-        String filename2 = "D:/aumond/Desktop/T07.ply";
-        try {
-            writeVTK(filename, propDataOut);
-            writePLY(filename2, mesh);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        double p = 0.5; // probability favourable conditions
+        PropagationProcessPathData propData = new PropagationProcessPathData();
+        propData.setTemperature(10);
+        propData.setHumidity(70);
+        propData.setPrime2520(true);
+
+        double[] aGlobal = computeWithMeteo(propData, propDataOut, p);
+        splCompare(aGlobal, "Test T07", new double[]{-60.3,-61.42,-73.01,-65.11,-68.64,-71.54,-78.82,-98.05}, ERROR_EPSILON_TEST_T);
 
     }
 
@@ -683,7 +764,7 @@ public class TestComputeRaysIso17534 {
         double[] favrose = new double[]{0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25};
 
         PropagationProcessData rayData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 1, 1, 300, 300, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
+                freqLvl, 1, 2, 300, 300, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
 
         ComputeRaysOut propDataOut = new ComputeRaysOut();
         ComputeRays computeRays = new ComputeRays(rayData, propDataOut);
@@ -694,14 +775,15 @@ public class TestComputeRaysIso17534 {
         List<PropagationDebugInfo> debug = new ArrayList<>();
         computeRays.computeRaysAtPosition(new Coordinate(200, 50, 4), energeticSum, debug);
 
-        String filename = "D:/aumond/Desktop/T08.vtk";
-        String filename2 = "D:/aumond/Desktop/T08.ply";
-        try {
-            writeVTK(filename, propDataOut);
-            writePLY(filename2, mesh);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        double p = 0.5; // probability favourable conditions
+        PropagationProcessPathData propData = new PropagationProcessPathData();
+        propData.setTemperature(10);
+        propData.setHumidity(70);
+        propData.setPrime2520(true);
+
+        double[] aGlobal = computeWithMeteo(propData, propDataOut, p);
+        splCompare(aGlobal, "Test T08", new double[]{-58.63,-60.04,-61.89,-64.34,-68.13,-70.76,-78.07,-97.33}, ERROR_EPSILON_TEST_T);
+
 
     }
 
@@ -775,14 +857,14 @@ public class TestComputeRaysIso17534 {
         double energeticSum[] = new double[freqLvl.size()];
         List<PropagationDebugInfo> debug = new ArrayList<>();
         computeRays.computeRaysAtPosition(new Coordinate(70, 10, 4), energeticSum, debug);
-        String filename = "D:/aumond/Desktop/T09.vtk";
-        String filename2 = "D:/aumond/Desktop/T09.ply";
-        try {
-            writeVTK(filename, propDataOut);
-            writePLY(filename2, mesh);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+
+        double p = 0.5; // probability favourable conditions
+        PropagationProcessPathData propData = new PropagationProcessPathData();
+        propData.setTemperature(10);
+        propData.setHumidity(70);
+
+        double[] aGlobal = computeWithMeteo(propData, propDataOut, p);
+        splCompare(aGlobal, "Test T10", new double[]{-46.91,-50.51,-54.56,-57.03,-58.33,-59.1,-59.91,-61.8}, ERROR_EPSILON_TEST_T);
 
     }
 

@@ -273,8 +273,6 @@ public class EvaluateAttenuationCnossos {
                 aDif[idf]=DeltaDifSR[idf];
                 aBoundary[idf] = aDif[idf] + aGround[idf];
             }
-
-             ;
         }
         if (path.difHPoints.size() > 0) {
             List<PropagationPath.SegmentPath> segmentPath = path.getSegmentList();

@@ -45,7 +45,7 @@ import java.util.List;
  * Data input for a propagation process (SubEnveloppe of BR_TriGrid).
  *
  * @author Nicolas Fortin
- * @author Pierre Aumond 07/06/2016
+ * @author Pierre Aumond
  */
 public class PropagationProcessData_Att {
     /** coordinate of receivers */
