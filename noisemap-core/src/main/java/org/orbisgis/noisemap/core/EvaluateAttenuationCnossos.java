@@ -32,6 +32,8 @@
  * info_at_ orbisgis.org
  */
 package org.orbisgis.noisemap.core;
+import jdk.nashorn.internal.objects.Global;
+import java.lang.Object;
 import java.util.List;
 
 /**

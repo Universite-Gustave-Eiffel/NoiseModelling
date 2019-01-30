@@ -34,6 +34,7 @@
 package org.orbisgis.noisemap.core;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -44,7 +45,18 @@ import java.util.List;
  * @author Pierre Aumond
  */
 public class ComputeRaysOut {
-    private double verticesSoundLevel[];
+
+    public static final class verticeSL {
+        public final int sourceId;
+        public final int receiverId;
+        public final double[] value;
+
+        verticeSL(int receiverId, int sourceId, double[] value) {
+            this.sourceId = sourceId;
+            this.receiverId = receiverId;
+            this.value = value;
+        }
+    }
 	private long nb_couple_receiver_src = 0;
 	private long nb_obstr_test = 0;
 	private long nb_image_receiver = 0;
@@ -52,6 +64,10 @@ public class ComputeRaysOut {
     private long nb_diffraction_path = 0;
 	private long cellComputed = 0;
 	List<PropagationPath> propagationPaths = new ArrayList<PropagationPath>();
+
+    private List<ComputeRaysOut.verticeSL> verticeSoundLevel =
+            Collections.synchronizedList(new ArrayList<ComputeRaysOut.verticeSL>());
+
 
 
 	public void addPropagationPath(PropagationPath propagationPath){
@@ -63,9 +79,29 @@ public class ComputeRaysOut {
 		propagationPaths.addAll(propagationPath);
 	}
 
-	public double[] getVerticesSoundLevel() {
+	public void setSrcIdAndAddPropagationPaths (List<PropagationPath> propagationPath, int srcId, int rcvId){
+		for (int j=0; j< propagationPath.size();j++){
+			propagationPath.get(j).idSource = srcId;
+			propagationPath.get(j).idReceiver = rcvId;
+		}
+        propagationPaths.addAll(propagationPath);
+	}
+
+    public List<ComputeRaysOut.verticeSL> getVerticesSoundLevel() {
+        return verticeSoundLevel;
+    }
+
+    public void addVerticeSoundLevel(int receiverId, int sourceId, double[] value) {
+        verticeSoundLevel.add(new ComputeRaysOut.verticeSL(receiverId, sourceId, value));
+    }
+
+	/*public double[] getVerticesSoundLevel() {
         return verticesSoundLevel;
     }
+
+	public void addVerticeSoundLevel(int receiverId, int sourceId, double[] value) {
+		verticeSoundLevel.add(new PropagationProcessOut_Att_f.verticeSL(receiverId, sourceId, value));
+	}
 
     public void setVerticesSoundLevel(double[] verticesSoundLevel) {
 		this.verticesSoundLevel = verticesSoundLevel;
@@ -74,7 +110,7 @@ public class ComputeRaysOut {
 
     public void setVerticeSoundLevel(int receiverId, double value) {
 				verticesSoundLevel[receiverId] = value;
-    }
+    }*/
 
 
 	public synchronized long getNb_couple_receiver_src() {

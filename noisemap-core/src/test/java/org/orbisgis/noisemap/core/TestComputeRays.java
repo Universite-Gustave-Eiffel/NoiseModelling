@@ -265,7 +265,7 @@ public class TestComputeRays {
 
         double energeticSum[] = new double[freqLvl.size()];
         List<PropagationDebugInfo> debug = new ArrayList<>();
-        computeRays.computeRaysAtPosition(new Coordinate(200, 0, 4), energeticSum, debug);
+        computeRays.computeRaysAtPosition(new Coordinate(200, 0, 4),0, energeticSum, debug);
 
 
         /*PropagationProcessPathData propData = new PropagationProcessPathData();
@@ -354,7 +354,7 @@ public class TestComputeRays {
 
         double energeticSum[] = new double[freqLvl.size()];
         List<PropagationDebugInfo> debug = new ArrayList<>();
-        computeRays.computeRaysAtPosition(new Coordinate(200, 50, 14), energeticSum, debug);
+        computeRays.computeRaysAtPosition(new Coordinate(200, 50, 14), 0,energeticSum, debug);
 
         String filename = "D:/aumond/Desktop/T05.vtk";
         String filename2 = "D:/aumond/Desktop/T05.ply";
@@ -441,7 +441,7 @@ public class TestComputeRays {
 
         double energeticSum[] = new double[freqLvl.size()];
         List<PropagationDebugInfo> debug = new ArrayList<>();
-        computeRays.computeRaysAtPosition(new Coordinate(200, 50, 11.5), energeticSum, debug);
+        computeRays.computeRaysAtPosition(new Coordinate(200, 50, 11.5), 0,energeticSum, debug);
         assertEquals(true, false);
     }
 
@@ -504,7 +504,7 @@ public class TestComputeRays {
 
         double energeticSum[] = new double[freqLvl.size()];
         List<PropagationDebugInfo> debug = new ArrayList<>();
-        computeRays.computeRaysAtPosition(new Coordinate(200, 50, 4), energeticSum, debug);
+        computeRays.computeRaysAtPosition(new Coordinate(200, 50, 4), 0,energeticSum, debug);
 
         String filename = "D:/aumond/Desktop/T07.vtk";
         String filename2 = "D:/aumond/Desktop/T07.ply";
@@ -575,7 +575,7 @@ public class TestComputeRays {
 
         double energeticSum[] = new double[freqLvl.size()];
         List<PropagationDebugInfo> debug = new ArrayList<>();
-        computeRays.computeRaysAtPosition(new Coordinate(200, 50, 4), energeticSum, debug);
+        computeRays.computeRaysAtPosition(new Coordinate(200, 50, 4), 0,energeticSum, debug);
 
         String filename = "D:/aumond/Desktop/T08.vtk";
         String filename2 = "D:/aumond/Desktop/T08.ply";
@@ -657,7 +657,7 @@ public class TestComputeRays {
 
         double energeticSum[] = new double[freqLvl.size()];
         List<PropagationDebugInfo> debug = new ArrayList<>();
-        computeRays.computeRaysAtPosition(new Coordinate(70, 10, 4), energeticSum, debug);
+        computeRays.computeRaysAtPosition(new Coordinate(70, 10, 4), 0,energeticSum, debug);
         String filename = "D:/aumond/Desktop/T09.vtk";
         String filename2 = "D:/aumond/Desktop/T09.ply";
         try {
@@ -728,7 +728,7 @@ public class TestComputeRays {
 
         double energeticSum[] = new double[freqLvl.size()];
         List<PropagationDebugInfo> debug = new ArrayList<>();
-        computeRays.computeRaysAtPosition(new Coordinate(70, 10, 15), energeticSum, debug);
+        computeRays.computeRaysAtPosition(new Coordinate(70, 10, 15), 0,energeticSum, debug);
         String filename = "D:/aumond/Desktop/T11.vtk";
         String filename2 = "D:/aumond/Desktop/T11.ply";
         try {
@@ -803,7 +803,7 @@ public class TestComputeRays {
 
         double energeticSum[] = new double[freqLvl.size()];
         List<PropagationDebugInfo> debug = new ArrayList<>();
-        computeRays.computeRaysAtPosition(new Coordinate(30, 20, 6), energeticSum, debug);
+        computeRays.computeRaysAtPosition(new Coordinate(30, 20, 6), 0,energeticSum, debug);
         String filename = "D:/aumond/Desktop/T12.vtk";
         String filename2 = "D:/aumond/Desktop/T12.ply";
         try {
@@ -899,7 +899,7 @@ public class TestComputeRays {
 
         double energeticSum[] = new double[freqLvl.size()];
         List<PropagationDebugInfo> debug = new ArrayList<>();
-        computeRays.computeRaysAtPosition(new Coordinate(200, 50, 28.5), energeticSum, debug);
+        computeRays.computeRaysAtPosition(new Coordinate(200, 50, 28.5), 0,energeticSum, debug);
         String filename = "D:/aumond/Desktop/T13.vtk";
         String filename2 = "D:/aumond/Desktop/T13.ply";
         try {
@@ -971,7 +971,7 @@ public class TestComputeRays {
 
         double energeticSum[] = new double[freqLvl.size()];
         List<PropagationDebugInfo> debug = new ArrayList<>();
-        computeRays.computeRaysAtPosition(new Coordinate(25, 20, 23), energeticSum, debug);
+        computeRays.computeRaysAtPosition(new Coordinate(25, 20, 23), 0,energeticSum, debug);
         String filename = "D:/aumond/Desktop/T14.vtk";
         String filename2 = "D:/aumond/Desktop/T14.ply";
         try {
@@ -1059,7 +1059,7 @@ public class TestComputeRays {
 
         double energeticSum[] = new double[freqLvl.size()];
         List<PropagationDebugInfo> debug = new ArrayList<>();
-        computeRays.computeRaysAtPosition(new Coordinate(100, 15, 5), energeticSum, debug);
+        computeRays.computeRaysAtPosition(new Coordinate(100, 15, 5), 0,energeticSum, debug);
         String filename = "D:/aumond/Desktop/T15.vtk";
         String filename2 = "D:/aumond/Desktop/T15.ply";
         try {
@@ -1150,7 +1150,7 @@ public class TestComputeRays {
 
         double energeticSum[] = new double[freqLvl.size()];
         List<PropagationDebugInfo> debug = new ArrayList<>();
-        computeRays.computeRaysAtPosition(new Coordinate(200, 50, 14), energeticSum, debug);
+        computeRays.computeRaysAtPosition(new Coordinate(200, 50, 14), 0,energeticSum, debug);
 
         String filename = "D:/aumond/Desktop/T16.vtk";
         String filename2 = "D:/aumond/Desktop/T16.ply";
@@ -1243,7 +1243,7 @@ public class TestComputeRays {
 
         double energeticSum[] = new double[freqLvl.size()];
         List<PropagationDebugInfo> debug = new ArrayList<>();
-        computeRays.computeRaysAtPosition(new Coordinate(200, 50, 11.5), energeticSum, debug);
+        computeRays.computeRaysAtPosition(new Coordinate(200, 50, 11.5), 0,energeticSum, debug);
 
         String filename = "D:/aumond/Desktop/T17.vtk";
         String filename2 = "D:/aumond/Desktop/T17.ply";
@@ -1343,7 +1343,7 @@ public class TestComputeRays {
 
         double energeticSum[] = new double[freqLvl.size()];
         List<PropagationDebugInfo> debug = new ArrayList<>();
-        computeRays.computeRaysAtPosition(new Coordinate(200, 50, 12), energeticSum, debug);
+        computeRays.computeRaysAtPosition(new Coordinate(200, 50, 12), 0,energeticSum, debug);
 
         String filename = "D:/aumond/Desktop/T18.vtk";
         String filename2 = "D:/aumond/Desktop/T18.ply";
@@ -1465,7 +1465,7 @@ public class TestComputeRays {
 
         double energeticSum[] = new double[freqLvl.size()];
         List<PropagationDebugInfo> debug = new ArrayList<>();
-        computeRays.computeRaysAtPosition(new Coordinate(200, 30, 14), energeticSum, debug);
+        computeRays.computeRaysAtPosition(new Coordinate(200, 30, 14), 0,energeticSum, debug);
 
         String filename = "D:/aumond/Desktop/T19.vtk";
         String filename2 = "D:/aumond/Desktop/T19.ply";
@@ -1571,7 +1571,7 @@ public class TestComputeRays {
 
         double energeticSum[] = new double[freqLvl.size()];
         List<PropagationDebugInfo> debug = new ArrayList<>();
-        computeRays.computeRaysAtPosition(new Coordinate(187.05, 25, 14), energeticSum, debug);
+        computeRays.computeRaysAtPosition(new Coordinate(187.05, 25, 14), 0,energeticSum, debug);
         String filename = "D:/aumond/Desktop/T21.vtk";
         String filename2 = "D:/aumond/Desktop/T21.ply";
         try {
@@ -1667,7 +1667,7 @@ public class TestComputeRays {
 
         double energeticSum[] = new double[freqLvl.size()];
         List<PropagationDebugInfo> debug = new ArrayList<>();
-        computeRays.computeRaysAtPosition(new Coordinate(187.05, 25, 14), energeticSum, debug);
+        computeRays.computeRaysAtPosition(new Coordinate(187.05, 25, 14), 0,energeticSum, debug);
         String filename = "D:/aumond/Desktop/T22.vtk";
         String filename2 = "D:/aumond/Desktop/T22.ply";
         try {
@@ -1781,7 +1781,7 @@ public class TestComputeRays {
 
         double energeticSum[] = new double[freqLvl.size()];
         List<PropagationDebugInfo> debug = new ArrayList<>();
-        computeRays.computeRaysAtPosition(new Coordinate(187.05, 25, 14), energeticSum, debug);
+        computeRays.computeRaysAtPosition(new Coordinate(187.05, 25, 14), 0,energeticSum, debug);
         String filename = "D:/aumond/Desktop/T23.vtk";
         String filename2 = "D:/aumond/Desktop/T23.ply";
         try {
@@ -1945,7 +1945,7 @@ public class TestComputeRays {
 
         double energeticSum[] = new double[freqLvl.size()];
         List<PropagationDebugInfo> debug = new ArrayList<>();
-        computeRays.computeRaysAtPosition(new Coordinate(1000, 100, 1), energeticSum, debug);
+        computeRays.computeRaysAtPosition(new Coordinate(1000, 100, 1), 0,energeticSum, debug);
         String filename = "D:/aumond/Desktop/T28.vtk";
         String filename2 = "D:/aumond/Desktop/T28.ply";
         try {

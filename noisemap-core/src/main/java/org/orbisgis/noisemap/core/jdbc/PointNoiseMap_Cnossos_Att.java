@@ -17,8 +17,6 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.*;
 
-import static org.orbisgis.noisemap.core.ComputeRays.dbaToW;
-import static org.orbisgis.noisemap.core.ComputeRays.wToDba;
 
 /**
  * Compute noise propagation at specified receiver points - Get Transfer Matrix
@@ -132,11 +130,11 @@ public class PointNoiseMap_Cnossos_Att extends JdbcNoiseMap {
         }
 
 
-        return new PropagationProcessData_Att(
+        return new PropagationProcessData(
                 receivers, freeFieldFinder, sourcesIndex,
                 sourceGeometries, wj_sources, db_field_freq,
                 soundReflectionOrder, soundDiffractionOrder, maximumPropagationDistance, maximumReflectionDistance,
-                0, wallAbsorption, ij,
+                0, wallAbsorption,new double[]{0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25},0, ij,
                 progression.subProcess(receivers.size()), geoWithSoil, computeVerticalDiffraction);
     }
 
@@ -145,36 +143,7 @@ public class PointNoiseMap_Cnossos_Att extends JdbcNoiseMap {
         return SFSUtilities.getTableEnvelope(connection, TableLocation.parse(receiverTableName), "");
     }
 
-    private double[] sumArrayWithPonderation(double[] array1, double[] array2, double p) {
-        double[] sum = new double[array1.length];
-        for (int i = 0; i < array1.length; i++) {
-            sum[i] = wToDba(p*dbaToW(array1[i])+ (1-p)*dbaToW(array2[i]));
-        }
-        return sum;
-    }
 
-    private double[] sumArray(double[] array1, double[] array2) {
-        double[] sum = new double[array1.length];
-        for (int i = 0; i < array1.length; i++) {
-            sum[i] = wToDba(dbaToW(array1[i])+ dbaToW(array2[i]));
-        }
-        return sum;
-    }
-    private double[] computeWithMeteo(PropagationProcessPathData propData,ComputeRaysOut propDataOut, double p) {
-        EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
-        double[] aGlobalMeteo = new double[8];
-        double[] aGlobal = new double[]{-10^1000,-10^1000,-10^1000,-10^1000,-10^1000,-10^1000,-10^1000,-10^1000};
-        for (PropagationPath propath:propDataOut.propagationPaths) {
-            propath.setFavorable(false);
-            evaluateAttenuationCnossos.evaluate(propath, propData);
-            aGlobalMeteo = evaluateAttenuationCnossos.getaGlobal();
-            propath.setFavorable(true);
-            evaluateAttenuationCnossos.evaluate(propath, propData);
-            aGlobalMeteo = sumArrayWithPonderation(aGlobalMeteo, evaluateAttenuationCnossos.getaGlobal(),p);
-            aGlobal = sumArray(aGlobal,aGlobalMeteo);
-        }
-        return aGlobal;
-    }
 
     /**
      * Launch sound propagation
@@ -188,67 +157,35 @@ public class PointNoiseMap_Cnossos_Att extends JdbcNoiseMap {
      */
     public Collection<PropagationResultPtRecord_Att_f> evaluateCell(Connection connection, int cellI, int cellJ,
                                                                     ProgressVisitor progression, Set<Long> skipReceivers) throws SQLException {
-        PropagationProcessOut_Att_f threadDataOut = new PropagationProcessOut_Att_f();
-
+        ComputeRaysOut threadDataOut = new ComputeRaysOut();
         List<Long> receiversPk = new ArrayList<>();
         List<Long> sourcesPk = new ArrayList<>();
 
-        PropagationProcessData threadData = prepareCell(connection, cellI, cellJ, progression, receiversPk, sourcesPk, skipReceivers);
+        PropagationProcessData threadData = prepareCell(connection, cellI, cellJ, progression, receiversPk, sourcesPk,skipReceivers);
 
-
-        //PropagationProcess_Att_f propaProcess = new PropagationProcess_Att_f(
-        //        threadData, threadDataOut);
-
-        //PropagationProcessData rayData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-         //       freqLvl, 0, 0, 400, 400, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
-        PropagationProcessData rayData = prepareCell(connection, cellI, cellJ, progression, receiversPk, sourcesPk, skipReceivers);
-
-        ComputeRaysOut propDataOut = new ComputeRaysOut();
-        ComputeRays computeRays = new ComputeRays(rayData, propDataOut);
-
-        computeRays.initStructures();
-
-        double energeticSum[] = new double[8];
-        List<PropagationDebugInfo> debug = new ArrayList<>();
-
-        if (!absoluteZCoordinates) {
-            // TODO get back this stuff
-            //ComputeRays.makeRelativeZToAbsolute();
+        ComputeRays propaProcess = new ComputeRays(
+                threadData, threadDataOut);
+        if(!absoluteZCoordinates) {
+            propaProcess.makeRelativeZToAbsolute();
         }
 
-        //propaProcess.run();
-        List<PropagationProcessOut_Att_f.verticeSL> verticesSoundLevel = threadDataOut.getVerticesSoundLevel();
+        propaProcess.run();
+        List<ComputeRaysOut.verticeSL> verticesSoundLevel = threadDataOut.getVerticesSoundLevel();
+
         Stack<PropagationResultPtRecord_Att_f> toDriver = new Stack<>();
 
         //Vertices output type
-        if (receiversPk.isEmpty()) {
-            for (PropagationProcessOut_Att_f.verticeSL result : verticesSoundLevel) {
-
-                /*computeRays.computeRaysAtPosition(new Coordinate(200, 10, 14), energeticSum, debug);
-
-
-                double p = 0.5; // probability favourable conditions
-                PropagationProcessPathData propData = new PropagationProcessPathData();
-                propData.setTemperature(10);
-                propData.setHumidity(70);
-                propData.setPrime2520(true);
-
-                double[] aGlobal = computeWithMeteo(propData, propDataOut, p);
-                splCompare(aGlobal, "Test T05", new double[]{-55.74,-55.79,-55.92,-56.09,-56.43,-57.59,-62.09,-78.46}, ERROR_EPSILON_TEST_T);*/
-
-                toDriver.add(new PropagationResultPtRecord_Att_f(result.receiverId, result.sourceId, threadData.cellId, result.value[0],
-                        result.value[1], result.value[2], result.value[3], result.value[4], result.value[5], result.value[6], result.value[7],
-                        result.value[8]));
+        if(receiversPk.isEmpty()) {
+            for (ComputeRaysOut.verticeSL result : verticesSoundLevel) {
+                toDriver.add(new PropagationResultPtRecord_Att_f(result.receiverId, result.sourceId, threadData.cellId, result.value[0],result.value[0],
+                        result.value[1], result.value[2], result.value[3], result.value[4], result.value[5], result.value[6], result.value[7]));
             }
         } else {
-            for (PropagationProcessOut_Att_f.verticeSL result : verticesSoundLevel) {
-                toDriver.add(new PropagationResultPtRecord_Att_f(receiversPk.get(result.receiverId), sourcesPk.get(result.sourceId), threadData.cellId, result.value[0],
-                        result.value[1], result.value[2], result.value[3], result.value[4], result.value[5], result.value[6], result.value[7],
-                        result.value[8]));
+            for (ComputeRaysOut.verticeSL result : verticesSoundLevel) {
+                toDriver.add(new PropagationResultPtRecord_Att_f(receiversPk.get(result.receiverId), sourcesPk.get(result.sourceId), threadData.cellId, result.value[0],result.value[0],
+                        result.value[1], result.value[2], result.value[3], result.value[4], result.value[5], result.value[6], result.value[7]));
             }
         }
-
-
         return toDriver;
     }
 }
