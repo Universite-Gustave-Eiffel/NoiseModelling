@@ -238,7 +238,10 @@ public class PropagationProcess implements Runnable {
             {
 
                 Double buildingAlpha = data.freeFieldFinder.getBuildingAlpha(seg.getBuildingId());
-                double[] CorrectionWallALpha = PropagationProcessData.getWallAlpha(data.wallAlpha,data.freq_lvl); // TODO Adrien
+                double[] CorrectionWallALpha = new double[data.freq_lvl.size()];
+                for(int idfreq=0;idfreq< data.freq_lvl.size();idfreq++) {
+                    CorrectionWallALpha[idfreq] = PropagationProcessData.getWallAlpha(data.wallAlpha, data.freq_lvl.get(idfreq));
+                }
                 reflectionAlpha *= 1 - (buildingAlpha.isNaN() ? data.wallAlpha : buildingAlpha);
                 // There are a probable reflection point on the
                 // segment

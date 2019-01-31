@@ -83,7 +83,7 @@ public class PropagationPath {
         public Coordinate coordinate; // coordinate (absolute)
         public final double altitude; // altitude of relief (exact)
         public final double gs;       // only if POINT_TYPE = SRCE or RECV, G coefficient right above the point
-        public final double alphaWall; // only if POINT_TYPE = REFL, alpha coefficient todo potentially compute using EN 1793-1:2013 if alphaWall > 1 (and so is considered as sigma)
+        public final double alphaWall; // only if POINT_TYPE = REFL, alpha coefficient
         public int buildingId; // only if POINT_TYPE = REFL
         public POINT_TYPE type; // type of point
         public enum POINT_TYPE {

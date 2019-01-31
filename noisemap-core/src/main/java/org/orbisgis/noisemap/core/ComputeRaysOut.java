@@ -69,16 +69,6 @@ public class ComputeRaysOut {
             Collections.synchronizedList(new ArrayList<ComputeRaysOut.verticeSL>());
 
 
-
-	public void addPropagationPath(PropagationPath propagationPath){
-
-		propagationPaths.add(propagationPath);
-	}
-	public void addPropagationPaths(List<PropagationPath> propagationPath){
-
-		propagationPaths.addAll(propagationPath);
-	}
-
 	public void setSrcIdAndAddPropagationPaths (List<PropagationPath> propagationPath, int srcId, int rcvId){
 		for (int j=0; j< propagationPath.size();j++){
 			propagationPath.get(j).idSource = srcId;
@@ -95,31 +85,7 @@ public class ComputeRaysOut {
         verticeSoundLevel.add(new ComputeRaysOut.verticeSL(receiverId, sourceId, value));
     }
 
-	/*public double[] getVerticesSoundLevel() {
-        return verticesSoundLevel;
-    }
 
-	public void addVerticeSoundLevel(int receiverId, int sourceId, double[] value) {
-		verticeSoundLevel.add(new PropagationProcessOut_Att_f.verticeSL(receiverId, sourceId, value));
-	}
-
-    public void setVerticesSoundLevel(double[] verticesSoundLevel) {
-		this.verticesSoundLevel = verticesSoundLevel;
-    }
-
-
-    public void setVerticeSoundLevel(int receiverId, double value) {
-				verticesSoundLevel[receiverId] = value;
-    }*/
-
-
-	public synchronized long getNb_couple_receiver_src() {
-		return nb_couple_receiver_src;
-	}
-
-	public synchronized long getNb_obstr_test() {
-		return nb_obstr_test;
-	}
 	public synchronized void appendReflexionPath(long added) {
 		nb_reflexion_path+=added;
 	}
@@ -127,18 +93,8 @@ public class ComputeRaysOut {
 		nb_diffraction_path+=added;
 	}
 
-    public synchronized long getNb_diffraction_path() {
-            return nb_diffraction_path;
-        }
 	public synchronized void appendImageReceiver(long added) {
 		nb_image_receiver+=added;
-	}
-	public synchronized long getNb_image_receiver() {
-		return nb_image_receiver;
-	}
-
-	public synchronized long getNb_reflexion_path() {
-		return nb_reflexion_path;
 	}
 
 	public synchronized void appendSourceCount(long srcCount) {

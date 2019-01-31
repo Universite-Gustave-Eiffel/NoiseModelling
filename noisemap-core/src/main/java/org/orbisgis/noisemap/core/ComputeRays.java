@@ -33,8 +33,6 @@
  */
 package org.orbisgis.noisemap.core;
 
-
-import com.sun.deploy.util.ArrayUtil;
 import org.h2gis.api.ProgressVisitor;
 import org.h2gis.utilities.jts_utils.CoordinateUtils;
 import org.locationtech.jts.algorithm.*;
@@ -373,124 +371,10 @@ public class ComputeRays implements Runnable {
     }
 
 
-    public double computeDeltaDiffraction(int idfreq, double eLength, double deltaDistance, double h0) {
-        double cprime;
-        //C" NMPB 2008 P.33
-        //Multiple diffraction
-        //CPRIME=( 1+(5*gamma)^2)/((1/3)+(5*gamma)^2)
-        double gammaPart = Math.pow((5 * freq_lambda[idfreq]) / eLength, 2);
-        double Ch = Math.min(h0 * (data.celerity / freq_lambda[idfreq]) / 250, 1);
-        //NFS 31-133 page 46
-        if (eLength > 0.3) {
-            cprime = (1. + gammaPart) / (ONETHIRD + gammaPart);
-        } else {
-            cprime = 1.;
-        }
-
-        //(7.11) NMP2008 P.32
-        double testForm = (40 / freq_lambda[idfreq])
-                * cprime * deltaDistance;
-        double diffractionAttenuation = 0.;
-        if (testForm >= -2.) {
-            diffractionAttenuation = 10 * Ch * Math
-                    .log10(3 + testForm);
-        }
-        // Limit to 0<=DiffractionAttenuation
-        diffractionAttenuation = Math.max(0,
-                diffractionAttenuation);
-
-        return diffractionAttenuation;
-    }
 
     private static List<Coordinate> removeDuplicates(List<Coordinate> coordinates) {
         return Arrays.asList(CoordinateUtils.removeDuplicatedCoordinates(
                 coordinates.toArray(new Coordinate[coordinates.size()]), false));
-    }
-
-    private double[] computeDeltaDistance(DiffractionWithSoilEffetZone diffDataWithSoilEffet) {
-        final Coordinate srcCoord = diffDataWithSoilEffet.getOSZone().getCoordinate(1);
-        final Coordinate receiverCoord = diffDataWithSoilEffet.getROZone().getCoordinate(0);
-        final LineSegment OSZone = diffDataWithSoilEffet.getOSZone();
-        final LineSegment ROZone = diffDataWithSoilEffet.getROZone();
-        final double fulldistance = diffDataWithSoilEffet.getFullDiffractionDistance();
-        // R' is the projection of R on the mean ground plane (O,R)
-        List<Coordinate> planeCoordinates = new ArrayList<>(diffDataWithSoilEffet.getrOgroundCoordinates());
-        planeCoordinates.addAll(diffDataWithSoilEffet.getoSgroundCoordinates());
-        planeCoordinates = JTSUtility.getNewCoordinateSystem(planeCoordinates);
-        List<Coordinate> rOPlaneCoordinates = planeCoordinates.subList(0, diffDataWithSoilEffet.getrOgroundCoordinates().size());
-        List<Coordinate> oSPlaneCoordinates = planeCoordinates.subList(rOPlaneCoordinates.size(), planeCoordinates.size());
-        // Compute source position using new plane system
-        Coordinate rotatedSource = new Coordinate(oSPlaneCoordinates.get(oSPlaneCoordinates.size() - 1));
-        rotatedSource.setOrdinate(1, srcCoord.z);
-        Coordinate rotatedOs = new Coordinate(oSPlaneCoordinates.get(0));
-        rotatedOs.setOrdinate(1, OSZone.getCoordinate(0).z);
-        // Compute receiver position using new plane system
-        Coordinate rotatedReceiver = new Coordinate(rOPlaneCoordinates.get(0));
-        rotatedReceiver.setOrdinate(1, receiverCoord.z);
-        Coordinate rotatedOr = new Coordinate(rOPlaneCoordinates.get(rOPlaneCoordinates.size() - 1));
-        rotatedOr.setOrdinate(1, ROZone.getCoordinate(1).z);
-        // Compute mean ground plane
-        final double[] oSFuncParam = JTSUtility.getLinearRegressionPolyline(removeDuplicates(oSPlaneCoordinates));
-        final double[] rOFuncParam = JTSUtility.getLinearRegressionPolyline(removeDuplicates(rOPlaneCoordinates));
-        // Compute source and receiver image on ground
-        Coordinate rPrim = JTSUtility.makePointImage(rOFuncParam[0], rOFuncParam[1], rotatedReceiver);
-        Coordinate sPrim = JTSUtility.makePointImage(oSFuncParam[0], oSFuncParam[1], rotatedSource);
-        double deltaDistanceORprim = (fulldistance - CGAlgorithms3D.distance(ROZone.p0, ROZone.p1)
-                + rPrim.distance(rotatedOr)) - rPrim.distance(rotatedSource);
-        // S' is the projection of R on the mean ground plane (S,O)
-        double deltaDistanceSprimO = (fulldistance - CGAlgorithms3D.distance(OSZone.p0, OSZone.p1)
-                + sPrim.distance(rotatedOs)) - sPrim.distance(rotatedReceiver);
-        return new double[]{deltaDistanceSprimO, deltaDistanceORprim};
-    }
-
-
-    private double[] computeCoordprime(DiffractionWithSoilEffetZone diffDataWithSoilEffet, boolean obstructedSourceReceiver) {
-        final Coordinate srcCoord = diffDataWithSoilEffet.getOSZone().getCoordinate(1);
-        final Coordinate receiverCoord = diffDataWithSoilEffet.getROZone().getCoordinate(0);
-        final LineSegment OSZone = diffDataWithSoilEffet.getOSZone();
-        final LineSegment ROZone = diffDataWithSoilEffet.getROZone();
-        final double fulldistance = diffDataWithSoilEffet.getFullDiffractionDistance();
-        // R' is the projection of R on the mean ground plane (O,R)
-        List<Coordinate> planeCoordinates = new ArrayList<>(diffDataWithSoilEffet.getrOgroundCoordinates());
-        planeCoordinates.addAll(diffDataWithSoilEffet.getoSgroundCoordinates());
-        planeCoordinates = JTSUtility.getNewCoordinateSystem(planeCoordinates);
-        List<Coordinate> rOPlaneCoordinates = planeCoordinates.subList(0, diffDataWithSoilEffet.getrOgroundCoordinates().size());
-        List<Coordinate> oSPlaneCoordinates = planeCoordinates.subList(rOPlaneCoordinates.size(), planeCoordinates.size());
-        // Compute source position using new plane system
-        Coordinate rotatedSource = new Coordinate(oSPlaneCoordinates.get(oSPlaneCoordinates.size() - 1));
-        rotatedSource.setOrdinate(1, srcCoord.z);
-        Coordinate rotatedOs = new Coordinate(oSPlaneCoordinates.get(0));
-        rotatedOs.setOrdinate(1, OSZone.getCoordinate(0).z);
-        // Compute receiver position using new plane system
-        Coordinate rotatedReceiver = new Coordinate(rOPlaneCoordinates.get(0));
-        rotatedReceiver.setOrdinate(1, receiverCoord.z);
-        Coordinate rotatedOr = new Coordinate(rOPlaneCoordinates.get(rOPlaneCoordinates.size() - 1));
-        rotatedOr.setOrdinate(1, ROZone.getCoordinate(1).z);
-        // Compute mean ground plane
-        final double[] oSFuncParam = JTSUtility.getLinearRegressionPolyline(removeDuplicates(oSPlaneCoordinates));
-        final double[] rOFuncParam = JTSUtility.getLinearRegressionPolyline(removeDuplicates(rOPlaneCoordinates));
-        // Compute source and receiver image on ground
-        Coordinate rPrim = JTSUtility.makePointImage(rOFuncParam[0], rOFuncParam[1], rotatedReceiver);
-        Coordinate sPrim = JTSUtility.makePointImage(oSFuncParam[0], oSFuncParam[1], rotatedSource);
-
-        rPrim.setOrdinate(0, receiverCoord.x - rPrim.x); // todo check that !!
-        sPrim.setOrdinate(0, receiverCoord.x - sPrim.x); // todo check that !!
-        rPrim.setOrdinate(2, rPrim.y);
-        sPrim.setOrdinate(2, sPrim.y);
-        rPrim.setOrdinate(1, receiverCoord.y);
-        sPrim.setOrdinate(1, srcCoord.y);
-
-        DiffractionWithSoilEffetZone diffDataWithSoilEffetSprime = data.freeFieldFinder.getPath(receiverCoord, sPrim);
-        DiffractionWithSoilEffetZone diffDataWithSoilEffetRprime = data.freeFieldFinder.getPath(rPrim, srcCoord);
-        final double DeltaDistanceSp = diffDataWithSoilEffetSprime.getDeltaDistance();
-        final double DeltaDistanceRp = diffDataWithSoilEffetRprime.getDeltaDistance();
-        final double DeltaDistanceSpfav = diffDataWithSoilEffetSprime.getDeltaDistancefav();
-        final double DeltaDistanceRpfav = diffDataWithSoilEffetRprime.getDeltaDistancefav();
-        if (obstructedSourceReceiver) {
-            return new double[]{DeltaDistanceSp, DeltaDistanceRp, DeltaDistanceSpfav, DeltaDistanceRpfav};
-        } else {
-            return new double[]{-DeltaDistanceSp, -DeltaDistanceRp, -DeltaDistanceSpfav, -DeltaDistanceRpfav};
-        }
     }
 
 
@@ -679,99 +563,7 @@ public class ComputeRays implements Runnable {
         }
         return coordinate;
     }
-    /**
-     * Add vertical edge diffraction noise contribution to energetic sum.
-     * @param regionCorners
-     * @param srcCoord
-     * @param receiverCoord
 
-     */
-    public List<ArrayList<Coordinate>> computeVerticalEdgeDiffraction2( List<Coordinate> regionCorners, Coordinate srcCoord,
-                                               Coordinate receiverCoord, List<PropagationDebugInfo> debugInfo) {
-        final LineSegment receiverSrc = new LineSegment(receiverCoord, srcCoord);
-        final double SrcReceiverDistance = CGAlgorithms3D.distance(srcCoord, receiverCoord);
-
-        List<ArrayList<Coordinate>> paths  = new ArrayList<>();
-
-        // Get the first valid receiver->corner
-        int freqcount = data.freq_lvl.size();
-        List<Integer> curCorner = new ArrayList<>();
-
-        int firstCorner = nextFreeFieldNode(regionCorners, receiverCoord, receiverSrc, curCorner, 0, data.freeFieldFinder);
-        if (firstCorner != -1) {
-            // History of propagation through corners
-            curCorner.add(firstCorner);
-            while (!curCorner.isEmpty()) {
-                Coordinate lastCorner = getProjectedZCoordinate(regionCorners.get(curCorner.get(curCorner.size() - 1)
-                ), receiverSrc);
-                // Test Path is free to the source
-                if (data.freeFieldFinder.isFreeField(lastCorner, srcCoord)) {
-                    // True then the path is clear
-                    // Compute attenuation level
-                    double eLength = 0;
-                    //Compute distance of the corner path
-                    for (int ie = 1; ie < curCorner.size(); ie++) {
-                        Coordinate cornerA = regionCorners.get(curCorner.get(ie));
-                        Coordinate cornerB = regionCorners.get(curCorner.get(ie - 1));
-                        eLength += CGAlgorithms3D.distance(cornerA, cornerB);
-                    }
-                    // delta=SO^1+O^nO^(n+1)+O^nnR
-                    double receiverCornerDistance = CGAlgorithms3D.distance(receiverCoord,
-                            regionCorners.get(curCorner.get(0)));
-                    double sourceCornerDistance = CGAlgorithms3D.distance(srcCoord,
-                            regionCorners.get(curCorner.get(curCorner.size() - 1)));
-                    double diffractionFullDistance = receiverCornerDistance + eLength
-                            //Corner to corner distance
-                            + sourceCornerDistance;
-                    if (diffractionFullDistance < data.maxSrcDist) {
-                        diffractionPathCount++;
-                        double delta = diffractionFullDistance - SrcReceiverDistance;
-                        PropagationDebugInfo propagationDebugInfo = null;
-                        if (debugInfo != null) {
-                            ArrayList<Coordinate> path = new ArrayList<>(curCorner.size() + 2);
-                            path.add(receiverCoord);
-                            for (Integer aCurCorner : curCorner) {
-                                Coordinate Corner = getProjectedZCoordinate(regionCorners.get(aCurCorner), receiverSrc);
-                                path.add(Corner);
-                            }
-                            path.add(srcCoord);
-                            propagationDebugInfo = new PropagationDebugInfo(path, new double[freqcount]);
-                            paths.add(path);
-                        }
-
-                        if (debugInfo != null) {
-                            debugInfo.add(propagationDebugInfo);
-                        }
-                    }
-                }
-                // Process to the next corner
-                int nextCorner = -1;
-                if (data.diffractionOrder > curCorner.size()) {
-                    // Continue to next order valid corner
-                    nextCorner = nextFreeFieldNode(regionCorners, lastCorner, receiverSrc, curCorner, 0,
-                            data.freeFieldFinder);
-                    if (nextCorner != -1) {
-                        curCorner.add(nextCorner);
-                    }
-                }
-                while (nextCorner == -1 && !curCorner.isEmpty()) {
-                    Coordinate startPoint = receiverCoord;
-                    if (curCorner.size() > 1) {
-                        startPoint = regionCorners.get(curCorner.get(curCorner.size() - 2));
-                    }
-                    // Next free field corner
-                    nextCorner = nextFreeFieldNode(regionCorners, startPoint, receiverSrc, curCorner,
-                            curCorner.get(curCorner.size() - 1), data.freeFieldFinder);
-                    if (nextCorner != -1) {
-                        curCorner.set(curCorner.size() - 1, nextCorner);
-                    } else {
-                        curCorner.remove(curCorner.size() - 1);
-                    }
-                }
-            }
-        }
-    return paths;
-    }
 
     public HashSet<Integer> getBuildingsOnPath(Coordinate p1,
                               Coordinate p2,List<Wall> nearBuildingsWalls){
@@ -1132,17 +924,6 @@ public class ComputeRays implements Runnable {
         }
     }
 
-    /**
-     * Compute the attenuation of atmospheric absorption
-     *
-     * @param Wj         Source energy
-     * @param dist       Propagation distance
-     * @param alpha_atmo Atmospheric alpha (dB/km)
-     * @return
-     */
-    private Double attAtmW(double Wj, double dist, double alpha_atmo) {
-        return dbaToW(wToDba(Wj) - (alpha_atmo * dist) / 1000.);
-    }
 
     /**
      * Use {@link #cornersQuad} to fetch all region corners in max ref dist
@@ -1353,78 +1134,6 @@ public class ComputeRays implements Runnable {
         }
         return totDistance;
 
-    }
-
-    /**
-     * getASoil use equation ASol in NF S 31-133 page 41 to calculate Attenuation(or contribution) Ground Effect
-     *
-     * @param zs       z of source point
-     * @param zr       z of receiver point
-     * @param dp       dp in equation
-     * @param gw       Gw
-     * @param fm       frequency
-     * @param AGroundHmin min ASoil
-     * @param cel      sound celerity m/s
-     * @return ASoil
-     */
-    private static double getASoil(double zs, double zr, double dp, double gw, int fm, double AGroundHmin, double cel) {
-        //NF S 31-133 page 41 c
-        double k = 2 * Math.PI * fm / cel;
-        //NF S 31-113 page 41 w
-        double w = 0.0185 * Math.pow(fm, 2.5) * Math.pow(gw, 2.6) /
-                (Math.pow(fm, 1.5) * Math.pow(gw, 2.6) + 1.3 * Math.pow(10, 3) * Math.pow(fm, 0.75) * Math.pow(gw, 1.3) + 1.16 * Math.pow(10, 6));
-        //NF S 31-113 page 41 Cf
-        double cf = dp * (1 + 3 * w * dp * Math.pow(Math.E, -Math.sqrt(w * dp))) / (1 + w * dp);
-        //NF S 31-113 page 41 A sol
-        double ASoil = -10 * Math.log10(4 * Math.pow(k, 2) / Math.pow(dp, 2) *
-                (Math.pow(zs, 2) - Math.sqrt(2 * cf / k) * zs + cf / k) * (Math.pow(zr, 2) - Math.sqrt(2 * cf / k) * zr + cf / k));
-        ASoil = Math.max(ASoil, AGroundHmin);
-        return ASoil;
-
-    }
-
-    /**
-     * getAGroundF use equation ASol in NF S 31-133 page 41 to calculate Attenuation(or contribution) Ground Effect
-     *
-     * @param zs          z of source point
-     * @param zr          z of receiver point
-     * @param dp          dp in equation
-     * @param gw          Gw
-     * @param fm          frequency
-     * @param AGroundFMin min ASoil
-     * @param cel         Sound celerity m/s
-     * @return AGroundF
-     */
-    private static double getAGroundF(double zs, double zr, double dp, double gw, int fm, double AGroundFMin, double cel) {
-        // CNOSSOS p89
-
-
-        //NF S 31-133 page 41 c
-        double k = 2 * Math.PI * fm / cel;
-        //NF S 31-113 page 41 w
-        double w = 0.0185 * Math.pow(fm, 2.5) * Math.pow(gw, 2.6) /
-                (Math.pow(fm, 1.5) * Math.pow(gw, 2.6) + 1.3 * Math.pow(10, 3) * Math.pow(fm, 0.75) * Math.pow(gw, 1.3) + 1.16 * Math.pow(10, 6));
-        //NF S 31-113 page 41 Cf
-        double cf = dp * (1 + 3 * w * dp * Math.pow(Math.E, -Math.sqrt(w * dp))) / (1 + w * dp);
-        //NF S 31-113 page 41 A sol
-        double AGroundF = -10 * Math.log10(4 * Math.pow(k, 2) / Math.pow(dp, 2) *
-                (Math.pow(zs, 2) - Math.sqrt(2 * cf / k) * zs + cf / k) * (Math.pow(zr, 2) - Math.sqrt(2 * cf / k) * zr + cf / k));
-        AGroundF = Math.max(AGroundF, AGroundFMin);
-        return AGroundF;
-
-    }
-
-
-    /**
-     * Formulae 7.18 and 7.20
-     *
-     * @param aSoil        Asol(O,R) or Asol(S,O) (sol mean ground)
-     * @param deltaDifPrim Δdif(S,R') if Asol(S,O) is given or Δdif(S', R) if Asol(O,R)
-     * @param deltaDif     Δdif(S, R)
-     * @return Δsol(S, O) if Asol(S,O) is given or Δsol(O,R) if Asol(O,R) is given
-     */
-    private double getDeltaSoil(double aSoil, double deltaDifPrim, double deltaDif) {
-        return -20 * Math.log10(1 + (Math.pow(10, -aSoil / 20) - 1) * Math.pow(10, -(deltaDifPrim - deltaDif) / 20));
     }
 
     private class RangeReceiversComputation implements Runnable {

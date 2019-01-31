@@ -32,17 +32,16 @@
  * info_at_ orbisgis.org
  */
 package org.orbisgis.noisemap.core;
-import jdk.nashorn.internal.objects.Global;
-import java.lang.Object;
 import java.util.List;
 
 /**
  * Return the dB value corresponding to the parameters
- * @author Pierre Aumond - 27/04/2017.
+ * Following Directive 2015/996/EN
+ * https://circabc.europa.eu/sd/a/9566c5b9-8607-4118-8427-906dab7632e2/Directive_2015_996_EN.pdf
+ * @author Pierre Aumond
  */
 
 public class EvaluateAttenuationCnossos {
-    private final static double BASE_LVL = 1.; // 0dB lvl
     private final static double ONETHIRD = 1. / 3.;
     private PropagationProcessPathData data;
     private PropagationPath propagationPath;
@@ -50,21 +49,6 @@ public class EvaluateAttenuationCnossos {
     private double[] alpha_atmo;
     private double[] freq_lambda;
     private double[] aGlobal;
-
-    /**
-     *
-     * @param nbfreq
-     * @param energeticSum
-     * @return
-     */
-    private static double GetGlobalLevel(int nbfreq, double energeticSum[]) {
-        double globlvl = 0;
-        for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
-            globlvl += energeticSum[idfreq];
-        }
-        return globlvl;
-    }
-
 
     public static double dbaToW(double dBA) {
         return Math.pow(10., dBA / 10.);
@@ -190,7 +174,6 @@ public class EvaluateAttenuationCnossos {
 
     /**
      * Formulae Eq. 2.5.31 - Eq. 2.5.32
-     *
      * @param aGround        Asol(O,R) or Asol(S,O) (sol mean ground)
      * @param deltaDifPrim Δdif(S,R') if Asol(S,O) is given or Δdif(S', R) if Asol(O,R)
      * @param deltaDif     Δdif(S, R)
@@ -203,10 +186,13 @@ public class EvaluateAttenuationCnossos {
 
     private double[] getARef(PropagationPath path, PropagationProcessPathData data) {
         double[] aRef = new double[data.freq_lvl.size()];
-
         for (int idf = 0; idf < nbfreq; idf++) {
             for (int idRef = 0; idRef < path.refPoints.size(); idRef++) {
-                aRef[idf] += - 10 * Math.log10(path.getPointList().get(path.refPoints.get(idRef)).alphaWall);
+                double alpha = path.getPointList().get(path.refPoints.get(idRef)).alphaWall;
+                if (alpha > 1){    // TODO Add if sigma = true also compute, issue #13
+                    PropagationProcessData.getWallAlpha(alpha, data.freq_lvl.get(idf));
+                }
+                aRef[idf] += - 10 * Math.log10(alpha);
             }
         }
         return aRef ;
@@ -217,10 +203,8 @@ public class EvaluateAttenuationCnossos {
         double[] aGround = new double[data.freq_lvl.size()];
         double aGroundmin;
 
-
         // Here there is a debate if use this condition or not
         if (segmentPath.gPath == 0 && data.gDisc == true) {
-
             if (path.isFavorable()) {
                 if (segmentPath.testForm <= 1) {
                     aGroundmin = -3 * (1 - segmentPath.gm);
@@ -232,11 +216,8 @@ public class EvaluateAttenuationCnossos {
             }
             java.util.Arrays.fill(aGround, aGroundmin);
         } else {
-
             aGround = getAGroundCore(path, segmentPath, data);
-
         }
-
         return aGround;
     }
 
@@ -322,13 +303,7 @@ public class EvaluateAttenuationCnossos {
         return aBoundary;
     }
 
-
-
-
-
-
     public double[] evaluate(PropagationPath path, PropagationProcessPathData data) {
-
         // init
         aGlobal = new double[data.freq_lvl.size()];
         double[] aBoundary ;

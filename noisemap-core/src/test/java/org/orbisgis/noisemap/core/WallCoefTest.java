@@ -56,20 +56,10 @@ public class WallCoefTest {
         double WallAlpha = 0.7;
         final double[] expected = new double[] {0.112,0.183,0.298,0.485,0.783,1.256,1.994,3.114};
 
-        double coefAlpha[] = PropagationProcessData.getWallAlpha(WallAlpha, freqLvl);
-        for(int idfreq=0;idfreq< expected.length;idfreq++) {
-            assertEquals(expected[idfreq], coefAlpha[idfreq], 0.5);
-        }
-    }
 
-    @Test
-    public void TestAlphaSigma200() {
-        double WallAlpha = 200;
-        final double[] expected = new double[] {-0.112,-0.183,-0,298,-0,485,-0,783,-1.256,-1,994};
-
-        double coefAlpha[] = PropagationProcessData.getWallAlpha(WallAlpha, freqLvl);
         for(int idfreq=0;idfreq< expected.length;idfreq++) {
-            assertEquals(expected[idfreq], coefAlpha[idfreq], 0.5);
+            double coefAlpha = PropagationProcessData.getWallAlpha(WallAlpha, freqLvl.get(idfreq));
+            assertEquals(expected[idfreq], coefAlpha, 0.5);
         }
     }
 }

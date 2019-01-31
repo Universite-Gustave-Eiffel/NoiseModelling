@@ -205,7 +205,7 @@ public class PropagationProcessData {
     /**
      * Set WallAlpha
      */
-    public static double[] getWallAlpha(double WallAlpha, List<Integer> freq_lvl)
+    public static double getWallAlpha(double WallAlpha, double freq_lvl)
     {
         double sigma = 0;
         if(WallAlpha >= 0 && WallAlpha <= 1) {
@@ -213,35 +213,33 @@ public class PropagationProcessData {
         }else if (WallAlpha >= 200 && WallAlpha <= 20000){
             sigma = WallAlpha;
         }
-        double[] value = GetWallImpedance(sigma,freq_lvl);
+        double value = GetWallImpedance(sigma,freq_lvl);
         return value;
 
     }
 
-    static double[] GetWallImpedance(double sigma, List<Integer> freq_l)            // TODO convert sigma to impedance
+    static double GetWallImpedance(double sigma, double freq_l)
     {
-        double[] alpha = new double[freq_l.size()];
-        for (int i=0 ; i < freq_l.size() ; ++i)
+        double s = Math.log(freq_l / sigma);
+        double x = 1. + 9.08 * Math.exp(-.75 * s);
+        double y = 11.9 * Math.exp(-0.73 * s);
+        ComplexNumber Z = new ComplexNumber(x, y);
+
+        // Delany-Bazley method, not used in NoiseModelling for the moment
+        /*double layer = 0.05; // Let user Choose
+        if (layer > 0 && sigma < 1000)
         {
-            double s = Math.log(freq_l.get(i) / sigma);
-            double x = 1. + 9.08 * Math.exp(-.75 * s);
-            double y = 11.9 * Math.exp(-0.73 * s);
-            ComplexNumber Z = new ComplexNumber(x, y);
-            /*double layer = 0.05; // Let user Choose
-            if (layer > 0 && sigma < 1000)
-            {
-                s = 1000 * sigma / freq;
-                double c = 340;
-                double RealK= 2 * Math.PI * freq / c *(1 + 0.0858 * Math.pow(s, 0.70));
-                double ImgK=2 * Math.PI * freq / c *(0.175 * Math.pow(s, 0.59));
-                ComplexNumber k = ComplexNumber.multiply(new ComplexNumber(2 * Math.PI * freq / c,0) , new ComplexNumber(1 + 0.0858 * Math.pow(s, 0.70),0.175 * Math.pow(s, 0.59)));
-                ComplexNumber j = new ComplexNumber(-0, -1);
-                ComplexNumber m = ComplexNumber.multiply(j,k);
-                Z[i] = ComplexNumber.divide(Z[i], (ComplexNumber.exp(m)));
-            }*/
-            alpha[i]=GetTrueWallAlpha(Z);
-        }
-        return alpha;
+            s = 1000 * sigma / freq;
+            double c = 340;
+            double RealK= 2 * Math.PI * freq / c *(1 + 0.0858 * Math.pow(s, 0.70));
+            double ImgK=2 * Math.PI * freq / c *(0.175 * Math.pow(s, 0.59));
+            ComplexNumber k = ComplexNumber.multiply(new ComplexNumber(2 * Math.PI * freq / c,0) , new ComplexNumber(1 + 0.0858 * Math.pow(s, 0.70),0.175 * Math.pow(s, 0.59)));
+            ComplexNumber j = new ComplexNumber(-0, -1);
+            ComplexNumber m = ComplexNumber.multiply(j,k);
+            Z[i] = ComplexNumber.divide(Z[i], (ComplexNumber.exp(m)));
+        }*/
+
+        return GetTrueWallAlpha(Z);
     }
 
    static double GetTrueWallAlpha(ComplexNumber impedance)         // TODO convert impedance to alpha
