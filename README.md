@@ -1,8 +1,6 @@
 [![Build Status](https://travis-ci.org/Ifsttar/NoiseModelling.svg?branch=master)](https://travis-ci.org/Ifsttar/NoiseModelling)
 
-![alt tag](http://noise-planet.org/assets/img/logos/Logo_noisemodelling.png)
-
-NoiseModelling (formerly NoiseM@p)
+NoiseModelling
 ======
 
 NoiseModelling (formerly NoiseM@ap) is a plugin of [H2GIS](http://www.h2gis.org) software (A spatial extension of the
@@ -19,3 +17,5 @@ For more information:
 * about the code, [read the wiki] (https://github.com/irstv/noisemap/wiki),
 * about H2GIS, [see the H2GIS website](http://www.h2gis.org).
 * follow us on twitter @Noise-Planet [![Twitter Follow](https://img.shields.io/twitter/follow/noise_planet.svg?style=social&label=Follow)](https://twitter.com/Noise_Planet?lang=en)
+
+![alt tag](http://noise-planet.org/assets/img/logos/Logo_noisemodelling.png)
