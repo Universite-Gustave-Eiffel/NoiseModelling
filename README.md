@@ -3,8 +3,7 @@
 NoiseModelling
 ======
 
-NoiseModelling (formerly NoiseM@ap) is a plugin of [H2GIS](http://www.h2gis.org) software (A spatial extension of the
-                                                                                           H2 database), this library is able to produce noise maps of cities, according to
+NoiseModelling is a plugin of [H2GIS](http://www.h2gis.org) software (A spatial extension of the H2 database), this library is able to produce noise maps of cities, according to
 
 * CNOSSOS-EU standard method
 
