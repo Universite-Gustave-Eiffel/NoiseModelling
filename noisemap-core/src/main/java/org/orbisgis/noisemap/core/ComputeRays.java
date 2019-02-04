@@ -132,7 +132,7 @@ public class ComputeRays implements Runnable {
      * Update ground Z coordinates of sound sources and receivers absolute to sea levels
      */
     public void makeRelativeZToAbsolute() {
-        AbsoluteCoordinateSequenceFilter filter = new AbsoluteCoordinateSequenceFilter(data.freeFieldFinder);
+        AbsoluteCoordinateSequenceFilter filter = new AbsoluteCoordinateSequenceFilter(data.freeFieldFinder, true);
         for (Geometry source : data.sourceGeometries) {
             source.apply(filter);
         }
@@ -385,7 +385,7 @@ public class ComputeRays implements Runnable {
      * @param debugInfo
      */
     public PropagationPath computeFreefield(Coordinate receiverCoord,
-                                            Coordinate srcCoord, boolean favorable,
+                                            Coordinate srcCoord,
                                             List<PropagationDebugInfo> debugInfo) {
 
         GeometryFactory factory = new GeometryFactory();
@@ -465,7 +465,7 @@ public class ComputeRays implements Runnable {
         if (debugInfo != null) {
             propagationDebugInfo = new PropagationDebugInfo(Arrays.asList(receiverCoord, srcCoord), new double[data.freq_lvl.size()]);
         }
-        return new PropagationPath(true, points, segments, segments);
+        return new PropagationPath(false, points, segments, segments);
 
     }
 
@@ -501,7 +501,7 @@ public class ComputeRays implements Runnable {
                 bufferedCoordinate2 = addBuffer(diffDataWithSoilEffet.getPath().get(j), receiverCoord,true);
                 bufferedCoordinate2.z += 0.1;
 
-                PropagationPath propagationPath1 = computeFreefield(bufferedCoordinate1,bufferedCoordinate2,favorable, debugInfo);
+                PropagationPath propagationPath1 = computeFreefield(bufferedCoordinate1,bufferedCoordinate2,debugInfo);
                 propagationPath1.getPointList().get(1).setType(PropagationPath.PointPath.POINT_TYPE.DIFH);
                 if ( j == diffDataWithSoilEffet.getPath().size()-1){
                     propagationPath1.getPointList().get(0).setCoordinate(diffDataWithSoilEffet.getPath().get(j));
@@ -514,14 +514,14 @@ public class ComputeRays implements Runnable {
             bufferedCoordinate1.z += 0.001;
             bufferedCoordinate2 = diffDataWithSoilEffet.getPath().get(0);
 
-            PropagationPath propagationPath2 = computeFreefield(bufferedCoordinate2,bufferedCoordinate1 , favorable, debugInfo);
+            PropagationPath propagationPath2 = computeFreefield(bufferedCoordinate2,bufferedCoordinate1 , debugInfo);
             points.add(propagationPath2.getPointList().get(1));
             segments.add(propagationPath2.getSegmentList().get(0));
 
 
         }
         else {
-            PropagationPath propagationPath = computeFreefield(receiverCoord, srcCoord, true, debugInfo);
+            PropagationPath propagationPath = computeFreefield(receiverCoord, srcCoord, debugInfo);
             points.addAll(propagationPath.getPointList());
             segments.addAll(propagationPath.getSegmentList());
             srPath.addAll(propagationPath.getSRList());
@@ -771,13 +771,13 @@ public class ComputeRays implements Runnable {
        // double fav_probability = favrose[(int) (Math.round(calcRotationAngleInDegrees(srcCoord, receiverCoord) / 30))];
 
         if (!somethingHideReceiver && !buildingOnPath) {
-            PropagationPath propagationPath = computeFreefield(receiverCoord, srcCoord, true, debugInfo);
+            PropagationPath propagationPath = computeFreefield(receiverCoord, srcCoord,  debugInfo);
             propagationPaths.add(propagationPath);
         }
 
         //Process diffraction 3D
         if (data.computeVerticalDiffraction && buildingOnPath) {
-            PropagationPath propagationPath3 = computeFreefield(receiverCoord, srcCoord, true, debugInfo);
+            PropagationPath propagationPath3 = computeFreefield(receiverCoord, srcCoord,  debugInfo);
             PropagationPath propagationPath =  computeHorizontalEdgeDiffraction(somethingHideReceiver, receiverCoord, srcCoord, true, debugInfo);
             propagationPath.getSRList().addAll(propagationPath3.getSRList());
             propagationPaths.add(propagationPath);
@@ -792,48 +792,51 @@ public class ComputeRays implements Runnable {
             // Left hand
             List<List<Coordinate>> diffractedPaths = computeVerticalEdgeDiffraction( srcCoord, receiverCoord,  nearBuildingsWalls,debugInfo);
             List<Coordinate> coordinates = diffractedPaths.get(0);
-            Collections.reverse(coordinates);
-            if (coordinates.size()>1) {
+            boolean convexhullValid = true;
+            if (coordinates.get(0) == coordinates.get(coordinates.size()-1)){
+                convexhullValid = false;
+            }
+
+            if (coordinates.size()>1 && convexhullValid) {
+                Collections.reverse(coordinates);
                 Coordinate bufferedCoordinate;
                 bufferedCoordinate = addBuffer(coordinates.get(1), coordinates.get(0),true);
-                propagationPath = computeFreefield(bufferedCoordinate,coordinates.get(0), true, debugInfo);
+                propagationPath = computeFreefield(bufferedCoordinate,coordinates.get(0),  debugInfo);
                 propagationPath.getPointList().get(1).setType(PropagationPath.PointPath.POINT_TYPE.DIFV);
                 propagationPath2 = propagationPath;
-                int j =0;
+                int j;
                 for (j=1; j < coordinates.size()-2; j++){
                     bufferedCoordinate = addBuffer(coordinates.get(j+1), coordinates.get(j),true);
-                    propagationPath = computeFreefield(bufferedCoordinate,coordinates.get(j), true, debugInfo);
+                    propagationPath = computeFreefield(bufferedCoordinate,coordinates.get(j),  debugInfo);
                     propagationPath.getPointList().get(1).setType(PropagationPath.PointPath.POINT_TYPE.DIFV);
                     propagationPath2.getPointList().add(propagationPath.getPointList().get(1));
                     propagationPath2.getSegmentList().addAll(propagationPath.getSegmentList());
                 }
                 bufferedCoordinate = addBuffer(coordinates.get(j), coordinates.get(j+1),true);
-                propagationPath = computeFreefield(coordinates.get(j+1),bufferedCoordinate, true, debugInfo);
+                propagationPath = computeFreefield(coordinates.get(j+1),bufferedCoordinate,  debugInfo);
                 propagationPath2.getPointList().add(propagationPath.getPointList().get(1));
                 propagationPath2.getSegmentList().addAll(propagationPath.getSegmentList());
                 propagationPaths.add(propagationPath2);
             }
 
-            // Left hand
+            // Right hand
             coordinates = diffractedPaths.get(1);
-            //Collections.reverse(coordinates);
-            if (coordinates.size()>1) {
+            if (coordinates.size()>1 && convexhullValid) {
                 Coordinate bufferedCoordinate;
                 bufferedCoordinate = addBuffer(coordinates.get(1), coordinates.get(0),true);
-                propagationPath = computeFreefield(bufferedCoordinate,coordinates.get(0), true, debugInfo);
+                propagationPath = computeFreefield(bufferedCoordinate,coordinates.get(0),  debugInfo);
                 propagationPath.getPointList().get(1).setType(PropagationPath.PointPath.POINT_TYPE.DIFV);
                 propagationPath2 = propagationPath;
-                int j =0;
-
+                int j;
                 for (j=1; j < coordinates.size()-2; j++){
                     bufferedCoordinate = addBuffer(coordinates.get(j+1), coordinates.get(j),true);
-                    propagationPath = computeFreefield(bufferedCoordinate,coordinates.get(j), true, debugInfo);
+                    propagationPath = computeFreefield(bufferedCoordinate,coordinates.get(j),  debugInfo);
                     propagationPath.getPointList().get(1).setType(PropagationPath.PointPath.POINT_TYPE.DIFV);
                     propagationPath2.getPointList().add(propagationPath.getPointList().get(1));
                     propagationPath2.getSegmentList().addAll(propagationPath.getSegmentList());
                 }
                 bufferedCoordinate = addBuffer(coordinates.get(j), coordinates.get(j+1),true);
-                propagationPath = computeFreefield(coordinates.get(j+1),bufferedCoordinate, true, debugInfo);
+                propagationPath = computeFreefield(coordinates.get(j+1),bufferedCoordinate,  debugInfo);
                 propagationPath2.getPointList().add(propagationPath.getPointList().get(1));
                 propagationPath2.getSegmentList().addAll(propagationPath.getSegmentList());
                 propagationPaths.add(propagationPath2);
@@ -844,9 +847,6 @@ public class ComputeRays implements Runnable {
 
 
         }
-
-
-
         return propagationPaths;
     }
 
@@ -863,8 +863,7 @@ public class ComputeRays implements Runnable {
      */
 
     private void receiverSourcePropa(Coordinate srcCoord, int srcId,
-                                     Coordinate receiverCoord, int rcvId, double energeticSum[],
-                                     double[] alpha_atmo, double[] favrose,
+                                     Coordinate receiverCoord, int rcvId,
                                      List<Wall> nearBuildingsWalls, List<PropagationDebugInfo> debugInfo) {
 
         GeometryFactory factory = new GeometryFactory();
@@ -873,16 +872,17 @@ public class ComputeRays implements Runnable {
 
         double PropaDistance = srcCoord.distance(receiverCoord);
         if (PropaDistance < data.maxSrcDist) {
+
+            // Process direct path (including horizontal and vertical diffractions)
             propagationPaths = directPath(srcCoord,receiverCoord,nearBuildingsWalls,true, debugInfo);
 
             // Process specular reflection
             if (data.reflexionOrder > 0) {
-                PropagationPath propagationPath = computeReflexion(receiverCoord, srcCoord, true, nearBuildingsWalls, debugInfo);
+                PropagationPath propagationPath = computeReflexion(receiverCoord, srcCoord, false, nearBuildingsWalls, debugInfo);
                 if (propagationPath.getPointList().size()>0) {
                     propagationPaths.add(propagationPath);
                 }
-            } // End reflexion
-            // ///////////
+            }
 
             if (propagationPaths.size()>0) {
                 this.dataOut.setSrcIdAndAddPropagationPaths(propagationPaths,srcId,rcvId);
@@ -1023,8 +1023,7 @@ public class ComputeRays implements Runnable {
                     Envelope query = new Envelope(receiverCoord, srcCoord);
                     query.expandBy(Math.min(data.maxRefDist, srcCoord.distance(receiverCoord)));
                     List queryResult = walls.query(query);
-                    receiverSourcePropa(srcCoord,mergedSrcId, receiverCoord, idReceiver, energeticSum,
-                            alpha_atmo, data.windRose,
+                    receiverSourcePropa(srcCoord,mergedSrcId, receiverCoord, idReceiver,
                             (List<Wall>) queryResult, debugInfo);
                 }
 
@@ -1247,19 +1246,26 @@ public class ComputeRays implements Runnable {
     /**
      * Offset de Z coordinates by the height of the ground
      */
-    private static final class AbsoluteCoordinateSequenceFilter implements CoordinateSequenceFilter {
+    public static final class AbsoluteCoordinateSequenceFilter implements CoordinateSequenceFilter {
         AtomicBoolean geometryChanged = new AtomicBoolean(false);
         FastObstructionTest fastObstructionTest;
+        boolean resetZ;
 
-        public AbsoluteCoordinateSequenceFilter(FastObstructionTest fastObstructionTest) {
+        /**
+         * Constructor
+         * @param fastObstructionTest Initialised instance of fastObstructionTest
+         * @param resetZ If filtered geometry contain Z and resetZ is false, do not update Z.
+         */
+        public AbsoluteCoordinateSequenceFilter(FastObstructionTest fastObstructionTest, boolean resetZ) {
             this.fastObstructionTest = fastObstructionTest;
+            this.resetZ = resetZ;
         }
 
         @Override
         public void filter(CoordinateSequence coordinateSequence, int i) {
             Coordinate pt = coordinateSequence.getCoordinate(i);
             Double zGround = fastObstructionTest.getHeightAtPosition(pt);
-            if (!zGround.isNaN()) {
+            if (!zGround.isNaN() && (resetZ || Double.isNaN(pt.getOrdinate(2)) || Double.compare(0, pt.getOrdinate(2)) == 0)) {
                 pt.setOrdinate(2, zGround + pt.getOrdinate(2));
                 geometryChanged.set(true);
             }

@@ -194,7 +194,7 @@ public class LayerPoly2Tri implements LayerDelaunay {
     for(Map.Entry<TriangulationPoint, Integer> entry : pts.entrySet()) {
       ptsArray[entry.getValue()] = entry.getKey();
     }
-    pts.clear();
+
     List<TriangulationPoint> meshPoints = new ArrayList<>(Arrays.asList(ptsArray));
     ConstrainedPointSet convertedInput = new ConstrainedPointSet(meshPoints, index);
 

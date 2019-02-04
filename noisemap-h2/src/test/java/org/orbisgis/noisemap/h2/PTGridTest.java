@@ -185,8 +185,8 @@ public class PTGridTest {
         st.execute("DROP TABLE IF EXISTS roads_src_global");
         st.execute("CREATE TEMPORARY TABLE roads_src_global(id integer,the_geom POINT, db_m double)");
         // INSERT 2 points to set the computation area
-        st.execute("INSERT INTO roads_src_global VALUES (1,'POINT(-20 -20 5)'::geometry, 100)");
-        st.execute("INSERT INTO roads_src_global VALUES (2,'POINT(20 20 5)'::geometry, 80)");
+        st.execute("INSERT INTO roads_src_global VALUES (1,'POINT(200 50 4)'::geometry, 100)");
+        st.execute("INSERT INTO roads_src_global VALUES (2,'POINT(-180 -30 4)'::geometry, 80)");
         //st.execute("INSERT INTO roads_src_global VALUES (2,'POINT(10 10 5)'::geometry, 90)");
 
 
@@ -204,22 +204,22 @@ public class PTGridTest {
         // Create receivers points
         st.execute("DROP TABLE IF EXISTS RECEIVERS");
         st.execute("CREATE TABLE RECEIVERS(ID SERIAL, THE_GEOM POINT)");
-        st.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT(0 0 0)')");
+        st.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT(10 10 1)')");
        // st.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT(50 50 1)')");
        // st.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT(-50 -50 1)')");
         // Compute noise map
         st.execute("DROP TABLE IF EXISTS TEST");
 
-        ResultSet rs = st.executeQuery("SELECT * FROM CNOSSOS_ATT('buildings','', 'roads_src','receivers','DB_M','', '', 75,75, 1,0,0.2)");
+        ResultSet rs = st.executeQuery("SELECT * FROM CNOSSOS_ATT('buildings','', 'roads_src','receivers','DB_M','', '', 250,250, 2,1,0.2)");
         try {
             assertTrue(rs.next());
             assertEquals(1, rs.getLong("IDSOURCE"));
             assertEquals(1, rs.getInt("IDRECEPTEUR"));
-            assertEquals(-40.57, rs.getDouble("ATT"), 1);
+            assertEquals(-53.05, rs.getDouble("ATT"), 1);
             assertTrue(rs.next());
             assertEquals(2, rs.getLong("IDSOURCE"));
             assertEquals(1, rs.getInt("IDRECEPTEUR"));
-            assertEquals(-40.57, rs.getDouble("ATT"), 1);
+            assertEquals(-53.05, rs.getDouble("ATT"), 1);
         } finally {
             rs.close();
         }
