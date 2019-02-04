@@ -1537,15 +1537,15 @@ public class TestComputeRays {
 
         // Add building
         mesh.addGeometry(factory.createPolygon(new Coordinate[]{
-                new Coordinate(167.2, 39.5, 0),
-                new Coordinate(151.6, 48.5, 0),
-                new Coordinate(141.1, 30.3, 0),
-                new Coordinate(156.7, 21.3, 0),
-                new Coordinate(159.7, 26.5, 0),
-                new Coordinate(151.0, 31.5, 0),
-                new Coordinate(155.5, 39.3, 0),
-                new Coordinate(164.2, 34.3, 0),
-                new Coordinate(167.2, 39.5, 0)}), 11.5);
+                new Coordinate(167.2, 39.5),
+                new Coordinate(151.6, 48.5),
+                new Coordinate(141.1, 30.3),
+                new Coordinate(156.7, 21.3),
+                new Coordinate(159.7, 26.5),
+                new Coordinate(151.0, 31.5),
+                new Coordinate(155.5, 39.3),
+                new Coordinate(164.2, 34.3),
+                new Coordinate(167.2, 39.5)}), 11.5);
 
         //x1
         mesh.addTopographicPoint(new Coordinate(0, 80, 0));
@@ -1573,6 +1573,15 @@ public class TestComputeRays {
         List<Coordinate> vert = mesh.getVertices();
         FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
                 mesh.getTriNeighbors(), mesh.getVertices());
+
+        String filename2 = "D:/aumond/Desktop/T21.ply";
+        try {
+
+            writePLY(filename2, mesh);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         // rose of favourable conditions
         double[] favrose = new double[]{0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25};
 
@@ -1587,11 +1596,12 @@ public class TestComputeRays {
         double energeticSum[] = new double[freqLvl.size()];
         List<PropagationDebugInfo> debug = new ArrayList<>();
         computeRays.computeRaysAtPosition(new Coordinate(187.05, 25, 14), 0,energeticSum, debug);
+
+
+
         String filename = "D:/aumond/Desktop/T21.vtk";
-        String filename2 = "D:/aumond/Desktop/T21.ply";
         try {
             writeVTK(filename, propDataOut);
-            writePLY(filename2, mesh);
         } catch (IOException e) {
             e.printStackTrace();
         }

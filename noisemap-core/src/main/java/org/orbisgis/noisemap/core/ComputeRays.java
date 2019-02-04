@@ -484,6 +484,8 @@ public class ComputeRays implements Runnable {
 
         double epsilon = 1e-7;
         DiffractionWithSoilEffetZone diffDataWithSoilEffet;
+
+
         if (!obstructedSourceReceiver) {
             diffDataWithSoilEffet = data.freeFieldFinder.getPathInverse(receiverCoord, srcCoord);
             validDiffraction = false;
