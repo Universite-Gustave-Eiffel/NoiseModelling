@@ -350,8 +350,8 @@ public class MeshBuilder {
         }
 
         //computeNeighbors
-        delaunayTool.setRetrieveNeighbors(computeNeighbors);
-        FastObstructionTest fastObstructionTest = new FastObstructionTest(new ArrayList<>(Collections.EMPTY_LIST), delaunayTool.getTriangles(),delaunayTool.getNeighbors(),delaunayTool.getVertices());
+        delaunayTool.setRetrieveNeighbors(false);
+        FastObstructionTest fastObstructionTest = new FastObstructionTest(new ArrayList<>(Collections.EMPTY_LIST), delaunayTool.getTriangles(),null,delaunayTool.getVertices());
         ComputeRays.AbsoluteCoordinateSequenceFilter absoluteCoordinateSequenceFilter = new ComputeRays.AbsoluteCoordinateSequenceFilter(fastObstructionTest, false);
 
         //add buildings to delaunay triangulation

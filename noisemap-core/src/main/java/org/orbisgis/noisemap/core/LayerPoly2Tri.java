@@ -184,6 +184,11 @@ public class LayerPoly2Tri implements LayerDelaunay {
 
   @Override
   public void processDelaunay() throws LayerDelaunayError {
+    triangles.clear();
+    neighbors.clear();
+    vertices.clear();
+    hashOfArrayIndex.clear();
+
     // Create input data for Poly2Tri
     int[] index = new int[segments.size()];
     for (int i = 0; i < index.length; i++) {

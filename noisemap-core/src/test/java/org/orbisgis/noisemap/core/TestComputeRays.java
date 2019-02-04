@@ -1311,18 +1311,18 @@ public class TestComputeRays {
 
         // Add building
         mesh.addGeometry(factory.createPolygon(new Coordinate[]{
-                new Coordinate(114, 52, 0),
-                new Coordinate(170, 60, 0),
-                new Coordinate(170, 61, 0),
-                new Coordinate(114, 53, 0),
-                new Coordinate(114, 52, 0)}), 15);
+                new Coordinate(114, 52),
+                new Coordinate(170, 60),
+                new Coordinate(170, 61),
+                new Coordinate(114, 53),
+                new Coordinate(114, 52)}), 15);
 
         mesh.addGeometry(factory.createPolygon(new Coordinate[]{
-                new Coordinate(87, 50, 0),
-                new Coordinate(92, 32, 0),
-                new Coordinate(92, 33, 0),
-                new Coordinate(87, 51, 0),
-                new Coordinate(87, 50, 0)}), 12);
+                new Coordinate(87, 50),
+                new Coordinate(92, 32),
+                new Coordinate(92, 33),
+                new Coordinate(87, 51),
+                new Coordinate(87, 50)}), 12);
 
         mesh.finishPolygonFeeding(cellEnvelope);
 
@@ -1330,6 +1330,14 @@ public class TestComputeRays {
         List<Coordinate> vert = mesh.getVertices();
         FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
                 mesh.getTriNeighbors(), mesh.getVertices());
+
+        String filename2 = "D:/aumond/Desktop/T18.ply";
+        try {
+            writePLY(filename2, mesh);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         // rose of favourable conditions
         double[] favrose = new double[]{0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25};
 
@@ -1346,10 +1354,9 @@ public class TestComputeRays {
         computeRays.computeRaysAtPosition(new Coordinate(200, 50, 12), 0,energeticSum, debug);
 
         String filename = "D:/aumond/Desktop/T18.vtk";
-        String filename2 = "D:/aumond/Desktop/T18.ply";
+
         try {
             writeVTK(filename, propDataOut);
-            writePLY(filename2, mesh);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -1412,39 +1419,39 @@ public class TestComputeRays {
 
         // Add building
         mesh.addGeometry(factory.createPolygon(new Coordinate[]{
-                new Coordinate(156, 28, 0),
-                new Coordinate(145, 7, 0),
-                new Coordinate(145, 8, 0),
-                new Coordinate(156, 29, 0),
-                new Coordinate(156, 28, 0)}), 14);
+                new Coordinate(156, 28),
+                new Coordinate(145, 7),
+                new Coordinate(145, 8),
+                new Coordinate(156, 29),
+                new Coordinate(156, 28)}), 14);
 
         mesh.addGeometry(factory.createPolygon(new Coordinate[]{
-                new Coordinate(175, 35, 0),
-                new Coordinate(188, 19, 0),
-                new Coordinate(188, 20, 0),
-                new Coordinate(175, 36, 0),
-                new Coordinate(175, 35, 0)}), 14.5);
+                new Coordinate(175, 35),
+                new Coordinate(188, 19),
+                new Coordinate(188, 20),
+                new Coordinate(175, 36),
+                new Coordinate(175, 35)}), 14.5);
 
         mesh.addGeometry(factory.createPolygon(new Coordinate[]{
-                new Coordinate(100, 24, 0),
-                new Coordinate(118, 24, 0),
-                new Coordinate(118, 30, 0),
-                new Coordinate(100, 30, 0),
-                new Coordinate(100, 24, 0)}), 12);
+                new Coordinate(100, 24),
+                new Coordinate(118, 24),
+                new Coordinate(118, 30),
+                new Coordinate(100, 30),
+                new Coordinate(100, 24)}), 12);
 
         mesh.addGeometry(factory.createPolygon(new Coordinate[]{
-                new Coordinate(100, 15.1, 0),
-                new Coordinate(118, 15.1, 0),
-                new Coordinate(118, 23.9, 0),
-                new Coordinate(100, 23.9, 0),
-                new Coordinate(100, 15.1, 0)}), 7);
+                new Coordinate(100, 15.1),
+                new Coordinate(118, 15.1),
+                new Coordinate(118, 23.9),
+                new Coordinate(100, 23.9),
+                new Coordinate(100, 15.1)}), 7);
 
         mesh.addGeometry(factory.createPolygon(new Coordinate[]{
-                new Coordinate(100, 9, 0),
-                new Coordinate(118, 9, 0),
-                new Coordinate(118, 15, 0),
-                new Coordinate(100, 15, 0),
-                new Coordinate(100, 9, 0)}), 12);
+                new Coordinate(100, 9),
+                new Coordinate(118, 9),
+                new Coordinate(118, 15),
+                new Coordinate(100, 15),
+                new Coordinate(100, 9)}), 12);
 
         mesh.finishPolygonFeeding(cellEnvelope);
 
@@ -1452,6 +1459,13 @@ public class TestComputeRays {
         List<Coordinate> vert = mesh.getVertices();
         FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
                 mesh.getTriNeighbors(), mesh.getVertices());
+
+        String filename2 = "D:/aumond/Desktop/T19.ply";
+        try {
+            writePLY(filename2, mesh);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         // rose of favourable conditions
         double[] favrose = new double[]{0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25};
 
@@ -1467,11 +1481,12 @@ public class TestComputeRays {
         List<PropagationDebugInfo> debug = new ArrayList<>();
         computeRays.computeRaysAtPosition(new Coordinate(200, 30, 14), 0,energeticSum, debug);
 
+
+
         String filename = "D:/aumond/Desktop/T19.vtk";
-        String filename2 = "D:/aumond/Desktop/T19.ply";
+
         try {
             writeVTK(filename, propDataOut);
-            writePLY(filename2, mesh);
         } catch (IOException e) {
             e.printStackTrace();
         }
