@@ -184,6 +184,11 @@ public class LayerPoly2Tri implements LayerDelaunay {
 
   @Override
   public void processDelaunay() throws LayerDelaunayError {
+    triangles.clear();
+    neighbors.clear();
+    vertices.clear();
+    hashOfArrayIndex.clear();
+
     // Create input data for Poly2Tri
     int[] index = new int[segments.size()];
     for (int i = 0; i < index.length; i++) {
@@ -194,7 +199,7 @@ public class LayerPoly2Tri implements LayerDelaunay {
     for(Map.Entry<TriangulationPoint, Integer> entry : pts.entrySet()) {
       ptsArray[entry.getValue()] = entry.getKey();
     }
-    pts.clear();
+
     List<TriangulationPoint> meshPoints = new ArrayList<>(Arrays.asList(ptsArray));
     ConstrainedPointSet convertedInput = new ConstrainedPointSet(meshPoints, index);
 
@@ -301,6 +306,7 @@ public class LayerPoly2Tri implements LayerDelaunay {
       triangleId++;
     }
   }
+
 
   private static class SetZFilter implements CoordinateSequenceFilter {
     private boolean done = false;
