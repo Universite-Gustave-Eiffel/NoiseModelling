@@ -330,25 +330,39 @@ public class MeshBuilder {
         }
 
         LayerDelaunay delaunayTool = new LayerPoly2Tri();
+
+
         //merge buildings
         mergeBuildings(boundingBoxGeom);
 
-        //add buildings to delaunay triangulation
-        int i = 1;
-        for (PolygonWithHeight polygon : polygonWithHeight) {
-            explodeAndAddPolygon(polygon.getGeometry(), delaunayTool, i);
-            i++;
-        }
+
         for (LineString lineString : envelopeSplited) {
             delaunayTool.addLineString(lineString, -1);
         }
+
         //add topoPoints to JDelaunay
         //no check if the point in the building
         if (!topoPoints.isEmpty()) {
             for (Coordinate topoPoint : topoPoints) {
                 delaunayTool.addVertex(topoPoint);
             }
+            delaunayTool.processDelaunay();
         }
+
+        //computeNeighbors
+        delaunayTool.setRetrieveNeighbors(false);
+        FastObstructionTest fastObstructionTest = new FastObstructionTest(new ArrayList<>(Collections.EMPTY_LIST), delaunayTool.getTriangles(),null,delaunayTool.getVertices());
+        ComputeRays.AbsoluteCoordinateSequenceFilter absoluteCoordinateSequenceFilter = new ComputeRays.AbsoluteCoordinateSequenceFilter(fastObstructionTest, false);
+
+        //add buildings to delaunay triangulation
+        int i = 1;
+        for (PolygonWithHeight polygon : polygonWithHeight) {
+            Geometry geometry = polygon.getGeometry();
+            geometry.apply(absoluteCoordinateSequenceFilter);
+            explodeAndAddPolygon(geometry, delaunayTool, i);
+            i++;
+        }
+
         //Process delaunay Triangulation
         delaunayTool.setMinAngle(0.);
         //computeNeighbors
@@ -363,6 +377,7 @@ public class MeshBuilder {
         // Get results
         this.triVertices = delaunayTool.getTriangles();
         this.vertices = delaunayTool.getVertices();
+
         if(computeNeighbors) {
             this.triNeighbors = delaunayTool.getNeighbors();
         }
