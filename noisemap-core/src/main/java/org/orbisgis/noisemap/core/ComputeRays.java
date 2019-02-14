@@ -892,7 +892,7 @@ public class ComputeRays implements Runnable {
         }
     }
 
-    private static void insertPtSource(Coordinate receiverPos, Coordinate ptpos, List<Double> wj, double li, List<Coordinate> srcPos, List<ArrayList<Double>> srcWj, PointsMerge sourcesMerger, List<Integer> srcSortedIndex, List<Double> srcDistSorted) {
+    private static void insertPtSource(Coordinate receiverPos, Coordinate ptpos, List<Double> wj, double li, List<Coordinate> srcPos, List<ArrayList<Double>> srcWj, PointsMerge sourcesMerger, List<Integer> srcSortedIndex, List<Integer> indexedSource, Integer sourceId, List<Double> srcDistSorted) {
         int mergedSrcIndex = sourcesMerger.getOrAppendVertex(ptpos);
         if (mergedSrcIndex < srcPos.size()) {
             ArrayList<Double> mergedWj = srcWj.get(mergedSrcIndex);
@@ -919,9 +919,11 @@ public class ComputeRays implements Runnable {
             if (index >= 0) {
                 srcSortedIndex.add(index, mergedSrcIndex);
                 srcDistSorted.add(index, distanceSrcPt);
+                indexedSource.add(index, sourceId);
             } else {
                 srcSortedIndex.add(-index - 1, mergedSrcIndex);
                 srcDistSorted.add(-index - 1, distanceSrcPt);
+                indexedSource.add(-index - 1, sourceId);
             }
         }
     }
@@ -981,6 +983,7 @@ public class ComputeRays implements Runnable {
             PointsMerge sourcesMerger = new PointsMerge(MERGE_SRC_DIST);
             List<Integer> srcSortByDist = new ArrayList<Integer>();
             List<Double> srcDist = new ArrayList<Double>();
+            List<Integer> indexedSrc = new ArrayList<>();
             List<Coordinate> srcPos = new ArrayList<Coordinate>();
             List<ArrayList<Double>> srcWj = new ArrayList<ArrayList<Double>>();
             while (regionSourcesLst.hasNext()) {
@@ -991,7 +994,8 @@ public class ComputeRays implements Runnable {
                     List<Double> wj = data.wj_sources.get(srcIndex); // DbaToW(sdsSources.getDouble(srcIndex,dbField
                     if (source instanceof Point) {
                         Coordinate ptpos = source.getCoordinate();
-                        insertPtSource(receiverCoord, ptpos, wj, 1., srcPos, srcWj, sourcesMerger, srcSortByDist, srcDist);
+                        insertPtSource(receiverCoord, ptpos, wj, 1., srcPos, srcWj, sourcesMerger, srcSortByDist,indexedSrc,srcIndex,  srcDist);
+
                         // Compute li to equation 4.1 NMPB 2008 (June 2009)
                     } else {
                         // Discretization of line into multiple point
@@ -1001,7 +1005,7 @@ public class ComputeRays implements Runnable {
                         double li = splitLineStringIntoPoints(source, receiverCoord,
                                 pts, data.minRecDist);
                         for (Coordinate pt : pts) {
-                            insertPtSource(receiverCoord, pt, wj, li, srcPos, srcWj, sourcesMerger, srcSortByDist, srcDist);
+                            insertPtSource(receiverCoord, pt, wj, li, srcPos, srcWj, sourcesMerger, srcSortByDist,indexedSrc,srcIndex, srcDist);
                         }
                         // Compute li to equation 4.1 NMPB 2008 (June 2009)
                     }
@@ -1025,7 +1029,7 @@ public class ComputeRays implements Runnable {
                     Envelope query = new Envelope(receiverCoord, srcCoord);
                     query.expandBy(Math.min(data.maxRefDist, srcCoord.distance(receiverCoord)));
                     List queryResult = walls.query(query);
-                    receiverSourcePropa(srcCoord,mergedSrcId, receiverCoord, idReceiver,
+                    receiverSourcePropa(srcCoord,indexedSrc.get(mergedSrcId), receiverCoord, idReceiver,
                             (List<Wall>) queryResult, debugInfo);
                 }
 

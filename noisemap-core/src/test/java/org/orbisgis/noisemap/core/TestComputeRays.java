@@ -19,6 +19,7 @@ import java.awt.event.MouseMotionAdapter;
 import java.io.*;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.swing.*;
 
@@ -27,6 +28,37 @@ import static org.junit.Assert.assertEquals;
 
 
 public class TestComputeRays {
+
+
+    /**
+     * Offset de Z coordinates by the height of the ground
+     */
+    public static final class SetCoordinateSequenceFilter implements CoordinateSequenceFilter {
+        AtomicBoolean geometryChanged = new AtomicBoolean(false);
+        double newValue;
+
+        public SetCoordinateSequenceFilter(double newValue) {
+            this.newValue = newValue;
+        }
+
+        @Override
+        public void filter(CoordinateSequence coordinateSequence, int i) {
+            Coordinate pt = coordinateSequence.getCoordinate(i);
+            pt.setOrdinate(2,newValue);
+            geometryChanged.set(true);
+        }
+
+        @Override
+        public boolean isDone() {
+            return false;
+        }
+
+        @Override
+        public boolean isGeometryChanged() {
+            return geometryChanged.get();
+        }
+    }
+
     private static final List<Integer> freqLvl = Collections.unmodifiableList(Arrays.asList(63, 125, 250, 500, 1000, 2000,
             4000, 8000));
 
@@ -114,7 +146,19 @@ public class TestComputeRays {
         GeometryFactory geometryFactory = new GeometryFactory();
         int k=0;
         for (MeshBuilder.PolygonWithHeight polygon : mesh.getPolygonWithHeight()) {
-            GeometryCollection buildingExtruded = GeometryExtrude.extrudePolygonAsGeometry((Polygon) polygon.getGeometry(), polygon.getHeight());
+            double sumBuildingHeight=0;
+            double minimumHeight = Double.MAX_VALUE;
+            int count=0;
+            for (Coordinate coordinate : polygon.getGeometry().getCoordinates()) {
+                sumBuildingHeight += coordinate.z;
+                minimumHeight = Math.min(minimumHeight, coordinate.z);
+                count++;
+            }
+            double averageBuildingHeight = sumBuildingHeight / count;
+            SetCoordinateSequenceFilter absoluteCoordinateSequenceFilter = new SetCoordinateSequenceFilter(minimumHeight);
+            Polygon base = (Polygon) polygon.getGeometry().copy();
+            base.apply(absoluteCoordinateSequenceFilter);
+            GeometryCollection buildingExtruded = GeometryExtrude.extrudePolygonAsGeometry(base, polygon.getHeight() + (averageBuildingHeight - minimumHeight));
             addGeometry(triVertices2, buildingExtruded);
             for (Coordinate coordinate : buildingExtruded.getCoordinates()) {
                 vertices2.put(coordinate.toString(),k);
@@ -274,7 +318,7 @@ public class TestComputeRays {
         EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
         splCompare(evaluateAttenuationCnossos.evaluate(propDataOut.propagationPaths.get(0), propData), "Test T01", new double[]{-54, -54.1, -54.2, -54.5, -54.8, -55.8, -59.3, -73.0}, ERROR_EPSILON_TEST_T);
 */
-        String filename = "D:/aumond/Desktop/test.vtk";
+        String filename = "target/test.vtk";
         try {
             writeVTK(filename, propDataOut);
         } catch (IOException e) {
@@ -356,8 +400,8 @@ public class TestComputeRays {
         List<PropagationDebugInfo> debug = new ArrayList<>();
         computeRays.computeRaysAtPosition(new Coordinate(200, 50, 14), 0,energeticSum, debug);
 
-        String filename = "D:/aumond/Desktop/T05.vtk";
-        String filename2 = "D:/aumond/Desktop/T05.ply";
+        String filename = "target/T05.vtk";
+        String filename2 = "target/T05.ply";
         try {
             writeVTK(filename, propDataOut);
             writePLY(filename2, mesh);
@@ -506,8 +550,8 @@ public class TestComputeRays {
         List<PropagationDebugInfo> debug = new ArrayList<>();
         computeRays.computeRaysAtPosition(new Coordinate(200, 50, 4), 0,energeticSum, debug);
 
-        String filename = "D:/aumond/Desktop/T07.vtk";
-        String filename2 = "D:/aumond/Desktop/T07.ply";
+        String filename = "target/T07.vtk";
+        String filename2 = "target/T07.ply";
         try {
             writeVTK(filename, propDataOut);
             writePLY(filename2, mesh);
@@ -577,8 +621,8 @@ public class TestComputeRays {
         List<PropagationDebugInfo> debug = new ArrayList<>();
         computeRays.computeRaysAtPosition(new Coordinate(200, 50, 4), 0,energeticSum, debug);
 
-        String filename = "D:/aumond/Desktop/T08.vtk";
-        String filename2 = "D:/aumond/Desktop/T08.ply";
+        String filename = "target/T08.vtk";
+        String filename2 = "target/T08.ply";
         try {
             writeVTK(filename, propDataOut);
             writePLY(filename2, mesh);
@@ -658,8 +702,8 @@ public class TestComputeRays {
         double energeticSum[] = new double[freqLvl.size()];
         List<PropagationDebugInfo> debug = new ArrayList<>();
         computeRays.computeRaysAtPosition(new Coordinate(70, 10, 4), 0,energeticSum, debug);
-        String filename = "D:/aumond/Desktop/T09.vtk";
-        String filename2 = "D:/aumond/Desktop/T09.ply";
+        String filename = "target/T09.vtk";
+        String filename2 = "target/T09.ply";
         try {
             writeVTK(filename, propDataOut);
             writePLY(filename2, mesh);
@@ -729,8 +773,8 @@ public class TestComputeRays {
         double energeticSum[] = new double[freqLvl.size()];
         List<PropagationDebugInfo> debug = new ArrayList<>();
         computeRays.computeRaysAtPosition(new Coordinate(70, 10, 15), 0,energeticSum, debug);
-        String filename = "D:/aumond/Desktop/T11.vtk";
-        String filename2 = "D:/aumond/Desktop/T11.ply";
+        String filename = "target/T11.vtk";
+        String filename2 = "target/T11.ply";
         try {
             writeVTK(filename, propDataOut);
             writePLY(filename2, mesh);
@@ -804,8 +848,8 @@ public class TestComputeRays {
         double energeticSum[] = new double[freqLvl.size()];
         List<PropagationDebugInfo> debug = new ArrayList<>();
         computeRays.computeRaysAtPosition(new Coordinate(30, 20, 6), 0,energeticSum, debug);
-        String filename = "D:/aumond/Desktop/T12.vtk";
-        String filename2 = "D:/aumond/Desktop/T12.ply";
+        String filename = "target/T12.vtk";
+        String filename2 = "target/T12.ply";
         try {
             writeVTK(filename, propDataOut);
             writePLY(filename2, mesh);
@@ -900,8 +944,8 @@ public class TestComputeRays {
         double energeticSum[] = new double[freqLvl.size()];
         List<PropagationDebugInfo> debug = new ArrayList<>();
         computeRays.computeRaysAtPosition(new Coordinate(200, 50, 28.5), 0,energeticSum, debug);
-        String filename = "D:/aumond/Desktop/T13.vtk";
-        String filename2 = "D:/aumond/Desktop/T13.ply";
+        String filename = "target/T13.vtk";
+        String filename2 = "target/T13.ply";
         try {
             writeVTK(filename, propDataOut);
             writePLY(filename2, mesh);
@@ -972,8 +1016,8 @@ public class TestComputeRays {
         double energeticSum[] = new double[freqLvl.size()];
         List<PropagationDebugInfo> debug = new ArrayList<>();
         computeRays.computeRaysAtPosition(new Coordinate(25, 20, 23), 0,energeticSum, debug);
-        String filename = "D:/aumond/Desktop/T14.vtk";
-        String filename2 = "D:/aumond/Desktop/T14.ply";
+        String filename = "target/T14.vtk";
+        String filename2 = "target/T14.ply";
         try {
             writeVTK(filename, propDataOut);
             writePLY(filename2, mesh);
@@ -1060,8 +1104,8 @@ public class TestComputeRays {
         double energeticSum[] = new double[freqLvl.size()];
         List<PropagationDebugInfo> debug = new ArrayList<>();
         computeRays.computeRaysAtPosition(new Coordinate(100, 15, 5), 0,energeticSum, debug);
-        String filename = "D:/aumond/Desktop/T15.vtk";
-        String filename2 = "D:/aumond/Desktop/T15.ply";
+        String filename = "target/T15.vtk";
+        String filename2 = "target/T15.ply";
         try {
             writeVTK(filename, propDataOut);
             writePLY(filename2, mesh);
@@ -1152,8 +1196,8 @@ public class TestComputeRays {
         List<PropagationDebugInfo> debug = new ArrayList<>();
         computeRays.computeRaysAtPosition(new Coordinate(200, 50, 14), 0,energeticSum, debug);
 
-        String filename = "D:/aumond/Desktop/T16.vtk";
-        String filename2 = "D:/aumond/Desktop/T16.ply";
+        String filename = "target/T16.vtk";
+        String filename2 = "target/T16.ply";
         try {
             writeVTK(filename, propDataOut);
             writePLY(filename2, mesh);
@@ -1245,8 +1289,8 @@ public class TestComputeRays {
         List<PropagationDebugInfo> debug = new ArrayList<>();
         computeRays.computeRaysAtPosition(new Coordinate(200, 50, 11.5), 0,energeticSum, debug);
 
-        String filename = "D:/aumond/Desktop/T17.vtk";
-        String filename2 = "D:/aumond/Desktop/T17.ply";
+        String filename = "target/T17.vtk";
+        String filename2 = "target/T17.ply";
         try {
             writeVTK(filename, propDataOut);
             writePLY(filename2, mesh);
@@ -1331,7 +1375,7 @@ public class TestComputeRays {
         FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
                 mesh.getTriNeighbors(), mesh.getVertices());
 
-        String filename2 = "D:/aumond/Desktop/T18.ply";
+        String filename2 = "target/T18.ply";
         try {
             writePLY(filename2, mesh);
         } catch (IOException e) {
@@ -1353,7 +1397,7 @@ public class TestComputeRays {
         List<PropagationDebugInfo> debug = new ArrayList<>();
         computeRays.computeRaysAtPosition(new Coordinate(200, 50, 12), 0,energeticSum, debug);
 
-        String filename = "D:/aumond/Desktop/T18.vtk";
+        String filename = "target/T18.vtk";
 
         try {
             writeVTK(filename, propDataOut);
@@ -1460,7 +1504,7 @@ public class TestComputeRays {
         FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
                 mesh.getTriNeighbors(), mesh.getVertices());
 
-        String filename2 = "D:/aumond/Desktop/T19.ply";
+        String filename2 = "target/T19.ply";
         try {
             writePLY(filename2, mesh);
         } catch (IOException e) {
@@ -1483,7 +1527,7 @@ public class TestComputeRays {
 
 
 
-        String filename = "D:/aumond/Desktop/T19.vtk";
+        String filename = "target/T19.vtk";
 
         try {
             writeVTK(filename, propDataOut);
@@ -1574,7 +1618,7 @@ public class TestComputeRays {
         FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
                 mesh.getTriNeighbors(), mesh.getVertices());
 
-        String filename2 = "D:/aumond/Desktop/T21.ply";
+        String filename2 = "target/T21.ply";
         try {
 
             writePLY(filename2, mesh);
@@ -1599,7 +1643,7 @@ public class TestComputeRays {
 
 
 
-        String filename = "D:/aumond/Desktop/T21.vtk";
+        String filename = "target/T21.vtk";
         try {
             writeVTK(filename, propDataOut);
         } catch (IOException e) {
@@ -1693,8 +1737,8 @@ public class TestComputeRays {
         double energeticSum[] = new double[freqLvl.size()];
         List<PropagationDebugInfo> debug = new ArrayList<>();
         computeRays.computeRaysAtPosition(new Coordinate(187.05, 25, 14), 0,energeticSum, debug);
-        String filename = "D:/aumond/Desktop/T22.vtk";
-        String filename2 = "D:/aumond/Desktop/T22.ply";
+        String filename = "target/T22.vtk";
+        String filename2 = "target/T22.ply";
         try {
             writeVTK(filename, propDataOut);
             writePLY(filename2, mesh);
@@ -1807,8 +1851,8 @@ public class TestComputeRays {
         double energeticSum[] = new double[freqLvl.size()];
         List<PropagationDebugInfo> debug = new ArrayList<>();
         computeRays.computeRaysAtPosition(new Coordinate(187.05, 25, 14), 0,energeticSum, debug);
-        String filename = "D:/aumond/Desktop/T23.vtk";
-        String filename2 = "D:/aumond/Desktop/T23.ply";
+        String filename = "target/T23.vtk";
+        String filename2 = "target/T23.ply";
         try {
             writeVTK(filename, propDataOut);
             writePLY(filename2, mesh);
@@ -1971,8 +2015,8 @@ public class TestComputeRays {
         double energeticSum[] = new double[freqLvl.size()];
         List<PropagationDebugInfo> debug = new ArrayList<>();
         computeRays.computeRaysAtPosition(new Coordinate(1000, 100, 1), 0,energeticSum, debug);
-        String filename = "D:/aumond/Desktop/T28.vtk";
-        String filename2 = "D:/aumond/Desktop/T28.ply";
+        String filename = "target/T28.vtk";
+        String filename2 = "target/T28.ply";
         try {
             writeVTK(filename, propDataOut);
             writePLY(filename2, mesh);
