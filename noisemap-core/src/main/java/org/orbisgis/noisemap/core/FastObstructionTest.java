@@ -925,63 +925,27 @@ public class FastObstructionTest {
         } else {
             Coordinate osCorner = interPoints.get(interPoints.size() - 2).getCoorIntersection();
             LinkedList<LineSegment> path = new LinkedList<>();
-            if (points.x[2] < points.x[1])
-            {
-                path.add(new LineSegment(new Coordinate(points.x[0], points.y[0]), new Coordinate(points.x[points.x.length-1], points.y[points.x.length-1])));
-                // FreeField test
-                TriIdWithIntersection interBegin = interPoints.get(pointsId.get(0));
-                osCorner = interBegin;
-                TriIdWithIntersection interEnd = interPoints.get(pointsId.get(points.x.length-1));
-                if (interBegin.getBuildingId() != interEnd.getBuildingId()) {
-                    Coordinate testPBegin = new Coordinate(interBegin.getCoorIntersection());
-                    Coordinate testPEnd = new Coordinate(interEnd.getCoorIntersection());
-                    testPBegin.setOrdinate(Coordinate.Z, points.y[0] + epsilon);
-                    testPEnd.setOrdinate(Coordinate.Z, points.y[points.x.length-1] + epsilon);
-                    if (!isFreeField(testPBegin, testPEnd)) {
-                        return totData;
-                    }
-                }
-                for (int i = points.x.length-2; i > 0 ; i--) {
-                    if (!(points.x[i+1] > points.x[i])) {
-                        path.add(new LineSegment(new Coordinate(points.x[i+1], points.y[i+1]), new Coordinate(points.x[i], points.y[i])));
-                        // FreeField test
-                        interBegin = interPoints.get(pointsId.get(i+1));
-                        osCorner = interBegin;
-                        interEnd = interPoints.get(pointsId.get(i ));
-                        if (interBegin.getBuildingId() != interEnd.getBuildingId()) {
-                            Coordinate testPBegin = new Coordinate(interBegin.getCoorIntersection());
-                            Coordinate testPEnd = new Coordinate(interEnd.getCoorIntersection());
-                            testPBegin.setOrdinate(Coordinate.Z, points.y[i+1] + epsilon);
-                            testPEnd.setOrdinate(Coordinate.Z, points.y[i ] + epsilon);
-                            if (!isFreeField(testPBegin, testPEnd)) {
-                                return totData;
-                            }
+            for (int i = 0; i < points.x.length - 1; i++) {
+                if(!(points.x[i] > points.x[i + 1])) {
+                    path.add(new LineSegment(new Coordinate(points.x[i], points.y[i]), new Coordinate(points.x[i + 1], points.y[i + 1])));
+                    // FreeField test
+                    TriIdWithIntersection interBegin = interPoints.get(pointsId.get(i));
+                    osCorner = interBegin;
+                    TriIdWithIntersection interEnd = interPoints.get(pointsId.get(i + 1));
+                    if (interBegin.getBuildingId() != interEnd.getBuildingId()) {
+                        Coordinate testPBegin = new Coordinate(interBegin.getCoorIntersection());
+                        Coordinate testPEnd = new Coordinate(interEnd.getCoorIntersection());
+                        // Offset coordinates in order to not be on triangle edge
+                        testPEnd.setOrdinate(Coordinate.Z, points.y[i + 1] + epsilon);
+                        Vector2D vector2D = new Vector2D(testPBegin, testPEnd).normalize();
+                        testPBegin = new Coordinate(testPBegin.x + vector2D.getX() * epsilon, testPBegin.y + vector2D.getY() * epsilon, points.y[i] + epsilon);
+                        testPEnd = new Coordinate(testPEnd.x - vector2D.getX() * epsilon, testPEnd.y - vector2D.getY() * epsilon, points.y[i + 1] + epsilon);
+                        if (!isFreeField(testPBegin, testPEnd)) {
+                            return totData;
                         }
-                    } else {
-                        break;
                     }
-                }
-
-            }else {
-                for (int i = 0; i < points.x.length - 1; i++) {
-                    if (!(points.x[i] > points.x[i + 1])) {
-                        path.add(new LineSegment(new Coordinate(points.x[i], points.y[i]), new Coordinate(points.x[i + 1], points.y[i + 1])));
-                        // FreeField test
-                        TriIdWithIntersection interBegin = interPoints.get(pointsId.get(i));
-                        osCorner = interBegin;
-                        TriIdWithIntersection interEnd = interPoints.get(pointsId.get(i + 1));
-                        if (interBegin.getBuildingId() != interEnd.getBuildingId()) {
-                            Coordinate testPBegin = new Coordinate(interBegin.getCoorIntersection());
-                            Coordinate testPEnd = new Coordinate(interEnd.getCoorIntersection());
-                            testPBegin.setOrdinate(Coordinate.Z, points.y[i] + epsilon);
-                            testPEnd.setOrdinate(Coordinate.Z, points.y[i + 1] + epsilon);
-                            if (!isFreeField(testPBegin, testPEnd)) {
-                                return totData;
-                            }
-                        }
-                    } else {
-                        break;
-                    }
+                } else {
+                    break;
                 }
             }
 
