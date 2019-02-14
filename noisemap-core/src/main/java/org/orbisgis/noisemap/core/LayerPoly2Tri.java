@@ -184,11 +184,6 @@ public class LayerPoly2Tri implements LayerDelaunay {
 
   @Override
   public void processDelaunay() throws LayerDelaunayError {
-    triangles.clear();
-    neighbors.clear();
-    vertices.clear();
-    hashOfArrayIndex.clear();
-
     // Create input data for Poly2Tri
     int[] index = new int[segments.size()];
     for (int i = 0; i < index.length; i++) {
@@ -199,7 +194,7 @@ public class LayerPoly2Tri implements LayerDelaunay {
     for(Map.Entry<TriangulationPoint, Integer> entry : pts.entrySet()) {
       ptsArray[entry.getValue()] = entry.getKey();
     }
-
+    pts.clear();
     List<TriangulationPoint> meshPoints = new ArrayList<>(Arrays.asList(ptsArray));
     ConstrainedPointSet convertedInput = new ConstrainedPointSet(meshPoints, index);
 
@@ -235,8 +230,8 @@ public class LayerPoly2Tri implements LayerDelaunay {
               if (id instanceof Integer) {
                 BuildingWithID inPoly = buildingWithID.get(id);
                 if (inPoly.building.contains(FACTORY.createPoint(TPointToCoordinate(centroid)))) {
-                    inBuilding = true;
-                    break;
+                  inBuilding = true;
+                  break;
                 }
               }
             }
@@ -402,7 +397,7 @@ public class LayerPoly2Tri implements LayerDelaunay {
 
   @Override
   public void setMaxArea(Double maxArea) throws LayerDelaunayError {
-      this.maxArea = Math.max(0, maxArea);
+    this.maxArea = Math.max(0, maxArea);
   }
 
   //add buildingID to edge property and to points property
