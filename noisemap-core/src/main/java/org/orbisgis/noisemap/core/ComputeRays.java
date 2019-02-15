@@ -327,15 +327,17 @@ public class ComputeRays implements Runnable {
                 // A path has been found
                 refpathcount += 1;
                 List<PropagationPath> propagationPaths = directPath(destinationPt,reflectionPt,nearBuildingsWalls,false, debugInfo);
-                propagationPath = propagationPaths.get(0);
-                propagationPath.getPointList().get(propagationPath.getPointList().size()-1).setType(PropagationPath.PointPath.POINT_TYPE.REFL);
-                propagationPath.getPointList().get(propagationPath.getPointList().size()-1).setBuildingId(receiverReflection.getBuildingId());
-                if (refpathcount > 1) {
-                    propagationPath.getPointList().remove(0);
-                }
-                points.addAll(propagationPath.getPointList());
-                segments.addAll(propagationPath.getSegmentList());
 
+                if (propagationPaths.size()>0) {
+                    propagationPath = propagationPaths.get(0);
+                    propagationPath.getPointList().get(propagationPath.getPointList().size() - 1).setType(PropagationPath.PointPath.POINT_TYPE.REFL);
+                    propagationPath.getPointList().get(propagationPath.getPointList().size() - 1).setBuildingId(receiverReflection.getBuildingId());
+                    if (refpathcount > 1) {
+                        propagationPath.getPointList().remove(0);
+                    }
+                    points.addAll(propagationPath.getPointList());
+                    segments.addAll(propagationPath.getSegmentList());
+                }
 
                 if (propagationDebugInfo != null && debugInfo != null) {
                     debugInfo.add(propagationDebugInfo);
@@ -548,9 +550,9 @@ public class ComputeRays implements Runnable {
         vec_epsilon.y /= length;
         vec_epsilon.z/= length;
         // Multiply by epsilon in meter
-        vec_epsilon.x *= 0.0001;
-        vec_epsilon.y *= 0.0001;
-        vec_epsilon.z *= 0.0001;
+        vec_epsilon.x *= 0.00001;
+        vec_epsilon.y *= 0.00001;
+        vec_epsilon.z *= 0.00001;
         // Translate reflection pt by epsilon to get outside
         // the wall
         // if side = false, p1 goes to p2
@@ -601,6 +603,7 @@ public class ComputeRays implements Runnable {
 
     public List<List<Coordinate>> computeVerticalEdgeDiffraction( Coordinate p1,
                                                                        Coordinate p2,List<Wall> nearBuildingsWalls, List<PropagationDebugInfo> debugInfo) {
+
         final LineSegment receiverSrc = new LineSegment(p1, p2);
         List<List<Coordinate>> paths  = new ArrayList<>();
         HashSet<Integer> buildingsOnPath = new HashSet<>();
@@ -799,7 +802,7 @@ public class ComputeRays implements Runnable {
                 convexhullValid = false;
             }
 
-            if (coordinates.size()>1 && convexhullValid) {
+            if (coordinates.size()>2 && convexhullValid) {
                 Collections.reverse(coordinates);
                 Coordinate bufferedCoordinate;
                 bufferedCoordinate = addBuffer(coordinates.get(1), coordinates.get(0),true);
@@ -820,10 +823,14 @@ public class ComputeRays implements Runnable {
                 propagationPath2.getSegmentList().addAll(propagationPath.getSegmentList());
                 propagationPaths.add(propagationPath2);
             }
+            else
+            {
+
+            }
 
             // Right hand
             coordinates = diffractedPaths.get(1);
-            if (coordinates.size()>1 && convexhullValid) {
+            if (coordinates.size()>2 && convexhullValid) {
                 Coordinate bufferedCoordinate;
                 bufferedCoordinate = addBuffer(coordinates.get(1), coordinates.get(0),true);
                 propagationPath = computeFreefield(bufferedCoordinate,coordinates.get(0),  debugInfo);

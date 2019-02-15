@@ -411,6 +411,7 @@ public class TestComputeRays {
 
     }
 
+
     /**
      * Test TC06 -- Reduced receiver height to include diffraction in some frequency bands
      * This test
@@ -482,7 +483,6 @@ public class TestComputeRays {
         ComputeRays computeRays = new ComputeRays(rayData, propDataOut);
 
         computeRays.initStructures();
-
         double energeticSum[] = new double[freqLvl.size()];
         List<PropagationDebugInfo> debug = new ArrayList<>();
         computeRays.computeRaysAtPosition(new Coordinate(200, 50, 11.5), 0,energeticSum, debug);
@@ -747,11 +747,11 @@ public class TestComputeRays {
 
         // Add building
         mesh.addGeometry(factory.createPolygon(new Coordinate[]{
-                new Coordinate(55, 5, 0),
-                new Coordinate(65, 5, 0),
-                new Coordinate(65, 15, 0),
-                new Coordinate(55, 15, 0),
-                new Coordinate(55, 5, 0)}), 10);
+                new Coordinate(55, 5,0),
+                new Coordinate(65, 5,0),
+                new Coordinate(65, 15,0),
+                new Coordinate(55, 15,0),
+                new Coordinate(55, 5,0)}), 10);
 
         mesh.finishPolygonFeeding(cellEnvelope);
 
@@ -1398,6 +1398,119 @@ public class TestComputeRays {
         computeRays.computeRaysAtPosition(new Coordinate(200, 50, 12), 0,energeticSum, debug);
 
         String filename = "target/T18.vtk";
+
+        try {
+            writeVTK(filename, propDataOut);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        assertEquals(true, true);
+    }
+
+
+    /**
+     * TC18b - Screening and reflecting barrier on ground with spatially varying heights and
+     * acoustic properties
+     */
+    @Test
+    public void TC18b() throws LayerDelaunayError {
+        GeometryFactory factory = new GeometryFactory();
+        ////////////////////////////////////////////////////////////////////////////
+        //Add road source as one point
+        List<Geometry> srclst = new ArrayList<Geometry>();
+        srclst.add(factory.createPoint(new Coordinate(10, 10, 1)));
+        //Scene dimension
+        Envelope cellEnvelope = new Envelope(new Coordinate(-250., -250., 0.), new Coordinate(250, 250, 0.));
+        //Add source sound level
+        List<ArrayList<Double>> srcSpectrum = new ArrayList<ArrayList<Double>>();
+        srcSpectrum.add(asW(80.0, 90.0, 95.0, 100.0, 100.0, 100.0, 95.0, 90.0));
+        // GeometrySoilType
+        List<GeoWithSoilType> geoWithSoilTypeList = new ArrayList<>();
+        geoWithSoilTypeList.add(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9));
+        geoWithSoilTypeList.add(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -100, 100)), 0.5));
+        geoWithSoilTypeList.add(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2));
+
+        //Build query structure for sources
+        QueryGeometryStructure sourcesIndex = new QueryQuadTree();
+        int idsrc = 0;
+        for (Geometry src : srclst) {
+            sourcesIndex.appendGeometry(src, idsrc);
+            idsrc++;
+        }
+        //Create obstruction test object
+        MeshBuilder mesh = new MeshBuilder();
+        // Add topographic points
+        //x1
+        mesh.addTopographicPoint(new Coordinate(0, 80, 2));
+        mesh.addTopographicPoint(new Coordinate(225, 80, 2));
+        mesh.addTopographicPoint(new Coordinate(225, -20, 2));
+        mesh.addTopographicPoint(new Coordinate(0, -20, 2));
+        mesh.addTopographicPoint(new Coordinate(120, -20, 2));
+        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
+        mesh.addTopographicPoint(new Coordinate(205, -5, 10));
+        mesh.addTopographicPoint(new Coordinate(205, 75, 10));
+        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
+        //x2
+        mesh.addTopographicPoint(new Coordinate(225, 80, 2));
+        mesh.addTopographicPoint(new Coordinate(225, -20, 2));
+        mesh.addTopographicPoint(new Coordinate(0, -20, 2));
+        mesh.addTopographicPoint(new Coordinate(0, 80, 2));
+        mesh.addTopographicPoint(new Coordinate(120, 80, 2));
+        mesh.addTopographicPoint(new Coordinate(205, -5, 10));
+        mesh.addTopographicPoint(new Coordinate(205, 75, 10));
+        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
+        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
+
+        // Add building
+        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+                new Coordinate(114, 52),
+                new Coordinate(170, 60),
+                new Coordinate(170, 61),
+                new Coordinate(114, 53),
+                new Coordinate(114, 52)}), 15);
+
+        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+                new Coordinate(87, 50),
+                new Coordinate(92, 32),
+                new Coordinate(92, 33),
+                new Coordinate(87, 51),
+                new Coordinate(87, 50)}), 12);
+
+        mesh.finishPolygonFeeding(cellEnvelope);
+
+        //Retrieve Delaunay triangulation of scene
+        List<Coordinate> vert = mesh.getVertices();
+        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+                mesh.getTriNeighbors(), mesh.getVertices());
+
+        String filename2 = "target/T18b.ply";
+        try {
+            writePLY(filename2, mesh);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // rose of favourable conditions
+        double[] favrose = new double[]{0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25};
+
+        PropagationProcessData rayData = new PropagationProcessData(new ArrayList<>(), manager, sourcesIndex, srclst, srcSpectrum,
+                freqLvl, 1, 2, 400, 400, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
+
+        ComputeRaysOut propDataOut = new ComputeRaysOut();
+        ComputeRays computeRays = new ComputeRays(rayData, propDataOut);
+
+        computeRays.initStructures();
+
+        computeRays.makeRelativeZToAbsolute();
+
+        double energeticSum[] = new double[freqLvl.size()];
+        List<PropagationDebugInfo> debug = new ArrayList<>();
+
+
+        computeRays.computeRaysAtPosition(new Coordinate(200 ,50 ,12 + manager.getHeightAtPosition(new Coordinate(200, 50, 12))), 0,energeticSum, debug);
+
+        String filename = "target/T18b.vtk";
 
         try {
             writeVTK(filename, propDataOut);
