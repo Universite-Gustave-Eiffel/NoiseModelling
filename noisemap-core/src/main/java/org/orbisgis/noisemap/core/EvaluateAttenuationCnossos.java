@@ -188,7 +188,8 @@ public class EvaluateAttenuationCnossos {
         double[] aRef = new double[data.freq_lvl.size()];
         for (int idf = 0; idf < nbfreq; idf++) {
             for (int idRef = 0; idRef < path.refPoints.size(); idRef++) {
-                double alpha = path.getPointList().get(path.refPoints.get(idRef)).alphaWall;
+                //double alpha = path.getPointList().get(path.refPoints.get(idRef)).alphaWall;
+                double alpha = 0.1; // todo uncomment for alpha
                 if (alpha > 1){    // TODO Add if sigma = true also compute, issue #13
                     PropagationProcessData.getWallAlpha(alpha, data.freq_lvl.get(idf));
                 }

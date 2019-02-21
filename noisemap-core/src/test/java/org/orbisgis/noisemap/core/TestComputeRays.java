@@ -692,7 +692,7 @@ public class TestComputeRays {
         double[] favrose = new double[]{0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25};
 
         PropagationProcessData rayData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 1, 2, 400, 400, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
+                freqLvl, 1, 5, 400, 400, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
 
         ComputeRaysOut propDataOut = new ComputeRaysOut();
         ComputeRays computeRays = new ComputeRays(rayData, propDataOut);
@@ -763,7 +763,7 @@ public class TestComputeRays {
         double[] favrose = new double[]{0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25};
 
         PropagationProcessData rayData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 1, 2, 400, 400, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
+                freqLvl, 1, 5, 400, 400, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
 
         ComputeRaysOut propDataOut = new ComputeRaysOut();
         ComputeRays computeRays = new ComputeRays(rayData, propDataOut);
@@ -838,7 +838,7 @@ public class TestComputeRays {
         double[] favrose = new double[]{0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25};
 
         PropagationProcessData rayData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 1, 2, 400, 400, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
+                freqLvl, 1, 5, 400, 400, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
 
         ComputeRaysOut propDataOut = new ComputeRaysOut();
         ComputeRays computeRays = new ComputeRays(rayData, propDataOut);
@@ -934,7 +934,7 @@ public class TestComputeRays {
         double[] favrose = new double[]{0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25};
 
         PropagationProcessData rayData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 1, 2, 400, 400, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
+                freqLvl, 1, 5, 400, 400, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
 
         ComputeRaysOut propDataOut = new ComputeRaysOut();
         ComputeRays computeRays = new ComputeRays(rayData, propDataOut);
@@ -1006,7 +1006,7 @@ public class TestComputeRays {
         double[] favrose = new double[]{0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25};
 
         PropagationProcessData rayData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 1, 2, 400, 400, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
+                freqLvl, 1, 5, 400, 400, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
 
         ComputeRaysOut propDataOut = new ComputeRaysOut();
         ComputeRays computeRays = new ComputeRays(rayData, propDataOut);
@@ -1207,6 +1207,86 @@ public class TestComputeRays {
 
     }
 
+
+    /**
+     * Reflecting two barrier on ground with spatially varying heights and acoustic properties
+     */
+    @Test
+    public void TC16b() throws LayerDelaunayError {
+        GeometryFactory factory = new GeometryFactory();
+        ////////////////////////////////////////////////////////////////////////////
+        //Add road source as one point
+        List<Geometry> srclst = new ArrayList<Geometry>();
+        srclst.add(factory.createPoint(new Coordinate(10, 10, 1)));
+        //Scene dimension
+        Envelope cellEnvelope = new Envelope(new Coordinate(-250., -250., 0.), new Coordinate(250, 250, 0.));
+        //Add source sound level
+        List<ArrayList<Double>> srcSpectrum = new ArrayList<ArrayList<Double>>();
+        srcSpectrum.add(asW(80.0, 90.0, 95.0, 100.0, 100.0, 100.0, 95.0, 90.0));
+        // GeometrySoilType
+        List<GeoWithSoilType> geoWithSoilTypeList = new ArrayList<>();
+        geoWithSoilTypeList.add(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9));
+        geoWithSoilTypeList.add(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -100, 100)), 0.5));
+        geoWithSoilTypeList.add(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2));
+
+        //Build query structure for sources
+        QueryGeometryStructure sourcesIndex = new QueryQuadTree();
+        int idsrc = 0;
+        for (Geometry src : srclst) {
+            sourcesIndex.appendGeometry(src, idsrc);
+            idsrc++;
+        }
+        //Create obstruction test object
+        MeshBuilder mesh = new MeshBuilder();
+
+        // Add building
+        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+                new Coordinate(114, 52, 0),
+                new Coordinate(170, 60, 0),
+                new Coordinate(170, 62, 0),
+                new Coordinate(114, 54, 0),
+                new Coordinate(114, 52, 0)}), 20);
+
+        // Add building
+        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+                new Coordinate(114, 12, 0),
+                new Coordinate(170, 30, 0),
+                new Coordinate(170, 32, 0),
+                new Coordinate(114, 14, 0),
+                new Coordinate(114, 12, 0)}), 20);
+
+        mesh.finishPolygonFeeding(cellEnvelope);
+
+        //Retrieve Delaunay triangulation of scene
+        List<Coordinate> vert = mesh.getVertices();
+        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+                mesh.getTriNeighbors(), mesh.getVertices());
+        // rose of favourable conditions
+        double[] favrose = new double[]{0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25};
+
+        PropagationProcessData rayData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
+                freqLvl, 2, 0, 1000, 1000, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
+
+        ComputeRaysOut propDataOut = new ComputeRaysOut();
+        ComputeRays computeRays = new ComputeRays(rayData, propDataOut);
+
+        computeRays.initStructures();
+
+        double energeticSum[] = new double[freqLvl.size()];
+        List<PropagationDebugInfo> debug = new ArrayList<>();
+        computeRays.computeRaysAtPosition(new Coordinate(200, 50, 15), 0,energeticSum, debug);
+
+        String filename = "target/T16b.vtk";
+        String filename2 = "target/T16b.ply";
+        try {
+            writeVTK(filename, propDataOut);
+            writePLY(filename2, mesh);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
     /**
      * TC17 - Reflecting barrier on ground with spatially varying heights and acoustic properties
      * reduced receiver height
@@ -1386,7 +1466,7 @@ public class TestComputeRays {
         double[] favrose = new double[]{0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25};
 
         PropagationProcessData rayData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 1, 1, 400, 400, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
+                freqLvl, 1, 4, 400, 400, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
 
         ComputeRaysOut propDataOut = new ComputeRaysOut();
         ComputeRays computeRays = new ComputeRays(rayData, propDataOut);
@@ -1495,7 +1575,7 @@ public class TestComputeRays {
         double[] favrose = new double[]{0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25};
 
         PropagationProcessData rayData = new PropagationProcessData(new ArrayList<>(), manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 1, 2, 400, 400, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
+                freqLvl, 1, 10, 400, 400, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
 
         ComputeRaysOut propDataOut = new ComputeRaysOut();
         ComputeRays computeRays = new ComputeRays(rayData, propDataOut);
@@ -1743,7 +1823,7 @@ public class TestComputeRays {
         double[] favrose = new double[]{0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25};
 
         PropagationProcessData rayData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 1, 2, 400, 400, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
+                freqLvl, 1, 5, 400, 400, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
 
         ComputeRaysOut propDataOut = new ComputeRaysOut();
         ComputeRays computeRays = new ComputeRays(rayData, propDataOut);
@@ -1840,7 +1920,7 @@ public class TestComputeRays {
         double[] favrose = new double[]{0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25};
 
         PropagationProcessData rayData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 1, 2, 400, 400, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
+                freqLvl, 1, 5, 400, 400, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
 
         ComputeRaysOut propDataOut = new ComputeRaysOut();
         ComputeRays computeRays = new ComputeRays(rayData, propDataOut);
@@ -2139,6 +2219,44 @@ public class TestComputeRays {
         assertEquals(true, true);
 
     }
+
+    /**
+     * TestPLY - Test ply
+     */
+    @Test
+    public void Tply() throws LayerDelaunayError {
+        GeometryFactory factory = new GeometryFactory();
+        //Scene dimension
+        Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
+
+        //Create obstruction test object
+        MeshBuilder mesh = new MeshBuilder();
+
+        // Add building
+        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+                new Coordinate(167.2, 39.5),
+                new Coordinate(151.6, 48.5),
+                new Coordinate(141.1, 30.3),
+                new Coordinate(156.7, 21.3),
+                new Coordinate(159.7, 26.5),
+                new Coordinate(151.0, 31.5),
+                new Coordinate(155.5, 39.3),
+                new Coordinate(164.2, 34.3),
+                new Coordinate(167.2, 39.5)}), 10);
+
+        mesh.finishPolygonFeeding(cellEnvelope);
+
+        String filename2 = "target/T_ply.ply";
+        try {
+
+            writePLY(filename2, mesh);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        assertEquals(true, false);
+    }
+
 
 
 }
