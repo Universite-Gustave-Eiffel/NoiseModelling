@@ -499,13 +499,7 @@ public class ComputeRays implements Runnable {
             propagationDebugInfo = new PropagationDebugInfo(Arrays.asList(receiverCoord, srcCoord), new double[data.freq_lvl.size()]);
         }
 
-        for (int i = 1; i < points.size(); i++) {
-            if (points.get(i).coordinate.z <10) {
-                points.clear();
-                segments.clear();
-            }
 
-        }
         return new PropagationPath(false, points, segments, segments);
 
     }
