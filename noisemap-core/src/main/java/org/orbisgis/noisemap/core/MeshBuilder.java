@@ -157,6 +157,14 @@ public class MeshBuilder {
 
 
     /**
+     * @return Envelope
+     */
+    public Envelope getEnvelope() {
+        return geometriesBoundingBox;
+    }
+
+
+    /**
      * Retrieve Buildings polygon with the height
      * @return the polygons(merged)  with a height "without" the effect Topographic.
      */

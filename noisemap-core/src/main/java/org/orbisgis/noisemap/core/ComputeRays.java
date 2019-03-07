@@ -42,7 +42,9 @@ import org.locationtech.jts.index.quadtree.Quadtree;
 import org.locationtech.jts.index.strtree.STRtree;
 import org.locationtech.jts.math.Vector3D;
 import org.locationtech.jts.operation.buffer.BufferParameters;
+import org.locationtech.jts.triangulate.Segment;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
+import org.poly2tri.triangulation.util.Tuple2;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,6 +62,10 @@ import static org.orbisgis.noisemap.core.FastObstructionTest.Wall;
 public class ComputeRays implements Runnable {
     private final static double BASE_LVL = 1.; // 0dB lvl
     private final static double ONETHIRD = 1. / 3.;
+    // Reject side diffraction if hull length > than direct length
+    // because 20 * LOG10(4) = 12 dB, so small contribution in comparison with diffraction on horizontal edge
+    // in order to reduce computational cost
+    private final static double MAX_RATIO_HULL_DIRECT_PATH = 4;
     private final static double MERGE_SRC_DIST = 1.;
     private final static double FIRST_STEP_RANGE = 90;
     private final static double W_RANGE = Math.pow(10, 94. / 10.); //94 dB(A) range search. Max iso level is >75 dB(a).
@@ -601,53 +607,44 @@ public class ComputeRays implements Runnable {
 
 
     public HashSet<Integer> getBuildingsOnPath(Coordinate p1,
-                                               Coordinate p2, List<Wall> nearBuildingsWalls, boolean vertivalDiffraction) {
+                                               Coordinate p2, List<Wall> nearBuildingsWalls, boolean verticalDiffraction) {
         HashSet<Integer> buildingsOnPath = new HashSet<>();
-        Boolean somethingHideReceiver = true;
-        Boolean buildingOnPath = true;
         List<TriIdWithIntersection> propagationPath = new ArrayList<>();
-        if (!vertivalDiffraction || !data.freeFieldFinder.isHasBuildingWithHeight()) {
-            somethingHideReceiver = !data.freeFieldFinder.isFreeField(p1, p2);
-        } else {
-
-            if (!data.freeFieldFinder.computePropagationPaths(p1, p2, nearBuildingsWalls, false, propagationPath, true)) {
-                // Propagation path not found, there is not direct field
-                somethingHideReceiver = true;
-            } else {
-                if (!propagationPath.isEmpty()) {
-                    for (TriIdWithIntersection inter : propagationPath) {
-                        if (inter.isIntersectionOnBuilding() || inter.isIntersectionOnTopography()) {
-                            somethingHideReceiver = true;
-                        }
-                        if (inter.getBuildingId() != 0) {
-                            buildingOnPath = true;
-                            buildingsOnPath.add(inter.getBuildingId());
-
-                        }
-                    }
+        data.freeFieldFinder.computePropagationPaths(p1, p2, nearBuildingsWalls, false, propagationPath, true);
+        if (!propagationPath.isEmpty()) {
+            for (TriIdWithIntersection inter : propagationPath) {
+                if (inter.getBuildingId() != 0) {
+                    buildingsOnPath.add(inter.getBuildingId());
                 }
             }
-
         }
         return buildingsOnPath;
     }
 
-    public List<List<Coordinate>> computeVerticalEdgeDiffraction(Coordinate p1,
-                                                                 Coordinate p2, List<Wall> nearBuildingsWalls, List<PropagationDebugInfo> debugInfo) {
+    /**
+     *
+     * @param left If true return path between p1 and p2; else p2 to p1
+     * @param p1 First point
+     * @param p2 Second point
+     * @param nearBuildingsWalls Walls to evaluate
+     * @return
+     */
+    private List<Coordinate> computeSideHull(boolean left, Coordinate p1,
+                                          Coordinate p2, List<Wall> nearBuildingsWalls) {
 
         final LineSegment receiverSrc = new LineSegment(p1, p2);
-        List<List<Coordinate>> paths = new ArrayList<>();
-        HashSet<Integer> buildingsOnPath = new HashSet<>();
         HashSet<Integer> buildingsOnPath2 = new HashSet<>();
+        Set<Segment> freeFieldSegments = new HashSet<>();
         GeometryFactory geometryFactory = new GeometryFactory();
 
         List<Coordinate> coordinates = new ArrayList<>();
         int indexp1 = 0;
         int indexp2 = 0;
 
-        boolean sthg = true;
-        buildingsOnPath = getBuildingsOnPath(p1, p2, nearBuildingsWalls, data.computeVerticalDiffraction);
-        while (sthg) {
+        boolean convexHullIntersects = true;
+        HashSet<Integer> buildingsOnPath = getBuildingsOnPath(p1, p2, nearBuildingsWalls, data.computeVerticalDiffraction);
+
+        while (convexHullIntersects) {
             Geometry[] geometries = new Geometry[buildingsOnPath.size() + 2];
             int k = 0;
             for (int i : buildingsOnPath) {
@@ -659,9 +656,17 @@ public class ComputeRays implements Runnable {
             geometries[k++] = geometryFactory.createPoint(p2);
             Geometry convexhull = geometryFactory.createGeometryCollection(geometries).convexHull();
 
-            ArrayList<Coordinate> path = new ArrayList<>();
+            if(p1.distance(p2) / convexhull.getLength() > MAX_RATIO_HULL_DIRECT_PATH) {
+                return new ArrayList<>();
+            }
+
+            convexHullIntersects = false;
+            buildingsOnPath2.clear();
+            coordinates = Arrays.asList(convexhull.getCoordinates());
+
+
             k = 0;
-            for (Coordinate c : convexhull.getCoordinates()) {
+            for (Coordinate c : coordinates) {
                 if (c.equals(p1)) {
                     indexp1 = k;
                 }
@@ -670,36 +675,56 @@ public class ComputeRays implements Runnable {
                 }
                 k++;
             }
-            sthg = false;
-            buildingsOnPath2.clear();
-            coordinates = Arrays.asList(convexhull.getCoordinates());
-            for (k = 0; k < coordinates.size(); k++) {
+
+            for (k = 0; k < coordinates.size() - 1; k++) {
                 coordinates.get(k).setCoordinate(getProjectedZCoordinate(coordinates.get(k), receiverSrc));
-                if (k < coordinates.size() - 1) {
+                Segment freeFieldTestSegment = new Segment(coordinates.get(k), coordinates.get(k + 1));
+                if(((left && k > indexp1 && k < indexp2) || (!left && (k < indexp1 || k > indexp2))) && !freeFieldSegments.contains(freeFieldTestSegment)) {
                     buildingsOnPath2 = getBuildingsOnPath(coordinates.get(k), coordinates.get(k + 1), nearBuildingsWalls, data.computeVerticalDiffraction);
                     if (!buildingsOnPath2.isEmpty()) {
                         buildingsOnPath.addAll(buildingsOnPath2);
-                        sthg = true;
+                        convexHullIntersects = true;
                         break;
+                    } else {
+                        freeFieldSegments.add(freeFieldTestSegment);
                     }
                 }
             }
+            coordinates.get(coordinates.size() - 1).setCoordinate(getProjectedZCoordinate(coordinates.get(coordinates.size() - 1), receiverSrc));
         }
 
         if (indexp1 < indexp2) {
-            paths.add(coordinates.subList(indexp1, indexp2 + 1));
-            ArrayList<Coordinate> inversePath = new ArrayList<>();
-            inversePath.addAll(coordinates.subList(indexp2, coordinates.size() - 1));
-            inversePath.addAll(coordinates.subList(0, indexp1 + 1));
-            paths.add(inversePath);
+            if(left) {
+                return coordinates.subList(indexp1, indexp2 + 1);
+            } else {
+                ArrayList<Coordinate> inversePath = new ArrayList<>();
+                inversePath.addAll(coordinates.subList(indexp2, coordinates.size() - 1));
+                inversePath.addAll(coordinates.subList(0, indexp1 + 1));
+                return inversePath;
+            }
         } else {
-            paths.add(coordinates.subList(indexp2, indexp1 + 1));
-            ArrayList<Coordinate> inversePath = new ArrayList<>();
-            inversePath.addAll(coordinates.subList(indexp1, coordinates.size() - 1));
-            inversePath.addAll(coordinates.subList(0, indexp2 + 1));
-            paths.add(inversePath);
+            if(!left) {
+                return coordinates.subList(indexp2, indexp1 + 1);
+            } else {
+                ArrayList<Coordinate> inversePath = new ArrayList<>();
+                inversePath.addAll(coordinates.subList(indexp1, coordinates.size() - 1));
+                inversePath.addAll(coordinates.subList(0, indexp2 + 1));
+                return inversePath;
+            }
         }
+    }
 
+    public List<List<Coordinate>> computeVerticalEdgeDiffraction(Coordinate p1,
+                                                                 Coordinate p2, List<Wall> nearBuildingsWalls, List<PropagationDebugInfo> debugInfo) {
+        List<List<Coordinate>> paths = new ArrayList<>();
+        List<Coordinate> p1leftp2 = computeSideHull(true, p1, p2, nearBuildingsWalls);
+        if(!p1leftp2.isEmpty()) {
+            paths.add(p1leftp2);
+        }
+        List<Coordinate> p1rightp2 = computeSideHull(false, p1, p2, nearBuildingsWalls);
+        if(!p1rightp2.isEmpty()) {
+            paths.add(p1rightp2);
+        }
         return paths;
     }
 
