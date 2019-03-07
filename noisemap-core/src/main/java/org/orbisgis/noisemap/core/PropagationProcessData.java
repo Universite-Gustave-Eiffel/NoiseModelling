@@ -210,9 +210,9 @@ public class PropagationProcessData {
     {
         double sigma = 0;
         if(WallAlpha >= 0 && WallAlpha <= 1) {
-            sigma = 20000 * Math.pow (10., -2 * Math.pow (WallAlpha, 3./5.)) ; // TODO convert G to sigma
-        }else if (WallAlpha >= 200 && WallAlpha <= 20000){
-            sigma = WallAlpha;
+            sigma = 20000 * Math.pow (10., -2 * Math.pow (WallAlpha, 3./5.)) ;
+        } else {
+            sigma = Math.min(20000, Math.max(20, WallAlpha));
         }
         double value = GetWallImpedance(sigma,freq_lvl);
         return value;

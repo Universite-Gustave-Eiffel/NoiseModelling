@@ -27,13 +27,11 @@ import java.util.*;
 
 public class PointNoiseMap_Cnossos_Att extends JdbcNoiseMap {
     private final String receiverTableName;
-    private final String sourcesTableName;
     private Logger logger = LoggerFactory.getLogger(PointNoiseMap_Cnossos_Att.class);
 
     public PointNoiseMap_Cnossos_Att(String buildingsTableName, String sourcesTableName, String receiverTableName) {
         super(buildingsTableName, sourcesTableName);
         this.receiverTableName = receiverTableName;
-        this.sourcesTableName = sourcesTableName;
     }
 
     /**
