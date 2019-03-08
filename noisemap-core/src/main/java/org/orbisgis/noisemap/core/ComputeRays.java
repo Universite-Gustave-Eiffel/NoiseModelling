@@ -345,6 +345,8 @@ public class ComputeRays implements Runnable {
                     propagationPath = propagationPaths.get(0);
                     propagationPath.getPointList().get(propagationPath.getPointList().size() - 1).setType(PropagationPath.PointPath.POINT_TYPE.REFL);
                     propagationPath.getPointList().get(propagationPath.getPointList().size() - 1).setBuildingId(receiverReflection.getBuildingId());
+                    // todo get alpha from building
+                    propagationPath.getPointList().get(propagationPath.getPointList().size() - 1).setAlphaWall(0.1);
                     if (refcount > 1) {
                         propagationPath.getPointList().remove(0);
                     }

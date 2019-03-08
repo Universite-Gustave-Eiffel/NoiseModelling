@@ -83,7 +83,7 @@ public class PropagationPath {
         public Coordinate coordinate; // coordinate (absolute)
         public final double altitude; // altitude of relief (exact)
         public final double gs;       // only if POINT_TYPE = SRCE or RECV, G coefficient right above the point
-        public final double alphaWall; // only if POINT_TYPE = REFL, alpha coefficient
+        public double alphaWall; // only if POINT_TYPE = REFL, alpha coefficient
         public int buildingId; // only if POINT_TYPE = REFL
         public POINT_TYPE type; // type of point
         public enum POINT_TYPE {
@@ -118,6 +118,10 @@ public class PropagationPath {
 
         public void setBuildingId(int buildingId) {
             this.buildingId =  buildingId;
+        }
+
+        public void setAlphaWall(double alphaWall) {
+            this.alphaWall =  alphaWall;
         }
 
         public int getBuildingId() {
