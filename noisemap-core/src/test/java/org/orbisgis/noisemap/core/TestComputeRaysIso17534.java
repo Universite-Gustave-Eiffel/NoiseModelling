@@ -1544,14 +1544,16 @@ public class TestComputeRaysIso17534 {
         List<PropagationDebugInfo> debug = new ArrayList<>();
         computeRays.computeRaysAtPosition(new Coordinate(200, 50, 12), 0, energeticSum, debug);
 
-        String filename = "D:/aumond/Desktop/T18.vtk";
-        String filename2 = "D:/aumond/Desktop/T18.ply";
-        try {
-            writeVTK(filename, propDataOut);
-            writePLY(filename2, mesh);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+
+        PropagationProcessPathData propData = new PropagationProcessPathData();
+        propData.setTemperature(10);
+        propData.setHumidity(70);
+
+        double[] aGlobal = computeWithMeteo(propData, propDataOut, 0.5);
+
+        splCompare(aGlobal, "Test T18", new double[]{-53.05,-53.11,-53.23,-53.4,-53.74,-54.91,-59.39,-75.73}, ERROR_EPSILON_TEST_T);
+
+
 
         assertEquals(true, true);
     }

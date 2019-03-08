@@ -736,7 +736,6 @@ public class FastObstructionTest {
      *
      * @param p1 Start propagation path
      * @param p2 End propagation path
-     * @param nearBuildingsWalls BuildingWalls
      * @param stopOnIntersection Stop if the segment between p1 and p2 intersects with topography or buildings
      * @param path [out] Intersection list with triangle sides.
      * @param includePoints Include p1 and p2 into path output
@@ -931,22 +930,7 @@ public class FastObstructionTest {
             for (int i = 0; i < points.x.length - 1; i++) {
                 if(!(points.x[i] > points.x[i + 1])) {
                     path.add(new LineSegment(new Coordinate(points.x[i], points.y[i]), new Coordinate(points.x[i + 1], points.y[i + 1])));
-                    // FreeField test
-                    TriIdWithIntersection interBegin = interPoints.get(pointsId.get(i));
-                    osCorner = interBegin;
-                    TriIdWithIntersection interEnd = interPoints.get(pointsId.get(i + 1));
-                    if (interBegin.getBuildingId() != interEnd.getBuildingId()) {
-                        Coordinate testPBegin = new Coordinate(interBegin.getCoorIntersection());
-                        Coordinate testPEnd = new Coordinate(interEnd.getCoorIntersection());
-                        // Offset coordinates in order to not be on triangle edge
-                        testPEnd.setOrdinate(Coordinate.Z, points.y[i + 1] + epsilon);
-                        Vector2D vector2D = new Vector2D(testPBegin, testPEnd).normalize();
-                        testPBegin = new Coordinate(testPBegin.x + vector2D.getX() * epsilon, testPBegin.y + vector2D.getY() * epsilon, points.y[i] + epsilon);
-                        testPEnd = new Coordinate(testPEnd.x - vector2D.getX() * epsilon, testPEnd.y - vector2D.getY() * epsilon, points.y[i + 1] + epsilon);
-                        if (!isFreeField(testPBegin, testPEnd)) {
-                            return totData;
-                        }
-                    }
+
                 } else {
                     break;
                 }
