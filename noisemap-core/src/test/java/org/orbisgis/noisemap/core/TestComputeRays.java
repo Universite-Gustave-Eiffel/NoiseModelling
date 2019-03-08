@@ -282,7 +282,7 @@ public class TestComputeRays {
         //LOGGER.info(factory.createLineString(ray.toArray(new Coordinate[ray.size()])).toString());
     }
 
-    @Test
+    //@Test
     public void benchmarkComputeVerticalEdgeDiffraction() throws LayerDelaunayError, ParseException {
         Coordinate[] buildingShell = new Coordinate[]{
                 new Coordinate(1,1),
