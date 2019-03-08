@@ -935,7 +935,7 @@ public class FastObstructionTest {
                     if (interBegin.getBuildingId() != interEnd.getBuildingId()) {
                         Coordinate testPBegin = new Coordinate(interBegin.getCoorIntersection());
                         Coordinate testPEnd = new Coordinate(interEnd.getCoorIntersection());
-                        // Offset coordinates in order to not be on triangle edge
+                        // Offset coordinates in order to not be on triangle edge // todo ICI NICOLAS
                         testPEnd.setOrdinate(Coordinate.Z, points.y[i + 1] + epsilon);
                         Vector2D vector2D = new Vector2D(testPBegin, testPEnd).normalize();
                         testPBegin = new Coordinate(testPBegin.x + vector2D.getX() * epsilon, testPBegin.y + vector2D.getY() * epsilon, points.y[i] + epsilon);
