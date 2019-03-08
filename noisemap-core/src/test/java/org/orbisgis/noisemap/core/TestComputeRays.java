@@ -1,7 +1,9 @@
 package org.orbisgis.noisemap.core;
 
 import org.h2gis.api.EmptyProgressVisitor;
+import org.h2gis.functions.spatial.affine_transformations.ST_Translate;
 import org.h2gis.functions.spatial.volume.GeometryExtrude;
+import org.h2gis.utilities.jts_utils.CoordinateUtils;
 import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.CoordinateSequence;
@@ -12,9 +14,12 @@ import org.locationtech.jts.geom.GeometryCollection;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.geom.util.AffineTransformation;
+import org.locationtech.jts.geom.util.GeometryEditor;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 import org.locationtech.jts.io.WKTWriter;
+import org.locationtech.jts.math.Vector2D;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +31,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.assertEquals;
@@ -226,10 +232,10 @@ public class TestComputeRays {
         Envelope cellEnvelope = new Envelope(new Coordinate(0, 0, 0.), new Coordinate(20, 15, 0.));
         //Create obstruction test object
         MeshBuilder mesh = new MeshBuilder();
-        mesh.addGeometry(wktReader.read("POLYGON((5 6, 6 5, 7 5, 7 8, 6 8, 5 7, 5 6))"));
-        mesh.addGeometry(wktReader.read("POLYGON((9 7, 11 7, 11 11, 9 11, 9 7))"));
-        mesh.addGeometry(wktReader.read("POLYGON((12 8, 13 8, 13 10, 12 10, 12 8))"));
-        mesh.addGeometry(wktReader.read("POLYGON((10 4, 11 4, 11 6, 10 6, 10 4))"));
+        mesh.addGeometry(wktReader.read("POLYGON((5 6, 6 5, 7 5, 7 8, 6 8, 5 7, 5 6))"), 4);
+        mesh.addGeometry(wktReader.read("POLYGON((9 7, 11 7, 11 11, 9 11, 9 7))"), 4);
+        mesh.addGeometry(wktReader.read("POLYGON((12 8, 13 8, 13 10, 12 10, 12 8))"), 4);
+        mesh.addGeometry(wktReader.read("POLYGON((10 4, 11 4, 11 6, 10 6, 10 4))"), 4);
         mesh.finishPolygonFeeding(cellEnvelope);
         //Retrieve Delaunay triangulation of scene
         FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(), mesh.getTriNeighbors(), mesh.getVertices());
@@ -237,8 +243,8 @@ public class TestComputeRays {
         QueryGeometryStructure sourcesIndex = new QueryQuadTree();
         PropagationProcessData processData = new PropagationProcessData(new ArrayList<>(), manager, sourcesIndex, srclst, new ArrayList<>(), new ArrayList<>(), 0, 99, 1000,1000,0,0,new double[0],0,0,new EmptyProgressVisitor(), new ArrayList<>(), true);
         ComputeRays computeRays = new ComputeRays(processData, new ComputeRaysOut());
-        Coordinate p1 = new Coordinate(2, 6.5);
-        Coordinate p2 = new Coordinate(14, 6.5);
+        Coordinate p1 = new Coordinate(2, 6.5, 1.6);
+        Coordinate p2 = new Coordinate(14, 6.5, 1.6);
 
         List<Coordinate> ray = computeRays.computeSideHull(true,p1, p2);
         int i = 0;
@@ -256,8 +262,84 @@ public class TestComputeRays {
         assertEquals(0, new Coordinate(11, 4).distance(ray.get(i++)),0.02);
         assertEquals(0, p2.distance(ray.get(i++)),0.02);
 
+        ray = computeRays.computeSideHull(false,p2, p1);
+        i = 0;
+        assertEquals(0, p2.distance(ray.get(i++)),0.02);
+        assertEquals(0, new Coordinate(13, 10).distance(ray.get(i++)),0.02);
+        assertEquals(0, new Coordinate(11, 11).distance(ray.get(i++)),0.02);
+        assertEquals(0, new Coordinate(9, 11).distance(ray.get(i++)),0.02);
+        assertEquals(0, p1.distance(ray.get(i++)),0.02);
 
-        LOGGER.info(factory.createLineString(ray.toArray(new Coordinate[ray.size()])).toString());
+        ray = computeRays.computeSideHull(true,p2, p1);
+        i = 0;
+        assertEquals(0, p2.distance(ray.get(i++)),0.02);
+        assertEquals(0, new Coordinate(11, 4).distance(ray.get(i++)),0.02);
+        assertEquals(0, new Coordinate(10, 4).distance(ray.get(i++)),0.02);
+        assertEquals(0, new Coordinate(6, 5).distance(ray.get(i++)),0.02);
+        assertEquals(0, p1.distance(ray.get(i++)),0.02);
+
+
+        //LOGGER.info(factory.createLineString(ray.toArray(new Coordinate[ray.size()])).toString());
+    }
+
+    @Test
+    public void benchmarkComputeVerticalEdgeDiffraction() throws LayerDelaunayError, ParseException {
+        Coordinate[] buildingShell = new Coordinate[]{
+                new Coordinate(1,1),
+                new Coordinate(2,0),
+                new Coordinate(1,-1),
+                new Coordinate(-1,-1),
+                new Coordinate(-2,0),
+                new Coordinate(-1,1),
+                new Coordinate(1,1)};
+        int nbCols = 20;
+        int nbRows = 20;
+        int xSpace = 4;
+        int ySpace = 4;
+        int yOffset = 2;
+        // Generate buildings procedurally
+        GeometryFactory factory = new GeometryFactory();
+        Polygon building = factory.createPolygon(buildingShell);
+        Envelope envelope = new Envelope(building.getEnvelopeInternal());
+        MeshBuilder mesh = new MeshBuilder();
+        for(int xStep = 0; xStep < nbCols; xStep++) {
+            for(int yStep=0; yStep < nbRows; yStep++) {
+                int offset = xStep % 2 == 0 ? 0 : yOffset;
+                Geometry translatedGeom = AffineTransformation.translationInstance(xStep * xSpace, yStep * ySpace + offset).transform(building);
+                mesh.addGeometry(translatedGeom, 4);
+                envelope.expandToInclude(translatedGeom.getEnvelopeInternal());
+            }
+        }
+        envelope.expandBy(10);
+        mesh.finishPolygonFeeding(envelope);
+
+        //Retrieve Delaunay triangulation of scene
+        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(), mesh.getTriNeighbors(), mesh.getVertices());
+
+        QueryGeometryStructure sourcesIndex = new QueryQuadTree();
+        PropagationProcessData processData = new PropagationProcessData(new ArrayList<>(), manager, sourcesIndex, new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), 0, 99, 1000,1000,0,0,new double[0],0,0,new EmptyProgressVisitor(), new ArrayList<>(), true);
+        ComputeRays computeRays = new ComputeRays(processData, new ComputeRaysOut());
+
+        Vector2D pRef = new Vector2D(1,2);
+        Random r = new Random(0);
+        int nbHull = 300;
+        long start = System.currentTimeMillis();
+        for(int i=0; i < nbHull; i++) {
+            int xStep = r.nextInt(nbCols);
+            int offset = xStep % 2 == 0 ? 0 : yOffset;
+            Coordinate p1 = pRef.translate(new Coordinate(xStep*xSpace,r.nextInt(nbRows)*ySpace + offset));
+            xStep = r.nextInt(nbCols);
+            offset = xStep % 2 == 0 ? 0 : yOffset;
+            Coordinate p2 = pRef.translate(new Coordinate(xStep*xSpace,r.nextInt(nbRows)*ySpace + offset));
+            p1.setOrdinate(2, 1.6);
+            p2.setOrdinate(2, 1.6);
+
+            List<Coordinate> h1 = computeRays.computeSideHull(true,p1, p2);
+            List<Coordinate> h2 = computeRays.computeSideHull(false,p1, p2);
+
+        }
+        long timeLen = System.currentTimeMillis() - start;
+        LOGGER.info(String.format("Benchmark done in %d millis. %d millis by hull", timeLen, timeLen / nbHull));
     }
 
     private void writeVTK(String filename, ComputeRaysOut propDataOut) throws IOException {

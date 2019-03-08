@@ -622,62 +622,84 @@ public class ComputeRays implements Runnable {
      * @return
      */
     public List<Coordinate> computeSideHull(boolean left, Coordinate p1, Coordinate p2) {
+        if(p1.equals(p2)) {
+            return new ArrayList<>();
+        }
 
         final LineSegment receiverSrc = new LineSegment(p1, p2);
-        HashSet<Integer> buildingsOnPath2 = new HashSet<>();
         // Intersection test cache
         Set<LineSegment> freeFieldSegments = new HashSet<>();
         GeometryFactory geometryFactory = new GeometryFactory();
 
-        List<Coordinate> coordinates = new ArrayList<>();
+        List<Coordinate> input = new ArrayList<>();
+
+        Coordinate[] coordinates = new Coordinate[0];
         int indexp1 = 0;
         int indexp2 = 0;
 
         boolean convexHullIntersects = true;
-        HashSet<Integer> buildingsOnPath = getBuildingsOnPath(p1, p2);
+        HashSet<Integer> buildingsOnPath = new HashSet<>();
 
-        while (convexHullIntersects) {
-            Geometry[] geometries = new Geometry[buildingsOnPath.size() + 2];
-            int k = 0;
-            for (int i : buildingsOnPath) {
-                List<Coordinate> buildPolygon = data.freeFieldFinder.getWideAnglePointsByBuilding(i, Math.PI * (1 + 1 / 16.0), Math.PI * (2 - (1 / 16.)));
-                geometries[k++] = geometryFactory.createPolygon((Coordinate[]) buildPolygon.toArray(new Coordinate[]{}));
+        input.add(p1);
+        input.add(p2);
+
+        for(int i : getBuildingsOnPath(p1, p2)) {
+            if(!buildingsOnPath.contains(i)) {
+                input.addAll(data.freeFieldFinder.getWideAnglePointsByBuilding(i, Math.PI * (1 + 1 / 16.0), Math.PI * (2 - (1 / 16.))));
+                buildingsOnPath.add(i);
             }
-
-            geometries[k++] = geometryFactory.createPoint(p1);
-            geometries[k++] = geometryFactory.createPoint(p2);
-            Geometry convexhull = geometryFactory.createGeometryCollection(geometries).convexHull();
+        }
+        int k;
+        while (convexHullIntersects) {
+            ConvexHull convexHull = new ConvexHull(input.toArray(new Coordinate[input.size()]), geometryFactory);
+            Geometry convexhull = convexHull.getConvexHull();
 
             if(convexhull.getLength() / p1.distance(p2) > MAX_RATIO_HULL_DIRECT_PATH) {
                 return new ArrayList<>();
             }
 
             convexHullIntersects = false;
-            buildingsOnPath2.clear();
-            coordinates = Arrays.asList(convexhull.getCoordinates());
+            coordinates = convexhull.getCoordinates();
 
-
+            for (int i=0; i < coordinates.length - 1; i++) {
+                if (coordinates[i].equals(p1)) {
+                    indexp1 = i;
+                }
+            }
+            // Transform array to set p1 at index=0
+            Coordinate[] coordinatesShifted = new Coordinate[coordinates.length];
+            // Copy from P1 to end in beginning of new array
+            int len = (coordinates.length - 1) - indexp1;
+            System.arraycopy(coordinates, indexp1, coordinatesShifted, 0, len);
+            // Copy from 0 to P1 in the end of array
+            System.arraycopy(coordinates, 0, coordinatesShifted, len, coordinates.length - len - 1);
+            coordinatesShifted[coordinatesShifted.length - 1] = coordinatesShifted[0];
+            coordinates = coordinatesShifted;
+            indexp1 = 0;
             k = 0;
             for (Coordinate c : coordinates) {
-                if (c.equals(p1)) {
-                    indexp1 = k;
-                }
                 if (c.equals(p2)) {
                     indexp2 = k;
                 }
                 k++;
             }
 
-            for (k = 0; k < coordinates.size() - 1; k++) {
-                coordinates.get(k).setCoordinate(getProjectedZCoordinate(coordinates.get(k), receiverSrc));
-                LineSegment freeFieldTestSegment = new LineSegment(coordinates.get(k), coordinates.get(k + 1));
-
+            for (k = 1; k < coordinates.length - 1; k++) {
+                coordinates[k].setCoordinate(getProjectedZCoordinate(coordinates[k], receiverSrc));
+            }
+            for (k = 0; k < coordinates.length - 1; k++) {
+                LineSegment freeFieldTestSegment = new LineSegment(coordinates[k], coordinates[k + 1]);
                 // Ignore intersection if iterating over other side (not parts of what is returned)
                 if(((left && k >= indexp1 && k < indexp2) || (!left && (k < indexp1 || k >= indexp2)))) {
                     if(!freeFieldSegments.contains(freeFieldTestSegment)) {
-                        buildingsOnPath2 = getBuildingsOnPath(coordinates.get(k), coordinates.get(k + 1));
+                        HashSet<Integer> buildingsOnPath2 = getBuildingsOnPath(coordinates[k], coordinates[k + 1]);
                         if (!buildingsOnPath2.isEmpty()) {
-                            buildingsOnPath.addAll(buildingsOnPath2);
+                            for(int i : buildingsOnPath2) {
+                                if(!buildingsOnPath.contains(i)) {
+                                    input.addAll(data.freeFieldFinder.getWideAnglePointsByBuilding(i, Math.PI * (1 + 1 / 16.0), Math.PI * (2 - (1 / 16.))));
+                                    buildingsOnPath.add(i);
+                                }
+                            }
                             convexHullIntersects = true;
                             break;
                         } else {
@@ -686,28 +708,26 @@ public class ComputeRays implements Runnable {
                     }
                 }
             }
-            coordinates.get(coordinates.size() - 1).setCoordinate(getProjectedZCoordinate(coordinates.get(coordinates.size() - 1), receiverSrc));
         }
-
         if (indexp1 < indexp2) {
             if(left) {
-                return coordinates.subList(indexp1, indexp2 + 1);
+                return Arrays.asList(Arrays.copyOfRange(coordinates,indexp1, indexp2 + 1));
             } else {
                 ArrayList<Coordinate> inversePath = new ArrayList<>();
-                inversePath.addAll(coordinates.subList(indexp2, coordinates.size() - 1));
-                inversePath.addAll(coordinates.subList(0, indexp1 + 1));
+                inversePath.addAll(Arrays.asList(Arrays.copyOfRange(coordinates,indexp2, coordinates.length - 1)));
+                inversePath.addAll(Arrays.asList(Arrays.copyOfRange(coordinates,0, indexp1 + 1)));
                 Collections.reverse(inversePath);
                 return inversePath;
             }
         } else {
             if(!left) {
-                List<Coordinate> inversePath = coordinates.subList(indexp2, indexp1 + 1);
+                List<Coordinate> inversePath = Arrays.asList(Arrays.copyOfRange(coordinates,indexp2, indexp1 + 1));
                 Collections.reverse(inversePath);
                 return inversePath;
             } else {
                 ArrayList<Coordinate> inversePath = new ArrayList<>();
-                inversePath.addAll(coordinates.subList(indexp1, coordinates.size() - 1));
-                inversePath.addAll(coordinates.subList(0, indexp2 + 1));
+                inversePath.addAll(Arrays.asList(Arrays.copyOfRange(coordinates,indexp1, coordinates.length - 1)));
+                inversePath.addAll(Arrays.asList(Arrays.copyOfRange(coordinates,0, indexp2 + 1)));
                 return inversePath;
             }
         }
