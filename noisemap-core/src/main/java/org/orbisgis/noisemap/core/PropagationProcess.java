@@ -1200,7 +1200,7 @@ public class PropagationProcess implements Runnable {
                 somethingHideReceiver = !data.freeFieldFinder.isFreeField(receiverCoord, srcCoord);
             } else {
                 List<TriIdWithIntersection> propagationPath = new ArrayList<>();
-                if (!data.freeFieldFinder.computePropagationPaths(receiverCoord, srcCoord, nearBuildingsWalls, false, propagationPath, false)) {
+                if (!data.freeFieldFinder.computePropagationPaths(receiverCoord, srcCoord, false, propagationPath, false)) {
                     // Propagation path not found, there is not direct field
                     somethingHideReceiver = true;
                 } else {

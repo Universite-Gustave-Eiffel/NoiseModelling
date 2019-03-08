@@ -43,12 +43,10 @@ import java.util.List;
 
 public class EvaluateAttenuationCnossos {
     private final static double ONETHIRD = 1. / 3.;
-    private PropagationProcessPathData data;
-    private PropagationPath propagationPath;
     private int nbfreq;
-    private double[] alpha_atmo;
     private double[] freq_lambda;
     private double[] aGlobal;
+    boolean gToSigma = false; // Todo publish parameter issue #13
 
     public static double dbaToW(double dBA) {
         return Math.pow(10., dBA / 10.);
@@ -188,9 +186,8 @@ public class EvaluateAttenuationCnossos {
         double[] aRef = new double[data.freq_lvl.size()];
         for (int idf = 0; idf < nbfreq; idf++) {
             for (int idRef = 0; idRef < path.refPoints.size(); idRef++) {
-                //double alpha = path.getPointList().get(path.refPoints.get(idRef)).alphaWall;
-                double alpha = 0.1; // todo uncomment for alpha
-                if (alpha > 1){    // TODO Add if sigma = true also compute, issue #13
+                double alpha = path.getPointList().get(path.refPoints.get(idRef)).alphaWall;
+                if (gToSigma || alpha > 1){
                     PropagationProcessData.getWallAlpha(alpha, data.freq_lvl.get(idf));
                 }
                 aRef[idf] += - 10 * Math.log10(alpha);
@@ -325,7 +322,7 @@ public class EvaluateAttenuationCnossos {
         path.initPropagationPath();
 
         // init atmosphere
-        alpha_atmo = data.getAlpha_atmo();
+        double[] alpha_atmo = data.getAlpha_atmo();
 
         double aDiv;
         // divergence
