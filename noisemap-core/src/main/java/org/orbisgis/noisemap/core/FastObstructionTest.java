@@ -499,6 +499,9 @@ public class FastObstructionTest {
      * @return List of corners within parameters range
      */
     public List<Coordinate> getWideAnglePointsByBuilding(int build, double minAngle, double maxAngle) {
+        if(verticesOpenAngleTranslated == null) {
+            getWideAnglePoints(minAngle, maxAngle);
+        }
 
         HashSet<Integer> triVerticesBuilding = new HashSet<>();
         for (Triangle tri : this.triVertices) {
@@ -739,7 +742,7 @@ public class FastObstructionTest {
      * @param includePoints Include p1 and p2 into path output
      * @return True if the propagation goes from p1 to p2.
      */
-    public boolean computePropagationPaths(Coordinate p1, Coordinate p2, List<FastObstructionTest.Wall> nearBuildingsWalls, boolean stopOnIntersection, List<TriIdWithIntersection> path, boolean includePoints) {
+    public boolean computePropagationPaths(Coordinate p1, Coordinate p2, boolean stopOnIntersection, List<TriIdWithIntersection> path, boolean includePoints) {
         nbObstructionTest++;
         LineSegment propaLine = new LineSegment(p1, p2);
 

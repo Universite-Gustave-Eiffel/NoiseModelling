@@ -35,7 +35,6 @@ public class PTGridTest {
         connection = SFSUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(PTGridTest.class.getSimpleName() + UUID.randomUUID(), false, "MV_STORE=FALSE"));
         org.h2gis.functions.factory.H2GISFunctions.load(connection);
         H2GISFunctions.registerFunction(connection.createStatement(), new BR_PtGrid3D(), "");
-        H2GISFunctions.registerFunction(connection.createStatement(), new BR_PtGrid3D_Att_f(), "");
         H2GISFunctions.registerFunction(connection.createStatement(), new CNOSSOS_Att(), "");
         H2GISFunctions.registerFunction(connection.createStatement(), new BR_PtGrid(), "");
         H2GISFunctions.registerFunction(connection.createStatement(), new BR_SpectrumRepartition(), "");
