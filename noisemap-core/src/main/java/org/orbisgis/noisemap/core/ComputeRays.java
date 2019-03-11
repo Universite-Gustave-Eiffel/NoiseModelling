@@ -711,27 +711,15 @@ public class ComputeRays implements Runnable {
                 }
             }
         }
-        if (indexp1 < indexp2) {
-            if(left) {
-                return Arrays.asList(Arrays.copyOfRange(coordinates,indexp1, indexp2 + 1));
-            } else {
-                ArrayList<Coordinate> inversePath = new ArrayList<>();
-                inversePath.addAll(Arrays.asList(Arrays.copyOfRange(coordinates,indexp2, coordinates.length - 1)));
-                inversePath.addAll(Arrays.asList(Arrays.copyOfRange(coordinates,0, indexp1 + 1)));
-                Collections.reverse(inversePath);
-                return inversePath;
-            }
+
+        if(left) {
+            return Arrays.asList(Arrays.copyOfRange(coordinates,indexp1, indexp2 + 1));
         } else {
-            if(!left) {
-                List<Coordinate> inversePath = Arrays.asList(Arrays.copyOfRange(coordinates,indexp2, indexp1 + 1));
-                Collections.reverse(inversePath);
-                return inversePath;
-            } else {
-                ArrayList<Coordinate> inversePath = new ArrayList<>();
-                inversePath.addAll(Arrays.asList(Arrays.copyOfRange(coordinates,indexp1, coordinates.length - 1)));
-                inversePath.addAll(Arrays.asList(Arrays.copyOfRange(coordinates,0, indexp2 + 1)));
-                return inversePath;
-            }
+            ArrayList<Coordinate> inversePath = new ArrayList<>();
+            inversePath.addAll(Arrays.asList(Arrays.copyOfRange(coordinates,indexp2, coordinates.length - 1)));
+            inversePath.addAll(Arrays.asList(Arrays.copyOfRange(coordinates,0, indexp1 + 1)));
+            Collections.reverse(inversePath);
+            return inversePath;
         }
     }
 
