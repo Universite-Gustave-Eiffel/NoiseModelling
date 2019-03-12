@@ -35,6 +35,7 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 
 public class TestComputeRays {
@@ -282,6 +283,43 @@ public class TestComputeRays {
         //LOGGER.info(factory.createLineString(ray.toArray(new Coordinate[ray.size()])).toString());
     }
 
+    /**
+     * Test vertical edge diffraction ray computation with receiver in concave building
+     * @throws LayerDelaunayError
+     * @throws ParseException
+     */
+    @Test
+    public void TestConcaveVerticalEdgeDiffraction() throws LayerDelaunayError, ParseException {
+        GeometryFactory factory = new GeometryFactory();
+        WKTReader wktReader = new WKTReader(factory);
+        List<Geometry> srclst = new ArrayList<Geometry>();
+        //Scene dimension
+        Envelope cellEnvelope = new Envelope(new Coordinate(0, 0, 0.), new Coordinate(20, 15, 0.));
+        //Create obstruction test object
+        MeshBuilder mesh = new MeshBuilder();
+        mesh.addGeometry(wktReader.read("POLYGON((5 6, 4 5, 7 5, 7 8, 4 8, 5 7, 5 6))"), 4);
+        mesh.addGeometry(wktReader.read("POLYGON((9 7, 11 7, 11 11, 9 11, 9 7))"), 4);
+        mesh.addGeometry(wktReader.read("POLYGON((12 8, 13 8, 13 10, 12 10, 12 8))"), 4);
+        mesh.addGeometry(wktReader.read("POLYGON((10 4, 11 4, 11 6, 10 6, 10 4))"), 4);
+        mesh.finishPolygonFeeding(cellEnvelope);
+        //Retrieve Delaunay triangulation of scene
+        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(), mesh.getTriNeighbors(), mesh.getVertices());
+
+        QueryGeometryStructure sourcesIndex = new QueryQuadTree();
+        PropagationProcessData processData = new PropagationProcessData(new ArrayList<>(), manager, sourcesIndex, srclst, new ArrayList<>(), new ArrayList<>(), 0, 99, 1000,1000,0,0,new double[0],0,0,new EmptyProgressVisitor(), new ArrayList<>(), true);
+        ComputeRays computeRays = new ComputeRays(processData, new ComputeRaysOut());
+        Coordinate p1 = new Coordinate(4.5, 6.5, 1.6);
+        Coordinate p2 = new Coordinate(14, 6.5, 1.6);
+
+        List<Coordinate> ray = computeRays.computeSideHull(true,p1, p2);
+        assertTrue(ray.isEmpty());
+        ray = computeRays.computeSideHull(false,p1, p2);
+        assertTrue(ray.isEmpty());
+        ray = computeRays.computeSideHull(false,p2, p1);
+        assertTrue(ray.isEmpty());
+        ray = computeRays.computeSideHull(true,p2, p1);
+        assertTrue(ray.isEmpty());
+    }
     //@Test
     public void benchmarkComputeVerticalEdgeDiffraction() throws LayerDelaunayError, ParseException {
         Coordinate[] buildingShell = new Coordinate[]{

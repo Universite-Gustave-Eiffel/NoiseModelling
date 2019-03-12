@@ -262,7 +262,6 @@ public class ComputeRays implements Runnable {
 
             imageReceiver++;
             boolean validReflection = false;
-            double reflectionAlpha = 1;
             MirrorReceiverResult receiverReflectionCursor = receiverReflection;
             // Test whether intersection point is on the wall
             // segment or not
@@ -345,8 +344,8 @@ public class ComputeRays implements Runnable {
                     propagationPath = propagationPaths.get(0);
                     propagationPath.getPointList().get(propagationPath.getPointList().size() - 1).setType(PropagationPath.PointPath.POINT_TYPE.REFL);
                     propagationPath.getPointList().get(propagationPath.getPointList().size() - 1).setBuildingId(receiverReflection.getBuildingId());
-                    // todo get alpha from building
-                    propagationPath.getPointList().get(propagationPath.getPointList().size() - 1).setAlphaWall(0.1);
+
+                    propagationPath.getPointList().get(propagationPath.getPointList().size() - 1).setAlphaWall(data.freeFieldFinder.getBuildingAlpha(receiverReflection.getBuildingId()));
                     if (refcount > 1) {
                         propagationPath.getPointList().remove(0);
                     }
@@ -663,10 +662,16 @@ public class ComputeRays implements Runnable {
             convexHullIntersects = false;
             coordinates = convexhull.getCoordinates();
 
+            indexp1 = -1;
             for (int i=0; i < coordinates.length - 1; i++) {
                 if (coordinates[i].equals(p1)) {
                     indexp1 = i;
                 }
+            }
+            if(indexp1 == -1) {
+                // P1 does not belong to convex vertices, cannot compute diffraction
+                // TODO handle concave path
+                return new ArrayList<>();
             }
             // Transform array to set p1 at index=0
             Coordinate[] coordinatesShifted = new Coordinate[coordinates.length];
@@ -678,14 +683,17 @@ public class ComputeRays implements Runnable {
             coordinatesShifted[coordinatesShifted.length - 1] = coordinatesShifted[0];
             coordinates = coordinatesShifted;
             indexp1 = 0;
-            k = 0;
-            for (Coordinate c : coordinates) {
-                if (c.equals(p2)) {
-                    indexp2 = k;
+            indexp2 = -1;
+            for (int i=1; i < coordinates.length - 1; i++) {
+                if (coordinates[i].equals(p2)) {
+                    indexp2 = i;
                 }
-                k++;
             }
-
+            if(indexp2 == -1) {
+                // P2 does not belong to convex vertices, cannot compute diffraction
+                // TODO handle concave path
+                return new ArrayList<>();
+            }
             for (k = 1; k < coordinates.length - 1; k++) {
                 coordinates[k].setCoordinate(getProjectedZCoordinate(coordinates[k], receiverSrc));
             }
@@ -698,7 +706,11 @@ public class ComputeRays implements Runnable {
                         if (!buildingsOnPath2.isEmpty()) {
                             for(int i : buildingsOnPath2) {
                                 if(!buildingsOnPath.contains(i)) {
-                                    input.addAll(data.freeFieldFinder.getWideAnglePointsByBuilding(i, Math.PI * (1 + 1 / 16.0), Math.PI * (2 - (1 / 16.))));
+                                    List<Coordinate> newCoords = data.freeFieldFinder.getWideAnglePointsByBuilding(i, Math.PI * (1 + 1 / 16.0), Math.PI * (2 - (1 / 16.)));
+                                    for(Coordinate coord : newCoords) {
+                                        coord.setCoordinate(getProjectedZCoordinate(coord, receiverSrc));
+                                    }
+                                    input.addAll(newCoords);
                                     buildingsOnPath.add(i);
                                 }
                             }
@@ -860,68 +872,63 @@ public class ComputeRays implements Runnable {
             PropagationPath propagationPath2 = new PropagationPath();
 
             // Left hand
-            List<List<Coordinate>> diffractedPaths = computeVerticalEdgeDiffraction(srcCoord, receiverCoord, debugInfo);
-            List<Coordinate> coordinates = diffractedPaths.get(0);
-            boolean convexhullValid = true;
-            if (coordinates.get(0) == coordinates.get(coordinates.size() - 1)) {
-                convexhullValid = false;
-            }
 
-            if (coordinates.size() > 2 && coordinates.size() <= data.diffractionOrder + 2 && convexhullValid) {
+            //List<List<Coordinate>> diffractedPaths = computeVerticalEdgeDiffraction(srcCoord, receiverCoord, debugInfo);
+            List<Coordinate> coordinates = computeSideHull(true, srcCoord, receiverCoord);
+            if(!coordinates.isEmpty()) {
 
-                // if (coordinates.size()>2 && coordinates.size() <= data.diffractionOrder+2 && convexhullValid) {
+                if (coordinates.size() > 2 && coordinates.size() <= data.diffractionOrder + 2) {
 
-                Coordinate bufferedCoordinate;
-                bufferedCoordinate = addBuffer(coordinates.get(1), coordinates.get(0), true);
-                propagationPath = computeFreefield(bufferedCoordinate, coordinates.get(0), debugInfo);
-                propagationPath.getPointList().get(1).setType(PropagationPath.PointPath.POINT_TYPE.DIFV);
+                    // if (coordinates.size()>2 && coordinates.size() <= data.diffractionOrder+2 && convexhullValid) {
 
-                propagationPath2 = propagationPath;
-                int j;
-                for (j = 1; j < coordinates.size() - 2; j++) {
-                    bufferedCoordinate = addBuffer(coordinates.get(j + 1), coordinates.get(j), true);
-                    propagationPath = computeFreefield(bufferedCoordinate, coordinates.get(j), debugInfo);
+                    Coordinate bufferedCoordinate;
+                    bufferedCoordinate = addBuffer(coordinates.get(1), coordinates.get(0), true);
+                    propagationPath = computeFreefield(bufferedCoordinate, coordinates.get(0), debugInfo);
                     propagationPath.getPointList().get(1).setType(PropagationPath.PointPath.POINT_TYPE.DIFV);
+
+                    propagationPath2 = propagationPath;
+                    int j;
+                    for (j = 1; j < coordinates.size() - 2; j++) {
+                        bufferedCoordinate = addBuffer(coordinates.get(j + 1), coordinates.get(j), true);
+                        propagationPath = computeFreefield(bufferedCoordinate, coordinates.get(j), debugInfo);
+                        propagationPath.getPointList().get(1).setType(PropagationPath.PointPath.POINT_TYPE.DIFV);
+                        propagationPath2.getPointList().add(propagationPath.getPointList().get(1));
+                        propagationPath2.getSegmentList().addAll(propagationPath.getSegmentList());
+                    }
+                    bufferedCoordinate = addBuffer(coordinates.get(j), coordinates.get(j + 1), true);
+                    propagationPath = computeFreefield(coordinates.get(j + 1), bufferedCoordinate, debugInfo);
                     propagationPath2.getPointList().add(propagationPath.getPointList().get(1));
                     propagationPath2.getSegmentList().addAll(propagationPath.getSegmentList());
+                    propagationPaths.add(propagationPath2);
                 }
-                bufferedCoordinate = addBuffer(coordinates.get(j), coordinates.get(j + 1), true);
-                propagationPath = computeFreefield(coordinates.get(j + 1), bufferedCoordinate, debugInfo);
-                propagationPath2.getPointList().add(propagationPath.getPointList().get(1));
-                propagationPath2.getSegmentList().addAll(propagationPath.getSegmentList());
-                propagationPaths.add(propagationPath2);
             }
-
 
             // Right hand
-            coordinates = diffractedPaths.get(1);
-            if (coordinates.get(0) == coordinates.get(coordinates.size() - 1)) {
-                convexhullValid = false;
-            }
-            //if (coordinates.size()>2  && convexhullValid) {
-            if (coordinates.size() > 2 && coordinates.size() <= data.diffractionOrder + 2 && convexhullValid) {
-                Collections.reverse(coordinates);
-                Coordinate bufferedCoordinate;
-                bufferedCoordinate = addBuffer(coordinates.get(1), coordinates.get(0), true);
-                propagationPath = computeFreefield(bufferedCoordinate, coordinates.get(0), debugInfo);
-                propagationPath.getPointList().get(1).setType(PropagationPath.PointPath.POINT_TYPE.DIFV);
-                propagationPath2 = propagationPath;
-                int j;
-                for (j = 1; j < coordinates.size() - 2; j++) {
-                    bufferedCoordinate = addBuffer(coordinates.get(j + 1), coordinates.get(j), true);
-                    propagationPath = computeFreefield(bufferedCoordinate, coordinates.get(j), debugInfo);
+            coordinates = computeSideHull(false, srcCoord, receiverCoord);
+            if(!coordinates.isEmpty()) {
+                if (coordinates.size() > 2 && coordinates.size() <= data.diffractionOrder + 2) {
+                    Collections.reverse(coordinates);
+                    Coordinate bufferedCoordinate;
+                    bufferedCoordinate = addBuffer(coordinates.get(1), coordinates.get(0), true);
+                    propagationPath = computeFreefield(bufferedCoordinate, coordinates.get(0), debugInfo);
                     propagationPath.getPointList().get(1).setType(PropagationPath.PointPath.POINT_TYPE.DIFV);
+                    propagationPath2 = propagationPath;
+                    int j;
+                    for (j = 1; j < coordinates.size() - 2; j++) {
+                        bufferedCoordinate = addBuffer(coordinates.get(j + 1), coordinates.get(j), true);
+                        propagationPath = computeFreefield(bufferedCoordinate, coordinates.get(j), debugInfo);
+                        propagationPath.getPointList().get(1).setType(PropagationPath.PointPath.POINT_TYPE.DIFV);
+                        propagationPath2.getPointList().add(propagationPath.getPointList().get(1));
+                        propagationPath2.getSegmentList().addAll(propagationPath.getSegmentList());
+                    }
+                    bufferedCoordinate = addBuffer(coordinates.get(j), coordinates.get(j + 1), true);
+                    propagationPath = computeFreefield(coordinates.get(j + 1), bufferedCoordinate, debugInfo);
                     propagationPath2.getPointList().add(propagationPath.getPointList().get(1));
                     propagationPath2.getSegmentList().addAll(propagationPath.getSegmentList());
+                    propagationPaths.add(propagationPath2);
+
                 }
-                bufferedCoordinate = addBuffer(coordinates.get(j), coordinates.get(j + 1), true);
-                propagationPath = computeFreefield(coordinates.get(j + 1), bufferedCoordinate, debugInfo);
-                propagationPath2.getPointList().add(propagationPath.getPointList().get(1));
-                propagationPath2.getSegmentList().addAll(propagationPath.getSegmentList());
-                propagationPaths.add(propagationPath2);
-
             }
-
         }
         return propagationPaths;
     }

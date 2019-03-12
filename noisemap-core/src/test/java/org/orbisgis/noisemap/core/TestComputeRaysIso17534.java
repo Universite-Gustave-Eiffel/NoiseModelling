@@ -928,8 +928,8 @@ public class TestComputeRaysIso17534 {
         double energeticSum[] = new double[freqLvl.size()];
         List<PropagationDebugInfo> debug = new ArrayList<>();
         computeRays.computeRaysAtPosition(new Coordinate(70, 10, 15), 0, energeticSum, debug);
-        String filename = "D:/aumond/Desktop/T11.vtk";
-        String filename2 = "D:/aumond/Desktop/T11.ply";
+        String filename = "target/T11.vtk";
+        String filename2 = "target/T11.ply";
         try {
             writeVTK(filename, propDataOut);
             writePLY(filename2, mesh);
