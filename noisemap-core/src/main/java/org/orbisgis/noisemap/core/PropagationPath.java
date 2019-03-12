@@ -518,7 +518,14 @@ public class PropagationPath {
             if (pointList.get(idPoint).type==PointPath.POINT_TYPE.REFL)
             {
                 refPoints.add(idPoint);
+
+
             }
+
+
+
+
+
 
         }
 
