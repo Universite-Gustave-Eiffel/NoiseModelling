@@ -426,7 +426,7 @@ public class TestComputeRays {
                 new Vector3D(9, 9, 4),
                 new Vector3D(9, 7, 4)};
 
-        Coordinate s = new Coordinate(4, 3, 3.1);
+        Coordinate s = new Coordinate(4, 3, 3);
 
         Coordinate r = new Coordinate(13,10,6.7);
 
@@ -446,19 +446,25 @@ public class TestComputeRays {
                     // Interpolate vector
                     Vector3D i = plane.intersection(new Line(buildingA[idp-1],buildingA[idp],FastObstructionTest.epsilon));
                     Vector3D ip = transform(plane, i);
-                    polyCut.add(new Coordinate(ip.getX(), ip.getY(), ip.getZ()));
+                    polyCut.add(new Coordinate(ip.getX(), ip.getY(), 0));
                 }
                 polyCut.add(new Coordinate(v0.getX(), v0.getY(), v0.getZ()));
-            } if (lastV != null && lastV.getZ() >= 0) {
+            } else if (lastV != null && lastV.getZ() >= 0) {
                 // Interpolate vector
                 Vector3D i = plane.intersection(new Line(buildingA[idp-1],buildingA[idp],FastObstructionTest.epsilon));
                 Vector3D ip = transform(plane, i);
-                polyCut.add(new Coordinate(ip.getX(), ip.getY(), ip.getZ()));
+                polyCut.add(new Coordinate(ip.getX(), ip.getY(), 0));
             }
             lastV = v0;
         }
         //projPoly[buildingA.length - 1] = projPoly[0];
         Polygon poly = geometryFactory.createPolygon(projPoly);
+        // Reproj to domain
+        for(int i=0; i < polyCut.size(); i++) {
+            Vector3D pointOnPlane = plane.toSpace(new org.apache.commons.math3.geometry.euclidean.twod.Vector2D(polyCut.get(i).x, polyCut.get(i).y));
+            pointOnPlane = pointOnPlane.add(plane.getNormal().scalarMultiply(polyCut.get(i).z));
+            polyCut.set(i, new Coordinate(pointOnPlane.getX(), pointOnPlane.getY(), pointOnPlane.getZ()));
+        }
         Polygon poly2 = geometryFactory.createPolygon(polyCut.toArray(new Coordinate[polyCut.size()]));
         LOGGER.info(String.format("Building \n%s", wktWriter.write(poly)));
         LOGGER.info(String.format("Building cut \n%s", wktWriter.write(poly2)));
