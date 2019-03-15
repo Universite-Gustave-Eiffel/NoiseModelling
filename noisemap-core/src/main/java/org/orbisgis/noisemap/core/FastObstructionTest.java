@@ -500,6 +500,7 @@ public class FastObstructionTest {
     }
 
     /**
+     * Return wall corners with an offset offward the building volume
      * @param minAngle Minimum angle [0-2Pi]
      * @param maxAngle Maximum angle [0-2Pi]
      * @return List of corners within parameters range
@@ -533,7 +534,8 @@ public class FastObstructionTest {
                 double midAngleFromZero = Angle.angle(ring[i], ring[i1]) + midAngle;
                 Coordinate offsetPt = new Coordinate(
                         ring[i].x + Math.cos(midAngleFromZero) * wideAngleTranslationEpsilon,
-                        ring[i].y + Math.sin(midAngleFromZero) * wideAngleTranslationEpsilon);
+                        ring[i].y + Math.sin(midAngleFromZero) * wideAngleTranslationEpsilon,
+                        getBuildingRoofZ(build) + wideAngleTranslationEpsilon);
                 verticesBuilding.add(offsetPt);
             }
         }

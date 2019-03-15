@@ -694,10 +694,6 @@ public class ComputeRays implements Runnable {
         for(int i : getBuildingsOnPath(p1, p2)) {
             if(!buildingsOnPath.contains(i)) {
                 List<Coordinate> roofPoints = data.freeFieldFinder.getWideAnglePointsByBuilding(i, Math.PI * (1 + 1 / 16.0), Math.PI * (2 - (1 / 16.)));
-                double z = data.freeFieldFinder.getBuildingRoofZ(i);
-                for(Coordinate coord : roofPoints) {
-                    coord.setCoordinate(new Coordinate(coord.x, coord.y, z));
-                }
                 input.addAll(cutRoofPointsWithPlane(cutPlane, roofPoints));
                 buildingsOnPath.add(i);
             }
@@ -756,10 +752,6 @@ public class ComputeRays implements Runnable {
                             for(int i : buildingsOnPath2) {
                                 if(!buildingsOnPath.contains(i)) {
                                     List<Coordinate> roofPoints = data.freeFieldFinder.getWideAnglePointsByBuilding(i, Math.PI * (1 + 1 / 16.0), Math.PI * (2 - (1 / 16.)));
-                                    double z = data.freeFieldFinder.getBuildingRoofZ(i);
-                                    for(Coordinate coord : roofPoints) {
-                                        coord.setCoordinate(new Coordinate(coord.x, coord.y, z));
-                                    }
                                     roofPoints = cutRoofPointsWithPlane(cutPlane, roofPoints);
                                     if(!roofPoints.isEmpty()) {
                                         convexHullIntersects = true;

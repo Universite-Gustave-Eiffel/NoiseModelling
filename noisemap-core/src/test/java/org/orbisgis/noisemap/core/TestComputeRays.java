@@ -334,9 +334,7 @@ public class TestComputeRays {
         List<Coordinate> ray = computeRays.computeSideHull(true,p1, p2);
         i = 0;
         assertEquals(0, p1.distance(ray.get(i++)),0.02);
-        assertEquals(0, new Coordinate(9, 11).distance(ray.get(i++)),0.02);
-        assertEquals(0, new Coordinate(11, 11).distance(ray.get(i++)),0.02);
-        assertEquals(0, new Coordinate(13, 10).distance(ray.get(i++)),0.02);
+        assertEquals(0, new Coordinate(5, 6.79).distance(ray.get(i++)),0.02);
         assertEquals(0, p2.distance(ray.get(i++)),0.02);
 
         /*
