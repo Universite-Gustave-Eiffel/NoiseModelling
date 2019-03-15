@@ -448,7 +448,9 @@ public class TestComputeRays {
                     Vector3D ip = transform(plane, i);
                     polyCut.add(new Coordinate(ip.getX(), ip.getY(), 0));
                 }
-                polyCut.add(new Coordinate(v0.getX(), v0.getY(), v0.getZ()));
+                Vector3D i = plane.intersection(new Line(new Vector3D(buildingA[idp].getX(),buildingA[idp].getY(),Double.MIN_VALUE),buildingA[idp],FastObstructionTest.epsilon));
+                org.apache.commons.math3.geometry.euclidean.twod.Vector2D iCut = plane.toSubSpace(i);
+                polyCut.add(new Coordinate(iCut.getX(), iCut.getY(), 0));
             } else if (lastV != null && lastV.getZ() >= 0) {
                 // Interpolate vector
                 Vector3D i = plane.intersection(new Line(buildingA[idp-1],buildingA[idp],FastObstructionTest.epsilon));
@@ -462,7 +464,7 @@ public class TestComputeRays {
         // Reproj to domain
         for(int i=0; i < polyCut.size(); i++) {
             Vector3D pointOnPlane = plane.toSpace(new org.apache.commons.math3.geometry.euclidean.twod.Vector2D(polyCut.get(i).x, polyCut.get(i).y));
-            pointOnPlane = pointOnPlane.add(plane.getNormal().scalarMultiply(polyCut.get(i).z));
+            //pointOnPlane = pointOnPlane.add(plane.getNormal().scalarMultiply(polyCut.get(i).z));
             polyCut.set(i, new Coordinate(pointOnPlane.getX(), pointOnPlane.getY(), pointOnPlane.getZ()));
         }
         Polygon poly2 = geometryFactory.createPolygon(polyCut.toArray(new Coordinate[polyCut.size()]));
