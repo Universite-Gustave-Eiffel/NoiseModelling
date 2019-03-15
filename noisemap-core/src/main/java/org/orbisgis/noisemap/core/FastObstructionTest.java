@@ -34,6 +34,8 @@
 package org.orbisgis.noisemap.core;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -42,6 +44,10 @@ import java.util.Stack;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.locationtech.jts.algorithm.Angle;
+import org.locationtech.jts.algorithm.CGAlgorithms;
+import org.locationtech.jts.algorithm.CGAlgorithms3D;
+import org.locationtech.jts.algorithm.CGAlgorithmsDD;
+import org.locationtech.jts.algorithm.Orientation;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.WKTWriter;
 import org.locationtech.jts.math.Vector2D;
@@ -499,31 +505,40 @@ public class FastObstructionTest {
      * @return List of corners within parameters range
      */
     public List<Coordinate> getWideAnglePointsByBuilding(int build, double minAngle, double maxAngle) {
-        if(verticesOpenAngleTranslated == null) {
-            getWideAnglePoints(minAngle, maxAngle);
-        }
-
-        HashSet<Integer> triVerticesBuilding = new HashSet<>();
-        for (Triangle tri : this.triVertices) {
-            if (tri.getAttribute()==build) {
-                triVerticesBuilding.add(tri.getA());
-                triVerticesBuilding.add(tri.getB());
-                triVerticesBuilding.add(tri.getC());
+        List <Coordinate> verticesBuilding = new ArrayList<>();
+        Coordinate[] ring = getBuilding(build).getExteriorRing().getCoordinates();
+        if(!Orientation.isCCW(ring)) {
+            for (int i = 0; i < ring.length / 2; i++) {
+                Coordinate temp = ring[i];
+                ring[i] = ring[ring.length - 1 - i];
+                ring[ring.length - 1 - i] = temp;
             }
         }
-
-        List <Coordinate> verticesBuilding = new ArrayList<>();
-
-        for (Integer tri: triVerticesBuilding){
-          verticesBuilding.add(verticesOpenAngleTranslated.get(tri));
+        for(int i=0; i < ring.length - 1; i++) {
+            int i1 = i > 0 ? i-1 : ring.length - 2;
+            int i3 = i + 1;
+            double smallestAngle = Angle.angleBetweenOriented(ring[i1], ring[i], ring[i3]);
+            double openAngle;
+            if(smallestAngle >= 0) {
+                // corresponds to a counterclockwise (CCW) rotation
+                openAngle = smallestAngle;
+            } else {
+                // corresponds to a clockwise (CW) rotation
+                openAngle = 2 * Math.PI + smallestAngle;
+            }
+            // Open Angle is the building angle in the free field area
+            if(openAngle > minAngle && openAngle < maxAngle) {
+                // corresponds to a counterclockwise (CCW) rotation
+                double midAngle = openAngle / 2;
+                double midAngleFromZero = Angle.angle(ring[i], ring[i1]) + midAngle;
+                Coordinate offsetPt = new Coordinate(
+                        ring[i].x + Math.cos(midAngleFromZero) * wideAngleTranslationEpsilon,
+                        ring[i].y + Math.sin(midAngleFromZero) * wideAngleTranslationEpsilon);
+                verticesBuilding.add(offsetPt);
+            }
         }
-        for (Integer tri: triVerticesBuilding){
-            verticesBuilding.add(verticesOpenAngleTranslated.get(tri));
-            break;
-        }
-
-        List<Coordinate> wideAnglePts = verticesBuilding;
-        return wideAnglePts;
+        verticesBuilding.add(verticesBuilding.get(0));
+        return verticesBuilding;
     }
 
     /**

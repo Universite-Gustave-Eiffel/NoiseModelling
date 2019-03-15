@@ -33,6 +33,8 @@
  */
 package org.orbisgis.noisemap.core;
 
+import org.apache.commons.math3.geometry.euclidean.threed.Line;
+import org.apache.commons.math3.geometry.euclidean.threed.Plane;
 import org.h2gis.api.ProgressVisitor;
 import org.h2gis.utilities.jts_utils.CoordinateUtils;
 import org.locationtech.jts.algorithm.*;
@@ -615,6 +617,49 @@ public class ComputeRays implements Runnable {
         return buildingsOnPath;
     }
 
+
+    public Plane ComputeZeroRadPlane(Coordinate p0, Coordinate p1) {
+        org.apache.commons.math3.geometry.euclidean.threed.Vector3D s = new org.apache.commons.math3.geometry.euclidean.threed.Vector3D(p0.x, p0.y, p0.z);
+        org.apache.commons.math3.geometry.euclidean.threed.Vector3D r = new org.apache.commons.math3.geometry.euclidean.threed.Vector3D(p1.x, p1.y, p1.z);
+        double angle = Math.atan2(p1.y - p0.y, p1.x - p0.x);
+        // Compute rPrime, the third point of the plane that is at -PI/2 with SR vector
+        org.apache.commons.math3.geometry.euclidean.threed.Vector3D rPrime = s.add(new org.apache.commons.math3.geometry.euclidean.threed.Vector3D(Math.cos(angle - Math.PI / 2),Math.sin(angle - Math.PI / 2),0));
+        Plane p = new Plane(r, s, rPrime, 1e-6);
+        // Normal of the cut plane should be upward
+        if(p.getNormal().getZ() < 0) {
+            p.revertSelf();
+        }
+        return p;
+    }
+
+
+//    public org.apache.commons.math3.geometry.euclidean.threed.Vector3D transform(Plane plane, Coordinate p) {
+//        org.apache.commons.math3.geometry.euclidean.twod.Vector2D sp = plane.toSubSpace(p);
+//        return new org.apache.commons.math3.geometry.euclidean.threed.Vector3D(sp.getX(), sp.getY(), plane.getOffset(p));
+//    }
+
+    public org.apache.commons.math3.geometry.euclidean.threed.Vector3D CoordinateToVector(Coordinate p) {
+        return new org.apache.commons.math3.geometry.euclidean.threed.Vector3D(p.x, p.y, p.z);
+    }
+
+    public List<Coordinate> cutRoofPointsWithPlane(Plane plane, List<Coordinate> roofPts) {
+        List<Coordinate> polyCut = new ArrayList<>(roofPts.size());
+        Double lastOffset = null;
+        for(int idp = 0; idp < roofPts.size(); idp++) {
+            double offset = plane.getOffset(CoordinateToVector(roofPts.get(idp)));
+            if(lastOffset != null && ((offset >= 0 && lastOffset < 0) || (offset < 0 && lastOffset >= 0))) {
+                // Interpolate vector
+                org.apache.commons.math3.geometry.euclidean.threed.Vector3D i = plane.intersection(new Line(CoordinateToVector(roofPts.get(idp - 1)),CoordinateToVector(roofPts.get(idp)),FastObstructionTest.epsilon));
+                polyCut.add(new Coordinate(i.getX(), i.getY(), i.getZ()));
+            }
+            if(offset >= 0) {
+                org.apache.commons.math3.geometry.euclidean.threed.Vector3D i = plane.intersection(new Line(new org.apache.commons.math3.geometry.euclidean.threed.Vector3D(roofPts.get(idp).x,roofPts.get(idp).y,Double.MIN_VALUE),CoordinateToVector(roofPts.get(idp)),FastObstructionTest.epsilon));
+                polyCut.add(new Coordinate(i.getX(), i.getY(), i.getZ()));
+            }
+            lastOffset = offset;
+        }
+        return polyCut;
+    }
     /**
      *
      * @param left If true return path between p1 and p2; else p2 to p1
@@ -626,6 +671,8 @@ public class ComputeRays implements Runnable {
         if(p1.equals(p2)) {
             return new ArrayList<>();
         }
+
+        Plane cutPlane = ComputeZeroRadPlane(p1, p2);
 
         final LineSegment receiverSrc = new LineSegment(p1, p2);
         // Intersection test cache
@@ -646,7 +693,12 @@ public class ComputeRays implements Runnable {
 
         for(int i : getBuildingsOnPath(p1, p2)) {
             if(!buildingsOnPath.contains(i)) {
-                input.addAll(data.freeFieldFinder.getWideAnglePointsByBuilding(i, Math.PI * (1 + 1 / 16.0), Math.PI * (2 - (1 / 16.))));
+                List<Coordinate> roofPoints = data.freeFieldFinder.getWideAnglePointsByBuilding(i, Math.PI * (1 + 1 / 16.0), Math.PI * (2 - (1 / 16.)));
+                double z = data.freeFieldFinder.getBuildingRoofZ(i);
+                for(Coordinate coord : roofPoints) {
+                    coord.setCoordinate(new Coordinate(coord.x, coord.y, z));
+                }
+                input.addAll(cutRoofPointsWithPlane(cutPlane, roofPoints));
                 buildingsOnPath.add(i);
             }
         }
@@ -700,17 +752,18 @@ public class ComputeRays implements Runnable {
             for (k = 0; k < coordinates.length - 1; k++) {
                 LineSegment freeFieldTestSegment = new LineSegment(coordinates[k], coordinates[k + 1]);
                 // Ignore intersection if iterating over other side (not parts of what is returned)
-                if(((left && k >= indexp1 && k < indexp2) || (!left && (k < indexp1 || k >= indexp2)))) {
+                if(left && k < indexp2 || !left && k >= indexp2) {
                     if(!freeFieldSegments.contains(freeFieldTestSegment)) {
                         HashSet<Integer> buildingsOnPath2 = getBuildingsOnPath(coordinates[k], coordinates[k + 1]);
                         if (!buildingsOnPath2.isEmpty()) {
                             for(int i : buildingsOnPath2) {
                                 if(!buildingsOnPath.contains(i)) {
-                                    List<Coordinate> newCoords = data.freeFieldFinder.getWideAnglePointsByBuilding(i, Math.PI * (1 + 1 / 16.0), Math.PI * (2 - (1 / 16.)));
-                                    for(Coordinate coord : newCoords) {
-                                        coord.setCoordinate(getProjectedZCoordinate(coord, receiverSrc));
+                                    List<Coordinate> roofPoints = data.freeFieldFinder.getWideAnglePointsByBuilding(i, Math.PI * (1 + 1 / 16.0), Math.PI * (2 - (1 / 16.)));
+                                    double z = data.freeFieldFinder.getBuildingRoofZ(i);
+                                    for(Coordinate coord : roofPoints) {
+                                        coord.setCoordinate(new Coordinate(coord.x, coord.y, z));
                                     }
-                                    input.addAll(newCoords);
+                                    input.addAll(cutRoofPointsWithPlane(cutPlane, roofPoints));
                                     buildingsOnPath.add(i);
                                 }
                             }
