@@ -746,9 +746,6 @@ public class ComputeRays implements Runnable {
                 // TODO handle concave path
                 return new ArrayList<>();
             }
-            for (k = 1; k < coordinates.length - 1; k++) {
-                coordinates[k].setCoordinate(getProjectedZCoordinate(coordinates[k], receiverSrc));
-            }
             for (k = 0; k < coordinates.length - 1; k++) {
                 LineSegment freeFieldTestSegment = new LineSegment(coordinates[k], coordinates[k + 1]);
                 // Ignore intersection if iterating over other side (not parts of what is returned)
@@ -763,11 +760,14 @@ public class ComputeRays implements Runnable {
                                     for(Coordinate coord : roofPoints) {
                                         coord.setCoordinate(new Coordinate(coord.x, coord.y, z));
                                     }
-                                    input.addAll(cutRoofPointsWithPlane(cutPlane, roofPoints));
+                                    roofPoints = cutRoofPointsWithPlane(cutPlane, roofPoints);
+                                    if(!roofPoints.isEmpty()) {
+                                        convexHullIntersects = true;
+                                        input.addAll(roofPoints);
+                                    }
                                     buildingsOnPath.add(i);
                                 }
                             }
-                            convexHullIntersects = true;
                             break;
                         } else {
                             freeFieldSegments.add(freeFieldTestSegment);

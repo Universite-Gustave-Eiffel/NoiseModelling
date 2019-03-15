@@ -320,18 +320,26 @@ public class TestComputeRays {
         Coordinate p1 = new Coordinate(4, 3, 3);
         Coordinate p2 = new Coordinate(13, 10, 6.7);
 
-        List<Coordinate> b1OffsetRoof = manager.getWideAnglePointsByBuilding(1,0, Math.PI * 2);
+        // Check the computation of convex corners of a building
+        List<Coordinate> b1OffsetRoof = manager.getWideAnglePointsByBuilding(1,Math.PI * (1 + 1 / 16.0), Math.PI * (2 - (1 / 16.)));
         int i = 0;
-        assertEquals(0, new Coordinate().distance(b1OffsetRoof.get(i++)),2*FastObstructionTest.wideAngleTranslationEpsilon);
-        /*
+        assertEquals(0, new Coordinate(5,5).distance(b1OffsetRoof.get(i++)),2*FastObstructionTest.wideAngleTranslationEpsilon);
+        assertEquals(0, new Coordinate(7,5).distance(b1OffsetRoof.get(i++)),2*FastObstructionTest.wideAngleTranslationEpsilon);
+        assertEquals(0, new Coordinate(8,6).distance(b1OffsetRoof.get(i++)),2*FastObstructionTest.wideAngleTranslationEpsilon);
+        assertEquals(0, new Coordinate(8,8).distance(b1OffsetRoof.get(i++)),2*FastObstructionTest.wideAngleTranslationEpsilon);
+        assertEquals(0, new Coordinate(5,8).distance(b1OffsetRoof.get(i++)),2*FastObstructionTest.wideAngleTranslationEpsilon);
+        assertEquals(0, new Coordinate(5,5).distance(b1OffsetRoof.get(i++)),2*FastObstructionTest.wideAngleTranslationEpsilon);
+
+
         List<Coordinate> ray = computeRays.computeSideHull(true,p1, p2);
-        int i = 0;
+        i = 0;
         assertEquals(0, p1.distance(ray.get(i++)),0.02);
         assertEquals(0, new Coordinate(9, 11).distance(ray.get(i++)),0.02);
         assertEquals(0, new Coordinate(11, 11).distance(ray.get(i++)),0.02);
         assertEquals(0, new Coordinate(13, 10).distance(ray.get(i++)),0.02);
         assertEquals(0, p2.distance(ray.get(i++)),0.02);
 
+        /*
         ray = computeRays.computeSideHull(false,p1, p2);
         i = 0;
         assertEquals(0, p1.distance(ray.get(i++)),0.02);
