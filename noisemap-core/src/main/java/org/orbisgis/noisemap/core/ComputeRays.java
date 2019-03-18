@@ -606,7 +606,7 @@ public class ComputeRays implements Runnable {
     public HashSet<Integer> getBuildingsOnPath(Coordinate p1, Coordinate p2) {
         HashSet<Integer> buildingsOnPath = new HashSet<>();
         List<TriIdWithIntersection> propagationPath = new ArrayList<>();
-        data.freeFieldFinder.computePropagationPaths(p1, p2, false, propagationPath, true);
+        data.freeFieldFinder.computePropagationPath(p1, p2, false, propagationPath, true);
         if (!propagationPath.isEmpty()) {
             for (TriIdWithIntersection inter : propagationPath) {
                 if (inter.getBuildingId() != 0) {
@@ -717,6 +717,7 @@ public class ComputeRays implements Runnable {
             for (int i = 0; i < coordinates.length - 1; i++) {
                 if (coordinates[i].equals(p1)) {
                     indexp1 = i;
+                    break;
                 }
             }
             if (indexp1 == -1) {
@@ -738,6 +739,7 @@ public class ComputeRays implements Runnable {
             for (int i = 1; i < coordinates.length - 1; i++) {
                 if (coordinates[i].equals(p2)) {
                     indexp2 = i;
+                    break;
                 }
             }
             if (indexp2 == -1) {
@@ -776,8 +778,7 @@ public class ComputeRays implements Runnable {
             return Arrays.asList(Arrays.copyOfRange(coordinates,indexp1, indexp2 + 1));
         } else {
             ArrayList<Coordinate> inversePath = new ArrayList<>();
-            inversePath.addAll(Arrays.asList(Arrays.copyOfRange(coordinates,indexp2, coordinates.length - 1)));
-            inversePath.addAll(Arrays.asList(Arrays.copyOfRange(coordinates,0, indexp1 + 1)));
+            inversePath.addAll(Arrays.asList(Arrays.copyOfRange(coordinates,indexp2, coordinates.length)));
             Collections.reverse(inversePath);
             return inversePath;
         }
@@ -861,7 +862,7 @@ public class ComputeRays implements Runnable {
             somethingHideReceiver = !data.freeFieldFinder.isFreeField(receiverCoord, srcCoord);
         } else {
             List<TriIdWithIntersection> propagationPath = new ArrayList<>();
-            if (!data.freeFieldFinder.computePropagationPaths(receiverCoord, srcCoord, false, propagationPath, false)) {
+            if (!data.freeFieldFinder.computePropagationPath(receiverCoord, srcCoord, false, propagationPath, false)) {
                 // Propagation path not found, there is not direct field
                 somethingHideReceiver = true;
             } else {

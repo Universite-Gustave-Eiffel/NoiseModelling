@@ -365,6 +365,7 @@ public class TestComputeRays {
 
     /**
      * Test vertical edge diffraction ray computation with receiver in concave building
+     * This configuration is not supported currently, so it must return no rays.
      * @throws LayerDelaunayError
      * @throws ParseException
      */
@@ -440,7 +441,22 @@ public class TestComputeRays {
 
         Vector2D pRef = new Vector2D(1,2);
         Random r = new Random(0);
-        int nbHull = 300;
+        int nbHull = 1200;
+        // Warmup
+        for(int i=0; i < 10; i++) {
+            int xStep = r.nextInt(nbCols);
+            int offset = xStep % 2 == 0 ? 0 : yOffset;
+            Coordinate p1 = pRef.translate(new Coordinate(xStep*xSpace,r.nextInt(nbRows)*ySpace + offset));
+            xStep = r.nextInt(nbCols);
+            offset = xStep % 2 == 0 ? 0 : yOffset;
+            Coordinate p2 = pRef.translate(new Coordinate(xStep*xSpace,r.nextInt(nbRows)*ySpace + offset));
+            p1.setOrdinate(2, 1.6);
+            p2.setOrdinate(2, 1.6);
+
+            List<Coordinate> h1 = computeRays.computeSideHull(true,p1, p2);
+            List<Coordinate> h2 = computeRays.computeSideHull(false,p1, p2);
+
+        }
         long start = System.currentTimeMillis();
         for(int i=0; i < nbHull; i++) {
             int xStep = r.nextInt(nbCols);
