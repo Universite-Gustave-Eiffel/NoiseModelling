@@ -1,5 +1,11 @@
 package org.orbisgis.noisemap.core;
 
+import org.apache.commons.math3.geometry.euclidean.threed.Line;
+import org.apache.commons.math3.geometry.euclidean.threed.Plane;
+import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
+import org.apache.commons.math3.geometry.euclidean.threed.RotationConvention;
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+import org.apache.commons.math3.util.FastMath;
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.functions.spatial.affine_transformations.ST_Translate;
 import org.h2gis.functions.spatial.volume.GeometryExtrude;
@@ -12,6 +18,7 @@ import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryCollection;
 import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.LineSegment;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.geom.util.AffineTransformation;
@@ -19,22 +26,26 @@ import org.locationtech.jts.geom.util.GeometryEditor;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 import org.locationtech.jts.io.WKTWriter;
+import org.locationtech.jts.math.Plane3D;
 import org.locationtech.jts.math.Vector2D;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 
@@ -283,8 +294,78 @@ public class TestComputeRays {
         //LOGGER.info(factory.createLineString(ray.toArray(new Coordinate[ray.size()])).toString());
     }
 
+
+    /**
+     * Test vertical edge diffraction ray computation
+     * @throws LayerDelaunayError
+     * @throws ParseException
+     */
+    @Test
+    public void TestcomputeVerticalEdgeDiffractionRayOverBuilding() throws LayerDelaunayError, ParseException {
+        GeometryFactory factory = new GeometryFactory();
+        WKTReader wktReader = new WKTReader(factory);
+        List<Geometry> srclst = new ArrayList<Geometry>();
+        //Scene dimension
+        Envelope cellEnvelope = new Envelope(new Coordinate(0, 0, 0.), new Coordinate(20, 15, 0.));
+        //Create obstruction test object
+        MeshBuilder mesh = new MeshBuilder();
+        mesh.addGeometry(wktReader.read("POLYGON((5 5, 7 5, 7 6, 8 6, 8 8, 5 8, 5 5))"), 4.3);
+        mesh.addGeometry(wktReader.read("POLYGON((9 7, 10 7, 10 9, 9 9, 9 7))"), 4.3);
+        mesh.finishPolygonFeeding(cellEnvelope);
+
+        //Retrieve Delaunay triangulation of scene
+        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(), mesh.getTriNeighbors(), mesh.getVertices());
+
+
+        QueryGeometryStructure sourcesIndex = new QueryQuadTree();
+        PropagationProcessData processData = new PropagationProcessData(new ArrayList<>(), manager, sourcesIndex, srclst, new ArrayList<>(), new ArrayList<>(), 0, 99, 1000,1000,0,0,new double[0],0,0,new EmptyProgressVisitor(), new ArrayList<>(), true);
+        ComputeRays computeRays = new ComputeRays(processData, new ComputeRaysOut());
+        Coordinate p1 = new Coordinate(4, 3, 3);
+        Coordinate p2 = new Coordinate(13, 10, 6.7);
+
+        assertFalse(manager.isFreeField(p1, p2));
+
+        // Check the computation of convex corners of a building
+        List<Coordinate> b1OffsetRoof = manager.getWideAnglePointsByBuilding(1,Math.PI * (1 + 1 / 16.0), Math.PI * (2 - (1 / 16.)));
+        int i = 0;
+        assertEquals(0, new Coordinate(5,5).distance(b1OffsetRoof.get(i++)),2*FastObstructionTest.wideAngleTranslationEpsilon);
+        assertEquals(0, new Coordinate(7,5).distance(b1OffsetRoof.get(i++)),2*FastObstructionTest.wideAngleTranslationEpsilon);
+        assertEquals(0, new Coordinate(8,6).distance(b1OffsetRoof.get(i++)),2*FastObstructionTest.wideAngleTranslationEpsilon);
+        assertEquals(0, new Coordinate(8,8).distance(b1OffsetRoof.get(i++)),2*FastObstructionTest.wideAngleTranslationEpsilon);
+        assertEquals(0, new Coordinate(5,8).distance(b1OffsetRoof.get(i++)),2*FastObstructionTest.wideAngleTranslationEpsilon);
+        assertEquals(0, new Coordinate(5,5).distance(b1OffsetRoof.get(i++)),2*FastObstructionTest.wideAngleTranslationEpsilon);
+
+
+        List<Coordinate> ray = computeRays.computeSideHull(true,p1, p2);
+        i = 0;
+        assertEquals(0, p1.distance(ray.get(i++)),0.02);
+        assertEquals(0, new Coordinate(5, 8).distance(ray.get(i++)),0.02);
+        assertEquals(0, p2.distance(ray.get(i++)),0.02);
+
+
+        ray = computeRays.computeSideHull(false,p1, p2);
+        i = 0;
+        assertEquals(0, p1.distance(ray.get(i++)),0.02);
+        assertEquals(0, new Coordinate(7, 5).distance(ray.get(i++)),0.02);
+        assertEquals(0, p2.distance(ray.get(i++)),0.02);
+
+
+        ray = computeRays.computeSideHull(false,p2, p1);
+        i = 0;
+        assertEquals(0, p2.distance(ray.get(i++)),0.02);
+        assertEquals(0, new Coordinate(5, 8).distance(ray.get(i++)),0.02);
+        assertEquals(0, p1.distance(ray.get(i++)),0.02);
+
+        ray = computeRays.computeSideHull(true,p2, p1);
+        i = 0;
+        assertEquals(0, p2.distance(ray.get(i++)),0.02);
+        assertEquals(0, new Coordinate(7, 5).distance(ray.get(i++)),0.02);
+        assertEquals(0, p1.distance(ray.get(i++)),0.02);
+    }
+
     /**
      * Test vertical edge diffraction ray computation with receiver in concave building
+     * This configuration is not supported currently, so it must return no rays.
      * @throws LayerDelaunayError
      * @throws ParseException
      */
@@ -360,7 +441,22 @@ public class TestComputeRays {
 
         Vector2D pRef = new Vector2D(1,2);
         Random r = new Random(0);
-        int nbHull = 300;
+        int nbHull = 1200;
+        // Warmup
+        for(int i=0; i < 10; i++) {
+            int xStep = r.nextInt(nbCols);
+            int offset = xStep % 2 == 0 ? 0 : yOffset;
+            Coordinate p1 = pRef.translate(new Coordinate(xStep*xSpace,r.nextInt(nbRows)*ySpace + offset));
+            xStep = r.nextInt(nbCols);
+            offset = xStep % 2 == 0 ? 0 : yOffset;
+            Coordinate p2 = pRef.translate(new Coordinate(xStep*xSpace,r.nextInt(nbRows)*ySpace + offset));
+            p1.setOrdinate(2, 1.6);
+            p2.setOrdinate(2, 1.6);
+
+            List<Coordinate> h1 = computeRays.computeSideHull(true,p1, p2);
+            List<Coordinate> h2 = computeRays.computeSideHull(false,p1, p2);
+
+        }
         long start = System.currentTimeMillis();
         for(int i=0; i < nbHull; i++) {
             int xStep = r.nextInt(nbCols);
@@ -378,6 +474,92 @@ public class TestComputeRays {
         }
         long timeLen = System.currentTimeMillis() - start;
         LOGGER.info(String.format("Benchmark done in %d millis. %d millis by hull", timeLen, timeLen / nbHull));
+    }
+
+    public Plane ComputeZeroRadPlane(Coordinate p0, Coordinate p1) {
+        Vector3D s = new Vector3D(p0.x, p0.y, p0.z);
+        Vector3D r = new Vector3D(p1.x, p1.y, p1.z);
+        double angle = Math.atan2(p1.y - p0.y, p1.x - p0.x);
+        // Compute rPrime, the third point of the plane that is at -PI/2 with SR vector
+        Vector3D rPrime = s.add(new Vector3D(Math.cos(angle - Math.PI / 2),Math.sin(angle - Math.PI / 2),0));
+        Plane p = new Plane(r, s, rPrime, 1e-6);
+        // Normal of the cut plane should be upward
+        if(p.getNormal().getZ() < 0) {
+            p.revertSelf();
+        }
+        return p;
+    }
+
+    public Vector3D transform(Plane plane, Vector3D p) {
+        org.apache.commons.math3.geometry.euclidean.twod.Vector2D sp = plane.toSubSpace(p);
+        return new Vector3D(sp.getX(), sp.getY(), plane.getOffset(p));
+    }
+
+    @Test
+    public void testVolumePlaneIntersection() {
+        Vector3D[] buildingA = new Vector3D[]{new Vector3D(5, 5, 4),
+                new Vector3D(7, 5, 4),
+                new Vector3D(7, 6, 4),
+                new Vector3D(8, 6, 4),
+                new Vector3D(8, 8, 4),
+                new Vector3D(5, 8, 4),
+                new Vector3D(5, 5, 4)};
+
+        Vector3D[] buildingB = new Vector3D[]{new Vector3D(9, 7, 4),
+                new Vector3D(9, 7, 4),
+                new Vector3D(10, 7, 4),
+                new Vector3D(10, 9, 4),
+                new Vector3D(9, 9, 4),
+                new Vector3D(9, 7, 4)};
+
+        Coordinate s = new Coordinate(7.5, 5.5, 3);
+
+        Coordinate r = new Coordinate(6.5,8.5,10);
+
+        Plane plane = ComputeZeroRadPlane(r, s);
+        //LOGGER.info(String.format("plane %s", plane.getNormal()));
+
+        GeometryFactory geometryFactory = new GeometryFactory();
+        WKTWriter wktWriter = new WKTWriter(3);
+        Coordinate[] projPoly = new Coordinate[buildingA.length];
+        List<Coordinate> polyCut = new ArrayList<>();
+        Vector3D lastV = null;
+        for(int idp = 0; idp < buildingA.length; idp++) {
+            Vector3D v0 = transform(plane, buildingA[idp]);
+            projPoly[idp] = new Coordinate(v0.getX(), v0.getY(), v0.getZ());
+            if(v0.getZ() >= 0) {
+                if(lastV != null && lastV.getZ() < 0) {
+                    // Interpolate vector
+                    Vector3D i = plane.intersection(new Line(buildingA[idp-1],buildingA[idp],FastObstructionTest.epsilon));
+                    Vector3D ip = transform(plane, i);
+                    polyCut.add(new Coordinate(ip.getX(), ip.getY(), 0));
+                }
+                Vector3D i = plane.intersection(new Line(new Vector3D(buildingA[idp].getX(),buildingA[idp].getY(),Double.MIN_VALUE),buildingA[idp],FastObstructionTest.epsilon));
+                org.apache.commons.math3.geometry.euclidean.twod.Vector2D iCut = plane.toSubSpace(i);
+                polyCut.add(new Coordinate(iCut.getX(), iCut.getY(), 0));
+            } else if (lastV != null && lastV.getZ() >= 0) {
+                // Interpolate vector
+                Vector3D i = plane.intersection(new Line(buildingA[idp-1],buildingA[idp],FastObstructionTest.epsilon));
+                Vector3D ip = transform(plane, i);
+                polyCut.add(new Coordinate(ip.getX(), ip.getY(), 0));
+            }
+            lastV = v0;
+        }
+        //projPoly[buildingA.length - 1] = projPoly[0];
+        Polygon poly = geometryFactory.createPolygon(projPoly);
+        // Reproj to domain
+        for(int i=0; i < polyCut.size(); i++) {
+            Vector3D pointOnPlane = plane.toSpace(new org.apache.commons.math3.geometry.euclidean.twod.Vector2D(polyCut.get(i).x, polyCut.get(i).y));
+            //pointOnPlane = pointOnPlane.add(plane.getNormal().scalarMultiply(polyCut.get(i).z));
+            polyCut.set(i, new Coordinate(pointOnPlane.getX(), pointOnPlane.getY(), pointOnPlane.getZ()));
+        }
+        if(!polyCut.get(polyCut.size() - 1).equals(polyCut.get(0))) {
+            polyCut.add(polyCut.get(0));
+        }
+        Polygon poly2 = geometryFactory.createPolygon(polyCut.toArray(new Coordinate[polyCut.size()]));
+        //LOGGER.info(String.format("Building \n%s", wktWriter.write(poly)));
+        //LOGGER.info(String.format("Building cut \n%s", wktWriter.write(poly2)));
+
     }
 
     private void writeVTK(String filename, ComputeRaysOut propDataOut) throws IOException {

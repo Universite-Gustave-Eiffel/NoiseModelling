@@ -34,6 +34,8 @@
 package org.orbisgis.noisemap.core;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -42,6 +44,10 @@ import java.util.Stack;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.locationtech.jts.algorithm.Angle;
+import org.locationtech.jts.algorithm.CGAlgorithms;
+import org.locationtech.jts.algorithm.CGAlgorithms3D;
+import org.locationtech.jts.algorithm.CGAlgorithmsDD;
+import org.locationtech.jts.algorithm.Orientation;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.WKTWriter;
 import org.locationtech.jts.math.Vector2D;
@@ -494,36 +500,47 @@ public class FastObstructionTest {
     }
 
     /**
+     * Return wall corners with an offset offward the building volume
      * @param minAngle Minimum angle [0-2Pi]
      * @param maxAngle Maximum angle [0-2Pi]
      * @return List of corners within parameters range
      */
     public List<Coordinate> getWideAnglePointsByBuilding(int build, double minAngle, double maxAngle) {
-        if(verticesOpenAngleTranslated == null) {
-            getWideAnglePoints(minAngle, maxAngle);
-        }
-
-        HashSet<Integer> triVerticesBuilding = new HashSet<>();
-        for (Triangle tri : this.triVertices) {
-            if (tri.getAttribute()==build) {
-                triVerticesBuilding.add(tri.getA());
-                triVerticesBuilding.add(tri.getB());
-                triVerticesBuilding.add(tri.getC());
+        List <Coordinate> verticesBuilding = new ArrayList<>();
+        Coordinate[] ring = getBuilding(build).getExteriorRing().getCoordinates();
+        if(!Orientation.isCCW(ring)) {
+            for (int i = 0; i < ring.length / 2; i++) {
+                Coordinate temp = ring[i];
+                ring[i] = ring[ring.length - 1 - i];
+                ring[ring.length - 1 - i] = temp;
             }
         }
-
-        List <Coordinate> verticesBuilding = new ArrayList<>();
-
-        for (Integer tri: triVerticesBuilding){
-          verticesBuilding.add(verticesOpenAngleTranslated.get(tri));
+        for(int i=0; i < ring.length - 1; i++) {
+            int i1 = i > 0 ? i-1 : ring.length - 2;
+            int i3 = i + 1;
+            double smallestAngle = Angle.angleBetweenOriented(ring[i1], ring[i], ring[i3]);
+            double openAngle;
+            if(smallestAngle >= 0) {
+                // corresponds to a counterclockwise (CCW) rotation
+                openAngle = smallestAngle;
+            } else {
+                // corresponds to a clockwise (CW) rotation
+                openAngle = 2 * Math.PI + smallestAngle;
+            }
+            // Open Angle is the building angle in the free field area
+            if(openAngle > minAngle && openAngle < maxAngle) {
+                // corresponds to a counterclockwise (CCW) rotation
+                double midAngle = openAngle / 2;
+                double midAngleFromZero = Angle.angle(ring[i], ring[i1]) + midAngle;
+                Coordinate offsetPt = new Coordinate(
+                        ring[i].x + Math.cos(midAngleFromZero) * wideAngleTranslationEpsilon,
+                        ring[i].y + Math.sin(midAngleFromZero) * wideAngleTranslationEpsilon,
+                        getBuildingRoofZ(build) + wideAngleTranslationEpsilon);
+                verticesBuilding.add(offsetPt);
+            }
         }
-        for (Integer tri: triVerticesBuilding){
-            verticesBuilding.add(verticesOpenAngleTranslated.get(tri));
-            break;
-        }
-
-        List<Coordinate> wideAnglePts = verticesBuilding;
-        return wideAnglePts;
+        verticesBuilding.add(verticesBuilding.get(0));
+        return verticesBuilding;
     }
 
     /**
@@ -716,88 +733,7 @@ public class FastObstructionTest {
                 if (path != null) {
                     path.add(propaTri);
                 }
-                if (!stopOnIntersection || !propaTri.isIntersectionOnBuilding() && !propaTri.isIntersectionOnTopography()) { // todo ICI ON INTEGRE LES TRIANGLES BUILDINGS AU SOL AUSSI
-                    navigationTri = propaTri.getTriID();
-                } else {
-                    navigationTri = -1;
-                }
-            }
-            // Can't find a way to p2
-            return false;
-        } finally {
-            if(includePoints) {
-                path.add(new TriIdWithIntersection(curTriP2, new Coordinate(p2.x, p2.y, zTopoP2), false, false,
-                        buildingP2.getAttribute()));
-            }
-        }
-    }
-
-    /**
-     *
-     * @param p1 Start propagation path
-     * @param p2 End propagation path
-     * @param stopOnIntersection Stop if the segment between p1 and p2 intersects with topography or buildings
-     * @param path [out] Intersection list with triangle sides.
-     * @param includePoints Include p1 and p2 into path output
-     * @return True if the propagation goes from p1 to p2.
-     */
-    public boolean computePropagationPaths(Coordinate p1, Coordinate p2, boolean stopOnIntersection, List<TriIdWithIntersection> path, boolean includePoints) {
-        nbObstructionTest++;
-        LineSegment propaLine = new LineSegment(p1, p2);
-
-        //get receiver triangle id
-        int curTriP1 = getTriangleIdByCoordinate(p1);
-        //get source triangle id
-        int curTriP2 = getTriangleIdByCoordinate(p2);
-        Coordinate[] triP1 = getTriangle(curTriP1);
-        Coordinate[] triP2 = getTriangle(curTriP2);
-        Triangle buildingP1 = this.triVertices.get(curTriP1);
-        Triangle buildingP2 = this.triVertices.get(curTriP2);
-        // Test if source or receiver is inside a building
-        if (buildingP1.getAttribute() >= 1) {
-            MeshBuilder.PolygonWithHeight building = polygonWithHeight.get(buildingP1.getAttribute() - 1);
-            if(!building.hasHeight() || Double.isNaN(p1.z) || building.getHeight() >= p1.z) {
-                //receiver is in the building so this propagation line is invisible
-                return false;
-            }
-        }
-        if (buildingP2.getAttribute() >= 1) {
-            MeshBuilder.PolygonWithHeight building = polygonWithHeight.get(buildingP2.getAttribute() - 1);
-            if(!building.hasHeight() || Double.isNaN(p2.z) || building.getHeight() >= p2.z) {
-                //receiver is in the building so this propagation line is invisible
-                return false;
-            }
-        }
-
-
-        double zTopoP1 = getTopoZByGiven3Points(triP1[0], triP1[1], triP1[2], p1);
-        double zTopoP2 = getTopoZByGiven3Points(triP2[0], triP2[1], triP2[2], p2);
-        if(includePoints) {
-            path.add(new TriIdWithIntersection(curTriP1, new Coordinate(p1.x, p1.y, zTopoP1)));
-        }
-        try {
-            // if point is "inside" topography
-            if ((!Double.isNaN(p1.z) && p1.z + epsilon < zTopoP1)
-                    || (!Double.isNaN(p2.z) && p2.z + epsilon < zTopoP2)) {
-                //Z value of origin or destination is lower than topography. FreeField is always false in this case
-                return false;
-            }
-
-            HashSet<Integer> navigationHistory = new HashSet<Integer>();
-            int navigationTri = curTriP1;
-            while (navigationTri != -1) {
-                navigationHistory.add(navigationTri);
-                Coordinate[] tri = getTriangle(navigationTri);
-                if (dotInTri(p2, tri[0], tri[1], tri[2])) {
-                    return true;
-                }
-                TriIdWithIntersection propaTri = this.getNextTri(navigationTri, propaLine, navigationHistory);
-                if (path != null) {
-                    path.add(propaTri);
-                }
                 if (!stopOnIntersection || !propaTri.isIntersectionOnBuilding() && !propaTri.isIntersectionOnTopography()) {
-                    // todo ICI ON INTEGRE LES TRIANGLES BUILDINGS AU SOL AUSSI
-
                     navigationTri = propaTri.getTriID();
                 } else {
                     navigationTri = -1;

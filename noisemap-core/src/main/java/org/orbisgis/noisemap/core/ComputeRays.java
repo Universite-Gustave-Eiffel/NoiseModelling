@@ -33,6 +33,8 @@
  */
 package org.orbisgis.noisemap.core;
 
+import org.apache.commons.math3.geometry.euclidean.threed.Line;
+import org.apache.commons.math3.geometry.euclidean.threed.Plane;
 import org.h2gis.api.ProgressVisitor;
 import org.h2gis.utilities.jts_utils.CoordinateUtils;
 import org.locationtech.jts.algorithm.*;
@@ -611,7 +613,7 @@ public class ComputeRays implements Runnable {
     public HashSet<Integer> getBuildingsOnPath(Coordinate p1, Coordinate p2) {
         HashSet<Integer> buildingsOnPath = new HashSet<>();
         List<TriIdWithIntersection> propagationPath = new ArrayList<>();
-        data.freeFieldFinder.computePropagationPaths(p1, p2, false, propagationPath, true);
+        data.freeFieldFinder.computePropagationPath(p1, p2, false, propagationPath, true);
         if (!propagationPath.isEmpty()) {
             for (TriIdWithIntersection inter : propagationPath) {
                 if (inter.getBuildingId() != 0) {
@@ -622,6 +624,49 @@ public class ComputeRays implements Runnable {
         return buildingsOnPath;
     }
 
+
+    public Plane ComputeZeroRadPlane(Coordinate p0, Coordinate p1) {
+        org.apache.commons.math3.geometry.euclidean.threed.Vector3D s = new org.apache.commons.math3.geometry.euclidean.threed.Vector3D(p0.x, p0.y, p0.z);
+        org.apache.commons.math3.geometry.euclidean.threed.Vector3D r = new org.apache.commons.math3.geometry.euclidean.threed.Vector3D(p1.x, p1.y, p1.z);
+        double angle = Math.atan2(p1.y - p0.y, p1.x - p0.x);
+        // Compute rPrime, the third point of the plane that is at -PI/2 with SR vector
+        org.apache.commons.math3.geometry.euclidean.threed.Vector3D rPrime = s.add(new org.apache.commons.math3.geometry.euclidean.threed.Vector3D(Math.cos(angle - Math.PI / 2),Math.sin(angle - Math.PI / 2),0));
+        Plane p = new Plane(r, s, rPrime, 1e-6);
+        // Normal of the cut plane should be upward
+        if(p.getNormal().getZ() < 0) {
+            p.revertSelf();
+        }
+        return p;
+    }
+
+
+//    public org.apache.commons.math3.geometry.euclidean.threed.Vector3D transform(Plane plane, Coordinate p) {
+//        org.apache.commons.math3.geometry.euclidean.twod.Vector2D sp = plane.toSubSpace(p);
+//        return new org.apache.commons.math3.geometry.euclidean.threed.Vector3D(sp.getX(), sp.getY(), plane.getOffset(p));
+//    }
+
+    public org.apache.commons.math3.geometry.euclidean.threed.Vector3D CoordinateToVector(Coordinate p) {
+        return new org.apache.commons.math3.geometry.euclidean.threed.Vector3D(p.x, p.y, p.z);
+    }
+
+    public List<Coordinate> cutRoofPointsWithPlane(Plane plane, List<Coordinate> roofPts) {
+        List<Coordinate> polyCut = new ArrayList<>(roofPts.size());
+        Double lastOffset = null;
+        for(int idp = 0; idp < roofPts.size(); idp++) {
+            double offset = plane.getOffset(CoordinateToVector(roofPts.get(idp)));
+            if(lastOffset != null && ((offset >= 0 && lastOffset < 0) || (offset < 0 && lastOffset >= 0))) {
+                // Interpolate vector
+                org.apache.commons.math3.geometry.euclidean.threed.Vector3D i = plane.intersection(new Line(CoordinateToVector(roofPts.get(idp - 1)),CoordinateToVector(roofPts.get(idp)),FastObstructionTest.epsilon));
+                polyCut.add(new Coordinate(i.getX(), i.getY(), i.getZ()));
+            }
+            if(offset >= 0) {
+                org.apache.commons.math3.geometry.euclidean.threed.Vector3D i = plane.intersection(new Line(new org.apache.commons.math3.geometry.euclidean.threed.Vector3D(roofPts.get(idp).x,roofPts.get(idp).y,Double.MIN_VALUE),CoordinateToVector(roofPts.get(idp)),FastObstructionTest.epsilon));
+                polyCut.add(new Coordinate(i.getX(), i.getY(), i.getZ()));
+            }
+            lastOffset = offset;
+        }
+        return polyCut;
+    }
     /**
      *
      * @param left If true return path between p1 and p2; else p2 to p1
@@ -633,6 +678,8 @@ public class ComputeRays implements Runnable {
         if(p1.equals(p2)) {
             return new ArrayList<>();
         }
+
+        Plane cutPlane = ComputeZeroRadPlane(p1, p2);
 
         final LineSegment receiverSrc = new LineSegment(p1, p2);
         // Intersection test cache
@@ -653,8 +700,12 @@ public class ComputeRays implements Runnable {
 
         for(int i : getBuildingsOnPath(p1, p2)) {
             if(!buildingsOnPath.contains(i)) {
-                input.addAll(data.freeFieldFinder.getWideAnglePointsByBuilding(i, Math.PI * (1 + 1 / 16.0), Math.PI * (2 - (1 / 16.))));
-                buildingsOnPath.add(i);
+                List<Coordinate> roofPoints = data.freeFieldFinder.getWideAnglePointsByBuilding(i, Math.PI * (1 + 1 / 16.0), Math.PI * (2 - (1 / 16.)));
+                roofPoints = cutRoofPointsWithPlane(cutPlane, roofPoints);
+                if(!roofPoints.isEmpty()) {
+                    input.addAll(roofPoints.subList(0, roofPoints.size() - 1));
+                    buildingsOnPath.add(i);
+                }
             }
         }
         int k;
@@ -662,7 +713,7 @@ public class ComputeRays implements Runnable {
             ConvexHull convexHull = new ConvexHull(input.toArray(new Coordinate[input.size()]), geometryFactory);
             Geometry convexhull = convexHull.getConvexHull();
 
-            if(convexhull.getLength() / p1.distance(p2) > MAX_RATIO_HULL_DIRECT_PATH) {
+            if (convexhull.getLength() / p1.distance(p2) > MAX_RATIO_HULL_DIRECT_PATH) {
                 return new ArrayList<>();
             }
 
@@ -670,12 +721,13 @@ public class ComputeRays implements Runnable {
             coordinates = convexhull.getCoordinates();
 
             indexp1 = -1;
-            for (int i=0; i < coordinates.length - 1; i++) {
+            for (int i = 0; i < coordinates.length - 1; i++) {
                 if (coordinates[i].equals(p1)) {
                     indexp1 = i;
+                    break;
                 }
             }
-            if(indexp1 == -1) {
+            if (indexp1 == -1) {
                 // P1 does not belong to convex vertices, cannot compute diffraction
                 // TODO handle concave path
                 return new ArrayList<>();
@@ -691,40 +743,38 @@ public class ComputeRays implements Runnable {
             coordinates = coordinatesShifted;
             indexp1 = 0;
             indexp2 = -1;
-            for (int i=1; i < coordinates.length - 1; i++) {
+            for (int i = 1; i < coordinates.length - 1; i++) {
                 if (coordinates[i].equals(p2)) {
                     indexp2 = i;
+                    break;
                 }
             }
-            if(indexp2 == -1) {
+            if (indexp2 == -1) {
                 // P2 does not belong to convex vertices, cannot compute diffraction
                 // TODO handle concave path
                 return new ArrayList<>();
             }
-            for (k = 1; k < coordinates.length - 1; k++) {
-                coordinates[k].setCoordinate(getProjectedZCoordinate(coordinates[k], receiverSrc));
-            }
             for (k = 0; k < coordinates.length - 1; k++) {
                 LineSegment freeFieldTestSegment = new LineSegment(coordinates[k], coordinates[k + 1]);
                 // Ignore intersection if iterating over other side (not parts of what is returned)
-                if(((left && k >= indexp1 && k < indexp2) || (!left && (k < indexp1 || k >= indexp2)))) {
-                    if(!freeFieldSegments.contains(freeFieldTestSegment)) {
+                if (left && k < indexp2 || !left && k >= indexp2) {
+                    if (!freeFieldSegments.contains(freeFieldTestSegment)) {
                         HashSet<Integer> buildingsOnPath2 = getBuildingsOnPath(coordinates[k], coordinates[k + 1]);
-                        if (!buildingsOnPath2.isEmpty()) {
-                            for(int i : buildingsOnPath2) {
-                                if(!buildingsOnPath.contains(i)) {
-                                    List<Coordinate> newCoords = data.freeFieldFinder.getWideAnglePointsByBuilding(i, Math.PI * (1 + 1 / 16.0), Math.PI * (2 - (1 / 16.)));
-                                    for(Coordinate coord : newCoords) {
-                                        coord.setCoordinate(getProjectedZCoordinate(coord, receiverSrc));
-                                    }
-                                    input.addAll(newCoords);
-                                    buildingsOnPath.add(i);
+                        for (int i : buildingsOnPath2) {
+                            if (!buildingsOnPath.contains(i)) {
+                                List<Coordinate> roofPoints = data.freeFieldFinder.getWideAnglePointsByBuilding(i, Math.PI * (1 + 1 / 16.0), Math.PI * (2 - (1 / 16.)));
+                                roofPoints = cutRoofPointsWithPlane(cutPlane, roofPoints);
+                                if (!roofPoints.isEmpty()) {
+                                    convexHullIntersects = true;
+                                    input.addAll(roofPoints.subList(0, roofPoints.size() - 1));
                                 }
+                                buildingsOnPath.add(i);
                             }
-                            convexHullIntersects = true;
-                            break;
-                        } else {
+                        }
+                        if (!convexHullIntersects) {
                             freeFieldSegments.add(freeFieldTestSegment);
+                        } else {
+                            break;
                         }
                     }
                 }
@@ -735,8 +785,7 @@ public class ComputeRays implements Runnable {
             return Arrays.asList(Arrays.copyOfRange(coordinates,indexp1, indexp2 + 1));
         } else {
             ArrayList<Coordinate> inversePath = new ArrayList<>();
-            inversePath.addAll(Arrays.asList(Arrays.copyOfRange(coordinates,indexp2, coordinates.length - 1)));
-            inversePath.addAll(Arrays.asList(Arrays.copyOfRange(coordinates,0, indexp1 + 1)));
+            inversePath.addAll(Arrays.asList(Arrays.copyOfRange(coordinates,indexp2, coordinates.length)));
             Collections.reverse(inversePath);
             return inversePath;
         }
@@ -820,7 +869,7 @@ public class ComputeRays implements Runnable {
             somethingHideReceiver = !data.freeFieldFinder.isFreeField(receiverCoord, srcCoord);
         } else {
             List<TriIdWithIntersection> propagationPath = new ArrayList<>();
-            if (!data.freeFieldFinder.computePropagationPaths(receiverCoord, srcCoord, false, propagationPath, false)) {
+            if (!data.freeFieldFinder.computePropagationPath(receiverCoord, srcCoord, false, propagationPath, false)) {
                 // Propagation path not found, there is not direct field
                 somethingHideReceiver = true;
             } else {
