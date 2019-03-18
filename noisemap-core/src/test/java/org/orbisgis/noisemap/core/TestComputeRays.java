@@ -517,7 +517,7 @@ public class TestComputeRays {
         Coordinate r = new Coordinate(6.5,8.5,10);
 
         Plane plane = ComputeZeroRadPlane(r, s);
-        LOGGER.info(String.format("plane %s", plane.getNormal()));
+        //LOGGER.info(String.format("plane %s", plane.getNormal()));
 
         GeometryFactory geometryFactory = new GeometryFactory();
         WKTWriter wktWriter = new WKTWriter(3);
@@ -557,8 +557,8 @@ public class TestComputeRays {
             polyCut.add(polyCut.get(0));
         }
         Polygon poly2 = geometryFactory.createPolygon(polyCut.toArray(new Coordinate[polyCut.size()]));
-        LOGGER.info(String.format("Building \n%s", wktWriter.write(poly)));
-        LOGGER.info(String.format("Building cut \n%s", wktWriter.write(poly2)));
+        //LOGGER.info(String.format("Building \n%s", wktWriter.write(poly)));
+        //LOGGER.info(String.format("Building cut \n%s", wktWriter.write(poly2)));
 
     }
 
