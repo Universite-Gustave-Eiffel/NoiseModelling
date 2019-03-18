@@ -45,6 +45,7 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 
@@ -308,17 +309,21 @@ public class TestComputeRays {
         Envelope cellEnvelope = new Envelope(new Coordinate(0, 0, 0.), new Coordinate(20, 15, 0.));
         //Create obstruction test object
         MeshBuilder mesh = new MeshBuilder();
-        mesh.addGeometry(wktReader.read("POLYGON((5 5, 7 5, 7 6, 8 6, 8 8, 5 8, 5 5))"), 4);
-        mesh.addGeometry(wktReader.read("POLYGON((9 7, 10 7, 10 9, 9 9, 9 7))"), 4);
+        mesh.addGeometry(wktReader.read("POLYGON((5 5, 7 5, 7 6, 8 6, 8 8, 5 8, 5 5))"), 4.3);
+        mesh.addGeometry(wktReader.read("POLYGON((9 7, 10 7, 10 9, 9 9, 9 7))"), 4.3);
         mesh.finishPolygonFeeding(cellEnvelope);
+
         //Retrieve Delaunay triangulation of scene
         FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(), mesh.getTriNeighbors(), mesh.getVertices());
+
 
         QueryGeometryStructure sourcesIndex = new QueryQuadTree();
         PropagationProcessData processData = new PropagationProcessData(new ArrayList<>(), manager, sourcesIndex, srclst, new ArrayList<>(), new ArrayList<>(), 0, 99, 1000,1000,0,0,new double[0],0,0,new EmptyProgressVisitor(), new ArrayList<>(), true);
         ComputeRays computeRays = new ComputeRays(processData, new ComputeRaysOut());
         Coordinate p1 = new Coordinate(4, 3, 3);
         Coordinate p2 = new Coordinate(13, 10, 6.7);
+
+        assertFalse(manager.isFreeField(p1, p2));
 
         // Check the computation of convex corners of a building
         List<Coordinate> b1OffsetRoof = manager.getWideAnglePointsByBuilding(1,Math.PI * (1 + 1 / 16.0), Math.PI * (2 - (1 / 16.)));
@@ -334,36 +339,28 @@ public class TestComputeRays {
         List<Coordinate> ray = computeRays.computeSideHull(true,p1, p2);
         i = 0;
         assertEquals(0, p1.distance(ray.get(i++)),0.02);
-        assertEquals(0, new Coordinate(5, 6.79).distance(ray.get(i++)),0.02);
+        assertEquals(0, new Coordinate(5, 8).distance(ray.get(i++)),0.02);
         assertEquals(0, p2.distance(ray.get(i++)),0.02);
 
-        /*
+
         ray = computeRays.computeSideHull(false,p1, p2);
         i = 0;
         assertEquals(0, p1.distance(ray.get(i++)),0.02);
-        assertEquals(0, new Coordinate(6, 5).distance(ray.get(i++)),0.02);
-        assertEquals(0, new Coordinate(10, 4).distance(ray.get(i++)),0.02);
-        assertEquals(0, new Coordinate(11, 4).distance(ray.get(i++)),0.02);
+        assertEquals(0, new Coordinate(7, 5).distance(ray.get(i++)),0.02);
         assertEquals(0, p2.distance(ray.get(i++)),0.02);
+
 
         ray = computeRays.computeSideHull(false,p2, p1);
         i = 0;
         assertEquals(0, p2.distance(ray.get(i++)),0.02);
-        assertEquals(0, new Coordinate(13, 10).distance(ray.get(i++)),0.02);
-        assertEquals(0, new Coordinate(11, 11).distance(ray.get(i++)),0.02);
-        assertEquals(0, new Coordinate(9, 11).distance(ray.get(i++)),0.02);
+        assertEquals(0, new Coordinate(5, 8).distance(ray.get(i++)),0.02);
         assertEquals(0, p1.distance(ray.get(i++)),0.02);
 
         ray = computeRays.computeSideHull(true,p2, p1);
         i = 0;
         assertEquals(0, p2.distance(ray.get(i++)),0.02);
-        assertEquals(0, new Coordinate(11, 4).distance(ray.get(i++)),0.02);
-        assertEquals(0, new Coordinate(10, 4).distance(ray.get(i++)),0.02);
-        assertEquals(0, new Coordinate(6, 5).distance(ray.get(i++)),0.02);
+        assertEquals(0, new Coordinate(7, 5).distance(ray.get(i++)),0.02);
         assertEquals(0, p1.distance(ray.get(i++)),0.02);
-        */
-
-        //LOGGER.info(factory.createLineString(ray.toArray(new Coordinate[ray.size()])).toString());
     }
 
     /**

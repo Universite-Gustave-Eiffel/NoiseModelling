@@ -694,8 +694,11 @@ public class ComputeRays implements Runnable {
         for(int i : getBuildingsOnPath(p1, p2)) {
             if(!buildingsOnPath.contains(i)) {
                 List<Coordinate> roofPoints = data.freeFieldFinder.getWideAnglePointsByBuilding(i, Math.PI * (1 + 1 / 16.0), Math.PI * (2 - (1 / 16.)));
-                input.addAll(cutRoofPointsWithPlane(cutPlane, roofPoints));
-                buildingsOnPath.add(i);
+                roofPoints = cutRoofPointsWithPlane(cutPlane, roofPoints);
+                if(!roofPoints.isEmpty()) {
+                    input.addAll(roofPoints.subList(0, roofPoints.size() - 1));
+                    buildingsOnPath.add(i);
+                }
             }
         }
         int k;
@@ -703,7 +706,7 @@ public class ComputeRays implements Runnable {
             ConvexHull convexHull = new ConvexHull(input.toArray(new Coordinate[input.size()]), geometryFactory);
             Geometry convexhull = convexHull.getConvexHull();
 
-            if(convexhull.getLength() / p1.distance(p2) > MAX_RATIO_HULL_DIRECT_PATH) {
+            if (convexhull.getLength() / p1.distance(p2) > MAX_RATIO_HULL_DIRECT_PATH) {
                 return new ArrayList<>();
             }
 
@@ -711,12 +714,12 @@ public class ComputeRays implements Runnable {
             coordinates = convexhull.getCoordinates();
 
             indexp1 = -1;
-            for (int i=0; i < coordinates.length - 1; i++) {
+            for (int i = 0; i < coordinates.length - 1; i++) {
                 if (coordinates[i].equals(p1)) {
                     indexp1 = i;
                 }
             }
-            if(indexp1 == -1) {
+            if (indexp1 == -1) {
                 // P1 does not belong to convex vertices, cannot compute diffraction
                 // TODO handle concave path
                 return new ArrayList<>();
@@ -732,12 +735,12 @@ public class ComputeRays implements Runnable {
             coordinates = coordinatesShifted;
             indexp1 = 0;
             indexp2 = -1;
-            for (int i=1; i < coordinates.length - 1; i++) {
+            for (int i = 1; i < coordinates.length - 1; i++) {
                 if (coordinates[i].equals(p2)) {
                     indexp2 = i;
                 }
             }
-            if(indexp2 == -1) {
+            if (indexp2 == -1) {
                 // P2 does not belong to convex vertices, cannot compute diffraction
                 // TODO handle concave path
                 return new ArrayList<>();
@@ -745,24 +748,24 @@ public class ComputeRays implements Runnable {
             for (k = 0; k < coordinates.length - 1; k++) {
                 LineSegment freeFieldTestSegment = new LineSegment(coordinates[k], coordinates[k + 1]);
                 // Ignore intersection if iterating over other side (not parts of what is returned)
-                if(left && k < indexp2 || !left && k >= indexp2) {
-                    if(!freeFieldSegments.contains(freeFieldTestSegment)) {
+                if (left && k < indexp2 || !left && k >= indexp2) {
+                    if (!freeFieldSegments.contains(freeFieldTestSegment)) {
                         HashSet<Integer> buildingsOnPath2 = getBuildingsOnPath(coordinates[k], coordinates[k + 1]);
-                        if (!buildingsOnPath2.isEmpty()) {
-                            for(int i : buildingsOnPath2) {
-                                if(!buildingsOnPath.contains(i)) {
-                                    List<Coordinate> roofPoints = data.freeFieldFinder.getWideAnglePointsByBuilding(i, Math.PI * (1 + 1 / 16.0), Math.PI * (2 - (1 / 16.)));
-                                    roofPoints = cutRoofPointsWithPlane(cutPlane, roofPoints);
-                                    if(!roofPoints.isEmpty()) {
-                                        convexHullIntersects = true;
-                                        input.addAll(roofPoints);
-                                    }
-                                    buildingsOnPath.add(i);
+                        for (int i : buildingsOnPath2) {
+                            if (!buildingsOnPath.contains(i)) {
+                                List<Coordinate> roofPoints = data.freeFieldFinder.getWideAnglePointsByBuilding(i, Math.PI * (1 + 1 / 16.0), Math.PI * (2 - (1 / 16.)));
+                                roofPoints = cutRoofPointsWithPlane(cutPlane, roofPoints);
+                                if (!roofPoints.isEmpty()) {
+                                    convexHullIntersects = true;
+                                    input.addAll(roofPoints.subList(0, roofPoints.size() - 1));
                                 }
+                                buildingsOnPath.add(i);
                             }
-                            break;
-                        } else {
+                        }
+                        if (!convexHullIntersects) {
                             freeFieldSegments.add(freeFieldTestSegment);
+                        } else {
+                            break;
                         }
                     }
                 }
