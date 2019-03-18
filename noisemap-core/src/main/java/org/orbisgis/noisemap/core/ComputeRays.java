@@ -579,27 +579,34 @@ public class ComputeRays implements Runnable {
                 p1.z - p2.z);
         double length = vec_epsilon
                 .distance(new Coordinate(0., 0., 0.));
-        // Normalize vector
-        vec_epsilon.x /= length;
-        vec_epsilon.y /= length;
-        vec_epsilon.z /= length;
-        // Multiply by epsilon in meter
-        vec_epsilon.x *= 0.00001;
-        vec_epsilon.y *= 0.00001;
-        vec_epsilon.z *= 0.00001;
-        // Translate reflection pt by epsilon to get outside
-        // the wall
-        // if side = false, p1 goes to p2
-        if (!side) {
-            coordinate.x = p1.x + vec_epsilon.x;
-            coordinate.y = p1.y + vec_epsilon.y;
-            coordinate.z = p1.z + vec_epsilon.z;
-        } else {
-            coordinate.x = p1.x - vec_epsilon.x;
-            coordinate.y = p1.y - vec_epsilon.y;
-            coordinate.z = p1.z + vec_epsilon.z;
+        if (length==0){
+            coordinate.x = p1.x;
+            coordinate.y = p1.y ;
+            coordinate.z = p1.z ;
+            return coordinate;
+        }else {
+            // Normalize vector
+            vec_epsilon.x /= length;
+            vec_epsilon.y /= length;
+            vec_epsilon.z /= length;
+            // Multiply by epsilon in meter
+            vec_epsilon.x *= 0.00001;
+            vec_epsilon.y *= 0.00001;
+            vec_epsilon.z *= 0.00001;
+            // Translate reflection pt by epsilon to get outside
+            // the wall
+            // if side = false, p1 goes to p2
+            if (!side) {
+                coordinate.x = p1.x + vec_epsilon.x;
+                coordinate.y = p1.y + vec_epsilon.y;
+                coordinate.z = p1.z + vec_epsilon.z;
+            } else {
+                coordinate.x = p1.x - vec_epsilon.x;
+                coordinate.y = p1.y - vec_epsilon.y;
+                coordinate.z = p1.z + vec_epsilon.z;
+            }
+            return coordinate;
         }
-        return coordinate;
     }
 
 
