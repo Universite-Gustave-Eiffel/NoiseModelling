@@ -579,12 +579,12 @@ public class ComputeRays implements Runnable {
                 p1.z - p2.z);
         double length = vec_epsilon
                 .distance(new Coordinate(0., 0., 0.));
-        if (length==0){
+       /* if (length==0){
             coordinate.x = p1.x;
             coordinate.y = p1.y ;
             coordinate.z = p1.z ;
             return coordinate;
-        }else {
+        }else {*/
             // Normalize vector
             vec_epsilon.x /= length;
             vec_epsilon.y /= length;
@@ -606,7 +606,7 @@ public class ComputeRays implements Runnable {
                 coordinate.z = p1.z + vec_epsilon.z;
             }
             return coordinate;
-        }
+        //}
     }
 
 
@@ -900,7 +900,7 @@ public class ComputeRays implements Runnable {
         // hidden by a building)
         // Create the direct Line
         boolean buildingInArea = false;
-
+        boolean freefield = data.freeFieldFinder.isFreeField(receiverCoord, srcCoord);
         boolean[] somethingOnPath = findBuildingOnPath(srcCoord, receiverCoord, verticalDiffraction);
         boolean somethingHideReceiver = somethingOnPath[0];
         boolean buildingOnPath = somethingOnPath[1];
@@ -913,7 +913,8 @@ public class ComputeRays implements Runnable {
         }
 
         //Process diffraction 3D
-        if (verticalDiffraction && buildingOnPath) {
+        // todo include rayleigh criterium
+        if (verticalDiffraction && buildingOnPath && !freefield) {
             PropagationPath propagationPath3 = computeFreefield(receiverCoord, srcCoord, debugInfo);
             PropagationPath propagationPath = computeHorizontalEdgeDiffraction(somethingHideReceiver, receiverCoord, srcCoord, true, debugInfo);
             propagationPath.getSRList().addAll(propagationPath3.getSRList());
