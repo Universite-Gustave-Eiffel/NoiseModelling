@@ -871,10 +871,10 @@ public class FastObstructionTest {
                     break;
                 }
             }
-            /*if (path.size()<=2){
+            if (path.size()<=2){
                 //Here we should calculate the rayleigh criterum I think
                 return totData;
-            }*/
+            }
 
             List<Coordinate> path3D = new ArrayList<>();
             Coordinate coordinate = new Coordinate();

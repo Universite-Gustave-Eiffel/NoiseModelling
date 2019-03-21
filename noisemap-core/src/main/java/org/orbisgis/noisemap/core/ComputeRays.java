@@ -364,34 +364,34 @@ public class ComputeRays implements Runnable {
             }
             if (refcount > 0 ) {
                 List<PropagationPath> propagationPaths = directPath(lastPoint, receiverCoord, nearBuildingsWalls, data.computeVerticalDiffraction,false, debugInfo);
-                propagationPath = propagationPaths.get(0);
-                propagationPath.getPointList().remove(0);
-                points.addAll(propagationPath.getPointList());
-                segments.addAll(propagationPath.getSegmentList());
-                srPath.add(new PropagationPath.SegmentPath(0.0, new Vector3D(srcCoord, receiverCoord)));
+                if (propagationPaths.size() > 0 ) {
+                    propagationPath = propagationPaths.get(0);
+                    propagationPath.getPointList().remove(0);
+                    points.addAll(propagationPath.getPointList());
+                    segments.addAll(propagationPath.getSegmentList());
+                    srPath.add(new PropagationPath.SegmentPath(0.0, new Vector3D(srcCoord, receiverCoord)));
 
 
+                    for (int i = 1; i < points.size(); i++) {
+                        if (points.get(i).type == PropagationPath.PointPath.POINT_TYPE.DIFH) {
+                            if (points.get(i).coordinate.z <= data.freeFieldFinder.getHeightAtPosition(points.get(i).coordinate)) {
+                                points.clear();
+                                segments.clear();
+                            }
+                        }
+                        if (points.get(i).type == PropagationPath.PointPath.POINT_TYPE.REFL) {
+                            points.get(i).coordinate.z = Vertex.interpolateZ(points.get(i).coordinate, points.get(i - 1).coordinate, points.get(i + 1).coordinate);
+                            //check if in building && if under floor
+                            if (points.get(i).coordinate.z > data.freeFieldFinder.getBuildingRoofZ(points.get(i).getBuildingId())
+                                    || points.get(i).coordinate.z <= data.freeFieldFinder.getHeightAtPosition(points.get(i).coordinate)) {
+                                points.clear();
+                                segments.clear();
+                            }
 
-                for (int i = 1; i < points.size(); i++) {
-                    if (points.get(i).type == PropagationPath.PointPath.POINT_TYPE.DIFH) {
-                        if (points.get(i).coordinate.z <= data.freeFieldFinder.getHeightAtPosition(points.get(i).coordinate)) {
-                            points.clear();
-                            segments.clear();
+
                         }
                     }
-                    if (points.get(i).type == PropagationPath.PointPath.POINT_TYPE.REFL) {
-                        points.get(i).coordinate.z = Vertex.interpolateZ(points.get(i).coordinate, points.get(i - 1).coordinate, points.get(i + 1).coordinate);
-                        //check if in building && if under floor
-                        if (points.get(i).coordinate.z > data.freeFieldFinder.getBuildingRoofZ(points.get(i).getBuildingId())
-                                || points.get(i).coordinate.z <= data.freeFieldFinder.getHeightAtPosition(points.get(i).coordinate) ) {
-                            points.clear();
-                            segments.clear();
-                        }
-
-
-                    }
-                }
-                if (points.size() > 2) {
+                    if (points.size() > 2) {
                     /*for (int i = 1; i < points.size(); i++) {
                         if (points.get(i).coordinate.z <10) {
                             points.clear();
@@ -399,7 +399,8 @@ public class ComputeRays implements Runnable {
                         }
 
                     }*/
-                    propagationPaths_all.add(new PropagationPath(favorable, points, segments, srPath));
+                        propagationPaths_all.add(new PropagationPath(favorable, points, segments, srPath));
+                    }
                 }
             }
         }
@@ -530,7 +531,7 @@ public class ComputeRays implements Runnable {
             validDiffraction = true;
         }
 
-        if (validDiffraction) {
+        if (validDiffraction && diffDataWithSoilEffet.getPath().size()>2) {
             Coordinate bufferedCoordinate1;
             Coordinate bufferedCoordinate2;
             for (int j = diffDataWithSoilEffet.getPath().size() - 1; j > 1; j--) {
