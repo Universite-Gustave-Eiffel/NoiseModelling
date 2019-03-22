@@ -530,32 +530,34 @@ public class ComputeRays implements Runnable {
             diffDataWithSoilEffet = data.freeFieldFinder.getPath(receiverCoord, srcCoord);
             validDiffraction = true;
         }
+        // todo not sure about this part...
+        if (validDiffraction) {
+            if (diffDataWithSoilEffet.getPath().size()>2) {
+                Coordinate bufferedCoordinate1;
+                Coordinate bufferedCoordinate2;
+                for (int j = diffDataWithSoilEffet.getPath().size() - 1; j > 1; j--) {
+                    bufferedCoordinate1 = addBuffer(diffDataWithSoilEffet.getPath().get(j - 1), srcCoord, true);
+                    bufferedCoordinate1.z += 0.1;
+                    bufferedCoordinate2 = addBuffer(diffDataWithSoilEffet.getPath().get(j), receiverCoord, true);
+                    bufferedCoordinate2.z += 0.1;
 
-        if (validDiffraction && diffDataWithSoilEffet.getPath().size()>2) {
-            Coordinate bufferedCoordinate1;
-            Coordinate bufferedCoordinate2;
-            for (int j = diffDataWithSoilEffet.getPath().size() - 1; j > 1; j--) {
-                bufferedCoordinate1 = addBuffer(diffDataWithSoilEffet.getPath().get(j - 1), srcCoord, true);
-                bufferedCoordinate1.z += 0.1;
-                bufferedCoordinate2 = addBuffer(diffDataWithSoilEffet.getPath().get(j), receiverCoord, true);
-                bufferedCoordinate2.z += 0.1;
-
-                PropagationPath propagationPath1 = computeFreefield(bufferedCoordinate1, bufferedCoordinate2, debugInfo);
-                propagationPath1.getPointList().get(1).setType(PropagationPath.PointPath.POINT_TYPE.DIFH);
-                if (j == diffDataWithSoilEffet.getPath().size() - 1) {
-                    propagationPath1.getPointList().get(0).setCoordinate(diffDataWithSoilEffet.getPath().get(j));
-                    points.add(propagationPath1.getPointList().get(0));
+                    PropagationPath propagationPath1 = computeFreefield(bufferedCoordinate1, bufferedCoordinate2, debugInfo);
+                    propagationPath1.getPointList().get(1).setType(PropagationPath.PointPath.POINT_TYPE.DIFH);
+                    if (j == diffDataWithSoilEffet.getPath().size() - 1) {
+                        propagationPath1.getPointList().get(0).setCoordinate(diffDataWithSoilEffet.getPath().get(j));
+                        points.add(propagationPath1.getPointList().get(0));
+                    }
+                    points.add(propagationPath1.getPointList().get(1));
+                    segments.addAll(propagationPath1.getSegmentList());
                 }
-                points.add(propagationPath1.getPointList().get(1));
-                segments.addAll(propagationPath1.getSegmentList());
-            }
-            bufferedCoordinate1 = addBuffer(diffDataWithSoilEffet.getPath().get(1), srcCoord, true);
-            bufferedCoordinate1.z += 0.001;
-            bufferedCoordinate2 = diffDataWithSoilEffet.getPath().get(0);
+                bufferedCoordinate1 = addBuffer(diffDataWithSoilEffet.getPath().get(1), srcCoord, true);
+                bufferedCoordinate1.z += 0.001;
+                bufferedCoordinate2 = diffDataWithSoilEffet.getPath().get(0);
 
-            PropagationPath propagationPath2 = computeFreefield(bufferedCoordinate2, bufferedCoordinate1, debugInfo);
-            points.add(propagationPath2.getPointList().get(1));
-            segments.add(propagationPath2.getSegmentList().get(0));
+                PropagationPath propagationPath2 = computeFreefield(bufferedCoordinate2, bufferedCoordinate1, debugInfo);
+                points.add(propagationPath2.getPointList().get(1));
+                segments.add(propagationPath2.getSegmentList().get(0));
+            }
 
 
         } else {
