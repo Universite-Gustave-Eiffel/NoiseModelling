@@ -301,6 +301,31 @@ public class TestComputeRays {
      * @throws ParseException
      */
     @Test
+    public void TestComputeHorizontalEdgeDiffraction() throws LayerDelaunayError, ParseException {
+        GeometryFactory factory = new GeometryFactory();
+        WKTReader wktReader = new WKTReader(factory);
+        List<Geometry> srclst = new ArrayList<Geometry>();
+        //Scene dimension
+        Envelope cellEnvelope = new Envelope(new Coordinate(316705, 6706347, 0.), new Coordinate(316828, 6706469, 0.));
+        //Create obstruction test object
+        MeshBuilder mesh = new MeshBuilder();
+        mesh.addGeometry(wktReader.read("POLYGON ((316759.81 6706397.4101739, 316759.81 6706403.99033324, 316765.7002829955 6706404.19000385, 316778.88539775345 6706404.489665548, 316777.49275745824 6706400.809116197, 316765.598667453 6706399.209910818, 316765.5966749492 6706399.209431015, 316765.594822107 6706399.208555082, 316765.59318675095 6706399.207319812, 316765.5918375706 6706399.205777088, 316765.59083123534 6706399.203991711, 316765.59021001414 6706399.202038671, 316765.58999999997 6706399.2, 316765.58999999997 6706397.509829072, 316759.81 6706397.4101739))"), 16.68046);
+        mesh.addGeometry(wktReader.read("POLYGON ((316755.91050631634 6706412.408966506, 316756.3094447798 6706419.689593465, 316765.78984906914 6706419.290418547, 316765.6900012205 6706412.900156232, 316765.69 6706412.9, 316765.69 6706412.20970156, 316762.3996971088 6706412.109995412, 316762.39766060974 6706412.109722513, 316762.3957228751 6706412.109039148, 316762.3939657122 6706412.107974169, 316762.39246330503 6706412.106572536, 316762.3912790822 6706412.104893423, 316762.3904630394 6706412.10300772, 316762.3900496281 6706412.100995037, 316762.1910047661 6706410.110546417, 316758.81 6706410.30942905, 316758.81 6706412.1, 316758.8097809892 6706412.102081406, 316758.80913354986 6706412.104071641, 316758.8080860413 6706412.10588353, 316758.8066843467 6706412.107437708, 316758.8049898632 6706412.108666099, 316758.8030768129 6706412.109514894, 316758.8010289915 6706412.109946918, 316755.91050631634 6706412.408966506))"), 16.73458);
+        cellEnvelope.expandBy(200);
+        mesh.finishPolygonFeeding(cellEnvelope);
+        //Retrieve Delaunay triangulation of scene
+        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(), mesh.getTriNeighbors(), mesh.getVertices());
+
+        DiffractionWithSoilEffetZone eff = manager.getPath(new Coordinate(316876.05185368325, 6706318.789634008, 22.089050196052437),
+                new Coordinate(316747.10402055364, 6706422.950335046, 12.808121783800553));
+        assertEquals(3, eff.getPath().size());
+    }
+    /**
+     * Test vertical edge diffraction ray computation
+     * @throws LayerDelaunayError
+     * @throws ParseException
+     */
+    @Test
     public void TestcomputeVerticalEdgeDiffractionRayOverBuilding() throws LayerDelaunayError, ParseException {
         GeometryFactory factory = new GeometryFactory();
         WKTReader wktReader = new WKTReader(factory);

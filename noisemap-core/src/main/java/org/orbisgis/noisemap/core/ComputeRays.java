@@ -531,7 +531,7 @@ public class ComputeRays implements Runnable {
             validDiffraction = true;
         }
         // todo not sure about this part...
-        if (validDiffraction && diffDataWithSoilEffet.getPath().size()>2) {
+        if (validDiffraction) {
 
                 Coordinate bufferedCoordinate1;
                 Coordinate bufferedCoordinate2;
