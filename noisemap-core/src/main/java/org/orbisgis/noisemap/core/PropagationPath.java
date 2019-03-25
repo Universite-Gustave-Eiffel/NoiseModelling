@@ -316,7 +316,8 @@ public class PropagationPath {
                     + CGAlgorithms3D.distance(pointList.get(pointList.size()-2).coordinate,R);
             SR.dc = SR.d;
             double convex = 1; // if path is convex, delta is positive, otherwise negative
-            if (Vector3D.dot(S,R,S,pointList.get(difVPoints.get(0)).coordinate)<0){convex = -1;}
+            // todo handle with unconvex path
+            //if (Vector3D.dot(S,R,S,pointList.get(difVPoints.get(0)).coordinate)<0){convex = -1;}
             SR.delta = convex * (SR.dPath - SR.dc);
         }
         if (difHPoints.size()>0) {

@@ -531,8 +531,8 @@ public class ComputeRays implements Runnable {
             validDiffraction = true;
         }
         // todo not sure about this part...
-        if (validDiffraction) {
-            if (diffDataWithSoilEffet.getPath().size()>2) {
+        if (validDiffraction && diffDataWithSoilEffet.getPath().size()>2) {
+
                 Coordinate bufferedCoordinate1;
                 Coordinate bufferedCoordinate2;
                 for (int j = diffDataWithSoilEffet.getPath().size() - 1; j > 1; j--) {
@@ -557,7 +557,7 @@ public class ComputeRays implements Runnable {
                 PropagationPath propagationPath2 = computeFreefield(bufferedCoordinate2, bufferedCoordinate1, debugInfo);
                 points.add(propagationPath2.getPointList().get(1));
                 segments.add(propagationPath2.getSegmentList().get(0));
-            }
+
 
 
         } else {
