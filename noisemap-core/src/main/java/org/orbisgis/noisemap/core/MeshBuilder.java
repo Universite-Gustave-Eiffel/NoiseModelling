@@ -140,6 +140,13 @@ public class MeshBuilder {
     }
 
     /**
+     * @return Envelope of buildings
+     */
+    public Envelope getGeometriesBoundingBox() {
+        return new Envelope(geometriesBoundingBox);
+    }
+
+    /**
      * Retrieve neighbors triangle list
      *
      * @return

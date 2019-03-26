@@ -33,6 +33,8 @@
  */
 package org.orbisgis.noisemap.core;
 
+import org.apache.commons.math3.stat.regression.RegressionResults;
+import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineSegment;
@@ -148,24 +150,11 @@ public class JTSUtility {
      */
     public static double[] getLinearRegressionPolyline(List<Coordinate> xzList) {
         // Linear regression
-        double A1 = 0, A2 = 0, B1 = 0, B2 = 0;
-        for(int i=0;i<xzList.size()-1;i++) {
-            final Coordinate p = xzList.get(i);
-            final Coordinate p1 = xzList.get(i + 1);
-            double ab[] = getLinearFunction(p, p1);
-            A1 += ab[0] * (Math.pow(p1.x, 3d) - Math.pow(p.x, 3d));
-            A2 += ab[1] * (Math.pow(p1.x, 2d) - Math.pow(p.x, 2d));
-            B1 += ab[0] * (Math.pow(p1.x, 2d) - Math.pow(p.x, 2d));
-            B2 += ab[1] * (p1.x - p.x);
+        SimpleRegression simpleRegression = new SimpleRegression();
+        for(Coordinate p : xzList) {
+            simpleRegression.addData(p.x, p.y);
         }
-        final double A = (2d / 3d) * A1 + A2;
-        final double B = B1 + 2d * B2;
-        final double XN = xzList.get(xzList.size() - 1).x;
-        final double X1 = xzList.get(0).x;
-        final double XN_X1 = XN - X1;
-        final double XN_X1_3 = Math.pow(XN_X1, 3d);
-        return new double[]{(3d*(2d*A-B*(XN+X1)))/XN_X1_3,
-                ((2d*(Math.pow(XN, 3d) - Math.pow(X1, 3d)))/Math.pow(XN-X1, 4d)) * B - ((3d*(XN+X1)) / XN_X1_3) * A};
+        return new double[] {simpleRegression.getSlope(), simpleRegression.getIntercept()};
     }
 
     /**

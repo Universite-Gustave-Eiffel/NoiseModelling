@@ -501,6 +501,7 @@ public class FastObstructionTest {
 
     /**
      * Return wall corners with an offset offward the building volume
+     * @param build Building identifier [1-buildingCount]
      * @param minAngle Minimum angle [0-2Pi]
      * @param maxAngle Maximum angle [0-2Pi]
      * @return List of corners within parameters range
@@ -665,6 +666,13 @@ public class FastObstructionTest {
         return (Polygon) polygonWithHeight.get(buildingId - 1).geo;
     }
 
+    /**
+     * @return Number of stored buildings
+     */
+    public int getBuildingCount() {
+        return polygonWithHeight.size();
+    }
+
 
     /*
      * compute diffraction.
@@ -695,18 +703,20 @@ public class FastObstructionTest {
         Coordinate[] triP2 = getTriangle(curTriP2);
         Triangle buildingP1 = this.triVertices.get(curTriP1);
         Triangle buildingP2 = this.triVertices.get(curTriP2);
-        if (buildingP1.getAttribute() >= 1) {
-            MeshBuilder.PolygonWithHeight building = polygonWithHeight.get(buildingP1.getAttribute() - 1);
-            if(!building.hasHeight() || Double.isNaN(p1.z) || building.getHeight() >= p1.z) {
-                //receiver is in the building so this propagation line is invisible
-                return false;
+        if(stopOnIntersection) {
+            if (buildingP1.getAttribute() >= 1) {
+                MeshBuilder.PolygonWithHeight building = polygonWithHeight.get(buildingP1.getAttribute() - 1);
+                if (!building.hasHeight() || Double.isNaN(p1.z) || building.getHeight() >= p1.z) {
+                    //receiver is in the building so this propagation line is invisible
+                    return false;
+                }
             }
-        }
-        if (buildingP2.getAttribute() >= 1) {
-            MeshBuilder.PolygonWithHeight building = polygonWithHeight.get(buildingP2.getAttribute() - 1);
-            if(!building.hasHeight() || Double.isNaN(p2.z) || building.getHeight() >= p2.z) {
-                //receiver is in the building so this propagation line is invisible
-                return false;
+            if (buildingP2.getAttribute() >= 1) {
+                MeshBuilder.PolygonWithHeight building = polygonWithHeight.get(buildingP2.getAttribute() - 1);
+                if (!building.hasHeight() || Double.isNaN(p2.z) || building.getHeight() >= p2.z) {
+                    //receiver is in the building so this propagation line is invisible
+                    return false;
+                }
             }
         }
         double zTopoP1 = getTopoZByGiven3Points(triP1[0], triP1[1], triP1[2], p1);
@@ -715,8 +725,8 @@ public class FastObstructionTest {
             path.add(new TriIdWithIntersection(curTriP1, new Coordinate(p1.x, p1.y, zTopoP1)));
         }
         try {
-            if ((!Double.isNaN(p1.z) && p1.z + epsilon < zTopoP1)
-                    || (!Double.isNaN(p2.z) && p2.z + epsilon < zTopoP2)) {
+            if (stopOnIntersection && ((!Double.isNaN(p1.z) && p1.z + epsilon < zTopoP1)
+                    || (!Double.isNaN(p2.z) && p2.z + epsilon < zTopoP2))) {
                 //Z value of origin or destination is lower than topography. FreeField is always false in this case
                 return false;
             }
@@ -871,11 +881,6 @@ public class FastObstructionTest {
                     break;
                 }
             }
-            if (path.size()<=2){
-                //Here we should calculate the rayleigh criterum I think
-                return totData;
-            }
-
             List<Coordinate> path3D = new ArrayList<>();
             Coordinate coordinate = new Coordinate();
             int i =0;
