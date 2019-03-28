@@ -35,7 +35,11 @@ package org.orbisgis.noisemap.core;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Way to store data computed by thread.
@@ -44,48 +48,61 @@ import java.util.List;
  * @author Nicolas Fortin
  * @author Pierre Aumond
  */
-public class ComputeRaysOut {
+public class ComputeRaysOut implements IComputeRaysOut {
+    private List<ComputeRaysOut.verticeSL> verticeSoundLevel = new ArrayList<>();
+    private PropagationProcessPathData pathData;
 
-    public static final class verticeSL {
-        public final int sourceId;
-        public final int receiverId;
-        public final double[] value;
-
-        verticeSL(int receiverId, int sourceId, double[] value) {
-            this.sourceId = sourceId;
-            this.receiverId = receiverId;
-            this.value = value;
-        }
+    public ComputeRaysOut(boolean keepRays, PropagationProcessPathData pathData) {
+        this.keepRays = keepRays;
+        this.pathData = pathData;
     }
 
-    public static final class SourceIdReceiverId {
-        public final int sourceId;
-        public final int receiverId;
-
-        SourceIdReceiverId(int receiverId, int sourceId) {
-            this.sourceId = sourceId;
-            this.receiverId = receiverId;
-        }
-    }
-
-    private long nb_couple_receiver_src = 0;
-    private long nb_obstr_test = 0;
-    private long nb_image_receiver = 0;
-    private long nb_reflexion_path = 0;
-    private long nb_diffraction_path = 0;
+    public boolean keepRays = true;
+    public AtomicLong rayCount = new AtomicLong();
+    private AtomicLong nb_couple_receiver_src = new AtomicLong();
+    private AtomicLong nb_obstr_test = new AtomicLong();
+    private AtomicLong nb_image_receiver = new AtomicLong();
+    private AtomicLong nb_reflexion_path = new AtomicLong();
+    private AtomicLong nb_diffraction_path = new AtomicLong();
     private long cellComputed = 0;
-    List<PropagationPath> propagationPaths = new ArrayList<PropagationPath>();
+    List<PropagationPath> propagationPaths = Collections.synchronizedList(new ArrayList<PropagationPath>());
 
-    private List<ComputeRaysOut.verticeSL> verticeSoundLevel =
-            Collections.synchronizedList(new ArrayList<ComputeRaysOut.verticeSL>());
-
-
-    public void setSrcIdAndAddPropagationPaths(List<PropagationPath> propagationPath, int srcId, int rcvId) {
-        for (int j = 0; j < propagationPath.size(); j++) {
-            propagationPath.get(j).idSource = srcId;
-            propagationPath.get(j).idReceiver = rcvId;
+    @Override
+    public double addPropagationPaths(int sourceId, int receiverId, List<PropagationPath> propagationPath) {
+        if(keepRays) {
+            propagationPaths.addAll(propagationPath);
         }
-        propagationPaths.addAll(propagationPath);
+
+        // Compute receiver/source attenuation
+        EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
+        double[] aGlobalMeteo = null;
+        for (PropagationPath propath : propagationPath) {
+            propath.setFavorable(false);
+            evaluateAttenuationCnossos.evaluate(propath, pathData);
+            if (aGlobalMeteo != null) {
+                aGlobalMeteo = ComputeRays.sumArray(evaluateAttenuationCnossos.getaGlobal(), aGlobalMeteo);
+            } else {
+                aGlobalMeteo = evaluateAttenuationCnossos.getaGlobal();
+            }
+            propath.setFavorable(true);
+            evaluateAttenuationCnossos.evaluate(propath, pathData);
+            aGlobalMeteo = ComputeRays.sumArrayWithPonderation(aGlobalMeteo, evaluateAttenuationCnossos.getaGlobal(), pathData.getDefaultOccurance());
+        }
+        if(aGlobalMeteo != null) {
+            verticeSoundLevel.add(new ComputeRaysOut.verticeSL(receiverId, sourceId, aGlobalMeteo));
+            double globalValue = 0;
+            for (double att : aGlobalMeteo) {
+                globalValue += Math.pow(10, att / 10.0);
+            }
+            return 10 * Math.log10(globalValue);
+        } else {
+            return Double.NaN;
+        }
+    }
+
+    @Override
+    public IComputeRaysOut subProcess(int receiverStart, int receiverEnd) {
+        return this;
     }
 
     public List<ComputeRaysOut.verticeSL> getVerticesSoundLevel() {
@@ -97,30 +114,24 @@ public class ComputeRaysOut {
     }
     public void clearPropagationPaths() { this.propagationPaths.clear();}
 
-
-    public void addVerticeSoundLevel(int receiverId, int sourceId, double[] value) {
-        verticeSoundLevel.add(new ComputeRaysOut.verticeSL(receiverId, sourceId, value));
+    public void appendReflexionPath(long added) {
+        nb_reflexion_path.addAndGet(added);
     }
 
-
-    public synchronized void appendReflexionPath(long added) {
-        nb_reflexion_path += added;
+    public void appendDiffractionPath(long added) {
+        nb_diffraction_path.addAndGet(added);
     }
 
-    public synchronized void appendDiffractionPath(long added) {
-        nb_diffraction_path += added;
+    public void appendImageReceiver(long added) {
+        nb_image_receiver.addAndGet(added);
     }
 
-    public synchronized void appendImageReceiver(long added) {
-        nb_image_receiver += added;
+    public void appendSourceCount(long srcCount) {
+        nb_couple_receiver_src.addAndGet(srcCount);
     }
 
-    public synchronized void appendSourceCount(long srcCount) {
-        nb_couple_receiver_src += srcCount;
-    }
-
-    public synchronized void appendFreeFieldTestCount(long freeFieldTestCount) {
-        nb_obstr_test += freeFieldTestCount;
+    public void appendFreeFieldTestCount(long freeFieldTestCount) {
+        nb_obstr_test.addAndGet(freeFieldTestCount);
     }
 
     public synchronized void log(String str) {
@@ -138,4 +149,15 @@ public class ComputeRaysOut {
         return cellComputed;
     }
 
+    public static final class verticeSL {
+        public final int sourceId;
+        public final int receiverId;
+        public final double[] value;
+
+        verticeSL(int receiverId, int sourceId, double[] value) {
+            this.sourceId = sourceId;
+            this.receiverId = receiverId;
+            this.value = value;
+        }
+    }
 }

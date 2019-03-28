@@ -69,8 +69,8 @@ public class PropagationProcessData {
     public QueryGeometryStructure sourcesIndex;
     /** Sources geometries. Can be LINESTRING or POINT */
     public List<Geometry> sourceGeometries;
-    /** Sound level of source. By frequency band, energetic */
-    public List<ArrayList<Double>> wj_sources;
+    /** Optional Sound level of source.energetic */
+    public List<Double> wj_sources;
     /** Frequency bands values, by third octave */
     public List<Integer> freq_lvl;
     /** Maximum reflexion order */
@@ -87,8 +87,8 @@ public class PropagationProcessData {
     public double wallAlpha;
     /** probability occurrence favourable condition */
     public double[] windRose;
-    /** Forget Sound Source in dB */
-    public double forgetSource;
+    /** maximum dB Error, stop calculation if the sum of further sources contributions are smaller than this value */
+    public double maximumError;
     /** cellId only used in output data */
     public int cellId;
     /** Progression information */
@@ -105,9 +105,9 @@ public class PropagationProcessData {
 
     public PropagationProcessData(List<Coordinate> receivers, FastObstructionTest freeFieldFinder,
                                   QueryGeometryStructure sourcesIndex, List<Geometry> sourceGeometries,
-                                  List<ArrayList<Double>> wj_sources, List<Integer> freq_lvl, int reflexionOrder,
+                                  List<Double> wj_sources, List<Integer> freq_lvl, int reflexionOrder,
                                   int diffractionOrder, double maxSrcDist, double maxRefDist, double minRecDist,
-                                  double wallAlpha, double[] windRose, double forgetSource, int cellId, ProgressVisitor cellProg,
+                                  double wallAlpha, double[] windRose, double maximumError, int cellId, ProgressVisitor cellProg,
                                   List<GeoWithSoilType> geoWithSoilType, boolean computeVerticalDiffraction) {
         this.receivers = receivers;
         this.freeFieldFinder = freeFieldFinder;
@@ -122,7 +122,7 @@ public class PropagationProcessData {
         this.minRecDist = minRecDist;
         this.wallAlpha = wallAlpha;
         this.windRose = windRose;
-        this.forgetSource = forgetSource;
+        this.maximumError = maximumError;
         this.cellId = cellId;
         this.cellProg = cellProg;
         this.geoWithSoilType = geoWithSoilType;

@@ -65,7 +65,7 @@ public class PropagationProcessPathData {
     double humidity = 70;
     double pressure = Pref;
     double[] alpha_atmo = getAtmoCoeffArray(freq_lvl,  temperature,  pressure,  humidity);
-
+    double defaultOccurance = 0.5;
 
     boolean gDisc = true;     // choose between accept G discontinuity or not
     boolean prime2520 = false; // choose to use prime values to compute eq. 2.5.20
@@ -88,6 +88,20 @@ public class PropagationProcessPathData {
         this.pressure = pressure;
         this.alpha_atmo = getAtmoCoeffArray(freq_lvl,  temperature,  pressure,  humidity);
         return this;
+    }
+
+    /**
+     * @return Default favorable probability (0-1)
+     */
+    public double getDefaultOccurance() {
+        return defaultOccurance;
+    }
+
+    /**
+     * @param defaultOccurance Default favorable probability (0-1)
+     */
+    public void setDefaultOccurance(double defaultOccurance) {
+        this.defaultOccurance = defaultOccurance;
     }
 
     public PropagationProcessPathData setGDisc(boolean gDisc) {

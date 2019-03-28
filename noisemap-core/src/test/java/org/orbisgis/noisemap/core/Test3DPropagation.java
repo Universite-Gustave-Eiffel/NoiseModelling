@@ -72,24 +72,5 @@ public class Test3DPropagation extends TestCase{
         assertEquals(factory.createLineString(coords.toArray(new Coordinate[coords.size()])).getLength(),
                 factory.createLineString(coordsInv.toArray(new Coordinate[coordsInv.size()])).getLength(), 1e-12);
     }
-
-    public void testLinearRegression() {
-        double ab[] = JTSUtility.getLinearRegressionPolyline(JTSUtility.getNewCoordinateSystem(Arrays.asList(new Coordinate(5, 5, 5),
-                new Coordinate(10, 5, 5))));
-        assertArrayEquals(new double[]{0, 5}, ab, 1e-12);
-        ab = JTSUtility.getLinearRegressionPolyline(JTSUtility.getNewCoordinateSystem(Arrays.asList(new Coordinate(10, 5, 5),
-                new Coordinate(5, 5, 5))));
-        assertArrayEquals(new double[]{0, 5}, ab, 1e-12);
-        ab = JTSUtility.getLinearRegressionPolyline(JTSUtility.getNewCoordinateSystem(Arrays.asList(new Coordinate(5, 5, 5),
-                new Coordinate(10, 5, 10))));
-        assertArrayEquals(new double[]{1, 5}, ab, 1e-12);
-        List<Coordinate> sample = Arrays.asList(new Coordinate(15, 10, 1.5), new Coordinate(17.5, 10, 1.8),
-                new Coordinate(20, 10, 2),new Coordinate(22.5, 10, 2), new Coordinate(25, 10, 2.5));
-        List<Coordinate> localSample = JTSUtility.getNewCoordinateSystem(sample);
-        ab = JTSUtility.getLinearRegressionPolyline(localSample);
-        final double funcError = 0.17;
-        for (Coordinate aSample : localSample) {
-            assertEquals(aSample.y, aSample.x * ab[0] + ab[1], funcError);
-        }
-    }
+    
 }

@@ -66,7 +66,6 @@ import org.locationtech.jts.triangulate.quadedge.Vertex;
 public class FastObstructionTest {
     public static final double epsilon = 1e-7;
     public static final double wideAngleTranslationEpsilon = 0.01;
-    private long nbObstructionTest = 0;
     private List<Triangle> triVertices;
     private List<Coordinate> vertices;
     private List<Triangle> triNeighbors; // Neighbors
@@ -126,12 +125,6 @@ public class FastObstructionTest {
     public boolean isHasBuildingWithHeight() {
         return hasBuildingWithHeight;
     }
-
-    public long getNbObstructionTest() {
-        return nbObstructionTest;
-    }
-
-
 
     /**
      * Retrieve triangle list, only for debug and unit test purpose
@@ -691,8 +684,6 @@ public class FastObstructionTest {
      * @return True if the propagation goes from p1 to p2.
      */
     public boolean computePropagationPath(Coordinate p1, Coordinate p2, boolean stopOnIntersection, List<TriIdWithIntersection> path, boolean includePoints) {
-        nbObstructionTest++;
-
         LineSegment propaLine = new LineSegment(p1, p2);
 
         //get receiver triangle id
