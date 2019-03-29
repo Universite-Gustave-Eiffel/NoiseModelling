@@ -419,17 +419,17 @@ public class ComputeRays implements Runnable {
     /**
      * @param receiverCoord
      * @param srcCoord
+     * @param inters PropagationPath between srcCoord and receiverCoord (or null if must be computed here)
      * @param debugInfo
      */
     public PropagationPath computeFreefield(Coordinate receiverCoord,
-                                            Coordinate srcCoord,
+                                            Coordinate srcCoord,List<TriIdWithIntersection> inters,
                                             List<PropagationDebugInfo> debugInfo) {
 
         GeometryFactory factory = new GeometryFactory();
         List<PropagationPath.PointPath> points = new ArrayList<PropagationPath.PointPath>();
         List<PropagationPath.SegmentPath> segments = new ArrayList<PropagationPath.SegmentPath>();
         List<PropagationPath.SegmentPath> srPath = new ArrayList<PropagationPath.SegmentPath>();
-        List<PropagationPath> propagationPaths = new ArrayList<PropagationPath>();
 
         double gPath = 0;
         double totRSDistance = 0.;
@@ -453,8 +453,10 @@ public class ComputeRays implements Runnable {
             // Compute GPath using 2D Length
             gPath = totRSDistance / RSZone.getLength();
 
-            List<TriIdWithIntersection> inters = new ArrayList<>();
-            data.freeFieldFinder.computePropagationPath(srcCoord, receiverCoord, false, inters, true);
+            if(inters == null) {
+                inters = new ArrayList<>();
+                data.freeFieldFinder.computePropagationPath(srcCoord, receiverCoord, false, inters, true);
+            }
             List<Coordinate> rSground = data.freeFieldFinder.getGroundProfile(inters);
             altR = rSground.get(inters.size() - 1).z;    // altitude Receiver
             altS = rSground.get(0).z; // altitude Source
@@ -537,7 +539,7 @@ public class ComputeRays implements Runnable {
                     offsetPath.set(i, new Coordinate(dest.x - v.getX(), dest.y - v.getY(), dest.z));
                 }
                 for (int j = offsetPath.size() - 1; j > 1; j--) {
-                    PropagationPath propagationPath1 = computeFreefield(offsetPath.get(j - 1), offsetPath.get(j), debugInfo);
+                    PropagationPath propagationPath1 = computeFreefield(offsetPath.get(j - 1), offsetPath.get(j), null, debugInfo);
                     propagationPath1.getPointList().get(1).setType(PropagationPath.PointPath.POINT_TYPE.DIFH);
                     if (j == offsetPath.size() - 1) {
                         propagationPath1.getPointList().get(0).setCoordinate(offsetPath.get(j));
@@ -547,12 +549,12 @@ public class ComputeRays implements Runnable {
                     segments.addAll(propagationPath1.getSegmentList());
                 }
 
-                PropagationPath propagationPath2 = computeFreefield(offsetPath.get(0), offsetPath.get(1), debugInfo);
+                PropagationPath propagationPath2 = computeFreefield(offsetPath.get(0), offsetPath.get(1),null, debugInfo);
                 points.add(propagationPath2.getPointList().get(1));
                 segments.add(propagationPath2.getSegmentList().get(0));
 
         } else {
-            PropagationPath propagationPath = computeFreefield(receiverCoord, srcCoord, debugInfo);
+            PropagationPath propagationPath = computeFreefield(receiverCoord, srcCoord,null, debugInfo);
             points.addAll(propagationPath.getPointList());
             segments.addAll(propagationPath.getSegmentList());
             srPath.addAll(propagationPath.getSRList());
@@ -850,23 +852,33 @@ public class ComputeRays implements Runnable {
         // Then, check if the source is visible from the receiver (not
         // hidden by a building)
         // Create the direct Line
-        boolean buildingInArea = false;
-        boolean freefield = data.freeFieldFinder.isFreeField(receiverCoord, srcCoord);
-        boolean[] somethingOnPath = findBuildingOnPath(srcCoord, receiverCoord, verticalDiffraction);
-        boolean somethingHideReceiver = somethingOnPath[0];
-        boolean buildingOnPath = somethingOnPath[1];
+
+        boolean freefield = true;
+        boolean somethingHideReceiver = false;
+        boolean buildingOnPath = false;
+
+        List<TriIdWithIntersection> inters = new ArrayList<>();
+        data.freeFieldFinder.computePropagationPath(srcCoord, receiverCoord, false, inters, true);
+        for(TriIdWithIntersection intersection : inters) {
+            if(intersection.getBuildingId() > 0) {
+                buildingOnPath = true;
+            }
+            if(intersection.isIntersectionOnBuilding() || intersection.isIntersectionOnTopography()) {
+                freefield = false;
+            }
+        }
 
         // double fav_probability = favrose[(int) (Math.round(calcRotationAngleInDegrees(srcCoord, receiverCoord) / 30))];
 
         if (!somethingHideReceiver && !buildingOnPath) {
-            PropagationPath propagationPath = computeFreefield(receiverCoord, srcCoord, debugInfo);
+            PropagationPath propagationPath = computeFreefield(receiverCoord, srcCoord,inters, debugInfo);
             propagationPaths.add(propagationPath);
         }
 
         //Process diffraction 3D
         // todo include rayleigh criterium
         if (verticalDiffraction && buildingOnPath && !freefield) {
-            PropagationPath propagationPath3 = computeFreefield(receiverCoord, srcCoord, debugInfo);
+            PropagationPath propagationPath3 = computeFreefield(receiverCoord, srcCoord, inters, debugInfo);
             PropagationPath propagationPath = computeHorizontalEdgeDiffraction(somethingHideReceiver, receiverCoord, srcCoord, debugInfo);
             propagationPath.getSRList().addAll(propagationPath3.getSRList());
             propagationPaths.add(propagationPath);
@@ -889,18 +901,18 @@ public class ComputeRays implements Runnable {
 
                     // if (coordinates.size()>2 && coordinates.size() <= data.diffractionOrder+2 && convexhullValid) {
 
-                    propagationPath = computeFreefield(coordinates.get(1), coordinates.get(0), debugInfo);
+                    propagationPath = computeFreefield(coordinates.get(1), coordinates.get(0),null, debugInfo);
                     propagationPath.getPointList().get(1).setType(PropagationPath.PointPath.POINT_TYPE.DIFV);
 
                     propagationPath2 = propagationPath;
                     int j;
                     for (j = 1; j < coordinates.size() - 2; j++) {
-                        propagationPath = computeFreefield(coordinates.get(j + 1), coordinates.get(j), debugInfo);
+                        propagationPath = computeFreefield(coordinates.get(j + 1), coordinates.get(j),null, debugInfo);
                         propagationPath.getPointList().get(1).setType(PropagationPath.PointPath.POINT_TYPE.DIFV);
                         propagationPath2.getPointList().add(propagationPath.getPointList().get(1));
                         propagationPath2.getSegmentList().addAll(propagationPath.getSegmentList());
                     }
-                    propagationPath = computeFreefield(coordinates.get(j + 1), coordinates.get(j), debugInfo);
+                    propagationPath = computeFreefield(coordinates.get(j + 1), coordinates.get(j),null, debugInfo);
                     propagationPath2.getPointList().add(propagationPath.getPointList().get(1));
                     propagationPath2.getSegmentList().addAll(propagationPath.getSegmentList());
                     propagationPaths.add(propagationPath2);
@@ -912,17 +924,17 @@ public class ComputeRays implements Runnable {
             if(!coordinates.isEmpty()) {
                 if (coordinates.size() > 2 && coordinates.size() <= data.diffractionOrder + 2) {
                     Collections.reverse(coordinates);
-                    propagationPath = computeFreefield(coordinates.get(1), coordinates.get(0), debugInfo);
+                    propagationPath = computeFreefield(coordinates.get(1), coordinates.get(0),null, debugInfo);
                     propagationPath.getPointList().get(1).setType(PropagationPath.PointPath.POINT_TYPE.DIFV);
                     propagationPath2 = propagationPath;
                     int j;
                     for (j = 1; j < coordinates.size() - 2; j++) {
-                        propagationPath = computeFreefield(coordinates.get(j + 1), coordinates.get(j), debugInfo);
+                        propagationPath = computeFreefield(coordinates.get(j + 1), coordinates.get(j),null, debugInfo);
                         propagationPath.getPointList().get(1).setType(PropagationPath.PointPath.POINT_TYPE.DIFV);
                         propagationPath2.getPointList().add(propagationPath.getPointList().get(1));
                         propagationPath2.getSegmentList().addAll(propagationPath.getSegmentList());
                     }
-                    propagationPath = computeFreefield(coordinates.get(j + 1), coordinates.get(j), debugInfo);
+                    propagationPath = computeFreefield(coordinates.get(j + 1), coordinates.get(j),null, debugInfo);
                     propagationPath2.getPointList().add(propagationPath.getPointList().get(1));
                     propagationPath2.getSegmentList().addAll(propagationPath.getSegmentList());
                     propagationPaths.add(propagationPath2);
