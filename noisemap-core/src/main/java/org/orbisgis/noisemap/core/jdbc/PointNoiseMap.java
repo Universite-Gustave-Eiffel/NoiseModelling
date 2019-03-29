@@ -12,7 +12,6 @@ import org.orbisgis.noisemap.core.FastObstructionTest;
 import org.orbisgis.noisemap.core.GeoWithSoilType;
 import org.orbisgis.noisemap.core.LayerDelaunayError;
 import org.orbisgis.noisemap.core.MeshBuilder;
-import org.orbisgis.noisemap.core.PropagationProcess;
 import org.orbisgis.noisemap.core.PropagationProcessData;
 import org.orbisgis.noisemap.core.PropagationProcessOut;
 import org.orbisgis.noisemap.core.PropagationResultPtRecord;
@@ -68,7 +67,7 @@ public class PointNoiseMap extends JdbcNoiseMap {
         // optimization
         // Fetch buildings in extendedEnvelope
         ArrayList<Geometry> buildingsGeometries = new ArrayList<>();
-        fetchCellBuildings(connection, expandedCellEnvelop, buildingsGeometries, mesh);
+        fetchCellBuildings(connection, expandedCellEnvelop, buildingsGeometries,null, mesh);
         //if we have topographic points data
         fetchCellDem(connection, expandedCellEnvelop, mesh);
 
@@ -106,6 +105,8 @@ public class PointNoiseMap extends JdbcNoiseMap {
         String pkSelect = "";
         if(intPk >= 1) {
             pkSelect = ", " + JDBCUtilities.getFieldName(connection.getMetaData(), receiverTableName, intPk);
+        } else {
+            throw new SQLException(String.format("Table %s missing primary key for receiver identification", receiverTableName));
         }
         try (PreparedStatement st = connection.prepareStatement(
                 "SELECT " + TableLocation.quoteIdentifier(receiverGeomName) + pkSelect + " FROM " +
@@ -114,15 +115,13 @@ public class PointNoiseMap extends JdbcNoiseMap {
             st.setObject(1, geometryFactory.toGeometry(cellEnvelope));
             try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
                 while (rs.next()) {
-                    if(!pkSelect.isEmpty()) {
-                        long receiverPk = rs.getLong(2);
-                        if(skipReceivers.contains(receiverPk)) {
-                            continue;
-                        }
-                        receiversPk.add(receiverPk);
+                    long receiverPk = rs.getLong(2);
+                    if(skipReceivers.contains(receiverPk)) {
+                        continue;
                     }
                     Geometry pt = rs.getGeometry();
-                    if(pt != null) {
+                    if(pt != null && !pt.isEmpty()) {
+                        receiversPk.add(receiverPk);
                         receivers.add(pt.getCoordinate());
                     }
                 }
@@ -131,8 +130,8 @@ public class PointNoiseMap extends JdbcNoiseMap {
 
         return new PropagationProcessData(
                 receivers, freeFieldFinder, sourcesIndex,
-                sourceGeometries, wj_sources, db_field_freq,
-                soundReflectionOrder, soundDiffractionOrder, maximumPropagationDistance, maximumReflectionDistance,
+                sourceGeometries, null, db_field_freq,
+                soundReflectionOrder, computeHorizontalDiffraction, maximumPropagationDistance, maximumReflectionDistance,
                 0, wallAbsorption, DEFAULT_WIND_ROSE, forgetSource, ij,
                 progression.subProcess(receivers.size()), geoWithSoil, computeVerticalDiffraction);
     }
@@ -157,12 +156,12 @@ public class PointNoiseMap extends JdbcNoiseMap {
         List<Long> receiversPk = new ArrayList<>();
         PropagationProcessData threadData = prepareCell(connection, cellI, cellJ, progression, receiversPk, skipReceivers);
 
-        PropagationProcess propaProcess = new PropagationProcess(
-                threadData, threadDataOut);
-        if(!absoluteZCoordinates) {
-            propaProcess.makeRelativeZToAbsolute();
-        }
-        propaProcess.run();
+//        PropagationProcess propaProcess = new PropagationProcess(
+//                threadData, threadDataOut);
+//        if(!absoluteZCoordinates) {
+//            propaProcess.makeRelativeZToAbsolute();
+//        }
+//        propaProcess.run();
 
 
         double[] verticesSoundLevel = threadDataOut.getVerticesSoundLevel();

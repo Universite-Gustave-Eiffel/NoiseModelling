@@ -39,9 +39,9 @@ public class TestComputeRaysIso17534 {
 
     private double[] computeWithMeteo(PropagationProcessPathData propData,ComputeRaysOut propDataOut, double p) {
         EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
-        double[] aGlobalMeteo = new double[8];
+        double[] aGlobalMeteo;
         double[] aGlobal = new double[]{-10^1000,-10^1000,-10^1000,-10^1000,-10^1000,-10^1000,-10^1000,-10^1000};
-        for (PropagationPath propath:propDataOut.propagationPaths) {
+        for (PropagationPath propath : propDataOut.propagationPaths) {
             propath.setFavorable(false);
             evaluateAttenuationCnossos.evaluate(propath, propData);
             aGlobalMeteo = evaluateAttenuationCnossos.getaGlobal();
@@ -233,7 +233,7 @@ public class TestComputeRaysIso17534 {
     private static ArrayList<Double> asW(double... dbValues) {
         ArrayList<Double> ret = new ArrayList<>(dbValues.length);
         for (double db_m : dbValues) {
-            ret.add(PropagationProcess.dbaToW(db_m));
+            ret.add(ComputeRays.dbaToW(db_m));
         }
         return ret;
     }
@@ -277,17 +277,12 @@ public class TestComputeRaysIso17534 {
         double[] favrose = new double[]{0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25};
 
         PropagationProcessData rayData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 400, 400, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
-
-        ComputeRaysOut propDataOut = new ComputeRaysOut();
-        ComputeRays computeRays = new ComputeRays(rayData, propDataOut);
+                freqLvl, 0, false, 400, 400, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
+        rayData.receivers.add(new Coordinate(200, 50, 4));
+        ComputeRaysOut propDataOut = new ComputeRaysOut(false, new PropagationProcessPathData());
+        ComputeRays computeRays = new ComputeRays(rayData);
 
         computeRays.initStructures();
-
-        double energeticSum[] = new double[freqLvl.size()];
-        List<PropagationDebugInfo> debug = new ArrayList<>();
-        computeRays.computeRaysAtPosition(new Coordinate(200, 50, 4), 0, energeticSum, debug);
-
 
         PropagationProcessPathData propData = new PropagationProcessPathData();
         propData.setTemperature(10);
@@ -335,17 +330,14 @@ public class TestComputeRaysIso17534 {
         double[] favrose = new double[]{0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25};
 
         PropagationProcessData rayData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 400, 400, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
+                freqLvl, 0, false, 400, 400, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
 
-        ComputeRaysOut propDataOut = new ComputeRaysOut();
-        ComputeRays computeRays = new ComputeRays(rayData, propDataOut);
+        ComputeRaysOut propDataOut = new ComputeRaysOut(false, new PropagationProcessPathData());
+        rayData.receivers.add(new Coordinate(200, 50, 4));
+        ComputeRays computeRays = new ComputeRays(rayData);
 
         computeRays.initStructures();
-
-        double energeticSum[] = new double[freqLvl.size()];
-        List<PropagationDebugInfo> debug = new ArrayList<>();
-        computeRays.computeRaysAtPosition(new Coordinate(200, 50, 4), 0, energeticSum, debug);
-
+        computeRays.run(propDataOut);
 
         PropagationProcessPathData propData = new PropagationProcessPathData();
         propData.setTemperature(10);
@@ -393,21 +385,19 @@ public class TestComputeRaysIso17534 {
         double[] favrose = new double[]{0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25};
 
         PropagationProcessData rayData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 400, 400, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
+                freqLvl, 0, false, 400, 400, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
 
-        ComputeRaysOut propDataOut = new ComputeRaysOut();
-        ComputeRays computeRays = new ComputeRays(rayData, propDataOut);
-
-        computeRays.initStructures();
-
-        double energeticSum[] = new double[freqLvl.size()];
-        List<PropagationDebugInfo> debug = new ArrayList<>();
-        computeRays.computeRaysAtPosition(new Coordinate(200, 50, 4), 0, energeticSum, debug);
-
+        rayData.receivers.add(new Coordinate(200, 50, 4));
 
         PropagationProcessPathData propData = new PropagationProcessPathData();
         propData.setTemperature(10);
         propData.setHumidity(70);
+
+        ComputeRaysOut propDataOut = new ComputeRaysOut(false, propData);
+        ComputeRays computeRays = new ComputeRays(rayData);
+        computeRays.initStructures();
+
+        computeRays.run(propDataOut);
 
         double[] aGlobal = computeWithMeteo(propData, propDataOut, p);
 
@@ -458,20 +448,20 @@ public class TestComputeRaysIso17534 {
         double[] favrose = new double[]{0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25};
 
         PropagationProcessData rayData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 400, 400, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
-
-        ComputeRaysOut propDataOut = new ComputeRaysOut();
-        ComputeRays computeRays = new ComputeRays(rayData, propDataOut);
-
-        computeRays.initStructures();
-
-        double energeticSum[] = new double[freqLvl.size()];
-        List<PropagationDebugInfo> debug = new ArrayList<>();
-        computeRays.computeRaysAtPosition(new Coordinate(200, 50, 4), 0, energeticSum, debug);
+                freqLvl, 0, false, 400, 400, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
 
         PropagationProcessPathData propData = new PropagationProcessPathData();
         propData.setTemperature(10);
         propData.setHumidity(70);
+
+        ComputeRaysOut propDataOut = new ComputeRaysOut(false, propData);
+        ComputeRays computeRays = new ComputeRays(rayData);
+
+        computeRays.initStructures();
+
+        List<PropagationDebugInfo> debug = new ArrayList<>();
+        computeRays.computeRaysAtPosition(new Coordinate(200, 50, 4), 0, debug, propDataOut);
+
 
         double[] aGlobal = computeWithMeteo(propData, propDataOut, p);
         splCompare(aGlobal, "Test T04", new double[]{-55.09,-55.15,-55.27,-56.63,-58.77,-56.94,-61.43,-77.76}, ERROR_EPSILON_TEST_T);
@@ -539,23 +529,23 @@ public class TestComputeRaysIso17534 {
         double[] favrose = new double[]{0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25};
 
         PropagationProcessData rayData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 400, 400, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
+                freqLvl, 0, false, 400, 400, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
+        PropagationProcessPathData propData = new PropagationProcessPathData();
+        propData.setTemperature(10);
+        propData.setHumidity(70);
+        propData.setPrime2520(true);
 
-        ComputeRaysOut propDataOut = new ComputeRaysOut();
-        ComputeRays computeRays = new ComputeRays(rayData, propDataOut);
+        ComputeRaysOut propDataOut = new ComputeRaysOut(false ,propData);
+        ComputeRays computeRays = new ComputeRays(rayData);
 
         computeRays.initStructures();
 
         double energeticSum[] = new double[freqLvl.size()];
         List<PropagationDebugInfo> debug = new ArrayList<>();
-        computeRays.computeRaysAtPosition(new Coordinate(200, 10, 14), 0, energeticSum, debug);
+        computeRays.computeRaysAtPosition(new Coordinate(200, 10, 14), 0, debug, propDataOut);
 
 
         double p = 0.5; // probability favourable conditions
-        PropagationProcessPathData propData = new PropagationProcessPathData();
-        propData.setTemperature(10);
-        propData.setHumidity(70);
-        propData.setPrime2520(true);
 
         double[] aGlobal = computeWithMeteo(propData, propDataOut, p);
         splCompare(aGlobal, "Test T05", new double[]{-55.74,-55.79,-55.92,-56.09,-56.43,-57.59,-62.09,-78.46}, ERROR_EPSILON_TEST_T);
@@ -630,16 +620,16 @@ public class TestComputeRaysIso17534 {
         double[] favrose = new double[]{0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25};
 
         PropagationProcessData rayData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 0, 0, 400, 400, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
+                freqLvl, 0, false, 400, 400, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
 
-        ComputeRaysOut propDataOut = new ComputeRaysOut();
-        ComputeRays computeRays = new ComputeRays(rayData, propDataOut);
+        ComputeRaysOut propDataOut = new ComputeRaysOut(false, new PropagationProcessPathData());
+        ComputeRays computeRays = new ComputeRays(rayData);
 
         computeRays.initStructures();
 
         double energeticSum[] = new double[freqLvl.size()];
         List<PropagationDebugInfo> debug = new ArrayList<>();
-        computeRays.computeRaysAtPosition(new Coordinate(200, 50, 11.5), 0, energeticSum, debug);
+        computeRays.computeRaysAtPosition(new Coordinate(200, 50, 11.5), 0, debug, propDataOut);
         assertEquals(true, false);
     }
 
@@ -693,9 +683,9 @@ public class TestComputeRaysIso17534 {
         double[] favrose = new double[]{0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25};
 
         PropagationProcessData rayData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 1, 0, 250, 250, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
+                freqLvl, 1, false, 250, 250, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
 
-        ComputeRaysOut propDataOut = new ComputeRaysOut();
+        ComputeRaysOut propDataOut = new ComputeRaysOut(false, p);
         ComputeRays computeRays = new ComputeRays(rayData, propDataOut);
 
         computeRays.initStructures();
@@ -1533,16 +1523,16 @@ public class TestComputeRaysIso17534 {
         double[] favrose = new double[]{0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25};
 
         PropagationProcessData rayData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-                freqLvl, 1, 1, 400, 400, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
+                freqLvl, 1, true, 400, 400, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
 
-        ComputeRaysOut propDataOut = new ComputeRaysOut();
-        ComputeRays computeRays = new ComputeRays(rayData, propDataOut);
+        ComputeRaysOut propDataOut = new ComputeRaysOut(false, new PropagationProcessPathData());
+        ComputeRays computeRays = new ComputeRays(rayData);
 
         computeRays.initStructures();
 
         double energeticSum[] = new double[freqLvl.size()];
         List<PropagationDebugInfo> debug = new ArrayList<>();
-        computeRays.computeRaysAtPosition(new Coordinate(200, 50, 12), 0, energeticSum, debug);
+        computeRays.computeRaysAtPosition(new Coordinate(200, 50, 12), 0, debug, propDataOut);
 
 
         PropagationProcessPathData propData = new PropagationProcessPathData();

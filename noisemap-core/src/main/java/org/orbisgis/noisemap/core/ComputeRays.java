@@ -806,7 +806,7 @@ public class ComputeRays {
 
         }
 
-        if (somethingHideReceiver && data.diffractionOrder > 0 && horizontalDiffraction ) {
+        if (somethingHideReceiver && data.computeHorizontalDiffraction && horizontalDiffraction ) {
             // todo if one of the points > roof or < floor, get out this path
             PropagationPath propagationPath = new PropagationPath();
             PropagationPath propagationPath2 = new PropagationPath();
@@ -816,10 +816,7 @@ public class ComputeRays {
             //List<List<Coordinate>> diffractedPaths = computeVerticalEdgeDiffraction(srcCoord, receiverCoord, debugInfo);
             List<Coordinate> coordinates = computeSideHull(true, srcCoord, receiverCoord);
             if(!coordinates.isEmpty()) {
-
-                if (coordinates.size() > 2 && coordinates.size() <= data.diffractionOrder + 2) {
-
-                    // if (coordinates.size()>2 && coordinates.size() <= data.diffractionOrder+2 && convexhullValid) {
+                if (coordinates.size() > 2) {
 
                     propagationPath = computeFreefield(coordinates.get(1), coordinates.get(0), debugInfo);
                     propagationPath.getPointList().get(1).setType(PropagationPath.PointPath.POINT_TYPE.DIFV);
@@ -842,7 +839,7 @@ public class ComputeRays {
             // Right hand
             coordinates = computeSideHull(false, srcCoord, receiverCoord);
             if(!coordinates.isEmpty()) {
-                if (coordinates.size() > 2 && coordinates.size() <= data.diffractionOrder + 2) {
+                if (coordinates.size() > 2) {
                     Collections.reverse(coordinates);
                     propagationPath = computeFreefield(coordinates.get(1), coordinates.get(0), debugInfo);
                     propagationPath.getPointList().get(1).setType(PropagationPath.PointPath.POINT_TYPE.DIFV);

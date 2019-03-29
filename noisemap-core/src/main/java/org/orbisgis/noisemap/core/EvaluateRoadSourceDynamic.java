@@ -817,11 +817,11 @@ public class EvaluateRoadSourceDynamic {
 
     /** get sum dBa **/
     private static Double sumDba(Double dBA1, Double dBA2) {
-        return PropagationProcess.wToDba(PropagationProcess.dbaToW(dBA1) + PropagationProcess.dbaToW(dBA2));
+        return ComputeRays.wToDba(ComputeRays.dbaToW(dBA1) + ComputeRays.dbaToW(dBA2));
     }
 
     private static Double sumDba_5(Double dBA1, Double dBA2, Double dBA3, Double dBA4, Double dBA5) {
-        return PropagationProcess.wToDba(PropagationProcess.dbaToW(dBA1) + PropagationProcess.dbaToW(dBA2) + PropagationProcess.dbaToW(dBA3) + PropagationProcess.dbaToW(dBA4) + PropagationProcess.dbaToW(dBA5));
+        return ComputeRays.wToDba(ComputeRays.dbaToW(dBA1) + ComputeRays.dbaToW(dBA2) + ComputeRays.dbaToW(dBA3) + ComputeRays.dbaToW(dBA4) + ComputeRays.dbaToW(dBA5));
     }
 
     /**

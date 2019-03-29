@@ -20,7 +20,6 @@ import org.orbisgis.noisemap.core.FastObstructionTest;
 import org.orbisgis.noisemap.core.GeoWithSoilType;
 import org.orbisgis.noisemap.core.LayerDelaunayError;
 import org.orbisgis.noisemap.core.MeshBuilder;
-import org.orbisgis.noisemap.core.PropagationProcess;
 import org.orbisgis.noisemap.core.PropagationProcessData;
 import org.orbisgis.noisemap.core.PropagationProcessOut;
 import org.orbisgis.noisemap.core.PropagationResultTriRecord;
@@ -241,7 +240,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         // optimization
         // Fetch buildings in extendedEnvelope
         ArrayList<Geometry> buildingsGeometries = new ArrayList<>();
-        fetchCellBuildings(connection, expandedCellEnvelop, buildingsGeometries, mesh);
+        fetchCellBuildings(connection, expandedCellEnvelop, buildingsGeometries,null, mesh);
         //if we have topographic points data
         fetchCellDem(connection, expandedCellEnvelop, mesh);
 
@@ -313,16 +312,16 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         }
         PropagationProcessData threadData = new PropagationProcessData(
                 vertices, freeFieldFinder, sourcesIndex,
-                sourceGeometries, wj_sources, db_field_freq,
-                soundReflectionOrder, soundDiffractionOrder, maximumPropagationDistance, maximumReflectionDistance,
+                sourceGeometries, null, db_field_freq,
+                soundReflectionOrder, computeHorizontalDiffraction, maximumPropagationDistance, maximumReflectionDistance,
                 roadWidth, wallAbsorption, DEFAULT_WIND_ROSE,forgetSource, ij,
                 progression.subProcess(vertices.size()), geoWithSoil, computeVerticalDiffraction);
-        PropagationProcess propaProcess = new PropagationProcess(
-                threadData, threadDataOut);
-        if(!absoluteZCoordinates) {
-            propaProcess.makeRelativeZToAbsolute();
-        }
-        propaProcess.run();
+//        PropagationProcess propaProcess = new PropagationProcess(
+//                threadData, threadDataOut);
+//        if(!absoluteZCoordinates) {
+//            propaProcess.makeRelativeZToAbsolute();
+//        }
+//        propaProcess.run();
         Stack<PropagationResultTriRecord> toDriver = new Stack<>();
         int tri_id = 0;
         double[] verticesSoundLevel = threadDataOut.getVerticesSoundLevel();

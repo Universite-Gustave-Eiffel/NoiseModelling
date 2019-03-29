@@ -29,7 +29,7 @@ public abstract class JdbcNoiseMap {
     // When computing cell size, try to keep propagation distance away from the cell
     // inferior to this ratio (in comparison with cell width)
     protected static final double MINIMAL_BUFFER_RATIO = 0.3;
-    private static final String ALPHA_FIELD_NAME = "ALPHA";
+    private String alphaFieldName = "ALPHA";
     protected final String buildingsTableName;
     protected final String sourcesTableName;
     protected String soilTableName = "";
@@ -42,7 +42,7 @@ public abstract class JdbcNoiseMap {
     protected double maximumReflectionDistance = 100;
     protected int subdivisionLevel = -1; // TODO Guess it from maximumPropagationDistance and source extent
     protected int soundReflectionOrder = 2;
-    protected int soundDiffractionOrder = 1;
+    protected boolean computeHorizontalDiffraction = true;
     protected boolean computeVerticalDiffraction = true;
     protected double wallAbsorption = 0.05;
     // wind rose [0-30,30-60,60-90,90-120,120-150,150-180,180-210,210-240,240-270,270-300,300-330,330-360]
@@ -51,7 +51,7 @@ public abstract class JdbcNoiseMap {
     protected double forgetSource = 0.1;
     protected String heightField = "";
     protected GeometryFactory geometryFactory = new GeometryFactory();
-    protected boolean doMultiThreading = true;
+    protected int parallelComputationCount = 0;
     // Initialised attributes
     protected int gridDim = 0;
     protected Envelope mainEnvelope = new Envelope();
@@ -61,6 +61,20 @@ public abstract class JdbcNoiseMap {
     public JdbcNoiseMap(String buildingsTableName, String sourcesTableName) {
         this.buildingsTableName = buildingsTableName;
         this.sourcesTableName = sourcesTableName;
+    }
+
+    /**
+     * @return Get building absorption coefficient column name
+     */
+    public String getAlphaFieldName() {
+        return alphaFieldName;
+    }
+
+    /**
+     * @param alphaFieldName Set building absorption coefficient column name (default is ALPHA)
+     */
+    public void setAlphaFieldName(String alphaFieldName) {
+        this.alphaFieldName = alphaFieldName;
     }
 
     /**
@@ -128,16 +142,24 @@ public abstract class JdbcNoiseMap {
         }
     }
 
-    protected void fetchCellBuildings(Connection connection, Envelope fetchEnvelope, List<Geometry> buildingsGeometries,
-                                      MeshBuilder mesh) throws SQLException {
+    void fetchCellBuildings(Connection connection, Envelope fetchEnvelope, List<Geometry> buildingsGeometries,
+                                      List<Integer> buildingsPk, MeshBuilder mesh) throws SQLException {
         Geometry envGeo = geometryFactory.toGeometry(fetchEnvelope);
-        boolean fetchAlpha = JDBCUtilities.hasField(connection, buildingsTableName, ALPHA_FIELD_NAME);
+        boolean fetchAlpha = JDBCUtilities.hasField(connection, buildingsTableName, alphaFieldName);
         String additionalQuery = "";
         if(!heightField.isEmpty()) {
             additionalQuery = ", " + TableLocation.quoteIdentifier(heightField);
         }
         if(fetchAlpha) {
-            additionalQuery = ", " + ALPHA_FIELD_NAME;
+            additionalQuery = ", " + alphaFieldName;
+        }
+        String pkBuilding = "";
+        if(buildingsPk != null) {
+            int indexPk = JDBCUtilities.getIntegerPrimaryKey(connection, buildingsTableName);
+            if(indexPk > 0) {
+                pkBuilding = JDBCUtilities.getFieldName(connection.getMetaData(), buildingsTableName, indexPk);
+                additionalQuery = ", " + pkBuilding;
+            }
         }
         String buildingGeomName = SFSUtilities.getGeometryFields(connection,
                 TableLocation.parse(buildingsTableName)).get(0);
@@ -147,16 +169,23 @@ public abstract class JdbcNoiseMap {
                         TableLocation.quoteIdentifier(buildingGeomName) + " && ?::geometry")) {
             st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
             try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
+                int indexPk = 0;
+                if(!pkBuilding.isEmpty()) {
+                    indexPk = JDBCUtilities.getFieldIndex(rs.getMetaData(), pkBuilding);
+                }
                 while (rs.next()) {
                     //if we don't have height of building
                     Geometry building = rs.getGeometry();
                     if(building != null) {
-                        buildingsGeometries.add(building);
                         Geometry intersectedGeometry = building.intersection(envGeo);
                         if(intersectedGeometry instanceof Polygon || intersectedGeometry instanceof MultiPolygon) {
+                            buildingsGeometries.add(building);
                             mesh.addGeometry(intersectedGeometry,
                                     heightField.isEmpty() ? Double.MAX_VALUE : rs.getDouble(heightField),
-                                    fetchAlpha ? rs.getDouble(ALPHA_FIELD_NAME) : wallAbsorption);
+                                    fetchAlpha ? rs.getDouble(alphaFieldName) : wallAbsorption);
+                            if(buildingsPk != null && indexPk != 0) {
+                                buildingsPk.add(rs.getInt(indexPk));
+                            }
                         }
                     }
                 }
@@ -187,46 +216,6 @@ public abstract class JdbcNoiseMap {
             try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
                 while (rs.next()) {
                     Geometry geo = rs.getGeometry();
-                    if (geo != null) {
-                        ArrayList<Double> wj_spectrum = new ArrayList<>();
-                        wj_spectrum.ensureCapacity(db_field_ids.size());
-                        double sumPow = 0;
-                        for (Integer idcol : db_field_ids) {
-                            double wj = DbaToW(rs.getDouble(idcol));
-                            wj_spectrum
-                                    .add(wj);
-                            sumPow += wj;
-                        }
-                        if(allSourceGeometries != null) {
-                            allSourceGeometries.add(geo);
-                        }
-                        if(sumPow > 0) {
-                            wj_sources.add(wj_spectrum);
-                            sourcesIndex.appendGeometry(geo, idSource);
-                            sourceGeometries.add(geo);
-                            idSource++;
-                        }
-                    }
-                }
-            }
-        }
-
-    }
-
-    protected void fetchCellSource_withindex(Connection connection,Envelope fetchEnvelope, List<Geometry> allSourceGeometries,
-                                   List<Geometry> sourceGeometries, List<Long> sourcePk, List<ArrayList<Double>> wj_sources, QueryGeometryStructure sourcesIndex)
-            throws SQLException {
-        int idSource = 0;
-        TableLocation sourceTableIdentifier = TableLocation.parse(sourcesTableName);
-        String sourceGeomName = SFSUtilities.getGeometryFields(connection, sourceTableIdentifier).get(0);
-        try (PreparedStatement st = connection.prepareStatement("SELECT * FROM " + sourcesTableName + " WHERE "
-                + TableLocation.quoteIdentifier(sourceGeomName) + " && ?::geometry")) {
-            st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
-            try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
-                while (rs.next()) {
-                    Geometry geo = rs.getGeometry();
-                    // todo get primarykey
-                    sourcePk.add(rs.getLong(1));
                     if (geo != null) {
                         ArrayList<Double> wj_spectrum = new ArrayList<>();
                         wj_spectrum.ensureCapacity(db_field_ids.size());
@@ -509,30 +498,28 @@ public abstract class JdbcNoiseMap {
     }
 
     /**
-     * @return Sound vertical diffraction order. 0 order mean 0 diffraction depth.
-     * 2 means propagation of rays up to 2 corners.
+     * @return True if diffraction rays will be computed on vertical edges (around buildings)
      */
-    public int getSoundDiffractionOrder() {
-        return soundDiffractionOrder;
+    public boolean isComputeHorizontalDiffraction() {
+        return computeHorizontalDiffraction;
     }
 
     /**
-     * @param soundDiffractionOrder Sound vertical diffraction order. 0 order mean 0 diffraction depth.
-     * 2 means propagation of rays up to 2 corners.
+     * @param computeHorizontalDiffraction True if diffraction rays will be computed on vertical edges (around buildings)
      */
-    public void setSoundDiffractionOrder(int soundDiffractionOrder) {
-        this.soundDiffractionOrder = soundDiffractionOrder;
+    public void setComputeHorizontalDiffraction(boolean computeHorizontalDiffraction) {
+        this.computeHorizontalDiffraction = computeHorizontalDiffraction;
     }
 
     /**
-     * @return Global wall absorption on sound reflection.
+     * @return Global default wall absorption on sound reflection.
      */
     public double getWallAbsorption() {
         return wallAbsorption;
     }
 
     /**
-     * @param wallAbsorption Global wall absorption on sound reflection.
+     * @param wallAbsorption Set default global wall absorption on sound reflection.
      */
     public void setWallAbsorption(double wallAbsorption) {
         this.wallAbsorption = wallAbsorption;
@@ -556,14 +543,21 @@ public abstract class JdbcNoiseMap {
      * @return True if multi-threading is activated.
      */
     public boolean isDoMultiThreading() {
-        return doMultiThreading;
+        return parallelComputationCount != 1;
     }
 
     /**
-     * @param doMultiThreading True to use all available cores.
+     * @return Parallel computations, 0 for using all available cores (1 single core)
      */
-    public void setDoMultiThreading(boolean doMultiThreading) {
-        this.doMultiThreading = doMultiThreading;
+    public int getParallelComputationCount() {
+        return parallelComputationCount;
+    }
+
+    /**
+     * @param parallelComputationCount Parallel computations, 0 for using all available cores  (1 single core)
+     */
+    public void setParallelComputationCount(int parallelComputationCount) {
+        this.parallelComputationCount = parallelComputationCount;
     }
 
     /**

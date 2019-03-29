@@ -9,10 +9,12 @@ import org.h2gis.utilities.SFSUtilities;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.orbisgis.noisemap.core.ComputeRays;
+import org.orbisgis.noisemap.core.ComputeRaysOut;
 import org.orbisgis.noisemap.core.PropagationDebugInfo;
-import org.orbisgis.noisemap.core.PropagationProcess;
 import org.orbisgis.noisemap.core.PropagationProcessData;
 import org.orbisgis.noisemap.core.PropagationProcessOut;
+import org.orbisgis.noisemap.core.PropagationProcessPathData;
 import org.orbisgis.noisemap.core.PropagationResultPtRecord;
 
 import java.io.File;
@@ -65,7 +67,7 @@ public class TestPointNoiseMap {
             st.execute("INSERT INTO RECEIVERS(the_geom) VALUES ('POINT(-275 -18 20)')");
             st.execute("INSERT INTO RECEIVERS(the_geom) VALUES ('POINT(-275 -18 1.6)')");
             PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS", "SOUND_SOURCE", "RECEIVERS");
-            pointNoiseMap.setSoundDiffractionOrder(0);
+            pointNoiseMap.setComputeHorizontalDiffraction(false);
             pointNoiseMap.setSoundReflectionOrder(0);
             pointNoiseMap.setHeightField("HEIGHT");
             pointNoiseMap.setDemTable("DEM");
@@ -97,7 +99,7 @@ public class TestPointNoiseMap {
             st.execute("INSERT INTO RECEIVERS(the_geom) VALUES ('POINT(-9 41 1.6)')");
             st.execute("INSERT INTO RECEIVERS(the_geom) VALUES ('POINT(70 11 7)')");
             PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS", "SOUND_SOURCE", "RECEIVERS");
-            pointNoiseMap.setSoundDiffractionOrder(0);
+            pointNoiseMap.setComputeHorizontalDiffraction(false);
             pointNoiseMap.setSoundReflectionOrder(0);
             pointNoiseMap.setHeightField("HEIGHT");
             pointNoiseMap.setDemTable("DEM");
@@ -132,7 +134,7 @@ public class TestPointNoiseMap {
             st.execute("INSERT INTO RECEIVERS(the_geom) VALUES ('POINT(-9 41 1.6)')");
             st.execute("INSERT INTO RECEIVERS(the_geom) VALUES ('POINT(70 11 7)')");
             PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS", "SOUND_SOURCE", "RECEIVERS");
-            pointNoiseMap.setSoundDiffractionOrder(0);
+            pointNoiseMap.setComputeHorizontalDiffraction(false);
             pointNoiseMap.setSoundReflectionOrder(0);
             pointNoiseMap.setHeightField("HEIGHT");
             pointNoiseMap.setDemTable("DEM");
@@ -154,16 +156,16 @@ public class TestPointNoiseMap {
             st.execute(getRunScriptRes("scene_without_dem.sql"));
             PointNoiseMap nm = new PointNoiseMap("BUILDINGS", "SOUND_SOURCE", "RECEIVERS");
             nm.setHeightField("HEIGHT");
-            nm.setSoundDiffractionOrder(0);
+            nm.setComputeHorizontalDiffraction(false);
             nm.setSoundReflectionOrder(2);
             nm.setComputeVerticalDiffraction(false);
             List<PropagationDebugInfo> debugInfo = new ArrayList<>();
             nm.initialize(connection, new EmptyProgressVisitor());
             PropagationProcessData propInput = nm.prepareCell(connection, 0, 0, new EmptyProgressVisitor(), new ArrayList<Long>(), new HashSet<Long>());
-            PropagationProcessOut threadDataOut = new PropagationProcessOut();
-            PropagationProcess propaProcess = new PropagationProcess(
-                    propInput, threadDataOut);
-            propaProcess.runDebug(debugInfo);
+            ComputeRaysOut threadDataOut = new ComputeRaysOut(false, new PropagationProcessPathData());
+            ComputeRays propaProcess = new ComputeRays(
+                    propInput);
+            propaProcess.runDebug(threadDataOut ,debugInfo);
             assertEquals(4, debugInfo.size());
         }
     }

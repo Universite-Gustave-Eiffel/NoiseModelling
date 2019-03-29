@@ -57,16 +57,16 @@ public class CnossosTest {
   // A weighting
   private static final double[] dba = new double[] { -25.2 , -15.6 ,  -8.4 ,  -3.1 ,   0.0 ,   1.2 ,   0.9 ,  -2.4};
 
-  private double[] splCompute(PropagationProcess propManager,Coordinate receiverPosition) {
+  private double[] splCompute(ComputeRays propManager,Coordinate receiverPosition) {
     double energeticSum[] = new double[freqLvl.size()];
     List<PropagationDebugInfo> debug = new ArrayList<>();
-    propManager.computeSoundLevelAtPosition(receiverPosition, energeticSum, debug);
+    //propManager.(receiverPosition, energeticSum, debug);
     return energeticSum;
   }
 
   private void splCompare(double[] resultW,String testName,double[] expectedLevel, double splEpsilon) {
     for(int i=0; i<resultW.length; i++) {
-      double dba = PropagationProcess.wToDba(resultW[i]);
+      double dba = ComputeRays.wToDba(resultW[i]);
       double expected = expectedLevel[i];
       assertEquals("Unit test "+testName+" failed at "+freqLvl.get(i)+" Hz",expected, dba,splEpsilon);
     }
@@ -76,7 +76,7 @@ public class CnossosTest {
     assertEquals(dba.length, dbValues.length);
     ArrayList<Double> ret = new ArrayList<>(dbValues.length);
     for(int idFreq = 0; idFreq < freqLvl.size(); idFreq++) {
-      ret.add(PropagationProcess.dbaToW(dbValues[idFreq] + dba[idFreq]));
+      ret.add(ComputeRays.dbaToW(dbValues[idFreq] + dba[idFreq]));
     }
     return ret;
   }
@@ -124,12 +124,12 @@ public class CnossosTest {
     //Retrieve Delaunay triangulation of scene
     List<Coordinate> vert = mesh.getVertices();
     FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(), mesh.getTriNeighbors(), mesh.getVertices());
-
-    PropagationProcessData propData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum, freqLvl, 0, 0, 200, 200, 1., 0., WIND_ROSE,0, 0, null, soil, false);
+    List<Double> wjGlobal = new ArrayList<>();
+    PropagationProcessData propData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, wjGlobal, freqLvl, 0, false, 200, 200, 1., 0., WIND_ROSE,0, 0, null, soil, false);
     propData.setTemperature(temperature);
     propData.setHumidity(humidity);
     PropagationProcessOut propDataOut = new PropagationProcessOut();
-    PropagationProcess propManager = new PropagationProcess(propData, propDataOut);
+    ComputeRays propManager = new ComputeRays(propData);
     propManager.initStructures();
 
     //Run test
@@ -180,11 +180,11 @@ public class CnossosTest {
     List<Coordinate> vert = mesh.getVertices();
     FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(), mesh.getTriNeighbors(), mesh.getVertices());
 
-    PropagationProcessData propData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum, freqLvl, 0, 0, 200, 200, 1., 0., WIND_ROSE, 0,0, null, soil, false);
+    List<Double> spectrum = new ArrayList<>();
+    PropagationProcessData propData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, spectrum, freqLvl, 0, false, 200, 200, 1., 0., WIND_ROSE, 0,0, null, soil, false);
     propData.setTemperature(temperature);
     propData.setHumidity(humidity);
-    PropagationProcessOut propDataOut = new PropagationProcessOut();
-    PropagationProcess propManager = new PropagationProcess(propData, propDataOut);
+    ComputeRays propManager = new ComputeRays(propData);
     propManager.initStructures();
 
     //Run test

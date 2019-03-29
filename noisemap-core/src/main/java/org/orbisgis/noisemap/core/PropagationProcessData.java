@@ -75,8 +75,8 @@ public class PropagationProcessData {
     public List<Integer> freq_lvl;
     /** Maximum reflexion order */
     public int reflexionOrder;
-    /** Maximum diffraction order */
-    public int diffractionOrder;
+    /** Compute diffraction rays over vertical edges */
+    public boolean computeHorizontalDiffraction;
     /** Maximum source distance */
     public double maxSrcDist;
     /** Maximum reflection wall distance from receiver->source line */
@@ -105,18 +105,19 @@ public class PropagationProcessData {
 
     public PropagationProcessData(List<Coordinate> receivers, FastObstructionTest freeFieldFinder,
                                   QueryGeometryStructure sourcesIndex, List<Geometry> sourceGeometries,
-                                  List<Double> wj_sources, List<Integer> freq_lvl, int reflexionOrder,
-                                  int diffractionOrder, double maxSrcDist, double maxRefDist, double minRecDist,
+                                  List<ArrayList<Double>> wj_sources, List<Integer> freq_lvl, int reflexionOrder,
+                                  boolean computeHorizontalDiffraction, double maxSrcDist, double maxRefDist, double minRecDist,
                                   double wallAlpha, double[] windRose, double maximumError, int cellId, ProgressVisitor cellProg,
                                   List<GeoWithSoilType> geoWithSoilType, boolean computeVerticalDiffraction) {
         this.receivers = receivers;
         this.freeFieldFinder = freeFieldFinder;
         this.sourcesIndex = sourcesIndex;
         this.sourceGeometries = sourceGeometries;
-        this.wj_sources = wj_sources;
+        this.wj_sources = new ArrayList<>();
+        //TODO compute global level
         this.freq_lvl = freq_lvl;
         this.reflexionOrder = reflexionOrder;
-        this.diffractionOrder = diffractionOrder;
+        this.computeHorizontalDiffraction = computeHorizontalDiffraction;
         this.maxSrcDist = maxSrcDist;
         this.maxRefDist = maxRefDist;
         this.minRecDist = minRecDist;
@@ -129,7 +130,6 @@ public class PropagationProcessData {
         this.computeVerticalDiffraction = computeVerticalDiffraction;
         this.celerity = computeCelerity(temperature+K_0);
     }
-
     /**
      * Set relative humidity in percentage.
      * @param humidity relative humidity in percentage. 0-100
