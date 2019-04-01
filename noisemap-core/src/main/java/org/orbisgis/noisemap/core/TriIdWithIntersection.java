@@ -94,6 +94,9 @@ public class TriIdWithIntersection extends Coordinate {
         return intersectionOnTopography;
     }
 
+    /**
+     * @return Building identifier 1-n (0 if none)
+     */
     public int getBuildingId() {
         return buildingId;
     }
