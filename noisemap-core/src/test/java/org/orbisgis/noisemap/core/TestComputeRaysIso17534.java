@@ -19,10 +19,10 @@ public class TestComputeRaysIso17534 {
     private static final List<Integer> freqLvl = Collections.unmodifiableList(Arrays.asList(63, 125, 250, 500, 1000, 2000,
             4000, 8000));
 
-    private static final double ERROR_EPSILON_TEST_T01 = 0.3; // 8khz issue
-    private static final double ERROR_EPSILON_TEST_T02 = 0.3; // 8khz issue
-    private static final double ERROR_EPSILON_TEST_T03 = 0.3; // 8khz issue
-    private static final double ERROR_EPSILON_TEST_T04 = 0.3; // 8khz issue
+    private static final double ERROR_EPSILON_TEST_T01 = 0.2; // 8khz issue
+    private static final double ERROR_EPSILON_TEST_T02 = 0.2; // 8khz issue
+    private static final double ERROR_EPSILON_TEST_T03 = 0.2; // 8khz issue
+    private static final double ERROR_EPSILON_TEST_T04 = 0.2; // 8khz issue
     private static final double ERROR_EPSILON_TEST_T = 0.2;
 
     private double[] sumArrayWithPonderation(double[] array1, double[] array2, double p) {
@@ -125,6 +125,7 @@ public class TestComputeRaysIso17534 {
         PropagationProcessPathData propData = new PropagationProcessPathData();
         propData.setTemperature(10);
         propData.setHumidity(70);
+        propData.setPrime2520(true);
 
         ComputeRaysOut propDataOut = new ComputeRaysOut(false, propData);
 
