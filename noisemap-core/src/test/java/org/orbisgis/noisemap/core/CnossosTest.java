@@ -124,11 +124,11 @@ public class CnossosTest {
     //Retrieve Delaunay triangulation of scene
     List<Coordinate> vert = mesh.getVertices();
     FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(), mesh.getTriNeighbors(), mesh.getVertices());
-    List<Double> wjGlobal = new ArrayList<>();
-    PropagationProcessData propData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, wjGlobal, freqLvl, 0, false, 200, 200, 1., 0., WIND_ROSE,0, 0, null, soil, false);
+
+    PropagationProcessData propData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum, freqLvl, 0, false, 200, 200, 1., 0., WIND_ROSE,0, 0, null, soil, false);
     propData.setTemperature(temperature);
     propData.setHumidity(humidity);
-    PropagationProcessOut propDataOut = new PropagationProcessOut();
+
     ComputeRays propManager = new ComputeRays(propData);
     propManager.initStructures();
 
@@ -180,8 +180,7 @@ public class CnossosTest {
     List<Coordinate> vert = mesh.getVertices();
     FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(), mesh.getTriNeighbors(), mesh.getVertices());
 
-    List<Double> spectrum = new ArrayList<>();
-    PropagationProcessData propData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, spectrum, freqLvl, 0, false, 200, 200, 1., 0., WIND_ROSE, 0,0, null, soil, false);
+    PropagationProcessData propData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum, freqLvl, 0, false, 200, 200, 1., 0., WIND_ROSE, 0,0, null, soil, false);
     propData.setTemperature(temperature);
     propData.setHumidity(humidity);
     ComputeRays propManager = new ComputeRays(propData);

@@ -55,7 +55,7 @@ public class TestTriangleNoiseMap {
         try(Statement st = connection.createStatement()) {
             st.execute(getRunScriptRes("scene_buildings_issues.sql"));
             TriangleNoiseMap triangleNoiseMap = new TriangleNoiseMap("BUILDINGS", "ROADS");
-            triangleNoiseMap.setSoundDiffractionOrder(0);
+            triangleNoiseMap.setComputeHorizontalDiffraction(false);
             triangleNoiseMap.setSoundReflectionOrder(0);
             triangleNoiseMap.setHeightField("HEIGHT");
             triangleNoiseMap.setRoadWidth(2.5);

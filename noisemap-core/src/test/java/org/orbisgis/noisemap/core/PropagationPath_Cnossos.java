@@ -29,7 +29,7 @@ public class PropagationPath_Cnossos {
     private static ArrayList<Double> asW(double... dbValues) {
         ArrayList<Double> ret = new ArrayList<>(dbValues.length);
         for (double db_m : dbValues) {
-            ret.add(PropagationProcess.dbaToW(db_m));
+            ret.add(ComputeRays.dbaToW(db_m));
         }
         return ret;
     }

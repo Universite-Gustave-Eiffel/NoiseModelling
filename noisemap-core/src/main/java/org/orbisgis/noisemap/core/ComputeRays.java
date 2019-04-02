@@ -715,7 +715,7 @@ public class ComputeRays {
      * @return Attenuation coefficient dB/KM
      */
     public static double getAlpha(double frequency, double temperature, double pressure, double humidity) {
-        return PropagationProcessData.getCoefAttAtmos(frequency, humidity, pressure, temperature + PropagationProcessData.K_0);
+        return PropagationProcessData.getCoefAttAtmos2(frequency, humidity, pressure, temperature + PropagationProcessData.K_0);
     }
 
     private int nextFreeFieldNode(List<Coordinate> nodes, Coordinate startPt, LineSegment segmentConstraint,
@@ -963,7 +963,7 @@ public class ComputeRays {
             if (!processedLineSources.contains(srcIndex)) {
                 processedLineSources.add(srcIndex);
                 Geometry source = data.sourceGeometries.get(srcIndex);
-                double globalWj = data.wj_sources.get(srcIndex);
+                double globalWj = data.wj_sources.size() > srcIndex ? data.wj_sources.get(srcIndex) : 1e-16;
                 if (source instanceof Point) {
                     Coordinate ptpos = source.getCoordinate();
                     totalPowerRemaining += insertPtSource(receiverCoord, ptpos, globalWj, 1., sourcesMerger, srcIndex, sourceList);
@@ -1062,7 +1062,7 @@ public class ComputeRays {
                 RangeReceiversComputation batchThread = new RangeReceiversComputation(endReceiverRange,
                         newEndReceiver, this, debugInfo, propaProcessProgression,
                         computeRaysOut.subProcess(endReceiverRange ,newEndReceiver));
-                if(threadCount == 1) {
+                if(threadCount != 1) {
                     threadManager.executeBlocking(batchThread);
                 } else {
                     batchThread.run();
@@ -1122,7 +1122,9 @@ public class ComputeRays {
 
                 propagationProcess.computeRaysAtPosition(receiverCoord, idReceiver, debugInfo, dataOut);
 
-                progressVisitor.endStep();
+                if(progressVisitor != null) {
+                    progressVisitor.endStep();
+                }
             }
         }
     }
