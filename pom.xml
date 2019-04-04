@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>noisemap-parent</artifactId>
     <packaging>pom</packaging>
-    <version>2.2.0-SNAPSHOT</version>
-    <name>noisemap-parent</name>
+    <name>noisemodelling-parent</name>
+    <artifactId>noisemodelling-parent</artifactId>
+    <version>3.0.0-SNAPSHOT</version>
     <description>NoiseModelling is an extension of H2GIS</description>
     <organization>
         <name>Lab-STICC - UMR CNRS 6285</name>
@@ -26,9 +26,11 @@
         <h2gis-version>1.5.0-SNAPSHOT</h2gis-version>
     </properties>
     <modules>
-        <module>noisemap-core</module>
-        <module>noisemap-h2</module>
-        <module>noisemap-h2-osgi</module>
+        <module>noisemodelling-propagation</module>
+        <module>noisemodelling-emission</module>
+        <!--<module>noisemap-core</module>-->
+        <!--<module>noisemap-h2</module>-->
+        <!--<module>noisemap-h2-osgi</module>-->
     </modules>
     <scm>
         <connection>scm:git:https://github.com/Ifsttar/NoiseModelling.git</connection>
