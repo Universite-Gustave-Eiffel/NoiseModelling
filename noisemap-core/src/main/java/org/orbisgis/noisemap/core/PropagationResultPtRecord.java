@@ -40,16 +40,15 @@ package org.orbisgis.noisemap.core;
  */
 public class PropagationResultPtRecord {
     private long receiverRecordRow;
+    private long sourceRecordRow;
     private int cellId;
-    private double receiverLvl;
+    private double[] attenuation;
 
-
-
-    public PropagationResultPtRecord(long receiverRecordRow, int cellId,double receiverLvl) {
+    public PropagationResultPtRecord(long receiverRecordRow, long sourceRecordRow, int cellId, double[] attenuation) {
         this.receiverRecordRow = receiverRecordRow;
+        this.sourceRecordRow = sourceRecordRow;
         this.cellId = cellId;
-        this.receiverLvl = receiverLvl;
-
+        this.attenuation = attenuation;
     }
 
     public int getCellId() {
@@ -60,12 +59,12 @@ public class PropagationResultPtRecord {
         this.cellId = cellId;
     }
 
-    public double getReceiverLvl() {
-        return receiverLvl;
+    public double[] getAttenuation() {
+        return attenuation;
     }
 
-    public void setReceiverLvl(double receiverLvl) {
-        this.receiverLvl = receiverLvl;
+    public void setAttenuation(double[] attenuation) {
+        this.attenuation = attenuation;
     }
 
     public long getReceiverRecordRow() {
@@ -77,4 +76,11 @@ public class PropagationResultPtRecord {
     }
 
 
+    public long getSourceRecordRow() {
+        return sourceRecordRow;
+    }
+
+    public void setSourceRecordRow(long sourceRecordRow) {
+        this.sourceRecordRow = sourceRecordRow;
+    }
 }

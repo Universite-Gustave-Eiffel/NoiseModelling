@@ -56,11 +56,19 @@ public class EvaluateAttenuationCnossos {
         return 10 * Math.log10(w);
     }
 
-    public double[] getaGlobal() {
+    double[] getaGlobal() {
         return aGlobal;
     }
 
-    public double[] getDeltaDif(PropagationPath.SegmentPath srpath, PropagationProcessPathData data) {
+    public boolean isgToSigma() {
+        return gToSigma;
+    }
+
+    public void setgToSigma(boolean gToSigma) {
+        this.gToSigma = gToSigma;
+    }
+
+    private double[] getDeltaDif(PropagationPath.SegmentPath srpath, PropagationProcessPathData data) {
         double[] DeltaDif = new double[data.freq_lvl.size()];
         double cprime;
 
@@ -127,7 +135,7 @@ public class EvaluateAttenuationCnossos {
 
         for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
             //NF S 31-133 page 41 c
-            double k = 2 * Math.PI *  data.freq_lvl.get(idfreq) / data.celerity;
+            double k = 2 * Math.PI *  data.freq_lvl.get(idfreq) / data.getCelerity();
             //NF S 31-113 page 41 w
             double w = 0.0185 * Math.pow(data.freq_lvl.get(idfreq), 2.5) * Math.pow(segmentPath.gw, 2.6) /
                     (Math.pow(data.freq_lvl.get(idfreq), 1.5) * Math.pow(segmentPath.gw, 2.6) + 1.3 * Math.pow(10, 3) * Math.pow(data.freq_lvl.get(idfreq), 0.75) * Math.pow(segmentPath.gw, 1.3) + 1.16 * Math.pow(10, 6));
@@ -136,7 +144,7 @@ public class EvaluateAttenuationCnossos {
             //NF S 31-113 page 41 A sol
 
             if (path.isFavorable()){
-                if (data.prime2520) {
+                if (data.isPrime2520()) {
                     if (segmentPath.testFormPrime <= 1) {
                         aGroundmin = -3 * (1 - segmentPath.gm);
                     } else {
@@ -202,7 +210,7 @@ public class EvaluateAttenuationCnossos {
         double aGroundmin;
 
         // Here there is a debate if use this condition or not
-        if (segmentPath.gPath == 0 && data.gDisc == true) {
+        if (segmentPath.gPath == 0 && data.isgDisc()) {
             if (path.isFavorable()) {
                 if (segmentPath.testForm <= 1) {
                     aGroundmin = -3 * (1 - segmentPath.gm);
@@ -312,7 +320,7 @@ public class EvaluateAttenuationCnossos {
         freq_lambda = new double[nbfreq];
         for (int idf = 0; idf < nbfreq; idf++) {
             if (data.freq_lvl.get(idf) > 0) {
-                freq_lambda[idf] = data.celerity / data.freq_lvl.get(idf);
+                freq_lambda[idf] = data.getCelerity() / data.freq_lvl.get(idf);
             } else {
                 freq_lambda[idf] = 1;
             }

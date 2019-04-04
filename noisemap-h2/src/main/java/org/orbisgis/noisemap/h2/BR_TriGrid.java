@@ -64,7 +64,7 @@ public class BR_TriGrid extends AbstractFunction implements ScalarFunction {
                 "BR_TriGrid(VARCHAR buildingsTable, VARCHAR sourcesTable,VARCHAR sourcesTableSoundFieldName, " +
                 "VARCHAR groundTypeTable, double maximumPropagationDistance, double maximumWallSeekingDistance, " +
                 "double roadsWidth, double receiversDensification, double maximumAreaOfTriangle, " +
-                "int soundReflectionOrder, int soundDiffractionOrder, double wallAlpha)\n" +
+                "int soundReflectionOrder, int soundDiffractionOrder, double defaultWallApha)\n" +
                 " \n" +
                 " - **buildingsTable** table identifier that contain a geometry column of type POLYGON.\n" +
                 " - **sourcesTable** table identifier that contain a geometry column of type POINT or LINESTRING.The " +
@@ -95,7 +95,7 @@ public class BR_TriGrid extends AbstractFunction implements ScalarFunction {
                 "Recommended value is 2.\n" +
                 " - **soundDiffractionOrder** Maximum depth of sound diffraction. Impacts performance. Recommended " +
                 "value is 1.\n" +
-                " - **wallAlpha** Default wall absorption value. Between 0 and 1. Recommended value is 0.23 for " +
+                " - **defaultWallApha** Default wall absorption value. Between 0 and 1. Recommended value is 0.23 for " +
                 "concrete. Specific absorption value can be specified in the ALPHA column of building table.\n" +
                 " " +
                 "");

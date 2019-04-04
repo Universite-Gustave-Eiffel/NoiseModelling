@@ -8,12 +8,14 @@ import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SFSUtilities;
 import org.h2gis.utilities.SpatialResultSet;
 import org.h2gis.utilities.TableLocation;
+import org.orbisgis.noisemap.core.ComputeRays;
+import org.orbisgis.noisemap.core.ComputeRaysOut;
 import org.orbisgis.noisemap.core.FastObstructionTest;
 import org.orbisgis.noisemap.core.GeoWithSoilType;
 import org.orbisgis.noisemap.core.LayerDelaunayError;
 import org.orbisgis.noisemap.core.MeshBuilder;
 import org.orbisgis.noisemap.core.PropagationProcessData;
-import org.orbisgis.noisemap.core.PropagationProcessOut;
+import org.orbisgis.noisemap.core.PropagationProcessPathData;
 import org.orbisgis.noisemap.core.PropagationResultPtRecord;
 import org.orbisgis.noisemap.core.QueryGeometryStructure;
 import org.orbisgis.noisemap.core.QueryQuadTree;
@@ -32,6 +34,7 @@ import java.util.*;
 public class PointNoiseMap extends JdbcNoiseMap {
     private final String receiverTableName;
     private Logger logger = LoggerFactory.getLogger(PointNoiseMap.class);
+    private PropagationProcessPathData propagationProcessPathData = new PropagationProcessPathData();
 
     public PointNoiseMap(String buildingsTableName, String sourcesTableName, String receiverTableName) {
         super(buildingsTableName, sourcesTableName);
@@ -152,30 +155,60 @@ public class PointNoiseMap extends JdbcNoiseMap {
      */
     public Collection<PropagationResultPtRecord> evaluateCell(Connection connection, int cellI, int cellJ,
                                                               ProgressVisitor progression, Set<Long> skipReceivers) throws SQLException {
-        PropagationProcessOut threadDataOut = new PropagationProcessOut();
         List<Long> receiversPk = new ArrayList<>();
         PropagationProcessData threadData = prepareCell(connection, cellI, cellJ, progression, receiversPk, skipReceivers);
 
-//        PropagationProcess propaProcess = new PropagationProcess(
-//                threadData, threadDataOut);
-//        if(!absoluteZCoordinates) {
-//            propaProcess.makeRelativeZToAbsolute();
-//        }
-//        propaProcess.run();
+        ComputeRaysOut computeRaysOut = new ComputeRaysOut(false, propagationProcessPathData);
 
+        ComputeRays computeRays = new ComputeRays(threadData);
 
-        double[] verticesSoundLevel = threadDataOut.getVerticesSoundLevel();
-        Stack<PropagationResultPtRecord> toDriver = new Stack<>();
-        //Vertices output type
-        if(receiversPk.isEmpty()) {
-            for (int receiverId = 0; receiverId < threadData.receivers.size(); receiverId++) {
-                toDriver.add(new PropagationResultPtRecord(receiverId, threadData.cellId, verticesSoundLevel[receiverId]));
-            }
-        } else {
-            for (int receiverId = 0; receiverId < threadData.receivers.size(); receiverId++) {
-                toDriver.add(new PropagationResultPtRecord(receiversPk.get(receiverId), threadData.cellId, verticesSoundLevel[receiverId]));
-            }
+        if(!absoluteZCoordinates) {
+            computeRays.makeRelativeZToAbsolute();
         }
-        return toDriver;
+        computeRays.run(computeRaysOut);
+
+        return new cellResult(computeRaysOut.getVerticesSoundLevel(), threadData.cellId);
+    }
+
+    private static class cellResult extends AbstractCollection<PropagationResultPtRecord> {
+        private List<ComputeRaysOut.verticeSL> verticeSLS;
+        private int cellId;
+
+        public cellResult(List<ComputeRaysOut.verticeSL> verticeSLS, int cellId) {
+            this.verticeSLS = verticeSLS;
+            this.cellId = cellId;
+        }
+
+        @Override
+        public Iterator<PropagationResultPtRecord> iterator() {
+            return new cellResultIterator(verticeSLS, cellId);
+        }
+
+        @Override
+        public int size() {
+            return 0;
+        }
+    }
+
+    private static class cellResultIterator implements Iterator<PropagationResultPtRecord> {
+        private List<ComputeRaysOut.verticeSL> verticeSLS;
+        private int cellId;
+        private int index = 0;
+
+        public cellResultIterator(List<ComputeRaysOut.verticeSL> verticeSLS, int cellId) {
+            this.verticeSLS = verticeSLS;
+            this.cellId = cellId;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return index < verticeSLS.size();
+        }
+
+        @Override
+        public PropagationResultPtRecord next() {
+            ComputeRaysOut.verticeSL v = verticeSLS.get(index++);
+            return new PropagationResultPtRecord(v.receiverId, v.sourceId, cellId, v.value);
+        }
     }
 }

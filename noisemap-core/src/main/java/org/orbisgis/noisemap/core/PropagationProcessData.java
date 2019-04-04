@@ -39,6 +39,7 @@ import org.h2gis.api.ProgressVisitor;
 import org.locationtech.jts.geom.GeometryFactory;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 
@@ -51,6 +52,9 @@ import java.util.List;
  * @author Adrien Le Bellec
  */
 public class PropagationProcessData {
+    public static double DEFAULT_MAX_PROPAGATION_DISTANCE = 1200;
+    public static double DEFAULT_MAXIMUM_REF_DIST = 50;
+    public static double DEFAULT_RECEIVER_DIST = 1.0;
     // Thermodynamic constants
 	static final double K_0 = 273.15;	// Absolute zero in Celsius
     static final  double Pref = 101325;	// Standard atmosphere atm (Pa)
@@ -62,29 +66,27 @@ public class PropagationProcessData {
     static final  double K01 = 273.16;  // Isothermal temperature at the triple point (K)
 
     /** coordinate of receivers */
-    public List<Coordinate> receivers;
+    public List<Coordinate> receivers = new ArrayList<>();
     /** FreeField test */
     public FastObstructionTest freeFieldFinder;
     /** Source Index */
-    public QueryGeometryStructure sourcesIndex;
+    public QueryGeometryStructure sourcesIndex = new QueryRTree();
     /** Sources geometries. Can be LINESTRING or POINT */
-    public List<Geometry> sourceGeometries;
+    public List<Geometry> sourceGeometries = new ArrayList<>();
     /** Optional Sound level of source.energetic */
-    public List<Double> wj_sources;
+    public List<Double> wj_sources = new ArrayList<>();
     /** Frequency bands values, by third octave */
-    public List<Integer> freq_lvl;
+    private double freq_lvl[] = new double[] {63 ,   125 ,   250 ,   500 ,  1000 ,  2000 ,  4000 ,  8000};
     /** Maximum reflexion order */
-    public int reflexionOrder;
+    public int reflexionOrder = 1;
     /** Compute diffraction rays over vertical edges */
-    public boolean computeHorizontalDiffraction;
+    public boolean computeHorizontalDiffraction = true;
     /** Maximum source distance */
-    public double maxSrcDist;
+    public double maxSrcDist = DEFAULT_MAX_PROPAGATION_DISTANCE;
     /** Maximum reflection wall distance from receiver->source line */
-    public double maxRefDist;
+    public double maxRefDist = DEFAULT_MAXIMUM_REF_DIST;
     /** Minimum distance between source and receiver */
-    public double minRecDist;
-    /** Wall alpha [0-1] */
-    public double wallAlpha;
+    public double minRecDist = DEFAULT_RECEIVER_DIST;
     /** probability occurrence favourable condition */
     public double[] windRose;
     /** maximum dB Error, stop calculation if the sum of further sources contributions are smaller than this value */
@@ -103,33 +105,51 @@ public class PropagationProcessData {
     double humidity = 70;
     double pressure = Pref;
 
-    public PropagationProcessData(List<Coordinate> receivers, FastObstructionTest freeFieldFinder,
-                                  QueryGeometryStructure sourcesIndex, List<Geometry> sourceGeometries,
-                                  List<ArrayList<Double>> wj_sources, List<Integer> freq_lvl, int reflexionOrder,
-                                  boolean computeHorizontalDiffraction, double maxSrcDist, double maxRefDist, double minRecDist,
-                                  double wallAlpha, double[] windRose, double maximumError, int cellId, ProgressVisitor cellProg,
-                                  List<GeoWithSoilType> geoWithSoilType, boolean computeVerticalDiffraction) {
-        this.receivers = receivers;
+//    public PropagationProcessData(List<Coordinate> receivers, FastObstructionTest freeFieldFinder,
+//                                  QueryGeometryStructure sourcesIndex, List<Geometry> sourceGeometries,
+//                                  List<ArrayList<Double>> wj_sources, List<Integer> freq_lvl, int reflexionOrder,
+//                                  boolean computeHorizontalDiffraction, double maxSrcDist, double maxRefDist, double minRecDist,
+//                                  double defaultWallApha, double maximumError, int cellId, ProgressVisitor cellProg,
+//                                  List<GeoWithSoilType> geoWithSoilType, boolean computeVerticalDiffraction) {
+//        this.receivers = receivers;
+//        this.freeFieldFinder = freeFieldFinder;
+//        this.sourcesIndex = sourcesIndex;
+//        this.sourceGeometries = sourceGeometries;
+//        this.wj_sources = new ArrayList<>();
+//        //TODO compute global level
+//        this.freq_lvl = freq_lvl;
+//        this.reflexionOrder = reflexionOrder;
+//        this.computeHorizontalDiffraction = computeHorizontalDiffraction;
+//        this.maxSrcDist = maxSrcDist;
+//        this.maxRefDist = maxRefDist;
+//        this.minRecDist = minRecDist;
+//        this.defaultWallApha = defaultWallApha;
+//        this.windRose = windRose;
+//        this.maximumError = maximumError;
+//        this.cellId = cellId;
+//        this.cellProg = cellProg;
+//        this.geoWithSoilType = geoWithSoilType;
+//        this.computeVerticalDiffraction = computeVerticalDiffraction;
+//        this.celerity = computeCelerity(temperature+K_0);
+//    }
+    public PropagationProcessData(FastObstructionTest freeFieldFinder) {
         this.freeFieldFinder = freeFieldFinder;
+    }
+
+    public void addSource(Geometry geom) {
+        sourceGeometries.add(geom);
+        sourcesIndex.appendGeometry(geom, sourceGeometries.size() - 1);
+    }
+
+    public void setSources(QueryGeometryStructure sourcesIndex, List<Geometry> sourceGeometries) {
         this.sourcesIndex = sourcesIndex;
         this.sourceGeometries = sourceGeometries;
-        this.wj_sources = new ArrayList<>();
-        //TODO compute global level
-        this.freq_lvl = freq_lvl;
-        this.reflexionOrder = reflexionOrder;
-        this.computeHorizontalDiffraction = computeHorizontalDiffraction;
-        this.maxSrcDist = maxSrcDist;
-        this.maxRefDist = maxRefDist;
-        this.minRecDist = minRecDist;
-        this.wallAlpha = wallAlpha;
-        this.windRose = windRose;
-        this.maximumError = maximumError;
-        this.cellId = cellId;
-        this.cellProg = cellProg;
-        this.geoWithSoilType = geoWithSoilType;
-        this.computeVerticalDiffraction = computeVerticalDiffraction;
-        this.celerity = computeCelerity(temperature+K_0);
     }
+
+    public void addReceiver(Coordinate... receiver) {
+        receivers.addAll(Arrays.asList(receiver));
+    }
+
     /**
      * Set relative humidity in percentage.
      * @param humidity relative humidity in percentage. 0-100
@@ -241,24 +261,35 @@ public class PropagationProcessData {
     }
 
 
+    /**
+     * @return Computation parameters for PropagationProcessPath
+     */
+    public PropagationProcessPathData newPropagationProcessPathData() {
+        PropagationProcessPathData attenuationWithMeteo = new PropagationProcessPathData();
+        attenuationWithMeteo.setWindRose(windRose);
+        attenuationWithMeteo.setTemperature(temperature);
+        attenuationWithMeteo.setHumidity(humidity);
+        attenuationWithMeteo.setPressure(pressure);
+        return attenuationWithMeteo;
+    }
 
     /**
      * Get WallAlpha
      */
-    public static double getWallAlpha(double WallAlpha, double freq_lvl)
+    public static double getWallAlpha(double wallAlpha, double freq_lvl)
     {
         double sigma = 0;
-        if(WallAlpha >= 0 && WallAlpha <= 1) {
-            sigma = 20000 * Math.pow (10., -2 * Math.pow (WallAlpha, 3./5.)) ;
+        if(wallAlpha >= 0 && wallAlpha <= 1) {
+            sigma = 20000 * Math.pow (10., -2 * Math.pow (wallAlpha, 3./5.)) ;
         } else {
-            sigma = Math.min(20000, Math.max(20, WallAlpha));
+            sigma = Math.min(20000, Math.max(20, wallAlpha));
         }
         double value = GetWallImpedance(sigma,freq_lvl);
         return value;
 
     }
 
-    static double GetWallImpedance(double sigma, double freq_l)
+    public static double GetWallImpedance(double sigma, double freq_l)
     {
         double s = Math.log(freq_l / sigma);
         double x = 1. + 9.08 * Math.exp(-.75 * s);
@@ -294,6 +325,8 @@ public class PropagationProcessData {
         alpha = 8 * x * (1 + a1 * Math.atan(a2) - x * Math.log(a3)) ;
         return alpha ;
     }
+
+
 
     /**
      * Update ground Z coordinates of sound sources and receivers absolute to sea levels

@@ -77,8 +77,12 @@ public class TestDiffractionPath {
         mesh.addTopographicPoint(new Coordinate(50, 20, 1));
         mesh.addTopographicPoint(new Coordinate(50, 45, 1));
 
-        mesh.finishPolygonFeeding(new Envelope(new Coordinate(0., 0., 0.),
-                new Coordinate(45., 45., 0.)));
+        Envelope bbox = mesh.getGeometriesBoundingBox();
+
+        bbox.expandBy(5);
+
+        mesh.finishPolygonFeeding(bbox);
+
         Coordinate p1 = new Coordinate(10, 20, 1.5);
         Coordinate p2 = new Coordinate(40, 20, 1.5);
         FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(), mesh.getTriNeighbors(), mesh.getVertices());

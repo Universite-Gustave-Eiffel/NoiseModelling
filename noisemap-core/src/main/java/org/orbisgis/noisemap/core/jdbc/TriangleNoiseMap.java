@@ -21,7 +21,6 @@ import org.orbisgis.noisemap.core.GeoWithSoilType;
 import org.orbisgis.noisemap.core.LayerDelaunayError;
 import org.orbisgis.noisemap.core.MeshBuilder;
 import org.orbisgis.noisemap.core.PropagationProcessData;
-import org.orbisgis.noisemap.core.PropagationProcessOut;
 import org.orbisgis.noisemap.core.PropagationResultTriRecord;
 import org.orbisgis.noisemap.core.QueryGeometryStructure;
 import org.orbisgis.noisemap.core.QueryQuadTree;
@@ -222,7 +221,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
     }
 
     public Collection<PropagationResultTriRecord> evaluateCell(Connection connection,int cellI, int cellJ, ProgressVisitor progression) throws SQLException {
-        PropagationProcessOut threadDataOut = new PropagationProcessOut();
+        //PropagationProcessOut threadDataOut = new PropagationProcessOut();
         MeshBuilder mesh = new MeshBuilder();
         int ij = cellI * gridDim + cellJ;
         logger.info("Begin processing of cell " + (cellI + 1) + ","
@@ -324,21 +323,21 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
 //        propaProcess.run();
         Stack<PropagationResultTriRecord> toDriver = new Stack<>();
         int tri_id = 0;
-        double[] verticesSoundLevel = threadDataOut.getVerticesSoundLevel();
-        for (Triangle tri : triangles) {
-            Coordinate pverts[] = {vertices.get(tri.getA()),
-                    vertices.get(tri.getB()),
-                    vertices.get(tri.getC()),
-                    vertices.get(tri.getA())};
-            toDriver.add(new PropagationResultTriRecord(
-                    geometryFactory.createPolygon(geometryFactory.createLinearRing(pverts), null),
-                    verticesSoundLevel[tri.getA()],
-                    verticesSoundLevel[tri.getB()],
-                    verticesSoundLevel[tri.getC()],
-                    ij,
-                    tri_id));
-            tri_id++;
-        }
+//        double[] verticesSoundLevel = threadDataOut.getVerticesSoundLevel();
+//        for (Triangle tri : triangles) {
+//            Coordinate pverts[] = {vertices.get(tri.getA()),
+//                    vertices.get(tri.getB()),
+//                    vertices.get(tri.getC()),
+//                    vertices.get(tri.getA())};
+//            toDriver.add(new PropagationResultTriRecord(
+//                    geometryFactory.createPolygon(geometryFactory.createLinearRing(pverts), null),
+//                    verticesSoundLevel[tri.getA()],
+//                    verticesSoundLevel[tri.getB()],
+//                    verticesSoundLevel[tri.getC()],
+//                    ij,
+//                    tri_id));
+//            tri_id++;
+//        }
         return toDriver;
     }
 

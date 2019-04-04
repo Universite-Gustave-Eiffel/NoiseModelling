@@ -52,7 +52,7 @@ public class BR_PtGrid_f extends AbstractFunction implements ScalarFunction {
     public BR_PtGrid_f() {
         addProperty(PROP_REMARKS , "## BR_PtGrid_f\n" +
                 "\n" +
-                "BR_PtGrid_f(String buildingsTable,String sourcesTable, String receiversTable, String sourcesTableSoundFieldName, String groundTypeTable, double maximumPropagationDistance, double maximumWallSeekingDistance, int soundReflectionOrder, int soundDiffractionOrder, double wallAlpha)\n" +
+                "BR_PtGrid_f(String buildingsTable,String sourcesTable, String receiversTable, String sourcesTableSoundFieldName, String groundTypeTable, double maximumPropagationDistance, double maximumWallSeekingDistance, int soundReflectionOrder, int soundDiffractionOrder, double defaultWallApha)\n" +
                 "\n" +
                 " - **buildingsTable** table identifier that contain a geometry column of type POLYGON.\n" +
                 " - **sourcesTable** table identifier that contain a geometry column of type POINT or LINESTRING.The " +
@@ -80,7 +80,7 @@ public class BR_PtGrid_f extends AbstractFunction implements ScalarFunction {
                 "Recommended value is 2.\n" +
                 " - **soundDiffractionOrder** Maximum depth of sound diffraction. Impacts performance. Recommended " +
                 "value is 1.\n" +
-                " - **wallAlpha** Wall absorption value. Between 0 and 1. Recommended value is 0.23 for concrete." +
+                " - **defaultWallApha** Wall absorption value. Between 0 and 1. Recommended value is 0.23 for concrete." +
                 "");
     }
 

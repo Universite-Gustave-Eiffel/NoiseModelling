@@ -292,6 +292,7 @@ public class MeshBuilder {
             if (Double.isNaN(point.z)) {
                 point.setCoordinate(new Coordinate(point.x, point.y, 0.));
             }
+            geometriesBoundingBox.expandToInclude(point);
             this.topoPoints.add(point);
         }
     }

@@ -13,7 +13,6 @@ import org.orbisgis.noisemap.core.ComputeRays;
 import org.orbisgis.noisemap.core.ComputeRaysOut;
 import org.orbisgis.noisemap.core.PropagationDebugInfo;
 import org.orbisgis.noisemap.core.PropagationProcessData;
-import org.orbisgis.noisemap.core.PropagationProcessOut;
 import org.orbisgis.noisemap.core.PropagationProcessPathData;
 import org.orbisgis.noisemap.core.PropagationResultPtRecord;
 

@@ -33,12 +33,11 @@
  */
 package org.orbisgis.noisemap.core;
 
+import org.locationtech.jts.algorithm.Angle;
+
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -49,7 +48,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Pierre Aumond
  */
 public class ComputeRaysOut implements IComputeRaysOut {
-    private List<ComputeRaysOut.verticeSL> verticeSoundLevel = new ArrayList<>();
+    private List<ComputeRaysOut.verticeSL> receiverAttenuationLevels = new ArrayList<>();
     private PropagationProcessPathData pathData;
 
     public ComputeRaysOut(boolean keepRays, PropagationProcessPathData pathData) {
@@ -69,6 +68,7 @@ public class ComputeRaysOut implements IComputeRaysOut {
 
     @Override
     public double addPropagationPaths(int sourceId, int receiverId, List<PropagationPath> propagationPath) {
+        rayCount.addAndGet(1);
         if(keepRays) {
             propagationPaths.addAll(propagationPath);
         }
@@ -77,6 +77,12 @@ public class ComputeRaysOut implements IComputeRaysOut {
         EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
         double[] aGlobalMeteo = null;
         for (PropagationPath propath : propagationPath) {
+            List<PropagationPath.PointPath> ptList = propath.getPointList();
+            double angleRad = Angle.angle(ptList.get(0).coordinate, ptList.get(ptList.size() - 1).coordinate);
+            double rad2rose = (-angleRad + Math.PI / 2);
+            int roseindex = Math.round(rad2rose / (2 * Math.PI / pathData.getWindRose().length));
+
+
             propath.setFavorable(false);
             evaluateAttenuationCnossos.evaluate(propath, pathData);
             if (aGlobalMeteo != null) {
@@ -89,7 +95,7 @@ public class ComputeRaysOut implements IComputeRaysOut {
             aGlobalMeteo = ComputeRays.sumArrayWithPonderation(aGlobalMeteo, evaluateAttenuationCnossos.getaGlobal(), pathData.getDefaultOccurance());
         }
         if(aGlobalMeteo != null) {
-            verticeSoundLevel.add(new ComputeRaysOut.verticeSL(receiverId, sourceId, aGlobalMeteo));
+            receiverAttenuationLevels.add(new ComputeRaysOut.verticeSL(receiverId, sourceId, aGlobalMeteo));
             double globalValue = 0;
             for (double att : aGlobalMeteo) {
                 globalValue += Math.pow(10, att / 10.0);
@@ -106,7 +112,7 @@ public class ComputeRaysOut implements IComputeRaysOut {
     }
 
     public List<ComputeRaysOut.verticeSL> getVerticesSoundLevel() {
-        return verticeSoundLevel;
+        return receiverAttenuationLevels;
     }
 
     public List<PropagationPath> getPropagationPaths() {

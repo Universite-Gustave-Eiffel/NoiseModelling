@@ -75,7 +75,7 @@ public class BR_TriGrid3D extends AbstractFunction implements ScalarFunction {
                 "String sourcesTableSoundFieldName, String groundTypeTable, String demTable, " +
                 "double maximumPropagationDistance, double maximumWallSeekingDistance, double roadsWidth, " +
                 "double receiversDensification, double maximumAreaOfTriangle, int soundReflectionOrder, " +
-                "int soundDiffractionOrder, double wallAlpha)\n" +
+                "int soundDiffractionOrder, double defaultWallApha)\n" +
                 " \n" +
                 " - **buildingsTable** table identifier that contain a geometry column of type POLYGON. Polygon Z " +
                 "value is the ground level.\n" +
@@ -107,7 +107,7 @@ public class BR_TriGrid3D extends AbstractFunction implements ScalarFunction {
                 "Recommended value is 2.\n" +
                 " - **soundDiffractionOrder** Maximum depth of sound diffraction. Impacts performance. Recommended " +
                 "value is 1.\n" +
-                " - **wallAlpha** Wall absorption value. Between 0 and 1. Recommended value is 0.23 for concrete. Specific absorption value can be specified in the ALPHA column of building table.");
+                " - **defaultWallApha** Wall absorption value. Between 0 and 1. Recommended value is 0.23 for concrete. Specific absorption value can be specified in the ALPHA column of building table.");
     }
 
     @Override

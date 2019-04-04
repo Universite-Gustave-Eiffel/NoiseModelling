@@ -60,15 +60,17 @@ public class PropagationProcessPathData {
     static final List<Integer> freq_lvl = Arrays.asList(63, 125, 250, 500, 1000, 2000, 4000, 8000);
 
     /** Temperature in celsius */
-    double temperature = 15;
-    double celerity = 340;
-    double humidity = 70;
-    double pressure = Pref;
-    double[] alpha_atmo = getAtmoCoeffArray(freq_lvl,  temperature,  pressure,  humidity);
-    double defaultOccurance = 0.5;
+    private double temperature = 15;
+    private double celerity = 340;
+    private double humidity = 70;
+    private double pressure = Pref;
+    private double[] alpha_atmo = getAtmoCoeffArray(freq_lvl,  temperature,  pressure,  humidity);
+    private double defaultOccurance = 0.5;
 
-    boolean gDisc = true;     // choose between accept G discontinuity or not
-    boolean prime2520 = false; // choose to use prime values to compute eq. 2.5.20
+    private boolean gDisc = true;     // choose between accept G discontinuity or not
+    private boolean prime2520 = false; // choose to use prime values to compute eq. 2.5.20
+    /** probability occurrence favourable condition */
+    private double[] windRose  = new double[]{0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
 
     /**
      * Set relative humidity in percentage.
@@ -88,6 +90,42 @@ public class PropagationProcessPathData {
         this.pressure = pressure;
         this.alpha_atmo = getAtmoCoeffArray(freq_lvl,  temperature,  pressure,  humidity);
         return this;
+    }
+
+    public double[] getWindRose() {
+        return windRose;
+    }
+
+    public void setWindRose(double[] windRose) {
+        this.windRose = windRose;
+    }
+
+    public double getTemperature() {
+        return temperature;
+    }
+
+    public double getCelerity() {
+        return celerity;
+    }
+
+    public double getHumidity() {
+        return humidity;
+    }
+
+    public double getPressure() {
+        return pressure;
+    }
+
+    public boolean isPrime2520() {
+        return prime2520;
+    }
+
+    public boolean isgDisc() {
+        return gDisc;
+    }
+
+    public void setgDisc(boolean gDisc) {
+        this.gDisc = gDisc;
     }
 
     /**
@@ -131,44 +169,6 @@ public class PropagationProcessPathData {
         this.celerity = computeCelerity(temperature + K_0);
         this.alpha_atmo = getAtmoCoeffArray(freq_lvl,  temperature,  pressure,  humidity);
         return this;
-    }
-
-    /**
-     * This function calculates the atmospheric attenuation coefficient of sound in air
-     * ISO 9613-1:1993(F)
-     * @param frequency acoustic frequency (Hz)
-     * @param humidity relative humidity (in %) (0-100)
-     * @param pressure atmospheric pressure (in Pa)
-     * @param tempKelvin Temperature in Kelvin (in K)
-     * @return atmospheric attenuation coefficient (db/km)
-     * @author Judicaël Picaut, UMRAE
-     */
-    public static double getCoefAttAtmos(double frequency, double humidity, double pressure, double tempKelvin) {
-        // Sound celerity
-        double cson = computeCelerity(tempKelvin);
-
-        // Calculation of the molar fraction of water vapour
-        double C = -6.8346 * Math.pow(K01 / tempKelvin, 1.261) + 4.6151;
-        double Ps = Pref * Math.pow(10., C);
-        double hmol = humidity * Ps / Pref;
-
-        // Classic and rotational absorption
-        double Acr = (Pref / pressure) * (1.60E-10) * Math.sqrt(tempKelvin / Kref) * Math.pow(frequency, 2);
-
-        // Vibratory oxygen absorption:!!123
-        double Fr = (pressure / Pref) * (24. + 4.04E4 * hmol * (0.02 + hmol) / (0.391 + hmol));
-        double Am = 1.559 * PropagationProcessPathData.FmolO * Math.exp(-KvibO / tempKelvin) * Math.pow(KvibO / tempKelvin, 2);
-        double AvibO = Am * (frequency / cson) * 2. * (frequency / Fr) / (1 + Math.pow(frequency / Fr, 2));
-
-        // Vibratory nitrogen absorption
-        Fr = (pressure / Pref) * Math.sqrt(Kref / tempKelvin) * (9. + 280. * hmol * Math.exp(-4.170 * (Math.pow(tempKelvin / Kref, -1. / 3.) - 1)));
-        Am = 1.559 * FmolN * Math.exp(-KvibN / tempKelvin) * Math.pow(KvibN / tempKelvin, 2);
-        double AvibN = Am * (frequency / cson) * 2. * (frequency / Fr) / (1 + Math.pow(frequency / Fr, 2));
-
-        // Total absorption in dB/m
-        double alpha = (Acr + AvibO + AvibN);
-
-        return alpha * 1000;
     }
 
     /**
