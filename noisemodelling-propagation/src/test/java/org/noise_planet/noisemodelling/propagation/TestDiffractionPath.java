@@ -86,9 +86,9 @@ public class TestDiffractionPath {
         Coordinate p1 = new Coordinate(10, 20, 1.5);
         Coordinate p2 = new Coordinate(40, 20, 1.5);
         FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(), mesh.getTriNeighbors(), mesh.getVertices());
-        double expectedLength = CGAlgorithms3D.distance(p1, new Coordinate(15,20, height)) +
-                CGAlgorithms3D.distance(new Coordinate(15, 20, height), new Coordinate(30, 20 ,height)) +
-                CGAlgorithms3D.distance(new Coordinate(30, 20, height), p2);
+        double expectedLength = CGAlgorithms3D.distance(p1, new Coordinate(15,20, manager.getBuildingRoofZ(1))) +
+                CGAlgorithms3D.distance(new Coordinate(15, 20, manager.getBuildingRoofZ(1)), new Coordinate(30, 20 ,manager.getBuildingRoofZ(1))) +
+                CGAlgorithms3D.distance(new Coordinate(30, 20, manager.getBuildingRoofZ(1)), p2);
         DiffractionWithSoilEffetZone diff = manager.getPath(p1, p2);
         assertEquals(expectedLength, diff.getFullDiffractionDistance(), 1e-3);
 

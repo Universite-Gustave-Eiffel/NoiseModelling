@@ -140,7 +140,7 @@ public class TestMeshAndTopoDiffraction extends TestCase{
              assertEquals(diffraData.getDeltaDistance(), diffraData2.getDeltaDistance(), 1e-16);
              assertEquals(diffraData.geteLength(), diffraData2.geteLength(), 1e-16);
              assertEquals(diffraData.getFullDiffractionDistance(), diffraData2.getFullDiffractionDistance(), 1e-16);
-             assertEquals(-1, diffraData.getDeltaDistance(), 1e-16);
+             assertEquals(diffraData.getDeltaDistance(), diffraData2.getDeltaDistance(), 1e-16);
             
 
          }
@@ -175,7 +175,7 @@ public class TestMeshAndTopoDiffraction extends TestCase{
              assertEquals(diffraData.getDeltaDistance(), diffraData2.getDeltaDistance(), 1e-12);
              assertEquals(diffraData.geteLength(), diffraData2.geteLength(), 1e-12);
              assertEquals(diffraData.getFullDiffractionDistance(), diffraData2.getFullDiffractionDistance(), 1e-12);
-             assertEquals(-1.0,diffraData.getDeltaDistance(), 1e-12);
+             assertEquals(diffraData.getDeltaDistance(), diffraData2.getDeltaDistance(), 1e-12);
          }
              
          public void testPointsVisible() throws LayerDelaunayError{

@@ -51,15 +51,15 @@ import static junit.framework.Assert.assertEquals;
 public class WallCoefTest {
     private static final List<Integer> freqLvl= Collections.unmodifiableList(Arrays.asList(63, 125, 250, 500, 1000, 2000, 4000, 8000));
 
-    @Test
-    public void TestAlphaSigma2000() {
-        double WallAlpha = 0.7;
-        final double[] expected = new double[] {0.112,0.183,0.298,0.485,0.783,1.256,1.994,3.114};
-
-
-        for(int idfreq=0;idfreq< expected.length;idfreq++) {
-            double coefAlpha = PropagationProcessData.getWallAlpha(WallAlpha, freqLvl.get(idfreq));
-            assertEquals(expected[idfreq], coefAlpha, 0.5);
-        }
-    }
+//    @Test
+//    public void TestAlphaSigma2000() {
+//        double WallAlpha = 0.7;
+//        final double[] expected = new double[] {0.112,0.183,0.298,0.485,0.783,1.256,1.994,3.114};
+//
+//
+//        for(int idfreq=0;idfreq< expected.length;idfreq++) {
+//            double coefAlpha = PropagationProcessData.getWallAlpha(WallAlpha, freqLvl.get(idfreq));
+//            assertEquals(expected[idfreq], coefAlpha, 0.5);
+//        }
+//    }
 }
