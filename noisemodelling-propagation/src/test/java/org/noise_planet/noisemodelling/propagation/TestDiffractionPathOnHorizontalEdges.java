@@ -17,8 +17,8 @@ import static org.junit.Assert.assertEquals;
 /**
  * @author Nicolas Fortin
  */
-public class TestDiffractionPath {
-    private static final Logger LOGGER = LoggerFactory.getLogger(TestDiffractionPath.class);
+public class TestDiffractionPathOnHorizontalEdges {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestDiffractionPathOnHorizontalEdges.class);
 
     @Test
     public void testPathOneBuilding() throws LayerDelaunayError {

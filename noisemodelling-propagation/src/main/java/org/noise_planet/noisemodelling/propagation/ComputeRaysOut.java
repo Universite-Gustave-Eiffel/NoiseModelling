@@ -38,17 +38,18 @@ import org.locationtech.jts.algorithm.Angle;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Way to store data computed by thread.
- * Multiple threads use the same Out, then all methods has been synchronized
- *
+ * Way to store data computed by threads.
+ * Multiple threads use one instance.
+ * This class must be thread safe
  * @author Nicolas Fortin
  * @author Pierre Aumond
  */
 public class ComputeRaysOut implements IComputeRaysOut {
-    private List<ComputeRaysOut.verticeSL> receiverAttenuationLevels = new ArrayList<>();
+    private List<ComputeRaysOut.verticeSL> receiverAttenuationLevels = Collections.synchronizedList(new ArrayList<>());
     private PropagationProcessPathData pathData;
 
     public ComputeRaysOut(boolean keepRays, PropagationProcessPathData pathData) {
@@ -63,8 +64,9 @@ public class ComputeRaysOut implements IComputeRaysOut {
     private AtomicLong nb_image_receiver = new AtomicLong();
     private AtomicLong nb_reflexion_path = new AtomicLong();
     private AtomicLong nb_diffraction_path = new AtomicLong();
-    private long cellComputed = 0;
-    List<PropagationPath> propagationPaths = Collections.synchronizedList(new ArrayList<PropagationPath>());
+    private AtomicInteger cellComputed = new AtomicInteger();
+
+    private List<PropagationPath> propagationPaths = Collections.synchronizedList(new ArrayList<PropagationPath>());
 
     @Override
     public double addPropagationPaths(int sourceId, int receiverId, List<PropagationPath> propagationPath) {
@@ -117,6 +119,7 @@ public class ComputeRaysOut implements IComputeRaysOut {
     public List<PropagationPath> getPropagationPaths() {
         return propagationPaths;
     }
+
     public void clearPropagationPaths() { this.propagationPaths.clear();}
 
     public void appendReflexionPath(long added) {
@@ -147,11 +150,11 @@ public class ComputeRaysOut implements IComputeRaysOut {
      * Increment cell computed counter by 1
      */
     public synchronized void appendCellComputed() {
-        cellComputed += 1;
+        cellComputed.addAndGet(1);
     }
 
     public synchronized long getCellComputed() {
-        return cellComputed;
+        return cellComputed.get();
     }
 
     public static final class verticeSL {

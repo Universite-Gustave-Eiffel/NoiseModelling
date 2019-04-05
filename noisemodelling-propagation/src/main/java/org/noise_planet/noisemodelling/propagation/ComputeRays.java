@@ -803,7 +803,7 @@ public class ComputeRays {
         // Create the direct Line
 
         boolean freefield = true;
-        boolean somethingHideReceiver = false;
+        boolean topographyHideReceiver = false;
         boolean buildingOnPath = false;
 
         List<TriIdWithIntersection> inters = new ArrayList<>();
@@ -811,15 +811,19 @@ public class ComputeRays {
         for(TriIdWithIntersection intersection : inters) {
             if(intersection.getBuildingId() > 0) {
                 buildingOnPath = true;
+                topographyHideReceiver = true;
             }
             if(intersection.isIntersectionOnBuilding() || intersection.isIntersectionOnTopography()) {
                 freefield = false;
+                if(intersection.isIntersectionOnTopography()) {
+                    topographyHideReceiver = true;
+                }
             }
         }
 
         // double fav_probability = favrose[(int) (Math.round(calcRotationAngleInDegrees(srcCoord, receiverCoord) / 30))];
 
-        if (!somethingHideReceiver && !buildingOnPath) {
+        if (!topographyHideReceiver && !buildingOnPath) {
             PropagationPath propagationPath = computeFreefield(receiverCoord, srcCoord,inters, debugInfo);
             propagationPaths.add(propagationPath);
         }
@@ -828,14 +832,14 @@ public class ComputeRays {
         // todo include rayleigh criterium
         if (verticalDiffraction && buildingOnPath && !freefield) {
             PropagationPath propagationPath3 = computeFreefield(receiverCoord, srcCoord, inters, debugInfo);
-            PropagationPath propagationPath = computeHorizontalEdgeDiffraction(somethingHideReceiver, receiverCoord, srcCoord, debugInfo);
+            PropagationPath propagationPath = computeHorizontalEdgeDiffraction(topographyHideReceiver, receiverCoord, srcCoord, debugInfo);
             propagationPath.getSRList().addAll(propagationPath3.getSRList());
             propagationPaths.add(propagationPath);
 
 
         }
 
-        if (somethingHideReceiver && data.computeHorizontalDiffraction && horizontalDiffraction ) {
+        if (topographyHideReceiver && data.computeHorizontalDiffraction && horizontalDiffraction ) {
             // todo if one of the points > roof or < floor, get out this path
             PropagationPath propagationPath = new PropagationPath();
             PropagationPath propagationPath2 = new PropagationPath();
