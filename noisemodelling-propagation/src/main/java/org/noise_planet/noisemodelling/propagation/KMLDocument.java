@@ -162,8 +162,9 @@ public class KMLDocument {
         xmlOut.writeCharacters("mnt");
         xmlOut.writeEndElement();//Name
         for(Triangle triangle : triVertices) {
-            Geometry poly = geometryFactory.createPolygon(new Coordinate[]{vertices.get(triangle.getA()),
-                    vertices.get(triangle.getB()), vertices.get(triangle.getC()), vertices.get(triangle.getA())});
+            Geometry poly = geometryFactory.createPolygon(new Coordinate[]{new Coordinate(vertices.get(triangle.getA())),
+                    new Coordinate(vertices.get(triangle.getB())), new Coordinate(vertices.get(triangle.getC())),
+                    new Coordinate(vertices.get(triangle.getA()))});
             xmlOut.writeStartElement("Placemark");
             xmlOut.writeAttribute("name", "tri");
             // Apply CRS transform
@@ -187,7 +188,6 @@ public class KMLDocument {
         if(transform != null && geometry != null) {
             geometry.apply(new CRSTransformFilter(transform));
             // Recompute envelope
-            geometry.geometryChanged();
             geometry.setSRID(4326);
         }
     }
@@ -210,8 +210,6 @@ public class KMLDocument {
                 coord.y = xyz[1];
                 if (xyz.length > 2) {
                     coord.z = xyz[2];
-                } else {
-                    coord.z = 0.0D / 0.0;
                 }
             } catch (IllegalCoordinateException | CoordinateOperationException var3) {
                 Logger.getLogger(KMLDocument.class.getName()).log(Level.SEVERE, (String)null, var3);

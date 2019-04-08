@@ -294,7 +294,7 @@ public class TestComputeRays {
         //Scene dimension
         Coordinate proj = new Coordinate( 356372.67, 6686702.14);
         double zOffset = 10;
-        Envelope cellEnvelope = new Envelope(new Coordinate(-300+proj.x, -300+proj.y, 0.), new Coordinate(500+proj.x, 500+proj.y, 0.));
+        Envelope cellEnvelope = new Envelope(new Coordinate(-300, -300, 0.), new Coordinate(500, 500, 0.));
         //Create obstruction test object
         MeshBuilder mesh = new MeshBuilder();
 
@@ -303,7 +303,8 @@ public class TestComputeRays {
         double mountainX = -80;
         double mountainY = 50;
         double mountainWidth = 8;
-        double mountainLength = 50;
+        double mountainHeight = 50;
+        double mountainLength = 8;
         double domainXmax = cellEnvelope.getMaxX();
         double domainXmin = cellEnvelope.getMinX();
         double domainYmax = cellEnvelope.getMaxY();
@@ -312,14 +313,15 @@ public class TestComputeRays {
             for(int y = 0; y < pointCount; y++) {
                 double xp = x * ((domainXmax - domainXmin) / pointCount) + domainXmin;
                 double yp = y * ((domainYmax - domainYmin) / pointCount) + domainYmin;
-                double zp = 45 * Math.exp(-(Math.pow(x - ((mountainX - domainXmin) /
+                double zp = mountainHeight * Math.exp(-(Math.pow(x - ((mountainX - domainXmin) /
                         (domainXmax - domainXmin) * pointCount)  , 2) / mountainWidth  +
                         Math.pow(y - ((mountainY - domainYmin) / (domainYmax - domainYmin) *
                                 pointCount) ,2) / mountainLength )) + zOffset;
-                Coordinate p = new Coordinate(xp, yp, zp);
+                Coordinate p = new Coordinate(xp+proj.x, yp+proj.y, zp);
                 mesh.addTopographicPoint(p);
             }
         }
+        cellEnvelope = mesh.getGeometriesBoundingBox();
         cellEnvelope.expandBy(50);
         mesh.finishPolygonFeeding(cellEnvelope);
         //Retrieve Delaunay triangulation of scene
