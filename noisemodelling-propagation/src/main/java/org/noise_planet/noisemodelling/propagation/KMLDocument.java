@@ -165,6 +165,7 @@ public class KMLDocument {
             Geometry poly = geometryFactory.createPolygon(new Coordinate[]{vertices.get(triangle.getA()),
                     vertices.get(triangle.getB()), vertices.get(triangle.getC()), vertices.get(triangle.getA())});
             xmlOut.writeStartElement("Placemark");
+            xmlOut.writeAttribute("name", "tri");
             // Apply CRS transform
             doTransform(poly);
             //Write geometry
@@ -183,7 +184,7 @@ public class KMLDocument {
     }
 
     public void doTransform(Geometry geometry) {
-        if(transform != null) {
+        if(transform != null && geometry != null) {
             geometry.apply(new CRSTransformFilter(transform));
             // Recompute envelope
             geometry.geometryChanged();

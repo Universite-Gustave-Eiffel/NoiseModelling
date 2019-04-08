@@ -58,7 +58,7 @@ public class MeshBuilder {
     private static final int BUILDING_COUNT_HINT = 1500; // 2-3 km² average buildings
     private List<PolygonWithHeight> polygonWithHeight = new ArrayList<>(BUILDING_COUNT_HINT);//list polygon with height
     private List<LineString> envelopeSplited = new ArrayList<>();
-    private Envelope geometriesBoundingBox = null;
+    private Envelope geometriesBoundingBox = new Envelope();
     private List<Coordinate> topoPoints = new LinkedList<Coordinate>();
     private boolean computeNeighbors = true;
     private double maximumArea = 0;
@@ -193,11 +193,7 @@ public class MeshBuilder {
     }
 
     private void addGeometry(PolygonWithHeight poly) {
-        if (this.geometriesBoundingBox == null) {
-            this.geometriesBoundingBox = new Envelope(poly.getGeometry().getEnvelopeInternal());
-        } else {
-            this.geometriesBoundingBox.expandToInclude(poly.getGeometry().getEnvelopeInternal());
-        }
+        this.geometriesBoundingBox.expandToInclude(poly.getGeometry().getEnvelopeInternal());
         polygonWithHeight.add(poly);
     }
 

@@ -1,5 +1,7 @@
 package org.noise_planet.noisemodelling.propagation;
 
+import org.cts.crs.CRSException;
+import org.cts.op.CoordinateOperationException;
 import org.h2gis.functions.spatial.crs.ST_Transform;
 import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
@@ -14,6 +16,10 @@ import org.locationtech.jts.math.Vector2D;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.xml.stream.XMLStreamException;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -281,17 +287,19 @@ public class TestComputeRays {
     }
 
     @Test
-    public void testHillHideReceiverSourceRay() throws LayerDelaunayError, ParseException {
+    public void testHillHideReceiverSourceRay() throws LayerDelaunayError, ParseException, IOException, XMLStreamException, CoordinateOperationException, CRSException {
 
         GeometryFactory factory = new GeometryFactory();
         WKTReader wktReader = new WKTReader(factory);
         //Scene dimension
-        Envelope cellEnvelope = new Envelope(new Coordinate(-300, -300, 0.), new Coordinate(500, 500, 0.));
+        Coordinate proj = new Coordinate( 356372.67, 6686702.14);
+        double zOffset = 10;
+        Envelope cellEnvelope = new Envelope(new Coordinate(-300+proj.x, -300+proj.y, 0.), new Coordinate(500+proj.x, 500+proj.y, 0.));
         //Create obstruction test object
         MeshBuilder mesh = new MeshBuilder();
 
         // Create DEM using gaussian 2d function
-        int pointCount = 50;
+        int pointCount = 10;
         double mountainX = -80;
         double mountainY = 50;
         double mountainWidth = 8;
@@ -307,12 +315,12 @@ public class TestComputeRays {
                 double zp = 45 * Math.exp(-(Math.pow(x - ((mountainX - domainXmin) /
                         (domainXmax - domainXmin) * pointCount)  , 2) / mountainWidth  +
                         Math.pow(y - ((mountainY - domainYmin) / (domainYmax - domainYmin) *
-                                pointCount) ,2) / mountainLength ));
+                                pointCount) ,2) / mountainLength )) + zOffset;
                 Coordinate p = new Coordinate(xp, yp, zp);
                 mesh.addTopographicPoint(p);
             }
         }
-
+        cellEnvelope.expandBy(50);
         mesh.finishPolygonFeeding(cellEnvelope);
         //Retrieve Delaunay triangulation of scene
         FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(), mesh.getTriNeighbors(), mesh.getVertices());
@@ -336,7 +344,11 @@ public class TestComputeRays {
         Coordinate p1 = new Coordinate(4.5, 6.5, 1.6);
         Coordinate p2 = new Coordinate(14, 6.5, 1.6);
 
-        ST_Transform
+        KMLDocument kmlDocument = new KMLDocument(new FileOutputStream("target/topotest.kml"));
+        kmlDocument.setInputCRS("EPSG:2154");
+        kmlDocument.writeHeader();
+        kmlDocument.writeTopographic(manager.getTriangles(), manager.getVertices());
+        kmlDocument.writeFooter();
     }
 
     //@Test

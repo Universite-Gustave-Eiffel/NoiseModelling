@@ -132,7 +132,7 @@ public class FastObstructionTest {
      * @return Triangle list
      */
     public List<Triangle> getTriangles() {
-        return triVertices;
+        return Collections.unmodifiableList(triVertices);
     }
 
 
@@ -140,7 +140,7 @@ public class FastObstructionTest {
      * @return vertices list, only for debug and unit test purpose
      */
     public List<Coordinate> getVertices() {
-        return vertices;
+        return Collections.unmodifiableList(vertices);
     }
 
 
