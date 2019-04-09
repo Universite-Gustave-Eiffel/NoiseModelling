@@ -659,6 +659,10 @@ public class FastObstructionTest {
         return (Polygon) polygonWithHeight.get(buildingId - 1).geo;
     }
 
+    public List<MeshBuilder.PolygonWithHeight> getPolygonWithHeight() {
+        return Collections.unmodifiableList(polygonWithHeight);
+    }
+
     /**
      * @return Number of stored buildings
      */

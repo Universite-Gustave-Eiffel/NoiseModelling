@@ -66,6 +66,7 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.CoordinateFilter;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.io.kml.KMLWriter;
 
@@ -73,8 +74,10 @@ import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
 import java.io.BufferedOutputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -91,6 +94,7 @@ public class KMLDocument {
 //    private List<MeshBuilder.PolygonWithHeight> buildings = new ArrayList<>();
 //    private List<TriMarkers> isoCountours = new ArrayList<>();
     private final XMLStreamWriter xmlOut;
+    private Coordinate offset = new Coordinate(0, 0, 0);
     // 0.011 meters precision
     //https://gisjames.wordpress.com/2016/04/27/deciding-how-many-decimal-places-to-include-when-reporting-latitude-and-longitude/
     private int wgs84Precision = 7;
@@ -152,6 +156,14 @@ public class KMLDocument {
         xmlOut.close();
     }
 
+    public void setOffset(Coordinate offset) {
+        this.offset = offset;
+    }
+
+    private Coordinate copyCoord(Coordinate in) {
+        return new Coordinate(in.x + offset.x, in.y + offset.y, Double.isNaN(in.z) ? offset.z : in.z + offset.z);
+    }
+
     public void writeTopographic(List<Triangle> triVertices, List<Coordinate> vertices) throws XMLStreamException {
 
         xmlOut.writeStartElement("Schema");
@@ -169,9 +181,9 @@ public class KMLDocument {
         Polygon[] polygons = new Polygon[triVertices.size()];
         int idTri = 0;
         for(Triangle triangle : triVertices) {
-            Polygon poly = geometryFactory.createPolygon(new Coordinate[]{new Coordinate(vertices.get(triangle.getA())),
-                    new Coordinate(vertices.get(triangle.getB())), new Coordinate(vertices.get(triangle.getC())),
-                    new Coordinate(vertices.get(triangle.getA()))});
+            Polygon poly = geometryFactory.createPolygon(new Coordinate[]{copyCoord(vertices.get(triangle.getA())),
+                    copyCoord(vertices.get(triangle.getB())), copyCoord(vertices.get(triangle.getC())),
+                    copyCoord(vertices.get(triangle.getA()))});
             // Apply CRS transform
             doTransform(poly);
             polygons[idTri++] = poly;
@@ -183,12 +195,86 @@ public class KMLDocument {
         xmlOut.writeEndElement();//Folder
     }
 
-    public void writeBuildings(List<MeshBuilder.PolygonWithHeight> buildings) throws XMLStreamException {
+    public void writeBuildings(FastObstructionTest manager) throws XMLStreamException {
+        xmlOut.writeStartElement("Schema");
+        xmlOut.writeAttribute("name", "buildings");
+        xmlOut.writeAttribute("id", "buildings");
+        xmlOut.writeEndElement();//Write schema
+        xmlOut.writeStartElement("Folder");
+        xmlOut.writeStartElement("name");
+        xmlOut.writeCharacters("buildings");
+        xmlOut.writeEndElement();//Name
+        xmlOut.writeStartElement("Placemark");
+        xmlOut.writeStartElement("name");
+        xmlOut.writeCharacters("building");
+        xmlOut.writeEndElement();//Name
+        List<MeshBuilder.PolygonWithHeight> buildings = manager.getPolygonWithHeight();
+        Polygon[] polygons = new Polygon[buildings.size()];
+        int idPoly = 0;
 
+        for(MeshBuilder.PolygonWithHeight triangle : buildings) {
+            /**
+             *
+             *
+             for (Coordinate coordinate : polygon.getGeometry().getCoordinates()) {
+
+             double z = manager.getHeightAtPosition(coordinate)
+             Geometry outPutGeom = (Point) gf.createPoint(coordinate).copy()
+             outPutGeom.geometryChanged()
+             outPutGeom.apply(new ST_Transform.CRSTransformFilter(op.get(0)))
+             outPutGeom.setSRID(4326)
+             Coordinate coordinate2 = outPutGeom.getCoordinate()
+
+             fileWriter.write("\t\t\t" + coordinate2.x.toString() + "," + coordinate2.y.toString() + "," + (height).toString() + "\n")
+             }
+             * */
+
+            Coordinate[] original = triangle.geo.getCoordinates();
+            Coordinate[] coordinates = new Coordinate[original.length];
+            double z = manager.getBuildingRoofZ(idPoly + 1);
+            for(int i = 0; i < coordinates.length; i++) {
+                coordinates[i] = copyCoord(new Coordinate(original[i].x, original[i].y, z));
+            }
+            Polygon poly = geometryFactory.createPolygon(coordinates);
+            // Apply CRS transform
+            doTransform(poly);
+            polygons[idPoly++] = poly;
+        }
+        //Write geometry
+        xmlOut.writeCharacters(KMLWriter.writeGeometry(geometryFactory.createMultiPolygon(polygons), Double.NaN,
+                wgs84Precision, true, KMLWriter.ALTITUDE_MODE_ABSOLUTE));
+        xmlOut.writeEndElement();//Write Placemark
+        xmlOut.writeEndElement();//Folder
     }
 
-    public void writeRays(List<PropagationPath> rays) {
-
+    public void writeRays(Collection<PropagationPath> rays) throws XMLStreamException {
+        xmlOut.writeStartElement("Schema");
+        xmlOut.writeAttribute("name", "rays");
+        xmlOut.writeAttribute("id", "rays");
+        xmlOut.writeEndElement();//Write schema
+        xmlOut.writeStartElement("Folder");
+        xmlOut.writeStartElement("name");
+        xmlOut.writeCharacters("rays");
+        xmlOut.writeEndElement();//Name
+        for(PropagationPath line : rays) {
+            xmlOut.writeStartElement("Placemark");
+            xmlOut.writeStartElement("name");
+            xmlOut.writeCharacters(String.format("R:%d S:%d", line.idReceiver, line.idSource));
+            xmlOut.writeEndElement();//Name
+            Coordinate[] coordinates = new Coordinate[line.getPointList().size()];
+            int i=0;
+            for(PropagationPath.PointPath pointPath : line.getPointList()) {
+                coordinates[i++] = copyCoord(pointPath.coordinate);
+            }
+            LineString lineString = geometryFactory.createLineString(coordinates);
+            // Apply CRS transform
+            doTransform(lineString);
+            //Write geometry
+            xmlOut.writeCharacters(KMLWriter.writeGeometry(lineString, Double.NaN,
+                    wgs84Precision, false, KMLWriter.ALTITUDE_MODE_ABSOLUTE));
+            xmlOut.writeEndElement();//Write Placemark
+        }
+        xmlOut.writeEndElement();//Folder
     }
 
     public void doTransform(Geometry geometry) {

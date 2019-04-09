@@ -1475,7 +1475,8 @@ public class TestComputeRays {
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
-        exportRays("target/T14", propDataOut);
+        //exportRays("target/T14.geojson", propDataOut);
+        exportScene("target/T14.kml", manager, propDataOut);
         //assertRaysEquals(TestComputeRays.class.getResourceAsStream("T14.geojson"), propDataOut);
     }
     /**
@@ -1547,6 +1548,29 @@ public class TestComputeRays {
             jsonDocument.writeRay(propagationPath);
         }
         jsonDocument.writeFooter();
+    }
+
+    private void exportScene(String name, FastObstructionTest manager, ComputeRaysOut result) throws IOException {
+        try {
+            Coordinate proj = new Coordinate( 351714.794877, 6685824.856402, 0);
+            FileOutputStream outData = new FileOutputStream(name);
+            KMLDocument kmlDocument = new KMLDocument(outData);
+            kmlDocument.setInputCRS("EPSG:2154");
+            kmlDocument.setOffset(proj);
+            kmlDocument.writeHeader();
+            if(manager != null) {
+                kmlDocument.writeTopographic(manager.getTriangles(), manager.getVertices());
+            }
+            if(result != null) {
+                kmlDocument.writeRays(result.getPropagationPaths());
+            }
+            if(manager != null && manager.isHasBuildingWithHeight()) {
+                kmlDocument.writeBuildings(manager);
+            }
+            kmlDocument.writeFooter();
+        } catch (XMLStreamException | CoordinateOperationException | CRSException ex) {
+            throw new IOException(ex);
+        }
     }
 
     private void assertRaysEquals(InputStream expected, ComputeRaysOut result) throws IOException {
