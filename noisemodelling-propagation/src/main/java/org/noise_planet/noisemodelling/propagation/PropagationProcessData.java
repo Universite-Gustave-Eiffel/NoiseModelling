@@ -34,6 +34,7 @@
 package org.noise_planet.noisemodelling.propagation;
 
 import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
 import org.h2gis.api.ProgressVisitor;
 import org.locationtech.jts.geom.GeometryFactory;
@@ -96,7 +97,7 @@ public class PropagationProcessData {
     /** Progression information */
     public ProgressVisitor cellProg;
     /** list Geometry of soil and the type of this soil */
-    public List<GeoWithSoilType> geoWithSoilType;
+    private List<GeoWithSoilType> soilList = new ArrayList<>();
     /** True will compute vertical diffraction */
     private boolean computeVerticalDiffraction;
     /** Temperature in celsius */
@@ -110,7 +111,7 @@ public class PropagationProcessData {
 //                                  List<ArrayList<Double>> wj_sources, List<Integer> freq_lvl, int reflexionOrder,
 //                                  boolean computeHorizontalDiffraction, double maxSrcDist, double maxRefDist, double minRecDist,
 //                                  double defaultWallApha, double maximumError, int cellId, ProgressVisitor cellProg,
-//                                  List<GeoWithSoilType> geoWithSoilType, boolean computeVerticalDiffraction) {
+//                                  List<GeoWithSoilType> soilList, boolean computeVerticalDiffraction) {
 //        this.receivers = receivers;
 //        this.freeFieldFinder = freeFieldFinder;
 //        this.sourcesIndex = sourcesIndex;
@@ -128,7 +129,7 @@ public class PropagationProcessData {
 //        this.maximumError = maximumError;
 //        this.cellId = cellId;
 //        this.cellProg = cellProg;
-//        this.geoWithSoilType = geoWithSoilType;
+//        this.soilList = soilList;
 //        this.computeVerticalDiffraction = computeVerticalDiffraction;
 //        this.celerity = computeCelerity(temperature+K_0);
 //    }
@@ -144,6 +145,26 @@ public class PropagationProcessData {
     public void setSources(QueryGeometryStructure sourcesIndex, List<Geometry> sourceGeometries) {
         this.sourcesIndex = sourcesIndex;
         this.sourceGeometries = sourceGeometries;
+    }
+
+    public void addSoilType(GeoWithSoilType soilType) {
+        soilList.add(soilType);
+    }
+
+    public void addSoilType(Envelope region, double type) {
+        soilList.add(new GeoWithSoilType(new GeometryFactory().toGeometry(region), type));
+    }
+
+    public void addSoilType(Geometry geo, double type) {
+        soilList.add(new GeoWithSoilType(geo, type));
+    }
+
+    public void setSoilList(List<GeoWithSoilType> soilList) {
+        this.soilList = soilList;
+    }
+
+    public List<GeoWithSoilType> getSoilList() {
+        return soilList;
     }
 
     public void addReceiver(Coordinate... receiver) {

@@ -396,15 +396,16 @@ public class ComputeRays {
         Coordinate projSource;
 
         //will give a flag here for soil effect
-        if (data.geoWithSoilType != null) {
+        List<GeoWithSoilType> soilTypeList = data.getSoilList();
+        if (soilTypeList != null) {
             LineString RSZone = factory.createLineString(new Coordinate[]{receiverCoord, srcCoord});
             List<EnvelopeWithIndex<Integer>> resultZ0 = rTreeOfGeoSoil.query(RSZone.getEnvelopeInternal());
             if (!resultZ0.isEmpty()) {
                 for (EnvelopeWithIndex<Integer> envel : resultZ0) {
                     //get the geo intersected
-                    Geometry geoInter = RSZone.intersection(data.geoWithSoilType.get(envel.getId()).getGeo());
+                    Geometry geoInter = RSZone.intersection(soilTypeList.get(envel.getId()).getGeo());
                     //add the intersected distance with ground effect
-                    totRSDistance += getIntersectedDistance(geoInter) * this.data.geoWithSoilType.get(envel.getId()).getType();
+                    totRSDistance += getIntersectedDistance(geoInter) * soilTypeList.get(envel.getId()).getType();
                 }
             }
             // Compute GPath using 2D Length
@@ -959,9 +960,8 @@ public class ComputeRays {
         HashSet<Integer> processedLineSources = new HashSet<Integer>(); //Already processed Raw source (line and/or points)
         STRtree walls = new STRtree();
         if (data.reflexionOrder > 0) {
-            // Gather walls near the receiver
-            for (FastObstructionTest.Wall wall : data.freeFieldFinder.getLimitsInRange(
-                    data.maxRefDist, receiverCoord, false)) {
+            for(FastObstructionTest.Wall wall : data.freeFieldFinder.getLimitsInRange(
+                    data.maxSrcDist, receiverCoord, false)) {
                 walls.insert(new Envelope(wall.p0, wall.p1), wall);
             }
         }
@@ -1006,11 +1006,6 @@ public class ComputeRays {
         for (SourcePointInfo src : sourceList) {
             // For each Pt Source - Pt Receiver
             Coordinate srcCoord = src.position;
-            // Gather walls near the source
-            for (FastObstructionTest.Wall wall : data.freeFieldFinder.getLimitsInRange(
-                    data.maxRefDist, srcCoord, false)) {
-                walls.insert(new Envelope(wall.p0, wall.p1), wall);
-            }
             Envelope query = new Envelope(receiverCoord, srcCoord);
             query.expandBy(Math.min(data.maxRefDist, srcCoord.distance(receiverCoord)));
             List queryResult = walls.query(query);
@@ -1049,9 +1044,10 @@ public class ComputeRays {
 
         //Build R-tree for soil geometry and soil type
         rTreeOfGeoSoil = new STRtree();
-        if (data.geoWithSoilType != null) {
-            for (int i = 0; i < data.geoWithSoilType.size(); i++) {
-                GeoWithSoilType geoWithSoilType = data.geoWithSoilType.get(i);
+        List<GeoWithSoilType> soilTypeList = data.getSoilList();
+        if (soilTypeList != null) {
+            for (int i = 0; i < soilTypeList.size(); i++) {
+                GeoWithSoilType geoWithSoilType = soilTypeList.get(i);
                 rTreeOfGeoSoil.insert(geoWithSoilType.getGeo().getEnvelopeInternal(),
                         new EnvelopeWithIndex<Integer>(geoWithSoilType.getGeo().getEnvelopeInternal(), i));
             }
