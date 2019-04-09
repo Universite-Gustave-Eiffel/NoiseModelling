@@ -1431,6 +1431,53 @@ public class TestComputeRays {
 //    }
 //
 //
+
+
+    /**
+     * Test TC14 -- Flat ground with homogeneous acoustic properties and polygonal building –
+     * receiver at large height
+     */
+    @Test
+    public void TC14() throws LayerDelaunayError, IOException {
+        GeometryFactory factory = new GeometryFactory();
+        //Scene dimension
+        Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
+
+        //Create obstruction test object
+        MeshBuilder mesh = new MeshBuilder();
+
+        // Add building
+        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+                new Coordinate(11., 15.5, 0),
+                new Coordinate(12., 13, 0),
+                new Coordinate(14.5, 12, 0),
+                new Coordinate(17.0, 13, 0),
+                new Coordinate(18.0, 15.5, 0),
+                new Coordinate(17.0, 18, 0),
+                new Coordinate(14.5, 19, 0),
+                new Coordinate(12.0, 18, 0),
+                new Coordinate(11, 15.5, 0)}), 10);
+
+        mesh.finishPolygonFeeding(cellEnvelope);
+
+        //Retrieve Delaunay triangulation of scene
+        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+                mesh.getTriNeighbors(), mesh.getVertices());
+
+        PropagationProcessData rayData = new PropagationProcessData(manager);
+        rayData.addReceiver(new Coordinate(25, 20, 23));
+        rayData.addSource(factory.createPoint(new Coordinate(8, 10, 1)));
+        rayData.setComputeHorizontalDiffraction(true);
+        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(-300, 300, -300, 300)), 0.2));
+        rayData.setComputeVerticalDiffraction(true);
+        PropagationProcessPathData attData = new PropagationProcessPathData();
+        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRays computeRays = new ComputeRays(rayData);
+        computeRays.setThreadCount(1);
+        computeRays.run(propDataOut);
+        exportRays("target/T14", propDataOut);
+        //assertRaysEquals(TestComputeRays.class.getResourceAsStream("T14.geojson"), propDataOut);
+    }
     /**
      * Test TC15 -- Flat ground with homogeneous acoustic properties and four buildings
      */
@@ -1439,12 +1486,6 @@ public class TestComputeRays {
         GeometryFactory factory = new GeometryFactory();
         //Scene dimension
         Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
-        //Add source sound level
-        //List<ArrayList<Double>> srcSpectrum = new ArrayList<ArrayList<Double>>();
-        //srcSpectrum.add(asW(80.0, 90.0, 95.0, 100.0, 100.0, 100.0, 95.0, 90.0));
-        // GeometrySoilType
-        List<GeoWithSoilType> geoWithSoilTypeList = new ArrayList<>();
-        geoWithSoilTypeList.add(new GeoWithSoilType(factory.toGeometry(new Envelope(-250, 250, -250, 250)), 0.5));
 
         //Create obstruction test object
         MeshBuilder mesh = new MeshBuilder();
@@ -1488,12 +1529,24 @@ public class TestComputeRays {
         rayData.addSource(factory.createPoint(new Coordinate(50, 10, 1)));
         rayData.setComputeHorizontalDiffraction(true);
         rayData.setComputeVerticalDiffraction(true);
+        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(-250, 250, -250, 250)), 0.5));
         PropagationProcessPathData attData = new PropagationProcessPathData();
         ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
         assertRaysEquals(TestComputeRays.class.getResourceAsStream("T15.geojson"), propDataOut);
+    }
+
+    private void exportRays(String name, ComputeRaysOut result) throws IOException {
+        FileOutputStream outData = new FileOutputStream(name);
+        GeoJSONDocument jsonDocument = new GeoJSONDocument(outData);
+        jsonDocument.setRounding(1);
+        jsonDocument.writeHeader();
+        for(PropagationPath propagationPath : result.getPropagationPaths()) {
+            jsonDocument.writeRay(propagationPath);
+        }
+        jsonDocument.writeFooter();
     }
 
     private void assertRaysEquals(InputStream expected, ComputeRaysOut result) throws IOException {
