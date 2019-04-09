@@ -35,6 +35,9 @@ package org.noise_planet.noisemodelling.propagation;
 
 import org.locationtech.jts.algorithm.CGAlgorithms3D;
 import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.math.Vector3D;
 import java.util.ArrayList;
 import java.util.List;

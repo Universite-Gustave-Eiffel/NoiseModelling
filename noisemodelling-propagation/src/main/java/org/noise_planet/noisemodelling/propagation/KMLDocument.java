@@ -66,6 +66,7 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.CoordinateFilter;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.io.kml.KMLWriter;
 
 import javax.xml.stream.XMLOutputFactory;
@@ -161,18 +162,24 @@ public class KMLDocument {
         xmlOut.writeStartElement("name");
         xmlOut.writeCharacters("mnt");
         xmlOut.writeEndElement();//Name
+        xmlOut.writeStartElement("Placemark");
+        xmlOut.writeStartElement("name");
+        xmlOut.writeCharacters("tri");
+        xmlOut.writeEndElement();//Name
+        Polygon[] polygons = new Polygon[triVertices.size()];
+        int idTri = 0;
         for(Triangle triangle : triVertices) {
-            Geometry poly = geometryFactory.createPolygon(new Coordinate[]{new Coordinate(vertices.get(triangle.getA())),
+            Polygon poly = geometryFactory.createPolygon(new Coordinate[]{new Coordinate(vertices.get(triangle.getA())),
                     new Coordinate(vertices.get(triangle.getB())), new Coordinate(vertices.get(triangle.getC())),
                     new Coordinate(vertices.get(triangle.getA()))});
-            xmlOut.writeStartElement("Placemark");
-            xmlOut.writeAttribute("name", "tri");
             // Apply CRS transform
             doTransform(poly);
-            //Write geometry
-            xmlOut.writeCharacters(KMLWriter.writeGeometry(poly, Double.NaN, wgs84Precision, false, KMLWriter.ALTITUDE_MODE_ABSOLUTE));
-            xmlOut.writeEndElement();//Write Placemark
+            polygons[idTri++] = poly;
         }
+        //Write geometry
+        xmlOut.writeCharacters(KMLWriter.writeGeometry(geometryFactory.createMultiPolygon(polygons), Double.NaN,
+                wgs84Precision, false, KMLWriter.ALTITUDE_MODE_ABSOLUTE));
+        xmlOut.writeEndElement();//Write Placemark
         xmlOut.writeEndElement();//Folder
     }
 

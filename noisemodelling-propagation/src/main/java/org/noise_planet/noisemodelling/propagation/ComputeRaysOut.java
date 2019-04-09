@@ -74,34 +74,37 @@ public class ComputeRaysOut implements IComputeRaysOut {
         if(keepRays) {
             propagationPaths.addAll(propagationPath);
         }
+        if(pathData != null) {
+            // Compute receiver/source attenuation
+            EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
+            double[] aGlobalMeteo = null;
+            for (PropagationPath propath : propagationPath) {
+                List<PropagationPath.PointPath> ptList = propath.getPointList();
+                double angleRad = Angle.angle(ptList.get(0).coordinate, ptList.get(ptList.size() - 1).coordinate);
+                double rad2rose = (-angleRad + Math.PI / 2);
+                int roseindex = (int) Math.round(rad2rose / (2 * Math.PI / pathData.getWindRose().length));
 
-        // Compute receiver/source attenuation
-        EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
-        double[] aGlobalMeteo = null;
-        for (PropagationPath propath : propagationPath) {
-            List<PropagationPath.PointPath> ptList = propath.getPointList();
-            double angleRad = Angle.angle(ptList.get(0).coordinate, ptList.get(ptList.size() - 1).coordinate);
-            double rad2rose = (-angleRad + Math.PI / 2);
-            int roseindex = (int) Math.round(rad2rose / (2 * Math.PI / pathData.getWindRose().length));
-
-            propath.setFavorable(false);
-            evaluateAttenuationCnossos.evaluate(propath, pathData);
+                propath.setFavorable(false);
+                evaluateAttenuationCnossos.evaluate(propath, pathData);
+                if (aGlobalMeteo != null) {
+                    aGlobalMeteo = ComputeRays.sumArray(evaluateAttenuationCnossos.getaGlobal(), aGlobalMeteo);
+                } else {
+                    aGlobalMeteo = evaluateAttenuationCnossos.getaGlobal();
+                }
+                propath.setFavorable(true);
+                evaluateAttenuationCnossos.evaluate(propath, pathData);
+                aGlobalMeteo = ComputeRays.sumArrayWithPonderation(aGlobalMeteo, evaluateAttenuationCnossos.getaGlobal(), pathData.getDefaultOccurance());
+            }
             if (aGlobalMeteo != null) {
-                aGlobalMeteo = ComputeRays.sumArray(evaluateAttenuationCnossos.getaGlobal(), aGlobalMeteo);
+                receiverAttenuationLevels.add(new ComputeRaysOut.verticeSL(receiverId, sourceId, aGlobalMeteo));
+                double globalValue = 0;
+                for (double att : aGlobalMeteo) {
+                    globalValue += Math.pow(10, att / 10.0);
+                }
+                return 10 * Math.log10(globalValue);
             } else {
-                aGlobalMeteo = evaluateAttenuationCnossos.getaGlobal();
+                return Double.NaN;
             }
-            propath.setFavorable(true);
-            evaluateAttenuationCnossos.evaluate(propath, pathData);
-            aGlobalMeteo = ComputeRays.sumArrayWithPonderation(aGlobalMeteo, evaluateAttenuationCnossos.getaGlobal(), pathData.getDefaultOccurance());
-        }
-        if(aGlobalMeteo != null) {
-            receiverAttenuationLevels.add(new ComputeRaysOut.verticeSL(receiverId, sourceId, aGlobalMeteo));
-            double globalValue = 0;
-            for (double att : aGlobalMeteo) {
-                globalValue += Math.pow(10, att / 10.0);
-            }
-            return 10 * Math.log10(globalValue);
         } else {
             return Double.NaN;
         }

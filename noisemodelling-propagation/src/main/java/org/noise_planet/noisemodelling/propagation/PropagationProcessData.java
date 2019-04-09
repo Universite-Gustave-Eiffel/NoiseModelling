@@ -80,7 +80,7 @@ public class PropagationProcessData {
     /** Maximum reflexion order */
     public int reflexionOrder = 1;
     /** Compute diffraction rays over vertical edges */
-    public boolean computeHorizontalDiffraction = true;
+    private boolean computeHorizontalDiffraction = true;
     /** Maximum source distance */
     public double maxSrcDist = DEFAULT_MAX_PROPAGATION_DISTANCE;
     /** Maximum reflection wall distance from receiver->source line */
@@ -98,7 +98,7 @@ public class PropagationProcessData {
     /** list Geometry of soil and the type of this soil */
     public List<GeoWithSoilType> geoWithSoilType;
     /** True will compute vertical diffraction */
-    public boolean computeVerticalDiffraction;
+    private boolean computeVerticalDiffraction;
     /** Temperature in celsius */
     double temperature = 15;
     double celerity ;
@@ -163,6 +163,22 @@ public class PropagationProcessData {
      */
     public void setPressure(double pressure) {
         this.pressure = pressure;
+    }
+
+    public void setComputeHorizontalDiffraction(boolean computeHorizontalDiffraction) {
+        this.computeHorizontalDiffraction = computeHorizontalDiffraction;
+    }
+
+    public void setComputeVerticalDiffraction(boolean computeVerticalDiffraction) {
+        this.computeVerticalDiffraction = computeVerticalDiffraction;
+    }
+
+    public boolean isComputeHorizontalDiffraction() {
+        return computeHorizontalDiffraction;
+    }
+
+    public boolean isComputeVerticalDiffraction() {
+        return computeVerticalDiffraction;
     }
 
     /**

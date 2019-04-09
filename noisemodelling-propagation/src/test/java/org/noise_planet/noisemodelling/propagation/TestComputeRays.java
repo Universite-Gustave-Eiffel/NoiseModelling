@@ -1,28 +1,48 @@
 package org.noise_planet.noisemodelling.propagation;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sun.xml.internal.messaging.saaj.util.ByteOutputStream;
 import org.cts.crs.CRSException;
 import org.cts.op.CoordinateOperationException;
 import org.h2gis.functions.spatial.crs.ST_Transform;
+import org.h2gis.functions.spatial.volume.GeometryExtrude;
 import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.CoordinateSequence;
+import org.locationtech.jts.geom.CoordinateSequenceFilter;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.GeometryCollection;
 import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.geom.util.AffineTransformation;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
+import org.locationtech.jts.io.WKTWriter;
 import org.locationtech.jts.math.Vector2D;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.xml.stream.XMLStreamException;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -299,7 +319,7 @@ public class TestComputeRays {
         MeshBuilder mesh = new MeshBuilder();
 
         // Create DEM using gaussian 2d function
-        int pointCount = 10;
+        int pointCount = 50;
         double mountainX = -80;
         double mountainY = 50;
         double mountainWidth = 8;
@@ -327,30 +347,16 @@ public class TestComputeRays {
         //Retrieve Delaunay triangulation of scene
         FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(), mesh.getTriNeighbors(), mesh.getVertices());
 
-//SET @DOMAIN_XMIN = SELECT ST_XMIN(ST_EXTENT(THE_GEOM)) FROM SOUND_SOURCE;
-//SET @DOMAIN_XMAX = SELECT ST_XMAX(ST_EXTENT(THE_GEOM)) FROM SOUND_SOURCE;
-//SET @DOMAIN_YMIN = SELECT ST_YMIN(ST_EXTENT(THE_GEOM)) FROM SOUND_SOURCE;
-//SET @DOMAIN_YMAX = SELECT ST_YMAX(ST_EXTENT(THE_GEOM)) FROM SOUND_SOURCE;
-//SET @POINT_COUNT = 50;
-//SET @MOUNTAIN_X = -80;
-//SET @MOUNTAIN_Y = 50;
-//SET @MONTAIN_WIDTH = 8;
-//SET @MOUNTAIN_LENGTH = 50;
-//create table all_dem(the_geom POINT,Z double as ST_Z(the_geom)) as select ST_MAKEPOINT(X * ((@DOMAIN_XMAX - @DOMAIN_XMIN) / @POINT_COUNT) + @DOMAIN_XMIN, Y * ((@DOMAIN_YMAX - @DOMAIN_YMIN) / @POINT_COUNT) + @DOMAIN_YMIN, 45 * EXP(-(POWER(X - ((@MOUNTAIN_X - @DOMAIN_XMIN) / (@DOMAIN_XMAX - @DOMAIN_XMIN) * @POINT_COUNT)  ,2) / @MONTAIN_WIDTH  + POWER(Y - ((@MOUNTAIN_Y - @DOMAIN_YMIN) / (@DOMAIN_YMAX - @DOMAIN_YMIN) * @POINT_COUNT) ,2) / @MOUNTAIN_LENGTH ))) the_geom,
-//
-//null  from (select X from system_range(0,@POINT_COUNT)),(select X Y from system_range(0,@POINT_COUNT)) ;
-//select (-24 - @DOMAIN_XMIN) / (@DOMAIN_XMAX - @DOMAIN_XMIN) * @POINT_COUNT;
-
         PropagationProcessData processData = new PropagationProcessData(manager);
         ComputeRays computeRays = new ComputeRays(processData);
         Coordinate p1 = new Coordinate(4.5, 6.5, 1.6);
         Coordinate p2 = new Coordinate(14, 6.5, 1.6);
 
-        KMLDocument kmlDocument = new KMLDocument(new FileOutputStream("target/topotest.kml"));
-        kmlDocument.setInputCRS("EPSG:2154");
-        kmlDocument.writeHeader();
-        kmlDocument.writeTopographic(manager.getTriangles(), manager.getVertices());
-        kmlDocument.writeFooter();
+//        KMLDocument kmlDocument = new KMLDocument(new FileOutputStream("target/topotest.kml"));
+//        kmlDocument.setInputCRS("EPSG:2154");
+//        kmlDocument.writeHeader();
+//        kmlDocument.writeTopographic(manager.getTriangles(), manager.getVertices());
+//        kmlDocument.writeFooter();
     }
 
     //@Test
@@ -428,49 +434,49 @@ public class TestComputeRays {
     }
 
 
-//
-//    /**
-//     * Offset de Z coordinates by the height of the ground
-//     */
-//    public static final class SetCoordinateSequenceFilter implements CoordinateSequenceFilter {
-//        AtomicBoolean geometryChanged = new AtomicBoolean(false);
-//        double newValue;
-//
-//        public SetCoordinateSequenceFilter(double newValue) {
-//            this.newValue = newValue;
-//        }
-//
-//        @Override
-//        public void filter(CoordinateSequence coordinateSequence, int i) {
-//            Coordinate pt = coordinateSequence.getCoordinate(i);
-//            pt.setOrdinate(2,newValue);
-//            geometryChanged.set(true);
-//        }
-//
-//        @Override
-//        public boolean isDone() {
-//            return false;
-//        }
-//
-//        @Override
-//        public boolean isGeometryChanged() {
-//            return geometryChanged.get();
-//        }
-//    }
-//
-//    private static final List<Integer> freqLvl = Collections.unmodifiableList(Arrays.asList(63, 125, 250, 500, 1000, 2000,
-//            4000, 8000));
-//
-//    private static final double ERROR_EPSILON_TEST_T = 0.2;
-//
-//
-//    private void splCompare(double[] resultW, String testName, double[] expectedLevel, double splEpsilon) {
-//        for (int i = 0; i < resultW.length; i++) {
-//            double dba = resultW[i];
-//            double expected = expectedLevel[i];
-//            assertEquals("Unit test " + testName + " failed at " + freqLvl.get(i) + " Hz", expected, dba, splEpsilon);
-//        }
-//    }
+
+    /**
+     * Offset de Z coordinates by the height of the ground
+     */
+    public static final class SetCoordinateSequenceFilter implements CoordinateSequenceFilter {
+        AtomicBoolean geometryChanged = new AtomicBoolean(false);
+        double newValue;
+
+        public SetCoordinateSequenceFilter(double newValue) {
+            this.newValue = newValue;
+        }
+
+        @Override
+        public void filter(CoordinateSequence coordinateSequence, int i) {
+            Coordinate pt = coordinateSequence.getCoordinate(i);
+            pt.setOrdinate(2,newValue);
+            geometryChanged.set(true);
+        }
+
+        @Override
+        public boolean isDone() {
+            return false;
+        }
+
+        @Override
+        public boolean isGeometryChanged() {
+            return geometryChanged.get();
+        }
+    }
+
+    private static final List<Integer> freqLvl = Collections.unmodifiableList(Arrays.asList(63, 125, 250, 500, 1000, 2000,
+            4000, 8000));
+
+    private static final double ERROR_EPSILON_TEST_T = 0.2;
+
+
+    private void splCompare(double[] resultW, String testName, double[] expectedLevel, double splEpsilon) {
+        for (int i = 0; i < resultW.length; i++) {
+            double dba = resultW[i];
+            double expected = expectedLevel[i];
+            assertEquals("Unit test " + testName + " failed at " + freqLvl.get(i) + " Hz", expected, dba, splEpsilon);
+        }
+    }
 //
 //    private void writeVTKmesh(String filename, ComputeRaysOut propDataOut, MeshBuilder mesh) throws IOException {
 //
@@ -523,132 +529,133 @@ public class TestComputeRays {
 //        fileWriter.close();
 //    }
 //
-//    private static void addGeometry(List<Geometry> geom, Geometry polygon) {
-//        if (polygon instanceof Polygon) {
-//            geom.add((Polygon) polygon);
-//        } else {
-//            for (int i = 0; i < polygon.getNumGeometries(); i++) {
-//                addGeometry(geom, polygon.getGeometryN(i));
-//            }
-//        }
-//
-//    }
-//
-//    private void writePLY(String filename, MeshBuilder mesh) throws IOException, LayerDelaunayError {
-//        PointsMerge pointsMerge = new PointsMerge(0.01);
-//        List<Geometry> triVertices2 = new ArrayList<>();
-//        Map<String,Integer> vertices2 = new HashMap<>();
-//        List<Coordinate> vertices3 = new ArrayList<>();
-//        GeometryFactory geometryFactory = new GeometryFactory();
-//        int k=0;
-//        for (MeshBuilder.PolygonWithHeight polygon : mesh.getPolygonWithHeight()) {
-//            double sumBuildingHeight=0;
-//            double minimumHeight = Double.MAX_VALUE;
-//            int count=0;
-//            for (Coordinate coordinate : polygon.getGeometry().getCoordinates()) {
-//                sumBuildingHeight += coordinate.z;
-//                minimumHeight = Math.min(minimumHeight, coordinate.z);
-//                count++;
-//            }
-//            double averageBuildingHeight = sumBuildingHeight / count;
-//            SetCoordinateSequenceFilter absoluteCoordinateSequenceFilter = new SetCoordinateSequenceFilter(minimumHeight);
-//            Polygon base = (Polygon) polygon.getGeometry().copy();
-//            base.apply(absoluteCoordinateSequenceFilter);
-//            GeometryCollection buildingExtruded = GeometryExtrude.extrudePolygonAsGeometry(base, polygon.getHeight() + (averageBuildingHeight - minimumHeight));
-//            addGeometry(triVertices2, buildingExtruded);
-//            for (Coordinate coordinate : buildingExtruded.getCoordinates()) {
-//                vertices2.put(coordinate.toString(),k);
-//                vertices3.add(coordinate);
-//                k++;
-//            }
-//
-//        }
-//        int vertexCountG = mesh.getVertices().size();
-//        int vertexCountB = vertices3.size();
-//        int faceCountG = mesh.getTriangles().size();
-//        int faceCountB = triVertices2.size();
-//        int vertexCount = vertexCountG + vertexCountB;
-//        int faceCount = faceCountG + faceCountB;
-//        FileWriter fileWriter = new FileWriter(filename);
-//        fileWriter.write("ply\n");
-//        fileWriter.write("format ascii 1.0\n");
-//        fileWriter.write("element vertex " + vertexCount + "\n");
-//        fileWriter.write("property float x\n");
-//        fileWriter.write("property float y\n");
-//        fileWriter.write("property float z\n");
-//        fileWriter.write("property uchar green\n");
-//        fileWriter.write("property uchar red\n");
-//        fileWriter.write("property uchar blue\n");
-//        fileWriter.write("element face " + faceCount + "\n");
-//        fileWriter.write("property list uchar int vertex_index\n");
-//        fileWriter.write("end_header\n");
-//
-//        for (int i = 0; i < vertexCountG; i++) {
-//            fileWriter.write(mesh.getVertices().get(i).x + " " + mesh.getVertices().get(i).y + " " + (mesh.getVertices().get(i).z) + " " + "255 0 0\n");
-//        }
-//        // Iterating over values only
-//        for (Coordinate vertice : vertices3) {
-//            //System.out.println("Value = " + value);
-//            fileWriter.write(vertice.x + " " + vertice.y + " " + (vertice.z) + " " + "0 0 255\n");
-//        }
-//
-//        for (int i = 0; i < faceCountG; i++) {
-//            fileWriter.write("3 " + mesh.getTriangles().get(i).getA() + " " + mesh.getTriangles().get(i).getB() + " " + (mesh.getTriangles().get(i).getC()) + "\n");
-//        }
-//        for (int i=0;i<faceCountB;i++){
-//            Coordinate[] coordinates = triVertices2.get(i).getCoordinates();
-//            fileWriter.write(coordinates.length + " " );
-//            for (int j=0;j<coordinates.length;j++){
-//              fileWriter.write((vertexCountG+ vertices2.get(coordinates[j].toString()))+" ");
-//            }
-//            fileWriter.write("\n" );
-//        }
-//        fileWriter.close();
-//    }
-//
-//
-//    private void writeVTK(String filename, ComputeRaysOut propDataOut) throws IOException {
+    private static void addGeometry(List<Geometry> geom, Geometry polygon) {
+        if (polygon instanceof Polygon) {
+            geom.add((Polygon) polygon);
+        } else {
+            for (int i = 0; i < polygon.getNumGeometries(); i++) {
+                addGeometry(geom, polygon.getGeometryN(i));
+            }
+        }
+
+    }
+
+    private void writePLY(String filename, MeshBuilder mesh) throws IOException, LayerDelaunayError {
+        PointsMerge pointsMerge = new PointsMerge(0.01);
+        List<Geometry> triVertices2 = new ArrayList<>();
+        Map<String,Integer> vertices2 = new HashMap<>();
+        List<Coordinate> vertices3 = new ArrayList<>();
+        GeometryFactory geometryFactory = new GeometryFactory();
+        int k=0;
+        for (MeshBuilder.PolygonWithHeight polygon : mesh.getPolygonWithHeight()) {
+            double sumBuildingHeight=0;
+            double minimumHeight = Double.MAX_VALUE;
+            int count=0;
+            for (Coordinate coordinate : polygon.getGeometry().getCoordinates()) {
+                sumBuildingHeight += coordinate.z;
+                minimumHeight = Math.min(minimumHeight, coordinate.z);
+                count++;
+            }
+            double averageBuildingHeight = sumBuildingHeight / count;
+            SetCoordinateSequenceFilter absoluteCoordinateSequenceFilter = new SetCoordinateSequenceFilter(minimumHeight);
+            Polygon base = (Polygon) polygon.getGeometry().copy();
+            base.apply(absoluteCoordinateSequenceFilter);
+            GeometryCollection buildingExtruded = GeometryExtrude.extrudePolygonAsGeometry(base, polygon.getHeight() + (averageBuildingHeight - minimumHeight));
+            addGeometry(triVertices2, buildingExtruded);
+            for (Coordinate coordinate : buildingExtruded.getCoordinates()) {
+                vertices2.put(coordinate.toString(),k);
+                vertices3.add(coordinate);
+                k++;
+            }
+
+        }
+        int vertexCountG = mesh.getVertices().size();
+        int vertexCountB = vertices3.size();
+        int faceCountG = mesh.getTriangles().size();
+        int faceCountB = triVertices2.size();
+        int vertexCount = vertexCountG + vertexCountB;
+        int faceCount = faceCountG + faceCountB;
+        FileWriter fileWriter = new FileWriter(filename);
+        fileWriter.write("ply\n");
+        fileWriter.write("format ascii 1.0\n");
+        fileWriter.write("element vertex " + vertexCount + "\n");
+        fileWriter.write("property float x\n");
+        fileWriter.write("property float y\n");
+        fileWriter.write("property float z\n");
+        fileWriter.write("property uchar green\n");
+        fileWriter.write("property uchar red\n");
+        fileWriter.write("property uchar blue\n");
+        fileWriter.write("element face " + faceCount + "\n");
+        fileWriter.write("property list uchar int vertex_index\n");
+        fileWriter.write("end_header\n");
+
+        for (int i = 0; i < vertexCountG; i++) {
+            fileWriter.write(mesh.getVertices().get(i).x + " " + mesh.getVertices().get(i).y + " " + (mesh.getVertices().get(i).z) + " " + "255 0 0\n");
+        }
+        // Iterating over values only
+        for (Coordinate vertice : vertices3) {
+            //System.out.println("Value = " + value);
+            fileWriter.write(vertice.x + " " + vertice.y + " " + (vertice.z) + " " + "0 0 255\n");
+        }
+
+        for (int i = 0; i < faceCountG; i++) {
+            fileWriter.write("3 " + mesh.getTriangles().get(i).getA() + " " + mesh.getTriangles().get(i).getB() + " " + (mesh.getTriangles().get(i).getC()) + "\n");
+        }
+        for (int i=0;i<faceCountB;i++){
+            Coordinate[] coordinates = triVertices2.get(i).getCoordinates();
+            fileWriter.write(coordinates.length + " " );
+            for (int j=0;j<coordinates.length;j++){
+              fileWriter.write((vertexCountG+ vertices2.get(coordinates[j].toString()))+" ");
+            }
+            fileWriter.write("\n" );
+        }
+        fileWriter.close();
+    }
 //
 //
-//        FileWriter fileWriter = new FileWriter(filename);
-//        fileWriter.write("# vtk DataFile Version 2.0\n");
-//        fileWriter.write("PropagationPath\n");
-//        fileWriter.write("ASCII\n");
-//        fileWriter.write("DATASET POLYDATA\n");
-//        int nbPoints = 0;
-//        for (int j = 0; j < propDataOut.propagationPaths.size(); j++) {
-//            nbPoints = nbPoints + propDataOut.propagationPaths.get(j).getPointList().size();
-//        }
-//        fileWriter.write("\n");
-//        fileWriter.write("POINTS " + String.valueOf(nbPoints) + " float\n");
-//
-//        GeometryFactory geometryFactory = new GeometryFactory();
-//        List<Coordinate> coordinates = new ArrayList<>();
-//        for (int j = 0; j < propDataOut.propagationPaths.size(); j++) {
-//            for (PropagationPath.PointPath p : propDataOut.propagationPaths.get(j).getPointList()) {
-//                coordinates.add(p.coordinate);
-//                fileWriter.write(String.valueOf(p.coordinate.x) + " " + String.valueOf(p.coordinate.y) + " " + String.valueOf(p.coordinate.z) + "\n");
-//            }
-//        }
-//        LineString factoryLineString = geometryFactory.createLineString(coordinates.toArray(new Coordinate[coordinates.size()]));
-//        WKTWriter wktWriter = new WKTWriter(3);
-//
-//        fileWriter.write("\n");
-//        fileWriter.write("LINES " + String.valueOf(propDataOut.propagationPaths.size()) + " " + String.valueOf(nbPoints + propDataOut.propagationPaths.size()) + "\n");
-//        int i = 0;
-//        for (int j = 0; j < propDataOut.propagationPaths.size(); j++) {
-//            fileWriter.write(String.valueOf(propDataOut.propagationPaths.get(j).getPointList().size()));
-//
-//            for (PropagationPath.PointPath p : propDataOut.propagationPaths.get(j).getPointList()) {
-//                fileWriter.write(" " + String.valueOf(i));
-//                i++;
-//            }
-//            fileWriter.write("\n");
-//        }
-//
-//
-//        fileWriter.close();
-//    }
+    private void writeVTK(String filename, ComputeRaysOut propDataOut) throws IOException {
+
+
+        FileWriter fileWriter = new FileWriter(filename);
+        fileWriter.write("# vtk DataFile Version 2.0\n");
+        fileWriter.write("PropagationPath\n");
+        fileWriter.write("ASCII\n");
+        fileWriter.write("DATASET POLYDATA\n");
+        int nbPoints = 0;
+        List<PropagationPath> propagationPaths = propDataOut.getPropagationPaths();
+        for (int j = 0; j < propagationPaths.size(); j++) {
+            nbPoints = nbPoints + propagationPaths.get(j).getPointList().size();
+        }
+        fileWriter.write("\n");
+        fileWriter.write("POINTS " + String.valueOf(nbPoints) + " float\n");
+
+        GeometryFactory geometryFactory = new GeometryFactory();
+        List<Coordinate> coordinates = new ArrayList<>();
+        for (int j = 0; j < propagationPaths.size(); j++) {
+            for (PropagationPath.PointPath p : propagationPaths.get(j).getPointList()) {
+                coordinates.add(p.coordinate);
+                fileWriter.write(String.valueOf(p.coordinate.x) + " " + String.valueOf(p.coordinate.y) + " " + String.valueOf(p.coordinate.z) + "\n");
+            }
+        }
+        LineString factoryLineString = geometryFactory.createLineString(coordinates.toArray(new Coordinate[coordinates.size()]));
+        WKTWriter wktWriter = new WKTWriter(3);
+
+        fileWriter.write("\n");
+        fileWriter.write("LINES " + String.valueOf(propagationPaths.size()) + " " + String.valueOf(nbPoints + propagationPaths.size()) + "\n");
+        int i = 0;
+        for (int j = 0; j < propagationPaths.size(); j++) {
+            fileWriter.write(String.valueOf(propagationPaths.get(j).getPointList().size()));
+
+            for (PropagationPath.PointPath p : propagationPaths.get(j).getPointList()) {
+                fileWriter.write(" " + String.valueOf(i));
+                i++;
+            }
+            fileWriter.write("\n");
+        }
+
+
+        fileWriter.close();
+    }
 //
 //
 //    private static ArrayList<Double> asW(double... dbValues) {
@@ -1424,92 +1431,88 @@ public class TestComputeRays {
 //    }
 //
 //
-//    /**
-//     * Test TC15 -- Flat ground with homogeneous acoustic properties and four buildings
-//     */
-//    @Test
-//    public void TC15() throws LayerDelaunayError {
-//        GeometryFactory factory = new GeometryFactory();
-//        ////////////////////////////////////////////////////////////////////////////
-//        //Add road source as one point
-//        List<Geometry> srclst = new ArrayList<Geometry>();
-//        srclst.add(factory.createPoint(new Coordinate(50, 10, 1)));
-//        //Scene dimension
-//        Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
-//        //Add source sound level
-//        List<ArrayList<Double>> srcSpectrum = new ArrayList<ArrayList<Double>>();
-//        srcSpectrum.add(asW(80.0, 90.0, 95.0, 100.0, 100.0, 100.0, 95.0, 90.0));
-//        // GeometrySoilType
-//        List<GeoWithSoilType> geoWithSoilTypeList = new ArrayList<>();
-//        geoWithSoilTypeList.add(new GeoWithSoilType(factory.toGeometry(new Envelope(-250, 250, -250, 250)), 0.5));
-//
-//        //Build query structure for sources
-//        QueryGeometryStructure sourcesIndex = new QueryQuadTree();
-//        int idsrc = 0;
-//        for (Geometry src : srclst) {
-//            sourcesIndex.appendGeometry(src, idsrc);
-//            idsrc++;
-//        }
-//        //Create obstruction test object
-//        MeshBuilder mesh = new MeshBuilder();
-//
-//        // Add building
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
-//                new Coordinate(55.0, 5.0, 0),
-//                new Coordinate(65.0, 5.0, 0),
-//                new Coordinate(65.0, 15.0, 0),
-//                new Coordinate(55.0, 15.0, 0),
-//                new Coordinate(55.0, 5.0, 0)}), 8);
-//
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
-//                new Coordinate(70, 14.5, 0),
-//                new Coordinate(80.0, 10.2, 0),
-//                new Coordinate(80.0, 20.2, 0),
-//                new Coordinate(70, 14.5, 0)}), 12);
-//
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
-//                new Coordinate(90.1, 19.5, 0),
-//                new Coordinate(93.3, 17.8, 0),
-//                new Coordinate(87.3, 6.6, 0),
-//                new Coordinate(84.1, 8.3, 0),
-//                new Coordinate(90.1, 19.5, 0)}), 10);
-//
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
-//                new Coordinate(94.9, 14.1, 0),
-//                new Coordinate(98.02, 12.37, 0),
-//                new Coordinate(92.03, 1.2, 0),
-//                new Coordinate(88.86, 2.9, 0),
-//                new Coordinate(94.9, 14.1, 0)}), 10);
-//
-//        mesh.finishPolygonFeeding(cellEnvelope);
-//
-//        //Retrieve Delaunay triangulation of scene
-//        List<Coordinate> vert = mesh.getVertices();
-//        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-//                mesh.getTriNeighbors(), mesh.getVertices());
-//        // rose of favourable conditions
-//        double[] favrose = new double[]{0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25};
-//
-//        PropagationProcessData rayData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-//                freqLvl, 1, 5, 400, 400, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
-//
-//        ComputeRaysOut propDataOut = new ComputeRaysOut();
-//        ComputeRays computeRays = new ComputeRays(rayData, propDataOut);
-//
-//        computeRays.initStructures();
-//
-//        double energeticSum[] = new double[freqLvl.size()];
-//        List<PropagationDebugInfo> debug = new ArrayList<>();
-//        computeRays.computeRaysAtPosition(new Coordinate(100, 15, 5), 0,energeticSum, debug);
-//        String filename = "target/T15.vtk";
-//        String filename2 = "target/T15.ply";
-//        try {
-//            writeVTK(filename, propDataOut);
-//            writePLY(filename2, mesh);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//    }
+    /**
+     * Test TC15 -- Flat ground with homogeneous acoustic properties and four buildings
+     */
+    @Test
+    public void TC15() throws LayerDelaunayError, IOException {
+        GeometryFactory factory = new GeometryFactory();
+        //Scene dimension
+        Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
+        //Add source sound level
+        //List<ArrayList<Double>> srcSpectrum = new ArrayList<ArrayList<Double>>();
+        //srcSpectrum.add(asW(80.0, 90.0, 95.0, 100.0, 100.0, 100.0, 95.0, 90.0));
+        // GeometrySoilType
+        List<GeoWithSoilType> geoWithSoilTypeList = new ArrayList<>();
+        geoWithSoilTypeList.add(new GeoWithSoilType(factory.toGeometry(new Envelope(-250, 250, -250, 250)), 0.5));
+
+        //Create obstruction test object
+        MeshBuilder mesh = new MeshBuilder();
+
+        // Add building
+        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+                new Coordinate(55.0, 5.0, 0),
+                new Coordinate(65.0, 5.0, 0),
+                new Coordinate(65.0, 15.0, 0),
+                new Coordinate(55.0, 15.0, 0),
+                new Coordinate(55.0, 5.0, 0)}), 8);
+
+        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+                new Coordinate(70, 14.5, 0),
+                new Coordinate(80.0, 10.2, 0),
+                new Coordinate(80.0, 20.2, 0),
+                new Coordinate(70, 14.5, 0)}), 12);
+
+        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+                new Coordinate(90.1, 19.5, 0),
+                new Coordinate(93.3, 17.8, 0),
+                new Coordinate(87.3, 6.6, 0),
+                new Coordinate(84.1, 8.3, 0),
+                new Coordinate(90.1, 19.5, 0)}), 10);
+
+        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+                new Coordinate(94.9, 14.1, 0),
+                new Coordinate(98.02, 12.37, 0),
+                new Coordinate(92.03, 1.2, 0),
+                new Coordinate(88.86, 2.9, 0),
+                new Coordinate(94.9, 14.1, 0)}), 10);
+
+        mesh.finishPolygonFeeding(cellEnvelope);
+
+        //Retrieve Delaunay triangulation of scene
+        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+                mesh.getTriNeighbors(), mesh.getVertices());
+
+        PropagationProcessData rayData = new PropagationProcessData(manager);
+        rayData.addReceiver(new Coordinate(100, 15, 5));
+        rayData.addSource(factory.createPoint(new Coordinate(50, 10, 1)));
+        rayData.setComputeHorizontalDiffraction(true);
+        rayData.setComputeVerticalDiffraction(true);
+        PropagationProcessPathData attData = new PropagationProcessPathData();
+        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRays computeRays = new ComputeRays(rayData);
+        computeRays.setThreadCount(1);
+        computeRays.run(propDataOut);
+        assertRaysEquals(TestComputeRays.class.getResourceAsStream("T15.geojson"), propDataOut);
+    }
+
+    private void assertRaysEquals(InputStream expected, ComputeRaysOut result) throws IOException {
+        // Parse expected
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode rootNode = mapper.readTree(expected);
+        // Generate result
+        ByteOutputStream outData = new ByteOutputStream();
+        GeoJSONDocument jsonDocument = new GeoJSONDocument(outData);
+        jsonDocument.setRounding(1);
+        jsonDocument.writeHeader();
+        for(PropagationPath propagationPath : result.getPropagationPaths()) {
+            jsonDocument.writeRay(propagationPath);
+        }
+        jsonDocument.writeFooter();
+        JsonNode resultNode = mapper.readTree(outData.toString());
+        // Check equality
+        assertEquals(rootNode, resultNode);
+    }
 //
 //
 //    /**

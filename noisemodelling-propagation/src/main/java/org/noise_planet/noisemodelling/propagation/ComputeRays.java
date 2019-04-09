@@ -305,7 +305,7 @@ public class ComputeRays {
                 lastPoint = reflectionPt;
 
                 // A path has been found
-                List<PropagationPath> propagationPaths = directPath(destinationPt, reflectionPt, data.computeVerticalDiffraction,false,  debugInfo);
+                List<PropagationPath> propagationPaths = directPath(destinationPt, reflectionPt, data.isComputeVerticalDiffraction(),false,  debugInfo);
 
                 if (propagationPaths.size() > 0 ) {
                     refcount +=1;
@@ -329,7 +329,7 @@ public class ComputeRays {
 
             }
             if (refcount > 0 ) {
-                List<PropagationPath> propagationPaths = directPath(lastPoint, receiverCoord, data.computeVerticalDiffraction,false, debugInfo);
+                List<PropagationPath> propagationPaths = directPath(lastPoint, receiverCoord, data.isComputeVerticalDiffraction(),false, debugInfo);
                 if (propagationPaths.size() > 0 ) {
                     propagationPath = propagationPaths.get(0);
                     propagationPath.getPointList().remove(0);
@@ -839,7 +839,7 @@ public class ComputeRays {
 
         }
 
-        if (topographyHideReceiver && data.computeHorizontalDiffraction && horizontalDiffraction ) {
+        if (topographyHideReceiver && data.isComputeHorizontalDiffraction() && horizontalDiffraction ) {
             // todo if one of the points > roof or < floor, get out this path
             PropagationPath propagationPath = new PropagationPath();
             PropagationPath propagationPath2 = new PropagationPath();
@@ -918,7 +918,7 @@ public class ComputeRays {
         if (PropaDistance < data.maxSrcDist) {
 
             // Process direct path (including horizontal and vertical diffractions)
-            propagationPaths = directPath(srcCoord, receiverCoord, data.computeVerticalDiffraction, true, debugInfo);
+            propagationPaths = directPath(srcCoord, receiverCoord, data.isComputeVerticalDiffraction(), true, debugInfo);
 
             // Process specular reflection
             if (data.reflexionOrder > 0) {
