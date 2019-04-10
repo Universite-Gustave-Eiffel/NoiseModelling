@@ -59,7 +59,8 @@ public class MeshBuilder {
     private List<PolygonWithHeight> polygonWithHeight = new ArrayList<>(BUILDING_COUNT_HINT);//list polygon with height
     private List<LineString> envelopeSplited = new ArrayList<>();
     private Envelope geometriesBoundingBox = new Envelope();
-    private List<Coordinate> topoPoints = new LinkedList<Coordinate>();
+    private Set<Coordinate> topoPoints = new HashSet<Coordinate>();
+    private Set<LineString> topoLines = new HashSet<LineString>();
     private boolean computeNeighbors = true;
     private double maximumArea = 0;
     private GeometryFactory factory = new GeometryFactory();
@@ -283,14 +284,16 @@ public class MeshBuilder {
      * @param point Topographic Point
      */
     public void addTopographicPoint(Coordinate point) {
-
-        if (!topoPoints.contains(point)) {
-            if (Double.isNaN(point.z)) {
-                point.setCoordinate(new Coordinate(point.x, point.y, 0.));
-            }
-            geometriesBoundingBox.expandToInclude(point);
-            this.topoPoints.add(point);
+        if (Double.isNaN(point.z)) {
+            point.setCoordinate(new Coordinate(point.x, point.y, 0.));
         }
+        geometriesBoundingBox.expandToInclude(point);
+        this.topoPoints.add(point);
+    }
+
+    public void addTopographicLine(LineString lineSegment) {
+        geometriesBoundingBox.expandToInclude(lineSegment.getEnvelopeInternal());
+        this.topoLines.add(lineSegment);
     }
 
     private void addPolygon(Polygon newpoly, LayerDelaunay delaunayTool,
@@ -314,18 +317,6 @@ public class MeshBuilder {
         } else if (intersectedGeometry instanceof LineString) {
             delaunayTool.addLineString((LineString) intersectedGeometry, buildingID);
         }
-    }
-
-    public void convertBuildtoTopoPoint() throws LayerDelaunayError {
-        List<Coordinate> coordinates = new ArrayList<>();
-        for (PolygonWithHeight polygon : polygonWithHeight) {
-            coordinates = Arrays.asList(polygon.getGeometry().getCoordinates());
-            for (int i =0; i< coordinates.size() ;i++) {
-                this.topoPoints.add(new Coordinate(0.99*coordinates.get(i).x,0.99*coordinates.get(i).y, polygon.getHeight()));
-            }
-        }
-
-
     }
 
     public void finishPolygonFeeding(Envelope boundingBoxFilter) throws LayerDelaunayError {
@@ -352,11 +343,13 @@ public class MeshBuilder {
             delaunayTool.addLineString(lineString, -1);
         }
 
-        //add topoPoints to JDelaunay
-        //no check if the point in the building
-        if (!topoPoints.isEmpty()) {
+        //add topoPoints to delaunay
+        if (!topoPoints.isEmpty() || !topoLines.isEmpty()) {
             for (Coordinate topoPoint : topoPoints) {
                 delaunayTool.addVertex(topoPoint);
+            }
+            for(LineString topoLine : topoLines) {
+                explodeAndAddPolygon(topoLine, delaunayTool, -1);
             }
             delaunayTool.processDelaunay();
         }
