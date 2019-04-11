@@ -819,9 +819,7 @@ public class TestComputeRays {
         rayData.addReceiver(new Coordinate(30, 20, 6));
         rayData.addSource(factory.createPoint(new Coordinate(0, 10, 1)));
         rayData.setComputeHorizontalDiffraction(true);
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
+        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.5));
         rayData.setComputeVerticalDiffraction(true);
         PropagationProcessPathData attData = new PropagationProcessPathData();
         ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
