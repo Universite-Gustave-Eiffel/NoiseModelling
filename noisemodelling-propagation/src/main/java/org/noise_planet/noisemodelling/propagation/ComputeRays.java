@@ -312,8 +312,8 @@ public class ComputeRays {
                     propagationPath = propagationPaths.get(0);
                     propagationPath.getPointList().get(propagationPath.getPointList().size() - 1).setType(PropagationPath.PointPath.POINT_TYPE.REFL);
                     propagationPath.getPointList().get(propagationPath.getPointList().size() - 1).setBuildingId(receiverReflection.getBuildingId());
-
                     propagationPath.getPointList().get(propagationPath.getPointList().size() - 1).setAlphaWall(data.freeFieldFinder.getBuildingAlpha(receiverReflection.getBuildingId()));
+
                     if (refcount > 1) {
                         propagationPath.getPointList().remove(0);
                     }
