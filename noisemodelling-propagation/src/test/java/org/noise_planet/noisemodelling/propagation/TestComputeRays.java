@@ -1075,7 +1075,7 @@ public class TestComputeRays {
         assertEquals(rootNode, resultNode);
     }
 
-    private static void addGround(MeshBuilder mesh) throws IOException {
+    private static Geometry addGround(MeshBuilder mesh) throws IOException {
         List<LineSegment> lineSegments = new ArrayList<>();
         lineSegments.add(new LineSegment(new Coordinate(0, 80, 0), new Coordinate(225, 80, 0)));
         lineSegments.add(new LineSegment(new Coordinate(225, 80, 0), new Coordinate(225, -20, 0)));
@@ -1105,6 +1105,7 @@ public class TestComputeRays {
                 mesh.addTopographicLine((LineString)line);
             }
         }
+        return geo;
         /*
         MCIndexNoder mCIndexNoder = new MCIndexNoder();
         mCIndexNoder.setSegmentIntersector(new IntersectionAdder(new RobustLineIntersector()));
