@@ -811,6 +811,7 @@ public class ComputeRays {
         data.freeFieldFinder.computePropagationPath(srcCoord, receiverCoord, false, inters, true);
         for(TriIdWithIntersection intersection : inters) {
             if(intersection.getBuildingId() > 0) {
+                topographyHideReceiver = true;
                 buildingOnPath = true;
             }
             if(intersection.isIntersectionOnBuilding() || intersection.isIntersectionOnTopography()) {

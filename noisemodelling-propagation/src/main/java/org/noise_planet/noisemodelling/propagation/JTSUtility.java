@@ -254,7 +254,7 @@ public class JTSUtility {
         ConvexHull convexHull = new ConvexHull(coordinates, new GeometryFactory());
         Geometry hullGeom = convexHull.getConvexHull();
         Coordinate[] hull = hullGeom.getCoordinates();
-        if(Orientation.isCCW(hull)) {
+        if(hull.length > 3 && Orientation.isCCW(hull)) {
             Coordinate temp;
             for (int i = 0; i < hull.length / 2; i++) {
                 temp = hull[i];
