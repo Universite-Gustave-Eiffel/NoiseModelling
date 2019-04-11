@@ -11,7 +11,7 @@ import java.io.OutputStream;
 import java.util.Locale;
 
 /**
- * Export/Import rays in msgpack format
+ * Export rays for validation
  */
 public class GeoJSONDocument {
     JsonGenerator jsonGenerator;
@@ -62,6 +62,14 @@ public class GeoJSONDocument {
         jsonGenerator.writeObjectFieldStart("properties");
         jsonGenerator.writeNumberField("receiver", path.idReceiver);
         jsonGenerator.writeNumberField("source", path.idSource);
+        if(path.getSRList() == null || path.getSRList().isEmpty()) {
+            path.computeAugmentedSRPath();
+        }
+        jsonGenerator.writeArrayFieldStart("gPath");
+        for(PropagationPath.SegmentPath sr : path.getSRList()) {
+            jsonGenerator.writeNumber(String.format(Locale.ROOT, "%.2f", sr.gPath));
+        }
+        jsonGenerator.writeEndArray(); //gPath
         jsonGenerator.writeEndObject(); // properties
         jsonGenerator.writeEndObject();
     }
