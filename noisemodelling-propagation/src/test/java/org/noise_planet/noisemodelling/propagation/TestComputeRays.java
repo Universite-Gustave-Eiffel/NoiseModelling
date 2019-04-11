@@ -36,7 +36,7 @@ import static org.junit.Assert.assertTrue;
 
 public class TestComputeRays {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestComputeRays.class);
-    private boolean storeGeoJSONRays = true;
+    private boolean storeGeoJSONRays = false;
 
     /**
      * Test vertical edge diffraction ray computation
@@ -1959,215 +1959,55 @@ public class TestComputeRays {
     }
 
 
-//
-//    /**
-//     * TC20 - Ground with spatially varying heights and acoustic properties
-//     */
-//
-//    public void TC20() throws LayerDelaunayError {
-//        //Tables 221 – 222 are not shown in this draft.
-//
-//        assertEquals(false, true);
-//    }
 
-//
-//    /**
-//     * TC24 – Two buildings behind an earth-berm on flat ground with homogeneous acoustic
-//     * properties – receiver position modified
-//     */
-//    public void TC24() throws LayerDelaunayError {
-//
-//        assertEquals(true, false);
-//
-//    }
-//
-//    /**
-//     * TC25 – Replacement of the earth-berm by a barrier
-//     */
-//    public void TC25() throws LayerDelaunayError {
-//
-//        assertEquals(true, false);
-//
-//    }
-//
-//    /**
-//     * TC26 – Road source with influence of retrodiffraction
-//     */
-//
-//    public void TC26() throws LayerDelaunayError {
-//
-//        assertEquals(true, false);
-//
-//    }
-//
-//    /**
-//     * TC27 Source located in flat cut with retro-diffraction
-//     */
-//    public void TC27() throws LayerDelaunayError {
-//
-//        assertEquals(true, false);
-//
-//    }
-//
-//    /**
-//     * TC28 Propagation over a large distance with many buildings between source and
-//     * receiver
-//     */
-//    @Test
-//    public void TC28() throws LayerDelaunayError {
-//        GeometryFactory factory = new GeometryFactory();
-//        ////////////////////////////////////////////////////////////////////////////
-//        //Add road source as one point
-//        List<Geometry> srclst = new ArrayList<Geometry>();
-//        srclst.add(factory.createPoint(new Coordinate(0, 50, 4)));
-//        //Scene dimension
-//        Envelope cellEnvelope = new Envelope(new Coordinate(-1500., -1500., 0.), new Coordinate(1500., 1500., 0.));
-//        //Add source sound level
-//        List<ArrayList<Double>> srcSpectrum = new ArrayList<ArrayList<Double>>();
-//        srcSpectrum.add(asW(80.0, 90.0, 95.0, 100.0, 100.0, 100.0, 95.0, 90.0));
-//        // GeometrySoilType
-//        List<GeoWithSoilType> geoWithSoilTypeList = new ArrayList<>();
-//        geoWithSoilTypeList.add(new GeoWithSoilType(factory.toGeometry(new Envelope(-11, 1011, -300, 300)), 0.5));
-//
-//        //Build query structure for sources
-//        QueryGeometryStructure sourcesIndex = new QueryQuadTree();
-//        int idsrc = 0;
-//        for (Geometry src : srclst) {
-//            sourcesIndex.appendGeometry(src, idsrc);
-//            idsrc++;
-//        }
-//        //Create obstruction test object
-//        MeshBuilder mesh = new MeshBuilder();
-//
-//        // Add building
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
-//                new Coordinate(113, 10, 0),
-//                new Coordinate(127, 16, 0),
-//                new Coordinate(102, 70, 0),
-//                new Coordinate(88, 64, 0),
-//                new Coordinate(113, 10, 0)}), 6);
-//
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
-//                new Coordinate(176, 19, 0),
-//                new Coordinate(164, 88, 0),
-//                new Coordinate(184, 91, 0),
-//                new Coordinate(196, 22, 0),
-//                new Coordinate(176, 19, 0)}), 10);
-//
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
-//                new Coordinate(250, 70, 0),
-//                new Coordinate(250, 180, 0),
-//                new Coordinate(270, 180, 0),
-//                new Coordinate(270, 70, 0),
-//                new Coordinate(250, 70, 0)}), 14);
-//
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
-//                new Coordinate(332, 32, 0),
-//                new Coordinate(348, 126, 0),
-//                new Coordinate(361, 108, 0),
-//                new Coordinate(349, 44, 0),
-//                new Coordinate(332, 32, 0)}), 10);
-//
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
-//                new Coordinate(400, 5, 0),
-//                new Coordinate(400, 85, 0),
-//                new Coordinate(415, 85, 0),
-//                new Coordinate(415, 5, 0),
-//                new Coordinate(400, 5, 0)}), 9);
-//
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
-//                new Coordinate(444, 47, 0),
-//                new Coordinate(436, 136, 0),
-//                new Coordinate(516, 143, 0),
-//                new Coordinate(521, 89, 0),
-//                new Coordinate(506, 87, 0),
-//                new Coordinate(502, 127, 0),
-//                new Coordinate(452, 123, 0),
-//                new Coordinate(459, 48, 0),
-//                new Coordinate(444, 47, 0)}), 12);
-//
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
-//                new Coordinate(773, 12, 0),
-//                new Coordinate(728, 90, 0),
-//                new Coordinate(741, 98, 0),
-//                new Coordinate(786, 20, 0),
-//                new Coordinate(773, 12, 0)}), 14);
-//
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
-//                new Coordinate(972, 82, 0),
-//                new Coordinate(979, 121, 0),
-//                new Coordinate(993, 118, 0),
-//                new Coordinate(986, 79, 0),
-//                new Coordinate(972, 82, 0)}), 8);
-//
-//        mesh.finishPolygonFeeding(cellEnvelope);
-//
-//        //Retrieve Delaunay triangulation of scene
-//        List<Coordinate> vert = mesh.getVertices();
-//        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-//                mesh.getTriNeighbors(), mesh.getVertices());
-//        // rose of favourable conditions
-//        double[] favrose = new double[]{0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25};
-//
-//        PropagationProcessData rayData = new PropagationProcessData(vert, manager, sourcesIndex, srclst, srcSpectrum,
-//                freqLvl, 1, 5, 1500, 1500, 1., 0., favrose, 0.1, 0, null, geoWithSoilTypeList, true);
-//
-//        ComputeRaysOut propDataOut = new ComputeRaysOut();
-//        ComputeRays computeRays = new ComputeRays(rayData, propDataOut);
-//
-//        computeRays.initStructures();
-//
-//        double energeticSum[] = new double[freqLvl.size()];
-//        List<PropagationDebugInfo> debug = new ArrayList<>();
-//        computeRays.computeRaysAtPosition(new Coordinate(1000, 100, 1), 0,energeticSum, debug);
-//        String filename = "target/T28.vtk";
-//        String filename2 = "target/T28.ply";
-//        try {
-//            writeVTK(filename, propDataOut);
-//            writePLY(filename2, mesh);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//        assertEquals(true, true);
-//
-//    }
-//
-//    /**
-//     * TestPLY - Test ply
-//     */
-//    public void Tply() throws LayerDelaunayError {
-//        GeometryFactory factory = new GeometryFactory();
-//        //Scene dimension
-//        Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
-//
-//        //Create obstruction test object
-//        MeshBuilder mesh = new MeshBuilder();
-//
-//        // Add building
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
-//                new Coordinate(167.2, 39.5),
-//                new Coordinate(151.6, 48.5),
-//                new Coordinate(141.1, 30.3),
-//                new Coordinate(156.7, 21.3),
-//                new Coordinate(159.7, 26.5),
-//                new Coordinate(151.0, 31.5),
-//                new Coordinate(155.5, 39.3),
-//                new Coordinate(164.2, 34.3),
-//                new Coordinate(167.2, 39.5)}), 10);
-//
-//        mesh.finishPolygonFeeding(cellEnvelope);
-//
-//        String filename2 = "target/T_ply.ply";
-//        try {
-//
-//            writePLY(filename2, mesh);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//
-//        assertEquals(true, false);
-//    }
-//
-//
+    /**
+     * TC20 - Ground with spatially varying heights and acoustic properties
+     */
+
+    public void TC20() throws LayerDelaunayError {
+        //Tables 221 – 222 are not shown in this draft.
+
+        assertEquals(false, true);
+    }
+
+
+    /**
+     * TC24 – Two buildings behind an earth-berm on flat ground with homogeneous acoustic
+     * properties – receiver position modified
+     */
+    public void TC24() throws LayerDelaunayError {
+
+        assertEquals(true, false);
+
+    }
+
+    /**
+     * TC25 – Replacement of the earth-berm by a barrier
+     */
+    public void TC25() throws LayerDelaunayError {
+
+        assertEquals(true, false);
+
+    }
+
+    /**
+     * TC26 – Road source with influence of retrodiffraction
+     */
+
+    public void TC26() throws LayerDelaunayError {
+
+        assertEquals(true, false);
+
+    }
+
+    /**
+     * TC27 Source located in flat cut with retro-diffraction
+     */
+    public void TC27() throws LayerDelaunayError {
+
+        assertEquals(true, false);
+
+    }
+
 
 }
