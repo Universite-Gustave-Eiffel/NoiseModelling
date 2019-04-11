@@ -66,7 +66,7 @@ public class GeoJSONDocument {
             path.computeAugmentedSRPath();
         }
         jsonGenerator.writeArrayFieldStart("gPath");
-        for(PropagationPath.SegmentPath sr : path.getSRList()) {
+        for(PropagationPath.SegmentPath sr : path.getSegmentList()) {
             jsonGenerator.writeNumber(String.format(Locale.ROOT, "%.2f", sr.gPath));
         }
         jsonGenerator.writeEndArray(); //gPath
