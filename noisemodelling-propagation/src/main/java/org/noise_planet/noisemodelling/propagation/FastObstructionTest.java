@@ -719,39 +719,40 @@ public class FastObstructionTest {
         if(includePoints) {
             path.add(new TriIdWithIntersection(curTriP1, new Coordinate(p1.x, p1.y, zTopoP1)));
         }
-        try {
-            if (stopOnIntersection && ((!Double.isNaN(p1.z) && p1.z + epsilon < zTopoP1)
-                    || (!Double.isNaN(p2.z) && p2.z + epsilon < zTopoP2))) {
-                //Z value of origin or destination is lower than topography. FreeField is always false in this case
-                return false;
-            }
-
-            HashSet<Integer> navigationHistory = new HashSet<Integer>();
-            int navigationTri = curTriP1;
-            while (navigationTri != -1) {
-                navigationHistory.add(navigationTri);
-                Coordinate[] tri = getTriangle(navigationTri);
-                if (dotInTri(p2, tri[0], tri[1], tri[2])) {
-                    return true;
-                }
-                TriIdWithIntersection propaTri = this.getNextTri(navigationTri, propaLine, navigationHistory);
-                if (path != null) {
-                    path.add(propaTri);
-                }
-                if (!stopOnIntersection || !propaTri.isIntersectionOnBuilding() && !propaTri.isIntersectionOnTopography()) {
-                    navigationTri = propaTri.getTriID();
-                } else {
-                    navigationTri = -1;
-                }
-            }
-            // Can't find a way to p2
-            return false;
-        } finally {
+        if (stopOnIntersection && ((!Double.isNaN(p1.z) && p1.z + epsilon < zTopoP1)
+                || (!Double.isNaN(p2.z) && p2.z + epsilon < zTopoP2))) {
+            //Z value of origin or destination is lower than topography. FreeField is always false in this case
             if(includePoints) {
                 path.add(new TriIdWithIntersection(curTriP2, new Coordinate(p2.x, p2.y, zTopoP2), false, false,
                         buildingP2.getAttribute()));
             }
+            return false;
         }
+
+        HashSet<Integer> navigationHistory = new HashSet<Integer>();
+        int navigationTri = curTriP1;
+        while (navigationTri != -1) {
+            navigationHistory.add(navigationTri);
+            Coordinate[] tri = getTriangle(navigationTri);
+            if (dotInTri(p2, tri[0], tri[1], tri[2])) {
+                if(includePoints) {
+                    path.add(new TriIdWithIntersection(curTriP2, new Coordinate(p2.x, p2.y, zTopoP2), false, false,
+                            buildingP2.getAttribute()));
+                }
+                return true;
+            }
+            TriIdWithIntersection propaTri = this.getNextTri(navigationTri, propaLine, navigationHistory);
+            if (path != null && propaTri.getTriID() >= 0) {
+                path.add(propaTri);
+            }
+            if (!stopOnIntersection || !propaTri.isIntersectionOnBuilding() && !propaTri.isIntersectionOnTopography()) {
+                navigationTri = propaTri.getTriID();
+            } else {
+                navigationTri = -1;
+            }
+        }
+        // Can't find a way to p2
+        return false;
     }
 
     private TriIdWithIntersection updateZ(TriIdWithIntersection pt) {
