@@ -345,7 +345,7 @@ public class ComputeRays {
                                 segments.clear();
                             }
                         }
-                        if (points.get(i).type == PropagationPath.PointPath.POINT_TYPE.REFL) {
+                        if (i < points.size() - 1 && points.get(i).type == PropagationPath.PointPath.POINT_TYPE.REFL) {
                             points.get(i).coordinate.z = Vertex.interpolateZ(points.get(i).coordinate, points.get(i - 1).coordinate, points.get(i + 1).coordinate);
                             //check if in building && if under floor
                             if (points.get(i).coordinate.z > data.freeFieldFinder.getBuildingRoofZ(points.get(i).getBuildingId())
