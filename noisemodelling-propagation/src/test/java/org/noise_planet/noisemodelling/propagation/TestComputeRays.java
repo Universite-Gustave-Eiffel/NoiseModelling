@@ -1714,34 +1714,34 @@ public class TestComputeRays {
         mesh.addTopographicPoint(new Coordinate(122, 45, 0));
         mesh.addTopographicPoint(new Coordinate(30, 45, 0));
         mesh.addTopographicPoint(new Coordinate(59.6, -9.87, 0));
-        mesh.addTopographicPoint(new Coordinate(76.84, -5.28, 10));
-        mesh.addTopographicPoint(new Coordinate(63.71, 41.16, 10));
-        mesh.addTopographicPoint(new Coordinate(46.27, 36.28, 10));
-        mesh.addTopographicPoint(new Coordinate(46.27, 36.28, 10));
-        mesh.addTopographicPoint(new Coordinate(54.68, 37.59, 10));
-        mesh.addTopographicPoint(new Coordinate(55.93, 37.93, 10));
-        mesh.addTopographicPoint(new Coordinate(59.60, -9.87, 10));
-        mesh.addTopographicPoint(new Coordinate(67.35, -6.83, 10));
-        mesh.addTopographicPoint(new Coordinate(68.68, -6.49, 10));
-        mesh.addTopographicPoint(new Coordinate(54.68, 37.59, 10));
-        mesh.addTopographicPoint(new Coordinate(55.93, 37.39, 10));
+        mesh.addTopographicPoint(new Coordinate(76.84, -5.28, 0));
+        mesh.addTopographicPoint(new Coordinate(63.71, 41.16, 0));
+        mesh.addTopographicPoint(new Coordinate(46.27, 36.28, 0));
+        mesh.addTopographicPoint(new Coordinate(46.27, 36.28, 0));
+        mesh.addTopographicPoint(new Coordinate(54.68, 37.59, 5));
+        mesh.addTopographicPoint(new Coordinate(55.93, 37.93, 5));
+        mesh.addTopographicPoint(new Coordinate(59.60, -9.87, 0));
+        mesh.addTopographicPoint(new Coordinate(67.35, -6.83, 5));
+        mesh.addTopographicPoint(new Coordinate(68.68, -6.49, 5));
+        mesh.addTopographicPoint(new Coordinate(54.68, 37.59, 5));
+        mesh.addTopographicPoint(new Coordinate(55.93, 37.39, 5));
         //x2
         mesh.addTopographicPoint(new Coordinate(122, -14, 0));
         mesh.addTopographicPoint(new Coordinate(122, 45, 0));
         mesh.addTopographicPoint(new Coordinate(30, 45, 0));
         mesh.addTopographicPoint(new Coordinate(30, -14, 0));
-        mesh.addTopographicPoint(new Coordinate(76.84, -5.28, 10));
-        mesh.addTopographicPoint(new Coordinate(63.71, 41.16, 10));
-        mesh.addTopographicPoint(new Coordinate(46.27, 36.28, 10));
-        mesh.addTopographicPoint(new Coordinate(59.60, -9.87, 10));
-        mesh.addTopographicPoint(new Coordinate(54.68, 37.59, 10));
-        mesh.addTopographicPoint(new Coordinate(55.93, 37.93, 10));
-        mesh.addTopographicPoint(new Coordinate(63.71, 41.16, 10));
-        mesh.addTopographicPoint(new Coordinate(67.35, -6.83, 10));
-        mesh.addTopographicPoint(new Coordinate(68.68, -6.49, 10));
-        mesh.addTopographicPoint(new Coordinate(76.84, -5.28, 10));
-        mesh.addTopographicPoint(new Coordinate(67.35, -6.93, 10));
-        mesh.addTopographicPoint(new Coordinate(68.68, -6.49, 10));
+        mesh.addTopographicPoint(new Coordinate(76.84, -5.28, 0));
+        mesh.addTopographicPoint(new Coordinate(63.71, 41.16, 0));
+        mesh.addTopographicPoint(new Coordinate(46.27, 36.28, 0));
+        mesh.addTopographicPoint(new Coordinate(59.60, -9.87, 0));
+        mesh.addTopographicPoint(new Coordinate(54.68, 37.59, 5));
+        mesh.addTopographicPoint(new Coordinate(55.93, 37.93, 5));
+        mesh.addTopographicPoint(new Coordinate(63.71, 41.16, 0));
+        mesh.addTopographicPoint(new Coordinate(67.35, -6.83, 5));
+        mesh.addTopographicPoint(new Coordinate(68.68, -6.49, 5));
+        mesh.addTopographicPoint(new Coordinate(76.84, -5.28, 0));
+        mesh.addTopographicPoint(new Coordinate(67.35, -6.93, 5));
+        mesh.addTopographicPoint(new Coordinate(68.68, -6.49, 5));
 
         mesh.finishPolygonFeeding(cellEnvelope);
 
@@ -1750,7 +1750,7 @@ public class TestComputeRays {
                 mesh.getTriNeighbors(), mesh.getVertices());
 
         PropagationProcessData rayData = new PropagationProcessData(manager);
-        rayData.addReceiver(new Coordinate(187.05, 25, 14));
+        rayData.addReceiver(new Coordinate(107, 25.95, 4));
         rayData.addSource(factory.createPoint(new Coordinate(38, 14, 1)));
         rayData.setComputeHorizontalDiffraction(true);
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9));
