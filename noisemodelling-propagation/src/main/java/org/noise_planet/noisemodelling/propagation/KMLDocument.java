@@ -165,6 +165,20 @@ public class KMLDocument {
     }
 
     public void writeTopographic(List<Triangle> triVertices, List<Coordinate> vertices) throws XMLStreamException {
+        // Write style
+        xmlOut.writeStartElement("Style");
+        xmlOut.writeAttribute("id", "mnt");
+        xmlOut.writeStartElement("LineStyle");
+        xmlOut.writeStartElement("width");
+        xmlOut.writeCharacters("0");
+        xmlOut.writeEndElement(); // width
+        xmlOut.writeEndElement();// LineStyle
+        xmlOut.writeStartElement("PolyStyle");
+        xmlOut.writeStartElement("color");
+        xmlOut.writeCharacters("96252bff");
+        xmlOut.writeEndElement(); // color
+        xmlOut.writeEndElement();// LineStyle
+        xmlOut.writeEndElement();// Style
 
         xmlOut.writeStartElement("Schema");
         xmlOut.writeAttribute("name", "mnt");
@@ -175,6 +189,9 @@ public class KMLDocument {
         xmlOut.writeCharacters("mnt");
         xmlOut.writeEndElement();//Name
         xmlOut.writeStartElement("Placemark");
+        xmlOut.writeStartElement("styleUrl");
+        xmlOut.writeCharacters("#mnt");
+        xmlOut.writeEndElement(); // styleUrl
         xmlOut.writeStartElement("name");
         xmlOut.writeCharacters("tri");
         xmlOut.writeEndElement();//Name

@@ -69,9 +69,9 @@ public class TestSoundPropagationIn3DWithNewFunction extends TestCase {
 
         mesh.finishPolygonFeeding(new Envelope(new Coordinate(0., 0., 0.), new Coordinate(60., 60., 0.)));
         FastObstructionTest ft = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(), mesh.getTriNeighbors(), mesh.getVertices());
-        DiffractionWithSoilEffetZone diffraData = ft.getPath(new Coordinate(5, 15, 1.5), new Coordinate(10, 15, 0.5));
-        diffraData = ft.getPath(new Coordinate(48, 25, 0.5), new Coordinate(5, 15, 1.5));
-        DiffractionWithSoilEffetZone diffraData2 = ft.getPath(new Coordinate(5, 15, 1.5), new Coordinate(48, 25, 0.5));
+        DiffractionWithSoilEffetZone diffraData = ft.getPath(new Coordinate(5, 15, 1.5), new Coordinate(10, 15, 0.5), null);
+        diffraData = ft.getPath(new Coordinate(48, 25, 0.5), new Coordinate(5, 15, 1.5), null);
+        DiffractionWithSoilEffetZone diffraData2 = ft.getPath(new Coordinate(5, 15, 1.5), new Coordinate(48, 25, 0.5), null);
         assertTrue("Exchange source receiver got the different resultat",
                 diffraData.getDeltaDistance() - diffraData2.getDeltaDistance() <= FastObstructionTest.epsilon
                         && diffraData.geteLength() - diffraData2.geteLength() <= FastObstructionTest.epsilon
@@ -101,8 +101,8 @@ public class TestSoundPropagationIn3DWithNewFunction extends TestCase {
            mesh.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(60., 60.,0.)));
            FastObstructionTest ft= new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());           
            
-           DiffractionWithSoilEffetZone diffraData=ft.getPath(new Coordinate(48,25,0.5), new Coordinate(5,15,1.5));
-           DiffractionWithSoilEffetZone diffraData2=ft.getPath(new Coordinate(5,15,1.5), new Coordinate(48,25,0.5));
+           DiffractionWithSoilEffetZone diffraData=ft.getPath(new Coordinate(48,25,0.5), new Coordinate(5,15,1.5), null);
+           DiffractionWithSoilEffetZone diffraData2=ft.getPath(new Coordinate(5,15,1.5), new Coordinate(48,25,0.5), null);
 
            assertTrue("Exchange source receiver got the different resultat",
                 diffraData.getDeltaDistance() - diffraData2.getDeltaDistance() <= FastObstructionTest.epsilon

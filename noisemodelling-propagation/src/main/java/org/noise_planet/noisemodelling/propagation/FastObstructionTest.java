@@ -796,7 +796,7 @@ public class FastObstructionTest {
      * if Double[DELTA_DISTANCE],Double[E_LENGTH],Double[FULL_DIFFRACTION_DISTANCE],Double[Full_Distance_With_Soil_Effect] are -1. then no useful intersections.
      */
     @SuppressWarnings("unchecked")
-    public DiffractionWithSoilEffetZone getPath(Coordinate receiver, Coordinate source) {
+    public DiffractionWithSoilEffetZone getPath(Coordinate receiver, Coordinate source, List<TriIdWithIntersection> allInterPoints) {
         //set default data
         DiffractionWithSoilEffetZone totData = new DiffractionWithSoilEffetZone(null, null, -1,-1, -1, -1,-1,
                 new ArrayList<Coordinate>(), new ArrayList<Coordinate>(),new ArrayList<Coordinate>(),0);
@@ -810,8 +810,10 @@ public class FastObstructionTest {
         LineSegment rOZone = new LineSegment(new Coordinate(-1, -1), new Coordinate(-1, -1));
         LineSegment sOZone = new LineSegment(new Coordinate(-1, -1), new Coordinate(-1, -1));
 
-        List<TriIdWithIntersection> allInterPoints = new ArrayList<>();
-        computePropagationPath(receiver, source, false, allInterPoints, true);
+        if(allInterPoints == null) {
+            allInterPoints = new ArrayList<>();
+            computePropagationPath(receiver, source, false, allInterPoints, true);
+        }
         if(allInterPoints.isEmpty()) {
             return totData;
         }
@@ -856,25 +858,21 @@ public class FastObstructionTest {
             }
             newPoints.get(i).setCoordinate(new Coordinate(pointsX[i], pointsY[i]));
         }
-        //algorithm JarvisMarch to get the convex hull
-        JarvisMarch jm = new JarvisMarch(new JarvisMarch.Points(pointsX, pointsY));
-        JarvisMarch.Points points = jm.calculateHull();
-        List<Integer> pointsId = jm.getHullPointId();
+        //algorithm to get the upper side of the convex hull
+        List<Coordinate> upperHull = JTSUtility.getXAscendingHullPoints(newPoints.toArray(new Coordinate[newPoints.size()]));
+        //JarvisMarch jm = new JarvisMarch(new JarvisMarch.Points(pointsX, pointsY));
+        //JarvisMarch.Points points = jm.calculateHull();
+        //List<Integer> pointsId = jm.getHullPointId();
 
         //if there are no useful intersection
-        if (points.x.length <= 2) {
+        if (upperHull.size() <= 2) {
             //after jarvis march if we get the length of list of points less than 2, so we have no useful points
             return totData;
         } else {
             Coordinate osCorner = interPoints.get(interPoints.size() - 2).getCoorIntersection();
             LinkedList<LineSegment> path = new LinkedList<>();
-            for (int i = 0; i < points.x.length - 1; i++) {
-                if(!(points.x[i] > points.x[i + 1])) {
-                    path.add(new LineSegment(new Coordinate(points.x[i], points.y[i]), new Coordinate(points.x[i + 1], points.y[i + 1])));
-
-                } else {
-                    break;
-                }
+            for (int i = 0; i < upperHull.size() - 1; i++) {
+                path.add(new LineSegment(upperHull.get(i), upperHull.get(i+1)));
             }
             List<Coordinate> path3D = new ArrayList<>();
             Coordinate coordinate = new Coordinate();

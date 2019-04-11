@@ -2,61 +2,32 @@ package org.noise_planet.noisemodelling.propagation;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sun.xml.internal.messaging.saaj.util.ByteOutputStream;
 import org.cts.crs.CRSException;
 import org.cts.op.CoordinateOperationException;
-import org.h2gis.functions.spatial.aggregate.ST_LineMerge;
-import org.h2gis.functions.spatial.crs.ST_Transform;
-import org.h2gis.functions.spatial.edit.ST_Densify;
-import org.h2gis.functions.spatial.operators.ST_Union;
-import org.h2gis.functions.spatial.split.ST_LineIntersector;
-import org.h2gis.functions.spatial.volume.GeometryExtrude;
 import org.junit.Test;
-import org.locationtech.jts.algorithm.RobustLineIntersector;
 import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.CoordinateSequence;
-import org.locationtech.jts.geom.CoordinateSequenceFilter;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryCollection;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineSegment;
 import org.locationtech.jts.geom.LineString;
-import org.locationtech.jts.geom.MultiLineString;
 import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.geom.util.AffineTransformation;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
-import org.locationtech.jts.io.WKTWriter;
 import org.locationtech.jts.math.Vector2D;
-import org.locationtech.jts.noding.IntersectionAdder;
-import org.locationtech.jts.noding.MCIndexNoder;
-import org.locationtech.jts.noding.NodedSegmentString;
-import org.locationtech.jts.noding.SegmentString;
-import org.locationtech.jts.operation.linemerge.LineMerger;
 import org.noise_planet.noisemodelling.propagation.utils.Densifier3D;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.xml.stream.XMLStreamException;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
+import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -152,7 +123,7 @@ public class TestComputeRays {
         FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(), mesh.getTriNeighbors(), mesh.getVertices());
 
         DiffractionWithSoilEffetZone eff = manager.getPath(new Coordinate(316876.05185368325, 6706318.789634008, 22.089050196052437),
-                new Coordinate(316747.10402055364, 6706422.950335046, 12.808121783800553));
+                new Coordinate(316747.10402055364, 6706422.950335046, 12.808121783800553), null);
         assertEquals(3, eff.getPath().size());
     }
 
@@ -1062,7 +1033,7 @@ public class TestComputeRays {
         ObjectMapper mapper = new ObjectMapper();
         JsonNode rootNode = mapper.readTree(expected);
         // Generate result
-        ByteOutputStream outData = new ByteOutputStream();
+        ByteArrayOutputStream outData = new ByteArrayOutputStream();
         GeoJSONDocument jsonDocument = new GeoJSONDocument(outData);
         jsonDocument.setRounding(1);
         jsonDocument.writeHeader();
@@ -1099,12 +1070,16 @@ public class TestComputeRays {
         }
         Geometry geo = factory.createMultiLineString(segments);
         geo = geo.union();
-        for(int idGeo = 0; idGeo < geo.getNumGeometries(); idGeo++) {
-            Geometry line = geo.getGeometryN(idGeo);
-            if(line instanceof LineString) {
-                mesh.addTopographicLine((LineString)line);
-            }
+        geo = Densifier3D.densify(geo, 4);
+        for(Coordinate pt : geo.getCoordinates()) {
+            mesh.addTopographicPoint(pt);
         }
+//        for(int idGeo = 0; idGeo < geo.getNumGeometries(); idGeo++) {
+//            Geometry line = geo.getGeometryN(idGeo);
+//            if(line instanceof LineString) {
+//                mesh.addTopographicLine((LineString)line);
+//            }
+//        }
         return geo;
         /*
         MCIndexNoder mCIndexNoder = new MCIndexNoder();

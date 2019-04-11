@@ -41,12 +41,12 @@ public class TestDiffractionPathOnHorizontalEdges {
         double expectedLength = CGAlgorithms3D.distance(p1, new Coordinate(15,20, height)) +
                 CGAlgorithms3D.distance(new Coordinate(15, 20, height), new Coordinate(30, 20 ,height)) +
                 CGAlgorithms3D.distance(new Coordinate(30, 20, height), p2);
-        DiffractionWithSoilEffetZone diff = manager.getPath(p1, p2);
+        DiffractionWithSoilEffetZone diff = manager.getPath(p1, p2, null);
         assertEquals(expectedLength, diff.getFullDiffractionDistance(), 1e-3);
         assertEquals(height, diff.getROZone().p1.z, 1e-12);
         assertEquals(height, diff.getOSZone().p0.z, 1e-12);
         // Do other way
-        diff = manager.getPath(p2, p1);
+        diff = manager.getPath(p2, p1, null);
         assertEquals(expectedLength, diff.getFullDiffractionDistance(), 1e-3);
         assertEquals(height, diff.getROZone().p1.z, 1e-12);
         assertEquals(height, diff.getOSZone().p0.z, 1e-12);
@@ -89,11 +89,11 @@ public class TestDiffractionPathOnHorizontalEdges {
         double expectedLength = CGAlgorithms3D.distance(p1, new Coordinate(15,20, manager.getBuildingRoofZ(1))) +
                 CGAlgorithms3D.distance(new Coordinate(15, 20, manager.getBuildingRoofZ(1)), new Coordinate(30, 20 ,manager.getBuildingRoofZ(1))) +
                 CGAlgorithms3D.distance(new Coordinate(30, 20, manager.getBuildingRoofZ(1)), p2);
-        DiffractionWithSoilEffetZone diff = manager.getPath(p1, p2);
+        DiffractionWithSoilEffetZone diff = manager.getPath(p1, p2, null);
         assertEquals(expectedLength, diff.getFullDiffractionDistance(), 1e-3);
 
         // Do other way
-        diff = manager.getPath(p2, p1);
+        diff = manager.getPath(p2, p1, null);
         assertEquals(expectedLength, diff.getFullDiffractionDistance(), 1e-3);
     }
 
@@ -116,7 +116,7 @@ public class TestDiffractionPathOnHorizontalEdges {
 
         FastObstructionTest manager=new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
 
-        DiffractionWithSoilEffetZone diff = manager.getPath(p1, p2);
+        DiffractionWithSoilEffetZone diff = manager.getPath(p1, p2, null);
 
         assertEquals(80.2, diff.getFullDiffractionDistance(), 0.1);
     }

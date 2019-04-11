@@ -47,7 +47,7 @@ public class Densifier3D {
      * @return the densified geometry
      */
     public static Geometry densify(Geometry geom, double distanceTolerance) {
-        org.locationtech.jts.densify.Densifier densifier = new org.locationtech.jts.densify.Densifier(geom);
+        Densifier3D densifier = new Densifier3D(geom);
         densifier.setDistanceTolerance(distanceTolerance);
         return densifier.getResultGeometry();
     }

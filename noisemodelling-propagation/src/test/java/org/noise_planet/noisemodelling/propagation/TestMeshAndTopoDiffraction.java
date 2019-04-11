@@ -108,8 +108,8 @@ public class TestMeshAndTopoDiffraction extends TestCase{
             mesh.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(60., 60.,0.)));
             FastObstructionTest nfot= new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
 
-            DiffractionWithSoilEffetZone diffraData=nfot.getPath(new Coordinate(48,25,7), new Coordinate(5,15,8));
-            DiffractionWithSoilEffetZone diffraData2=nfot.getPath(new Coordinate(5,15,8), new Coordinate(48,25,7));
+            DiffractionWithSoilEffetZone diffraData=nfot.getPath(new Coordinate(48,25,7), new Coordinate(5,15,8), null);
+            DiffractionWithSoilEffetZone diffraData2=nfot.getPath(new Coordinate(5,15,8), new Coordinate(48,25,7), null);
 
             assertTrue("Exchange source receiver got the different resultat",
                     diffraData.getDeltaDistance() - diffraData2.getDeltaDistance() <= FastObstructionTest.epsilon
@@ -135,8 +135,8 @@ public class TestMeshAndTopoDiffraction extends TestCase{
 
              mesh.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(60., 60.,0.)));
              FastObstructionTest nfot= new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
-             DiffractionWithSoilEffetZone diffraData=nfot.getPath(new Coordinate(48,25,4), new Coordinate(5,15,3.7));
-             DiffractionWithSoilEffetZone diffraData2=nfot.getPath(new Coordinate(5,15,3.7), new Coordinate(48,25,4));
+             DiffractionWithSoilEffetZone diffraData=nfot.getPath(new Coordinate(48,25,4), new Coordinate(5,15,3.7), null);
+             DiffractionWithSoilEffetZone diffraData2=nfot.getPath(new Coordinate(5,15,3.7), new Coordinate(48,25,4), null);
              assertEquals(diffraData.getDeltaDistance(), diffraData2.getDeltaDistance(), 1e-16);
              assertEquals(diffraData.geteLength(), diffraData2.geteLength(), 1e-16);
              assertEquals(diffraData.getFullDiffractionDistance(), diffraData2.getFullDiffractionDistance(), 1e-16);
@@ -170,8 +170,8 @@ public class TestMeshAndTopoDiffraction extends TestCase{
 
              mesh.finishPolygonFeeding(new Envelope(new Coordinate(0., 0.,0.), new Coordinate(60., 60.,0.)));
              FastObstructionTest nfot= new FastObstructionTest(mesh.getPolygonWithHeight(),mesh.getTriangles(),mesh.getTriNeighbors(),mesh.getVertices());
-             DiffractionWithSoilEffetZone diffraData=nfot.getPath(new Coordinate(48,25,1.5), new Coordinate(5,15,2));
-             DiffractionWithSoilEffetZone diffraData2=nfot.getPath(new Coordinate(5,15,2), new Coordinate(48,25,1.5));
+             DiffractionWithSoilEffetZone diffraData=nfot.getPath(new Coordinate(48,25,1.5), new Coordinate(5,15,2), null);
+             DiffractionWithSoilEffetZone diffraData2=nfot.getPath(new Coordinate(5,15,2), new Coordinate(48,25,1.5), null);
              assertEquals(diffraData.getDeltaDistance(), diffraData2.getDeltaDistance(), 1e-12);
              assertEquals(diffraData.geteLength(), diffraData2.geteLength(), 1e-12);
              assertEquals(diffraData.getFullDiffractionDistance(), diffraData2.getFullDiffractionDistance(), 1e-12);

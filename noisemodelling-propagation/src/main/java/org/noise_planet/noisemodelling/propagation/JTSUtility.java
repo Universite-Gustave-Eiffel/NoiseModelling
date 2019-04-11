@@ -35,12 +35,16 @@ package org.noise_planet.noisemodelling.propagation;
 
 import org.apache.commons.math3.stat.regression.RegressionResults;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
+import org.locationtech.jts.algorithm.ConvexHull;
+import org.locationtech.jts.algorithm.Orientation;
 import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineSegment;
 import org.locationtech.jts.geom.LineString;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -242,5 +246,50 @@ public class JTSUtility {
         return new Coordinate( (Point.x ) *cos, (Point.x ) *sin, Point.y);
     }
 
+    /**
+     * @param coordinates Coordinates
+     * @return Parts of the clock-wise ConvexHull where x value are increasing from the minimum X value
+     */
+    public static List<Coordinate> getXAscendingHullPoints(Coordinate[] coordinates) {
+        ConvexHull convexHull = new ConvexHull(coordinates, new GeometryFactory());
+        Geometry hullGeom = convexHull.getConvexHull();
+        Coordinate[] hull = hullGeom.getCoordinates();
+        if(Orientation.isCCW(hull)) {
+            Coordinate temp;
+            for (int i = 0; i < hull.length / 2; i++) {
+                temp = hull[i];
+                hull[i] = hull[hull.length - 1 - i];
+                hull[hull.length - 1 - i] = temp;
+            }
+        }
+        // Find minimal x index
+        int index = -1;
+        double minX = Double.MAX_VALUE;
+        for(int i=0; i < hull.length; i++) {
+            if(hull[i].x < minX) {
+                index = i;
+                minX = hull[i].x;
+            }
+        }
+        List<Coordinate> offsetHull = new ArrayList<>(hull.length);
+        double lastX = Double.NEGATIVE_INFINITY;
+        for(int i = index; i < hull.length; i++) {
+            if(hull[i].x > lastX) {
+                offsetHull.add(hull[i]);
+                lastX = hull[i].x;
+            } else {
+                break;
+            }
+        }
+        for(int i = 0; i < index; i++) {
+            if(hull[i].x > lastX) {
+                offsetHull.add(hull[i]);
+                lastX = hull[i].x;
+            } else {
+                break;
+            }
+        }
+        return offsetHull;
+    }
 
 }

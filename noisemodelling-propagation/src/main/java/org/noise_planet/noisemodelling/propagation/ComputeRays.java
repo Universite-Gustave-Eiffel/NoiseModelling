@@ -462,7 +462,7 @@ public class ComputeRays {
 
 
     public PropagationPath computeHorizontalEdgeDiffraction(boolean obstructedSourceReceiver, Coordinate receiverCoord,
-                                                            Coordinate srcCoord, List<PropagationDebugInfo> debugInfo) {
+                                                            Coordinate srcCoord, List<TriIdWithIntersection> allInterPoints, List<PropagationDebugInfo> debugInfo) {
 
         List<PropagationPath.PointPath> points = new ArrayList<PropagationPath.PointPath>();
         List<PropagationPath.SegmentPath> segments = new ArrayList<PropagationPath.SegmentPath>();
@@ -476,9 +476,9 @@ public class ComputeRays {
             diffDataWithSoilEffet = data.freeFieldFinder.getPathInverse(receiverCoord, srcCoord);
             validDiffraction = false;
         } else {
-            diffDataWithSoilEffet = data.freeFieldFinder.getPath(receiverCoord, srcCoord);
+            diffDataWithSoilEffet = data.freeFieldFinder.getPath(receiverCoord, srcCoord, allInterPoints);
             // Offset Coordinates by epsilon
-            validDiffraction = true;
+            validDiffraction = diffDataWithSoilEffet.getROZone() != null;
         }
         // todo not sure about this part...
         if (validDiffraction) {
@@ -812,7 +812,6 @@ public class ComputeRays {
         for(TriIdWithIntersection intersection : inters) {
             if(intersection.getBuildingId() > 0) {
                 buildingOnPath = true;
-                topographyHideReceiver = true;
             }
             if(intersection.isIntersectionOnBuilding() || intersection.isIntersectionOnTopography()) {
                 freefield = false;
@@ -833,7 +832,7 @@ public class ComputeRays {
         // todo include rayleigh criterium
         if (verticalDiffraction && buildingOnPath && !freefield) {
             PropagationPath propagationPath3 = computeFreefield(receiverCoord, srcCoord, inters, debugInfo);
-            PropagationPath propagationPath = computeHorizontalEdgeDiffraction(topographyHideReceiver, receiverCoord, srcCoord, debugInfo);
+            PropagationPath propagationPath = computeHorizontalEdgeDiffraction(topographyHideReceiver, receiverCoord, srcCoord, inters, debugInfo);
             propagationPath.getSRList().addAll(propagationPath3.getSRList());
             propagationPaths.add(propagationPath);
 
