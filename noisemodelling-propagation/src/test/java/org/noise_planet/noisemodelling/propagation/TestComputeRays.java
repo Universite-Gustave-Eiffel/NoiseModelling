@@ -496,7 +496,7 @@ public class TestComputeRays {
         rayData.addReceiver(new Coordinate(200, 50, 14));
         rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
         rayData.setComputeHorizontalDiffraction(true);
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 500, -20, 80)), 0.9));
+        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -20, 80)), 0.9));
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -20, 80)), 0.5));
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -20, 80)), 0.2));
         rayData.setComputeVerticalDiffraction(true);
@@ -559,7 +559,7 @@ public class TestComputeRays {
         rayData.addReceiver(new Coordinate(200, 50, 11.5));
         rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
         rayData.setComputeHorizontalDiffraction(true);
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 500, -20, 80)), 0.9));
+        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -20, 80)), 0.9));
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -20, 80)), 0.5));
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -20, 80)), 0.2));
         rayData.setComputeVerticalDiffraction(true);
@@ -1675,8 +1675,6 @@ public class TestComputeRays {
         }
 
     }
-
-
 
 
     /**
