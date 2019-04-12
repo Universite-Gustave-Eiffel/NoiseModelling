@@ -7,7 +7,7 @@ public interface IComputeRaysOut {
     /**
      * Add propagation path
      * @param propagationPath Propagation path result
-     * @return Optional global energetic contribution
+     * @return Optional minimal global energetic contribution
      */
     double addPropagationPaths(int sourceId, int receiverId, List<PropagationPath> propagationPath);
 

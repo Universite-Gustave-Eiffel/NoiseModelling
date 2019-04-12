@@ -74,7 +74,7 @@ public class PropagationProcessData {
     public QueryGeometryStructure sourcesIndex = new QueryRTree();
     /** Sources geometries. Can be LINESTRING or POINT */
     public List<Geometry> sourceGeometries = new ArrayList<>();
-    /** Optional Sound level of source.energetic */
+    /** Optional Maximal Sound level of source.energetic */
     public List<Double> wj_sources = new ArrayList<>();
     /** Frequency bands values, by third octave */
     public double freq_lvl[] = new double[] {63 ,   125 ,   250 ,   500 ,  1000 ,  2000 ,  4000 ,  8000};
@@ -91,7 +91,7 @@ public class PropagationProcessData {
     /** probability occurrence favourable condition */
     public double[] windRose;
     /** maximum dB Error, stop calculation if the sum of further sources contributions are smaller than this value */
-    public double maximumError;
+    public double maximumError = Double.NEGATIVE_INFINITY;
     /** cellId only used in output data */
     public int cellId;
     /** Progression information */
@@ -142,9 +142,27 @@ public class PropagationProcessData {
         sourcesIndex.appendGeometry(geom, sourceGeometries.size() - 1);
     }
 
-    public void setSources(QueryGeometryStructure sourcesIndex, List<Geometry> sourceGeometries) {
-        this.sourcesIndex = sourcesIndex;
+    public void addSource(Geometry geom, double wj) {
+        sourceGeometries.add(geom);
+        sourcesIndex.appendGeometry(geom, sourceGeometries.size() - 1);
+        wj_sources.add(wj);
+    }
+
+    public void setSources(List<Geometry> sourceGeometries) {
+        int i = 0;
+        for(Geometry source : sourceGeometries) {
+            sourcesIndex.appendGeometry(source, i++);
+        }
         this.sourceGeometries = sourceGeometries;
+    }
+
+    public void setSources(List<Geometry> sourceGeometries, List<Double> wj) {
+        int i = 0;
+        for(Geometry source : sourceGeometries) {
+            sourcesIndex.appendGeometry(source, i++);
+        }
+        this.sourceGeometries = sourceGeometries;
+        this.wj_sources = wj;
     }
 
     public void addSoilType(GeoWithSoilType soilType) {

@@ -49,24 +49,24 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Pierre Aumond
  */
 public class ComputeRaysOut implements IComputeRaysOut {
-    private List<ComputeRaysOut.verticeSL> receiverAttenuationLevels = Collections.synchronizedList(new ArrayList<>());
-    private PropagationProcessPathData pathData;
+    protected List<ComputeRaysOut.verticeSL> receiverAttenuationLevels = Collections.synchronizedList(new ArrayList<>());
+    protected PropagationProcessPathData pathData;
 
     public ComputeRaysOut(boolean keepRays, PropagationProcessPathData pathData) {
         this.keepRays = keepRays;
         this.pathData = pathData;
     }
 
-    public boolean keepRays = true;
-    public AtomicLong rayCount = new AtomicLong();
-    private AtomicLong nb_couple_receiver_src = new AtomicLong();
-    private AtomicLong nb_obstr_test = new AtomicLong();
-    private AtomicLong nb_image_receiver = new AtomicLong();
-    private AtomicLong nb_reflexion_path = new AtomicLong();
-    private AtomicLong nb_diffraction_path = new AtomicLong();
-    private AtomicInteger cellComputed = new AtomicInteger();
+    protected boolean keepRays = true;
+    protected AtomicLong rayCount = new AtomicLong();
+    protected AtomicLong nb_couple_receiver_src = new AtomicLong();
+    protected AtomicLong nb_obstr_test = new AtomicLong();
+    protected AtomicLong nb_image_receiver = new AtomicLong();
+    protected AtomicLong nb_reflexion_path = new AtomicLong();
+    protected AtomicLong nb_diffraction_path = new AtomicLong();
+    protected AtomicInteger cellComputed = new AtomicInteger();
 
-    private List<PropagationPath> propagationPaths = Collections.synchronizedList(new ArrayList<PropagationPath>());
+    protected List<PropagationPath> propagationPaths = Collections.synchronizedList(new ArrayList<PropagationPath>());
 
     @Override
     public double addPropagationPaths(int sourceId, int receiverId, List<PropagationPath> propagationPath) {
@@ -109,7 +109,7 @@ public class ComputeRaysOut implements IComputeRaysOut {
                 for (double att : aGlobalMeteo) {
                     globalValue += Math.pow(10, att / 10.0);
                 }
-                return 10 * Math.log10(globalValue);
+                return globalValue;
             } else {
                 return Double.NaN;
             }

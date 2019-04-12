@@ -752,18 +752,6 @@ public class ComputeRays {
         return validNode;
     }
 
-    /**
-     * Compute attenuation of sound energy by distance. Minimum distance is one
-     * meter.
-     *
-     * @param Wj       Source level
-     * @param distance Distance in meter
-     * @return Attenuated sound level. Take only account of geometric dispersion
-     * of sound wave.
-     */
-    public static double attDistW(double Wj, double distance) {
-        return Wj / (4 * Math.PI * Math.max(1, distance * distance));
-    }
 
     private boolean[] findBuildingOnPath(Coordinate srcCoord,
                                          Coordinate receiverCoord, boolean vertivalDiffraction) {
@@ -943,7 +931,13 @@ public class ComputeRays {
 
     private static double insertPtSource(Coordinate receiverPos, Coordinate ptpos, double wj, double li, PointsMerge sourcesMerger, Integer sourceId, List<SourcePointInfo> sourceList) {
         int mergedSrcIndex = sourcesMerger.getOrAppendVertex(ptpos);
-        double pwr = attDistW(wj * li, CGAlgorithms3D.distance(receiverPos, ptpos));
+        // Compute maximal power at freefield at the receiver position with reflective ground
+        double aDiv = -EvaluateAttenuationCnossos.getADiv(CGAlgorithms3D.distance(receiverPos, ptpos));
+        double global_attenuation = 0;
+        for(double freq : PropagationProcessPathData.freq_lvl) {
+            global_attenuation += dbaToW(aDiv) * dbaToW(3);
+        }
+        double pwr = li * wj * global_attenuation;
         if (mergedSrcIndex < sourceList.size()) {
             //A source already exist and is close enough to merge
             sourceList.get(mergedSrcIndex).wj += pwr;
@@ -961,12 +955,10 @@ public class ComputeRays {
     public void computeRaysAtPosition(Coordinate receiverCoord, int idReceiver, List<PropagationDebugInfo> debugInfo, IComputeRaysOut dataOut) {
         // List of walls within maxReceiverSource distance
         HashSet<Integer> processedLineSources = new HashSet<Integer>(); //Already processed Raw source (line and/or points)
-        STRtree walls = new STRtree();
+        List<FastObstructionTest.Wall> wallsReceiver = new ArrayList<>();
         if (data.reflexionOrder > 0) {
-            for(FastObstructionTest.Wall wall : data.freeFieldFinder.getLimitsInRange(
-                    data.maxSrcDist, receiverCoord, false)) {
-                walls.insert(new Envelope(wall.p0, wall.p1), wall);
-            }
+            wallsReceiver.addAll(data.freeFieldFinder.getLimitsInRange(
+                    data.maxRefDist, receiverCoord, false));
         }
         double searchSourceDistance = data.maxSrcDist;
         Envelope receiverSourceRegion = new Envelope(receiverCoord.x
@@ -985,7 +977,7 @@ public class ComputeRays {
             if (!processedLineSources.contains(srcIndex)) {
                 processedLineSources.add(srcIndex);
                 Geometry source = data.sourceGeometries.get(srcIndex);
-                double globalWj = data.wj_sources.size() > srcIndex ? data.wj_sources.get(srcIndex) : 1e-16;
+                double globalWj = data.wj_sources.size() > srcIndex ? data.wj_sources.get(srcIndex) : Double.MAX_VALUE;
                 if (source instanceof Point) {
                     Coordinate ptpos = source.getCoordinate();
                     totalPowerRemaining += insertPtSource(receiverCoord, ptpos, globalWj, 1., sourcesMerger, srcIndex, sourceList);
@@ -1005,21 +997,28 @@ public class ComputeRays {
         }
         // Sort
         Collections.sort(sourceList);
-        //Iterate over source point sorted by their distance from the receiver
+        double powerAtSource = 0;
+        //Iterate over source point sorted by maximal power by descending order
         for (SourcePointInfo src : sourceList) {
             // For each Pt Source - Pt Receiver
             Coordinate srcCoord = src.position;
-            Envelope query = new Envelope(receiverCoord, srcCoord);
-            query.expandBy(Math.min(data.maxRefDist, srcCoord.distance(receiverCoord)));
-            List queryResult = walls.query(query);
-            double power = receiverSourcePropa(srcCoord, src.sourcePrimaryKey, receiverCoord, idReceiver,
-                    (List<FastObstructionTest.Wall>) queryResult, debugInfo, dataOut);
-            if(!Double.isNaN(power)) {
-                totalPowerRemaining -= power;
-            } else {
-                totalPowerRemaining -= src.wj;
+
+            List<FastObstructionTest.Wall> wallsSource = new ArrayList<>(wallsReceiver);
+            if (data.reflexionOrder > 0) {
+                wallsSource.addAll(data.freeFieldFinder.getLimitsInRange(
+                        data.maxRefDist, srcCoord, false));
             }
-            if (10 * Math.log10(totalPowerRemaining) < data.maximumError) {
+            double power = receiverSourcePropa(srcCoord, src.sourcePrimaryKey, receiverCoord, idReceiver,
+                    wallsSource, debugInfo, dataOut);
+            totalPowerRemaining -= src.wj;
+            if(!Double.isNaN(power)) {
+                powerAtSource += power;
+            } else {
+                powerAtSource += src.wj;
+            }
+            totalPowerRemaining = Math.max(0, totalPowerRemaining);
+            // If the delta between already received power and maximal potential power received is inferior than than data.maximumError
+            if (data.maximumError > 0 && wToDba(powerAtSource + totalPowerRemaining) - wToDba(powerAtSource) < data.maximumError) {
                 break; //Stop looking for more rays
             }
         }
@@ -1192,6 +1191,11 @@ public class ComputeRays {
         private int sourcePrimaryKey;
         private Coordinate position;
 
+        /**
+         * @param wj Maximum received power from this source
+         * @param sourcePrimaryKey
+         * @param position
+         */
         public SourcePointInfo(double wj, int sourcePrimaryKey, Coordinate position) {
             this.wj = wj;
             this.sourcePrimaryKey = sourcePrimaryKey;
@@ -1200,7 +1204,7 @@ public class ComputeRays {
 
         @Override
         public int compareTo(SourcePointInfo sourcePointInfo) {
-            int cmp = Double.compare(wj, sourcePointInfo.wj);
+            int cmp = -Double.compare(wj, sourcePointInfo.wj);
             if(cmp == 0) {
                 return Integer.compare(sourcePrimaryKey, sourcePointInfo.sourcePrimaryKey);
             } else {
