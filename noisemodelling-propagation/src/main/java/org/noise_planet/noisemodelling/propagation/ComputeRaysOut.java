@@ -84,16 +84,24 @@ public class ComputeRaysOut implements IComputeRaysOut {
                 double rad2rose = (-angleRad + Math.PI / 2);
                 int roseindex = (int) Math.round(rad2rose / (2 * Math.PI / pathData.getWindRose().length));
 
+                // Compute homogeneous conditions attenuation
                 propath.setFavorable(false);
                 evaluateAttenuationCnossos.evaluate(propath, pathData);
-                if (aGlobalMeteo != null) {
-                    aGlobalMeteo = ComputeRays.sumArray(evaluateAttenuationCnossos.getaGlobal(), aGlobalMeteo);
-                } else {
-                    aGlobalMeteo = evaluateAttenuationCnossos.getaGlobal();
-                }
+                double[] aGlobalMeteoHom = evaluateAttenuationCnossos.getaGlobal();
+
+                // Compute favorable conditions attenuation
                 propath.setFavorable(true);
                 evaluateAttenuationCnossos.evaluate(propath, pathData);
-                aGlobalMeteo = ComputeRays.sumArrayWithPonderation(aGlobalMeteo, evaluateAttenuationCnossos.getaGlobal(), pathData.getDefaultOccurance());
+                double[] aGlobalMeteoFav = evaluateAttenuationCnossos.getaGlobal();
+
+                // Compute attenuation under the wind conditions using the ray direction
+                double[] aGlobalMeteoRay = ComputeRays.sumArrayWithPonderation(aGlobalMeteoFav, aGlobalMeteoHom, pathData.getWindRose()[roseindex]);
+
+                if (aGlobalMeteo != null) {
+                    aGlobalMeteo = ComputeRays.sumArray(aGlobalMeteoRay, aGlobalMeteo);
+                } else {
+                    aGlobalMeteo = aGlobalMeteoRay;
+                }
             }
             if (aGlobalMeteo != null) {
                 receiverAttenuationLevels.add(new ComputeRaysOut.verticeSL(receiverId, sourceId, aGlobalMeteo));
