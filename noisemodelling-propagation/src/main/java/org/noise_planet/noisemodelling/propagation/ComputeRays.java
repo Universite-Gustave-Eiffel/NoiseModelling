@@ -343,18 +343,21 @@ public class ComputeRays {
                             if (points.get(i).coordinate.z <= data.freeFieldFinder.getHeightAtPosition(points.get(i).coordinate)) {
                                 points.clear();
                                 segments.clear();
+                                break;
                             }
-                        }
-                        if (i < points.size() - 1 && points.get(i).type == PropagationPath.PointPath.POINT_TYPE.REFL) {
-                            points.get(i).coordinate.z = Vertex.interpolateZ(points.get(i).coordinate, points.get(i - 1).coordinate, points.get(i + 1).coordinate);
-                            //check if in building && if under floor
-                            if (points.get(i).coordinate.z > data.freeFieldFinder.getBuildingRoofZ(points.get(i).getBuildingId())
-                                    || points.get(i).coordinate.z <= data.freeFieldFinder.getHeightAtPosition(points.get(i).coordinate)) {
-                                points.clear();
-                                segments.clear();
+                        } else if (points.get(i).type == PropagationPath.PointPath.POINT_TYPE.REFL) {
+                            if(i < points.size() - 1 ) {
+                                points.get(i).coordinate.z = Vertex.interpolateZ(points.get(i).coordinate, points.get(i - 1).coordinate, points.get(i + 1).coordinate);
+                                //check if in building && if under floor
+                                if (points.get(i).coordinate.z > data.freeFieldFinder.getBuildingRoofZ(points.get(i).getBuildingId())
+                                        || points.get(i).coordinate.z <= data.freeFieldFinder.getHeightAtPosition(points.get(i).coordinate)) {
+                                    points.clear();
+                                    segments.clear();
+                                    break;
+                                }
+                            } else {
+                                LOGGER.warn("Invalid state, reflexion point on last point");
                             }
-
-
                         }
                     }
                     if (points.size() > 2) {
