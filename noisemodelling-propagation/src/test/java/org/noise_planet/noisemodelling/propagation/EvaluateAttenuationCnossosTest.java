@@ -145,6 +145,19 @@ public class EvaluateAttenuationCnossosTest {
         assertEquals(1, propDataOut.getVerticesSoundLevel().size());
     }
 
+    @Test
+    public void testRoseIndex() {
+        double angle_section = (2 * Math.PI) / PropagationProcessPathData.DEFAULT_WIND_ROSE.length;
+        double angleStart = Math.PI / 2 - angle_section / 2;
+        for(int i = 0; i < PropagationProcessPathData.DEFAULT_WIND_ROSE.length; i++) {
+            double angle = angleStart - angle_section * i - angle_section / 3;
+            int index = ComputeRaysOut.getRoseIndex(new Coordinate(0, 0), new Coordinate(Math.cos(angle), Math.sin(angle)));
+            assertEquals(i, index);angle = angleStart - angle_section * i - angle_section * 2.0/3.0;
+            index = ComputeRaysOut.getRoseIndex(new Coordinate(0, 0), new Coordinate(Math.cos(angle), Math.sin(angle)));
+            assertEquals(i, index);
+        }
+    }
+
 
 
     private static class RayOut extends ComputeRaysOut {

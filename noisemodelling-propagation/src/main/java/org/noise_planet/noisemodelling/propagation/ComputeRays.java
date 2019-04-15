@@ -1057,39 +1057,39 @@ public class ComputeRays {
     }
 
     public void runDebug(IComputeRaysOut computeRaysOut, List<PropagationDebugInfo> debugInfo) {
-        try {
-            initStructures();
 
-            // Computed sound level of vertices
-            //dataOut.setVerticesSoundLevel(new double[data.receivers.size()]);
+        initStructures();
 
-            // For each vertices, find sources where the distance is within
-            // maxSrcDist meters
-            ProgressVisitor propaProcessProgression = data.cellProg;
+        // Computed sound level of vertices
+        //dataOut.setVerticesSoundLevel(new double[data.receivers.size()]);
 
-            int splitCount = threadCount;
-            ThreadPool threadManager = new ThreadPool(
-                    splitCount,
-                    splitCount + 1, Long.MAX_VALUE,
-                    TimeUnit.SECONDS);
-            int maximumReceiverBatch = (int) Math.ceil(data.receivers.size() / (double) splitCount);
-            int endReceiverRange = 0;
-            while (endReceiverRange < data.receivers.size()) {
-                int newEndReceiver = Math.min(endReceiverRange + maximumReceiverBatch, data.receivers.size());
-                RangeReceiversComputation batchThread = new RangeReceiversComputation(endReceiverRange,
-                        newEndReceiver, this, debugInfo, propaProcessProgression,
-                        computeRaysOut.subProcess(endReceiverRange ,newEndReceiver));
-                if(threadCount != 1) {
-                    threadManager.executeBlocking(batchThread);
-                } else {
-                    batchThread.run();
-                }
-                endReceiverRange = newEndReceiver;
+        // For each vertices, find sources where the distance is within
+        // maxSrcDist meters
+        ProgressVisitor propaProcessProgression = data.cellProg;
+
+        int splitCount = threadCount;
+        ThreadPool threadManager = new ThreadPool(
+                splitCount,
+                splitCount + 1, Long.MAX_VALUE,
+                TimeUnit.SECONDS);
+        int maximumReceiverBatch = (int) Math.ceil(data.receivers.size() / (double) splitCount);
+        int endReceiverRange = 0;
+        while (endReceiverRange < data.receivers.size()) {
+            int newEndReceiver = Math.min(endReceiverRange + maximumReceiverBatch, data.receivers.size());
+            RangeReceiversComputation batchThread = new RangeReceiversComputation(endReceiverRange,
+                    newEndReceiver, this, debugInfo, propaProcessProgression,
+                    computeRaysOut.subProcess(endReceiverRange ,newEndReceiver));
+            if(threadCount != 1) {
+                threadManager.executeBlocking(batchThread);
+            } else {
+                batchThread.run();
             }
-            threadManager.shutdown();
+            endReceiverRange = newEndReceiver;
+        }
+        threadManager.shutdown();
+        try {
             threadManager.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
-            //dataOut.appendCellComputed();
-        } catch (Exception ex) {
+        } catch (InterruptedException ex) {
             LOGGER.error(ex.getLocalizedMessage(), ex);
         }
     }

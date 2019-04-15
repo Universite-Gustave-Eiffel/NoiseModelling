@@ -58,7 +58,7 @@ public class PropagationProcessPathData {
     static final  double K01 = 273.16;  // Isothermal temperature at the triple point (K)
     /** Frequency bands values, by third octave */
     static final List<Integer> freq_lvl = Arrays.asList(63, 125, 250, 500, 1000, 2000, 4000, 8000);
-
+    static final double[] DEFAULT_WIND_ROSE = new double[]{0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
     /** Temperature in celsius */
     private double temperature = 15;
     private double celerity = 340;
@@ -70,7 +70,7 @@ public class PropagationProcessPathData {
     private boolean gDisc = true;     // choose between accept G discontinuity or not
     private boolean prime2520 = false; // choose to use prime values to compute eq. 2.5.20
     /** probability occurrence favourable condition */
-    private double[] windRose  = new double[]{0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
+    private double[] windRose  = DEFAULT_WIND_ROSE;
 
     /**
      * Set relative humidity in percentage.
@@ -97,6 +97,9 @@ public class PropagationProcessPathData {
     }
 
     public void setWindRose(double[] windRose) {
+        if(windRose.length != this.windRose.length) {
+            throw new IllegalArgumentException(String.format("Wind roses length is not compatible %d!=%d",windRose.length,this.windRose.length));
+        }
         this.windRose = windRose;
     }
 

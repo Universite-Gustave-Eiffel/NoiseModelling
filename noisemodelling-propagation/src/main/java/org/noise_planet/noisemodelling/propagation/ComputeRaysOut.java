@@ -34,8 +34,10 @@
 package org.noise_planet.noisemodelling.propagation;
 
 import org.locationtech.jts.algorithm.Angle;
+import org.locationtech.jts.geom.Coordinate;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -65,8 +67,30 @@ public class ComputeRaysOut implements IComputeRaysOut {
     protected AtomicLong nb_reflexion_path = new AtomicLong();
     protected AtomicLong nb_diffraction_path = new AtomicLong();
     protected AtomicInteger cellComputed = new AtomicInteger();
+    private static final double angle_section = (2 * Math.PI) / PropagationProcessPathData.DEFAULT_WIND_ROSE.length;
 
     protected List<PropagationPath> propagationPaths = Collections.synchronizedList(new ArrayList<PropagationPath>());
+
+    public static int getRoseIndex(Coordinate receiver, Coordinate source) {
+        // Angle from cos -1 sin 0
+        double angleRad = -(Angle.angle(receiver, source) - Math.PI);
+        // Offset angle by PI / 2 (North),
+        // the north slice ranges is [PI / 2 + angle_section / 2; PI / 2 - angle_section / 2]
+        angleRad -= (Math.PI / 2 - angle_section / 2);
+        // Fix out of bounds angle 0-2Pi
+        if(angleRad < 0) {
+            angleRad += Math.PI * 2;
+        }
+        // The north slice is the last array index not the first one
+        // Ex for slice width of 20°:
+        //      - The first column 20° contain winds between 10 to 30 °
+        //      - The last column 360° contains winds between 350° to 360° and 0 to 10°
+        int index = (int)(angleRad / angle_section) - 1;
+        if(index < 0) {
+            index = PropagationProcessPathData.DEFAULT_WIND_ROSE.length - 1;
+        }
+        return index;
+    }
 
     @Override
     public double addPropagationPaths(int sourceId, int receiverId, List<PropagationPath> propagationPath) {
@@ -80,9 +104,7 @@ public class ComputeRaysOut implements IComputeRaysOut {
             double[] aGlobalMeteo = null;
             for (PropagationPath propath : propagationPath) {
                 List<PropagationPath.PointPath> ptList = propath.getPointList();
-                double angleRad = Angle.angle(ptList.get(0).coordinate, ptList.get(ptList.size() - 1).coordinate);
-                double rad2rose = (-angleRad + Math.PI / 2);
-                int roseindex = (int) Math.round(rad2rose / (2 * Math.PI / pathData.getWindRose().length));
+                int roseindex = getRoseIndex(ptList.get(0).coordinate, ptList.get(ptList.size() - 1).coordinate);
 
                 // Compute homogeneous conditions attenuation
                 propath.setFavorable(false);
