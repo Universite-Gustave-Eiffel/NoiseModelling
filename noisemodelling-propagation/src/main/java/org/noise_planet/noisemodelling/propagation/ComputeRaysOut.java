@@ -94,7 +94,7 @@ public class ComputeRaysOut implements IComputeRaysOut {
 
     @Override
     public double addPropagationPaths(int sourceId, int receiverId, List<PropagationPath> propagationPath) {
-        rayCount.addAndGet(1);
+        rayCount.addAndGet(propagationPath.size());
         if(keepRays) {
             propagationPaths.addAll(propagationPath);
         }

@@ -60,6 +60,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -955,7 +956,7 @@ public class ComputeRays {
     public void computeRaysAtPosition(Coordinate receiverCoord, int idReceiver, List<PropagationDebugInfo> debugInfo, IComputeRaysOut dataOut) {
         // List of walls within maxReceiverSource distance
         HashSet<Integer> processedLineSources = new HashSet<Integer>(); //Already processed Raw source (line and/or points)
-        List<FastObstructionTest.Wall> wallsReceiver = new ArrayList<>();
+        Set<FastObstructionTest.Wall> wallsReceiver = new HashSet<>();
         if (data.reflexionOrder > 0) {
             wallsReceiver.addAll(data.freeFieldFinder.getLimitsInRange(
                     data.maxRefDist, receiverCoord, false));
@@ -1003,13 +1004,13 @@ public class ComputeRays {
             // For each Pt Source - Pt Receiver
             Coordinate srcCoord = src.position;
 
-            List<FastObstructionTest.Wall> wallsSource = new ArrayList<>(wallsReceiver);
+            Set<FastObstructionTest.Wall> wallsSource = new HashSet<>(wallsReceiver);
             if (data.reflexionOrder > 0) {
                 wallsSource.addAll(data.freeFieldFinder.getLimitsInRange(
                         data.maxRefDist, srcCoord, false));
             }
             double power = receiverSourcePropa(srcCoord, src.sourcePrimaryKey, receiverCoord, idReceiver,
-                    wallsSource, debugInfo, dataOut);
+                    new ArrayList<>(wallsSource), debugInfo, dataOut);
             totalPowerRemaining -= src.wj;
             if(!Double.isNaN(power)) {
                 powerAtSource += power;
