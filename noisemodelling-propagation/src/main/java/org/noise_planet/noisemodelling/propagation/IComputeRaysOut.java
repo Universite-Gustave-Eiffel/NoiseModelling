@@ -7,9 +7,9 @@ public interface IComputeRaysOut {
     /**
      * Add propagation path
      * @param propagationPath Propagation path result
-     * @return Optional minimal global energetic contribution
+     * @return Optional minimal energetic contribution per frequency band or empty array
      */
-    double addPropagationPaths(int sourceId, int receiverId, List<PropagationPath> propagationPath);
+    double[] addPropagationPaths(int sourceId, int receiverId, List<PropagationPath> propagationPath);
 
     /**
      * If the implementation does not support thread concurrency, this method is called to return an instance

@@ -53,18 +53,9 @@ import java.util.List;
  * @author Adrien Le Bellec
  */
 public class PropagationProcessData {
-    public static double DEFAULT_MAX_PROPAGATION_DISTANCE = 1200;
-    public static double DEFAULT_MAXIMUM_REF_DIST = 50;
-    public static double DEFAULT_RECEIVER_DIST = 1.0;
-    // Thermodynamic constants
-	static final double K_0 = 273.15;	// Absolute zero in Celsius
-    static final  double Pref = 101325;	// Standard atmosphere atm (Pa)
-    static final  double Kref = 293.15;	// Reference ambient atmospheric temperature (K)
-    static final  double FmolO = 0.209;	// Mole fraction of oxygen
-    static final  double FmolN = 0.781;	// Mole fraction of nitrogen
-    static final  double KvibO = 2239.1;// Vibrational temperature of oxygen (K)
-    static final  double KvibN = 3352.0;// Vibrational temperature of the nitrogen (K)
-    static final  double K01 = 273.16;  // Isothermal temperature at the triple point (K)
+    public static final double DEFAULT_MAX_PROPAGATION_DISTANCE = 1200;
+    public static final double DEFAULT_MAXIMUM_REF_DIST = 50;
+    public static final double DEFAULT_RECEIVER_DIST = 1.0;
 
     /** coordinate of receivers */
     public List<Coordinate> receivers = new ArrayList<>();
@@ -74,22 +65,19 @@ public class PropagationProcessData {
     public QueryGeometryStructure sourcesIndex = new QueryRTree();
     /** Sources geometries. Can be LINESTRING or POINT */
     public List<Geometry> sourceGeometries = new ArrayList<>();
-    /** Optional Maximal Sound level of source.energetic */
-    public List<Double> wj_sources = new ArrayList<>();
     /** Frequency bands values, by third octave */
     public double freq_lvl[] = new double[] {63 ,   125 ,   250 ,   500 ,  1000 ,  2000 ,  4000 ,  8000};
     /** Maximum reflexion order */
     public int reflexionOrder = 1;
     /** Compute diffraction rays over vertical edges */
-    private boolean computeHorizontalDiffraction = true;
+    protected boolean computeHorizontalDiffraction = true;
     /** Maximum source distance */
     public double maxSrcDist = DEFAULT_MAX_PROPAGATION_DISTANCE;
     /** Maximum reflection wall distance from receiver->source line */
     public double maxRefDist = DEFAULT_MAXIMUM_REF_DIST;
     /** Minimum distance between source and receiver */
     public double minRecDist = DEFAULT_RECEIVER_DIST;
-    /** probability occurrence favourable condition */
-    public double[] windRose;
+
     /** maximum dB Error, stop calculation if the sum of further sources contributions are smaller than this value */
     public double maximumError = Double.NEGATIVE_INFINITY;
     /** cellId only used in output data */
@@ -97,37 +85,10 @@ public class PropagationProcessData {
     /** Progression information */
     public ProgressVisitor cellProg;
     /** list Geometry of soil and the type of this soil */
-    private List<GeoWithSoilType> soilList = new ArrayList<>();
+    protected List<GeoWithSoilType> soilList = new ArrayList<>();
     /** True will compute vertical diffraction */
-    private boolean computeVerticalDiffraction;
+    protected boolean computeVerticalDiffraction;
 
-//    public PropagationProcessData(List<Coordinate> receivers, FastObstructionTest freeFieldFinder,
-//                                  QueryGeometryStructure sourcesIndex, List<Geometry> sourceGeometries,
-//                                  List<ArrayList<Double>> wj_sources, List<Integer> freq_lvl, int reflexionOrder,
-//                                  boolean computeHorizontalDiffraction, double maxSrcDist, double maxRefDist, double minRecDist,
-//                                  double defaultWallApha, double maximumError, int cellId, ProgressVisitor cellProg,
-//                                  List<GeoWithSoilType> soilList, boolean computeVerticalDiffraction) {
-//        this.receivers = receivers;
-//        this.freeFieldFinder = freeFieldFinder;
-//        this.sourcesIndex = sourcesIndex;
-//        this.sourceGeometries = sourceGeometries;
-//        this.wj_sources = new ArrayList<>();
-//        //TODO compute global level
-//        this.freq_lvl = freq_lvl;
-//        this.reflexionOrder = reflexionOrder;
-//        this.computeHorizontalDiffraction = computeHorizontalDiffraction;
-//        this.maxSrcDist = maxSrcDist;
-//        this.maxRefDist = maxRefDist;
-//        this.minRecDist = minRecDist;
-//        this.defaultWallApha = defaultWallApha;
-//        this.windRose = windRose;
-//        this.maximumError = maximumError;
-//        this.cellId = cellId;
-//        this.cellProg = cellProg;
-//        this.soilList = soilList;
-//        this.computeVerticalDiffraction = computeVerticalDiffraction;
-//        this.celerity = computeCelerity(temperature+K_0);
-//    }
     public PropagationProcessData(FastObstructionTest freeFieldFinder) {
         this.freeFieldFinder = freeFieldFinder;
     }
@@ -135,12 +96,6 @@ public class PropagationProcessData {
     public void addSource(Geometry geom) {
         sourceGeometries.add(geom);
         sourcesIndex.appendGeometry(geom, sourceGeometries.size() - 1);
-    }
-
-    public void addSource(Geometry geom, double wj) {
-        sourceGeometries.add(geom);
-        sourcesIndex.appendGeometry(geom, sourceGeometries.size() - 1);
-        wj_sources.add(wj);
     }
 
     public void setSources(List<Geometry> sourceGeometries) {
@@ -151,14 +106,15 @@ public class PropagationProcessData {
         this.sourceGeometries = sourceGeometries;
     }
 
-    public void setSources(List<Geometry> sourceGeometries, List<Double> wj) {
-        int i = 0;
-        for(Geometry source : sourceGeometries) {
-            sourcesIndex.appendGeometry(source, i++);
-        }
-        this.sourceGeometries = sourceGeometries;
-        this.wj_sources = wj;
+    /**
+     * Optional - Return the maximal power spectrum of the sound source
+     * @param sourceId Source identifier (index in {@link PropagationProcessData#sourceGeometries})
+     * @return maximal power spectrum or empty array
+     */
+    public double[] getMaximalSourcePower(int sourceId) {
+        return new double[0];
     }
+
 
     public void addSoilType(GeoWithSoilType soilType) {
         soilList.add(soilType);

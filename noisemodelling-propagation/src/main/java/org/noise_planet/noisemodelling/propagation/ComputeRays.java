@@ -91,6 +91,9 @@ public class ComputeRays {
     private final static Logger LOGGER = LoggerFactory.getLogger(ComputeRays.class);
 
     public static double[] sumArrayWithPonderation(double[] array1, double[] array2, double p) {
+        if(array1.length != array2.length) {
+            throw new IllegalArgumentException("Not same size array");
+        }
         double[] sum = new double[array1.length];
         for (int i = 0; i < array1.length; i++) {
             sum[i] = wToDba(p * dbaToW(array1[i]) + (1 - p) * dbaToW(array2[i]));
@@ -98,10 +101,36 @@ public class ComputeRays {
         return sum;
     }
 
+    /**
+     * energetic Sum of dBA array
+     * @param array1
+     * @param array2
+     * @return
+     */
     public static double[] sumArray(double[] array1, double[] array2) {
+        if(array1.length != array2.length) {
+            throw new IllegalArgumentException("Not same size array");
+        }
         double[] sum = new double[array1.length];
         for (int i = 0; i < array1.length; i++) {
             sum[i] = wToDba(dbaToW(array1[i]) + dbaToW(array2[i]));
+        }
+        return sum;
+    }
+
+    /**
+     * Multiply component of two same size array
+     * @param array1
+     * @param array2
+     * @return
+     */
+    public static double[] multArray(double[] array1, double[] array2) {
+        if(array1.length != array2.length) {
+            throw new IllegalArgumentException("Not same size array");
+        }
+        double[] sum = new double[array1.length];
+        for (int i = 0; i < array1.length; i++) {
+            sum[i] = array1[i] * array2[i];
         }
         return sum;
     }
@@ -149,6 +178,14 @@ public class ComputeRays {
 
     public static double wToDba(double w) {
         return 10 * Math.log10(w);
+    }
+
+    public static double[] wToDba(double[] w) {
+        double[] ret = new double[w.length];
+        for(int i=0; i<w.length; i++) {
+            ret[i] = wToDba(w[i]);
+        }
+        return ret;
     }
 
     /**
@@ -886,7 +923,7 @@ public class ComputeRays {
      * from receiver
      */
 
-    private double receiverSourcePropa(Coordinate srcCoord, int srcId,
+    private double[] receiverSourcePropa(Coordinate srcCoord, int srcId,
                                      Coordinate receiverCoord, int rcvId,
                                      List<FastObstructionTest.Wall> nearBuildingsWalls, List<PropagationDebugInfo> debugInfo, IComputeRaysOut dataOut) {
 
@@ -913,25 +950,24 @@ public class ComputeRays {
                 return dataOut.addPropagationPaths(srcId, rcvId, propagationPaths);
             }
         }
-        return Double.NaN;
+        return new double[0];
     }
 
-    private static double insertPtSource(Coordinate receiverPos, Coordinate ptpos, double wj, double li, PointsMerge sourcesMerger, Integer sourceId, List<SourcePointInfo> sourceList) {
+    private static double insertPtSource(Coordinate receiverPos, Coordinate ptpos, double[] wj, double li, PointsMerge sourcesMerger, Integer sourceId, List<SourcePointInfo> sourceList) {
         int mergedSrcIndex = sourcesMerger.getOrAppendVertex(ptpos);
         // Compute maximal power at freefield at the receiver position with reflective ground
         double aDiv = -EvaluateAttenuationCnossos.getADiv(CGAlgorithms3D.distance(receiverPos, ptpos));
-        double global_attenuation = 0;
-        for(double freq : PropagationProcessPathData.freq_lvl) {
-            global_attenuation += dbaToW(aDiv) * dbaToW(3);
+        double[] srcWJ = new double[wj.length];
+        for(int idFreq = 0; idFreq < srcWJ.length; idFreq++) {
+            srcWJ[idFreq] = wj[idFreq] * li * dbaToW(aDiv) * dbaToW(3);
         }
-        double pwr = li * wj * global_attenuation;
         if (mergedSrcIndex < sourceList.size()) {
             //A source already exist and is close enough to merge
-            sourceList.get(mergedSrcIndex).wj += pwr;
+            sourceList.get(mergedSrcIndex).setWj(ComputeRays.sumArray(sourceList.get(mergedSrcIndex).getWj(), srcWJ));
         } else {
-            sourceList.add(new SourcePointInfo(pwr, sourceId, ptpos));
+            sourceList.add(new SourcePointInfo(srcWJ, sourceId, ptpos));
         }
-        return pwr;
+        return ComputeRays.GetGlobalLevel(srcWJ.length, srcWJ);
     }
 
     /**
@@ -964,10 +1000,10 @@ public class ComputeRays {
             if (!processedLineSources.contains(srcIndex)) {
                 processedLineSources.add(srcIndex);
                 Geometry source = data.sourceGeometries.get(srcIndex);
-                double globalWj = data.wj_sources.size() > srcIndex ? data.wj_sources.get(srcIndex) : Double.MAX_VALUE;
+                double[] wj = data.getMaximalSourcePower(srcIndex);
                 if (source instanceof Point) {
                     Coordinate ptpos = source.getCoordinate();
-                    totalPowerRemaining += insertPtSource(receiverCoord, ptpos, globalWj, 1., sourcesMerger, srcIndex, sourceList);
+                    totalPowerRemaining += insertPtSource(receiverCoord, ptpos, wj, 1., sourcesMerger, srcIndex, sourceList);
                 } else {
                     // Discretization of line into multiple point
                     // First point is the closest point of the LineString from
@@ -977,7 +1013,7 @@ public class ComputeRays {
                     double li = splitLineStringIntoPoints(source, receiverCoord,
                             pts, data.minRecDist);
                     for (Coordinate pt : pts) {
-                        totalPowerRemaining += insertPtSource(receiverCoord, pt, globalWj, li, sourcesMerger, srcIndex, sourceList);
+                        totalPowerRemaining += insertPtSource(receiverCoord, pt, wj, li, sourcesMerger, srcIndex, sourceList);
                     }
                 }
             }
@@ -995,13 +1031,14 @@ public class ComputeRays {
                 wallsSource.addAll(data.freeFieldFinder.getLimitsInRange(
                         data.maxRefDist, srcCoord, false));
             }
-            double power = receiverSourcePropa(srcCoord, src.sourcePrimaryKey, receiverCoord, idReceiver,
+            double[] power = receiverSourcePropa(srcCoord, src.sourcePrimaryKey, receiverCoord, idReceiver,
                     new ArrayList<>(wallsSource), debugInfo, dataOut);
-            totalPowerRemaining -= src.wj;
-            if(!Double.isNaN(power)) {
-                powerAtSource += power;
+            double global = ComputeRays.GetGlobalLevel(power.length, power);
+            totalPowerRemaining -= src.globalWj;
+            if(power.length > 0) {
+                powerAtSource += global;
             } else {
-                powerAtSource += src.wj;
+                powerAtSource += src.globalWj;
             }
             totalPowerRemaining = Math.max(0, totalPowerRemaining);
             // If the delta between already received power and maximal potential power received is inferior than than data.maximumError
@@ -1160,24 +1197,35 @@ public class ComputeRays {
     }
 
     private static final class SourcePointInfo implements Comparable<SourcePointInfo> {
-        private double wj;
+        private double[] wj;
         private int sourcePrimaryKey;
         private Coordinate position;
+        private double globalWj;
 
         /**
          * @param wj Maximum received power from this source
          * @param sourcePrimaryKey
          * @param position
          */
-        public SourcePointInfo(double wj, int sourcePrimaryKey, Coordinate position) {
+        public SourcePointInfo(double[] wj, int sourcePrimaryKey, Coordinate position) {
             this.wj = wj;
             this.sourcePrimaryKey = sourcePrimaryKey;
             this.position = position;
+            this.globalWj = ComputeRays.GetGlobalLevel(wj.length, wj);
+        }
+
+        public double[] getWj() {
+            return wj;
+        }
+
+        public void setWj(double[] wj) {
+            this.wj = wj;
+            this.globalWj = ComputeRays.GetGlobalLevel(wj.length, wj);
         }
 
         @Override
         public int compareTo(SourcePointInfo sourcePointInfo) {
-            int cmp = -Double.compare(wj, sourcePointInfo.wj);
+            int cmp = -Double.compare(globalWj, sourcePointInfo.globalWj);
             if(cmp == 0) {
                 return Integer.compare(sourcePrimaryKey, sourcePointInfo.sourcePrimaryKey);
             } else {

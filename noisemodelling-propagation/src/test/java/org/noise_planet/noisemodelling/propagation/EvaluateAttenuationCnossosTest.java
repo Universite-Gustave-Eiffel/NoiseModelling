@@ -3,11 +3,13 @@ package org.noise_planet.noisemodelling.propagation;
 import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
+import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -121,10 +123,15 @@ public class EvaluateAttenuationCnossosTest {
         FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
                 mesh.getTriNeighbors(), mesh.getVertices());
 
-        PropagationProcessData rayData = new PropagationProcessData(manager);
+        double[] roadLvl = new double[]{25.65, 38.15, 54.35, 60.35, 74.65, 66.75, 59.25, 53.95};
+        for(int i = 0; i < roadLvl.length; i++) {
+            roadLvl[i] = ComputeRays.dbaToW(roadLvl[i]);
+        }
+
+        DirectPropagationProcessData rayData = new DirectPropagationProcessData(manager);
         rayData.addReceiver(new Coordinate(0, 0, 4));
-        rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)), ComputeRays.dbaToW(84));
-        rayData.addSource(factory.createPoint(new Coordinate(1100, 1100, 1)), ComputeRays.dbaToW(84));
+        rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)), roadLvl);
+        rayData.addSource(factory.createPoint(new Coordinate(1100, 1100, 1)), roadLvl);
         rayData.setComputeHorizontalDiffraction(true);
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9));
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
@@ -162,17 +169,35 @@ public class EvaluateAttenuationCnossosTest {
 
 
     private static class RayOut extends ComputeRaysOut {
-        private PropagationProcessData processData;
+        private DirectPropagationProcessData processData;
 
-        public RayOut(boolean keepRays, PropagationProcessPathData pathData, PropagationProcessData processData) {
+        public RayOut(boolean keepRays, PropagationProcessPathData pathData, DirectPropagationProcessData processData) {
             super(keepRays, pathData);
             this.processData = processData;
         }
 
         @Override
-        public double addPropagationPaths(int sourceId, int receiverId, List<PropagationPath> propagationPath) {
-            double global_attenuation = super.addPropagationPaths(sourceId, receiverId, propagationPath);
-            return processData.wj_sources.get(sourceId) * global_attenuation;
+        public double[] addPropagationPaths(int sourceId, int receiverId, List<PropagationPath> propagationPath) {
+            double[] attenuation = super.addPropagationPaths(sourceId, receiverId, propagationPath);
+            return ComputeRays.sumArray(ComputeRays.wToDba(processData.wjSources.get(sourceId)), attenuation);
+        }
+    }
+
+    private static class DirectPropagationProcessData extends PropagationProcessData {
+        private List<double[]> wjSources = new ArrayList<>();
+
+        public DirectPropagationProcessData(FastObstructionTest freeFieldFinder) {
+            super(freeFieldFinder);
+        }
+
+        public void addSource(Geometry geom, double[] spectrum) {
+            super.addSource(geom);
+            wjSources.add(spectrum);
+        }
+
+        @Override
+        public double[] getMaximalSourcePower(int sourceId) {
+            return wjSources.get(sourceId);
         }
     }
 }

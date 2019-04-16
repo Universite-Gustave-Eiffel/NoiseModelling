@@ -13,6 +13,7 @@ import org.h2gis.utilities.TableLocation;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOut;
 import org.noise_planet.noisemodelling.propagation.GeoWithSoilType;
 import org.noise_planet.noisemodelling.propagation.MeshBuilder;
+import org.noise_planet.noisemodelling.propagation.PropagationPath;
 import org.noise_planet.noisemodelling.propagation.PropagationProcessData;
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 import org.noise_planet.noisemodelling.propagation.QueryGeometryStructure;
@@ -56,8 +57,6 @@ public abstract class JdbcNoiseMap {
      Gwenaël Guillaume, Benoît Gauvreau, Philippe L’Hermite
      RPR0J10292/VegDUD */
     protected double wallAbsorption = 1175;
-    public static final double[] DEFAULT_WIND_ROSE = new double[]{0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25};
-    public static final double[] STATIONARY_WIND_ROSE = new double[]{0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.};
     protected double forgetSource = 0.1;
     protected String heightField = "";
     protected GeometryFactory geometryFactory = new GeometryFactory();
@@ -65,8 +64,6 @@ public abstract class JdbcNoiseMap {
     // Initialised attributes
     protected int gridDim = 0;
     protected Envelope mainEnvelope = new Envelope();
-    protected List<Integer> db_field_ids = new ArrayList<>();
-    protected List<Integer> db_field_freq = new ArrayList<>();
 
     public JdbcNoiseMap(String buildingsTableName, String sourcesTableName) {
         this.buildingsTableName = buildingsTableName;
@@ -233,29 +230,20 @@ public abstract class JdbcNoiseMap {
                 while (rs.next()) {
                     Geometry geo = rs.getGeometry();
                     if (geo != null) {
-                        ArrayList<Double> wj_spectrum = new ArrayList<>(db_field_ids.size());
-                        double sumPow = 0;
-                        for (Integer idcol : db_field_ids) {
-                            double wj = DbaToW(rs.getDouble(idcol));
-                            wj_spectrum
-                                    .add(wj);
-                            sumPow += wj;
-                        }
-                        if(db_field_ids.isEmpty()) {
+//                        ArrayList<Double> wj_spectrum = new ArrayList<>(db_field_ids.size());
+//                        double sumPow = 0;
+//                        for (Integer idcol : db_field_ids) {
+//                            double wj = DbaToW(rs.getDouble(idcol));
+//                            wj_spectrum
+//                                    .add(wj);
+//                            sumPow += wj;
+//                        }
+//                        if(db_field_ids.isEmpty()) {
                             propagationProcessData.addSource(geo);
-                        } else {
-                            propagationProcessData.addSource(geo, sumPow);
-                        }
+//                        } else {
+//                            propagationProcessData.addSource(geo, sumPow);
+//                        }
                         sourcesPK.add(rs.getLong(pkIndex));
-//                        if(allSourceGeometries != null) {
-//                            allSourceGeometries.add(geo);
-//                        }
-//                        if(sumPow > 0) {
-//                            wj_sources.add(wj_spectrum);
-//                            sourcesIndex.appendGeometry(geo, idSource);
-//                            sourceGeometries.add(geo);
-//                            idSource++;
-//                        }
                     }
                 }
             } finally {
@@ -264,7 +252,6 @@ public abstract class JdbcNoiseMap {
                 }
             }
         }
-
     }
 
     protected double getCellWidth() {
@@ -318,26 +305,26 @@ public abstract class JdbcNoiseMap {
             setMainEnvelope(getComputationEnvelope(connection));
         }
 
-        // Initialization frequency declared in source Table
-        db_field_ids = new ArrayList<>();
-        db_field_freq = new ArrayList<>();
-        TableLocation sourceTableIdentifier = TableLocation.parse(sourcesTableName);
-        try(ResultSet rs = connection.getMetaData().getColumns(sourceTableIdentifier.getCatalog(),
-                sourceTableIdentifier.getSchema(), sourceTableIdentifier.getTable(), null)) {
-            while(rs.next()) {
-                String fieldName = rs.getString("COLUMN_NAME");
-                if (fieldName.startsWith(sound_lvl_field)) {
-                    String sub = fieldName.substring(sound_lvl_field.length());
-                    db_field_ids.add(rs.getInt("ORDINAL_POSITION"));
-                    if (sub.length() > 0) {
-                        int freq = Integer.parseInt(sub);
-                        db_field_freq.add(freq);
-                    } else {
-                        db_field_freq.add(0);
-                    }
-                }
-            }
-        }
+//        // Initialization frequency declared in source Table
+//        db_field_ids = new ArrayList<>();
+//        db_field_freq = new ArrayList<>();
+//        TableLocation sourceTableIdentifier = TableLocation.parse(sourcesTableName);
+//        try(ResultSet rs = connection.getMetaData().getColumns(sourceTableIdentifier.getCatalog(),
+//                sourceTableIdentifier.getSchema(), sourceTableIdentifier.getTable(), null)) {
+//            while(rs.next()) {
+//                String fieldName = rs.getString("COLUMN_NAME");
+//                if (fieldName.startsWith(sound_lvl_field)) {
+//                    String sub = fieldName.substring(sound_lvl_field.length());
+//                    db_field_ids.add(rs.getInt("ORDINAL_POSITION"));
+//                    if (sub.length() > 0) {
+//                        int freq = Integer.parseInt(sub);
+//                        db_field_freq.add(freq);
+//                    } else {
+//                        db_field_freq.add(0);
+//                    }
+//                }
+//            }
+//        }
     }
 
     /**
@@ -623,11 +610,4 @@ public abstract class JdbcNoiseMap {
         this.computeVerticalDiffraction = computeVerticalDiffraction;
     }
 
-    public static final class JDBCRaysOut extends ComputeRaysOut {
-        public JDBCRaysOut(boolean keepRays, PropagationProcessPathData pathData) {
-            super(keepRays, pathData);
-        }
-
-
-    }
 }

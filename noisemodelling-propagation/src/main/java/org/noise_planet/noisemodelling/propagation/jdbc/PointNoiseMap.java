@@ -94,6 +94,9 @@ public class PointNoiseMap extends JdbcNoiseMap {
         List<Long> sourcePK = new ArrayList<>();
         fetchCellSource(connection, expandedCellEnvelop, propagationProcessData, sourcePK);
 
+        // Convert relative source coordinates to absolute ones
+        propagationProcessData.makeRelativeZToAbsoluteOnlySources();
+
         // Fetch soil areas
         fetchCellSoilAreas(connection, expandedCellEnvelop, propagationProcessData.getSoilList());
 

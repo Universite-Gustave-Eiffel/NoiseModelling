@@ -238,7 +238,7 @@ public class PropagationProcessPathData {
 
         // Vibratory oxygen absorption:!!123
         double Fr = (pressure / Pref) * (24. + 4.04E4 * hmol * (0.02 + hmol) / (0.391 + hmol));
-        double Am = 1.559 * PropagationProcessData.FmolO * Math.exp(-KvibO / tempKelvin) * Math.pow(KvibO / tempKelvin, 2);
+        double Am = 1.559 * FmolO * Math.exp(-KvibO / tempKelvin) * Math.pow(KvibO / tempKelvin, 2);
         double AvibO = Am * (frequency / cson) * 2. * (frequency / Fr) / (1 + Math.pow(frequency / Fr, 2));
 
         // Vibratory nitrogen absorption
@@ -261,7 +261,7 @@ public class PropagationProcessPathData {
      * @return Attenuation coefficient dB/KM
      */
     public static double getAlpha(double frequency, double temperature, double pressure, double humidity) {
-        return getCoefAttAtmos(frequency, humidity, pressure, temperature + PropagationProcessData.K_0);
+        return getCoefAttAtmos(frequency, humidity, pressure, temperature + K_0);
     }
 
     public static double[] getAtmoCoeffArray(List<Integer> freq_lvl, double temperature, double pressure, double humidity){

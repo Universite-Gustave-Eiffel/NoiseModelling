@@ -93,7 +93,7 @@ public class ComputeRaysOut implements IComputeRaysOut {
     }
 
     @Override
-    public double addPropagationPaths(int sourceId, int receiverId, List<PropagationPath> propagationPath) {
+    public double[] addPropagationPaths(int sourceId, int receiverId, List<PropagationPath> propagationPath) {
         rayCount.addAndGet(propagationPath.size());
         if(keepRays) {
             propagationPaths.addAll(propagationPath);
@@ -127,16 +127,12 @@ public class ComputeRaysOut implements IComputeRaysOut {
             }
             if (aGlobalMeteo != null) {
                 receiverAttenuationLevels.add(new ComputeRaysOut.verticeSL(receiverId, sourceId, aGlobalMeteo));
-                double globalValue = 0;
-                for (double att : aGlobalMeteo) {
-                    globalValue += Math.pow(10, att / 10.0);
-                }
-                return globalValue;
+                return aGlobalMeteo;
             } else {
-                return Double.NaN;
+                return new double[0];
             }
         } else {
-            return Double.NaN;
+            return new double[0];
         }
     }
 
@@ -190,6 +186,9 @@ public class ComputeRaysOut implements IComputeRaysOut {
         return cellComputed.get();
     }
 
+    /**
+     * Noise level or attenuation level for each source/receiver
+     */
     public static final class verticeSL {
         public final int sourceId;
         public final int receiverId;
