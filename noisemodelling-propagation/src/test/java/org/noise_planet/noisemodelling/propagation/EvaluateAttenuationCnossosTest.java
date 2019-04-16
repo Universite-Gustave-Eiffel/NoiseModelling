@@ -44,9 +44,9 @@ public class EvaluateAttenuationCnossosTest {
         rayData.setComputeHorizontalDiffraction(true);
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 250, -20, 80)), 0));
         rayData.setComputeVerticalDiffraction(true);
-        rayData.setHumidity(70);
-        rayData.setTemperature(10);
         PropagationProcessPathData attData = new PropagationProcessPathData();
+        attData.setHumidity(70);
+        attData.setTemperature(10);
         ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
@@ -89,9 +89,9 @@ public class EvaluateAttenuationCnossosTest {
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
         rayData.setComputeVerticalDiffraction(true);
-        rayData.setHumidity(70);
-        rayData.setTemperature(10);
         PropagationProcessPathData attData = new PropagationProcessPathData();
+        attData.setHumidity(70);
+        attData.setTemperature(10);
         ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
@@ -130,12 +130,13 @@ public class EvaluateAttenuationCnossosTest {
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
         rayData.setComputeVerticalDiffraction(true);
-        rayData.setHumidity(70);
-        rayData.setTemperature(10);
+
         rayData.maxSrcDist = 2000;
         rayData.maximumError = 3; // 3 dB error max
 
         PropagationProcessPathData attData = new PropagationProcessPathData();
+        attData.setHumidity(70);
+        attData.setTemperature(10);
         ComputeRaysOut propDataOut = new RayOut(true, attData, rayData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);

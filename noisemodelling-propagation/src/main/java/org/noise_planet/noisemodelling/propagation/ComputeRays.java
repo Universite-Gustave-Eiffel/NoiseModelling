@@ -84,8 +84,6 @@ public class ComputeRays {
     private int threadCount;
     private PropagationProcessData data;
     private int nbfreq;
-    private double[] alpha_atmo;
-    private double[] freq_lambda;
     // todo implement this next variable as input parameter
     private double gS = 0; // 0 si route, 1 si ballast
 
@@ -725,18 +723,6 @@ public class ComputeRays {
                 line.closestPoint(coordinateWithoutZ), line.p0, line.p1));
     }
 
-    /**
-     * ISO-9613 p1
-     *
-     * @param frequency   acoustic frequency (Hz)
-     * @param temperature Temperative in celsius
-     * @param pressure    atmospheric pressure (in Pa)
-     * @param humidity    relative humidity (in %) (0-100)
-     * @return Attenuation coefficient dB/KM
-     */
-    public static double getAlpha(double frequency, double temperature, double pressure, double humidity) {
-        return PropagationProcessData.getCoefAttAtmos2(frequency, humidity, pressure, temperature + PropagationProcessData.K_0);
-    }
 
     private int nextFreeFieldNode(List<Coordinate> nodes, Coordinate startPt, LineSegment segmentConstraint,
                                   List<Integer> NodeExceptions, int firstTestNode,
@@ -1030,20 +1016,6 @@ public class ComputeRays {
      */
     public void initStructures() {
         nbfreq = data.freq_lvl.length;
-        // Init wave length for each frequency
-        freq_lambda = new double[nbfreq];
-        for (int idf = 0; idf < nbfreq; idf++) {
-            if (data.freq_lvl[idf] > 0) {
-                freq_lambda[idf] = data.celerity / data.freq_lvl[idf];
-            } else {
-                freq_lambda[idf] = 1;
-            }
-        }
-        // Compute atmospheric alpha value by specified frequency band
-        alpha_atmo = new double[data.freq_lvl.length];
-        for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
-            alpha_atmo[idfreq] = getAlpha(data.freq_lvl[idfreq], data.temperature, data.pressure, data.humidity);
-        }
 
         //Build R-tree for soil geometry and soil type
         rTreeOfGeoSoil = new STRtree();
