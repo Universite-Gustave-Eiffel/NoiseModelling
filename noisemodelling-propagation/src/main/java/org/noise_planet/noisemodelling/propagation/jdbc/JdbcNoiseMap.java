@@ -10,8 +10,11 @@ import org.h2gis.api.ProgressVisitor;
 import org.h2gis.utilities.SFSUtilities;
 import org.h2gis.utilities.SpatialResultSet;
 import org.h2gis.utilities.TableLocation;
+import org.noise_planet.noisemodelling.propagation.ComputeRaysOut;
 import org.noise_planet.noisemodelling.propagation.GeoWithSoilType;
 import org.noise_planet.noisemodelling.propagation.MeshBuilder;
+import org.noise_planet.noisemodelling.propagation.PropagationProcessData;
+import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 import org.noise_planet.noisemodelling.propagation.QueryGeometryStructure;
 
 import java.sql.Connection;
@@ -28,6 +31,8 @@ import java.util.List;
 public abstract class JdbcNoiseMap {
     // When computing cell size, try to keep propagation distance away from the cell
     // inferior to this ratio (in comparison with cell width)
+    private static final int DEFAULT_FETCH_SIZE = 300;
+    protected int fetchSize = DEFAULT_FETCH_SIZE;
     protected static final double MINIMAL_BUFFER_RATIO = 0.3;
     private String alphaFieldName = "ALPHA";
     protected final String buildingsTableName;
@@ -147,8 +152,7 @@ public abstract class JdbcNoiseMap {
         }
     }
 
-    void fetchCellBuildings(Connection connection, Envelope fetchEnvelope, List<Geometry> buildingsGeometries,
-                                      List<Integer> buildingsPk, MeshBuilder mesh) throws SQLException {
+    void fetchCellBuildings(Connection connection, Envelope fetchEnvelope, List<Integer> buildingsPk, MeshBuilder mesh) throws SQLException {
         Geometry envGeo = geometryFactory.toGeometry(fetchEnvelope);
         boolean fetchAlpha = JDBCUtilities.hasField(connection, buildingsTableName, alphaFieldName);
         String additionalQuery = "";
@@ -184,7 +188,6 @@ public abstract class JdbcNoiseMap {
                     if(building != null) {
                         Geometry intersectedGeometry = building.intersection(envGeo);
                         if(intersectedGeometry instanceof Polygon || intersectedGeometry instanceof MultiPolygon) {
-                            buildingsGeometries.add(building);
                             mesh.addGeometry(intersectedGeometry,
                                     heightField.isEmpty() ? Double.MAX_VALUE : rs.getDouble(heightField),
                                     fetchAlpha ? rs.getDouble(alphaFieldName) : wallAbsorption);
@@ -209,21 +212,28 @@ public abstract class JdbcNoiseMap {
      * @param sourcesIndex source with power > -Inf dB(A) are inserted in this index.
      * @throws SQLException
      */
-    protected void fetchCellSource(Connection connection,Envelope fetchEnvelope, List<Geometry> allSourceGeometries,
-                                   List<Geometry> sourceGeometries, List<ArrayList<Double>> wj_sources, QueryGeometryStructure sourcesIndex)
+    protected void fetchCellSource(Connection connection,Envelope fetchEnvelope, PropagationProcessData propagationProcessData, List<Long> sourcesPK)
             throws SQLException {
-        int idSource = 0;
         TableLocation sourceTableIdentifier = TableLocation.parse(sourcesTableName);
         String sourceGeomName = SFSUtilities.getGeometryFields(connection, sourceTableIdentifier).get(0);
+        int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, sourcesTableName);
+        if(pkIndex < 1) {
+            throw new IllegalArgumentException(String.format("Source table %s does not contain a primary key", sourceTableIdentifier));
+        }
         try (PreparedStatement st = connection.prepareStatement("SELECT * FROM " + sourcesTableName + " WHERE "
                 + TableLocation.quoteIdentifier(sourceGeomName) + " && ?::geometry")) {
             st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
+            st.setFetchSize(fetchSize);
+            boolean autoCommit = connection.getAutoCommit();
+            if(autoCommit) {
+                connection.setAutoCommit(false);
+            }
+            st.setFetchDirection(ResultSet.FETCH_FORWARD);
             try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
                 while (rs.next()) {
                     Geometry geo = rs.getGeometry();
                     if (geo != null) {
-                        ArrayList<Double> wj_spectrum = new ArrayList<>();
-                        wj_spectrum.ensureCapacity(db_field_ids.size());
+                        ArrayList<Double> wj_spectrum = new ArrayList<>(db_field_ids.size());
                         double sumPow = 0;
                         for (Integer idcol : db_field_ids) {
                             double wj = DbaToW(rs.getDouble(idcol));
@@ -231,16 +241,26 @@ public abstract class JdbcNoiseMap {
                                     .add(wj);
                             sumPow += wj;
                         }
-                        if(allSourceGeometries != null) {
-                            allSourceGeometries.add(geo);
+                        if(db_field_ids.isEmpty()) {
+                            propagationProcessData.addSource(geo);
+                        } else {
+                            propagationProcessData.addSource(geo, sumPow);
                         }
-                        if(sumPow > 0) {
-                            wj_sources.add(wj_spectrum);
-                            sourcesIndex.appendGeometry(geo, idSource);
-                            sourceGeometries.add(geo);
-                            idSource++;
-                        }
+                        sourcesPK.add(rs.getLong(pkIndex));
+//                        if(allSourceGeometries != null) {
+//                            allSourceGeometries.add(geo);
+//                        }
+//                        if(sumPow > 0) {
+//                            wj_sources.add(wj_spectrum);
+//                            sourcesIndex.appendGeometry(geo, idSource);
+//                            sourceGeometries.add(geo);
+//                            idSource++;
+//                        }
                     }
+                }
+            } finally {
+                if (autoCommit) {
+                    connection.setAutoCommit(true);
                 }
             }
         }
@@ -601,5 +621,13 @@ public abstract class JdbcNoiseMap {
      */
     public void setComputeVerticalDiffraction(boolean computeVerticalDiffraction) {
         this.computeVerticalDiffraction = computeVerticalDiffraction;
+    }
+
+    public static final class JDBCRaysOut extends ComputeRaysOut {
+        public JDBCRaysOut(boolean keepRays, PropagationProcessPathData pathData) {
+            super(keepRays, pathData);
+        }
+
+
     }
 }

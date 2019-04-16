@@ -69,8 +69,8 @@ public class PointNoiseMap extends JdbcNoiseMap {
         // feed freeFieldFinder for fast intersection query
         // optimization
         // Fetch buildings in extendedEnvelope
-        ArrayList<Geometry> buildingsGeometries = new ArrayList<>();
-        fetchCellBuildings(connection, expandedCellEnvelop, buildingsGeometries,null, mesh);
+        List<Integer> buildingsPK = new ArrayList<>();
+        fetchCellBuildings(connection, expandedCellEnvelop, buildingsPK, mesh);
         //if we have topographic points data
         fetchCellDem(connection, expandedCellEnvelop, mesh);
 
@@ -83,25 +83,22 @@ public class PointNoiseMap extends JdbcNoiseMap {
         FastObstructionTest freeFieldFinder = new FastObstructionTest(mesh.getPolygonWithHeight(),
                 mesh.getTriangles(), mesh.getTriNeighbors(), mesh.getVertices());
 
-        // //////////////////////////////////////////////////////
-        // Make source index for optimization
-        ArrayList<Geometry> sourceGeometries = new ArrayList<>();
-        ArrayList<ArrayList<Double>> wj_sources = new ArrayList<>();
-        QueryGeometryStructure sourcesIndex = new QueryQuadTree();
+
+        PropagationProcessData propagationProcessData = new PropagationProcessData(freeFieldFinder);
+        propagationProcessData.reflexionOrder = soundReflectionOrder;
+        propagationProcessData.maxRefDist = maximumReflectionDistance;
+        propagationProcessData.setComputeVerticalDiffraction(computeVerticalDiffraction);
+
 
         // Fetch all source located in expandedCellEnvelop
-        fetchCellSource(connection, expandedCellEnvelop, null, sourceGeometries, wj_sources, sourcesIndex);
+        List<Long> sourcePK = new ArrayList<>();
+        fetchCellSource(connection, expandedCellEnvelop, propagationProcessData, sourcePK);
 
         // Fetch soil areas
-        List<GeoWithSoilType> geoWithSoil = new ArrayList<>();
-        fetchCellSoilAreas(connection, expandedCellEnvelop, geoWithSoil);
-        if(geoWithSoil.isEmpty()){
-            geoWithSoil = null;
-        }
+        fetchCellSoilAreas(connection, expandedCellEnvelop, propagationProcessData.getSoilList());
 
         // Fetch receivers
 
-        List<Coordinate> receivers = new ArrayList<>();
         String receiverGeomName = SFSUtilities.getGeometryFields(connection,
                 TableLocation.parse(receiverTableName)).get(0);
         int intPk = JDBCUtilities.getIntegerPrimaryKey(connection, receiverTableName);
@@ -124,13 +121,13 @@ public class PointNoiseMap extends JdbcNoiseMap {
                     }
                     Geometry pt = rs.getGeometry();
                     if(pt != null && !pt.isEmpty()) {
+                        propagationProcessData.addReceiver(pt.getCoordinate());
                         receiversPk.add(receiverPk);
-                        receivers.add(pt.getCoordinate());
                     }
                 }
             }
         }
-        return null;
+        return propagationProcessData;
 //        return new PropagationProcessData(
 //                receivers, freeFieldFinder, sourcesIndex,
 //                sourceGeometries, null, db_field_freq,
