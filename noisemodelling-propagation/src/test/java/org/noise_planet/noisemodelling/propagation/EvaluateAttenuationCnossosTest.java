@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -144,13 +145,15 @@ public class EvaluateAttenuationCnossosTest {
         PropagationProcessPathData attData = new PropagationProcessPathData();
         attData.setHumidity(70);
         attData.setTemperature(10);
-        ComputeRaysOut propDataOut = new RayOut(true, attData, rayData);
+        RayOut propDataOut = new RayOut(true, attData, rayData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
-        // Second source has not been computed because at best it would only increase the received level of only 0.00042 dB
-        assertEquals(1, propDataOut.getVerticesSoundLevel().size());
+        // Second source has not been computed because at best it would only increase the received level of only 0.0004 dB
+        assertEquals(1, propDataOut.receiverLevels.size());
+
+        assertEquals(44.07, ComputeRays.wToDba(ComputeRays.sumArray(roadLvl.length, ComputeRays.dbaToW(propDataOut.receiverLevels.get(0).value))), 0.1);
     }
 
     @Test
@@ -170,16 +173,20 @@ public class EvaluateAttenuationCnossosTest {
 
     private static class RayOut extends ComputeRaysOut {
         private DirectPropagationProcessData processData;
+        protected List<ComputeRaysOut.verticeSL> receiverLevels = Collections.synchronizedList(new ArrayList<>());
 
         public RayOut(boolean keepRays, PropagationProcessPathData pathData, DirectPropagationProcessData processData) {
             super(keepRays, pathData);
             this.processData = processData;
+            this.receiverAttenuationLevels = null;
         }
 
         @Override
         public double[] addPropagationPaths(int sourceId, int receiverId, List<PropagationPath> propagationPath) {
             double[] attenuation = super.addPropagationPaths(sourceId, receiverId, propagationPath);
-            return ComputeRays.sumArray(ComputeRays.wToDba(processData.wjSources.get(sourceId)), attenuation);
+            double[] soundLevel = ComputeRays.wToDba(ComputeRays.multArray(processData.wjSources.get(sourceId), ComputeRays.dbaToW(attenuation)));
+            receiverLevels.add(new ComputeRaysOut.verticeSL(receiverId, sourceId, soundLevel));
+            return soundLevel;
         }
     }
 

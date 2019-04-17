@@ -49,18 +49,19 @@ import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineSegment;
 import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.MultiLineString;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.impl.CoordinateArraySequence;
 import org.locationtech.jts.index.strtree.STRtree;
 import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.math.Vector3D;
+import org.locationtech.jts.operation.distance3d.Distance3DOp;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -79,11 +80,8 @@ public class ComputeRays {
     // because 20 * LOG10(4) = 12 dB, so small contribution in comparison with diffraction on horizontal edge
     // in order to reduce computational cost
     private final static double MAX_RATIO_HULL_DIRECT_PATH = 4;
-    private final static double MERGE_SRC_DIST = 1.;
-    private final static double FIRST_STEP_RANGE = 90;
     private int threadCount;
     private PropagationProcessData data;
-    private int nbfreq;
     // todo implement this next variable as input parameter
     private double gS = 0; // 0 si route, 1 si ballast
 
@@ -135,7 +133,7 @@ public class ComputeRays {
         return sum;
     }
 
-    public static double GetGlobalLevel(int nbfreq, double energeticSum[]) {
+    public static double sumArray(int nbfreq, double energeticSum[]) {
         double globlvl = 0;
         for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
             globlvl += energeticSum[idfreq];
@@ -176,6 +174,14 @@ public class ComputeRays {
         return Math.pow(10., dBA / 10.);
     }
 
+    public static double[] dbaToW(double[] dBA) {
+        double[] ret = new double[dBA.length];
+        for(int i=0; i<dBA.length; i++) {
+            ret[i] = dbaToW(dBA[i]);
+        }
+        return ret;
+    }
+
     public static double wToDba(double w) {
         return 10 * Math.log10(w);
     }
@@ -191,54 +197,60 @@ public class ComputeRays {
     /**
      * @param startPt Compute the closest point on lineString with this coordinate,
      *                use it as one of the splitted points
-     * @return computed delta
+     * @return li coefficient to apply to equivalent source point from the sound power per metre set on linear source
      */
-    private double splitLineStringIntoPoints(Geometry geom, Coordinate startPt,
-                                             List<Coordinate> pts, double minRecDist) {
-        // Find the position of the closest point
-        Coordinate[] points = geom.getCoordinates();
-        // For each segments
-        Double bestClosestPtDist = Double.MAX_VALUE;
-        Coordinate closestPt = null;
-        double roadLength = 0.;
-        for (int i = 1; i < points.length; i++) {
-            LineSegment seg = new LineSegment(points[i - 1], points[i]);
-            roadLength += seg.getLength();
-            Coordinate ptClosest = seg.closestPoint(startPt);
-            // Interpolate Z value
-            ptClosest.setOrdinate(2, Vertex.interpolateZ(ptClosest, seg.p0, seg.p1));
-            double closestDist = CGAlgorithms3D.distance(startPt, ptClosest);
-            if (closestDist < bestClosestPtDist) {
-                bestClosestPtDist = closestDist;
-                closestPt = ptClosest;
-            }
-        }
-        if (closestPt == null) {
-            return 1.;
-        }
-        double delta = 20.;
-        // If the minimum effective distance between the line source and the
-        // receiver is smaller than the minimum distance constraint then the
-        // discretization parameter is changed
-        // Delta must not not too small to avoid memory overhead.
-        if (bestClosestPtDist < minRecDist) {
-            bestClosestPtDist = minRecDist;
-        }
-        if (bestClosestPtDist / 2 < delta) {
-            delta = bestClosestPtDist / 2;
-        }
-        pts.add(closestPt);
-        Coordinate[] splitedPts = JTSUtility
-                .splitMultiPointsInRegularPoints(points, delta);
-        for (Coordinate pt : splitedPts) {
-            if (pt.distance(closestPt) > delta) {
-                pts.add(pt);
-            }
-        }
-        if (delta < roadLength) {
-            return delta;
+    public static double splitLineStringIntoPoints(LineString geom, Coordinate startPt,
+                                             List<Coordinate> pts) {
+        // If the linear sound source length is inferior than half the distance between the nearest point of the sound
+        // source and the receiver then it can be modelled as a single point source
+        Point startPoint = new GeometryFactory().createPoint(startPt);
+        Coordinate nearestPoint = Distance3DOp.nearestPoints(geom, startPoint)[1];
+        double segmentSizeConstraint = Math.max(1, startPt.distance3D(nearestPoint) / 2.0);
+        double geomLength = geom.getLength();
+        if(geomLength < segmentSizeConstraint) {
+            // Return closest coordinate
+            pts.add(nearestPoint);
+            return geom.getLength();
         } else {
-            return roadLength;
+            double targetSegmentSize = geomLength / Math.ceil(geomLength / segmentSizeConstraint);
+            Coordinate[] points = geom.getCoordinates();
+            double segmentLength = 0.;
+
+            Coordinate closestPoint = null;
+            double closestPointDistance = Double.MAX_VALUE;
+            for (int i = 0; i < points.length - 1; i++) {
+                Coordinate a = points[i];
+                final Coordinate b = points[i + 1];
+                double length = a.distance3D(b);
+                while (length + segmentLength > targetSegmentSize) {
+                    //LineSegment segment = new LineSegment(a, b);
+                    double segmentLengthFraction = (targetSegmentSize - segmentLength) / length;
+                    Coordinate splitPoint = new Coordinate();
+                    splitPoint.x = a.x + segmentLengthFraction * (b.x - a.x);
+                    splitPoint.y = a.y + segmentLengthFraction * (b.y - a.y);
+                    splitPoint.z = a.z + segmentLengthFraction * (b.z - a.z);
+                    Coordinate closestPointOnSegment = new LineSegment(a, b).closestPoint(startPt);
+                    double closestPointOnSegmentDistance = closestPointOnSegment.distance3D(startPt);
+                    if(closestPoint == null || closestPointOnSegmentDistance < closestPointDistance) {
+                        closestPoint = closestPointOnSegment;
+                    }
+                    pts.add(closestPoint);
+                    a = splitPoint;
+                    length = a.distance3D(b);
+                    segmentLength = 0;
+                    closestPoint = null;
+                    closestPointDistance = Double.MAX_VALUE;
+                }
+                Coordinate closestPointOnSegment = new LineSegment(a, b).closestPoint(startPt);
+                double closestPointOnSegmentDistance = closestPointOnSegment.distance3D(startPt);
+                if(closestPoint == null || closestPointOnSegmentDistance < closestPointDistance) {
+                    closestPoint = closestPointOnSegment;
+                    closestPointDistance = closestPointOnSegmentDistance;
+                }
+                segmentLength += length;
+            }
+            pts.add(closestPoint);
+            return targetSegmentSize;
         }
     }
 
@@ -921,6 +933,7 @@ public class ComputeRays {
      * @param[in] wj Source sound pressure level dB(A) by frequency band
      * @param[in] nearBuildingsWalls Walls within maxsrcdist
      * from receiver
+     * @return Minimal power level (dB) or maximum attenuation (dB)
      */
 
     private double[] receiverSourcePropa(Coordinate srcCoord, int srcId,
@@ -953,21 +966,27 @@ public class ComputeRays {
         return new double[0];
     }
 
-    private static double insertPtSource(Coordinate receiverPos, Coordinate ptpos, double[] wj, double li, PointsMerge sourcesMerger, Integer sourceId, List<SourcePointInfo> sourceList) {
-        int mergedSrcIndex = sourcesMerger.getOrAppendVertex(ptpos);
+    private static double insertPtSource(Coordinate receiverPos, Coordinate ptpos, double[] wj, double li, Integer sourceId, List<SourcePointInfo> sourceList) {
         // Compute maximal power at freefield at the receiver position with reflective ground
         double aDiv = -EvaluateAttenuationCnossos.getADiv(CGAlgorithms3D.distance(receiverPos, ptpos));
         double[] srcWJ = new double[wj.length];
         for(int idFreq = 0; idFreq < srcWJ.length; idFreq++) {
             srcWJ[idFreq] = wj[idFreq] * li * dbaToW(aDiv) * dbaToW(3);
         }
-        if (mergedSrcIndex < sourceList.size()) {
-            //A source already exist and is close enough to merge
-            sourceList.get(mergedSrcIndex).setWj(ComputeRays.sumArray(sourceList.get(mergedSrcIndex).getWj(), srcWJ));
-        } else {
-            sourceList.add(new SourcePointInfo(srcWJ, sourceId, ptpos));
+        sourceList.add(new SourcePointInfo(srcWJ, sourceId, ptpos, li));
+        return ComputeRays.sumArray(srcWJ.length, srcWJ);
+    }
+
+    private double addLineSource(LineString source, Coordinate receiverCoord, int srcIndex, List<SourcePointInfo> sourceList, double[] wj) {
+        double totalPowerRemaining = 0;
+        ArrayList<Coordinate> pts = new ArrayList<Coordinate>();
+        // Compute li to equation 4.1 NMPB 2008 (June 2009)
+        double li = splitLineStringIntoPoints(source, receiverCoord,
+                pts);
+        for (Coordinate pt : pts) {
+            totalPowerRemaining += insertPtSource(receiverCoord, pt, wj, li, srcIndex, sourceList);
         }
-        return ComputeRays.GetGlobalLevel(srcWJ.length, srcWJ);
+        return totalPowerRemaining;
     }
 
     /**
@@ -991,7 +1010,6 @@ public class ComputeRays {
         );
         Iterator<Integer> regionSourcesLst = data.sourcesIndex
                 .query(receiverSourceRegion);
-        PointsMerge sourcesMerger = new PointsMerge(MERGE_SRC_DIST);
         List<SourcePointInfo> sourceList = new ArrayList<>();
         // Sum of all sources power using only geometric dispersion with direct field
         double totalPowerRemaining = 0;
@@ -1003,22 +1021,25 @@ public class ComputeRays {
                 double[] wj = data.getMaximalSourcePower(srcIndex);
                 if (source instanceof Point) {
                     Coordinate ptpos = source.getCoordinate();
-                    totalPowerRemaining += insertPtSource(receiverCoord, ptpos, wj, 1., sourcesMerger, srcIndex, sourceList);
-                } else {
+                    totalPowerRemaining += insertPtSource(receiverCoord, ptpos, wj, 1., srcIndex, sourceList);
+                } else if (source instanceof LineString){
                     // Discretization of line into multiple point
                     // First point is the closest point of the LineString from
                     // the receiver
-                    ArrayList<Coordinate> pts = new ArrayList<Coordinate>();
-                    // Compute li to equation 4.1 NMPB 2008 (June 2009)
-                    double li = splitLineStringIntoPoints(source, receiverCoord,
-                            pts, data.minRecDist);
-                    for (Coordinate pt : pts) {
-                        totalPowerRemaining += insertPtSource(receiverCoord, pt, wj, li, sourcesMerger, srcIndex, sourceList);
+                    totalPowerRemaining += addLineSource((LineString)source, receiverCoord,srcIndex, sourceList, wj);
+                } else if(source instanceof MultiLineString) {
+                    for(int id = 0; id < source.getNumGeometries(); id++) {
+                        Geometry subGeom = source.getGeometryN(id);
+                        if(subGeom instanceof LineString) {
+                            totalPowerRemaining += addLineSource((LineString) subGeom, receiverCoord, srcIndex, sourceList, wj);
+                        }
                     }
+                } else {
+                    throw new IllegalArgumentException(String.format("Sound source %s geometry are not supported", source.getGeometryType()));
                 }
             }
         }
-        // Sort
+        // Sort sources by power contribution descending
         Collections.sort(sourceList);
         double powerAtSource = 0;
         //Iterate over source point sorted by maximal power by descending order
@@ -1033,7 +1054,7 @@ public class ComputeRays {
             }
             double[] power = receiverSourcePropa(srcCoord, src.sourcePrimaryKey, receiverCoord, idReceiver,
                     new ArrayList<>(wallsSource), debugInfo, dataOut);
-            double global = ComputeRays.GetGlobalLevel(power.length, power);
+            double global = ComputeRays.sumArray(power.length, ComputeRays.dbaToW(power));
             totalPowerRemaining -= src.globalWj;
             if(power.length > 0) {
                 powerAtSource += global;
@@ -1052,8 +1073,6 @@ public class ComputeRays {
      * Must be called before computeSoundLevelAtPosition
      */
     public void initStructures() {
-        nbfreq = data.freq_lvl.length;
-
         //Build R-tree for soil geometry and soil type
         rTreeOfGeoSoil = new STRtree();
         List<GeoWithSoilType> soilTypeList = data.getSoilList();
@@ -1198,6 +1217,7 @@ public class ComputeRays {
 
     private static final class SourcePointInfo implements Comparable<SourcePointInfo> {
         private double[] wj;
+        private double li; //
         private int sourcePrimaryKey;
         private Coordinate position;
         private double globalWj;
@@ -1207,11 +1227,19 @@ public class ComputeRays {
          * @param sourcePrimaryKey
          * @param position
          */
-        public SourcePointInfo(double[] wj, int sourcePrimaryKey, Coordinate position) {
+        public SourcePointInfo(double[] wj, int sourcePrimaryKey, Coordinate position, double li) {
             this.wj = wj;
             this.sourcePrimaryKey = sourcePrimaryKey;
             this.position = position;
-            this.globalWj = ComputeRays.GetGlobalLevel(wj.length, wj);
+            this.globalWj = ComputeRays.sumArray(wj.length, wj);
+            this.li = li;
+        }
+
+        /**
+         * @return coefficient to apply to linear source as sound power per meter length
+         */
+        public double getLi() {
+            return li;
         }
 
         public double[] getWj() {
@@ -1220,7 +1248,7 @@ public class ComputeRays {
 
         public void setWj(double[] wj) {
             this.wj = wj;
-            this.globalWj = ComputeRays.GetGlobalLevel(wj.length, wj);
+            this.globalWj = ComputeRays.sumArray(wj.length, wj);
         }
 
         @Override

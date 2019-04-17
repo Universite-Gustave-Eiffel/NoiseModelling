@@ -126,7 +126,9 @@ public class ComputeRaysOut implements IComputeRaysOut {
                 }
             }
             if (aGlobalMeteo != null) {
-                receiverAttenuationLevels.add(new ComputeRaysOut.verticeSL(receiverId, sourceId, aGlobalMeteo));
+                if(receiverAttenuationLevels != null) {
+                    receiverAttenuationLevels.add(new ComputeRaysOut.verticeSL(receiverId, sourceId, aGlobalMeteo));
+                }
                 return aGlobalMeteo;
             } else {
                 return new double[0];

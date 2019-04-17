@@ -57,7 +57,8 @@ public abstract class JdbcNoiseMap {
      Gwenaël Guillaume, Benoît Gauvreau, Philippe L’Hermite
      RPR0J10292/VegDUD */
     protected double wallAbsorption = 1175;
-    protected double forgetSource = 0.1;
+    /** maximum dB Error, stop calculation if the sum of further sources contributions are smaller than this value */
+    public double maximumError = Double.NEGATIVE_INFINITY;
     protected String heightField = "";
     protected GeometryFactory geometryFactory = new GeometryFactory();
     protected int parallelComputationCount = 0;
@@ -305,26 +306,6 @@ public abstract class JdbcNoiseMap {
             setMainEnvelope(getComputationEnvelope(connection));
         }
 
-//        // Initialization frequency declared in source Table
-//        db_field_ids = new ArrayList<>();
-//        db_field_freq = new ArrayList<>();
-//        TableLocation sourceTableIdentifier = TableLocation.parse(sourcesTableName);
-//        try(ResultSet rs = connection.getMetaData().getColumns(sourceTableIdentifier.getCatalog(),
-//                sourceTableIdentifier.getSchema(), sourceTableIdentifier.getTable(), null)) {
-//            while(rs.next()) {
-//                String fieldName = rs.getString("COLUMN_NAME");
-//                if (fieldName.startsWith(sound_lvl_field)) {
-//                    String sub = fieldName.substring(sound_lvl_field.length());
-//                    db_field_ids.add(rs.getInt("ORDINAL_POSITION"));
-//                    if (sub.length() > 0) {
-//                        int freq = Integer.parseInt(sub);
-//                        db_field_freq.add(freq);
-//                    } else {
-//                        db_field_freq.add(0);
-//                    }
-//                }
-//            }
-//        }
     }
 
     /**
@@ -448,20 +429,19 @@ public abstract class JdbcNoiseMap {
         this.maximumPropagationDistance = maximumPropagationDistance;
     }
 
+
     /**
-     * @return forgetSource value below which sound sources can be ignored.
-     * value below which sound sources can be ignored.
+     * @return maximum dB Error, stop calculation if the maximum sum of further sources contributions are smaller than this value
      */
-    public double getForgetSource() {
-        return forgetSource;
+    public double getMaximumError() {
+        return maximumError;
     }
 
     /**
-     * @param forgetSource  value below which sound sources can be ignored.
-     * value below which sound sources can be ignored.
+     * @param maximumError maximum dB Error, stop calculation if the maximum sum of further sources contributions are smaller than this value
      */
-    public void setForgetSource(double forgetSource) {
-        this.maximumPropagationDistance = forgetSource;
+    public void setMaximumError(double maximumError) {
+        this.maximumError = maximumError;
     }
 
     /**

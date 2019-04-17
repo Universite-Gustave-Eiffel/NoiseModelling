@@ -88,7 +88,7 @@ public class PointNoiseMap extends JdbcNoiseMap {
         propagationProcessData.reflexionOrder = soundReflectionOrder;
         propagationProcessData.maxRefDist = maximumReflectionDistance;
         propagationProcessData.setComputeVerticalDiffraction(computeVerticalDiffraction);
-
+        propagationProcessData.cellProg = progression.subProcess(propagationProcessData.receivers.size());
 
         // Fetch all source located in expandedCellEnvelop
         List<Long> sourcePK = new ArrayList<>();
