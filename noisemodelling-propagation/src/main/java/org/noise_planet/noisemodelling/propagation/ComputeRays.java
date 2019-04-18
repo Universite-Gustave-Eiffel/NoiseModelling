@@ -206,24 +206,45 @@ public class ComputeRays {
      *                use it as one of the splitted points
      * @return li coefficient to apply to equivalent source point from the sound power per metre set on linear source
      */
-    public static double splitLineStringIntoPoints(LineString geom, Coordinate startPt,
+    /**
+     *
+     * @param geom Geometry
+     * @param segmentSizeConstraint Maximal distance between points
+     * @param[out] pts computed points
+     * @return Fixed distance between points
+     */
+    public static double splitLineStringIntoPoints(LineString geom, double segmentSizeConstraint,
                                              List<Coordinate> pts) {
         // If the linear sound source length is inferior than half the distance between the nearest point of the sound
         // source and the receiver then it can be modelled as a single point source
-        Coordinate nearestPoint = JTSUtility.getNearestPoint(startPt, geom);
-        double segmentSizeConstraint = Math.max(1, startPt.distance3D(nearestPoint) / 2.0);
         double geomLength = geom.getLength();
         if(geomLength < segmentSizeConstraint) {
-            // Return closest coordinate
-            pts.add(nearestPoint);
+           // Return mid point
+            Coordinate[] points = geom.getCoordinates();
+            double segmentLength = 0;
+            final double targetSegmentSize = geomLength / 2.0;
+            for (int i = 0; i < points.length - 1; i++) {
+                Coordinate a = points[i];
+                final Coordinate b = points[i + 1];
+                double length = a.distance3D(b);
+                if(length + segmentLength > targetSegmentSize) {
+                    double segmentLengthFraction = (targetSegmentSize - segmentLength) / length;
+                    Coordinate midPoint = new Coordinate(a.x + segmentLengthFraction * (b.x - a.x),
+                            a.y + segmentLengthFraction * (b.y - a.y),
+                            a.z + segmentLengthFraction * (b.z - a.z));
+                    pts.add(midPoint);
+                    break;
+                }
+                segmentLength += length;
+            }
             return geom.getLength();
         } else {
             double targetSegmentSize = geomLength / Math.ceil(geomLength / segmentSizeConstraint);
             Coordinate[] points = geom.getCoordinates();
             double segmentLength = 0.;
 
-            Coordinate closestPoint = null;
-            double closestPointDistance = Double.MAX_VALUE;
+            // Mid point of segmented line source
+            Coordinate midPoint = null;
             for (int i = 0; i < points.length - 1; i++) {
                 Coordinate a = points[i];
                 final Coordinate b = points[i + 1];
@@ -235,27 +256,27 @@ public class ComputeRays {
                     splitPoint.x = a.x + segmentLengthFraction * (b.x - a.x);
                     splitPoint.y = a.y + segmentLengthFraction * (b.y - a.y);
                     splitPoint.z = a.z + segmentLengthFraction * (b.z - a.z);
-                    Coordinate closestPointOnSegment = JTSUtility.getNearestPoint(new LineSegment(a, splitPoint), startPt);
-                    double closestPointOnSegmentDistance = closestPointOnSegment.distance3D(startPt);
-                    if(closestPoint == null || closestPointOnSegmentDistance < closestPointDistance) {
-                        closestPoint = closestPointOnSegment;
+                    if(midPoint == null && length + segmentLength > targetSegmentSize / 2) {
+                        segmentLengthFraction = (targetSegmentSize / 2.0 - segmentLength) / length;
+                        midPoint = new Coordinate(a.x + segmentLengthFraction * (b.x - a.x),
+                                a.y + segmentLengthFraction * (b.y - a.y),
+                                a.z + segmentLengthFraction * (b.z - a.z));
                     }
-                    pts.add(closestPoint);
+                    pts.add(midPoint);
                     a = splitPoint;
                     length = a.distance3D(b);
                     segmentLength = 0;
-                    closestPoint = null;
-                    closestPointDistance = Double.MAX_VALUE;
+                    midPoint = null;
                 }
-                Coordinate closestPointOnSegment = JTSUtility.getNearestPoint(new LineSegment(a, b), startPt);
-                double closestPointOnSegmentDistance = closestPointOnSegment.distance3D(startPt);
-                if(closestPoint == null || closestPointOnSegmentDistance < closestPointDistance) {
-                    closestPoint = closestPointOnSegment;
-                    closestPointDistance = closestPointOnSegmentDistance;
+                if(midPoint == null && length + segmentLength > targetSegmentSize / 2) {
+                    double segmentLengthFraction = (targetSegmentSize / 2.0 - segmentLength) / length;
+                    midPoint = new Coordinate(a.x + segmentLengthFraction * (b.x - a.x),
+                            a.y + segmentLengthFraction * (b.y - a.y),
+                            a.z + segmentLengthFraction * (b.z - a.z));
                 }
                 segmentLength += length;
             }
-            pts.add(closestPoint);
+            pts.add(midPoint);
             return targetSegmentSize;
         }
     }
@@ -986,8 +1007,9 @@ public class ComputeRays {
         double totalPowerRemaining = 0;
         ArrayList<Coordinate> pts = new ArrayList<Coordinate>();
         // Compute li to equation 4.1 NMPB 2008 (June 2009)
-        double li = splitLineStringIntoPoints(source, receiverCoord,
-                pts);
+        Coordinate nearestPoint = JTSUtility.getNearestPoint(receiverCoord, source);
+        double segmentSizeConstraint = Math.max(1, receiverCoord.distance3D(nearestPoint) / 2.0);
+        double li = splitLineStringIntoPoints(source, segmentSizeConstraint, pts);
         for (Coordinate pt : pts) {
             totalPowerRemaining += insertPtSource(receiverCoord, pt, wj, li, srcIndex, sourceList);
         }

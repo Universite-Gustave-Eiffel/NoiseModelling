@@ -5,6 +5,10 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.io.ParseException;
+import org.locationtech.jts.io.WKTReader;
+import org.noise_planet.noisemodelling.propagation.utils.Densifier3D;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -176,11 +180,12 @@ public class EvaluateAttenuationCnossosTest {
      * @throws LayerDelaunayError
      */
     @Test
-    public void testSourceLines()  throws LayerDelaunayError, IOException {
+    public void testSourceLines()  throws LayerDelaunayError, IOException, ParseException {
 
         // First Compute the scene with only point sources at 1m each
-
         GeometryFactory factory = new GeometryFactory();
+        WKTReader wktReader = new WKTReader(factory);
+        LineString geomSource = (LineString)wktReader.read("LINESTRING (51 40.5 0.05, 51 55.5 0.05)");
         //Scene dimension
         Envelope cellEnvelope = new Envelope(new Coordinate(-1200, -1200, 0.), new Coordinate(1200, 1200, 0.));
 
@@ -205,10 +210,13 @@ public class EvaluateAttenuationCnossosTest {
         rayData.addReceiver(new Coordinate(40, 50, 4));
         rayData.addReceiver(new Coordinate(20, 50, 4));
         rayData.addReceiver(new Coordinate(0, 50, 4));
-        int roadLength = 15;
-        for(int yOffset = 0; yOffset < roadLength; yOffset++) {
-            rayData.addSource(factory.createPoint(new Coordinate(51, 50 - (roadLength / 2.0) + yOffset, 0.05)), roadLvl);
+
+        List<Coordinate> srcPtsRef = new ArrayList<>();
+        ComputeRays.splitLineStringIntoPoints(geomSource, 1.0, srcPtsRef);
+        for(Coordinate srcPtRef : srcPtsRef) {
+            rayData.addSource(factory.createPoint(srcPtRef), roadLvl);
         }
+
         rayData.setComputeHorizontalDiffraction(true);
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9));
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
@@ -228,8 +236,7 @@ public class EvaluateAttenuationCnossosTest {
 
         // Second compute the same scene but with a line source
         rayData.clearSources();
-        rayData.addSource(factory.createLineString(new Coordinate[]{new Coordinate(51, 50 - (roadLength / 2.0), 0.05),
-                new Coordinate(51, 50 + (roadLength / 2.0), 0.05)}), roadLvl);
+        rayData.addSource(geomSource, roadLvl);
         RayOut propDataOutTest = new RayOut(true, attData, rayData);
         computeRays.run(propDataOutTest);
 
@@ -261,15 +268,25 @@ public class EvaluateAttenuationCnossosTest {
         assertEquals(6, levelsPerReceiverLines.size());
         assertEquals(6, levelsPerReceiver.size());
 
-        KMLDocument.exportScene("target/testSourceLines.kml", manager, propDataOutTest);
-        KMLDocument.exportScene("target/testSourceLinesPt.kml", manager, propDataOut);
+//        KMLDocument.exportScene("target/testSourceLines.kml", manager, propDataOutTest);
+//        KMLDocument.exportScene("target/testSourceLinesPt.kml", manager, propDataOut);
+//        // Uncomment for printing maximum error
+//        for(int i = 0; i < levelsPerReceiver.size(); i++) {
+//            LOGGER.info(String.format("%d error %.2f", i,  getMaxError(levelsPerReceiver.get(i), levelsPerReceiverLines.get(i))));
+//        }
 
-        assertArrayEquals(levelsPerReceiver.get(0), levelsPerReceiverLines.get(0), 1.7);
-        assertArrayEquals(levelsPerReceiver.get(1), levelsPerReceiverLines.get(1), 0.7);
-        assertArrayEquals(levelsPerReceiver.get(2), levelsPerReceiverLines.get(2), 0.62);
-        assertArrayEquals(levelsPerReceiver.get(3), levelsPerReceiverLines.get(3), 0.46);
-        assertArrayEquals(levelsPerReceiver.get(4), levelsPerReceiverLines.get(4), 0.13);
-        assertArrayEquals(levelsPerReceiver.get(5), levelsPerReceiverLines.get(5), 0.1);
+        for(int i = 0; i < levelsPerReceiver.size(); i++) {
+            assertArrayEquals(levelsPerReceiver.get(i), levelsPerReceiverLines.get(i), 0.2);
+        }
+    }
+
+    private static double getMaxError(double[] ref, double[] result) {
+        assertEquals(ref.length, result.length);
+        double max = Double.MIN_VALUE;
+        for(int i=0; i < ref.length; i++) {
+            max = Math.max(max, Math.abs(ref[i] - result[i]));
+        }
+        return max;
     }
 
     private static class RayOut extends ComputeRaysOut {

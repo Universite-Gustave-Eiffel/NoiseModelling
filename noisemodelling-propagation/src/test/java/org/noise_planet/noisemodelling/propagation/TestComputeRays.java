@@ -110,13 +110,15 @@ public class TestComputeRays {
         // The constrain is distance / 2.0 so 2.5 meters
         // The source length is equals to 5 meters
         // It can be equally split in 2 segments of 2.5 meters each, for each segment the nearest point is retained
-        assertEquals(2.5, ComputeRays.splitLineStringIntoPoints(
-                factory.createLineString(new Coordinate[]{new Coordinate(1,2,0),
-                        new Coordinate(4,2,0), new Coordinate(4, 0, 0)}),
-                new Coordinate(-4, 2, 0), sourcePoints), 1e-6);
+        LineString geom = factory.createLineString(new Coordinate[]{new Coordinate(1,2,0),
+                new Coordinate(4,2,0), new Coordinate(4, 0, 0)});
+        Coordinate receiverCoord = new Coordinate(-4, 2, 0);
+        Coordinate nearestPoint = JTSUtility.getNearestPoint(receiverCoord, geom);
+        double segmentSizeConstraint = Math.max(1, receiverCoord.distance3D(nearestPoint) / 2.0);
+        assertEquals(2.5, ComputeRays.splitLineStringIntoPoints(geom , segmentSizeConstraint, sourcePoints), 1e-6);
         assertEquals(2, sourcePoints.size());
-        assertEquals(0, new Coordinate(1, 2, 0).distance3D(sourcePoints.get(0)), 1e-6);
-        assertEquals(0, new Coordinate(3.5, 2, 0).distance3D(sourcePoints.get(1)), 1e-6);
+        assertEquals(0, new Coordinate(2.25, 2, 0).distance3D(sourcePoints.get(0)), 1e-6);
+        assertEquals(0, new Coordinate(4, 1.25, 0).distance3D(sourcePoints.get(1)), 1e-6);
     }
 
 
