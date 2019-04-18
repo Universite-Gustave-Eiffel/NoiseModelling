@@ -146,7 +146,7 @@ public class ComputeRaysOut implements IComputeRaysOut {
                 // For line source, take account of li coefficient
                 if(sourceLi > 1.0) {
                     for (int i = 0; i < aGlobalMeteo.length; i++) {
-                        aGlobalMeteo[i] *= sourceLi;
+                        aGlobalMeteo[i] = ComputeRays.wToDba(ComputeRays.dbaToW(aGlobalMeteo[i]) * sourceLi);
                     }
                 }
                 return aGlobalMeteo;

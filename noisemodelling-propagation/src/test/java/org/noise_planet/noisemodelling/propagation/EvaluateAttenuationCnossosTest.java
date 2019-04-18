@@ -200,11 +200,11 @@ public class EvaluateAttenuationCnossosTest {
 
         DirectPropagationProcessData rayData = new DirectPropagationProcessData(manager);
         rayData.addReceiver(new Coordinate(50, 50, 0.05));
-//        rayData.addReceiver(new Coordinate(48, 50, 4));
-//        rayData.addReceiver(new Coordinate(44, 50, 4));
-//        rayData.addReceiver(new Coordinate(40, 50, 4));
-//        rayData.addReceiver(new Coordinate(20, 50, 4));
-//        rayData.addReceiver(new Coordinate(0, 50, 4));
+        rayData.addReceiver(new Coordinate(48, 50, 4));
+        rayData.addReceiver(new Coordinate(44, 50, 4));
+        rayData.addReceiver(new Coordinate(40, 50, 4));
+        rayData.addReceiver(new Coordinate(20, 50, 4));
+        rayData.addReceiver(new Coordinate(0, 50, 4));
         int roadLength = 15;
         for(int yOffset = 0; yOffset < roadLength; yOffset++) {
             rayData.addSource(factory.createPoint(new Coordinate(51, 50 - (roadLength / 2.0) + yOffset, 0.05)), roadLvl);
@@ -258,16 +258,18 @@ public class EvaluateAttenuationCnossosTest {
             }
         }
 
-        assertEquals(rayData.receivers.size(), levelsPerReceiverLines.size());
-        assertEquals(rayData.receivers.size(), levelsPerReceiver.size());
+        assertEquals(6, levelsPerReceiverLines.size());
+        assertEquals(6, levelsPerReceiver.size());
 
-        KMLDocument.exportScene("target/lineSource.kml", manager, propDataOutTest);
-        for(Map.Entry<Integer, double[]> entry : levelsPerReceiver.entrySet()) {
-            double[] lvlDb = entry.getValue();
-            double[] lvlLineDb = levelsPerReceiverLines.get(entry.getKey());
-            assertArrayEquals(lvlDb, lvlLineDb, 2);
-        }
+        KMLDocument.exportScene("target/testSourceLines.kml", manager, propDataOutTest);
+        KMLDocument.exportScene("target/testSourceLinesPt.kml", manager, propDataOut);
 
+        assertArrayEquals(levelsPerReceiver.get(0), levelsPerReceiverLines.get(0), 1.7);
+        assertArrayEquals(levelsPerReceiver.get(1), levelsPerReceiverLines.get(1), 0.7);
+        assertArrayEquals(levelsPerReceiver.get(2), levelsPerReceiverLines.get(2), 0.62);
+        assertArrayEquals(levelsPerReceiver.get(3), levelsPerReceiverLines.get(3), 0.46);
+        assertArrayEquals(levelsPerReceiver.get(4), levelsPerReceiverLines.get(4), 0.13);
+        assertArrayEquals(levelsPerReceiver.get(5), levelsPerReceiverLines.get(5), 0.1);
     }
 
     private static class RayOut extends ComputeRaysOut {
