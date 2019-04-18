@@ -71,6 +71,30 @@ public class JTSUtility {
         return new double[]{a, b};
     }
 
+    public static Coordinate getNearestPoint(LineSegment segment, Coordinate p) {
+        double segmentLengthFraction = Math.min(1.0, Math.max(0, segment.projectionFactor(p)));
+        return new Coordinate(segment.p0.x + segmentLengthFraction * (segment.p1.x - segment.p0.x),
+                segment.p0.y + segmentLengthFraction * (segment.p1.y - segment.p0.y),
+                segment.p0.z + segmentLengthFraction * (segment.p1.z - segment.p0.z));
+    }
+
+    public static Coordinate getNearestPoint(Coordinate from, LineString to) {
+        Coordinate[] coordinates = to.getCoordinates();
+        Coordinate closestPoint = null;
+        double closestPointDistance = Double.MAX_VALUE;
+        for(int i=0; i < coordinates.length - 1; i++) {
+            final Coordinate a = coordinates[i];
+            final Coordinate b =  coordinates[i+1];
+            Coordinate closestPointOnSegment = getNearestPoint(new LineSegment(a, b), from);
+            double closestPointOnSegmentDistance = closestPointOnSegment.distance3D(from);
+            if(closestPoint == null || closestPointOnSegmentDistance < closestPointDistance) {
+                closestPoint = closestPointOnSegment;
+                closestPointDistance = closestPointOnSegmentDistance;
+            }
+        }
+        return closestPoint;
+    }
+
     /**
      * NFS 31-133 P.69 Annex E
      * @param xzList Line coordinates in the same plan of the line formed by the first and the last point.

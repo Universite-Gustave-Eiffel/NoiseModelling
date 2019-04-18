@@ -37,7 +37,6 @@ import org.locationtech.jts.algorithm.Angle;
 import org.locationtech.jts.geom.Coordinate;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -93,7 +92,7 @@ public class ComputeRaysOut implements IComputeRaysOut {
     }
 
     @Override
-    public double[] addPropagationPaths(int sourceId, int receiverId, List<PropagationPath> propagationPath) {
+    public double[] addPropagationPaths(int sourceId, double sourceLi, int receiverId, List<PropagationPath> propagationPath) {
         rayCount.addAndGet(propagationPath.size());
         if(keepRays) {
             propagationPaths.addAll(propagationPath);
@@ -120,13 +119,19 @@ public class ComputeRaysOut implements IComputeRaysOut {
                 double[] aGlobalMeteoRay = ComputeRays.sumArrayWithPonderation(aGlobalMeteoFav, aGlobalMeteoHom, pathData.getWindRose()[roseindex]);
 
                 if (aGlobalMeteo != null) {
-                    aGlobalMeteo = ComputeRays.sumArray(aGlobalMeteoRay, aGlobalMeteo);
+                    aGlobalMeteo = ComputeRays.sumDbArray(aGlobalMeteoRay, aGlobalMeteo);
                 } else {
                     aGlobalMeteo = aGlobalMeteoRay;
                 }
             }
             if (aGlobalMeteo != null) {
                 if(receiverAttenuationLevels != null) {
+                    // For line source, take account of li coefficient
+                    if(sourceLi > 1.0) {
+                        for (int i = 0; i < aGlobalMeteo.length; i++) {
+                            aGlobalMeteo[i] *= sourceLi;
+                        }
+                    }
                     receiverAttenuationLevels.add(new ComputeRaysOut.verticeSL(receiverId, sourceId, aGlobalMeteo));
                 }
                 return aGlobalMeteo;

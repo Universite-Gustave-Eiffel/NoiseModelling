@@ -11,7 +11,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -169,7 +171,87 @@ public class EvaluateAttenuationCnossosTest {
         }
     }
 
+    /**
+     * Check if Li coefficient computation and line source subdivision are correctly done
+     * @throws LayerDelaunayError
+     */
+    @Test
+    public void testSourceLines()  throws LayerDelaunayError {
 
+        // First Compute the scene with only point sources at 1m each
+
+        GeometryFactory factory = new GeometryFactory();
+        //Scene dimension
+        Envelope cellEnvelope = new Envelope(new Coordinate(-1200, -1200, 0.), new Coordinate(1200, 1200, 0.));
+
+        //Create obstruction test object
+        MeshBuilder mesh = new MeshBuilder();
+
+        mesh.finishPolygonFeeding(cellEnvelope);
+
+        //Retrieve Delaunay triangulation of scene
+        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+                mesh.getTriNeighbors(), mesh.getVertices());
+
+        double[] roadLvl = new double[]{25.65, 38.15, 54.35, 60.35, 74.65, 66.75, 59.25, 53.95};
+        for(int i = 0; i < roadLvl.length; i++) {
+            roadLvl[i] = ComputeRays.dbaToW(roadLvl[i]);
+        }
+
+        DirectPropagationProcessData rayData = new DirectPropagationProcessData(manager);
+        rayData.addReceiver(new Coordinate(50, 50, 4));
+        rayData.addReceiver(new Coordinate(48, 50, 4));
+        rayData.addReceiver(new Coordinate(44, 50, 4));
+        rayData.addReceiver(new Coordinate(40, 50, 4));
+        rayData.addReceiver(new Coordinate(20, 50, 4));
+        rayData.addReceiver(new Coordinate(0, 50, 4));
+        int roadLength = 15;
+        for(int yOffset = 0; yOffset < roadLength; yOffset++) {
+            rayData.addSource(factory.createPoint(new Coordinate(51, 50 - (roadLength / 2.0) + yOffset, 0.05)), roadLvl);
+        }
+        rayData.setComputeHorizontalDiffraction(true);
+        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9));
+        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
+        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
+        rayData.setComputeVerticalDiffraction(true);
+        rayData.makeRelativeZToAbsoluteOnlySources();
+        rayData.maxSrcDist = 2000;
+
+        PropagationProcessPathData attData = new PropagationProcessPathData();
+        attData.setHumidity(70);
+        attData.setTemperature(10);
+        RayOut propDataOut = new RayOut(false, attData, rayData);
+        ComputeRays computeRays = new ComputeRays(rayData);
+        computeRays.setThreadCount(1);
+        computeRays.run(propDataOut);
+
+
+        // Second compute the same scene but with a line source
+        rayData.clearSources();
+        rayData.addSource(factory.createLineString(new Coordinate[]{new Coordinate(51, 50 - (roadLength / 2.0), 0.05),
+                new Coordinate(51, 50 + (roadLength / 2.0), 0.05)}), roadLvl);
+        RayOut propDataOutTest = new RayOut(false, attData, rayData);
+        computeRays.run(propDataOutTest);
+
+        // Merge levels for each receiver
+        Map<Integer, double[]> levelsPerReceiver = new HashMap<>();
+        for(ComputeRaysOut.verticeSL lvl : propDataOut.receiverLevels) {
+            if(!levelsPerReceiver.containsKey(lvl.receiverId)) {
+                levelsPerReceiver.put(lvl.receiverId, lvl.value);
+            } else {
+                // merge
+                levelsPerReceiver.put(lvl.receiverId, ComputeRays.sumDbArray(levelsPerReceiver.get(lvl.receiverId),
+                        lvl.value));
+            }
+        }
+
+        for(Map.Entry<Integer, double[]> entry : levelsPerReceiver.entrySet()) {
+            double[] lvlDb = entry.getValue();
+            double[] lvlLineDb = propDataOutTest.receiverLevels.get(entry.getKey()).value;
+            assertArrayEquals(lvlDb, lvlLineDb, 0.1);
+        }
+
+    }
 
     private static class RayOut extends ComputeRaysOut {
         private DirectPropagationProcessData processData;
@@ -182,8 +264,8 @@ public class EvaluateAttenuationCnossosTest {
         }
 
         @Override
-        public double[] addPropagationPaths(int sourceId, int receiverId, List<PropagationPath> propagationPath) {
-            double[] attenuation = super.addPropagationPaths(sourceId, receiverId, propagationPath);
+        public double[] addPropagationPaths(int sourceId,double sourceLi, int receiverId, List<PropagationPath> propagationPath) {
+            double[] attenuation = super.addPropagationPaths(sourceId, sourceLi, receiverId, propagationPath);
             double[] soundLevel = ComputeRays.wToDba(ComputeRays.multArray(processData.wjSources.get(sourceId), ComputeRays.dbaToW(attenuation)));
             receiverLevels.add(new ComputeRaysOut.verticeSL(receiverId, sourceId, soundLevel));
             return soundLevel;
@@ -200,6 +282,12 @@ public class EvaluateAttenuationCnossosTest {
         public void addSource(Geometry geom, double[] spectrum) {
             super.addSource(geom);
             wjSources.add(spectrum);
+        }
+
+        public void clearSources() {
+            wjSources.clear();
+            sourceGeometries.clear();
+            sourcesIndex = new QueryRTree();
         }
 
         @Override

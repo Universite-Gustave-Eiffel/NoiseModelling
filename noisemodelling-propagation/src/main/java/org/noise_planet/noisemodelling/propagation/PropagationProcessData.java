@@ -226,8 +226,11 @@ public class PropagationProcessData {
                 pt.setOrdinate(2, zGround + (Double.isNaN(pt.getOrdinate(2)) ? 0 : pt.getOrdinate(2)));
                 coordinates[i] = pt;
             }
-
-            this.sourceGeometries.set(k,factory.createLineString(coordinates));
+            if(coordinates.length > 1) {
+                this.sourceGeometries.set(k, factory.createLineString(coordinates));
+            } else {
+                this.sourceGeometries.set(k, factory.createPoint(coordinates[0]));
+            }
         }
 
 

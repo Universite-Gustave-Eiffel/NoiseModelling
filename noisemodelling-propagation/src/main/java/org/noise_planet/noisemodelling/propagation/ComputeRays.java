@@ -55,7 +55,6 @@ import org.locationtech.jts.geom.impl.CoordinateArraySequence;
 import org.locationtech.jts.index.strtree.STRtree;
 import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.math.Vector3D;
-import org.locationtech.jts.operation.distance3d.Distance3DOp;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,7 +104,7 @@ public class ComputeRays {
      * @param array2
      * @return
      */
-    public static double[] sumArray(double[] array1, double[] array2) {
+    public static double[] sumDbArray(double[] array1, double[] array2) {
         if(array1.length != array2.length) {
             throw new IllegalArgumentException("Not same size array");
         }
@@ -136,6 +135,14 @@ public class ComputeRays {
     public static double sumArray(int nbfreq, double energeticSum[]) {
         double globlvl = 0;
         for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
+            globlvl += energeticSum[idfreq];
+        }
+        return globlvl;
+    }
+
+    public static double sumArray(double energeticSum[]) {
+        double globlvl = 0;
+        for (int idfreq = 0; idfreq < energeticSum.length; idfreq++) {
             globlvl += energeticSum[idfreq];
         }
         return globlvl;
@@ -203,8 +210,7 @@ public class ComputeRays {
                                              List<Coordinate> pts) {
         // If the linear sound source length is inferior than half the distance between the nearest point of the sound
         // source and the receiver then it can be modelled as a single point source
-        Point startPoint = new GeometryFactory().createPoint(startPt);
-        Coordinate nearestPoint = Distance3DOp.nearestPoints(geom, startPoint)[1];
+        Coordinate nearestPoint = JTSUtility.getNearestPoint(startPt, geom);
         double segmentSizeConstraint = Math.max(1, startPt.distance3D(nearestPoint) / 2.0);
         double geomLength = geom.getLength();
         if(geomLength < segmentSizeConstraint) {
@@ -229,7 +235,7 @@ public class ComputeRays {
                     splitPoint.x = a.x + segmentLengthFraction * (b.x - a.x);
                     splitPoint.y = a.y + segmentLengthFraction * (b.y - a.y);
                     splitPoint.z = a.z + segmentLengthFraction * (b.z - a.z);
-                    Coordinate closestPointOnSegment = new LineSegment(a, b).closestPoint(startPt);
+                    Coordinate closestPointOnSegment = JTSUtility.getNearestPoint(new LineSegment(a, b), startPt);
                     double closestPointOnSegmentDistance = closestPointOnSegment.distance3D(startPt);
                     if(closestPoint == null || closestPointOnSegmentDistance < closestPointDistance) {
                         closestPoint = closestPointOnSegment;
@@ -241,7 +247,7 @@ public class ComputeRays {
                     closestPoint = null;
                     closestPointDistance = Double.MAX_VALUE;
                 }
-                Coordinate closestPointOnSegment = new LineSegment(a, b).closestPoint(startPt);
+                Coordinate closestPointOnSegment = JTSUtility.getNearestPoint(new LineSegment(a, b), startPt);
                 double closestPointOnSegmentDistance = closestPointOnSegment.distance3D(startPt);
                 if(closestPoint == null || closestPointOnSegmentDistance < closestPointDistance) {
                     closestPoint = closestPointOnSegment;
@@ -925,18 +931,17 @@ public class ComputeRays {
 
     /**
      * Source-Receiver Direct+Reflection+Diffraction computation
-     *
-     * @param[in] srcCoord coordinate of source
-     * @param[in] receiverCoord coordinate of receiver
-     * @param[out] energeticSum Energy by frequency band
-     * @param[in] alpha_atmo Atmospheric absorption by frequency band
-     * @param[in] wj Source sound pressure level dB(A) by frequency band
-     * @param[in] nearBuildingsWalls Walls within maxsrcdist
-     * from receiver
+     * @param srcCoord coordinate of source
+     * @param srcId Source identifier
+     * @param sourceLi Coefficient of power per meter for this point source
+     * @param receiverCoord coordinate of receiver
+     * @param rcvId receiver identifier
+     * @param nearBuildingsWalls Walls to use in reflection
+     * @param debugInfo
+     * @param dataOut
      * @return Minimal power level (dB) or maximum attenuation (dB)
      */
-
-    private double[] receiverSourcePropa(Coordinate srcCoord, int srcId,
+    private double[] receiverSourcePropa(Coordinate srcCoord, int srcId, double sourceLi,
                                      Coordinate receiverCoord, int rcvId,
                                      List<FastObstructionTest.Wall> nearBuildingsWalls, List<PropagationDebugInfo> debugInfo, IComputeRaysOut dataOut) {
 
@@ -960,7 +965,7 @@ public class ComputeRays {
                     propagationPath.idSource = srcId;
                     propagationPath.idReceiver = rcvId;
                 }
-                return dataOut.addPropagationPaths(srcId, rcvId, propagationPaths);
+                return dataOut.addPropagationPaths(srcId, sourceLi, rcvId, propagationPaths);
             }
         }
         return new double[0];
@@ -1052,7 +1057,7 @@ public class ComputeRays {
                 wallsSource.addAll(data.freeFieldFinder.getLimitsInRange(
                         data.maxRefDist, srcCoord, false));
             }
-            double[] power = receiverSourcePropa(srcCoord, src.sourcePrimaryKey, receiverCoord, idReceiver,
+            double[] power = receiverSourcePropa(srcCoord, src.sourcePrimaryKey, src.li, receiverCoord, idReceiver,
                     new ArrayList<>(wallsSource), debugInfo, dataOut);
             double global = ComputeRays.sumArray(power.length, ComputeRays.dbaToW(power));
             totalPowerRemaining -= src.globalWj;
