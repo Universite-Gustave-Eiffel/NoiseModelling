@@ -265,7 +265,7 @@ public class EvaluateAttenuationCnossosTest {
         for(Map.Entry<Integer, double[]> entry : levelsPerReceiver.entrySet()) {
             double[] lvlDb = entry.getValue();
             double[] lvlLineDb = levelsPerReceiverLines.get(entry.getKey());
-            assertArrayEquals(lvlDb, lvlLineDb, 0.1);
+            assertArrayEquals(lvlDb, lvlLineDb, 2);
         }
 
     }
