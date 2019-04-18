@@ -153,9 +153,9 @@ public class EvaluateAttenuationCnossosTest {
         computeRays.run(propDataOut);
 
         // Second source has not been computed because at best it would only increase the received level of only 0.0004 dB
-        assertEquals(1, propDataOut.receiverLevels.size());
+        assertEquals(1, propDataOut.receiversAttenuationLevels.size());
 
-        assertEquals(44.07, ComputeRays.wToDba(ComputeRays.sumArray(roadLvl.length, ComputeRays.dbaToW(propDataOut.receiverLevels.get(0).value))), 0.1);
+        assertEquals(44.07, ComputeRays.wToDba(ComputeRays.sumArray(roadLvl.length, ComputeRays.dbaToW(propDataOut.receiversAttenuationLevels.get(0).value))), 0.1);
     }
 
     @Test
@@ -176,7 +176,7 @@ public class EvaluateAttenuationCnossosTest {
      * @throws LayerDelaunayError
      */
     @Test
-    public void testSourceLines()  throws LayerDelaunayError {
+    public void testSourceLines()  throws LayerDelaunayError, IOException {
 
         // First Compute the scene with only point sources at 1m each
 
@@ -199,12 +199,12 @@ public class EvaluateAttenuationCnossosTest {
         }
 
         DirectPropagationProcessData rayData = new DirectPropagationProcessData(manager);
-        rayData.addReceiver(new Coordinate(50, 50, 4));
-        rayData.addReceiver(new Coordinate(48, 50, 4));
-        rayData.addReceiver(new Coordinate(44, 50, 4));
-        rayData.addReceiver(new Coordinate(40, 50, 4));
-        rayData.addReceiver(new Coordinate(20, 50, 4));
-        rayData.addReceiver(new Coordinate(0, 50, 4));
+        rayData.addReceiver(new Coordinate(50, 50, 0.05));
+//        rayData.addReceiver(new Coordinate(48, 50, 4));
+//        rayData.addReceiver(new Coordinate(44, 50, 4));
+//        rayData.addReceiver(new Coordinate(40, 50, 4));
+//        rayData.addReceiver(new Coordinate(20, 50, 4));
+//        rayData.addReceiver(new Coordinate(0, 50, 4));
         int roadLength = 15;
         for(int yOffset = 0; yOffset < roadLength; yOffset++) {
             rayData.addSource(factory.createPoint(new Coordinate(51, 50 - (roadLength / 2.0) + yOffset, 0.05)), roadLvl);
@@ -220,7 +220,7 @@ public class EvaluateAttenuationCnossosTest {
         PropagationProcessPathData attData = new PropagationProcessPathData();
         attData.setHumidity(70);
         attData.setTemperature(10);
-        RayOut propDataOut = new RayOut(false, attData, rayData);
+        RayOut propDataOut = new RayOut(true, attData, rayData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -230,12 +230,12 @@ public class EvaluateAttenuationCnossosTest {
         rayData.clearSources();
         rayData.addSource(factory.createLineString(new Coordinate[]{new Coordinate(51, 50 - (roadLength / 2.0), 0.05),
                 new Coordinate(51, 50 + (roadLength / 2.0), 0.05)}), roadLvl);
-        RayOut propDataOutTest = new RayOut(false, attData, rayData);
+        RayOut propDataOutTest = new RayOut(true, attData, rayData);
         computeRays.run(propDataOutTest);
 
-        // Merge levels for each receiver
+        // Merge levels for each receiver for point sources
         Map<Integer, double[]> levelsPerReceiver = new HashMap<>();
-        for(ComputeRaysOut.verticeSL lvl : propDataOut.receiverLevels) {
+        for(ComputeRaysOut.verticeSL lvl : propDataOut.receiversAttenuationLevels) {
             if(!levelsPerReceiver.containsKey(lvl.receiverId)) {
                 levelsPerReceiver.put(lvl.receiverId, lvl.value);
             } else {
@@ -245,9 +245,26 @@ public class EvaluateAttenuationCnossosTest {
             }
         }
 
+
+        // Merge levels for each receiver for lines sources
+        Map<Integer, double[]> levelsPerReceiverLines = new HashMap<>();
+        for(ComputeRaysOut.verticeSL lvl : propDataOutTest.receiversAttenuationLevels) {
+            if(!levelsPerReceiverLines.containsKey(lvl.receiverId)) {
+                levelsPerReceiverLines.put(lvl.receiverId, lvl.value);
+            } else {
+                // merge
+                levelsPerReceiverLines.put(lvl.receiverId, ComputeRays.sumDbArray(levelsPerReceiverLines.get(lvl.receiverId),
+                        lvl.value));
+            }
+        }
+
+        assertEquals(rayData.receivers.size(), levelsPerReceiverLines.size());
+        assertEquals(rayData.receivers.size(), levelsPerReceiver.size());
+
+        KMLDocument.exportScene("target/lineSource.kml", manager, propDataOutTest);
         for(Map.Entry<Integer, double[]> entry : levelsPerReceiver.entrySet()) {
             double[] lvlDb = entry.getValue();
-            double[] lvlLineDb = propDataOutTest.receiverLevels.get(entry.getKey()).value;
+            double[] lvlLineDb = levelsPerReceiverLines.get(entry.getKey());
             assertArrayEquals(lvlDb, lvlLineDb, 0.1);
         }
 
@@ -255,19 +272,16 @@ public class EvaluateAttenuationCnossosTest {
 
     private static class RayOut extends ComputeRaysOut {
         private DirectPropagationProcessData processData;
-        protected List<ComputeRaysOut.verticeSL> receiverLevels = Collections.synchronizedList(new ArrayList<>());
 
         public RayOut(boolean keepRays, PropagationProcessPathData pathData, DirectPropagationProcessData processData) {
             super(keepRays, pathData);
             this.processData = processData;
-            this.receiverAttenuationLevels = null;
         }
 
         @Override
-        public double[] addPropagationPaths(int sourceId,double sourceLi, int receiverId, List<PropagationPath> propagationPath) {
-            double[] attenuation = super.addPropagationPaths(sourceId, sourceLi, receiverId, propagationPath);
+        public double[] doAddPropagationPaths(int sourceId, double sourceLi, int receiverId, List<PropagationPath> propagationPath) {
+            double[] attenuation = super.doAddPropagationPaths(sourceId, sourceLi, receiverId, propagationPath);
             double[] soundLevel = ComputeRays.wToDba(ComputeRays.multArray(processData.wjSources.get(sourceId), ComputeRays.dbaToW(attenuation)));
-            receiverLevels.add(new ComputeRaysOut.verticeSL(receiverId, sourceId, soundLevel));
             return soundLevel;
         }
     }

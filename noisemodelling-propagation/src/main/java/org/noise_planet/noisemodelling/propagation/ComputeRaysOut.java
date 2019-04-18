@@ -38,7 +38,9 @@ import org.locationtech.jts.geom.Coordinate;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -50,7 +52,9 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Pierre Aumond
  */
 public class ComputeRaysOut implements IComputeRaysOut {
-    protected List<ComputeRaysOut.verticeSL> receiverAttenuationLevels = Collections.synchronizedList(new ArrayList<>());
+    protected List<ComputeRaysOut.verticeSL> receiversAttenuationLevels = Collections.synchronizedList(new ArrayList<>());
+    protected List<PropagationPath> propagationPaths = Collections.synchronizedList(new ArrayList<PropagationPath>());
+
     protected PropagationProcessPathData pathData;
 
     public ComputeRaysOut(boolean keepRays, PropagationProcessPathData pathData) {
@@ -68,7 +72,6 @@ public class ComputeRaysOut implements IComputeRaysOut {
     protected AtomicInteger cellComputed = new AtomicInteger();
     private static final double angle_section = (2 * Math.PI) / PropagationProcessPathData.DEFAULT_WIND_ROSE.length;
 
-    protected List<PropagationPath> propagationPaths = Collections.synchronizedList(new ArrayList<PropagationPath>());
 
     public static int getRoseIndex(Coordinate receiver, Coordinate source) {
         // Angle from cos -1 sin 0
@@ -92,7 +95,22 @@ public class ComputeRaysOut implements IComputeRaysOut {
     }
 
     @Override
+    public void finalizeReceiver(int receiverId) {
+
+    }
+
+    @Override
     public double[] addPropagationPaths(int sourceId, double sourceLi, int receiverId, List<PropagationPath> propagationPath) {
+        double[] aGlobalMeteo = doAddPropagationPaths(sourceId, sourceLi, receiverId, propagationPath);
+        if (aGlobalMeteo != null && aGlobalMeteo.length > 0) {
+            receiversAttenuationLevels.add(new ComputeRaysOut.verticeSL(receiverId, sourceId, aGlobalMeteo));
+            return aGlobalMeteo;
+        } else {
+            return new double[0];
+        }
+    }
+
+    public double[] doAddPropagationPaths(int sourceId, double sourceLi, int receiverId, List<PropagationPath> propagationPath) {
         rayCount.addAndGet(propagationPath.size());
         if(keepRays) {
             propagationPaths.addAll(propagationPath);
@@ -125,14 +143,11 @@ public class ComputeRaysOut implements IComputeRaysOut {
                 }
             }
             if (aGlobalMeteo != null) {
-                if(receiverAttenuationLevels != null) {
-                    // For line source, take account of li coefficient
-                    if(sourceLi > 1.0) {
-                        for (int i = 0; i < aGlobalMeteo.length; i++) {
-                            aGlobalMeteo[i] *= sourceLi;
-                        }
+                // For line source, take account of li coefficient
+                if(sourceLi > 1.0) {
+                    for (int i = 0; i < aGlobalMeteo.length; i++) {
+                        aGlobalMeteo[i] *= sourceLi;
                     }
-                    receiverAttenuationLevels.add(new ComputeRaysOut.verticeSL(receiverId, sourceId, aGlobalMeteo));
                 }
                 return aGlobalMeteo;
             } else {
@@ -145,11 +160,11 @@ public class ComputeRaysOut implements IComputeRaysOut {
 
     @Override
     public IComputeRaysOut subProcess(int receiverStart, int receiverEnd) {
-        return this;
+        return new ThreadRaysOut(this);
     }
 
     public List<ComputeRaysOut.verticeSL> getVerticesSoundLevel() {
-        return receiverAttenuationLevels;
+        return receiversAttenuationLevels;
     }
 
     public List<PropagationPath> getPropagationPaths() {
@@ -205,6 +220,53 @@ public class ComputeRaysOut implements IComputeRaysOut {
             this.sourceId = sourceId;
             this.receiverId = receiverId;
             this.value = value;
+        }
+    }
+
+    private static class ThreadRaysOut implements IComputeRaysOut {
+        private ComputeRaysOut multiThreadParent;
+        protected List<ComputeRaysOut.verticeSL> receiverAttenuationLevels = Collections.synchronizedList(new ArrayList<>());
+
+        public ThreadRaysOut(ComputeRaysOut multiThreadParent) {
+            this.multiThreadParent = multiThreadParent;
+        }
+
+        @Override
+        public double[] addPropagationPaths(int sourceId, double sourceLi, int receiverId, List<PropagationPath> propagationPath) {
+            double[] aGlobalMeteo = multiThreadParent.doAddPropagationPaths(sourceId, sourceLi, receiverId, propagationPath);
+            if (aGlobalMeteo != null) {
+                receiverAttenuationLevels.add(new ComputeRaysOut.verticeSL(receiverId, sourceId, aGlobalMeteo));
+                return aGlobalMeteo;
+            } else {
+                return new double[0];
+            }
+        }
+
+        @Override
+        public void finalizeReceiver(int receiverId) {
+            if(multiThreadParent.receiversAttenuationLevels != null) {
+                // Push merged sources into multi-thread parent
+                // Merge levels for each receiver for lines sources
+                Map<Integer, double[]> levelsPerSourceLines = new HashMap<>();
+                for (ComputeRaysOut.verticeSL lvl : receiverAttenuationLevels) {
+                    if (!levelsPerSourceLines.containsKey(lvl.sourceId)) {
+                        levelsPerSourceLines.put(lvl.sourceId, lvl.value);
+                    } else {
+                        // merge
+                        levelsPerSourceLines.put(lvl.sourceId, ComputeRays.sumDbArray(levelsPerSourceLines.get(lvl.sourceId),
+                                lvl.value));
+                    }
+                }
+                for (Map.Entry<Integer, double[]> entry : levelsPerSourceLines.entrySet()) {
+                    multiThreadParent.receiversAttenuationLevels.add(new verticeSL(receiverId, entry.getKey(), entry.getValue()));
+                }
+            }
+            receiverAttenuationLevels.clear();
+        }
+
+        @Override
+        public IComputeRaysOut subProcess(int receiverStart, int receiverEnd) {
+            return multiThreadParent.subProcess(receiverStart, receiverEnd);
         }
     }
 }

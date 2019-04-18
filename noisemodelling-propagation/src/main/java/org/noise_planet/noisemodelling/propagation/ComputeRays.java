@@ -235,7 +235,7 @@ public class ComputeRays {
                     splitPoint.x = a.x + segmentLengthFraction * (b.x - a.x);
                     splitPoint.y = a.y + segmentLengthFraction * (b.y - a.y);
                     splitPoint.z = a.z + segmentLengthFraction * (b.z - a.z);
-                    Coordinate closestPointOnSegment = JTSUtility.getNearestPoint(new LineSegment(a, b), startPt);
+                    Coordinate closestPointOnSegment = JTSUtility.getNearestPoint(new LineSegment(a, splitPoint), startPt);
                     double closestPointOnSegmentDistance = closestPointOnSegment.distance3D(startPt);
                     if(closestPoint == null || closestPointOnSegmentDistance < closestPointDistance) {
                         closestPoint = closestPointOnSegment;
@@ -1072,6 +1072,8 @@ public class ComputeRays {
                 break; //Stop looking for more rays
             }
         }
+        // No more rays for this receiver
+        dataOut.finalizeReceiver(idReceiver);
     }
 
     /**

@@ -32,6 +32,7 @@ import java.util.Random;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.noise_planet.noisemodelling.propagation.KMLDocument.exportScene;
 
 
 public class TestComputeRays {
@@ -1879,29 +1880,6 @@ public class TestComputeRays {
             jsonDocument.writeRay(propagationPath);
         }
         jsonDocument.writeFooter();
-    }
-
-    private void exportScene(String name, FastObstructionTest manager, ComputeRaysOut result) throws IOException {
-        try {
-            Coordinate proj = new Coordinate( 351714.794877, 6685824.856402, 0);
-            FileOutputStream outData = new FileOutputStream(name);
-            KMLDocument kmlDocument = new KMLDocument(outData);
-            kmlDocument.setInputCRS("EPSG:2154");
-            kmlDocument.setOffset(proj);
-            kmlDocument.writeHeader();
-            if(manager != null) {
-                kmlDocument.writeTopographic(manager.getTriangles(), manager.getVertices());
-            }
-            if(result != null) {
-                kmlDocument.writeRays(result.getPropagationPaths());
-            }
-            if(manager != null && manager.isHasBuildingWithHeight()) {
-                kmlDocument.writeBuildings(manager);
-            }
-            kmlDocument.writeFooter();
-        } catch (XMLStreamException | CoordinateOperationException | CRSException ex) {
-            throw new IOException(ex);
-        }
     }
 
     private void assertRaysEquals(InputStream expected, ComputeRaysOut result) throws IOException {
