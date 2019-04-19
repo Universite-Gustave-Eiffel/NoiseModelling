@@ -18,12 +18,12 @@
         </license>
     </licenses>
     <properties>
-        <jts-core-groupId>org.orbisgis.jts</jts-core-groupId>
+        <jts-core-groupId>org.locationtech.jts</jts-core-groupId>
         <jts-core-version>1.15.1</jts-core-version>
         <jts-io-version>1.15.1</jts-io-version>
-        <h2-version>1.4.198</h2-version>
+        <h2-version>1.4.197</h2-version>
         <h2-group>org.orbisgis</h2-group>
-        <h2gis-version>1.5.0-SNAPSHOT</h2gis-version>
+        <h2gis-version>1.5.0</h2gis-version>
     </properties>
     <modules>
         <module>noisemodelling-propagation</module>
@@ -68,8 +68,13 @@
     <developers>
         <developer>
             <name>Nicolas Fortin</name>
-            <organization>IRSTV CNRS-FR-2488</organization>
+            <organization>Ifsttar UMRAE</organization>
             <url>https://github.com/nicolas-f</url>
+        </developer>
+        <developer>
+            <name>Pierre Aumond</name>
+            <organization>Ifsttar UMRAE</organization>
+            <url>https://github.com/pierromond</url>
         </developer>
         <developer>
             <name>Qi Su</name>
