@@ -241,7 +241,7 @@ public class EvaluateAttenuationCnossosTest {
         computeRays.run(propDataOutTest);
 
         // Merge levels for each receiver for point sources
-        Map<Integer, double[]> levelsPerReceiver = new HashMap<>();
+        Map<Long, double[]> levelsPerReceiver = new HashMap<>();
         for(ComputeRaysOut.verticeSL lvl : propDataOut.receiversAttenuationLevels) {
             if(!levelsPerReceiver.containsKey(lvl.receiverId)) {
                 levelsPerReceiver.put(lvl.receiverId, lvl.value);
@@ -254,7 +254,7 @@ public class EvaluateAttenuationCnossosTest {
 
 
         // Merge levels for each receiver for lines sources
-        Map<Integer, double[]> levelsPerReceiverLines = new HashMap<>();
+        Map<Long, double[]> levelsPerReceiverLines = new HashMap<>();
         for(ComputeRaysOut.verticeSL lvl : propDataOutTest.receiversAttenuationLevels) {
             if(!levelsPerReceiverLines.containsKey(lvl.receiverId)) {
                 levelsPerReceiverLines.put(lvl.receiverId, lvl.value);
@@ -298,9 +298,9 @@ public class EvaluateAttenuationCnossosTest {
         }
 
         @Override
-        public double[] doAddPropagationPaths(int sourceId, double sourceLi, int receiverId, List<PropagationPath> propagationPath) {
+        public double[] doAddPropagationPaths(long sourceId, double sourceLi, long receiverId, List<PropagationPath> propagationPath) {
             double[] attenuation = super.doAddPropagationPaths(sourceId, sourceLi, receiverId, propagationPath);
-            double[] soundLevel = ComputeRays.wToDba(ComputeRays.multArray(processData.wjSources.get(sourceId), ComputeRays.dbaToW(attenuation)));
+            double[] soundLevel = ComputeRays.wToDba(ComputeRays.multArray(processData.wjSources.get((int)sourceId), ComputeRays.dbaToW(attenuation)));
             return soundLevel;
         }
     }

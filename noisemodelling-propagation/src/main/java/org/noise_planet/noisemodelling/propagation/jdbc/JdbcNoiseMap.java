@@ -204,13 +204,10 @@ public abstract class JdbcNoiseMap {
      * Fetch source geometries and power
      * @param connection Active connection
      * @param fetchEnvelope Fetch envelope
-     * @param allSourceGeometries All source geometries, may be null
-     * @param sourceGeometries Source geometries of source with power > -Inf dB(A)
-     * @param wj_sources Power of source, same size as sourceGeometries
-     * @param sourcesIndex source with power > -Inf dB(A) are inserted in this index.
+     * @param propagationProcessData (Out) Propagation process input data
      * @throws SQLException
      */
-    protected void fetchCellSource(Connection connection,Envelope fetchEnvelope, PropagationProcessData propagationProcessData, List<Long> sourcesPK)
+    protected void fetchCellSource(Connection connection,Envelope fetchEnvelope, PropagationProcessData propagationProcessData)
             throws SQLException {
         TableLocation sourceTableIdentifier = TableLocation.parse(sourcesTableName);
         String sourceGeomName = SFSUtilities.getGeometryFields(connection, sourceTableIdentifier).get(0);
@@ -231,20 +228,7 @@ public abstract class JdbcNoiseMap {
                 while (rs.next()) {
                     Geometry geo = rs.getGeometry();
                     if (geo != null) {
-//                        ArrayList<Double> wj_spectrum = new ArrayList<>(db_field_ids.size());
-//                        double sumPow = 0;
-//                        for (Integer idcol : db_field_ids) {
-//                            double wj = DbaToW(rs.getDouble(idcol));
-//                            wj_spectrum
-//                                    .add(wj);
-//                            sumPow += wj;
-//                        }
-//                        if(db_field_ids.isEmpty()) {
-                            propagationProcessData.addSource(geo);
-//                        } else {
-//                            propagationProcessData.addSource(geo, sumPow);
-//                        }
-                        sourcesPK.add(rs.getLong(pkIndex));
+                        propagationProcessData.addSource(rs.getLong(pkIndex), geo, rs);
                     }
                 }
             } finally {
@@ -258,6 +242,7 @@ public abstract class JdbcNoiseMap {
     protected double getCellWidth() {
         return mainEnvelope.getWidth() / gridDim;
     }
+
     protected double getCellHeight() {
         return mainEnvelope.getHeight() / gridDim;
     }

@@ -33,6 +33,7 @@
  */
 package org.noise_planet.noisemodelling.propagation;
 
+import org.h2gis.utilities.SpatialResultSet;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
@@ -57,6 +58,8 @@ public class PropagationProcessData {
     public static final double DEFAULT_MAXIMUM_REF_DIST = 50;
     public static final double DEFAULT_RECEIVER_DIST = 1.0;
 
+    public List<Long> receiversPk = new ArrayList<>();
+    public List<Long> sourcesPk = new ArrayList<>();
     /** coordinate of receivers */
     public List<Coordinate> receivers = new ArrayList<>();
     /** FreeField test */
@@ -96,6 +99,20 @@ public class PropagationProcessData {
     public void addSource(Geometry geom) {
         sourceGeometries.add(geom);
         sourcesIndex.appendGeometry(geom, sourceGeometries.size() - 1);
+    }
+
+    public void addSource(Long pk, Geometry geom) {
+        sourceGeometries.add(geom);
+        sourcesPk.add(pk);
+    }
+    /**
+     * Add geometry with additional attributes
+     * @param pk Unique source identifier
+     * @param geom Source geometry
+     * @param rs Additional attributes fetched from database
+     */
+    public void addSource(Long pk, Geometry geom, SpatialResultSet rs) {
+        addSource(pk, geom);
     }
 
     public void setSources(List<Geometry> sourceGeometries) {
@@ -138,6 +155,15 @@ public class PropagationProcessData {
 
     public void addReceiver(Coordinate... receiver) {
         receivers.addAll(Arrays.asList(receiver));
+    }
+
+    public void addReceiver(long pk, Coordinate position) {
+        receivers.add(position);
+        receiversPk.add(pk);
+    }
+
+    public void addReceiver(long pk, Coordinate position, SpatialResultSet rs) {
+        addReceiver(pk, position);
     }
 
     public void setComputeHorizontalDiffraction(boolean computeHorizontalDiffraction) {

@@ -56,6 +56,13 @@ public class ComputeRaysOut implements IComputeRaysOut {
     protected List<PropagationPath> propagationPaths = Collections.synchronizedList(new ArrayList<PropagationPath>());
 
     protected PropagationProcessPathData pathData;
+    protected PropagationProcessData inputData;
+
+    public ComputeRaysOut(boolean keepRays, PropagationProcessPathData pathData, PropagationProcessData inputData) {
+        this.keepRays = keepRays;
+        this.pathData = pathData;
+        this.inputData = inputData;
+    }
 
     public ComputeRaysOut(boolean keepRays, PropagationProcessPathData pathData) {
         this.keepRays = keepRays;
@@ -95,14 +102,22 @@ public class ComputeRaysOut implements IComputeRaysOut {
     }
 
     @Override
-    public void finalizeReceiver(int receiverId) {
+    public void finalizeReceiver(long receiverId) {
 
     }
 
     @Override
-    public double[] addPropagationPaths(int sourceId, double sourceLi, int receiverId, List<PropagationPath> propagationPath) {
+    public double[] addPropagationPaths(long sourceId, double sourceLi, long receiverId, List<PropagationPath> propagationPath) {
         double[] aGlobalMeteo = doAddPropagationPaths(sourceId, sourceLi, receiverId, propagationPath);
         if (aGlobalMeteo != null && aGlobalMeteo.length > 0) {
+            if(inputData != null) {
+                if(sourceId < inputData.sourcesPk.size()) {
+                    sourceId = inputData.sourcesPk.get((int)sourceId);
+                }
+                if(receiverId < inputData.receiversPk.size()) {
+                    receiverId = inputData.receiversPk.get((int)receiverId);
+                }
+            }
             receiversAttenuationLevels.add(new ComputeRaysOut.verticeSL(receiverId, sourceId, aGlobalMeteo));
             return aGlobalMeteo;
         } else {
@@ -110,7 +125,7 @@ public class ComputeRaysOut implements IComputeRaysOut {
         }
     }
 
-    public double[] doAddPropagationPaths(int sourceId, double sourceLi, int receiverId, List<PropagationPath> propagationPath) {
+    public double[] doAddPropagationPaths(long sourceId, double sourceLi, long receiverId, List<PropagationPath> propagationPath) {
         rayCount.addAndGet(propagationPath.size());
         if(keepRays) {
             propagationPaths.addAll(propagationPath);
@@ -212,11 +227,11 @@ public class ComputeRaysOut implements IComputeRaysOut {
      * Noise level or attenuation level for each source/receiver
      */
     public static final class verticeSL {
-        public final int sourceId;
-        public final int receiverId;
+        public final long sourceId;
+        public final long receiverId;
         public final double[] value;
 
-        verticeSL(int receiverId, int sourceId, double[] value) {
+        verticeSL(long receiverId, long sourceId, double[] value) {
             this.sourceId = sourceId;
             this.receiverId = receiverId;
             this.value = value;
@@ -232,7 +247,7 @@ public class ComputeRaysOut implements IComputeRaysOut {
         }
 
         @Override
-        public double[] addPropagationPaths(int sourceId, double sourceLi, int receiverId, List<PropagationPath> propagationPath) {
+        public double[] addPropagationPaths(long sourceId, double sourceLi, long receiverId, List<PropagationPath> propagationPath) {
             double[] aGlobalMeteo = multiThreadParent.doAddPropagationPaths(sourceId, sourceLi, receiverId, propagationPath);
             if (aGlobalMeteo != null) {
                 receiverAttenuationLevels.add(new ComputeRaysOut.verticeSL(receiverId, sourceId, aGlobalMeteo));
@@ -243,11 +258,11 @@ public class ComputeRaysOut implements IComputeRaysOut {
         }
 
         @Override
-        public void finalizeReceiver(int receiverId) {
+        public void finalizeReceiver(long receiverId) {
             if(multiThreadParent.receiversAttenuationLevels != null) {
                 // Push merged sources into multi-thread parent
                 // Merge levels for each receiver for lines sources
-                Map<Integer, double[]> levelsPerSourceLines = new HashMap<>();
+                Map<Long, double[]> levelsPerSourceLines = new HashMap<>();
                 for (ComputeRaysOut.verticeSL lvl : receiverAttenuationLevels) {
                     if (!levelsPerSourceLines.containsKey(lvl.sourceId)) {
                         levelsPerSourceLines.put(lvl.sourceId, lvl.value);
@@ -257,7 +272,7 @@ public class ComputeRaysOut implements IComputeRaysOut {
                                 lvl.value));
                     }
                 }
-                for (Map.Entry<Integer, double[]> entry : levelsPerSourceLines.entrySet()) {
+                for (Map.Entry<Long, double[]> entry : levelsPerSourceLines.entrySet()) {
                     multiThreadParent.receiversAttenuationLevels.add(new verticeSL(receiverId, entry.getKey(), entry.getValue()));
                 }
             }
