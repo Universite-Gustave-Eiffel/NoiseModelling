@@ -55,18 +55,18 @@ public class ComputeRaysOut implements IComputeRaysOut {
     protected List<ComputeRaysOut.verticeSL> receiversAttenuationLevels = Collections.synchronizedList(new ArrayList<>());
     protected List<PropagationPath> propagationPaths = Collections.synchronizedList(new ArrayList<PropagationPath>());
 
-    protected PropagationProcessPathData pathData;
+    protected PropagationProcessPathData genericMeteoData;
     protected PropagationProcessData inputData;
 
     public ComputeRaysOut(boolean keepRays, PropagationProcessPathData pathData, PropagationProcessData inputData) {
         this.keepRays = keepRays;
-        this.pathData = pathData;
+        this.genericMeteoData = pathData;
         this.inputData = inputData;
     }
 
     public ComputeRaysOut(boolean keepRays, PropagationProcessPathData pathData) {
         this.keepRays = keepRays;
-        this.pathData = pathData;
+        this.genericMeteoData = pathData;
     }
 
     protected boolean keepRays = true;
@@ -108,7 +108,11 @@ public class ComputeRaysOut implements IComputeRaysOut {
 
     @Override
     public double[] addPropagationPaths(long sourceId, double sourceLi, long receiverId, List<PropagationPath> propagationPath) {
-        double[] aGlobalMeteo = doAddPropagationPaths(sourceId, sourceLi, receiverId, propagationPath);
+        rayCount.addAndGet(propagationPath.size());
+        if(keepRays) {
+            propagationPaths.addAll(propagationPath);
+        }
+        double[] aGlobalMeteo = computeAttenuation(genericMeteoData, sourceId, sourceLi, receiverId, propagationPath);
         if (aGlobalMeteo != null && aGlobalMeteo.length > 0) {
             if(inputData != null) {
                 if(sourceId < inputData.sourcesPk.size()) {
@@ -125,11 +129,7 @@ public class ComputeRaysOut implements IComputeRaysOut {
         }
     }
 
-    public double[] doAddPropagationPaths(long sourceId, double sourceLi, long receiverId, List<PropagationPath> propagationPath) {
-        rayCount.addAndGet(propagationPath.size());
-        if(keepRays) {
-            propagationPaths.addAll(propagationPath);
-        }
+    public double[] computeAttenuation(PropagationProcessPathData pathData, long sourceId, double sourceLi, long receiverId, List<PropagationPath> propagationPath) {
         if(pathData != null) {
             // Compute receiver/source attenuation
             EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
@@ -248,13 +248,21 @@ public class ComputeRaysOut implements IComputeRaysOut {
 
         @Override
         public double[] addPropagationPaths(long sourceId, double sourceLi, long receiverId, List<PropagationPath> propagationPath) {
-            double[] aGlobalMeteo = multiThreadParent.doAddPropagationPaths(sourceId, sourceLi, receiverId, propagationPath);
+            double[] aGlobalMeteo = multiThreadParent.computeAttenuation(multiThreadParent.genericMeteoData, sourceId, sourceLi, receiverId, propagationPath);
+            multiThreadParent.rayCount.addAndGet(propagationPath.size());
+            if(multiThreadParent.keepRays) {
+                multiThreadParent.propagationPaths.addAll(propagationPath);
+            }
             if (aGlobalMeteo != null) {
                 receiverAttenuationLevels.add(new ComputeRaysOut.verticeSL(receiverId, sourceId, aGlobalMeteo));
                 return aGlobalMeteo;
             } else {
                 return new double[0];
             }
+        }
+
+        protected void pushResult(long receiverId, long sourceId, double[] level) {
+            multiThreadParent.receiversAttenuationLevels.add(new verticeSL(receiverId, sourceId, level));
         }
 
         @Override
@@ -273,7 +281,17 @@ public class ComputeRaysOut implements IComputeRaysOut {
                     }
                 }
                 for (Map.Entry<Long, double[]> entry : levelsPerSourceLines.entrySet()) {
-                    multiThreadParent.receiversAttenuationLevels.add(new verticeSL(receiverId, entry.getKey(), entry.getValue()));
+                    long sourceId = entry.getKey();
+                    if(multiThreadParent.inputData != null) {
+                        // Retrieve original identifier
+                        if(entry.getKey() < multiThreadParent.inputData.sourcesPk.size()) {
+                            sourceId = multiThreadParent.inputData.sourcesPk.get((int)sourceId);
+                        }
+                        if(receiverId < multiThreadParent.inputData.receiversPk.size()) {
+                            receiverId = multiThreadParent.inputData.receiversPk.get((int)receiverId);
+                        }
+                    }
+                    pushResult(receiverId, sourceId, entry.getValue());
                 }
             }
             receiverAttenuationLevels.clear();
