@@ -4,18 +4,34 @@ import org.h2.util.StringUtils;
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.utilities.SFSUtilities;
+import org.h2gis.utilities.SpatialResultSet;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.locationtech.jts.geom.Geometry;
+import org.noise_planet.noisemodelling.propagation.ComputeRays;
+import org.noise_planet.noisemodelling.propagation.ComputeRaysOut;
+import org.noise_planet.noisemodelling.propagation.EvaluateAttenuationCnossosTest;
+import org.noise_planet.noisemodelling.propagation.FastObstructionTest;
+import org.noise_planet.noisemodelling.propagation.IComputeRaysOut;
+import org.noise_planet.noisemodelling.propagation.PropagationPath;
+import org.noise_planet.noisemodelling.propagation.PropagationProcessData;
+import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 import org.noise_planet.noisemodelling.propagation.PropagationResultPtRecord;
+import org.noise_planet.noisemodelling.propagation.QueryRTree;
 
 import java.io.File;
 import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import static org.junit.Assert.assertEquals;
 
 public class PointNoiseMapTest {
 
@@ -58,11 +74,6 @@ public class PointNoiseMapTest {
     public void testDemTopOfBuilding() throws Exception {
         try(Statement st = connection.createStatement()) {
             st.execute(getRunScriptRes("scene_with_dem.sql"));
-            st.execute("TRUNCATE TABLE BUILDINGS");
-            st.execute("INSERT INTO buildings VALUES (" +
-                    "'MULTIPOLYGON (((80 -30 0,80 90 0,-10 90 0,-10 70 0,60 70 0,60 -30 0,80 -30 0)))',4)");
-            st.execute("DELETE FROM sound_source WHERE GID = 1");
-            st.execute("UPDATE sound_source SET THE_GEOM = 'POINT(200 -18 1.6)' WHERE GID = 2");
             st.execute("DROP TABLE IF EXISTS RECEIVERS");
             st.execute("CREATE TABLE RECEIVERS(the_geom POINT, GID SERIAL)");
             st.execute("INSERT INTO RECEIVERS(the_geom) VALUES ('POINT(-72 41 11)')");
@@ -76,14 +87,77 @@ public class PointNoiseMapTest {
             pointNoiseMap.setDemTable("DEM");
             pointNoiseMap.setComputeVerticalDiffraction(false);
             pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
+            pointNoiseMap.setComputeRaysOutFactory(new JDBCComputeRaysOut());
+            pointNoiseMap.setPropagationProcessDataFactory(new JDBCPropagationData());
+            List<ComputeRaysOut.verticeSL> allLevels = new ArrayList<>();
+            Set<Long> receivers = new HashSet<>();
+            pointNoiseMap.setThreadCount(1);
+            for(int i=0; i < pointNoiseMap.getGridDim(); i++) {
+                for(int j=0; j < pointNoiseMap.getGridDim(); j++) {
+                    IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, i, j, new EmptyProgressVisitor(), receivers);
+                    if(out instanceof ComputeRaysOut) {
+                        allLevels.addAll(((ComputeRaysOut) out).getVerticesSoundLevel());
+                    }
+                }
+            }
 
-            //Collection<PropagationResultPtRecord> result =
-            //        pointNoiseMap.evaluateCell(connection, 0, 0, new EmptyProgressVisitor(), new HashSet<Long>());
+            assertEquals(3, allLevels.size());
+        }
+    }
 
-//            assertEquals(3, result.size());
-//            assertEquals(51.20, 10*Math.log10(result.get(0).getReceiverLvl()), 1e-2);
-//            assertEquals(0, 10*Math.log10(result.get(1).getReceiverLvl()), 1e-2);
-//            assertEquals(58.23, 10*Math.log10(result.get(2).getReceiverLvl()), 1e-2);
+    private static class JDBCPropagationData implements PointNoiseMap.PropagationProcessDataFactory {
+        @Override
+        public PropagationProcessData create(FastObstructionTest freeFieldFinder) {
+            return new DirectPropagationProcessData(freeFieldFinder);
+        }
+    }
+
+    private static class JDBCComputeRaysOut implements PointNoiseMap.IComputeRaysOutFactory {
+        @Override
+        public IComputeRaysOut create(PropagationProcessData threadData, PropagationProcessPathData pathData) {
+            return new RayOut(false, pathData, (DirectPropagationProcessData)threadData);
+        }
+    }
+
+    private static class RayOut extends ComputeRaysOut {
+        private DirectPropagationProcessData processData;
+
+        public RayOut(boolean keepRays, PropagationProcessPathData pathData, DirectPropagationProcessData processData) {
+            super(keepRays, pathData, processData);
+            this.processData = processData;
+        }
+
+        @Override
+        public double[] computeAttenuation(PropagationProcessPathData pathData, long sourceId, double sourceLi, long receiverId, List<PropagationPath> propagationPath) {
+            double[] attenuation = super.computeAttenuation(pathData, sourceId, sourceLi, receiverId, propagationPath);
+            double[] soundLevel = ComputeRays.wToDba(ComputeRays.multArray(processData.wjSources.get((int)sourceId), ComputeRays.dbaToW(attenuation)));
+            return soundLevel;
+        }
+    }
+
+    private static class DirectPropagationProcessData extends PropagationProcessData {
+        private List<double[]> wjSources = new ArrayList<>();
+        private final static String[] powerColumns = new String[]{"db_m63", "db_m125", "db_m250", "db_m500", "db_m1000", "db_m2000", "db_m4000", "db_m8000"};
+
+        public DirectPropagationProcessData(FastObstructionTest freeFieldFinder) {
+            super(freeFieldFinder);
+        }
+
+
+        @Override
+        public void addSource(Long pk, Geometry geom, SpatialResultSet rs)  throws SQLException {
+            super.addSource(pk, geom, rs);
+            double sl[] = new double[powerColumns.length];
+            int i = 0;
+            for(String columnName : powerColumns) {
+                sl[i++] = ComputeRays.dbaToW(rs.getDouble(columnName));
+            }
+            wjSources.add(sl);
+        }
+
+        @Override
+        public double[] getMaximalSourcePower(int sourceId) {
+            return wjSources.get(sourceId);
         }
     }
 }

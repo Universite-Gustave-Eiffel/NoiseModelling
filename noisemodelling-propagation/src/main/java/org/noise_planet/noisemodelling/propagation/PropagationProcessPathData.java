@@ -57,7 +57,7 @@ public class PropagationProcessPathData {
     static final  double KvibN = 3352.0;// Vibrational temperature of the nitrogen (K)
     static final  double K01 = 273.16;  // Isothermal temperature at the triple point (K)
     /** Frequency bands values, by third octave */
-    static final List<Integer> freq_lvl = Arrays.asList(63, 125, 250, 500, 1000, 2000, 4000, 8000);
+    public static final List<Integer> freq_lvl = Arrays.asList(63, 125, 250, 500, 1000, 2000, 4000, 8000);
     static final double[] DEFAULT_WIND_ROSE = new double[]{0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
     /** Temperature in celsius */
     private double temperature = 15;

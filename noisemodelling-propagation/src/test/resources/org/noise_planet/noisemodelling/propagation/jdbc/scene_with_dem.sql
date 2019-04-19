@@ -1,26 +1,22 @@
 -- make buildings table
 drop table if exists buildings;
-create table buildings ( the_geom GEOMETRY, height double );
+create table buildings ( id serial, the_geom GEOMETRY, height double );
 -- Insert 4 buildings
-INSERT INTO buildings VALUES
-('MULTIPOLYGON (((0 20 0,20 20 0,20 60 0,0 60 0,0 20 0)))',5),
-('MULTIPOLYGON (((20 0 0,100 0 0, 100 20 0,20 20 0, 20 0 0)))',5),
-('MULTIPOLYGON (((80 30 0,80 90 0,-10 90 0,-10 70 0,60 70 0,60 30 0,80 30 0)))',5),
-('POLYGON ((137 89 0, 137 109 0, 153 109 0, 153 89 0, 137 89 0))',5),
-('MULTIPOLYGON (((140 0 0,230 0 0, 230 60 0, 140 60 0,140 40 0,210 40 0,210 20 0, 140 20 0, 140 0 0)))',10);
+INSERT INTO buildings(the_geom, height) VALUES
+('MULTIPOLYGON (((0 20,20 20,20 60,0 60,0 20)))',5),
+('MULTIPOLYGON (((20 0,100 0, 100 20,20 20, 20 0)))',5),
+('MULTIPOLYGON (((80 30,80 90,-10 90,-10 70,60 70,60 30,80 30)))',5),
+('POLYGON ((137 89, 137 109, 153 109, 153 89, 137 89))',5),
+('MULTIPOLYGON (((140 0,230 0, 230 60, 140 60,140 40,210 40,210 20, 140 20, 140 0)))',10);
 drop table if exists sound_source;
-create table sound_source(the_geom geometry,gid integer, db_m100 double,db_m125 double,db_m160 double,db_m200 double,db_m250 double,db_m315 double,db_m400 double,db_m500 double,db_m630 double,
-db_m800 double,db_m1000 double,db_m1250 double,db_m1600 double,db_m2000 double,db_m2500 double,db_m3150 double,db_m4000 double,db_m5000 double);
-insert into sound_source VALUES ('POINT (110 60 0)',1, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80);
-insert into sound_source VALUES ('POINT (26 61 0)',2, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100);
-INSERT INTO sound_source VALUES ('POINT( -300 -300 0 )',3,Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0));
-INSERT INTO sound_source VALUES ('POINT( 500 500 0 )',4,Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0),Log10(0));
+create table sound_source(the_geom geometry,gid serial, db_m63 double,db_m125 double,db_m250 double,db_m500 double, db_m1000 double,db_m2000 double, db_m4000 double,db_m8000 double);
+insert into sound_source VALUES ('LINESTRING (26.3 175.5, 111.9 90.9, 123 -70.9, 345.2 -137.8)',1, 25.65, 38.15, 54.35, 60.35, 74.65, 66.75, 59.25, 53.95);
 -- Create Digital elevation model using gaussian 2d function
 drop table if exists all_dem;
-SET @DOMAIN_XMIN = SELECT ST_XMIN(ST_EXTENT(THE_GEOM)) FROM SOUND_SOURCE;
-SET @DOMAIN_XMAX = SELECT ST_XMAX(ST_EXTENT(THE_GEOM)) FROM SOUND_SOURCE;
-SET @DOMAIN_YMIN = SELECT ST_YMIN(ST_EXTENT(THE_GEOM)) FROM SOUND_SOURCE;
-SET @DOMAIN_YMAX = SELECT ST_YMAX(ST_EXTENT(THE_GEOM)) FROM SOUND_SOURCE;
+SET @DOMAIN_XMIN = SELECT ST_XMIN(ST_EXPAND(ST_EXTENT(THE_GEOM), 100, 100)) FROM SOUND_SOURCE;
+SET @DOMAIN_XMAX = SELECT ST_XMAX(ST_EXPAND(ST_EXTENT(THE_GEOM), 100, 100)) FROM SOUND_SOURCE;
+SET @DOMAIN_YMIN = SELECT ST_YMIN(ST_EXPAND(ST_EXTENT(THE_GEOM), 100, 100)) FROM SOUND_SOURCE;
+SET @DOMAIN_YMAX = SELECT ST_YMAX(ST_EXPAND(ST_EXTENT(THE_GEOM), 100, 100)) FROM SOUND_SOURCE;
 SET @POINT_COUNT = 50;
 SET @MOUNTAIN_X = -80;
 SET @MOUNTAIN_Y = 50;

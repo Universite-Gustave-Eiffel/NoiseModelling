@@ -40,6 +40,7 @@ import org.locationtech.jts.geom.Geometry;
 import org.h2gis.api.ProgressVisitor;
 import org.locationtech.jts.geom.GeometryFactory;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -102,7 +103,7 @@ public class PropagationProcessData {
     }
 
     public void addSource(Long pk, Geometry geom) {
-        sourceGeometries.add(geom);
+        addSource(geom);
         sourcesPk.add(pk);
     }
     /**
@@ -111,7 +112,7 @@ public class PropagationProcessData {
      * @param geom Source geometry
      * @param rs Additional attributes fetched from database
      */
-    public void addSource(Long pk, Geometry geom, SpatialResultSet rs) {
+    public void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException {
         addSource(pk, geom);
     }
 

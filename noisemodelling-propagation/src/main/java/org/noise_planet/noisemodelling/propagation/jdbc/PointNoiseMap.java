@@ -39,6 +39,7 @@ public class PointNoiseMap extends JdbcNoiseMap {
     private IComputeRaysOutFactory computeRaysOutFactory;
     private Logger logger = LoggerFactory.getLogger(PointNoiseMap.class);
     private PropagationProcessPathData propagationProcessPathData = new PropagationProcessPathData();
+    private int threadCount = 0;
 
     public PointNoiseMap(String buildingsTableName, String sourcesTableName, String receiverTableName) {
         super(buildingsTableName, sourcesTableName);
@@ -51,6 +52,18 @@ public class PointNoiseMap extends JdbcNoiseMap {
 
     public void setComputeRaysOutFactory(IComputeRaysOutFactory computeRaysOutFactory) {
         this.computeRaysOutFactory = computeRaysOutFactory;
+    }
+
+    public void setPropagationProcessDataFactory(PropagationProcessDataFactory propagationProcessDataFactory) {
+        this.propagationProcessDataFactory = propagationProcessDataFactory;
+    }
+
+    public int getThreadCount() {
+        return threadCount;
+    }
+
+    public void setThreadCount(int threadCount) {
+        this.threadCount = threadCount;
     }
 
     /**
@@ -138,6 +151,8 @@ public class PointNoiseMap extends JdbcNoiseMap {
                     long receiverPk = rs.getLong(2);
                     if(skipReceivers.contains(receiverPk)) {
                         continue;
+                    } else {
+                        skipReceivers.add(receiverPk);
                     }
                     Geometry pt = rs.getGeometry();
                     if(pt != null && !pt.isEmpty()) {
@@ -175,6 +190,8 @@ public class PointNoiseMap extends JdbcNoiseMap {
         }
 
         ComputeRays computeRays = new ComputeRays(threadData);
+
+        computeRays.setThreadCount(threadCount);
 
         if(!absoluteZCoordinates) {
             computeRays.makeRelativeZToAbsolute();

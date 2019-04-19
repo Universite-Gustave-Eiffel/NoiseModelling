@@ -31,6 +31,7 @@ import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.noise_planet.noisemodelling.propagation.KMLDocument.exportScene;
 
@@ -121,6 +122,17 @@ public class TestComputeRays {
         assertEquals(0, new Coordinate(4, 1.25, 0).distance3D(sourcePoints.get(1)), 1e-6);
     }
 
+    @Test
+    public void TestSplitRegression() throws ParseException {
+        LineString geom = (LineString)new WKTReader().read("LINESTRING (26.3 175.5 0.0000034909259558, 111.9 90.9 0, 123 -70.9 0, 345.2 -137.8 0)");
+        double constraint = 82.98581729762442;
+        List<Coordinate> pts = new ArrayList<>();
+        ComputeRays.splitLineStringIntoPoints(geom, constraint, pts);
+        for(Coordinate pt : pts) {
+            assertNotNull(pt);
+        }
+        assertEquals(7, pts.size());
+    }
 
     /**
      * Test vertical edge diffraction ray computation

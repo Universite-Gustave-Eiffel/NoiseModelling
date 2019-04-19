@@ -276,7 +276,9 @@ public class ComputeRays {
                 }
                 segmentLength += length;
             }
-            pts.add(midPoint);
+            if(midPoint != null) {
+                pts.add(midPoint);
+            }
             return targetSegmentSize;
         }
     }

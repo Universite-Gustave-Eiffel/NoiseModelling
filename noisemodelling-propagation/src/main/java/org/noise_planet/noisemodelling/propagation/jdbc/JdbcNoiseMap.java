@@ -155,17 +155,17 @@ public abstract class JdbcNoiseMap {
         boolean fetchAlpha = JDBCUtilities.hasField(connection, buildingsTableName, alphaFieldName);
         String additionalQuery = "";
         if(!heightField.isEmpty()) {
-            additionalQuery = ", " + TableLocation.quoteIdentifier(heightField);
+            additionalQuery += ", " + TableLocation.quoteIdentifier(heightField);
         }
         if(fetchAlpha) {
-            additionalQuery = ", " + alphaFieldName;
+            additionalQuery += ", " + alphaFieldName;
         }
         String pkBuilding = "";
         if(buildingsPk != null) {
             int indexPk = JDBCUtilities.getIntegerPrimaryKey(connection, buildingsTableName);
             if(indexPk > 0) {
                 pkBuilding = JDBCUtilities.getFieldName(connection.getMetaData(), buildingsTableName, indexPk);
-                additionalQuery = ", " + pkBuilding;
+                additionalQuery += ", " + pkBuilding;
             }
         }
         String buildingGeomName = SFSUtilities.getGeometryFields(connection,
