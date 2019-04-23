@@ -34,10 +34,13 @@
 package org.noise_planet.noisemodelling.propagation;
 
 import org.locationtech.jts.algorithm.Angle;
+import org.locationtech.jts.geom.Coordinate;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -49,74 +52,134 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Pierre Aumond
  */
 public class ComputeRaysOut implements IComputeRaysOut {
-    private List<ComputeRaysOut.verticeSL> receiverAttenuationLevels = Collections.synchronizedList(new ArrayList<>());
-    private PropagationProcessPathData pathData;
+    protected List<ComputeRaysOut.verticeSL> receiversAttenuationLevels = Collections.synchronizedList(new ArrayList<>());
+    protected List<PropagationPath> propagationPaths = Collections.synchronizedList(new ArrayList<PropagationPath>());
+
+    protected PropagationProcessPathData genericMeteoData;
+    protected PropagationProcessData inputData;
+
+    public ComputeRaysOut(boolean keepRays, PropagationProcessPathData pathData, PropagationProcessData inputData) {
+        this.keepRays = keepRays;
+        this.genericMeteoData = pathData;
+        this.inputData = inputData;
+    }
 
     public ComputeRaysOut(boolean keepRays, PropagationProcessPathData pathData) {
         this.keepRays = keepRays;
-        this.pathData = pathData;
+        this.genericMeteoData = pathData;
     }
 
-    public boolean keepRays = true;
-    public AtomicLong rayCount = new AtomicLong();
-    private AtomicLong nb_couple_receiver_src = new AtomicLong();
-    private AtomicLong nb_obstr_test = new AtomicLong();
-    private AtomicLong nb_image_receiver = new AtomicLong();
-    private AtomicLong nb_reflexion_path = new AtomicLong();
-    private AtomicLong nb_diffraction_path = new AtomicLong();
-    private AtomicInteger cellComputed = new AtomicInteger();
+    protected boolean keepRays = true;
+    protected AtomicLong rayCount = new AtomicLong();
+    protected AtomicLong nb_couple_receiver_src = new AtomicLong();
+    protected AtomicLong nb_obstr_test = new AtomicLong();
+    protected AtomicLong nb_image_receiver = new AtomicLong();
+    protected AtomicLong nb_reflexion_path = new AtomicLong();
+    protected AtomicLong nb_diffraction_path = new AtomicLong();
+    protected AtomicInteger cellComputed = new AtomicInteger();
+    private static final double angle_section = (2 * Math.PI) / PropagationProcessPathData.DEFAULT_WIND_ROSE.length;
 
-    private List<PropagationPath> propagationPaths = Collections.synchronizedList(new ArrayList<PropagationPath>());
+
+    public static int getRoseIndex(Coordinate receiver, Coordinate source) {
+        // Angle from cos -1 sin 0
+        double angleRad = -(Angle.angle(receiver, source) - Math.PI);
+        // Offset angle by PI / 2 (North),
+        // the north slice ranges is [PI / 2 + angle_section / 2; PI / 2 - angle_section / 2]
+        angleRad -= (Math.PI / 2 - angle_section / 2);
+        // Fix out of bounds angle 0-2Pi
+        if(angleRad < 0) {
+            angleRad += Math.PI * 2;
+        }
+        // The north slice is the last array index not the first one
+        // Ex for slice width of 20°:
+        //      - The first column 20° contain winds between 10 to 30 °
+        //      - The last column 360° contains winds between 350° to 360° and 0 to 10°
+        int index = (int)(angleRad / angle_section) - 1;
+        if(index < 0) {
+            index = PropagationProcessPathData.DEFAULT_WIND_ROSE.length - 1;
+        }
+        return index;
+    }
 
     @Override
-    public double addPropagationPaths(int sourceId, int receiverId, List<PropagationPath> propagationPath) {
-        rayCount.addAndGet(1);
+    public void finalizeReceiver(long receiverId) {
+
+    }
+
+    @Override
+    public double[] addPropagationPaths(long sourceId, double sourceLi, long receiverId, List<PropagationPath> propagationPath) {
+        rayCount.addAndGet(propagationPath.size());
         if(keepRays) {
             propagationPaths.addAll(propagationPath);
         }
+        double[] aGlobalMeteo = computeAttenuation(genericMeteoData, sourceId, sourceLi, receiverId, propagationPath);
+        if (aGlobalMeteo != null && aGlobalMeteo.length > 0) {
+            if(inputData != null) {
+                if(sourceId < inputData.sourcesPk.size()) {
+                    sourceId = inputData.sourcesPk.get((int)sourceId);
+                }
+                if(receiverId < inputData.receiversPk.size()) {
+                    receiverId = inputData.receiversPk.get((int)receiverId);
+                }
+            }
+            receiversAttenuationLevels.add(new ComputeRaysOut.verticeSL(receiverId, sourceId, aGlobalMeteo));
+            return aGlobalMeteo;
+        } else {
+            return new double[0];
+        }
+    }
+
+    public double[] computeAttenuation(PropagationProcessPathData pathData, long sourceId, double sourceLi, long receiverId, List<PropagationPath> propagationPath) {
         if(pathData != null) {
             // Compute receiver/source attenuation
             EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
             double[] aGlobalMeteo = null;
             for (PropagationPath propath : propagationPath) {
                 List<PropagationPath.PointPath> ptList = propath.getPointList();
-                double angleRad = Angle.angle(ptList.get(0).coordinate, ptList.get(ptList.size() - 1).coordinate);
-                double rad2rose = (-angleRad + Math.PI / 2);
-                int roseindex = (int) Math.round(rad2rose / (2 * Math.PI / pathData.getWindRose().length));
+                int roseindex = getRoseIndex(ptList.get(0).coordinate, ptList.get(ptList.size() - 1).coordinate);
 
+                // Compute homogeneous conditions attenuation
                 propath.setFavorable(false);
                 evaluateAttenuationCnossos.evaluate(propath, pathData);
-                if (aGlobalMeteo != null) {
-                    aGlobalMeteo = ComputeRays.sumArray(evaluateAttenuationCnossos.getaGlobal(), aGlobalMeteo);
-                } else {
-                    aGlobalMeteo = evaluateAttenuationCnossos.getaGlobal();
-                }
+                double[] aGlobalMeteoHom = evaluateAttenuationCnossos.getaGlobal();
+
+                // Compute favorable conditions attenuation
                 propath.setFavorable(true);
                 evaluateAttenuationCnossos.evaluate(propath, pathData);
-                aGlobalMeteo = ComputeRays.sumArrayWithPonderation(aGlobalMeteo, evaluateAttenuationCnossos.getaGlobal(), pathData.getDefaultOccurance());
+                double[] aGlobalMeteoFav = evaluateAttenuationCnossos.getaGlobal();
+
+                // Compute attenuation under the wind conditions using the ray direction
+                double[] aGlobalMeteoRay = ComputeRays.sumArrayWithPonderation(aGlobalMeteoFav, aGlobalMeteoHom, pathData.getWindRose()[roseindex]);
+
+                if (aGlobalMeteo != null) {
+                    aGlobalMeteo = ComputeRays.sumDbArray(aGlobalMeteoRay, aGlobalMeteo);
+                } else {
+                    aGlobalMeteo = aGlobalMeteoRay;
+                }
             }
             if (aGlobalMeteo != null) {
-                receiverAttenuationLevels.add(new ComputeRaysOut.verticeSL(receiverId, sourceId, aGlobalMeteo));
-                double globalValue = 0;
-                for (double att : aGlobalMeteo) {
-                    globalValue += Math.pow(10, att / 10.0);
+                // For line source, take account of li coefficient
+                if(sourceLi > 1.0) {
+                    for (int i = 0; i < aGlobalMeteo.length; i++) {
+                        aGlobalMeteo[i] = ComputeRays.wToDba(ComputeRays.dbaToW(aGlobalMeteo[i]) * sourceLi);
+                    }
                 }
-                return 10 * Math.log10(globalValue);
+                return aGlobalMeteo;
             } else {
-                return Double.NaN;
+                return new double[0];
             }
         } else {
-            return Double.NaN;
+            return new double[0];
         }
     }
 
     @Override
     public IComputeRaysOut subProcess(int receiverStart, int receiverEnd) {
-        return this;
+        return new ThreadRaysOut(this);
     }
 
     public List<ComputeRaysOut.verticeSL> getVerticesSoundLevel() {
-        return receiverAttenuationLevels;
+        return receiversAttenuationLevels;
     }
 
     public List<PropagationPath> getPropagationPaths() {
@@ -160,15 +223,83 @@ public class ComputeRaysOut implements IComputeRaysOut {
         return cellComputed.get();
     }
 
+    /**
+     * Noise level or attenuation level for each source/receiver
+     */
     public static final class verticeSL {
-        public final int sourceId;
-        public final int receiverId;
+        public final long sourceId;
+        public final long receiverId;
         public final double[] value;
 
-        verticeSL(int receiverId, int sourceId, double[] value) {
+        verticeSL(long receiverId, long sourceId, double[] value) {
             this.sourceId = sourceId;
             this.receiverId = receiverId;
             this.value = value;
+        }
+    }
+
+    private static class ThreadRaysOut implements IComputeRaysOut {
+        private ComputeRaysOut multiThreadParent;
+        protected List<ComputeRaysOut.verticeSL> receiverAttenuationLevels = Collections.synchronizedList(new ArrayList<>());
+
+        public ThreadRaysOut(ComputeRaysOut multiThreadParent) {
+            this.multiThreadParent = multiThreadParent;
+        }
+
+        @Override
+        public double[] addPropagationPaths(long sourceId, double sourceLi, long receiverId, List<PropagationPath> propagationPath) {
+            double[] aGlobalMeteo = multiThreadParent.computeAttenuation(multiThreadParent.genericMeteoData, sourceId, sourceLi, receiverId, propagationPath);
+            multiThreadParent.rayCount.addAndGet(propagationPath.size());
+            if(multiThreadParent.keepRays) {
+                multiThreadParent.propagationPaths.addAll(propagationPath);
+            }
+            if (aGlobalMeteo != null) {
+                receiverAttenuationLevels.add(new ComputeRaysOut.verticeSL(receiverId, sourceId, aGlobalMeteo));
+                return aGlobalMeteo;
+            } else {
+                return new double[0];
+            }
+        }
+
+        protected void pushResult(long receiverId, long sourceId, double[] level) {
+            multiThreadParent.receiversAttenuationLevels.add(new verticeSL(receiverId, sourceId, level));
+        }
+
+        @Override
+        public void finalizeReceiver(long receiverId) {
+            if(multiThreadParent.receiversAttenuationLevels != null) {
+                // Push merged sources into multi-thread parent
+                // Merge levels for each receiver for lines sources
+                Map<Long, double[]> levelsPerSourceLines = new HashMap<>();
+                for (ComputeRaysOut.verticeSL lvl : receiverAttenuationLevels) {
+                    if (!levelsPerSourceLines.containsKey(lvl.sourceId)) {
+                        levelsPerSourceLines.put(lvl.sourceId, lvl.value);
+                    } else {
+                        // merge
+                        levelsPerSourceLines.put(lvl.sourceId, ComputeRays.sumDbArray(levelsPerSourceLines.get(lvl.sourceId),
+                                lvl.value));
+                    }
+                }
+                for (Map.Entry<Long, double[]> entry : levelsPerSourceLines.entrySet()) {
+                    long sourceId = entry.getKey();
+                    if(multiThreadParent.inputData != null) {
+                        // Retrieve original identifier
+                        if(entry.getKey() < multiThreadParent.inputData.sourcesPk.size()) {
+                            sourceId = multiThreadParent.inputData.sourcesPk.get((int)sourceId);
+                        }
+                        if(receiverId < multiThreadParent.inputData.receiversPk.size()) {
+                            receiverId = multiThreadParent.inputData.receiversPk.get((int)receiverId);
+                        }
+                    }
+                    pushResult(receiverId, sourceId, entry.getValue());
+                }
+            }
+            receiverAttenuationLevels.clear();
+        }
+
+        @Override
+        public IComputeRaysOut subProcess(int receiverStart, int receiverEnd) {
+            return multiThreadParent.subProcess(receiverStart, receiverEnd);
         }
     }
 }

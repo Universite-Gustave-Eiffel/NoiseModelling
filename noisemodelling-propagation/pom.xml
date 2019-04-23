@@ -45,6 +45,7 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
+            <scope>test</scope>
             <version>2.9.6</version>
         </dependency>
         <dependency>

@@ -57,8 +57,8 @@ public class PropagationProcessPathData {
     static final  double KvibN = 3352.0;// Vibrational temperature of the nitrogen (K)
     static final  double K01 = 273.16;  // Isothermal temperature at the triple point (K)
     /** Frequency bands values, by third octave */
-    static final List<Integer> freq_lvl = Arrays.asList(63, 125, 250, 500, 1000, 2000, 4000, 8000);
-
+    public static final List<Integer> freq_lvl = Arrays.asList(63, 125, 250, 500, 1000, 2000, 4000, 8000);
+    static final double[] DEFAULT_WIND_ROSE = new double[]{0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
     /** Temperature in celsius */
     private double temperature = 15;
     private double celerity = 340;
@@ -70,7 +70,7 @@ public class PropagationProcessPathData {
     private boolean gDisc = true;     // choose between accept G discontinuity or not
     private boolean prime2520 = false; // choose to use prime values to compute eq. 2.5.20
     /** probability occurrence favourable condition */
-    private double[] windRose  = new double[]{0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
+    private double[] windRose  = DEFAULT_WIND_ROSE;
 
     /**
      * Set relative humidity in percentage.
@@ -97,6 +97,9 @@ public class PropagationProcessPathData {
     }
 
     public void setWindRose(double[] windRose) {
+        if(windRose.length != this.windRose.length) {
+            throw new IllegalArgumentException(String.format("Wind roses length is not compatible %d!=%d",windRose.length,this.windRose.length));
+        }
         this.windRose = windRose;
     }
 
@@ -171,6 +174,84 @@ public class PropagationProcessPathData {
         return this;
     }
 
+
+    /**
+     *
+     * @param frequency Frequency (Hz)
+     * @param humidity Humidity %
+     * @param pressure Pressure in pascal
+     * @param T_kel Temperature in kelvin
+     * @return Atmospheric absorption dB/km
+     */
+    public static double getCoefAttAtmos2(double frequency, double humidity, double pressure, double T_kel) {
+
+        final double Kelvin = 273.15;	//For converting to Kelvin
+        final double e = 2.718282;
+
+        double T_ref = Kelvin + 20;     //Reference temp = 20 degC
+        double T_rel = T_kel / T_ref;   //Relative temp
+        double T_01 = Kelvin + 0.01;    //Triple point isotherm temperature (Kelvin)
+        double P_ref = 101.325;         //Reference atmospheric P = 101.325 kPa
+        double P_rel = (pressure / 1e3) / P_ref;       //Relative pressure
+
+        //Get Molecular Concentration of water vapour
+        double P_sat_over_P_ref = Math.pow(10,((-6.8346 * Math.pow((T_01 / T_kel), 1.261)) + 4.6151));
+        double H = humidity * (P_sat_over_P_ref/P_rel); 		// h from ISO 9613-1, Annex B, B.1
+
+        //fro from ISO 9613-1, 6.2, eq.3
+        double Fro = P_rel * (24 + 40400 * H * (0.02 + H) / (0.391 + H));
+
+        //frn from ISO 9613-1, 6.2, eq.4
+        double Frn = P_rel / Math.sqrt(T_rel) * (9 + 280 * H * Math.pow(e,(-4.17 * (Math.pow(T_rel,(-1.0/3.0)) - 1))));
+
+        //xc, xo and xn from ISO 9613-1, 6.2, part of eq.5
+        double Xc = 0.0000000000184 / P_rel * Math.sqrt(T_rel);
+        double Xo = 0.01275 * Math.pow(e,(-2239.1 / T_kel)) * Math.pow((Fro + (frequency*frequency / Fro)), -1);
+        double Xn = 0.1068 * Math.pow(e,(-3352.0 / T_kel)) * Math.pow((Frn + (frequency*frequency / Frn)), -1);
+
+        //alpha from ISO 9613-1, 6.2, eq.5
+        double Alpha = 20 * Math.log10(e) * frequency * frequency * (Xc + Math.pow(T_rel,(-5.0/2.0)) * (Xo + Xn));
+
+        return Alpha * 1000;
+    }
+    /**
+     * This function calculates the atmospheric attenuation coefficient of sound in air
+     * ISO 9613-1:1993(F)
+     * @param frequency acoustic frequency (Hz)
+     * @param humidity relative humidity (in %) (0-100)
+     * @param pressure atmospheric pressure (in Pa)
+     * @param tempKelvin Temperature in Kelvin (in K)
+     * @return atmospheric attenuation coefficient (db/km)
+     * @author Judicaël Picaut, UMRAE
+     */
+    public static double getCoefAttAtmos(double frequency, double humidity, double pressure, double tempKelvin) {
+        // Sound celerity
+        double cson = computeCelerity(tempKelvin);
+
+        // Calculation of the molar fraction of water vapour
+        double C = -6.8346 * Math.pow(K01 / tempKelvin, 1.261) + 4.6151;
+        double Ps = Pref * Math.pow(10., C);
+        double hmol = humidity * Ps / Pref;
+
+        // Classic and rotational absorption
+        double Acr = (Pref / pressure) * (1.60E-10) * Math.sqrt(tempKelvin / Kref) * Math.pow(frequency, 2);
+
+        // Vibratory oxygen absorption:!!123
+        double Fr = (pressure / Pref) * (24. + 4.04E4 * hmol * (0.02 + hmol) / (0.391 + hmol));
+        double Am = 1.559 * FmolO * Math.exp(-KvibO / tempKelvin) * Math.pow(KvibO / tempKelvin, 2);
+        double AvibO = Am * (frequency / cson) * 2. * (frequency / Fr) / (1 + Math.pow(frequency / Fr, 2));
+
+        // Vibratory nitrogen absorption
+        Fr = (pressure / Pref) * Math.sqrt(Kref / tempKelvin) * (9. + 280. * hmol * Math.exp(-4.170 * (Math.pow(tempKelvin / Kref, -1. / 3.) - 1)));
+        Am = 1.559 * FmolN * Math.exp(-KvibN / tempKelvin) * Math.pow(KvibN / tempKelvin, 2);
+        double AvibN = Am * (frequency / cson) * 2. * (frequency / Fr) / (1 + Math.pow(frequency / Fr, 2));
+
+        // Total absorption in dB/m
+        double alpha = (Acr + AvibO + AvibN);
+
+        return alpha * 1000;
+    }
+
     /**
      * ISO-9613 p1
      * @param frequency acoustic frequency (Hz)
@@ -180,7 +261,7 @@ public class PropagationProcessPathData {
      * @return Attenuation coefficient dB/KM
      */
     public static double getAlpha(double frequency, double temperature, double pressure, double humidity) {
-        return PropagationProcessData.getCoefAttAtmos(frequency, humidity, pressure, temperature + PropagationProcessData.K_0);
+        return getCoefAttAtmos(frequency, humidity, pressure, temperature + K_0);
     }
 
     public static double[] getAtmoCoeffArray(List<Integer> freq_lvl, double temperature, double pressure, double humidity){

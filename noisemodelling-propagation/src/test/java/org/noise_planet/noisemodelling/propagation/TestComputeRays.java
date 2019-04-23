@@ -31,7 +31,9 @@ import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.noise_planet.noisemodelling.propagation.KMLDocument.exportScene;
 
 
 public class TestComputeRays {
@@ -100,6 +102,37 @@ public class TestComputeRays {
         assertEquals(0, p1.distance(ray.get(i++)), 0.02);
     }
 
+    @Test
+    public void TestSplitLineStringIntoPoints() {
+        GeometryFactory factory = new GeometryFactory();
+        List<Coordinate> sourcePoints = new ArrayList<>();
+        // source line is split in 3 parts of 2.5 meters
+        // This is because minimal receiver-source distance is equal to 5 meters
+        // The constrain is distance / 2.0 so 2.5 meters
+        // The source length is equals to 5 meters
+        // It can be equally split in 2 segments of 2.5 meters each, for each segment the nearest point is retained
+        LineString geom = factory.createLineString(new Coordinate[]{new Coordinate(1,2,0),
+                new Coordinate(4,2,0), new Coordinate(4, 0, 0)});
+        Coordinate receiverCoord = new Coordinate(-4, 2, 0);
+        Coordinate nearestPoint = JTSUtility.getNearestPoint(receiverCoord, geom);
+        double segmentSizeConstraint = Math.max(1, receiverCoord.distance3D(nearestPoint) / 2.0);
+        assertEquals(2.5, ComputeRays.splitLineStringIntoPoints(geom , segmentSizeConstraint, sourcePoints), 1e-6);
+        assertEquals(2, sourcePoints.size());
+        assertEquals(0, new Coordinate(2.25, 2, 0).distance3D(sourcePoints.get(0)), 1e-6);
+        assertEquals(0, new Coordinate(4, 1.25, 0).distance3D(sourcePoints.get(1)), 1e-6);
+    }
+
+    @Test
+    public void TestSplitRegression() throws ParseException {
+        LineString geom = (LineString)new WKTReader().read("LINESTRING (26.3 175.5 0.0000034909259558, 111.9 90.9 0, 123 -70.9 0, 345.2 -137.8 0)");
+        double constraint = 82.98581729762442;
+        List<Coordinate> pts = new ArrayList<>();
+        ComputeRays.splitLineStringIntoPoints(geom, constraint, pts);
+        for(Coordinate pt : pts) {
+            assertNotNull(pt);
+        }
+        assertEquals(7, pts.size());
+    }
 
     /**
      * Test vertical edge diffraction ray computation
@@ -691,8 +724,7 @@ public class TestComputeRays {
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
         rayData.setComputeVerticalDiffraction(true);
-        PropagationProcessPathData attData = new PropagationProcessPathData();
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOut propDataOut = new ComputeRaysOut(true, null);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -1862,29 +1894,6 @@ public class TestComputeRays {
             jsonDocument.writeRay(propagationPath);
         }
         jsonDocument.writeFooter();
-    }
-
-    private void exportScene(String name, FastObstructionTest manager, ComputeRaysOut result) throws IOException {
-        try {
-            Coordinate proj = new Coordinate( 351714.794877, 6685824.856402, 0);
-            FileOutputStream outData = new FileOutputStream(name);
-            KMLDocument kmlDocument = new KMLDocument(outData);
-            kmlDocument.setInputCRS("EPSG:2154");
-            kmlDocument.setOffset(proj);
-            kmlDocument.writeHeader();
-            if(manager != null) {
-                kmlDocument.writeTopographic(manager.getTriangles(), manager.getVertices());
-            }
-            if(result != null) {
-                kmlDocument.writeRays(result.getPropagationPaths());
-            }
-            if(manager != null && manager.isHasBuildingWithHeight()) {
-                kmlDocument.writeBuildings(manager);
-            }
-            kmlDocument.writeFooter();
-        } catch (XMLStreamException | CoordinateOperationException | CRSException ex) {
-            throw new IOException(ex);
-        }
     }
 
     private void assertRaysEquals(InputStream expected, ComputeRaysOut result) throws IOException {

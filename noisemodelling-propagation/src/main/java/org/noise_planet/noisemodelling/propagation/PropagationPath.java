@@ -59,6 +59,7 @@ public class PropagationPath {
     private boolean favorable; // if true, favorable meteorological condition path
     int idSource;
     int idReceiver;
+    private boolean initialized = false;
     // computed in Augmented Path
     public List<Integer> difHPoints = new ArrayList<Integer>(); // diffraction points indices
     public List<Integer> difVPoints = new ArrayList<Integer>(); // diffraction points indices
@@ -79,6 +80,14 @@ public class PropagationPath {
 
     public PropagationPath() {
 
+    }
+
+    public boolean isInitialized() {
+        return initialized;
+    }
+
+    protected void setInitialized(boolean initialized) {
+        this.initialized = initialized;
     }
 
     public static class PointPath {
@@ -244,6 +253,7 @@ public class PropagationPath {
 
     public void setFavorable(boolean favorable) {
         this.favorable =  favorable;
+        setInitialized(false);
     }
 
 
@@ -268,9 +278,12 @@ public class PropagationPath {
     }
 
     public void initPropagationPath() {
-        computeAugmentedPath();
-        computeAugmentedSegments();
-        computeAugmentedSRPath();
+        if(!isInitialized()) {
+            computeAugmentedPath();
+            computeAugmentedSegments();
+            computeAugmentedSRPath();
+            setInitialized(true);
+        }
     }
 
 
