@@ -26,10 +26,23 @@ import java.util.Random;
 import static org.junit.Assert.*;
 
 
+
+
 public class TestComputeRaysFull {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestComputeRaysFull.class);
     private boolean storeGeoJSONRays = false;
 
+    private static double[] addArray(double[] first, double[] second) {
+        int length = first.length < second.length ? first.length
+                : second.length;
+        double[] result = new double[length];
+
+        for (int i = 0; i < length; i++) {
+            result[i] = first[i] + second[i];
+        }
+
+        return result;
+    }
      /**
      * Test TC01 -- Reflecting ground (G = 0)
      */
@@ -55,15 +68,55 @@ public class TestComputeRaysFull {
         rayData.setComputeHorizontalDiffraction(true);
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 250, -20, 80)), 0));
         rayData.setComputeVerticalDiffraction(true);
-        rayData.setHumidity(70);
-        rayData.setTemperature(10);
+
         PropagationProcessPathData attData = new PropagationProcessPathData();
+        attData.setHumidity(70);
+        attData.setTemperature(10);
+
         ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
+        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});
+        assertArrayEquals(  new double[]{39.95,39.89,39.77,39.60,39.26,38.09,33.61,17.27},L, 0.5);
+    }
 
-        assertArrayEquals(  new double[]{-53.05,-53.11,-53.23,-53.4,-53.74,-54.91,-59.39,-75.73},propDataOut.getVerticesSoundLevel().get(0).value, 3);
+    /**
+     * Test TC02 -- Mixed ground (G = 0.5)
+     */
+    @Test
+    public void TC02()  throws LayerDelaunayError , IOException {
+        GeometryFactory factory = new GeometryFactory();
+        //Scene dimension
+        Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
+
+        //Create obstruction test object
+        MeshBuilder mesh = new MeshBuilder();
+
+
+        mesh.finishPolygonFeeding(cellEnvelope);
+
+        //Retrieve Delaunay triangulation of scene
+        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+                mesh.getTriNeighbors(), mesh.getVertices());
+
+        PropagationProcessData rayData = new PropagationProcessData(manager);
+        rayData.addReceiver(new Coordinate(200, 50, 4));
+        rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
+        rayData.setComputeHorizontalDiffraction(true);
+        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 250, -20, 80)), 0.5));
+        rayData.setComputeVerticalDiffraction(true);
+
+        PropagationProcessPathData attData = new PropagationProcessPathData();
+        attData.setHumidity(70);
+        attData.setTemperature(10);
+
+        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRays computeRays = new ComputeRays(rayData);
+        computeRays.setThreadCount(1);
+        computeRays.run(propDataOut);
+        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});
+        assertArrayEquals(  new double[]{38.07,38.01,37.89,36.79,34.29,36.21,31.73,15.39},L, 0.5);
     }
 
     /**
@@ -100,16 +153,18 @@ public class TestComputeRaysFull {
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
         rayData.setComputeVerticalDiffraction(true);
-        rayData.setHumidity(70);
-        rayData.setTemperature(10);
+
         PropagationProcessPathData attData = new PropagationProcessPathData();
+        attData.setHumidity(70);
+        attData.setTemperature(10);
+        attData.setWindRose(new double[]{0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5});
         ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
-        assertArrayEquals(  new double[]{-60.3,-61.42,-63.01,-65.11,-68.64,-71.54,-78.82,-98.05},propDataOut.getVerticesSoundLevel().get(0).value, 3);
-
+        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});
+        assertArrayEquals(  new double[]{32.70,31.58,29.99,27.89,24.36,21.46,14.18,-5.05},L, 3);
 
 
     }
