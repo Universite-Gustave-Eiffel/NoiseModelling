@@ -93,8 +93,8 @@ public class PropagationPath {
     public static class PointPath {
         // given by user
         public Coordinate coordinate; // coordinate (absolute)
-        public final double altitude; // altitude of relief (exact)
-        public final double gs;       // only if POINT_TYPE = SRCE or RECV, G coefficient right above the point
+        public double altitude; // altitude of relief (exact)
+        public double gs;       // only if POINT_TYPE = SRCE or RECV, G coefficient right above the point
         public double alphaWall; // only if POINT_TYPE = REFL, alpha coefficient
         public int buildingId; // only if POINT_TYPE = REFL
         public POINT_TYPE type; // type of point
@@ -124,6 +124,10 @@ public class PropagationPath {
             this.type = type;
         }
 
+        public PointPath() {
+
+        }
+
         public void setType(POINT_TYPE type) {
             this.type =  type;
         }
@@ -148,8 +152,8 @@ public class PropagationPath {
 
     public static class SegmentPath {
         //  given by user
-        public final double gPath;          // G coefficient for the considered path segment
-        public final Vector3D vector3D;     // mean Plane for the considered path segment
+        public double gPath;          // G coefficient for the considered path segment
+        public Vector3D vector3D;     // mean Plane for the considered path segment
 
         // computed in AugmentedSegments
         public int idPtStart;               //start point indice for the considered path segment
@@ -181,7 +185,8 @@ public class PropagationPath {
             this.vector3D = vector3D;
         }
 
-
+        public SegmentPath() {
+        }
 
         public void setGw(double g) {
             this.gw = g;

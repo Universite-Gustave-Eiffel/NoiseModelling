@@ -703,6 +703,9 @@ public class ComputeRays {
             convexHullIntersects = false;
             coordinates = convexhull.getCoordinates();
 
+            input.clear();
+            input.addAll(Arrays.asList(coordinates));
+
             indexp1 = -1;
             for (int i = 0; i < coordinates.length - 1; i++) {
                 if (coordinates[i].equals(p1)) {
