@@ -326,7 +326,7 @@ public class FastObstructionTest {
      * @return Triangle Id, Or -1 if no triangle has been found
      */
 
-    private int getTriangleIdByCoordinate(Coordinate pt) {
+    public int getTriangleIdByCoordinate(Coordinate pt) {
         Envelope ptEnv = new Envelope(pt);
         Iterator<Integer> res = triIndex.query(new Envelope(ptEnv));
         double minDistance = Double.MAX_VALUE;

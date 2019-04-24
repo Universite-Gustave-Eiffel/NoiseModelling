@@ -78,6 +78,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -227,7 +228,7 @@ public class KMLDocument {
         xmlOut.writeCharacters("building");
         xmlOut.writeEndElement();//Name
         List<MeshBuilder.PolygonWithHeight> buildings = manager.getPolygonWithHeight();
-        Polygon[] polygons = new Polygon[buildings.size()];
+        List<Polygon> polygons = new ArrayList<>(buildings.size());
         int idPoly = 0;
 
         for(MeshBuilder.PolygonWithHeight triangle : buildings) {
@@ -253,13 +254,17 @@ public class KMLDocument {
             for(int i = 0; i < coordinates.length; i++) {
                 coordinates[i] = copyCoord(new Coordinate(original[i].x, original[i].y, z));
             }
-            Polygon poly = geometryFactory.createPolygon(coordinates);
-            // Apply CRS transform
-            doTransform(poly);
-            polygons[idPoly++] = poly;
+            if(coordinates.length > 3 && coordinates[0].equals2D(coordinates[coordinates.length - 1])) {
+                Polygon poly = geometryFactory.createPolygon(coordinates);
+                // Apply CRS transform
+                doTransform(poly);
+                polygons.add(poly);
+            }
+            idPoly++;
         }
         //Write geometry
-        xmlOut.writeCharacters(KMLWriter.writeGeometry(geometryFactory.createMultiPolygon(polygons), Double.NaN,
+        xmlOut.writeCharacters(KMLWriter.writeGeometry(geometryFactory.createMultiPolygon(
+                polygons.toArray(new Polygon[polygons.size()])), Double.NaN,
                 wgs84Precision, true, KMLWriter.ALTITUDE_MODE_ABSOLUTE));
         xmlOut.writeEndElement();//Write Placemark
         xmlOut.writeEndElement();//Folder

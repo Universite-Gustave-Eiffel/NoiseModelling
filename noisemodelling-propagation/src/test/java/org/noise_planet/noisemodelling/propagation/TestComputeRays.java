@@ -225,6 +225,53 @@ public class TestComputeRays {
         assertEquals(3, prop.size());
     }
 
+    @Test
+    public void testVerticalSideDiffractionRaysOutOfDomain() throws LayerDelaunayError, ParseException  {
+
+        GeometryFactory factory = new GeometryFactory();
+        WKTReader wktReader = new WKTReader(factory);
+        //Scene dimension
+        Envelope cellEnvelope = wktReader.read("POLYGON ((316849.05 6703855.11, 316849.05 6703924.04, " +
+                "316925.36 6703924.04, 316925.36 6703855.11, 316849.05 6703855.11))").getEnvelopeInternal();
+        Coordinate p1 = new Coordinate(316914.1, 6703907.5, 4);
+        Coordinate p2 = new Coordinate(316913.4, 6703879, 4);
+        //Create obstruction test object
+        MeshBuilder mesh = new MeshBuilder();
+
+        mesh.addGeometry(wktReader.read("POLYGON ((316925.36 6703889.64, 316914.1 6703892.61, 316914.09 6703892.61, 316914.09 6703892.6, 316913.49 6703890.41, 316906.71 6703892.11, 316907.21 6703894.4, 316907.21 6703894.41, 316907.2 6703894.41, 316901.11 6703895.91, 316903.31 6703904.49, 316916.3 6703901.19, 316925.36 6703898.87, 316925.36 6703889.64)) "), 11.915885805791621);
+        mesh.addGeometry(wktReader.read("POLYGON ((316886.41 6703903.61, 316888.31 6703910.59, 316899.79 6703907.69, 316897.99 6703900.71, 316886.41 6703903.61))"), 13.143551238469575);
+
+        mesh.finishPolygonFeeding(cellEnvelope);
+
+
+        //Retrieve Delaunay triangulation of scene
+        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(), mesh.getTriNeighbors(), mesh.getVertices());
+
+        PropagationProcessData processData = new PropagationProcessData(manager);
+        //new ArrayList<>(), manager, sourcesIndex, srclst, new ArrayList<>(), new ArrayList<>(), 0, 99, 1000,1000,0,0,new double[0],0,0,new EmptyProgressVisitor(), new ArrayList<>(), true
+        ComputeRays computeRays = new ComputeRays(processData);
+
+        computeRays.initStructures();
+
+        assertFalse(manager.isFreeField(p1, p2));
+
+        List<Coordinate> pts = computeRays.computeSideHull(true, p1, p2);
+        assertEquals(0, pts.size());
+
+        pts = computeRays.computeSideHull(false, p1, p2);
+        assertEquals(4, pts.size());
+        for (int i = 0; i < pts.size() - 1; i++) {
+            assertTrue(manager.isFreeField(pts.get(i), pts.get(i + 1)));
+        }
+
+        ArrayList<PropagationDebugInfo> dbg = new ArrayList<>();
+        List<PropagationPath> prop = computeRays.directPath(p2, p1, true, true, dbg);
+        // 3 paths
+        // 1 over the building / 1 left side
+        assertEquals(2, prop.size());
+
+    }
+
     /**
      * Test vertical edge diffraction ray computation
      *
