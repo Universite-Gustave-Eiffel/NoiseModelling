@@ -54,9 +54,9 @@ public class PropagationPath_Cnossos {
         points.add(new PropagationPath.PointPath(new Coordinate(10,0,0),1,Double.NaN,0.5, -1, PropagationPath.PointPath.POINT_TYPE.DIFH));
         points.add(new PropagationPath.PointPath(new Coordinate(20,0,0),1,Double.NaN,0.5, -1, PropagationPath.PointPath.POINT_TYPE.DIFH));
         points.add(new PropagationPath.PointPath(new Coordinate(30,30,0),1,0,Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.RECV));
-        segments.add(new PropagationPath.SegmentPath(1, flatTopography));
-        segments.add(new PropagationPath.SegmentPath(1, flatTopography));
-        srPath.add(new PropagationPath.SegmentPath(1,flatTopography));
+        segments.add(new PropagationPath.SegmentPath(1, flatTopography,new Coordinate(0,0,0)));
+        segments.add(new PropagationPath.SegmentPath(1, flatTopography,new Coordinate(0,0,0)));
+        srPath.add(new PropagationPath.SegmentPath(1,flatTopography,new Coordinate(0,0,0)));
 
         PropagationPath propagationPath = new PropagationPath(favorable,points,segments,srPath);
         PropagationProcessPathData propData = new PropagationProcessPathData();
@@ -82,8 +82,8 @@ public class PropagationPath_Cnossos {
 
         points.add(new PropagationPath.PointPath(new Coordinate(0,0,1),0,0,Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.SRCE));
         points.add(new PropagationPath.PointPath(new Coordinate(200,0,4),0,0,Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.RECV));
-        segments.add(new PropagationPath.SegmentPath(0, flatTopography));
-        srPath.add(new PropagationPath.SegmentPath(0,flatTopography));
+        segments.add(new PropagationPath.SegmentPath(0, flatTopography,new Coordinate(0,0,0)));
+        srPath.add(new PropagationPath.SegmentPath(0,flatTopography,new Coordinate(0,0,0)));
 
         PropagationPath propagationPath = new PropagationPath(favorable,points,segments, srPath);
         PropagationProcessPathData propData = new PropagationProcessPathData();
@@ -110,7 +110,7 @@ public class PropagationPath_Cnossos {
 
         points.add(new PropagationPath.PointPath(new Coordinate(0, 0, 0.05), 0, 0, Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.SRCE));
         points.add(new PropagationPath.PointPath(new Coordinate(200, 0, 4), 0, 0, Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.RECV));
-        srPath.add(new PropagationPath.SegmentPath(1,flatTopography));
+        srPath.add(new PropagationPath.SegmentPath(1,flatTopography,new Coordinate(0,0,0)));
 
         PropagationPath propagationPath = new PropagationPath(false,points,segments, srPath);
         PropagationProcessPathData propData = new PropagationProcessPathData();
@@ -135,7 +135,7 @@ public class PropagationPath_Cnossos {
 
         points.add(new PropagationPath.PointPath(new Coordinate(0, 0, 0.05), 0, 0, Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.SRCE));
         points.add(new PropagationPath.PointPath(new Coordinate(200, 0, 4), 0, 0, Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.RECV));
-        srPath.add(new PropagationPath.SegmentPath(1,flatTopography));
+        srPath.add(new PropagationPath.SegmentPath(1,flatTopography,new Coordinate(0,0,0)));
 
         PropagationPath propagationPath = new PropagationPath(true,points,segments, srPath);
         PropagationProcessPathData propData = new PropagationProcessPathData();
@@ -160,7 +160,7 @@ public class PropagationPath_Cnossos {
 
         points.add(new PropagationPath.PointPath(new Coordinate(0, 0, 0.05), 0.0, 0, Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.SRCE));
         points.add(new PropagationPath.PointPath(new Coordinate(200, 0, 4.), 0., 0, Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.RECV));
-        srPath.add(new PropagationPath.SegmentPath(0.7,flatTopography));
+        srPath.add(new PropagationPath.SegmentPath(0.7,flatTopography,new Coordinate(0,0,0)));
 
         PropagationPath propagationPath = new PropagationPath(true,points,segments, srPath);
         PropagationProcessPathData propData = new PropagationProcessPathData();
@@ -186,7 +186,7 @@ public class PropagationPath_Cnossos {
 
         points.add(new PropagationPath.PointPath(new Coordinate(0, 0, 0.05), 0., 0, Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.SRCE));
         points.add(new PropagationPath.PointPath(new Coordinate(200, 0, 4.), 0., 0, Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.RECV));
-        srPath.add(new PropagationPath.SegmentPath(0.7,flatTopography));
+        srPath.add(new PropagationPath.SegmentPath(0.7,flatTopography,new Coordinate(0,0,0)));
 
         PropagationPath propagationPath = new PropagationPath(false,points,segments, srPath);
         PropagationProcessPathData propData = new PropagationProcessPathData();
@@ -219,9 +219,9 @@ public class PropagationPath_Cnossos {
         points.add(new PropagationPath.PointPath(new Coordinate(100, 0, 10.0), 0, 0, Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.DIFH));
         points.add(new PropagationPath.PointPath(new Coordinate(150, 0, 2.0), 0, 0, Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.RECV));
         // only first and last segment are necessary, even if it is possible to add more.
-        segments.add(new PropagationPath.SegmentPath(0, flatTopography));
-        segments.add(new PropagationPath.SegmentPath(0, flatTopography));
-        srPath.add(new PropagationPath.SegmentPath(0,flatTopography));
+        segments.add(new PropagationPath.SegmentPath(0, flatTopography,new Coordinate(0,0,0)));
+        segments.add(new PropagationPath.SegmentPath(0, flatTopography,new Coordinate(0,0,0)));
+        srPath.add(new PropagationPath.SegmentPath(0,flatTopography,new Coordinate(0,0,0)));
 
         PropagationPath propagationPath = new PropagationPath(false,points,segments, srPath);
         PropagationProcessPathData propData = new PropagationProcessPathData();
@@ -253,9 +253,9 @@ public class PropagationPath_Cnossos {
         points.add(new PropagationPath.PointPath(new Coordinate(100, 0, 10.0), 0, 0, Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.DIFH));
         points.add(new PropagationPath.PointPath(new Coordinate(150, 0, 2.0), 0, 0, Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.RECV));
         // only first and last segment are necessary, even if it is possible to add more.
-        segments.add(new PropagationPath.SegmentPath(0.0, flatTopography));
-        segments.add(new PropagationPath.SegmentPath(0.0, flatTopography));
-        srPath.add(new PropagationPath.SegmentPath(0.0,flatTopography));
+        segments.add(new PropagationPath.SegmentPath(0.0, flatTopography,new Coordinate(0,0,0)));
+        segments.add(new PropagationPath.SegmentPath(0.0, flatTopography,new Coordinate(0,0,0)));
+        srPath.add(new PropagationPath.SegmentPath(0.0,flatTopography,new Coordinate(0,0,0)));
 
         PropagationPath propagationPath = new PropagationPath(true,points,segments, srPath);
         PropagationProcessPathData propData = new PropagationProcessPathData();
@@ -286,7 +286,7 @@ public class PropagationPath_Cnossos {
         points.add(new PropagationPath.PointPath(new Coordinate(0, 0, 0.05), 0, 0, Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.SRCE));
         points.add(new PropagationPath.PointPath(new Coordinate(150, 0, 10.0), 0, 0, Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.RECV));
         // only first and last segment are necessary, even if it is possible to add more.
-        srPath.add(new PropagationPath.SegmentPath(0.7,smallSlope));
+        srPath.add(new PropagationPath.SegmentPath(0.7,smallSlope,new Coordinate(0,0,0)));
 
         PropagationPath propagationPath = new PropagationPath(false,points,segments, srPath);
         PropagationProcessPathData propData = new PropagationProcessPathData();
@@ -315,7 +315,7 @@ public class PropagationPath_Cnossos {
         points.add(new PropagationPath.PointPath(new Coordinate(0, 0, 0.05), 0, 0, Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.SRCE));
         points.add(new PropagationPath.PointPath(new Coordinate(150, 0, 10.0), 0, 0, Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.RECV));
         // only first and last segment are necessary, even if it is possible to add more.
-        srPath.add(new PropagationPath.SegmentPath(0.7,smallSlope));
+        srPath.add(new PropagationPath.SegmentPath(0.7,smallSlope,new Coordinate(0,0,0)));
 
         PropagationPath propagationPath = new PropagationPath(true,points,segments, srPath);
         PropagationProcessPathData propData = new PropagationProcessPathData();
@@ -345,7 +345,7 @@ public class PropagationPath_Cnossos {
         points.add(new PropagationPath.PointPath(new Coordinate(75, 20, 4), 0, Double.NaN, 0.7, -1, PropagationPath.PointPath.POINT_TYPE.REFL));
         points.add(new PropagationPath.PointPath(new Coordinate(150, 0, 4), 0, 0, Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.RECV));
         // only first and last segment are necessary, even if it is possible to add more.
-        srPath.add(new PropagationPath.SegmentPath(0.,flatTopography));
+        srPath.add(new PropagationPath.SegmentPath(0.,flatTopography,new Coordinate(0,0,0)));
 
         PropagationPath propagationPath = new PropagationPath(false,points,segments, srPath);
         PropagationProcessPathData propData = new PropagationProcessPathData();
@@ -378,8 +378,8 @@ public class PropagationPath_Cnossos {
         Vector3D flatTopography = new Vector3D(new Coordinate(10,10,0),new Coordinate(200,50,0));
         points.add(new PropagationPath.PointPath(new Coordinate(10, 10, 1), 0, 0, Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.SRCE));
         points.add(new PropagationPath.PointPath(new Coordinate(200, 50, 4), 0, 0, Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.RECV));
-        segments.add(new PropagationPath.SegmentPath(0, flatTopography));
-        srPath.add(new PropagationPath.SegmentPath(0,flatTopography));
+        segments.add(new PropagationPath.SegmentPath(0, flatTopography,new Coordinate(0,0,0)));
+        srPath.add(new PropagationPath.SegmentPath(0,flatTopography,new Coordinate(0,0,0)));
 
         PropagationPath propagationPath = new PropagationPath(false,points,segments, srPath);
         PropagationProcessPathData propData = new PropagationProcessPathData();
@@ -406,8 +406,8 @@ public class PropagationPath_Cnossos {
 
         points.add(new PropagationPath.PointPath(new Coordinate(10, 10, 1), 0, 0, Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.SRCE));
         points.add(new PropagationPath.PointPath(new Coordinate(200, 50, 4), 0, 0, Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.RECV));
-        segments.add(new PropagationPath.SegmentPath(0, flatTopography));
-        srPath.add(new PropagationPath.SegmentPath(0,flatTopography));
+        segments.add(new PropagationPath.SegmentPath(0, flatTopography,new Coordinate(0,0,0)));
+        srPath.add(new PropagationPath.SegmentPath(0,flatTopography,new Coordinate(0,0,0)));
 
         PropagationPath propagationPath = new PropagationPath(true,points,segments, srPath);
         PropagationProcessPathData propData = new PropagationProcessPathData();
@@ -439,9 +439,9 @@ public class PropagationPath_Cnossos {
         points.add(new PropagationPath.PointPath(new Coordinate(175, 50, 4.0), 0, 0, Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.DIFV));
         points.add(new PropagationPath.PointPath(new Coordinate(200, 10, 4.0), 0, 0, Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.RECV));
         // only first and last segment are necessary, even if it is possible to add more.
-        segments.add(new PropagationPath.SegmentPath(0.0, new Vector3D(new Coordinate(10,10,0),new Coordinate(175,50,0))));
-        segments.add(new PropagationPath.SegmentPath(0.0, new Vector3D(new Coordinate(175,50,0),new Coordinate(200,10,0))));
-        srPath.add(new PropagationPath.SegmentPath(0.0,new Vector3D(new Coordinate(10,10,0),new Coordinate(200,10,0))));
+        segments.add(new PropagationPath.SegmentPath(0.0, new Vector3D(new Coordinate(10,10,0),new Coordinate(175,50,0)),new Coordinate(0,0,0)));
+        segments.add(new PropagationPath.SegmentPath(0.0, new Vector3D(new Coordinate(175,50,0),new Coordinate(200,10,0)),new Coordinate(0,0,0)));
+        srPath.add(new PropagationPath.SegmentPath(0.0,new Vector3D(new Coordinate(10,10,0),new Coordinate(200,10,0)),new Coordinate(0,0,0)));
 
         PropagationPath propagationPath = new PropagationPath(false,points,segments, srPath);
         PropagationProcessPathData propData = new PropagationProcessPathData();

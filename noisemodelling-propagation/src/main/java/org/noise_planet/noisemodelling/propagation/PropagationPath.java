@@ -154,6 +154,7 @@ public class PropagationPath {
         //  given by user
         public double gPath;          // G coefficient for the considered path segment
         public Vector3D vector3D;     // mean Plane for the considered path segment
+        public Coordinate pInit;     // init point to compute the mean Plane
 
         // computed in AugmentedSegments
         public int idPtStart;               //start point indice for the considered path segment
@@ -180,13 +181,12 @@ public class PropagationPath {
          * @param gPath
          */
 
-        public SegmentPath(double gPath, Vector3D vector3D) {
+        public SegmentPath(double gPath, Vector3D vector3D, Coordinate pInit) {
             this.gPath = gPath;
             this.vector3D = vector3D;
+            this.pInit = pInit;
         }
 
-        public SegmentPath() {
-        }
 
         public void setGw(double g) {
             this.gw = g;
@@ -262,21 +262,19 @@ public class PropagationPath {
     }
 
 
-    public Coordinate projectPointonSegment(Coordinate P, Vector3D vector, Coordinate Pinit) {
-        Coordinate A = new Coordinate(0, 0,0);
-        Coordinate B = new Coordinate(vector.getX(), vector.getY(),vector.getZ());
-        // convert vector to segment
-        A.x+=Pinit.x;
-        A.y+=Pinit.y;
-        B.x+=Pinit.x;
-        B.y+=Pinit.y;
+    public Coordinate projectPointonSegment(Coordinate P, Vector3D vector, Coordinate pInit) {
+        Coordinate A = new Coordinate(pInit.x, pInit.y,pInit.z);
+        Coordinate B = new Coordinate(vector.getX()+pInit.x, vector.getY()+pInit.y,vector.getZ()+pInit.z);
+
         return new Coordinate(A.x+(Vector3D.dot(A,P,A,B) / Vector3D.dot(A,B,A,B))*vector.getX(),
                 A.y+(Vector3D.dot(A,P,A,B) / Vector3D.dot(A,B,A,B))*vector.getY(),
                 A.z+(Vector3D.dot(A,P,A,B) / Vector3D.dot(A,B,A,B))*vector.getZ());
     }
-    public Coordinate projectPointonVector(Coordinate P, Vector3D vector) {
-        Coordinate A = new Coordinate(0, 0,0);
-        Coordinate B = new Coordinate(vector.getX(), vector.getY(),vector.getZ());
+
+
+    public Coordinate projectPointonVector(Coordinate P, Vector3D vector,Coordinate pInit) {
+        Coordinate A = new Coordinate(pInit.x, pInit.y,pInit.z);
+        Coordinate B = new Coordinate(vector.getX()+pInit.x, vector.getY()+pInit.y,vector.getZ()+pInit.z);
         return new Coordinate(A.x+(Vector3D.dot(A,P,A,B) / Vector3D.dot(A,B,A,B))*vector.getX(),
                 A.y+(Vector3D.dot(A,P,A,B) / Vector3D.dot(A,B,A,B))*vector.getY(),
                 A.z+(Vector3D.dot(A,P,A,B) / Vector3D.dot(A,B,A,B))*vector.getZ());
@@ -305,8 +303,8 @@ public class PropagationPath {
         Coordinate R = (Coordinate) pointList.get(pointList.size()-1).coordinate.clone();
 
         // Projected source and receiver on MeanPlane
-        Coordinate SGround = projectPointonVector(S,SR.vector3D);
-        Coordinate RGround = projectPointonVector(R,SR.vector3D);
+        Coordinate SGround = projectPointonVector(S,SR.vector3D,SR.pInit);
+        Coordinate RGround = projectPointonVector(R,SR.vector3D,SR.pInit);
 
         SR.d = CGAlgorithms3D.distance(S, R);
         SR.dp = CGAlgorithms3D.distance(SGround, RGround);
@@ -346,8 +344,8 @@ public class PropagationPath {
             Coordinate Sprime = new Coordinate(2 * SGround.x - S.x, 2 * SGround.y - S.y, 2 * SGround.z - S.z);
             Coordinate Rprime = new Coordinate(2 * RGround.x - R.x, 2 * RGround.y - R.y, 2 * RGround.z - R.z);
             double gpath = SR.gPath;
-            SegmentPath SRp = new SegmentPath(gpath, new Vector3D(S, Rprime));
-            SegmentPath SpR = new SegmentPath(gpath, new Vector3D(Sprime, R));
+            SegmentPath SRp = new SegmentPath(gpath, new Vector3D(S, Rprime),new Coordinate(0,0,0));
+            SegmentPath SpR = new SegmentPath(gpath, new Vector3D(Sprime, R),new Coordinate(0,0,0));
 
             SpR.d = CGAlgorithms3D.distance(Sprime, R);
             SRp.d = CGAlgorithms3D.distance(S, Rprime);
@@ -414,7 +412,7 @@ public class PropagationPath {
 
 
                 if (Vector3D.dot(S,R,S,pointList.get(difHPoints.get(0)).coordinate)<0) {
-                    Coordinate A = projectPointonVector(pointList.get(difHPoints.get(0)).coordinate,SR.vector3D);
+                    Coordinate A = projectPointonVector(pointList.get(difHPoints.get(0)).coordinate,SR.vector3D, SR.pInit);
                     double SA = getRayCurveLength(CGAlgorithms3D.distance(S, A));
                     double AR = getRayCurveLength(CGAlgorithms3D.distance(A, R));
                     double SO = getRayCurveLength(CGAlgorithms3D.distance(S, pointList.get(difHPoints.get(0)).coordinate));
@@ -479,8 +477,8 @@ public class PropagationPath {
             Coordinate R = (Coordinate) pointList.get(idSegment+1).coordinate.clone();
 
             // Projected source and receiver on MeanPlane
-            Coordinate SGround = projectPointonVector(S,segmentList.get(idSegment).vector3D);
-            Coordinate RGround = projectPointonVector(R,segmentList.get(idSegment).vector3D);
+            Coordinate SGround = projectPointonVector(S,segmentList.get(idSegment).vector3D,segmentList.get(idSegment).pInit);
+            Coordinate RGround = projectPointonVector(R,segmentList.get(idSegment).vector3D,segmentList.get(idSegment).pInit);
 
 
             double dp = CGAlgorithms3D.distance(SGround, RGround);
@@ -555,11 +553,11 @@ public class PropagationPath {
 
 
     private double computeZs(SegmentPath segmentPath) {
-        return pointList.get(segmentPath.idPtStart).coordinate.z - projectPointonSegment(pointList.get(segmentPath.idPtStart).coordinate,segmentPath.vector3D,pointList.get(segmentPath.idPtStart).coordinate).z;
+        return pointList.get(segmentPath.idPtStart).coordinate.z - projectPointonSegment(pointList.get(segmentPath.idPtStart).coordinate,segmentPath.vector3D,segmentPath.pInit).z;
     }
 
     private double computeZr(SegmentPath segmentPath) {
-        return pointList.get(segmentPath.idPtFinal).coordinate.z - projectPointonSegment(pointList.get(segmentPath.idPtFinal).coordinate,segmentPath.vector3D,pointList.get(segmentPath.idPtStart).coordinate).z;
+        return pointList.get(segmentPath.idPtFinal).coordinate.z - projectPointonSegment(pointList.get(segmentPath.idPtFinal).coordinate,segmentPath.vector3D,segmentPath.pInit).z;
     }
 
     private double computeZsPrime(SegmentPath segmentPath) {

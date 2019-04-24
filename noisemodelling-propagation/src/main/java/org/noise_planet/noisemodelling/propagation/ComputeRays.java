@@ -412,7 +412,7 @@ public class ComputeRays {
                     propagationPath.getPointList().remove(0);
                     points.addAll(propagationPath.getPointList());
                     segments.addAll(propagationPath.getSegmentList());
-                    srPath.add(new PropagationPath.SegmentPath(0.0, new Vector3D(srcCoord, receiverCoord)));
+                    srPath.add(new PropagationPath.SegmentPath(0.0, new Vector3D(srcCoord, receiverCoord),new Coordinate(0,0,0)));
 
 
                     for (int i = 1; i < points.size(); i++) {
@@ -503,20 +503,24 @@ public class ComputeRays {
 
             // Compute mean ground plan
             double[] ab = JTSUtility.getLinearRegressionPolyline(removeDuplicates(rSground));
+            Coordinate pInit = new Coordinate();
             Coordinate rotatedReceiver = new Coordinate(rSground.get(rSground.size() - 1));
             rotatedReceiver.setOrdinate(1, receiverCoord.z);
             Coordinate rotatedSource = new Coordinate(rSground.get(0));
             rotatedSource.setOrdinate(1, srcCoord.z);
             projReceiver = JTSUtility.makeProjectedPoint(ab[0], ab[1], rotatedReceiver);
             projSource = JTSUtility.makeProjectedPoint(ab[0], ab[1], rotatedSource);
-
+            pInit = JTSUtility.makeProjectedPoint(ab[0], ab[1], new Coordinate(0,0,0));
             projReceiver = JTSUtility.getOldCoordinateSystem(projReceiver, angle);
             projSource = JTSUtility.getOldCoordinateSystem(projSource, angle);
+            pInit = JTSUtility.getOldCoordinateSystem(pInit, angle);
 
             projReceiver.x = srcCoord.x + projReceiver.x;
             projSource.x = srcCoord.x + projSource.x;
             projReceiver.y = srcCoord.y + projReceiver.y;
             projSource.y = srcCoord.y + projSource.y;
+            pInit.x = srcCoord.x + pInit.x;
+            pInit.y = srcCoord.y + pInit.y;
 
             List<Coordinate> Test = new ArrayList<Coordinate>();
             Test.add(projSource);
@@ -524,10 +528,10 @@ public class ComputeRays {
 
             JTSUtility.getLinearRegressionPolyline(removeDuplicates(JTSUtility.getNewCoordinateSystem(Test)));
 
-            segments.add(new PropagationPath.SegmentPath(gPath, new Vector3D(projSource, projReceiver)));
+            segments.add(new PropagationPath.SegmentPath(gPath, new Vector3D(projSource, projReceiver),pInit));
 
         } else {
-            segments.add(new PropagationPath.SegmentPath(0.0, new Vector3D(srcCoord, receiverCoord)));
+            segments.add(new PropagationPath.SegmentPath(0.0, new Vector3D(srcCoord, receiverCoord),new Coordinate(0,0,0)));
         }
         points.add(new PropagationPath.PointPath(srcCoord, altS, gS, Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.SRCE));
         points.add(new PropagationPath.PointPath(receiverCoord, altR, gS, Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.RECV));
