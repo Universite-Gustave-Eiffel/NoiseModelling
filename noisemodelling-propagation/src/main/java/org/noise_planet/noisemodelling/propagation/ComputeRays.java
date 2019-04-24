@@ -742,6 +742,12 @@ public class ComputeRays {
                 // Ignore intersection if iterating over other side (not parts of what is returned)
                 if (left && k < indexp2 || !left && k >= indexp2) {
                     if (!freeFieldSegments.contains(freeFieldTestSegment)) {
+                        // Check if we still are in the propagation domain
+                        if(data.freeFieldFinder.getTriangleIdByCoordinate(coordinates[k]) == -1 ||
+                                data.freeFieldFinder.getTriangleIdByCoordinate(coordinates[k+1]) ==-1) {
+                            // This side goes over propagation path
+                            return new ArrayList<>();
+                        }
                         HashSet<Integer> buildingsOnPath2 = getBuildingsOnPath(coordinates[k], coordinates[k + 1]);
                         for (int i : buildingsOnPath2) {
                             if (!buildingsOnPath.contains(i)) {
