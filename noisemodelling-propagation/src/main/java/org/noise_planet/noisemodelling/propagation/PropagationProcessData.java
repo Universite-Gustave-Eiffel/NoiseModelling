@@ -58,6 +58,7 @@ public class PropagationProcessData {
     public static final double DEFAULT_MAX_PROPAGATION_DISTANCE = 1200;
     public static final double DEFAULT_MAXIMUM_REF_DIST = 50;
     public static final double DEFAULT_RECEIVER_DIST = 1.0;
+    public static final double DEFAULT_GS = 0.0;
 
     public List<Long> receiversPk = new ArrayList<>();
     public List<Long> sourcesPk = new ArrayList<>();
@@ -81,6 +82,8 @@ public class PropagationProcessData {
     public double maxRefDist = DEFAULT_MAXIMUM_REF_DIST;
     /** Minimum distance between source and receiver */
     public double minRecDist = DEFAULT_RECEIVER_DIST;
+    /** Source factor absorption */
+    public double gS = DEFAULT_GS;
 
     /** maximum dB Error, stop calculation if the sum of further sources contributions are smaller than this value */
     public double maximumError = Double.NEGATIVE_INFINITY;
@@ -92,6 +95,8 @@ public class PropagationProcessData {
     protected List<GeoWithSoilType> soilList = new ArrayList<>();
     /** True will compute vertical diffraction */
     protected boolean computeVerticalDiffraction;
+
+
 
     public PropagationProcessData(FastObstructionTest freeFieldFinder) {
         this.freeFieldFinder = freeFieldFinder;
@@ -173,6 +178,10 @@ public class PropagationProcessData {
 
     public void setComputeVerticalDiffraction(boolean computeVerticalDiffraction) {
         this.computeVerticalDiffraction = computeVerticalDiffraction;
+    }
+
+    public void setGs(double gS) {
+        this.gS = gS;
     }
 
     public boolean isComputeHorizontalDiffraction() {

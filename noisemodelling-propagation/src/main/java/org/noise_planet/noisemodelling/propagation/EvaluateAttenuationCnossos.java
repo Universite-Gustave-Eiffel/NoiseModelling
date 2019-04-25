@@ -278,22 +278,22 @@ public class EvaluateAttenuationCnossos {
 
             // Set Gm and Gw for AGround SO - Table 2.5.b
             if (path.isFavorable()) {
-                segmentPath.get(0).setGw(srPath.get(0).gPath);
-                segmentPath.get(0).setGm(srPath.get(0).gPathPrime);
+                segmentPath.get(0).setGw(segmentPath.get(0).gPath);
+                segmentPath.get(0).setGm(segmentPath.get(0).gPathPrime);
             } else {
-                segmentPath.get(0).setGw(srPath.get(0).gPathPrime);
-                segmentPath.get(0).setGm(srPath.get(0).gPathPrime);
+                segmentPath.get(0).setGw(segmentPath.get(0).gPathPrime);
+                segmentPath.get(0).setGm(segmentPath.get(0).gPathPrime);
             }
 
             aGroundSO = getAGround(segmentPath.get(0), path,data);
 
             // Set Gm and Gw for AGround OR - Table 2.5.b
             if (path.isFavorable()) {
-                segmentPath.get(segmentPath.size()-1).setGw(srPath.get(0).gPath);
-                segmentPath.get(segmentPath.size()-1).setGm(srPath.get(0).gPath);
+                segmentPath.get(segmentPath.size()-1).setGw(segmentPath.get(segmentPath.size()-1).gPath);
+                segmentPath.get(segmentPath.size()-1).setGm(segmentPath.get(segmentPath.size()-1).gPath);
             } else {
-                segmentPath.get(segmentPath.size()-1).setGw(srPath.get(0).gPath);
-                segmentPath.get(segmentPath.size()-1).setGm(srPath.get(0).gPath);
+                segmentPath.get(segmentPath.size()-1).setGw(segmentPath.get(segmentPath.size()-1).gPath);
+                segmentPath.get(segmentPath.size()-1).setGm(segmentPath.get(segmentPath.size()-1).gPath);
             }
             aGroundOR = getAGround(segmentPath.get(segmentPath.size()-1), path,data);
 

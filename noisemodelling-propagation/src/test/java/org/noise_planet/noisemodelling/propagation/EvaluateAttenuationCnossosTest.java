@@ -110,6 +110,7 @@ public class EvaluateAttenuationCnossosTest {
         rayData.setComputeHorizontalDiffraction(true);
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 250, -20, 80)), 0.5));
         rayData.setComputeVerticalDiffraction(true);
+        rayData.setGs(0.5);
 
         PropagationProcessPathData attData = new PropagationProcessPathData();
         attData.setHumidity(70);
@@ -148,6 +149,7 @@ public class EvaluateAttenuationCnossosTest {
         rayData.setComputeHorizontalDiffraction(true);
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 250, -20, 80)), 1));
         rayData.setComputeVerticalDiffraction(true);
+        rayData.setGs(1.0);
 
         PropagationProcessPathData attData = new PropagationProcessPathData();
         attData.setHumidity(70);
@@ -186,6 +188,7 @@ public class EvaluateAttenuationCnossosTest {
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -20, 80)), 0.2));
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -20, 80)), 0.5));
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -20, 80)), 0.9));
+        rayData.setGs(0.2);
 
         rayData.setComputeVerticalDiffraction(true);
 
@@ -253,6 +256,8 @@ public class EvaluateAttenuationCnossosTest {
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -20, 80)), 0.5));
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -20, 80)), 0.2));
         rayData.setComputeVerticalDiffraction(true);
+        rayData.setGs(0.9);
+
         PropagationProcessPathData attData = new PropagationProcessPathData();
         attData.setHumidity(70);
         attData.setTemperature(10);
@@ -304,20 +309,21 @@ public class EvaluateAttenuationCnossosTest {
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
         rayData.setComputeVerticalDiffraction(true);
+        rayData.setGs(0.9);
 
         PropagationProcessPathData attData = new PropagationProcessPathData();
         attData.setHumidity(70);
         attData.setTemperature(10);
-        //attData.setWindRose(HOM_WIND_ROSE);
+        attData.setWindRose(FAV_WIND_ROSE);
         ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});
-        assertArrayEquals(  new double[]{32.70,31.58,29.99,27.89,24.36,21.46,14.18,-5.05},L, ERROR_EPSILON_low);//p=0.5
-        //assertArrayEquals(  new double[]{32.54,31.32,29.60,27.37,22.22,20.76,13.44,-5.81},L, ERROR_EPSILON_low);//HOM
-        //assertArrayEquals(  new double[]{32.85,31.83,30.35,29.36,25.78,22.06,14.81,-4.41},L, ERROR_EPSILON_low);//FAV
+        //assertArrayEquals(  new double[]{32.70,31.58,29.99,27.89,24.36,21.46,14.18,-5.05},L, ERROR_EPSILON_very_low);//p=0.5
+        //assertArrayEquals(  new double[]{32.54,31.32,29.60,27.37,22.22,20.76,13.44,-5.81},L, ERROR_EPSILON_very_low);//HOM
+        assertArrayEquals(  new double[]{32.85,31.83,30.35,29.36,25.78,22.06,14.81,-4.41},L, ERROR_EPSILON_low);//FAV
 
     }
 

@@ -63,12 +63,9 @@ public class TestComputeRays {
         rSground.add(new Coordinate(200,50,10));
         rSground = getNewCoordinateSystemFix(rSground);
 
-
-
-
         // Compute mean ground plan
         double[] ab = JTSUtility.getLinearRegressionPolyline(rSground);
-        assertArrayEquals(new double[]{0.05,-2.83},ab, 0.1);
+        assertArrayEquals(new double[]{0.05,-2.83},ab, 1);
 
     }
 

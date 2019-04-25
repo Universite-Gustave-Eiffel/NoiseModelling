@@ -81,8 +81,6 @@ public class ComputeRays {
     private final static double MAX_RATIO_HULL_DIRECT_PATH = 4;
     private int threadCount;
     private PropagationProcessData data;
-    // todo implement this next variable as input parameter
-    private double gS = 0; // 0 si route, 1 si ballast
 
     private STRtree rTreeOfGeoSoil;
     private final static Logger LOGGER = LoggerFactory.getLogger(ComputeRays.class);
@@ -475,6 +473,7 @@ public class ComputeRays {
         Coordinate projReceiver;
         Coordinate projSource;
 
+
         //will give a flag here for soil effect
         List<GeoWithSoilType> soilTypeList = data.getSoilList();
         if (soilTypeList != null) {
@@ -522,19 +521,13 @@ public class ComputeRays {
             pInit.x = srcCoord.x + pInit.x;
             pInit.y = srcCoord.y + pInit.y;
 
-            List<Coordinate> Test = new ArrayList<Coordinate>();
-            Test.add(projSource);
-            Test.add(projReceiver);
-
-            JTSUtility.getLinearRegressionPolyline(removeDuplicates(JTSUtility.getNewCoordinateSystem(Test)));
-
             segments.add(new PropagationPath.SegmentPath(gPath, new Vector3D(projSource, projReceiver),pInit));
 
         } else {
             segments.add(new PropagationPath.SegmentPath(0.0, new Vector3D(srcCoord, receiverCoord),new Coordinate(0,0,0)));
         }
-        points.add(new PropagationPath.PointPath(srcCoord, altS, gS, Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.SRCE));
-        points.add(new PropagationPath.PointPath(receiverCoord, altR, gS, Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.RECV));
+        points.add(new PropagationPath.PointPath(srcCoord, altS, data.gS, Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.SRCE));
+        points.add(new PropagationPath.PointPath(receiverCoord, altR, data.gS, Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.RECV));
 
         if (debugInfo != null) {
             debugInfo.add(new PropagationDebugInfo(Arrays.asList(receiverCoord, srcCoord), new double[data.freq_lvl.length]));
