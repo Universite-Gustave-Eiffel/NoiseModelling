@@ -31,6 +31,10 @@ public class EvaluateAttenuationCnossosTest {
     private static final double ERROR_EPSILON_low = 1;
     private static final double ERROR_EPSILON_very_low = 0.5;
 
+    private static final double[] HOM_WIND_ROSE = new double[]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    private static final double[] FAV_WIND_ROSE = new double[]{1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
+
+
     private static double[] addArray(double[] first, double[] second) {
         int length = first.length < second.length ? first.length
                 : second.length;
@@ -76,6 +80,7 @@ public class EvaluateAttenuationCnossosTest {
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
+
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});
         assertArrayEquals(  new double[]{39.95,39.89,39.77,39.60,39.26,38.09,33.61,17.27},L, ERROR_EPSILON_very_low);
     }
@@ -187,13 +192,16 @@ public class EvaluateAttenuationCnossosTest {
         PropagationProcessPathData attData = new PropagationProcessPathData();
         attData.setHumidity(70);
         attData.setTemperature(10);
+        //attData.setWindRose(FAV_WIND_ROSE);
 
         ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});
-        assertArrayEquals(  new double[]{37.91,37.85,37.73,36.37,34.23,36.06,31.57,15.24},L, ERROR_EPSILON_very_low);
+        assertArrayEquals(  new double[]{37.91,37.85,37.73,36.37,34.23,36.06,31.57,15.24},L, ERROR_EPSILON_very_low); // p=0.5
+        //assertArrayEquals(  new double[]{37.59,37.53,37.41,34.10,29.29,35.73,31.25,14.91},L, ERROR_EPSILON_low); // HOM
+        //assertArrayEquals(  new double[]{38.21,38.15,38.03,37.86,36.48,36.36,31.87,15.54},L, ERROR_EPSILON_low);// FAV
     }
 
 
@@ -255,7 +263,8 @@ public class EvaluateAttenuationCnossosTest {
         computeRays.run(propDataOut);
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});
-        assertArrayEquals(  new double[]{37.26,37.21,37.08,36.91,36.57,35.41,30.91,14.54},L, ERROR_EPSILON_low);
+        assertArrayEquals(  new double[]{37.26,37.21,37.08,36.91,36.57,35.41,30.91,14.54},L, ERROR_EPSILON_low); // p=0.5
+
     }
 
 
@@ -299,14 +308,16 @@ public class EvaluateAttenuationCnossosTest {
         PropagationProcessPathData attData = new PropagationProcessPathData();
         attData.setHumidity(70);
         attData.setTemperature(10);
-        attData.setWindRose(new double[]{0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5});
+        //attData.setWindRose(HOM_WIND_ROSE);
         ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});
-        assertArrayEquals(  new double[]{32.70,31.58,29.99,27.89,24.36,21.46,14.18,-5.05},L, ERROR_EPSILON_high);
+        assertArrayEquals(  new double[]{32.70,31.58,29.99,27.89,24.36,21.46,14.18,-5.05},L, ERROR_EPSILON_low);//p=0.5
+        //assertArrayEquals(  new double[]{32.54,31.32,29.60,27.37,22.22,20.76,13.44,-5.81},L, ERROR_EPSILON_low);//HOM
+        //assertArrayEquals(  new double[]{32.85,31.83,30.35,29.36,25.78,22.06,14.81,-4.41},L, ERROR_EPSILON_low);//FAV
 
     }
 
