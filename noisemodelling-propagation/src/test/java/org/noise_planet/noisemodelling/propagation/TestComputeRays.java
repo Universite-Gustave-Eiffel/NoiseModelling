@@ -29,16 +29,48 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.noise_planet.noisemodelling.propagation.KMLDocument.exportScene;
 
 
 public class TestComputeRays {
+
+
     private static final Logger LOGGER = LoggerFactory.getLogger(TestComputeRays.class);
     private boolean storeGeoJSONRays = false;
+
+    public static List<Coordinate> getNewCoordinateSystemFix(List<Coordinate> listPoints) {
+        List<Coordinate> newCoord = new ArrayList<>(listPoints.size());
+        //get angle by ray source-receiver with the X-axis.
+        double angle = new LineSegment(listPoints.get(0), listPoints.get(listPoints.size() - 1)).angle();
+        double sin = Math.sin(angle);
+        double cos = Math.cos(angle);
+
+        for (Coordinate listPoint : listPoints) {
+            double newX = (listPoint.x) * cos +
+                    (listPoint.y) * sin;
+            newCoord.add(new Coordinate(newX, listPoint.z));
+        }
+        return newCoord;
+    }
+
+    @Test
+    public void TestMeanGroundPlane() {
+        List<Coordinate> rSground = new ArrayList<>();
+        rSground.add(new Coordinate(10,10,0));
+        rSground.add(new Coordinate(120.0,33.1578,0.0));
+        rSground.add(new Coordinate(185.0,46.84,10.));
+        rSground.add(new Coordinate(200,50,10));
+        rSground = getNewCoordinateSystemFix(rSground);
+
+
+
+
+        // Compute mean ground plan
+        double[] ab = JTSUtility.getLinearRegressionPolyline(rSground);
+        assertArrayEquals(new double[]{0.05,-2.83},ab, 0.1);
+
+    }
 
     /**
      * Test vertical edge diffraction ray computation
