@@ -56,15 +56,17 @@ public class PropagationProcessPathData {
     static final  double KvibO = 2239.1;// Vibrational temperature of oxygen (K)
     static final  double KvibN = 3352.0;// Vibrational temperature of the nitrogen (K)
     static final  double K01 = 273.16;  // Isothermal temperature at the triple point (K)
+    static final double a8 = (2 * Math.PI / 35.0) * 10 * Math.log10(Math.pow(Math.exp(1),2));
     /** Frequency bands values, by third octave */
     public static final List<Integer> freq_lvl = Arrays.asList(63, 125, 250, 500, 1000, 2000, 4000, 8000);
+    public static final List<Double> freq_lvl_exact = Arrays.asList(63.0957, 125.8925, 251.1888, 501.1872, 1000.0, 1995.26231, 3981.07171, 7943.28235);
     static final double[] DEFAULT_WIND_ROSE = new double[]{0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
     /** Temperature in celsius */
     private double temperature = 15;
     private double celerity = 340;
     private double humidity = 70;
     private double pressure = Pref;
-    private double[] alpha_atmo = getAtmoCoeffArray(freq_lvl,  temperature,  pressure,  humidity);
+    private double[] alpha_atmo = getAtmoCoeffArray(freq_lvl_exact,  temperature,  pressure,  humidity);
     private double defaultOccurance = 0.5;
 
     private boolean gDisc = true;     // choose between accept G discontinuity or not
@@ -79,7 +81,7 @@ public class PropagationProcessPathData {
     public PropagationProcessPathData setHumidity(double humidity) {
 
         this.humidity = humidity;
-        this.alpha_atmo = getAtmoCoeffArray(freq_lvl,  temperature,  pressure,  humidity);
+        this.alpha_atmo = getAtmoCoeffArray(freq_lvl_exact,  temperature,  pressure,  humidity);
         return this;
     }
 
@@ -88,7 +90,7 @@ public class PropagationProcessPathData {
      */
     public PropagationProcessPathData setPressure(double pressure) {
         this.pressure = pressure;
-        this.alpha_atmo = getAtmoCoeffArray(freq_lvl,  temperature,  pressure,  humidity);
+        this.alpha_atmo = getAtmoCoeffArray(freq_lvl_exact,  temperature,  pressure,  humidity);
         return this;
     }
 
@@ -170,10 +172,33 @@ public class PropagationProcessPathData {
     public PropagationProcessPathData setTemperature(double temperature) {
         this.temperature = temperature;
         this.celerity = computeCelerity(temperature + K_0);
-        this.alpha_atmo = getAtmoCoeffArray(freq_lvl,  temperature,  pressure,  humidity);
+        this.alpha_atmo = getAtmoCoeffArray(freq_lvl_exact,  temperature,  pressure,  humidity);
         return this;
     }
 
+    /**
+     *
+     * @param freq Frequency (Hz)
+     * @param humidity Humidity %
+     * @param pressure Pressure in pascal
+     * @param T_kel Temperature in kelvin
+     * @return Atmospheric absorption dB/km
+     */
+    public static double getCoefAttAtmosCnossos(double freq, double humidity, double pressure, double T_kel) {
+        double tcor = T_kel/ Kref ;
+        double xmol = humidity * Math.pow (10., 4.6151 - 6.8346 * Math.pow (K01 / T_kel, 1.261));
+
+        double frqO = 24. + 40400. * xmol * ((.02 + xmol) / (0.391 + xmol)) ;
+        double frqN = Math.pow (tcor,-0.5) * (9. + 280. * xmol * Math.exp (-4.17 * (Math.pow (tcor,-1./3.) - 1.))) ;
+
+
+        double a1 = 0.01275 * Math.exp (-2239.1 / T_kel) / (frqO + (freq * freq / frqO)) ;
+        double a2 = 0.10680 * Math.exp (-3352.0 / T_kel) / (frqN + (freq * freq / frqN)) ;
+        double a0 = 8.686 * freq * freq
+                * (1.84e-11 * Math.pow(tcor,0.5) + Math.pow(tcor,-2.5) * (a1 + a2)) ;
+
+        return a0 * 1000;
+    }
 
     /**
      *
@@ -183,7 +208,7 @@ public class PropagationProcessPathData {
      * @param T_kel Temperature in kelvin
      * @return Atmospheric absorption dB/km
      */
-    public static double getCoefAttAtmos2(double frequency, double humidity, double pressure, double T_kel) {
+    public static double getCoefAttAtmos(double frequency, double humidity, double pressure, double T_kel) {
 
         final double Kelvin = 273.15;	//For converting to Kelvin
         final double e = 2.718282;
@@ -224,26 +249,26 @@ public class PropagationProcessPathData {
      * @return atmospheric attenuation coefficient (db/km)
      * @author Judicaël Picaut, UMRAE
      */
-    public static double getCoefAttAtmos(double frequency, double humidity, double pressure, double tempKelvin) {
+    public static double getCoefAttAtmosSpps(double frequency, double humidity, double pressure, double tempKelvin) {
         // Sound celerity
         double cson = computeCelerity(tempKelvin);
 
         // Calculation of the molar fraction of water vapour
         double C = -6.8346 * Math.pow(K01 / tempKelvin, 1.261) + 4.6151;
         double Ps = Pref * Math.pow(10., C);
-        double hmol = humidity * Ps / Pref;
+        double hmol = humidity * (Ps / Pref) * (pressure / Pref);
 
         // Classic and rotational absorption
         double Acr = (Pref / pressure) * (1.60E-10) * Math.sqrt(tempKelvin / Kref) * Math.pow(frequency, 2);
 
         // Vibratory oxygen absorption:!!123
         double Fr = (pressure / Pref) * (24. + 4.04E4 * hmol * (0.02 + hmol) / (0.391 + hmol));
-        double Am = 1.559 * FmolO * Math.exp(-KvibO / tempKelvin) * Math.pow(KvibO / tempKelvin, 2);
+        double Am = a8 * FmolO * Math.exp(-KvibO / tempKelvin) * Math.pow(KvibO / tempKelvin, 2);
         double AvibO = Am * (frequency / cson) * 2. * (frequency / Fr) / (1 + Math.pow(frequency / Fr, 2));
 
         // Vibratory nitrogen absorption
         Fr = (pressure / Pref) * Math.sqrt(Kref / tempKelvin) * (9. + 280. * hmol * Math.exp(-4.170 * (Math.pow(tempKelvin / Kref, -1. / 3.) - 1)));
-        Am = 1.559 * FmolN * Math.exp(-KvibN / tempKelvin) * Math.pow(KvibN / tempKelvin, 2);
+        Am = a8 * FmolN * Math.exp(-KvibN / tempKelvin) * Math.pow(KvibN / tempKelvin, 2);
         double AvibN = Am * (frequency / cson) * 2. * (frequency / Fr) / (1 + Math.pow(frequency / Fr, 2));
 
         // Total absorption in dB/m
@@ -264,7 +289,7 @@ public class PropagationProcessPathData {
         return getCoefAttAtmos(frequency, humidity, pressure, temperature + K_0);
     }
 
-    public static double[] getAtmoCoeffArray(List<Integer> freq_lvl, double temperature, double pressure, double humidity){
+    public static double[] getAtmoCoeffArray(List<Double> freq_lvl, double temperature, double pressure, double humidity){
         double[] alpha_atmo;
         // Compute atmospheric alpha value by specified frequency band
         alpha_atmo = new double[freq_lvl.size()];
