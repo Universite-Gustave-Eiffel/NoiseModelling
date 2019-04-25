@@ -315,6 +315,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setHumidity(70);
         attData.setTemperature(10);
         attData.setWindRose(FAV_WIND_ROSE);
+        attData.setPrime2520(true);
         ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);

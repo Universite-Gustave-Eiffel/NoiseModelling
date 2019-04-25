@@ -501,7 +501,7 @@ public class ComputeRays {
             rSground = JTSUtility.getNewCoordinateSystem(rSground);
 
             // Compute mean ground plan
-            double[] ab = JTSUtility.getLinearRegressionPolyline(removeDuplicates(rSground));
+            double[] ab = JTSUtility.getMeanPlaneCoefficients(rSground.toArray(new Coordinate[rSground.size()]));
             Coordinate pInit = new Coordinate();
             Coordinate rotatedReceiver = new Coordinate(rSground.get(rSground.size() - 1));
             rotatedReceiver.setOrdinate(1, receiverCoord.z);
