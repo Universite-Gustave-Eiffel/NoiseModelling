@@ -31,6 +31,7 @@
  * or contact directly:
  * info_at_ orbisgis.org
  */
+
 package org.noise_planet.noisemodelling.propagation;
 
 import org.apache.commons.math3.stat.regression.RegressionResults;
@@ -193,6 +194,55 @@ public class JTSUtility {
         double cos = Math.cos(angle);
 
         return new Coordinate( (Point.x ) *cos, (Point.x ) *sin, Point.y);
+    }
+
+    /**
+     * calculate the mean plane y = A.x + B for a sequence of terrain points projected on the
+     * unfolded propagation plane ; using (x,y) coordinates as in section  VI.2.2.c of the
+     * JRC-2012 reference report.
+     * @param profile u v coordinates @see {{@link #getNewCoordinateSystem(List)}}
+     * @return Coefficient A and B
+     */
+    public static double[] getMeanPlaneCoefficients (Coordinate[] profile)
+    {
+        int n = profile.length - 1 ;
+        double valA1 = 0;
+        double valA2 = 0;
+        double valB1 = 0;
+        double valB2 = 0;
+        /*
+         * equation VI-3
+         */
+        for (int i = 0 ; i < n ; i++)
+        {
+            Coordinate p1 = profile[i];
+            Coordinate p2 = profile[i+1];
+            double dx = p2.x - p1.x ;
+            if (dx != 0)
+            {
+                double ai = (p2.y - p1.y) / dx;
+                double bi = p1.y - ai * p1.x;
+                double vald2 = Math.pow (p2.x, 2) - Math.pow (p1.x, 2);
+                double vald3 = Math.pow (p2.x, 3) - Math.pow (p1.x, 3);
+                valA1 += ai * vald3 ;
+                valA2 += bi * vald2;
+                valB1 += ai * vald2;
+                valB2 += bi * dx;
+            }
+        }
+        double valA = 2/3. * valA1 + valA2;
+        double valB = valB1 + 2 * valB2;
+        double dist3 = Math.pow (profile[n].x - profile[0].x, 3) ;
+        double dist4 = Math.pow (profile[n].x - profile[0].x, 4) ;
+        assert (dist3 > 0) ;
+        assert (dist4 > 0) ;
+        /*
+         * equation VI-4
+         */
+        double A = 3 * (2 * valA - valB * (profile[n].x + profile[0].x)) / dist3 ;
+        double B = 2 * valB * (Math.pow(profile[n].x, 3) - Math.pow(profile[0].x, 3)) / dist4
+                - 3 * valA * (profile[n].x + profile[0].x) / dist3;
+        return new double[] {A, B};
     }
 
     /**

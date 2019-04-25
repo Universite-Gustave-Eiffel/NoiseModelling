@@ -220,125 +220,64 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         return SFSUtilities.getTableEnvelope(connection, TableLocation.parse(sourcesTableName), "");
     }
 
-    public Collection<PropagationResultTriRecord> evaluateCell(Connection connection,int cellI, int cellJ, ProgressVisitor progression) throws SQLException {
-//        //PropagationProcessOut threadDataOut = new PropagationProcessOut();
-//        MeshBuilder mesh = new MeshBuilder();
-//        int ij = cellI * gridDim + cellJ;
-//        logger.info("Begin processing of cell " + (cellI + 1) + ","
-//                + (cellJ + 1) + " of the " + gridDim + "x" + gridDim
-//                + "  grid..");
-//        Envelope cellEnvelope = getCellEnv(mainEnvelope, cellI,
-//                cellJ, getCellWidth(), getCellHeight());
-//
-//
-//        Envelope expandedCellEnvelop = new Envelope(cellEnvelope);
-//        expandedCellEnvelop.expandBy(maximumPropagationDistance);
-//
-//        // //////////////////////////////////////////////////////
-//        // feed freeFieldFinder for fast intersection query
-//        // optimization
-//        // Fetch buildings in extendedEnvelope
-//
-//        fetchCellBuildings(connection, expandedCellEnvelop, , mesh);
-//        //if we have topographic points data
-//        fetchCellDem(connection, expandedCellEnvelop, mesh);
-//
-//        // Data fetching for collision test is done.
-//        try {
-//            mesh.finishPolygonFeeding(expandedCellEnvelop);
-//        } catch (LayerDelaunayError ex) {
-//            throw new SQLException(ex.getLocalizedMessage(), ex);
-//        }
-//        FastObstructionTest freeFieldFinder = new FastObstructionTest(mesh.getPolygonWithHeight(),
-//                mesh.getTriangles(), mesh.getTriNeighbors(), mesh.getVertices());
-//
-//        // //////////////////////////////////////////////////////
-//        // Make source index for optimization
-//        ArrayList<Geometry> sourceDelaunayGeometries = new ArrayList<>();
-//        ArrayList<Geometry> sourceGeometries = new ArrayList<>();
-//        ArrayList<ArrayList<Double>> wj_sources = new ArrayList<>();
-//        QueryGeometryStructure sourcesIndex = new QueryQuadTree();
-//
-//        // Fetch all source located in expandedCellEnvelop
-//        fetchCellSource(connection, expandedCellEnvelop, sourceDelaunayGeometries, sourceGeometries, wj_sources,
-//                sourcesIndex);
-//        // Compute the first pass delaunay mesh
-//        // The first pass doesn't take account of additional
-//        // vertices of neighbor cells at the borders
-//        // then, there are discontinuities in iso surfaces at each
-//        // border of cell
-//        MeshBuilder cellMesh = new MeshBuilder();
-//        try {
-//            computeDelaunay(cellMesh, mainEnvelope, cellI,
-//                    cellJ,
-//                    maximumPropagationDistance, buildingsGeometries, sourceDelaunayGeometries, roadWidth,
-//                    sourceDensification, maximumArea);
-//        } catch (LayerDelaunayError err) {
-//            throw new SQLException(err.getLocalizedMessage(), err);
-//        }
-//        sourceDelaunayGeometries.clear();
-//        // Make a structure to keep the following information
-//        // Triangle list with 3 vertices(int), and 3 neighbor
-//        // triangle ID
-//        // Vertices list
-//
-//        // The evaluation of sound level must be done where the
-//        // following vertices are
-//        List<Coordinate> vertices = new ArrayList<>(cellMesh.getVertices().size());
-//        for(Coordinate vertex : cellMesh.getVertices()) {
-//            Coordinate translatedVertex = new Coordinate(vertex);
-//            double z = receiverHeight;
-//            if(!demTable.isEmpty()) {
-//                z = freeFieldFinder.getHeightAtPosition(translatedVertex) + receiverHeight;
-//            }
-//            translatedVertex.setOrdinate(2, z);
-//            vertices.add(translatedVertex);
-//        }
-//        List<Triangle> triangles = new ArrayList<>();
-//        for(Triangle triangle : cellMesh.getTriangles()) {
-//            if(triangle.getAttribute() == 0) {
-//                triangles.add(triangle);
-//            }
-//        }
-//        nbreceivers += vertices.size();
-//
-//
-//        // Fetch soil areas
-//        List<GeoWithSoilType> geoWithSoil = new ArrayList<>();
-//        fetchCellSoilAreas(connection, expandedCellEnvelop, geoWithSoil);
-//        if(geoWithSoil.isEmpty()){
-//            geoWithSoil = null;
-//        }
-//        PropagationProcessData threadData = new PropagationProcessData(
-//                vertices, freeFieldFinder, sourcesIndex,
-//                sourceGeometries, null, db_field_freq,
-//                soundReflectionOrder, computeHorizontalDiffraction, maximumPropagationDistance, maximumReflectionDistance,
-//                roadWidth, wallAbsorption, DEFAULT_WIND_ROSE,forgetSource, ij,
-//                progression.subProcess(vertices.size()), geoWithSoil, computeVerticalDiffraction);
-//        PropagationProcess propaProcess = new PropagationProcess(
-//                threadData, threadDataOut);
-//        if(!absoluteZCoordinates) {
-//            propaProcess.makeRelativeZToAbsolute();
-//        }
-//        propaProcess.run();
-        Stack<PropagationResultTriRecord> toDriver = new Stack<>();
-        int tri_id = 0;
-//        double[] verticesSoundLevel = threadDataOut.getVerticesSoundLevel();
-//        for (Triangle tri : triangles) {
-//            Coordinate pverts[] = {vertices.get(tri.getA()),
-//                    vertices.get(tri.getB()),
-//                    vertices.get(tri.getC()),
-//                    vertices.get(tri.getA())};
-//            toDriver.add(new PropagationResultTriRecord(
-//                    geometryFactory.createPolygon(geometryFactory.createLinearRing(pverts), null),
-//                    verticesSoundLevel[tri.getA()],
-//                    verticesSoundLevel[tri.getB()],
-//                    verticesSoundLevel[tri.getC()],
-//                    ij,
-//                    tri_id));
-//            tri_id++;
-//        }
-        return toDriver;
+    public void generateReceivers(Connection connection,int cellI, int cellJ, String receiverTableName, String trianglesTableName) throws SQLException, LayerDelaunayError {
+        // Compute the first pass delaunay mesh
+        // The first pass doesn't take account of additional
+        // vertices of neighbor cells at the borders
+        // then, there are discontinuities in iso surfaces at each
+        // border of cell
+        MeshBuilder cellMesh = new MeshBuilder();
+        Envelope cellEnvelope = getCellEnv(mainEnvelope, cellI,
+                cellJ, getCellWidth(), getCellHeight());
+        // Fetch all source located in expandedCellEnvelop
+        PropagationProcessData data = new PropagationProcessData(null);
+        fetchCellSource(connection, cellEnvelope, data);
+        Collection<Geometry> buildingsGeometries = new ArrayList<>();
+        List<Geometry> sourceDelaunayGeometries = data.sourceGeometries;
+        fetchCellBuildings(connection, cellEnvelope, null, cellMesh);
+
+        MeshBuilder demMesh = new MeshBuilder();
+        if(!demTable.isEmpty()) {
+            fetchCellDem(connection, cellEnvelope, demMesh);
+            demMesh.finishPolygonFeeding(cellEnvelope);
+        }
+        FastObstructionTest freeFieldFinder = new FastObstructionTest(demMesh.getPolygonWithHeight(),
+                demMesh.getTriangles(), demMesh.getTriNeighbors(), demMesh.getVertices());
+        try {
+            computeDelaunay(cellMesh, mainEnvelope, cellI,
+                    cellJ,
+                    maximumPropagationDistance, buildingsGeometries, sourceDelaunayGeometries, roadWidth,
+                    sourceDensification, maximumArea);
+        } catch (LayerDelaunayError err) {
+            throw new SQLException(err.getLocalizedMessage(), err);
+        }
+        sourceDelaunayGeometries.clear();
+        // Make a structure to keep the following information
+        // Triangle list with 3 vertices(int), and 3 neighbor
+        // triangle ID
+        // Vertices list
+
+        // The evaluation of sound level must be done where the
+        // following vertices are
+        List<Coordinate> vertices = new ArrayList<>(cellMesh.getVertices().size());
+        for(Coordinate vertex : cellMesh.getVertices()) {
+            Coordinate translatedVertex = new Coordinate(vertex);
+            double z = receiverHeight;
+            if(!demTable.isEmpty()) {
+                z = freeFieldFinder.getHeightAtPosition(translatedVertex) + receiverHeight;
+            }
+            translatedVertex.setOrdinate(2, z);
+            vertices.add(translatedVertex);
+        }
+        List<Triangle> triangles = new ArrayList<>();
+        for(Triangle triangle : cellMesh.getTriangles()) {
+            if(triangle.getAttribute() == 0) {
+                triangles.add(triangle);
+            }
+        }
+        nbreceivers += vertices.size();
+
+        // TODO export to specified tables
     }
 
     public double getRoadWidth() {

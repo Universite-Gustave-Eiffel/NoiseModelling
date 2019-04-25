@@ -28,9 +28,6 @@
     <modules>
         <module>noisemodelling-propagation</module>
         <module>noisemodelling-emission</module>
-        <!--<module>noisemap-core</module>-->
-        <!--<module>noisemap-h2</module>-->
-        <!--<module>noisemap-h2-osgi</module>-->
     </modules>
     <scm>
         <connection>scm:git:https://github.com/Ifsttar/NoiseModelling.git</connection>

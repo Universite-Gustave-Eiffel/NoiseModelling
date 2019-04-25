@@ -2,9 +2,13 @@ package org.noise_planet.noisemodelling.propagation;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+import org.apache.commons.math3.stat.regression.RegressionResults;
+import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.cts.crs.CRSException;
 import org.cts.op.CoordinateOperationException;
 import org.junit.Test;
+import org.locationtech.jts.algorithm.CGAlgorithms3D;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
@@ -39,6 +43,47 @@ import static org.noise_planet.noisemodelling.propagation.KMLDocument.exportScen
 public class TestComputeRays {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestComputeRays.class);
     private boolean storeGeoJSONRays = false;
+
+
+    @Test
+    public void testMeanPlane() {
+        Coordinate sGround = new Coordinate(10, 10, 0);
+        Coordinate rGround = new Coordinate(200, 50, 10);
+        LineSegment segBottom = new LineSegment(new Coordinate(120, -20, 0),
+                new Coordinate(120, 80, 0));
+        LineSegment segTop = new LineSegment(new Coordinate(185, -5, 10),
+                new Coordinate(185, 75, 10));
+        LineSegment SgroundRGround = new LineSegment(sGround,
+                rGround);
+
+        Coordinate O1 = segBottom.lineIntersection(SgroundRGround);
+        O1.z = segBottom.p0.z;
+        Coordinate O2 = segTop.lineIntersection(SgroundRGround);
+        O2.z = segTop.p0.z;
+        List<Coordinate> uv = new ArrayList<>();
+        uv.add(new Coordinate(sGround.distance(sGround), sGround.z));
+        uv.add(new Coordinate(sGround.distance(O1), O1.z));
+        uv.add(new Coordinate(sGround.distance(O2), O2.z));
+        uv.add(new Coordinate(sGround.distance(rGround), rGround.z));
+
+        double[] ab = JTSUtility.getMeanPlaneCoefficients(uv.toArray(new Coordinate[uv.size()]));
+        double slope = ab[0];
+        double intercept = ab[1];
+
+        assertEquals(0.05, slope, 0.01);
+        assertEquals(-2.83, intercept, 0.01);
+
+        uv = new ArrayList<>();
+        uv.add(new Coordinate(sGround.distance(sGround), sGround.z));
+        uv.add(new Coordinate(sGround.distance(O1), O1.z));
+        uv.add(new Coordinate(sGround.distance(O2), O2.z));
+
+        ab = JTSUtility.getMeanPlaneCoefficients(uv.toArray(new Coordinate[uv.size()]));
+        slope = ab[0];
+        intercept = ab[1];
+        assertEquals(0.05, slope, 0.01);
+        assertEquals(-2.33, intercept, 0.01);
+    }
 
     /**
      * Test vertical edge diffraction ray computation
