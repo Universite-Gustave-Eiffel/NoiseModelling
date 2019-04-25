@@ -2,9 +2,13 @@ package org.noise_planet.noisemodelling.propagation;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+import org.apache.commons.math3.stat.regression.RegressionResults;
+import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.cts.crs.CRSException;
 import org.cts.op.CoordinateOperationException;
 import org.junit.Test;
+import org.locationtech.jts.algorithm.CGAlgorithms3D;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
@@ -29,44 +33,56 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.noise_planet.noisemodelling.propagation.KMLDocument.exportScene;
 
 
 public class TestComputeRays {
-
-
     private static final Logger LOGGER = LoggerFactory.getLogger(TestComputeRays.class);
     private boolean storeGeoJSONRays = false;
 
-    public static List<Coordinate> getNewCoordinateSystemFix(List<Coordinate> listPoints) {
-        List<Coordinate> newCoord = new ArrayList<>(listPoints.size());
-        //get angle by ray source-receiver with the X-axis.
-        double angle = new LineSegment(listPoints.get(0), listPoints.get(listPoints.size() - 1)).angle();
-        double sin = Math.sin(angle);
-        double cos = Math.cos(angle);
-
-        for (Coordinate listPoint : listPoints) {
-            double newX = (listPoint.x) * cos +
-                    (listPoint.y) * sin;
-            newCoord.add(new Coordinate(newX, listPoint.z));
-        }
-        return newCoord;
-    }
 
     @Test
-    public void TestMeanGroundPlane() {
-        List<Coordinate> rSground = new ArrayList<>();
-        rSground.add(new Coordinate(10,10,0));
-        rSground.add(new Coordinate(120.0,33.1578,0.0));
-        rSground.add(new Coordinate(185.0,46.84,10.));
-        rSground.add(new Coordinate(200,50,10));
-        rSground = getNewCoordinateSystemFix(rSground);
+    public void testMeanPlane() {
+        Coordinate sGround = new Coordinate(10, 10, 0);
+        Coordinate rGround = new Coordinate(200, 50, 10);
+        LineSegment segBottom = new LineSegment(new Coordinate(120, -20, 0),
+                new Coordinate(120, 80, 0));
+        LineSegment segTop = new LineSegment(new Coordinate(185, -5, 10),
+                new Coordinate(185, 75, 10));
+        LineSegment SgroundRGround = new LineSegment(sGround,
+                rGround);
 
-        // Compute mean ground plan
-        double[] ab = JTSUtility.getLinearRegressionPolyline(rSground);
-        assertArrayEquals(new double[]{0.05,-2.83},ab, 1);
+        Coordinate O1 = segBottom.lineIntersection(SgroundRGround);
+        O1.z = segBottom.p0.z;
+        Coordinate O2 = segTop.lineIntersection(SgroundRGround);
+        O2.z = segTop.p0.z;
+        List<Coordinate> uv = new ArrayList<>();
+        uv.add(new Coordinate(sGround.distance(sGround), sGround.z));
+        uv.add(new Coordinate(sGround.distance(O1), O1.z));
+        uv.add(new Coordinate(sGround.distance(O2), O2.z));
+        uv.add(new Coordinate(sGround.distance(rGround), rGround.z));
 
+        double[] ab = JTSUtility.getMeanPlaneCoefficients(uv.toArray(new Coordinate[uv.size()]));
+        double slope = ab[0];
+        double intercept = ab[1];
+
+        assertEquals(0.05, slope, 0.01);
+        assertEquals(-2.83, intercept, 0.01);
+
+        uv = new ArrayList<>();
+        uv.add(new Coordinate(sGround.distance(sGround), sGround.z));
+        uv.add(new Coordinate(sGround.distance(O1), O1.z));
+        uv.add(new Coordinate(sGround.distance(O2), O2.z));
+
+        ab = JTSUtility.getMeanPlaneCoefficients(uv.toArray(new Coordinate[uv.size()]));
+        slope = ab[0];
+        intercept = ab[1];
+        assertEquals(0.05, slope, 0.01);
+        assertEquals(-2.33, intercept, 0.01);
     }
 
     /**
