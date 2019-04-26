@@ -37,7 +37,7 @@ package org.noise_planet.noisemodelling.propagation;
  * Throwed delaunay error.
  * @author Nicolas Fortin
  */
-public class LayerDelaunayError extends Throwable {
+public class LayerDelaunayError extends Exception {
 	private static final long serialVersionUID = 1L;
 
 	// error code saving

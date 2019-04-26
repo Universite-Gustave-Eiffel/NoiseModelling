@@ -213,7 +213,7 @@ public class TestComputeRays {
      * Regression test for hull points in intersection with buildings
      */
     @Test
-    public void TestComputeDiffractionRaysComplex() throws LayerDelaunayError, ParseException {
+    public void TestComputeDiffractionRaysComplex() throws Exception {
         GeometryFactory factory = new GeometryFactory();
         WKTReader wktReader = new WKTReader(factory);
         //Scene dimension
@@ -246,6 +246,25 @@ public class TestComputeRays {
 
         //Retrieve Delaunay triangulation of scene
         FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(), mesh.getTriNeighbors(), mesh.getVertices());
+
+
+        KMLDocument kmlDocument = new KMLDocument(new FileOutputStream("target/meshtopo.kml"));
+        kmlDocument.setInputCRS("EPSG:2154");
+        kmlDocument.setOffset(new Coordinate(0, 0, 50));
+        kmlDocument.writeHeader();
+        kmlDocument.writeTopographic(mesh.getTriangles(), mesh.getVertices());
+        kmlDocument.writeFooter();
+
+        KMLDocument kmlDocumentB = new KMLDocument(new FileOutputStream("target/meshbuildings.kml"));
+        kmlDocumentB.setInputCRS("EPSG:2154");
+        kmlDocumentB.setOffset(new Coordinate(0, 0, 50));
+        kmlDocumentB.writeHeader();
+        kmlDocumentB.writeBuildings(manager);
+        kmlDocumentB.writeFooter();
+        if(true) {
+            return;
+        }
+
 
         PropagationProcessData processData = new PropagationProcessData(manager);
         //new ArrayList<>(), manager, sourcesIndex, srclst, new ArrayList<>(), new ArrayList<>(), 0, 99, 1000,1000,0,0,new double[0],0,0,new EmptyProgressVisitor(), new ArrayList<>(), true
