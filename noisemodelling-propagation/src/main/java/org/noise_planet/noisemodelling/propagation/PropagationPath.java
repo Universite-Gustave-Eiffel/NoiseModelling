@@ -153,7 +153,7 @@ public class PropagationPath {
         public Coordinate coordinate; // coordinate (absolute)
         public double altitude; // altitude of relief (exact)
         public double gs;       // only if POINT_TYPE = SRCE or RECV, G coefficient right above the point
-        public double[] alphaWall; // only if POINT_TYPE = REFL, alpha coefficient
+        public double[] alphaWall = new double[PropagationProcessPathData.freq_lvl.size()]; // only if POINT_TYPE = REFL, alpha coefficient
         public int buildingId; // only if POINT_TYPE = REFL
         public POINT_TYPE type; // type of point
         public enum POINT_TYPE {
@@ -216,7 +216,9 @@ public class PropagationPath {
             writeCoordinate(out, coordinate);
             out.writeDouble(altitude);
             out.writeDouble(gs);
-            out.writeDouble(alphaWall);
+            for (int j = 0;j<PropagationProcessPathData.freq_lvl.size();j++) {
+                out.writeDouble(alphaWall[j]);
+            }
             out.writeInt(buildingId);
             out.writeInt(type.ordinal());
         }
@@ -232,7 +234,9 @@ public class PropagationPath {
             coordinate = readCoordinate(in);
             altitude = in.readDouble();
             gs = in.readDouble();
-            alphaWall = in.readDouble();
+            for (int j = 0;j<PropagationProcessPathData.freq_lvl.size();j++){
+                alphaWall[j] = in.readDouble();
+            }
             buildingId = in.readInt();
             type = POINT_TYPE.values()[in.readInt()];
         }

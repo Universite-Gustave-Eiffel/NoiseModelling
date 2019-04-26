@@ -57,7 +57,6 @@ public class MeshBuilder {
     private List<Triangle> triNeighbors; // Neighbors
     private static final int BUILDING_COUNT_HINT = 1500; // 2-3 km² average buildings
     private static final double[] ALPHA_DEFAULT_VALUE = new double[]{0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1}; // 2-3 km² average buildings
-    private static final double freq_lvl[] = new double[] {63 ,   125 ,   250 ,   500 ,  1000 ,  2000 ,  4000 ,  8000};
 
     private List<PolygonWithHeight> polygonWithHeight = new ArrayList<>(BUILDING_COUNT_HINT);//list polygon with height
     private List<LineString> envelopeSplited = new ArrayList<>();
@@ -130,7 +129,7 @@ public class MeshBuilder {
          */
         public void setAlpha(double alphaUniqueValue) {
             for (int i=0;i<8;i++) {
-                 alpha[i]=getWallAlpha(alphaUniqueValue,freq_lvl[i]);
+                 alpha[i]=getWallAlpha(alphaUniqueValue,PropagationProcessPathData.freq_lvl.get(i));
             }
             this.alpha = alpha;
         }
