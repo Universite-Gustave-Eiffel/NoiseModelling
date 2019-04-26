@@ -56,6 +56,9 @@ public class MeshBuilder {
     private List<Coordinate> vertices;
     private List<Triangle> triNeighbors; // Neighbors
     private static final int BUILDING_COUNT_HINT = 1500; // 2-3 km² average buildings
+    private static final double[] ALPHA_DEFAULT_VALUE = new double[]{0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1}; // 2-3 km² average buildings
+    private static final double freq_lvl[] = new double[] {63 ,   125 ,   250 ,   500 ,  1000 ,  2000 ,  4000 ,  8000};
+
     private List<PolygonWithHeight> polygonWithHeight = new ArrayList<>(BUILDING_COUNT_HINT);//list polygon with height
     private List<LineString> envelopeSplited = new ArrayList<>();
     private Envelope geometriesBoundingBox = new Envelope();
@@ -70,7 +73,9 @@ public class MeshBuilder {
         protected final Geometry geo;
         //If we add the topographic, the building height will be the average ToPo Height+ Building Height of all vertices
         private double height;
-        private double alpha = Double.NaN;
+        private double[] alpha = ALPHA_DEFAULT_VALUE;
+        private double alphaUniqueValue = Double.NaN;
+
         private final boolean hasHeight;
 
         public PolygonWithHeight(Geometry geo) {
@@ -85,29 +90,48 @@ public class MeshBuilder {
             this.hasHeight = height < Double.MAX_VALUE;
         }
 
-        public PolygonWithHeight(Geometry geo, double height, double alpha) {
+        public PolygonWithHeight(Geometry geo, double height, double alphaUniqueValue) {
             this.geo = geo;
             this.height = height;
             this.hasHeight = height < Double.MAX_VALUE;
-            this.alpha = Math.min(1, Math.max(0, alpha));
+            for (int i=0;i<8;i++) {
+                this.alpha[i]=alphaUniqueValue;
+            }
+        }
+        
+        public PolygonWithHeight(Geometry geo, double height, double[] alpha) {
+            this.geo = geo;
+            this.height = height;
+            this.hasHeight = height < Double.MAX_VALUE;
+            this.alpha = alpha;
         }
 
         public Geometry getGeometry() {
-
             return this.geo;
         }
 
         /**
          * @return Get absorption coefficient of walls
          */
-        public double getAlpha() {
+        public double[] getAlpha() {
             return alpha;
         }
+
 
         /**
          * @param alpha Set absorption coefficient of walls
          */
-        public void setAlpha(double alpha) {
+        public void setAlpha(double[] alpha) {
+            this.alpha = alpha;
+        }
+
+        /**
+         * @param alphaUniqueValue Set absorption coefficient of walls
+         */
+        public void setAlpha(double alphaUniqueValue) {
+            for (int i=0;i<8;i++) {
+                 alpha[i]=getWallAlpha(alphaUniqueValue,freq_lvl[i]);
+            }
             this.alpha = alpha;
         }
 
@@ -126,6 +150,61 @@ public class MeshBuilder {
             return hasHeight;
         }
     }
+
+
+    /**
+     * Get WallAlpha
+     */
+    public static double getWallAlpha(double wallAlpha, double freq_lvl)
+    {
+        double value;
+        if(wallAlpha >= 0 && wallAlpha <= 1) {
+            // todo let the user choose if he wants to convert G to Sigma
+            //value = GetWallImpedance(20000 * Math.pow (10., -2 * Math.pow (wallAlpha, 3./5.)),freq_lvl);
+            value= wallAlpha;
+        } else {
+            value = GetWallImpedance(Math.min(20000, Math.max(20, wallAlpha)),freq_lvl);
+        }
+        return value;
+    }
+
+    public static double GetWallImpedance(double sigma, double freq_l)
+    {
+        double s = Math.log(freq_l / sigma);
+        double x = 1. + 9.08 * Math.exp(-.75 * s);
+        double y = 11.9 * Math.exp(-0.73 * s);
+        ComplexNumber Z = new ComplexNumber(x, y);
+
+        // Delany-Bazley method, not used in NoiseModelling for the moment
+        /*double layer = 0.05; // Let user Choose
+        if (layer > 0 && sigma < 1000)
+        {
+            s = 1000 * sigma / freq;
+            double c = 340;
+            double RealK= 2 * Math.PI * freq / c *(1 + 0.0858 * Math.pow(s, 0.70));
+            double ImgK=2 * Math.PI * freq / c *(0.175 * Math.pow(s, 0.59));
+            ComplexNumber k = ComplexNumber.multiply(new ComplexNumber(2 * Math.PI * freq / c,0) , new ComplexNumber(1 + 0.0858 * Math.pow(s, 0.70),0.175 * Math.pow(s, 0.59)));
+            ComplexNumber j = new ComplexNumber(-0, -1);
+            ComplexNumber m = ComplexNumber.multiply(j,k);
+            Z[i] = ComplexNumber.divide(Z[i], (ComplexNumber.exp(m)));
+        }*/
+
+        return GetTrueWallAlpha(Z);
+    }
+
+    static double GetTrueWallAlpha(ComplexNumber impedance)         // TODO convert impedance to alpha
+    {
+        double alpha ;
+        ComplexNumber z = ComplexNumber.divide(new ComplexNumber(1.0,0), impedance) ;
+        double x = z.getRe();
+        double y = z.getIm();
+        double a1 = (x * x - y * y) / y ;
+        double a2 = y / (x * x + y * y + x) ;
+        double a3 = ((x + 1) *(x + 1) + y * y) / (x * x + y * y) ;
+        alpha = 8 * x * (1 + a1 * Math.atan(a2) - x * Math.log(a3)) ;
+        return alpha ;
+    }
+
 
     public MeshBuilder() {
         super();
@@ -218,6 +297,18 @@ public class MeshBuilder {
      * @param heightofBuilding building's Height
      * @param alpha Wall absorption coefficient
      */
+    public void addGeometry(Geometry obstructionPoly, double heightofBuilding, double[] alpha) {
+        addGeometry(new PolygonWithHeight(obstructionPoly, heightofBuilding, alpha));
+    }
+
+    /**
+     * Add a new building with height and merge this new building with existing buildings if they have intersections
+     * When we merge the buildings, we will use The shortest height to new building
+     *
+     * @param obstructionPoly  building's Geometry
+     * @param heightofBuilding building's Height
+     * @param alpha Wall absorption coefficient
+     */
     public void addGeometry(Geometry obstructionPoly, double heightofBuilding, double alpha) {
         addGeometry(new PolygonWithHeight(obstructionPoly, heightofBuilding, alpha));
     }
@@ -254,7 +345,7 @@ public class MeshBuilder {
             if(geometryN instanceof Polygon) {
                 List polyInters = buildingsRtree.query(geometryN.getEnvelopeInternal());
                 double minHeight = Double.MAX_VALUE;
-                double minAlpha = Double.MAX_VALUE;
+                double[] minAlpha = ALPHA_DEFAULT_VALUE;
                 for (Object id : polyInters) {
                     if (id instanceof Integer) {
                         PolygonWithHeight inPoly = polygonWithHeight.get((int) id);
@@ -262,14 +353,12 @@ public class MeshBuilder {
                             if(inPoly.hasHeight) {
                                 minHeight = Math.min(minHeight, inPoly.getHeight());
                             }
-                            if(!Double.isNaN(inPoly.getAlpha())) {
-                                minAlpha = Math.min(minAlpha, inPoly.getAlpha());
-                            }
+                                minAlpha = inPoly.getAlpha();
                             break;
                         }
                     }
                 }
-                mergedPolygonWithHeight.add(new PolygonWithHeight(geometryN, minHeight, minAlpha > 1 ? Double.NaN : minAlpha));
+                mergedPolygonWithHeight.add(new PolygonWithHeight(geometryN, minHeight, minAlpha));
             } else if(geometryN instanceof LineString) {
               // Exterior envelope
               envelopeSplited.add((LineString)geometryN);

@@ -50,10 +50,10 @@ public class PropagationPath_Cnossos {
         List<PropagationPath.SegmentPath> srPath = new ArrayList<PropagationPath.SegmentPath>();
         Vector3D flatTopography = new Vector3D(new Coordinate(0,0,0),new Coordinate(0,0,0));
 
-        points.add(new PropagationPath.PointPath(new Coordinate(0,0,0),1,0,Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.SRCE));
+        points.add(new PropagationPath.PointPath(new Coordinate(0,0,0),1,0,new double[0], -1, PropagationPath.PointPath.POINT_TYPE.SRCE));
         points.add(new PropagationPath.PointPath(new Coordinate(10,0,0),1,Double.NaN,0.5, -1, PropagationPath.PointPath.POINT_TYPE.DIFH));
         points.add(new PropagationPath.PointPath(new Coordinate(20,0,0),1,Double.NaN,0.5, -1, PropagationPath.PointPath.POINT_TYPE.DIFH));
-        points.add(new PropagationPath.PointPath(new Coordinate(30,30,0),1,0,Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.RECV));
+        points.add(new PropagationPath.PointPath(new Coordinate(30,30,0),1,0,new double[0], -1, PropagationPath.PointPath.POINT_TYPE.RECV));
         segments.add(new PropagationPath.SegmentPath(1, flatTopography,new Coordinate(0,0,0)));
         segments.add(new PropagationPath.SegmentPath(1, flatTopography,new Coordinate(0,0,0)));
         srPath.add(new PropagationPath.SegmentPath(1,flatTopography,new Coordinate(0,0,0)));

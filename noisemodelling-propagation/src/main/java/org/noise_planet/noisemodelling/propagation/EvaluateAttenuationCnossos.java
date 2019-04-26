@@ -194,11 +194,11 @@ public class EvaluateAttenuationCnossos {
         double[] aRef = new double[data.freq_lvl.size()];
         for (int idf = 0; idf < nbfreq; idf++) {
             for (int idRef = 0; idRef < path.refPoints.size(); idRef++) {
-                double alpha = path.getPointList().get(path.refPoints.get(idRef)).alphaWall;
-                if (gToSigma || alpha > 1){
-                    PropagationProcessData.getWallAlpha(alpha, data.freq_lvl.get(idf));
-                }
-                aRef[idf] += - 10 * Math.log10(alpha);
+                double[] alpha = path.getPointList().get(path.refPoints.get(idRef)).alphaWall;
+                /*if (gToSigma || alphaUniqueValue > 1){
+                    PropagationProcessData.getWallAlpha(alphaUniqueValue, data.freq_lvl.get(idf));
+                }*/
+                aRef[idf] += - 10 * Math.log10(alpha[idf]);
             }
         }
         return aRef ;

@@ -526,8 +526,8 @@ public class ComputeRays {
         } else {
             segments.add(new PropagationPath.SegmentPath(0.0, new Vector3D(srcCoord, receiverCoord),new Coordinate(0,0,0)));
         }
-        points.add(new PropagationPath.PointPath(srcCoord, altS, data.gS, Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.SRCE));
-        points.add(new PropagationPath.PointPath(receiverCoord, altR, data.gS, Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.RECV));
+        points.add(new PropagationPath.PointPath(srcCoord, altS, data.gS, new double[0], -1, PropagationPath.PointPath.POINT_TYPE.SRCE));
+        points.add(new PropagationPath.PointPath(receiverCoord, altR, data.gS, new double[0], -1, PropagationPath.PointPath.POINT_TYPE.RECV));
 
         if (debugInfo != null) {
             debugInfo.add(new PropagationDebugInfo(Arrays.asList(receiverCoord, srcCoord), new double[data.freq_lvl.length]));
