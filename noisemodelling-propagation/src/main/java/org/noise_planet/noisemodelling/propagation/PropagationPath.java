@@ -39,6 +39,10 @@ import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.math.Vector3D;
+
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -81,6 +85,60 @@ public class PropagationPath {
     public PropagationPath() {
 
     }
+
+    /**
+     * Writes the content of this object into <code>out</code>.
+     * @param out the stream to write into
+     * @throws java.io.IOException if an I/O-error occurs
+     */
+    public void writeStream( DataOutputStream out ) throws IOException {
+        out.writeBoolean(favorable);
+        out.writeInt(pointList.size());
+        for(PointPath pointPath : pointList) {
+            pointPath.writeStream(out);
+        }
+        out.writeInt(segmentList.size());
+        for(SegmentPath segmentPath : segmentList) {
+            segmentPath.writeStream(out);
+        }
+        out.writeInt(srList.size());
+        for(SegmentPath segmentPath : srList) {
+            segmentPath.writeStream(out);
+        }
+    }
+
+    /**
+     * Reads the content of this object from <code>out</code>. All
+     * properties should be set to their default value or to the value read
+     * from the stream.
+     * @param in the stream to read
+     * @throws IOException if an I/O-error occurs
+     */
+    public void readStream( DataInputStream in ) throws IOException {
+        favorable = in.readBoolean();
+        int pointListSize = in.readInt();
+        pointList = new ArrayList<>(pointListSize);
+        for(int i=0; i < pointListSize; i++) {
+            PointPath pointPath = new PointPath();
+            pointPath.readStream(in);
+            pointList.add(pointPath);
+        }
+        int segmentListSize = in.readInt();
+        segmentList = new ArrayList<>(segmentListSize);
+        for(int i=0; i < pointListSize; i++) {
+            SegmentPath segmentPath = new SegmentPath();
+            segmentPath.readStream(in);
+            segmentList.add(segmentPath);
+        }
+        int srListSize = in.readInt();
+        srList = new ArrayList<>(srListSize);
+        for(int i=0; i < srListSize; i++) {
+            SegmentPath segmentPath = new SegmentPath();
+            segmentPath.readStream(in);
+            srList.add(segmentPath);
+        }
+    }
+
 
     public boolean isInitialized() {
         return initialized;
@@ -148,6 +206,37 @@ public class PropagationPath {
 
         }
 
+
+        /**
+         * Writes the content of this object into <code>out</code>.
+         * @param out the stream to write into
+         * @throws java.io.IOException if an I/O-error occurs
+         */
+        public void writeStream( DataOutputStream out ) throws IOException {
+            writeCoordinate(out, coordinate);
+            out.writeDouble(altitude);
+            out.writeDouble(gs);
+            out.writeDouble(alphaWall);
+            out.writeInt(buildingId);
+            out.writeInt(type.ordinal());
+        }
+
+        /**
+         * Reads the content of this object from <code>out</code>. All
+         * properties should be set to their default value or to the value read
+         * from the stream.
+         * @param in the stream to read
+         * @throws IOException if an I/O-error occurs
+         */
+        public void readStream( DataInputStream in ) throws IOException {
+            coordinate = readCoordinate(in);
+            altitude = in.readDouble();
+            gs = in.readDouble();
+            alphaWall = in.readDouble();
+            buildingId = in.readInt();
+            type = POINT_TYPE.values()[in.readInt()];
+        }
+
         public void setType(POINT_TYPE type) {
             this.type =  type;
         }
@@ -208,8 +297,33 @@ public class PropagationPath {
         }
 
         public SegmentPath() {
-
         }
+
+
+        /**
+         * Writes the content of this object into <code>out</code>.
+         * @param out the stream to write into
+         * @throws java.io.IOException if an I/O-error occurs
+         */
+        public void writeStream( DataOutputStream out ) throws IOException {
+            out.writeDouble(gPath);
+            writeVector(out, vector3D);
+            writeCoordinate(out, pInit);
+        }
+
+        /**
+         * Reads the content of this object from <code>out</code>. All
+         * properties should be set to their default value or to the value read
+         * from the stream.
+         * @param in the stream to read
+         * @throws IOException if an I/O-error occurs
+         */
+        public void readStream( DataInputStream in ) throws IOException {
+            gPath = in.readDouble();
+            vector3D = readVector(in);
+            pInit = readCoordinate(in);
+        }
+
 
         public void setGw(double g) {
             this.gw = g;
@@ -609,4 +723,54 @@ public class PropagationPath {
 
 
 
+    public static void writeCoordinate(DataOutputStream out, Coordinate p) throws IOException {
+        out.writeDouble(p.x);
+        out.writeDouble(p.y);
+        out.writeDouble(p.z);
+    }
+
+    public static Coordinate readCoordinate(DataInputStream in) throws IOException {
+        return new Coordinate(in.readDouble(), in.readDouble(), in.readDouble());
+    }
+
+    public static void writeVector(DataOutputStream out, Vector3D p) throws IOException {
+        out.writeDouble(p.getX());
+        out.writeDouble(p.getY());
+        out.writeDouble(p.getZ());
+    }
+
+    public static Vector3D readVector(DataInputStream in) throws IOException {
+        return new Vector3D(in.readDouble(), in.readDouble(), in.readDouble());
+    }
+
+
+
+    /**
+     * Writes the content of this object into <code>out</code>.
+     * @param out the stream to write into
+     * @throws java.io.IOException if an I/O-error occurs
+     */
+    public static void writePropagationPathListStream( DataOutputStream out, List<PropagationPath> propagationPaths ) throws IOException {
+        out.writeInt(propagationPaths.size());
+        for(PropagationPath propagationPath : propagationPaths) {
+            propagationPath.writeStream(out);
+        }
+    }
+
+    /**
+     * Reads the content of this object from <code>out</code>. All
+     * properties should be set to their default value or to the value read
+     * from the stream.
+     * @param in the stream to read
+     * @throws IOException if an I/O-error occurs
+     */
+    public static void readPropagationPathListStream( DataInputStream in , ArrayList<PropagationPath> propagationPaths) throws IOException {
+        int propagationPathsListSize = in.readInt();
+        propagationPaths.ensureCapacity(propagationPathsListSize);
+        for(int i=0; i < propagationPathsListSize; i++) {
+            PropagationPath propagationPath = new PropagationPath();
+            propagationPath.readStream(in);
+            propagationPaths.add(propagationPath);
+        }
+    }
 }

@@ -206,6 +206,9 @@ public class JTSUtility {
     public static double[] getMeanPlaneCoefficients (Coordinate[] profile)
     {
         int n = profile.length - 1 ;
+        if(n == 0) {
+            return new double[] {0, profile[0].y};
+        }
         double valA1 = 0;
         double valA2 = 0;
         double valB1 = 0;

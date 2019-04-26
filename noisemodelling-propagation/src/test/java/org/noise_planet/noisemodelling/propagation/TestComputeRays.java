@@ -25,11 +25,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.xml.stream.XMLStreamException;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -268,6 +272,44 @@ public class TestComputeRays {
         // 3 paths
         // 1 over the building
         assertEquals(3, prop.size());
+    }
+
+    @Test
+    public void testPropagationPathSerialization() throws IOException {
+        List<PropagationPath> expected = new ArrayList<>();
+        expected.add(new PropagationPath(true,
+                Arrays.asList(new PropagationPath.PointPath(
+                        new Coordinate(1,2,3), 15.0, 1, 0.23, 8,
+                        PropagationPath.PointPath.POINT_TYPE.RECV)),
+                Arrays.asList(new PropagationPath.SegmentPath(0.15,
+                        new org.locationtech.jts.math.Vector3D(1,1,1),
+                        new Coordinate(1.5,2.5,3.5))),
+                Arrays.asList(new PropagationPath.SegmentPath(0.35,
+                        new org.locationtech.jts.math.Vector3D(2,2,3),
+                        new Coordinate(4.5,5.5,8.5)), new PropagationPath.SegmentPath(0.15,
+                        new org.locationtech.jts.math.Vector3D(1,1,1),
+                        new Coordinate(1.5,2.5,3.5)))));
+        expected.add(new PropagationPath(true,
+                Arrays.asList(new PropagationPath.PointPath(
+                        new Coordinate(2,7,1), 1.0, 0.5, 0.4, 1,
+                        PropagationPath.PointPath.POINT_TYPE.DIFV)),
+                Arrays.asList(new PropagationPath.SegmentPath(0.115,
+                        new org.locationtech.jts.math.Vector3D(11,13,14),
+                        new Coordinate(1.5,21.5,13.5))),
+                new ArrayList<>()));
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        PropagationPath.writePropagationPathListStream(new DataOutputStream(byteArrayOutputStream), expected);
+
+        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(byteArrayOutputStream.toByteArray());
+        ArrayList<PropagationPath> got = new ArrayList<>();
+        PropagationPath.readPropagationPathListStream(new DataInputStream(byteArrayInputStream), got);
+
+        assertEquals(2, got.size());
+        assertEquals(expected.get(0).getPointList().size(), got.get(0).getPointList().size());
+        assertEquals(expected.get(0).getPointList().get(0).coordinate, got.get(0).getPointList().get(0).coordinate);
+        assertEquals(1, expected.get(1).getPointList().size());
+        assertEquals(PropagationPath.PointPath.POINT_TYPE.DIFV, expected.get(1).getPointList().get(0).type);
+        assertEquals(0, expected.get(1).getSRList().size());
     }
 
     @Test

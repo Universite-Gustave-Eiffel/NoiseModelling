@@ -475,59 +475,55 @@ public class ComputeRays {
 
 
         //will give a flag here for soil effect
-        List<GeoWithSoilType> soilTypeList = data.getSoilList();
-        if (soilTypeList != null) {
-            LineString RSZone = factory.createLineString(new Coordinate[]{receiverCoord, srcCoord});
-            List<EnvelopeWithIndex<Integer>> resultZ0 = rTreeOfGeoSoil.query(RSZone.getEnvelopeInternal());
-            if (!resultZ0.isEmpty()) {
-                for (EnvelopeWithIndex<Integer> envel : resultZ0) {
-                    //get the geo intersected
-                    Geometry geoInter = RSZone.intersection(soilTypeList.get(envel.getId()).getGeo());
-                    //add the intersected distance with ground effect
-                    totRSDistance += getIntersectedDistance(geoInter) * soilTypeList.get(envel.getId()).getType();
-                }
+        final List<GeoWithSoilType> soilTypeList = data.getSoilList();
+        LineString RSZone = factory.createLineString(new Coordinate[]{receiverCoord, srcCoord});
+        List<EnvelopeWithIndex<Integer>> resultZ0 = rTreeOfGeoSoil.query(RSZone.getEnvelopeInternal());
+        if (!resultZ0.isEmpty()) {
+            for (EnvelopeWithIndex<Integer> envel : resultZ0) {
+                //get the geo intersected
+                Geometry geoInter = RSZone.intersection(soilTypeList.get(envel.getId()).getGeo());
+                //add the intersected distance with ground effect
+                totRSDistance += getIntersectedDistance(geoInter) * soilTypeList.get(envel.getId()).getType();
             }
-            // Compute GPath using 2D Length
-            gPath = totRSDistance / RSZone.getLength();
-
-            if(inters == null) {
-                inters = new ArrayList<>();
-                data.freeFieldFinder.computePropagationPath(srcCoord, receiverCoord, false, inters, true);
-            }
-            List<Coordinate> rSground = data.freeFieldFinder.getGroundProfile(inters);
-            altR = rSground.get(inters.size() - 1).z;    // altitude Receiver
-            altS = rSground.get(0).z; // altitude Source
-            double angle = new LineSegment(rSground.get(0), rSground.get(rSground.size() - 1)).angle();
-            rSground = JTSUtility.getNewCoordinateSystem(rSground);
-
-            // Compute mean ground plan
-            double[] ab = JTSUtility.getMeanPlaneCoefficients(rSground.toArray(new Coordinate[rSground.size()]));
-            Coordinate pInit = new Coordinate();
-            Coordinate rotatedReceiver = new Coordinate(rSground.get(rSground.size() - 1));
-            rotatedReceiver.setOrdinate(1, receiverCoord.z);
-            Coordinate rotatedSource = new Coordinate(rSground.get(0));
-            rotatedSource.setOrdinate(1, srcCoord.z);
-            projReceiver = JTSUtility.makeProjectedPoint(ab[0], ab[1], rotatedReceiver);
-            projSource = JTSUtility.makeProjectedPoint(ab[0], ab[1], rotatedSource);
-            pInit = JTSUtility.makeProjectedPoint(ab[0], ab[1], new Coordinate(0,0,0));
-            projReceiver = JTSUtility.getOldCoordinateSystem(projReceiver, angle);
-            projSource = JTSUtility.getOldCoordinateSystem(projSource, angle);
-            pInit = JTSUtility.getOldCoordinateSystem(pInit, angle);
-
-            projReceiver.x = srcCoord.x + projReceiver.x;
-            projSource.x = srcCoord.x + projSource.x;
-            projReceiver.y = srcCoord.y + projReceiver.y;
-            projSource.y = srcCoord.y + projSource.y;
-            pInit.x = srcCoord.x + pInit.x;
-            pInit.y = srcCoord.y + pInit.y;
-
-            segments.add(new PropagationPath.SegmentPath(gPath, new Vector3D(projSource, projReceiver),pInit));
-
-        } else {
-            segments.add(new PropagationPath.SegmentPath(0.0, new Vector3D(srcCoord, receiverCoord),new Coordinate(0,0,0)));
         }
-        points.add(new PropagationPath.PointPath(srcCoord, altS, data.gS, new double[0], -1, PropagationPath.PointPath.POINT_TYPE.SRCE));
-        points.add(new PropagationPath.PointPath(receiverCoord, altR, data.gS, new double[0], -1, PropagationPath.PointPath.POINT_TYPE.RECV));
+        // Compute GPath using 2D Length
+        gPath = totRSDistance / RSZone.getLength();
+
+        if(inters == null) {
+            inters = new ArrayList<>();
+            data.freeFieldFinder.computePropagationPath(srcCoord, receiverCoord, false, inters, true);
+        }
+        List<Coordinate> rSground = data.freeFieldFinder.getGroundProfile(inters);
+        altR = rSground.get(inters.size() - 1).z;    // altitude Receiver
+        altS = rSground.get(0).z; // altitude Source
+        double angle = new LineSegment(rSground.get(0), rSground.get(rSground.size() - 1)).angle();
+        rSground = JTSUtility.getNewCoordinateSystem(rSground);
+
+        // Compute mean ground plan
+        double[] ab = JTSUtility.getMeanPlaneCoefficients(rSground.toArray(new Coordinate[rSground.size()]));
+        Coordinate pInit = new Coordinate();
+        Coordinate rotatedReceiver = new Coordinate(rSground.get(rSground.size() - 1));
+        rotatedReceiver.setOrdinate(1, receiverCoord.z);
+        Coordinate rotatedSource = new Coordinate(rSground.get(0));
+        rotatedSource.setOrdinate(1, srcCoord.z);
+        projReceiver = JTSUtility.makeProjectedPoint(ab[0], ab[1], rotatedReceiver);
+        projSource = JTSUtility.makeProjectedPoint(ab[0], ab[1], rotatedSource);
+        pInit = JTSUtility.makeProjectedPoint(ab[0], ab[1], new Coordinate(0,0,0));
+        projReceiver = JTSUtility.getOldCoordinateSystem(projReceiver, angle);
+        projSource = JTSUtility.getOldCoordinateSystem(projSource, angle);
+        pInit = JTSUtility.getOldCoordinateSystem(pInit, angle);
+
+        projReceiver.x = srcCoord.x + projReceiver.x;
+        projSource.x = srcCoord.x + projSource.x;
+        projReceiver.y = srcCoord.y + projReceiver.y;
+        projSource.y = srcCoord.y + projSource.y;
+        pInit.x = srcCoord.x + pInit.x;
+        pInit.y = srcCoord.y + pInit.y;
+
+        segments.add(new PropagationPath.SegmentPath(gPath, new Vector3D(projSource, projReceiver),pInit));
+
+        points.add(new PropagationPath.PointPath(srcCoord, altS, data.gS, Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.SRCE));
+        points.add(new PropagationPath.PointPath(receiverCoord, altR, data.gS, Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.RECV));
 
         if (debugInfo != null) {
             debugInfo.add(new PropagationDebugInfo(Arrays.asList(receiverCoord, srcCoord), new double[data.freq_lvl.length]));

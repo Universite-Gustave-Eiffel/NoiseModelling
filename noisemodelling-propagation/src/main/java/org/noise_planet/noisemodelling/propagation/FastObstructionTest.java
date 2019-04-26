@@ -71,7 +71,7 @@ public class FastObstructionTest {
     private List<Triangle> triNeighbors; // Neighbors
     private List<MeshBuilder.PolygonWithHeight> polygonWithHeight = new ArrayList<MeshBuilder.PolygonWithHeight>();//list polygon with height
 
-    private QueryGeometryStructure triIndex = null; //TODO remove
+    private QueryGeometryStructure triIndex = null;
     private List<Float> verticesOpenAngle = null;
     private List<Coordinate> verticesOpenAngleTranslated = null; /*Open angle*/
     private boolean hasBuildingWithHeight;
@@ -174,7 +174,11 @@ public class FastObstructionTest {
         // Intersection First Side
         idneigh = triNeighbors.get(2);
         if (idneigh != -1 && !navigationHistory.contains(idneigh)) {
-            Coordinate intersectionTest= propagationLine.intersection(new LineSegment(aTri, bTri));
+            Coordinate[] closestPoints = propagationLine.closestPoints(new LineSegment(aTri, bTri));
+            Coordinate intersectionTest = null;
+            if(closestPoints.length == 2 && closestPoints[0].distance(closestPoints[1]) < epsilon) {
+                intersectionTest = closestPoints[0];
+            }
             if(intersectionTest != null) {
                 distline_line = propagationLine.p1.distance(intersectionTest);
                 if (distline_line < nearestIntersectionPtDist) {
@@ -190,7 +194,11 @@ public class FastObstructionTest {
         // Intersection Second Side
         idneigh = triNeighbors.get(0);
         if (idneigh != -1 && !navigationHistory.contains(idneigh)) {
-            Coordinate intersectionTest = propagationLine.intersection(new LineSegment(bTri, cTri));
+            Coordinate[] closestPoints = propagationLine.closestPoints(new LineSegment(bTri, cTri));
+            Coordinate intersectionTest = null;
+            if(closestPoints.length == 2 && closestPoints[0].distance(closestPoints[1]) < epsilon) {
+                intersectionTest = closestPoints[0];
+            }
             if(intersectionTest != null) {
                 distline_line = propagationLine.p1.distance(intersectionTest);
                 if (distline_line < nearestIntersectionPtDist) {
@@ -206,7 +214,11 @@ public class FastObstructionTest {
         // Intersection Third Side
         idneigh = triNeighbors.get(1);
         if (idneigh != -1 && !navigationHistory.contains(idneigh)) {
-            Coordinate intersectionTest = propagationLine.intersection(new LineSegment(cTri, aTri));
+            Coordinate[] closestPoints = propagationLine.closestPoints(new LineSegment(cTri, aTri));
+            Coordinate intersectionTest = null;
+            if(closestPoints.length == 2 && closestPoints[0].distance(closestPoints[1]) < epsilon) {
+                intersectionTest = closestPoints[0];
+            }
             if(intersectionTest != null) {
                 distline_line = propagationLine.p1.distance(intersectionTest);
                 if (distline_line < nearestIntersectionPtDist) {
