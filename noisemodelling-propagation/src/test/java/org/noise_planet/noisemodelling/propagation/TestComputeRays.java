@@ -784,14 +784,6 @@ public class TestComputeRays {
 
     }
 
-    /**
-     * Test TC09 -- Ground with spatially varying heights and and acoustic properties and short
-     * barrier
-     */
-    public void TC09() throws LayerDelaunayError {
-        // Impossible shape for NoiseModelling
-    }
-
 
     /**
      * Test TC08 -- Flat ground with spatially varying acoustic properties and short barrier
@@ -841,6 +833,17 @@ public class TestComputeRays {
 
 
     }
+
+    /**
+     * Test TC09 -- Ground with spatially varying heights and and acoustic properties and short
+     * barrier
+     */
+    public void TC09() throws LayerDelaunayError {
+        // Impossible shape for NoiseModelling
+    }
+
+
+
 
     /**
      * Test TC10 -- Flat ground with homogeneous acoustic properties and cubic building – receiver

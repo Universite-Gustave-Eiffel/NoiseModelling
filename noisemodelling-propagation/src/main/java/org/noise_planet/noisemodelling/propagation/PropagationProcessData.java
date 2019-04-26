@@ -184,6 +184,7 @@ public class PropagationProcessData {
         this.gS = gS;
     }
 
+
     public boolean isComputeHorizontalDiffraction() {
         return computeHorizontalDiffraction;
     }
@@ -191,60 +192,6 @@ public class PropagationProcessData {
     public boolean isComputeVerticalDiffraction() {
         return computeVerticalDiffraction;
     }
-
-    /**
-     * Get WallAlpha
-     */
-    public static double getWallAlpha(double wallAlpha, double freq_lvl)
-    {
-        double sigma = 0;
-        if(wallAlpha >= 0 && wallAlpha <= 1) {
-            sigma = 20000 * Math.pow (10., -2 * Math.pow (wallAlpha, 3./5.)) ;
-        } else {
-            sigma = Math.min(20000, Math.max(20, wallAlpha));
-        }
-        double value = GetWallImpedance(sigma,freq_lvl);
-        return value;
-
-    }
-
-    public static double GetWallImpedance(double sigma, double freq_l)
-    {
-        double s = Math.log(freq_l / sigma);
-        double x = 1. + 9.08 * Math.exp(-.75 * s);
-        double y = 11.9 * Math.exp(-0.73 * s);
-        ComplexNumber Z = new ComplexNumber(x, y);
-
-        // Delany-Bazley method, not used in NoiseModelling for the moment
-        /*double layer = 0.05; // Let user Choose
-        if (layer > 0 && sigma < 1000)
-        {
-            s = 1000 * sigma / freq;
-            double c = 340;
-            double RealK= 2 * Math.PI * freq / c *(1 + 0.0858 * Math.pow(s, 0.70));
-            double ImgK=2 * Math.PI * freq / c *(0.175 * Math.pow(s, 0.59));
-            ComplexNumber k = ComplexNumber.multiply(new ComplexNumber(2 * Math.PI * freq / c,0) , new ComplexNumber(1 + 0.0858 * Math.pow(s, 0.70),0.175 * Math.pow(s, 0.59)));
-            ComplexNumber j = new ComplexNumber(-0, -1);
-            ComplexNumber m = ComplexNumber.multiply(j,k);
-            Z[i] = ComplexNumber.divide(Z[i], (ComplexNumber.exp(m)));
-        }*/
-
-        return GetTrueWallAlpha(Z);
-    }
-
-   static double GetTrueWallAlpha(ComplexNumber impedance)         // TODO convert impedance to alpha
-    {
-        double alpha ;
-        ComplexNumber z = ComplexNumber.divide(new ComplexNumber(1.0,0), impedance) ;
-        double x = z.getRe();
-        double y = z.getIm();
-        double a1 = (x * x - y * y) / y ;
-        double a2 = y / (x * x + y * y + x) ;
-        double a3 = ((x + 1) *(x + 1) + y * y) / (x * x + y * y) ;
-        alpha = 8 * x * (1 + a1 * Math.atan(a2) - x * Math.log(a3)) ;
-        return alpha ;
-    }
-
 
 
     /**
