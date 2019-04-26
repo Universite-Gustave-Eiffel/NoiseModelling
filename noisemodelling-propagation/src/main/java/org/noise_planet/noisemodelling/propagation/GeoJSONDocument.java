@@ -53,7 +53,7 @@ public class GeoJSONDocument {
         jsonGenerator.writeStringField("type", "LineString");
         jsonGenerator.writeFieldName("coordinates");
         jsonGenerator.writeStartArray();
-        for(PropagationPath.PointPath pointPath : path.getPointList()) {
+        for(PointPath pointPath : path.getPointList()) {
             writeCoordinate(new Coordinate(pointPath.coordinate));
         }
         jsonGenerator.writeEndArray();
@@ -66,7 +66,7 @@ public class GeoJSONDocument {
             path.computeAugmentedSRPath();
         }
         jsonGenerator.writeArrayFieldStart("gPath");
-        for(PropagationPath.SegmentPath sr : path.getSegmentList()) {
+        for(SegmentPath sr : path.getSegmentList()) {
             jsonGenerator.writeNumber(String.format(Locale.ROOT, "%.2f", sr.gPath));
         }
         jsonGenerator.writeEndArray(); //gPath

@@ -68,7 +68,7 @@ public class EvaluateAttenuationCnossos {
         this.gToSigma = gToSigma;
     }
 
-    private double[] getDeltaDif(PropagationPath.SegmentPath srpath, PropagationProcessPathData data) {
+    private double[] getDeltaDif(SegmentPath srpath, PropagationProcessPathData data) {
         double[] DeltaDif = new double[data.freq_lvl.size()];
         double cprime;
 
@@ -127,7 +127,7 @@ public class EvaluateAttenuationCnossos {
      *
      * @return
      */
-    public static double[] getAGroundCore(PropagationPath path, PropagationPath.SegmentPath segmentPath, PropagationProcessPathData data) {
+    public static double[] getAGroundCore(PropagationPath path, SegmentPath segmentPath, PropagationProcessPathData data) {
 
         double[] aGround = new double[data.freq_lvl.size()];
         double aGroundmin;
@@ -205,7 +205,7 @@ public class EvaluateAttenuationCnossos {
     }
 
 
-    private double[] getAGround(PropagationPath.SegmentPath segmentPath,PropagationPath path, PropagationProcessPathData data) {
+    private double[] getAGround(SegmentPath segmentPath,PropagationPath path, PropagationProcessPathData data) {
         double[] aGround = new double[data.freq_lvl.size()];
         double aGroundmin;
 
@@ -235,7 +235,7 @@ public class EvaluateAttenuationCnossos {
      */
     private double[] getABoundary(PropagationPath path, PropagationProcessPathData data) {
 
-        List<PropagationPath.SegmentPath> srPath = path.getSRList();
+        List<SegmentPath> srPath = path.getSRList();
 
         double[] aGround;
         double[] aBoundary ;
@@ -253,7 +253,7 @@ public class EvaluateAttenuationCnossos {
         aGround = getAGround(srPath.get(0), path,data);
         aBoundary = aGround;
         if (path.difVPoints.size() > 0) {
-            List<PropagationPath.SegmentPath> segmentPath = path.getSegmentList();
+            List<SegmentPath> segmentPath = path.getSegmentList();
             double[] DeltaDifSR;
             DeltaDifSR = getDeltaDif(path.getSRList().get(0), data);
 
@@ -264,7 +264,7 @@ public class EvaluateAttenuationCnossos {
             }
         }
         if (path.difHPoints.size() > 0) {
-            List<PropagationPath.SegmentPath> segmentPath = path.getSegmentList();
+            List<SegmentPath> segmentPath = path.getSegmentList();
 
             double[] DeltaDifSR;
             double[] DeltaDifSpR;

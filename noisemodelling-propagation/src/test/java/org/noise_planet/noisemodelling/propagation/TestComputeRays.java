@@ -297,22 +297,22 @@ public class TestComputeRays {
     public void testPropagationPathSerialization() throws IOException {
         List<PropagationPath> expected = new ArrayList<>();
         expected.add(new PropagationPath(true,
-                Arrays.asList(new PropagationPath.PointPath(
+                Arrays.asList(new PointPath(
                         new Coordinate(1,2,3), 15.0, 1, 0.23, 8,
-                        PropagationPath.PointPath.POINT_TYPE.RECV)),
-                Arrays.asList(new PropagationPath.SegmentPath(0.15,
+                        PointPath.POINT_TYPE.RECV)),
+                Arrays.asList(new SegmentPath(0.15,
                         new org.locationtech.jts.math.Vector3D(1,1,1),
                         new Coordinate(1.5,2.5,3.5))),
-                Arrays.asList(new PropagationPath.SegmentPath(0.35,
+                Arrays.asList(new SegmentPath(0.35,
                         new org.locationtech.jts.math.Vector3D(2,2,3),
-                        new Coordinate(4.5,5.5,8.5)), new PropagationPath.SegmentPath(0.15,
+                        new Coordinate(4.5,5.5,8.5)), new SegmentPath(0.15,
                         new org.locationtech.jts.math.Vector3D(1,1,1),
                         new Coordinate(1.5,2.5,3.5)))));
         expected.add(new PropagationPath(true,
-                Arrays.asList(new PropagationPath.PointPath(
+                Arrays.asList(new PointPath(
                         new Coordinate(2,7,1), 1.0, 0.5, 0.4, 1,
-                        PropagationPath.PointPath.POINT_TYPE.DIFV)),
-                Arrays.asList(new PropagationPath.SegmentPath(0.115,
+                        PointPath.POINT_TYPE.DIFV)),
+                Arrays.asList(new SegmentPath(0.115,
                         new org.locationtech.jts.math.Vector3D(11,13,14),
                         new Coordinate(1.5,21.5,13.5))),
                 new ArrayList<>()));
@@ -327,8 +327,61 @@ public class TestComputeRays {
         assertEquals(expected.get(0).getPointList().size(), got.get(0).getPointList().size());
         assertEquals(expected.get(0).getPointList().get(0).coordinate, got.get(0).getPointList().get(0).coordinate);
         assertEquals(1, expected.get(1).getPointList().size());
-        assertEquals(PropagationPath.PointPath.POINT_TYPE.DIFV, expected.get(1).getPointList().get(0).type);
+        assertEquals(PointPath.POINT_TYPE.DIFV, expected.get(1).getPointList().get(0).type);
         assertEquals(0, expected.get(1).getSRList().size());
+    }
+
+    @Test
+    public void testPropagationPathSerialization2() throws LayerDelaunayError, ParseException, IOException  {
+
+        GeometryFactory factory = new GeometryFactory();
+        WKTReader wktReader = new WKTReader(factory);
+        //Scene dimension
+        Envelope cellEnvelope = wktReader.read("POLYGON ((316849.05 6703855.11, 316849.05 6703924.04, " +
+                "316925.36 6703924.04, 316925.36 6703855.11, 316849.05 6703855.11))").getEnvelopeInternal();
+        Coordinate p1 = new Coordinate(316914.1, 6703907.5, 4);
+        Coordinate p2 = new Coordinate(316913.4, 6703879, 4);
+        //Create obstruction test object
+        MeshBuilder mesh = new MeshBuilder();
+
+        mesh.addGeometry(wktReader.read("POLYGON ((316925.36 6703889.64, 316914.1 6703892.61, 316914.09 6703892.61, 316914.09 6703892.6, 316913.49 6703890.41, 316906.71 6703892.11, 316907.21 6703894.4, 316907.21 6703894.41, 316907.2 6703894.41, 316901.11 6703895.91, 316903.31 6703904.49, 316916.3 6703901.19, 316925.36 6703898.87, 316925.36 6703889.64)) "), 11.915885805791621);
+        mesh.addGeometry(wktReader.read("POLYGON ((316886.41 6703903.61, 316888.31 6703910.59, 316899.79 6703907.69, 316897.99 6703900.71, 316886.41 6703903.61))"), 13.143551238469575);
+
+        mesh.finishPolygonFeeding(cellEnvelope);
+
+
+        //Retrieve Delaunay triangulation of scene
+        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(), mesh.getTriNeighbors(), mesh.getVertices());
+
+        PropagationProcessData processData = new PropagationProcessData(manager);
+
+        processData.addReceiver(p1);
+        processData.addSource(factory.createPoint(p2));
+        //new ArrayList<>(), manager, sourcesIndex, srclst, new ArrayList<>(), new ArrayList<>(), 0, 99, 1000,1000,0,0,new double[0],0,0,new EmptyProgressVisitor(), new ArrayList<>(), true
+        ComputeRays computeRays = new ComputeRays(processData);
+
+        computeRays.setThreadCount(1);
+
+        computeRays.initStructures();
+
+        ComputeRaysOut computeRaysOut = new ComputeRaysOut(true, null, processData);
+
+        computeRays.run(computeRaysOut);
+
+        // 3 paths
+        // 1 over the building / 1 left side
+
+
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        PropagationPath.writePropagationPathListStream(new DataOutputStream(byteArrayOutputStream), computeRaysOut.propagationPaths);
+
+
+        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(byteArrayOutputStream.toByteArray());
+        ArrayList<PropagationPath> got = new ArrayList<>();
+        PropagationPath.readPropagationPathListStream(new DataInputStream(byteArrayInputStream), got);
+
+        assertEquals(computeRaysOut.propagationPaths.size(), got.size());
+
     }
 
     @Test

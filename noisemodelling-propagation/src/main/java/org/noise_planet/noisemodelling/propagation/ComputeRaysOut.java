@@ -135,7 +135,7 @@ public class ComputeRaysOut implements IComputeRaysOut {
             EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
             double[] aGlobalMeteo = null;
             for (PropagationPath propath : propagationPath) {
-                List<PropagationPath.PointPath> ptList = propath.getPointList();
+                List<PointPath> ptList = propath.getPointList();
                 int roseindex = getRoseIndex(ptList.get(0).coordinate, ptList.get(ptList.size() - 1).coordinate);
 
                 // Compute homogeneous conditions attenuation
@@ -267,6 +267,7 @@ public class ComputeRaysOut implements IComputeRaysOut {
 
         @Override
         public void finalizeReceiver(long receiverId) {
+            multiThreadParent.finalizeReceiver(receiverId);
             if(multiThreadParent.receiversAttenuationLevels != null) {
                 // Push merged sources into multi-thread parent
                 // Merge levels for each receiver for lines sources

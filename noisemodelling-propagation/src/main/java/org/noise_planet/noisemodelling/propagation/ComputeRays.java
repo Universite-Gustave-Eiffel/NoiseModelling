@@ -301,9 +301,9 @@ public class ComputeRays {
         for (MirrorReceiverResult receiverReflection : mirroredReceivers) {
 
             PropagationPath propagationPath = new PropagationPath();
-            List<PropagationPath.PointPath> points = new ArrayList<PropagationPath.PointPath>();
-            List<PropagationPath.SegmentPath> segments = new ArrayList<PropagationPath.SegmentPath>();
-            List<PropagationPath.SegmentPath> srPath = new ArrayList<PropagationPath.SegmentPath>();
+            List<PointPath> points = new ArrayList<PointPath>();
+            List<SegmentPath> segments = new ArrayList<SegmentPath>();
+            List<SegmentPath> srPath = new ArrayList<SegmentPath>();
             int refcount = 0;
 
             boolean validReflection = false;
@@ -385,7 +385,7 @@ public class ComputeRays {
                 if (propagationPaths.size() > 0 ) {
                     refcount +=1;
                     propagationPath = propagationPaths.get(0);
-                    propagationPath.getPointList().get(propagationPath.getPointList().size() - 1).setType(PropagationPath.PointPath.POINT_TYPE.REFL);
+                    propagationPath.getPointList().get(propagationPath.getPointList().size() - 1).setType(PointPath.POINT_TYPE.REFL);
                     propagationPath.getPointList().get(propagationPath.getPointList().size() - 1).setBuildingId(receiverReflection.getBuildingId());
                     propagationPath.getPointList().get(propagationPath.getPointList().size() - 1).setAlphaWall(data.freeFieldFinder.getBuildingAlpha(receiverReflection.getBuildingId()));
 
@@ -410,17 +410,17 @@ public class ComputeRays {
                     propagationPath.getPointList().remove(0);
                     points.addAll(propagationPath.getPointList());
                     segments.addAll(propagationPath.getSegmentList());
-                    srPath.add(new PropagationPath.SegmentPath(0.0, new Vector3D(srcCoord, receiverCoord),new Coordinate(0,0,0)));
+                    srPath.add(new SegmentPath(0.0, new Vector3D(srcCoord, receiverCoord),new Coordinate(0,0,0)));
 
 
                     for (int i = 1; i < points.size(); i++) {
-                        if (points.get(i).type == PropagationPath.PointPath.POINT_TYPE.DIFH) {
+                        if (points.get(i).type == PointPath.POINT_TYPE.DIFH) {
                             if (points.get(i).coordinate.z <= data.freeFieldFinder.getHeightAtPosition(points.get(i).coordinate)) {
                                 points.clear();
                                 segments.clear();
                                 break;
                             }
-                        } else if (points.get(i).type == PropagationPath.PointPath.POINT_TYPE.REFL) {
+                        } else if (points.get(i).type == PointPath.POINT_TYPE.REFL) {
                             if(i < points.size() - 1 ) {
                                 points.get(i).coordinate.z = Vertex.interpolateZ(points.get(i).coordinate, points.get(i - 1).coordinate, points.get(i + 1).coordinate);
                                 //check if in building && if under floor
@@ -462,9 +462,9 @@ public class ComputeRays {
                                             List<PropagationDebugInfo> debugInfo) {
 
         GeometryFactory factory = new GeometryFactory();
-        List<PropagationPath.PointPath> points = new ArrayList<PropagationPath.PointPath>();
-        List<PropagationPath.SegmentPath> segments = new ArrayList<PropagationPath.SegmentPath>();
-        List<PropagationPath.SegmentPath> srPath = new ArrayList<PropagationPath.SegmentPath>();
+        List<PointPath> points = new ArrayList<PointPath>();
+        List<SegmentPath> segments = new ArrayList<SegmentPath>();
+        List<SegmentPath> srPath = new ArrayList<SegmentPath>();
 
         double gPath;
         double totRSDistance = 0.;
@@ -520,10 +520,10 @@ public class ComputeRays {
         pInit.x = srcCoord.x + pInit.x;
         pInit.y = srcCoord.y + pInit.y;
 
-        segments.add(new PropagationPath.SegmentPath(gPath, new Vector3D(projSource, projReceiver),pInit));
+        segments.add(new SegmentPath(gPath, new Vector3D(projSource, projReceiver),pInit));
 
-        points.add(new PropagationPath.PointPath(srcCoord, altS, data.gS, Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.SRCE));
-        points.add(new PropagationPath.PointPath(receiverCoord, altR, data.gS, Double.NaN, -1, PropagationPath.PointPath.POINT_TYPE.RECV));
+        points.add(new PointPath(srcCoord, altS, data.gS, Double.NaN, -1, PointPath.POINT_TYPE.SRCE));
+        points.add(new PointPath(receiverCoord, altR, data.gS, Double.NaN, -1, PointPath.POINT_TYPE.RECV));
 
         if (debugInfo != null) {
             debugInfo.add(new PropagationDebugInfo(Arrays.asList(receiverCoord, srcCoord), new double[data.freq_lvl.length]));
@@ -537,9 +537,9 @@ public class ComputeRays {
     public PropagationPath computeHorizontalEdgeDiffraction(boolean obstructedSourceReceiver, Coordinate receiverCoord,
                                                             Coordinate srcCoord, List<TriIdWithIntersection> allInterPoints, List<PropagationDebugInfo> debugInfo) {
 
-        List<PropagationPath.PointPath> points = new ArrayList<PropagationPath.PointPath>();
-        List<PropagationPath.SegmentPath> segments = new ArrayList<PropagationPath.SegmentPath>();
-        List<PropagationPath.SegmentPath> srPath = new ArrayList<PropagationPath.SegmentPath>();
+        List<PointPath> points = new ArrayList<PointPath>();
+        List<SegmentPath> segments = new ArrayList<SegmentPath>();
+        List<SegmentPath> srPath = new ArrayList<SegmentPath>();
         boolean validDiffraction;
 
         DiffractionWithSoilEffetZone diffDataWithSoilEffet;
@@ -563,7 +563,7 @@ public class ComputeRays {
                 }
                 for (int j = offsetPath.size() - 1; j > 1; j--) {
                     PropagationPath propagationPath1 = computeFreefield(offsetPath.get(j - 1), offsetPath.get(j), null, debugInfo);
-                    propagationPath1.getPointList().get(1).setType(PropagationPath.PointPath.POINT_TYPE.DIFH);
+                    propagationPath1.getPointList().get(1).setType(PointPath.POINT_TYPE.DIFH);
                     if (j == offsetPath.size() - 1) {
                         propagationPath1.getPointList().get(0).setCoordinate(offsetPath.get(j));
                         points.add(propagationPath1.getPointList().get(0));
@@ -911,13 +911,13 @@ public class ComputeRays {
                 if (coordinates.size() > 2) {
 
                     propagationPath = computeFreefield(coordinates.get(1), coordinates.get(0),null, debugInfo);
-                    propagationPath.getPointList().get(1).setType(PropagationPath.PointPath.POINT_TYPE.DIFV);
+                    propagationPath.getPointList().get(1).setType(PointPath.POINT_TYPE.DIFV);
 
                     propagationPath2 = propagationPath;
                     int j;
                     for (j = 1; j < coordinates.size() - 2; j++) {
                         propagationPath = computeFreefield(coordinates.get(j + 1), coordinates.get(j),null, debugInfo);
-                        propagationPath.getPointList().get(1).setType(PropagationPath.PointPath.POINT_TYPE.DIFV);
+                        propagationPath.getPointList().get(1).setType(PointPath.POINT_TYPE.DIFV);
                         propagationPath2.getPointList().add(propagationPath.getPointList().get(1));
                         propagationPath2.getSegmentList().addAll(propagationPath.getSegmentList());
                     }
@@ -934,12 +934,12 @@ public class ComputeRays {
                 if (coordinates.size() > 2) {
                     Collections.reverse(coordinates);
                     propagationPath = computeFreefield(coordinates.get(1), coordinates.get(0),null, debugInfo);
-                    propagationPath.getPointList().get(1).setType(PropagationPath.PointPath.POINT_TYPE.DIFV);
+                    propagationPath.getPointList().get(1).setType(PointPath.POINT_TYPE.DIFV);
                     propagationPath2 = propagationPath;
                     int j;
                     for (j = 1; j < coordinates.size() - 2; j++) {
                         propagationPath = computeFreefield(coordinates.get(j + 1), coordinates.get(j),null, debugInfo);
-                        propagationPath.getPointList().get(1).setType(PropagationPath.PointPath.POINT_TYPE.DIFV);
+                        propagationPath.getPointList().get(1).setType(PointPath.POINT_TYPE.DIFV);
                         propagationPath2.getPointList().add(propagationPath.getPointList().get(1));
                         propagationPath2.getSegmentList().addAll(propagationPath.getSegmentList());
                     }

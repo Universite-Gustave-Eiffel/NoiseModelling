@@ -62,6 +62,7 @@ import org.cts.op.CoordinateOperationException;
 import org.cts.op.CoordinateOperationFactory;
 import org.cts.registry.EPSGRegistry;
 import org.cts.registry.RegistryManager;
+import org.locationtech.jts.algorithm.Orientation;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.CoordinateFilter;
 import org.locationtech.jts.geom.Geometry;
@@ -203,6 +204,9 @@ public class KMLDocument {
             Polygon poly = geometryFactory.createPolygon(new Coordinate[]{copyCoord(vertices.get(triangle.getA())),
                     copyCoord(vertices.get(triangle.getB())), copyCoord(vertices.get(triangle.getC())),
                     copyCoord(vertices.get(triangle.getA()))});
+            if(Orientation.isCCW(poly.getCoordinates())) {
+                poly = (Polygon) poly.reverse();
+            }
             // Apply CRS transform
             doTransform(poly);
             polygons[idTri++] = poly;
@@ -232,22 +236,6 @@ public class KMLDocument {
         int idPoly = 0;
 
         for(MeshBuilder.PolygonWithHeight triangle : buildings) {
-            /**
-             *
-             *
-             for (Coordinate coordinate : polygon.getGeometry().getCoordinates()) {
-
-             double z = manager.getHeightAtPosition(coordinate)
-             Geometry outPutGeom = (Point) gf.createPoint(coordinate).copy()
-             outPutGeom.geometryChanged()
-             outPutGeom.apply(new ST_Transform.CRSTransformFilter(op.get(0)))
-             outPutGeom.setSRID(4326)
-             Coordinate coordinate2 = outPutGeom.getCoordinate()
-
-             fileWriter.write("\t\t\t" + coordinate2.x.toString() + "," + coordinate2.y.toString() + "," + (height).toString() + "\n")
-             }
-             * */
-
             Coordinate[] original = triangle.geo.getCoordinates();
             Coordinate[] coordinates = new Coordinate[original.length];
             double z = manager.getBuildingRoofZ(idPoly + 1);
@@ -256,6 +244,9 @@ public class KMLDocument {
             }
             if(coordinates.length > 3 && coordinates[0].equals2D(coordinates[coordinates.length - 1])) {
                 Polygon poly = geometryFactory.createPolygon(coordinates);
+                if(Orientation.isCCW(poly.getCoordinates())) {
+                    poly = (Polygon) poly.reverse();
+                }
                 // Apply CRS transform
                 doTransform(poly);
                 polygons.add(poly);
@@ -286,7 +277,7 @@ public class KMLDocument {
             xmlOut.writeEndElement();//Name
             Coordinate[] coordinates = new Coordinate[line.getPointList().size()];
             int i=0;
-            for(PropagationPath.PointPath pointPath : line.getPointList()) {
+            for(PointPath pointPath : line.getPointList()) {
                 coordinates[i++] = copyCoord(pointPath.coordinate);
             }
             LineString lineString = geometryFactory.createLineString(coordinates);

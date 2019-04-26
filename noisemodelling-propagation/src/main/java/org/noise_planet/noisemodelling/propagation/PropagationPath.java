@@ -44,6 +44,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -125,7 +126,7 @@ public class PropagationPath {
         }
         int segmentListSize = in.readInt();
         segmentList = new ArrayList<>(segmentListSize);
-        for(int i=0; i < pointListSize; i++) {
+        for(int i=0; i < segmentListSize; i++) {
             SegmentPath segmentPath = new SegmentPath();
             segmentPath.readStream(in);
             segmentList.add(segmentPath);
@@ -147,241 +148,6 @@ public class PropagationPath {
     protected void setInitialized(boolean initialized) {
         this.initialized = initialized;
     }
-
-    public static class PointPath {
-        // given by user
-        public Coordinate coordinate; // coordinate (absolute)
-        public double altitude; // altitude of relief (exact)
-        public double gs;       // only if POINT_TYPE = SRCE or RECV, G coefficient right above the point
-        public double[] alphaWall = new double[PropagationProcessPathData.freq_lvl.size()]; // only if POINT_TYPE = REFL, alpha coefficient
-        public int buildingId; // only if POINT_TYPE = REFL
-        public POINT_TYPE type; // type of point
-        public enum POINT_TYPE {
-            SRCE,
-            REFL,
-            DIFV,
-            DIFH,
-            RECV
-        }
-
-        /**
-         * parameters given by user
-         * @param coordinate
-         * @param altitude
-         * @param gs
-         * @param alphaWall
-         * @param buildingId
-         * @param type
-         */
-        public PointPath(Coordinate coordinate, double altitude, double gs, double[] alphaWall, int buildingId, POINT_TYPE type) {
-            this.coordinate = coordinate;
-            this.altitude = altitude;
-            this.gs = gs;
-            this.alphaWall = alphaWall;
-            this.buildingId = buildingId;
-            this.type = type;
-        }
-
-        /**
-         * parameters given by user
-         * @param coordinate
-         * @param altitude
-         * @param gs
-         * @param alpha
-         * @param buildingId
-         * @param type
-         */
-        public PointPath(Coordinate coordinate, double altitude, double gs, double alpha, int buildingId, POINT_TYPE type) {
-            this.coordinate = coordinate;
-            this.altitude = altitude;
-            this.gs = gs;
-            for (int j=0;j<8;j++){
-                this.alphaWall[j] = alpha;
-            }
-            this.buildingId = buildingId;
-            this.type = type;
-        }
-
-        public PointPath() {
-
-        }
-
-
-        /**
-         * Writes the content of this object into <code>out</code>.
-         * @param out the stream to write into
-         * @throws java.io.IOException if an I/O-error occurs
-         */
-        public void writeStream( DataOutputStream out ) throws IOException {
-            writeCoordinate(out, coordinate);
-            out.writeDouble(altitude);
-            out.writeDouble(gs);
-            for (int j = 0;j<PropagationProcessPathData.freq_lvl.size();j++) {
-                out.writeDouble(alphaWall[j]);
-            }
-            out.writeInt(buildingId);
-            out.writeInt(type.ordinal());
-        }
-
-        /**
-         * Reads the content of this object from <code>out</code>. All
-         * properties should be set to their default value or to the value read
-         * from the stream.
-         * @param in the stream to read
-         * @throws IOException if an I/O-error occurs
-         */
-        public void readStream( DataInputStream in ) throws IOException {
-            coordinate = readCoordinate(in);
-            altitude = in.readDouble();
-            gs = in.readDouble();
-            for (int j = 0;j<PropagationProcessPathData.freq_lvl.size();j++){
-                alphaWall[j] = in.readDouble();
-            }
-            buildingId = in.readInt();
-            type = POINT_TYPE.values()[in.readInt()];
-        }
-
-        public void setType(POINT_TYPE type) {
-            this.type =  type;
-        }
-
-        public void setBuildingId(int buildingId) {
-            this.buildingId =  buildingId;
-        }
-
-        public void setAlphaWall(double[] alphaWall) {
-            this.alphaWall =  alphaWall;
-        }
-
-        public int getBuildingId() {
-            return buildingId;
-        }
-
-
-        public void setCoordinate(Coordinate coordinate) {
-            this.coordinate =  coordinate;
-        }
-    }
-
-    public static class SegmentPath {
-        //  given by user
-        public double gPath;          // G coefficient for the considered path segment
-        public Vector3D vector3D;     // mean Plane for the considered path segment
-        public Coordinate pInit;     // init point to compute the mean Plane
-
-        // computed in AugmentedSegments
-        public int idPtStart;               //start point indice for the considered path segment
-        public int idPtFinal;               //final point indice for the considered path segment
-
-        public Double gPathPrime = null;    //Gpath prime , calculated from Gpath and geometry
-        public Double gw = null;
-        public Double gm = null;
-        public Double zs = null;
-        public Double zr = null;
-        public Double zsPrime = null;
-        public Double zrPrime = null;
-        public Double testForm = null;
-        public Double testFormPrime = null;
-
-        public Double dPath; // pass by points
-        public Double d ; // direct ray between source and receiver
-        public Double dc; // direct ray sensible to meteorological conditions (can be curve) between source and receiver
-        public Double dp; // distance on mean plane between source and receiver
-        public Double eLength = 0.0; // distance between first and last diffraction point
-        public Double delta; // distance between first and last diffraction point
-
-        /**
-         * @param gPath
-         */
-
-        public SegmentPath(double gPath, Vector3D vector3D, Coordinate pInit) {
-            this.gPath = gPath;
-            this.vector3D = vector3D;
-            this.pInit = pInit;
-        }
-
-        public SegmentPath() {
-        }
-
-
-        /**
-         * Writes the content of this object into <code>out</code>.
-         * @param out the stream to write into
-         * @throws java.io.IOException if an I/O-error occurs
-         */
-        public void writeStream( DataOutputStream out ) throws IOException {
-            out.writeDouble(gPath);
-            writeVector(out, vector3D);
-            writeCoordinate(out, pInit);
-        }
-
-        /**
-         * Reads the content of this object from <code>out</code>. All
-         * properties should be set to their default value or to the value read
-         * from the stream.
-         * @param in the stream to read
-         * @throws IOException if an I/O-error occurs
-         */
-        public void readStream( DataInputStream in ) throws IOException {
-            gPath = in.readDouble();
-            vector3D = readVector(in);
-            pInit = readCoordinate(in);
-        }
-
-
-        public void setGw(double g) {
-            this.gw = g;
-        }
-
-        public void setGm(double g) {
-            this.gm = g;
-        }
-
-        public Double getgPathPrime(PropagationPath path) {
-            if(gPathPrime == null) {
-                path.computeAugmentedSegments();
-            }
-            return gPathPrime;
-        }
-
-        public Double getGw() {
-            return gw;
-        }
-
-        public Double getGm() {
-            return gm;
-        }
-
-        public Double getZs(PropagationPath path, SegmentPath segmentPath) {
-            if(zs == null) {
-                zs = path.computeZs(segmentPath);
-            }
-            return zs;
-        }
-
-        public Double getZr(PropagationPath path, SegmentPath segmentPath) {
-            if(zr == null) {
-                zr = path.computeZr(segmentPath);
-            }
-            return zr;
-        }
-
-        public Double getZsPrime(PropagationPath path, SegmentPath segmentPath) {
-            if(zsPrime == null) {
-                zsPrime = path.computeZsPrime(segmentPath);
-            }
-            return zsPrime;
-        }
-
-        public Double getZrPrime(PropagationPath path, SegmentPath segmentPath) {
-            if(zrPrime == null) {
-                zrPrime = path.computeZrPrime(segmentPath);
-            }
-            return zrPrime;
-        }
-
-    }
-
 
     public List<PointPath> getPointList() {return pointList;}
 
@@ -602,7 +368,7 @@ public class PropagationPath {
     }
 
 
-    private void computeAugmentedSegments() {
+    void computeAugmentedSegments() {
         for (int idSegment = 0; idSegment < segmentList.size(); idSegment++) {
 
             segmentList.get(idSegment).idPtStart = idSegment;
@@ -693,22 +459,22 @@ public class PropagationPath {
     }
 
 
-    private double computeZs(SegmentPath segmentPath) {
+    double computeZs(SegmentPath segmentPath) {
         return pointList.get(segmentPath.idPtStart).coordinate.z - projectPointonSegment(pointList.get(segmentPath.idPtStart).coordinate,segmentPath.vector3D,segmentPath.pInit).z;
     }
 
-    private double computeZr(SegmentPath segmentPath) {
+    public double computeZr(SegmentPath segmentPath) {
         return pointList.get(segmentPath.idPtFinal).coordinate.z - projectPointonSegment(pointList.get(segmentPath.idPtFinal).coordinate,segmentPath.vector3D,segmentPath.pInit).z;
     }
 
-    private double computeZsPrime(SegmentPath segmentPath) {
+    public double computeZsPrime(SegmentPath segmentPath) {
         double alpha0 = 2 * Math.pow(10, -4);
         double deltazt = 6 * Math.pow(10, -3) * segmentPath.dp / (segmentPath.zs + segmentPath.zr);
         double deltazs = alpha0 * Math.pow((segmentPath.zs / (segmentPath.zs + segmentPath.zr)), 2) * (Math.pow(segmentPath.dp, 2) / 2);
         return segmentPath.zs + deltazs + deltazt;
     }
 
-    private double computeZrPrime(SegmentPath segmentPath) {
+    public double computeZrPrime(SegmentPath segmentPath) {
         double alpha0 = 2 * Math.pow(10, -4);
         double deltazt = 6 * Math.pow(10, -3) * segmentPath.dp / (segmentPath.zs + segmentPath.zr);
         double deltazr = alpha0 * Math.pow((segmentPath.zr / (segmentPath.zs + segmentPath.zr)), 2) * (Math.pow(segmentPath.dp, 2) / 2);
