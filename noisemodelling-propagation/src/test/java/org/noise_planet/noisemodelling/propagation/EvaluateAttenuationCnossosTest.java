@@ -323,7 +323,7 @@ public class EvaluateAttenuationCnossosTest {
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});
         //assertArrayEquals(  new double[]{32.70,31.58,29.99,27.89,24.36,21.46,14.18,-5.05},L, ERROR_EPSILON_very_low);//p=0.5
-        assertArrayEquals(  new double[]{32.54,31.32,29.60,27.37,22.22,20.76,13.44,-5.81},L, ERROR_EPSILON_very_low);//HOM
+        assertArrayEquals( new double[]{32.54,31.32,29.60,27.37,22.22,20.76,13.44,-5.81},L, ERROR_EPSILON_very_low);//HOM
         //assertArrayEquals(  new double[]{32.85,31.83,30.35,29.36,25.78,22.06,14.81,-4.41},L, ERROR_EPSILON_low);//FAV
 
     }
