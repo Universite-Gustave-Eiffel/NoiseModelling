@@ -328,6 +328,152 @@ public class EvaluateAttenuationCnossosTest {
 
     }
 
+
+    /**
+     * Test TC08 -- Flat ground with spatially varying acoustic properties and short barrier
+     */
+    @Test
+    public void TC08()  throws LayerDelaunayError , IOException {
+        GeometryFactory factory = new GeometryFactory();
+        //Scene dimension
+        Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
+
+        //Create obstruction test object
+        MeshBuilder mesh = new MeshBuilder();
+
+        // Add building
+        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+                new Coordinate(175, 50, 0),
+                new Coordinate(175.01, 50, 0),
+                new Coordinate(190.01, 10, 0),
+                new Coordinate(190, 10, 0),
+                new Coordinate(175, 50, 0)}), 6);
+
+        mesh.finishPolygonFeeding(cellEnvelope);
+
+        //Retrieve Delaunay triangulation of scene
+        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+                mesh.getTriNeighbors(), mesh.getVertices());
+
+        PropagationProcessData rayData = new PropagationProcessData(manager);
+        rayData.addReceiver(new Coordinate(200, 50, 4));
+        rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
+        rayData.setComputeHorizontalDiffraction(true);
+        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9));
+        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
+        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
+        rayData.setComputeVerticalDiffraction(true);
+        rayData.setGs(0.9);
+
+        PropagationProcessPathData attData = new PropagationProcessPathData();
+        attData.setHumidity(70);
+        attData.setTemperature(10);
+        attData.setPrime2520(true);
+        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRays computeRays = new ComputeRays(rayData);
+        computeRays.setThreadCount(1);
+        computeRays.run(propDataOut);
+
+        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
+        assertArrayEquals(  new double[]{8.17,16.86,22.51,25.46,24.87,23.44,15.93,-5.43},L, ERROR_EPSILON_low);//p=0.5
+    }
+
+    /**
+     * Test TC10 -- Flat ground with homogeneous acoustic properties and cubic building – receiver
+     * at low height
+     */
+    @Test
+    public void TC10()  throws LayerDelaunayError , IOException {
+        GeometryFactory factory = new GeometryFactory();
+        //Scene dimension
+        Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
+
+        //Create obstruction test object
+        MeshBuilder mesh = new MeshBuilder();
+
+        // Add building
+        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+                new Coordinate(55, 5, 0),
+                new Coordinate(65, 5, 0),
+                new Coordinate(65, 15, 0),
+                new Coordinate(55, 15, 0),
+                new Coordinate(55, 5, 0)}), 10);
+
+        mesh.finishPolygonFeeding(cellEnvelope);
+
+        //Retrieve Delaunay triangulation of scene
+        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+                mesh.getTriNeighbors(), mesh.getVertices());
+
+        PropagationProcessData rayData = new PropagationProcessData(manager);
+        rayData.addReceiver(new Coordinate(70, 10, 4));
+        rayData.addSource(factory.createPoint(new Coordinate(50, 10, 1)));
+        rayData.setComputeHorizontalDiffraction(true);
+        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 100, -100, 100)), 0.5));
+        rayData.setComputeVerticalDiffraction(true);
+        rayData.setGs(0.5);
+
+        PropagationProcessPathData attData = new PropagationProcessPathData();
+        attData.setHumidity(70);
+        attData.setTemperature(10);
+        attData.setPrime2520(true);
+        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRays computeRays = new ComputeRays(rayData);
+        computeRays.setThreadCount(1);
+        computeRays.run(propDataOut);
+
+        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});
+        assertArrayEquals(  new double[]{46.09,42.49,38.44,35.97,34.67,33.90,33.09,31.20},L, ERROR_EPSILON_low);//p=0.5
+    }
+
+    /**
+     * Test TC11 -- Flat ground with homogeneous acoustic properties and cubic building – receiver
+     * at large height
+     */
+    @Test
+    public void TC11() throws LayerDelaunayError , IOException {
+        GeometryFactory factory = new GeometryFactory();
+        //Scene dimension
+        Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
+
+        //Create obstruction test object
+        MeshBuilder mesh = new MeshBuilder();
+
+        // Add building
+        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+                new Coordinate(55, 5,0),
+                new Coordinate(65, 5,0),
+                new Coordinate(65, 15,0),
+                new Coordinate(55, 15,0),
+                new Coordinate(55, 5,0)}), 10);
+
+        mesh.finishPolygonFeeding(cellEnvelope);
+
+        //Retrieve Delaunay triangulation of scene
+        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+                mesh.getTriNeighbors(), mesh.getVertices());
+
+        PropagationProcessData rayData = new PropagationProcessData(manager);
+        rayData.addReceiver(new Coordinate(70, 10, 15));
+        rayData.addSource(factory.createPoint(new Coordinate(50, 10, 1)));
+        rayData.setComputeHorizontalDiffraction(true);
+        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 100, -100, 100)), 0.5));
+        rayData.setComputeVerticalDiffraction(true);
+        rayData.setGs(0.5);
+
+        PropagationProcessPathData attData = new PropagationProcessPathData();
+        attData.setHumidity(70);
+        attData.setTemperature(10);
+        attData.setPrime2520(false);
+        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRays computeRays = new ComputeRays(rayData);
+        computeRays.setThreadCount(1);
+        computeRays.run(propDataOut);
+
+        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});
+        assertArrayEquals(  new double[]{44.64,42.04,39.22,36.30,33.30,31.21,30.64,28.59},L, ERROR_EPSILON_high);//p=0.5
+
+    }
     /**
      * Test TC15 -- Flat ground with homogeneous acoustic properties and four buildings
      */

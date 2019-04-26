@@ -187,6 +187,9 @@ public class PropagationPath {
             this.pInit = pInit;
         }
 
+        public SegmentPath() {
+
+        }
 
         public void setGw(double g) {
             this.gw = g;
