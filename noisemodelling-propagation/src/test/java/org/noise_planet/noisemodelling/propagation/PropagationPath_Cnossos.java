@@ -91,7 +91,7 @@ public class PropagationPath_Cnossos {
         propData.setHumidity(70);
 
         EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
-        splCompare(evaluateAttenuationCnossos.evaluate(propagationPath, propData), "Test T01", new double[]{-54, -54.1, -54.2, -54.5, -54.8, -55.8, -59.3, -73.0}, ERROR_EPSILON_TEST_T);
+        splCompare(evaluateAttenuationCnossos.evaluate(propagationPath, propData), "Test T01", new double[]{-54, -54.1, -54.2, -54.5, -54.8, -55.8, -59.3, -72.76}, ERROR_EPSILON_TEST_T);
 
 
     }
@@ -118,7 +118,7 @@ public class PropagationPath_Cnossos {
         propData.setHumidity(70);
 
         EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
-        splCompare(evaluateAttenuationCnossos.evaluate(propagationPath, propData), "Test T02H", new double[]{-57, -57.1, -57.9, -64.7, -70.6, -76.7, -82.0, -88.3}, ERROR_EPSILON_TEST_T);
+        splCompare(evaluateAttenuationCnossos.evaluate(propagationPath, propData), "Test T02H", new double[]{-57, -57.1, -57.9, -64.7, -70.6, -76.7, -82.0, -88.0}, ERROR_EPSILON_TEST_T);
     }
 
     /**
@@ -143,7 +143,7 @@ public class PropagationPath_Cnossos {
         propData.setHumidity(70);
 
         EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
-        splCompare(evaluateAttenuationCnossos.evaluate(propagationPath, propData), "Test T02F", new double[]{-57, -57.1, -57.2, -58.5, -65.8, -60.4, -62.3, -76.0}, ERROR_EPSILON_TEST_T);
+        splCompare(evaluateAttenuationCnossos.evaluate(propagationPath, propData), "Test T02F", new double[]{-57, -57.1, -57.2, -58.5, -65.8, -60.4, -62.3, -75.76}, ERROR_EPSILON_TEST_T);
     }
 
     /**
@@ -169,7 +169,7 @@ public class PropagationPath_Cnossos {
         propData.setPrime2520(true);
 
         EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
-        splCompare(evaluateAttenuationCnossos.evaluate(propagationPath, propData), "Test T03F", new double[]{-56.1, -56.2, -56.3, -56.6, -61.6, -61.1, -61.4, -75.1}, ERROR_EPSILON_TEST_T);
+        splCompare(evaluateAttenuationCnossos.evaluate(propagationPath, propData), "Test T03F", new double[]{-56.1, -56.2, -56.3, -56.6, -61.6, -61.1, -61.4, -74.8}, ERROR_EPSILON_TEST_T);
     }
 
     /**
@@ -195,7 +195,7 @@ public class PropagationPath_Cnossos {
         propData.setGDisc(true);
 
         EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
-        splCompare(evaluateAttenuationCnossos.evaluate(propagationPath, propData), "Test T03H", new double[]{-56.1, -56.2, -56.3, -60.6, -66.0, -72.6, -80.8, -88.8}, ERROR_EPSILON_TEST_T);
+        splCompare(evaluateAttenuationCnossos.evaluate(propagationPath, propData), "Test T03H", new double[]{-56.1, -56.2, -56.3, -60.6, -66.0, -72.6, -80.8, -88.5}, ERROR_EPSILON_TEST_T);
     }
 
 
@@ -263,7 +263,7 @@ public class PropagationPath_Cnossos {
         propData.setHumidity(70);
 
         EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
-        splCompare(evaluateAttenuationCnossos.evaluate(propagationPath, propData), "Test T05F", new double[]{-63.2, -67.0, -70.4, -73.6, -74.6, -75.3, -78.0, -88.3}, ERROR_EPSILON_TEST_T);
+        splCompare(evaluateAttenuationCnossos.evaluate(propagationPath, propData), "Test T05F", new double[]{-63.2, -67.0, -70.4, -73.6, -74.6, -75.3, -78.0, -88.07}, ERROR_EPSILON_TEST_T);
 
     }
 
@@ -449,7 +449,7 @@ public class PropagationPath_Cnossos {
         propData.setHumidity(70);
 
         EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
-        splCompare(evaluateAttenuationCnossos.evaluate(propagationPath, propData), "Test T14H", new double[]{-76.7, -79.7, -82.8, -86.1, -89.5, -93.5, -100.4, -118.2}, ERROR_EPSILON_TEST_T);
+        splCompare(evaluateAttenuationCnossos.evaluate(propagationPath, propData), "Test T14H", new double[]{-76.7, -79.7, -82.8, -86.1, -89.5, -93.5, -100.4, -117.9}, ERROR_EPSILON_TEST_T);
 
     }
 
