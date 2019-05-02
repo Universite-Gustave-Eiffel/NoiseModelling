@@ -255,7 +255,7 @@ public class EvaluateAttenuationCnossos {
         if (path.difVPoints.size() > 0) {
             List<SegmentPath> segmentPath = path.getSegmentList();
             double[] DeltaDifSR;
-            DeltaDifSR = getDeltaDif(path.getSRList().get(0), data);
+            DeltaDifSR = getDeltaDif(srPath.get(0), data);
 
             // Eq 2.5.30 - Eq. 2.5.31 - Eq. 2.5.32
             for (int idf = 0; idf < nbfreq; idf++) {
@@ -272,9 +272,9 @@ public class EvaluateAttenuationCnossos {
             double[] aGroundSO;
             double[] aGroundOR;
 
-            DeltaDifSR = getDeltaDif(path.getSRList().get(0), data);
-            DeltaDifSpR = getDeltaDif(path.getSRList().get(1), data);
-            DeltaDifSRp = getDeltaDif(path.getSRList().get(2), data);
+            DeltaDifSR = getDeltaDif(srPath.get(0), data);
+            DeltaDifSpR = getDeltaDif(srPath.get(srPath.size()-2), data);
+            DeltaDifSRp = getDeltaDif(srPath.get(srPath.size()-1), data);
 
             // Set Gm and Gw for AGround SO - Table 2.5.b
             if (path.isFavorable()) {

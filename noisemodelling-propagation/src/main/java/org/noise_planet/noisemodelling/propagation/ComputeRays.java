@@ -410,7 +410,7 @@ public class ComputeRays {
                     propagationPath.getPointList().remove(0);
                     points.addAll(propagationPath.getPointList());
                     segments.addAll(propagationPath.getSegmentList());
-                    srPath.add(new SegmentPath(0.0, new Vector3D(srcCoord, receiverCoord),new Coordinate(0,0,0)));
+                    srPath.add(new SegmentPath(0.0, new Vector3D(srcCoord, receiverCoord),srcCoord));
 
 
                     for (int i = 1; i < points.size(); i++) {
