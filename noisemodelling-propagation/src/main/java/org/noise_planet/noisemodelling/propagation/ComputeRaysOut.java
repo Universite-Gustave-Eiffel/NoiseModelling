@@ -251,6 +251,15 @@ public class ComputeRaysOut implements IComputeRaysOut {
             double[] aGlobalMeteo = multiThreadParent.computeAttenuation(multiThreadParent.genericMeteoData, sourceId, sourceLi, receiverId, propagationPath);
             multiThreadParent.rayCount.addAndGet(propagationPath.size());
             if(multiThreadParent.keepRays) {
+                if (multiThreadParent.inputData != null && sourceId < multiThreadParent.inputData.sourcesPk.size() && receiverId < multiThreadParent.inputData.receiversPk.size()) {
+                    long sourcePk = multiThreadParent.inputData.sourcesPk.get((int) sourceId);
+                    long receiverPk = multiThreadParent.inputData.receiversPk.get((int) receiverId);
+                    for (int i = 0; i < propagationPath.size(); i++) {
+                        propagationPath.get(i).idSource = (int) sourcePk;
+                        propagationPath.get(i).idReceiver = (int) receiverPk;
+                    }
+                }
+
                 multiThreadParent.propagationPaths.addAll(propagationPath);
             }
             if (aGlobalMeteo != null) {

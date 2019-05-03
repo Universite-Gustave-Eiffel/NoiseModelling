@@ -406,6 +406,10 @@ public class PropagationPath {
                 segmentList.get(idSegment).dc = getRayCurveLength(d);
             }
 
+            // see Point 5.3 Equivalent heights in AFNOR document
+            if (zs<=0){zs= 0.000000001;}
+            if (zr<=0){zr= 0.000000001;}
+
             double gs = pointList.get(0).gs;
 
             double testForm = dp / (30 * (zs + zr));

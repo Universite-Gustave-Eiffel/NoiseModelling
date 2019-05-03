@@ -76,6 +76,10 @@ public class PropagationProcessData {
     public int reflexionOrder = 1;
     /** Compute diffraction rays over vertical edges */
     protected boolean computeHorizontalDiffraction = true;
+
+    /** True will compute vertical diffraction */
+    protected boolean computeVerticalDiffraction;
+
     /** Maximum source distance */
     public double maxSrcDist = DEFAULT_MAX_PROPAGATION_DISTANCE;
     /** Maximum reflection wall distance from receiver->source line */
@@ -93,8 +97,6 @@ public class PropagationProcessData {
     public ProgressVisitor cellProg;
     /** list Geometry of soil and the type of this soil */
     protected List<GeoWithSoilType> soilList = new ArrayList<>();
-    /** True will compute vertical diffraction */
-    protected boolean computeVerticalDiffraction;
 
 
 
