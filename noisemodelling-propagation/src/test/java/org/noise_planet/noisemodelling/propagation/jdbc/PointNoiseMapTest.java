@@ -20,7 +20,7 @@ import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 import org.noise_planet.noisemodelling.propagation.PropagationResultPtRecord;
 import org.noise_planet.noisemodelling.propagation.QueryRTree;
 
-import java.io.File;
+import java.io.*;
 import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -87,9 +87,12 @@ public class PointNoiseMapTest {
             pointNoiseMap.setDemTable("DEM");
             pointNoiseMap.setComputeVerticalDiffraction(false);
             pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
+
             pointNoiseMap.setComputeRaysOutFactory(new JDBCComputeRaysOut());
             pointNoiseMap.setPropagationProcessDataFactory(new JDBCPropagationData());
+
             List<ComputeRaysOut.verticeSL> allLevels = new ArrayList<>();
+            ArrayList<PropagationPath> propaMap = new ArrayList<>();
             Set<Long> receivers = new HashSet<>();
             pointNoiseMap.setThreadCount(1);
             for(int i=0; i < pointNoiseMap.getGridDim(); i++) {
@@ -97,9 +100,18 @@ public class PointNoiseMapTest {
                     IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, i, j, new EmptyProgressVisitor(), receivers);
                     if(out instanceof ComputeRaysOut) {
                         allLevels.addAll(((ComputeRaysOut) out).getVerticesSoundLevel());
+                        propaMap.addAll(((ComputeRaysOut) out).getPropagationPaths());
                     }
                 }
             }
+
+
+            DataOutputStream outputBin = new DataOutputStream(new FileOutputStream("./target/test-resources/propaMap.bin"));
+            PropagationPath.writePropagationPathListStream(outputBin, propaMap);
+            propaMap.clear();
+            DataInputStream input = new DataInputStream(new FileInputStream("./target/test-resources/propaMap.bin"));
+            PropagationPath.readPropagationPathListStream(input, propaMap);
+
 
             assertEquals(3, allLevels.size());
         }
@@ -115,7 +127,7 @@ public class PointNoiseMapTest {
     private static class JDBCComputeRaysOut implements PointNoiseMap.IComputeRaysOutFactory {
         @Override
         public IComputeRaysOut create(PropagationProcessData threadData, PropagationProcessPathData pathData) {
-            return new RayOut(false, pathData, (DirectPropagationProcessData)threadData);
+            return new RayOut(true, pathData, (DirectPropagationProcessData)threadData);
         }
     }
 

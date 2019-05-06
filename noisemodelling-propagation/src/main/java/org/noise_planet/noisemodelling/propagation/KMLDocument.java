@@ -178,7 +178,7 @@ public class KMLDocument {
         xmlOut.writeEndElement();// LineStyle
         xmlOut.writeStartElement("PolyStyle");
         xmlOut.writeStartElement("color");
-        xmlOut.writeCharacters("96252bff");
+        xmlOut.writeCharacters("640078FF");
         xmlOut.writeEndElement(); // color
         xmlOut.writeEndElement();// LineStyle
         xmlOut.writeEndElement();// Style

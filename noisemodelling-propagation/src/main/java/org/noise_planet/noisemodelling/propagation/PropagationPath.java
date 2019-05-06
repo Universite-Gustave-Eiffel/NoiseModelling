@@ -41,9 +41,7 @@ import org.locationtech.jts.math.Vector3D;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 import static org.apache.commons.math3.geometry.euclidean.threed.Vector3D.angle;
 
@@ -94,6 +92,9 @@ public class PropagationPath {
      */
     public void writeStream( DataOutputStream out ) throws IOException {
         out.writeBoolean(favorable);
+        out.writeInt(idSource);
+        out.writeInt(idReceiver);
+
         out.writeInt(pointList.size());
         for(PointPath pointPath : pointList) {
             pointPath.writeStream(out);
@@ -117,6 +118,9 @@ public class PropagationPath {
      */
     public void readStream( DataInputStream in ) throws IOException {
         favorable = in.readBoolean();
+        idSource = in.readInt();
+        idReceiver = in.readInt();
+
         int pointListSize = in.readInt();
         pointList = new ArrayList<>(pointListSize);
         for(int i=0; i < pointListSize; i++) {
@@ -542,7 +546,7 @@ public class PropagationPath {
      * @param in the stream to read
      * @throws IOException if an I/O-error occurs
      */
-    public static void readPropagationPathListStream( DataInputStream in , ArrayList<PropagationPath> propagationPaths) throws IOException {
+    public static void readPropagationPathListStream(DataInputStream in , ArrayList<PropagationPath> propagationPaths) throws IOException {
         int propagationPathsListSize = in.readInt();
         propagationPaths.ensureCapacity(propagationPathsListSize);
         for(int i=0; i < propagationPathsListSize; i++) {
