@@ -34,10 +34,8 @@
 package org.noise_planet.noisemodelling.propagation;
 
 import org.locationtech.jts.algorithm.CGAlgorithms3D;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.algorithm.CGAlgorithmsDD;
+import org.locationtech.jts.geom.*;
 import org.locationtech.jts.math.Vector3D;
 
 import java.io.DataInputStream;
@@ -46,6 +44,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import static org.apache.commons.math3.geometry.euclidean.threed.Vector3D.angle;
 
 /**
  * PropagationPath
@@ -191,6 +191,7 @@ public class PropagationPath {
                 A.z+(Vector3D.dot(A,P,A,B) / Vector3D.dot(A,B,A,B))*vector.getZ());
     }
 
+
     public void initPropagationPath() {
         if(!isInitialized()) {
             computeAugmentedPath();
@@ -238,6 +239,7 @@ public class PropagationPath {
             for (int idPoint = 2; idPoint < pointList.size()-1; idPoint++) {
                 dPath += CGAlgorithms3D.distance(pointList.get(idPoint - 1).coordinate, pointList.get(idPoint).coordinate);
             }
+
             if (pointList.size()>3){
                 SR.eLength = dPath;
             }
@@ -255,8 +257,8 @@ public class PropagationPath {
             Coordinate Sprime = new Coordinate(2 * SGround.x - S.x, 2 * SGround.y - S.y, 2 * SGround.z - S.z);
             Coordinate Rprime = new Coordinate(2 * RGround.x - R.x, 2 * RGround.y - R.y, 2 * RGround.z - R.z);
             double gpath = SR.gPath;
-            SegmentPath SRp = new SegmentPath(gpath, new Vector3D(S, Rprime),new Coordinate(0,0,0));
-            SegmentPath SpR = new SegmentPath(gpath, new Vector3D(Sprime, R),new Coordinate(0,0,0));
+            SegmentPath SRp = new SegmentPath(gpath, new Vector3D(S, Rprime),SR.pInit);
+            SegmentPath SpR = new SegmentPath(gpath, new Vector3D(Sprime, R),Sprime);
 
             SpR.d = CGAlgorithms3D.distance(Sprime, R);
             SRp.d = CGAlgorithms3D.distance(S, Rprime);
@@ -268,6 +270,7 @@ public class PropagationPath {
                 for (int idPoint = 2; idPoint < pointList.size()-1; idPoint++) {
                     dPath += CGAlgorithms3D.distance(pointList.get(idPoint - 1).coordinate, pointList.get(idPoint).coordinate);
                 }
+
                 if (pointList.size()>3){
                     SR.eLength = dPath;
                     SpR.eLength = dPath;
@@ -298,6 +301,7 @@ public class PropagationPath {
                 for (int idPoint = 2; idPoint < pointList.size()-1; idPoint++) {
                     dPath += getRayCurveLength(CGAlgorithms3D.distance(pointList.get(idPoint - 1).coordinate, pointList.get(idPoint).coordinate));
                 }
+
                 if (difHPoints.size()>1){
                     SR.eLength = CGAlgorithms3D.distance(pointList.get(difHPoints.get(0)).coordinate,pointList.get(difHPoints.get(difHPoints.size()-1)).coordinate);
                     SpR.eLength = SR.eLength;
@@ -405,6 +409,10 @@ public class PropagationPath {
             {
                 segmentList.get(idSegment).dc = getRayCurveLength(d);
             }
+
+            // see Point 5.3 Equivalent heights in AFNOR document
+            if (zs<=0){zs= 0.000000001;}
+            if (zr<=0){zr= 0.000000001;}
 
             double gs = pointList.get(0).gs;
 

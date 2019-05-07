@@ -72,7 +72,6 @@ public class PointNoiseMap extends JdbcNoiseMap {
      * @param cellI Cell I [0-{@link #getGridDim()}]
      * @param cellJ Cell J [0-{@link #getGridDim()}]
      * @param progression Progression info
-     * @param receiversPk [out] receivers primary key extraction
      * @return Data input for cell evaluation
      * @throws SQLException
      */
@@ -118,6 +117,7 @@ public class PointNoiseMap extends JdbcNoiseMap {
         propagationProcessData.reflexionOrder = soundReflectionOrder;
         propagationProcessData.maxRefDist = maximumReflectionDistance;
         propagationProcessData.setComputeVerticalDiffraction(computeVerticalDiffraction);
+        propagationProcessData.setComputeHorizontalDiffraction(computeHorizontalDiffraction);
 
         // Fetch all source located in expandedCellEnvelop
         fetchCellSource(connection, expandedCellEnvelop, propagationProcessData);
