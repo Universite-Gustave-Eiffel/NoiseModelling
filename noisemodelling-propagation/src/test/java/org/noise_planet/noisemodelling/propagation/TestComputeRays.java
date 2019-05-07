@@ -316,6 +316,11 @@ public class TestComputeRays {
                         new org.locationtech.jts.math.Vector3D(11,13,14),
                         new Coordinate(1.5,21.5,13.5))),
                 new ArrayList<>()));
+        expected.get(0).idReceiver = 5;
+        expected.get(0).idSource = 10;
+        expected.get(0).idReceiver = 6;
+        expected.get(0).idSource = 18;
+
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         PropagationPath.writePropagationPathListStream(new DataOutputStream(byteArrayOutputStream), expected);
 
@@ -329,6 +334,10 @@ public class TestComputeRays {
         assertEquals(1, expected.get(1).getPointList().size());
         assertEquals(PointPath.POINT_TYPE.DIFV, expected.get(1).getPointList().get(0).type);
         assertEquals(0, expected.get(1).getSRList().size());
+        assertEquals(expected.get(0).idReceiver, got.get(0).idReceiver);
+        assertEquals(expected.get(0).idSource, got.get(0).idSource);
+        assertEquals(expected.get(1).idReceiver, got.get(1).idReceiver);
+        assertEquals(expected.get(1).idSource, got.get(1).idSource);
     }
 
     @Test

@@ -94,6 +94,8 @@ public class PropagationPath {
      */
     public void writeStream( DataOutputStream out ) throws IOException {
         out.writeBoolean(favorable);
+        out.writeInt(idSource);
+        out.writeInt(idReceiver);
         out.writeInt(pointList.size());
         for(PointPath pointPath : pointList) {
             pointPath.writeStream(out);
@@ -117,6 +119,8 @@ public class PropagationPath {
      */
     public void readStream( DataInputStream in ) throws IOException {
         favorable = in.readBoolean();
+        idSource = in.readInt();
+        idReceiver = in.readInt();
         int pointListSize = in.readInt();
         pointList = new ArrayList<>(pointListSize);
         for(int i=0; i < pointListSize; i++) {
