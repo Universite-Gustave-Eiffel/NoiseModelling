@@ -34,9 +34,13 @@
 package org.noise_planet.noisemodelling.propagation;
 
 import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Envelope;
+import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineSegment;
 
 import junit.framework.TestCase;
+import org.locationtech.jts.io.ParseException;
+import org.locationtech.jts.io.WKTReader;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -197,5 +201,36 @@ public class TestWallReflection extends TestCase {
         MirrorReceiverIterator.CrossTableIterator it = new MirrorReceiverIterator.CrossTableIterator(2, 1);
         equalsTest(new int[]{0}, it.next());
         assertFalse(it.hasNext());
+    }
+
+    public void testPath() throws ParseException, LayerDelaunayError {
+
+        GeometryFactory factory = new GeometryFactory();
+        WKTReader wktReader = new WKTReader(factory);
+        //Scene dimension
+        Envelope cellEnvelope = wktReader.read("POLYGON ((316849.05 6703855.11, 316849.05 6703924.04, " +
+                "316925.36 6703924.04, 316925.36 6703855.11, 316849.05 6703855.11))").getEnvelopeInternal();
+        Coordinate p1 = new Coordinate(316914.1, 6703907.5, 4);
+        Coordinate p2 = new Coordinate(316913.4, 6703879, 4);
+        //Create obstruction test object
+        MeshBuilder mesh = new MeshBuilder();
+
+        mesh.addGeometry(wktReader.read("POLYGON ((316925.36 6703889.64, 316914.1 6703892.61, 316914.09 6703892.61, 316914.09 6703892.6, 316913.49 6703890.41, 316906.71 6703892.11, 316907.21 6703894.4, 316907.21 6703894.41, 316907.2 6703894.41, 316901.11 6703895.91, 316903.31 6703904.49, 316916.3 6703901.19, 316925.36 6703898.87, 316925.36 6703889.64)) "), 11.915885805791621);
+        mesh.addGeometry(wktReader.read("POLYGON ((316886.41 6703903.61, 316888.31 6703910.59, 316899.79 6703907.69, 316897.99 6703900.71, 316886.41 6703903.61))"), 13.143551238469575);
+
+        mesh.finishPolygonFeeding(cellEnvelope);
+
+
+        //Retrieve Delaunay triangulation of scene
+        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(), mesh.getTriNeighbors(), mesh.getVertices());
+
+        PropagationProcessData data = new PropagationProcessData(manager);
+	    ComputeRays computeRays = new ComputeRays(data);
+
+	    Coordinate receiver = new Coordinate();
+	    Coordinate source = new Coordinate();
+        List<FastObstructionTest.Wall> walls = data.freeFieldFinder.getLimitsInRange(
+                data.maxRefDist, source, false);
+	    computeRays.computeReflexion(receiver, source, false, walls, null);
     }
 }
