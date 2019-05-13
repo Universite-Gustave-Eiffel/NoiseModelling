@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ns4:Style xmlns:ns1="http://www.opengis.net/ows/2.0" xmlns:ns2="http://www.w3.org/1999/xlink" xmlns:ns3="http://www.opengis.net/ows-context" xmlns:ns4="http://www.opengis.net/se/2.0/core" xmlns:ns5="http://www.opengis.net/fes/2.1" xmlns:ns6="http://www.opengis.net/gml" xmlns:ns7="http://www.opengis.net/kml/2.2" xmlns:ns8="http://www.w3.org/2005/Atom" xmlns:ns9="urn:oasis:names:tc:ciq:xsdschema:xAL:2.0" xmlns:ns10="http://www.opengis.net/sld/1.2" xmlns:ns11="http://www.opengis.net/se/2.0/thematic" xmlns:ns12="http://www.opengis.net/wfs/2.1" xmlns:ns13="http://www.w3.org/2001/SMIL20/" xmlns:ns14="http://www.opengis.net/wms" xmlns:ns15="http://www.opengis.net/se/2.0/raster" xmlns:ns16="http://www.w3.org/2001/SMIL20/Language" version="2.0.0">
+    <ns4:Name>NFS 31-130</ns4:Name>
+    <ns4:Rule>
+        <ns4:AreaSymbolizer uom="urn:ogc:def:uom:se::mm" version="2.0.0">
+            <ns4:Name>ISO SURFACE</ns4:Name>
+            <ns4:Extension>
+                <ns4:ExtensionParameter name="level">2</ns4:ExtensionParameter>
+            </ns4:Extension>
+            <ns4:SolidFill>
+                <ns4:Color>
+                    <ns4:Recode fallbackValue="#8D2AD3">
+                        <ns4:LookupValue>
+                            <ns5:ValueReference>idiso</ns5:ValueReference>
+                        </ns4:LookupValue>
+                        <ns4:MapItem>
+                            <ns4:Key>0</ns4:Key><!-- <45 dB(A) -->
+                            <ns4:Value>#4CC800</ns4:Value>
+                        </ns4:MapItem>
+                        <ns4:MapItem>
+                            <ns4:Key>1</ns4:Key><!-- 45-50 dB(A)-->
+                            <ns4:Value>#55FF00</ns4:Value>
+                        </ns4:MapItem>
+                        <ns4:MapItem>
+                            <ns4:Key>2</ns4:Key><!-- 50-55 dB(A)-->
+                            <ns4:Value>#B9FF73</ns4:Value>
+                        </ns4:MapItem>
+                        <ns4:MapItem>
+                            <ns4:Key>3</ns4:Key><!-- 55-60 dB(A)-->
+                            <ns4:Value>#FFFF00</ns4:Value>
+                        </ns4:MapItem>
+                        <ns4:MapItem>
+                            <ns4:Key>4</ns4:Key><!-- 60-65 dB(A)-->
+                            <ns4:Value>#FFAA00</ns4:Value>
+                        </ns4:MapItem>
+                        <ns4:MapItem>
+                            <ns4:Key>5</ns4:Key><!-- 65-70 dB(A)-->
+                            <ns4:Value>#FF0000</ns4:Value>
+                        </ns4:MapItem>
+                        <ns4:MapItem>
+                            <ns4:Key>6</ns4:Key><!-- 70-75 dB(A)-->
+                            <ns4:Value>#D500FF</ns4:Value>
+                        </ns4:MapItem>
+                        <ns4:MapItem>
+                            <ns4:Key>7</ns4:Key><!-- >75 dB(A)-->
+                            <ns4:Value>#960064</ns4:Value>
+                        </ns4:MapItem>
+                    </ns4:Recode>
+                </ns4:Color>
+                <ns4:Opacity>1.00</ns4:Opacity>
+            </ns4:SolidFill>
+        </ns4:AreaSymbolizer>
+    </ns4:Rule>
+</ns4:Style>
