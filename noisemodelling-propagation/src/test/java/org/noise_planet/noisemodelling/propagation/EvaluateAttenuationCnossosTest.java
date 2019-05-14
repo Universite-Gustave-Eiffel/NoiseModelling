@@ -15,6 +15,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -903,6 +904,14 @@ public class EvaluateAttenuationCnossosTest {
         assertArrayEquals(  new double[]{13.62,23.58,30.71,35.68,38.27,38.01,32.98,15.00},L, ERROR_EPSILON_very_high);//p=0.5
     }
 
+    private double[] aWeighting(double... lvls) {
+        return new double[] {lvls[0] - 26.2, lvls[1] - 16.1, lvls[2] - 8.6, lvls[3] - 3.2, lvls[4] , lvls[5] + 1.2, lvls[6] + 1, lvls[7]  - 1.1};
+    }
+
+    private double[] aWeighting(List<Double> lvls) {
+        return new double[] {lvls.get(0) - 26.2, lvls.get(1) - 16.1, lvls.get(2) - 8.6, lvls.get(3) - 3.2, lvls.get(4) ,
+                lvls.get(5) + 1.2, lvls.get(6) + 1, lvls.get(7)  - 1.1};
+    }
     /**
      * TC17 - Reflecting barrier on ground with spatially varying heights and acoustic properties
      * reduced receiver height
@@ -923,7 +932,7 @@ public class EvaluateAttenuationCnossosTest {
                 new Coordinate(170, 60, 0),
                 new Coordinate(170, 62, 0),
                 new Coordinate(114, 54, 0),
-                new Coordinate(114, 52, 0)}), 15);
+                new Coordinate(114, 52, 0)}), 15, new double[]{0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.5});
 
         //x1
         mesh.addTopographicPoint(new Coordinate(0, 80, 0));
@@ -952,9 +961,12 @@ public class EvaluateAttenuationCnossosTest {
         FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
                 mesh.getTriNeighbors(), mesh.getVertices());
 
-        PropagationProcessData rayData = new PropagationProcessData(manager);
+        DirectPropagationProcessData rayData = new DirectPropagationProcessData(manager);
         rayData.addReceiver(new Coordinate(200, 50, 11.5));
-        rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
+
+        // Push source with sound level
+        rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)), ComputeRays.dbaToW(aWeighting(Collections.nCopies(PropagationProcessPathData.freq_lvl.size(), 93d))));
+
         rayData.setComputeHorizontalDiffraction(true);
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9));
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -100, 100)), 0.5));
@@ -967,13 +979,12 @@ public class EvaluateAttenuationCnossosTest {
         attData.setHumidity(70);
         attData.setTemperature(10);
         attData.setPrime2520(false);
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOut propDataOut = new RayOut(true, attData, rayData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
-        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
-        assertArrayEquals(  new double[]{14.02,23.84,30.95,33.86,38.37,38.27,33.25,15.28},L, ERROR_EPSILON_high);//p=0.5
+        assertArrayEquals(  new double[]{14.02,23.84,30.95,33.86,38.37,38.27,33.25,15.28}, propDataOut.getVerticesSoundLevel().get(0).value, ERROR_EPSILON_high);//p=0.5
     }
 
 
@@ -1738,6 +1749,15 @@ public class EvaluateAttenuationCnossosTest {
         public void addSource(Geometry geom, double[] spectrum) {
             super.addSource(geom);
             wjSources.add(spectrum);
+        }
+
+        public void addSource(Geometry geom, List<Double> spectrum) {
+            super.addSource(geom);
+            double[] wj = new double[spectrum.size()];
+            for(int i=0; i < spectrum.size(); i++) {
+                wj[i] = spectrum.get(i);
+            }
+            wjSources.add(wj);
         }
 
         public void clearSources() {
