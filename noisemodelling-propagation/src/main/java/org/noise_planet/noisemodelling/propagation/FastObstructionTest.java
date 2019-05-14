@@ -66,6 +66,7 @@ import org.locationtech.jts.triangulate.quadedge.Vertex;
 public class FastObstructionTest {
     public static final double epsilon = 1e-7;
     public static final double wideAngleTranslationEpsilon = 0.01;
+    private static final double MINIMAL_REFLECTION_WALL_LENGTH = 1.0;
     private List<Triangle> triVertices;
     private List<Coordinate> vertices;
     private List<Triangle> triNeighbors; // Neighbors
@@ -597,7 +598,7 @@ public class FastObstructionTest {
                     // Propagate search in this direction if this is not the domain limitation
                     if (neighbors.get(sideId) != -1) {
                         // If the triangle side is a wal
-                        if (wall.getBuildingId() >= 1) {
+                        if (wall.getBuildingId() >= 1 && wall.getLength() > MINIMAL_REFLECTION_WALL_LENGTH) {
                             walls.add(wall);
                         }
                         if((goThroughWalls || wall.getBuildingId() < 1) && !navigationHistory.contains(neighbors.get(sideId))) {

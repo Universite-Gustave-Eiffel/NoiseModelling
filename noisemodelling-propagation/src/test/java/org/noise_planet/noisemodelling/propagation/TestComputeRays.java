@@ -286,8 +286,7 @@ public class TestComputeRays {
             assertTrue(manager.isFreeField(pts.get(i), pts.get(i + 1)));
         }
 
-        ArrayList<PropagationDebugInfo> dbg = new ArrayList<>();
-        List<PropagationPath> prop = computeRays.directPath(p2, p1, true, true, dbg);
+        List<PropagationPath> prop = computeRays.directPath(p2, p1, true, true);
         // 3 paths
         // 1 over the building
         assertEquals(3, prop.size());
@@ -432,8 +431,7 @@ public class TestComputeRays {
             assertTrue(manager.isFreeField(pts.get(i), pts.get(i + 1)));
         }
 
-        ArrayList<PropagationDebugInfo> dbg = new ArrayList<>();
-        List<PropagationPath> prop = computeRays.directPath(p2, p1, true, true, dbg);
+        List<PropagationPath> prop = computeRays.directPath(p2, p1, true, true);
         // 3 paths
         // 1 over the building / 1 left side
         assertEquals(2, prop.size());

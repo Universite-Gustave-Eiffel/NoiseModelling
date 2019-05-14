@@ -41,7 +41,7 @@ import org.locationtech.jts.geom.Coordinate;
  */
 public class MirrorReceiverResult {
 
-	private final Coordinate receiverPos;
+	private Coordinate receiverPos;
 	private final MirrorReceiverResult parentMirror;
 	private final int wallId; // Wall index of the last mirrored processed
     private final int buildingId; // building that belongs to this wall
@@ -52,6 +52,10 @@ public class MirrorReceiverResult {
 	public Coordinate getReceiverPos() {
 		return receiverPos;
 	}
+
+    public void setReceiverPos(Coordinate receiverPos) {
+        this.receiverPos = receiverPos;
+    }
 
     /**
      * @return Other MirrorReceiverResult index, -1 for the first reflexion
@@ -85,5 +89,16 @@ public class MirrorReceiverResult {
         this.parentMirror = parentMirror;
         this.wallId = wallId;
         this.buildingId = buildingId;
+    }
+
+    /**
+     * Copy constructor
+     * @param cpy ref
+     */
+    public MirrorReceiverResult(MirrorReceiverResult cpy) {
+        this.receiverPos = new Coordinate(cpy.receiverPos);
+        this.parentMirror = cpy.parentMirror;
+        this.wallId = cpy.wallId;
+        this.buildingId = cpy.buildingId;
     }
 }
