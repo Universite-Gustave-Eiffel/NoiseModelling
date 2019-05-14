@@ -46,7 +46,7 @@ import static org.noise_planet.noisemodelling.propagation.KMLDocument.exportScen
 
 public class TestComputeRays {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestComputeRays.class);
-    private boolean storeGeoJSONRays = false;
+    private boolean storeGeoJSONRays = true;
 
 
     @Test

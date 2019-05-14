@@ -417,6 +417,23 @@ public class ComputeRays {
                             segments.clear();
                             break;
                         }
+                    } else if (points.get(i).type == PointPath.POINT_TYPE.REFL) {
+                        if(i < points.size() - 1 ) {
+                            // A diffraction point may have offset in height the reflection coordinate
+                            points.get(i).coordinate.z = Vertex.interpolateZ(points.get(i).coordinate, points.get(i - 1).coordinate, points.get(i + 1).coordinate);
+                            //check if in building && if under floor
+                            if (points.get(i).coordinate.z > data.freeFieldFinder.getBuildingRoofZ(points.get(i).getBuildingId())
+                                    || points.get(i).coordinate.z <= data.freeFieldFinder.getHeightAtPosition(points.get(i).coordinate)) {
+                                points.clear();
+                                segments.clear();
+                                break;
+                            }
+                        } else {
+                            LOGGER.warn("Invalid state, reflexion point on last point");
+                            points.clear();
+                            segments.clear();
+                            break;
+                        }
                     }
                 }
                 if (points.size() > 2) {
