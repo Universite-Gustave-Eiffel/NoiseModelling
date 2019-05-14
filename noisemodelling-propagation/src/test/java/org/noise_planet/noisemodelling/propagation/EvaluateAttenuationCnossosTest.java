@@ -11,8 +11,10 @@ import org.locationtech.jts.io.WKTReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -1710,7 +1712,7 @@ public class EvaluateAttenuationCnossosTest {
         return max;
     }
 
-    private static class RayOut extends ComputeRaysOut {
+    private static final class RayOut extends ComputeRaysOut {
         private DirectPropagationProcessData processData;
 
         public RayOut(boolean keepRays, PropagationProcessPathData pathData, DirectPropagationProcessData processData) {
@@ -1726,7 +1728,7 @@ public class EvaluateAttenuationCnossosTest {
         }
     }
 
-    private static class DirectPropagationProcessData extends PropagationProcessData {
+    private static final class DirectPropagationProcessData extends PropagationProcessData {
         private List<double[]> wjSources = new ArrayList<>();
 
         public DirectPropagationProcessData(FastObstructionTest freeFieldFinder) {

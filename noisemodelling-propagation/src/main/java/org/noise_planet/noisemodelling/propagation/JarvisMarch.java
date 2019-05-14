@@ -189,7 +189,7 @@ public class JarvisMarch {
       return hi;
   }
 
-  public static class Points {
+  public static final class Points {
     public double x[];
     public double y[];
 

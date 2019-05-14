@@ -344,11 +344,11 @@ public class ComputeRays {
 
                 // Test if there is no obstacles between the
                 // reflection point and old reflection pt (or source position)
-                validReflection = (Double.isNaN(receiverReflectionCursor.getReceiverPos().z) ||
+                validReflection = Double.isNaN(receiverReflectionCursor.getReceiverPos().z) ||
                         Double.isNaN(reflectionPt.z) || Double.isNaN(destinationPt.z) || seg.getBuildingId() == 0
-                        || reflectionPt.z < data.freeFieldFinder.getBuildingRoofZ(seg.getBuildingId())
-                        || reflectionPt.z > data.freeFieldFinder.getHeightAtPosition(reflectionPt)
-                        || destinationPt.z > data.freeFieldFinder.getHeightAtPosition(destinationPt));
+                        || (reflectionPt.z < data.freeFieldFinder.getBuildingRoofZ(seg.getBuildingId())
+                        && reflectionPt.z > data.freeFieldFinder.getHeightAtPosition(reflectionPt)
+                        && destinationPt.z > data.freeFieldFinder.getHeightAtPosition(destinationPt));
                 if (validReflection) // Source point can see receiver image
                 {
                     MirrorReceiverResult reflResult = new MirrorReceiverResult(receiverReflectionCursor);
@@ -770,81 +770,6 @@ public class ComputeRays {
         }
     }
 
-    public List<List<Coordinate>> computeVerticalEdgeDiffraction(Coordinate p1,
-                                                                 Coordinate p2, List<PropagationDebugInfo> debugInfo) {
-        List<List<Coordinate>> paths = new ArrayList<>();
-        List<Coordinate> p1leftp2 = computeSideHull(true, p1, p2);
-        if(!p1leftp2.isEmpty()) {
-            paths.add(p1leftp2);
-        }
-        List<Coordinate> p1rightp2 = computeSideHull(false, p1, p2);
-        if(!p1rightp2.isEmpty()) {
-            paths.add(p1rightp2);
-        }
-        return paths;
-    }
-
-    /**
-     * Compute project Z coordinate between p0 p1 of x,y.
-     *
-     * @param coordinateWithoutZ coordinate to set the Z value from Z interpolation of line
-     * @param line               Extract Z values of this segment
-     * @return coordinateWithoutZ with Z value computed from line.
-     */
-    private static Coordinate getProjectedZCoordinate(Coordinate coordinateWithoutZ, LineSegment line) {
-        // Z value is the interpolation of source-receiver line
-        return new Coordinate(coordinateWithoutZ.x, coordinateWithoutZ.y, Vertex.interpolateZ(
-                line.closestPoint(coordinateWithoutZ), line.p0, line.p1));
-    }
-
-
-    private int nextFreeFieldNode(List<Coordinate> nodes, Coordinate startPt, LineSegment segmentConstraint,
-                                  List<Integer> NodeExceptions, int firstTestNode,
-                                  FastObstructionTest freeFieldFinder) {
-        int validNode = firstTestNode;
-        while (NodeExceptions.contains(validNode)
-                || (validNode < nodes.size() && (Math.abs(segmentConstraint.projectionFactor(nodes.get(validNode))) > 1 || !freeFieldFinder.isFreeField(
-                startPt, getProjectedZCoordinate(nodes.get(validNode), segmentConstraint))))) {
-            validNode++;
-        }
-        if (validNode >= nodes.size()) {
-            return -1;
-        }
-        return validNode;
-    }
-
-
-    private boolean[] findBuildingOnPath(Coordinate srcCoord,
-                                         Coordinate receiverCoord, boolean vertivalDiffraction) {
-
-        boolean somethingHideReceiver = false;
-        boolean buildingOnPath = false;
-        boolean[] somethingOnPath = new boolean[2];
-        if (!vertivalDiffraction || !data.freeFieldFinder.isHasBuildingWithHeight()) {
-            somethingHideReceiver = !data.freeFieldFinder.isFreeField(receiverCoord, srcCoord);
-        } else {
-            List<TriIdWithIntersection> propagationPath = new ArrayList<>();
-            if (!data.freeFieldFinder.computePropagationPath(receiverCoord, srcCoord, false, propagationPath, false)) {
-                // Propagation path not found, there is not direct field
-                somethingHideReceiver = true;
-            } else {
-                if (!propagationPath.isEmpty()) {
-                    for (TriIdWithIntersection inter : propagationPath) {
-                        if (inter.isIntersectionOnBuilding() || inter.isIntersectionOnTopography()) {
-                            somethingHideReceiver = true;
-                        }
-                        if (inter.getBuildingId() != 0) {
-                            buildingOnPath = true;
-                        }
-                    }
-                }
-            }
-        }
-        somethingOnPath[0] = somethingHideReceiver;
-        somethingOnPath[1] = buildingOnPath;
-        return somethingOnPath;
-    }
-
     List<PropagationPath> directPath(Coordinate srcCoord,
                                              Coordinate receiverCoord, boolean verticalDiffraction,boolean horizontalDiffraction) {
 
@@ -1168,7 +1093,7 @@ public class ComputeRays {
 
     }
 
-    private static class RangeReceiversComputation implements Runnable {
+    private static final class RangeReceiversComputation implements Runnable {
         private final int startReceiver; // Included
         private final int endReceiver; // Excluded
         private ComputeRays propagationProcess;

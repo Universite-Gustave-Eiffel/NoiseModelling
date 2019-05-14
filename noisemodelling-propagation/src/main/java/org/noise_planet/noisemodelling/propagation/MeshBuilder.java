@@ -56,7 +56,8 @@ public class MeshBuilder {
     private List<Coordinate> vertices;
     private List<Triangle> triNeighbors; // Neighbors
     private static final int BUILDING_COUNT_HINT = 1500; // 2-3 km² average buildings
-    private static final double[] ALPHA_DEFAULT_VALUE = new double[]{0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1}; // 2-3 km² average buildings
+    public static final List<Double> ALPHA_DEFAULT_VALUE = Collections.unmodifiableList(
+            Arrays.asList(0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1));
 
     private List<PolygonWithHeight> polygonWithHeight = new ArrayList<>(BUILDING_COUNT_HINT);//list polygon with height
     private List<LineString> envelopeSplited = new ArrayList<>();
@@ -68,11 +69,11 @@ public class MeshBuilder {
     private GeometryFactory factory = new GeometryFactory();
     private static final int EPSILON_MESH = 2; //Decimal value, Used for merged geometry precision
 
-    public static class PolygonWithHeight {
+    public static final class PolygonWithHeight {
         protected final Geometry geo;
         //If we add the topographic, the building height will be the average ToPo Height+ Building Height of all vertices
         private double height;
-        private double[] alpha = ALPHA_DEFAULT_VALUE;
+        private List<Double> alpha = ALPHA_DEFAULT_VALUE;
         private double alphaUniqueValue = Double.NaN;
 
         private final boolean hasHeight;
@@ -93,16 +94,14 @@ public class MeshBuilder {
             this.geo = geo;
             this.height = height;
             this.hasHeight = height < Double.MAX_VALUE;
-            for (int i=0;i<8;i++) {
-                this.alpha[i]=alphaUniqueValue;
-            }
+            setAlpha(alphaUniqueValue);
         }
         
-        public PolygonWithHeight(Geometry geo, double height, double[] alpha) {
+        public PolygonWithHeight(Geometry geo, double height, List<Double> alpha) {
             this.geo = geo;
             this.height = height;
             this.hasHeight = height < Double.MAX_VALUE;
-            this.alpha = alpha;
+            this.alpha = new ArrayList<>(alpha);
         }
 
         public Geometry getGeometry() {
@@ -112,26 +111,27 @@ public class MeshBuilder {
         /**
          * @return Get absorption coefficient of walls
          */
-        public double[] getAlpha() {
-            return alpha;
+        public List<Double> getAlpha() {
+            return Collections.unmodifiableList(alpha);
         }
 
 
         /**
          * @param alpha Set absorption coefficient of walls
          */
-        public void setAlpha(double[] alpha) {
-            this.alpha = alpha;
+        public void setAlpha(List<Double> alpha) {
+            this.alpha = Collections.unmodifiableList(new ArrayList<>(alpha));
         }
 
         /**
          * @param alphaUniqueValue Set absorption coefficient of walls
          */
         public void setAlpha(double alphaUniqueValue) {
-            for (int i=0;i<8;i++) {
-                 alpha[i]=getWallAlpha(alphaUniqueValue,PropagationProcessPathData.freq_lvl.get(i));
+            List<Double> newAlpha = new ArrayList<>(PropagationProcessPathData.freq_lvl.size());
+            for(double freq : PropagationProcessPathData.freq_lvl_exact) {
+                newAlpha.add(getWallAlpha(alphaUniqueValue, freq));
             }
-            this.alpha = alpha;
+            this.alpha = newAlpha;
         }
 
         public double getHeight() {
@@ -296,8 +296,24 @@ public class MeshBuilder {
      * @param heightofBuilding building's Height
      * @param alpha Wall absorption coefficient
      */
-    public void addGeometry(Geometry obstructionPoly, double heightofBuilding, double[] alpha) {
+    public void addGeometry(Geometry obstructionPoly, double heightofBuilding, List<Double> alpha) {
         addGeometry(new PolygonWithHeight(obstructionPoly, heightofBuilding, alpha));
+    }
+
+    /**
+     * Add a new building with height and merge this new building with existing buildings if they have intersections
+     * When we merge the buildings, we will use The shortest height to new building
+     *
+     * @param obstructionPoly  building's Geometry
+     * @param heightofBuilding building's Height
+     * @param alpha Wall absorption coefficient
+     */
+    public void addGeometry(Geometry obstructionPoly, double heightofBuilding, double[] alpha) {
+        List<Double> alphaw = new ArrayList<>(alpha.length);
+        for(double a : alpha) {
+            alphaw.add(a);
+        }
+        addGeometry(new PolygonWithHeight(obstructionPoly, heightofBuilding, alphaw));
     }
 
     /**
@@ -344,7 +360,7 @@ public class MeshBuilder {
             if(geometryN instanceof Polygon) {
                 List polyInters = buildingsRtree.query(geometryN.getEnvelopeInternal());
                 double minHeight = Double.MAX_VALUE;
-                double[] minAlpha = ALPHA_DEFAULT_VALUE;
+                List<Double> minAlpha = new ArrayList<>(ALPHA_DEFAULT_VALUE);
                 for (Object id : polyInters) {
                     if (id instanceof Integer) {
                         PolygonWithHeight inPoly = polygonWithHeight.get((int) id);
@@ -352,7 +368,7 @@ public class MeshBuilder {
                             if(inPoly.hasHeight) {
                                 minHeight = Math.min(minHeight, inPoly.getHeight());
                             }
-                                minAlpha = inPoly.getAlpha();
+                            minAlpha = inPoly.getAlpha();
                             break;
                         }
                     }

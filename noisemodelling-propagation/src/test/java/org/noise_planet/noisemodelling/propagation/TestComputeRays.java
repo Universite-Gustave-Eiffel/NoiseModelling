@@ -2101,7 +2101,7 @@ public class TestComputeRays {
     }
 
 
-    private void exportRays(String name, ComputeRaysOut result) throws IOException {
+    public static void exportRays(String name, ComputeRaysOut result) throws IOException {
         FileOutputStream outData = new FileOutputStream(name);
         GeoJSONDocument jsonDocument = new GeoJSONDocument(outData);
         jsonDocument.setRounding(1);
