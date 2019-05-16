@@ -87,6 +87,22 @@ public class PropagationPath {
 
     }
 
+    public int getIdSource() {
+        return idSource;
+    }
+
+    public void setIdSource(int idSource) {
+        this.idSource = idSource;
+    }
+
+    public int getIdReceiver() {
+        return idReceiver;
+    }
+
+    public void setIdReceiver(int idReceiver) {
+        this.idReceiver = idReceiver;
+    }
+
     /**
      * Writes the content of this object into <code>out</code>.
      * @param out the stream to write into

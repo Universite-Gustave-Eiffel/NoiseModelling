@@ -944,7 +944,7 @@ public class ComputeRays {
      *
      * @param receiverCoord
      */
-    public void computeRaysAtPosition(Coordinate receiverCoord, int idReceiver, List<PropagationDebugInfo> debugInfo, IComputeRaysOut dataOut) {
+    public void computeRaysAtPosition(Coordinate receiverCoord, int idReceiver, List<PropagationDebugInfo> debugInfo, IComputeRaysOut dataOut, ProgressVisitor progressVisitor) {
         // List of walls within maxReceiverSource distance
         HashSet<Integer> processedLineSources = new HashSet<Integer>(); //Already processed Raw source (line and/or points)
         Set<FastObstructionTest.Wall> wallsReceiver = new HashSet<>();
@@ -1013,7 +1013,7 @@ public class ComputeRays {
             }
             totalPowerRemaining = Math.max(0, totalPowerRemaining);
             // If the delta between already received power and maximal potential power received is inferior than than data.maximumError
-            if (data.maximumError > 0 && wToDba(powerAtSource + totalPowerRemaining) - wToDba(powerAtSource) < data.maximumError) {
+            if ((progressVisitor != null && progressVisitor.isCanceled()) || (data.maximumError > 0 && wToDba(powerAtSource + totalPowerRemaining) - wToDba(powerAtSource) < data.maximumError)) {
                 break; //Stop looking for more rays
             }
         }
@@ -1056,6 +1056,9 @@ public class ComputeRays {
         int maximumReceiverBatch = (int) Math.ceil(data.receivers.size() / (double) splitCount);
         int endReceiverRange = 0;
         while (endReceiverRange < data.receivers.size()) {
+            if(propaProcessProgression != null && propaProcessProgression.isCanceled()) {
+                break;
+            }
             int newEndReceiver = Math.min(endReceiverRange + maximumReceiverBatch, data.receivers.size());
             RangeReceiversComputation batchThread = new RangeReceiversComputation(endReceiverRange,
                     newEndReceiver, this, debugInfo, propaProcessProgression,
@@ -1114,15 +1117,21 @@ public class ComputeRays {
 
         @Override
         public void run() {
+            try {
+                for (int idReceiver = startReceiver; idReceiver < endReceiver; idReceiver++) {
+                    Coordinate receiverCoord = propagationProcess.data.receivers.get(idReceiver);
 
-            for (int idReceiver = startReceiver; idReceiver < endReceiver; idReceiver++) {
-                Coordinate receiverCoord = propagationProcess.data.receivers.get(idReceiver);
+                    propagationProcess.computeRaysAtPosition(receiverCoord, idReceiver, debugInfo, dataOut, progressVisitor);
 
-                propagationProcess.computeRaysAtPosition(receiverCoord, idReceiver, debugInfo, dataOut);
-
-                if(progressVisitor != null) {
-                    progressVisitor.endStep();
+                    if (progressVisitor != null) {
+                        progressVisitor.endStep();
+                    }
                 }
+            } catch (Exception ex) {
+                if(progressVisitor != null) {
+                    progressVisitor.cancel();
+                }
+                throw ex;
             }
         }
     }
