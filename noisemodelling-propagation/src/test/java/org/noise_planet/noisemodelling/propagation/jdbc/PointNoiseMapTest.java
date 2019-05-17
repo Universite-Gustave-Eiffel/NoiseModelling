@@ -16,6 +16,7 @@ import org.noise_planet.noisemodelling.propagation.IComputeRaysOut;
 import org.noise_planet.noisemodelling.propagation.PropagationPath;
 import org.noise_planet.noisemodelling.propagation.PropagationProcessData;
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
+import org.noise_planet.noisemodelling.propagation.RootProgressVisitor;
 
 import java.io.File;
 import java.net.URISyntaxException;
@@ -76,9 +77,10 @@ public class PointNoiseMapTest {
             List<ComputeRaysOut.verticeSL> allLevels = new ArrayList<>();
             Set<Long> receivers = new HashSet<>();
             pointNoiseMap.setThreadCount(1);
+            RootProgressVisitor progressVisitor = new RootProgressVisitor(pointNoiseMap.getGridDim() * pointNoiseMap.getGridDim(), true, 5);
             for(int i=0; i < pointNoiseMap.getGridDim(); i++) {
                 for(int j=0; j < pointNoiseMap.getGridDim(); j++) {
-                    IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, i, j, new EmptyProgressVisitor(), receivers);
+                    IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, i, j, progressVisitor, receivers);
                     if(out instanceof ComputeRaysOut) {
                         allLevels.addAll(((ComputeRaysOut) out).getVerticesSoundLevel());
                     }

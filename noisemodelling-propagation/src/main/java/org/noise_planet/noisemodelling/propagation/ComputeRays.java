@@ -386,6 +386,9 @@ public class ComputeRays {
                 List<SegmentPath> srPath = new ArrayList<SegmentPath>();
                 // Compute direct path between source and first reflection point, add profile to the data
                 computeReflexionOverBuildings(srcCoord, rayPath.get(0).getReceiverPos(), points, segments, srPath);
+                if(points.isEmpty()) {
+                    continue;
+                }
                 PointPath reflPoint = points.get(points.size() - 1);
                 reflPoint.setType(PointPath.POINT_TYPE.REFL);
                 reflPoint.setBuildingId(rayPath.get(0).getBuildingId());
@@ -409,6 +412,9 @@ public class ComputeRays {
                 // Compute direct path between receiver and last reflection point, add profile to the data
                 List<PointPath> lastPts = new ArrayList<>();
                 computeReflexionOverBuildings(rayPath.get(rayPath.size() - 1).getReceiverPos(), receiverCoord, lastPts, segments, srPath);
+                if(lastPts.isEmpty()) {
+                    continue;
+                }
                 points.addAll(lastPts.subList(1, lastPts.size()));
                 for (int i = 1; i < points.size(); i++) {
                     if (points.get(i).type == PointPath.POINT_TYPE.DIFH) {
