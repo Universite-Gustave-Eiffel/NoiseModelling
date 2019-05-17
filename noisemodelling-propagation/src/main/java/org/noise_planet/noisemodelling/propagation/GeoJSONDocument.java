@@ -31,6 +31,12 @@ public class GeoJSONDocument {
 
     public void writeFooter() throws IOException {
         jsonGenerator.writeEndArray(); // features
+        jsonGenerator.writeObjectFieldStart("crs");
+        jsonGenerator.writeStringField("type", "name");
+        jsonGenerator.writeObjectFieldStart("properties");
+        jsonGenerator.writeStringField("name", crs);
+        jsonGenerator.writeEndObject(); // properties
+        jsonGenerator.writeEndObject(); // crs
         jsonGenerator.writeEndObject(); // {
         jsonGenerator.flush();
         jsonGenerator.close();
@@ -38,12 +44,6 @@ public class GeoJSONDocument {
     public void writeHeader() throws IOException {
         jsonGenerator.writeStartObject();
         jsonGenerator.writeStringField("type", "FeatureCollection");
-        jsonGenerator.writeObjectFieldStart("crs");
-        jsonGenerator.writeStringField("type", "name");
-        jsonGenerator.writeObjectFieldStart("properties");
-        jsonGenerator.writeStringField("name", crs);
-        jsonGenerator.writeEndObject(); // properties
-        jsonGenerator.writeEndObject(); // crs
         jsonGenerator.writeArrayFieldStart("features");
     }
 

@@ -13,7 +13,7 @@ public class RootProgressVisitor extends DefaultProgressVisitor {
     private boolean logProgression = false;
     private int progressionLogStep = 1;
     private Logger logger = LoggerFactory.getLogger(RootProgressVisitor.class);
-    private int lastLoggedProgression = Integer.MIN_VALUE;
+    private int lastLoggedProgression = 0;
 
     public RootProgressVisitor(long subprocessSize) {
         super(subprocessSize, null);
