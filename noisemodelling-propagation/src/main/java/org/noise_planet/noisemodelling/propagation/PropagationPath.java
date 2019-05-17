@@ -153,6 +153,10 @@ public class PropagationPath {
         this.initialized = initialized;
     }
 
+    public int getIdSource() {return idSource;}
+
+    public int getIdReceiver() {return idReceiver;}
+
     public List<PointPath> getPointList() {return pointList;}
 
     public List<SegmentPath> getSegmentList() {return segmentList;}
