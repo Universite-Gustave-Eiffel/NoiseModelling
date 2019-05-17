@@ -944,7 +944,9 @@ public class ComputeRays {
         double segmentSizeConstraint = Math.max(1, receiverCoord.distance3D(nearestPoint) / 2.0);
         double li = splitLineStringIntoPoints(source, segmentSizeConstraint, pts);
         for (Coordinate pt : pts) {
-            totalPowerRemaining += insertPtSource(receiverCoord, pt, wj, li, srcIndex, sourceList);
+            if(pt.distance(receiverCoord) < data.maxSrcDist) {
+                totalPowerRemaining += insertPtSource(receiverCoord, pt, wj, li, srcIndex, sourceList);
+            }
         }
         return totalPowerRemaining;
     }
@@ -981,7 +983,9 @@ public class ComputeRays {
                 double[] wj = data.getMaximalSourcePower(srcIndex);
                 if (source instanceof Point) {
                     Coordinate ptpos = source.getCoordinate();
-                    totalPowerRemaining += insertPtSource(receiverCoord, ptpos, wj, 1., srcIndex, sourceList);
+                    if(ptpos.distance(receiverCoord) < data.maxSrcDist) {
+                        totalPowerRemaining += insertPtSource(receiverCoord, ptpos, wj, 1., srcIndex, sourceList);
+                    }
                 } else if (source instanceof LineString){
                     // Discretization of line into multiple point
                     // First point is the closest point of the LineString from
