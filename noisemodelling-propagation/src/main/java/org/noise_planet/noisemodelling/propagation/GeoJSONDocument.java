@@ -8,6 +8,7 @@ import org.locationtech.jts.geom.Coordinate;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -72,6 +73,36 @@ public class GeoJSONDocument {
         jsonGenerator.writeEndArray(); //gPath
         jsonGenerator.writeEndObject(); // properties
         jsonGenerator.writeEndObject();
+    }
+
+    /**
+     * Write topography triangles
+     * @param triVertices
+     * @param vertices
+     * @throws IOException
+     */
+    public void writeTopographic(List<Triangle> triVertices, List<Coordinate> vertices) throws IOException {
+        for(Triangle triangle : triVertices) {
+            jsonGenerator.writeStartObject();
+            jsonGenerator.writeStringField("type", "Feature");
+            jsonGenerator.writeObjectFieldStart("geometry");
+            jsonGenerator.writeStringField("type", "Polygon");
+            jsonGenerator.writeFieldName("coordinates");
+            jsonGenerator.writeStartArray();
+            jsonGenerator.writeStartArray(); // Outer line
+            writeCoordinate(new Coordinate(vertices.get(triangle.getA())));
+            writeCoordinate(new Coordinate(vertices.get(triangle.getB())));
+            writeCoordinate(new Coordinate(vertices.get(triangle.getC())));
+            writeCoordinate(new Coordinate(vertices.get(triangle.getA())));
+            jsonGenerator.writeEndArray();
+            jsonGenerator.writeEndArray();
+            jsonGenerator.writeEndObject(); // geometry
+            // Write properties
+            jsonGenerator.writeObjectFieldStart("properties");
+            jsonGenerator.writeNumberField("b", triangle.getAttribute());
+            jsonGenerator.writeEndObject(); // properties
+            jsonGenerator.writeEndObject();
+        }
     }
 
     /**

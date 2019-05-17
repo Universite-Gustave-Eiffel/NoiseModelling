@@ -33,7 +33,7 @@
  */
 package org.noise_planet.noisemodelling.propagation;
 
-import org.locationtech.jts.algorithm.CGAlgorithms;
+import org.locationtech.jts.algorithm.Orientation;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.LineSegment;
 
@@ -165,7 +165,7 @@ public class MirrorReceiverIterator implements Iterator<MirrorReceiverResult> {
      * @return True if the walls are face to face
      */
     public static boolean wallWallTest(LineSegment wall1, LineSegment wall2) {
-        return ((CGAlgorithms.isCCW(new Coordinate[]{wall1.getCoordinate(0), wall1.getCoordinate(1), wall2.getCoordinate(0), wall1.getCoordinate(0)}) || CGAlgorithms.isCCW(new Coordinate[]{wall1.getCoordinate(0), wall1.getCoordinate(1), wall2.getCoordinate(1), wall1.getCoordinate(0)})) && (CGAlgorithms.isCCW(new Coordinate[]{wall2.getCoordinate(0), wall2.getCoordinate(1), wall1.getCoordinate(0), wall2.getCoordinate(0)}) || CGAlgorithms.isCCW(new Coordinate[]{wall2.getCoordinate(0), wall2.getCoordinate(1), wall1.getCoordinate(1), wall2.getCoordinate(0)})));
+        return ((Orientation.isCCW(new Coordinate[]{wall1.getCoordinate(0), wall1.getCoordinate(1), wall2.getCoordinate(0), wall1.getCoordinate(0)}) || Orientation.isCCW(new Coordinate[]{wall1.getCoordinate(0), wall1.getCoordinate(1), wall2.getCoordinate(1), wall1.getCoordinate(0)})) && (Orientation.isCCW(new Coordinate[]{wall2.getCoordinate(0), wall2.getCoordinate(1), wall1.getCoordinate(0), wall2.getCoordinate(0)}) || Orientation.isCCW(new Coordinate[]{wall2.getCoordinate(0), wall2.getCoordinate(1), wall1.getCoordinate(1), wall2.getCoordinate(0)})));
     }
 
     /**
@@ -176,10 +176,10 @@ public class MirrorReceiverIterator implements Iterator<MirrorReceiverResult> {
      * @return True if the wall is oriented to the point
      */
     public static boolean wallPointTest(LineSegment wall1, Coordinate pt) {
-        return CGAlgorithms.isCCW(new Coordinate[]{wall1.getCoordinate(0), wall1.getCoordinate(1), pt, wall1.getCoordinate(0)});
+        return Orientation.isCCW(new Coordinate[]{wall1.getCoordinate(0), wall1.getCoordinate(1), pt, wall1.getCoordinate(0)});
     }
 
-    public static class It implements Iterable<MirrorReceiverResult> {
+    public static final class It implements Iterable<MirrorReceiverResult> {
         private final Coordinate receiverCoord;
         private final List<FastObstructionTest.Wall> nearBuildingsWalls;
         private final LineSegment srcReceiver;
@@ -207,7 +207,7 @@ public class MirrorReceiverIterator implements Iterator<MirrorReceiverResult> {
     /**
      * Iterates over wall identifier.
      */
-    public static class CrossTableIterator implements Iterator<List<Integer>> {
+    public static final class CrossTableIterator implements Iterator<List<Integer>> {
         private final int maxDepth;
         private final int wallCount;
         private List<Integer> current;

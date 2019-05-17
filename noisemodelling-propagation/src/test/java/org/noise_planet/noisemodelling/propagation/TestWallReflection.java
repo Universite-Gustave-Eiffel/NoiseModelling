@@ -34,9 +34,13 @@
 package org.noise_planet.noisemodelling.propagation;
 
 import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Envelope;
+import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineSegment;
 
 import junit.framework.TestCase;
+import org.locationtech.jts.io.ParseException;
+import org.locationtech.jts.io.WKTReader;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -197,5 +201,63 @@ public class TestWallReflection extends TestCase {
         MirrorReceiverIterator.CrossTableIterator it = new MirrorReceiverIterator.CrossTableIterator(2, 1);
         equalsTest(new int[]{0}, it.next());
         assertFalse(it.hasNext());
+    }
+
+    public void testPath() throws ParseException, LayerDelaunayError {
+
+        GeometryFactory factory = new GeometryFactory();
+        WKTReader wktReader = new WKTReader(factory);
+        //Scene dimension
+        Envelope cellEnvelope = wktReader.read("POLYGON ((316849.05 6703855.11, 316849.05 6703924.04, " +
+                "316925.36 6703924.04, 316925.36 6703855.11, 316849.05 6703855.11))").getEnvelopeInternal();
+        Coordinate p1 = new Coordinate(316914.1, 6703907.5, 4);
+        Coordinate p2 = new Coordinate(316913.4, 6703879, 4);
+        //Create obstruction test object
+        MeshBuilder mesh = new MeshBuilder();
+
+        mesh.addGeometry(wktReader.read("POLYGON ((316900.21711186244 6703891.837263795, 316903.24859771173 6703904.468454833, 316926.44405761914 6703898.451414739, 316925.433562336 6703889.678478417, 316914.1343878069 6703892.480306247, 316913.53727695777 6703890.367452473, 316906.78533120255 6703892.066921813, 316906.4178783723 6703890.32152087, 316900.21711186244 6703891.837263795))"), 11.915885805791621);
+        mesh.addGeometry(wktReader.read("POLYGON ((316886.41 6703903.61, 316888.31 6703910.59, 316899.79 6703907.69, 316897.99 6703900.71, 316886.41 6703903.61))"), 13.143551238469575);
+
+        mesh.finishPolygonFeeding(cellEnvelope);
+
+
+        //Retrieve Delaunay triangulation of scene
+        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(), mesh.getTriNeighbors(), mesh.getVertices());
+
+        PropagationProcessData data = new PropagationProcessData(manager);
+	    ComputeRays computeRays = new ComputeRays(data);
+	    computeRays.initStructures();
+        data.reflexionOrder = 1;
+	    Coordinate receiver = new Coordinate(316898.0027227718, 6703891.69841584, 4);
+	    Coordinate source = new Coordinate(316900.8845049501,6703903.754851485, 0.05);
+        List<FastObstructionTest.Wall> walls = data.freeFieldFinder.getLimitsInRange(
+                data.maxRefDist, source, false);
+        assertEquals(12, walls.size());
+        List<PropagationPath> paths;
+        paths = computeRays.computeReflexion(receiver, source, false, walls);
+        assertEquals(1, paths.size());
+        List<PointPath> pts = paths.get(0).getPointList();
+        assertEquals(3, pts.size());
+        assertEquals(PointPath.POINT_TYPE.SRCE, pts.get(0).type);
+        assertEquals(0, source.distance(pts.get(0).coordinate), 1e-6);
+        assertEquals(PointPath.POINT_TYPE.REFL, pts.get(1).type);
+        assertEquals(0, new Coordinate(316901.506, 6703897.22, 2.14).distance(pts.get(1).coordinate), 0.01);
+        assertEquals(PointPath.POINT_TYPE.RECV, pts.get(2).type);
+        assertEquals(0, receiver.distance(pts.get(2).coordinate), 1e-6);
+
+        data.reflexionOrder = 2;
+        paths = computeRays.computeReflexion(receiver, source, false, walls);
+        assertEquals(2, paths.size());
+        pts = paths.get(1).getPointList();
+        // 2 ref points
+        assertEquals(4, pts.size());
+        assertEquals(PointPath.POINT_TYPE.SRCE, pts.get(0).type);
+        assertEquals(0, source.distance(pts.get(0).coordinate), 1e-6);
+        assertEquals(PointPath.POINT_TYPE.REFL, pts.get(1).type);
+        assertEquals(0, new Coordinate(316898.18, 6703901.42, 0.99).distance(pts.get(1).coordinate), 0.01);
+        assertEquals(PointPath.POINT_TYPE.REFL, pts.get(2).type);
+        assertEquals(0, new Coordinate(316900.80, 6703894.30, 3).distance(pts.get(2).coordinate), 0.01);
+        assertEquals(PointPath.POINT_TYPE.RECV, pts.get(3).type);
+        assertEquals(0, receiver.distance(pts.get(3).coordinate), 1e-6);
     }
 }

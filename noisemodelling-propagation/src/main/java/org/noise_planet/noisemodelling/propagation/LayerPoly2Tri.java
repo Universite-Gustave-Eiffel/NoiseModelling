@@ -37,7 +37,7 @@
 
 package org.noise_planet.noisemodelling.propagation;
 
-import org.locationtech.jts.algorithm.CGAlgorithms;
+import org.locationtech.jts.algorithm.Orientation;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.CoordinateFilter;
 import org.locationtech.jts.geom.CoordinateSequence;
@@ -49,7 +49,6 @@ import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.index.strtree.*;
 import org.poly2tri.Poly2Tri;
 import org.poly2tri.geometry.polygon.PolygonPoint;
-import org.poly2tri.triangulation.Triangulatable;
 import org.poly2tri.triangulation.TriangulationAlgorithm;
 import org.poly2tri.triangulation.TriangulationPoint;
 import org.poly2tri.triangulation.delaunay.DelaunayTriangle;
@@ -91,7 +90,7 @@ public class LayerPoly2Tri implements LayerDelaunay {
   private HashMap<Integer, LinkedList<Integer>> hashOfArrayIndex = new HashMap<Integer, LinkedList<Integer>>();
   private double maxArea = 0;
 
-  private static GeometryFactory FACTORY = new GeometryFactory();
+  private GeometryFactory factory = new GeometryFactory();
 
   private static Coordinate TPointToCoordinate(TriangulationPoint tPoint) {
     return new Coordinate(tPoint.getX(), tPoint.getY(), tPoint.getZ());
@@ -105,7 +104,7 @@ public class LayerPoly2Tri implements LayerDelaunay {
     return new PointWithAttribute(coordinate.x, coordinate.y, coordinate.z, attribute);
   }
 
-  private static class BuildingWithID {
+  private static final class BuildingWithID {
     private Polygon building;
 
 
@@ -116,7 +115,7 @@ public class LayerPoly2Tri implements LayerDelaunay {
 
 
     public boolean isTriangleInBuilding(TPoint point) {
-      return this.building.intersects(FACTORY.createPoint(TPointToCoordinate(point)));
+      return this.building.intersects(new GeometryFactory().createPoint(TPointToCoordinate(point)));
     }
 
 
@@ -234,7 +233,7 @@ public class LayerPoly2Tri implements LayerDelaunay {
             for (Object id : polyInters) {
               if (id instanceof Integer) {
                 BuildingWithID inPoly = buildingWithID.get(id);
-                if (inPoly.building.contains(FACTORY.createPoint(TPointToCoordinate(centroid)))) {
+                if (inPoly.building.contains(factory.createPoint(TPointToCoordinate(centroid)))) {
                   inBuilding = true;
                   break;
                 }
@@ -289,7 +288,7 @@ public class LayerPoly2Tri implements LayerDelaunay {
         triangleAttribute.set(triangleId, 0);
       }
 
-      if (!CGAlgorithms.isCCW(ring)) {
+      if (!Orientation.isCCW(ring)) {
         Coordinate tmp = new Coordinate(ring[0]);
         ring[0] = ring[2];
         ring[2] = tmp;
@@ -308,7 +307,7 @@ public class LayerPoly2Tri implements LayerDelaunay {
   }
 
 
-  private static class SetZFilter implements CoordinateSequenceFilter {
+  private static final class SetZFilter implements CoordinateSequenceFilter {
     private boolean done = false;
 
     @Override
@@ -473,7 +472,7 @@ public class LayerPoly2Tri implements LayerDelaunay {
     }
   }
 
-  private static class LineStringHandler extends PointHandler {
+  private static final class LineStringHandler extends PointHandler {
     private List<Integer> segments;
     private int firstPtIndex = -1;
     private int attribute = -1;
@@ -513,7 +512,7 @@ public class LayerPoly2Tri implements LayerDelaunay {
   /**
    * Points instance are kept by poly2tri, so define our own point instance in order to retrieve attributes
    */
-  private static class PointWithAttribute extends PolygonPoint {
+  private static final class PointWithAttribute extends PolygonPoint {
     int attribute;
 
     public PointWithAttribute(double x, double y, int attribute) {

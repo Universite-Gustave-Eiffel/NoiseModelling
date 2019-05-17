@@ -5,20 +5,18 @@ import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.utilities.SFSUtilities;
 import org.h2gis.utilities.SpatialResultSet;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.locationtech.jts.geom.Geometry;
 import org.noise_planet.noisemodelling.propagation.ComputeRays;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOut;
-import org.noise_planet.noisemodelling.propagation.EvaluateAttenuationCnossosTest;
 import org.noise_planet.noisemodelling.propagation.FastObstructionTest;
 import org.noise_planet.noisemodelling.propagation.IComputeRaysOut;
 import org.noise_planet.noisemodelling.propagation.PropagationPath;
 import org.noise_planet.noisemodelling.propagation.PropagationProcessData;
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
-import org.noise_planet.noisemodelling.propagation.PropagationResultPtRecord;
-import org.noise_planet.noisemodelling.propagation.QueryRTree;
+import org.noise_planet.noisemodelling.propagation.RootProgressVisitor;
 
 import java.io.*;
 import java.net.URISyntaxException;
@@ -26,7 +24,6 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -35,15 +32,15 @@ import static org.junit.Assert.assertEquals;
 
 public class PointNoiseMapTest {
 
-    private static Connection connection;
+    private Connection connection;
 
-    @BeforeClass
-    public static void tearUp() throws Exception {
+    @Before
+    public void tearUp() throws Exception {
         connection = SFSUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(PointNoiseMapTest.class.getSimpleName(), true, ""));
     }
 
-    @AfterClass
-    public static void tearDown() throws Exception {
+    @After
+    public void tearDown() throws Exception {
         if(connection != null) {
             connection.close();
         }
@@ -53,18 +50,6 @@ public class PointNoiseMapTest {
         File resourceFile = new File(PointNoiseMapTest.class.getResource(fileName).toURI());
         return "RUNSCRIPT FROM "+StringUtils.quoteStringSQL(resourceFile.getPath());
     }
-
-    @Test
-    public void testSplitting() {
-        PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS", "ROADS", "RECEIVERS");
-
-    }
-
-    public void testLdenPointNoiseMap() {
-        // Test optimisation on lden scenario
-        PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS", "ROADS", "RECEIVERS");
-    }
-
 
     /**
      * DEM is 22m height between sources and receiver. There is a direct field propagation over the building
@@ -95,9 +80,10 @@ public class PointNoiseMapTest {
             ArrayList<PropagationPath> propaMap = new ArrayList<>();
             Set<Long> receivers = new HashSet<>();
             pointNoiseMap.setThreadCount(1);
+            RootProgressVisitor progressVisitor = new RootProgressVisitor(pointNoiseMap.getGridDim() * pointNoiseMap.getGridDim(), true, 5);
             for(int i=0; i < pointNoiseMap.getGridDim(); i++) {
                 for(int j=0; j < pointNoiseMap.getGridDim(); j++) {
-                    IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, i, j, new EmptyProgressVisitor(), receivers);
+                    IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, i, j, progressVisitor, receivers);
                     if(out instanceof ComputeRaysOut) {
                         allLevels.addAll(((ComputeRaysOut) out).getVerticesSoundLevel());
                         propaMap.addAll(((ComputeRaysOut) out).getPropagationPaths());
@@ -131,7 +117,7 @@ public class PointNoiseMapTest {
         }
     }
 
-    private static class RayOut extends ComputeRaysOut {
+    private static final class RayOut extends ComputeRaysOut {
         private DirectPropagationProcessData processData;
 
         public RayOut(boolean keepRays, PropagationProcessPathData pathData, DirectPropagationProcessData processData) {
@@ -147,7 +133,7 @@ public class PointNoiseMapTest {
         }
     }
 
-    private static class DirectPropagationProcessData extends PropagationProcessData {
+    private static final class DirectPropagationProcessData extends PropagationProcessData {
         private List<double[]> wjSources = new ArrayList<>();
         private final static String[] powerColumns = new String[]{"db_m63", "db_m125", "db_m250", "db_m500", "db_m1000", "db_m2000", "db_m4000", "db_m8000"};
 

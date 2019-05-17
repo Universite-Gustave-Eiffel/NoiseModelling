@@ -21,7 +21,7 @@
     "type" : "Feature",
     "geometry" : {
       "type" : "LineString",
-      "coordinates" : [ [ 10.0, 10.0, 1.0 ], [ 131.9, 54.6, 9.7 ], [ 200.0, 50.0, 14.0 ] ]
+      "coordinates" : [ [ 10.0, 10.0, 1.0 ], [ 131.9, 54.5, 9.7 ], [ 200.0, 50.0, 14.0 ] ]
     },
     "properties" : {
       "receiver" : 0,

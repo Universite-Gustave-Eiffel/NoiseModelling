@@ -142,7 +142,7 @@ public class KMLDocument {
         }
     }
 
-    public void writeHeader() throws XMLStreamException {
+    public KMLDocument writeHeader() throws XMLStreamException {
         xmlOut.writeStartDocument("UTF-8", "1.0");
         xmlOut.writeStartElement("kml");
         xmlOut.writeDefaultNamespace("http://www.opengis.net/kml/2.2");
@@ -151,23 +151,26 @@ public class KMLDocument {
         xmlOut.writeNamespace("gx", "http://www.google.com/kml/ext/2.2");
         xmlOut.writeNamespace("xal", "urn:oasis:names:tc:ciq:xsdschema:xAL:2.0");
         xmlOut.writeStartElement("Document");
+        return this;
     }
 
-    public void writeFooter() throws XMLStreamException {
+    public KMLDocument writeFooter() throws XMLStreamException {
         xmlOut.writeEndElement();//Doc
         xmlOut.writeEndDocument();//KML
         xmlOut.close();
+        return this;
     }
 
-    public void setOffset(Coordinate offset) {
+    public KMLDocument setOffset(Coordinate offset) {
         this.offset = offset;
+        return this;
     }
 
     private Coordinate copyCoord(Coordinate in) {
         return new Coordinate(in.x + offset.x, in.y + offset.y, Double.isNaN(in.z) ? offset.z : in.z + offset.z);
     }
 
-    public void writeTopographic(List<Triangle> triVertices, List<Coordinate> vertices) throws XMLStreamException {
+    public KMLDocument writeTopographic(List<Triangle> triVertices, List<Coordinate> vertices) throws XMLStreamException {
         // Write style
         xmlOut.writeStartElement("Style");
         xmlOut.writeAttribute("id", "mnt");
@@ -216,9 +219,10 @@ public class KMLDocument {
                 wgs84Precision, false, KMLWriter.ALTITUDE_MODE_ABSOLUTE));
         xmlOut.writeEndElement();//Write Placemark
         xmlOut.writeEndElement();//Folder
+        return this;
     }
 
-    public void writeBuildings(FastObstructionTest manager) throws XMLStreamException {
+    public KMLDocument writeBuildings(FastObstructionTest manager) throws XMLStreamException {
         xmlOut.writeStartElement("Schema");
         xmlOut.writeAttribute("name", "buildings");
         xmlOut.writeAttribute("id", "buildings");
@@ -259,9 +263,10 @@ public class KMLDocument {
                 wgs84Precision, true, KMLWriter.ALTITUDE_MODE_ABSOLUTE));
         xmlOut.writeEndElement();//Write Placemark
         xmlOut.writeEndElement();//Folder
+        return this;
     }
 
-    public void writeRays(Collection<PropagationPath> rays) throws XMLStreamException {
+    public KMLDocument writeRays(Collection<PropagationPath> rays) throws XMLStreamException {
         xmlOut.writeStartElement("Schema");
         xmlOut.writeAttribute("name", "rays");
         xmlOut.writeAttribute("id", "rays");
@@ -289,6 +294,7 @@ public class KMLDocument {
             xmlOut.writeEndElement();//Write Placemark
         }
         xmlOut.writeEndElement();//Folder
+        return this;
     }
 
     public void doTransform(Geometry geometry) {
@@ -299,7 +305,7 @@ public class KMLDocument {
         }
     }
 
-    public static class CRSTransformFilter implements CoordinateFilter {
+    public static final class CRSTransformFilter implements CoordinateFilter {
         private final CoordinateOperation coordinateOperation;
 
         public CRSTransformFilter(CoordinateOperation coordinateOperation) {

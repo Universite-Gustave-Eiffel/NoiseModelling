@@ -5,7 +5,10 @@ import org.locationtech.jts.geom.Coordinate;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 public class PointPath {
 
@@ -13,7 +16,7 @@ public class PointPath {
     public Coordinate coordinate; // coordinate (absolute)
     public double altitude; // altitude of relief (exact)
     public double gs;       // only if POINT_TYPE = SRCE or RECV, G coefficient right above the point
-    public double[] alphaWall = new double[PropagationProcessPathData.freq_lvl.size()]; // only if POINT_TYPE = REFL, alpha coefficient
+    public List<Double> alphaWall = MeshBuilder.ALPHA_DEFAULT_VALUE; // only if POINT_TYPE = REFL, alpha coefficient
     public int buildingId; // only if POINT_TYPE = REFL
     public POINT_TYPE type; // type of point
     public enum POINT_TYPE {
@@ -33,11 +36,32 @@ public class PointPath {
      * @param buildingId
      * @param type
      */
-    public PointPath(Coordinate coordinate, double altitude, double gs, double[] alphaWall, int buildingId, POINT_TYPE type) {
+    public PointPath(Coordinate coordinate, double altitude, double gs, List<Double> alphaWall, int buildingId, POINT_TYPE type) {
         this.coordinate = coordinate;
         this.altitude = altitude;
         this.gs = gs;
         this.alphaWall = alphaWall;
+        this.buildingId = buildingId;
+        this.type = type;
+    }
+
+    /**
+     * parameters given by user
+     * @param coordinate
+     * @param altitude
+     * @param gs
+     * @param alphaWall
+     * @param buildingId
+     * @param type
+     */
+    public PointPath(Coordinate coordinate, double altitude, double gs, double[] alphaWall, int buildingId, POINT_TYPE type) {
+        this.coordinate = coordinate;
+        this.altitude = altitude;
+        this.gs = gs;
+        this.alphaWall = new ArrayList<>(alphaWall.length);
+        for(double a : alphaWall) {
+            this.alphaWall.add(a);
+        }
         this.buildingId = buildingId;
         this.type = type;
     }
@@ -55,9 +79,7 @@ public class PointPath {
         this.coordinate = coordinate;
         this.altitude = altitude;
         this.gs = gs;
-        for(int i=0; i < alphaWall.length; i++) {
-            alphaWall[i] = alpha;
-        }
+        this.alphaWall = Collections.nCopies(PropagationProcessPathData.freq_lvl.size(), alpha);
         this.buildingId = buildingId;
         this.type = type;
     }
@@ -76,8 +98,8 @@ public class PointPath {
         PropagationPath.writeCoordinate(out, coordinate);
         out.writeDouble(altitude);
         out.writeDouble(gs);
-        for (int j = 0;j<PropagationProcessPathData.freq_lvl.size();j++) {
-            out.writeDouble(alphaWall[j]);
+        for (double alpha :  PropagationProcessPathData.freq_lvl) {
+            out.writeDouble(alpha);
         }
         out.writeInt(buildingId);
         out.writeInt(type.ordinal());
@@ -94,9 +116,11 @@ public class PointPath {
         coordinate = PropagationPath.readCoordinate(in);
         altitude = in.readDouble();
         gs = in.readDouble();
-        for (int j = 0;j<PropagationProcessPathData.freq_lvl.size();j++){
-            alphaWall[j] = in.readDouble();
+        ArrayList<Double> readAlpha = new ArrayList<>(PropagationProcessPathData.freq_lvl.size());
+        for (int j = 0; j< PropagationProcessPathData.freq_lvl.size(); j++){
+            readAlpha.add(in.readDouble());
         }
+        this.alphaWall = readAlpha;
         buildingId = in.readInt();
         type = POINT_TYPE.values()[in.readInt()];
     }
@@ -109,8 +133,8 @@ public class PointPath {
         this.buildingId =  buildingId;
     }
 
-    public void setAlphaWall(double[] alphaWall) {
-        this.alphaWall =  alphaWall;
+    public void setAlphaWall(List<Double> alphaWall) {
+        this.alphaWall = new ArrayList<>(alphaWall);
     }
 
     public int getBuildingId() {

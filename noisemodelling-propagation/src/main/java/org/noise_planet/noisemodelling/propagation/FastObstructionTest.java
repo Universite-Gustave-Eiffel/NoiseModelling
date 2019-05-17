@@ -33,8 +33,18 @@
  */
 package org.noise_planet.noisemodelling.propagation;
 
+import org.locationtech.jts.algorithm.Angle;
+import org.locationtech.jts.algorithm.Orientation;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Envelope;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.LineSegment;
+import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.io.WKTWriter;
+import org.locationtech.jts.math.Vector2D;
+import org.locationtech.jts.triangulate.quadedge.Vertex;
+
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -42,17 +52,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Stack;
 import java.util.concurrent.atomic.AtomicReference;
-
-import org.locationtech.jts.algorithm.Angle;
-import org.locationtech.jts.algorithm.CGAlgorithms;
-import org.locationtech.jts.algorithm.CGAlgorithms3D;
-import org.locationtech.jts.algorithm.CGAlgorithmsDD;
-import org.locationtech.jts.algorithm.Orientation;
-import org.locationtech.jts.geom.*;
-import org.locationtech.jts.io.WKTWriter;
-import org.locationtech.jts.math.Vector2D;
-import org.locationtech.jts.triangulate.Segment;
-import org.locationtech.jts.triangulate.quadedge.Vertex;
 
 /**
  * FastObstructionTest speed up the search of
@@ -66,6 +65,7 @@ import org.locationtech.jts.triangulate.quadedge.Vertex;
 public class FastObstructionTest {
     public static final double epsilon = 1e-7;
     public static final double wideAngleTranslationEpsilon = 0.01;
+    private static final double MINIMAL_REFLECTION_WALL_LENGTH = 1.0;
     private List<Triangle> triVertices;
     private List<Coordinate> vertices;
     private List<Triangle> triNeighbors; // Neighbors
@@ -597,7 +597,7 @@ public class FastObstructionTest {
                     // Propagate search in this direction if this is not the domain limitation
                     if (neighbors.get(sideId) != -1) {
                         // If the triangle side is a wal
-                        if (wall.getBuildingId() >= 1) {
+                        if (wall.getBuildingId() >= 1 && wall.getLength() > MINIMAL_REFLECTION_WALL_LENGTH) {
                             walls.add(wall);
                         }
                         if((goThroughWalls || wall.getBuildingId() < 1) && !navigationHistory.contains(neighbors.get(sideId))) {
@@ -667,7 +667,7 @@ public class FastObstructionTest {
         return polygonWithHeight.get(buildingId - 1).getHeight();
     }
 
-    public double[] getBuildingAlpha(int buildingId) {
+    public List<Double> getBuildingAlpha(int buildingId) {
         return polygonWithHeight.get(buildingId - 1).getAlpha();
     }
 
@@ -1323,7 +1323,7 @@ public class FastObstructionTest {
         return Vertex.interpolateZ(point, p1, p2, p3);
     }
 
-    public static class Wall extends LineSegment {
+    public static final class Wall extends LineSegment {
         private int buildingId = 0;
 
         public Wall(Coordinate p0, Coordinate p1, int buildingId) {

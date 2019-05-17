@@ -238,7 +238,7 @@ public class ComputeRaysOut implements IComputeRaysOut {
         }
     }
 
-    private static class ThreadRaysOut implements IComputeRaysOut {
+    private static final class ThreadRaysOut implements IComputeRaysOut {
         private ComputeRaysOut multiThreadParent;
         protected List<ComputeRaysOut.verticeSL> receiverAttenuationLevels = Collections.synchronizedList(new ArrayList<>());
 
@@ -251,16 +251,19 @@ public class ComputeRaysOut implements IComputeRaysOut {
             double[] aGlobalMeteo = multiThreadParent.computeAttenuation(multiThreadParent.genericMeteoData, sourceId, sourceLi, receiverId, propagationPath);
             multiThreadParent.rayCount.addAndGet(propagationPath.size());
             if(multiThreadParent.keepRays) {
-                if (multiThreadParent.inputData != null && sourceId < multiThreadParent.inputData.sourcesPk.size() && receiverId < multiThreadParent.inputData.receiversPk.size()) {
-                    long sourcePk = multiThreadParent.inputData.sourcesPk.get((int) sourceId);
-                    long receiverPk = multiThreadParent.inputData.receiversPk.get((int) receiverId);
-                    for (int i = 0; i < propagationPath.size(); i++) {
-                        propagationPath.get(i).idSource = (int) sourcePk;
-                        propagationPath.get(i).idReceiver = (int) receiverPk;
+                if(multiThreadParent.inputData != null && sourceId < multiThreadParent.inputData.sourcesPk.size() &&
+                      receiverId < multiThreadParent.inputData.receiversPk.size()) {
+                    for(PropagationPath path : propagationPath) {
+                        // Copy path content in order to keep original ids for other method calls
+                        PropagationPath pathPk = new PropagationPath(path.isFavorable(), path.getPointList(),
+                                path.getSegmentList(), path.getSRList());
+                        pathPk.idReceiver = multiThreadParent.inputData.receiversPk.get((int)receiverId).intValue();
+                        pathPk.idSource = multiThreadParent.inputData.sourcesPk.get((int)sourceId).intValue();
+                        multiThreadParent.propagationPaths.add(pathPk);
                     }
+                } else {
+                    multiThreadParent.propagationPaths.addAll(propagationPath);
                 }
-
-                multiThreadParent.propagationPaths.addAll(propagationPath);
             }
             if (aGlobalMeteo != null) {
                 receiverAttenuationLevels.add(new ComputeRaysOut.verticeSL(receiverId, sourceId, aGlobalMeteo));
