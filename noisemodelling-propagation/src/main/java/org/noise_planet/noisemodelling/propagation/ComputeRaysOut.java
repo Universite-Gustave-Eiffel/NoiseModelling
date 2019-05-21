@@ -226,19 +226,19 @@ public class ComputeRaysOut implements IComputeRaysOut {
     /**
      * Noise level or attenuation level for each source/receiver
      */
-    public static final class verticeSL {
+    public static class verticeSL {
         public final long sourceId;
         public final long receiverId;
         public final double[] value;
 
-        verticeSL(long receiverId, long sourceId, double[] value) {
+        public verticeSL(long receiverId, long sourceId, double[] value) {
             this.sourceId = sourceId;
             this.receiverId = receiverId;
             this.value = value;
         }
     }
 
-    private static final class ThreadRaysOut implements IComputeRaysOut {
+    public static class ThreadRaysOut implements IComputeRaysOut {
         private ComputeRaysOut multiThreadParent;
         protected List<ComputeRaysOut.verticeSL> receiverAttenuationLevels = Collections.synchronizedList(new ArrayList<>());
 
