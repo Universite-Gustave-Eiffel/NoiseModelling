@@ -69,14 +69,14 @@ public class ComputeRaysOut implements IComputeRaysOut {
         this.genericMeteoData = pathData;
     }
 
-    protected boolean keepRays = true;
-    protected AtomicLong rayCount = new AtomicLong();
-    protected AtomicLong nb_couple_receiver_src = new AtomicLong();
-    protected AtomicLong nb_obstr_test = new AtomicLong();
-    protected AtomicLong nb_image_receiver = new AtomicLong();
-    protected AtomicLong nb_reflexion_path = new AtomicLong();
-    protected AtomicLong nb_diffraction_path = new AtomicLong();
-    protected AtomicInteger cellComputed = new AtomicInteger();
+    public boolean keepRays = true;
+    public AtomicLong rayCount = new AtomicLong();
+    public AtomicLong nb_couple_receiver_src = new AtomicLong();
+    public AtomicLong nb_obstr_test = new AtomicLong();
+    public AtomicLong nb_image_receiver = new AtomicLong();
+    public AtomicLong nb_reflexion_path = new AtomicLong();
+    public AtomicLong nb_diffraction_path = new AtomicLong();
+    public AtomicInteger cellComputed = new AtomicInteger();
     private static final double angle_section = (2 * Math.PI) / PropagationProcessPathData.DEFAULT_WIND_ROSE.length;
 
 

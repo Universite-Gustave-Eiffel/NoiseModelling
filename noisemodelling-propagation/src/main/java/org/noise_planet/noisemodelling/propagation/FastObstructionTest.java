@@ -35,11 +35,7 @@ package org.noise_planet.noisemodelling.propagation;
 
 import org.locationtech.jts.algorithm.Angle;
 import org.locationtech.jts.algorithm.Orientation;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.Envelope;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.LineSegment;
-import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.WKTWriter;
 import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
@@ -642,7 +638,22 @@ public class FastObstructionTest {
      * @return Interpolated Z value, NaN if out of bounds
      */
     public double getHeightAtPosition(Coordinate p1) {
-        int curTri = getTriangleIdByCoordinate(p1);
+        Envelope ptEnv = new Envelope(p1);
+        ptEnv.expandBy(1);
+        Iterator<Integer> res = triIndex.query(ptEnv);
+        double minDistance = Double.MAX_VALUE;
+        int curTri = -1;
+        GeometryFactory f = new GeometryFactory();
+        Point p = f.createPoint(p1);
+        while (res.hasNext()) {
+            int triId = res.next();
+            Coordinate[] tri = getTriangle(triId);
+            double distance = f.createPolygon(new Coordinate[]{tri[0], tri[1], tri[2], tri[0]}).distance(p);
+            if (distance < minDistance) {
+                minDistance = distance;
+                curTri = triId;
+            }
+        }
         if(curTri >= 0) {
             Triangle triangle = triVertices.get(curTri);
             org.locationtech.jts.geom.Triangle tri =

@@ -455,11 +455,11 @@ public class MeshBuilder {
             for(LineString topoLine : topoLines) {
                 explodeAndAddPolygon(topoLine, delaunayTool, -1);
             }
-            delaunayTool.processDelaunay();
         }
 
         //computeNeighbors
         delaunayTool.setRetrieveNeighbors(false);
+        delaunayTool.processDelaunay();
         FastObstructionTest fastObstructionTest = new FastObstructionTest(new ArrayList<>(Collections.EMPTY_LIST), delaunayTool.getTriangles(),null,delaunayTool.getVertices());
         ComputeRays.AbsoluteCoordinateSequenceFilter absoluteCoordinateSequenceFilter = new ComputeRays.AbsoluteCoordinateSequenceFilter(fastObstructionTest, false);
 

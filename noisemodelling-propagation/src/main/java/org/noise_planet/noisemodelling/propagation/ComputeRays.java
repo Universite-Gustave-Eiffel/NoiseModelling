@@ -380,6 +380,18 @@ public class ComputeRays {
                 }
             }
             if (validReflection && !rayPath.isEmpty()) {
+                // Check intermediate reflections
+                for(int idPt = 0; idPt < rayPath.size() - 1; idPt++) {
+                    Coordinate firstPt = rayPath.get(idPt).getReceiverPos();
+                    MirrorReceiverResult refl = rayPath.get(idPt + 1);
+                    if(!data.freeFieldFinder.isFreeField(firstPt, refl.getReceiverPos())) {
+                        validReflection = false;
+                        break;
+                    }
+                }
+                if(!validReflection) {
+                    continue;
+                }
                 // A valid propagation path as been found
                 List<PointPath> points = new ArrayList<PointPath>();
                 List<SegmentPath> segments = new ArrayList<SegmentPath>();
@@ -397,17 +409,9 @@ public class ComputeRays {
                 for(int idPt = 0; idPt < rayPath.size() - 1; idPt++) {
                     Coordinate firstPt = rayPath.get(idPt).getReceiverPos();
                     MirrorReceiverResult refl = rayPath.get(idPt + 1);
-                    if(!data.freeFieldFinder.isFreeField(firstPt, refl.getReceiverPos())) {
-                        validReflection = false;
-                        break;
-                    } else {
-                        reflPoint = new PointPath(refl.getReceiverPos(), 0, 1, data.freeFieldFinder.getBuildingAlpha(refl.getBuildingId()), refl.getBuildingId(), PointPath.POINT_TYPE.REFL);
-                        points.add(reflPoint);
-                        segments.add(new SegmentPath(1, new Vector3D(firstPt), refl.getReceiverPos()));
-                    }
-                }
-                if(!validReflection) {
-                    continue;
+                    reflPoint = new PointPath(refl.getReceiverPos(), 0, 1, data.freeFieldFinder.getBuildingAlpha(refl.getBuildingId()), refl.getBuildingId(), PointPath.POINT_TYPE.REFL);
+                    points.add(reflPoint);
+                    segments.add(new SegmentPath(1, new Vector3D(firstPt), refl.getReceiverPos()));
                 }
                 // Compute direct path between receiver and last reflection point, add profile to the data
                 List<PointPath> lastPts = new ArrayList<>();
@@ -940,7 +944,9 @@ public class ComputeRays {
         double segmentSizeConstraint = Math.max(1, receiverCoord.distance3D(nearestPoint) / 2.0);
         double li = splitLineStringIntoPoints(source, segmentSizeConstraint, pts);
         for (Coordinate pt : pts) {
-            totalPowerRemaining += insertPtSource(receiverCoord, pt, wj, li, srcIndex, sourceList);
+            if(pt.distance(receiverCoord) < data.maxSrcDist) {
+                totalPowerRemaining += insertPtSource(receiverCoord, pt, wj, li, srcIndex, sourceList);
+            }
         }
         return totalPowerRemaining;
     }
@@ -977,7 +983,9 @@ public class ComputeRays {
                 double[] wj = data.getMaximalSourcePower(srcIndex);
                 if (source instanceof Point) {
                     Coordinate ptpos = source.getCoordinate();
-                    totalPowerRemaining += insertPtSource(receiverCoord, ptpos, wj, 1., srcIndex, sourceList);
+                    if(ptpos.distance(receiverCoord) < data.maxSrcDist) {
+                        totalPowerRemaining += insertPtSource(receiverCoord, ptpos, wj, 1., srcIndex, sourceList);
+                    }
                 } else if (source instanceof LineString){
                     // Discretization of line into multiple point
                     // First point is the closest point of the LineString from

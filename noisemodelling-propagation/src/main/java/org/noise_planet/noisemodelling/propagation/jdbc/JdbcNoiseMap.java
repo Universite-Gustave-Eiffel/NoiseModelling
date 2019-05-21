@@ -211,6 +211,7 @@ public abstract class JdbcNoiseMap {
             throws SQLException {
         TableLocation sourceTableIdentifier = TableLocation.parse(sourcesTableName);
         String sourceGeomName = SFSUtilities.getGeometryFields(connection, sourceTableIdentifier).get(0);
+        Geometry domainConstraint = geometryFactory.toGeometry(fetchEnvelope);
         int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, sourcesTableName);
         if(pkIndex < 1) {
             throw new IllegalArgumentException(String.format("Source table %s does not contain a primary key", sourceTableIdentifier));
@@ -228,7 +229,10 @@ public abstract class JdbcNoiseMap {
                 while (rs.next()) {
                     Geometry geo = rs.getGeometry();
                     if (geo != null) {
-                        propagationProcessData.addSource(rs.getLong(pkIndex), geo, rs);
+                        geo = domainConstraint.intersection(geo);
+                        if(!geo.isEmpty()) {
+                            propagationProcessData.addSource(rs.getLong(pkIndex), geo, rs);
+                        }
                     }
                 }
             } finally {
