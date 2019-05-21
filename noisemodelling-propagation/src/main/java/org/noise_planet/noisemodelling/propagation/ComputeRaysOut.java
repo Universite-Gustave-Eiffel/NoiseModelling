@@ -231,7 +231,7 @@ public class ComputeRaysOut implements IComputeRaysOut {
         public final long receiverId;
         public final double[] value;
 
-        verticeSL(long receiverId, long sourceId, double[] value) {
+        public verticeSL(long receiverId, long sourceId, double[] value) {
             this.sourceId = sourceId;
             this.receiverId = receiverId;
             this.value = value;
