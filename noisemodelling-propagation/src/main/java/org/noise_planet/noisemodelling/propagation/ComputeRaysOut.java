@@ -52,11 +52,11 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Pierre Aumond
  */
 public class ComputeRaysOut implements IComputeRaysOut {
-    protected List<ComputeRaysOut.verticeSL> receiversAttenuationLevels = Collections.synchronizedList(new ArrayList<>());
-    protected List<PropagationPath> propagationPaths = Collections.synchronizedList(new ArrayList<PropagationPath>());
+    public List<ComputeRaysOut.verticeSL> receiversAttenuationLevels = Collections.synchronizedList(new ArrayList<>());
+    public List<PropagationPath> propagationPaths = Collections.synchronizedList(new ArrayList<PropagationPath>());
 
-    protected PropagationProcessPathData genericMeteoData;
-    protected PropagationProcessData inputData;
+    public PropagationProcessPathData genericMeteoData;
+    public PropagationProcessData inputData;
 
     public ComputeRaysOut(boolean keepRays, PropagationProcessPathData pathData, PropagationProcessData inputData) {
         this.keepRays = keepRays;
