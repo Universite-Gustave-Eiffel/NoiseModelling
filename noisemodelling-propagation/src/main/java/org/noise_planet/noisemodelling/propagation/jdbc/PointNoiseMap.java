@@ -79,9 +79,9 @@ public class PointNoiseMap extends JdbcNoiseMap {
                                               ProgressVisitor progression, Set<Long> skipReceivers) throws SQLException {
         MeshBuilder mesh = new MeshBuilder();
         int ij = cellI * gridDim + cellJ;
-        logger.info("Begin processing of cell " + (cellI + 1) + ","
-                + (cellJ + 1) + " of the " + gridDim + "x" + gridDim
-                + "  grid..");
+        if(verbose) {
+            logger.info("Begin processing of cell " + ij + " / " + gridDim * gridDim);
+        }
         Envelope cellEnvelope = getCellEnv(mainEnvelope, cellI,
                 cellJ, getCellWidth(), getCellHeight());
 

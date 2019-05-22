@@ -48,6 +48,7 @@ public abstract class JdbcNoiseMap {
     protected double maximumReflectionDistance = 100;
     protected int subdivisionLevel = -1; // TODO Guess it from maximumPropagationDistance and source extent
     protected int soundReflectionOrder = 2;
+    public boolean verbose = true;
     protected boolean computeHorizontalDiffraction = true;
     protected boolean computeVerticalDiffraction = true;
     /** Wall impedance Default value is cement wall σ = 1175 kN.s.m-4
