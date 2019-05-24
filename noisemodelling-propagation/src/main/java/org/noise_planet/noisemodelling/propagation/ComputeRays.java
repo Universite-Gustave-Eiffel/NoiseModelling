@@ -161,20 +161,39 @@ public class ComputeRays {
     }
 
     /**
+     * Update ground Z coordinates of sound sources absolute to sea levels
+     */
+    public void makeSourceRelativeZToAbsolute() {
+        AbsoluteCoordinateSequenceFilter filter = new AbsoluteCoordinateSequenceFilter(data.freeFieldFinder, true);
+        List<Geometry> sourceCopy = new ArrayList<>(data.sourceGeometries);
+        for (Geometry source : data.sourceGeometries) {
+            filter.reset();
+            Geometry cpy = source.copy();
+            cpy.apply(filter);
+            sourceCopy.add(cpy);
+        }
+        data.sourceGeometries = sourceCopy;
+    }
+
+    /**
      * Update ground Z coordinates of sound sources and receivers absolute to sea levels
      */
     public void makeRelativeZToAbsolute() {
+        makeSourceRelativeZToAbsolute();
+        makeReceiverRelativeZToAbsolute();
+    }
+
+    /**
+     * Update ground Z coordinates of receivers absolute to sea levels
+     */
+    public void makeReceiverRelativeZToAbsolute() {
         AbsoluteCoordinateSequenceFilter filter = new AbsoluteCoordinateSequenceFilter(data.freeFieldFinder, true);
-        for (Geometry source : data.sourceGeometries) {
-            source.apply(filter);
-        }
         CoordinateSequence sequence = new CoordinateArraySequence(data.receivers.toArray(new Coordinate[data.receivers.size()]));
         for (int i = 0; i < sequence.size(); i++) {
             filter.filter(sequence, i);
         }
         data.receivers = Arrays.asList(sequence.toCoordinateArray());
     }
-
     public static double dbaToW(double dBA) {
         return Math.pow(10., dBA / 10.);
     }
@@ -247,6 +266,9 @@ public class ComputeRays {
                 Coordinate a = points[i];
                 final Coordinate b = points[i + 1];
                 double length = a.distance3D(b);
+                if(Double.isNaN(length)) {
+                    length = a.distance(b);
+                }
                 while (length + segmentLength > targetSegmentSize) {
                     //LineSegment segment = new LineSegment(a, b);
                     double segmentLengthFraction = (targetSegmentSize - segmentLength) / length;
@@ -263,6 +285,9 @@ public class ComputeRays {
                     pts.add(midPoint);
                     a = splitPoint;
                     length = a.distance3D(b);
+                    if(Double.isNaN(length)) {
+                        length = a.distance(b);
+                    }
                     segmentLength = 0;
                     midPoint = null;
                 }
@@ -942,6 +967,9 @@ public class ComputeRays {
         // Compute li to equation 4.1 NMPB 2008 (June 2009)
         Coordinate nearestPoint = JTSUtility.getNearestPoint(receiverCoord, source);
         double segmentSizeConstraint = Math.max(1, receiverCoord.distance3D(nearestPoint) / 2.0);
+        if(Double.isNaN(segmentSizeConstraint)) {
+            segmentSizeConstraint = Math.max(1, receiverCoord.distance(nearestPoint) / 2.0);
+        }
         double li = splitLineStringIntoPoints(source, segmentSizeConstraint, pts);
         for (Coordinate pt : pts) {
             if(pt.distance(receiverCoord) < data.maxSrcDist) {
@@ -1169,6 +1197,10 @@ public class ComputeRays {
             this.resetZ = resetZ;
         }
 
+        public void reset() {
+            geometryChanged.set(false);
+        }
+
         @Override
         public void filter(CoordinateSequence coordinateSequence, int i) {
             Coordinate pt = coordinateSequence.getCoordinate(i);
@@ -1206,6 +1238,9 @@ public class ComputeRays {
             this.wj = wj;
             this.sourcePrimaryKey = sourcePrimaryKey;
             this.position = position;
+            if(Double.isNaN(position.z)) {
+                this.position = new Coordinate(position.x, position.y, 0);
+            }
             this.globalWj = ComputeRays.sumArray(wj.length, wj);
             this.li = li;
         }
