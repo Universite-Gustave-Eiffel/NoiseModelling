@@ -46,7 +46,6 @@ public abstract class JdbcNoiseMap {
     protected boolean absoluteZCoordinates = false;
     protected double maximumPropagationDistance = 750;
     protected double maximumReflectionDistance = 100;
-    protected int subdivisionLevel = -1; // TODO Guess it from maximumPropagationDistance and source extent
     protected int soundReflectionOrder = 2;
     public boolean verbose = true;
     protected boolean computeHorizontalDiffraction = true;
@@ -305,6 +304,10 @@ public abstract class JdbcNoiseMap {
         return gridDim;
     }
 
+    public void setGridDim(int gridDim) {
+        this.gridDim = gridDim;
+    }
+
     /**
      * This table must contain a POLYGON column, where Z values are wall bottom position relative to sea level.
      * It may also contain a height field (0-N] average building height from the ground.
@@ -450,20 +453,6 @@ public abstract class JdbcNoiseMap {
     }
 
     /**
-     * @return Subdivision of {@link #mainEnvelope}. This is a quadtree subdivision in the for 4^N
-     */
-    public int getSubdivisionLevel() {
-        return subdivisionLevel;
-    }
-
-    /**
-     * @param subdivisionLevel Subdivision of {@link #mainEnvelope}. This is a quadtree subdivision in the for 4^N
-     */
-    public void setSubdivisionLevel(int subdivisionLevel) {
-        this.subdivisionLevel = subdivisionLevel;
-    }
-
-    /**
      * @return Sound reflection order. 0 order mean 0 reflection depth.
      * 2 means propagation of rays up to 2 collision with walls.
      */
@@ -558,7 +547,7 @@ public abstract class JdbcNoiseMap {
         // Split domain into 4^subdiv cells
         // Compute subdivision level using envelope and maximum propagation distance
         double greatestSideLength = mainEnvelope.maxExtent();
-        subdivisionLevel = 0;
+        int subdivisionLevel = 0;
         while(maximumPropagationDistance / (greatestSideLength / Math.pow(2, subdivisionLevel)) < MINIMAL_BUFFER_RATIO) {
             subdivisionLevel++;
         }
