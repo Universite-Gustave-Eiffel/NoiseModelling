@@ -43,7 +43,8 @@ public abstract class JdbcNoiseMap {
     protected String demTable = "";
     protected String sound_lvl_field = "DB_M";
     // True if Z of sound source and receivers are relative to the ground
-    protected boolean absoluteZCoordinates = false;
+    protected boolean receiverHasAbsoluteZCoordinates = false;
+    protected boolean sourceHasAbsoluteZCoordinates = false;
     protected double maximumPropagationDistance = 750;
     protected double maximumReflectionDistance = 100;
     protected int soundReflectionOrder = 2;
@@ -341,19 +342,32 @@ public abstract class JdbcNoiseMap {
     }
 
     /**
-     * @return True if provided Z value of receivers and sources are relative to the ground level.
-     * False (sea level) otherwise
+     * @return True if provided Z value are sea level (false for relative to ground level)
      */
-    public boolean isAbsoluteZCoordinates() {
-        return absoluteZCoordinates;
+    public boolean isReceiverHasAbsoluteZCoordinates() {
+        return receiverHasAbsoluteZCoordinates;
     }
 
     /**
-     * True if provided Z value of receivers and sources are relative to the ground level.
-     * False (sea level) otherwise
+     *
+     * @param receiverHasAbsoluteZCoordinates True if provided Z value are sea level (false for relative to ground level)
      */
-    public void setAbsoluteZCoordinates(boolean absoluteZCoordinates) {
-        this.absoluteZCoordinates = absoluteZCoordinates;
+    public void setReceiverHasAbsoluteZCoordinates(boolean receiverHasAbsoluteZCoordinates) {
+        this.receiverHasAbsoluteZCoordinates = receiverHasAbsoluteZCoordinates;
+    }
+
+    /**
+     * @return True if provided Z value are sea level (false for relative to ground level)
+     */
+    public boolean isSourceHasAbsoluteZCoordinates() {
+        return sourceHasAbsoluteZCoordinates;
+    }
+
+    /**
+     * @param sourceHasAbsoluteZCoordinates True if provided Z value are sea level (false for relative to ground level)
+     */
+    public void setSourceHasAbsoluteZCoordinates(boolean sourceHasAbsoluteZCoordinates) {
+        this.sourceHasAbsoluteZCoordinates = sourceHasAbsoluteZCoordinates;
     }
 
     /**

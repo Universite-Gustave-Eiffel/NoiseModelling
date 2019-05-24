@@ -123,8 +123,6 @@ public class PointNoiseMap extends JdbcNoiseMap {
         // Fetch all source located in expandedCellEnvelop
         fetchCellSource(connection, expandedCellEnvelop, propagationProcessData);
 
-        // Convert relative source coordinates to absolute ones
-        propagationProcessData.makeRelativeZToAbsoluteOnlySources();
         propagationProcessData.cellId = ij;
 
         // Fetch soil areas
@@ -196,8 +194,12 @@ public class PointNoiseMap extends JdbcNoiseMap {
 
         computeRays.setThreadCount(threadCount);
 
-        if(!absoluteZCoordinates) {
-            computeRays.makeRelativeZToAbsolute();
+        if(!receiverHasAbsoluteZCoordinates) {
+            computeRays.makeReceiverRelativeZToAbsolute();
+        }
+
+        if(!sourceHasAbsoluteZCoordinates) {
+            computeRays.makeSourceRelativeZToAbsolute();
         }
 
         computeRays.run(computeRaysOut);

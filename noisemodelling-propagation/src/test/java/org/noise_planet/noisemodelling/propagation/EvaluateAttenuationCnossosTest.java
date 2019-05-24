@@ -1655,7 +1655,6 @@ public class EvaluateAttenuationCnossosTest {
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
         rayData.setComputeVerticalDiffraction(true);
-        rayData.makeRelativeZToAbsoluteOnlySources();
         rayData.maxSrcDist = 2000;
 
         PropagationProcessPathData attData = new PropagationProcessPathData();
@@ -1664,6 +1663,7 @@ public class EvaluateAttenuationCnossosTest {
 
         RayOut propDataOut = new RayOut(true, attData, rayData);
         ComputeRays computeRays = new ComputeRays(rayData);
+        computeRays.makeRelativeZToAbsolute();
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
