@@ -10,7 +10,7 @@ INSERT INTO buildings(the_geom, height) VALUES
 ('MULTIPOLYGON (((140 0,230 0, 230 60, 140 60,140 40,210 40,210 20, 140 20, 140 0)))',10);
 drop table if exists sound_source;
 create table sound_source(the_geom geometry,gid serial, db_m63 double,db_m125 double,db_m250 double,db_m500 double, db_m1000 double,db_m2000 double, db_m4000 double,db_m8000 double);
-insert into sound_source VALUES ('LINESTRING (26.3 175.5, 111.9 90.9, 123 -70.9, 345.2 -137.8)',1, 25.65, 38.15, 54.35, 60.35, 74.65, 66.75, 59.25, 53.95);
+insert into sound_source VALUES ('LINESTRING (26.3 175.5 0.05, 111.9 90.9 0.05, 123 -70.9 0.05, 345.2 -137.8 0.05)',1, 25.65, 38.15, 54.35, 60.35, 74.65, 66.75, 59.25, 53.95);
 -- Create Digital elevation model using gaussian 2d function
 drop table if exists all_dem;
 SET @DOMAIN_XMIN = SELECT ST_XMIN(ST_EXPAND(ST_EXTENT(THE_GEOM), 100, 100)) FROM SOUND_SOURCE;

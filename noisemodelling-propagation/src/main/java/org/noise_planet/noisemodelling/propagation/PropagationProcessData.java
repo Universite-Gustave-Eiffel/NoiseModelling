@@ -196,31 +196,6 @@ public class PropagationProcessData {
     }
 
 
-    /**
-     * Update ground Z coordinates of sound sources and receivers absolute to sea levels
-     */
-    public void makeRelativeZToAbsoluteOnlySources() {
-
-        for (int k=0; k< this.sourceGeometries.size(); k++) {
-            Geometry source = this.sourceGeometries.get(k);
-            GeometryFactory factory = new GeometryFactory();
-            Coordinate[] coordinates = source.getCoordinates();
-            for (int i = 0; i < coordinates.length; i++){
-                Coordinate pt = coordinates[i];
-                Double zGround = this.freeFieldFinder.getHeightAtPosition(pt);
-                pt.setOrdinate(2, zGround + (Double.isNaN(pt.getOrdinate(2)) ? 0 : pt.getOrdinate(2)));
-                coordinates[i] = pt;
-            }
-            if(coordinates.length > 1) {
-                this.sourceGeometries.set(k, factory.createLineString(coordinates));
-            } else {
-                this.sourceGeometries.set(k, factory.createPoint(coordinates[0]));
-            }
-        }
-
-
-    }
-
 }
 
 

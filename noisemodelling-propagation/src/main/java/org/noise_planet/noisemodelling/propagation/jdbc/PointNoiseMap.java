@@ -79,9 +79,9 @@ public class PointNoiseMap extends JdbcNoiseMap {
                                               ProgressVisitor progression, Set<Long> skipReceivers) throws SQLException {
         MeshBuilder mesh = new MeshBuilder();
         int ij = cellI * gridDim + cellJ;
-        logger.info("Begin processing of cell " + (cellI + 1) + ","
-                + (cellJ + 1) + " of the " + gridDim + "x" + gridDim
-                + "  grid..");
+        if(verbose) {
+            logger.info("Begin processing of cell " + ij + " / " + gridDim * gridDim);
+        }
         Envelope cellEnvelope = getCellEnv(mainEnvelope, cellI,
                 cellJ, getCellWidth(), getCellHeight());
 
@@ -123,8 +123,6 @@ public class PointNoiseMap extends JdbcNoiseMap {
         // Fetch all source located in expandedCellEnvelop
         fetchCellSource(connection, expandedCellEnvelop, propagationProcessData);
 
-        // Convert relative source coordinates to absolute ones
-        propagationProcessData.makeRelativeZToAbsoluteOnlySources();
         propagationProcessData.cellId = ij;
 
         // Fetch soil areas
@@ -196,8 +194,12 @@ public class PointNoiseMap extends JdbcNoiseMap {
 
         computeRays.setThreadCount(threadCount);
 
-        if(!absoluteZCoordinates) {
-            computeRays.makeRelativeZToAbsolute();
+        if(!receiverHasAbsoluteZCoordinates) {
+            computeRays.makeReceiverRelativeZToAbsolute();
+        }
+
+        if(!sourceHasAbsoluteZCoordinates) {
+            computeRays.makeSourceRelativeZToAbsolute();
         }
 
         computeRays.run(computeRaysOut);
