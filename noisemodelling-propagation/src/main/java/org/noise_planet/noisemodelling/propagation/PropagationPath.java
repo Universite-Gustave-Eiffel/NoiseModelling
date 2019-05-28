@@ -210,7 +210,7 @@ public class PropagationPath {
 
     public void initPropagationPath() {
         if(!isInitialized()) {
-            computeAugmentedPath();
+            //computeAugmentedPath();
             computeAugmentedSegments();
             computeAugmentedSRPath();
             setInitialized(true);
@@ -369,6 +369,11 @@ public class PropagationPath {
         SR.zs  =SR.getZs(this, SR);
         SR.zr  =SR.getZr(this, SR);
 
+        // see Point 5.3 Equivalent heights in AFNOR document
+        if (SR.zs<=0){SR.zs = 0.000000001;}
+        if (SR.zr<=0){SR.zr = 0.000000001;}
+
+
         double gs = pointList.get(0).gs;
 
         double testForm = SR.dp / (30 * (SR.zs + SR.zr));
@@ -388,7 +393,7 @@ public class PropagationPath {
         }
         SR.gPathPrime = gPathPrime;
 
-
+        this.srList.set(0,SR);
     }
 
 
@@ -398,11 +403,15 @@ public class PropagationPath {
             segmentList.get(idSegment).idPtStart = idSegment;
             segmentList.get(idSegment).idPtFinal = idSegment+1;
 
-            double zs= segmentList.get(idSegment).getZs(this, this.segmentList.get(idSegment));
-            segmentList.get(idSegment).zs  =zs;
-
+            double zs = segmentList.get(idSegment).getZs(this, this.segmentList.get(idSegment));
             double zr = segmentList.get(idSegment).getZr(this, this.segmentList.get(idSegment));
-            segmentList.get(idSegment).zr = zr;
+
+            // see Point 5.3 Equivalent heights in AFNOR document
+            if (zs<=0){zs = 0.000000001;}
+            if (zr<=0){zr = 0.000000001;}
+
+            this.segmentList.get(idSegment).zs  = zs;
+            this.segmentList.get(idSegment).zr = zr;
 
             Coordinate S = (Coordinate) pointList.get(idSegment).coordinate.clone();
             Coordinate R = (Coordinate) pointList.get(idSegment+1).coordinate.clone();
@@ -426,9 +435,7 @@ public class PropagationPath {
                 segmentList.get(idSegment).dc = getRayCurveLength(d);
             }
 
-            // see Point 5.3 Equivalent heights in AFNOR document
-            if (zs<=0){zs= 0.000000001;}
-            if (zr<=0){zr= 0.000000001;}
+
 
             double gs = pointList.get(0).gs;
 
@@ -437,10 +444,8 @@ public class PropagationPath {
 
             // Compute PRIME zs, zr and testForm
             double zsPrime= segmentList.get(idSegment).getZsPrime(this,this.segmentList.get(idSegment) );
-            segmentList.get(idSegment).zs  =zs;
 
             double zrPrime = segmentList.get(idSegment).getZrPrime(this, this.segmentList.get(idSegment));
-            segmentList.get(idSegment).zr = zr;
 
             double testFormPrime = dp / (30 * (zsPrime + zrPrime));
             segmentList.get(idSegment).testFormPrime = testFormPrime;
@@ -459,8 +464,11 @@ public class PropagationPath {
     }
 
     private void computeAugmentedPath() {
-
+        difVPoints.clear();
+        difHPoints.clear();
+        refPoints.clear();
         for (int idPoint = 0; idPoint < pointList.size(); idPoint++) {
+
             if (pointList.get(idPoint).type==PointPath.POINT_TYPE.DIFV)
             {
                 difVPoints.add(idPoint);
@@ -473,15 +481,7 @@ public class PropagationPath {
             if (pointList.get(idPoint).type==PointPath.POINT_TYPE.REFL)
             {
                 refPoints.add(idPoint);
-
-
             }
-
-
-
-
-
-
         }
 
     }

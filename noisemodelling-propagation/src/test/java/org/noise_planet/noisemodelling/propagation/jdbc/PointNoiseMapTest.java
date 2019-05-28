@@ -71,6 +71,7 @@ public class PointNoiseMapTest {
             pointNoiseMap.setReceiverHasAbsoluteZCoordinates(true);
             pointNoiseMap.setSourceHasAbsoluteZCoordinates(false);
             pointNoiseMap.setHeightField("HEIGHT");
+
             pointNoiseMap.setDemTable("DEM");
             pointNoiseMap.setComputeVerticalDiffraction(false);
             pointNoiseMap.initialize(connection, new EmptyProgressVisitor());

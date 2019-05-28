@@ -98,8 +98,8 @@ public class PointPath {
         PropagationPath.writeCoordinate(out, coordinate);
         out.writeDouble(altitude);
         out.writeDouble(gs);
-        for (double alpha :  PropagationProcessPathData.freq_lvl) {
-            out.writeDouble(alpha);
+        for (int j = 0; j< PropagationProcessPathData.freq_lvl.size(); j++){
+            out.writeDouble(alphaWall.get(j));
         }
         out.writeInt(buildingId);
         out.writeInt(type.ordinal());

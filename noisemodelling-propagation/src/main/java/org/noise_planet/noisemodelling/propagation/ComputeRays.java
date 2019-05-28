@@ -943,6 +943,27 @@ public class ComputeRays {
                 for (PropagationPath propagationPath : propagationPaths) {
                     propagationPath.idSource = srcId;
                     propagationPath.idReceiver = rcvId;
+                    propagationPath.difVPoints.clear();
+                    propagationPath.difHPoints.clear();
+                    propagationPath.refPoints.clear();
+
+                    for (int idPoint = 0; idPoint < propagationPath.getPointList().size(); idPoint++) {
+
+                        if (propagationPath.getPointList().get(idPoint).type==PointPath.POINT_TYPE.DIFV)
+                        {
+                            propagationPath.difVPoints.add(idPoint);
+                        }
+                        if (propagationPath.getPointList().get(idPoint).type==PointPath.POINT_TYPE.DIFH)
+                        {
+                            propagationPath.difHPoints.add(idPoint);
+                        }
+
+                        if (propagationPath.getPointList().get(idPoint).type==PointPath.POINT_TYPE.REFL)
+                        {
+                            propagationPath.refPoints.add(idPoint);
+                        }
+                    }
+
                 }
                 return dataOut.addPropagationPaths(srcId, sourceLi, rcvId, propagationPaths);
             }
