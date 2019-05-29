@@ -210,7 +210,7 @@ public class PropagationPath {
 
     public void initPropagationPath() {
         if(!isInitialized()) {
-            //computeAugmentedPath();
+            computeAugmentedPath();
             computeAugmentedSegments();
             computeAugmentedSRPath();
             setInitialized(true);
