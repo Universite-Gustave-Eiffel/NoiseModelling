@@ -988,7 +988,6 @@ public class EvaluateAttenuationCnossosTest {
     }
 
 
-
     /**
      * TC18 - Screening and reflecting barrier on ground with spatially varying heights and
      * acoustic properties
