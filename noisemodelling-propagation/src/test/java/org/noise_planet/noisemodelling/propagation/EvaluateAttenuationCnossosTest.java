@@ -1,5 +1,7 @@
 package org.noise_planet.noisemodelling.propagation;
 
+import com.sun.org.apache.xml.internal.security.exceptions.Base64DecodingException;
+import com.sun.org.apache.xml.internal.security.utils.Base64;
 import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
@@ -11,6 +13,8 @@ import org.locationtech.jts.io.WKTReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -20,8 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 import static org.noise_planet.noisemodelling.propagation.KMLDocument.exportScene;
 
 public class EvaluateAttenuationCnossosTest {
@@ -1769,5 +1772,43 @@ public class EvaluateAttenuationCnossosTest {
         public double[] getMaximalSourcePower(int sourceId) {
             return wjSources.get(sourceId);
         }
+    }
+
+
+    /**
+     * Test NaN regression issue
+     * ByteArrayOutputStream bos = new ByteArrayOutputStream();
+     * propath.writeStream(new DataOutputStream(bos));
+     * new String(Base64.getEncoder().encode(bos.toByteArray()));
+     */
+    @Test
+    public void TestRegressionNaN() throws LayerDelaunayError, IOException, Base64DecodingException {
+        String path = "AAAAAAAAAAAAAAAABkELTp9wo7AcQVnI2rXCgfo/qZmZmZmZmgAAAAAAAAAAAAAAAAAAAAB/+AAAAAAAAH/4AAAAAAAAf" +
+                "/gAAAAAAAB/+AAAAAAAAH/4AAAAAAAAf/gAAAAAAAB/+AAAAAAAAH/4AAAAAAAA" +
+                "/////wAAAABBC1AyUqFAN0FZyLag3BoSQCXYkAb18EtAFU46DH/X4gAAAAAAAAAAf/gAAAAAAAB/+AAAAAAAAH/4AAAAAAAAf" +
+                "/gAAAAAAAB/+AAAAAAAAH/4AAAAAAAAf/gAAAAAAAB/+AAAAAAAAP////8AAAADQQtSgYVM4atBWciBrnR" +
+                "/N0A2aoP8x7ilQBy3Mx4IxFoAAAAAAAAAAH/4AAAAAAAAf/gAAAAAAAB/+AAAAAAAAH/4AAAAAAAAf/gAAAAAAAB/+AAAAAAAAH" +
+                "/4AAAAAAAAf/gAAAAAAAD/////AAAAA0ELUo/NRf1KQVnIgGcH8SZANmqD/Me4pUAe4TEhnNY1AAAAAAAAAAB/+AAAAAAAAH" +
+                "/4AAAAAAAAf/gAAAAAAAB/+AAAAAAAAH/4AAAAAAAAf/gAAAAAAAB/+AAAAAAAAH/4AAAAAAAA" +
+                "/////wAAAANBC1NUa4Kow0FZyG7LKg/OQDDZILDUkCJAJUagr26FpAAAAAAAAAAAf/gAAAAAAAB/+AAAAAAAAH/4AAAAAAAAf" +
+                "/gAAAAAAAB/+AAAAAAAAH/4AAAAAAAAf/gAAAAAAAB/+AAAAAAAAP" +
+                "////8AAAADQQtTd2Mz1AZBWchrqXZ4aEAt2dfMwxGBQCXZ18zDEYEAAAAAAAAAAH/4AAAAAAAAf/gAAAAAAAB/+AAAAAAAAH" +
+                "/4AAAAAAAAf/gAAAAAAAB/+AAAAAAAAH/4AAAAAAAAf/gAAAAAAAD/////AAAABAAAAAU/wBvxnrf6hkBJLxOOJzAAwGILIc" +
+                "/cAABAJRdmLHGkLkELTp9xTapHQVnI2rWzSOi/jTelQ3f5WD/hNUTOrUdwQFJ6WqIZaADAanpOelWAAD/odGaWtL" +
+                "+wQQtQMkhBG1pBWci2ocn7h0ASDrQig+tyAAAAAAAAAAA/+uzqKo4AAMATSo/AwAAAP/Qml6qEHQRBC1J9yb" +
+                "/w6kFZyIIECGuLQBb5xfFciCQAAAAAAAAAAEA4e506acAAwFGKjYvwAABABNd1zN" +
+                "/3IEELUo8N2d3pQVnIgHgsr3lAIC98kZ14SQAAAAAAAAAAQBFrZiGsAADAKPYLaTAAAD" +
+                "/SoWVrORNgQQtTU81vkgNBWchu2VI9a0AlRuFfAqJXAAAAAT" +
+                "/TBsY8SUi2QGNg7UkPZADAe8S0CsKAAEAVMZUczyA2QQtOn1fPWpRBWcjat/vFwUAKJWO95msG";
+        PropagationPath propPath = new PropagationPath();
+        propPath.readStream(new DataInputStream(new ByteArrayInputStream(Base64.decode(path))));
+        EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
+        PropagationProcessPathData pathData = new PropagationProcessPathData();
+        evaluateAttenuationCnossos.evaluate(propPath, pathData);
+        double[] aGlobalMeteoHom = evaluateAttenuationCnossos.getaGlobal();
+        for(int i = 0; i < aGlobalMeteoHom.length; i++) {
+            assertFalse(String.format("freq %d Hz with nan value",PropagationProcessPathData.freq_lvl.get(i)), Double.isNaN(aGlobalMeteoHom[i]));
+        }
+
     }
 }
