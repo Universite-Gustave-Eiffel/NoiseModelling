@@ -165,7 +165,7 @@ public class ComputeRays {
      */
     public void makeSourceRelativeZToAbsolute() {
         AbsoluteCoordinateSequenceFilter filter = new AbsoluteCoordinateSequenceFilter(data.freeFieldFinder, true);
-        List<Geometry> sourceCopy = new ArrayList<>();
+        List<Geometry> sourceCopy = new ArrayList<>(data.sourceGeometries.size());
         for (Geometry source : data.sourceGeometries) {
             filter.reset();
             Geometry cpy = source.copy();

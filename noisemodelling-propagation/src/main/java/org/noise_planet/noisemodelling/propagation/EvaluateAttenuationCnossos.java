@@ -91,7 +91,7 @@ public class EvaluateAttenuationCnossos {
 
             if (testForm >= -2.) {
                 deltaDif = 10 * Ch * Math
-                        .log10(3 + testForm);
+                        .log10(Math.max(0, 3 + testForm));
             }
 
             DeltaDif[idfreq] = Math.max(0,deltaDif);
@@ -186,7 +186,11 @@ public class EvaluateAttenuationCnossos {
      * @return Δsol(S, O) if Asol(S,O) is given or Δsol(O,R) if Asol(O,R) is given
      */
     private double getDeltaGround(double aGround, double deltaDifPrim, double deltaDif) {
-        return -20 * Math.log10(1 + (Math.pow(10, -aGround / 20) - 1) * Math.pow(10, -(deltaDifPrim - deltaDif) / 20));
+        double attArg = 1 + (Math.pow(10, -aGround / 20) - 1) * Math.pow(10, -(deltaDifPrim - deltaDif) / 20);
+        if(attArg < 0) {
+            attArg = 0;
+        }
+        return -20 * Math.log10(attArg);
     }
 
 
@@ -285,6 +289,7 @@ public class EvaluateAttenuationCnossos {
                 segmentPath.get(0).setGm(segmentPath.get(0).gPathPrime);
             }
 
+            // TODO Should be Z o,s' but can't find how to compute this
             aGroundSO = getAGround(segmentPath.get(0), path,data);
 
             // Set Gm and Gw for AGround OR - Table 2.5.b
@@ -301,7 +306,7 @@ public class EvaluateAttenuationCnossos {
             // Eq 2.5.30 - Eq. 2.5.31 - Eq. 2.5.32
             for (int idf = 0; idf < nbfreq; idf++) {
                 // see 5.3 Equivalent heights from AFNOR document
-                if (segmentPath.get(0).zs == 0.0000001 || segmentPath.get(segmentPath.size()-1).zr == 0.0000001) {
+                if (segmentPath.get(0).zs <= 0.0000001 || segmentPath.get(segmentPath.size()-1).zr <= 0.0000001) {
                     aDif[idf]=Math.min(25,DeltaDifSR[idf])+aGroundSO[idf] + aGroundOR[idf];
                     }
                 else{
