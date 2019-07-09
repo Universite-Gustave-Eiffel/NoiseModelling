@@ -33,6 +33,9 @@
  */
 package org.noise_planet.noisemodelling.propagation;
 
+import org.h2gis.api.EmptyProgressVisitor;
+import org.h2gis.api.ProgressVisitor;
+
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -47,6 +50,7 @@ import java.util.concurrent.TimeUnit;
  * @author Nicolas Fortin
  */
 public class ThreadPool extends ThreadPoolExecutor {
+	ProgressVisitor progressVisitor = new EmptyProgressVisitor();
 
 	/**
 	 * Default constructor. Set CorePoolSize size to 32 Set Maximum pool size to
@@ -121,6 +125,10 @@ public class ThreadPool extends ThreadPoolExecutor {
 				threadFactory);
 	}
 
+	public void setProgressVisitor(ProgressVisitor progressVisitor) {
+		this.progressVisitor = progressVisitor;
+	}
+
 	/**
 	 * @return True if poolSize is inferior of maximum pool size
 	 */
@@ -149,7 +157,7 @@ public class ThreadPool extends ThreadPoolExecutor {
 	 */
 	public void executeBlocking(Runnable command) {
 		while (this.getQueue().size() + this.getActiveCount() >= this
-				.getMaximumPoolSize()) {
+				.getMaximumPoolSize() && !progressVisitor.isCanceled()) {
 			try {
 				Thread.sleep(100);
 			} catch (InterruptedException e) {
