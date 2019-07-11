@@ -23,7 +23,7 @@ class TrafficPropagationProcessData extends PropagationProcessData {
     private List<double[]> wjSourcesE = new ArrayList<>();
     private List<double[]> wjSourcesN = new ArrayList<>();
 
-    private String TMJA_FIELD_NAME = "CUMUL_TRAF";
+    private String AAFD_FIELD_NAME = "AADF"; // Annual Average Daily Flow (AADF) estimates
     private String ROAD_CATEGORY_FIELD_NAME = "CLAS_ADM";
     private
     static double[] lv_hourly_distribution = new double[]{ 0.56, 0.3, 0.21, 0.26, 0.69, 1.8, 4.29, 7.56, 7.09, 5.5, 4.96, 5.04,
@@ -45,7 +45,7 @@ class TrafficPropagationProcessData extends PropagationProcessData {
         super.addSource(pk, geom, rs);
 
         // Read average 24h traffic
-        double tmja = rs.getDouble(TMJA_FIELD_NAME);
+        double tmja = rs.getDouble(AAFD_FIELD_NAME);
 
         //130 km/h 1:Autoroute
         //80 km/h  2:Nationale
