@@ -25,7 +25,9 @@ class PropagationPathStorageFactory implements PointNoiseMap.IComputeRaysOutFact
 
     void openPathOutputFile(String path) throws IOException {
         gzipOutputStream = new GZIPOutputStream(new FileOutputStream(path), GZIP_CACHE_SIZE);
-        new Thread(new WriteThread(pathQueue, waitForMorePaths, gzipOutputStream)).start();
+        if(gzipOutputStream != null) {
+            new Thread(new WriteThread(pathQueue, waitForMorePaths, gzipOutputStream)).start();
+        }
     }
 
     void setWorkingDir(String workingDir) {

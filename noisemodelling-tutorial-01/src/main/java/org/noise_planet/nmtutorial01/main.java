@@ -77,11 +77,13 @@ class Main {
         pointNoiseMap.setComputeRaysOutFactory(storageFactory);
         storageFactory.setWorkingDir(new File(workingDir).getAbsolutePath());
         try {
-            storageFactory.openPathOutputFile(new File(workingDir, "rays.gz").getAbsolutePath());
+            //storageFactory.openPathOutputFile(new File(workingDir, "rays.gz").getAbsolutePath());
             RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1);
             pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
             // Set of already processed receivers
             Set<Long> receivers = new HashSet<>();
+            // Do not split domain
+            pointNoiseMap.setGridDim(1);
             ProgressVisitor progressVisitor = progressLogger.subProcess(pointNoiseMap.getGridDim()*pointNoiseMap.getGridDim());
             for (int i = 0; i < pointNoiseMap.getGridDim(); i++) {
                 for (int j = 0; j < pointNoiseMap.getGridDim(); j++) {

@@ -84,7 +84,7 @@ class PropagationPathStorage extends ComputeRaysOut {
 
         @Override
         public void finalizeReceiver(long receiverId) {
-            propagationPathStorage.pathQueue.addAll(receiverPaths);
+            //propagationPathStorage.pathQueue.addAll(receiverPaths);
             receiverPaths.clear();
         }
 
