@@ -768,8 +768,8 @@ public class ComputeRays {
                 if (left && k < indexp2 || !left && k >= indexp2) {
                     if (!freeFieldSegments.contains(freeFieldTestSegment)) {
                         // Check if we still are in the propagation domain
-                        if(data.freeFieldFinder.getTriangleIdByCoordinate(coordinates[k]) == -1 ||
-                                data.freeFieldFinder.getTriangleIdByCoordinate(coordinates[k+1]) ==-1) {
+                        if(!data.freeFieldFinder.getMeshEnvelope().contains(coordinates[k]) ||
+                                !data.freeFieldFinder.getMeshEnvelope().contains(coordinates[k+1])) {
                             // This side goes over propagation path
                             return new ArrayList<>();
                         }

@@ -66,6 +66,7 @@ public class FastObstructionTest {
     private List<Coordinate> vertices;
     private List<Triangle> triNeighbors; // Neighbors
     private List<MeshBuilder.PolygonWithHeight> polygonWithHeight = new ArrayList<MeshBuilder.PolygonWithHeight>();//list polygon with height
+    private Envelope meshEnvelope;
 
     private QueryGeometryStructure triIndex = null;
     private List<Float> verticesOpenAngle = null;
@@ -96,6 +97,10 @@ public class FastObstructionTest {
         this.triVertices = triangles;
         this.triNeighbors = triNeighbors;
         this.vertices = points;
+        meshEnvelope = new Envelope();
+        for(Coordinate p : points) {
+            meshEnvelope.expandToInclude(p);
+        }
 
         // /////////////////////////////////
         // Feed Query Structure to find triangle, by coordinate
@@ -113,6 +118,10 @@ public class FastObstructionTest {
         }
         //give a average height to each building
         setAverageBuildingHeight(this.polygonWithHeight);
+    }
+
+    public Envelope getMeshEnvelope() {
+        return meshEnvelope;
     }
 
     /**

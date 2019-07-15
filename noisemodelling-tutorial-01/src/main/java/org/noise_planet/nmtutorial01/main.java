@@ -85,11 +85,21 @@ class Main {
             // Do not split domain
             pointNoiseMap.setGridDim(1);
             ProgressVisitor progressVisitor = progressLogger.subProcess(pointNoiseMap.getGridDim()*pointNoiseMap.getGridDim());
+            logger.info("warmup");
+            for (int i = 0; i < pointNoiseMap.getGridDim(); i++) {
+                for (int j = 0; j < pointNoiseMap.getGridDim(); j++) {
+                    IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, i, j, new EmptyProgressVisitor(), receivers);
+                }
+            }
+            logger.info("start");
+            receivers = new HashSet<>();
+            long start = System.currentTimeMillis();
             for (int i = 0; i < pointNoiseMap.getGridDim(); i++) {
                 for (int j = 0; j < pointNoiseMap.getGridDim(); j++) {
                     IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, i, j, progressVisitor, receivers);
                 }
             }
+            logger.info(String.format("Computed in %d ms", System.currentTimeMillis() - start));
         } finally {
             storageFactory.closeWriteThread();
         }

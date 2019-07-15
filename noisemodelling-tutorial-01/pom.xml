@@ -16,6 +16,11 @@
     <description>Test case with OpenStreetMap buildings and roads</description>
     <dependencies>
         <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>1.7.12</version>
+        </dependency>
+        <dependency>
             <groupId>org.orbisgis</groupId>
             <artifactId>noisemodelling-emission</artifactId>
             <version>${project.version}</version>
