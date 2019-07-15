@@ -36,6 +36,7 @@ package org.noise_planet.noisemodelling.propagation;
 import org.locationtech.jts.algorithm.Angle;
 import org.locationtech.jts.algorithm.Orientation;
 import org.locationtech.jts.geom.*;
+import org.locationtech.jts.index.strtree.STRtree;
 import org.locationtech.jts.io.WKTWriter;
 import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
@@ -68,7 +69,7 @@ public class FastObstructionTest {
     private List<MeshBuilder.PolygonWithHeight> polygonWithHeight = new ArrayList<MeshBuilder.PolygonWithHeight>();//list polygon with height
     private Envelope meshEnvelope;
 
-    private QueryGeometryStructure triIndex = null;
+    private STRtree triIndex = null;
     private List<Float> verticesOpenAngle = null;
     private List<Coordinate> verticesOpenAngleTranslated = null; /*Open angle*/
     private boolean hasBuildingWithHeight;
@@ -105,16 +106,12 @@ public class FastObstructionTest {
         // /////////////////////////////////
         // Feed Query Structure to find triangle, by coordinate
 
-        triIndex = new QueryQuadTree();
-        int triind = 0;
-        for (Triangle tri : this.triVertices) {
-            final Coordinate[] triCoords = {vertices.get(tri.getA()),
-                    vertices.get(tri.getB()), vertices.get(tri.getC()),
-                    vertices.get(tri.getA())};
-            Polygon newpoly = factory.createPolygon(
-                    factory.createLinearRing(triCoords), null);
-            triIndex.appendGeometry(newpoly, triind);
-            triind++;
+        triIndex = new STRtree();
+        for (int triId = 0; triId < this.triVertices.size(); triId++) {
+            Triangle tri = triVertices.get(triId);
+            Envelope env = new Envelope(vertices.get(tri.getA()), vertices.get(tri.getB()));
+            env.expandToInclude(vertices.get(tri.getC()));
+            triIndex.insert(env, triId);
         }
         //give a average height to each building
         setAverageBuildingHeight(this.polygonWithHeight);
@@ -345,11 +342,12 @@ public class FastObstructionTest {
 
     public int getTriangleIdByCoordinate(Coordinate pt) {
         Envelope ptEnv = new Envelope(pt);
-        Iterator<Integer> res = triIndex.query(new Envelope(ptEnv));
+        ptEnv.expandBy(1);
+        List res = triIndex.query(new Envelope(ptEnv));
         double minDistance = Double.MAX_VALUE;
         int minDistanceTriangle = -1;
-        while (res.hasNext()) {
-            int triId = res.next();
+        for(Object objInd : res) {
+            int triId = (Integer) objInd;
             Coordinate[] tri = getTriangle(triId);
             AtomicReference<Double> err = new AtomicReference<>(0.);
             if (dotInTri(pt, tri[0], tri[1], tri[2], err) && err.get() < minDistance) {
@@ -647,22 +645,7 @@ public class FastObstructionTest {
      * @return Interpolated Z value, NaN if out of bounds
      */
     public double getHeightAtPosition(Coordinate p1) {
-        Envelope ptEnv = new Envelope(p1);
-        ptEnv.expandBy(1);
-        Iterator<Integer> res = triIndex.query(ptEnv);
-        double minDistance = Double.MAX_VALUE;
-        int curTri = -1;
-        GeometryFactory f = new GeometryFactory();
-        Point p = f.createPoint(p1);
-        while (res.hasNext()) {
-            int triId = res.next();
-            Coordinate[] tri = getTriangle(triId);
-            double distance = f.createPolygon(new Coordinate[]{tri[0], tri[1], tri[2], tri[0]}).distance(p);
-            if (distance < minDistance) {
-                minDistance = distance;
-                curTri = triId;
-            }
-        }
+        int curTri = getTriangleIdByCoordinate(p1);
         if(curTri >= 0) {
             Triangle triangle = triVertices.get(curTri);
             org.locationtech.jts.geom.Triangle tri =
