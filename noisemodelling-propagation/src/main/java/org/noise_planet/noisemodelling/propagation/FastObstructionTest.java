@@ -556,6 +556,8 @@ public class FastObstructionTest {
                                              Coordinate p1, boolean goThroughWalls) {
         LinkedList<Wall> walls = new LinkedList<>();
         int curTri = getTriangleIdByCoordinate(p1);
+        int p1Building = 0;
+        p1Building = triVertices.get(curTri).getAttribute();
         int nextTri = -1;
         short firstSide = 0;
         HashSet<Integer> navigationHistory = new HashSet<Integer>(); // List all
@@ -581,8 +583,7 @@ public class FastObstructionTest {
                 IntSegment segVerticesIndex = tri
                         .getSegment(sideId);
                 int wallBuildingId = 0;
-                if(neighbors.get(sideId) != -1
-                        && tri.getAttribute() == 0) {
+                if(neighbors.get(sideId) != -1) {
                     wallBuildingId = triVertices.get(neighbors.get(sideId)).getAttribute();
                 }
                 Wall wall = new Wall(
@@ -596,7 +597,7 @@ public class FastObstructionTest {
                         if (wall.getBuildingId() >= 1 && wall.getLength() > MINIMAL_REFLECTION_WALL_LENGTH) {
                             walls.add(wall);
                         }
-                        if((goThroughWalls || wall.getBuildingId() < 1) && !navigationHistory.contains(neighbors.get(sideId))) {
+                        if((goThroughWalls || wall.getBuildingId() == 0 || wall.getBuildingId() == p1Building) && !navigationHistory.contains(neighbors.get(sideId))) {
                             // Store currentTriangle Id. This is where to go
                             // back when there is no more navigable neighbors at
                             // the next triangle
