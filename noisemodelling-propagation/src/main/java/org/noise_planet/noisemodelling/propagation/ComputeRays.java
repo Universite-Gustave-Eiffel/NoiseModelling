@@ -836,7 +836,7 @@ public class ComputeRays {
 
         // double fav_probability = favrose[(int) (Math.round(calcRotationAngleInDegrees(srcCoord, receiverCoord) / 30))];
 
-        if (!topographyHideReceiver && !buildingOnPath) {
+        if (freefield) {
             PropagationPath propagationPath = computeFreefield(receiverCoord, srcCoord,inters);
             propagationPaths.add(propagationPath);
         }
