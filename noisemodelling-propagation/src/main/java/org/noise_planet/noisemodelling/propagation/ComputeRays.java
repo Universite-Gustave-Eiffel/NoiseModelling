@@ -686,7 +686,6 @@ public class ComputeRays {
 
         Plane cutPlane = ComputeZeroRadPlane(p1, p2);
 
-        final LineSegment receiverSrc = new LineSegment(p1, p2);
         // Intersection test cache
         Set<LineSegment> freeFieldSegments = new HashSet<>();
         GeometryFactory geometryFactory = new GeometryFactory();
@@ -715,7 +714,7 @@ public class ComputeRays {
         }
         int k;
         while (convexHullIntersects) {
-            ConvexHull convexHull = new ConvexHull(input.toArray(new Coordinate[input.size()]), geometryFactory);
+            ConvexHull convexHull = new ConvexHull(input.toArray(new Coordinate[0]), geometryFactory);
             Geometry convexhull = convexHull.getConvexHull();
 
             if (convexhull.getLength() / p1.distance(p2) > MAX_RATIO_HULL_DIRECT_PATH) {
@@ -794,6 +793,12 @@ public class ComputeRays {
                 }
             }
         }
+        // Check for invalid coordinates
+        for(Coordinate p : coordinates) {
+            if(p.z < 0) {
+                return new ArrayList<>();
+            }
+        }
 
         if(left) {
             return Arrays.asList(Arrays.copyOfRange(coordinates,indexp1, indexp2 + 1));
@@ -852,7 +857,7 @@ public class ComputeRays {
 
         }
 
-        if (topographyHideReceiver && data.isComputeHorizontalDiffraction() && horizontalDiffraction ) {
+        if (topographyHideReceiver && data.isComputeHorizontalDiffraction() && horizontalDiffraction  && !freefield) {
             // todo if one of the points > roof or < floor, get out this path
             PropagationPath propagationPath = new PropagationPath();
             PropagationPath propagationPath2 = new PropagationPath();

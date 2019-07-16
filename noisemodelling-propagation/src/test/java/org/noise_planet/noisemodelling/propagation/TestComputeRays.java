@@ -2234,5 +2234,40 @@ public class TestComputeRays {
 
     }
 
+    /**
+     * Test vertical edge diffraction ray computation.
+     * If the diffraction plane goes under the ground, reject the path
+     * @throws LayerDelaunayError
+     * @throws ParseException
+     */
+    @Test
+    public void TestVerticalEdgeDiffractionAirplaneSource() throws LayerDelaunayError, ParseException {
+        GeometryFactory factory = new GeometryFactory();
+        WKTReader wktReader = new WKTReader(factory);
+        //Scene dimension
+        Envelope cellEnvelope = new Envelope();
+        Coordinate source = new Coordinate(223512.78, 6757739.7, 500.0);
+        Coordinate receiver = new Coordinate(223392.04632028608, 6757724.944483406, 2.0);
+        //Create obstruction test object
+        MeshBuilder mesh = new MeshBuilder();
+        mesh.addGeometry(wktReader.read("POLYGON ((223393 6757706, 223402 6757696, 223409 6757703, 223411 6757705, 223414 6757702, 223417 6757704, 223421 6757709, 223423 6757712, 223437 6757725, 223435 6757728, 223441 6757735, 223448 6757741, 223439 6757751, 223433 6757745, 223432 6757745, 223430 6757747, 223417 6757734, 223402 6757720, 223404 6757717, 223393 6757706)) "), 13);
 
+        cellEnvelope.expandToInclude(mesh.getGeometriesBoundingBox());
+        cellEnvelope.expandToInclude(source);
+        cellEnvelope.expandToInclude(receiver);
+        cellEnvelope.expandBy(1200);
+
+        mesh.finishPolygonFeeding(cellEnvelope);
+        //Retrieve Delaunay triangulation of scene
+        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(), mesh.getTriNeighbors(), mesh.getVertices());
+
+        PropagationProcessData processData = new PropagationProcessData(manager);
+        // new ArrayList<>(), manager, sourcesIndex, srclst, new ArrayList<>(), new ArrayList<>(), 0, 99, 1000,1000,0,0,new double[0],0,0,new EmptyProgressVisitor(), new ArrayList<>(), true
+
+        ComputeRays computeRays = new ComputeRays(processData);
+
+        List<Coordinate> ray = computeRays.computeSideHull(false, receiver, source);
+        assertTrue(ray.isEmpty());
+
+    }
 }
