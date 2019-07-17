@@ -35,19 +35,15 @@ package org.noise_planet.noisemodelling.propagation;
 
 import org.locationtech.jts.algorithm.Angle;
 import org.locationtech.jts.algorithm.Orientation;
+import org.locationtech.jts.algorithm.RectangleLineIntersector;
 import org.locationtech.jts.geom.*;
+import org.locationtech.jts.index.ItemVisitor;
 import org.locationtech.jts.index.strtree.STRtree;
 import org.locationtech.jts.io.WKTWriter;
 import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Stack;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -63,6 +59,9 @@ public class FastObstructionTest {
     public static final double epsilon = 1e-7;
     public static final double wideAngleTranslationEpsilon = 0.01;
     private static final double MINIMAL_REFLECTION_WALL_LENGTH = 1.0;
+    // Split ray to test up to 200m length (in order to reduce returns results)
+    private static final double STRTREE_TRAVERSAL_SPLIT = 200;
+    private STRtree polygonIndex;
     private List<Triangle> triVertices;
     private List<Coordinate> vertices;
     private List<Triangle> triNeighbors; // Neighbors
@@ -95,6 +94,12 @@ public class FastObstructionTest {
         }
         GeometryFactory factory = new GeometryFactory();
         this.polygonWithHeight = polygonWithHeightArray;
+        this.polygonIndex = new STRtree(Math.max(20, polygonWithHeightArray.size()));
+        // Index buildings
+        for(int i = 0; i < polygonWithHeightArray.size(); i++) {
+            MeshBuilder.PolygonWithHeight p = polygonWithHeightArray.get(i);
+            polygonIndex.insert(p.geo.getEnvelopeInternal(), i + 1);
+        }
         this.triVertices = triangles;
         this.triNeighbors = triNeighbors;
         this.vertices = points;
@@ -116,6 +121,34 @@ public class FastObstructionTest {
         //give a average height to each building
         setAverageBuildingHeight(this.polygonWithHeight);
     }
+
+    /**
+     * Find all buildings (polygons) that 2D cross the line p1->p2
+     * @param p1 first point of line
+     * @param p2 second point of line
+     * @param visitor Iterate over found buildings
+     * @return Building identifier (1-n) intersected by the line
+     */
+    public void getBuildingsOnPath(Coordinate p1, Coordinate p2, IntersectionRayVisitor visitor) {
+        LineSegment lineSeg = new LineSegment(p1, p2);
+        LineString seg = lineSeg.toGeometry(new GeometryFactory());
+        List<Coordinate> pts = new ArrayList<>(Math.max(2, (int)Math.ceil(p1.distance(p2) / STRTREE_TRAVERSAL_SPLIT)));
+        if(lineSeg.getLength() > STRTREE_TRAVERSAL_SPLIT) {
+            ComputeRays.splitLineStringIntoPoints(seg, STRTREE_TRAVERSAL_SPLIT, pts);
+        } else {
+            pts.add(p1);
+            pts.add(p2);
+        }
+        for(int idp = 0; idp < pts.size() - 1; idp++) {
+            Envelope pathEnv = new Envelope(pts.get(idp), pts.get(idp+1));
+            pathEnv.expandBy(1);
+            polygonIndex.query(pathEnv, visitor);
+            if(!visitor.doContinue()) {
+                return;
+            }
+        }
+    }
+
 
     public Envelope getMeshEnvelope() {
         return meshEnvelope;
@@ -507,6 +540,9 @@ public class FastObstructionTest {
         return wideAnglePts;
     }
 
+    public List<Coordinate> getWideAnglePointsByBuilding(int build, double minAngle, double maxAngle) {
+        return getWideAnglePointsByBuilding(build, minAngle, maxAngle, wideAngleTranslationEpsilon);
+    }
     /**
      * Return wall corners with an offset offward the building volume
      * @param build Building identifier [1-buildingCount]
@@ -514,7 +550,7 @@ public class FastObstructionTest {
      * @param maxAngle Maximum angle [0-2Pi]
      * @return List of corners within parameters range
      */
-    public List<Coordinate> getWideAnglePointsByBuilding(int build, double minAngle, double maxAngle) {
+    public List<Coordinate> getWideAnglePointsByBuilding(int build, double minAngle, double maxAngle, double offsetDistance) {
         List <Coordinate> verticesBuilding = new ArrayList<>();
         Coordinate[] ring = getBuilding(build).getExteriorRing().getCoordinates();
         if(!Orientation.isCCW(ring)) {
@@ -542,9 +578,9 @@ public class FastObstructionTest {
                 double midAngle = openAngle / 2;
                 double midAngleFromZero = Angle.angle(ring[i], ring[i1]) + midAngle;
                 Coordinate offsetPt = new Coordinate(
-                        ring[i].x + Math.cos(midAngleFromZero) * wideAngleTranslationEpsilon,
-                        ring[i].y + Math.sin(midAngleFromZero) * wideAngleTranslationEpsilon,
-                        getBuildingRoofZ(build) + wideAngleTranslationEpsilon);
+                        ring[i].x + Math.cos(midAngleFromZero) * offsetDistance,
+                        ring[i].y + Math.sin(midAngleFromZero) * offsetDistance,
+                        getBuildingRoofZ(build) + offsetDistance);
                 verticesBuilding.add(offsetPt);
             }
         }
@@ -1370,5 +1406,41 @@ public class FastObstructionTest {
             idTriangle++;
         }
         return sb.toString();
+    }
+
+
+
+    public static abstract class IntersectionRayVisitor implements ItemVisitor {
+        Set<Integer> buildingsprocessed = new HashSet<>();
+        List<MeshBuilder.PolygonWithHeight> polygonWithHeight;
+        Coordinate p1;
+        Coordinate p2;
+        LineString seg;
+        public IntersectionRayVisitor(List<MeshBuilder.PolygonWithHeight> polygonWithHeight, Coordinate p1,
+                                      Coordinate p2) {
+            this.polygonWithHeight = polygonWithHeight;
+            this.p1 = p1;
+            this.p2 = p2;
+            seg = new LineSegment(p1, p2).toGeometry(new GeometryFactory());
+        }
+
+        public abstract void addBuilding(int buildingId);
+
+        @Override
+        public void visitItem(Object item) {
+            int buildingId = (Integer) item;
+            if(!buildingsprocessed.contains(buildingId)) {
+                buildingsprocessed.add(buildingId);
+                final MeshBuilder.PolygonWithHeight p = polygonWithHeight.get(buildingId - 1);
+                RectangleLineIntersector rect = new RectangleLineIntersector(p.geo.getEnvelopeInternal());
+                if (rect.intersects(p1, p2) && p.geo.intersects(seg)) {
+                    addBuilding(buildingId);
+                }
+            }
+        }
+
+        public boolean doContinue() {
+            return true;
+        }
     }
 }

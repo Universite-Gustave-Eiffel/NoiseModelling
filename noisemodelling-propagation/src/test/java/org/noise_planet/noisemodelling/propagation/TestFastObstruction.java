@@ -36,6 +36,7 @@ package org.noise_planet.noisemodelling.propagation;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.locationtech.jts.algorithm.RectangleLineIntersector;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
@@ -229,4 +230,10 @@ public class TestFastObstruction extends TestCase {
 
 	}
 
+	@Test
+	public void testIntersectionRayEnvelope() {
+		Envelope env = new Envelope(new Coordinate(2, 3), new Coordinate(6, 6));
+		RectangleLineIntersector rect = new RectangleLineIntersector(env);
+		assertFalse(rect.intersects(new Coordinate(5, 1), new Coordinate(8, 5)));
+	}
 }
