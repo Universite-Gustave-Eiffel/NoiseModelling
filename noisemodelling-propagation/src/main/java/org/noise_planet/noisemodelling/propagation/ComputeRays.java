@@ -688,8 +688,10 @@ public class ComputeRays {
         input.add(p1);
         input.add(p2);
 
+        Set<Integer> buildingInHull = new HashSet<>();
+
         IntersectionRayVisitor intersectionRayVisitor = new IntersectionRayVisitor(
-                data.freeFieldFinder.getPolygonWithHeight(), p1, p2, data.freeFieldFinder, input);
+                data.freeFieldFinder.getPolygonWithHeight(), p1, p2, data.freeFieldFinder, input, buildingInHull);
 
         data.freeFieldFinder.getBuildingsOnPath(p1, p2, intersectionRayVisitor);
 
@@ -754,7 +756,7 @@ public class ComputeRays {
                             return new ArrayList<>();
                         }
                         intersectionRayVisitor = new IntersectionRayVisitor(data.freeFieldFinder.getPolygonWithHeight(),
-                                coordinates[k], coordinates[k + 1], data.freeFieldFinder, input);
+                                coordinates[k], coordinates[k + 1], data.freeFieldFinder, input, buildingInHull);
                         data.freeFieldFinder.getBuildingsOnPath(coordinates[k], coordinates[k + 1], intersectionRayVisitor);
                         if(!intersectionRayVisitor.doContinue()) {
                             convexHullIntersects = true;
@@ -1248,39 +1250,39 @@ public class ComputeRays {
     }
 
     private static final class IntersectionRayVisitor extends FastObstructionTest.IntersectionRayVisitor {
-        Set<Integer> buildingsInIntersection = new HashSet<>();
+        Set<Integer> buildingsInIntersection;
         FastObstructionTest freeFieldFinder;
         Plane cutPlane;
         List<Coordinate> input;
         GeometryFactory f = new GeometryFactory();
+        boolean foundIntersection = false;
 
         public IntersectionRayVisitor(List<MeshBuilder.PolygonWithHeight> polygonWithHeight, Coordinate p1,
-                                      Coordinate p2, FastObstructionTest freeFieldFinde, List<Coordinate> input) {
+                                      Coordinate p2, FastObstructionTest freeFieldFinde, List<Coordinate> input, Set<Integer> buildingsInIntersection) {
             super(polygonWithHeight, p1, p2);
             this.freeFieldFinder = freeFieldFinde;
             this.input = input;
+            this.buildingsInIntersection = buildingsInIntersection;
             cutPlane = ComputeZeroRadPlane(p1, p2);
         }
 
         @Override
         public void addBuilding(int buildingId) {
-            List<Coordinate> roofPoints = freeFieldFinder.getWideAnglePointsByBuilding(buildingId, 0, 2 * Math.PI, 0);
+            if(buildingsInIntersection.contains(buildingId)) {
+                return;
+            }
+            List<Coordinate> roofPoints = freeFieldFinder.getWideAnglePointsByBuilding(buildingId, 0, 2 * Math.PI);
             // Create a cut of the building volume
             roofPoints = cutRoofPointsWithPlane(cutPlane, roofPoints);
             if (!roofPoints.isEmpty()) {
-                // Check if the ray intersects buildings
-                if(f.createPolygon(roofPoints.toArray(new Coordinate[0])).intersects(seg)) {
-                    // Create an offset for creating the diffraction path
-                    roofPoints = freeFieldFinder.getWideAnglePointsByBuilding(buildingId, 0, 2 * Math.PI);
-                    roofPoints = cutRoofPointsWithPlane(cutPlane, roofPoints);
                     input.addAll(roofPoints.subList(0, roofPoints.size() - 1));
                     buildingsInIntersection.add(buildingId);
-                }
+                    foundIntersection = true;
             }
         }
 
         public boolean doContinue() {
-            return buildingsInIntersection.isEmpty();
+            return !foundIntersection;
         }
     }
 }
