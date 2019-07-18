@@ -1254,7 +1254,6 @@ public class ComputeRays {
         FastObstructionTest freeFieldFinder;
         Plane cutPlane;
         List<Coordinate> input;
-        GeometryFactory f = new GeometryFactory();
         boolean foundIntersection = false;
 
         public IntersectionRayVisitor(List<MeshBuilder.PolygonWithHeight> polygonWithHeight, Coordinate p1,

@@ -6,10 +6,6 @@ import org.cts.crs.CRSException;
 import org.cts.op.CoordinateOperationException;
 import org.junit.Test;
 import org.locationtech.jts.geom.*;
-import org.locationtech.jts.geom.util.AffineTransformation;
-import org.locationtech.jts.io.ParseException;
-import org.locationtech.jts.io.WKTReader;
-import org.locationtech.jts.math.Vector2D;
 import org.noise_planet.noisemodelling.propagation.utils.Densifier3D;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +17,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 import static org.junit.Assert.*;
 

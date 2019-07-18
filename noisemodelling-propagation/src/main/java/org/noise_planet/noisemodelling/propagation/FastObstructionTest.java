@@ -42,6 +42,7 @@ import org.locationtech.jts.index.strtree.STRtree;
 import org.locationtech.jts.io.WKTWriter;
 import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
+import org.noise_planet.noisemodelling.propagation.utils.Densifier3D;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -131,16 +132,15 @@ public class FastObstructionTest {
      */
     public void getBuildingsOnPath(Coordinate p1, Coordinate p2, IntersectionRayVisitor visitor) {
         LineSegment lineSeg = new LineSegment(p1, p2);
-        LineString seg = lineSeg.toGeometry(new GeometryFactory());
-        List<Coordinate> pts = new ArrayList<>(Math.max(2, (int)Math.ceil(p1.distance(p2) / STRTREE_TRAVERSAL_SPLIT)));
+        Coordinate[] pts;
         if(lineSeg.getLength() > STRTREE_TRAVERSAL_SPLIT) {
-            ComputeRays.splitLineStringIntoPoints(seg, STRTREE_TRAVERSAL_SPLIT, pts);
+            LineString seg = lineSeg.toGeometry(new GeometryFactory());
+            pts = Densifier3D.densify(seg, STRTREE_TRAVERSAL_SPLIT).getCoordinates();
         } else {
-            pts.add(p1);
-            pts.add(p2);
+            pts = new Coordinate[] {p1, p2};
         }
-        for(int idp = 0; idp < pts.size() - 1; idp++) {
-            Envelope pathEnv = new Envelope(pts.get(idp), pts.get(idp+1));
+        for(int idp = 0; idp < pts.length - 1; idp++) {
+            Envelope pathEnv = new Envelope(pts[idp], pts[idp+1]);
             pathEnv.expandBy(1);
             polygonIndex.query(pathEnv, visitor);
             if(!visitor.doContinue()) {
@@ -540,9 +540,6 @@ public class FastObstructionTest {
         return wideAnglePts;
     }
 
-    public List<Coordinate> getWideAnglePointsByBuilding(int build, double minAngle, double maxAngle) {
-        return getWideAnglePointsByBuilding(build, minAngle, maxAngle, wideAngleTranslationEpsilon);
-    }
     /**
      * Return wall corners with an offset offward the building volume
      * @param build Building identifier [1-buildingCount]
@@ -550,7 +547,7 @@ public class FastObstructionTest {
      * @param maxAngle Maximum angle [0-2Pi]
      * @return List of corners within parameters range
      */
-    public List<Coordinate> getWideAnglePointsByBuilding(int build, double minAngle, double maxAngle, double offsetDistance) {
+    public List<Coordinate> getWideAnglePointsByBuilding(int build, double minAngle, double maxAngle) {
         List <Coordinate> verticesBuilding = new ArrayList<>();
         Coordinate[] ring = getBuilding(build).getExteriorRing().getCoordinates();
         if(!Orientation.isCCW(ring)) {
@@ -578,9 +575,9 @@ public class FastObstructionTest {
                 double midAngle = openAngle / 2;
                 double midAngleFromZero = Angle.angle(ring[i], ring[i1]) + midAngle;
                 Coordinate offsetPt = new Coordinate(
-                        ring[i].x + Math.cos(midAngleFromZero) * offsetDistance,
-                        ring[i].y + Math.sin(midAngleFromZero) * offsetDistance,
-                        getBuildingRoofZ(build) + offsetDistance);
+                        ring[i].x + Math.cos(midAngleFromZero) * wideAngleTranslationEpsilon,
+                        ring[i].y + Math.sin(midAngleFromZero) * wideAngleTranslationEpsilon,
+                        getBuildingRoofZ(build) + wideAngleTranslationEpsilon);
                 verticesBuilding.add(offsetPt);
             }
         }
