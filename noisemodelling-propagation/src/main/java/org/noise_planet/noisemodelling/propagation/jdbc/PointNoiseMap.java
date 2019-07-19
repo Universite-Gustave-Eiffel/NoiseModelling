@@ -99,6 +99,9 @@ public class PointNoiseMap extends JdbcNoiseMap {
         fetchCellDem(connection, expandedCellEnvelop, mesh);
 
         // Data fetching for collision test is done.
+        Envelope meshEnvelope = new Envelope(expandedCellEnvelop);
+        // Expand again envelope for sound sources or buildings sides that are close to the edge
+        meshEnvelope.expandBy(10);
         try {
             mesh.finishPolygonFeeding(expandedCellEnvelop);
         } catch (LayerDelaunayError ex) {

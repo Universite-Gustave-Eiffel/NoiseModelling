@@ -2,13 +2,9 @@ package org.noise_planet.noisemodelling.propagation;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
-import org.apache.commons.math3.stat.regression.RegressionResults;
-import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.cts.crs.CRSException;
 import org.cts.op.CoordinateOperationException;
 import org.junit.Test;
-import org.locationtech.jts.algorithm.CGAlgorithms3D;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
@@ -595,7 +591,7 @@ public class TestComputeRays {
 //        kmlDocument.writeFooter();
     }
 
-    //@Test
+    @Test
     public void benchmarkComputeVerticalEdgeDiffraction() throws LayerDelaunayError, ParseException {
         Coordinate[] buildingShell = new Coordinate[]{
                 new Coordinate(1, 1),
@@ -634,7 +630,7 @@ public class TestComputeRays {
 
         Vector2D pRef = new Vector2D(1, 2);
         Random r = new Random(0);
-        int nbHull = 1200;
+        int nbHull = 3000;
         // Warmup
         for (int i = 0; i < 10; i++) {
             int xStep = r.nextInt(nbCols);

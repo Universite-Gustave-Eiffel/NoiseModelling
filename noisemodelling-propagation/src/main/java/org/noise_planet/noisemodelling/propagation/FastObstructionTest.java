@@ -35,18 +35,18 @@ package org.noise_planet.noisemodelling.propagation;
 
 import org.locationtech.jts.algorithm.Angle;
 import org.locationtech.jts.algorithm.Orientation;
+import org.locationtech.jts.algorithm.RectangleLineIntersector;
 import org.locationtech.jts.geom.*;
+import org.locationtech.jts.index.ItemVisitor;
+import org.locationtech.jts.index.strtree.STRtree;
 import org.locationtech.jts.io.WKTWriter;
 import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
+import org.noise_planet.noisemodelling.propagation.utils.Densifier3D;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Stack;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -62,15 +62,20 @@ public class FastObstructionTest {
     public static final double epsilon = 1e-7;
     public static final double wideAngleTranslationEpsilon = 0.01;
     private static final double MINIMAL_REFLECTION_WALL_LENGTH = 1.0;
+    // Split ray to test up to 200m length (in order to reduce returns results)
+    private static final double STRTREE_TRAVERSAL_SPLIT = 300;
+    private STRtree polygonIndex;
     private List<Triangle> triVertices;
     private List<Coordinate> vertices;
     private List<Triangle> triNeighbors; // Neighbors
     private List<MeshBuilder.PolygonWithHeight> polygonWithHeight = new ArrayList<MeshBuilder.PolygonWithHeight>();//list polygon with height
+    private Envelope meshEnvelope;
 
-    private QueryGeometryStructure triIndex = null;
+    private STRtree triIndex = null;
     private List<Float> verticesOpenAngle = null;
     private List<Coordinate> verticesOpenAngleTranslated = null; /*Open angle*/
     private boolean hasBuildingWithHeight;
+    private Logger logger = LoggerFactory.getLogger(FastObstructionTest.class);
     //data for calculate 3D diffraction,
     //first coordinate is the coordinate after the changing coordinate system, the second parameter will keep the data of original coordinate system
     /**
@@ -93,26 +98,53 @@ public class FastObstructionTest {
         }
         GeometryFactory factory = new GeometryFactory();
         this.polygonWithHeight = polygonWithHeightArray;
+        this.polygonIndex = new STRtree(Math.max(20, polygonWithHeightArray.size()));
+        // Index buildings
+        for(int i = 0; i < polygonWithHeightArray.size(); i++) {
+            MeshBuilder.PolygonWithHeight p = polygonWithHeightArray.get(i);
+            polygonIndex.insert(p.geo.getEnvelopeInternal(), i + 1);
+        }
         this.triVertices = triangles;
         this.triNeighbors = triNeighbors;
         this.vertices = points;
+        meshEnvelope = new Envelope();
+        for(Coordinate p : points) {
+            meshEnvelope.expandToInclude(p);
+        }
 
         // /////////////////////////////////
         // Feed Query Structure to find triangle, by coordinate
 
-        triIndex = new QueryQuadTree();
-        int triind = 0;
-        for (Triangle tri : this.triVertices) {
-            final Coordinate[] triCoords = {vertices.get(tri.getA()),
-                    vertices.get(tri.getB()), vertices.get(tri.getC()),
-                    vertices.get(tri.getA())};
-            Polygon newpoly = factory.createPolygon(
-                    factory.createLinearRing(triCoords), null);
-            triIndex.appendGeometry(newpoly, triind);
-            triind++;
+        triIndex = new STRtree();
+        for (int triId = 0; triId < this.triVertices.size(); triId++) {
+            Triangle tri = triVertices.get(triId);
+            Envelope env = new Envelope(vertices.get(tri.getA()), vertices.get(tri.getB()));
+            env.expandToInclude(vertices.get(tri.getC()));
+            triIndex.insert(env, triId);
         }
         //give a average height to each building
         setAverageBuildingHeight(this.polygonWithHeight);
+    }
+
+    /**
+     * Find all buildings (polygons) that 2D cross the line p1->p2
+     * @param p1 first point of line
+     * @param p2 second point of line
+     * @param visitor Iterate over found buildings
+     * @return Building identifier (1-n) intersected by the line
+     */
+    public void getBuildingsOnPath(Coordinate p1, Coordinate p2, IntersectionRayVisitor visitor) {
+        Envelope pathEnv = new Envelope(p1, p2);
+        try {
+            polygonIndex.query(pathEnv, visitor);
+        } catch (IllegalStateException ex) {
+            //Ignore
+        }
+    }
+
+
+    public Envelope getMeshEnvelope() {
+        return meshEnvelope;
     }
 
     /**
@@ -336,14 +368,16 @@ public class FastObstructionTest {
 
     public int getTriangleIdByCoordinate(Coordinate pt) {
         Envelope ptEnv = new Envelope(pt);
-        Iterator<Integer> res = triIndex.query(new Envelope(ptEnv));
+        ptEnv.expandBy(1);
+        List res = triIndex.query(new Envelope(ptEnv));
         double minDistance = Double.MAX_VALUE;
         int minDistanceTriangle = -1;
-        while (res.hasNext()) {
-            int triId = res.next();
+        for(Object objInd : res) {
+            int triId = (Integer) objInd;
             Coordinate[] tri = getTriangle(triId);
             AtomicReference<Double> err = new AtomicReference<>(0.);
-            if (dotInTri(pt, tri[0], tri[1], tri[2], err) && err.get() < minDistance) {
+            dotInTri(pt, tri[0], tri[1], tri[2], err);
+            if (err.get() < minDistance) {
                 minDistance = err.get();
                 minDistanceTriangle = triId;
             }
@@ -639,22 +673,7 @@ public class FastObstructionTest {
      * @return Interpolated Z value, NaN if out of bounds
      */
     public double getHeightAtPosition(Coordinate p1) {
-        Envelope ptEnv = new Envelope(p1);
-        ptEnv.expandBy(1);
-        Iterator<Integer> res = triIndex.query(ptEnv);
-        double minDistance = Double.MAX_VALUE;
-        int curTri = -1;
-        GeometryFactory f = new GeometryFactory();
-        Point p = f.createPoint(p1);
-        while (res.hasNext()) {
-            int triId = res.next();
-            Coordinate[] tri = getTriangle(triId);
-            double distance = f.createPolygon(new Coordinate[]{tri[0], tri[1], tri[2], tri[0]}).distance(p);
-            if (distance < minDistance) {
-                minDistance = distance;
-                curTri = triId;
-            }
-        }
+        int curTri = getTriangleIdByCoordinate(p1);
         if(curTri >= 0) {
             Triangle triangle = triVertices.get(curTri);
             org.locationtech.jts.geom.Triangle tri =
@@ -722,6 +741,14 @@ public class FastObstructionTest {
         int curTriP1 = getTriangleIdByCoordinate(p1);
         //get source triangle id
         int curTriP2 = getTriangleIdByCoordinate(p2);
+        if(curTriP1 == -1) {
+            logger.error(String.format("Propagation path point (%.2f, %.2f) is outside of bounds", p1.x, p1.y));
+            return false;
+        }
+        if(curTriP2 == -1) {
+            logger.error(String.format("Propagation path point (%.2f, %.2f) is outside of bounds", p2.x, p2.y));
+            return false;
+        }
         Coordinate[] triP1 = getTriangle(curTriP1);
         Coordinate[] triP2 = getTriangle(curTriP2);
         Triangle buildingP1 = this.triVertices.get(curTriP1);
@@ -1379,5 +1406,41 @@ public class FastObstructionTest {
             idTriangle++;
         }
         return sb.toString();
+    }
+
+
+
+    public static abstract class IntersectionRayVisitor implements ItemVisitor {
+        Set<Integer> buildingsprocessed = new HashSet<>();
+        List<MeshBuilder.PolygonWithHeight> polygonWithHeight;
+        Coordinate p1;
+        Coordinate p2;
+        LineString seg;
+        public IntersectionRayVisitor(List<MeshBuilder.PolygonWithHeight> polygonWithHeight, Coordinate p1,
+                                      Coordinate p2) {
+            this.polygonWithHeight = polygonWithHeight;
+            this.p1 = p1;
+            this.p2 = p2;
+            seg = new LineSegment(p1, p2).toGeometry(new GeometryFactory());
+        }
+
+        public abstract void addBuilding(int buildingId);
+
+        @Override
+        public void visitItem(Object item) {
+            int buildingId = (Integer) item;
+            if(!buildingsprocessed.contains(buildingId)) {
+                buildingsprocessed.add(buildingId);
+                final MeshBuilder.PolygonWithHeight p = polygonWithHeight.get(buildingId - 1);
+                RectangleLineIntersector rect = new RectangleLineIntersector(p.geo.getEnvelopeInternal());
+                if (rect.intersects(p1, p2) && p.geo.intersects(seg)) {
+                    addBuilding(buildingId);
+                }
+            }
+        }
+
+        public boolean doContinue() {
+            return true;
+        }
     }
 }

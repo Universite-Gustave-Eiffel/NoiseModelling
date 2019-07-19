@@ -4,6 +4,7 @@
     <packaging>pom</packaging>
     <name>noisemodelling-parent</name>
     <artifactId>noisemodelling-parent</artifactId>
+    <groupId>org.orbisgis</groupId>
     <version>3.0.0-SNAPSHOT</version>
     <description>NoiseModelling is an extension of H2GIS</description>
     <organization>
@@ -28,6 +29,7 @@
     <modules>
         <module>noisemodelling-propagation</module>
         <module>noisemodelling-emission</module>
+        <module>noisemodelling-tutorial-01</module>
     </modules>
     <scm>
         <connection>scm:git:https://github.com/Ifsttar/NoiseModelling.git</connection>
@@ -84,33 +86,6 @@
             <name>Maven2 repository 2</name>
             <url>http://repo2.maven.org/maven2</url>
         </repository>
-        <repository>
-            <id>osgi-maven</id>
-            <url>http://nexus.orbisgis.org/content/repositories/osgi-maven-snapshot</url>
-        </repository>
-        <repository>
-            <id>osgi-maven-5.1</id>
-            <url>http://nexus.orbisgis.org/content/repositories/osgi-maven-5.1</url>
-        </repository>
-        <repository>
-            <id>osgi-maven-5.1-snapshot</id>
-            <url>http://nexus.orbisgis.org/content/repositories/osgi-maven-5.1-snapshot</url>
-        </repository>
     </repositories>
 
-    <pluginRepositories>
-        <pluginRepository>
-            <id>osgi-maven-5.1</id>
-            <url>http://nexus.orbisgis.org/content/repositories/osgi-maven-5.1</url>
-        </pluginRepository>
-        <pluginRepository>
-            <id>osgi-maven-5.1-snapshot</id>
-            <url>http://nexus.orbisgis.org/content/repositories/osgi-maven-5.1-snapshot</url>
-        </pluginRepository>
-    </pluginRepositories>
-    <parent>
-        <groupId>org.orbisgis</groupId>
-        <artifactId>orbisgis-nexus</artifactId>
-        <version>5.1.0</version>
-    </parent>
 </project>

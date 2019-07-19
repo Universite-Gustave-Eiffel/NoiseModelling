@@ -1855,6 +1855,7 @@ public class EvaluateAttenuationCnossosTest {
                 "/TBsY8SUi2QGNg7UkPZADAe8S0CsKAAEAVMZUczyA2QQtOn1fPWpRBWcjat/vFwUAKJWO95msG";
         PropagationPath propPath = new PropagationPath();
         propPath.readStream(new DataInputStream(new ByteArrayInputStream(Base64.getDecoder().decode(path))));
+        propPath.initPropagationPath();
         EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
         PropagationProcessPathData pathData = new PropagationProcessPathData();
         evaluateAttenuationCnossos.evaluate(propPath, pathData);

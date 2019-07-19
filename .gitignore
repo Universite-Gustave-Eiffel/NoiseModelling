@@ -3,4 +3,4 @@ target/
 .idea/
 nbactions.xml
 *.versionsBackup
-
+.attach*
