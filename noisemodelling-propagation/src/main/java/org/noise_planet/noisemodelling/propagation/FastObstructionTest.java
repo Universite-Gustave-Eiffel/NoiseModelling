@@ -376,7 +376,8 @@ public class FastObstructionTest {
             int triId = (Integer) objInd;
             Coordinate[] tri = getTriangle(triId);
             AtomicReference<Double> err = new AtomicReference<>(0.);
-            if (dotInTri(pt, tri[0], tri[1], tri[2], err) && err.get() < minDistance) {
+            dotInTri(pt, tri[0], tri[1], tri[2], err);
+            if (err.get() < minDistance) {
                 minDistance = err.get();
                 minDistanceTriangle = triId;
             }
