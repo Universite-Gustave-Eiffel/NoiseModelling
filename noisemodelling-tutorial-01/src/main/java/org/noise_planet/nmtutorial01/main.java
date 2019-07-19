@@ -65,11 +65,11 @@ class Main {
         PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS_RAW", "ROADS", "RECEIVERS");
         //pointNoiseMap.setSoilTableName("GROUND_TYPE")
         pointNoiseMap.setMaximumPropagationDistance(750.0d);
-        pointNoiseMap.setSoundReflectionOrder(1);
+        pointNoiseMap.setSoundReflectionOrder(0);
         pointNoiseMap.setComputeHorizontalDiffraction(true);
         pointNoiseMap.setComputeVerticalDiffraction(true);
         pointNoiseMap.setHeightField("HEIGHT");
-        pointNoiseMap.setThreadCount(1); // Use 4 cpu threads
+        pointNoiseMap.setThreadCount(3); // Use 4 cpu threads
         pointNoiseMap.setMaximumError(0.1d);
         PropagationPathStorageFactory storageFactory = new PropagationPathStorageFactory();
         TrafficPropagationProcessDataFactory trafficPropagationProcessDataFactory = new TrafficPropagationProcessDataFactory();
@@ -85,12 +85,12 @@ class Main {
             // Do not split domain
             pointNoiseMap.setGridDim(1);
             ProgressVisitor progressVisitor = progressLogger.subProcess(pointNoiseMap.getGridDim()*pointNoiseMap.getGridDim());
-            logger.info("warmup");
-            for (int i = 0; i < pointNoiseMap.getGridDim(); i++) {
-                for (int j = 0; j < pointNoiseMap.getGridDim(); j++) {
-                    IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, i, j, new EmptyProgressVisitor(), receivers);
-                }
-            }
+//            logger.info("warmup");
+//            for (int i = 0; i < pointNoiseMap.getGridDim(); i++) {
+//                for (int j = 0; j < pointNoiseMap.getGridDim(); j++) {
+//                    IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, i, j, new EmptyProgressVisitor(), receivers);
+//                }
+//            }
             logger.info("start");
             receivers = new HashSet<>();
             long start = System.currentTimeMillis();
@@ -99,7 +99,8 @@ class Main {
                     IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, i, j, progressVisitor, receivers);
                 }
             }
-            logger.info(String.format("Computed in %d ms", System.currentTimeMillis() - start));
+            long computationTime = System.currentTimeMillis() - start;
+            logger.info(String.format("Computed in %d ms, %.2f ms per receiver", computationTime,computationTime / (double)receivers.size()));
         } finally {
             storageFactory.closeWriteThread();
         }

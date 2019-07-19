@@ -43,6 +43,8 @@ import org.locationtech.jts.io.WKTWriter;
 import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
 import org.noise_planet.noisemodelling.propagation.utils.Densifier3D;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -73,6 +75,7 @@ public class FastObstructionTest {
     private List<Float> verticesOpenAngle = null;
     private List<Coordinate> verticesOpenAngleTranslated = null; /*Open angle*/
     private boolean hasBuildingWithHeight;
+    private Logger logger = LoggerFactory.getLogger(FastObstructionTest.class);
     //data for calculate 3D diffraction,
     //first coordinate is the coordinate after the changing coordinate system, the second parameter will keep the data of original coordinate system
     /**
@@ -736,6 +739,14 @@ public class FastObstructionTest {
         int curTriP1 = getTriangleIdByCoordinate(p1);
         //get source triangle id
         int curTriP2 = getTriangleIdByCoordinate(p2);
+        if(curTriP1 == -1) {
+            logger.error(String.format("Propagation path point (%.2f, %.2f) is outside of bounds", p1.x, p1.y));
+            return false;
+        }
+        if(curTriP2 == -1) {
+            logger.error(String.format("Propagation path point (%.2f, %.2f) is outside of bounds", p2.x, p2.y));
+            return false;
+        }
         Coordinate[] triP1 = getTriangle(curTriP1);
         Coordinate[] triP2 = getTriangle(curTriP2);
         Triangle buildingP1 = this.triVertices.get(curTriP1);
