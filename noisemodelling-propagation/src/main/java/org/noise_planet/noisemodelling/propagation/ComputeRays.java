@@ -658,6 +658,7 @@ public class ComputeRays {
         }
         return polyCut;
     }
+
     /**
      * Compute Side Hull
      * Create a line between p1 and p2. Find the first intersection of this line with a building then create a ConvexHull
@@ -690,8 +691,10 @@ public class ComputeRays {
 
         Set<Integer> buildingInHull = new HashSet<>();
 
+        Plane cutPlane = ComputeZeroRadPlane(p1, p2);
+
         IntersectionRayVisitor intersectionRayVisitor = new IntersectionRayVisitor(
-                data.freeFieldFinder.getPolygonWithHeight(), p1, p2, data.freeFieldFinder, input, buildingInHull);
+                data.freeFieldFinder.getPolygonWithHeight(), p1, p2, data.freeFieldFinder, input, buildingInHull, cutPlane);
 
         data.freeFieldFinder.getBuildingsOnPath(p1, p2, intersectionRayVisitor);
 
@@ -756,7 +759,7 @@ public class ComputeRays {
                             return new ArrayList<>();
                         }
                         intersectionRayVisitor = new IntersectionRayVisitor(data.freeFieldFinder.getPolygonWithHeight(),
-                                coordinates[k], coordinates[k + 1], data.freeFieldFinder, input, buildingInHull);
+                                coordinates[k], coordinates[k + 1], data.freeFieldFinder, input, buildingInHull, cutPlane);
                         data.freeFieldFinder.getBuildingsOnPath(coordinates[k], coordinates[k + 1], intersectionRayVisitor);
                         if(!intersectionRayVisitor.doContinue()) {
                             convexHullIntersects = true;
@@ -1257,12 +1260,12 @@ public class ComputeRays {
         boolean foundIntersection = false;
 
         public IntersectionRayVisitor(List<MeshBuilder.PolygonWithHeight> polygonWithHeight, Coordinate p1,
-                                      Coordinate p2, FastObstructionTest freeFieldFinde, List<Coordinate> input, Set<Integer> buildingsInIntersection) {
+                                      Coordinate p2, FastObstructionTest freeFieldFinde, List<Coordinate> input, Set<Integer> buildingsInIntersection, Plane cutPlane) {
             super(polygonWithHeight, p1, p2);
             this.freeFieldFinder = freeFieldFinde;
             this.input = input;
             this.buildingsInIntersection = buildingsInIntersection;
-            cutPlane = ComputeZeroRadPlane(p1, p2);
+            this.cutPlane = cutPlane;
         }
 
         @Override
