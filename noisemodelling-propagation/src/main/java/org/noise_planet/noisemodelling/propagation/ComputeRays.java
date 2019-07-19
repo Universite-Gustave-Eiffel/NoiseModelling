@@ -1141,6 +1141,11 @@ public class ComputeRays {
         public void run() {
             try {
                 for (int idReceiver = startReceiver; idReceiver < endReceiver; idReceiver++) {
+                    if (progressVisitor != null) {
+                        if(progressVisitor.isCanceled()) {
+                            break;
+                        }
+                    }
                     Coordinate receiverCoord = propagationProcess.data.receivers.get(idReceiver);
 
                     propagationProcess.computeRaysAtPosition(receiverCoord, idReceiver, debugInfo, dataOut, progressVisitor);
