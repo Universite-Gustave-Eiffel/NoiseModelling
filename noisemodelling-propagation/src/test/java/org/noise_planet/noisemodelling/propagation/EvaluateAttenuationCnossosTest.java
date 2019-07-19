@@ -1709,6 +1709,66 @@ public class EvaluateAttenuationCnossosTest {
         }
     }
 
+
+
+
+
+    /**
+     * Test reported issue with receiver over building
+     */
+    @Test
+    public void testReceiverOverBuilding() throws LayerDelaunayError, ParseException {
+
+        GeometryFactory factory = new GeometryFactory();
+        //Scene dimension
+        Envelope cellEnvelope = new Envelope(new Coordinate(-1200, -1200, 0.), new Coordinate(1200, 1200, 0.));
+
+        WKTReader wktReader = new WKTReader();
+        //Create obstruction test object
+        MeshBuilder mesh = new MeshBuilder();
+
+        mesh.addGeometry(wktReader.read("POLYGON ((-111 -35, -111 82, 70 82, 70 285, 282 285, 282 -35, -111 -35))"), 10);
+
+        mesh.finishPolygonFeeding(cellEnvelope);
+
+        //Retrieve Delaunay triangulation of scene
+        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+                mesh.getTriNeighbors(), mesh.getVertices());
+
+        double[] roadLvl = new double[]{25.65, 38.15, 54.35, 60.35, 74.65, 66.75, 59.25, 53.95};
+        for(int i = 0; i < roadLvl.length; i++) {
+            roadLvl[i] = ComputeRays.dbaToW(roadLvl[i]);
+        }
+
+        DirectPropagationProcessData rayData = new DirectPropagationProcessData(manager);
+        rayData.addReceiver(new Coordinate(162, 80, 150));
+        rayData.addSource(factory.createPoint(new Coordinate(-150, 200, 1)), roadLvl);
+        rayData.setComputeHorizontalDiffraction(true);
+        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9));
+        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
+        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
+        rayData.setComputeVerticalDiffraction(true);
+
+        rayData.maxSrcDist = 2000;
+
+        PropagationProcessPathData attData = new PropagationProcessPathData();
+        attData.setHumidity(70);
+        attData.setTemperature(10);
+        RayOut propDataOut = new RayOut(true, attData, rayData);
+        ComputeRays computeRays = new ComputeRays(rayData);
+        computeRays.setThreadCount(1);
+        computeRays.run(propDataOut);
+
+        assertEquals(1, propDataOut.receiversAttenuationLevels.size());
+
+        assertEquals(14.6, ComputeRays.wToDba(ComputeRays.sumArray(roadLvl.length, ComputeRays.dbaToW(propDataOut.receiversAttenuationLevels.get(0).value))), 0.1);
+    }
+
+
+
+
+
+
     private static double getMaxError(double[] ref, double[] result) {
         assertEquals(ref.length, result.length);
         double max = Double.MIN_VALUE;
