@@ -61,7 +61,7 @@ public class FastObstructionTest {
     public static final double wideAngleTranslationEpsilon = 0.01;
     private static final double MINIMAL_REFLECTION_WALL_LENGTH = 1.0;
     // Split ray to test up to 200m length (in order to reduce returns results)
-    private static final double STRTREE_TRAVERSAL_SPLIT = 200;
+    private static final double STRTREE_TRAVERSAL_SPLIT = 300;
     private STRtree polygonIndex;
     private List<Triangle> triVertices;
     private List<Coordinate> vertices;
@@ -131,21 +131,11 @@ public class FastObstructionTest {
      * @return Building identifier (1-n) intersected by the line
      */
     public void getBuildingsOnPath(Coordinate p1, Coordinate p2, IntersectionRayVisitor visitor) {
-        LineSegment lineSeg = new LineSegment(p1, p2);
-        Coordinate[] pts;
-        if(lineSeg.getLength() > STRTREE_TRAVERSAL_SPLIT) {
-            LineString seg = lineSeg.toGeometry(new GeometryFactory());
-            pts = Densifier3D.densify(seg, STRTREE_TRAVERSAL_SPLIT).getCoordinates();
-        } else {
-            pts = new Coordinate[] {p1, p2};
-        }
-        for(int idp = 0; idp < pts.length - 1; idp++) {
-            Envelope pathEnv = new Envelope(pts[idp], pts[idp+1]);
-            pathEnv.expandBy(1);
+        Envelope pathEnv = new Envelope(p1, p2);
+        try {
             polygonIndex.query(pathEnv, visitor);
-            if(!visitor.doContinue()) {
-                return;
-            }
+        } catch (IllegalStateException ex) {
+            //Ignore
         }
     }
 
