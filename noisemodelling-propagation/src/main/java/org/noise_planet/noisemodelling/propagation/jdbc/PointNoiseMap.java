@@ -196,7 +196,9 @@ public class PointNoiseMap extends JdbcNoiseMap {
 
         ComputeRays computeRays = new ComputeRays(threadData);
 
-        computeRays.setThreadCount(threadCount);
+        if(threadCount > 0) {
+            computeRays.setThreadCount(threadCount);
+        }
 
         if(!receiverHasAbsoluteZCoordinates) {
             computeRays.makeReceiverRelativeZToAbsolute();
