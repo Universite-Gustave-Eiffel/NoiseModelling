@@ -240,7 +240,7 @@ public class ComputeRaysOut implements IComputeRaysOut {
 
     public static class ThreadRaysOut implements IComputeRaysOut {
         private ComputeRaysOut multiThreadParent;
-        protected List<ComputeRaysOut.verticeSL> receiverAttenuationLevels = Collections.synchronizedList(new ArrayList<>());
+        protected List<ComputeRaysOut.verticeSL> receiverAttenuationLevels = new ArrayList<>();
 
         public ThreadRaysOut(ComputeRaysOut multiThreadParent) {
             this.multiThreadParent = multiThreadParent;

@@ -15,7 +15,7 @@ ST_GEOMETRYN(THE_GEOM, ST_NUMGEOMETRIES(THE_GEOM)) AND ST_NUMGEOMETRIES(THE_GEOM
 2;
 DROP TABLE MAP_BUILDINGS;
 alter table MAP_BUILDINGS_GEOM add column height double;
-update MAP_BUILDINGS_GEOM set height = (select round("VALUE" * 3.0 + RAND() * 2,1) from MAP_WAY_TAG where id_tag = 152 and id_way = MAP_BUILDINGS_GEOM.id_way);
+update MAP_BUILDINGS_GEOM set height = (select round("VALUE" * 3.0 + RAND() * 2,1) from MAP_WAY_TAG where id_tag = (SELECT ID_TAG FROM MAP_TAG T WHERE T.TAG_KEY = 'building:levels' LIMIT 1) and id_way = MAP_BUILDINGS_GEOM.id_way);
 update MAP_BUILDINGS_GEOM set height = round(4 + RAND() * 2,1) where height is null;
 drop table if exists BUILDINGS_RAW;
 create table BUILDINGS_RAW(id_way serial, the_geom geometry, height double) as select id_way,  ST_SimplifyPreserveTopology(st_buffer(ST_TRANSFORM(ST_SETSRID(THE_GEOM, 4326), 2154), -0.1, 'join=mitre'),0.1) the_geom , height from MAP_BUILDINGS_GEOM;
