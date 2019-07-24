@@ -591,7 +591,7 @@ public class TestComputeRays {
 //        kmlDocument.writeFooter();
     }
 
-    @Test
+    //@Test
     public void benchmarkComputeVerticalEdgeDiffraction() throws LayerDelaunayError, ParseException {
         Coordinate[] buildingShell = new Coordinate[]{
                 new Coordinate(1, 1),

@@ -18,3 +18,10 @@ For more information:
 * follow us on twitter @Noise-Planet [![Twitter Follow](https://img.shields.io/twitter/follow/noise_planet.svg?style=social&label=Follow)](https://twitter.com/Noise_Planet?lang=en)
 
 ![alt tag](http://noise-planet.org/assets/img/logos/Logo_noisemodelling.png)
+
+* Run the tutorial
+
+```bash
+cd noisemodelling-tutorial-01
+mvn exec:java
+```

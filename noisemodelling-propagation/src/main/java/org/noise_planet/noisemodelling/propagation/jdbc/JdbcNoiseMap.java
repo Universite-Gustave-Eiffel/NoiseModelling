@@ -1,11 +1,7 @@
 package org.noise_planet.noisemodelling.propagation.jdbc;
 
 import org.h2gis.utilities.JDBCUtilities;
-import org.locationtech.jts.geom.Envelope;
-import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.MultiPolygon;
-import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.geom.*;
 import org.h2gis.api.ProgressVisitor;
 import org.h2gis.utilities.SFSUtilities;
 import org.h2gis.utilities.SpatialResultSet;
@@ -17,6 +13,8 @@ import org.noise_planet.noisemodelling.propagation.PropagationPath;
 import org.noise_planet.noisemodelling.propagation.PropagationProcessData;
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 import org.noise_planet.noisemodelling.propagation.QueryGeometryStructure;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -32,6 +30,7 @@ import java.util.List;
 public abstract class JdbcNoiseMap {
     // When computing cell size, try to keep propagation distance away from the cell
     // inferior to this ratio (in comparison with cell width)
+    Logger logger = LoggerFactory.getLogger(JdbcNoiseMap.class);
     private static final int DEFAULT_FETCH_SIZE = 300;
     protected int fetchSize = DEFAULT_FETCH_SIZE;
     protected static final double MINIMAL_BUFFER_RATIO = 0.3;
@@ -47,6 +46,8 @@ public abstract class JdbcNoiseMap {
     protected boolean sourceHasAbsoluteZCoordinates = false;
     protected double maximumPropagationDistance = 750;
     protected double maximumReflectionDistance = 100;
+    // Soil areas are splited by the provided size in order to reduce the propagation time
+    protected double groundSurfaceSplitSideLength = 200;
     protected int soundReflectionOrder = 2;
     public boolean verbose = true;
     protected boolean computeHorizontalDiffraction = true;
@@ -104,6 +105,14 @@ public abstract class JdbcNoiseMap {
                 mainEnvelope.getMinY() + cellHeight * cellJ + cellHeight);
     }
 
+    public double getGroundSurfaceSplitSideLength() {
+        return groundSurfaceSplitSideLength;
+    }
+
+    public void setGroundSurfaceSplitSideLength(double groundSurfaceSplitSideLength) {
+        this.groundSurfaceSplitSideLength = groundSurfaceSplitSideLength;
+    }
+
     protected void fetchCellDem(Connection connection, Envelope fetchEnvelope, MeshBuilder mesh) throws SQLException {
         if(!demTable.isEmpty()) {
             List<String> geomFields = SFSUtilities.getGeometryFields(connection,
@@ -132,6 +141,8 @@ public abstract class JdbcNoiseMap {
     protected void fetchCellSoilAreas(Connection connection, Envelope fetchEnvelope, List<GeoWithSoilType> geoWithSoil)
             throws SQLException {
         if(!soilTableName.isEmpty()){
+            double startX = Math.floor(fetchEnvelope.getMinX() / groundSurfaceSplitSideLength) * groundSurfaceSplitSideLength;
+            double startY = Math.floor(fetchEnvelope.getMinY() / groundSurfaceSplitSideLength) * groundSurfaceSplitSideLength;
             String soilGeomName = SFSUtilities.getGeometryFields(connection,
                     TableLocation.parse(soilTableName)).get(0);
             try (PreparedStatement st = connection.prepareStatement(
@@ -143,7 +154,31 @@ public abstract class JdbcNoiseMap {
                     while (rs.next()) {
                         Geometry poly = rs.getGeometry();
                         if(poly != null) {
-                            geoWithSoil.add(new GeoWithSoilType(poly, rs.getDouble("G")));
+                            // Split soil by square
+                            Envelope geoEnv = poly.getEnvelopeInternal();
+                            double startXGeo = Math.max(startX, Math.floor(geoEnv.getMinX() / groundSurfaceSplitSideLength) * groundSurfaceSplitSideLength);
+                            double startYGeo = Math.max(startY, Math.floor(geoEnv.getMinY() / groundSurfaceSplitSideLength) * groundSurfaceSplitSideLength);
+                            double xCursor = startXGeo;
+                            double g = rs.getDouble("G");
+                            double maxX = Math.min(fetchEnvelope.getMaxX(), geoEnv.getMaxX());
+                            double maxY = Math.min(fetchEnvelope.getMaxY(), geoEnv.getMaxY());
+                            while(xCursor < maxX)  {
+                                double yCursor = startYGeo;
+                                while(yCursor < maxY) {
+                                    Envelope cellEnv = new Envelope(xCursor, xCursor + groundSurfaceSplitSideLength, yCursor, yCursor+groundSurfaceSplitSideLength);
+                                    Geometry envGeom = geometryFactory.toGeometry(cellEnv);
+                                    try {
+                                        Geometry inters = poly.intersection(envGeom);
+                                        if (!inters.isEmpty() && (inters instanceof Polygon || inters instanceof MultiPolygon)) {
+                                            geoWithSoil.add(new GeoWithSoilType(inters, g));
+                                        }
+                                    } catch (TopologyException | IllegalArgumentException ex) {
+                                        // Ignore
+                                    }
+                                    yCursor += groundSurfaceSplitSideLength;
+                                }
+                                xCursor += groundSurfaceSplitSideLength;
+                            }
                         }
                     }
                 }
@@ -211,7 +246,11 @@ public abstract class JdbcNoiseMap {
     protected void fetchCellSource(Connection connection,Envelope fetchEnvelope, PropagationProcessData propagationProcessData)
             throws SQLException {
         TableLocation sourceTableIdentifier = TableLocation.parse(sourcesTableName);
-        String sourceGeomName = SFSUtilities.getGeometryFields(connection, sourceTableIdentifier).get(0);
+        List<String> geomFields = SFSUtilities.getGeometryFields(connection, sourceTableIdentifier);
+        if(geomFields.isEmpty()) {
+            throw new SQLException(String.format("The table %s does not exists or does not contain a geometry field", sourceTableIdentifier));
+        }
+        String sourceGeomName =  geomFields.get(0);
         Geometry domainConstraint = geometryFactory.toGeometry(fetchEnvelope);
         int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, sourcesTableName);
         if(pkIndex < 1) {
