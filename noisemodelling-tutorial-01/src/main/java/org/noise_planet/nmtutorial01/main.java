@@ -2,6 +2,7 @@ package org.noise_planet.nmtutorial01;
 
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.api.ProgressVisitor;
+import org.h2gis.functions.io.geojson.GeoJsonRead;
 import org.h2gis.functions.io.shp.SHPRead;
 import org.h2gis.utilities.SFSUtilities;
 import org.noise_planet.noisemodelling.propagation.ComputeRays;
@@ -62,6 +63,10 @@ class Main {
 
         sql.execute(String.format("RUNSCRIPT FROM '%s'", Main.class.getResource("create_receivers.sql").getFile()));
 
+        // Import MNT
+
+        GeoJsonRead.readGeoJson(connection, Main.class.getResource("dem_lorient.geojson").getFile(), "DEM");
+
         // Init NoiseModelling
         PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS_RAW", "ROADS", "RECEIVERS");
         // Ground surface category
@@ -74,6 +79,8 @@ class Main {
         pointNoiseMap.setComputeVerticalDiffraction(true);
         // Building height field name
         pointNoiseMap.setHeightField("HEIGHT");
+        // Point cloud height above sea level POINT(X Y Z)
+        pointNoiseMap.setDemTable("DEM");
         // Do not propagate for low emission or far away sources.
         // error in dB
         pointNoiseMap.setMaximumError(0.1d);
@@ -92,15 +99,18 @@ class Main {
         ProgressVisitor progressVisitor = progressLogger.subProcess(pointNoiseMap.getGridDim()*pointNoiseMap.getGridDim());
         logger.info("start");
         long start = System.currentTimeMillis();
-        logger.info("Rec\tSource\tLevel");
+        System.out.println("Rec\tSource\tLevel");
+        // Iterate over computation areas
         for (int i = 0; i < pointNoiseMap.getGridDim(); i++) {
             for (int j = 0; j < pointNoiseMap.getGridDim(); j++) {
+                // Run ray propagation
                 IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, i, j, progressVisitor, receivers);
+                // Return results with level spectrum for each source/receiver tuple
                 if(out instanceof PropagationPathStorage) {
                     PropagationPathStorage cellStorage = (PropagationPathStorage) out;
                     for(ComputeRaysOut.verticeSL v : cellStorage.receiversAttenuationLevels) {
                         double globalDbValue = ComputeRays.wToDba(ComputeRays.sumArray(ComputeRays.dbaToW(v.value)));
-                        logger.info(String.format("%d\t%d\t%.2f", v.receiverId, v.sourceId, globalDbValue));
+                        System.out.println(String.format("%d\t%d\t%.2f", v.receiverId, v.sourceId, globalDbValue));
                     }
                 }
             }
