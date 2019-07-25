@@ -18,7 +18,11 @@ import java.util.zip.GZIPOutputStream;
 
 class PropagationPathStorageFactory implements PointNoiseMap.IComputeRaysOutFactory {
     String workingDir;
+    boolean keepRays;
 
+    public void setKeepRays(boolean keepRays) {
+        this.keepRays = keepRays;
+    }
 
     void setWorkingDir(String workingDir) {
         this.workingDir = workingDir;
@@ -26,7 +30,7 @@ class PropagationPathStorageFactory implements PointNoiseMap.IComputeRaysOutFact
 
     @Override
     public IComputeRaysOut create(PropagationProcessData propagationProcessData, PropagationProcessPathData propagationProcessPathData) {
-        return new PropagationPathStorage(propagationProcessData, propagationProcessPathData);
+        return new PropagationPathStorage(propagationProcessData, propagationProcessPathData, keepRays);
     }
 }
 

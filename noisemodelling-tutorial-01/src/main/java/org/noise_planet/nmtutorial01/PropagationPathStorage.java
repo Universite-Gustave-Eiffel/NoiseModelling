@@ -20,8 +20,8 @@ class PropagationPathStorage extends ComputeRaysOut {
     // Thread safe queue object
     protected TrafficPropagationProcessData inputData;
 
-    PropagationPathStorage(PropagationProcessData inputData, PropagationProcessPathData pathData) {
-        super(false, pathData, inputData);
+    PropagationPathStorage(PropagationProcessData inputData, PropagationProcessPathData pathData, boolean keepRays) {
+        super(keepRays, pathData, inputData);
         this.inputData = (TrafficPropagationProcessData)inputData;
     }
 

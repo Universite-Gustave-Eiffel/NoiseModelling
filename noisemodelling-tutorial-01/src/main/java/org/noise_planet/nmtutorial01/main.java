@@ -1,19 +1,21 @@
 package org.noise_planet.nmtutorial01;
 
+import org.cts.crs.CRSException;
+import org.cts.op.CoordinateOperationException;
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.api.ProgressVisitor;
 import org.h2gis.functions.io.geojson.GeoJsonRead;
 import org.h2gis.functions.io.shp.SHPRead;
 import org.h2gis.utilities.SFSUtilities;
-import org.noise_planet.noisemodelling.propagation.ComputeRays;
-import org.noise_planet.noisemodelling.propagation.ComputeRaysOut;
-import org.noise_planet.noisemodelling.propagation.IComputeRaysOut;
-import org.noise_planet.noisemodelling.propagation.RootProgressVisitor;
+import org.locationtech.jts.geom.Coordinate;
+import org.noise_planet.noisemodelling.propagation.*;
 import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.xml.stream.XMLStreamException;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -54,36 +56,45 @@ class Main {
         Statement sql = connection.createStatement();
 
         // Convert Open Street Map data to buildings, roads and receivers
-        logger.info("Extract OpenStreetMap buildings");
+        logger.info("Extract OpenStreetMap objects");
         sql.execute(String.format("CALL OSMREAD('%s', 'MAP')", Main.class.getResource("map.osm.gz").getFile()));
 
         sql.execute(String.format("RUNSCRIPT FROM '%s'", Main.class.getResource("import_buildings.sql").getFile()));
 
         sql.execute(String.format("RUNSCRIPT FROM '%s'", Main.class.getResource("import_roads.sql").getFile()));
 
+        sql.execute(String.format("RUNSCRIPT FROM '%s'", Main.class.getResource("import_vegetation.sql").getFile()));
+
         sql.execute(String.format("RUNSCRIPT FROM '%s'", Main.class.getResource("create_receivers.sql").getFile()));
+
 
         // Import MNT
 
+        logger.info("Import digital elevation model");
+
         GeoJsonRead.readGeoJson(connection, Main.class.getResource("dem_lorient.geojson").getFile(), "DEM");
+
+
 
         // Init NoiseModelling
         PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS_RAW", "ROADS", "RECEIVERS");
-        // Ground surface category
-        //pointNoiseMap.setSoilTableName("GROUND_TYPE")
-        // Digital Elevation Model ( x,y,z Point cloud)
-        //pointNoiseMap.setDemTable("DEM");
+
         pointNoiseMap.setMaximumPropagationDistance(750.0d);
         pointNoiseMap.setSoundReflectionOrder(0);
         pointNoiseMap.setComputeHorizontalDiffraction(true);
         pointNoiseMap.setComputeVerticalDiffraction(true);
         // Building height field name
         pointNoiseMap.setHeightField("HEIGHT");
+        // Import table with Snow, Forest, Grass, Pasture field polygons. Attribute G is associated with each polygon
+        pointNoiseMap.setSoilTableName("SURFACE_RAW");
         // Point cloud height above sea level POINT(X Y Z)
         pointNoiseMap.setDemTable("DEM");
         // Do not propagate for low emission or far away sources.
         // error in dB
         pointNoiseMap.setMaximumError(0.1d);
+
+        // Init custom input in order to compute more than just attenuation
+
         PropagationPathStorageFactory storageFactory = new PropagationPathStorageFactory();
         TrafficPropagationProcessDataFactory trafficPropagationProcessDataFactory = new TrafficPropagationProcessDataFactory();
         pointNoiseMap.setPropagationProcessDataFactory(trafficPropagationProcessDataFactory);
@@ -108,6 +119,7 @@ class Main {
                 // Return results with level spectrum for each source/receiver tuple
                 if(out instanceof PropagationPathStorage) {
                     PropagationPathStorage cellStorage = (PropagationPathStorage) out;
+                    exportScene(String.format("target/scene_%d_%d.kml", i, j), cellStorage.inputData.freeFieldFinder, cellStorage);
                     for(ComputeRaysOut.verticeSL v : cellStorage.receiversAttenuationLevels) {
                         double globalDbValue = ComputeRays.wToDba(ComputeRays.sumArray(ComputeRays.dbaToW(v.value)));
                         System.out.println(String.format("%d\t%d\t%.2f", v.receiverId, v.sourceId, globalDbValue));
@@ -118,5 +130,27 @@ class Main {
         long computationTime = System.currentTimeMillis() - start;
         logger.info(String.format("Computed in %d ms, %.2f ms per receiver", computationTime,computationTime / (double)receivers.size()));
 
+    }
+
+
+    public static void exportScene(String name, FastObstructionTest manager, ComputeRaysOut result) throws IOException {
+        try {
+            FileOutputStream outData = new FileOutputStream(name);
+            KMLDocument kmlDocument = new KMLDocument(outData);
+            kmlDocument.setInputCRS("EPSG:2154");
+            kmlDocument.writeHeader();
+            if(manager != null) {
+                kmlDocument.writeTopographic(manager.getTriangles(), manager.getVertices());
+            }
+            if(result != null) {
+                kmlDocument.writeRays(result.getPropagationPaths());
+            }
+            if(manager != null && manager.isHasBuildingWithHeight()) {
+                kmlDocument.writeBuildings(manager);
+            }
+            kmlDocument.writeFooter();
+        } catch (XMLStreamException | CoordinateOperationException | CRSException ex) {
+            throw new IOException(ex);
+        }
     }
 }
