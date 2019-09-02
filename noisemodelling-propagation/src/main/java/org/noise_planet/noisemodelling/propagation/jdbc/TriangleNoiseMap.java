@@ -1,31 +1,15 @@
 package org.noise_planet.noisemodelling.propagation.jdbc;
 
 import org.h2gis.utilities.JDBCUtilities;
+import org.h2gis.utilities.SFSUtilities;
+import org.h2gis.utilities.TableLocation;
 import org.locationtech.jts.densify.Densifier;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.Envelope;
-import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryCollection;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.LineString;
-import org.locationtech.jts.geom.MultiLineString;
-import org.locationtech.jts.geom.Point;
-import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.geom.*;
 import org.locationtech.jts.operation.buffer.BufferOp;
 import org.locationtech.jts.operation.buffer.BufferParameters;
 import org.locationtech.jts.simplify.TopologyPreservingSimplifier;
-import org.h2gis.api.ProgressVisitor;
-import org.h2gis.utilities.SFSUtilities;
-import org.h2gis.utilities.TableLocation;
-import org.noise_planet.noisemodelling.propagation.FastObstructionTest;
-import org.noise_planet.noisemodelling.propagation.GeoWithSoilType;
-import org.noise_planet.noisemodelling.propagation.LayerDelaunayError;
-import org.noise_planet.noisemodelling.propagation.MeshBuilder;
-import org.noise_planet.noisemodelling.propagation.PropagationProcessData;
-import org.noise_planet.noisemodelling.propagation.PropagationResultTriRecord;
-import org.noise_planet.noisemodelling.propagation.QueryGeometryStructure;
-import org.noise_planet.noisemodelling.propagation.QueryQuadTree;
 import org.noise_planet.noisemodelling.propagation.Triangle;
+import org.noise_planet.noisemodelling.propagation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Stack;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -294,7 +277,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         }
         if(!JDBCUtilities.tableExists(connection, trianglesTableName)) {
             Statement st = connection.createStatement();
-            st.execute("CREATE TABLE "+TableLocation.parse(trianglesTableName)+"(pk serial NOT NULL, PK_1 integer not null, PK_2 integer not null, PK_3 integer not null, PRIMARY KEY (PK))");
+            st.execute("CREATE TABLE "+TableLocation.parse(trianglesTableName)+"(pk serial NOT NULL, the_geom geometry , PK_1 integer not null, PK_2 integer not null, PK_3 integer not null, PRIMARY KEY (PK))");
         }
         // Add vertices to receivers
         PreparedStatement ps = connection.prepareStatement("INSERT INTO "+TableLocation.parse(receiverTableName)+" VALUES (?, ST_MAKEPOINT(?,?,?));");
@@ -316,12 +299,14 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
             ps.executeBatch();
         }
         // Add triangles
-        ps = connection.prepareStatement("INSERT INTO "+TableLocation.parse(trianglesTableName)+"(PK_1, PK_2, PK_3) VALUES (?, ?, ?);");
+        ps = connection.prepareStatement("INSERT INTO "+TableLocation.parse(trianglesTableName)+"(the_geom, PK_1, PK_2, PK_3) VALUES (?, ?, ?, ?);");
         batchSize = 0;
         for(Triangle t : triangles) {
-            ps.setInt(1, t.getA());
-            ps.setInt(2, t.getB());
-            ps.setInt(3, t.getC());
+            ps.setObject(1, geometryFactory.createPolygon(new Coordinate[]{vertices.get(t.getA()),
+                    vertices.get(t.getB()), vertices.get(t.getC()), vertices.get(t.getA())}));
+            ps.setInt(2, t.getA());
+            ps.setInt(3, t.getB());
+            ps.setInt(4, t.getC());
             ps.addBatch();
             batchSize++;
             if (batchSize >= BATCH_MAX_SIZE) {
