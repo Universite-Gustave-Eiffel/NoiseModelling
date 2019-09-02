@@ -1,5 +1,6 @@
 package org.noise_planet.noisemodelling.propagation.jdbc;
 
+import org.h2gis.utilities.JDBCUtilities;
 import org.locationtech.jts.densify.Densifier;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
@@ -29,19 +30,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Stack;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Create noise map using JDBC connection. SQL syntax is compatible with H2 and PostGIS.
+ * Create input receivers built from Delaunay for contructing a NoiseMap rendering.
+ * SQL syntax is compatible with H2 and PostGIS.
  * @author Nicolas Fortin
  * @author SU Qi
  */
 public class TriangleNoiseMap extends JdbcNoiseMap {
+    private static final int BATCH_MAX_SIZE = 100;
     private final static double BUILDING_BUFFER = 0.5;
     private Logger logger = LoggerFactory.getLogger(TriangleNoiseMap.class);
     private double roadWidth = 2;
@@ -220,7 +226,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         return SFSUtilities.getTableEnvelope(connection, TableLocation.parse(sourcesTableName), "");
     }
 
-    public void generateReceivers(Connection connection,int cellI, int cellJ, String receiverTableName, String trianglesTableName) throws SQLException, LayerDelaunayError {
+    public void generateReceivers(Connection connection, int cellI, int cellJ, String receiverTableName, String trianglesTableName, AtomicInteger receiverPK) throws SQLException, LayerDelaunayError {
         // Compute the first pass delaunay mesh
         // The first pass doesn't take account of additional
         // vertices of neighbor cells at the borders
@@ -237,12 +243,13 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         fetchCellBuildings(connection, cellEnvelope, null, cellMesh);
 
         MeshBuilder demMesh = new MeshBuilder();
+        FastObstructionTest freeFieldFinder = null;
         if(!demTable.isEmpty()) {
             fetchCellDem(connection, cellEnvelope, demMesh);
             demMesh.finishPolygonFeeding(cellEnvelope);
+            freeFieldFinder = new FastObstructionTest(demMesh.getPolygonWithHeight(),
+                    demMesh.getTriangles(), demMesh.getTriNeighbors(), demMesh.getVertices());
         }
-        FastObstructionTest freeFieldFinder = new FastObstructionTest(demMesh.getPolygonWithHeight(),
-                demMesh.getTriangles(), demMesh.getTriNeighbors(), demMesh.getVertices());
         try {
             computeDelaunay(cellMesh, mainEnvelope, cellI,
                     cellJ,
@@ -263,21 +270,69 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         for(Coordinate vertex : cellMesh.getVertices()) {
             Coordinate translatedVertex = new Coordinate(vertex);
             double z = receiverHeight;
-            if(!demTable.isEmpty()) {
+            if(freeFieldFinder != null) {
                 z = freeFieldFinder.getHeightAtPosition(translatedVertex) + receiverHeight;
             }
             translatedVertex.setOrdinate(2, z);
             vertices.add(translatedVertex);
         }
+        // Do not add triangles associated with buildings
         List<Triangle> triangles = new ArrayList<>();
         for(Triangle triangle : cellMesh.getTriangles()) {
             if(triangle.getAttribute() == 0) {
+                for(int v = 0; v < 3; v++) {
+                    triangle.set(v, triangle.get(v) + receiverPK.get());
+                }
                 triangles.add(triangle);
             }
         }
         nbreceivers += vertices.size();
 
-        // TODO export to specified tables
+        if(!JDBCUtilities.tableExists(connection, receiverTableName)) {
+            Statement st = connection.createStatement();
+            st.execute("CREATE TABLE "+TableLocation.parse(receiverTableName)+"(pk serial NOT NULL, the_geom geometry not null, PRIMARY KEY (PK))");
+        }
+        if(!JDBCUtilities.tableExists(connection, trianglesTableName)) {
+            Statement st = connection.createStatement();
+            st.execute("CREATE TABLE "+TableLocation.parse(trianglesTableName)+"(pk serial NOT NULL, PK_1 integer not null, PK_2 integer not null, PK_3 integer not null, PRIMARY KEY (PK))");
+        }
+        // Add vertices to receivers
+        PreparedStatement ps = connection.prepareStatement("INSERT INTO "+TableLocation.parse(receiverTableName)+" VALUES (?, ST_MAKEPOINT(?,?,?));");
+        int batchSize = 0;
+        for(Coordinate v : vertices) {
+            ps.setInt(1, receiverPK.getAndAdd(1));
+            ps.setDouble(2, v.x);
+            ps.setDouble(3, v.y);
+            ps.setDouble(4, v.z);
+            ps.addBatch();
+            batchSize++;
+            if (batchSize >= BATCH_MAX_SIZE) {
+                ps.executeBatch();
+                ps.clearBatch();
+                batchSize = 0;
+            }
+        }
+        if (batchSize > 0) {
+            ps.executeBatch();
+        }
+        // Add triangles
+        ps = connection.prepareStatement("INSERT INTO "+TableLocation.parse(trianglesTableName)+"(PK_1, PK_2, PK_3) VALUES (?, ?, ?);");
+        batchSize = 0;
+        for(Triangle t : triangles) {
+            ps.setInt(1, t.getA());
+            ps.setInt(2, t.getB());
+            ps.setInt(3, t.getC());
+            ps.addBatch();
+            batchSize++;
+            if (batchSize >= BATCH_MAX_SIZE) {
+                ps.executeBatch();
+                ps.clearBatch();
+                batchSize = 0;
+            }
+        }
+        if (batchSize > 0) {
+            ps.executeBatch();
+        }
     }
 
     public double getRoadWidth() {

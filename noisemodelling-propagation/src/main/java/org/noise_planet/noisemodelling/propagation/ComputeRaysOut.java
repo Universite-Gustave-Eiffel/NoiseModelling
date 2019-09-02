@@ -106,6 +106,10 @@ public class ComputeRaysOut implements IComputeRaysOut {
 
     }
 
+    public PropagationProcessData getInputData() {
+        return inputData;
+    }
+
     @Override
     public double[] addPropagationPaths(long sourceId, double sourceLi, long receiverId, List<PropagationPath> propagationPath) {
         rayCount.addAndGet(propagationPath.size());

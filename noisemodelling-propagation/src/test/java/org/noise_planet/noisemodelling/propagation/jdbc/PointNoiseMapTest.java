@@ -20,9 +20,9 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class PointNoiseMapTest {
 
@@ -135,6 +135,27 @@ public class PointNoiseMapTest {
                 }
             }
 
+        }
+    }
+
+    @Test
+    public void testNoiseMapBuilding() throws Exception {
+        try(Statement st = connection.createStatement()) {
+            st.execute(String.format("CALL SHPREAD('%s', 'LANDCOVER2000')", PointNoiseMapTest.class.getResource("landcover2000.shp").getFile()));
+            st.execute(getRunScriptRes("scene_with_landcover.sql"));
+            TriangleNoiseMap noisemap = new TriangleNoiseMap("BUILDINGS", "ROADS_GEOM");
+            noisemap.setReceiverHasAbsoluteZCoordinates(false);
+            noisemap.setSourceHasAbsoluteZCoordinates(false);
+            noisemap.setHeightField("HEIGHT");
+            noisemap.initialize(connection, new EmptyProgressVisitor());
+
+            AtomicInteger pk = new AtomicInteger(0);
+            for(int i=0; i < noisemap.getGridDim(); i++) {
+                for(int j=0; j < noisemap.getGridDim(); j++) {
+                    noisemap.generateReceivers(connection, i, j, "NM_RECEIVERS", "TRIANGLES", pk);
+                }
+            }
+            assertNotSame(0, pk.get());
         }
     }
 

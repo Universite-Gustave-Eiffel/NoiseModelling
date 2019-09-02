@@ -189,7 +189,7 @@ public class PointNoiseMap extends JdbcNoiseMap {
 
         IComputeRaysOut computeRaysOut;
         if(computeRaysOutFactory == null) {
-            computeRaysOut = new ComputeRaysOut(false, propagationProcessPathData);
+            computeRaysOut = new ComputeRaysOut(false, propagationProcessPathData, threadData);
         } else {
             computeRaysOut = computeRaysOutFactory.create(threadData, propagationProcessPathData);
         }
