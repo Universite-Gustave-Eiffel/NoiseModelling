@@ -41,6 +41,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -52,7 +53,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Pierre Aumond
  */
 public class ComputeRaysOut implements IComputeRaysOut {
-    public List<ComputeRaysOut.verticeSL> receiversAttenuationLevels = Collections.synchronizedList(new ArrayList<>());
+    public ConcurrentLinkedDeque<verticeSL> receiversAttenuationLevels = new ConcurrentLinkedDeque<>();
     public List<PropagationPath> propagationPaths = Collections.synchronizedList(new ArrayList<PropagationPath>());
 
     public PropagationProcessPathData genericMeteoData;
@@ -183,7 +184,7 @@ public class ComputeRaysOut implements IComputeRaysOut {
     }
 
     public List<ComputeRaysOut.verticeSL> getVerticesSoundLevel() {
-        return receiversAttenuationLevels;
+        return new ArrayList<>(receiversAttenuationLevels);
     }
 
     public List<PropagationPath> getPropagationPaths() {
