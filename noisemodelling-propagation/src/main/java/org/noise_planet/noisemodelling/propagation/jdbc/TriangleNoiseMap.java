@@ -3,6 +3,7 @@ package org.noise_planet.noisemodelling.propagation.jdbc;
 import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SFSUtilities;
 import org.h2gis.utilities.TableLocation;
+import org.locationtech.jts.algorithm.Orientation;
 import org.locationtech.jts.densify.Densifier;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.operation.buffer.BufferOp;
@@ -17,10 +18,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -305,8 +303,8 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
             ps.setObject(1, geometryFactory.createPolygon(new Coordinate[]{vertices.get(t.getA()),
                     vertices.get(t.getB()), vertices.get(t.getC()), vertices.get(t.getA())}));
             ps.setInt(2, t.getA());
-            ps.setInt(3, t.getB());
-            ps.setInt(4, t.getC());
+            ps.setInt(3, t.getC());
+            ps.setInt(4, t.getB());
             ps.setInt(5, cellI * gridDim + cellJ);
             ps.addBatch();
             batchSize++;
