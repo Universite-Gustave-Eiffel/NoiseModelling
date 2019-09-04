@@ -283,7 +283,13 @@ public class ComputeRaysOut implements IComputeRaysOut {
         }
 
         @Override
-        public void finalizeReceiver(long receiverId) {
+        public void finalizeReceiver(final long receiverId) {
+            long receiverPK = receiverId;
+            if(multiThreadParent.inputData != null) {
+                if(receiverId < multiThreadParent.inputData.receiversPk.size()) {
+                    receiverPK = multiThreadParent.inputData.receiversPk.get((int)receiverId);
+                }
+            }
             multiThreadParent.finalizeReceiver(receiverId);
             if(multiThreadParent.receiversAttenuationLevels != null) {
                 // Push merged sources into multi-thread parent
@@ -298,18 +304,17 @@ public class ComputeRaysOut implements IComputeRaysOut {
                                 lvl.value));
                     }
                 }
+                long sourcePK;
                 for (Map.Entry<Long, double[]> entry : levelsPerSourceLines.entrySet()) {
-                    long sourceId = entry.getKey();
+                    final long sourceId = entry.getKey();
+                    sourcePK = sourceId;
                     if(multiThreadParent.inputData != null) {
                         // Retrieve original identifier
                         if(entry.getKey() < multiThreadParent.inputData.sourcesPk.size()) {
-                            sourceId = multiThreadParent.inputData.sourcesPk.get((int)sourceId);
-                        }
-                        if(receiverId < multiThreadParent.inputData.receiversPk.size()) {
-                            receiverId = multiThreadParent.inputData.receiversPk.get((int)receiverId);
+                            sourcePK = multiThreadParent.inputData.sourcesPk.get((int)sourceId);
                         }
                     }
-                    pushResult(receiverId, sourceId, entry.getValue());
+                    pushResult(receiverPK, sourcePK, entry.getValue());
                 }
             }
             receiverAttenuationLevels.clear();
