@@ -186,7 +186,7 @@ public abstract class JdbcNoiseMap {
         }
     }
 
-    void fetchCellBuildings(Connection connection, Envelope fetchEnvelope, List<Integer> buildingsPk, MeshBuilder mesh) throws SQLException {
+    void fetchCellBuildings(Connection connection, Envelope fetchEnvelope, MeshBuilder mesh) throws SQLException {
         Geometry envGeo = geometryFactory.toGeometry(fetchEnvelope);
         boolean fetchAlpha = JDBCUtilities.hasField(connection, buildingsTableName, alphaFieldName);
         String additionalQuery = "";
@@ -197,12 +197,10 @@ public abstract class JdbcNoiseMap {
             additionalQuery += ", " + alphaFieldName;
         }
         String pkBuilding = "";
-        if(buildingsPk != null) {
-            int indexPk = JDBCUtilities.getIntegerPrimaryKey(connection, buildingsTableName);
-            if(indexPk > 0) {
-                pkBuilding = JDBCUtilities.getFieldName(connection.getMetaData(), buildingsTableName, indexPk);
-                additionalQuery += ", " + pkBuilding;
-            }
+        final int indexPk = JDBCUtilities.getIntegerPrimaryKey(connection, buildingsTableName);
+        if(indexPk > 0) {
+            pkBuilding = JDBCUtilities.getFieldName(connection.getMetaData(), buildingsTableName, indexPk);
+            additionalQuery += ", " + pkBuilding;
         }
         String buildingGeomName = SFSUtilities.getGeometryFields(connection,
                 TableLocation.parse(buildingsTableName)).get(0);
@@ -212,9 +210,9 @@ public abstract class JdbcNoiseMap {
                         TableLocation.quoteIdentifier(buildingGeomName) + " && ?::geometry")) {
             st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
             try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
-                int indexPk = 0;
+                int columnIndex = 0;
                 if(!pkBuilding.isEmpty()) {
-                    indexPk = JDBCUtilities.getFieldIndex(rs.getMetaData(), pkBuilding);
+                    columnIndex = JDBCUtilities.getFieldIndex(rs.getMetaData(), pkBuilding);
                 }
                 while (rs.next()) {
                     //if we don't have height of building
@@ -222,11 +220,11 @@ public abstract class JdbcNoiseMap {
                     if(building != null) {
                         Geometry intersectedGeometry = building.intersection(envGeo);
                         if(intersectedGeometry instanceof Polygon || intersectedGeometry instanceof MultiPolygon) {
-                            mesh.addGeometry(intersectedGeometry,
+                            MeshBuilder.PolygonWithHeight poly = mesh.addGeometry(intersectedGeometry,
                                     heightField.isEmpty() ? Double.MAX_VALUE : rs.getDouble(heightField),
                                     fetchAlpha ? rs.getDouble(alphaFieldName) : wallAbsorption);
-                            if(buildingsPk != null && indexPk != 0) {
-                                buildingsPk.add(rs.getInt(indexPk));
+                            if(columnIndex != 0) {
+                                poly.setPrimaryKey(rs.getInt(columnIndex));
                             }
                         }
                     }

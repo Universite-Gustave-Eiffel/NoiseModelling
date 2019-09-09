@@ -75,7 +75,7 @@ public class MeshBuilder {
         private double height;
         private List<Double> alpha = ALPHA_DEFAULT_VALUE;
         private double alphaUniqueValue = Double.NaN;
-
+        private int primaryKey = -1;
         private final boolean hasHeight;
 
         public PolygonWithHeight(Geometry geo) {
@@ -102,6 +102,20 @@ public class MeshBuilder {
             this.height = height;
             this.hasHeight = height < Double.MAX_VALUE;
             this.alpha = new ArrayList<>(alpha);
+        }
+
+        /**
+         * @return Unique identifier of the building in the database
+         */
+        public int getPrimaryKey() {
+            return primaryKey;
+        }
+
+        /**
+         * @param primaryKey Unique identifier of the building in the database
+         */
+        public void setPrimaryKey(int primaryKey) {
+            this.primaryKey = primaryKey;
         }
 
         public Geometry getGeometry() {
@@ -324,8 +338,10 @@ public class MeshBuilder {
      * @param heightofBuilding building's Height
      * @param alpha Wall absorption coefficient
      */
-    public void addGeometry(Geometry obstructionPoly, double heightofBuilding, double alpha) {
-        addGeometry(new PolygonWithHeight(obstructionPoly, heightofBuilding, alpha));
+    public PolygonWithHeight addGeometry(Geometry obstructionPoly, double heightofBuilding, double alpha) {
+        PolygonWithHeight poly = new PolygonWithHeight(obstructionPoly, heightofBuilding, alpha);
+        addGeometry(poly);
+        return poly;
     }
 
     public void mergeBuildings(Geometry boundingBoxGeom) {

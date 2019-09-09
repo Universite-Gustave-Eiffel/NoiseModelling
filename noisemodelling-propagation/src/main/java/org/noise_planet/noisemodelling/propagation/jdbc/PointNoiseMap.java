@@ -93,8 +93,7 @@ public class PointNoiseMap extends JdbcNoiseMap {
         // feed freeFieldFinder for fast intersection query
         // optimization
         // Fetch buildings in extendedEnvelope
-        List<Integer> buildingsPK = new ArrayList<>();
-        fetchCellBuildings(connection, expandedCellEnvelop, buildingsPK, mesh);
+        fetchCellBuildings(connection, expandedCellEnvelop, mesh);
         //if we have topographic points data
         fetchCellDem(connection, expandedCellEnvelop, mesh);
 

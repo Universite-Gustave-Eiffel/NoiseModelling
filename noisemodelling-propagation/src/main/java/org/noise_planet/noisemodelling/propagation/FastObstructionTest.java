@@ -68,6 +68,7 @@ public class FastObstructionTest {
     private List<Triangle> triVertices;
     private List<Coordinate> vertices;
     private List<Triangle> triNeighbors; // Neighbors
+    private List<Integer> buildingsPK = new ArrayList<>();
     private List<MeshBuilder.PolygonWithHeight> polygonWithHeight = new ArrayList<MeshBuilder.PolygonWithHeight>();//list polygon with height
     private Envelope meshEnvelope;
 

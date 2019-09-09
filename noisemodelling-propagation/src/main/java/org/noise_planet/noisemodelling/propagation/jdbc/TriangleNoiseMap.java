@@ -221,7 +221,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         fetchCellSource(connection, cellEnvelope, data);
         Collection<Geometry> buildingsGeometries = new ArrayList<>();
         List<Geometry> sourceDelaunayGeometries = data.sourceGeometries;
-        fetchCellBuildings(connection, cellEnvelope, null, cellMesh);
+        fetchCellBuildings(connection, cellEnvelope, cellMesh);
 
         MeshBuilder demMesh = new MeshBuilder();
         FastObstructionTest freeFieldFinder = null;
