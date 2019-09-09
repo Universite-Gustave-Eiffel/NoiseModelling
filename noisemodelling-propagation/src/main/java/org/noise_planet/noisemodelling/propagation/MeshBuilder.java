@@ -377,10 +377,14 @@ public class MeshBuilder {
                 List polyInters = buildingsRtree.query(geometryN.getEnvelopeInternal());
                 double minHeight = Double.MAX_VALUE;
                 List<Double> minAlpha = new ArrayList<>(ALPHA_DEFAULT_VALUE);
+                int primaryKey = -1;
                 for (Object id : polyInters) {
                     if (id instanceof Integer) {
                         PolygonWithHeight inPoly = polygonWithHeight.get((int) id);
                         if (inPoly.getGeometry().intersects(geometryN)) {
+                            if(inPoly.getPrimaryKey() > -1) {
+                                primaryKey = inPoly.getPrimaryKey();
+                            }
                             if(inPoly.hasHeight) {
                                 minHeight = Math.min(minHeight, inPoly.getHeight());
                             }
@@ -389,7 +393,9 @@ public class MeshBuilder {
                         }
                     }
                 }
-                mergedPolygonWithHeight.add(new PolygonWithHeight(geometryN, minHeight, minAlpha));
+                PolygonWithHeight reconstructedBuilding = new PolygonWithHeight(geometryN, minHeight, minAlpha);
+                reconstructedBuilding.setPrimaryKey(primaryKey);
+                mergedPolygonWithHeight.add(reconstructedBuilding);
             } else if(geometryN instanceof LineString) {
               // Exterior envelope
               envelopeSplited.add((LineString)geometryN);
