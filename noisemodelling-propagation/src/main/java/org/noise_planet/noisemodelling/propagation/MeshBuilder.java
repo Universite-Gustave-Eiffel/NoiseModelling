@@ -96,6 +96,13 @@ public class MeshBuilder {
             this.hasHeight = height < Double.MAX_VALUE;
             setAlpha(alphaUniqueValue);
         }
+
+        public PolygonWithHeight copy() {
+            PolygonWithHeight copy = new PolygonWithHeight(geo, height, alpha);
+            copy.alphaUniqueValue = alphaUniqueValue;
+            copy.primaryKey = primaryKey;
+            return copy;
+        }
         
         public PolygonWithHeight(Geometry geo, double height, List<Double> alpha) {
             this.geo = geo;
@@ -215,7 +222,7 @@ public class MeshBuilder {
         double a2 = y / (x * x + y * y + x) ;
         double a3 = ((x + 1) *(x + 1) + y * y) / (x * x + y * y) ;
         alpha = 8 * x * (1 + a1 * Math.atan(a2) - x * Math.log(a3)) ;
-        return alpha ;
+        return 1 - alpha ;
     }
 
 
