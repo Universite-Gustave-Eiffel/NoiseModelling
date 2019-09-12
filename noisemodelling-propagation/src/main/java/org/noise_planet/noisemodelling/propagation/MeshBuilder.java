@@ -222,7 +222,7 @@ public class MeshBuilder {
         double a2 = y / (x * x + y * y + x) ;
         double a3 = ((x + 1) *(x + 1) + y * y) / (x * x + y * y) ;
         alpha = 8 * x * (1 + a1 * Math.atan(a2) - x * Math.log(a3)) ;
-        return 1 - alpha ;
+        return alpha ;
     }
 
 

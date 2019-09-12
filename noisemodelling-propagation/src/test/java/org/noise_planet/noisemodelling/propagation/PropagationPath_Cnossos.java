@@ -342,7 +342,7 @@ public class PropagationPath_Cnossos {
         Vector3D flatTopography = new Vector3D(new Coordinate(0,0,0),new Coordinate(150,0,0));
 
         points.add(new PointPath(new Coordinate(0, 0, 4), 0, 0, Double.NaN, -1, PointPath.POINT_TYPE.SRCE));
-        points.add(new PointPath(new Coordinate(75, 20, 4), 0, Double.NaN, 0.7, -1, PointPath.POINT_TYPE.REFL));
+        points.add(new PointPath(new Coordinate(75, 20, 4), 0, Double.NaN, 0.3, -1, PointPath.POINT_TYPE.REFL));
         points.add(new PointPath(new Coordinate(150, 0, 4), 0, 0, Double.NaN, -1, PointPath.POINT_TYPE.RECV));
         // only first and last segment are necessary, even if it is possible to add more.
         srPath.add(new SegmentPath(0.,flatTopography,new Coordinate(0,0,0)));

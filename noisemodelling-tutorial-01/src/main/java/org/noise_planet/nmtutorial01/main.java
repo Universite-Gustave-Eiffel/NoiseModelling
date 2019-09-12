@@ -79,7 +79,7 @@ class Main {
         // Init NoiseModelling
         PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS_RAW", "ROADS", "RECEIVERS");
 
-        pointNoiseMap.setMaximumPropagationDistance(750.0d);
+        pointNoiseMap.setMaximumPropagationDistance(200.0d);
         pointNoiseMap.setSoundReflectionOrder(0);
         pointNoiseMap.setComputeHorizontalDiffraction(true);
         pointNoiseMap.setComputeVerticalDiffraction(true);
@@ -95,12 +95,8 @@ class Main {
 
         // Init custom input in order to compute more than just attenuation
 
-        PropagationPathStorageFactory storageFactory = new PropagationPathStorageFactory();
         TrafficPropagationProcessDataFactory trafficPropagationProcessDataFactory = new TrafficPropagationProcessDataFactory();
         pointNoiseMap.setPropagationProcessDataFactory(trafficPropagationProcessDataFactory);
-        pointNoiseMap.setComputeRaysOutFactory(storageFactory);
-        storageFactory.setWorkingDir(new File(workingDir).getAbsolutePath());
-
         RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1);
 
         pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
@@ -117,8 +113,8 @@ class Main {
                 // Run ray propagation
                 IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, i, j, progressVisitor, receivers);
                 // Return results with level spectrum for each source/receiver tuple
-                if(out instanceof PropagationPathStorage) {
-                    PropagationPathStorage cellStorage = (PropagationPathStorage) out;
+                if(out instanceof ComputeRaysOut) {
+                    ComputeRaysOut cellStorage = (ComputeRaysOut) out;
                     exportScene(String.format("target/scene_%d_%d.kml", i, j), cellStorage.inputData.freeFieldFinder, cellStorage);
                     for(ComputeRaysOut.verticeSL v : cellStorage.receiversAttenuationLevels) {
                         double globalDbValue = ComputeRays.wToDba(ComputeRays.sumArray(ComputeRays.dbaToW(v.value)));
