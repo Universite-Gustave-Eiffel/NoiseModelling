@@ -36,6 +36,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
     private double maximumArea = 75;
     private long nbreceivers = 0;
     private double receiverHeight = 1.6;
+    private double buildingBuffer = 2;
 
 
     /**
@@ -44,6 +45,21 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
      */
     public TriangleNoiseMap(String buildingsTableName, String sourcesTableName) {
         super(buildingsTableName, sourcesTableName);
+    }
+
+    /**
+     * @return Do not add receivers closer to specified distance
+     */
+    public double getBuildingBuffer() {
+        return buildingBuffer;
+    }
+
+    /**
+     * Do not add receivers closer to specified distance
+     * @param buildingBuffer Distance in meters
+     */
+    public void setBuildingBuffer(double buildingBuffer) {
+        this.buildingBuffer = buildingBuffer;
     }
 
     private void explodeAndAddPolygon(Geometry intersectedGeometry,
@@ -72,7 +88,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
 
     private void feedDelaunay(Collection<Geometry> buildings, MeshBuilder delaunayTool, Envelope boundingBoxFilter,
                               double srcDistance, LinkedList<LineString> delaunaySegments, double minRecDist,
-                              double srcPtDist, double triangleSide) throws LayerDelaunayError {
+                              double srcPtDist, double triangleSide, double buildingBuffer) throws LayerDelaunayError {
         Envelope extendedEnvelope = new Envelope(boundingBoxFilter);
         extendedEnvelope.expandBy(srcDistance * 2.);
         Geometry linearRing = geometryFactory.toGeometry(boundingBoxFilter);
@@ -82,7 +98,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         Polygon boundingBox = (Polygon)linearRing;
         LinkedList<Geometry> toUnite = new LinkedList<>();
         Envelope fetchBox = new Envelope(boundingBoxFilter);
-        fetchBox.expandBy(BUILDING_BUFFER);
+        fetchBox.expandBy(buildingBuffer);
         Geometry fetchGeometry = geometryFactory.toGeometry(fetchBox);
         for(Geometry building : buildings) {
             if(building.intersects(fetchGeometry)) {
@@ -93,7 +109,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         // over-triangulated
         LinkedList<Geometry> toUniteFinal = new LinkedList<>();
         if (!toUnite.isEmpty()) {
-            Geometry bufferBuildings = merge(toUnite, BUILDING_BUFFER);
+            Geometry bufferBuildings = merge(toUnite, buildingBuffer);
             // Remove small artifacts due to buildingsTableName buffer
             if(triangleSide > 0) {
                 bufferBuildings = Densifier.densify(bufferBuildings, triangleSide);
@@ -146,7 +162,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
     public void computeDelaunay(MeshBuilder cellMesh,
                                 Envelope mainEnvelope, int cellI, int cellJ, double maxSrcDist,
                                 Collection<Geometry> buildings, Collection<Geometry> sources,
-                                double minRecDist, double srcPtDist, double maximumArea)
+                                double minRecDist, double srcPtDist, double maximumArea, double buildingBuffer)
             throws LayerDelaunayError {
 
         Envelope cellEnvelope = getCellEnv(mainEnvelope, cellI, cellJ,
@@ -187,7 +203,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         // Compute equilateral triangle side from Area
         double triangleSide = (2*Math.pow(maximumArea, 0.5)) / Math.pow(3, 0.25);
         feedDelaunay(buildings, cellMesh, cellEnvelope, maxSrcDist, delaunaySegments,
-                minRecDist, srcPtDist, triangleSide);
+                minRecDist, srcPtDist, triangleSide, buildingBuffer);
 
         // Process delaunay
         logger.info("Begin delaunay");
@@ -235,7 +251,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
             computeDelaunay(cellMesh, mainEnvelope, cellI,
                     cellJ,
                     maximumPropagationDistance, buildingsGeometries, sourceDelaunayGeometries, roadWidth,
-                    sourceDensification, maximumArea);
+                    sourceDensification, maximumArea, buildingBuffer);
         } catch (LayerDelaunayError err) {
             throw new SQLException(err.getLocalizedMessage(), err);
         }
@@ -349,5 +365,9 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
 
     public void setReceiverHeight(double receiverHeight) {
         this.receiverHeight = receiverHeight;
+    }
+
+    public long getNbreceivers() {
+        return nbreceivers;
     }
 }
