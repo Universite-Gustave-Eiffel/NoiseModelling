@@ -521,6 +521,10 @@ public class MeshBuilder {
         }
     }
 
+    public void clearBuildings() {
+        polygonWithHeight.clear();
+    }
+
     /**
      * Add a constraint on maximum triangle area.
      * @param maximumArea Value in square meter.

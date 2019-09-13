@@ -110,6 +110,8 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         LinkedList<Geometry> toUniteFinal = new LinkedList<>();
         if (!toUnite.isEmpty()) {
             Geometry bufferBuildings = merge(toUnite, buildingBuffer);
+            bufferBuildings = TopologyPreservingSimplifier.simplify(bufferBuildings,
+                    minRecDist / 2);
             // Remove small artifacts due to buildingsTableName buffer
             if(triangleSide > 0) {
                 bufferBuildings = Densifier.densify(bufferBuildings, triangleSide);
@@ -160,8 +162,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
      * @throws LayerDelaunayError
      */
     public void computeDelaunay(MeshBuilder cellMesh,
-                                Envelope mainEnvelope, int cellI, int cellJ, double maxSrcDist,
-                                Collection<Geometry> buildings, Collection<Geometry> sources,
+                                Envelope mainEnvelope, int cellI, int cellJ, double maxSrcDist, Collection<Geometry> sources,
                                 double minRecDist, double srcPtDist, double maximumArea, double buildingBuffer)
             throws LayerDelaunayError {
 
@@ -202,6 +203,11 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
 
         // Compute equilateral triangle side from Area
         double triangleSide = (2*Math.pow(maximumArea, 0.5)) / Math.pow(3, 0.25);
+        List<Geometry> buildings = new ArrayList<>(cellMesh.getPolygonWithHeight().size());
+        for(MeshBuilder.PolygonWithHeight poly : cellMesh.getPolygonWithHeight()) {
+            buildings.add(poly.getGeometry());
+        }
+        cellMesh.clearBuildings();
         feedDelaunay(buildings, cellMesh, cellEnvelope, maxSrcDist, delaunaySegments,
                 minRecDist, srcPtDist, triangleSide, buildingBuffer);
 
@@ -235,7 +241,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         // Fetch all source located in expandedCellEnvelop
         PropagationProcessData data = new PropagationProcessData(null);
         fetchCellSource(connection, cellEnvelope, data);
-        Collection<Geometry> buildingsGeometries = new ArrayList<>();
+
         List<Geometry> sourceDelaunayGeometries = data.sourceGeometries;
         fetchCellBuildings(connection, cellEnvelope, cellMesh);
 
@@ -250,7 +256,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         try {
             computeDelaunay(cellMesh, mainEnvelope, cellI,
                     cellJ,
-                    maximumPropagationDistance, buildingsGeometries, sourceDelaunayGeometries, roadWidth,
+                    maximumPropagationDistance, sourceDelaunayGeometries, roadWidth,
                     sourceDensification, maximumArea, buildingBuffer);
         } catch (LayerDelaunayError err) {
             throw new SQLException(err.getLocalizedMessage(), err);

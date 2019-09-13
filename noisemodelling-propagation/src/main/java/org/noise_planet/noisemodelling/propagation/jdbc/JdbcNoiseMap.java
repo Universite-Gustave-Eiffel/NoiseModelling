@@ -52,13 +52,8 @@ public abstract class JdbcNoiseMap {
     public boolean verbose = true;
     protected boolean computeHorizontalDiffraction = true;
     protected boolean computeVerticalDiffraction = true;
-    /** Wall impedance Default value is cement wall σ = 1175 kN.s.m-4
-     Ref. The role of vegetation in urban sustainable development evaluated
-     through the stakes related to climate, water, energy and ambiences – Eva-
-     luation of the green covers impact on soundscape
-     Gwenaël Guillaume, Benoît Gauvreau, Philippe L’Hermite
-     RPR0J10292/VegDUD */
-    protected double wallAbsorption = 1175;
+    /** TODO missing reference to the SIGMA value of materials */
+    protected double wallAbsorption = 100000;
     /** maximum dB Error, stop calculation if the sum of further sources contributions are smaller than this value */
     public double maximumError = Double.NEGATIVE_INFINITY;
     protected String heightField = "";
