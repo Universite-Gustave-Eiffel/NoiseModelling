@@ -1,5 +1,7 @@
 [![Build Status](https://travis-ci.org/Ifsttar/NoiseModelling.svg?branch=master)](https://travis-ci.org/Ifsttar/NoiseModelling)
 
+**Version 3.0 (cnossos) of NoiseModelling does not yet have tutorials and documentation. You can still use the [version 2.0](https://github.com/Ifsttar/NoiseModelling/tree/master) which is fully documented.**
+
 NoiseModelling
 ======
 
@@ -18,3 +20,4 @@ For more information:
 * follow us on twitter @Noise-Planet [![Twitter Follow](https://img.shields.io/twitter/follow/noise_planet.svg?style=social&label=Follow)](https://twitter.com/Noise_Planet?lang=en)
 
 ![alt tag](http://noise-planet.org/assets/img/logos/Logo_noisemodelling.png)
+
