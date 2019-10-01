@@ -202,7 +202,7 @@ public class EvaluateAttenuationCnossos {
                 /*if (gToSigma || alphaUniqueValue > 1){
                     PropagationProcessData.getWallAlpha(alphaUniqueValue, data.freq_lvl.get(idf));
                 }*/
-                aRef[idf] += - 10 * Math.log10(alpha.get(idf));
+                aRef[idf] += - 10 * Math.log10(1 - alpha.get(idf));
             }
         }
         return aRef ;

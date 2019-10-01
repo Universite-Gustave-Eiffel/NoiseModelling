@@ -70,8 +70,6 @@ public class PropagationProcessData {
     public QueryGeometryStructure sourcesIndex = new QueryRTree();
     /** Sources geometries. Can be LINESTRING or POINT */
     public List<Geometry> sourceGeometries = new ArrayList<>();
-    /** Frequency bands values, by third octave */
-    public double freq_lvl[] = new double[] {63 ,   125 ,   250 ,   500 ,  1000 ,  2000 ,  4000 ,  8000};
     /** Maximum reflexion order */
     public int reflexionOrder = 1;
     /** Compute diffraction rays over vertical edges */

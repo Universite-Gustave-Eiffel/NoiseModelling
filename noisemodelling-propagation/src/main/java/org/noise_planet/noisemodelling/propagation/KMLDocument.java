@@ -248,7 +248,7 @@ public class KMLDocument {
             }
             if(coordinates.length > 3 && coordinates[0].equals2D(coordinates[coordinates.length - 1])) {
                 Polygon poly = geometryFactory.createPolygon(coordinates);
-                if(Orientation.isCCW(poly.getCoordinates())) {
+                if(!Orientation.isCCW(poly.getCoordinates())) {
                     poly = (Polygon) poly.reverse();
                 }
                 // Apply CRS transform
@@ -260,7 +260,7 @@ public class KMLDocument {
         //Write geometry
         xmlOut.writeCharacters(KMLWriter.writeGeometry(geometryFactory.createMultiPolygon(
                 polygons.toArray(new Polygon[polygons.size()])), Double.NaN,
-                wgs84Precision, true, KMLWriter.ALTITUDE_MODE_ABSOLUTE));
+                wgs84Precision, true, KMLWriter.ALTITUDE_MODE_RELATIVETOGROUND));
         xmlOut.writeEndElement();//Write Placemark
         xmlOut.writeEndElement();//Folder
         return this;

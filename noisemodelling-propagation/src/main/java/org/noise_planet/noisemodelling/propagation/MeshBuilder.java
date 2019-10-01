@@ -75,7 +75,7 @@ public class MeshBuilder {
         private double height;
         private List<Double> alpha = ALPHA_DEFAULT_VALUE;
         private double alphaUniqueValue = Double.NaN;
-
+        private int primaryKey = -1;
         private final boolean hasHeight;
 
         public PolygonWithHeight(Geometry geo) {
@@ -96,12 +96,33 @@ public class MeshBuilder {
             this.hasHeight = height < Double.MAX_VALUE;
             setAlpha(alphaUniqueValue);
         }
+
+        public PolygonWithHeight copy() {
+            PolygonWithHeight copy = new PolygonWithHeight(geo, height, alpha);
+            copy.alphaUniqueValue = alphaUniqueValue;
+            copy.primaryKey = primaryKey;
+            return copy;
+        }
         
         public PolygonWithHeight(Geometry geo, double height, List<Double> alpha) {
             this.geo = geo;
             this.height = height;
             this.hasHeight = height < Double.MAX_VALUE;
             this.alpha = new ArrayList<>(alpha);
+        }
+
+        /**
+         * @return Unique identifier of the building in the database
+         */
+        public int getPrimaryKey() {
+            return primaryKey;
+        }
+
+        /**
+         * @param primaryKey Unique identifier of the building in the database
+         */
+        public void setPrimaryKey(int primaryKey) {
+            this.primaryKey = primaryKey;
         }
 
         public Geometry getGeometry() {
@@ -324,8 +345,10 @@ public class MeshBuilder {
      * @param heightofBuilding building's Height
      * @param alpha Wall absorption coefficient
      */
-    public void addGeometry(Geometry obstructionPoly, double heightofBuilding, double alpha) {
-        addGeometry(new PolygonWithHeight(obstructionPoly, heightofBuilding, alpha));
+    public PolygonWithHeight addGeometry(Geometry obstructionPoly, double heightofBuilding, double alpha) {
+        PolygonWithHeight poly = new PolygonWithHeight(obstructionPoly, heightofBuilding, alpha);
+        addGeometry(poly);
+        return poly;
     }
 
     public void mergeBuildings(Geometry boundingBoxGeom) {
@@ -361,10 +384,14 @@ public class MeshBuilder {
                 List polyInters = buildingsRtree.query(geometryN.getEnvelopeInternal());
                 double minHeight = Double.MAX_VALUE;
                 List<Double> minAlpha = new ArrayList<>(ALPHA_DEFAULT_VALUE);
+                int primaryKey = -1;
                 for (Object id : polyInters) {
                     if (id instanceof Integer) {
                         PolygonWithHeight inPoly = polygonWithHeight.get((int) id);
                         if (inPoly.getGeometry().intersects(geometryN)) {
+                            if(inPoly.getPrimaryKey() > -1) {
+                                primaryKey = inPoly.getPrimaryKey();
+                            }
                             if(inPoly.hasHeight) {
                                 minHeight = Math.min(minHeight, inPoly.getHeight());
                             }
@@ -373,7 +400,9 @@ public class MeshBuilder {
                         }
                     }
                 }
-                mergedPolygonWithHeight.add(new PolygonWithHeight(geometryN, minHeight, minAlpha));
+                PolygonWithHeight reconstructedBuilding = new PolygonWithHeight(geometryN, minHeight, minAlpha);
+                reconstructedBuilding.setPrimaryKey(primaryKey);
+                mergedPolygonWithHeight.add(reconstructedBuilding);
             } else if(geometryN instanceof LineString) {
               // Exterior envelope
               envelopeSplited.add((LineString)geometryN);
@@ -490,6 +519,10 @@ public class MeshBuilder {
         if(computeNeighbors) {
             this.triNeighbors = delaunayTool.getNeighbors();
         }
+    }
+
+    public void clearBuildings() {
+        polygonWithHeight.clear();
     }
 
     /**

@@ -37,20 +37,8 @@ import org.apache.commons.math3.geometry.euclidean.threed.Line;
 import org.apache.commons.math3.geometry.euclidean.threed.Plane;
 import org.h2gis.api.ProgressVisitor;
 import org.h2gis.utilities.jts_utils.CoordinateUtils;
-import org.locationtech.jts.algorithm.CGAlgorithms3D;
-import org.locationtech.jts.algorithm.ConvexHull;
-import org.locationtech.jts.algorithm.LineIntersector;
-import org.locationtech.jts.algorithm.RobustLineIntersector;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.CoordinateSequence;
-import org.locationtech.jts.geom.CoordinateSequenceFilter;
-import org.locationtech.jts.geom.Envelope;
-import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.LineSegment;
-import org.locationtech.jts.geom.LineString;
-import org.locationtech.jts.geom.MultiLineString;
-import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.algorithm.*;
+import org.locationtech.jts.geom.*;
 import org.locationtech.jts.geom.impl.CoordinateArraySequence;
 import org.locationtech.jts.index.ItemVisitor;
 import org.locationtech.jts.index.strtree.STRtree;
@@ -498,7 +486,6 @@ public class ComputeRays {
         GeometryFactory factory = new GeometryFactory();
         List<PointPath> points = new ArrayList<PointPath>();
         List<SegmentPath> segments = new ArrayList<SegmentPath>();
-        List<SegmentPath> srPath = new ArrayList<SegmentPath>();
 
         double gPath;
         double totRSDistance = 0.;
@@ -512,12 +499,17 @@ public class ComputeRays {
         final List<GeoWithSoilType> soilTypeList = data.getSoilList();
         LineString RSZone = factory.createLineString(new Coordinate[]{receiverCoord, srcCoord});
         List<EnvelopeWithIndex<Integer>> resultZ0 = rTreeOfGeoSoil.query(RSZone.getEnvelopeInternal());
-        if (!resultZ0.isEmpty()) {
-            for (EnvelopeWithIndex<Integer> envel : resultZ0) {
-                //get the geo intersected
-                Geometry geoInter = RSZone.intersection(soilTypeList.get(envel.getId()).getGeo());
-                //add the intersected distance with ground effect
-                totRSDistance += getIntersectedDistance(geoInter) * soilTypeList.get(envel.getId()).getType();
+        for (EnvelopeWithIndex<Integer> envel : resultZ0) {
+            RectangleLineIntersector rectangleLineIntersector = new RectangleLineIntersector(envel);
+            if(rectangleLineIntersector.intersects(receiverCoord, srcCoord)) {
+                try {
+                    //get the geo intersected
+                    Geometry geoInter = RSZone.intersection(soilTypeList.get(envel.getId()).getGeo());
+                    //add the intersected distance with ground effect
+                    totRSDistance += getIntersectedDistance(geoInter) * soilTypeList.get(envel.getId()).getType();
+                } catch (TopologyException | IllegalArgumentException ex) {
+                    // Ignore
+                }
             }
         }
         // Compute GPath using 2D Length

@@ -1587,7 +1587,7 @@ public class EvaluateAttenuationCnossosTest {
         // Second source has not been computed because at best it would only increase the received level of only 0.0004 dB
         assertEquals(1, propDataOut.receiversAttenuationLevels.size());
 
-        assertEquals(44.07, ComputeRays.wToDba(ComputeRays.sumArray(roadLvl.length, ComputeRays.dbaToW(propDataOut.receiversAttenuationLevels.get(0).value))), 0.1);
+        assertEquals(44.07, ComputeRays.wToDba(ComputeRays.sumArray(roadLvl.length, ComputeRays.dbaToW(propDataOut.getVerticesSoundLevel().get(0).value))), 0.1);
     }
 
     @Test
@@ -1761,7 +1761,7 @@ public class EvaluateAttenuationCnossosTest {
 
         assertEquals(1, propDataOut.receiversAttenuationLevels.size());
 
-        assertEquals(14.6, ComputeRays.wToDba(ComputeRays.sumArray(roadLvl.length, ComputeRays.dbaToW(propDataOut.receiversAttenuationLevels.get(0).value))), 0.1);
+        assertEquals(14.6, ComputeRays.wToDba(ComputeRays.sumArray(roadLvl.length, ComputeRays.dbaToW(propDataOut.getVerticesSoundLevel().get(0).value))), 0.1);
     }
 
 

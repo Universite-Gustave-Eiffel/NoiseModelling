@@ -41,6 +41,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -52,7 +53,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Pierre Aumond
  */
 public class ComputeRaysOut implements IComputeRaysOut {
-    public List<ComputeRaysOut.verticeSL> receiversAttenuationLevels = Collections.synchronizedList(new ArrayList<>());
+    public ConcurrentLinkedDeque<verticeSL> receiversAttenuationLevels = new ConcurrentLinkedDeque<>();
     public List<PropagationPath> propagationPaths = Collections.synchronizedList(new ArrayList<PropagationPath>());
 
     public PropagationProcessPathData genericMeteoData;
@@ -104,6 +105,10 @@ public class ComputeRaysOut implements IComputeRaysOut {
     @Override
     public void finalizeReceiver(long receiverId) {
 
+    }
+
+    public PropagationProcessData getInputData() {
+        return inputData;
     }
 
     @Override
@@ -179,7 +184,7 @@ public class ComputeRaysOut implements IComputeRaysOut {
     }
 
     public List<ComputeRaysOut.verticeSL> getVerticesSoundLevel() {
-        return receiversAttenuationLevels;
+        return new ArrayList<>(receiversAttenuationLevels);
     }
 
     public List<PropagationPath> getPropagationPaths() {
@@ -240,7 +245,7 @@ public class ComputeRaysOut implements IComputeRaysOut {
 
     public static class ThreadRaysOut implements IComputeRaysOut {
         private ComputeRaysOut multiThreadParent;
-        protected List<ComputeRaysOut.verticeSL> receiverAttenuationLevels = Collections.synchronizedList(new ArrayList<>());
+        protected List<ComputeRaysOut.verticeSL> receiverAttenuationLevels = new ArrayList<>();
 
         public ThreadRaysOut(ComputeRaysOut multiThreadParent) {
             this.multiThreadParent = multiThreadParent;
@@ -278,7 +283,13 @@ public class ComputeRaysOut implements IComputeRaysOut {
         }
 
         @Override
-        public void finalizeReceiver(long receiverId) {
+        public void finalizeReceiver(final long receiverId) {
+            long receiverPK = receiverId;
+            if(multiThreadParent.inputData != null) {
+                if(receiverId < multiThreadParent.inputData.receiversPk.size()) {
+                    receiverPK = multiThreadParent.inputData.receiversPk.get((int)receiverId);
+                }
+            }
             multiThreadParent.finalizeReceiver(receiverId);
             if(multiThreadParent.receiversAttenuationLevels != null) {
                 // Push merged sources into multi-thread parent
@@ -293,18 +304,17 @@ public class ComputeRaysOut implements IComputeRaysOut {
                                 lvl.value));
                     }
                 }
+                long sourcePK;
                 for (Map.Entry<Long, double[]> entry : levelsPerSourceLines.entrySet()) {
-                    long sourceId = entry.getKey();
+                    final long sourceId = entry.getKey();
+                    sourcePK = sourceId;
                     if(multiThreadParent.inputData != null) {
                         // Retrieve original identifier
                         if(entry.getKey() < multiThreadParent.inputData.sourcesPk.size()) {
-                            sourceId = multiThreadParent.inputData.sourcesPk.get((int)sourceId);
-                        }
-                        if(receiverId < multiThreadParent.inputData.receiversPk.size()) {
-                            receiverId = multiThreadParent.inputData.receiversPk.get((int)receiverId);
+                            sourcePK = multiThreadParent.inputData.sourcesPk.get((int)sourceId);
                         }
                     }
-                    pushResult(receiverId, sourceId, entry.getValue());
+                    pushResult(receiverPK, sourcePK, entry.getValue());
                 }
             }
             receiverAttenuationLevels.clear();

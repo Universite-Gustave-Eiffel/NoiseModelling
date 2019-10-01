@@ -9,14 +9,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.locationtech.jts.geom.Geometry;
-import org.noise_planet.noisemodelling.propagation.ComputeRays;
-import org.noise_planet.noisemodelling.propagation.ComputeRaysOut;
-import org.noise_planet.noisemodelling.propagation.FastObstructionTest;
-import org.noise_planet.noisemodelling.propagation.IComputeRaysOut;
-import org.noise_planet.noisemodelling.propagation.PropagationPath;
-import org.noise_planet.noisemodelling.propagation.PropagationProcessData;
-import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
-import org.noise_planet.noisemodelling.propagation.RootProgressVisitor;
+import org.noise_planet.noisemodelling.propagation.*;
 
 import java.io.*;
 import java.net.URISyntaxException;
@@ -27,8 +20,9 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 public class PointNoiseMapTest {
 
@@ -76,7 +70,7 @@ public class PointNoiseMapTest {
             pointNoiseMap.setComputeVerticalDiffraction(false);
             pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
 
-            pointNoiseMap.setComputeRaysOutFactory(new JDBCComputeRaysOut());
+            pointNoiseMap.setComputeRaysOutFactory(new JDBCComputeRaysOut(true));
             pointNoiseMap.setPropagationProcessDataFactory(new JDBCPropagationData());
 
             List<ComputeRaysOut.verticeSL> allLevels = new ArrayList<>();
@@ -106,6 +100,65 @@ public class PointNoiseMapTest {
         }
     }
 
+    @Test
+    public void testGroundSurface() throws Exception {
+        try(Statement st = connection.createStatement()) {
+            st.execute(String.format("CALL SHPREAD('%s', 'LANDCOVER2000')", PointNoiseMapTest.class.getResource("landcover2000.shp").getFile()));
+            st.execute(getRunScriptRes("scene_with_landcover.sql"));
+            PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS", "ROADS_GEOM", "RECEIVERS");
+            pointNoiseMap.setComputeHorizontalDiffraction(true);
+            pointNoiseMap.setComputeVerticalDiffraction(true);
+            pointNoiseMap.setSoundReflectionOrder(1);
+            pointNoiseMap.setReceiverHasAbsoluteZCoordinates(false);
+            pointNoiseMap.setSourceHasAbsoluteZCoordinates(false);
+            pointNoiseMap.setHeightField("HEIGHT");
+            pointNoiseMap.setSoilTableName("LAND_G");
+            pointNoiseMap.setComputeVerticalDiffraction(true);
+            pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
+
+            pointNoiseMap.setComputeRaysOutFactory(new JDBCComputeRaysOut(false));
+            pointNoiseMap.setPropagationProcessDataFactory(new JDBCPropagationData());
+
+            Set<Long> receivers = new HashSet<>();
+            pointNoiseMap.setThreadCount(1);
+            RootProgressVisitor progressVisitor = new RootProgressVisitor(pointNoiseMap.getGridDim() * pointNoiseMap.getGridDim(), true, 5);
+            double expectedMaxArea = Math.pow(pointNoiseMap.getGroundSurfaceSplitSideLength(), 2);
+            for(int i=0; i < pointNoiseMap.getGridDim(); i++) {
+                for(int j=0; j < pointNoiseMap.getGridDim(); j++) {
+                    IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, i, j, progressVisitor, receivers);
+                    if(out instanceof ComputeRaysOut) {
+                        ComputeRaysOut rout = (ComputeRaysOut) out;
+                        for(GeoWithSoilType soil : rout.inputData.getSoilList()) {
+                            assertTrue(soil.getGeo().getArea() < expectedMaxArea);
+                        }
+                    }
+                }
+            }
+
+        }
+    }
+
+    @Test
+    public void testNoiseMapBuilding() throws Exception {
+        try(Statement st = connection.createStatement()) {
+            st.execute(String.format("CALL SHPREAD('%s', 'LANDCOVER2000')", PointNoiseMapTest.class.getResource("landcover2000.shp").getFile()));
+            st.execute(getRunScriptRes("scene_with_landcover.sql"));
+            TriangleNoiseMap noisemap = new TriangleNoiseMap("BUILDINGS", "ROADS_GEOM");
+            noisemap.setReceiverHasAbsoluteZCoordinates(false);
+            noisemap.setSourceHasAbsoluteZCoordinates(false);
+            noisemap.setHeightField("HEIGHT");
+            noisemap.initialize(connection, new EmptyProgressVisitor());
+
+            AtomicInteger pk = new AtomicInteger(0);
+            for(int i=0; i < noisemap.getGridDim(); i++) {
+                for(int j=0; j < noisemap.getGridDim(); j++) {
+                    noisemap.generateReceivers(connection, i, j, "NM_RECEIVERS", "TRIANGLES", pk);
+                }
+            }
+            assertNotSame(0, pk.get());
+        }
+    }
+
     private static class JDBCPropagationData implements PointNoiseMap.PropagationProcessDataFactory {
         @Override
         public PropagationProcessData create(FastObstructionTest freeFieldFinder) {
@@ -114,9 +167,15 @@ public class PointNoiseMapTest {
     }
 
     private static class JDBCComputeRaysOut implements PointNoiseMap.IComputeRaysOutFactory {
+        boolean keepRays;
+
+        public JDBCComputeRaysOut(boolean keepRays) {
+            this.keepRays = keepRays;
+        }
+
         @Override
         public IComputeRaysOut create(PropagationProcessData threadData, PropagationProcessPathData pathData) {
-            return new RayOut(true, pathData, (DirectPropagationProcessData)threadData);
+            return new RayOut(keepRays, pathData, (DirectPropagationProcessData)threadData);
         }
     }
 
@@ -136,8 +195,8 @@ public class PointNoiseMapTest {
         }
     }
 
-    private static final class DirectPropagationProcessData extends PropagationProcessData {
-        private List<double[]> wjSources = new ArrayList<>();
+    private static class DirectPropagationProcessData extends PropagationProcessData {
+        List<double[]> wjSources = new ArrayList<>();
         private final static String[] powerColumns = new String[]{"db_m63", "db_m125", "db_m250", "db_m500", "db_m1000", "db_m2000", "db_m4000", "db_m8000"};
 
         public DirectPropagationProcessData(FastObstructionTest freeFieldFinder) {
@@ -161,4 +220,5 @@ public class PointNoiseMapTest {
             return wjSources.get(sourceId);
         }
     }
+
 }

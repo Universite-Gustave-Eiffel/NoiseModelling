@@ -20,8 +20,6 @@ import java.util.List;
 class TrafficPropagationProcessData extends PropagationProcessData {
     // Lden values
     protected List<double[]> wjSourcesD = new ArrayList<>();
-    private List<double[]> wjSourcesE = new ArrayList<>();
-    private List<double[]> wjSourcesN = new ArrayList<>();
 
     private String AAFD_FIELD_NAME = "AADF"; // Annual Average Daily Flow (AADF) estimates
     private String ROAD_CATEGORY_FIELD_NAME = "CLAS_ADM";

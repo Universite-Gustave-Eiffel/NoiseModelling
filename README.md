@@ -17,6 +17,13 @@ For more information:
 
 ![alt tag](http://noise-planet.org/assets/img/logos/Logo_noisemodelling.png)
 
+* Run the tutorial
+
+```bash
+cd noisemodelling-tutorial-01
+mvn exec:java
+```
+
 Cite as: 
 *Erwan Bocher, Gwenaël Guillaume, Judicaël Picaut, Gwendall Petit, Nicolas Fortin. NoiseModelling: An Open Source GIS Based Tool to Produce Environmental Noise Maps. ISPRS International Journal of Geo-Information, MDPI, 2019, 8 (3), pp.130. ⟨10.3390/ijgi8030130⟩. ⟨hal-02057736⟩*
 

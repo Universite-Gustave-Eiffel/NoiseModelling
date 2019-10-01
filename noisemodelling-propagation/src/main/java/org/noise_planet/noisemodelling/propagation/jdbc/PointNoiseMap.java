@@ -93,8 +93,7 @@ public class PointNoiseMap extends JdbcNoiseMap {
         // feed freeFieldFinder for fast intersection query
         // optimization
         // Fetch buildings in extendedEnvelope
-        List<Integer> buildingsPK = new ArrayList<>();
-        fetchCellBuildings(connection, expandedCellEnvelop, buildingsPK, mesh);
+        fetchCellBuildings(connection, expandedCellEnvelop, mesh);
         //if we have topographic points data
         fetchCellDem(connection, expandedCellEnvelop, mesh);
 
@@ -189,14 +188,16 @@ public class PointNoiseMap extends JdbcNoiseMap {
 
         IComputeRaysOut computeRaysOut;
         if(computeRaysOutFactory == null) {
-            computeRaysOut = new ComputeRaysOut(false, propagationProcessPathData);
+            computeRaysOut = new ComputeRaysOut(false, propagationProcessPathData, threadData);
         } else {
             computeRaysOut = computeRaysOutFactory.create(threadData, propagationProcessPathData);
         }
 
         ComputeRays computeRays = new ComputeRays(threadData);
 
-        computeRays.setThreadCount(threadCount);
+        if(threadCount > 0) {
+            computeRays.setThreadCount(threadCount);
+        }
 
         if(!receiverHasAbsoluteZCoordinates) {
             computeRays.makeReceiverRelativeZToAbsolute();
