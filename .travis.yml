@@ -4,10 +4,8 @@ jdk:
 
 
 script:
-  - ./mvn install
-  - cd wps_scripts
-  - pwd
-  - travis_retry ./gradlew test --info --stacktrace
+  - mvn test -B
+  - cd wps_scripts && travis_retry ./gradlew test --info --stacktrace
 
 
 
