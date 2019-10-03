@@ -1,0 +1,7 @@
+#NOTE: This is an Aether internal implementation file, its format can be changed without prior notice.
+#Tue Apr 30 10:31:28 CEST 2019
+gs-script-groovy-2.15.1-sources.jar>=
+gs-script-groovy-2.15.1-test-sources.jar>=
+gs-script-groovy-2.15.1.jar>=
+gs-script-groovy-2.15.1-tests.jar>=
+gs-script-groovy-2.15.1.pom>=
