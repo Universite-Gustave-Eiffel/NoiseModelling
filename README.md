@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/Ifsttar/NoiseModelling.svg?branch=master)](https://travis-ci.org/Ifsttar/NoiseModelling)
+[![Build Status](https://travis-ci.org/Ifsttar/NoiseModelling.svg?branch=cnossos)](https://travis-ci.org/Ifsttar/NoiseModelling)
 
 **Version 3.0 (cnossos) of NoiseModelling does not yet have tutorials and documentation. You can still use the [version 2.0](https://github.com/Ifsttar/NoiseModelling/tree/master) which is fully documented [here](https://github.com/Ifsttar/NoiseModelling/blob/master/wiki/Home.md).**
 
