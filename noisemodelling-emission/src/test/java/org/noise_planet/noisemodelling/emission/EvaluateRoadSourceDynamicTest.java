@@ -52,7 +52,7 @@ public class EvaluateRoadSourceDynamicTest {
     }
 
 
-    /*@Test
+    @Test
     public void testRoadNoise3_speed0() {
         //int FreqParam = 8000;
         int[] f = {63, 125, 250, 500,1000,2000,4000,8000};
@@ -61,7 +61,7 @@ public class EvaluateRoadSourceDynamicTest {
             int acc = 0;
 
             double Temperature = 15;
-            int RoadSurface = 5;
+            int RoadSurface = 8;
             boolean Stud = false;
             double Junc_dist = 200;
             int Junc_type = 1;
@@ -75,7 +75,7 @@ public class EvaluateRoadSourceDynamicTest {
             //EvaluateRoadSourceDynamic.evaluate(rsParameters);
             //assertEquals(98.18, EvaluateRoadSourceDynamic.evaluate(rsParameters), EPSILON_TEST1);
         }
-    }*/
+    }
 
 
 
