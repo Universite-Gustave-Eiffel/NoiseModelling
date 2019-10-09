@@ -1,0 +1,84 @@
+.. NoiseModelling documentation master file, created by
+   sphinx-quickstart on Tue Oct  8 17:50:48 2019.
+   You can adapt this file completely to your liking, but it should at least
+   contain the root `toctree` directive.
+
+NoiseModelling User Guide
+==========================================
+
+.. figure:: images/Logo_noisemodelling.png
+   :align: center
+
+This is the **official NoiseModelling User Guide**.
+
+NoiseModelling is a library capable of producing noise maps of cities. This tool is `almost compliant`_ with the CNOSSOS-EU standard method for the noise emission (only road traffic) and noise propagation.
+It can be freely used either for research and education, as well as by experts in a professional use.
+
+This plugin is distributed under `GPL 3 license`_ and is developed by the DECIDE team from the Lab-STICC (CNRS) and by the Mixt Research Unit in Environmental Acoustics UMRAE (Ifsttar).
+
+-  for **more information** on NoiseModelling, `visit the offical NoiseModelling website`_
+-  to **contribute to NoiseModelling** from the source code, follow the instructions
+-  to **contact the development team**, use the email contact@noise-planet.org or let an issue : https://github.com/Ifsttar/NoiseModelling/issues
+
+Cite as: *Erwan Bocher, Gwenaël Guillaume, Judicaël Picaut, Gwendall Petit, Nicolas Fortin. NoiseModelling: An Open Source GIS Based Tool to Produce Environmental Noise Maps. ISPRS International Journal of Geo-Information, MDPI, 2019, 8 (3), pp.130. ⟨10.3390/ijgi8030130⟩. ⟨hal-02057736⟩*
+
+.. important::
+    - The guide is currently not complete. Additions are underway.
+
+.. note::
+    -  Some illustrations may refer to previous versions of NoiseModelling.
+    -  If you observe some mistakes or errors, please contact us at contact@noise-planet.org or let an issue `here`_.
+    -  You can also contribute to the documentation
+
+.. note::
+	 The official documentation is available in English only.
+
+.. _visit the offical NoiseModelling website: http://noise-planet.org/noisemodelling.html
+
+.. _here: https://github.com/Ifsttar/NoiseModelling/issues
+
+.. _almost compliant: Numerical_Model.html
+
+.. _GPL 3 license: License.html
+
+.. toctree::
+    :maxdepth: 2
+    :caption: NoiseModelling presentation
+    
+    Numerical_Model
+    Validation
+
+.. toctree::
+    :maxdepth: 2
+    :caption: For Interface-Friendly Users
+
+    Get_Started_Tutorial
+    WPS_Blocks
+    FAQ_UF
+
+.. toctree::
+    :maxdepth: 2
+    :caption: Advanced Users
+
+    Own_Wps
+    dBeaver
+
+.. toctree::
+    :maxdepth: 2
+    :caption: For Developers
+
+    Get_Started_Dev
+
+.. toctree::
+    :maxdepth: 2
+    :caption: Appendices
+
+    Support
+    License
+
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
