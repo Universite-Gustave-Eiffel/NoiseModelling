@@ -3,17 +3,17 @@ Numerical Model
 
 Emission Numerical Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Trafic emission model
+Traffic emission model
 ----------------------
 The emission model of the implemented traffic is the `CNOSSOS-EU`_ model.
 
 .. note::
-    Current model include the emission coefficients a and b presented in the `following report (2019)`_
+    Current model includes the emission coefficients a and b presented in the `report "Amendments for CNOSSOS-EU" (Kok, 2019)`_
 
 Other emission models
 ----------------------
 
-In this version, other emission models are not included.
+Other emission models are not included within the release 3.0.
 
 Ray Tracing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -28,12 +28,12 @@ The emission model of the implemented traffic is the `CNOSSOS-EU`_ model.
 
 .. warning::
     - the rays under favorable conditions are subject to `questioning`_. The current version is not final.
-    - the Rayleigh criterion is subject to `questioning`_. The current version doesn't integrate calculation that involve this criterion.
-    - taking into account 15 degrees obstacles are subject to `questioning`_. The current version doesn't integrate calculation that involve 15 degrees obstacle.
+    - the Rayleigh criterion is subject to `questioning`_. The current version does not integrate calculation that involve this criterion.
+    - taking into account 15 degrees obstacles are subject to `questioning`_. The current version doesn't integrate calculation that involve 15 degrees obstacles.
 
 .. _questioning: https://www.rivm.nl/bibliotheek/rapporten/2019-0023.pdf
 
-.. _following report (2019): https://www.rivm.nl/bibliotheek/rapporten/2019-0023.pdf
+.. _report "Amendments for CNOSSOS-EU" (Kok, 2019): https://www.rivm.nl/bibliotheek/rapporten/2019-0023.pdf
 
 .. _CNOSSOS-EU: https://circabc.europa.eu/sd/a/9566c5b9-8607-4118-8427-906dab7632e2/Directive_2015_996_EN.pdfde
 

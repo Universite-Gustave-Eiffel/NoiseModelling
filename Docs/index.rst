@@ -14,7 +14,7 @@ This is the **official NoiseModelling User Guide**.
 NoiseModelling is a library capable of producing noise maps of cities. This tool is `almost compliant`_ with the CNOSSOS-EU standard method for the noise emission (only road traffic) and noise propagation.
 It can be freely used either for research and education, as well as by experts in a professional use.
 
-This plugin is distributed under `GPL 3 license`_ and is developed by the DECIDE team from the Lab-STICC (CNRS) and by the Mixt Research Unit in Environmental Acoustics UMRAE (Ifsttar).
+This plugin is distributed under `GPL 3 license`_ and is developed by the DECIDE team of the Lab-STICC (CNRS) and by the Mixt Research Unit in Environmental Acoustics UMRAE (Ifsttar).
 
 -  for **more information** on NoiseModelling, `visit the offical NoiseModelling website`_
 -  to **contribute to NoiseModelling** from the source code, follow the instructions
@@ -59,7 +59,7 @@ Cite as: *Erwan Bocher, Gwenaël Guillaume, Judicaël Picaut, Gwendall Petit, Ni
 
 .. toctree::
     :maxdepth: 2
-    :caption: Advanced Users
+    :caption: For Advanced Users
 
     Own_Wps
     dBeaver

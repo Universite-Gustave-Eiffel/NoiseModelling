@@ -7,7 +7,7 @@ Requirements: Install Java
 Please install JAVA > v8.0
 - https://www.java.com/fr/download/
 
-Check if JAVA_HOME environnement variable is well setted to your last installed java folder.
+Check if JAVA_HOME environnement variable is well settled to your last installed java folder.
 
 Step 1: Download the lastest realese
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -74,7 +74,7 @@ Files are uploaded to database when the Console window displays :literal:`The ta
 Repeat it 5 times, one for each file.
 
 .. note::
-    - The process is suppose to be quick (<5 sec.). In case of out of time, try to restart the Geoserver (see Step 2).
+    - The process is supposed to be quick (<5 sec.). In case of out of time, try to restart the Geoserver (see Step 2).
     - Orange blocks are mandatory
     - Beige blocks are optional
     - Blocks get solid border when they are ready to run
