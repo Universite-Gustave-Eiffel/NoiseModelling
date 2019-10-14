@@ -47,6 +47,7 @@ Cite as: *Erwan Bocher, Gwenaël Guillaume, Judicaël Picaut, Gwendall Petit, Ni
     
     Numerical_Model
     Validation
+    Contributions
 
 .. toctree::
     :maxdepth: 2

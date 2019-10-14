@@ -67,6 +67,7 @@ public class EvaluateRoadSourceCnossosTest {
         int Junc_type = 1;
         RSParametersCnossos rsParameters = new RSParametersCnossos(lv_speed,  mv_speed,  hgv_speed,  wav_speed,  wbv_speed,  lv_per_hour,  mv_per_hour,  hgv_per_hour,  wav_per_hour,  wbv_per_hour,  FreqParam,  Temperature,  RoadSurface,Ts_stud, Pm_stud , Junc_dist, Junc_type);
         rsParameters.setSlopePercentage_without_limit(10);
+        rsParameters.setCoeffVer(1);
         //System.out.println(EvaluateRoadSourceCnossos.evaluate(rsParameters));
         assertEquals(77.6711 , EvaluateRoadSourceCnossos.evaluate(rsParameters), EPSILON_TEST1);
     }
@@ -93,6 +94,7 @@ public class EvaluateRoadSourceCnossosTest {
         int Junc_type = 1;
         RSParametersCnossos rsParameters = new RSParametersCnossos(lv_speed,  mv_speed,  hgv_speed,  wav_speed,  wbv_speed,  lv_per_hour,  mv_per_hour,  hgv_per_hour,  wav_per_hour,  wbv_per_hour,  FreqParam,  Temperature,  RoadSurface,Ts_stud, Pm_stud , Junc_dist, Junc_type);
         rsParameters.setSlopePercentage_without_limit(-5);
+        rsParameters.setCoeffVer(1);
         //System.out.println(EvaluateRoadSourceCnossos.evaluate(rsParameters));
         assertEquals(79.6814 , EvaluateRoadSourceCnossos.evaluate(rsParameters), EPSILON_TEST1);
     }
@@ -120,6 +122,7 @@ public class EvaluateRoadSourceCnossosTest {
 
         RSParametersCnossos rsParameters = new RSParametersCnossos(lv_speed,  mv_speed,  hgv_speed,  wav_speed,  wbv_speed,  lv_per_hour,  mv_per_hour,  hgv_per_hour,  wav_per_hour,  wbv_per_hour,  FreqParam,  Temperature,  RoadSurface,Ts_stud, Pm_stud, Junc_dist, Junc_type );
         rsParameters.setSlopePercentage_without_limit(-7);
+        rsParameters.setCoeffVer(1);
         //System.out.println(EvaluateRoadSourceCnossos.evaluate(rsParameters));
         assertEquals(58.8222 , EvaluateRoadSourceCnossos.evaluate(rsParameters), EPSILON_TEST1);
     }
@@ -146,6 +149,7 @@ public class EvaluateRoadSourceCnossosTest {
         int Junc_type = 1;
         RSParametersCnossos rsParameters = new RSParametersCnossos(lv_speed,  mv_speed,  hgv_speed,  wav_speed,  wbv_speed,  lv_per_hour,  mv_per_hour,  hgv_per_hour,  wav_per_hour,  wbv_per_hour,  FreqParam,  Temperature,  RoadSurface,Ts_stud, Pm_stud, Junc_dist, Junc_type );
         rsParameters.setSlopePercentage_without_limit(-7);
+        rsParameters.setCoeffVer(1);
         //System.out.println(EvaluateRoadSourceCnossos.evaluate(rsParameters));
         assertEquals(82.785 , EvaluateRoadSourceCnossos.evaluate(rsParameters), EPSILON_TEST1);
     }
@@ -172,6 +176,7 @@ public class EvaluateRoadSourceCnossosTest {
         int Junc_type = 2;
         RSParametersCnossos rsParameters = new RSParametersCnossos(lv_speed,  mv_speed,  hgv_speed,  wav_speed,  wbv_speed,  lv_per_hour,  mv_per_hour,  hgv_per_hour,  wav_per_hour,  wbv_per_hour,  FreqParam,  Temperature,  RoadSurface,Ts_stud, Pm_stud, Junc_dist, Junc_type );
         rsParameters.setSlopePercentage_without_limit(10);
+        rsParameters.setCoeffVer(1);
         assertEquals(85.4991 , EvaluateRoadSourceCnossos.evaluate(rsParameters), EPSILON_TEST1);
     }
 
@@ -179,7 +184,7 @@ public class EvaluateRoadSourceCnossosTest {
     public void TestTableIII() {
         int Freq = 125;
         String VehCat = "2";
-        final Double coeff = EvaluateRoadSourceCnossos.getCoeff("ar",Freq, VehCat);
+        final Double coeff = EvaluateRoadSourceCnossos.getCoeff("ar",Freq, VehCat, 1);
         assertEquals(88.7 , coeff, EPSILON_TEST1);
 
     }
@@ -205,6 +210,7 @@ public class EvaluateRoadSourceCnossosTest {
                     "4a".equals(vehCat) ? vehiclePerHour : 0, "4b".equals(vehCat) ? vehiclePerHour : 0,
                     FREQUENCIES[idFreq], temperature, surfRef, tsStud, pmStud, juncDist, juncType);
             rsParameters.setSlopePercentage(slope);
+            rsParameters.setCoeffVer(1);
             assertEquals(String.format("%d Hz", FREQUENCIES[idFreq]), expectedValues[idFreq], EvaluateRoadSourceCnossos.evaluate(rsParameters), EPSILON_TEST1);
         }
     }

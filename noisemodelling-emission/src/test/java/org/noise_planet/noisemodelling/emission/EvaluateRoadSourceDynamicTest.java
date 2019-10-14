@@ -28,7 +28,7 @@ public class EvaluateRoadSourceDynamicTest {
         RSParametersDynamic rsParameters = new RSParametersDynamic(speed,  acc,  veh_type, acc_type, FreqParam,  Temperature,  RoadSurface,Stud, Junc_dist, Junc_type,LwStd,VehId);
         rsParameters.setSlopePercentage(0);
         //System.out.println(EvaluateRoadSourceCnossos.evaluate(rsParameters));
-        assertEquals(91.71, EvaluateRoadSourceDynamic.evaluate(rsParameters), EPSILON_TEST1);
+        assertEquals(94.35, EvaluateRoadSourceDynamic.evaluate(rsParameters), EPSILON_TEST1);
     }
 
     @Test

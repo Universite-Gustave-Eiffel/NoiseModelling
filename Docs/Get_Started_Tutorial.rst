@@ -96,9 +96,13 @@ Then, you can run the process.
 
 The table LDAY_GEOM will be created in your database.
 
-.. tip::
-    if you want you can try to change the different parameters.
+.. note::
+    If you want to know more about the format of the input tables, you can refer to the `WPS Blocks`_ section.
 
+.. tip::
+    If you want you can try to change the different parameters.
+
+.. _WPS Blocks : WPS_Blocks.html
 
 Step 6: Export (& see) the results
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
