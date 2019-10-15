@@ -20,7 +20,7 @@
 # -- Project information -----------------------------------------------------
 
 project = u'NoiseModelling'
-copyright = u'2019, Aumond P., Fortin N.'
+copyright = u'2019, Ifsttar'
 author = u'Aumond P., Fortin N.'
 
 # The short X.Y version
