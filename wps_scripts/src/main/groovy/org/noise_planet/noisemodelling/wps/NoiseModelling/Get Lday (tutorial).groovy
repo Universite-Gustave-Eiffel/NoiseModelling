@@ -1,38 +1,3 @@
-/**
- * NoiseMap is a scientific computation plugin for OrbisGIS developed in order to
- * evaluate the noise impact on urban mobility plans. This model is
- * based on the French standard method NMPB2008. It includes traffic-to-noise
- * sources evaluation and sound propagation processing.
- *
- * This version is developed at French IRSTV Institute and at IFSTTAR
- * (http://www.ifsttar.fr/) as part of the Eval-PDU project, funded by the
- * French Agence Nationale de la Recherche (ANR) under contract ANR-08-VILL-0005-01.
- *
- * Noisemap is distributed under GPL 3 license. Its reference contact is Judicaël
- * Picaut <judicael.picaut@ifsttar.fr>. It is maintained by Nicolas Fortin
- * as part of the "Atelier SIG" team of the IRSTV Institute <http://www.irstv.fr/>.
- *
- * Copyright (C) 2011 IFSTTAR
- * Copyright (C) 2011-2012 IRSTV (FR CNRS 2488)
- *
- * Noisemap is free software: you can redistribute it and/or modify it under the
- * terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- *
- * Noisemap is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE. See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with
- * Noisemap. If not, see <http://www.gnu.org/licenses/>.
- *
- * For more information, please consult: <http://www.orbisgis.org/>
- * or contact directly:
- * info_at_ orbisgis.org
- */
-
-
 /*
  * @Author Hesry Quentin
  * @Author Pierre Aumond
@@ -59,7 +24,7 @@ import java.sql.DriverManager
 import java.sql.Statement
 import java.sql.PreparedStatement
 import groovy.sql.Sql
-
+import org.h2gis.utilities.SFSUtilities
 import org.h2gis.api.EmptyProgressVisitor
 import org.noisemodellingwps.utilities.WpsConnectionWrapper
 import org.h2gis.utilities.wrapper.*
@@ -77,11 +42,11 @@ import java.sql.SQLException
 import java.util.ArrayList
 import java.util.List
 
-title = 'Compute Lday Map'
-description = 'Compute Lday Map from AADF estimates'
+title = 'Compute Lday'
+description = 'Compute Lday Map from Estimated Annual average daily flows (AADF) estimates.'
 
 inputs = [
-        resultPath: [name: 'Path for result files', title: 'Path for result files',  type: String.class],
+        databaseName: [name: 'Name of the database', title: 'Name of the database', description : 'Name of the database. (default : h2gisdb)', min : 0, max : 1, type: String.class],
         buildingTableName: [name: 'Buildings table name', title: 'Buildings table name',  type: String.class],
         sourcesTableName: [name: 'Sources table name', title: 'Sources table name', type: String.class],
         receiversTableName: [name: 'Receivers table name', title: 'Receivers table name', type: String.class],
@@ -103,10 +68,10 @@ outputs = [
 /**
  * Read source database and compute the sound emission spectrum of roads sources
  */
-
 class TrafficPropagationProcessData extends PropagationProcessData {
     // Lden values
-    protected List<double[]> wjSourcesD = new ArrayList<>();
+    public List<double[]> wjSourcesD = new ArrayList<>();
+    public Map<Long, Integer> SourcesPk = new HashMap<>();
 
     private String AAFD_FIELD_NAME = "AADF"; // Annual Average Daily Flow (AADF) estimates
     private String ROAD_CATEGORY_FIELD_NAME = "CLAS_ADM";
@@ -122,10 +87,12 @@ class TrafficPropagationProcessData extends PropagationProcessData {
         super(freeFieldFinder);
     }
 
+    def idSource = 0
 
     @Override
     public void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException {
         super.addSource(pk, geom, rs);
+        SourcesPk.put(pk,idSource++)
 
         // Read average 24h traffic
         double tmja = rs.getDouble(AAFD_FIELD_NAME);
@@ -224,6 +191,7 @@ class TrafficPropagationProcessData extends PropagationProcessData {
     }
 }
 
+
 class TrafficPropagationProcessDataFactory implements PointNoiseMap.PropagationProcessDataFactory {
     @Override
     public PropagationProcessData create(FastObstructionTest freeFieldFinder) {
@@ -232,11 +200,11 @@ class TrafficPropagationProcessDataFactory implements PointNoiseMap.PropagationP
 }
 
 
-def static Connection openPostgreSQLDataStoreConnection() {
-    Store store = new GeoServer().catalog.getStore("h2gisdb")
-    JDBCDataStore jdbcDataStore = (JDBCDataStore) store.getDataStoreInfo().getDataStore(null)
+def static Connection openPostgreSQLDataStoreConnection(String dbName) {
+    Store store = new GeoServer().catalog.getStore(dbName)
+    JDBCDataStore jdbcDataStore = (JDBCDataStore)store.getDataStoreInfo().getDataStore(null)
     return jdbcDataStore.getDataSource().getConnection()
-}
+} 
 
 def static exportScene(String name, FastObstructionTest manager, ComputeRaysOut result) throws IOException {
     try {
@@ -251,22 +219,25 @@ def static exportScene(String name, FastObstructionTest manager, ComputeRaysOut 
             kmlDocument.writeRays(result.getPropagationPaths());
         }
         if(manager != null && manager.isHasBuildingWithHeight()) {
-            kmlDocument.writeBuildings(manager);
+            kmlDocument.writeBuildings(manager)
         }
         kmlDocument.writeFooter();
     } catch (XMLStreamException | CRSException ex) {
-        throw new IOException(ex);
+        throw new IOException(ex)
     }
 }
 
 def run(input) {
 
+
+    // -------------------
+    // Get inputs
+    // -------------------
+
     String sources_table_name = "SOURCES"
     if (input['sourcesTableName']){sources_table_name = input['sourcesTableName']}
     sources_table_name = sources_table_name.toUpperCase()
     
-    String resultPath = input['resultPath']
-
     String receivers_table_name = "RECEIVERS"
     if (input['receiversTableName']){receivers_table_name = input['receiversTableName']}
     receivers_table_name = receivers_table_name.toUpperCase()
@@ -275,11 +246,11 @@ def run(input) {
     if (input['buildingTableName']){building_table_name = input['buildingTableName']}
     building_table_name = building_table_name.toUpperCase()
 
-    String dem_table_name = "DEM"
+    String dem_table_name = ""
     if (input['demTableName']){building_table_name = input['demTableName']}
     dem_table_name = dem_table_name.toUpperCase()
 
-    String ground_table_name = "GROUND"
+    String ground_table_name = ""
     if (input['groundTableName']){ground_table_name = input['groundTableName']}
     ground_table_name = ground_table_name.toUpperCase()
 
@@ -304,17 +275,21 @@ def run(input) {
     boolean compute_horizontal_diffraction = false
     if (input['computeHorizontal']){compute_horizontal_diffraction = input['computeHorizontal']}
 
-    List<ComputeRaysOut.verticeSL> allLevels = new ArrayList<>() // ca c'est la table avec les attenuations
-    ArrayList<PropagationPath> propaMap2 = new ArrayList<>() // ca c'est la table avec tous les rayons, attention gros espace memoire !
+    // Get name of the database
+    String dbName = "h2gisdb"
+    if (input['databaseName']){dbName = input['databaseName'] as String}
 
     // ----------------------------------
-    // Et la on commence la boucle sur les simus
+    // Start... 
     // ----------------------------------
 
     System.out.println("Run ...")
     
-    // Open connection to database
-    Connection connection = openPostgreSQLDataStoreConnection()
+    List<ComputeRaysOut.verticeSL> allLevels = new ArrayList<>() // Attenuation matrix table
+    ArrayList<PropagationPath> propaMap2 = new ArrayList<>() // All rays storage
+
+    // Open connection
+    Connection connection = openPostgreSQLDataStoreConnection(dbName)
 
     //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postgis database
     connection = new ConnectionWrapper(connection)
@@ -328,9 +303,9 @@ def run(input) {
     // Building height field name
     pointNoiseMap.setHeightField("HEIGHT")
     // Import table with Snow, Forest, Grass, Pasture field polygons. Attribute G is associated with each polygon
-    //pointNoiseMap.setSoilTableName(ground_table_name);
+    if (ground_table_name!=""){pointNoiseMap.setSoilTableName(ground_table_name)} 
     // Point cloud height above sea level POINT(X Y Z)
-    //pointNoiseMap.setDemTable(dem_table_name);
+    if (ground_table_name!=""){pointNoiseMap.setSoilTableName(dem_table_name)}
     // Do not propagate for low emission or far away sources.
     // error in dB
     pointNoiseMap.setMaximumError(0.1d);
@@ -345,6 +320,8 @@ def run(input) {
 
     TrafficPropagationProcessDataFactory trafficPropagationProcessDataFactory = new TrafficPropagationProcessDataFactory();
     pointNoiseMap.setPropagationProcessDataFactory(trafficPropagationProcessDataFactory);
+
+
     RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1);
 
     System.out.println("Init Map ...")
@@ -355,8 +332,10 @@ def run(input) {
     ProgressVisitor progressVisitor = progressLogger.subProcess(pointNoiseMap.getGridDim()*pointNoiseMap.getGridDim());
     
     long start = System.currentTimeMillis();
-    System.out.println("Rec\tSource\tLevel");
     System.out.println("Start ...")
+
+    Map<Integer, double[]> SourceSpectrum = new HashMap<>()
+
     // Iterate over computation areas
     for (int i = 0; i < pointNoiseMap.getGridDim(); i++) {
         for (int j = 0; j < pointNoiseMap.getGridDim(); j++) {
@@ -364,16 +343,81 @@ def run(input) {
             IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, i, j, progressVisitor, receivers);
             // Return results with level spectrum for each source/receiver tuple
             if(out instanceof ComputeRaysOut) {
+
                 ComputeRaysOut cellStorage = (ComputeRaysOut) out;
-                exportScene(String.format(resultPath+"/scene_%d_%d.kml", i, j), cellStorage.inputData.freeFieldFinder, cellStorage);
-                cellStorage.receiversAttenuationLevels.each { v ->
+
+                allLevels.addAll(((ComputeRaysOut) out).getVerticesSoundLevel())
+                
+                //exportScene(String.format(resultPath+"/scene_%d_%d.kml", i, j), cellStorage.inputData.freeFieldFinder, cellStorage);
+                cellStorage.receiversAttenuationLevels.each { v -> 
                     double globalDbValue = ComputeRays.wToDba(ComputeRays.sumArray(ComputeRays.dbaToW(v.value)));
-                    System.out.println(String.format("%d\t%d\t%.2f", v.receiverId, v.sourceId, globalDbValue));
+                    def idSource = out.inputData.SourcesPk.get(v.sourceId)
+                    double[] w_spectrum  = ComputeRays.wToDba(out.inputData.wjSourcesD.get(idSource))
+                    SourceSpectrum.put(v.sourceId as Integer,w_spectrum)
                 }
             }
         }
     }
+    
 
+    Map<Integer, double[]> soundLevels = new HashMap<>()
+    for (int i=0;i< allLevels.size() ; i++) {
+        int idReceiver = (Integer) allLevels.get(i).receiverId
+        int idSource = (Integer) allLevels.get(i).sourceId
+        
+        double[] soundLevel = allLevels.get(i).value
+            if (!Double.isNaN(soundLevel[0])
+                    && !Double.isNaN(soundLevel[1])
+                    && !Double.isNaN(soundLevel[2])
+                    && !Double.isNaN(soundLevel[3])
+                    && !Double.isNaN(soundLevel[4])
+                    && !Double.isNaN(soundLevel[5])
+                    && !Double.isNaN(soundLevel[6])
+                    && !Double.isNaN(soundLevel[7])
+
+            ) {
+            if (soundLevels.containsKey(idReceiver)) {
+                //soundLevel = DBToDBA(soundLevel)
+
+                soundLevel = ComputeRays.sumDbArray(sumArraySR(soundLevel,SourceSpectrum.get(idSource)), soundLevels.get(idReceiver))
+                soundLevels.replace(idReceiver, soundLevel)
+            } else {
+                //soundLevel = DBToDBA(soundLevel)
+                soundLevels.put(idReceiver, sumArraySR(soundLevel,SourceSpectrum.get(idSource)))
+               
+
+            }
+        } else {
+                System.out.println("NaN on Rec :" + idReceiver + "and Src :" + idSource)
+            }
+    }
+
+
+    Sql sql = new Sql(connection)
+    System.out.println("Export data to table")
+    sql.execute("drop table if exists LDAY;")
+    sql.execute("create table LDAY (IDRECEIVER integer, Hz63 double precision, Hz125 double precision, Hz250 double precision, Hz500 double precision, Hz1000 double precision, Hz2000 double precision, Hz4000 double precision, Hz8000 double precision);")
+
+    def qry = 'INSERT INTO LDAY(IDRECEIVER,Hz63, Hz125, Hz250, Hz500, Hz1000,Hz2000, Hz4000, Hz8000) VALUES (?,?,?,?,?,?,?,?,?);'
+   
+    sql.withBatch(100, qry) { ps ->
+        for ( s in soundLevels ) {
+           ps.addBatch(s.key as Integer, 
+                     s.value[0] as Double,  s.value[1] as Double, s.value[2] as Double,
+                    s.value[3] as Double,  s.value[4] as Double,  s.value[5] as Double,
+                    s.value[6] as Double,  s.value[7] as Double)
+
+        }
+   }
+
+    sql.execute("drop table if exists LDAY_GEOM;")
+    sql.execute("create table LDAY_GEOM  as select a.IDRECEIVER, b.THE_GEOM, a.Hz63, a.Hz125, a.Hz250, a.Hz500, a.Hz1000, a.Hz2000, a.Hz4000, a.Hz8000 FROM RECEIVERS b LEFT JOIN LDAY a ON a.IDRECEIVER = b.ID;")
+
+
+
+
+    
+    System.out.println("Done !")
     
 
     long computationTime = System.currentTimeMillis() - start;
@@ -382,3 +426,26 @@ def run(input) {
 
     
 }
+
+static double[] DBToDBA(double[] db){
+        double[] dbA = [-26.2,-16.1,-8.6,-3.2,0,1.2,1.0,-1.1]
+        for(int i = 0; i < db.length; ++i) {
+            db[i] = db[i] + dbA[i]
+        }
+        return db
+
+    }
+
+static double[] sumArraySR(double[] array1, double[] array2) {
+        if (array1.length != array2.length) {
+            throw new IllegalArgumentException("Not same size array");
+        } else {
+            double[] sum = new double[array1.length];
+
+            for(int i = 0; i < array1.length; ++i) {
+                sum[i] = (array1[i]) + (array2[i]);
+            }
+
+            return sum;
+        }
+    }
