@@ -51,7 +51,8 @@ import java.io.InputStream;
 
 public class EvaluateRoadSourceCnossos {
 
-    private final static JsonNode cnossosData = parse(EvaluateRoadSourceCnossos.class.getResourceAsStream("coefficients_cnossos.json"));
+    private static JsonNode cnossosData = parse(EvaluateRoadSourceCnossos.class.getResourceAsStream("coefficients_cnossos.json"));
+    private static JsonNode cnossosData2019 = parse(EvaluateRoadSourceCnossos.class.getResourceAsStream("coefficients_cnossos2019.json"));
 
     private static JsonNode parse(InputStream inputStream) {
         try {
@@ -62,8 +63,17 @@ public class EvaluateRoadSourceCnossos {
         }
     }
 
+    public static JsonNode getCnossosData(int coeffVer){
+        if (coeffVer==1){
+            return cnossosData;
+        }
+        else {
+            return cnossosData2019;
+        }
+    }
+
     /** Get a Road Coeff by Freq **/
-    public static Double getA_Roadcoeff(int Freq, String vehCat, String RoadSurface) { //CNOSSOS-EU_Road_Catalogue_Final - 01April2014.xlsx - https://circabc.europa.eu/webdav/CircaBC/env/noisedir/Library/Public/cnossos-eu/Final_methods%26software
+    public static Double getA_Roadcoeff(int Freq, String vehCat, String RoadSurface, int coeffVer) { //CNOSSOS-EU_Road_Catalogue_Final - 01April2014.xlsx - https://circabc.europa.eu/webdav/CircaBC/env/noisedir/Library/Public/cnossos-eu/Final_methods%26software
         int Freq_ind;
         int VehCat_ind;
         double out_value;
@@ -95,20 +105,20 @@ public class EvaluateRoadSourceCnossos {
             default:
                 Freq_ind=0;
         }
-        return cnossosData.get("roads").get(RoadSurface).get("ref").get(vehCat).get("spectrum").get(Freq_ind).doubleValue();
+        return getCnossosData(coeffVer).get("roads").get(RoadSurface).get("ref").get(vehCat).get("spectrum").get(Freq_ind).doubleValue();
     }
 
     /** Get b Road Coeff by Freq **/
-    public static Double getB_Roadcoeff(String vehCat, String roadSurface) { //CNOSSOS-EU_Road_Catalogue_Final - 01April2014.xlsx - https://circabc.europa.eu/webdav/CircaBC/env/noisedir/Library/Public/cnossos-eu/Final_methods%26software
-        return cnossosData.get("roads").get(roadSurface).get("ref").get(vehCat).get("ßm").doubleValue();
+    public static Double getB_Roadcoeff(String vehCat, String roadSurface, int coeffVer) { //CNOSSOS-EU_Road_Catalogue_Final - 01April2014.xlsx - https://circabc.europa.eu/webdav/CircaBC/env/noisedir/Library/Public/cnossos-eu/Final_methods%26software
+        return getCnossosData(coeffVer).get("roads").get(roadSurface).get("ref").get(vehCat).get("ßm").doubleValue();
     }
 
-    public static double getCr(String vehCat, int k) {
-        return cnossosData.get("vehicles").get(vehCat).get(k == 1 ? "crossing" : "roundabout").get("cr").doubleValue();
+    public static double getCr(String vehCat, int k, int coeffVer) {
+        return getCnossosData(coeffVer).get("vehicles").get(vehCat).get(k == 1 ? "crossing" : "roundabout").get("cr").doubleValue();
     }
 
-    public static double getCp(String vehCat, int k) {
-        return cnossosData.get("vehicles").get(vehCat).get(k == 1 ? "crossing" : "roundabout").get("cp").doubleValue();
+    public static double getCp(String vehCat, int k, int coeffVer) {
+        return getCnossosData(coeffVer).get("vehicles").get(vehCat).get(k == 1 ? "crossing" : "roundabout").get("cp").doubleValue();
     }
 
     /**
@@ -118,7 +128,7 @@ public class EvaluateRoadSourceCnossos {
      * @param vehicleCategory 1,2,3,4a,4b..
      * @return
      */
-    public static Double getCoeff(String coeff, int freq, String vehicleCategory) {
+    public static Double getCoeff(String coeff, int freq, String vehicleCategory, int coeffVer) {
         int Freq_ind;
         switch (freq) {
             case 63:
@@ -148,7 +158,7 @@ public class EvaluateRoadSourceCnossos {
             default:
                 Freq_ind=0;
         }
-        return cnossosData.get("vehicles").get(vehicleCategory).get(coeff).get(Freq_ind).doubleValue();
+        return getCnossosData(coeffVer).get("vehicles").get(vehicleCategory).get(coeff).get(Freq_ind).doubleValue();
     }
 
     /** get noise level from speed **/
@@ -190,7 +200,7 @@ public class EvaluateRoadSourceCnossos {
         final double Junc_dist = parameters.getJunc_dist();
         final int Junc_type = parameters.getJunc_type();
         final String roadSurface = parameters.getRoadSurface();
-
+        final int coeffVer = parameters.getCoeffVer();
 
         // ///////////////////////
         // Noise road/tire CNOSSOS
@@ -201,11 +211,11 @@ public class EvaluateRoadSourceCnossos {
         double wheelbRoadLvl;// Lw/m (1 veh/h)
 
         // Noise level
-        lvRoadLvl = getNoiseLvl(getCoeff("ar", freqParam , "1"  ), getCoeff("br", freqParam , "1"  ), parameters.getSpeedLv(), 70.);
-        medRoadLvl = getNoiseLvl(getCoeff("ar", freqParam , "2"  ), getCoeff("br", freqParam , "2"  ), parameters.getSpeedMv(), 70.);
-        hgvRoadLvl = getNoiseLvl(getCoeff("ar", freqParam , "3"  ), getCoeff("br", freqParam , "3"  ), parameters.getSpeedHgv(), 70.);
-        wheelaRoadLvl = getNoiseLvl(getCoeff("ar", freqParam , "4a"  ), getCoeff("br", freqParam , "4a"  ), parameters.getSpeedWav(), 70.);
-        wheelbRoadLvl = getNoiseLvl(getCoeff("ar", freqParam , "4b"  ), getCoeff("br", freqParam , "4b"  ), parameters.getSpeedWbv(), 70.);
+        lvRoadLvl = getNoiseLvl(getCoeff("ar", freqParam , "1"  ,coeffVer), getCoeff("br", freqParam , "1"  ,coeffVer), parameters.getSpeedLv(), 70.);
+        medRoadLvl = getNoiseLvl(getCoeff("ar", freqParam , "2" ,coeffVer ), getCoeff("br", freqParam , "2" ,coeffVer ), parameters.getSpeedMv(), 70.);
+        hgvRoadLvl = getNoiseLvl(getCoeff("ar", freqParam , "3"  ,coeffVer), getCoeff("br", freqParam , "3" ,coeffVer ), parameters.getSpeedHgv(), 70.);
+        wheelaRoadLvl = getNoiseLvl(getCoeff("ar", freqParam , "4a" ,coeffVer ), getCoeff("br", freqParam , "4a" ,coeffVer ), parameters.getSpeedWav(), 70.);
+        wheelbRoadLvl = getNoiseLvl(getCoeff("ar", freqParam , "4b"  ,coeffVer), getCoeff("br", freqParam , "4b" ,coeffVer ), parameters.getSpeedWbv(), 70.);
 
         // Correction by temperature p. 36
         lvRoadLvl = lvRoadLvl+ 0.08*(20-Temperature); // K = 0.08  p. 36
@@ -214,9 +224,9 @@ public class EvaluateRoadSourceCnossos {
 
 
         // Rolling noise acceleration correction
-        lvRoadLvl = lvRoadLvl + getCr("1", Junc_type) * Math.max(1-Math.abs(Junc_dist)/100,0) ;
-        medRoadLvl = medRoadLvl + getCr("2", Junc_type)  * Math.max(1-Math.abs(Junc_dist)/100,0);
-        hgvRoadLvl = hgvRoadLvl + getCr("3", Junc_type)  * Math.max(1-Math.abs(Junc_dist)/100,0);
+        lvRoadLvl = lvRoadLvl + getCr("1", Junc_type,coeffVer) * Math.max(1-Math.abs(Junc_dist)/100,0) ;
+        medRoadLvl = medRoadLvl + getCr("2", Junc_type,coeffVer)  * Math.max(1-Math.abs(Junc_dist)/100,0);
+        hgvRoadLvl = hgvRoadLvl + getCr("3", Junc_type,coeffVer)  * Math.max(1-Math.abs(Junc_dist)/100,0);
 
         //Studied tyres
         if (Pm_stud >0 && Ts_stud > 0) {
@@ -225,34 +235,34 @@ public class EvaluateRoadSourceCnossos {
             double ps = Pm_stud * Ts_stud / 12; //yearly average proportion of vehicles equipped with studded tyres
             speed = (speed >= 90) ? 90 : speed;
             speed = (speed <= 50) ? 50 : speed;
-            deltastud = getNoiseLvl(getCoeff("a", freqParam, "1"), getCoeff("b", freqParam, "1"), speed, 70.);
+            deltastud = getNoiseLvl(getCoeff("a", freqParam, "1",coeffVer), getCoeff("b", freqParam, "1",coeffVer), speed, 70.);
             lvRoadLvl = lvRoadLvl + 10 * Math.log10((1 - ps) + ps * Math.pow(10, deltastud / 10));
         }
 
         //Road surface correction on rolling noise
-        lvRoadLvl = lvRoadLvl+ getNoiseLvl(getA_Roadcoeff(freqParam,"1", parameters.getRoadSurface()), getB_Roadcoeff("1",roadSurface), parameters.getSpeedLv(), 70.);
-        medRoadLvl = medRoadLvl + getNoiseLvl(getA_Roadcoeff(freqParam,"2", parameters.getRoadSurface()), getB_Roadcoeff("2",roadSurface), parameters.getSpeedMv(), 70.);
-        hgvRoadLvl = hgvRoadLvl + getNoiseLvl(getA_Roadcoeff(freqParam,"3", parameters.getRoadSurface()), getB_Roadcoeff("3",roadSurface), parameters.getSpeedHgv(), 70.);
-        wheelaRoadLvl = wheelaRoadLvl + getNoiseLvl(getA_Roadcoeff(freqParam,"4a", parameters.getRoadSurface()), getB_Roadcoeff("4a",roadSurface), parameters.getSpeedWav(), 70.);
-        wheelbRoadLvl = wheelbRoadLvl + getNoiseLvl(getA_Roadcoeff(freqParam,"4b", parameters.getRoadSurface()), getB_Roadcoeff("4b",roadSurface), parameters.getSpeedWbv(), 70.);
+        lvRoadLvl = lvRoadLvl+ getNoiseLvl(getA_Roadcoeff(freqParam,"1", parameters.getRoadSurface(),coeffVer), getB_Roadcoeff("1",roadSurface,coeffVer), parameters.getSpeedLv(), 70.);
+        medRoadLvl = medRoadLvl + getNoiseLvl(getA_Roadcoeff(freqParam,"2", parameters.getRoadSurface(),coeffVer), getB_Roadcoeff("2",roadSurface,coeffVer), parameters.getSpeedMv(), 70.);
+        hgvRoadLvl = hgvRoadLvl + getNoiseLvl(getA_Roadcoeff(freqParam,"3", parameters.getRoadSurface(),coeffVer), getB_Roadcoeff("3",roadSurface,coeffVer), parameters.getSpeedHgv(), 70.);
+        wheelaRoadLvl = wheelaRoadLvl + getNoiseLvl(getA_Roadcoeff(freqParam,"4a", parameters.getRoadSurface(),coeffVer), getB_Roadcoeff("4a",roadSurface,coeffVer), parameters.getSpeedWav(), 70.);
+        wheelbRoadLvl = wheelbRoadLvl + getNoiseLvl(getA_Roadcoeff(freqParam,"4b", parameters.getRoadSurface(),coeffVer), getB_Roadcoeff("4b",roadSurface,coeffVer), parameters.getSpeedWbv(), 70.);
 
         // ///////////////////////
         // Noise motor
         // Calculate the emission powers of motors lights vehicles and heavies goods vehicles.
 
         // default or steady speed.
-        double lvMotorLvl = getCoeff("ap", freqParam , "1"  ) + getCoeff("bp", freqParam , "1"  ) * (parameters.getSpeedLv()-70)/70 ;
-        double medMotorLvl =  getCoeff("ap", freqParam , "2"  ) + getCoeff("bp", freqParam , "2"  ) * (parameters.getSpeedMv()-70)/70 ;
-        double hgvMotorLvl =  getCoeff("ap", freqParam , "3"  ) + getCoeff("bp", freqParam , "3"  ) * (parameters.getSpeedHgv()-70)/70 ;
-        double wheelaMotorLvl =  getCoeff("ap", freqParam , "4a"  ) + getCoeff("bp", freqParam , "4a"  ) * (parameters.getSpeedWav()-70)/70 ;
-        double wheelbMotorLvl =  getCoeff("ap", freqParam , "4b"  ) + getCoeff("bp", freqParam , "4b"  ) * (parameters.getSpeedWbv()-70)/70 ;
+        double lvMotorLvl = getCoeff("ap", freqParam , "1" ,coeffVer ) + getCoeff("bp", freqParam , "1" ,coeffVer ) * (parameters.getSpeedLv()-70)/70 ;
+        double medMotorLvl =  getCoeff("ap", freqParam , "2" ,coeffVer ) + getCoeff("bp", freqParam , "2" ,coeffVer ) * (parameters.getSpeedMv()-70)/70 ;
+        double hgvMotorLvl =  getCoeff("ap", freqParam , "3" ,coeffVer ) + getCoeff("bp", freqParam , "3" ,coeffVer ) * (parameters.getSpeedHgv()-70)/70 ;
+        double wheelaMotorLvl =  getCoeff("ap", freqParam , "4a" ,coeffVer ) + getCoeff("bp", freqParam , "4a" ,coeffVer ) * (parameters.getSpeedWav()-70)/70 ;
+        double wheelbMotorLvl =  getCoeff("ap", freqParam , "4b" ,coeffVer ) + getCoeff("bp", freqParam , "4b" ,coeffVer ) * (parameters.getSpeedWbv()-70)/70 ;
 
 
         // Propulsion noise acceleration correction
 
-        lvMotorLvl = lvMotorLvl + getCp("1", Junc_type) * Math.max(1-Math.abs(Junc_dist)/100,0) ;
-        medMotorLvl = medMotorLvl + getCp("2", Junc_type)  * Math.max(1-Math.abs(Junc_dist)/100,0);
-        hgvMotorLvl = hgvMotorLvl + getCp("3", Junc_type)  * Math.max(1-Math.abs(Junc_dist)/100,0);
+        lvMotorLvl = lvMotorLvl + getCp("1", Junc_type,coeffVer) * Math.max(1-Math.abs(Junc_dist)/100,0) ;
+        medMotorLvl = medMotorLvl + getCp("2", Junc_type,coeffVer)  * Math.max(1-Math.abs(Junc_dist)/100,0);
+        hgvMotorLvl = hgvMotorLvl + getCp("3", Junc_type,coeffVer)  * Math.max(1-Math.abs(Junc_dist)/100,0);
 
 
         // Correction gradient for light vehicle
@@ -283,11 +293,11 @@ public class EvaluateRoadSourceCnossos {
         }
 
         // Correction road on propulsion noise
-        lvMotorLvl = lvMotorLvl+ Math.min(getA_Roadcoeff(freqParam ,"1",roadSurface), 0.);
-        medMotorLvl = medMotorLvl + Math.min(getA_Roadcoeff(freqParam ,"2",roadSurface), 0.);
-        hgvMotorLvl = hgvMotorLvl + Math.min(getA_Roadcoeff(freqParam ,"3",roadSurface), 0.);
-        wheelaMotorLvl = wheelaMotorLvl + Math.min(getA_Roadcoeff(freqParam ,"4a",roadSurface), 0.);
-        wheelbMotorLvl = wheelbMotorLvl + Math.min(getA_Roadcoeff(freqParam ,"4b",roadSurface), 0.);
+        lvMotorLvl = lvMotorLvl+ Math.min(getA_Roadcoeff(freqParam ,"1",roadSurface,coeffVer), 0.);
+        medMotorLvl = medMotorLvl + Math.min(getA_Roadcoeff(freqParam ,"2",roadSurface,coeffVer), 0.);
+        hgvMotorLvl = hgvMotorLvl + Math.min(getA_Roadcoeff(freqParam ,"3",roadSurface,coeffVer), 0.);
+        wheelaMotorLvl = wheelaMotorLvl + Math.min(getA_Roadcoeff(freqParam ,"4a",roadSurface,coeffVer), 0.);
+        wheelbMotorLvl = wheelbMotorLvl + Math.min(getA_Roadcoeff(freqParam ,"4b",roadSurface,coeffVer), 0.);
 
 
         final double lvCompound = sumDba(lvRoadLvl, lvMotorLvl);

@@ -318,7 +318,7 @@ public class EvaluateRoadSourceDynamic {
             {-0.8, -0.8, 2.8, 0., 0., 0.}, {30, 130}};
 
     /** CNOSSOS Vehicule Tables -  All coefficients are from CNOSSOS-EU_Road_Catalogue_Final - 01April2014.xlsx - Emission + Studded **/
-    private static final double[][] VehCat1 = {   // light vehicle 2015
+   /* private static final double[][] VehCat1 = {   // light vehicle 2015
             {79.7, 30.0, 94.5, -1.3, 0., 0.},
             {85.7, 41.5, 89.2, 7.2, 0., 0.},
             {84.5, 38.9, 88.0, 7.7, 0., 0.},
@@ -326,7 +326,7 @@ public class EvaluateRoadSourceDynamic {
             {97.3, 32.5, 84.2, 8.0, 2.9, -6.4},
             {93.9, 37.2, 86.9, 8.0, 1.5, -14},
             {84.1, 39.0, 83.3, 8.0, 2.3, -22.4},
-            {74.3, 40.0, 76.1, 8.0, 9.2, -11.4}};
+            {74.3, 40.0, 76.1, 8.0, 9.2, -11.4}};*/
    /* private static final double[][] VehCat1 = {   // light vehicle 2018
             {83.4, 39.2, 98.0, 2.8, 0., 0.},
             {86.8, 37.5, 90.3, 6.1, 0., 0.},
@@ -337,7 +337,7 @@ public class EvaluateRoadSourceDynamic {
             {85.8, 32.1, 85.1, 5.3, 2.3, -22.4},
             {76.2, 35.1, 78.0, 6.3, 9.2, -11.4}};*/
 
-    /*private static final double[][] VehCat1 = {   // light vehicle 2017
+    private static final double[][] VehCat1 = {   // light vehicle 2017
             {83.1, 30.0, 97.9, -1.3, 0., 0.},
             {89.2, 41.5, 92.5, 7.2, 0., 0.},
             {87.7, 38.9, 90.7, 7.7, 0., 0.},
@@ -345,7 +345,7 @@ public class EvaluateRoadSourceDynamic {
             {100.1,32.5, 84.7, 8.0, 2.9, -6.4},
             {96.7, 37.2, 88.0, 8.0, 1.5, -14},
             {86.8, 39.0, 84.4, 8.0, 2.3, -22.4},
-            {76.2, 40.0, 77.1, 8.0, 9.2, -11.4}};*/
+            {76.2, 40.0, 77.1, 8.0, 9.2, -11.4}};
 
     private static final double[][] VehCat2 = { // medium vehicle
             {84., 30.0, 101., -1.9, 0., 0.},

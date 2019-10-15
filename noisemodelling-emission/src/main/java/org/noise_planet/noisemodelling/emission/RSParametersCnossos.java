@@ -59,6 +59,20 @@ public class RSParametersCnossos {
     private double speedWav;
     private double speedWbv;
 
+    private int coeffVer = 2;
+
+    /**
+     * @param coeffVer
+     */
+    public void setCoeffVer(int coeffVer) {
+        this.coeffVer = coeffVer;
+    }
+
+    public int getCoeffVer() {
+        return this.coeffVer;
+    }
+
+
     private static double getVPl(double sLv, double speedmax, int type, int subtype) throws IllegalArgumentException {
         switch (type) {
             case 1:

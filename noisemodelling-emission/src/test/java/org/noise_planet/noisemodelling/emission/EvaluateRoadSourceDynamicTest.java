@@ -28,7 +28,7 @@ public class EvaluateRoadSourceDynamicTest {
         RSParametersDynamic rsParameters = new RSParametersDynamic(speed,  acc,  veh_type, acc_type, FreqParam,  Temperature,  RoadSurface,Stud, Junc_dist, Junc_type,LwStd,VehId);
         rsParameters.setSlopePercentage(0);
         //System.out.println(EvaluateRoadSourceCnossos.evaluate(rsParameters));
-        assertEquals(91.71, EvaluateRoadSourceDynamic.evaluate(rsParameters), EPSILON_TEST1);
+        assertEquals(94.35, EvaluateRoadSourceDynamic.evaluate(rsParameters), EPSILON_TEST1);
     }
 
     @Test
@@ -52,7 +52,7 @@ public class EvaluateRoadSourceDynamicTest {
     }
 
 
-    /*@Test
+    @Test
     public void testRoadNoise3_speed0() {
         //int FreqParam = 8000;
         int[] f = {63, 125, 250, 500,1000,2000,4000,8000};
@@ -61,7 +61,7 @@ public class EvaluateRoadSourceDynamicTest {
             int acc = 0;
 
             double Temperature = 15;
-            int RoadSurface = 5;
+            int RoadSurface = 8;
             boolean Stud = false;
             double Junc_dist = 200;
             int Junc_type = 1;
@@ -75,7 +75,7 @@ public class EvaluateRoadSourceDynamicTest {
             //EvaluateRoadSourceDynamic.evaluate(rsParameters);
             //assertEquals(98.18, EvaluateRoadSourceDynamic.evaluate(rsParameters), EPSILON_TEST1);
         }
-    }*/
+    }
 
 
 
