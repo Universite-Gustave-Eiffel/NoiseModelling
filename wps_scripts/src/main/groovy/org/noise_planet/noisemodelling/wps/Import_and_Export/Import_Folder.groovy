@@ -3,7 +3,7 @@
 * @Author Pierre Aumond
 */
 
-package org.noise_planet.noisemodelling.scriptwps
+package org.noise_planet.noisemodelling.wps.Import_and_Export
 
 import geoserver.GeoServer
 import geoserver.catalog.Store

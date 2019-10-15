@@ -3,7 +3,7 @@
 * @Author Pierre Aumond
 */
 
-package org.noise_planet.noisemodelling.wps
+package org.noise_planet.noisemodelling.wps.Database_Manager
 
 
 import geoserver.GeoServer
@@ -27,7 +27,7 @@ import org.h2gis.utilities.wrapper.ConnectionWrapper
 
 import org.noisemodellingwps.utilities.WpsConnectionWrapper
 
-title = 'Drop a Table'
+title = 'Drop_a_Table'
 description = 'Delete a table from the database'
 
 inputs = [

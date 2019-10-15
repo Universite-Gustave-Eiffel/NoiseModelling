@@ -37,6 +37,7 @@ package org.noise_planet.noisemodelling.wps
 import org.h2gis.functions.io.shp.SHPRead
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.noise_planet.noisemodelling.wps.Database_Manager.*;
 
 /**
  * Test parsing of zip file using H2GIS database
@@ -46,8 +47,8 @@ class TestDisplayTables extends JdbcTestCase {
 
     void testDisplayTables1() {
         SHPRead.readShape(connection, TestDisplayTables.getResource("buildings.shp").getPath())
-        String res = new DisplayTables().exec(connection)
-        assertEquals("BUILDINGS\n\tPK\n\tTHE_GEOM\n\tID_WAY\n\tHEIGHT\n", res)
+        String res = new Display_All().exec(connection, [])
+        assertEquals("BUILDINGS ( PK - THE_GEOM - ID_WAY - HEIGHT -  ) ", res)
     }
 
 }

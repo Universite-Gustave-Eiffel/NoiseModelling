@@ -3,7 +3,7 @@
 * @Author Pierre Aumond
 */
 
-package org.noise_planet.noisemodelling.scriptwps
+package org.noise_planet.noisemodelling.wps.Import_and_Export
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
@@ -24,8 +24,8 @@ import org.h2gis.utilities.wrapper.ConnectionWrapper
 
 import org.noisemodellingwps.utilities.WpsConnectionWrapper
 
-title = 'Export Table'
-description = 'Export Table (csv, dbf, geojson, gpx, bz2, gz, osm, shp, tsv)'
+title = 'Export_Table'
+description = 'Export_Table (csv, dbf, geojson, gpx, bz2, gz, osm, shp, tsv)'
 
 inputs = [
         exportPath: [name: 'Export path', title: 'Path of the file to export', description: 'Path of the input File (including extension .csv, .shp, etc.)', type: String.class],

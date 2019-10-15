@@ -3,7 +3,7 @@
 * @Author Pierre Aumond
 */
 
-package org.noise_planet.noisemodelling.wps
+package org.noise_planet.noisemodelling.wps.Database_Manager
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
@@ -44,6 +44,36 @@ def static Connection openPostgreSQLDataStoreConnection(String dbName) {
     return jdbcDataStore.getDataSource().getConnection()
 }
 
+def exec(Connection connection, input) {
+    List<String> ignorelst = ["SPATIAL_REF_SYS", "GEOMETRY_COLUMNS"]
+    Boolean showColumnName = true
+    if (input['showColumns']){showColumnName = input['showColumns'] as Boolean}
+
+    // Excute code
+    StringBuilder sb = new StringBuilder()
+
+    List<String> tables = JDBCUtilities.getTableNames(connection.getMetaData(), null, "PUBLIC", "%", null)
+    tables.each { t ->
+        TableLocation tab = TableLocation.parse(t)
+        if(!ignorelst.contains(tab.getTable())) {
+            if(sb.size() > 0) {
+                sb.append(" || ")
+            }
+            sb.append(tab.getTable())
+            if (showColumnName) {
+                sb.append(" ( ")
+                List<String> fields = JDBCUtilities.getFieldNames(connection.getMetaData(), t)
+                fields.each { f -> sb.append(String.format("%s - ", f))
+                }
+                sb.append(" ) ")
+            }
+        }
+    }
+
+    // print to Console windows
+    return sb.toString()
+}
+
 def run(input) {
 
     // Get name of the database
@@ -53,29 +83,5 @@ def run(input) {
     // Open connection
     Connection connection = openPostgreSQLDataStoreConnection(dbName)
 
-    Boolean showColumnName = true
-    if (input['showColumns']){showColumnName = input['showColumns'] as Boolean}
-
-    // Excute code
-    StringBuilder sb = new StringBuilder()
-    
-    List<String> tables = JDBCUtilities.getTableNames(connection.getMetaData(), null, "PUBLIC", "%", null)
-    tables.each { t ->
-        TableLocation tab = TableLocation.parse(t)
-        sb.append(" || ")
-        sb.append(tab.getTable())
-        
-        if (showColumnName){
-            sb.append(" ( ")
-            List<String> fields = JDBCUtilities.getFieldNames(connection.getMetaData(), t)
-            fields.each { f ->
-                sb.append(String.format("\t%s - ", f))
-            }
-            sb.append(" ) ")
-        }
-    }
-    sb.append(" || ")
-
-    // print to Console windows
-     return [result : sb.toString()]
+    return [result : exec(connection, input)]
 }

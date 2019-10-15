@@ -3,7 +3,7 @@
 * @Author Pierre Aumond
 */
 
-package org.noise_planet.noisemodelling.wps
+package org.noise_planet.noisemodelling.wps.Database_Manager
 
 
 import geoserver.GeoServer
@@ -53,6 +53,7 @@ def run(input) {
     // Open connection
     Connection connection = openPostgreSQLDataStoreConnection(dbName)
 
+    List<String> ignorelst = ["SPATIAL_REF_SYS", "GEOMETRY_COLUMNS"]
     // Excute code
     StringBuilder sb = new StringBuilder()
 
@@ -60,12 +61,15 @@ def run(input) {
     List<String> tables = JDBCUtilities.getTableNames(connection.getMetaData(), null, "PUBLIC", "%", null)
     tables.each { t ->
         TableLocation tab = TableLocation.parse(t)
-        sb.append(" || ")
-        sb.append(tab.getTable())
-        
-        Statement stmt = connection.createStatement()
-        stmt.execute("drop table if exists " + tab.getTable())
-        sb.append(" || ")
+        if(!ignorelst.contains(tab.getTable())) {
+            if(sb.size() > 0) {
+                sb.append(" || ")
+            }
+            sb.append(tab.getTable())
+
+            Statement stmt = connection.createStatement()
+            stmt.execute("drop table if exists " + tab)
+        }
     }
    
 
