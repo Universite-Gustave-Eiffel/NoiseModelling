@@ -4,12 +4,12 @@ Get Started - Tutorial
 Requirements: Install Java
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Please install JAVA > v8.0
+Please install JAVA version v8.x. Currently only version 8 of Java is compatible
 - https://www.java.com/fr/download/
 
 Check if JAVA_HOME environnement variable is well settled to your last installed java folder.
 
-Step 1: Download the lastest realese
+Step 1: Download the latest release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - Download the latest realease on `Github`_. 
@@ -28,8 +28,8 @@ In this tutorial the server type is `GeoServer`_ and the database type is `H2GIS
 
 To run the server, please execute "startup" from your own Geoserver folder :
 
-- Geoserver\\bin\\startup.bat for Windows Users
-- Geoserver\\bin\\startup.sh for Linux Users
+- Geoserver\\bin\\startup.bat for Windows Users 
+- Geoserver\\bin\\startup.sh for Linux Users (check authorize file execution in property of this file before)
 
 and wait until :literal:`INFO:oejs.Server:main:Started` is written in your command prompt.
 
@@ -63,15 +63,21 @@ In the Geoserver\\data_dir\\data\\wpsdata folder, you will find 5 files (4 shape
 You can import these layers in your database using the *Import File* or *Import Folder* blocks.
 
 - Drag *Import File* block into Builder window 
-- Select *Path of the input File* block and add your local pathFile in the Inputs windows. 
-- Then, click on *Run Process*
+- Select *Path of the input File* block and type ``data_dir/data/wpsdata/buildings.shp`` in the field **pathFile**: 
+- Then click on *Run Process* after selecting the yellow block
 
 .. figure:: images/tutorial/Tutorial1_Image1.PNG
    :align: center
 
 Files are uploaded to database when the Console window displays :literal:`The table x has been upload to database.`
 
-Repeat it 5 times, one for each file.
+Repeat this operation for other files:
+
+- ``data_dir/data/wpsdata/buildings.shp``
+- ``data_dir/data/wpsdata/ground_type.shp``
+- ``data_dir/data/wpsdata/receivers.shp``
+- ``data_dir/data/wpsdata/roads.shp``
+- ``data_dir/data/wpsdata/dem.geojson``
 
 .. note::
     - The process is supposed to be quick (<5 sec.). In case of out of time, try to restart the Geoserver (see Step 2).
