@@ -52,15 +52,15 @@ def run(input) {
     if (input['databaseName']){dbName = input['databaseName'] as String}
 
     // Open connection
-    Connection connection = openPostgreSQLDataStoreConnection(dbName)
+    openPostgreSQLDataStoreConnection(dbName).withCloseable { Connection connection ->
+        // Execute
+        String table = input["tableToDrop"] as String
+        table = table.toUpperCase()
+        Statement stmt = connection.createStatement()
+        String dropTable = "Drop table if exists " + table
+        stmt.execute(dropTable)
 
-    // Execute
-    String table = input["tableToDrop"] as String
-    table = table.toUpperCase()
-    Statement stmt = connection.createStatement()
-    String dropTable = "Drop table if exists " + table
-    stmt.execute(dropTable)
-
-    // print to Console windows
-     return [result : table + " was dropped !"]
+        // print to Console windows
+        return [result: table + " was dropped !"]
+    }
 }
