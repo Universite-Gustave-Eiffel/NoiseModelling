@@ -10,7 +10,7 @@ Please install JAVA version v8.x. Currently only version 8 of Java is compatible
 .. note::
     Check if JAVA_HOME environnement variable is well settled to your last installed java folder. If not, you can refer to `this document`_ for example.
 
-.. _Github : https://confluence.atlassian.com/doc/setting-the-java_home-variable-in-windows-8895.html   
+.. _this document : https://confluence.atlassian.com/doc/setting-the-java_home-variable-in-windows-8895.html   
 
 Step 1: Download the latest release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
