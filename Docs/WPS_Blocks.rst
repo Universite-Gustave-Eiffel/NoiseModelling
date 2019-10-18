@@ -3,6 +3,13 @@ WPS Blocks
 
 NoiseModelling v3.0 comes with 7 WPS blocks.
 
+.. note ::
+    - Orange blocks are mandatory
+    - Beige blocks are optional
+    - if all input blocks are optional, you must modify at least one of these blocks to be able to run the process
+    - Blocks get solid border when they are ready to run
+
+
 Import and Export 
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
