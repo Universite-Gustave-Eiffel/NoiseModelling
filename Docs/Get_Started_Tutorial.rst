@@ -72,7 +72,7 @@ You can import these layers in your database using the *Import File* or *Import 
 .. figure:: images/tutorial/Tutorial1_Image1.PNG
    :align: center
 
-Files are uploaded to database when the Console window displays :literal:`The table x has been upload to database.`
+Files are uploaded to database when the Console window displays :literal:`The table x has been uploaded to database.`
 
 Repeat this operation for other files:
 
@@ -86,6 +86,7 @@ Repeat this operation for other files:
     - The process is supposed to be quick (<5 sec.). In case of out of time, try to restart the Geoserver (see Step 2).
     - Orange blocks are mandatory
     - Beige blocks are optional
+    - if all input blocks are optional, you must modify at least one of these blocks to be able to run the process
     - Blocks get solid border when they are ready to run
 
 Step 5: Run Calculation
@@ -94,6 +95,7 @@ Step 5: Run Calculation
 To run Calculation you have to drag the block *Get Lday* into WPS Builder window.
 
 Then, select the orange blocks and indicate the name of the corresponding table your database, for example :
+
 - Building table name : "BUILDING"
 - Sources table name : "ROADS"
 - Receivers table name : "RECEIVERS"
