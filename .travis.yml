@@ -7,7 +7,8 @@ script:
   - mvn test -B
   - cd wps_scripts && travis_retry ./gradlew test --info --stacktrace
 
-
+env:
+    - CODECOV_TOKEN=66ef8999-e16b-42f3-b9e2-e026d2e1f17c
 
 before_cache:
   - rm -f $HOME/.gradle/caches/modules-2/modules-2.lock
