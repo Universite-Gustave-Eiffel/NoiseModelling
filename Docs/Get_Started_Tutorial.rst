@@ -21,7 +21,7 @@ Step 1: Download the latest release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - Download the latest realease on `Github`_. 
-- Unzip the downloaded file into your working directory.
+- Unzip the downloaded file into a directory (can be anywhere).
 
 .. note::
     Only from version 3.0, NoiseModelling releases include a user interface.
