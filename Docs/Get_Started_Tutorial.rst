@@ -44,6 +44,9 @@ and wait until :literal:`INFO:oejs.Server:main:Started` is written in your comma
 
 Your local server is now started. 
 
+.. warning::
+    Your server will be open as long as the command window is open. If you close it, the server will automatically be closed and you will not be able to continue with the tutorial.
+
 .. tip::
     You can consult it via your web browser : http://localhost:8080/geoserver/web/
     login (default): admin
