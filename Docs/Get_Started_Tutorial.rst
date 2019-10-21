@@ -5,11 +5,16 @@ Requirements: Install Java
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Please install JAVA version v8.x. Currently only version 8 of Java is compatible
-- https://www.java.com/fr/download/
 
-.. note::
-    Check if JAVA_HOME environnement variable is well settled to your last installed java folder. If not, you can refer to `this document`_ for example.
+- Download Java here : https://www.java.com/fr/download/
 
+- You can check if JAVA_HOME environnement variable is well settled to your last installed java folder using :literal:`echo %JAVA_HOME%` in your command prompt. You should have a result similar to :literal:`C:\\Program Files (x86)\\Java\\jre1.8.x\\`
+
+-  If JAVA_HOME environnement variable is not well settled , you can refer to `this document`_ for example.
+
+.. warning::
+    The command promprt should print :literal:`C:\\Program Files (x86)\\Java\\jre1.8.x\\` whithout the bin directory. If JAVA_HOME is settled as :literal:`C:\\Program Files (x86)\\Java\\jre1.8.x\\bin`, it will not work.
+    
 .. _this document : https://confluence.atlassian.com/doc/setting-the-java_home-variable-in-windows-8895.html   
 
 Step 1: Download the latest release
