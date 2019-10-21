@@ -21,10 +21,11 @@ Step 1: Download the latest release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - Download the latest realease on `Github`_. 
-- Unzip the downloaded file into a directory (can be anywhere).
+- Unzip the downloaded file into a chosen directory.
 
 .. note::
-    Only from version 3.0, NoiseModelling releases include the user interface described in this tutorial. 
+    - Only from version 3.0, NoiseModelling releases include the user interface described in this tutorial. 
+    - The chosen directory can be anywhere but be sure that you have write access. If you are using the computer of your company, the Program Files folder is probably not a good idea. 
 
 .. _Github : https://github.com/Ifsttar/NoiseModelling/releases
 
@@ -91,6 +92,7 @@ Repeat this operation for other files:
 - ``data_dir/data/wpsdata/dem.geojson``
 
 .. note::
+    - if you have the message :literal:`Error opening database`, please refer to the note in Step 1.
     - The process is supposed to be quick (<5 sec.). In case of out of time, try to restart the Geoserver (see Step 2).
     - Orange blocks are mandatory
     - Beige blocks are optional
