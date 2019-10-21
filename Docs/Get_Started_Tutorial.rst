@@ -24,7 +24,7 @@ Step 1: Download the latest release
 - Unzip the downloaded file into a directory (can be anywhere).
 
 .. note::
-    Only from version 3.0, NoiseModelling releases include a user interface.
+    Only from version 3.0, NoiseModelling releases include the user interface described in this tutorial. 
 
 .. _Github : https://github.com/Ifsttar/NoiseModelling/releases
 
