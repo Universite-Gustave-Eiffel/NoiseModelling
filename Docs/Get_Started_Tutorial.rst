@@ -106,7 +106,7 @@ To run Calculation you have to drag the block *Get Lday* into WPS Builder window
 
 Then, select the orange blocks and indicate the name of the corresponding table your database, for example :
 
-- Building table name : "BUILDING"
+- Building table name : "BUILDINGS"
 - Sources table name : "ROADS"
 - Receivers table name : "RECEIVERS"
 
