@@ -36,4 +36,11 @@ Many spatial processing are possible with H2GIS. Please see the `H2GIS website`_
 
 
 
+Connect dBeaver to NoiseModelling libraries
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You have to load the NoiseModelling library using the grab annotation at the beginning of its script as `here`_.
+
+.. _here: https://github.com/orbisgis/geoclimate
+
 
