@@ -89,8 +89,8 @@ Example :
 Init Noise Modelling
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Object and methods
---------------------
+Object PointNoiseMap and associated methods
+----------------------------------------------
 
 To create a PointNoiseMap object, the 3 following inputs are need :
 
@@ -124,6 +124,10 @@ The following methods can also be used :
 - setPropagationProcessDataFactory(trafficPropagationProcessDataFactory) 
 - initialize
 
+Object TrafficPropagationProcessDataFactory and associated methods
+----------------------------------------------------------------------
+
+@ToDo
 
 Example :
 --------------------
