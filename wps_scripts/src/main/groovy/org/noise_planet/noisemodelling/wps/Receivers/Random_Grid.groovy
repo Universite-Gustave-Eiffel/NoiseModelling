@@ -6,11 +6,7 @@ package org.noise_planet.noisemodelling.wps.Receivers
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
-
 import org.geotools.jdbc.JDBCDataStore
-
-import java.sql.Connection
-import groovy.sql.Sql
 
 import org.h2gis.functions.io.dbf.*
 import org.h2gis.functions.io.geojson.*
@@ -19,14 +15,18 @@ import org.h2gis.functions.io.osm.*
 import org.h2gis.functions.io.shp.*
 import org.h2gis.functions.io.tsv.*
 
+import java.sql.Connection
+
+import groovy.sql.Sql
 import org.h2gis.utilities.wrapper.*
 
-title = 'Regular Grid'
-description = 'Calculates a regular grid of receivers based on a single Geometry geom or a table tableName of Geometries with delta as offset in the Cartesian plane in meters.'
 
-inputs = [buildingTableName : [name: 'Buildings table name', title: 'Buildings table name', type: String.class],
+title = 'Random Grid'
+description = 'Calculates a random grid of receivers based on a single Geometry geom or a table tableName of Geometries with delta as offset in the Cartesian plane in meters.'
+
+inputs = [buildingTableName : [name: 'Buildings table name', title: 'Buildings table name',  type: String.class],
           sourcesTableName  : [name: 'Sources table name', title: 'Sources table name', min: 0, max: 1, type: String.class],
-          delta    : [name: 'offset', title: 'offset', description: 'Offset in the Cartesian plane in meters', type: Double.class],
+          nReceivers    : [name: 'nReceivers', title: 'nReceivers', description: 'Number of receivers', type: Integer.class],
           databaseName   : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database. (default : h2gisdb)', min: 0, max: 1, type: String.class],
           outputTableName: [name: 'outputTableName', description: 'Do not write the name of a table that contains a space. (default : RECEIVERS)', title: 'Name of output table', min: 0, max: 1, type: String.class]]
 
@@ -42,9 +42,9 @@ def run(input) {
 
     String receivers_table_name = "RECEIVERS"
 
-    Double delta = 10
-    if (input['delta']) {
-        delta = input['delta']
+    Integer nReceivers = 100
+    if (input['nReceivers']) {
+        nReceivers = input['nReceivers']
     }
 
     String sources_table_name = "SOURCES"
@@ -72,11 +72,18 @@ def run(input) {
         System.out.println("Delete previous receivers grid...")
         sql.execute(String.format("DROP TABLE IF EXISTS %s", receivers_table_name))
 
-        String queryGrid = String.format("CREATE TABLE "+receivers_table_name+" AS SELECT * FROM ST_MakeGridPoints('"
-                + building_table_name + "',"
-                + delta + ","
-                + delta + ");")
-        sql.execute(queryGrid)
+        def min_max = sql.firstRow("SELECT ST_XMAX(the_geom) as maxX, ST_XMIN(the_geom) as minX, ST_YMAX(the_geom) as maxY, ST_YMIN(the_geom) as minY"
+                +" FROM "
+                +"("
+                +" SELECT ST_Collect(the_geom) as the_geom "
+                +" FROM " + sources_table_name
+                +" UNION ALL "
+                +" SELECT the_geom "
+                +" FROM " + building_table_name
+                +");")
+
+        sql.execute("create table "+receivers_table_name+" as select ST_MAKEPOINT(RAND()*("+min_max.maxX.toString()+" - "+min_max.minX.toString()+") + "+min_max.minX.toString()+", RAND()*("+min_max.maxY.toString()+" - "+min_max.minY.toString()+") + "+min_max.minY.toString()+") as the_geom from system_range(0,"+nReceivers.toString()+");")
+
 
         System.out.println("New receivers grid created ...")
 
@@ -91,7 +98,6 @@ def run(input) {
             sql.execute("Create spatial index on "+sources_table_name+"(the_geom);")
             sql.execute("delete from "+receivers_table_name+" g where exists (select 1 from "+sources_table_name+" r where st_expand(g.the_geom, 1) && r.the_geom and st_distance(g.the_geom, r.the_geom) < 1 limit 1);")
         }
-
 
     }
     System.out.println("Process Done !")
