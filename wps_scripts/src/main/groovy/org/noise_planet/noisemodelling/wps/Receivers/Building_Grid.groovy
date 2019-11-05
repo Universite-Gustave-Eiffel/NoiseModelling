@@ -66,6 +66,7 @@ def run(input) {
         System.out.println("Delete previous receivers grid...")
         sql.execute(String.format("DROP TABLE IF EXISTS %s", receivers_table_name))
 
+        System.out.println("Create rings around buildings...")
         sql.execute("drop table if exists receivers_build_0;")
         sql.execute("create table receivers_build_0 as SELECT ID ID_BUILD, ST_ExteriorRing(ST_Buffer(ST_SimplifyPreserveTopology(b.the_geom,2), 2, 'quad_segs=0 endcap=flat')) the_geom  from "+building_table_name+" b ;")
         sql.execute("ALTER TABLE receivers_build_0 ADD COLUMN id SERIAL PRIMARY KEY;")
@@ -74,25 +75,29 @@ def run(input) {
         sql.execute("drop table if exists indexed_points;")
         sql.execute("create table indexed_points(old_edge_id integer, the_geom geometry, number_on_line integer, gid integer);")
 
+        System.out.println("Create global fence...")
         sql.execute("drop table if exists bb;")
-        sql.execute("create table bb as select ST_EXPAND(ST_Collect(ST_ACCUM(b.the_geom)),0,0)  the_geom from "+building_table_name+" b;")
+        sql.execute("create table bb as select ST_EXPAND(ST_Envelope(ST_ACCUM(b.the_geom)),-100,-100)  the_geom from "+building_table_name+" b;")
 
+        System.out.println("Select 10 buildings ...")
         sql.execute("drop table if exists receivers_build_ratio;")
         sql.execute("create table receivers_build_ratio as select a.* from receivers_build_0 a, bb b where st_intersects(b.the_geom, a.the_geom) ORDER BY random() LIMIT 10;")
 
+        System.out.println("Create receivers ...")
         sql.execute("drop table if exists indexed_points;")
         sql.execute("create table indexed_points(old_edge_id integer, the_geom geometry, number_on_line integer, gid integer);")
 
         current_fractional = 0.0
         current_number_of_point = 1
-        def insertInIndexedPoints = "INSERT INTO indexed_points(old_edge_id, the_geom, number_on_line, gid) VALUES (?, ST_LocateAlong(?, ?), ?, ?);"
+        def insertInIndexedPoints = "INSERT INTO indexed_points(old_edge_id, the_geom, number_on_line, gid) VALUES (?, ST_LocateAlong(?, ?,0), ?, ?);"
 
-        sql.eachRow("SELECT id as id_column, st_transform(the_geom, 2154) as the_geom, ID as build_id, " +
-                "st_length(st_transform(the_geom, 2154)) as line_length FROM receivers_build_ratio;"){ row ->
+        System.out.println("Every 5 meters ...")
+        sql.eachRow("SELECT id as id_column, st_transform(ST_SetSRID(the_geom,4326), 2154) as the_geom, ID as build_id, " +
+                "st_length(st_transform(ST_SetSRID(the_geom,4326), 2154)) as line_length FROM receivers_build_ratio;"){ row ->
             current_fractional = 0.0
             while(current_fractional <= 1.0){
                 sql.withBatch(insertInIndexedPoints) { batch ->
-                    batch.addBatch(row.id_column, row.the_geom, current_fractional, current_number_of_point, row.build_id)
+                    batch.addBatch(row.id_column, row.the_geom, current_fractional as Double, current_number_of_point, row.build_id)
                 }
                 current_fractional = current_fractional + (5 / data[i].line_length)
                 current_number_of_point = current_number_of_point + 1
@@ -101,6 +106,7 @@ def run(input) {
 
         sql.execute("ALTER TABLE indexed_points ADD COLUMN id SERIAL PRIMARY KEY;")
 
+        System.out.println("Remove receivers in buildings  ...")
         sql.execute("drop table if exists receivers_delete;")
         sql.execute("create table receivers_delete as SELECT r.ID, r.the_geom,r.gid build_id from indexed_points r, "+building_table_name+" b where st_intersects(b.the_geom, r.the_geom);")
         sql.execute("delete from indexed_points r where exists (select 1 from receivers_delete rd where r.ID=rd.ID);")
@@ -126,3 +132,4 @@ def run(input) {
     System.out.println("Process Done !")
     return [tableNameCreated: "Process done !"]
 }
+

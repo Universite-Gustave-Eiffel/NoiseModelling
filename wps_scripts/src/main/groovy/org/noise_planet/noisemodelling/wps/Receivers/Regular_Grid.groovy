@@ -4,27 +4,40 @@
 
 package org.noise_planet.noisemodelling.wps.Receivers
 
-import geoserver.GeoServer
-import geoserver.catalog.Store
-
-import org.geotools.jdbc.JDBCDataStore
-
-import java.sql.Connection
-import groovy.sql.Sql
-
-import org.h2gis.functions.io.dbf.*
-import org.h2gis.functions.io.geojson.*
 import org.h2gis.functions.io.gpx.*
 import org.h2gis.functions.io.osm.*
-import org.h2gis.functions.io.shp.*
-import org.h2gis.functions.io.tsv.*
 
 import org.h2gis.utilities.wrapper.*
+
+
+import org.locationtech.jts.io.WKTWriter
+
+import geoserver.GeoServer
+import geoserver.catalog.Store
+import org.geotools.jdbc.JDBCDataStore
+import org.geotools.data.simple.*
+
+
+
+import java.sql.Connection;
+import org.locationtech.jts.geom.Geometry
+import java.io.*;
+import java.sql.*;
+import groovy.sql.Sql
+
+import org.h2gis.functions.io.csv.*
+import org.h2gis.functions.io.dbf.*
+import org.h2gis.functions.io.geojson.*
+import org.h2gis.functions.io.json.*
+import org.h2gis.functions.io.kml.*
+import org.h2gis.functions.io.shp.*
+import org.h2gis.functions.io.tsv.*
 
 title = 'Regular Grid'
 description = 'Calculates a regular grid of receivers based on a single Geometry geom or a table tableName of Geometries with delta as offset in the Cartesian plane in meters.'
 
 inputs = [buildingTableName : [name: 'Buildings table name', title: 'Buildings table name', type: String.class],
+          fence  : [name: 'Fence', title: 'Fence', min: 0, max: 1, type: Geometry.class],
           sourcesTableName  : [name: 'Sources table name', title: 'Sources table name', min: 0, max: 1, type: String.class],
           delta    : [name: 'offset', title: 'offset', description: 'Offset in the Cartesian plane in meters', type: Double.class],
           databaseName   : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database. (default : h2gisdb)', min: 0, max: 1, type: String.class],
@@ -59,6 +72,12 @@ def run(input) {
     }
     building_table_name = building_table_name.toUpperCase()
 
+    System.out.println("--------------------------------------------")
+    String fence = null
+    if (input['fence']) {
+        fence = (String) input['fence']
+    }
+
     // Get name of the database
     String dbName = "h2gisdb"
     if (input['databaseName']) {
@@ -71,11 +90,26 @@ def run(input) {
         Sql sql = new Sql(connection)
         System.out.println("Delete previous receivers grid...")
         sql.execute(String.format("DROP TABLE IF EXISTS %s", receivers_table_name))
+        String queryGrid = null
+        if (input['fence']) {
+            System.out.println("--------------------------------------------")
+            System.out.println((String) fence)
+            sql.execute(String.format("DROP TABLE IF EXISTS FENCE"))
+            sql.execute(String.format("CREATE TABLE FENCE AS SELECT ST_AsText('"+ fence + "') the_geom"))
+            sql.execute(String.format("DROP TABLE IF EXISTS FENCE_2154"))
+            sql.execute(String.format("CREATE TABLE FENCE_2154 AS SELECT ST_TRANSFORM(ST_SetSRID(the_geom,4326),2154) the_geom from FENCE"))
+            sql.execute(String.format("DROP TABLE IF EXISTS FENCE"))
 
-        String queryGrid = String.format("CREATE TABLE "+receivers_table_name+" AS SELECT * FROM ST_MakeGridPoints('"
-                + building_table_name + "',"
-                + delta + ","
-                + delta + ");")
+             queryGrid = String.format("CREATE TABLE "+receivers_table_name+" AS SELECT * FROM ST_MakeGridPoints('FENCE_2154',"
+                    + delta + ","
+                    + delta + ");")
+        }else{
+            queryGrid  = String.format("CREATE TABLE "+receivers_table_name+" AS SELECT * FROM ST_MakeGridPoints('"
+                    + building_table_name + "',"
+                    + delta + ","
+                    + delta + ");")
+        }
+
         sql.execute(queryGrid)
 
         System.out.println("New receivers grid created ...")
@@ -96,4 +130,17 @@ def run(input) {
     }
     System.out.println("Process Done !")
     return [tableNameCreated: "Process done !"]
+}
+
+/**
+ * Convert a Geometry value into a Well Known Text value.
+ * @param geometry Geometry instance
+ * @return The String representation
+ */
+static String asWKT(Geometry geometry) {
+    if(geometry==null) {
+        return null
+    }
+    WKTWriter wktWriter = new WKTWriter()
+    return wktWriter.write(geometry)
 }
