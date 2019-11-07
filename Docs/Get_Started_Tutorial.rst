@@ -128,7 +128,7 @@ The table LDAY_GEOM will be created in your database.
 Step 6: Export (& see) the results
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can now export the table LDAY_GEOM in your favorite export format using *Export Table* block.
+You can now export the output table in your favorite export format using *Export Table* block.
 
 .. figure:: images/tutorial/Tutorial1_Image3.PNG
    :align: center
