@@ -75,7 +75,7 @@ def run(input) {
                 break
             case "dbf":
                 DBFDriverFunction dbfDriver = new DBFDriverFunction()
-                bdfDriver.importFile(connection, outputTableName, new File(pathFile), new EmptyProgressVisitor())
+                dbfDriver.importFile(connection, outputTableName, new File(pathFile), new EmptyProgressVisitor())
                 break
             case "geojson":
                 GeoJsonDriverFunction geoJsonDriver = new GeoJsonDriverFunction()

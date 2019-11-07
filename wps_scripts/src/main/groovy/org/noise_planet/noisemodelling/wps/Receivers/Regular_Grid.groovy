@@ -115,6 +115,14 @@ def run(input) {
         System.out.println("New receivers grid created ...")
 
         sql.execute("Create spatial index on "+receivers_table_name+"(the_geom);")
+
+        if (input['fence']) {
+            System.out.println("Delete receivers near sources ...")
+            sql.execute("Create spatial index on FENCE_2154(the_geom);")
+            sql.execute("delete from " + receivers_table_name + " g where exists (select 1 from FENCE_2154 r where ST_Disjoint(g.the_geom, r.the_geom) limit 1);")
+        }
+
+
         if (input['buildingTableName']) {
             System.out.println("Delete receivers inside buildings ...")
             sql.execute("Create spatial index on "+building_table_name+"(the_geom);")
