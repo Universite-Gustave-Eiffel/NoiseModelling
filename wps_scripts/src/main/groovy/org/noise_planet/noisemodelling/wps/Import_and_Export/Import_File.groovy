@@ -107,6 +107,21 @@ def run(input) {
                 break
         }
 
-        return [tableNameCreated: "The table " + outputTableName + " has been upload to database !"]
+           
+        def file = new File(pathFile)
+        String returnString = null
+
+         if (file.exists())
+         {          
+             returnString = "The table " + outputTableName + " has been uploaded to database!"
+             }
+             else 
+             {
+                 returnString = "The input file is not found"
+                 }
+ 
+
+        return [tableNameCreated: returnString]
+
     }
 }
