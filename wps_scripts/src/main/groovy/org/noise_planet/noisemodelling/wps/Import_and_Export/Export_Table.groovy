@@ -28,7 +28,7 @@ title = 'Export_Table'
 description = 'Export_Table (csv, dbf, geojson, gpx, bz2, gz, osm, shp, tsv)'
 
 inputs = [
-        exportPath: [name: 'Export path', title: 'Path of the file to export', description: 'Path of the input File (including extension .csv, .shp, etc.)', type: String.class],
+        exportPath: [name: 'Export path', title: 'Path of the file to export', description: 'Path of the output File (including extension .csv, .shp, etc.)', type: String.class],
         databaseName: [name: 'Name of the database', title: 'Name of the database', description : 'Name of the database. (default : h2gisdb)', min : 0, max : 1, type: String.class],
         tableToExport: [name: 'Name of the table to export', title: 'Name of the table to export.',  type: String.class]
 ]
