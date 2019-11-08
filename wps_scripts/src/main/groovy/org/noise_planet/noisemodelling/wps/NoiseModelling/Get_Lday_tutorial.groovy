@@ -59,7 +59,9 @@ inputs = [databaseName      : [name: 'Name of the database', title: 'Name of the
           wallAlpha         : [name: 'wallAlpha', title: 'Wall alpha', description: 'Wall abosrption (default = 0.1)', min: 0, max: 1, type: String.class],
           threadNumber      : [name: 'Thread number', title: 'Thread number', description: 'Number of thread to use on the computer (default = 1)', min: 0, max: 1, type: String.class],
           computeVertical   : [name: 'Compute vertical diffraction', title: 'Compute vertical diffraction', description: 'Compute or not the vertical diffraction (default = false)', min: 0, max: 1, type: Boolean.class],
-          computeHorizontal : [name: 'Compute horizontal diffraction', title: 'Compute horizontal diffraction', description: 'Compute or not the horizontal diffraction (default = false)', min: 0, max: 1, type: Boolean.class]]
+          computeHorizontal : [name: 'Compute horizontal diffraction', title: 'Compute horizontal diffraction', description: 'Compute or not the horizontal diffraction (default = false)', min: 0, max: 1, type: Boolean.class],
+          outputTableName: [name: 'outputTableName', description: 'Do not write the name of a table that contains a space. (default : file name without extension)', title: 'Name of output table', min: 0, max: 1, type: String.class]
+          ]
 
 outputs = [result: [name: 'result', title: 'Result', type: String.class]]
 
@@ -436,17 +438,30 @@ def run(input) {
 
             }
         }
+        
+        String outputTableName = input["outputTableName"] as String
+        outputTableName = outputTableName.toUpperCase()
 
-        sql.execute("drop table if exists LDAY_GEOM;")
-        sql.execute("create table LDAY_GEOM  as select a.IDRECEIVER, b.THE_GEOM, a.Hz63, a.Hz125, a.Hz250, a.Hz500, a.Hz1000, a.Hz2000, a.Hz4000, a.Hz8000 FROM RECEIVERS b LEFT JOIN LDAY a ON a.IDRECEIVER = b.ID;")
+        //if (!outputTableName) {
+          
+         //   outputTableName = fileName
+        //}
+        //outputTableName = outputTableName.toUpperCase()
+
+        sql.execute("drop table if exists "+outputTableName+";")
+        sql.execute("create table "+outputTableName+" as select a.IDRECEIVER, b.THE_GEOM, a.Hz63, a.Hz125, a.Hz250, a.Hz500, a.Hz1000, a.Hz2000, a.Hz4000, a.Hz8000 FROM RECEIVERS b LEFT JOIN LDAY a ON a.IDRECEIVER = b.ID;")
+
+
+ 
 
 
         System.out.println("Done !")
 
 
         long computationTime = System.currentTimeMillis() - start;
+        //return [result: "Calculation Done !"]
 
-        return [result: "Calculation Done !"]
+        return [result: "Calculation Done ! The table " + outputTableName + " has been created !"]
 
 
     }
