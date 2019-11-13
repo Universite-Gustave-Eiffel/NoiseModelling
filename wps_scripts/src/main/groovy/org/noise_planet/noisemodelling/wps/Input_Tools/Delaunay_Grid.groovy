@@ -89,6 +89,7 @@ def run(input) {
     openPostgreSQLDataStoreConnection(dbName).withCloseable { Connection connection ->
         //Statement sql = connection.createStatement()
         Sql sql = new Sql(connection)
+        connection = new ConnectionWrapper(connection)
         RootProgressVisitor progressLogger = new RootProgressVisitor(2, true, 1)
 
         System.out.println("Delete previous receivers grid...")
@@ -106,7 +107,7 @@ def run(input) {
             sql.execute(String.format("DROP TABLE IF EXISTS FENCE_2154"))
             sql.execute(String.format("CREATE TABLE FENCE_2154 AS SELECT ST_TRANSFORM(ST_SetSRID(the_geom,4326),2154) the_geom from FENCE"))
             sql.execute(String.format("DROP TABLE IF EXISTS FENCE"))
-           noiseMap.setMainEnvelope(sql.firstRow("SELECT ST_Envelope(THE_GEOM) FROM FENCE_2154")[0].getEnvelopeInternal())
+            noiseMap.setMainEnvelope(sql.firstRow("SELECT ST_Envelope(THE_GEOM) FROM FENCE_2154")[0].getEnvelopeInternal())
             noiseMap.setMaximumPropagationDistance(5000)
         }else{
             noiseMap.setMainEnvelope(sql.firstRow("SELECT ST_Envelope(THE_GEOM) FROM "+building_table_name+"")[0].getEnvelopeInternal())
@@ -137,8 +138,6 @@ def run(input) {
 
 
         sql.execute("Create spatial index on "+receivers_table_name+"(the_geom);")
-        sql.execute("ALTER TABLE "+ receivers_table_name +" ADD pk INT AUTO_INCREMENT PRIMARY KEY;" )
-
 
 
     }
