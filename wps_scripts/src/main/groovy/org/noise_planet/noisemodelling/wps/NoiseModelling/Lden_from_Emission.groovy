@@ -67,9 +67,7 @@ outputs = [result: [name: 'result', title: 'Result', type: String.class]]
  * Read source database and compute the sound emission spectrum of roads sources*/
 class TrafficPropagationProcessData extends PropagationProcessData {
     // Lden values
-    public List<double[]> wjSourcesD = new ArrayList<>();
-    public List<double[]> wjSourcesE = new ArrayList<>();
-    public List<double[]> wjSourcesN = new ArrayList<>();
+    public List<double[]> wjSourcesDEN = new ArrayList<>();
     public Map<Long, Integer> SourcesPk = new HashMap<>();
 
 
@@ -85,18 +83,48 @@ class TrafficPropagationProcessData extends PropagationProcessData {
         SourcesPk.put(pk, idSource++)
 
         // Read average 24h traffic
-        double ld = [rs.getDouble('Ld63'), rs.getDouble('Ld125'), rs.getDouble('Ld250'), rs.getDouble('Ld500'), rs.getDouble('Ld1000'),rs.getDouble('Ld2000'), rs.getDouble('Ld4000'), rs.getDouble('Ld8000')]
-        double le = [rs.getDouble('Le63'), rs.getDouble('Le125'), rs.getDouble('Le250'), rs.getDouble('Le500'), rs.getDouble('Le1000'),rs.getDouble('Le2000'), rs.getDouble('Le4000'), rs.getDouble('Le8000')]
-        double ln = [rs.getDouble('Ln63'), rs.getDouble('Ln125'), rs.getDouble('Ln250'), rs.getDouble('Ln500'), rs.getDouble('Ln1000'),rs.getDouble('Ln2000'), rs.getDouble('Ln4000'), rs.getDouble('Ln8000')]
-        wjSourcesD.add(ld)
-        wjSourcesD.add(le)
-        wjSourcesD.add(ln)
+        double[] ld = [ComputeRays.dbaToW(rs.getDouble('Ld63')),
+                       ComputeRays.dbaToW(rs.getDouble('Ld125')),
+                       ComputeRays.dbaToW(rs.getDouble('Ld250')),
+                       ComputeRays.dbaToW(rs.getDouble('Ld500')),
+                       ComputeRays.dbaToW(rs.getDouble('Ld1000')),
+                       ComputeRays.dbaToW(rs.getDouble('Ld2000')),
+                       ComputeRays.dbaToW(rs.getDouble('Ld4000')),
+                       ComputeRays.dbaToW(rs.getDouble('Ld8000'))]
+        double[] le = [ComputeRays.dbaToW(rs.getDouble('Le63')),
+                       ComputeRays.dbaToW(rs.getDouble('Le125')),
+                       ComputeRays.dbaToW(rs.getDouble('Le250')),
+                       ComputeRays.dbaToW(rs.getDouble('Le500')),
+                       ComputeRays.dbaToW(rs.getDouble('Le1000')),
+                       ComputeRays.dbaToW(rs.getDouble('Le2000')),
+                       ComputeRays.dbaToW(rs.getDouble('Le4000')),
+                       ComputeRays.dbaToW(rs.getDouble('Le8000'))]
+        double[] ln = [ComputeRays.dbaToW(rs.getDouble('Ln63')),
+                       ComputeRays.dbaToW(rs.getDouble('Ln125')),
+                       ComputeRays.dbaToW(rs.getDouble('Ln250')),
+                       ComputeRays.dbaToW(rs.getDouble('Ln500')),
+                       ComputeRays.dbaToW(rs.getDouble('Ln1000')),
+                       ComputeRays.dbaToW(rs.getDouble('Ln2000')),
+                       ComputeRays.dbaToW(rs.getDouble('Ln4000')),
+                       ComputeRays.dbaToW(rs.getDouble('Ln8000'))]
+
+        double[] lden = new double[PropagationProcessPathData.freq_lvl.size()]
+        int idFreq = 0
+        for(int freq : PropagationProcessPathData.freq_lvl) {
+            lden[idFreq++] = (12 * ld[idFreq] +
+                    4 * ComputeRays.dbaToW(ComputeRays.wToDba(le[idFreq]) + 5) +
+                    8 * ComputeRays.dbaToW(ComputeRays.wToDba(ln[idFreq]) + 10)) / 24.0
+        }
+
+        wjSourcesDEN.add(lden)
+
+
 
     }
 
     @Override
     public double[] getMaximalSourcePower(int sourceId) {
-        return wjSourcesD.get(sourceId);
+        return wjSourcesDEN.get(sourceId);
     }
 }
 
@@ -293,7 +321,7 @@ def run(input) {
                     cellStorage.receiversAttenuationLevels.each { v ->
                         double globalDbValue = ComputeRays.wToDba(ComputeRays.sumArray(ComputeRays.dbaToW(v.value)));
                         def idSource = out.inputData.SourcesPk.get(v.sourceId)
-                        double[] w_spectrum = ComputeRays.wToDba(out.inputData.wjSourcesD.get(idSource))
+                        double[] w_spectrum = ComputeRays.wToDba(out.inputData.wjSourcesDEN.get(idSource))
                         SourceSpectrum.put(v.sourceId as Integer, w_spectrum)
                     }
                 }
