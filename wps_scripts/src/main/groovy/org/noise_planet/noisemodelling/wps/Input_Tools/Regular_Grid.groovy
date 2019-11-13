@@ -115,7 +115,7 @@ def run(input) {
          System.out.println("New receivers grid created ...")
 
         sql.execute("Create spatial index on "+receivers_table_name+"(the_geom);")
-        sql.execute("UPDATE "+receivers_table_name+" SET THE_GEOM = ST_UPDATEZ(The_geom,150);")
+        sql.execute("UPDATE "+receivers_table_name+" SET THE_GEOM = ST_UPDATEZ(The_geom,2);")
         sql.execute("ALTER TABLE "+ receivers_table_name +" ADD pk INT AUTO_INCREMENT PRIMARY KEY;" )
 
 
@@ -130,7 +130,7 @@ def run(input) {
         if (input['buildingTableName']) {
             System.out.println("Delete receivers inside buildings ...")
             sql.execute("Create spatial index on "+building_table_name+"(the_geom);")
-            sql.execute("delete from "+receivers_table_name+" g where exists (select 1 from "+building_table_name+" b where ST_Z(the_geom) < b.HAUTEUR and g.the_geom && b.the_geom and ST_distance(b.the_geom, g.the_geom) < 1 limit 1);")
+            sql.execute("delete from "+receivers_table_name+" g where exists (select 1 from "+building_table_name+" b where ST_Z(the_geom) < b.HEIGHT and g.the_geom && b.the_geom and ST_distance(b.the_geom, g.the_geom) < 1 limit 1);")
         }
         if (input['sourcesTableName']) {
             System.out.println("Delete receivers near sources ...")

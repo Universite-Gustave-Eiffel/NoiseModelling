@@ -164,6 +164,8 @@ def run(input) {
         }
 
         sql.execute("UPDATE LW_ROADS SET THE_GEOM = ST_UPDATEZ(The_geom,0.05);")
+        sql.execute("ALTER TABLE LW_ROADS ADD pk INT AUTO_INCREMENT PRIMARY KEY;" )
+
         long computationTime = System.currentTimeMillis() - start;
         output = "The Table LW_ROADS have been created"
         return [result: output]

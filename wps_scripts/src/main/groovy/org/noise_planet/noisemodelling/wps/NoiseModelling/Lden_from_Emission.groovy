@@ -85,8 +85,6 @@ class TrafficPropagationProcessData extends PropagationProcessData {
         SourcesPk.put(pk, idSource++)
 
         // Read average 24h traffic
-        double tmja = rs.getDouble(AAFD_FIELD_NAME)
-
         double ld = [rs.getDouble('Ld63'), rs.getDouble('Ld125'), rs.getDouble('Ld250'), rs.getDouble('Ld500'), rs.getDouble('Ld1000'),rs.getDouble('Ld2000'), rs.getDouble('Ld4000'), rs.getDouble('Ld8000')]
         double le = [rs.getDouble('Le63'), rs.getDouble('Le125'), rs.getDouble('Le250'), rs.getDouble('Le500'), rs.getDouble('Le1000'),rs.getDouble('Le2000'), rs.getDouble('Le4000'), rs.getDouble('Le8000')]
         double ln = [rs.getDouble('Ln63'), rs.getDouble('Ln125'), rs.getDouble('Ln250'), rs.getDouble('Ln500'), rs.getDouble('Ln1000'),rs.getDouble('Ln2000'), rs.getDouble('Ln4000'), rs.getDouble('Ln8000')]
