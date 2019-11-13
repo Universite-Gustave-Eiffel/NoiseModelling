@@ -47,6 +47,7 @@ import java.sql.SQLException
 import java.util.ArrayList
 import java.util.List
 
+
 title = 'Compute Road Emission'
 description = 'Compute Road Emission Noise Map from Estimated Annual average daily flows (AADF) estimates. ' +
         'This block allows to calculate a road traffic noise emission map ' +
@@ -162,6 +163,7 @@ def run(input) {
             }
         }
 
+        sql.execute("UPDATE LW_ROADS SET THE_GEOM = ST_UPDATEZ(The_geom,0.05);")
         long computationTime = System.currentTimeMillis() - start;
         output = "The Table LW_ROADS have been created"
         return [result: output]
@@ -297,7 +299,7 @@ static void computeLw(Long pk, Geometry geom, SpatialResultSet rs) throws SQLExc
                     speedWbv, lvPerHour, mvPerHour, hgvPerHour, wavPerHour, wbvPerHour, freq, Temperature,
                     roadSurface, Ts_stud, Pm_stud, Junc_dist, Junc_type);
             rsParametersCnossos.setSpeedFromRoadCaracteristics(speed_lv, speed_lv, false, speed_lv, roadType)
-            le[idFreq++] += ComputeRays.dbaToW(EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos))
+            le[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
         }
     }
 
@@ -315,7 +317,7 @@ static void computeLw(Long pk, Geometry geom, SpatialResultSet rs) throws SQLExc
                     speedWbv, lvPerHour, mvPerHour, hgvPerHour, wavPerHour, wbvPerHour, freq, Temperature,
                     roadSurface, Ts_stud, Pm_stud, Junc_dist, Junc_type);
             rsParametersCnossos.setSpeedFromRoadCaracteristics(speed_lv, speed_lv, false, speed_lv, roadType)
-            ln[idFreq++] += ComputeRays.dbaToW(EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos))
+            ln[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
         }
     }
     for(int i=0; i<ln.size(); i++) {
@@ -326,3 +328,5 @@ static void computeLw(Long pk, Geometry geom, SpatialResultSet rs) throws SQLExc
     Globals.wjSourcesE = le
     Globals.wjSourcesN = ln
 }
+
+
