@@ -59,6 +59,11 @@ def static Connection openPostgreSQLDataStoreConnection(String dbName) {
 def run(input) {
 
     String receivers_table_name = "RECEIVERS"
+    if (input['outputTableName']) {
+        receivers_table_name = input['outputTableName']
+    }
+    receivers_table_name = receivers_table_name.toUpperCase()
+
 
 
     String sources_table_name = "SOURCES"
@@ -66,6 +71,8 @@ def run(input) {
         sources_table_name = input['sourcesTableName']
     }
     sources_table_name = sources_table_name.toUpperCase()
+
+
 
     String building_table_name = "BUILDINGS"
     if (input['buildingTableName']) {
@@ -129,9 +136,7 @@ def run(input) {
 
         for (int i = 0; i < noiseMap.getGridDim(); i++) {
             for (int j = 0; j < noiseMap.getGridDim(); j++) {
-                System.println("ppojpojp----------------------------ojpoj")
-                noiseMap.generateReceivers(connection, i, j, "RECEIVERS", "TRIANGLES", pk)
-                System.println("ppojpojp----------------------------ojpoj")
+                noiseMap.generateReceivers(connection, i, j, receivers_table_name, "TRIANGLES", pk)
                 progressVisitorNM.endStep()
             }
         }
