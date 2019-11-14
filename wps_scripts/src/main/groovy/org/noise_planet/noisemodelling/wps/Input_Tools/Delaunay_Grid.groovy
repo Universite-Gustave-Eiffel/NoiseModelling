@@ -103,6 +103,10 @@ def run(input) {
         sql.execute(String.format("DROP TABLE IF EXISTS %s", receivers_table_name))
         sql.execute("DROP TABLE IF EXISTS TRIANGLES")
 
+
+        sql.execute("UPDATE  "+building_table_name+" SET the_geom = ST_TRANSFORM(ST_SetSRID(the_geom,2154),2154)")
+        sql.execute("UPDATE  "+sources_table_name+" SET the_geom = ST_TRANSFORM(ST_SetSRID(the_geom,2154),2154)")
+
         // Generate receivers grid for noise map rendering
         TriangleNoiseMap noiseMap = new TriangleNoiseMap(building_table_name, sources_table_name)
 
@@ -115,10 +119,10 @@ def run(input) {
             sql.execute(String.format("CREATE TABLE FENCE_2154 AS SELECT ST_TRANSFORM(ST_SetSRID(the_geom,4326),2154) the_geom from FENCE"))
             sql.execute(String.format("DROP TABLE IF EXISTS FENCE"))
             noiseMap.setMainEnvelope(sql.firstRow("SELECT ST_Envelope(THE_GEOM) FROM FENCE_2154")[0].getEnvelopeInternal())
-            noiseMap.setMaximumPropagationDistance(5000)
+            noiseMap.setMaximumPropagationDistance(50000)
         }else{
-            noiseMap.setMainEnvelope(sql.firstRow("SELECT ST_Envelope(THE_GEOM) FROM "+building_table_name+"")[0].getEnvelopeInternal())
-            noiseMap.setMaximumPropagationDistance(5000)
+            noiseMap.setMainEnvelope(sql.firstRow("SELECT ST_Envelope(ST_ACCUM(THE_GEOM)) FROM "+building_table_name+"")[0].getEnvelopeInternal())
+            noiseMap.setMaximumPropagationDistance(50000)
         }
 
         // Receiver height relative to the ground
@@ -126,7 +130,7 @@ def run(input) {
         // No receivers closer than road width distance
         noiseMap.setRoadWidth(2.0)
         // No triangles larger than provided area
-        noiseMap.setMaximumArea(15.0)
+        noiseMap.setMaximumArea(50.0)
         // Densification of receivers near sound sources
         noiseMap.setSourceDensification(8.0)
 
