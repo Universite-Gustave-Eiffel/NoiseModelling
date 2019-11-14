@@ -49,8 +49,8 @@ def static Connection openPostgreSQLDataStoreConnection(String dbName) {
 
 def exec(Connection connection, input) {
     List<String> ignorelst = ["SPATIAL_REF_SYS", "GEOMETRY_COLUMNS"]
-    Boolean showColumnName = true
 
+    Boolean showColumnName = false
     if ('showColumns' in input) {
         showColumnName = input['showColumns'] as Boolean
     }

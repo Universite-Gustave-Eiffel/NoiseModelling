@@ -130,7 +130,7 @@ def run(input) {
         // No receivers closer than road width distance
         noiseMap.setRoadWidth(2.0)
         // No triangles larger than provided area
-        noiseMap.setMaximumArea(50.0)
+        noiseMap.setMaximumArea(100.0)
         // Densification of receivers near sound sources
         noiseMap.setSourceDensification(8.0)
 

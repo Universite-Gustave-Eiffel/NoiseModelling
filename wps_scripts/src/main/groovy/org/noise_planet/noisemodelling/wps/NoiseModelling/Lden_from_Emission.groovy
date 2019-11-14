@@ -357,10 +357,10 @@ def run(input) {
 
         Sql sql = new Sql(connection)
         System.out.println("Export data to table")
-        sql.execute("drop table if exists LDAY;")
-        sql.execute("create table LDAY (IDRECEIVER integer, Hz63 double precision, Hz125 double precision, Hz250 double precision, Hz500 double precision, Hz1000 double precision, Hz2000 double precision, Hz4000 double precision, Hz8000 double precision);")
+        sql.execute("drop table if exists LDEN;")
+        sql.execute("create table LDEN (IDRECEIVER integer, Hz63 double precision, Hz125 double precision, Hz250 double precision, Hz500 double precision, Hz1000 double precision, Hz2000 double precision, Hz4000 double precision, Hz8000 double precision);")
 
-        def qry = 'INSERT INTO LDAY(IDRECEIVER,Hz63, Hz125, Hz250, Hz500, Hz1000,Hz2000, Hz4000, Hz8000) VALUES (?,?,?,?,?,?,?,?,?);'
+        def qry = 'INSERT INTO LDEN(IDRECEIVER,Hz63, Hz125, Hz250, Hz500, Hz1000,Hz2000, Hz4000, Hz8000) VALUES (?,?,?,?,?,?,?,?,?);'
 
         sql.withBatch(100, qry) { ps ->
             for (s in soundLevels) {
@@ -372,8 +372,8 @@ def run(input) {
             }
         }
 
-        sql.execute("drop table if exists LDAY_GEOM;")
-        sql.execute("create table LDAY_GEOM  as select a.IDRECEIVER, b.THE_GEOM, a.Hz63, a.Hz125, a.Hz250, a.Hz500, a.Hz1000, a.Hz2000, a.Hz4000, a.Hz8000 FROM RECEIVERS b LEFT JOIN LDAY a ON a.IDRECEIVER = b.ID;")
+        sql.execute("drop table if exists LDEN_GEOM;")
+        sql.execute("create table LDEN_GEOM  as select a.IDRECEIVER, b.THE_GEOM, a.Hz63, a.Hz125, a.Hz250, a.Hz500, a.Hz1000, a.Hz2000, a.Hz4000, a.Hz8000 FROM RECEIVERS b LEFT JOIN LDEN a ON a.IDRECEIVER = b.ID;")
 
 
         System.out.println("Done !")
@@ -381,7 +381,7 @@ def run(input) {
 
         long computationTime = System.currentTimeMillis() - start;
 
-        return [result: "Calculation Done !"]
+        return [result: "Calculation Done ! LDEN_GEOM"]
 
 
     }
