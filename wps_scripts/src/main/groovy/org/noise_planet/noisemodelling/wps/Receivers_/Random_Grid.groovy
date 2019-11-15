@@ -2,18 +2,11 @@
  * @Author Aumond Pierre
  */
 
-package org.noise_planet.noisemodelling.wps.Receivers
+package org.noise_planet.noisemodelling.wps.Receivers_
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import org.geotools.jdbc.JDBCDataStore
-
-import org.h2gis.functions.io.dbf.*
-import org.h2gis.functions.io.geojson.*
-import org.h2gis.functions.io.gpx.*
-import org.h2gis.functions.io.osm.*
-import org.h2gis.functions.io.shp.*
-import org.h2gis.functions.io.tsv.*
 
 import java.sql.Connection
 

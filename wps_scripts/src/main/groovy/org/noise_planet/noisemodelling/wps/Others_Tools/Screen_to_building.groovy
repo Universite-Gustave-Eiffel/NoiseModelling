@@ -2,7 +2,7 @@
  * @Author Can Arnaud
  */
 
-package org.noise_planet.noisemodelling.wps.Receivers
+package org.noise_planet.noisemodelling.wps.Others_Tools
 
 import org.h2gis.functions.io.gpx.*
 import org.h2gis.functions.io.osm.*

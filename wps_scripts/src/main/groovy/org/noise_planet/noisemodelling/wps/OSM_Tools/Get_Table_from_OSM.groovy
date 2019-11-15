@@ -2,7 +2,7 @@
  * @Author Aumond Pierre
  */
 
-package org.noise_planet.noisemodelling.wps.Input_Tools
+package org.noise_planet.noisemodelling.wps.OSM_Tools
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
