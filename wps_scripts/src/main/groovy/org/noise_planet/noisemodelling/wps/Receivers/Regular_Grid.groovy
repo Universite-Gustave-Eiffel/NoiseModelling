@@ -38,10 +38,12 @@ description = 'Calculates a regular grid of receivers based on a single Geometry
 
 inputs = [buildingTableName : [name: 'Buildings table name', title: 'Buildings table name', type: String.class],
           fence  : [name: 'Fence', title: 'Fence', min: 0, max: 1, type: Geometry.class],
+          fenceTableName  : [name: 'Fence table name', title: 'Fence table name', min: 0, max: 1, type: String.class],
           sourcesTableName  : [name: 'Sources table name', title: 'Sources table name', min: 0, max: 1, type: String.class],
           delta    : [name: 'offset', title: 'offset', description: 'Offset in the Cartesian plane in meters', type: Double.class],
           databaseName   : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database. (default : h2gisdb)', min: 0, max: 1, type: String.class],
-          outputTableName: [name: 'outputTableName', description: 'Do not write the name of a table that contains a space. (default : RECEIVERS)', title: 'Name of output table', min: 0, max: 1, type: String.class]]
+          receiverstablename: [name: 'receiverstablename', description: 'Do not write the name of a table that contains a space. (default : RECEIVERS)', title: 'Name of receivers table', min: 0, max: 1, type: String.class],
+          height    : [name: 'height', title: 'height', description: 'Height of receivers in meters', min: 0, max: 1, type: Double.class]]
 
 outputs = [tableNameCreated: [name: 'tableNameCreated', title: 'tableNameCreated', type: String.class]]
 
@@ -54,10 +56,26 @@ def static Connection openPostgreSQLDataStoreConnection(String dbName) {
 def run(input) {
 
     String receivers_table_name = "RECEIVERS"
+    if (input['receiverstablename']) {
+        receivers_table_name = input['receiverstablename']
+    }
+    receivers_table_name = receivers_table_name.toUpperCase()
+
+    String fence_table_name = "FENCE_2154"
+    if (input['fenceTableName']) {
+        fence_table_name = input['fenceTableName']
+    }
+    fence_table_name = fence_table_name.toUpperCase()
+
 
     Double delta = 10
     if (input['delta']) {
         delta = input['delta']
+    }
+
+    Double h = 4
+    if (input['height']) {
+        h = input['height']
     }
 
     String sources_table_name = "SOURCES"
@@ -91,6 +109,9 @@ def run(input) {
         System.out.println("Delete previous receivers grid...")
         sql.execute(String.format("DROP TABLE IF EXISTS %s", receivers_table_name))
         String queryGrid = null
+
+
+
         if (input['fence']) {
             System.out.println("--------------------------------------------")
             System.out.println((String) fence)
@@ -103,6 +124,17 @@ def run(input) {
              queryGrid = String.format("CREATE TABLE "+receivers_table_name+" AS SELECT * FROM ST_MakeGridPoints('FENCE_2154',"
                     + delta + ","
                     + delta + ");")
+
+
+
+        }else if (input['fenceTableName']) {
+
+            queryGrid = String.format("CREATE TABLE "+receivers_table_name+" AS SELECT * FROM ST_MakeGridPoints('"+ fence_table_name + "',"
+                    + delta + ","
+                    + delta + ");")
+
+
+
         }else{
             queryGrid  = String.format("CREATE TABLE "+receivers_table_name+" AS SELECT * FROM ST_MakeGridPoints('"
                     + building_table_name + "',"
@@ -115,9 +147,8 @@ def run(input) {
          System.out.println("New receivers grid created ...")
 
         sql.execute("Create spatial index on "+receivers_table_name+"(the_geom);")
-        sql.execute("UPDATE "+receivers_table_name+" SET THE_GEOM = ST_UPDATEZ(The_geom,2);")
+        sql.execute("UPDATE "+receivers_table_name+" SET THE_GEOM = ST_UPDATEZ(The_geom,"+h+");")
         sql.execute("ALTER TABLE "+ receivers_table_name +" ADD pk INT AUTO_INCREMENT PRIMARY KEY;" )
-
 
 
         if (input['fence']) {
@@ -125,7 +156,11 @@ def run(input) {
             sql.execute("Create spatial index on FENCE_2154(the_geom);")
             sql.execute("delete from " + receivers_table_name + " g where exists (select 1 from FENCE_2154 r where ST_Disjoint(g.the_geom, r.the_geom) limit 1);")
         }
-
+        if (input['fenceTableName']) {
+            System.out.println("Delete receivers near sources ...")
+            sql.execute("Create spatial index on "+fence_table_name+"(the_geom);")
+            sql.execute("delete from " + receivers_table_name + " g where exists (select 1 from "+fence_table_name+" r where ST_Disjoint(g.the_geom, r.the_geom) limit 1);")
+        }
 
         if (input['buildingTableName']) {
             System.out.println("Delete receivers inside buildings ...")
@@ -141,18 +176,6 @@ def run(input) {
 
     }
     System.out.println("Process Done !")
-    return [tableNameCreated: "Process done !"]
+    return [tableNameCreated: "Process done. Table of receivers "+ receivers_table_name +" created !"]
 }
 
-/**
- * Convert a Geometry value into a Well Known Text value.
- * @param geometry Geometry instance
- * @return The String representation
- */
-static String asWKT(Geometry geometry) {
-    if(geometry==null) {
-        return null
-    }
-    WKTWriter wktWriter = new WKTWriter()
-    return wktWriter.write(geometry)
-}
