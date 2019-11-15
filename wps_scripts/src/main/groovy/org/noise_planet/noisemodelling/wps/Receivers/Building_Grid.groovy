@@ -9,17 +9,9 @@ import geoserver.GeoServer
 import geoserver.catalog.Store
 import org.geotools.jdbc.JDBCDataStore
 
-import org.h2gis.functions.io.dbf.*
-import org.h2gis.functions.io.geojson.*
-import org.h2gis.functions.io.gpx.*
-import org.h2gis.functions.io.osm.*
-import org.h2gis.functions.io.shp.*
-import org.h2gis.functions.io.tsv.*
-
 import java.sql.Connection
 
 import groovy.sql.Sql
-import org.h2gis.utilities.wrapper.*
 
 
 title = 'Buildings Grid'
@@ -116,8 +108,6 @@ def run(input) {
 
             queryGrid = String.format("create table "+receivers_table_name+" (ID int AUTO_INCREMENT PRIMARY KEY, the_geom GEOMETRY) as SELECT NULL, r.the_geom from receivers_temp r, FENCE_2154 f where r.the_geom && f.the_geom and ST_INTERSECTS (r.the_geom, f.the_geom)")
 
-
-
         }else if (input['fenceTableName']) {
             sql.execute(String.format("drop table if exists buildtemp"))
             sql.execute(String.format("create table buildtemp (id serial, the_geom polygon) as select null, ST_CONVEXHULL (the_geom) from "+building_table_name+" where ST_AREA(the_geom)>100"));
@@ -131,11 +121,6 @@ def run(input) {
 
         }else{
 
-
-
-//drop table if exists receivers;
-//create table receivers (ID int AUTO_INCREMENT PRIMARY KEY, the_geom GEOMETRY) as SELECT NULL, r.the_geom from receivers_temp r, fence f where r.the_geom && f.the_geom and ST_INTERSECTS (r.the_geom, f.the_geom);
-
             sql.execute(String.format("drop table if exists buildtemp"))
             sql.execute(String.format("create table buildtemp (id serial, the_geom polygon) as select null, ST_CONVEXHULL (the_geom) from "+building_table_name+" where ST_AREA(the_geom)>100"));
 
@@ -148,28 +133,15 @@ def run(input) {
             queryGrid = String.format("create table "+receivers_table_name+" (ID int AUTO_INCREMENT PRIMARY KEY, the_geom GEOMETRY) as SELECT NULL, r.the_geom from receivers_temp r")
 
 
-          //  queryGrid  = String.format("CREATE TABLE "+receivers_table_name+" AS SELECT * FROM ST_MakeGridPoints('"
-            //        + building_table_name + "',"
-              //      + delta + ","
-                //    + delta + ");")
+
         }
 
         sql.execute(queryGrid)
 
          System.out.println("New receivers grid created ...")
-
-        //sql.execute("Create spatial index on "+receivers_table_name+"(the_geom);")
-        //sql.execute("ALTER TABLE "+receivers_table_name+" ADD COLUMN HEIGHT FLOAT;")
-        //sql.execute("UPDATE "+receivers_table_name+" SET HEIGHT = "+h+";")
-        
-        
         
         sql.execute("Create spatial index on "+receivers_table_name+"(the_geom);")
         sql.execute("UPDATE "+receivers_table_name+" SET THE_GEOM = ST_UPDATEZ(The_geom,"+h+");")
-        //sql.execute("ALTER TABLE "+ receivers_table_name +" ADD pk INT AUTO_INCREMENT PRIMARY KEY;" )
-        
-        
-        //sql.execute("ALTER TABLE "+ receivers_table_name +" ADD pk INT AUTO_INCREMENT PRIMARY KEY;" )
 
         if (input['fence']) {
             System.out.println("Delete receivers near sources ...")

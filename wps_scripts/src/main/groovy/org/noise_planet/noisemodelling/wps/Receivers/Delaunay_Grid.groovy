@@ -4,28 +4,12 @@
 
 package org.noise_planet.noisemodelling.wps.Receivers
 
-import org.h2gis.functions.io.gpx.*
-import org.h2gis.functions.io.osm.*
-
-import org.h2gis.utilities.wrapper.*
-
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import org.geotools.jdbc.JDBCDataStore
 import org.geotools.data.simple.*
 
 import org.locationtech.jts.geom.Geometry
-import java.io.*;
-import java.sql.*;
-
-import org.h2gis.functions.io.csv.*
-import org.h2gis.functions.io.dbf.*
-import org.h2gis.functions.io.geojson.*
-import org.h2gis.functions.io.json.*
-import org.h2gis.functions.io.kml.*
-import org.h2gis.functions.io.shp.*
-import org.h2gis.functions.io.tsv.*
-
 
 import groovy.sql.Sql
 

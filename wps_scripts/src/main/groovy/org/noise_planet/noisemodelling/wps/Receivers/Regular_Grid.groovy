@@ -4,34 +4,15 @@
 
 package org.noise_planet.noisemodelling.wps.Receivers
 
-import org.h2gis.functions.io.gpx.*
-import org.h2gis.functions.io.osm.*
-
-import org.h2gis.utilities.wrapper.*
-
-
-import org.locationtech.jts.io.WKTWriter
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import org.geotools.jdbc.JDBCDataStore
 import org.geotools.data.simple.*
 
-
-
-import java.sql.Connection;
 import org.locationtech.jts.geom.Geometry
-import java.io.*;
-import java.sql.*;
+import java.sql.*
 import groovy.sql.Sql
-
-import org.h2gis.functions.io.csv.*
-import org.h2gis.functions.io.dbf.*
-import org.h2gis.functions.io.geojson.*
-import org.h2gis.functions.io.json.*
-import org.h2gis.functions.io.kml.*
-import org.h2gis.functions.io.shp.*
-import org.h2gis.functions.io.tsv.*
 
 title = 'Regular Grid'
 description = 'Calculates a regular grid of receivers based on a single Geometry geom or a table tableName of Geometries with delta as offset in the Cartesian plane in meters.'
