@@ -15,7 +15,7 @@ import java.sql.*
 import groovy.sql.Sql
 
 
-
+// Change code and use : DbUtilities.createReceiversFromBuildings
 title = 'Buildings Grid'
 description = 'Calculates a regular grid of receivers around buildings. Step is the step value of the grid in the Cartesian plane in meters.'
 
