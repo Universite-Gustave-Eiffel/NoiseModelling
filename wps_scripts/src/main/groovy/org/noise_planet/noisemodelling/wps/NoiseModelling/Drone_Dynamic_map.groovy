@@ -71,7 +71,8 @@ description = 'Compute Dynamic NoiseMap from individual moving point sources'
 
 inputs = [databaseName      : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database. (default : h2gisdb)', min: 0, max: 1, type: String.class],
           buildingTableName : [name: 'Buildings table name', title: 'Buildings table name', type: String.class],
-          sourcesTableName  : [name: 'Sources table name', title: 'Sources table name', type: String.class],
+          sourcesTimeTableName  : [name: 'Sources Time table name', title: 'Sources Time table name',description: 'Column idSource, column idPosition, column idTime', type: String.class],
+          sourcesPositionTableName  : [name: 'Sources position table name', title: 'Sources position table name',description: 'Column the_geom, column idPosition', type: String.class],
           receiversTableName: [name: 'Receivers table name', title: 'Receivers table name', type: String.class],
           demTableName      : [name: 'DEM table name', title: 'DEM table name', min: 0, max: 1, type: String.class],
           groundTableName   : [name: 'Ground table name', title: 'Ground table name', min: 0, max: 1, type: String.class],
@@ -189,8 +190,6 @@ class DronePropagationProcessData extends PropagationProcessData {
         double db_m2000 = 90
         double db_m4000 = 90
         double db_m8000 = 90
-        int t = rs.getInt("T")
-        int id = rs.getInt("ID")
 
         double[] res_d = new double[PropagationProcessPathData.freq_lvl.size()]
 
@@ -222,26 +221,6 @@ def static Connection openPostgreSQLDataStoreConnection(String dbName) {
     return jdbcDataStore.getDataSource().getConnection()
 }
 
-def static exportScene(String name, FastObstructionTest manager, ComputeRaysOut result) throws IOException {
-    try {
-        FileOutputStream outData = new FileOutputStream(name);
-        KMLDocument kmlDocument = new KMLDocument(outData);
-        kmlDocument.setInputCRS("EPSG:2154");
-        kmlDocument.writeHeader();
-        if (manager != null) {
-            kmlDocument.writeTopographic(manager.getTriangles(), manager.getVertices());
-        }
-        if (result != null) {
-            kmlDocument.writeRays(result.getPropagationPaths());
-        }
-        if (manager != null && manager.isHasBuildingWithHeight()) {
-            kmlDocument.writeBuildings(manager)
-        }
-        kmlDocument.writeFooter();
-    } catch (XMLStreamException | CRSException ex) {
-        throw new IOException(ex)
-    }
-}
 
 def run(input) {
 
@@ -249,11 +228,18 @@ def run(input) {
     // Get inputs
     // -------------------
 
-    String sources_table_name = "SOURCES"
-    if (input['sourcesTableName']) {
-        sources_table_name = input['sourcesTableName']
+    String sources_position_table_name = "SOURCES"
+    if (input['sourcesPositionTableName']) {
+        sources_position_table_name = input['sourcesPositionTableName']
     }
-    sources_table_name = sources_table_name.toUpperCase()
+    sources_position_table_name = sources_position_table_name.toUpperCase()
+
+    String sources_time_table_name = "SOURCES"
+    if (input['sourcesTimeTableName']) {
+        sources_time_table_name = input['sourcesTimeTableName']
+    }
+    sources_time_table_name = sources_time_table_name.toUpperCase()
+
 
     String receivers_table_name = "RECEIVERS"
     if (input['receiversTableName']) {
@@ -340,7 +326,7 @@ def run(input) {
 
         System.out.println("Connection to the database ok ...")
         // Init NoiseModelling
-        PointNoiseMap pointNoiseMap = new PointNoiseMap(building_table_name, sources_table_name, receivers_table_name)
+        PointNoiseMap pointNoiseMap = new PointNoiseMap(building_table_name, sources_position_table_name, receivers_table_name)
         pointNoiseMap.setComputeHorizontalDiffraction(compute_horizontal_diffraction)
         pointNoiseMap.setComputeVerticalDiffraction(compute_vertical_diffraction)
         pointNoiseMap.setSoundReflectionOrder(reflexion_order)
@@ -401,88 +387,84 @@ def run(input) {
         sql.execute("create table LDAY (TIME integer, IDRECEIVER integer, Hz63 double precision, Hz125 double precision, Hz250 double precision, Hz500 double precision, Hz1000 double precision, Hz2000 double precision, Hz4000 double precision, Hz8000 double precision);")
         def qry = 'INSERT INTO LDAY(TIME , IDRECEIVER,Hz63, Hz125, Hz250, Hz500, Hz1000,Hz2000, Hz4000, Hz8000) VALUES (?,?,?,?,?,?,?,?,?,?);'
 
-
         Map<Integer, Coordinate> geomReceivers = new HashMap<>()
         sql.eachRow('SELECT PK,ST_X(the_geom),ST_Y(the_geom),ST_Z(the_geom) FROM RECEIVERS;') { row ->
             geomReceivers.put(row[0], new Coordinate(row[1] as Double, row[2] as Double, row[3] as Double))
 
         }
 
-        Map<Integer, Map<Integer, double[]>> geomSourcesTime = new HashMap<>()
-
-        sql.eachRow('SELECT PK,ST_X(the_geom),ST_Y(the_geom),ST_Z(the_geom), PHI, T FROM '+sources_table_name+' ;') { row ->
-            //System.println(row[0])
-            //System.out.println(row[4].toString())
-            Map<Integer, double[]> geomSources = new HashMap<>()
-            geomSources.put((int) row[0], [row[1] as Double, row[2] as Double, row[3] as Double, row[4] as Double])
-            geomSourcesTime.put((int) row[5], geomSources)
+        Map<Integer, double[]> geomSources = new HashMap<>()
+        sql.eachRow('SELECT PK, ST_X(the_geom),ST_Y(the_geom),ST_Z(the_geom) FROM '+sources_position_table_name+' ;') { row ->
+            geomSources.put((int) row[0], [row[1] as Double, row[2] as Double, row[3] as Double])
         }
 
-        for (int t = 1; t <= 3; t++) {
+        for (int t = 1; t <= 100; t++) {
             System.out.println(t.toString())
+
             Map<Integer, double[]> soundLevels = new HashMap<>()
-            for (int i = 0; i < allLevels.size(); i++) {
-                int idReceiver = (Integer) allLevels.get(i).receiverId
-                int idSource = (Integer) allLevels.get(i).sourceId
 
-                if (geomSourcesTime.get(t).get(idSource) != null) {
+            sql.eachRow('SELECT PK, PHI, T FROM ' + sources_time_table_name + ' WHERE T = ' + t.toString() + ';') { row ->
 
-                    //System.println(idSource)
-                    //System.println(idReceiver)
-                    Coordinate A = new Coordinate(geomSourcesTime.get(t).get(idSource)[0], geomSourcesTime.get(t).get(idSource)[1], geomSourcesTime.get(t).get(idSource)[2])
-                    Coordinate B = geomReceivers.get(idReceiver)
-                    //System.println(A)
-                    //System.println(B)
-                    Vector3D vector = new Vector3D(A, B)
-                    double phiHelico = geomSourcesTime.get(t).get(idSource)[3]
-                    double r = A.distance3D(B)
-                    //System.println(phiHelico)
-                    double angle = Math.atan2(vector.getY(), vector.getX())
-                    if (angle <0) angle = angle + 2*3.14
-                    angle = angle*360/(2*3.14)
-                    double phi = angle - phiHelico
-                    if (phi <0) phi = phi + 360
-                    double theta = 180 - (Math.acos(vector.getZ() / r) * 180 / 3.14)
-                    double[] soundLevel = allLevels.get(i).value
+                int time = row[2]
+                int idSource = 1
+                int idPositionDynamic = row[0]
+                double phiHelico = row[1]
 
-//                    System.out.println(angle+";"+phiHelico+";"+theta +";"+phi)
-                    double[] sourceLev = dynamicProcessData.getDroneLevel(sources_table_name, sql, t, idSource, theta, phi)
-                    //if (sourceLev[0] ==0) break
-                    //System.println(sourceLev)
-                    // if (sourceLev[0]>0){
-                    if (soundLevels.containsKey(idReceiver)) {
+                for (int i = 0; i < allLevels.size(); i++) {
+                    int idPositionFix = (Integer) allLevels.get(i).sourceId
+                    if (idPositionFix == idPositionDynamic) {
+                        int idReceiver = (Integer) allLevels.get(i).receiverId
+                        Coordinate A = new Coordinate(geomSources.get(idPositionFix)[0], geomSources.get(idPositionFix)[1], geomSources.get(idPositionFix)[2])
+                        Coordinate B = geomReceivers.get(idReceiver)
+                        Vector3D vector = new Vector3D(A, B)
 
-                        soundLevel = ComputeRays.sumDbArray(sumLinearArray(soundLevel, sourceLev), soundLevels.get(idReceiver))
-                        soundLevels.replace(idReceiver, soundLevel)
+                        double r = A.distance3D(B)
 
-                    } else {
+                        double angle = Math.atan2(vector.getY(), vector.getX())
+                        if (angle < 0) angle = angle + 2 * 3.14
+                        angle = angle * 360 / (2 * 3.14)
+                        double phi = angle - phiHelico
+                        if (phi < 0) phi = phi + 360
+                        double theta = 180 - (Math.acos(vector.getZ() / r) * 180 / 3.14)
+                        double[] soundLevel = allLevels.get(i).value
 
-                        soundLevels.put(idReceiver, sumLinearArray(soundLevel, sourceLev))
+                        double[] sourceLev = dynamicProcessData.getDroneLevel(sources_time_table_name, sql, t, idPositionFix, theta, phi)
+
+                        if (soundLevels.containsKey(idReceiver)) {
+                            soundLevel = ComputeRays.sumDbArray(sumLinearArray(soundLevel, sourceLev), soundLevels.get(idReceiver))
+                            soundLevels.replace(idReceiver, soundLevel)
+                        } else {
+
+                            soundLevels.put(idReceiver, sumLinearArray(soundLevel, sourceLev))
+
+                        }
+
 
                     }
 
-                    // closing writer connection
-
-                    //}
-
-                }
-            }
-            sql.withBatch(100, qry) { ps ->
-                for (Map.Entry<Integer, double[]> entry : soundLevels.entrySet()) {
-                    Integer key = entry.getKey()
-                    double[] value = entry.getValue()
-                    value = DBToDBA(value)
-                    ps.addBatch(t as Integer, key as Integer,
-                            value[0] as Double, value[1] as Double, value[2] as Double,
-                            value[3] as Double, value[4] as Double, value[5] as Double,
-                            value[6] as Double, value[7] as Double)
 
 
                 }
+
+
+                sql.withBatch(100, qry) { ps ->
+                    for (Map.Entry<Integer, double[]> entry : soundLevels.entrySet()) {
+                        Integer key = entry.getKey()
+                        double[] value = entry.getValue()
+                        value = DBToDBA(value)
+                        ps.addBatch(t as Integer, key as Integer,
+                                value[0] as Double, value[1] as Double, value[2] as Double,
+                                value[3] as Double, value[4] as Double, value[5] as Double,
+                                value[6] as Double, value[7] as Double)
+
+
+                    }
+                }
+
+
+
             }
         }
-
-
 
 
         System.out.println("Join Results with Geometry")
