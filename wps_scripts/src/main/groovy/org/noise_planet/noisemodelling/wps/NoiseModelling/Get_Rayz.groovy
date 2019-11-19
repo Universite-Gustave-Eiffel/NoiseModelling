@@ -142,26 +142,6 @@ def static Connection openPostgreSQLDataStoreConnection(String dbName) {
     return jdbcDataStore.getDataSource().getConnection()
 }
 
-def static exportScene(String name, FastObstructionTest manager, ComputeRaysOut result) throws IOException {
-    try {
-        FileOutputStream outData = new FileOutputStream(name);
-        KMLDocument kmlDocument = new KMLDocument(outData);
-        kmlDocument.setInputCRS("EPSG:2154");
-        kmlDocument.writeHeader();
-        if (manager != null) {
-            kmlDocument.writeTopographic(manager.getTriangles(), manager.getVertices());
-        }
-        if (result != null) {
-            kmlDocument.writeRays(result.getPropagationPaths());
-        }
-        if (manager != null && manager.isHasBuildingWithHeight()) {
-            kmlDocument.writeBuildings(manager)
-        }
-        kmlDocument.writeFooter();
-    } catch (XMLStreamException | CRSException ex) {
-        throw new IOException(ex)
-    }
-}
 
 def run(input) {
 
@@ -345,12 +325,12 @@ def run(input) {
  */
 class PropagationPathStorage extends ComputeRaysOut {
     // Thread safe queue object
-    protected TrafficPropagationProcessData inputData
+    protected TrafficRayzPropagationProcessData inputData
     ConcurrentLinkedDeque<PointToPointPaths> pathQueue
 
     PropagationPathStorage(PropagationProcessData inputData, PropagationProcessPathData pathData, ConcurrentLinkedDeque<PointToPointPaths> pathQueue) {
         super(true, pathData, inputData)
-        this.inputData = (TrafficPropagationProcessData) inputData
+        this.inputData = (TrafficRayzPropagationProcessData) inputData
         this.pathQueue = pathQueue
     }
 
@@ -428,72 +408,6 @@ class PropagationPathStorage extends ComputeRaysOut {
         }
 
 
-    }
-
-
-/**
- * Read source database and compute the sound emission spectrum of roads sources*/
-    class TrafficPropagationProcessData extends PropagationProcessData {
-        // Lden values
-        public List<double[]> wjSourcesDEN = new ArrayList<>();
-        public Map<Long, Integer> SourcesPk = new HashMap<>();
-
-
-        public TrafficPropagationProcessData(FastObstructionTest freeFieldFinder) {
-            super(freeFieldFinder);
-        }
-
-        int idSource = 0
-
-        @Override
-        public void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException {
-            super.addSource(pk, geom, rs)
-            SourcesPk.put(pk, idSource++)
-
-            // Read average 24h traffic
-            double[] ld = [ComputeRays.dbaToW(rs.getDouble('Ld63')),
-                           ComputeRays.dbaToW(rs.getDouble('Ld125')),
-                           ComputeRays.dbaToW(rs.getDouble('Ld250')),
-                           ComputeRays.dbaToW(rs.getDouble('Ld500')),
-                           ComputeRays.dbaToW(rs.getDouble('Ld1000')),
-                           ComputeRays.dbaToW(rs.getDouble('Ld2000')),
-                           ComputeRays.dbaToW(rs.getDouble('Ld4000')),
-                           ComputeRays.dbaToW(rs.getDouble('Ld8000'))]
-            double[] le = [ComputeRays.dbaToW(rs.getDouble('Le63')),
-                           ComputeRays.dbaToW(rs.getDouble('Le125')),
-                           ComputeRays.dbaToW(rs.getDouble('Le250')),
-                           ComputeRays.dbaToW(rs.getDouble('Le500')),
-                           ComputeRays.dbaToW(rs.getDouble('Le1000')),
-                           ComputeRays.dbaToW(rs.getDouble('Le2000')),
-                           ComputeRays.dbaToW(rs.getDouble('Le4000')),
-                           ComputeRays.dbaToW(rs.getDouble('Le8000'))]
-            double[] ln = [ComputeRays.dbaToW(rs.getDouble('Ln63')),
-                           ComputeRays.dbaToW(rs.getDouble('Ln125')),
-                           ComputeRays.dbaToW(rs.getDouble('Ln250')),
-                           ComputeRays.dbaToW(rs.getDouble('Ln500')),
-                           ComputeRays.dbaToW(rs.getDouble('Ln1000')),
-                           ComputeRays.dbaToW(rs.getDouble('Ln2000')),
-                           ComputeRays.dbaToW(rs.getDouble('Ln4000')),
-                           ComputeRays.dbaToW(rs.getDouble('Ln8000'))]
-
-            double[] lden = new double[PropagationProcessPathData.freq_lvl.size()]
-            int idFreq = 0
-            for(int freq : PropagationProcessPathData.freq_lvl) {
-                lden[idFreq++] = (12 * ld[idFreq] +
-                        4 * ComputeRays.dbaToW(ComputeRays.wToDba(le[idFreq]) + 5) +
-                        8 * ComputeRays.dbaToW(ComputeRays.wToDba(ln[idFreq]) + 10)) / 24.0
-            }
-
-            wjSourcesDEN.add(lden)
-
-
-
-        }
-
-        @Override
-        public double[] getMaximalSourcePower(int sourceId) {
-            return wjSourcesDEN.get(sourceId);
-        }
     }
 
 }

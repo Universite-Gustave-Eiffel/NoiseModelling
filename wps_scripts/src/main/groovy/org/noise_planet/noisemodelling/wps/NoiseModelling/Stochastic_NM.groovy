@@ -3,33 +3,16 @@ package org.noise_planet.noisemodelling.wps.NoiseModelling;
 /*
  * @Author Pierre Aumond
  */
-
-
-import com.opencsv.CSVWriter
 import groovy.sql.Sql
-import org.locationtech.jts.geom.Coordinate
 import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceDynamic
 import org.noise_planet.noisemodelling.emission.RSParametersDynamic
 
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.zip.GZIPOutputStream
-import java.util.zip.ZipEntry
-import java.util.zip.ZipOutputStream
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
 
-import groovy.transform.CompileStatic
-
-
-import java.util.concurrent.ConcurrentLinkedDeque
-
 
 import org.geotools.jdbc.JDBCDataStore
-
-
-import javax.xml.stream.XMLStreamException
-import org.cts.crs.CRSException
 
 import java.sql.Connection
 
@@ -41,18 +24,16 @@ import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap
 
 import org.h2gis.utilities.SpatialResultSet
 import org.locationtech.jts.geom.Geometry
-import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.api.ProgressVisitor
 
 import java.sql.SQLException
 
-title = 'Get Rays in gunzip'
-description = 'Compute all the rays and keep it in gunzip file.'
+title = 'Stochastic Map'
+description = 'Compute Stochastic Map.'
 
 inputs = [databaseName      : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database. (default : h2gisdb)', min: 0, max: 1, type: String.class],
-          workingDir : [name: 'workingDir', title: 'workingDir', description: 'workingDir (ex : C:/Desktop/)', type: String.class],
           buildingTableName : [name: 'Buildings table name', title: 'Buildings table name', type: String.class],
-          sourcesTableName  : [name: 'Sources table name', title: 'Sources table name with emission', type: String.class],
+          sourcesTableName  : [name: 'Sources table name', title: 'Sources table name', type: String.class],
           receiversTableName: [name: 'Receivers table name', title: 'Receivers table name', type: String.class],
           demTableName      : [name: 'DEM table name', title: 'DEM table name', min: 0, max: 1, type: String.class],
           groundTableName   : [name: 'Ground table name', title: 'Ground table name', min: 0, max: 1, type: String.class],
@@ -69,76 +50,6 @@ outputs = [result: [name: 'result', title: 'Result', type: String.class]]
 
 /**
  * Read source database and compute the sound emission spectrum of roads sources*/
-class TrafficStochasticPropagationProcessData extends PropagationProcessData {
-    // Lden values
-    public List<double[]> wjSourcesDEN = new ArrayList<>();
-    public Map<Long, Integer> SourcesPk = new HashMap<>();
-
-
-    public TrafficStochasticPropagationProcessData(FastObstructionTest freeFieldFinder) {
-        super(freeFieldFinder);
-    }
-
-    int idSource = 0
-
-    @Override
-    public void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException {
-        super.addSource(pk, geom, rs)
-        SourcesPk.put(pk, idSource++)
-
-        // Read average 24h traffic
-        double[] ld = [ComputeRays.dbaToW(rs.getDouble('Ld63')),
-                       ComputeRays.dbaToW(rs.getDouble('Ld125')),
-                       ComputeRays.dbaToW(rs.getDouble('Ld250')),
-                       ComputeRays.dbaToW(rs.getDouble('Ld500')),
-                       ComputeRays.dbaToW(rs.getDouble('Ld1000')),
-                       ComputeRays.dbaToW(rs.getDouble('Ld2000')),
-                       ComputeRays.dbaToW(rs.getDouble('Ld4000')),
-                       ComputeRays.dbaToW(rs.getDouble('Ld8000'))]
-        double[] le = [ComputeRays.dbaToW(rs.getDouble('Le63')),
-                       ComputeRays.dbaToW(rs.getDouble('Le125')),
-                       ComputeRays.dbaToW(rs.getDouble('Le250')),
-                       ComputeRays.dbaToW(rs.getDouble('Le500')),
-                       ComputeRays.dbaToW(rs.getDouble('Le1000')),
-                       ComputeRays.dbaToW(rs.getDouble('Le2000')),
-                       ComputeRays.dbaToW(rs.getDouble('Le4000')),
-                       ComputeRays.dbaToW(rs.getDouble('Le8000'))]
-        double[] ln = [ComputeRays.dbaToW(rs.getDouble('Ln63')),
-                       ComputeRays.dbaToW(rs.getDouble('Ln125')),
-                       ComputeRays.dbaToW(rs.getDouble('Ln250')),
-                       ComputeRays.dbaToW(rs.getDouble('Ln500')),
-                       ComputeRays.dbaToW(rs.getDouble('Ln1000')),
-                       ComputeRays.dbaToW(rs.getDouble('Ln2000')),
-                       ComputeRays.dbaToW(rs.getDouble('Ln4000')),
-                       ComputeRays.dbaToW(rs.getDouble('Ln8000'))]
-
-        double[] lden = new double[PropagationProcessPathData.freq_lvl.size()]
-        int idFreq = 0
-        for(int freq : PropagationProcessPathData.freq_lvl) {
-            lden[idFreq++] = (12 * ld[idFreq] +
-                    4 * ComputeRays.dbaToW(ComputeRays.wToDba(le[idFreq]) + 5) +
-                    8 * ComputeRays.dbaToW(ComputeRays.wToDba(ln[idFreq]) + 10)) / 24.0
-        }
-
-        wjSourcesDEN.add(lden)
-
-
-
-    }
-
-    @Override
-    public double[] getMaximalSourcePower(int sourceId) {
-        return wjSourcesDEN.get(sourceId);
-    }
-}
-
-
-class TrafficStochasticPropagationProcessDataFactory implements PointNoiseMap.PropagationProcessDataFactory {
-    @Override
-    public PropagationProcessData create(FastObstructionTest freeFieldFinder) {
-        return new TrafficStochasticPropagationProcessData(freeFieldFinder);
-    }
-}
 
 
 def static Connection openPostgreSQLDataStoreConnection(String dbName) {
@@ -147,40 +58,17 @@ def static Connection openPostgreSQLDataStoreConnection(String dbName) {
     return jdbcDataStore.getDataSource().getConnection()
 }
 
-def static exportScene(String name, FastObstructionTest manager, ComputeRaysOut result) throws IOException {
-    try {
-        FileOutputStream outData = new FileOutputStream(name);
-        KMLDocument kmlDocument = new KMLDocument(outData);
-        kmlDocument.setInputCRS("EPSG:2154");
-        kmlDocument.writeHeader();
-        if (manager != null) {
-            kmlDocument.writeTopographic(manager.getTriangles(), manager.getVertices());
-        }
-        if (result != null) {
-            kmlDocument.writeRays(result.getPropagationPaths());
-        }
-        if (manager != null && manager.isHasBuildingWithHeight()) {
-            kmlDocument.writeBuildings(manager)
-        }
-        kmlDocument.writeFooter();
-    } catch (XMLStreamException | CRSException ex) {
-        throw new IOException(ex)
-    }
-}
 
 def run(input) {
-
 
     // -------------------
     // Get inputs
     // -------------------
 
-    String working_dir = "D:\\aumond\\Documents\\Boulot\\Articles\\2019_XX_XX Sensitivity"
+    String working_dir = ""
     if (input['workingDir']) {
         working_dir = input['workingDir']
     }
-
-
 
     String sources_table_name = "SOURCES"
     if (input['sourcesTableName']) {
@@ -235,7 +123,7 @@ def run(input) {
 
     int nreplications = 300
     if (input['nReplications']) {
-        nreplications = Double.valueOf(input['nReplications'])
+        nreplications = Integer.valueOf(input['nReplications'])
     }
 
     int n_thread = 1
@@ -301,11 +189,8 @@ def run(input) {
         pointNoiseMap.setWallAbsorption(wall_alpha)
         pointNoiseMap.setThreadCount(n_thread)
 
-        PropagationPathStorageProbaFactory storageFactory = new PropagationPathStorageProbaFactory()
         ProbaPropagationProcessDataFactory probaPropagationProcessDataFactory = new ProbaPropagationProcessDataFactory()
         pointNoiseMap.setPropagationProcessDataFactory(probaPropagationProcessDataFactory)
-        pointNoiseMap.setComputeRaysOutFactory(storageFactory)
-        storageFactory.setWorkingDir(working_dir)
 
         RootProgressVisitor progressLogger = new RootProgressVisitor(2, true, 1)
 
@@ -314,7 +199,6 @@ def run(input) {
         long start = System.currentTimeMillis();
 
         System.out.println("Start ...")
-        storageFactory.openPathOutputFile(new File(working_dir + "/rayz.gz").absolutePath)
         pointNoiseMap.initialize(connection, progressLogger)
         progressLogger.endStep()
         // Set of already processed receivers
@@ -330,15 +214,55 @@ def run(input) {
             }
         }
 
+
+        sql.execute("set @grid_density=10;\n" +
+                "set @PL_D=0.1;\n" +
+                "set @SPEED_CST=50;\n" +
+                "drop table TRAFIC_DENSITY if exists;\n" +
+                "create table TRAFIC_DENSITY (the_geom geometry, TV int, PL INT, SPEED double, DENSITY_TV double, DENSITY_PL double, DENSITY_TOT double) as \n" +
+                "    select THE_GEOM, AADF - (AADF*@PL_D/100), AADF*@PL_D/100, \n" +
+                "        case when @SPEED_CST < 20 then 20 \n" +
+                "            else @SPEED_CST end, \n" +
+                "        case when @SPEED_CST< 20 then 0.001*(AADF - (AADF*@PL_D/100))/20 \n" +
+                "            else 0.001*(AADF - (AADF*@PL_D/100))/@SPEED_CST end, \n" +
+                "        case when @SPEED_CST< 20 then 0.001*(AADF*@PL_D/100)/20 \n" +
+                "            else 0.001*(AADF*@PL_D/100)/@SPEED_CST end, \n" +
+                "        case when @SPEED_CST< 20 then 0.001*(AADF)/20 \n" +
+                "            else 0.001*(AADF)/@SPEED_CST end \n" +
+                "        from ROADS WHERE (AADF IS NOT NULL);" +
+                "drop table if exists traf_explode;\n" +
+                "create table traf_explode as SELECT * FROM ST_Explode('TRAFIC_DENSITY');\n" +
+                "alter table traf_explode add length double as select ST_LENGTH(the_geom) ;\n" +
+                "drop table grid_traf2 if exists;\n" +
+                "create table grid_traf2 (the_geom geometry, SPEED int, DENSITY_TV double, DENSITY_PL double, DENSITY_TOT double) as SELECT ST_Tomultipoint(ST_Densify(the_geom, 10)), SPEED, DENSITY_TV, DENSITY_PL, DENSITY_TOT from traf_explode;\n" +
+                "drop table grid_traf_tot if exists;\n" +
+                "create table grid_traf_tot as SELECT * from  ST_explode('grid_traf2');\n" +
+                "alter table grid_traf_tot ADD number_veh double as select DENSITY_TOT;\n" +
+                "drop table grid_traf2 if exists;\n" +
+                "drop table CARS2D if exists;\n" +
+                "create table CARS2D as SELECT ST_FORCE2D(the_geom) the_geom, speed, density_TV, density_pl, density_tot, explod_id exp_id, number_veh from grid_traf_tot WHERE DENSITY_TOT > 0 and DENSITY_TOT IS NOT NULL;\n" +
+                "alter table CARS2D add column PK serial ;\n" +
+                "drop table CARS3D if exists;\n" +
+                "create table CARS3D as SELECT ST_UPDATEZ(ST_FORCE3D(the_geom),0.05,1) the_geom,ST_Z(ST_AddZ(ST_FORCE3D(the_geom),0.05)) z, speed, density_TV TV, density_pl PL, density_tot TOT, exp_id, number_veh from ST_Explode('CARS2D');\n" +
+                "alter table CARS3D add column PK serial ;\n" +
+                "drop table grid_traf_tot if exists;" +
+                "drop table CARS2D if exists;" +
+                "drop table grid_traf2 if exists;" +
+                "drop table if exists traf_explode;" +
+                "drop table TRAFIC_DENSITY if exists;")
+
+
         ProbaProcessData probaProcessData = new ProbaProcessData()
-        probaProcessData.setProbaTable("CARS", sql)
+        probaProcessData.setProbaTable("CARS3D", sql)
 
-
-        System.println("Write results to csv file...")
-        CSVWriter writer = new CSVWriter(new FileWriter(working_dir + "/ResultatsProba2.csv"))
+        System.out.println("Export data to table")
+        sql.execute("drop table if exists LDAY;")
+        sql.execute("create table LDAY (TIME integer, IDRECEIVER integer, Hz63 double precision, Hz125 double precision, Hz250 double precision, Hz500 double precision, Hz1000 double precision, Hz2000 double precision, Hz4000 double precision, Hz8000 double precision);")
+        def qry = 'INSERT INTO LDAY(TIME , IDRECEIVER,Hz63, Hz125, Hz250, Hz500, Hz1000,Hz2000, Hz4000, Hz8000) VALUES (?,?,?,?,?,?,?,?,?,?);'
 
         def t_old = -1
         def idSource_old = -1
+
         for (int t=1;t<nreplications;t++){
             Map<Integer, double[]> soundLevels = new HashMap<>()
             Map<Integer, double[]> sourceLev = new HashMap<>()
@@ -367,13 +291,32 @@ def run(input) {
 
                 }
             }
-            for (Map.Entry<Integer, double[]> entry : soundLevels.entrySet()) {
-                Integer key = entry.getKey()
-                double[] value = entry.getValue()
-                value = DBToDBA(value)
-                writer.writeNext([key.toString(),t.toString(), ComputeRays.wToDba(ComputeRays.sumArray(ComputeRays.dbaToW(value))).toString()] as String[])
+            sql.withBatch(100, qry) { ps ->
+                for (Map.Entry<Integer, double[]> entry : soundLevels.entrySet()) {
+                    Integer key = entry.getKey()
+                    double[] value = entry.getValue()
+                    value = DBToDBA(value)
+                    ps.addBatch(t as Integer, key as Integer,
+                            value[0] as Double, value[1] as Double, value[2] as Double,
+                            value[3] as Double, value[4] as Double, value[5] as Double,
+                            value[6] as Double, value[7] as Double)
+
+                }
             }
         }
+
+        System.out.println("Join Results with Geometry")
+        sql.execute("CREATE INDEX ON LDAY(IDRECEIVER);")
+        sql.execute("CREATE INDEX ON RECEIVERS(ID);")
+
+        sql.execute("drop table if exists LDAY_GEOM;")
+        sql.execute("create table LDAY_GEOM  as select a. TIME,a.IDRECEIVER, b.THE_GEOM, a.Hz63, a.Hz125, a.Hz250, a.Hz500, a.Hz1000, a.Hz2000, a.Hz4000, a.Hz8000  FROM LDAY a LEFT JOIN  RECEIVERS b  ON a.IDRECEIVER = b.ID;")
+
+
+        System.out.println("Done !")
+
+
+        /*
         writer.close()
 
 
@@ -401,20 +344,19 @@ def run(input) {
 
 
 
-                /* if (soundLevels.containsKey(idReceiver)) {
-                     soundLevel = ComputeRays.sumDbArray(soundLevel, soundLevels.get(idReceiver))
-                     soundLevels.replace(idReceiver, soundLevel)
-                 } else {
-                     soundLevels.put(idReceiver, soundLevel)
-                 }*/
+                // if (soundLevels.containsKey(idReceiver)) {
+                //     soundLevel = ComputeRays.sumDbArray(soundLevel, soundLevels.get(idReceiver))
+                //     soundLevels.replace(idReceiver, soundLevel)
+                // } else {
+                //     soundLevels.put(idReceiver, soundLevel)
+                // }
             } else {
                 System.println("NaN on Rec :" + idReceiver + "and Src :" + idSource)
             }
         }
 
         writer2.close()
-
-        storageFactory.closeWriteThread()
+*/
 
         System.out.println("Done !")
 
@@ -430,31 +372,10 @@ def run(input) {
 
 class ProbaProcessData {
 
-    double[] getDroneLevel(String tablename, Sql sql, int t, int idSource) throws SQLException {
-        double[] res_d = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
-        // memes valeurs d e et n
-        sql.eachRow('SELECT id, the_geom,\n' +
-                'db_m63,db_m125,db_m250,db_m500,db_m1000,db_m2000,db_m4000,db_m8000,t FROM ' + tablename +' WHERE ID = '+ idSource.toString()+' AND T = '+ t.toString()+';') { row ->
-            int id = (int) row[0]
-            //System.out.println("Source :" + id)
-            Geometry the_geom = row[1]
-            def db_m63 = row[2]
-            def db_m125 = row[3]
-            def db_m250 = row[4]
-            def db_m500 = row[5]
-            def db_m1000 = row[6]
-            def db_m2000 = row[7]
-            def db_m4000 = row[8]
-            def db_m8000 = row[9]
-            int time = (int) row[10]
+    Map<Integer,Double> SPEED = new HashMap<>()
+    Map<Integer,Double> TV = new HashMap<>()
+    Map<Integer,Double> PL = new HashMap<>()
 
-
-            res_d = [db_m63,db_m125,db_m250,db_m500,db_m1000,db_m2000,db_m4000,db_m8000]
-
-        }
-
-        return res_d
-    }
     double[] getCarsLevel(int t, int idSource) throws SQLException {
         double[] res_d = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
         double[] res_TV = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
@@ -534,14 +455,17 @@ class ProbaProcessData {
         // Import file text
         //////////////////////
         int i_read = 0;
+
         // Remplissage des variables avec le contenu du fichier plan d'exp
-        sql.eachRow('SELECT PK, SPEED, DENSITY_TV, DENSITY_PL FROM ' + tablename +';') { row ->
-            int pk = row[0].toInteger()
-            SPEED.put(pk,row[1].toFloat())
-            TV.put(pk,row[2].toFloat())
-            PL.put(pk,row[3].toFloat())
+        sql.eachRow('SELECT PK,  SPEED, PL,TV FROM ' + tablename +';') { row ->
+            int pk = (int) row[0]
+
+            SPEED.put(pk,(double) row[1])
+            PL.put(pk,(double) row[2])
+            TV.put(pk, (double) row[3])
 
         }
+
 
     }
 
@@ -565,17 +489,14 @@ class ProbaPropagationProcessData extends PropagationProcessData {
 
         super.addSource(pk, geom, rs)
 
-        Geometry the_geom = rs.getGeometry("the_geom")
-
-        double db_m63 = 0
-        double db_m125 = 0
-        double db_m250 = 0
-        double db_m500 =0
-        double db_m1000 = 0
-        double db_m2000 =0
-        double db_m4000 = 0
-        double db_m8000 = 0
-        int id = rs.getInt("PK")
+        double db_m63 = 90
+        double db_m125 = 90
+        double db_m250 = 90
+        double db_m500 =90
+        double db_m1000 = 90
+        double db_m2000 =90
+        double db_m4000 = 90
+        double db_m8000 = 90
 
         double[] res_d =  [db_m63,db_m125,db_m250,db_m500,db_m1000,db_m2000,db_m4000,db_m8000]
         wjSourcesD.add(ComputeRays.dbaToW(res_d))
@@ -622,261 +543,3 @@ static double[] sumLinearArray(double[] array1, double[] array2) {
 
 
 
-
-
-@CompileStatic
-/**
- * Collect path computed by ComputeRays and store it into provided queue (with consecutive receiverId)
- * remove receiverpath or put to keep rays or not
- */
-class PropagationPathStorageProba extends ComputeRaysOut {
-    // Thread safe queue object
-    protected TrafficRayzPropagationProcessData inputData
-    ConcurrentLinkedDeque<PointToPointPathsProba> pathQueue
-
-    PropagationPathStorageProba(PropagationProcessData inputData, PropagationProcessPathData pathData, ConcurrentLinkedDeque<PointToPointPathsProba> pathQueue) {
-        super(true, pathData, inputData)
-        this.inputData = (TrafficRayzPropagationProcessData)inputData
-        this.pathQueue = pathQueue
-    }
-
-    @Override
-    double[] addPropagationPaths(long sourceId, double sourceLi, long receiverId, List<PropagationPath> propagationPath) {
-        return new double[0]
-    }
-
-    @Override
-    double[] computeAttenuation(PropagationProcessPathData pathData, long sourceId, double sourceLi, long receiverId, List<PropagationPath> propagationPath) {
-        /*if (receiverId==11 && sourceId == 42171){
-            receiverId == 11
-        }*/
-        double[] attenuation = super.computeAttenuation(pathData, sourceId, sourceLi, receiverId, propagationPath)
-
-        return attenuation
-    }
-
-    @Override
-    void finalizeReceiver(long l) {
-
-    }
-
-    @Override
-    IComputeRaysOut subProcess(int i, int i1) {
-        return new PropagationPathStorageProbaThread(this)
-    }
-
-    static class PropagationPathStorageProbaThread implements IComputeRaysOut {
-        // In order to keep consecutive receivers into the deque an intermediate list is built for each thread
-        private List<PointToPointPathsProba> receiverPaths = new ArrayList<>()
-        private PropagationPathStorageProba propagationPathStorageProba
-
-        PropagationPathStorageProbaThread(PropagationPathStorageProba propagationPathStorageProba) {
-            this.propagationPathStorageProba = propagationPathStorageProba
-        }
-
-        @Override
-        double[] addPropagationPaths(long sourceId, double sourceLi, long receiverId, List<PropagationPath> propagationPath) {
-            PointToPointPathsProba paths = new PointToPointPathsProba()
-            paths.li = sourceLi
-            paths.receiverId = (propagationPathStorageProba.inputData.receiversPk.get((int) receiverId).intValue())
-            paths.sourceId = propagationPathStorageProba.inputData.sourcesPk.get((int) sourceId).intValue()
-            paths.propagationPathList = new ArrayList<>(propagationPath.size())
-            for (PropagationPath path : propagationPath) {
-                // Copy path content in order to keep original ids for other method calls
-                PropagationPath pathPk = new PropagationPath(path.isFavorable(), path.getPointList(),
-                        path.getSegmentList(), path.getSRList())
-                pathPk.setIdReceiver((int)paths.receiverId)
-                pathPk.setIdSource((int)paths.sourceId)
-                paths.propagationPathList.add(pathPk)
-                receiverPaths.add(paths)
-            }
-            double[] aGlobalMeteo = propagationPathStorageProba.computeAttenuation(propagationPathStorageProba.genericMeteoData, sourceId, sourceLi, receiverId, propagationPath);
-            if (aGlobalMeteo != null && aGlobalMeteo.length > 0)  {
-
-                propagationPathStorageProba.receiversAttenuationLevels.add(new ComputeRaysOut.verticeSL(paths.receiverId, paths.sourceId, aGlobalMeteo))
-                return aGlobalMeteo
-            } else {
-                return new double[0]
-            }
-        }
-
-
-
-        @Override
-        void finalizeReceiver(long receiverId) {
-            propagationPathStorageProba.pathQueue.addAll(receiverPaths)
-            receiverPaths.clear()
-        }
-
-        @Override
-        IComputeRaysOut subProcess(int receiverStart, int receiverEnd) {
-            return null
-        }
-
-
-    }
-
-}
-
-
-
-@CompileStatic
-class PropagationPathStorageProbaFactory implements PointNoiseMap.IComputeRaysOutFactory {
-    ConcurrentLinkedDeque<PointToPointPathsProba> pathQueue = new ConcurrentLinkedDeque<>()
-    GZIPOutputStream gzipOutputStream
-    AtomicBoolean waitForMorePaths = new AtomicBoolean(true)
-    public static final int GZIP_CACHE_SIZE = (int)Math.pow(2, 19)
-    String workingDir
-
-    void openPathOutputFile(String path) {
-        gzipOutputStream = new GZIPOutputStream(new FileOutputStream(path), GZIP_CACHE_SIZE)
-        new Thread(new WriteThread(pathQueue, waitForMorePaths, gzipOutputStream)).start()
-    }
-
-    void setWorkingDir(String workingDir) {
-        this.workingDir = workingDir
-    }
-
-    void exportDomain(PropagationProcessData inputData, String path) {
-        /*GeoJSONDocument geoJSONDocument = new GeoJSONDocument(new FileOutputStream(path))
-        geoJSONDocument.writeHeader()
-        geoJSONDocument.writeTopographic(inputData.freeFieldFinder.getTriangles(), inputData.freeFieldFinder.getVertices())
-        geoJSONDocument.writeFooter()*/
-        KMLDocument kmlDocument
-        ZipOutputStream compressedDoc
-        System.println( "Cellid" + inputData.cellId.toString())
-        compressedDoc = new ZipOutputStream(new FileOutputStream(
-                String.format("domain_%d.kmz", inputData.cellId)))
-        compressedDoc.putNextEntry(new ZipEntry("doc.kml"))
-        kmlDocument = new KMLDocument(compressedDoc)
-        kmlDocument.writeHeader()
-        kmlDocument.setInputCRS("EPSG:2154")
-        kmlDocument.setOffset(new Coordinate(0,0,0))
-        kmlDocument.writeTopographic(inputData.freeFieldFinder.getTriangles(), inputData.freeFieldFinder.getVertices())
-        kmlDocument.writeBuildings(inputData.freeFieldFinder)
-        kmlDocument.writeFooter()
-        compressedDoc.closeEntry()
-        compressedDoc.close()
-    }
-
-    @Override
-    IComputeRaysOut create(PropagationProcessData propagationProcessData, PropagationProcessPathData propagationProcessPathData) {
-        exportDomain(propagationProcessData, new File(this.workingDir, String.format("_%d.geojson", propagationProcessData.cellId)).absolutePath)
-        return new PropagationPathStorageProba(propagationProcessData, propagationProcessPathData, pathQueue)
-    }
-
-    void closeWriteThread() {
-        waitForMorePaths.set(false)
-    }
-
-    /**
-     * Write paths on disk using a single thread
-     */
-    static class WriteThread implements Runnable {
-        ConcurrentLinkedDeque<PointToPointPathsProba> pathQueue
-        AtomicBoolean waitForMorePaths
-        GZIPOutputStream gzipOutputStream
-
-        WriteThread(ConcurrentLinkedDeque<PointToPointPathsProba> pathQueue, AtomicBoolean waitForMorePaths, GZIPOutputStream gzipOutputStream) {
-            this.pathQueue = pathQueue
-            this.waitForMorePaths = waitForMorePaths
-            this.gzipOutputStream = gzipOutputStream
-        }
-
-        @Override
-        void run() {
-            long exportReceiverRay = 2 // primary key of receiver to export
-            KMLDocument kmlDocument
-
-            ZipOutputStream compressedDoc
-
-            compressedDoc = new ZipOutputStream(new FileOutputStream(
-                    String.format("domain.kmz")))
-            compressedDoc.putNextEntry(new ZipEntry("doc.kml"))
-            kmlDocument = new KMLDocument(compressedDoc)
-            kmlDocument.writeHeader()
-            kmlDocument.setInputCRS("EPSG:2154")
-            kmlDocument.setOffset(new Coordinate(0,0,0))
-
-
-            /*PropagationProcessPathData genericMeteoData = new PropagationProcessPathData()
-            genericMeteoData.setHumidity(70)
-            genericMeteoData.setTemperature(10)
-            ComputeRaysOut out = new ComputeRaysOut(false, genericMeteoData)
-*/
-            DataOutputStream dataOutputStream = new DataOutputStream(gzipOutputStream)
-            while (waitForMorePaths.get()) {
-                while(!pathQueue.isEmpty()) {
-                    PointToPointPathsProba paths = pathQueue.pop()
-                    paths.writePropagationPathListStream(dataOutputStream)
-
-                    if(paths.receiverId == exportReceiverRay) {
-                        // Export rays
-                        kmlDocument.writeRays(paths.getPropagationPathList())
-
-                    }
-
-                }
-                Thread.sleep(10)
-            }
-            dataOutputStream.flush()
-            gzipOutputStream.close()
-            kmlDocument.writeFooter()
-            compressedDoc.closeEntry()
-            compressedDoc.close()
-
-
-
-        }
-    }
-}
-
-
-@CompileStatic
-class PointToPointPathsProba {
-    ArrayList<PropagationPath> propagationPathList;
-    double li
-    long sourceId
-    long receiverId
-
-    /**
-     * Writes the content of this object into <code>out</code>.
-     * @param out the stream to write into
-     * @throws java.io.IOException if an I/O-error occurs
-     */
-    void writePropagationPathListStream( DataOutputStream out) throws IOException {
-
-        out.writeLong(receiverId)
-        out.writeLong(sourceId)
-        out.writeDouble(li)
-        out.writeInt(propagationPathList.size())
-        for(PropagationPath propagationPath : propagationPathList) {
-            propagationPath.writeStream(out);
-        }
-    }
-
-    /**
-     * Reads the content of this object from <code>out</code>. All
-     * properties should be set to their default value or to the value read
-     * from the stream.
-     * @param in the stream to read
-     * @throws IOException if an I/O-error occurs
-     */
-    void readPropagationPathListStream( DataInputStream inputStream) throws IOException {
-        if (propagationPathList==null){
-            propagationPathList = new ArrayList<>()
-        }
-
-        receiverId = inputStream.readLong()
-        sourceId = inputStream.readLong()
-        li = inputStream.readDouble()
-        int propagationPathsListSize = inputStream.readInt()
-        propagationPathList.ensureCapacity(propagationPathsListSize)
-        for(int i=0; i < propagationPathsListSize; i++) {
-            PropagationPath propagationPath = new PropagationPath()
-            propagationPath.readStream(inputStream)
-            propagationPathList.add(propagationPath)
-        }
-    }
-
-}
