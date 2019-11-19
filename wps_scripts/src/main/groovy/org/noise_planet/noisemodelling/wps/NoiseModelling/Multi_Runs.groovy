@@ -12,36 +12,18 @@ import org.h2gis.functions.spatial.convert.ST_Force3D
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.LineString
 import org.locationtech.jts.geom.Polygon
-
 import java.sql.DriverManager
-
-
 import geoserver.GeoServer
 import geoserver.catalog.Store
-
-import org.h2gis.api.ProgressVisitor
 import org.geotools.jdbc.JDBCDataStore
-
 import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
 import org.noise_planet.noisemodelling.emission.RSParametersCnossos
-
-
-import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.utilities.wrapper.*
-
-
-import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap
-
-
-import org.h2gis.utilities.SpatialResultSet
 import org.locationtech.jts.geom.Geometry
-
-
 import java.sql.SQLException
 import groovy.sql.Sql
 import groovy.transform.CompileStatic
 import org.h2gis.functions.io.shp.SHPRead
-import org.h2gis.utilities.SFSUtilities
 import org.noise_planet.noisemodelling.propagation.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -56,6 +38,7 @@ title = 'Compute MultiRuns'
 description = 'Compute MultiRuns.'
 
 inputs = [databaseName      : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database. (default : h2gisdb)', min: 0, max: 1, type: String.class],
+          workingDir : [name: 'workingDir', title: 'workingDir', description: 'workingDir (ex : C:/Desktop/)', type: String.class],
           buildingTableName : [name: 'Buildings table name', title: 'Buildings table name', type: String.class],
           sourcesTableName  : [name: 'Sources table name', title: 'Sources table name', type: String.class],
           receiversTableName: [name: 'Receivers table name', title: 'Receivers table name', type: String.class],
@@ -74,11 +57,18 @@ def static Connection openPostgreSQLDataStoreConnection(String dbName) {
 }
 
 
+
 def run(input) {
+
+    SensitivityProcessData sensitivityProcessData = new SensitivityProcessData()
 
     // -------------------
     // Get inputs
     // -------------------
+    String workingDir = "D:\\aumond\\Documents\\Boulot\\Articles\\2019_XX_XX Sensitivity"
+    if (input['workingDir']) {
+        workingDir = input['workingDir']
+    }
 
     String sources_table_name = "SOURCES"
     if (input['sourcesTableName']) {
@@ -146,16 +136,13 @@ def run(input) {
         connection = new ConnectionWrapper(connection)
 
         // Init output logger
-        Logger logger = LoggerFactory.getLogger(SensitivityProcess.class)
+        Logger logger = LoggerFactory.getLogger(Multi_Runs.class)
         logger.info(String.format("Working directory is %s", new File(workingDir).getAbsolutePath()))
 
         // Create spatial database
-        //TimeZone tz = TimeZone.getTimeZone("UTC")
+
         DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
 
-        //df.setTimeZone(tz)
-        //String dbName = new File("database2").toURI()
-        //Connection connection = SFSUtilities.wrapConnection(DbUtilities.createSpatialDataBase(dbName, true))
         Sql sql = new Sql(connection)
 
         File dest2 = new File("D:\\aumond\\Documents\\CENSE\\LorientMapNoise\\data\\Exp_compICA2m.csv")
@@ -171,13 +158,13 @@ def run(input) {
             fields ->
                 switch (i_read) {
                     case 1:
-                        nvar = (int) fields[0 as String]
+                        nvar = (int) fields[0]
                     case 2:
-                        nr = (int) fields[0 as String]
+                        nr = (int) fields[0]
                     case 3:
-                        nSimu = (int) fields[0 as String]
+                        nSimu = (int) fields[0]
                     case 4:
-                        n_comp = (int) fields[0 as String]
+                        n_comp = (int) fields[0]
                     default: break
                 }
                 i_read = i_read + 1
