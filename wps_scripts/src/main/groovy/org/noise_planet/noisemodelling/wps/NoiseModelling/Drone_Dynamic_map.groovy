@@ -89,7 +89,7 @@ outputs = [result: [name: 'result', title: 'Result', type: String.class]]
 /**
  *
  */
-class DynamicProcessData {
+class DroneProcessData {
 
     static double[] thirdOctaveToOctave(double[] values) {
         double[] valueoct = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
@@ -379,7 +379,7 @@ def run(input) {
 
 
 
-        DynamicProcessData dynamicProcessData = new DynamicProcessData()
+        DroneProcessData droneProcessData = new DroneProcessData()
 
         Sql sql = new Sql(connection)
         System.out.println("Export data to table")

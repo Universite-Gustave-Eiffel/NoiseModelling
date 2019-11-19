@@ -2,7 +2,7 @@
  * @Author Aumond Pierre
  */
 
-package org.noise_planet.noisemodelling.wps.Receivers_
+package org.noise_planet.noisemodelling.wps.Receivers
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
@@ -11,8 +11,6 @@ import org.geotools.jdbc.JDBCDataStore
 import java.sql.Connection
 
 import groovy.sql.Sql
-import org.h2gis.utilities.wrapper.*
-
 
 title = 'Random Grid'
 description = 'Calculates a random grid of receivers based on a single Geometry geom or a table tableName of Geometries with delta as offset in the Cartesian plane in meters.'

@@ -122,11 +122,11 @@ class DynamicProcessData {
 
 /** Read source database and compute the sound emission spectrum of roads sources **/
 @CompileStatic
-class DronePropagationProcessData extends PropagationProcessData {
+class DynamicPropagationProcessData extends PropagationProcessData {
 
     protected List<double[]> wjSourcesD = new ArrayList<>()
 
-    public DronePropagationProcessData(FastObstructionTest freeFieldFinder) {
+    public DynamicPropagationProcessData(FastObstructionTest freeFieldFinder) {
         super(freeFieldFinder)
     }
 
@@ -164,10 +164,10 @@ class DronePropagationProcessData extends PropagationProcessData {
 }
 
 
-class DronePropagationProcessDataFactory implements PointNoiseMap.PropagationProcessDataFactory {
+class DynamicPropagationProcessDataFactory implements PointNoiseMap.PropagationProcessDataFactory {
     @Override
     PropagationProcessData create(FastObstructionTest freeFieldFinder) {
-        return new DronePropagationProcessData(freeFieldFinder)
+        return new DynamicPropagationProcessData(freeFieldFinder)
     }
 }
 
@@ -332,8 +332,8 @@ def run(input) {
         //PropagationPathStorageFactory storageFactory = new PropagationPathStorageFactory()
         //pointNoiseMap.setComputeRaysOutFactory(storageFactory)
 
-        DronePropagationProcessDataFactory dronePropagationProcessDataFactory = new DronePropagationProcessDataFactory()
-        pointNoiseMap.setPropagationProcessDataFactory(dronePropagationProcessDataFactory)
+        DynamicPropagationProcessDataFactory dynamicPropagationProcessDataFactory = new DynamicPropagationProcessDataFactory()
+        pointNoiseMap.setPropagationProcessDataFactory(dynamicPropagationProcessDataFactory)
 
 
         RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1);

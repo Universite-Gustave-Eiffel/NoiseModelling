@@ -65,17 +65,17 @@ outputs = [result: [name: 'result', title: 'Result', type: String.class]]
 
 /**
  * Read source database and compute the sound emission spectrum of roads sources*/
-class TrafficPropagationProcessData extends PropagationProcessData {
+class TrafficPropagationProcessDataDEN extends PropagationProcessData {
     // Lden values
     public List<double[]> wjSourcesDEN = new ArrayList<>();
     public Map<Long, Integer> SourcesPk = new HashMap<>();
 
 
-    public TrafficPropagationProcessData(FastObstructionTest freeFieldFinder) {
+    public TrafficPropagationProcessDataDEN(FastObstructionTest freeFieldFinder) {
         super(freeFieldFinder);
     }
 
-    def idSource = 0
+    int idSource = 0
 
     @Override
     public void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException {
@@ -129,10 +129,10 @@ class TrafficPropagationProcessData extends PropagationProcessData {
 }
 
 
-class TrafficPropagationProcessDataFactory implements PointNoiseMap.PropagationProcessDataFactory {
+class TrafficPropagationProcessDataDENFactory implements PointNoiseMap.PropagationProcessDataFactory {
     @Override
     public PropagationProcessData create(FastObstructionTest freeFieldFinder) {
-        return new TrafficPropagationProcessData(freeFieldFinder);
+        return new TrafficPropagationProcessDataDEN(freeFieldFinder);
     }
 }
 
@@ -287,8 +287,8 @@ def run(input) {
 
         // Init custom input in order to compute more than just attenuation
 
-        TrafficPropagationProcessDataFactory trafficPropagationProcessDataFactory = new TrafficPropagationProcessDataFactory();
-        pointNoiseMap.setPropagationProcessDataFactory(trafficPropagationProcessDataFactory)
+        TrafficPropagationProcessDataDENFactory TrafficPropagationProcessDataDENFactory = new TrafficPropagationProcessDataDENFactory();
+        pointNoiseMap.setPropagationProcessDataFactory(TrafficPropagationProcessDataDENFactory)
 
 
         RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1);

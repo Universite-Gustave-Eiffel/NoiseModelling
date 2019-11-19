@@ -64,17 +64,17 @@ outputs = [result: [name: 'result', title: 'Result', type: String.class]]
 
 /**
  * Read source database and compute the sound emission spectrum of roads sources*/
-class TrafficPropagationProcessData extends PropagationProcessData {
+class TrafficRayzPropagationProcessData extends PropagationProcessData {
     // Lden values
     public List<double[]> wjSourcesDEN = new ArrayList<>();
     public Map<Long, Integer> SourcesPk = new HashMap<>();
 
 
-    public TrafficPropagationProcessData(FastObstructionTest freeFieldFinder) {
+    public TrafficRayzPropagationProcessData(FastObstructionTest freeFieldFinder) {
         super(freeFieldFinder);
     }
 
-    def idSource = 0
+    int idSource = 0
 
     @Override
     public void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException {
@@ -128,10 +128,10 @@ class TrafficPropagationProcessData extends PropagationProcessData {
 }
 
 
-class TrafficPropagationProcessDataFactory implements PointNoiseMap.PropagationProcessDataFactory {
+class TrafficRayzPropagationProcessDataFactory implements PointNoiseMap.PropagationProcessDataFactory {
     @Override
     public PropagationProcessData create(FastObstructionTest freeFieldFinder) {
-        return new TrafficPropagationProcessData(freeFieldFinder);
+        return new TrafficRayzPropagationProcessData(freeFieldFinder);
     }
 }
 
@@ -290,8 +290,8 @@ def run(input) {
         pointNoiseMap.setWallAbsorption(wall_alpha)
         pointNoiseMap.setThreadCount(n_thread)
 
-        TrafficPropagationProcessDataFactory trafficPropagationProcessDataFactory = new TrafficPropagationProcessDataFactory()
-        pointNoiseMap.setPropagationProcessDataFactory(trafficPropagationProcessDataFactory)
+        TrafficRayzPropagationProcessDataFactory trafficRayzPropagationProcessDataFactory = new TrafficRayzPropagationProcessDataFactory()
+        pointNoiseMap.setPropagationProcessDataFactory(trafficRayzPropagationProcessDataFactory)
 
         // Init custom input in order to compute more than just attenuation
         PropagationPathStorageFactory storageFactory = new PropagationPathStorageFactory()
@@ -350,7 +350,7 @@ class PropagationPathStorage extends ComputeRaysOut {
 
     PropagationPathStorage(PropagationProcessData inputData, PropagationProcessPathData pathData, ConcurrentLinkedDeque<PointToPointPaths> pathQueue) {
         super(true, pathData, inputData)
-        this.inputData = (TrafficPropagationProcessData)inputData
+        this.inputData = (TrafficPropagationProcessData) inputData
         this.pathQueue = pathQueue
     }
 
@@ -428,6 +428,72 @@ class PropagationPathStorage extends ComputeRaysOut {
         }
 
 
+    }
+
+
+/**
+ * Read source database and compute the sound emission spectrum of roads sources*/
+    class TrafficPropagationProcessData extends PropagationProcessData {
+        // Lden values
+        public List<double[]> wjSourcesDEN = new ArrayList<>();
+        public Map<Long, Integer> SourcesPk = new HashMap<>();
+
+
+        public TrafficPropagationProcessData(FastObstructionTest freeFieldFinder) {
+            super(freeFieldFinder);
+        }
+
+        int idSource = 0
+
+        @Override
+        public void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException {
+            super.addSource(pk, geom, rs)
+            SourcesPk.put(pk, idSource++)
+
+            // Read average 24h traffic
+            double[] ld = [ComputeRays.dbaToW(rs.getDouble('Ld63')),
+                           ComputeRays.dbaToW(rs.getDouble('Ld125')),
+                           ComputeRays.dbaToW(rs.getDouble('Ld250')),
+                           ComputeRays.dbaToW(rs.getDouble('Ld500')),
+                           ComputeRays.dbaToW(rs.getDouble('Ld1000')),
+                           ComputeRays.dbaToW(rs.getDouble('Ld2000')),
+                           ComputeRays.dbaToW(rs.getDouble('Ld4000')),
+                           ComputeRays.dbaToW(rs.getDouble('Ld8000'))]
+            double[] le = [ComputeRays.dbaToW(rs.getDouble('Le63')),
+                           ComputeRays.dbaToW(rs.getDouble('Le125')),
+                           ComputeRays.dbaToW(rs.getDouble('Le250')),
+                           ComputeRays.dbaToW(rs.getDouble('Le500')),
+                           ComputeRays.dbaToW(rs.getDouble('Le1000')),
+                           ComputeRays.dbaToW(rs.getDouble('Le2000')),
+                           ComputeRays.dbaToW(rs.getDouble('Le4000')),
+                           ComputeRays.dbaToW(rs.getDouble('Le8000'))]
+            double[] ln = [ComputeRays.dbaToW(rs.getDouble('Ln63')),
+                           ComputeRays.dbaToW(rs.getDouble('Ln125')),
+                           ComputeRays.dbaToW(rs.getDouble('Ln250')),
+                           ComputeRays.dbaToW(rs.getDouble('Ln500')),
+                           ComputeRays.dbaToW(rs.getDouble('Ln1000')),
+                           ComputeRays.dbaToW(rs.getDouble('Ln2000')),
+                           ComputeRays.dbaToW(rs.getDouble('Ln4000')),
+                           ComputeRays.dbaToW(rs.getDouble('Ln8000'))]
+
+            double[] lden = new double[PropagationProcessPathData.freq_lvl.size()]
+            int idFreq = 0
+            for(int freq : PropagationProcessPathData.freq_lvl) {
+                lden[idFreq++] = (12 * ld[idFreq] +
+                        4 * ComputeRays.dbaToW(ComputeRays.wToDba(le[idFreq]) + 5) +
+                        8 * ComputeRays.dbaToW(ComputeRays.wToDba(ln[idFreq]) + 10)) / 24.0
+            }
+
+            wjSourcesDEN.add(lden)
+
+
+
+        }
+
+        @Override
+        public double[] getMaximalSourcePower(int sourceId) {
+            return wjSourcesDEN.get(sourceId);
+        }
     }
 
 }

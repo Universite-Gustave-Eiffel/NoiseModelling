@@ -85,7 +85,7 @@ class TrafficPropagationProcessData extends PropagationProcessData {
         super(freeFieldFinder);
     }
 
-    def idSource = 0
+    int idSource = 0
 
     @Override
     public void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException {

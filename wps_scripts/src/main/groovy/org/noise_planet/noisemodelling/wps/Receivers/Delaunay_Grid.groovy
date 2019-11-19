@@ -2,13 +2,11 @@
  * @Author Aumond Pierre
  */
 
-package org.noise_planet.noisemodelling.wps.Receivers_
+package org.noise_planet.noisemodelling.wps.Receivers
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import org.geotools.jdbc.JDBCDataStore
-import org.geotools.data.simple.*
-
 import org.locationtech.jts.geom.Geometry
 
 import groovy.sql.Sql

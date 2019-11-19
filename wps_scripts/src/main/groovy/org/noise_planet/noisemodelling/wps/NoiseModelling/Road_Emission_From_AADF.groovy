@@ -61,11 +61,7 @@ inputs = [databaseName      : [name: 'Name of the database', title: 'Name of the
 
 outputs = [result: [name: 'result', title: 'Result', type: String.class]]
 
-class Globals {
-    static double[] wjSourcesD = new double[PropagationProcessPathData.freq_lvl.size()]
-    static double[] wjSourcesE =new double[PropagationProcessPathData.freq_lvl.size()]
-    static double[] wjSourcesN = new double[PropagationProcessPathData.freq_lvl.size()]
-}
+
 
 def static Connection openPostgreSQLDataStoreConnection(String dbName) {
     Store store = new GeoServer().catalog.getStore(dbName)
@@ -148,18 +144,18 @@ def run(input) {
             while (rs.next()) {
                 System.println(rs)
                 Geometry geo = rs.getGeometry()
-                computeLw(rs.getLong(pkIndex), geo, rs)
-                System.println(Globals.wjSourcesD[0])
+                def results = computeLw(rs.getLong(pkIndex), geo, rs)
+
                 ps.addBatch(rs.getLong(pkIndex) as Integer,geo as Geometry,
-                        Globals.wjSourcesD[0] as Double, Globals.wjSourcesD[1] as Double, Globals.wjSourcesD[2] as Double,
-                        Globals.wjSourcesD[3] as Double, Globals.wjSourcesD[4]as Double, Globals.wjSourcesD[5] as Double,
-                        Globals.wjSourcesD[6]as Double, Globals.wjSourcesD[7] as Double,
-                        Globals.wjSourcesE[0] as Double, Globals.wjSourcesE[1] as Double, Globals.wjSourcesE[2] as Double,
-                        Globals.wjSourcesE[3] as Double, Globals.wjSourcesE[4]as Double, Globals.wjSourcesE[5] as Double,
-                        Globals.wjSourcesE[6]as Double, Globals.wjSourcesE[7] as Double,
-                        Globals.wjSourcesN[0] as Double, Globals.wjSourcesN[1] as Double, Globals.wjSourcesN[2] as Double,
-                        Globals.wjSourcesN[3] as Double, Globals.wjSourcesN[4]as Double, Globals.wjSourcesN[5] as Double,
-                        Globals.wjSourcesN[6]as Double, Globals.wjSourcesN[7] as Double)
+                        results[0][0] as Double, results[0][1] as Double, results[0][2] as Double,
+                        results[0][3] as Double, results[0][4]as Double, results[0][5] as Double,
+                        results[0][6]as Double, results[0][7] as Double,
+                        results[1][0] as Double, results[1][1] as Double, results[1][2] as Double,
+                        results[1][3] as Double, results[1][4]as Double, results[1][5] as Double,
+                        results[1][6]as Double, results[1][7] as Double,
+                        results[2][0] as Double, results[2][1] as Double, results[2][2] as Double,
+                        results[2][3] as Double, results[2][4]as Double, results[2][5] as Double,
+                        results[2][6]as Double, results[2][7] as Double)
             }
         }
 
@@ -175,7 +171,7 @@ def run(input) {
 
 }
 
-static void computeLw(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException {
+static double[][] computeLw(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException {
 
     String AAFD_FIELD_NAME = "AADF"
 
@@ -192,7 +188,7 @@ static void computeLw(Long pk, Geometry geom, SpatialResultSet rs) throws SQLExc
     int[] nightHours=[22, 23, 0, 1, 2, 3, 4, 5]
     double HV_PERCENTAGE = 0.1
 
-    def idSource = 0
+    int idSource = 0
 
     idSource = idSource +1
     // Read average 24h traffic
@@ -326,9 +322,7 @@ static void computeLw(Long pk, Geometry geom, SpatialResultSet rs) throws SQLExc
         ln[i] = (ln[i] / nightHours.length)
     }
 
-    Globals.wjSourcesD = ld
-    Globals.wjSourcesE = le
-    Globals.wjSourcesN = ln
+    return [ld,le,ln]
 }
 
 

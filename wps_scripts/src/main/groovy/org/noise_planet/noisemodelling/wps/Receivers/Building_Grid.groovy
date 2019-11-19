@@ -3,14 +3,13 @@
  * @Author Can Arnaud
  */
 
-package org.noise_planet.noisemodelling.wps.Receivers_
+package org.noise_planet.noisemodelling.wps.Receivers
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.BatchingPreparedStatementWrapper
 import groovy.transform.CompileStatic
 import org.geotools.jdbc.JDBCDataStore
-import org.geotools.data.simple.*
 import org.h2gis.functions.io.shp.SHPWrite
 import org.h2gis.functions.spatial.convert.ST_Force3D
 import org.locationtech.jts.geom.Coordinate
