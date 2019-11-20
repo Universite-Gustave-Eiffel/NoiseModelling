@@ -1,38 +1,32 @@
-package org.noise_planet.noisemodelling.wps.NoiseModelling;
+package org.noise_planet.noisemodelling.wps.NoiseModelling
 
 /*
  * @Author Pierre Aumond
  */
 
-import groovy.sql.BatchingPreparedStatementWrapper
-import org.h2.Driver
-import org.h2gis.functions.factory.H2GISFunctions
-import org.h2gis.functions.io.shp.SHPWrite
-import org.h2gis.functions.spatial.convert.ST_Force3D
-import org.locationtech.jts.geom.Coordinate
-import org.locationtech.jts.geom.LineString
-import org.locationtech.jts.geom.Polygon
-import java.sql.DriverManager
 import geoserver.GeoServer
 import geoserver.catalog.Store
-import org.geotools.jdbc.JDBCDataStore
-import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
-import org.noise_planet.noisemodelling.emission.RSParametersCnossos
-import org.h2gis.utilities.wrapper.*
-import org.locationtech.jts.geom.Geometry
-import java.sql.SQLException
+
 import groovy.sql.Sql
 import groovy.transform.CompileStatic
+import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.functions.io.shp.SHPRead
-import org.noise_planet.noisemodelling.propagation.*
+import org.h2gis.utilities.wrapper.ConnectionWrapper
+import org.locationtech.jts.geom.Geometry
+import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
+import org.noise_planet.noisemodelling.emission.RSParametersCnossos
+import org.noise_planet.noisemodelling.propagation.ComputeRays
+import org.noise_planet.noisemodelling.propagation.ComputeRaysOut
+import org.noise_planet.noisemodelling.propagation.PropagationPath
+import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import java.sql.Connection
+import java.sql.SQLException
 import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.zip.GZIPInputStream
-
 
 title = 'Compute MultiRuns'
 description = 'Compute MultiRuns.'
@@ -135,9 +129,10 @@ def run(input) {
         //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postgis database
         connection = new ConnectionWrapper(connection)
 
+        System.out.println("Run ...")
         // Init output logger
-        Logger logger = LoggerFactory.getLogger(Multi_Runs.class)
-        logger.info(String.format("Working directory is %s", new File(workingDir).getAbsolutePath()))
+
+        System.out.println(String.format("Working directory is %s", new File(workingDir).getAbsolutePath()))
 
         // Create spatial database
 
@@ -158,34 +153,35 @@ def run(input) {
             fields ->
                 switch (i_read) {
                     case 1:
-                        nvar = (int) fields[0]
+                        nvar = (int) fields[0].toInteger()
                     case 2:
-                        nr = (int) fields[0]
+                        nr = (int) fields[0].toInteger()
                     case 3:
-                        nSimu = (int) fields[0]
+                        nSimu = (int) fields[0].toInteger()
                     case 4:
-                        n_comp = (int) fields[0]
+                        n_comp = (int) fields[0].toInteger()
                     default: break
                 }
                 i_read = i_read + 1
         }
 
         // Evaluate receiver points using provided buildings
-        logger.info("Read Sources")
+        System.out.println("Read Sources")
         sql.execute("DROP TABLE IF EXISTS RECEIVERS")
-        SHPRead.readShape(connection, "data/RecepteursQuest3D.shp", "RECEIVERS")
+        SHPRead.readShape(connection, "D:\\aumond\\Documents\\CENSE\\LorientMapNoise\\data\\RecepteursQuest3D.shp", "RECEIVERS")
 
         HashMap<Integer, Double> pop = new HashMap<>()
         // memes valeurs d e et n
         sql.eachRow('SELECT id, pop FROM RECEIVERS;') { row ->
-            int id = (int) row[0 as String]
-            pop.put(id, (Double) row[1 as String])
+            int id = (int) row[0]
+            pop.put(id, (Double) row[1])
         }
 
         // Load roads
-        logger.info("Read road geometries and traffic")
+        System.out.println("Read road geometries and traffic")
         // ICA 2019 - Sensitivity
-        SHPRead.readShape(connection, "data/RoadsICA2.shp", "ROADS2")
+        sql.execute("DROP TABLE ROADS2 if exists;")
+        SHPRead.readShape(connection, "D:\\aumond\\Documents\\CENSE\\LorientMapNoise\\data\\RoadsICA2.shp", "ROADS2")
         sql.execute("DROP TABLE ROADS if exists;")
         sql.execute('CREATE TABLE ROADS AS SELECT CAST( OSM_ID AS INTEGER ) OSM_ID , THE_GEOM, TMJA_D,TMJA_E,TMJA_N,\n' +
                 'PL_D,PL_E,PL_N,\n' +
@@ -195,12 +191,13 @@ def run(input) {
         sql.execute('ALTER TABLE ROADS ADD PRIMARY KEY (OSM_ID);')
         sql.execute("CREATE SPATIAL INDEX ON ROADS(THE_GEOM)")
 
-        logger.info("Road file loaded")
+        System.out.println("Road file loaded")
 
         // ICA 2019 - Sensitivity
-        SHPRead.readShape(connection, "data/Roads09083D.shp", "ROADS3")
+        sql.execute("DROP TABLE ROADS3 if exists;")
+        SHPRead.readShape(connection, "D:\\aumond\\Documents\\CENSE\\LorientMapNoise\\data\\Roads09083D.shp", "ROADS3")
 
-        logger.info("Road file loaded")
+        System.out.println("Road file loaded")
 
 
         PropagationProcessPathData genericMeteoData = new PropagationProcessPathData()
@@ -209,10 +206,10 @@ def run(input) {
 
         int GZIP_CACHE_SIZE = (int) Math.pow(2, 19)
 
-        logger.info("Start time :" + df.format(new Date()))
+        System.out.println("Start time :" + df.format(new Date()))
 
 
-        FileInputStream fileInputStream = new FileInputStream(new File("rays0908.gz").getAbsolutePath())
+        FileInputStream fileInputStream = new FileInputStream(new File("D:\\aumond\\Documents\\CENSE\\LorientMapNoise\\rays0908.gz").getAbsolutePath())
         try {
             GZIPInputStream gzipInputStream = new GZIPInputStream((fileInputStream), GZIP_CACHE_SIZE)
             DataInputStream dataInputStream = new DataInputStream(gzipInputStream)
@@ -220,7 +217,7 @@ def run(input) {
             int oldIdReceiver = -1
             int oldIdSource = -1
 
-            FileWriter csvFile = new FileWriter(new File(workingDir, "simuICA2.csv"))
+            FileWriter csvFile = new FileWriter(new File("D:\\aumond\\Documents\\CENSE\\LorientMapNoise\\simuICA2.csv"))
             List<double[]> simuSpectrum = new ArrayList<>()
 
             Map<Integer, List<double[]>> sourceLevel = new HashMap<>()
@@ -230,25 +227,22 @@ def run(input) {
 
             sourceLevel = sensitivityProcessData.getTrafficLevel("ROADS3", sql, nSimu)
 
-
-
-
             def timeStart2 = System.currentTimeMillis()
             System.out.println(timeStart2 - timeStart)
-            logger.info("End Emission time :" + df.format(new Date()))
+            System.out.println("End Emission time :" + df.format(new Date()))
             System.out.println("Run SA")
             long computationTime = 0
             long startSimulationTime = System.currentTimeMillis()
             while (fileInputStream.available() > 0) {
 
-                PointToPointPaths paths = new PointToPointPaths()
+                PointToPointPathsMultiRuns paths = new PointToPointPathsMultiRuns()
                 paths.readPropagationPathListStream(dataInputStream)
                 long startComputationTime = System.currentTimeMillis()
                 int idReceiver = (Integer) paths.receiverId
                 int idSource = (Integer) paths.sourceId
 
                 if (idReceiver != oldIdReceiver) {
-                    logger.info("Receiver: " + oldIdReceiver)
+                    System.out.println("Receiver: " + oldIdReceiver)
                     // Save old receiver values
                     if (oldIdReceiver != -1) {
                         for (int r = 0; r < nSimu; ++r) {
@@ -311,11 +305,11 @@ def run(input) {
                 computationTime += System.currentTimeMillis() - startComputationTime
             }
 
-            logger.info("ComputationTime :" + computationTime.toString())
-            logger.info("SimulationTime :" + (System.currentTimeMillis() - startSimulationTime).toString())
+            System.out.println("ComputationTime :" + computationTime.toString())
+            System.out.println("SimulationTime :" + (System.currentTimeMillis() - startSimulationTime).toString())
 
             csvFile.close()
-            logger.info("End time :" + df.format(new Date()))
+            System.out.println("End time :" + df.format(new Date()))
 
         } finally {
 
@@ -782,65 +776,51 @@ class SensitivityProcessData {
 }
 
 
-class DbUtilities {
+@CompileStatic
+class PointToPointPathsMultiRuns {
+    ArrayList<PropagationPath> propagationPathList;
+    double li
+    long sourceId
+    long receiverId
 
+    /**
+     * Writes the content of this object into <code>out</code>.
+     * @param out the stream to write into
+     * @throws java.io.IOException if an I/O-error occurs
+     */
+    void writePropagationPathListStream( DataOutputStream out) throws IOException {
 
-    private static String getDataBasePath(String dbName) {
-        return dbName.startsWith("file:/") ? (new File(URI.create(dbName))).getAbsolutePath() : (new File(dbName)).getAbsolutePath()
+        out.writeLong(receiverId)
+        out.writeLong(sourceId)
+        out.writeDouble(li)
+        out.writeInt(propagationPathList.size())
+        for(PropagationPath propagationPath : propagationPathList) {
+            propagationPath.writeStream(out);
+        }
     }
 
-
-    static Connection createSpatialDataBase(String dbName, boolean initSpatial) throws SQLException, ClassNotFoundException {
-        String dbFilePath = getDataBasePath(dbName);
-        File dbFile = new File(dbFilePath + ".mv.db")
-
-        String databasePath = "jdbc:h2:" + dbFilePath + ";LOCK_MODE=0;LOG=0;DB_CLOSE_DELAY=5"
-
-        if (dbFile.exists()) {
-            dbFile.delete()
+    /**
+     * Reads the content of this object from <code>out</code>. All
+     * properties should be set to their default value or to the value read
+     * from the stream.
+     * @param in the stream to read
+     * @throws IOException if an I/O-error occurs
+     */
+    void readPropagationPathListStream( DataInputStream inputStream) throws IOException {
+        if (propagationPathList==null){
+            propagationPathList = new ArrayList<>()
         }
 
-        dbFile = new File(dbFilePath + ".mv.db")
-        if (dbFile.exists()) {
-            dbFile.delete()
+        receiverId = inputStream.readLong()
+        sourceId = inputStream.readLong()
+        li = inputStream.readDouble()
+        int propagationPathsListSize = inputStream.readInt()
+        propagationPathList.ensureCapacity(propagationPathsListSize)
+        for(int i=0; i < propagationPathsListSize; i++) {
+            PropagationPath propagationPath = new PropagationPath()
+            propagationPath.readStream(inputStream)
+            propagationPathList.add(propagationPath)
         }
-        Driver.load()
-        Connection connection = DriverManager.getConnection(databasePath, "sa", "sa")
-        if (initSpatial) {
-            H2GISFunctions.load(connection)
-        }
-
-        return connection
     }
 
-    @CompileStatic
-    static void createReceiversFromBuildings(Sql sql, String buildingName, String areaTable) {
-        sql.execute("DROP TABLE IF EXISTS GLUED_BUILDINGS")
-        sql.execute("CREATE TABLE GLUED_BUILDINGS AS SELECT ST_UNION(ST_ACCUM(ST_BUFFER(B.THE_GEOM, 2.0,'endcap=square join=bevel'))) the_geom FROM " + buildingName + " B, " + areaTable + " A WHERE A.THE_GEOM && B.THE_GEOM AND ST_INTERSECTS(A.THE_GEOM, B.THE_GEOM)")
-        Logger logger = LoggerFactory.getLogger("test")
-        sql.execute("DROP TABLE IF EXISTS RECEIVERS")
-        sql.execute("CREATE TABLE RECEIVERS(pk serial, the_geom GEOMETRY)")
-        boolean pushed = false
-        sql.withTransaction {
-            sql.withBatch("INSERT INTO receivers(the_geom) VALUES (ST_MAKEPOINT(:px, :py, :pz))") { BatchingPreparedStatementWrapper batch ->
-                sql.eachRow("SELECT THE_GEOM FROM ST_EXPLODE('GLUED_BUILDINGS')") {
-                    row ->
-                        List<Coordinate> receivers = new ArrayList<>();
-                        ComputeRays.splitLineStringIntoPoints((LineString) ST_Force3D.force3D(((Polygon) row["the_geom"]).exteriorRing), 5.0d, receivers)
-                        for (Coordinate p : receivers) {
-                            p.setOrdinate(2, 4.0d)
-                            batch.addBatch([px: p.x, py: p.y, pz: p.z])
-                            pushed = true
-                        }
-
-                }
-                if (pushed) {
-                    batch.executeBatch()
-                    pushed = false
-                }
-            }
-        }
-        SHPWrite.exportTable(sql.getConnection(), "data/receivers.shp", "RECEIVERS")
-        sql.execute("DROP TABLE GLUED_BUILDINGS")
-    }
 }

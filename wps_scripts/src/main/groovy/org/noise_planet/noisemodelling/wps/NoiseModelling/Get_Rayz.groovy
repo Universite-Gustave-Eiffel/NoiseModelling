@@ -1,52 +1,34 @@
-package org.noise_planet.noisemodelling.wps.NoiseModelling;
+package org.noise_planet.noisemodelling.wps.NoiseModelling
 
 /*
  * @Author Pierre Aumond
  */
 
-
+import geoserver.GeoServer
+import geoserver.catalog.Store
+import groovy.transform.CompileStatic
+import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.api.ProgressVisitor
+import org.h2gis.utilities.SpatialResultSet
+import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Coordinate
+import org.locationtech.jts.geom.Geometry
+import org.noise_planet.noisemodelling.propagation.*
+import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap
 
+import java.sql.Connection
+import java.sql.SQLException
+import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.zip.GZIPOutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
-import geoserver.GeoServer
-import geoserver.catalog.Store
-
-import groovy.transform.CompileStatic
-
-
-import java.util.concurrent.ConcurrentLinkedDeque
-
-
-import org.geotools.jdbc.JDBCDataStore
-
-
-import javax.xml.stream.XMLStreamException
-import org.cts.crs.CRSException
-
-import java.sql.Connection
-
-import org.h2gis.utilities.wrapper.*
-
-import org.noise_planet.noisemodelling.propagation.*
-import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap
-
-
-import org.h2gis.utilities.SpatialResultSet
-import org.locationtech.jts.geom.Geometry
-import org.h2gis.api.EmptyProgressVisitor
-import org.h2gis.api.ProgressVisitor
-
-import java.sql.SQLException
-
 title = 'Get Rays in gunzip'
 description = 'Compute all the rays and keep it in gunzip file.'
 
 inputs = [databaseName      : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database. (default : h2gisdb)', min: 0, max: 1, type: String.class],
-          workingDir : [name: 'workingDir', title: 'workingDir', description: 'workingDir (ex : C:/Desktop/)', type: String.class],
+          workingDir : [name: 'workingDir', title: 'Output Directory', description: 'Where Rays will be exported (ex : C:/Desktop/)', type: String.class],
           buildingTableName : [name: 'Buildings table name', title: 'Buildings table name', type: String.class],
           sourcesTableName  : [name: 'Sources table name', title: 'Sources table name with emission', type: String.class],
           receiversTableName: [name: 'Receivers table name', title: 'Receivers table name', type: String.class],
