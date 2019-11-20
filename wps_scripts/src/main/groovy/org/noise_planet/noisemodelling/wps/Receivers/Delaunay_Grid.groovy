@@ -86,7 +86,7 @@ def run(input) {
         connection = new ConnectionWrapper(connection)
         RootProgressVisitor progressLogger = new RootProgressVisitor(2, true, 1)
 
-        System.out.println("Delete previous receivers grid...")
+        // Delete previous receivers grid
         sql.execute(String.format("DROP TABLE IF EXISTS %s", receivers_table_name))
         sql.execute("DROP TABLE IF EXISTS TRIANGLES")
 
@@ -98,8 +98,6 @@ def run(input) {
         TriangleNoiseMap noiseMap = new TriangleNoiseMap(building_table_name, sources_table_name)
 
         if (input['fence']) {
-            System.out.println("--------------------------------------------")
-            System.out.println((String) fence)
             sql.execute(String.format("DROP TABLE IF EXISTS FENCE"))
             sql.execute(String.format("CREATE TABLE FENCE AS SELECT ST_AsText('"+ fence + "') the_geom"))
             sql.execute(String.format("DROP TABLE IF EXISTS FENCE_2154"))
@@ -137,7 +135,7 @@ def run(input) {
 
 
     }
-    System.out.println("Process Done !")
+
     return [tableNameCreated: "Process done !"]
 }
 

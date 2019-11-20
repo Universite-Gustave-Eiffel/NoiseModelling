@@ -4,21 +4,16 @@
 
 package org.noise_planet.noisemodelling.wps.Others_Tools
 
-import org.h2gis.utilities.wrapper.*
-
 import geoserver.GeoServer
 import geoserver.catalog.Store
+import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
-import org.geotools.data.simple.*
+import org.locationtech.jts.geom.Geometry
 
 import java.sql.Connection
-import org.locationtech.jts.geom.Geometry
-import java.sql.*
-import groovy.sql.Sql
-
 
 title = 'Screen to Buildings'
-description = 'Screen to Buildings.'
+description = 'Convert noise barriers table into NoiseModelling compatible buildings'
 
 inputs = [buildingTableName : [name: 'Buildings table name', title: 'Buildings table name', min: 0, max: 1, type: String.class],
           fence  : [name: 'Fence', title: 'Fence', min: 0, max: 1, type: Geometry.class],
@@ -67,10 +62,8 @@ def run(input) {
     openGeoserverDataStoreConnection(dbName).withCloseable { Connection connection ->
         //Statement sql = connection.createStatement()
         Sql sql = new Sql(connection)
-        System.out.println("Delete previous Screens table...")
         sql.execute(String.format("DROP TABLE IF EXISTS SCREENS"))
         if (input['fence']) {
-            System.out.println((String) fence)
             sql.execute(String.format("DROP TABLE IF EXISTS FENCE"))
             sql.execute(String.format("CREATE TABLE FENCE AS SELECT ST_AsText('"+ fence + "') the_geom"))
             sql.execute(String.format("DROP TABLE IF EXISTS FENCE_2154"))
@@ -113,7 +106,6 @@ def run(input) {
 
 
     }
-    System.out.println("Process Done !")
     return [tableNameCreated: "Process done ! Table BUILDINGS_SCREENS has been created"]
 }
 

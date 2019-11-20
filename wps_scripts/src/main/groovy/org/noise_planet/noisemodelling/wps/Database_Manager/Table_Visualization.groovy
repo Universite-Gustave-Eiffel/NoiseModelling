@@ -12,15 +12,15 @@ import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.SFSUtilities
 import org.h2gis.utilities.TableLocation
 import org.locationtech.jts.geom.Geometry
+import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.io.WKTWriter
 
 import java.sql.Connection
 import java.sql.ResultSet
-import java.sql.ResultSetMetaData
 import java.sql.Statement
 
 title = 'Visualize a Table'
-description = 'Visualize a Table'
+description = 'Groups all the geometries of a table and returns them in WKT OGC format. Be careful, this treatment can be blocking if the table is large.'
 
 inputs = [
    databaseName: [name: 'Name of the database', title: 'Name of the database', description : 'Name of the database (default : first found db)', min : 0, max : 1, type: String.class],
@@ -59,18 +59,16 @@ def run(input) {
         // Read Geometry Index and type
         List<String> spatialFieldNames = SFSUtilities.getGeometryFields(connection, TableLocation.parse(tableName, JDBCUtilities.isH2DataBase(connection.getMetaData())))
         if (spatialFieldNames.isEmpty()) {
-            System.out.println("The table %s does not contain a geometry field")
+            System.err.println("The table %s does not contain a geometry field")
+            return new GeometryFactory().createPolygon()
         }
 
 
-        ResultSet rs = sql.executeQuery(String.format("select ST_ACCUM(ST_TRANSFORM(ST_SetSRID(the_geom,2154),4326)) the_geom from %s", tableName))
-        //ResultSet rs = sql.executeQuery(String.format("select ST_ACCUM(the_geom) the_geom from %s", tableName))
+        ResultSet rs = sql.executeQuery(String.format("select ST_ACCUM(ST_TRANSFORM(ST_SetSRID("+spatialFieldNames.get(0)+",2154),4326)) the_geom from %s", tableName))
 
         Geometry geom = null
         while (rs.next()) {
-            ResultSetMetaData resultSetMetaData = rs.getMetaData()
-            def geoFieldIndex = JDBCUtilities.getFieldIndex(resultSetMetaData, spatialFieldNames.get(0))
-            geom = (Geometry) rs.getObject(geoFieldIndex)
+            geom = (Geometry) rs.getObject(0)
         }
 
 

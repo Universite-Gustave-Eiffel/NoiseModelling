@@ -70,15 +70,11 @@ def run(input) {
     // Start... 
     // ----------------------------------
 
-    System.out.println("Run ...")
-
     // Open connection
     openGeoserverDataStoreConnection(dbName).withCloseable { Connection connection ->
 
         //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postgis database
         connection = new ConnectionWrapper(connection)
-        System.out.println("Connection to the database ok ...")
-
 
         //Get the geometry field of the source table
         TableLocation sourceTableIdentifier = TableLocation.parse(sources_table_name)
@@ -114,7 +110,6 @@ def run(input) {
 
 
         long start = System.currentTimeMillis()
-        System.out.println("Start ...")
         // fill the table LW_ROADS
         sql.withBatch(100, qry) { ps ->
             PreparedStatement st = connection.prepareStatement("SELECT * FROM " + sources_table_name)

@@ -20,8 +20,8 @@ import org.h2gis.functions.io.tsv.TSVDriverFunction
 import java.sql.Connection
 import java.sql.Statement
 
-title = 'Import Table'
-description = 'Import Table (csv, dbf, geojson, gpx, bz2, gz, osm, shp, tsv)'
+title = 'Import File'
+description = 'Import file into a database table (csv, dbf, geojson, gpx, bz2, gz, osm, shp, tsv)'
 
 inputs = [pathFile       : [name: 'Path of the input File', description: 'Path of the input File (including extension .csv, .shp, etc.)', title: 'Path of the input File', type: String.class],
           databaseName   : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database (default : first found db)', min: 0, max: 1, type: String.class],
@@ -64,7 +64,6 @@ def run(input) {
         stmt.execute(dropOutputTable)
 
         String ext = pathFile.substring(pathFile.lastIndexOf('.') + 1, pathFile.length())
-        System.out.println(pathFile)
         switch (ext) {
             case "csv":
                 CSVDriverFunction csvDriver = new CSVDriverFunction()

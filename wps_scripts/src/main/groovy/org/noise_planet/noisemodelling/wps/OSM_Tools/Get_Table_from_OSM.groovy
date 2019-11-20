@@ -16,7 +16,7 @@ import java.sql.Statement
 // import org.orbisgis.orbisprocess.geoclimate.Geoclimate
 
 title = 'Import from OSM'
-description = 'Convert OSM file to a compatible building and/or vegetation table.'
+description = 'Convert OSM/OSM.GZ file (https://www.openstreetmap.org) to a compatible building and/or vegetation table.'
 
 inputs = [pathFile       : [name: 'Path of the input File', description: 'Path of the input File (including extension .osm.gz)', title: 'Path of the input File', type: String.class],
           convert2Building: [name: 'convert2Building', title: 'convert2Building', description: 'convert2Building', type: Boolean.class],
@@ -53,25 +53,21 @@ def run(input) {
     if (input['databaseName']) {
         dbName = input['databaseName'] as String
     }
+    String[] osm_tables = ["MAP_NODE","MAP_NODE_MEMBER","MAP_NODE_TAG",
+                           "MAP_RELATION","MAP_RELATION_MEMBER","MAP_RELATION_TAG",
+                           "MAP_TAG","MAP_WAY","MAP_WAY_MEMBER","MAP_WAY_NODE","MAP_WAY_TAG"]
 
     // Open connection
     openGeoserverDataStoreConnection(dbName).withCloseable { Connection connection ->
 
         String pathFile = input["pathFile"] as String
 
+
         Statement sql = connection.createStatement()
 
-        sql.execute("DROP TABLE IF EXISTS MAP_NODE")
-        sql.execute("DROP TABLE IF EXISTS MAP_NODE_MEMBER")
-        sql.execute("DROP TABLE IF EXISTS  MAP_NODE_TAG")
-        sql.execute("DROP TABLE IF EXISTS MAP_RELATION")
-        sql.execute("DROP TABLE IF EXISTS  MAP_RELATION_MEMBER")
-        sql.execute("DROP TABLE IF EXISTS MAP_RELATION_TAG")
-        sql.execute("DROP TABLE IF EXISTS MAP_TAG")
-        sql.execute("DROP TABLE IF EXISTS MAP_WAY")
-        sql.execute("DROP TABLE IF EXISTS MAP_WAY_MEMBER")
-        sql.execute("DROP TABLE IF EXISTS  MAP_WAY_NODE")
-        sql.execute("DROP TABLE IF EXISTS MAP_WAY_TAG")
+        osm_tables.each { tableName ->
+            sql.execute("DROP TABLE IF EXISTS " + tableName)
+        }
 
         OSMRead.readOSM(connection, pathFile, "MAP")
 
@@ -121,24 +117,12 @@ def run(input) {
             sql.execute(Vegetation_Import)
         }
 
-        sql.execute("DROP TABLE IF EXISTS MAP_NODE")
-        sql.execute("DROP TABLE IF EXISTS MAP_NODE_MEMBER")
-        sql.execute("DROP TABLE IF EXISTS  MAP_NODE_TAG")
-        sql.execute("DROP TABLE IF EXISTS MAP_RELATION")
-        sql.execute("DROP TABLE IF EXISTS  MAP_RELATION_MEMBER")
-        sql.execute("DROP TABLE IF EXISTS MAP_RELATION_TAG")
-        sql.execute("DROP TABLE IF EXISTS MAP_TAG")
-        sql.execute("DROP TABLE IF EXISTS MAP_WAY")
-        sql.execute("DROP TABLE IF EXISTS MAP_WAY_MEMBER")
-        sql.execute("DROP TABLE IF EXISTS  MAP_WAY_NODE")
-        sql.execute("DROP TABLE IF EXISTS MAP_WAY_TAG")
-
-        //sql.execute(String.format("RUNSCRIPT FROM '%s'", Main.class.getResource("import_roads.sql").getFile()));
-
-
+        osm_tables.each { tableName ->
+            sql.execute("DROP TABLE IF EXISTS " + tableName)
+        }
     }
-    System.out.println("Process Done !")
-    return [tableNameCreated: "Process done !"]
+
+    return [tableNameCreated: "SURFACE_OSM, BUILDINGS_OSM"]
 }
 
 

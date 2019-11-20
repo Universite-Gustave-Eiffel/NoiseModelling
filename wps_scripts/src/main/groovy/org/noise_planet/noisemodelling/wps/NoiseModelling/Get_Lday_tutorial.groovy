@@ -184,11 +184,11 @@ class TrafficPropagationProcessDataFactory implements PointNoiseMap.PropagationP
 }
 
 static Connection openGeoserverDataStoreConnection(String dbName) {
-    if(dbName == null || dbName.isEmpty()) {
+    if (dbName == null || dbName.isEmpty()) {
         dbName = new GeoServer().catalog.getStoreNames().get(0)
     }
     Store store = new GeoServer().catalog.getStore(dbName)
-    JDBCDataStore jdbcDataStore = (JDBCDataStore)store.getDataStoreInfo().getDataStore(null)
+    JDBCDataStore jdbcDataStore = (JDBCDataStore) store.getDataStoreInfo().getDataStore(null)
     return jdbcDataStore.getDataSource().getConnection()
 }
 
@@ -295,8 +295,6 @@ def run(input) {
     // Start... 
     // ----------------------------------
 
-    System.out.println("Run ...")
-
     List<ComputeRaysOut.verticeSL> allLevels = new ArrayList<>()
     // Attenuation matrix table
     ArrayList<PropagationPath> propaMap2 = new ArrayList<>()
@@ -308,7 +306,7 @@ def run(input) {
         //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postgis database
         connection = new ConnectionWrapper(connection)
 
-        System.out.println("Connection to the database ok ...")
+        // Connection to the database
         // Init NoiseModelling
         PointNoiseMap pointNoiseMap = new PointNoiseMap(building_table_name, sources_table_name, receivers_table_name)
         pointNoiseMap.setComputeHorizontalDiffraction(compute_horizontal_diffraction)
@@ -342,7 +340,7 @@ def run(input) {
 
         RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1);
 
-        System.out.println("Init Map ...")
+        // Init Map
         pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
 
         // Set of already processed receivers
@@ -350,7 +348,7 @@ def run(input) {
         ProgressVisitor progressVisitor = progressLogger.subProcess(pointNoiseMap.getGridDim() * pointNoiseMap.getGridDim());
 
         long start = System.currentTimeMillis();
-        System.out.println("Start ...")
+        // Start ...
 
         Map<Integer, double[]> SourceSpectrum = new HashMap<>()
 
@@ -384,9 +382,9 @@ def run(input) {
             int idSource = (Integer) allLevels.get(i).sourceId
 
             double[] soundLevel = allLevels.get(i).value
-            if (!Double.isNaN(soundLevel[0]) && !Double.isNaN(soundLevel[1]) && !Double.isNaN(soundLevel[2]) && !Double.isNaN(soundLevel[3]) && !Double.isNaN(soundLevel[4]) && !Double.isNaN(soundLevel[5]) && !Double.isNaN(soundLevel[6]) && !Double.isNaN(soundLevel[7])
-
-            ) {
+            if (!Double.isNaN(soundLevel[0]) && !Double.isNaN(soundLevel[1]) && !Double.isNaN(soundLevel[2]) &&
+                    !Double.isNaN(soundLevel[3]) && !Double.isNaN(soundLevel[4]) && !Double.isNaN(soundLevel[5]) &&
+                    !Double.isNaN(soundLevel[6]) && !Double.isNaN(soundLevel[7]) ) {
                 if (soundLevels.containsKey(idReceiver)) {
                     //soundLevel = DBToDBA(soundLevel)
 
@@ -395,17 +393,15 @@ def run(input) {
                 } else {
                     //soundLevel = DBToDBA(soundLevel)
                     soundLevels.put(idReceiver, sumArraySR(soundLevel, SourceSpectrum.get(idSource)))
-
-
                 }
             } else {
-                System.out.println("NaN on Rec :" + idReceiver + "and Src :" + idSource)
+                System.err.println("NaN on Rec :" + idReceiver + "and Src :" + idSource)
             }
         }
 
 
         Sql sql = new Sql(connection)
-        System.out.println("Export data to table")
+        // Export data to table
         sql.execute("drop table if exists LDAY;")
         sql.execute("create table LDAY (IDRECEIVER integer, Hz63 double precision, Hz125 double precision, Hz250 double precision, Hz500 double precision, Hz1000 double precision, Hz2000 double precision, Hz4000 double precision, Hz8000 double precision);")
 
@@ -423,10 +419,6 @@ def run(input) {
 
         sql.execute("drop table if exists LDAY_GEOM;")
         sql.execute("create table LDAY_GEOM  as select a.IDRECEIVER, b.THE_GEOM, a.Hz63, a.Hz125, a.Hz250, a.Hz500, a.Hz1000, a.Hz2000, a.Hz4000, a.Hz8000 FROM RECEIVERS b LEFT JOIN LDAY a ON a.IDRECEIVER = b.ID;")
-
-
-        System.out.println("Done !")
-
 
         long computationTime = System.currentTimeMillis() - start;
 

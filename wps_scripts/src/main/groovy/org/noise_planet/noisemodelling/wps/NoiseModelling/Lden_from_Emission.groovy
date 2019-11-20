@@ -1,4 +1,6 @@
-package org.noise_planet.noisemodelling.wps.NoiseModelling;
+package org.noise_planet.noisemodelling.wps.NoiseModelling
+
+import geoserver.GeoServer;
 
 /*
  * @Author Hesry Quentin
@@ -6,43 +8,21 @@ package org.noise_planet.noisemodelling.wps.NoiseModelling;
  * @Author Nicolas Fortin
  */
 
-import geoserver.GeoServer
 import geoserver.catalog.Store
-
-import org.h2gis.api.ProgressVisitor
-import org.geotools.jdbc.JDBCDataStore
-import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
-import org.noise_planet.noisemodelling.emission.RSParametersCnossos
-import org.noise_planet.noisemodelling.propagation.ComputeRays
-import org.noise_planet.noisemodelling.propagation.FastObstructionTest
-import org.noise_planet.noisemodelling.propagation.PropagationProcessData
-import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
-
-import javax.xml.stream.XMLStreamException
-import org.cts.crs.CRSException
-
-import java.sql.Connection
-import java.sql.DriverManager
-import java.sql.Statement
-import java.sql.PreparedStatement
 import groovy.sql.Sql
-import org.h2gis.utilities.SFSUtilities
+import org.cts.crs.CRSException
+import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.api.EmptyProgressVisitor
-import org.noisemodellingwps.utilities.WpsConnectionWrapper
-import org.h2gis.utilities.wrapper.*
-
+import org.h2gis.api.ProgressVisitor
+import org.h2gis.utilities.SpatialResultSet
+import org.h2gis.utilities.wrapper.ConnectionWrapper
+import org.locationtech.jts.geom.Geometry
 import org.noise_planet.noisemodelling.propagation.*
 import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
-import org.h2gis.utilities.SpatialResultSet
-import org.locationtech.jts.geom.Geometry
-
-
+import javax.xml.stream.XMLStreamException
+import java.sql.Connection
 import java.sql.SQLException
-import java.util.ArrayList
-import java.util.List
 
 title = 'Compute Lden Map from Road Emission'
 description = 'Compute Lden Map from Road Emission.'
@@ -249,7 +229,7 @@ def run(input) {
     // Start... 
     // ----------------------------------
 
-    System.out.println("Run ...")
+    // Run
 
     List<ComputeRaysOut.verticeSL> allLevels = new ArrayList<>()
     // Attenuation matrix table
@@ -262,7 +242,7 @@ def run(input) {
         //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postgis database
         connection = new ConnectionWrapper(connection)
 
-        System.out.println("Connection to the database ok ...")
+        // Connection to the database
         // Init NoiseModelling
         PointNoiseMap pointNoiseMap = new PointNoiseMap(building_table_name, sources_table_name, receivers_table_name)
         pointNoiseMap.setComputeHorizontalDiffraction(compute_horizontal_diffraction)
@@ -296,7 +276,7 @@ def run(input) {
 
         RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1);
 
-        System.out.println("Init Map ...")
+        // Init Map
         pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
 
         // Set of already processed receivers
@@ -304,7 +284,7 @@ def run(input) {
         ProgressVisitor progressVisitor = progressLogger.subProcess(pointNoiseMap.getGridDim() * pointNoiseMap.getGridDim());
 
         long start = System.currentTimeMillis();
-        System.out.println("Start ...")
+        // Start
 
         Map<Integer, double[]> SourceSpectrum = new HashMap<>()
 
@@ -353,13 +333,14 @@ def run(input) {
 
                 }
             } else {
-                System.out.println("NaN on Rec :" + idReceiver + "and Src :" + idSource)
+                System.err.println("NaN on Rec :" + idReceiver + "and Src :" + idSource)
             }
         }
 
 
         Sql sql = new Sql(connection)
-        System.out.println("Export data to table")
+
+        // Export data to table
         sql.execute("drop table if exists LDEN;")
         sql.execute("create table LDEN (IDRECEIVER integer, Hz63 double precision, Hz125 double precision, Hz250 double precision, Hz500 double precision, Hz1000 double precision, Hz2000 double precision, Hz4000 double precision, Hz8000 double precision);")
 
@@ -379,7 +360,7 @@ def run(input) {
         sql.execute("create table LDEN_GEOM  as select a.IDRECEIVER, b.THE_GEOM, a.Hz63, a.Hz125, a.Hz250, a.Hz500, a.Hz1000, a.Hz2000, a.Hz4000, a.Hz8000 FROM RECEIVERS b LEFT JOIN LDEN a ON a.IDRECEIVER = b.ID;")
 
 
-        System.out.println("Done !")
+        // Done
 
 
         long computationTime = System.currentTimeMillis() - start;

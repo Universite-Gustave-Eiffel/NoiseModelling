@@ -22,8 +22,8 @@ import org.h2gis.functions.io.tsv.TSVDriverFunction
 import java.sql.Connection
 import java.sql.Statement
 
-title = 'Import Tables from folder'
-description = 'Import all files from a folder (csv, dbf, geojson, gpx, bz2, gz, osm, shp, tsv)'
+title = 'Import Files from folder'
+description = 'Import all files from a folder (csv, dbf, geojson, gpx, bz2, gz, osm, shp, tsv) to tables'
 
 inputs = [
         pathFile: [name: 'Path of the folder', description : 'Path of the folder', title: 'Path of the folder', type: String.class],
@@ -65,8 +65,6 @@ def run(input) {
                         String ext = pathFile.substring(pathFile.lastIndexOf('.') + 1, pathFile.length())
 
                         if (ext ==  user_ext){
-                                System.out.println("Reading : " + pathFile)
-
                                 String fileName = FilenameUtils.removeExtension(new File(pathFile).getName())
                                 String outputTableName = fileName
                                 outputTableName = outputTableName.toUpperCase()

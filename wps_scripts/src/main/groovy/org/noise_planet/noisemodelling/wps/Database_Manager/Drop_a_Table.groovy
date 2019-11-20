@@ -12,8 +12,8 @@ import org.geotools.jdbc.JDBCDataStore
 import java.sql.Connection
 import java.sql.Statement
 
-title = 'Drop_a_Table'
-description = 'Delete a table from the database'
+title = 'Remove table'
+description = 'Delete a table from the database. The data will be deleted and can no longer be recovered.'
 
 inputs = [
   databaseName: [name: 'Name of the database', title: 'Name of the database', description : 'Name of the database (default : first found db)', min : 0, max : 1, type: String.class],

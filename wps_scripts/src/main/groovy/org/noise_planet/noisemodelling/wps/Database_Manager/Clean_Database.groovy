@@ -14,8 +14,8 @@ import org.h2gis.utilities.TableLocation
 import java.sql.Connection
 import java.sql.Statement
 
-title = 'Clean all the database'
-description = 'Delete all tables from the database.'
+title = 'Delete all tables'
+description = 'Delete all non-system tables from the database.'
 
 inputs = [
     databaseName: [name: 'Name of the database', description : 'Name of the database', title: 'Name of the database', type: String.class]

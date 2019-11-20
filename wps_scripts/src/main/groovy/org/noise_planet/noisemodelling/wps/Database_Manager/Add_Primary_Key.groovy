@@ -11,8 +11,8 @@ import org.geotools.jdbc.JDBCDataStore
 import java.sql.Connection
 import java.sql.Statement
 
-title = 'Add_Primary_Key'
-description = 'Add a primary key to a table'
+title = 'Add primary key column to a table'
+description = 'Adds a column of integers as the primary key of the table.'
 
 inputs = [databaseName: [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database (default : first available database)', min: 0, max: 1, type: String.class],
           pkName      : [name: 'Name of the pk field', title: 'Name of the pk field', description: 'Name of the pk field (default : will create a new field named pk_)', min: 0, max: 1, type: String.class],

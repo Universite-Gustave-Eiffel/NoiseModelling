@@ -21,7 +21,7 @@ import org.noisemodellingwps.utilities.WpsConnectionWrapper
 import java.sql.Connection
 
 title = 'Export_Table'
-description = 'Export_Table (csv, dbf, geojson, gpx, bz2, gz, osm, shp, tsv)'
+description = 'Export database table to a file (csv, dbf, geojson, gpx, bz2, gz, osm, shp, tsv)'
 
 inputs = [
         exportPath: [name: 'Export path', title: 'Path of the file to export', description: 'Path of the input File (including extension .csv, .shp, etc.)', type: String.class],

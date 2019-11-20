@@ -13,8 +13,8 @@ import org.h2gis.utilities.TableLocation
 
 import java.sql.Connection
 
-title = 'Display Tables'
-description = 'Display all tables in the database'
+title = 'Display Tables names and columns'
+description = 'Displays the list of tables and their columns.'
 
 inputs = [
    databaseName: [name: 'Name of the database', title: 'Name of the database', description : 'Name of the database (default : first found db)', min : 0, max : 1, type: String.class],
