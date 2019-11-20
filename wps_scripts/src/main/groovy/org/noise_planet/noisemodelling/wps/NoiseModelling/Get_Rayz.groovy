@@ -8,7 +8,9 @@ import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.transform.CompileStatic
 import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.api.ProgressVisitor
+import org.h2gis.functions.io.geojson.GeoJsonDriverFunction
 import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Coordinate
@@ -127,8 +129,9 @@ def static Connection openPostgreSQLDataStoreConnection(String dbName) {
 
 
 def run(input) {
-
-
+    def srcFiles =[]
+    String fileName =""
+    GeoJsonDriverFunction geoJsonDriver = new GeoJsonDriverFunction()
     // -------------------
     // Get inputs
     // -------------------
@@ -139,36 +142,6 @@ def run(input) {
     }
 
 
-
-    String sources_table_name = "SOURCES"
-    if (input['sourcesTableName']) {
-        sources_table_name = input['sourcesTableName']
-    }
-    sources_table_name = sources_table_name.toUpperCase()
-
-    String receivers_table_name = "RECEIVERS"
-    if (input['receiversTableName']) {
-        receivers_table_name = input['receiversTableName']
-    }
-    receivers_table_name = receivers_table_name.toUpperCase()
-
-    String building_table_name = "BUILDINGS"
-    if (input['buildingTableName']) {
-        building_table_name = input['buildingTableName']
-    }
-    building_table_name = building_table_name.toUpperCase()
-
-    String dem_table_name = ""
-    if (input['demTableName']) {
-        building_table_name = input['demTableName']
-    }
-    dem_table_name = dem_table_name.toUpperCase()
-
-    String ground_table_name = ""
-    if (input['groundTableName']) {
-        ground_table_name = input['groundTableName']
-    }
-    ground_table_name = ground_table_name.toUpperCase()
 
     int reflexion_order = 0
     if (input['reflexionOrder']) {
@@ -233,8 +206,57 @@ def run(input) {
     // Open connection
     openPostgreSQLDataStoreConnection(dbName).withCloseable { Connection connection ->
 
+
         //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postgis database
         connection = new ConnectionWrapper(connection)
+
+        String sources_table_name = "SOURCES"
+        if (input['sourcesTableName']) {
+            sources_table_name = input['sourcesTableName']
+            sources_table_name = sources_table_name.toUpperCase()
+            fileName = "sources.geojson"
+            srcFiles.add(fileName)
+            geoJsonDriver.exportTable(connection, sources_table_name, new File(working_dir+fileName), new EmptyProgressVisitor())
+        }
+
+        String receivers_table_name = "RECEIVERS"
+        if (input['receiversTableName']) {
+            receivers_table_name = input['receiversTableName']
+            receivers_table_name = receivers_table_name.toUpperCase()
+            fileName = "receivers.geojson"
+            srcFiles.add(fileName)
+            geoJsonDriver.exportTable(connection, receivers_table_name, new File(working_dir+fileName), new EmptyProgressVisitor())
+
+        }
+
+        String building_table_name = "BUILDINGS"
+        if (input['buildingTableName']) {
+            building_table_name = input['buildingTableName']
+            building_table_name = building_table_name.toUpperCase()
+            fileName = "buildings.geojson"
+            srcFiles.add(fileName)
+            geoJsonDriver.exportTable(connection, building_table_name, new File(working_dir+fileName), new EmptyProgressVisitor())
+
+        }
+
+        String dem_table_name = ""
+        if (input['demTableName']) {
+            dem_table_name = input['demTableName']
+            dem_table_name = dem_table_name.toUpperCase()
+            fileName = "dem.geojson"
+            srcFiles.add(fileName)
+            geoJsonDriver.exportTable(connection, dem_table_name, new File(working_dir+fileName), new EmptyProgressVisitor())
+        }
+
+
+        String ground_table_name = ""
+        if (input['groundTableName']) {
+            ground_table_name = input['groundTableName']
+            ground_table_name = ground_table_name.toUpperCase()
+            fileName = "ground.geojson"
+            srcFiles.add(fileName)
+            geoJsonDriver.exportTable(connection, ground_table_name, new File(working_dir+fileName), new EmptyProgressVisitor())
+        }
 
         System.out.println("Connection to the database ok ...")
         // Init NoiseModelling
@@ -277,7 +299,8 @@ def run(input) {
         long start = System.currentTimeMillis();
 
         System.out.println("Start ...")
-        storageFactory.openPathOutputFile(new File(working_dir + "/rayz.gz").absolutePath)
+        srcFiles.add("rays.gz")
+        storageFactory.openPathOutputFile(new File(working_dir + "/rays.gz").absolutePath)
         pointNoiseMap.initialize(connection, progressLogger)
         progressLogger.endStep()
         // Set of already processed receivers
@@ -292,9 +315,30 @@ def run(input) {
                 }
             }
         }
-
-
         storageFactory.closeWriteThread()
+
+
+
+        FileOutputStream fos = new FileOutputStream(working_dir + "Rays.zip")
+        ZipOutputStream zipOut = new ZipOutputStream(fos)
+        for (String srcFile : srcFiles) {
+            File fileToZip = new File(new File(working_dir + srcFile).absolutePath)
+            FileInputStream fis = new FileInputStream(fileToZip)
+            ZipEntry zipEntry = new ZipEntry(fileToZip.getName())
+            zipOut.putNextEntry(zipEntry)
+
+            byte[] bytes = new byte[1024]
+            int length
+            while((length = fis.read(bytes)) >= 0) {
+                zipOut.write(bytes, 0, length)
+            }
+            fis.close()
+            fileSuccessfullyDeleted =  new File(working_dir + srcFile).delete()
+        }
+        zipOut.close()
+        fos.close()
+
+
 
         System.out.println("Done !")
 
