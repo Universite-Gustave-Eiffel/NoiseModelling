@@ -40,6 +40,7 @@ inputs = [databaseName      : [name: 'Name of the database', title: 'Name of the
           wallAlpha         : [name: 'wallAlpha', title: 'Wall alpha', description: 'Wall abosrption (default = 0.1)', min: 0, max: 1, type: String.class],
           threadNumber      : [name: 'Thread number', title: 'Thread number', description: 'Number of thread to use on the computer (default = 1)', min: 0, max: 1, type: String.class],
           computeVertical   : [name: 'Compute vertical diffraction', title: 'Compute vertical diffraction', description: 'Compute or not the vertical diffraction (default = false)', min: 0, max: 1, type: Boolean.class],
+          exportReceiverRays   : [name: 'Export Rays of one receiver', title: 'Export Rays of one receiver', description: 'Primary Key Id of the receiver to export (default = -1 (no receivers exported))', min: 0, max: 1, type: Integer.class],
           computeHorizontal : [name: 'Compute horizontal diffraction', title: 'Compute horizontal diffraction', description: 'Compute or not the horizontal diffraction (default = false)', min: 0, max: 1, type: Boolean.class]]
 
 outputs = [result: [name: 'result', title: 'Result', type: String.class]]
@@ -189,6 +190,14 @@ def run(input) {
         wall_alpha = Double.valueOf(input['wallAlpha'])
     }
 
+
+    long exportReceiverRays =-1
+    if (input['exportReceiverRays']) {
+        exportReceiverRays = Integer.valueOf(input['exportReceiverRays'])
+    }
+
+
+
     int n_thread = 1
     if (input['threadNumber']) {
         n_thread = Integer.valueOf(input['threadNumber'])
@@ -259,6 +268,7 @@ def run(input) {
         PropagationPathStorageFactory storageFactory = new PropagationPathStorageFactory()
         pointNoiseMap.setComputeRaysOutFactory(storageFactory)
         storageFactory.setWorkingDir(working_dir)
+        storageFactory.setExportReceiverRays(exportReceiverRays)
 
         RootProgressVisitor progressLogger = new RootProgressVisitor(2, true, 1)
 
@@ -403,15 +413,23 @@ class PropagationPathStorageFactory implements PointNoiseMap.IComputeRaysOutFact
     AtomicBoolean waitForMorePaths = new AtomicBoolean(true)
     public static final int GZIP_CACHE_SIZE = (int)Math.pow(2, 19)
     String workingDir
+    long exportReceiverRays
+
 
     void openPathOutputFile(String path) {
         gzipOutputStream = new GZIPOutputStream(new FileOutputStream(path), GZIP_CACHE_SIZE)
-        new Thread(new WriteThread(pathQueue, waitForMorePaths, gzipOutputStream)).start()
+        WriteThread writeThread = new WriteThread(pathQueue, waitForMorePaths, gzipOutputStream)
+        new Thread(writeThread).start()
     }
 
     void setWorkingDir(String workingDir) {
         this.workingDir = workingDir
     }
+
+    void setExportReceiverRays(long exportReceiverRays) {
+        this.exportReceiverRays = exportReceiverRays
+    }
+
 
     void exportDomain(PropagationProcessData inputData, String path) {
         /*GeoJSONDocument geoJSONDocument = new GeoJSONDocument(new FileOutputStream(path))
@@ -421,8 +439,7 @@ class PropagationPathStorageFactory implements PointNoiseMap.IComputeRaysOutFact
         KMLDocument kmlDocument
         ZipOutputStream compressedDoc
         System.println( "Cellid" + inputData.cellId.toString())
-        compressedDoc = new ZipOutputStream(new FileOutputStream(
-                String.format("domain_%d.kmz", inputData.cellId)))
+        compressedDoc = new ZipOutputStream(new FileOutputStream(path))
         compressedDoc.putNextEntry(new ZipEntry("doc.kml"))
         kmlDocument = new KMLDocument(compressedDoc)
         kmlDocument.writeHeader()
@@ -437,7 +454,7 @@ class PropagationPathStorageFactory implements PointNoiseMap.IComputeRaysOutFact
 
     @Override
     IComputeRaysOut create(PropagationProcessData propagationProcessData, PropagationProcessPathData propagationProcessPathData) {
-        exportDomain(propagationProcessData, new File(this.workingDir, String.format("_%d.geojson", propagationProcessData.cellId)).absolutePath)
+        if (exportReceiverRays>0) exportDomain(propagationProcessData, new File(this.workingDir, String.format("domain_%d.kmz", propagationProcessData.cellId)).absolutePath)
         return new PropagationPathStorage(propagationProcessData, propagationProcessPathData, pathQueue)
     }
 
@@ -448,7 +465,7 @@ class PropagationPathStorageFactory implements PointNoiseMap.IComputeRaysOutFact
     /**
      * Write paths on disk using a single thread
      */
-    static class WriteThread implements Runnable {
+    class WriteThread implements Runnable {
         ConcurrentLinkedDeque<PointToPointPaths> pathQueue
         AtomicBoolean waitForMorePaths
         GZIPOutputStream gzipOutputStream
@@ -461,46 +478,45 @@ class PropagationPathStorageFactory implements PointNoiseMap.IComputeRaysOutFact
 
         @Override
         void run() {
-            long exportReceiverRay = 2 // primary key of receiver to export
-            KMLDocument kmlDocument
+            if (exportReceiverRays>0){
+                KMLDocument kmlDocument
+                ZipOutputStream compressedDoc
 
-            ZipOutputStream compressedDoc
-
-            compressedDoc = new ZipOutputStream(new FileOutputStream(
-                    String.format("domain.kmz")))
-            compressedDoc.putNextEntry(new ZipEntry("doc.kml"))
-            kmlDocument = new KMLDocument(compressedDoc)
-            kmlDocument.writeHeader()
-            kmlDocument.setInputCRS("EPSG:2154")
-            kmlDocument.setOffset(new Coordinate(0,0,0))
+                compressedDoc = new ZipOutputStream(new FileOutputStream(
+                        String.format(workingDir + "RaysFromRecv"+ exportReceiverRays +".kmz")))
+                compressedDoc.putNextEntry(new ZipEntry("doc.kml"))
+                kmlDocument = new KMLDocument(compressedDoc)
+                kmlDocument.writeHeader()
+                kmlDocument.setInputCRS("EPSG:2154")
+                kmlDocument.setOffset(new Coordinate(0,0,0))
 
 
-            /*PropagationProcessPathData genericMeteoData = new PropagationProcessPathData()
-            genericMeteoData.setHumidity(70)
-            genericMeteoData.setTemperature(10)
-            ComputeRaysOut out = new ComputeRaysOut(false, genericMeteoData)
-*/
-            DataOutputStream dataOutputStream = new DataOutputStream(gzipOutputStream)
-            while (waitForMorePaths.get()) {
-                while(!pathQueue.isEmpty()) {
-                    PointToPointPaths paths = pathQueue.pop()
-                    paths.writePropagationPathListStream(dataOutputStream)
+                /*PropagationProcessPathData genericMeteoData = new PropagationProcessPathData()
+                genericMeteoData.setHumidity(70)
+                genericMeteoData.setTemperature(10)
+                ComputeRaysOut out = new ComputeRaysOut(false, genericMeteoData)
+    */
+                DataOutputStream dataOutputStream = new DataOutputStream(gzipOutputStream)
+                while (waitForMorePaths.get()) {
+                    while(!pathQueue.isEmpty()) {
+                        PointToPointPaths paths = pathQueue.pop()
+                        paths.writePropagationPathListStream(dataOutputStream)
 
-                    if(paths.receiverId == exportReceiverRay) {
-                        // Export rays
-                        kmlDocument.writeRays(paths.getPropagationPathList())
+                        if(paths.receiverId == exportReceiverRays) {
+                            // Export rays
+                            kmlDocument.writeRays(paths.getPropagationPathList())
+
+                        }
 
                     }
-
+                    Thread.sleep(5)
                 }
-                Thread.sleep(10)
+                dataOutputStream.flush()
+                gzipOutputStream.close()
+                kmlDocument.writeFooter()
+                compressedDoc.closeEntry()
+                compressedDoc.close()
             }
-            dataOutputStream.flush()
-            gzipOutputStream.close()
-            kmlDocument.writeFooter()
-            compressedDoc.closeEntry()
-            compressedDoc.close()
-
 
 
         }
