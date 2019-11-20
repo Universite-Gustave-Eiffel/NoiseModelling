@@ -8,28 +8,24 @@ package org.noise_planet.noisemodelling.wps.Import_and_Export
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.api.EmptyProgressVisitor
+import org.h2gis.functions.io.csv.CSVDriverFunction
+import org.h2gis.functions.io.dbf.DBFDriverFunction
+import org.h2gis.functions.io.geojson.GeoJsonDriverFunction
+import org.h2gis.functions.io.json.JsonDriverFunction
+import org.h2gis.functions.io.kml.KMLDriverFunction
+import org.h2gis.functions.io.shp.SHPDriverFunction
+import org.h2gis.functions.io.tsv.TSVDriverFunction
+import org.noisemodellingwps.utilities.WpsConnectionWrapper
 
 import java.sql.Connection
-import java.sql.Statement
-
-import org.h2gis.functions.io.csv.*
-import org.h2gis.functions.io.dbf.*
-import org.h2gis.functions.io.geojson.*
-import org.h2gis.functions.io.json.*
-import org.h2gis.functions.io.kml.*
-import org.h2gis.functions.io.shp.*
-import org.h2gis.functions.io.tsv.*
-import org.h2gis.api.EmptyProgressVisitor
-import org.h2gis.utilities.wrapper.ConnectionWrapper
-
-import org.noisemodellingwps.utilities.WpsConnectionWrapper
 
 title = 'Export_Table'
 description = 'Export_Table (csv, dbf, geojson, gpx, bz2, gz, osm, shp, tsv)'
 
 inputs = [
         exportPath: [name: 'Export path', title: 'Path of the file to export', description: 'Path of the input File (including extension .csv, .shp, etc.)', type: String.class],
-        databaseName: [name: 'Name of the database', title: 'Name of the database', description : 'Name of the database. (default : h2gisdb)', min : 0, max : 1, type: String.class],
+        databaseName: [name: 'Name of the database', title: 'Name of the database', description : 'Name of the database (default : first found db)', min : 0, max : 1, type: String.class],
         tableToExport: [name: 'Name of the table to export', title: 'Name of the table to export.',  type: String.class]
 ]
 
@@ -37,20 +33,24 @@ outputs = [
         result: [name: 'result', title: 'result', type: Boolean.class]
 ]
 
-def static Connection openPostgreSQLDataStoreConnection(String dbName) {
-    Store store = new GeoServer().catalog.getStore(dbName)
-    JDBCDataStore jdbcDataStore = (JDBCDataStore)store.getDataStoreInfo().getDataStore(null)
-    return jdbcDataStore.getDataSource().getConnection()
+
+static Connection openGeoserverDataStoreConnection(String dbName) {
+        if(dbName == null || dbName.isEmpty()) {
+                dbName = new GeoServer().catalog.getStoreNames().get(0)
+        }
+        Store store = new GeoServer().catalog.getStore(dbName)
+        JDBCDataStore jdbcDataStore = (JDBCDataStore)store.getDataStoreInfo().getDataStore(null)
+        return jdbcDataStore.getDataSource().getConnection()
 }
 
 def run(input) {
 
         // Get name of the database
-        String dbName = "h2gisdb"
+        String dbName = ""
         if (input['databaseName']){dbName = input['databaseName'] as String}
 
         // Open connection
-        openPostgreSQLDataStoreConnection(dbName).withCloseable { Connection connection ->
+        openGeoserverDataStoreConnection(dbName).withCloseable { Connection connection ->
 
                 connection = new WpsConnectionWrapper(connection)
 

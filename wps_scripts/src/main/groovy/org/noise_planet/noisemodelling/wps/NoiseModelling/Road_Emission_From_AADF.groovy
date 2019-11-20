@@ -1,52 +1,27 @@
 package org.noise_planet.noisemodelling.wps.NoiseModelling
 
+import geoserver.GeoServer
+
 /*
  * @Author Pierre Aumond 13/11/2019
  */
 
-import geoserver.GeoServer
 import geoserver.catalog.Store
-
-import org.h2gis.api.ProgressVisitor
+import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.utilities.JDBCUtilities
+import org.h2gis.utilities.SFSUtilities
+import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.TableLocation
-import org.locationtech.jts.geom.Coordinate
-import org.locationtech.jts.geom.Envelope
+import org.h2gis.utilities.wrapper.ConnectionWrapper
+import org.locationtech.jts.geom.Geometry
 import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
 import org.noise_planet.noisemodelling.emission.RSParametersCnossos
-import org.noise_planet.noisemodelling.propagation.ComputeRays
-import org.noise_planet.noisemodelling.propagation.FastObstructionTest
-import org.noise_planet.noisemodelling.propagation.PropagationProcessData
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
 
-import javax.xml.stream.XMLStreamException
-import org.cts.crs.CRSException
-
 import java.sql.Connection
-import java.sql.DriverManager
-import java.sql.ResultSet
-import java.sql.Statement
 import java.sql.PreparedStatement
-import groovy.sql.Sql
-import org.h2gis.utilities.SFSUtilities
-import org.h2gis.api.EmptyProgressVisitor
-import org.noisemodellingwps.utilities.WpsConnectionWrapper
-import org.h2gis.utilities.wrapper.*
-
-import org.noise_planet.noisemodelling.propagation.*
-import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-
-import org.h2gis.utilities.SpatialResultSet
-import org.locationtech.jts.geom.Geometry
-
-
 import java.sql.SQLException
-import java.util.ArrayList
-import java.util.List
-
 
 title = 'Compute Road Emission'
 description = 'Compute Road Emission Noise Map from Estimated Annual average daily flows (AADF) estimates. ' +
@@ -56,16 +31,19 @@ description = 'Compute Road Emission Noise Map from Estimated Annual average dai
         'distribution in Berengier et al., 2019 : "DEUFRABASE: A Simple Tool for the Evaluation of the Noise Impact of ' +
         'Pavements in Typical Road Geometries".'
 
-inputs = [databaseName      : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database. (default : h2gisdb)', min: 0, max: 1, type: String.class],
+inputs = [databaseName      : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database (default : first found db)', min: 0, max: 1, type: String.class],
           sourcesTableName  : [name: 'Sources table name', title: 'Sources table name', type: String.class]]
 
 outputs = [result: [name: 'result', title: 'Result', type: String.class]]
 
 
 
-def static Connection openPostgreSQLDataStoreConnection(String dbName) {
+static Connection openGeoserverDataStoreConnection(String dbName) {
+    if(dbName == null || dbName.isEmpty()) {
+        dbName = new GeoServer().catalog.getStoreNames().get(0)
+    }
     Store store = new GeoServer().catalog.getStore(dbName)
-    JDBCDataStore jdbcDataStore = (JDBCDataStore) store.getDataStoreInfo().getDataStore(null)
+    JDBCDataStore jdbcDataStore = (JDBCDataStore)store.getDataStoreInfo().getDataStore(null)
     return jdbcDataStore.getDataSource().getConnection()
 }
 
@@ -83,7 +61,7 @@ def run(input) {
     sources_table_name = sources_table_name.toUpperCase()
 
     // Get name of the database
-    String dbName = "h2gisdb"
+    String dbName = ""
     if (input['databaseName']) {
         dbName = input['databaseName'] as String
     }
@@ -95,7 +73,7 @@ def run(input) {
     System.out.println("Run ...")
 
     // Open connection
-    openPostgreSQLDataStoreConnection(dbName).withCloseable { Connection connection ->
+    openGeoserverDataStoreConnection(dbName).withCloseable { Connection connection ->
 
         //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postgis database
         connection = new ConnectionWrapper(connection)

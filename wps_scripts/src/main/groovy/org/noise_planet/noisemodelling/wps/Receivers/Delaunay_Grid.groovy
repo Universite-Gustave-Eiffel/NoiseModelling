@@ -28,14 +28,18 @@ description = 'Calculates a delaunay grid of receivers based on a single Geometr
 inputs = [buildingTableName : [name: 'Buildings table name', title: 'Buildings table name', type: String.class],
           fence  : [name: 'Fence', title: 'Fence', min: 0, max: 1, type: Geometry.class],
           sourcesTableName  : [name: 'Sources table name', title: 'Sources table name', type: String.class],
-          databaseName   : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database. (default : h2gisdb)', min: 0, max: 1, type: String.class],
+          databaseName   : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database (default : first found db)', min: 0, max: 1, type: String.class],
           outputTableName: [name: 'outputTableName', description: 'Do not write the name of a table that contains a space. (default : RECEIVERS)', title: 'Name of output table', min: 0, max: 1, type: String.class]]
 
 outputs = [tableNameCreated: [name: 'tableNameCreated', title: 'tableNameCreated', type: String.class]]
 
-def static Connection openPostgreSQLDataStoreConnection(String dbName) {
+
+static Connection openGeoserverDataStoreConnection(String dbName) {
+    if(dbName == null || dbName.isEmpty()) {
+        dbName = new GeoServer().catalog.getStoreNames().get(0)
+    }
     Store store = new GeoServer().catalog.getStore(dbName)
-    JDBCDataStore jdbcDataStore = (JDBCDataStore) store.getDataStoreInfo().getDataStore(null)
+    JDBCDataStore jdbcDataStore = (JDBCDataStore)store.getDataStoreInfo().getDataStore(null)
     return jdbcDataStore.getDataSource().getConnection()
 }
 
@@ -70,13 +74,13 @@ def run(input) {
     }
 
     // Get name of the database
-    String dbName = "h2gisdb"
+    String dbName = ""
     if (input['databaseName']) {
         dbName = input['databaseName'] as String
     }
 
     // Open connection
-    openPostgreSQLDataStoreConnection(dbName).withCloseable { Connection connection ->
+    openGeoserverDataStoreConnection(dbName).withCloseable { Connection connection ->
         //Statement sql = connection.createStatement()
         Sql sql = new Sql(connection)
         connection = new ConnectionWrapper(connection)

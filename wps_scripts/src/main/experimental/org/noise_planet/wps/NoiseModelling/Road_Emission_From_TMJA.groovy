@@ -50,16 +50,18 @@ import java.util.List
 title = 'Compute Road Emission'
 description = 'Compute Road Emission Noise Map from Estimated Annual average daily flows (TMJA) estimates. '
 
-inputs = [databaseName      : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database. (default : h2gisdb)', min: 0, max: 1, type: String.class],
+inputs = [databaseName      : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database (default : first found db)', min: 0, max: 1, type: String.class],
           sourcesTableName  : [name: 'Sources table name', title: 'Sources table name', type: String.class]]
 
 outputs = [result: [name: 'result', title: 'Result', type: String.class]]
 
 
-
-def static Connection openPostgreSQLDataStoreConnection(String dbName) {
+static Connection openGeoserverDataStoreConnection(String dbName) {
+    if(dbName == null || dbName.isEmpty()) {
+        dbName = new GeoServer().catalog.getStoreNames().get(0)
+    }
     Store store = new GeoServer().catalog.getStore(dbName)
-    JDBCDataStore jdbcDataStore = (JDBCDataStore) store.getDataStoreInfo().getDataStore(null)
+    JDBCDataStore jdbcDataStore = (JDBCDataStore)store.getDataStoreInfo().getDataStore(null)
     return jdbcDataStore.getDataSource().getConnection()
 }
 
@@ -77,7 +79,7 @@ def run(input) {
     sources_table_name = sources_table_name.toUpperCase()
 
     // Get name of the database
-    String dbName = "h2gisdb"
+    String dbName = ""
     if (input['databaseName']) {
         dbName = input['databaseName'] as String
     }
@@ -89,7 +91,7 @@ def run(input) {
     System.out.println("Run ...")
 
     // Open connection
-    openPostgreSQLDataStoreConnection(dbName).withCloseable { Connection connection ->
+    openGeoserverDataStoreConnection(dbName).withCloseable { Connection connection ->
 
         //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postgis database
         connection = new ConnectionWrapper(connection)

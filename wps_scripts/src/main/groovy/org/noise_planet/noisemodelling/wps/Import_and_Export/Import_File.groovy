@@ -8,49 +8,46 @@ import geoserver.GeoServer
 import geoserver.catalog.Store
 import org.apache.commons.io.FilenameUtils
 import org.geotools.jdbc.JDBCDataStore
-
-import java.util.Map
-import java.util.HashMap
+import org.h2gis.api.EmptyProgressVisitor
+import org.h2gis.functions.io.csv.CSVDriverFunction
+import org.h2gis.functions.io.dbf.DBFDriverFunction
+import org.h2gis.functions.io.geojson.GeoJsonDriverFunction
+import org.h2gis.functions.io.gpx.GPXDriverFunction
+import org.h2gis.functions.io.osm.OSMDriverFunction
+import org.h2gis.functions.io.shp.SHPDriverFunction
+import org.h2gis.functions.io.tsv.TSVDriverFunction
 
 import java.sql.Connection
 import java.sql.Statement
-
-import org.h2gis.functions.io.csv.CSVDriverFunction
-import org.h2gis.functions.io.dbf.*
-import org.h2gis.functions.io.geojson.*
-import org.h2gis.functions.io.gpx.*
-import org.h2gis.functions.io.osm.*
-import org.h2gis.functions.io.shp.*
-import org.h2gis.functions.io.tsv.*
-import org.h2gis.api.EmptyProgressVisitor
-
-import org.h2gis.utilities.wrapper.*
 
 title = 'Import Table'
 description = 'Import Table (csv, dbf, geojson, gpx, bz2, gz, osm, shp, tsv)'
 
 inputs = [pathFile       : [name: 'Path of the input File', description: 'Path of the input File (including extension .csv, .shp, etc.)', title: 'Path of the input File', type: String.class],
-          databaseName   : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database. (default : h2gisdb)', min: 0, max: 1, type: String.class],
+          databaseName   : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database (default : first found db)', min: 0, max: 1, type: String.class],
           outputTableName: [name: 'outputTableName', description: 'Do not write the name of a table that contains a space. (default : file name without extension)', title: 'Name of output table', min: 0, max: 1, type: String.class]]
 
 outputs = [tableNameCreated: [name: 'tableNameCreated', title: 'tableNameCreated', type: String.class]]
 
-def static Connection openPostgreSQLDataStoreConnection(String dbName) {
+static Connection openGeoserverDataStoreConnection(String dbName) {
+    if(dbName == null || dbName.isEmpty()) {
+        dbName = new GeoServer().catalog.getStoreNames().get(0)
+    }
     Store store = new GeoServer().catalog.getStore(dbName)
-    JDBCDataStore jdbcDataStore = (JDBCDataStore) store.getDataStoreInfo().getDataStore(null)
+    JDBCDataStore jdbcDataStore = (JDBCDataStore)store.getDataStoreInfo().getDataStore(null)
     return jdbcDataStore.getDataSource().getConnection()
 }
 
 def run(input) {
 
     // Get name of the database
-    String dbName = "h2gisdb"
+    String dbName = ""
     if (input['databaseName']) {
         dbName = input['databaseName'] as String
     }
 
     // Open connection
-    openPostgreSQLDataStoreConnection(dbName).withCloseable { Connection connection ->
+    openGeoserverDataStoreConnection(dbName).withCloseable { Connection connection ->
 
 
         String pathFile = input["pathFile"] as String

@@ -12,19 +12,6 @@ import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
 
 import java.sql.Connection
-import java.sql.Statement
-
-import org.h2gis.functions.io.csv.*
-import org.h2gis.functions.io.dbf.*
-import org.h2gis.functions.io.geojson.*
-import org.h2gis.functions.io.json.*
-import org.h2gis.functions.io.kml.*
-import org.h2gis.functions.io.shp.*
-import org.h2gis.functions.io.tsv.*
-import org.h2gis.api.EmptyProgressVisitor
-import org.h2gis.utilities.wrapper.ConnectionWrapper
-
-import org.noisemodellingwps.utilities.WpsConnectionWrapper
 
 title = 'Display Tables'
 description = 'Display all tables in the database'
@@ -38,7 +25,7 @@ outputs = [
     result: [name: 'Result', title: 'Result', type: String.class]
 ]
 
-def static Connection openPostgreSQLDataStoreConnection(String dbName) {
+static Connection openGeoserverDataStoreConnection(String dbName) {
     if(dbName == null || dbName.isEmpty()) {
         dbName = new GeoServer().catalog.getStoreNames().get(0)
     }
@@ -84,7 +71,7 @@ def run(input) {
     if (input['databaseName']){dbName = input['databaseName'] as String}
 
     // Open connection
-    openPostgreSQLDataStoreConnection(dbName).withCloseable {
+    openGeoserverDataStoreConnection(dbName).withCloseable {
         Connection connection ->
             return [result : exec(connection, input)]
     }

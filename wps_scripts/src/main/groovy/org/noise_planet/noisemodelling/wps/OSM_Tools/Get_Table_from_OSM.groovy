@@ -7,104 +7,31 @@ package org.noise_planet.noisemodelling.wps.OSM_Tools
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import org.geotools.jdbc.JDBCDataStore
-import org.geotools.data.simple.*
-
-import org.locationtech.jts.geom.Geometry
-
-import groovy.sql.Sql
-
-import org.h2gis.api.EmptyProgressVisitor
-import org.h2gis.api.ProgressVisitor
-
-import org.noise_planet.noisemodelling.propagation.jdbc.TriangleNoiseMap
-import org.noise_planet.noisemodelling.propagation.RootProgressVisitor
+import org.h2gis.functions.io.osm.OSMRead
 
 import java.sql.Connection
-import java.util.concurrent.atomic.AtomicInteger
+import java.sql.Statement
 
-import org.h2gis.functions.io.gpx.*
-import org.h2gis.functions.io.osm.*
-
-import org.h2gis.utilities.wrapper.*
-
-import geoserver.GeoServer
-import geoserver.catalog.Store
-import org.geotools.jdbc.JDBCDataStore
-import org.geotools.data.simple.*
-
-import org.locationtech.jts.geom.Geometry
-import java.io.*;
-import java.sql.*;
-
-import org.h2gis.functions.io.csv.*
-import org.h2gis.functions.io.dbf.*
-import org.h2gis.functions.io.geojson.*
-import org.h2gis.functions.io.json.*
-import org.h2gis.functions.io.kml.*
-import org.h2gis.functions.io.shp.*
-import org.h2gis.functions.io.tsv.*
-
-
-import groovy.sql.Sql
-
-import org.h2gis.api.EmptyProgressVisitor
-import org.h2gis.api.ProgressVisitor
-
-import org.noise_planet.noisemodelling.propagation.jdbc.TriangleNoiseMap
-import org.noise_planet.noisemodelling.propagation.RootProgressVisitor
-
-import java.sql.Connection
-import java.util.concurrent.atomic.AtomicInteger
-//import org.orbisgis.orbisprocess.geoclimate.Geoclimate
-
-
-import groovy.json.JsonSlurper
-import groovy.transform.BaseScript
-import org.h2gis.functions.spatial.crs.ST_Transform
-import org.locationtech.jts.geom.Envelope
-import org.locationtech.jts.geom.Geometry
-
-import org.cts.crs.CRSException;
-import org.cts.op.CoordinateOperationException;
-import org.h2gis.api.EmptyProgressVisitor;
-import org.h2gis.api.ProgressVisitor;
-import org.h2gis.functions.io.geojson.GeoJsonRead;
-import org.h2gis.functions.io.shp.SHPRead;
-import org.h2gis.utilities.SFSUtilities;
-import org.locationtech.jts.geom.Coordinate;
-import org.noise_planet.noisemodelling.propagation.*;
-import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.xml.stream.XMLStreamException;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Locale;
-import java.util.Set;
-
+// TODO use advanced OSM import algorithm
+// import org.orbisgis.orbisprocess.geoclimate.Geoclimate
 
 title = 'Import from OSM'
-description = 'Convert OSM file to a compatible building file.'
+description = 'Convert OSM file to a compatible building and/or vegetation table.'
 
 inputs = [pathFile       : [name: 'Path of the input File', description: 'Path of the input File (including extension .osm.gz)', title: 'Path of the input File', type: String.class],
           convert2Building: [name: 'convert2Building', title: 'convert2Building', description: 'convert2Building', type: Boolean.class],
           convert2Vegetation: [name: 'convert2Vegetation', title: 'convert2Vegetation', description: 'convert2Vegetation', type: Boolean.class],
-          databaseName   : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database. (default : h2gisdb)', min: 0, max: 1, type: String.class]]
+          databaseName   : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database (default : first found db)', min: 0, max: 1, type: String.class]]
 
 outputs = [tableNameCreated: [name: 'tableNameCreated', title: 'tableNameCreated', type: String.class]]
 
-def static Connection openPostgreSQLDataStoreConnection(String dbName) {
+
+static Connection openGeoserverDataStoreConnection(String dbName) {
+    if(dbName == null || dbName.isEmpty()) {
+        dbName = new GeoServer().catalog.getStoreNames().get(0)
+    }
     Store store = new GeoServer().catalog.getStore(dbName)
-    JDBCDataStore jdbcDataStore = (JDBCDataStore) store.getDataStoreInfo().getDataStore(null)
+    JDBCDataStore jdbcDataStore = (JDBCDataStore)store.getDataStoreInfo().getDataStore(null)
     return jdbcDataStore.getDataSource().getConnection()
 }
 
@@ -122,13 +49,13 @@ def run(input) {
 
 
     // Get name of the database
-    String dbName = "h2gisdb"
+    String dbName = ""
     if (input['databaseName']) {
         dbName = input['databaseName'] as String
     }
 
     // Open connection
-    openPostgreSQLDataStoreConnection(dbName).withCloseable { Connection connection ->
+    openGeoserverDataStoreConnection(dbName).withCloseable { Connection connection ->
 
         String pathFile = input["pathFile"] as String
 
@@ -146,7 +73,7 @@ def run(input) {
         sql.execute("DROP TABLE IF EXISTS  MAP_WAY_NODE")
         sql.execute("DROP TABLE IF EXISTS MAP_WAY_TAG")
 
-        sql.execute("CALL OSMREAD('"+pathFile+"', 'MAP')")
+        OSMRead.readOSM(connection, pathFile, "MAP")
 
         if (convert2Building){
             String Buildings_Import = "DROP TABLE IF EXISTS MAP_BUILDINGS;\n" +
