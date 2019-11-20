@@ -3,7 +3,7 @@
 * @Author Pierre Aumond
 */
 
-package org.noise_planet.noisemodelling.wps.Import_and_Export
+package org.noise_planet.noisemodelling.wps
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
@@ -16,7 +16,6 @@ import org.h2gis.functions.io.json.JsonDriverFunction
 import org.h2gis.functions.io.kml.KMLDriverFunction
 import org.h2gis.functions.io.shp.SHPDriverFunction
 import org.h2gis.functions.io.tsv.TSVDriverFunction
-import org.noisemodellingwps.utilities.WpsConnectionWrapper
 
 import java.sql.Connection
 
@@ -51,8 +50,6 @@ def run(input) {
 
         // Open connection
         openGeoserverDataStoreConnection(dbName).withCloseable { Connection connection ->
-
-                connection = new WpsConnectionWrapper(connection)
 
                 String exportPath = input["exportPath"] as String
                 String tableToExport = input["tableToExport"] as String
