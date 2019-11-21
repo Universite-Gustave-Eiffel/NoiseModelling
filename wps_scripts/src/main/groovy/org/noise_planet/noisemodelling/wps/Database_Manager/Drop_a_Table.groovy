@@ -8,23 +8,10 @@ package org.noise_planet.noisemodelling.wps.Database_Manager
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.utilities.TableLocation
 
 import java.sql.Connection
 import java.sql.Statement
-
-import groovy.sql.Sql
-
-import org.h2gis.functions.io.csv.*
-import org.h2gis.functions.io.dbf.*
-import org.h2gis.functions.io.geojson.*
-import org.h2gis.functions.io.json.*
-import org.h2gis.functions.io.kml.*
-import org.h2gis.functions.io.shp.*
-import org.h2gis.functions.io.tsv.*
-import org.h2gis.api.EmptyProgressVisitor
-import org.h2gis.utilities.wrapper.ConnectionWrapper
-
-import org.noisemodellingwps.utilities.WpsConnectionWrapper
 
 title = 'Drop_a_Table'
 description = 'Delete a table from the database'
