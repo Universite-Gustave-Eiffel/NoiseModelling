@@ -9,7 +9,10 @@ import geoserver.GeoServer
 import groovy.sql.Sql
 import groovy.transform.CompileStatic
 import org.geotools.jdbc.JDBCDataStore
+import org.h2.table.Column
 import org.h2gis.api.EmptyProgressVisitor
+import org.h2gis.functions.io.file_table.FileEngine
+import org.h2gis.functions.io.file_table.H2TableIndex
 import org.h2gis.functions.io.geojson.GeoJsonDriverFunction
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
@@ -47,7 +50,7 @@ def static Connection openPostgreSQLDataStoreConnection(String dbName) {
 
 def run(input) {
 
-    SensitivityProcessData sensitivityProcessData = new SensitivityProcessData()
+    MultiRunsProcessData multiRunsProcessData = new MultiRunsProcessData()
 
     // -------------------
     // Get inputs
@@ -57,7 +60,7 @@ def run(input) {
         workingDir = input['workingDir']
     }
 
-    int n_Simu = null
+    int n_Simu = -1
     if (input['nSimu']) {
         n_Simu = Integer.valueOf(input['nSimu'])
     }
@@ -73,15 +76,6 @@ def run(input) {
         dbName = input['databaseName'] as String
     }
 
-    // Get name of the database
-    String multirun_File_Path = input['multirunFilePath']
-
-    int reflexion_order = 0
-    double max_src_dist = 200
-    double max_ref_dist = 50
-    double wall_alpha = 0.1
-    boolean compute_vertical_diffraction = false
-    boolean compute_horizontal_diffraction = false
 
     // ----------------------------------
     // Start... 
@@ -133,7 +127,7 @@ def run(input) {
                 i_read = i_read + 1
         }
 
-        if (n_Simu != null)   nSimu = n_Simu
+        if (n_Simu >0)   nSimu = n_Simu
 
         // Evaluate receiver points using provided buildings
         String fileZip = workingDir +"Rays.zip"
@@ -144,26 +138,46 @@ def run(input) {
         while (entry != null) {
             String filePath = workingDir + File.separator + entry.getName()
             GeoJsonDriverFunction geoJsonDriver = new GeoJsonDriverFunction()
+            File file = new File(filePath)
             switch (entry.getName()) {
+
                 case 'buildings.geojson':
                     sql.execute("DROP TABLE BUILDINGS if exists;")
                     extractFile(zipInputStream, filePath)
-                    geoJsonDriver.importFile(connection, 'BUILDINGS', new File(filePath), new EmptyProgressVisitor())
+                    geoJsonDriver.importFile(connection, 'BUILDINGS', file, new EmptyProgressVisitor())
                     System.println("import Buildings")
                     break
+
                 case 'sources.geojson':
                     sql.execute("DROP TABLE SOURCES if exists;")
                     extractFile(zipInputStream, filePath)
-                    geoJsonDriver.importFile(connection, 'SOURCES', new File(filePath), new EmptyProgressVisitor())
+                    geoJsonDriver.importFile(connection, 'SOURCES', file, new EmptyProgressVisitor())
                     System.println("import Sources")
                     break
+
                 case 'receivers.geojson':
-                    sql.execute("DROP TABLE ROADS if exists;")
+                    sql.execute("DROP TABLE RECEIVERS if exists;")
                     extractFile(zipInputStream, filePath)
-                    geoJsonDriver.importFile(connection, 'ROADS', new File(filePath), new EmptyProgressVisitor())
-                    System.println("import Roads")
+                    geoJsonDriver.importFile(connection, 'RECEIVERS', file, new EmptyProgressVisitor())
+                    System.println("import RECEIVERS")
                     break
+
+                case 'ground.geojson':
+                    sql.execute("DROP TABLE GROUND_TYPE if exists;")
+                    extractFile(zipInputStream, filePath)
+                    geoJsonDriver.importFile(connection, 'GROUND_TYPE', file, new EmptyProgressVisitor())
+                    System.println("import GROUND_TYPE")
+                    break
+
+                case 'dem.geojson':
+                    sql.execute("DROP TABLE DEM if exists;")
+                    extractFile(zipInputStream, filePath)
+                    geoJsonDriver.importFile(connection, 'DEM', file, new EmptyProgressVisitor())
+                    System.println("import DEM")
+                    break
+
             }
+            file.delete()
             zipInputStream.closeEntry()
             entry = zipInputStream.getNextEntry()
         }
@@ -172,43 +186,43 @@ def run(input) {
         zipInputStream.close()
 
 
-       /* System.out.println("Read Sources")
-        sql.execute("DROP TABLE IF EXISTS RECEIVERS")
-        SHPRead.readShape(connection, "D:\\aumond\\Documents\\CENSE\\LorientMapNoise\\data\\RecepteursQuest3D.shp", "RECEIVERS")
+        /* System.out.println("Read Sources")
+         sql.execute("DROP TABLE IF EXISTS RECEIVERS")
+         SHPRead.readShape(connection, "D:\\aumond\\Documents\\CENSE\\LorientMapNoise\\data\\RecepteursQuest3D.shp", "RECEIVERS")
 
-        HashMap<Integer, Double> pop = new HashMap<>()
-        // memes valeurs d e et n
-        sql.eachRow('SELECT id, pop FROM RECEIVERS;') { row ->
-            int id = (int) row[0]
-            pop.put(id, (Double) row[1])
-        }
+         HashMap<Integer, Double> pop = new HashMap<>()
+         // memes valeurs d e et n
+         sql.eachRow('SELECT id, pop FROM RECEIVERS;') { row ->
+             int id = (int) row[0]
+             pop.put(id, (Double) row[1])
+         }
 
-        // Load roads
-        System.out.println("Read road geometries and traffic")
-        // ICA 2019 - Sensitivity
-        sql.execute("DROP TABLE ROADS2 if exists;")
-        SHPRead.readShape(connection, "D:\\aumond\\Documents\\CENSE\\LorientMapNoise\\data\\RoadsICA2.shp", "ROADS2")
-        sql.execute("DROP TABLE ROADS if exists;")
-        sql.execute('CREATE TABLE ROADS AS SELECT CAST( OSM_ID AS INTEGER ) OSM_ID , THE_GEOM, TMJA_D,TMJA_E,TMJA_N,\n' +
-                'PL_D,PL_E,PL_N,\n' +
-                'LV_SPEE,PV_SPEE, PVMT FROM ROADS2;')
+         // Load roads
+         System.out.println("Read road geometries and traffic")
+         // ICA 2019 - Sensitivity
+         sql.execute("DROP TABLE ROADS2 if exists;")
+         SHPRead.readShape(connection, "D:\\aumond\\Documents\\CENSE\\LorientMapNoise\\data\\RoadsICA2.shp", "ROADS2")
+         sql.execute("DROP TABLE ROADS if exists;")
+         sql.execute('CREATE TABLE ROADS AS SELECT CAST( OSM_ID AS INTEGER ) OSM_ID , THE_GEOM, TMJA_D,TMJA_E,TMJA_N,\n' +
+                 'PL_D,PL_E,PL_N,\n' +
+                 'LV_SPEE,PV_SPEE, PVMT FROM ROADS2;')
 
-        sql.execute('ALTER TABLE ROADS ALTER COLUMN OSM_ID SET NOT NULL;')
-        sql.execute('ALTER TABLE ROADS ADD PRIMARY KEY (OSM_ID);')
-        sql.execute("CREATE SPATIAL INDEX ON ROADS(THE_GEOM)")
+         sql.execute('ALTER TABLE ROADS ALTER COLUMN OSM_ID SET NOT NULL;')
+         sql.execute('ALTER TABLE ROADS ADD PRIMARY KEY (OSM_ID);')
+         sql.execute("CREATE SPATIAL INDEX ON ROADS(THE_GEOM)")
 
-        System.out.println("Road file loaded")
+         System.out.println("Road file loaded")
 
-        // ICA 2019 - Sensitivity
-        sql.execute("DROP TABLE ROADS3 if exists;")
-        SHPRead.readShape(connection, "D:\\aumond\\Documents\\CENSE\\LorientMapNoise\\data\\Roads09083D.shp", "ROADS3")
+         // ICA 2019 - Sensitivity
+         sql.execute("DROP TABLE ROADS3 if exists;")
+         SHPRead.readShape(connection, "D:\\aumond\\Documents\\CENSE\\LorientMapNoise\\data\\Roads09083D.shp", "ROADS3")
 
-        System.out.println("Road file loaded")*/
+         System.out.println("Road file loaded")*/
 
 
         PropagationProcessPathData genericMeteoData = new PropagationProcessPathData()
-        sensitivityProcessData.setSensitivityTable(dest2)
-        sensitivityProcessData.setRoadTable("ROADS",sql)
+        multiRunsProcessData.setSensitivityTable(dest2)
+        multiRunsProcessData.setRoadTable("SOURCES",sql)
 
         int GZIP_CACHE_SIZE = (int) Math.pow(2, 19)
 
@@ -216,47 +230,62 @@ def run(input) {
 
 
         //FileInputStream fileInputStream = new FileInputStream(new File("D:\\aumond\\Documents\\CENSE\\LorientMapNoise\\rays0908.gz").getAbsolutePath())
-         FileInputStream fileInputStream2 = new FileInputStream(new File(fileZip).getAbsolutePath())
-
-        try {
-            //
 
 
-            //DataInputStream dataInputStream = new DataInputStream(gzipInputStream)
-            //System.out.println(dataInputStream)
+        //DataInputStream dataInputStream = new DataInputStream(gzipInputStream)
+        //System.out.println(dataInputStream)
 
-            int oldIdReceiver = -1
-            int oldIdSource = -1
+        int oldIdReceiver = -1
+        int oldIdSource = -1
 
-            FileWriter csvFile = new FileWriter(new File("D:\\aumond\\Documents\\CENSE\\LorientMapNoise\\simuICA2.csv"))
-            List<double[]> simuSpectrum = new ArrayList<>()
+        FileWriter csvFile = new FileWriter(new File("D:\\aumond\\Documents\\CENSE\\LorientMapNoise\\simuICA2.csv"))
+        List<double[]> simuSpectrum = new ArrayList<>()
+        sql.execute("drop table if exists MultiRunsResults;")
+        sql.execute("create table MultiRunsResults (idRun integer,idReceiver integer, " +
+                "Lden63 double precision, Lden125 double precision, Lden250 double precision, Lden500 double precision, Lden1000 double precision, Lden2000 double precision, Lden4000 double precision, Lden8000 double precision);")
 
-            Map<Integer, List<double[]>> sourceLevel = new HashMap<>()
+        def qry = 'INSERT INTO MultiRunsResults(idRun,  idReceiver, ' +
+                'Lden63, Lden125, Lden250, Lden500, Lden1000,Lden2000, Lden4000, Lden8000) ' +
+                'VALUES (?,?,?,?,?,?,?,?,?,?);'
 
-            System.out.println("Prepare Sources")
-            def timeStart = System.currentTimeMillis()
 
-           sourceLevel = sensitivityProcessData.getTrafficLevel("ROADS", sql, nSimu)
 
-            def timeStart2 = System.currentTimeMillis()
-            System.out.println(timeStart2 - timeStart)
-            System.out.println("End Emission time :" + df.format(new Date()))
-            System.out.println("Run SA")
-            long computationTime = 0
-            long startSimulationTime = System.currentTimeMillis()
+        Map<Integer, List<double[]>> sourceLevel = new HashMap<>()
 
-            ZipInputStream zipInputStream2 = new ZipInputStream(fileInputStream2)
-            ZipEntry entry2 = zipInputStream2.getNextEntry()
+        System.out.println("Prepare Sources")
+        def timeStart = System.currentTimeMillis()
 
+        multiRunsProcessData.getTrafficLevel(nSimu)
+
+        def timeStart2 = System.currentTimeMillis()
+        System.out.println(timeStart2 - timeStart)
+        System.out.println("End Emission time :" + df.format(new Date()))
+        System.out.println("Run SA")
+        long computationTime = 0
+        long startSimulationTime = System.currentTimeMillis()
+
+        FileInputStream fileInputStream2 = new FileInputStream(new File(fileZip).getAbsolutePath())
+        ZipInputStream zipInputStream2 = new ZipInputStream(fileInputStream2)
+        ZipEntry entry2 = zipInputStream2.getNextEntry()
+
+        sql.withBatch(100, qry) { ps ->
             while (entry2 != null) {
 
                 switch (entry2.getName()) {
-                    case 'rays.gz' :
-                        GZIPInputStream gzipInputStream = new GZIPInputStream(zipInputStream2, GZIP_CACHE_SIZE)
-                        DataInputStream dataInputStream = new DataInputStream(gzipInputStream)
-                        //System.out.println(zipInputStream2.available()>0)
+                    case 'rays.gz':
+                        System.println(entry2.getName())
+                        System.println(entry2)
+                        String filePath = workingDir + entry2.getName()
+                        extractFile(zipInputStream2, filePath)
 
-                        while (fileInputStream2.available() > 0) {
+                        System.out.println(filePath)
+                        FileInputStream fileInput = new FileInputStream(new File(filePath))
+                        GZIPInputStream gzipInputStream = new GZIPInputStream(fileInput, GZIP_CACHE_SIZE)
+                        DataInputStream dataInputStream = new DataInputStream(gzipInputStream)
+
+                        System.out.println(fileInput.available() )
+                        while (fileInput.available() > 0) {
+
                             PointToPointPathsMultiRuns paths = new PointToPointPathsMultiRuns()
                             paths.readPropagationPathListStream(dataInputStream)
                             long startComputationTime = System.currentTimeMillis()
@@ -264,11 +293,15 @@ def run(input) {
                             int idSource = (Integer) paths.sourceId
 
                             if (idReceiver != oldIdReceiver) {
-                                System.out.println("Receiver: " + oldIdReceiver)
+                                System.out.println("oldReceiver: " + oldIdReceiver +"Receiver: " + idReceiver )
                                 // Save old receiver values
                                 if (oldIdReceiver != -1) {
                                     for (int r = 0; r < nSimu; ++r) {
-                                        csvFile.append(String.format("%d\t%d\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n", r, oldIdReceiver, pop.get(oldIdReceiver), simuSpectrum.get(r)[0], simuSpectrum.get(r)[1], simuSpectrum.get(r)[2], simuSpectrum.get(r)[3], simuSpectrum.get(r)[4], simuSpectrum.get(r)[5], simuSpectrum.get(r)[6], simuSpectrum.get(r)[7]))
+                                        ps.addBatch(r as Integer, idReceiver as Integer,
+                                                simuSpectrum.get(r)[0] as Double, simuSpectrum.get(r)[1] as Double, simuSpectrum.get(r)[2] as Double,
+                                                simuSpectrum.get(r)[3] as Double, simuSpectrum.get(r)[4]as Double, simuSpectrum.get(r)[5] as Double,
+                                                simuSpectrum.get(r)[6]as Double, simuSpectrum.get(r)[7] as Double)
+                                    //    csvFile.append(String.format("%d\t%d\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n", r, oldIdReceiver, pop.get(oldIdReceiver), simuSpectrum.get(r)[0], simuSpectrum.get(r)[1], simuSpectrum.get(r)[2], simuSpectrum.get(r)[3], simuSpectrum.get(r)[4], simuSpectrum.get(r)[5], simuSpectrum.get(r)[6], simuSpectrum.get(r)[7]))
                                     }
                                 }
                                 // Create new receiver value
@@ -277,9 +310,10 @@ def run(input) {
                                     simuSpectrum.add(new double[PropagationProcessPathData.freq_lvl.size()])
                                 }
                             }
+
                             oldIdReceiver = idReceiver
-                            ComputeRaysOut out = new ComputeRaysOut(false, sensitivityProcessData.getGenericMeteoData(0))
-                            //double[] attenuation = out.computeAttenuation(sensitivityProcessData.getGenericMeteoData(r), idSource, paths.getLi(), idReceiver, propagationPaths)
+                            ComputeRaysOut out = new ComputeRaysOut(false, multiRunsProcessData.getGenericMeteoData(0))
+                            //double[] attenuation = out.computeAttenuation(multiRunsProcessData.getGenericMeteoData(r), idSource, paths.getLi(), idReceiver, propagationPaths)
                             double[] attenuation = null
                             List<PropagationPath> propagationPaths = new ArrayList<>()
                             for (int r = 0; r < nSimu; r++) {
@@ -287,10 +321,10 @@ def run(input) {
                                 for (int pP = 0; pP < paths.propagationPathList.size(); pP++) {
 
                                     paths.propagationPathList.get(pP).initPropagationPath()
-                                    if (paths.propagationPathList.get(pP).refPoints.size() <= sensitivityProcessData.Refl[r]
-                                            && paths.propagationPathList.get(pP).difHPoints.size() <= sensitivityProcessData.Dif_hor[r]
-                                            && paths.propagationPathList.get(pP).difVPoints.size() <= sensitivityProcessData.Dif_ver[r]
-                                            && paths.propagationPathList.get(pP).SRList[0].dp <= sensitivityProcessData.DistProp[r]
+                                    if (paths.propagationPathList.get(pP).refPoints.size() <= multiRunsProcessData.Refl[r]
+                                            && paths.propagationPathList.get(pP).difHPoints.size() <= multiRunsProcessData.Dif_hor[r]
+                                            && paths.propagationPathList.get(pP).difVPoints.size() <= multiRunsProcessData.Dif_ver[r]
+                                            && paths.propagationPathList.get(pP).SRList[0].dp <= multiRunsProcessData.DistProp[r]
                                     ) {
                                         propagationPaths.add(paths.propagationPathList.get(pP))
                                     }
@@ -298,20 +332,23 @@ def run(input) {
 
 
                                 if (propagationPaths.size() > 0) {
-                                    //double[] attenuation = out.computeAttenuation(sensitivityProcessData.getGenericMeteoData(r), idSource, paths.getLi(), idReceiver, propagationPaths)
+                                    //double[] attenuation = out.computeAttenuation(multiRunsProcessData.getGenericMeteoData(r), idSource, paths.getLi(), idReceiver, propagationPaths)
                                     //double[] soundLevel = sumArray(attenuation, sourceLevel.get(idSource).get(r))
                                     if (attenuation != null) {
-                                        if (sensitivityProcessData.TempMean[r] != sensitivityProcessData.TempMean[r - 1]
-                                                || sensitivityProcessData.HumMean[r] != sensitivityProcessData.HumMean[r - 1]) {
-                                            attenuation = out.computeAttenuation(sensitivityProcessData.getGenericMeteoData(r), idSource, paths.getLi(), idReceiver, propagationPaths)
+                                        if (multiRunsProcessData.TempMean[r] != multiRunsProcessData.TempMean[r - 1]
+                                                || multiRunsProcessData.HumMean[r] != multiRunsProcessData.HumMean[r - 1]) {
+                                            attenuation = out.computeAttenuation(multiRunsProcessData.getGenericMeteoData(r), idSource, paths.getLi(), idReceiver, propagationPaths)
                                         }
                                     } else {
-                                        attenuation = out.computeAttenuation(sensitivityProcessData.getGenericMeteoData(r), idSource, paths.getLi(), idReceiver, propagationPaths)
+                                        attenuation = out.computeAttenuation(multiRunsProcessData.getGenericMeteoData(r), idSource, paths.getLi(), idReceiver, propagationPaths)
                                     }
 
-                                    double[] soundLevelDay = ComputeRays.wToDba(ComputeRays.multArray(sensitivityProcessData.wjSourcesD.get(idSource).get(r), ComputeRays.dbaToW(attenuation)))
-                                    double[] soundLevelEve = ComputeRays.wToDba(ComputeRays.multArray(sensitivityProcessData.wjSourcesE.get(idSource).get(r), ComputeRays.dbaToW(attenuation)))
-                                    double[] soundLevelNig = ComputeRays.wToDba(ComputeRays.multArray(sensitivityProcessData.wjSourcesN.get(idSource).get(r), ComputeRays.dbaToW(attenuation)))
+                                    double[] wjSourcesD = multiRunsProcessData.getWjSourcesD(idSource,r)
+                                    double[] wjSourcesE = multiRunsProcessData.getWjSourcesE(idSource,r)
+                                    double[] wjSourcesN = multiRunsProcessData.getWjSourcesN(idSource,r)
+                                    double[] soundLevelDay = ComputeRays.wToDba(ComputeRays.multArray(wjSourcesD, ComputeRays.dbaToW(attenuation)))
+                                    double[] soundLevelEve = ComputeRays.wToDba(ComputeRays.multArray(wjSourcesE, ComputeRays.dbaToW(attenuation)))
+                                    double[] soundLevelNig = ComputeRays.wToDba(ComputeRays.multArray(wjSourcesN, ComputeRays.dbaToW(attenuation)))
                                     double[] lDen = new double[soundLevelDay.length]
                                     double[] lN = new double[soundLevelDay.length]
                                     for (int i = 0; i < soundLevelDay.length; ++i) {
@@ -326,23 +363,31 @@ def run(input) {
                             }
                             computationTime += System.currentTimeMillis() - startComputationTime
                         }
+                        fileInput.close()
+
                 }
                 zipInputStream2.closeEntry()
                 entry2 = zipInputStream2.getNextEntry()
+
             }
 
-            System.out.println("ComputationTime :" + computationTime.toString())
-            System.out.println("SimulationTime :" + (System.currentTimeMillis() - startSimulationTime).toString())
-
-           // csvFile.close()
-            System.out.println("End time :" + df.format(new Date()))
-
-        } finally {
-
-            fileInputStream2.close()
         }
 
-       // long computationTime = System.currentTimeMillis() - start;
+        System.out.println("ComputationTime :" + computationTime.toString())
+        System.out.println("SimulationTime :" + (System.currentTimeMillis() - startSimulationTime).toString())
+
+        // csvFile.close()
+        System.out.println("End time :" + df.format(new Date()))
+
+
+        fileInputStream2.close()
+
+
+        sql.execute("drop table if exists MultiRunsResults_geom;")
+        sql.execute("create table MultiRunsResults_geom  as select a.idRun, a.idReceiver, b.THE_GEOM, a.Lden63, a.Lden125, a.Lden250, a.Lden500, a.Lden1000, a.Lden2000, a.Lden4000, a.Lden8000 FROM RECEIVERS b LEFT JOIN MultiRunsResults a ON a.IDRECEIVER = b.ID;")
+        sql.execute("drop table if exists MultiRunsResults;")
+
+        // long computationTime = System.currentTimeMillis() - start;
         return [result: "Calculation Done !"]
     }
 
@@ -407,19 +452,18 @@ private static void copyFileUsingStream(File source, File dest) throws IOExcepti
 /**
  * Read source database and compute the sound emission spectrum of roads sources
  */
-class SensitivityProcessData {
+class MultiRunsProcessData {
     static public Map<Integer, double[]> soundSourceLevels = new HashMap<>()
 
-    protected Map<Integer, List<double[]>> wjSourcesD = new HashMap<>()
-    protected Map<Integer, List<double[]>> wjSourcesE = new HashMap<>()
-    protected Map<Integer, List<double[]>> wjSourcesN = new HashMap<>()
+    public Map<Integer, List<double[]>> wjSourcesD = new HashMap<>()
+    public Map<Integer, List<double[]>> wjSourcesE = new HashMap<>()
+    public Map<Integer, List<double[]>> wjSourcesN = new HashMap<>()
 
     public static PropagationProcessPathData genericMeteoData = new PropagationProcessPathData()
 
     // Init des variables
     ArrayList<Integer> Simu = new ArrayList<Integer>() // numero simu
     ArrayList<Double> CalcTime = new ArrayList<Double>() // temps calcul
-
 
     ArrayList<Integer> Refl = new ArrayList<Integer>()
     ArrayList<Integer> Dif_hor = new ArrayList<Integer>()
@@ -437,28 +481,36 @@ class SensitivityProcessData {
     ArrayList<Double> FlowMean = new ArrayList<Double>()
 
 
-    ArrayList<Integer> pk = new ArrayList<Integer>()
-    ArrayList<Integer> osm_id = new ArrayList<Integer>()
-    ArrayList<Geometry> the_geom = new ArrayList<Geometry>()
-    ArrayList<Double> LV_SPEE = new ArrayList<Double>()
-    ArrayList<Double> PV_SPEE = new ArrayList<Double>()
-    ArrayList<Double> SPEED_D = new ArrayList<Double>()
-    ArrayList<Double> TMJA_D = new ArrayList<Double>()
-    ArrayList<Double> TMJA_E = new ArrayList<Double>()
-    ArrayList<Double> TMJA_N = new ArrayList<Double>()
-    ArrayList<Double> TMJA_DD = new ArrayList<Double>()
-    ArrayList<Double> TMJA_ED = new ArrayList<Double>()
-    ArrayList<Double> TMJA_ND = new ArrayList<Double>()
-    ArrayList<Double> PL_D = new ArrayList<Double>()
-    ArrayList<Double> PL_E = new ArrayList<Double>()
-    ArrayList<Double> PL_N = new ArrayList<Double>()
-    ArrayList<Double> PL_DD = new ArrayList<Double>()
-    ArrayList<Double> PL_ED = new ArrayList<Double>()
-    ArrayList<Double> PL_ND = new ArrayList<Double>()
-    ArrayList<String> PVMT = new ArrayList<String>()
+    Map<Integer, Integer> pk = new HashMap<>()
+    Map<Integer, Long> OSM_ID = new HashMap<>()
+    Map<Integer,Geometry> the_geom = new HashMap<>()
 
+    Map<Integer,Double> TV_D = new HashMap<>()
+    Map<Integer,Double> TV_E = new HashMap<>()
+    Map<Integer,Double> TV_N = new HashMap<>()
+    Map<Integer,Double> HV_D = new HashMap<>()
+    Map<Integer,Double> HV_E = new HashMap<>()
+    Map<Integer,Double> HV_N = new HashMap<>()
+    Map<Integer,Double> LV_SPD_D = new HashMap<>()
+    Map<Integer,Double> LV_SPD_E = new HashMap<>()
+    Map<Integer,Double> LV_SPD_N = new HashMap<>()
+    Map<Integer,Double> HV_SPD_D = new HashMap<>()
+    Map<Integer,Double> HV_SPD_E = new HashMap<>()
+    Map<Integer,Double> HV_SPD_N = new HashMap<>()
+    Map<Integer,String> PVMT = new HashMap<>()
 
-    Map<Integer, List<double[]>> getTrafficLevel(String tablename, Sql sql, int nSimu) throws SQLException {
+// Getter
+    double[] getWjSourcesD(int idSource, int r ) {
+        return this.wjSourcesD.get(idSource).get(r)
+    }
+    double[] getWjSourcesE(int idSource, int r ) {
+        return this.wjSourcesE.get(idSource).get(r)
+    }
+    double[] getWjSourcesN(int idSource, int r ) {
+        return this.wjSourcesN.get(idSource).get(r)
+    }
+
+    void getTrafficLevel(int nSimu) throws SQLException {
         /**
          * Vehicles category Table 3 P.31 CNOSSOS_EU_JRC_REFERENCE_REPORT
          * lv : Passenger cars, delivery vans ≤ 3.5 tons, SUVs , MPVs including trailers and caravans
@@ -485,102 +537,55 @@ class SensitivityProcessData {
          * @param Junc_type Type of junction ((k = 1 for a crossing with traffic lights ; k = 2 for a roundabout)
          */
         //connect
-        Map<Integer, List<double[]>> sourceLevel = new HashMap<>()
+       // Map<Integer, List<double[]>> sourceLevel = new HashMap<>()
 
         // memes valeurs d e et n
 
 
         def list = [63, 125, 250, 500, 1000, 2000, 4000, 8000]
-        sql.eachRow('SELECT pk, the_geom , OSM_ID, ' +
-                'TMJA_D,TMJA_E,TMJA_N,TMJA_DD,TMJA_ED,TMJA_ND,' +
-                'PL_D,PL_E,PL_N,PL_DD,PL_ED,PL_ND,' +
-                ' LV_SPEE, PV_SPEE,SPEED_D, ' +
-                'PVMT FROM ' + tablename + ';') { row ->
 
-            /* pk.add((int) fields[0])
-             the_geom.add((Geometry) fields[1])
-             osm_id.add((int) fields[2])
-             TMJA_D.add((double) fields[3])
-             TMJA_E.add((double) fields[4])
-             TMJA_N.add((double) fields[5])
-             TMJA_DD.add((double) fields[6])
-             TMJA_ED.add((double) fields[7])
-             TMJA_ND.add((double) fields[8])
-             PL_D.add((double) fields[9])
-             PL_E.add((double) fields[10])
-             PL_N.add((double) fields[11])
-             PL_DD.add((double) fields[12])
-             PL_ED.add((double) fields[13])
-             PL_ND.add((double) fields[14])
-             LV_SPEE.add((double) fields[15])
-             PV_SPEE.add((double) fields[16])
-             SPEED_D.add((double) fields[17])
-             PVMT.add((String) fields[18])*/
-
-
-            int id = (int) row[2].toInteger()
-            //System.out.println("Source :" + id)
-            Geometry the_geom = row[1]
-            def speed_lv = (double) row[15]
-            def speed_pl = (double) row[16]
-            def speed_lv_d = (double) row[17]
-
-            def lv_d_speed = (double) row[15]
-            def mv_d_speed = (double) 0.0
-            def hv_d_speed = (double) row[16]
-            def wav_d_speed = (double) 0.0
-            def wbv_d_speed = (double) 0.0
-            def lv_e_speed = (double) row[15]
-            def mv_e_speed = (double) 0.0
-            def hv_e_speed = (double) row[16]
-            def wav_e_speed = (double) 0.0
-            def wbv_e_speed = (double) 0.0
-            def lv_n_speed = (double) row[15]
-            def mv_n_speed = (double) 0.0
-            def hv_n_speed = (double) row[16]
-            def wav_n_speed = (double) 0.0
-            def wbv_n_speed = (double) 0.0
-            def TMJAD_Ref = (double) row[3]
-            def TMJAE_Ref = (double) row[4]
-            def TMJAN_Ref = (double) row[5]
-            def TMJAD_D = (double) row[6]
-            def TMJAE_D = (double) row[7]
-            def TMJAN_D = (double) row[8]
-            def TMJAD = (double) row[3]
-            def TMJAE = (double) row[4]
-            def TMJAN = (double) row[5]
-            def PLD = (double) row[9]
-            def PLE = (double) row[10]
-            def PLN = (double) row[11]
-            def PLD_Ref = (double) row[9]
-            def PLE_Ref = (double) row[10]
-            def PLN_Ref = (double) row[11]
-            def PLD_D = (double) row[12]
-            def PLE_D = (double) row[13]
-            def PLN_D = (double) row[14]
-
-
-
-            def vl_d_per_hour = (double) (TMJAD - (PLD * TMJAD / 100))
+        pk.each { id, val ->
+            def vl_d_per_hour = (double) TV_D.get(id) - HV_D.get(id)
             def ml_d_per_hour = (double) 0.0
-            def pl_d_per_hour = (double) (TMJAD * PLD / 100)
+            def pl_d_per_hour = (double) HV_D.get(id)
             def wa_d_per_hour = (double) 0.0
             def wb_d_per_hour = (double) 0.0
-            def vl_e_per_hour = (double) (TMJAE - (TMJAE * PLE / 100))
+            def vl_e_per_hour = (double) TV_E.get(id) - HV_E.get(id)
             def ml_e_per_hour = (double) 0.0
-            def pl_e_per_hour = (double) (TMJAE * PLE / 100)
+            def pl_e_per_hour = (double) HV_E.get(id)
             def wa_e_per_hour = (double) 0.0
             def wb_e_per_hour = (double) 0.0
-            def vl_n_per_hour = (double) (TMJAN - (TMJAN * PLN / 100))
+            def vl_n_per_hour = (double) TV_N.get(id) - HV_N.get(id)
             def ml_n_per_hour = (double) 0.0
-            def pl_n_per_hour = (double) (TMJAN * PLN / 100)
+            def pl_n_per_hour = (double) HV_N.get(id)
             def wa_n_per_hour = (double) 0.0
             def wb_n_per_hour = (double) 0.0
+
+            def speed_lv = LV_SPD_D.get(id)
+            def speed_pl = HV_SPD_D.get(id)
+            def speed_lv_d = LV_SPD_D.get(id)
+
+            def lv_d_speed = LV_SPD_D.get(id)
+            def mv_d_speed = (double) 0.0
+            def hv_d_speed = HV_SPD_D.get(id)
+            def wav_d_speed = (double) 0.0
+            def wbv_d_speed = (double) 0.0
+            def lv_e_speed = LV_SPD_E.get(id)
+            def mv_e_speed = (double) 0.0
+            def hv_e_speed = HV_SPD_E.get(id)
+            def wav_e_speed = (double) 0.0
+            def wbv_e_speed = (double) 0.0
+            def lv_n_speed = LV_SPD_N.get(id)
+            def mv_n_speed = (double) 0.0
+            def hv_n_speed = HV_SPD_N.get(id)
+            def wav_n_speed = (double) 0.0
+            def wbv_n_speed = (double) 0.0
+
             def Zstart = (double) 0.0
             def Zend = (double) 0.0
             def Juncdist = (double) 250.0
             def Junc_type = (int) 1
-            def road_pav = (String) row[18]
+            def road_pav = (String) PVMT.get(id)
 
             // Ici on calcule les valeurs d'emission par tronçons et par fréquence
 
@@ -596,7 +601,7 @@ class SensitivityProcessData {
                 double[] res_e = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
                 double[] res_n = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
-                if (PL[r]) {
+                /*if (PL[r]) {
                     PLD = PLD_Ref
                     PLE = PLE_Ref
                     PLN = PLN_Ref
@@ -615,16 +620,16 @@ class SensitivityProcessData {
                     TMJAD = TMJAD_D
                     TMJAE = TMJAE_D
                     TMJAN = TMJAN_D
-                }
+                }*/
 
-                vl_d_per_hour = (TMJAD - (PLD * TMJAD / 100))
+                /*vl_d_per_hour = (TMJAD - (PLD * TMJAD / 100))
                 pl_d_per_hour = (TMJAD * PLD / 100)
                 vl_e_per_hour = (TMJAE - (TMJAE * PLE / 100))
                 pl_e_per_hour = (TMJAE * PLE / 100)
                 vl_n_per_hour = (TMJAN - (TMJAN * PLN / 100))
-                pl_n_per_hour = (TMJAN * PLN / 100)
+                pl_n_per_hour = (TMJAN * PLN / 100)*/
 
-                if (Speed[r]) {
+                /*if (Speed[r]) {
                     lv_d_speed = speed_lv
                     hv_d_speed = speed_pl
                     lv_e_speed = speed_lv
@@ -638,10 +643,7 @@ class SensitivityProcessData {
                     hv_e_speed = speed_lv_d
                     lv_n_speed = speed_lv_d
                     hv_n_speed = speed_lv_d
-                }
-
-
-
+                }*/
 
                 for (f in list) {
                     // fois 0.5 car moitié dans un sens et moitié dans l'autre
@@ -691,9 +693,9 @@ class SensitivityProcessData {
                             vl_n_per_hour * FlowMean[r], ml_n_per_hour * FlowMean[r], pl_n_per_hour * FlowMean[r], wa_n_per_hour * FlowMean[r], wb_n_per_hour * FlowMean[r],
                             f, TempMean[r], RS, 0, 0, 250, 1)
 
-                    srcParameters_d.setSlopePercentage(RSParametersCnossos.computeSlope(Zstart, Zend, the_geom.getLength()))
-                    srcParameters_e.setSlopePercentage(RSParametersCnossos.computeSlope(Zstart, Zend, the_geom.getLength()))
-                    srcParameters_n.setSlopePercentage(RSParametersCnossos.computeSlope(Zstart, Zend, the_geom.getLength()))
+                    srcParameters_d.setSlopePercentage(RSParametersCnossos.computeSlope(0, 0, the_geom.get(id).getLength()))
+                    srcParameters_e.setSlopePercentage(RSParametersCnossos.computeSlope(0, 0, the_geom.get(id).getLength()))
+                    srcParameters_n.setSlopePercentage(RSParametersCnossos.computeSlope(0, 0, the_geom.get(id).getLength()))
                     //res_d[kk] = EvaluateRoadSourceCnossos.evaluate(srcParameters_d)
                     //res_e[kk] = EvaluateRoadSourceCnossos.evaluate(srcParameters_e)
                     //res_n[kk] = EvaluateRoadSourceCnossos.evaluate(srcParameters_n)
@@ -715,14 +717,11 @@ class SensitivityProcessData {
                 sl_res_d.add(res_d)
                 sl_res_e.add(res_e)
                 sl_res_n.add(res_n)
-                sourceLevel2.add(res_d)
             }
             wjSourcesD.put(id, sl_res_d)
             wjSourcesE.put(id, sl_res_e)
             wjSourcesN.put(id, sl_res_n)
-            sourceLevel.put(id, sourceLevel2)
         }
-        return sourceLevel
     }
 
     PropagationProcessPathData getGenericMeteoData(int r) {
@@ -769,27 +768,29 @@ class SensitivityProcessData {
         //////////////////////
 
 
-        sql.eachRow('SELECT pk, osm_id, the_geom , OSM_ID, TMJA_D,TMJA_E,TMJA_N,TMJA_DD,TMJA_ED,TMJA_ND,PL_D,PL_E,PL_N,PL_DD,PL_ED,PL_ND, LV_SPEE, PV_SPEE,SPEED_D, PVMT FROM ' + tablename + ';') { fields ->
+        sql.eachRow('SELECT pk2, CAST(OSM_ID AS INTEGER) OSM_ID, the_geom , ' +
+                'TV_D,TV_E,TV_N,' +
+                'HV_D,HV_E,HV_N, ' +
+                'LV_SPD_D, LV_SPD_E, LV_SPD_N, ' +
+                'HV_SPD_D, HV_SPD_E, HV_SPD_N, ' +
+                'PVMT FROM ' + tablename + ';') { fields ->
 
-            pk.add((int) fields[0])
-            the_geom.add(fields[1])
-            osm_id.add((int) fields[2])
-            TMJA_D.add((double) fields[3])
-            TMJA_E.add((double) fields[4])
-            TMJA_N.add((double) fields[5])
-            TMJA_DD.add((double) fields[6])
-            TMJA_ED.add((double) fields[7])
-            TMJA_ND.add((double) fields[8])
-            PL_D.add((double) fields[9])
-            PL_E.add((double) fields[10])
-            PL_N.add((double) fields[11])
-            PL_DD.add((double) fields[12])
-            PL_ED.add((double) fields[13])
-            PL_ND.add((double) fields[14])
-            LV_SPEE.add((double) fields[15])
-            PV_SPEE.add((double) fields[16])
-            SPEED_D.add((double) fields[17])
-            PVMT.add((String) fields[18])
+            pk.put((int) fields[0],(int) fields[0])
+            OSM_ID.put((int) fields[0],(long) fields[1])
+            the_geom.put((int) fields[0], (Geometry) fields[2])
+            TV_D.put((int) fields[0],(double) fields[3])
+            TV_E.put((int) fields[0],(double) fields[4])
+            TV_N.put((int) fields[0],(double) fields[5])
+            HV_D.put((int) fields[0],(double) fields[6])
+            HV_E.put((int) fields[0],(double) fields[7])
+            HV_N.put((int) fields[0],(double) fields[8])
+            LV_SPD_D.put((int) fields[0],(double) fields[9])
+            LV_SPD_E.put((int) fields[0],(double) fields[10])
+            LV_SPD_N.put((int) fields[0],(double) fields[11])
+            HV_SPD_D.put((int) fields[0],(double) fields[12])
+            HV_SPD_E.put((int) fields[0],(double) fields[13])
+            HV_SPD_N.put((int) fields[0],(double) fields[14])
+            PVMT.put((int) fields[0],(String) fields[15])
 
         }
 

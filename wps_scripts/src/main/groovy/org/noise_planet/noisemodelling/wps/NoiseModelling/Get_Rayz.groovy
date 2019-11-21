@@ -15,6 +15,8 @@ import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Geometry
+import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
+import org.noise_planet.noisemodelling.emission.RSParametersCnossos
 import org.noise_planet.noisemodelling.propagation.*
 import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap
 
@@ -26,13 +28,13 @@ import java.util.zip.GZIPOutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
-title = 'Get Rays in gunzip'
-description = 'Compute all the rays and keep it in gunzip file.'
+title = 'Export Rays.zip'
+description = 'Compute all the rays and keep it in zip file.'
 
 inputs = [databaseName      : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database. (default : h2gisdb)', min: 0, max: 1, type: String.class],
           workingDir : [name: 'workingDir', title: 'Output Directory', description: 'Where Rays will be exported (ex : C:/Desktop/)', type: String.class],
           buildingTableName : [name: 'Buildings table name', title: 'Buildings table name', type: String.class],
-          sourcesTableName  : [name: 'Sources table name', title: 'Sources table name with emission', type: String.class],
+          sourcesTableName  : [name: 'Sources table name', title: 'Sources table name', type: String.class],
           receiversTableName: [name: 'Receivers table name', title: 'Receivers table name', type: String.class],
           demTableName      : [name: 'DEM table name', title: 'DEM table name', min: 0, max: 1, type: String.class],
           groundTableName   : [name: 'Ground table name', title: 'Ground table name', min: 0, max: 1, type: String.class],
@@ -51,46 +53,99 @@ outputs = [result: [name: 'result', title: 'Result', type: String.class]]
  * Read source database and compute the sound emission spectrum of roads sources*/
 class TrafficRayzPropagationProcessData extends PropagationProcessData {
     // Lden values
-    public List<double[]> wjSourcesDEN = new ArrayList<>();
-    public Map<Long, Integer> SourcesPk = new HashMap<>();
+    public List<double[]> wjSourcesDEN = new ArrayList<>()
+    public Map<Long, Integer> SourcesPk = new HashMap<>()
 
 
-    public TrafficRayzPropagationProcessData(FastObstructionTest freeFieldFinder) {
-        super(freeFieldFinder);
+    TrafficRayzPropagationProcessData(FastObstructionTest freeFieldFinder) {
+        super(freeFieldFinder)
     }
 
     int idSource = 0
 
     @Override
-    public void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException {
+    void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException {
         super.addSource(pk, geom, rs)
         SourcesPk.put(pk, idSource++)
 
-        // Read average 24h traffic
-        double[] ld = [ComputeRays.dbaToW(rs.getDouble('Ld63')),
-                       ComputeRays.dbaToW(rs.getDouble('Ld125')),
-                       ComputeRays.dbaToW(rs.getDouble('Ld250')),
-                       ComputeRays.dbaToW(rs.getDouble('Ld500')),
-                       ComputeRays.dbaToW(rs.getDouble('Ld1000')),
-                       ComputeRays.dbaToW(rs.getDouble('Ld2000')),
-                       ComputeRays.dbaToW(rs.getDouble('Ld4000')),
-                       ComputeRays.dbaToW(rs.getDouble('Ld8000'))]
-        double[] le = [ComputeRays.dbaToW(rs.getDouble('Le63')),
-                       ComputeRays.dbaToW(rs.getDouble('Le125')),
-                       ComputeRays.dbaToW(rs.getDouble('Le250')),
-                       ComputeRays.dbaToW(rs.getDouble('Le500')),
-                       ComputeRays.dbaToW(rs.getDouble('Le1000')),
-                       ComputeRays.dbaToW(rs.getDouble('Le2000')),
-                       ComputeRays.dbaToW(rs.getDouble('Le4000')),
-                       ComputeRays.dbaToW(rs.getDouble('Le8000'))]
-        double[] ln = [ComputeRays.dbaToW(rs.getDouble('Ln63')),
-                       ComputeRays.dbaToW(rs.getDouble('Ln125')),
-                       ComputeRays.dbaToW(rs.getDouble('Ln250')),
-                       ComputeRays.dbaToW(rs.getDouble('Ln500')),
-                       ComputeRays.dbaToW(rs.getDouble('Ln1000')),
-                       ComputeRays.dbaToW(rs.getDouble('Ln2000')),
-                       ComputeRays.dbaToW(rs.getDouble('Ln4000')),
-                       ComputeRays.dbaToW(rs.getDouble('Ln8000'))]
+
+        double tvD = rs.getDouble("TV_D")
+        double tvE = rs.getDouble("TV_E")
+        double tvN = rs.getDouble("TV_N")
+
+        double hvD = rs.getDouble("HV_D")
+        double hvE = rs.getDouble("HV_E")
+        double hvN = rs.getDouble("HV_N")
+
+        double lvSpeedD = rs.getDouble("LV_SPD_D")
+        double lvSpeedE = rs.getDouble("LV_SPD_E")
+        double lvSpeedN = rs.getDouble("LV_SPD_N")
+
+        double hvSpeedD = rs.getDouble("HV_SPD_D")
+        double hvSpeedE = rs.getDouble("HV_SPD_E")
+        double hvSpeedN = rs.getDouble("HV_SPD_N")
+
+        // Annual Average Daily Flow (AADF) estimates
+        String pavement = rs.getString("PVMT");
+
+        int LDAY_START_HOUR = 6
+        int LDAY_STOP_HOUR = 18
+        int LEVENING_STOP_HOUR = 22
+        int[] nightHours=[22, 23, 0, 1, 2, 3, 4, 5]
+
+        // Compute day average level
+        double[] ld = new double[PropagationProcessPathData.freq_lvl.size()];
+        double[] le = new double[PropagationProcessPathData.freq_lvl.size()];
+        double[] ln = new double[PropagationProcessPathData.freq_lvl.size()];
+
+        double Temperature = 20.0d
+        double Ts_stud = 0
+        double Pm_stud = 0
+        double Junc_dist = 0
+        int Junc_type = 0
+
+        for (int h = LDAY_START_HOUR; h < LDAY_STOP_HOUR; h++) {
+            int idFreq = 0
+            for (int freq : PropagationProcessPathData.freq_lvl) {
+                RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedD, hvSpeedD, hvSpeedD, lvSpeedD,
+                        lvSpeedD, Math.max(0, tvD - hvD), hvD, 0, 0, 0, freq, Temperature,
+                        pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type);
+                ld[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
+            }
+        }
+        // Average
+        for (int i = 0; i < ld.length; i++) {
+            ld[i] = ld[i] / (LDAY_STOP_HOUR - LDAY_START_HOUR);
+        }
+
+        // Evening
+        for (int h = LDAY_STOP_HOUR; h < LEVENING_STOP_HOUR; h++) {
+            int idFreq = 0
+            for(int freq : PropagationProcessPathData.freq_lvl) {
+                RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedE, hvSpeedE, hvSpeedE, lvSpeedE,
+                        lvSpeedE, Math.max(0, tvE - hvE), hvE, 0, 0, 0, freq, Temperature,
+                        pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type);
+                le[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
+            }
+        }
+
+        for(int i=0; i<le.size(); i++) {
+            le[i] = (le[i] / (LEVENING_STOP_HOUR - LDAY_STOP_HOUR))
+        }
+
+        // Night
+        for (int h : nightHours) {
+            int idFreq = 0
+            for(int freq : PropagationProcessPathData.freq_lvl) {
+                RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedN, hvSpeedN, hvSpeedN, lvSpeedN,
+                        lvSpeedN, Math.max(0, tvN - hvN), hvN, 0, 0, 0, freq, Temperature,
+                        pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type);
+                ln[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
+            }
+        }
+        for(int i=0; i<ln.size(); i++) {
+            ln[i] = (ln[i] / nightHours.length)
+        }
 
         double[] lden = new double[PropagationProcessPathData.freq_lvl.size()]
         int idFreq = 0
@@ -102,13 +157,11 @@ class TrafficRayzPropagationProcessData extends PropagationProcessData {
 
         wjSourcesDEN.add(lden)
 
-
-
     }
 
     @Override
     public double[] getMaximalSourcePower(int sourceId) {
-        return wjSourcesDEN.get(sourceId);
+        return wjSourcesDEN.get(sourceId)
     }
 }
 
@@ -271,8 +324,8 @@ def run(input) {
             pointNoiseMap.setSoilTableName(ground_table_name)
         }
         // Point cloud height above sea level POINT(X Y Z)
-        if (ground_table_name != "") {
-            pointNoiseMap.setSoilTableName(dem_table_name)
+        if (dem_table_name != "") {
+            pointNoiseMap.setDemTable(dem_table_name)
         }
         // Do not propagate for low emission or far away sources.
         // error in dB
@@ -522,45 +575,45 @@ class PropagationPathStorageFactory implements PointNoiseMap.IComputeRaysOutFact
 
         @Override
         void run() {
-            if (exportReceiverRays>0){
-                KMLDocument kmlDocument
-                ZipOutputStream compressedDoc
 
-                compressedDoc = new ZipOutputStream(new FileOutputStream(
-                        String.format(workingDir + "RaysFromRecv"+ exportReceiverRays +".kmz")))
-                compressedDoc.putNextEntry(new ZipEntry("doc.kml"))
-                kmlDocument = new KMLDocument(compressedDoc)
-                kmlDocument.writeHeader()
-                kmlDocument.setInputCRS("EPSG:2154")
-                kmlDocument.setOffset(new Coordinate(0,0,0))
+            KMLDocument kmlDocument
+            ZipOutputStream compressedDoc
+
+            compressedDoc = new ZipOutputStream(new FileOutputStream(
+                    String.format(workingDir + "RaysFromRecv"+ exportReceiverRays +".kmz")))
+            compressedDoc.putNextEntry(new ZipEntry("doc.kml"))
+            kmlDocument = new KMLDocument(compressedDoc)
+            kmlDocument.writeHeader()
+            kmlDocument.setInputCRS("EPSG:2154")
+            kmlDocument.setOffset(new Coordinate(0,0,0))
 
 
-                /*PropagationProcessPathData genericMeteoData = new PropagationProcessPathData()
-                genericMeteoData.setHumidity(70)
-                genericMeteoData.setTemperature(10)
-                ComputeRaysOut out = new ComputeRaysOut(false, genericMeteoData)
-    */
-                DataOutputStream dataOutputStream = new DataOutputStream(gzipOutputStream)
-                while (waitForMorePaths.get()) {
-                    while(!pathQueue.isEmpty()) {
-                        PointToPointPaths paths = pathQueue.pop()
-                        paths.writePropagationPathListStream(dataOutputStream)
+            /*PropagationProcessPathData genericMeteoData = new PropagationProcessPathData()
+            genericMeteoData.setHumidity(70)
+            genericMeteoData.setTemperature(10)
+            ComputeRaysOut out = new ComputeRaysOut(false, genericMeteoData)
+*/
+            DataOutputStream dataOutputStream = new DataOutputStream(gzipOutputStream)
+            while (waitForMorePaths.get()) {
+                while(!pathQueue.isEmpty()) {
+                    PointToPointPaths paths = pathQueue.pop()
+                    paths.writePropagationPathListStream(dataOutputStream)
 
-                        if(paths.receiverId == exportReceiverRays) {
-                            // Export rays
-                            kmlDocument.writeRays(paths.getPropagationPathList())
-
-                        }
+                    if(paths.receiverId == exportReceiverRays) {
+                        // Export rays
+                        kmlDocument.writeRays(paths.getPropagationPathList())
 
                     }
-                    Thread.sleep(5)
+
                 }
-                dataOutputStream.flush()
-                gzipOutputStream.close()
-                kmlDocument.writeFooter()
-                compressedDoc.closeEntry()
-                compressedDoc.close()
+                Thread.sleep(5)
             }
+            dataOutputStream.flush()
+            gzipOutputStream.close()
+            kmlDocument.writeFooter()
+            compressedDoc.closeEntry()
+            compressedDoc.close()
+
 
 
         }
@@ -570,7 +623,7 @@ class PropagationPathStorageFactory implements PointNoiseMap.IComputeRaysOutFact
 
 @CompileStatic
 class PointToPointPaths {
-    ArrayList<PropagationPath> propagationPathList;
+    ArrayList<PropagationPath> propagationPathList
     double li
     long sourceId
     long receiverId
@@ -591,28 +644,6 @@ class PointToPointPaths {
         }
     }
 
-    /**
-     * Reads the content of this object from <code>out</code>. All
-     * properties should be set to their default value or to the value read
-     * from the stream.
-     * @param in the stream to read
-     * @throws IOException if an I/O-error occurs
-     */
-    void readPropagationPathListStream( DataInputStream inputStream) throws IOException {
-        if (propagationPathList==null){
-            propagationPathList = new ArrayList<>()
-        }
 
-        receiverId = inputStream.readLong()
-        sourceId = inputStream.readLong()
-        li = inputStream.readDouble()
-        int propagationPathsListSize = inputStream.readInt()
-        propagationPathList.ensureCapacity(propagationPathsListSize)
-        for(int i=0; i < propagationPathsListSize; i++) {
-            PropagationPath propagationPath = new PropagationPath()
-            propagationPath.readStream(inputStream)
-            propagationPathList.add(propagationPath)
-        }
-    }
 
 }
