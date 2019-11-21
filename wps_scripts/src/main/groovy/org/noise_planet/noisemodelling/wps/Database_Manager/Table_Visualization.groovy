@@ -60,7 +60,7 @@ def run(input) {
         List<String> spatialFieldNames = SFSUtilities.getGeometryFields(connection, TableLocation.parse(tableName, JDBCUtilities.isH2DataBase(connection.getMetaData())))
         if (spatialFieldNames.isEmpty()) {
             System.err.println("The table %s does not contain a geometry field")
-            return new GeometryFactory().createPolygon()
+            return [result: new GeometryFactory().createGeometryCollection()]
         }
 
 
