@@ -17,8 +17,6 @@ import org.h2gis.api.ProgressVisitor
 import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
-import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
-import org.noise_planet.noisemodelling.emission.RSParametersCnossos
 import org.noise_planet.noisemodelling.propagation.*
 import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap
 
@@ -26,12 +24,12 @@ import javax.xml.stream.XMLStreamException
 import java.sql.Connection
 import java.sql.SQLException
 
-title = 'Compute Lday'
-description = 'Compute Lday Map from Estimated Annual average daily flows (AADF) estimates.'
+title = 'Compute Lden Map from Road Emission'
+description = 'Compute Lden Map from Road Emission.'
 
 inputs = [databaseName      : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database (default : first found db)', min: 0, max: 1, type: String.class],
           buildingTableName : [name: 'Buildings table name', title: 'Buildings table name', type: String.class],
-          sourcesTableName  : [name: 'Sources table name', title: 'Sources table name', type: String.class],
+          sourcesTableName  : [name: 'Sources table name', title: 'Sources table name with emission', type: String.class],
           receiversTableName: [name: 'Receivers table name', title: 'Receivers table name', type: String.class],
           demTableName      : [name: 'DEM table name', title: 'DEM table name', min: 0, max: 1, type: String.class],
           groundTableName   : [name: 'Ground table name', title: 'Ground table name', min: 0, max: 1, type: String.class],
@@ -41,31 +39,19 @@ inputs = [databaseName      : [name: 'Name of the database', title: 'Name of the
           wallAlpha         : [name: 'wallAlpha', title: 'Wall alpha', description: 'Wall abosrption (default = 0.1)', min: 0, max: 1, type: String.class],
           threadNumber      : [name: 'Thread number', title: 'Thread number', description: 'Number of thread to use on the computer (default = 1)', min: 0, max: 1, type: String.class],
           computeVertical   : [name: 'Compute vertical diffraction', title: 'Compute vertical diffraction', description: 'Compute or not the vertical diffraction (default = false)', min: 0, max: 1, type: Boolean.class],
-          computeHorizontal : [name: 'Compute horizontal diffraction', title: 'Compute horizontal diffraction', description: 'Compute or not the horizontal diffraction (default = false)', min: 0, max: 1, type: Boolean.class],
-          outputTableName: [name: 'outputTableName', description: 'Do not write the name of a table that contains a space. (default : file name without extension)', title: 'Name of output table', min: 0, max: 1, type: String.class]
-          ]
+          computeHorizontal : [name: 'Compute horizontal diffraction', title: 'Compute horizontal diffraction', description: 'Compute or not the horizontal diffraction (default = false)', min: 0, max: 1, type: Boolean.class]]
 
 outputs = [result: [name: 'result', title: 'Result', type: String.class]]
 
 /**
  * Read source database and compute the sound emission spectrum of roads sources*/
-class TrafficPropagationProcessData extends PropagationProcessData {
+class TrafficPropagationProcessDataDEN extends PropagationProcessData {
     // Lden values
-    public List<double[]> wjSourcesD = new ArrayList<>();
+    public List<double[]> wjSourcesDEN = new ArrayList<>();
     public Map<Long, Integer> SourcesPk = new HashMap<>();
 
-    private String AAFD_FIELD_NAME = "AADF";
-    // Annual Average Daily Flow (AADF) estimates
-    private String ROAD_CATEGORY_FIELD_NAME = "CLAS_ADM";
-    def lv_hourly_distribution = [0.56, 0.3, 0.21, 0.26, 0.69, 1.8, 4.29, 7.56, 7.09, 5.5, 4.96, 5.04,
-                                  5.8, 6.08, 6.23, 6.67, 7.84, 8.01, 7.12, 5.44, 3.45, 2.26, 1.72, 1.12];
-    def hv_hourly_distribution = [1.01, 0.97, 1.06, 1.39, 2.05, 3.18, 4.77, 6.33, 6.72, 7.32, 7.37, 7.4,
-                                  6.16, 6.22, 6.84, 6.74, 6.23, 4.88, 3.79, 3.05, 2.36, 1.76, 1.34, 1.07];
-    private static final int LDAY_START_HOUR = 6;
-    private static final int LDAY_STOP_HOUR = 18;
-    private static final double HV_PERCENTAGE = 0.1;
 
-    public TrafficPropagationProcessData(FastObstructionTest freeFieldFinder) {
+    public TrafficPropagationProcessDataDEN(FastObstructionTest freeFieldFinder) {
         super(freeFieldFinder);
     }
 
@@ -73,124 +59,70 @@ class TrafficPropagationProcessData extends PropagationProcessData {
 
     @Override
     public void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException {
-        super.addSource(pk, geom, rs);
+        super.addSource(pk, geom, rs)
         SourcesPk.put(pk, idSource++)
 
         // Read average 24h traffic
-        double tmja = rs.getDouble(AAFD_FIELD_NAME);
+        double[] ld = [ComputeRays.dbaToW(rs.getDouble('Ld63')),
+                       ComputeRays.dbaToW(rs.getDouble('Ld125')),
+                       ComputeRays.dbaToW(rs.getDouble('Ld250')),
+                       ComputeRays.dbaToW(rs.getDouble('Ld500')),
+                       ComputeRays.dbaToW(rs.getDouble('Ld1000')),
+                       ComputeRays.dbaToW(rs.getDouble('Ld2000')),
+                       ComputeRays.dbaToW(rs.getDouble('Ld4000')),
+                       ComputeRays.dbaToW(rs.getDouble('Ld8000'))]
+        double[] le = [ComputeRays.dbaToW(rs.getDouble('Le63')),
+                       ComputeRays.dbaToW(rs.getDouble('Le125')),
+                       ComputeRays.dbaToW(rs.getDouble('Le250')),
+                       ComputeRays.dbaToW(rs.getDouble('Le500')),
+                       ComputeRays.dbaToW(rs.getDouble('Le1000')),
+                       ComputeRays.dbaToW(rs.getDouble('Le2000')),
+                       ComputeRays.dbaToW(rs.getDouble('Le4000')),
+                       ComputeRays.dbaToW(rs.getDouble('Le8000'))]
+        double[] ln = [ComputeRays.dbaToW(rs.getDouble('Ln63')),
+                       ComputeRays.dbaToW(rs.getDouble('Ln125')),
+                       ComputeRays.dbaToW(rs.getDouble('Ln250')),
+                       ComputeRays.dbaToW(rs.getDouble('Ln500')),
+                       ComputeRays.dbaToW(rs.getDouble('Ln1000')),
+                       ComputeRays.dbaToW(rs.getDouble('Ln2000')),
+                       ComputeRays.dbaToW(rs.getDouble('Ln4000')),
+                       ComputeRays.dbaToW(rs.getDouble('Ln8000'))]
 
-        //130 km/h 1:Autoroute
-        //80 km/h  2:Nationale
-        //50 km/h  3:Départementale
-        //50 km/h  4:Voirie CUN
-        //50 km/h  5:Inconnu
-        //50 km/h  6:Privée
-        //50 km/h  7:Communale
-        int road_cat = rs.getInt(ROAD_CATEGORY_FIELD_NAME);
-
-        int roadType;
-        if (road_cat == 1) {
-            roadType = 10;
-        } else {
-            if (road_cat == 2) {
-                roadType = 42;
-            } else {
-                roadType = 62;
-            }
-        }
-        double speed_lv = 50;
-        if (road_cat == 1) {
-            speed_lv = 120;
-        } else {
-            if (road_cat == 2) {
-                speed_lv = 80;
-            }
+        double[] lden = new double[PropagationProcessPathData.freq_lvl.size()]
+        int idFreq = 0
+        for(int freq : PropagationProcessPathData.freq_lvl) {
+            lden[idFreq++] = (12 * ld[idFreq] +
+                    4 * ComputeRays.dbaToW(ComputeRays.wToDba(le[idFreq]) + 5) +
+                    8 * ComputeRays.dbaToW(ComputeRays.wToDba(ln[idFreq]) + 10)) / 24.0
         }
 
-        /**
-         * Vehicles category Table 3 P.31 CNOSSOS_EU_JRC_REFERENCE_REPORT
-         * lv : Passenger cars, delivery vans ≤ 3.5 tons, SUVs , MPVs including trailers and caravans
-         * mv: Medium heavy vehicles, delivery vans > 3.5 tons,  buses, touring cars, etc. with two axles and twin tyre mounting on rear axle
-         * hgv: Heavy duty vehicles, touring cars, buses, with three or more axles
-         * wav:  mopeds, tricycles or quads ≤ 50 cc
-         * wbv:  motorcycles, tricycles or quads > 50 cc
-         * @param lv_speed Average light vehicle speed
-         * @param mv_speed Average medium vehicle speed
-         * @param hgv_speed Average heavy goods vehicle speed
-         * @param wav_speed Average light 2 wheels vehicle speed
-         * @param wbv_speed Average heavy 2 wheels vehicle speed
-         * @param lvPerHour Average light vehicle per hour
-         * @param mvPerHour Average heavy vehicle per hour
-         * @param hgvPerHour Average heavy vehicle per hour
-         * @param wavPerHour Average heavy vehicle per hour
-         * @param wbvPerHour Average heavy vehicle per hour
-         * @param FreqParam Studied Frequency
-         * @param Temperature Temperature (Celsius)
-         * @param roadSurface roadSurface empty default, NL01 FR01 ..
-         * @param Ts_stud A limited period Ts (in months) over the year where a average proportion pm of light vehicles are equipped with studded tyres and during .
-         * @param Pm_stud Average proportion of vehicles equipped with studded tyres
-         * @param Junc_dist Distance to junction
-         * @param Junc_type Type of junction ((k = 1 for a crossing with traffic lights ; k = 2 for a roundabout)
-         */
-        // Compute day average level
-        double[] ld = new double[PropagationProcessPathData.freq_lvl.size()];
-        double lvPerHour = 0;
-        double mvPerHour = 0;
-        double hgvPerHour = 0;
-        double wavPerHour = 0;
-        double wbvPerHour = 0;
-        double Temperature = 20.0d;
-        String roadSurface = "FR_R2";
-        double Ts_stud = 0.5;
-        double Pm_stud = 4;
-        double Junc_dist = 0;
-        int Junc_type = 0;
-        double slopePercentage = 0;
-        double speedLv = speed_lv;
-        double speedMv = speed_lv;
-        double speedHgv = speed_lv;
-        double speedWav = speed_lv;
-        double speedWbv = speed_lv;
-        for (int h = LDAY_START_HOUR; h < LDAY_STOP_HOUR; h++) {
-            lvPerHour = tmja * (1 - HV_PERCENTAGE) * (lv_hourly_distribution[h] / 100.0);
-            hgvPerHour = tmja * HV_PERCENTAGE * (hv_hourly_distribution[h] / 100.0);
-            int idFreq = 0;
-            for (int freq : PropagationProcessPathData.freq_lvl) {
-                RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(speedLv, speedMv, speedHgv, speedWav,
-                        speedWbv, lvPerHour, mvPerHour, hgvPerHour, wavPerHour, wbvPerHour, freq, Temperature,
-                        roadSurface, Ts_stud, Pm_stud, Junc_dist, Junc_type);
-                rsParametersCnossos.setSpeedFromRoadCaracteristics(speed_lv, speed_lv, false, speed_lv, roadType);
-                ld[idFreq++] += ComputeRays.dbaToW(EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos));
-            }
-        }
-        // Average
-        for (int i = 0; i < ld.length; i++) {
-            ld[i] = ld[i] / (LDAY_STOP_HOUR - LDAY_START_HOUR);
-        }
-        wjSourcesD.add(ld);
+        wjSourcesDEN.add(lden)
+
+
 
     }
 
     @Override
     public double[] getMaximalSourcePower(int sourceId) {
-        return wjSourcesD.get(sourceId);
+        return wjSourcesDEN.get(sourceId);
     }
 }
 
 
-class TrafficPropagationProcessDataFactory implements PointNoiseMap.PropagationProcessDataFactory {
+class TrafficPropagationProcessDataDENFactory implements PointNoiseMap.PropagationProcessDataFactory {
     @Override
     public PropagationProcessData create(FastObstructionTest freeFieldFinder) {
-        return new TrafficPropagationProcessData(freeFieldFinder);
+        return new TrafficPropagationProcessDataDEN(freeFieldFinder);
     }
 }
 
+
 static Connection openGeoserverDataStoreConnection(String dbName) {
-    if (dbName == null || dbName.isEmpty()) {
+    if(dbName == null || dbName.isEmpty()) {
         dbName = new GeoServer().catalog.getStoreNames().get(0)
     }
     Store store = new GeoServer().catalog.getStore(dbName)
-    JDBCDataStore jdbcDataStore = (JDBCDataStore) store.getDataStoreInfo().getDataStore(null)
+    JDBCDataStore jdbcDataStore = (JDBCDataStore)store.getDataStoreInfo().getDataStore(null)
     return jdbcDataStore.getDataSource().getConnection()
 }
 
@@ -297,6 +229,8 @@ def run(input) {
     // Start... 
     // ----------------------------------
 
+    // Run
+
     List<ComputeRaysOut.verticeSL> allLevels = new ArrayList<>()
     // Attenuation matrix table
     ArrayList<PropagationPath> propaMap2 = new ArrayList<>()
@@ -336,8 +270,8 @@ def run(input) {
 
         // Init custom input in order to compute more than just attenuation
 
-        TrafficPropagationProcessDataFactory trafficPropagationProcessDataFactory = new TrafficPropagationProcessDataFactory();
-        pointNoiseMap.setPropagationProcessDataFactory(trafficPropagationProcessDataFactory)
+        TrafficPropagationProcessDataDENFactory TrafficPropagationProcessDataDENFactory = new TrafficPropagationProcessDataDENFactory();
+        pointNoiseMap.setPropagationProcessDataFactory(TrafficPropagationProcessDataDENFactory)
 
 
         RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1);
@@ -350,7 +284,7 @@ def run(input) {
         ProgressVisitor progressVisitor = progressLogger.subProcess(pointNoiseMap.getGridDim() * pointNoiseMap.getGridDim());
 
         long start = System.currentTimeMillis();
-        // Start ...
+        // Start
 
         Map<Integer, double[]> SourceSpectrum = new HashMap<>()
 
@@ -370,7 +304,7 @@ def run(input) {
                     cellStorage.receiversAttenuationLevels.each { v ->
                         double globalDbValue = ComputeRays.wToDba(ComputeRays.sumArray(ComputeRays.dbaToW(v.value)));
                         def idSource = out.inputData.SourcesPk.get(v.sourceId)
-                        double[] w_spectrum = ComputeRays.wToDba(out.inputData.wjSourcesD.get(idSource))
+                        double[] w_spectrum = ComputeRays.wToDba(out.inputData.wjSourcesDEN.get(idSource))
                         SourceSpectrum.put(v.sourceId as Integer, w_spectrum)
                     }
                 }
@@ -384,9 +318,9 @@ def run(input) {
             int idSource = (Integer) allLevels.get(i).sourceId
 
             double[] soundLevel = allLevels.get(i).value
-            if (!Double.isNaN(soundLevel[0]) && !Double.isNaN(soundLevel[1]) && !Double.isNaN(soundLevel[2]) &&
-                    !Double.isNaN(soundLevel[3]) && !Double.isNaN(soundLevel[4]) && !Double.isNaN(soundLevel[5]) &&
-                    !Double.isNaN(soundLevel[6]) && !Double.isNaN(soundLevel[7]) ) {
+            if (!Double.isNaN(soundLevel[0]) && !Double.isNaN(soundLevel[1]) && !Double.isNaN(soundLevel[2]) && !Double.isNaN(soundLevel[3]) && !Double.isNaN(soundLevel[4]) && !Double.isNaN(soundLevel[5]) && !Double.isNaN(soundLevel[6]) && !Double.isNaN(soundLevel[7])
+
+            ) {
                 if (soundLevels.containsKey(idReceiver)) {
                     //soundLevel = DBToDBA(soundLevel)
 
@@ -395,6 +329,8 @@ def run(input) {
                 } else {
                     //soundLevel = DBToDBA(soundLevel)
                     soundLevels.put(idReceiver, sumArraySR(soundLevel, SourceSpectrum.get(idSource)))
+
+
                 }
             } else {
                 System.err.println("NaN on Rec :" + idReceiver + "and Src :" + idSource)
@@ -403,11 +339,12 @@ def run(input) {
 
 
         Sql sql = new Sql(connection)
-        // Export data to table
-        sql.execute("drop table if exists LDAY;")
-        sql.execute("create table LDAY (IDRECEIVER integer, Hz63 double precision, Hz125 double precision, Hz250 double precision, Hz500 double precision, Hz1000 double precision, Hz2000 double precision, Hz4000 double precision, Hz8000 double precision);")
 
-        def qry = 'INSERT INTO LDAY(IDRECEIVER,Hz63, Hz125, Hz250, Hz500, Hz1000,Hz2000, Hz4000, Hz8000) VALUES (?,?,?,?,?,?,?,?,?);'
+        // Export data to table
+        sql.execute("drop table if exists LDEN;")
+        sql.execute("create table LDEN (IDRECEIVER integer, Hz63 double precision, Hz125 double precision, Hz250 double precision, Hz500 double precision, Hz1000 double precision, Hz2000 double precision, Hz4000 double precision, Hz8000 double precision);")
+
+        def qry = 'INSERT INTO LDEN(IDRECEIVER,Hz63, Hz125, Hz250, Hz500, Hz1000,Hz2000, Hz4000, Hz8000) VALUES (?,?,?,?,?,?,?,?,?);'
 
         sql.withBatch(100, qry) { ps ->
             for (s in soundLevels) {
@@ -418,26 +355,17 @@ def run(input) {
 
             }
         }
-        
-        String outputTableName = input["outputTableName"] as String
-        outputTableName = outputTableName.toUpperCase()
 
-        //if (!outputTableName) {
-          
-         //   outputTableName = fileName
-        //}
-        //outputTableName = outputTableName.toUpperCase()
-
-        sql.execute("drop table if exists "+outputTableName+";")
-        sql.execute("create table "+outputTableName+" as select a.IDRECEIVER, b.THE_GEOM, a.Hz63, a.Hz125, a.Hz250, a.Hz500, a.Hz1000, a.Hz2000, a.Hz4000, a.Hz8000 FROM RECEIVERS b LEFT JOIN LDAY a ON a.IDRECEIVER = b.ID;")
+        sql.execute("drop table if exists LDEN_GEOM;")
+        sql.execute("create table LDEN_GEOM  as select a.IDRECEIVER, b.THE_GEOM, a.Hz63, a.Hz125, a.Hz250, a.Hz500, a.Hz1000, a.Hz2000, a.Hz4000, a.Hz8000 FROM RECEIVERS b LEFT JOIN LDEN a ON a.IDRECEIVER = b.ID;")
 
 
- 
+        // Done
+
 
         long computationTime = System.currentTimeMillis() - start;
-        //return [result: "Calculation Done !"]
 
-        return [result: "Calculation Done ! The table " + outputTableName + " has been created !"]
+        return [result: "Calculation Done ! LDEN_GEOM"]
 
 
     }

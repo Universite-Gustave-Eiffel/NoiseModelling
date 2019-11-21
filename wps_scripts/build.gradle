@@ -39,6 +39,8 @@ dependencies {
     compile group: 'org.orbisgis', name: 'h2gis', version: '1.5.0'
     compile group: 'org.orbisgis', name: 'noisemodelling-emission', version: '3.0.0-SNAPSHOT'
     compile group: 'org.orbisgis', name: 'noisemodelling-propagation', version: '3.0.0-SNAPSHOT'
+    //compile group: 'org.orbisgis', name: 'osm', version: '1.0.0-SNAPSHOT'
+    compile 'com.opencsv:opencsv:4.0'
     testCompile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.25' 
     testCompile 'junit:junit:4.12'
 }

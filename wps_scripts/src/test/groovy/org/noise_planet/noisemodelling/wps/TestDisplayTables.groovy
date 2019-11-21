@@ -47,8 +47,8 @@ class TestDisplayTables extends JdbcTestCase {
 
     void testDisplayTables1() {
         SHPRead.readShape(connection, TestDisplayTables.getResource("buildings.shp").getPath())
-        String res = new Display_All().exec(connection, [])
-        assertEquals("BUILDINGS</br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PK</br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;THE_GEOM</br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ID_WAY</br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;HEIGHT</br></br></br></br>", res)
+        String res = new Display_Database().exec(connection, [])
+        assertEquals("BUILDINGS</br></br></br></br>", res)
     }
 
 }
