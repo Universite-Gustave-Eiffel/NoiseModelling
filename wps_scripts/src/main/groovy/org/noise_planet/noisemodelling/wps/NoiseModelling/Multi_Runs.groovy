@@ -4,13 +4,13 @@ package org.noise_planet.noisemodelling.wps.NoiseModelling
  * @Author Pierre Aumond
  */
 
-import geoserver.GeoServer
 import geoserver.catalog.Store
-
+import geoserver.GeoServer
 import groovy.sql.Sql
 import groovy.transform.CompileStatic
 import org.geotools.jdbc.JDBCDataStore
-import org.h2gis.functions.io.shp.SHPRead
+import org.h2gis.api.EmptyProgressVisitor
+import org.h2gis.functions.io.geojson.GeoJsonDriverFunction
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
 import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
@@ -19,26 +19,21 @@ import org.noise_planet.noisemodelling.propagation.ComputeRays
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOut
 import org.noise_planet.noisemodelling.propagation.PropagationPath
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
 import java.sql.Connection
 import java.sql.SQLException
 import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.zip.GZIPInputStream
+import java.util.zip.ZipEntry
+import java.util.zip.ZipInputStream
 
 title = 'Compute MultiRuns'
 description = 'Compute MultiRuns.'
 
 inputs = [databaseName      : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database. (default : h2gisdb)', min: 0, max: 1, type: String.class],
           workingDir : [name: 'workingDir', title: 'workingDir', description: 'workingDir (ex : C:/Desktop/)', type: String.class],
-          buildingTableName : [name: 'Buildings table name', title: 'Buildings table name', type: String.class],
-          sourcesTableName  : [name: 'Sources table name', title: 'Sources table name', type: String.class],
-          receiversTableName: [name: 'Receivers table name', title: 'Receivers table name', type: String.class],
-          demTableName      : [name: 'DEM table name', title: 'DEM table name', min: 0, max: 1, type: String.class],
-          groundTableName   : [name: 'Ground table name', title: 'Ground table name', min: 0, max: 1, type: String.class],
-          multirunFilePath  : [name: 'multirunFilePath', title: 'multirunFilePath', type: String.class],
+          nSimu  : [name: 'nSimu', title: 'nSimu',min: 0, max: 1, type: Integer.class],
           threadNumber      : [name: 'Thread number', title: 'Thread number', description: 'Number of thread to use on the computer (default = 1)', min: 0, max: 1, type: String.class]]
 
 outputs = [result: [name: 'result', title: 'Result', type: String.class]]
@@ -49,8 +44,6 @@ def static Connection openPostgreSQLDataStoreConnection(String dbName) {
     JDBCDataStore jdbcDataStore = (JDBCDataStore) store.getDataStoreInfo().getDataStore(null)
     return jdbcDataStore.getDataSource().getConnection()
 }
-
-
 
 def run(input) {
 
@@ -64,35 +57,10 @@ def run(input) {
         workingDir = input['workingDir']
     }
 
-    String sources_table_name = "SOURCES"
-    if (input['sourcesTableName']) {
-        sources_table_name = input['sourcesTableName']
+    int n_Simu = null
+    if (input['nSimu']) {
+        n_Simu = Integer.valueOf(input['nSimu'])
     }
-    sources_table_name = sources_table_name.toUpperCase()
-
-    String receivers_table_name = "RECEIVERS"
-    if (input['receiversTableName']) {
-        receivers_table_name = input['receiversTableName']
-    }
-    receivers_table_name = receivers_table_name.toUpperCase()
-
-    String building_table_name = "BUILDINGS"
-    if (input['buildingTableName']) {
-        building_table_name = input['buildingTableName']
-    }
-    building_table_name = building_table_name.toUpperCase()
-
-    String dem_table_name = ""
-    if (input['demTableName']) {
-        building_table_name = input['demTableName']
-    }
-    dem_table_name = dem_table_name.toUpperCase()
-
-    String ground_table_name = ""
-    if (input['groundTableName']) {
-        ground_table_name = input['groundTableName']
-    }
-    ground_table_name = ground_table_name.toUpperCase()
 
     int n_thread = 1
     if (input['threadNumber']) {
@@ -165,8 +133,46 @@ def run(input) {
                 i_read = i_read + 1
         }
 
+        if (n_Simu != null)   nSimu = n_Simu
+
         // Evaluate receiver points using provided buildings
-        System.out.println("Read Sources")
+        String fileZip = workingDir +"Rays.zip"
+        FileInputStream fileInputStream = new FileInputStream(new File(fileZip).getAbsolutePath())
+        ZipInputStream zipInputStream = new ZipInputStream(fileInputStream)
+        ZipEntry entry = zipInputStream.getNextEntry()
+        // iterates over entries in the zip file
+        while (entry != null) {
+            String filePath = workingDir + File.separator + entry.getName()
+            GeoJsonDriverFunction geoJsonDriver = new GeoJsonDriverFunction()
+            switch (entry.getName()) {
+                case 'buildings.geojson':
+                    sql.execute("DROP TABLE BUILDINGS if exists;")
+                    extractFile(zipInputStream, filePath)
+                    geoJsonDriver.importFile(connection, 'BUILDINGS', new File(filePath), new EmptyProgressVisitor())
+                    System.println("import Buildings")
+                    break
+                case 'sources.geojson':
+                    sql.execute("DROP TABLE SOURCES if exists;")
+                    extractFile(zipInputStream, filePath)
+                    geoJsonDriver.importFile(connection, 'SOURCES', new File(filePath), new EmptyProgressVisitor())
+                    System.println("import Sources")
+                    break
+                case 'receivers.geojson':
+                    sql.execute("DROP TABLE ROADS if exists;")
+                    extractFile(zipInputStream, filePath)
+                    geoJsonDriver.importFile(connection, 'ROADS', new File(filePath), new EmptyProgressVisitor())
+                    System.println("import Roads")
+                    break
+            }
+            zipInputStream.closeEntry()
+            entry = zipInputStream.getNextEntry()
+        }
+
+        fileInputStream.close()
+        zipInputStream.close()
+
+
+       /* System.out.println("Read Sources")
         sql.execute("DROP TABLE IF EXISTS RECEIVERS")
         SHPRead.readShape(connection, "D:\\aumond\\Documents\\CENSE\\LorientMapNoise\\data\\RecepteursQuest3D.shp", "RECEIVERS")
 
@@ -197,23 +203,28 @@ def run(input) {
         sql.execute("DROP TABLE ROADS3 if exists;")
         SHPRead.readShape(connection, "D:\\aumond\\Documents\\CENSE\\LorientMapNoise\\data\\Roads09083D.shp", "ROADS3")
 
-        System.out.println("Road file loaded")
+        System.out.println("Road file loaded")*/
 
 
         PropagationProcessPathData genericMeteoData = new PropagationProcessPathData()
         sensitivityProcessData.setSensitivityTable(dest2)
-        //sensitivityProcessData.setRoadTable("ROADS3",sql,1)
+        sensitivityProcessData.setRoadTable("ROADS",sql)
 
         int GZIP_CACHE_SIZE = (int) Math.pow(2, 19)
 
         System.out.println("Start time :" + df.format(new Date()))
 
 
-        FileInputStream fileInputStream = new FileInputStream(new File("D:\\aumond\\Documents\\CENSE\\LorientMapNoise\\rays0908.gz").getAbsolutePath())
+        //FileInputStream fileInputStream = new FileInputStream(new File("D:\\aumond\\Documents\\CENSE\\LorientMapNoise\\rays0908.gz").getAbsolutePath())
+         FileInputStream fileInputStream2 = new FileInputStream(new File(fileZip).getAbsolutePath())
+
         try {
-            GZIPInputStream gzipInputStream = new GZIPInputStream((fileInputStream), GZIP_CACHE_SIZE)
-            DataInputStream dataInputStream = new DataInputStream(gzipInputStream)
-            System.out.println("Read file and apply sensitivity analysis")
+            //
+
+
+            //DataInputStream dataInputStream = new DataInputStream(gzipInputStream)
+            //System.out.println(dataInputStream)
+
             int oldIdReceiver = -1
             int oldIdSource = -1
 
@@ -225,7 +236,7 @@ def run(input) {
             System.out.println("Prepare Sources")
             def timeStart = System.currentTimeMillis()
 
-            sourceLevel = sensitivityProcessData.getTrafficLevel("ROADS3", sql, nSimu)
+           sourceLevel = sensitivityProcessData.getTrafficLevel("ROADS", sql, nSimu)
 
             def timeStart2 = System.currentTimeMillis()
             System.out.println(timeStart2 - timeStart)
@@ -233,95 +244,106 @@ def run(input) {
             System.out.println("Run SA")
             long computationTime = 0
             long startSimulationTime = System.currentTimeMillis()
-            while (fileInputStream.available() > 0) {
 
-                PointToPointPathsMultiRuns paths = new PointToPointPathsMultiRuns()
-                paths.readPropagationPathListStream(dataInputStream)
-                long startComputationTime = System.currentTimeMillis()
-                int idReceiver = (Integer) paths.receiverId
-                int idSource = (Integer) paths.sourceId
+            ZipInputStream zipInputStream2 = new ZipInputStream(fileInputStream2)
+            ZipEntry entry2 = zipInputStream2.getNextEntry()
 
-                if (idReceiver != oldIdReceiver) {
-                    System.out.println("Receiver: " + oldIdReceiver)
-                    // Save old receiver values
-                    if (oldIdReceiver != -1) {
-                        for (int r = 0; r < nSimu; ++r) {
-                            csvFile.append(String.format("%d\t%d\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n", r, oldIdReceiver, pop.get(oldIdReceiver), simuSpectrum.get(r)[0], simuSpectrum.get(r)[1], simuSpectrum.get(r)[2], simuSpectrum.get(r)[3], simuSpectrum.get(r)[4], simuSpectrum.get(r)[5], simuSpectrum.get(r)[6], simuSpectrum.get(r)[7]))
-                        }
-                    }
-                    // Create new receiver value
-                    simuSpectrum.clear()
-                    for (int r = 0; r < nSimu; ++r) {
-                        simuSpectrum.add(new double[PropagationProcessPathData.freq_lvl.size()])
-                    }
-                }
-                oldIdReceiver = idReceiver
-                ComputeRaysOut out = new ComputeRaysOut(false, sensitivityProcessData.getGenericMeteoData(0))
-                //double[] attenuation = out.computeAttenuation(sensitivityProcessData.getGenericMeteoData(r), idSource, paths.getLi(), idReceiver, propagationPaths)
-                double[] attenuation = null
-                List<PropagationPath> propagationPaths = new ArrayList<>()
-                for (int r = 0; r < nSimu; r++) {
-                    propagationPaths.clear()
-                    for (int pP = 0; pP < paths.propagationPathList.size(); pP++) {
+            while (entry2 != null) {
 
-                        paths.propagationPathList.get(pP).initPropagationPath()
-                        if (paths.propagationPathList.get(pP).refPoints.size() <= sensitivityProcessData.Refl[r]
-                                && paths.propagationPathList.get(pP).difHPoints.size() <= sensitivityProcessData.Dif_hor[r]
-                                && paths.propagationPathList.get(pP).difVPoints.size() <= sensitivityProcessData.Dif_ver[r]
-                                && paths.propagationPathList.get(pP).SRList[0].dp <= sensitivityProcessData.DistProp[r]
-                        ) {
-                            propagationPaths.add(paths.propagationPathList.get(pP))
-                        }
-                    }
+                switch (entry2.getName()) {
+                    case 'rays.gz' :
+                        GZIPInputStream gzipInputStream = new GZIPInputStream(zipInputStream2, GZIP_CACHE_SIZE)
+                        DataInputStream dataInputStream = new DataInputStream(gzipInputStream)
+                        //System.out.println(zipInputStream2.available()>0)
 
+                        while (fileInputStream2.available() > 0) {
+                            PointToPointPathsMultiRuns paths = new PointToPointPathsMultiRuns()
+                            paths.readPropagationPathListStream(dataInputStream)
+                            long startComputationTime = System.currentTimeMillis()
+                            int idReceiver = (Integer) paths.receiverId
+                            int idSource = (Integer) paths.sourceId
 
-                    if (propagationPaths.size() > 0) {
-                        //double[] attenuation = out.computeAttenuation(sensitivityProcessData.getGenericMeteoData(r), idSource, paths.getLi(), idReceiver, propagationPaths)
-                        //double[] soundLevel = sumArray(attenuation, sourceLevel.get(idSource).get(r))
-                        if (attenuation != null) {
-                            if (sensitivityProcessData.TempMean[r] != sensitivityProcessData.TempMean[r - 1]
-                                    || sensitivityProcessData.HumMean[r] != sensitivityProcessData.HumMean[r - 1]) {
-                                attenuation = out.computeAttenuation(sensitivityProcessData.getGenericMeteoData(r), idSource, paths.getLi(), idReceiver, propagationPaths)
+                            if (idReceiver != oldIdReceiver) {
+                                System.out.println("Receiver: " + oldIdReceiver)
+                                // Save old receiver values
+                                if (oldIdReceiver != -1) {
+                                    for (int r = 0; r < nSimu; ++r) {
+                                        csvFile.append(String.format("%d\t%d\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n", r, oldIdReceiver, pop.get(oldIdReceiver), simuSpectrum.get(r)[0], simuSpectrum.get(r)[1], simuSpectrum.get(r)[2], simuSpectrum.get(r)[3], simuSpectrum.get(r)[4], simuSpectrum.get(r)[5], simuSpectrum.get(r)[6], simuSpectrum.get(r)[7]))
+                                    }
+                                }
+                                // Create new receiver value
+                                simuSpectrum.clear()
+                                for (int r = 0; r < nSimu; ++r) {
+                                    simuSpectrum.add(new double[PropagationProcessPathData.freq_lvl.size()])
+                                }
                             }
-                        } else {
-                            attenuation = out.computeAttenuation(sensitivityProcessData.getGenericMeteoData(r), idSource, paths.getLi(), idReceiver, propagationPaths)
-                        }
+                            oldIdReceiver = idReceiver
+                            ComputeRaysOut out = new ComputeRaysOut(false, sensitivityProcessData.getGenericMeteoData(0))
+                            //double[] attenuation = out.computeAttenuation(sensitivityProcessData.getGenericMeteoData(r), idSource, paths.getLi(), idReceiver, propagationPaths)
+                            double[] attenuation = null
+                            List<PropagationPath> propagationPaths = new ArrayList<>()
+                            for (int r = 0; r < nSimu; r++) {
+                                propagationPaths.clear()
+                                for (int pP = 0; pP < paths.propagationPathList.size(); pP++) {
 
-                        double[] soundLevelDay = ComputeRays.wToDba(ComputeRays.multArray(sensitivityProcessData.wjSourcesD.get(idSource).get(r), ComputeRays.dbaToW(attenuation)))
-                        double[] soundLevelEve = ComputeRays.wToDba(ComputeRays.multArray(sensitivityProcessData.wjSourcesE.get(idSource).get(r), ComputeRays.dbaToW(attenuation)))
-                        double[] soundLevelNig = ComputeRays.wToDba(ComputeRays.multArray(sensitivityProcessData.wjSourcesN.get(idSource).get(r), ComputeRays.dbaToW(attenuation)))
-                        double[] lDen = new double[soundLevelDay.length]
-                        double[] lN = new double[soundLevelDay.length]
-                        for (int i = 0; i < soundLevelDay.length; ++i) {
-                            lDen[i] = 10.0D * Math.log10((12.0D / 24.0D) * Math.pow(10.0D, soundLevelDay[i] / 10.0D)
-                                    + (4.0D / 24.0D) * Math.pow(10.0D, (soundLevelEve[i] + 5.0D) / 10.0D)
-                                    + (8.0D / 24.0D) * Math.pow(10.0D, (soundLevelNig[i] + 10.0D) / 10.0D))
-                            lN[i] = soundLevelNig[i]
-                        }
+                                    paths.propagationPathList.get(pP).initPropagationPath()
+                                    if (paths.propagationPathList.get(pP).refPoints.size() <= sensitivityProcessData.Refl[r]
+                                            && paths.propagationPathList.get(pP).difHPoints.size() <= sensitivityProcessData.Dif_hor[r]
+                                            && paths.propagationPathList.get(pP).difVPoints.size() <= sensitivityProcessData.Dif_ver[r]
+                                            && paths.propagationPathList.get(pP).SRList[0].dp <= sensitivityProcessData.DistProp[r]
+                                    ) {
+                                        propagationPaths.add(paths.propagationPathList.get(pP))
+                                    }
+                                }
 
-                        simuSpectrum[r] = ComputeRays.sumDbArray(simuSpectrum[r], lDen)
-                    }
+
+                                if (propagationPaths.size() > 0) {
+                                    //double[] attenuation = out.computeAttenuation(sensitivityProcessData.getGenericMeteoData(r), idSource, paths.getLi(), idReceiver, propagationPaths)
+                                    //double[] soundLevel = sumArray(attenuation, sourceLevel.get(idSource).get(r))
+                                    if (attenuation != null) {
+                                        if (sensitivityProcessData.TempMean[r] != sensitivityProcessData.TempMean[r - 1]
+                                                || sensitivityProcessData.HumMean[r] != sensitivityProcessData.HumMean[r - 1]) {
+                                            attenuation = out.computeAttenuation(sensitivityProcessData.getGenericMeteoData(r), idSource, paths.getLi(), idReceiver, propagationPaths)
+                                        }
+                                    } else {
+                                        attenuation = out.computeAttenuation(sensitivityProcessData.getGenericMeteoData(r), idSource, paths.getLi(), idReceiver, propagationPaths)
+                                    }
+
+                                    double[] soundLevelDay = ComputeRays.wToDba(ComputeRays.multArray(sensitivityProcessData.wjSourcesD.get(idSource).get(r), ComputeRays.dbaToW(attenuation)))
+                                    double[] soundLevelEve = ComputeRays.wToDba(ComputeRays.multArray(sensitivityProcessData.wjSourcesE.get(idSource).get(r), ComputeRays.dbaToW(attenuation)))
+                                    double[] soundLevelNig = ComputeRays.wToDba(ComputeRays.multArray(sensitivityProcessData.wjSourcesN.get(idSource).get(r), ComputeRays.dbaToW(attenuation)))
+                                    double[] lDen = new double[soundLevelDay.length]
+                                    double[] lN = new double[soundLevelDay.length]
+                                    for (int i = 0; i < soundLevelDay.length; ++i) {
+                                        lDen[i] = 10.0D * Math.log10((12.0D / 24.0D) * Math.pow(10.0D, soundLevelDay[i] / 10.0D)
+                                                + (4.0D / 24.0D) * Math.pow(10.0D, (soundLevelEve[i] + 5.0D) / 10.0D)
+                                                + (8.0D / 24.0D) * Math.pow(10.0D, (soundLevelNig[i] + 10.0D) / 10.0D))
+                                        lN[i] = soundLevelNig[i]
+                                    }
+
+                                    simuSpectrum[r] = ComputeRays.sumDbArray(simuSpectrum[r], lDen)
+                                }
+                            }
+                            computationTime += System.currentTimeMillis() - startComputationTime
+                        }
                 }
-                computationTime += System.currentTimeMillis() - startComputationTime
+                zipInputStream2.closeEntry()
+                entry2 = zipInputStream2.getNextEntry()
             }
 
             System.out.println("ComputationTime :" + computationTime.toString())
             System.out.println("SimulationTime :" + (System.currentTimeMillis() - startSimulationTime).toString())
 
-            csvFile.close()
+           // csvFile.close()
             System.out.println("End time :" + df.format(new Date()))
 
         } finally {
 
-            fileInputStream.close()
+            fileInputStream2.close()
         }
 
-
-        long computationTime = System.currentTimeMillis() - start;
-
+       // long computationTime = System.currentTimeMillis() - start;
         return [result: "Calculation Done !"]
-
-
     }
 
 }
@@ -741,7 +763,7 @@ class SensitivityProcessData {
     }
 
 
-    void setRoadTable(String tablename, Sql sql, int nSimu) {
+    void setRoadTable(String tablename, Sql sql) {
         //////////////////////
         // Import file text
         //////////////////////
@@ -823,4 +845,14 @@ class PointToPointPathsMultiRuns {
         }
     }
 
+}
+
+private void extractFile(ZipInputStream zipIn, String filePath) throws IOException {
+    BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(filePath));
+    byte[] bytesIn = new byte[4096]
+    int read = 0
+    while ((read = zipIn.read(bytesIn)) != -1) {
+        bos.write(bytesIn, 0, read)
+    }
+    bos.close()
 }
