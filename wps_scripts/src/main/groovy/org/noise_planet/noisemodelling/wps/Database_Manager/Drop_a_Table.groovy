@@ -12,8 +12,22 @@ import org.geotools.jdbc.JDBCDataStore
 import java.sql.Connection
 import java.sql.Statement
 
-title = 'Remove table'
-description = 'Delete a table from the database. The data will be deleted and can no longer be recovered.'
+import groovy.sql.Sql
+
+import org.h2gis.functions.io.csv.*
+import org.h2gis.functions.io.dbf.*
+import org.h2gis.functions.io.geojson.*
+import org.h2gis.functions.io.json.*
+import org.h2gis.functions.io.kml.*
+import org.h2gis.functions.io.shp.*
+import org.h2gis.functions.io.tsv.*
+import org.h2gis.api.EmptyProgressVisitor
+import org.h2gis.utilities.wrapper.ConnectionWrapper
+
+import org.noisemodellingwps.utilities.WpsConnectionWrapper
+
+title = 'Drop_a_Table'
+description = 'Delete a table from the database'
 
 inputs = [
   databaseName: [name: 'Name of the database', title: 'Name of the database', description : 'Name of the database (default : first found db)', min : 0, max : 1, type: String.class],
@@ -44,11 +58,27 @@ def run(input) {
         // Execute
         String table = input["tableToDrop"] as String
         table = table.toUpperCase()
-        Statement stmt = connection.createStatement()
-        String dropTable = "Drop table if exists " + table
-        stmt.execute(dropTable)
 
-        // print to Console windows
-        return [result: table + " was dropped !"]
+        List<String> ignorelst = ["SPATIAL_REF_SYS", "GEOMETRY_COLUMNS"]
+
+        int flag =0
+        List<String> tables = JDBCUtilities.getTableNames(connection.getMetaData(), null, "PUBLIC", "%", null)
+        tables.each { t ->
+            TableLocation tab = TableLocation.parse(t)
+            if(!ignorelst.contains(tab.getTable())) {
+
+                if (tab.getTable()==table)   {
+                    Statement stmt = connection.createStatement()
+                    String dropTable = "Drop table if exists " + table 
+                    stmt.execute(dropTable)   
+                    returnString = "The table " + table + " was dropped !"
+                    flag = 1
+                }
+
+                if (flag==0) returnString = "The table to drop was not found"
+            }
+        }
+    
+        return [result: returnString]
     }
 }
