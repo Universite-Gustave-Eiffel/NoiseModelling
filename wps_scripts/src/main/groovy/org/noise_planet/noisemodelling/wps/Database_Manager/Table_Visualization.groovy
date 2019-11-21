@@ -68,7 +68,7 @@ def run(input) {
 
         Geometry geom = null
         while (rs.next()) {
-            geom = (Geometry) rs.getObject(0)
+            geom = (Geometry) rs.getObject(1)
         }
 
 
