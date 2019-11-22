@@ -98,6 +98,9 @@ Repeat this operation for other files:
     - Beige blocks are optional
     - if all input blocks are optional, you must modify at least one of these blocks to be able to run the process
     - Blocks get solid border when they are ready to run
+    - Find here more information about `WPS Builder`_.
+    
+.. _WPS Builder : https://docs.boundlessgeo.com/suite/1.1.0/processing/wpsbuilder/index.html#usage
 
 Step 5: Run Calculation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
