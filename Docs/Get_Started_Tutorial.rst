@@ -100,7 +100,7 @@ Repeat this operation for other files:
     - Blocks get solid border when they are ready to run
     - Find here more information about `WPS Builder`_.
     
-.. _WPS Builder : https://docs.boundlessgeo.com/suite/1.1.0/processing/wpsbuilder/index.html#usage
+.. _WPS Builder : https://docs.boundlessgeo.com/suite/1.1.0/processing/wpsbuilder/index.html#application-panels
 
 Step 5: Run Calculation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
