@@ -13,7 +13,7 @@ Please install JAVA version v8.x. Currently only version 8 of Java is compatible
 -  If JAVA_HOME environnement variable is not well settled , you can refer to `this document`_ for example.
 
 .. warning::
-    The command promprt should print :literal:`C:\\Program Files (x86)\\Java\\jre1.8.x\\` whithout the bin directory. If JAVA_HOME is settled as :literal:`C:\\Program Files (x86)\\Java\\jre1.8.x\\bin`, it will not work.
+    The command promprt should print :literal:`C:\\Program Files (x86)\\Java\\jre1.8.x\\` whithout the bin directory. If JAVA_HOME is settled as :literal:`C:\\Program Files (x86)\\Java\\jre1.8.x\\bin`, it will not work. It should also point to a JRE  (Java Runtime Environment) Java environnement and not JDK. 
     
 .. _this document : https://confluence.atlassian.com/doc/setting-the-java_home-variable-in-windows-8895.html   
 
