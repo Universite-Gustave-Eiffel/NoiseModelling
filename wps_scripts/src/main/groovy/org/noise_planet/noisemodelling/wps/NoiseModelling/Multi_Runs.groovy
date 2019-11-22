@@ -51,7 +51,7 @@ def static Connection openPostgreSQLDataStoreConnection(String dbName) {
 def run(input) {
 
     MultiRunsProcessData multiRunsProcessData = new MultiRunsProcessData()
-
+    Properties prop = new Properties()
     // -------------------
     // Get inputs
     // -------------------
@@ -176,6 +176,11 @@ def run(input) {
                     System.println("import DEM")
                     break
 
+
+                case 'NM.properties':
+                    extractFile(zipInputStream, filePath)
+                    prop.load(new FileInputStream(filePath))
+                    break
             }
             file.delete()
             zipInputStream.closeEntry()
@@ -184,7 +189,6 @@ def run(input) {
 
         fileInputStream.close()
         zipInputStream.close()
-
 
         /* System.out.println("Read Sources")
          sql.execute("DROP TABLE IF EXISTS RECEIVERS")
@@ -222,7 +226,7 @@ def run(input) {
 
         PropagationProcessPathData genericMeteoData = new PropagationProcessPathData()
         multiRunsProcessData.setSensitivityTable(dest2)
-        multiRunsProcessData.setRoadTable("SOURCES",sql)
+        multiRunsProcessData.setRoadTable("SOURCES",sql, prop)
 
         int GZIP_CACHE_SIZE = (int) Math.pow(2, 19)
 
@@ -270,7 +274,6 @@ def run(input) {
 
         sql.withBatch(100, qry) { ps ->
             while (entry2 != null) {
-
                 switch (entry2.getName()) {
                     case 'rays.gz':
                         System.println(entry2.getName())
@@ -383,8 +386,9 @@ def run(input) {
         fileInputStream2.close()
 
 
+
         sql.execute("drop table if exists MultiRunsResults_geom;")
-        sql.execute("create table MultiRunsResults_geom  as select a.idRun, a.idReceiver, b.THE_GEOM, a.Lden63, a.Lden125, a.Lden250, a.Lden500, a.Lden1000, a.Lden2000, a.Lden4000, a.Lden8000 FROM RECEIVERS b LEFT JOIN MultiRunsResults a ON a.IDRECEIVER = b.ID;")
+        sql.execute("create table MultiRunsResults_geom  as select a.idRun, a.idReceiver, b.THE_GEOM, a.Lden63, a.Lden125, a.Lden250, a.Lden500, a.Lden1000, a.Lden2000, a.Lden4000, a.Lden8000 FROM RECEIVERS b LEFT JOIN MultiRunsResults a ON a.IDRECEIVER = b."+prop.getProperty("pkReceivers")+";")
         sql.execute("drop table if exists MultiRunsResults;")
 
         // long computationTime = System.currentTimeMillis() - start;
@@ -762,13 +766,13 @@ class MultiRunsProcessData {
     }
 
 
-    void setRoadTable(String tablename, Sql sql) {
+    void setRoadTable(String tablename, Sql sql, Properties prop) {
         //////////////////////
         // Import file text
         //////////////////////
 
 
-        sql.eachRow('SELECT pk2, CAST(OSM_ID AS INTEGER) OSM_ID, the_geom , ' +
+        sql.eachRow('SELECT '+prop.getProperty("pkSources")+', CAST(OSM_ID AS INTEGER) OSM_ID, the_geom , ' +
                 'TV_D,TV_E,TV_N,' +
                 'HV_D,HV_E,HV_N, ' +
                 'LV_SPD_D, LV_SPD_E, LV_SPD_N, ' +
@@ -801,7 +805,7 @@ class MultiRunsProcessData {
 
 @CompileStatic
 class PointToPointPathsMultiRuns {
-    ArrayList<PropagationPath> propagationPathList;
+    ArrayList<PropagationPath> propagationPathList
     double li
     long sourceId
     long receiverId

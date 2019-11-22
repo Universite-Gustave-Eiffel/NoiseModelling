@@ -11,8 +11,11 @@ import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.api.ProgressVisitor
 import org.h2gis.functions.io.geojson.GeoJsonDriverFunction
+import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.wrapper.ConnectionWrapper
+import org.hsqldb.jdbc.JDBCConnection
+import org.hsqldb.jdbc.JDBCDriver
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Geometry
 import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
@@ -185,6 +188,7 @@ def run(input) {
     def srcFiles =[]
     String fileName =""
     GeoJsonDriverFunction geoJsonDriver = new GeoJsonDriverFunction()
+    Properties properties = new Properties()
     // -------------------
     // Get inputs
     // -------------------
@@ -200,29 +204,32 @@ def run(input) {
     if (input['reflexionOrder']) {
         reflexion_order = Integer.valueOf(input['reflexionOrder'])
     }
+    properties.setProperty("reflexion_order", reflexion_order.toString())
+
 
     double max_src_dist = 200
     if (input['maxSrcDistance']) {
         max_src_dist = Double.valueOf(input['maxSrcDistance'])
     }
+    properties.setProperty("maxSrcDistance", max_src_dist.toString())
 
     double max_ref_dist = 50
     if (input['maxRefDistance']) {
         max_ref_dist = Double.valueOf(input['maxRefDistance'])
     }
+    properties.setProperty("maxRefDistance", max_ref_dist.toString())
 
     double wall_alpha = 0.1
     if (input['wallAlpha']) {
         wall_alpha = Double.valueOf(input['wallAlpha'])
     }
+    properties.setProperty("wallAlpha", wall_alpha.toString())
 
 
     long exportReceiverRays =-1
     if (input['exportReceiverRays']) {
         exportReceiverRays = Integer.valueOf(input['exportReceiverRays'])
     }
-
-
 
     int n_thread = 1
     if (input['threadNumber']) {
@@ -233,11 +240,13 @@ def run(input) {
     if (input['computeVertical']) {
         compute_vertical_diffraction = input['computeVertical']
     }
+    properties.setProperty("computeVertical", compute_vertical_diffraction.toString())
 
     boolean compute_horizontal_diffraction = false
     if (input['computeHorizontal']) {
         compute_horizontal_diffraction = input['computeHorizontal']
     }
+    properties.setProperty("computeHorizontal", compute_horizontal_diffraction.toString())
 
     // Get name of the database
     String dbName = "h2gisdb"
@@ -262,7 +271,7 @@ def run(input) {
 
         //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postgis database
         connection = new ConnectionWrapper(connection)
-
+        String pkName = ""
         String sources_table_name = "SOURCES"
         if (input['sourcesTableName']) {
             sources_table_name = input['sourcesTableName']
@@ -270,6 +279,11 @@ def run(input) {
             fileName = "sources.geojson"
             srcFiles.add(fileName)
             geoJsonDriver.exportTable(connection, sources_table_name, new File(working_dir+fileName), new EmptyProgressVisitor())
+            int indexPk = JDBCUtilities.getIntegerPrimaryKey(connection, sources_table_name)
+            if(indexPk > 0) {
+                pkName = JDBCUtilities.getFieldName(connection.getMetaData(), sources_table_name, indexPk)
+            }
+            properties.setProperty("pkSources", pkName)
         }
 
         String receivers_table_name = "RECEIVERS"
@@ -279,7 +293,11 @@ def run(input) {
             fileName = "receivers.geojson"
             srcFiles.add(fileName)
             geoJsonDriver.exportTable(connection, receivers_table_name, new File(working_dir+fileName), new EmptyProgressVisitor())
-
+            int indexPk = JDBCUtilities.getIntegerPrimaryKey(connection, receivers_table_name)
+            if(indexPk > 0) {
+                pkName = JDBCUtilities.getFieldName(connection.getMetaData(), receivers_table_name, indexPk)
+            }
+            properties.setProperty("pkReceivers", pkName)
         }
 
         String building_table_name = "BUILDINGS"
@@ -289,7 +307,7 @@ def run(input) {
             fileName = "buildings.geojson"
             srcFiles.add(fileName)
             geoJsonDriver.exportTable(connection, building_table_name, new File(working_dir+fileName), new EmptyProgressVisitor())
-
+            properties.setProperty("buildings", "TRUE")
         }
 
         String dem_table_name = ""
@@ -299,6 +317,7 @@ def run(input) {
             fileName = "dem.geojson"
             srcFiles.add(fileName)
             geoJsonDriver.exportTable(connection, dem_table_name, new File(working_dir+fileName), new EmptyProgressVisitor())
+            properties.setProperty("demTableName", "TRUE")
         }
 
 
@@ -309,6 +328,7 @@ def run(input) {
             fileName = "ground.geojson"
             srcFiles.add(fileName)
             geoJsonDriver.exportTable(connection, ground_table_name, new File(working_dir+fileName), new EmptyProgressVisitor())
+            properties.setProperty("groundTableName", "TRUE")
         }
 
         System.out.println("Connection to the database ok ...")
@@ -370,7 +390,11 @@ def run(input) {
         }
         storageFactory.closeWriteThread()
 
-
+        String newAppConfigPropertiesFile = working_dir + "NM.properties"
+        FileWriter fileWriter = new FileWriter(newAppConfigPropertiesFile)
+        properties.store(fileWriter, "store to properties file")
+        srcFiles.add("NM.properties")
+        fileWriter.close()
 
         FileOutputStream fos = new FileOutputStream(working_dir + "Rays.zip")
         ZipOutputStream zipOut = new ZipOutputStream(fos)
