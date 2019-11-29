@@ -57,7 +57,7 @@ outputs = [result: [name: 'result', title: 'Result', type: String.class]]
 class TrafficRayzPropagationProcessData extends PropagationProcessData {
     // Lden values
     public List<double[]> wjSourcesDEN = new ArrayList<>()
-    public Map<Long, Integer> SourcesPk = new HashMap<>()
+    //public Map<Long, Integer> SourcesPk = new HashMap<>()
 
 
     TrafficRayzPropagationProcessData(FastObstructionTest freeFieldFinder) {
@@ -69,9 +69,11 @@ class TrafficRayzPropagationProcessData extends PropagationProcessData {
     @Override
     void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException {
         super.addSource(pk, geom, rs)
-        SourcesPk.put(pk, idSource++)
 
+        idSource++
 
+        int pkSource = rs.getInt("PK2")
+        //SourcesPk.put(pk, pkSource)
         double tvD = rs.getDouble("TV_D")
         double tvE = rs.getDouble("TV_E")
         double tvN = rs.getDouble("TV_N")
@@ -487,6 +489,7 @@ class PropagationPathStorage extends ComputeRaysOut {
             paths.li = sourceLi
             paths.receiverId = (propagationPathStorage.inputData.receiversPk.get((int) receiverId).intValue())
             paths.sourceId = propagationPathStorage.inputData.sourcesPk.get((int) sourceId).intValue()
+
             paths.propagationPathList = new ArrayList<>(propagationPath.size())
             for (PropagationPath path : propagationPath) {
                 // Copy path content in order to keep original ids for other method calls

@@ -1,20 +1,27 @@
 package org.noise_planet.noisemodelling.wps.NoiseModelling
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.annotation.JsonAppend.Prop;
+import com.fasterxml.jackson.databind.node.NullNode;
+import geoserver.GeoServer
+import geoserver.catalog.Store
+
 /*
  * @Author Pierre Aumond
  */
-
-import geoserver.catalog.Store
-import geoserver.GeoServer
 import groovy.sql.Sql
 import groovy.transform.CompileStatic
+import org.apache.commons.math3.util.DoubleArray
 import org.geotools.jdbc.JDBCDataStore
-import org.h2.table.Column
 import org.h2gis.api.EmptyProgressVisitor
-import org.h2gis.functions.io.file_table.FileEngine
-import org.h2gis.functions.io.file_table.H2TableIndex
+
 import org.h2gis.functions.io.geojson.GeoJsonDriverFunction
 import org.h2gis.utilities.wrapper.ConnectionWrapper
+
 import org.locationtech.jts.geom.Geometry
 import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
 import org.noise_planet.noisemodelling.emission.RSParametersCnossos
@@ -35,8 +42,8 @@ title = 'Compute MultiRuns'
 description = 'Compute MultiRuns.'
 
 inputs = [databaseName      : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database. (default : h2gisdb)', min: 0, max: 1, type: String.class],
-          workingDir : [name: 'workingDir', title: 'workingDir', description: 'workingDir (ex : C:/Desktop/)', type: String.class],
-          nSimu  : [name: 'nSimu', title: 'nSimu',min: 0, max: 1, type: Integer.class],
+          workingDir : [name: 'workingDir', title: 'workingDir', description: 'workingDir (ex : C:/Desktop/), shall contain Rays.zip and MR_Input.json', type: String.class],
+          nbSimu  : [name: 'nSimu', title: 'nSimu',min: 0, max: 1, type: Integer.class],
           threadNumber      : [name: 'Thread number', title: 'Thread number', description: 'Number of thread to use on the computer (default = 1)', min: 0, max: 1, type: String.class]]
 
 outputs = [result: [name: 'result', title: 'Result', type: String.class]]
@@ -61,8 +68,8 @@ def run(input) {
     }
 
     int n_Simu = -1
-    if (input['nSimu']) {
-        n_Simu = Integer.valueOf(input['nSimu'])
+    if (input['nbSimu']) {
+        n_Simu = Integer.valueOf(input['nbSimu'])
     }
 
     int n_thread = 1
@@ -102,32 +109,9 @@ def run(input) {
 
         Sql sql = new Sql(connection)
 
-        File dest2 = new File("D:\\aumond\\Documents\\CENSE\\LorientMapNoise\\data\\Exp_compICA2m.csv")
 
-        int nvar = 0 // pas toucher
-        int nr = 0 // pas toucher
-        int nSimu = 0 // ne pas toucher
-        int n_comp = 0 // pas toucher
-        int i_read = 1   //nombre de lignes d'entête
 
-        // lire les 4 premieres lignes de config
-        new File("D:\\aumond\\Documents\\CENSE\\LorientMapNoise\\data\\ConfigICA2.csv").splitEachLine(",") {
-            fields ->
-                switch (i_read) {
-                    case 1:
-                        nvar = (int) fields[0].toInteger()
-                    case 2:
-                        nr = (int) fields[0].toInteger()
-                    case 3:
-                        nSimu = (int) fields[0].toInteger()
-                    case 4:
-                        n_comp = (int) fields[0].toInteger()
-                    default: break
-                }
-                i_read = i_read + 1
-        }
 
-        if (n_Simu >0)   nSimu = n_Simu
 
         // Evaluate receiver points using provided buildings
         String fileZip = workingDir +"Rays.zip"
@@ -142,37 +126,37 @@ def run(input) {
             switch (entry.getName()) {
 
                 case 'buildings.geojson':
-                    sql.execute("DROP TABLE BUILDINGS if exists;")
+                    sql.execute("DROP TABLE BUILDINGS_MR if exists;")
                     extractFile(zipInputStream, filePath)
-                    geoJsonDriver.importFile(connection, 'BUILDINGS', file, new EmptyProgressVisitor())
+                    geoJsonDriver.importFile(connection, 'BUILDINGS_MR', file, new EmptyProgressVisitor())
                     System.println("import Buildings")
                     break
 
                 case 'sources.geojson':
-                    sql.execute("DROP TABLE SOURCES if exists;")
+                    sql.execute("DROP TABLE SOURCES_MR if exists;")
                     extractFile(zipInputStream, filePath)
-                    geoJsonDriver.importFile(connection, 'SOURCES', file, new EmptyProgressVisitor())
+                    geoJsonDriver.importFile(connection, 'SOURCES_MR', file, new EmptyProgressVisitor())
                     System.println("import Sources")
                     break
 
                 case 'receivers.geojson':
-                    sql.execute("DROP TABLE RECEIVERS if exists;")
+                    sql.execute("DROP TABLE RECEIVERS_MR if exists;")
                     extractFile(zipInputStream, filePath)
-                    geoJsonDriver.importFile(connection, 'RECEIVERS', file, new EmptyProgressVisitor())
+                    geoJsonDriver.importFile(connection, 'RECEIVERS_MR', file, new EmptyProgressVisitor())
                     System.println("import RECEIVERS")
                     break
 
                 case 'ground.geojson':
-                    sql.execute("DROP TABLE GROUND_TYPE if exists;")
+                    sql.execute("DROP TABLE GROUND_TYPE_MR if exists;")
                     extractFile(zipInputStream, filePath)
-                    geoJsonDriver.importFile(connection, 'GROUND_TYPE', file, new EmptyProgressVisitor())
+                    geoJsonDriver.importFile(connection, 'GROUND_TYPE_MR', file, new EmptyProgressVisitor())
                     System.println("import GROUND_TYPE")
                     break
 
                 case 'dem.geojson':
-                    sql.execute("DROP TABLE DEM if exists;")
+                    sql.execute("DROP TABLE DEM_MR if exists;")
                     extractFile(zipInputStream, filePath)
-                    geoJsonDriver.importFile(connection, 'DEM', file, new EmptyProgressVisitor())
+                    geoJsonDriver.importFile(connection, 'DEM_MR', file, new EmptyProgressVisitor())
                     System.println("import DEM")
                     break
 
@@ -225,8 +209,11 @@ def run(input) {
 
 
         PropagationProcessPathData genericMeteoData = new PropagationProcessPathData()
-        multiRunsProcessData.setSensitivityTable(dest2)
-        multiRunsProcessData.setRoadTable("SOURCES",sql, prop)
+        int nSimu =  multiRunsProcessData.setSensitivityTable(new File(workingDir + "MR_input.json"),prop)
+
+        if (n_Simu >0){ nSimu = n_Simu}
+
+        multiRunsProcessData.setRoadTable("SOURCES_MR",sql, prop)
 
         int GZIP_CACHE_SIZE = (int) Math.pow(2, 19)
 
@@ -242,7 +229,6 @@ def run(input) {
         int oldIdReceiver = -1
         int oldIdSource = -1
 
-        FileWriter csvFile = new FileWriter(new File("D:\\aumond\\Documents\\CENSE\\LorientMapNoise\\simuICA2.csv"))
         List<double[]> simuSpectrum = new ArrayList<>()
         sql.execute("drop table if exists MultiRunsResults;")
         sql.execute("create table MultiRunsResults (idRun integer,idReceiver integer, " +
@@ -300,7 +286,7 @@ def run(input) {
                                 // Save old receiver values
                                 if (oldIdReceiver != -1) {
                                     for (int r = 0; r < nSimu; ++r) {
-                                        ps.addBatch(r as Integer, idReceiver as Integer,
+                                        ps.addBatch(r as Integer, oldIdReceiver as Integer,
                                                 simuSpectrum.get(r)[0] as Double, simuSpectrum.get(r)[1] as Double, simuSpectrum.get(r)[2] as Double,
                                                 simuSpectrum.get(r)[3] as Double, simuSpectrum.get(r)[4]as Double, simuSpectrum.get(r)[5] as Double,
                                                 simuSpectrum.get(r)[6]as Double, simuSpectrum.get(r)[7] as Double)
@@ -388,7 +374,7 @@ def run(input) {
 
 
         sql.execute("drop table if exists MultiRunsResults_geom;")
-        sql.execute("create table MultiRunsResults_geom  as select a.idRun, a.idReceiver, b.THE_GEOM, a.Lden63, a.Lden125, a.Lden250, a.Lden500, a.Lden1000, a.Lden2000, a.Lden4000, a.Lden8000 FROM RECEIVERS b LEFT JOIN MultiRunsResults a ON a.IDRECEIVER = b."+prop.getProperty("pkReceivers")+";")
+        sql.execute("create table MultiRunsResults_geom  as select a.idRun, a.idReceiver, b.THE_GEOM, a.Lden63, a.Lden125, a.Lden250, a.Lden500, a.Lden1000, a.Lden2000, a.Lden4000, a.Lden8000 FROM RECEIVERS_MR b LEFT JOIN MultiRunsResults a ON a.IDRECEIVER = b."+prop.getProperty("pkReceivers")+";")
         sql.execute("drop table if exists MultiRunsResults;")
 
         // long computationTime = System.currentTimeMillis() - start;
@@ -452,7 +438,6 @@ private static void copyFileUsingStream(File source, File dest) throws IOExcepti
     }
 }
 
-
 /**
  * Read source database and compute the sound emission spectrum of roads sources
  */
@@ -503,6 +488,20 @@ class MultiRunsProcessData {
     Map<Integer,Double> HV_SPD_N = new HashMap<>()
     Map<Integer,String> PVMT = new HashMap<>()
 
+    void initialise(int nSimu, Properties prop){
+        for (int r = 0; r < nSimu; ++r) {
+            Refl[r] = prop.getProperty("reflexion_order").toInteger()
+            if (prop.getProperty("computeHorizontal").toBoolean()) {Dif_hor[r] = 10}else{Dif_hor[r] = 0}
+            if (prop.getProperty("computeVertical").toBoolean()) {Dif_ver[r] = 10}else{Dif_ver[r] = 0}
+            DistProp[r] = prop.getProperty("maxSrcDistance").toFloat()
+            Speed[r] = 1
+            TempMean[r] = 1
+            HumMean[r] = 1
+            SpeedMean[r] = 1
+            FlowMean[r] = 1
+
+        }
+    }
 // Getter
     double[] getWjSourcesD(int idSource, int r ) {
         return this.wjSourcesD.get(idSource).get(r)
@@ -547,8 +546,14 @@ class MultiRunsProcessData {
 
 
         def list = [63, 125, 250, 500, 1000, 2000, 4000, 8000]
-
+        int ii= 0
+        double computeRatio = Math.round(0*100/ pk.size())
         pk.each { id, val ->
+            if (Math.round(ii*100/ pk.size())!= computeRatio) {
+                computeRatio = Math.round(ii*100/ pk.size())
+                System.println(computeRatio + " % ")
+            }
+            ii=ii+1
             def vl_d_per_hour = (double) TV_D.get(id) - HV_D.get(id)
             def ml_d_per_hour = (double) 0.0
             def pl_d_per_hour = (double) HV_D.get(id)
@@ -728,6 +733,8 @@ class MultiRunsProcessData {
         }
     }
 
+
+
     PropagationProcessPathData getGenericMeteoData(int r) {
         genericMeteoData.setHumidity(HumMean[r])
         genericMeteoData.setTemperature(TempMean[r])
@@ -735,13 +742,53 @@ class MultiRunsProcessData {
     }
 
 
-    void setSensitivityTable(File file) {
+
+
+    int setSensitivityTable(File file, Properties prop) {
         //////////////////////
         // Import file text
         //////////////////////
-        int i_read = 0
+       // int i_read = 0
+
+        ObjectMapper mapper = new ObjectMapper()
+       // JsonNode Data = EvaluateRoadSourceCnossos.parse(EvaluateRoadSourceCnossos.getResourceAsStream("D:\\aumond\\Documents\\Boulot\\Articles\\2019_XX_XX Sensitivity\\MR_input.json"));
+
+
+        // JSON file to Java object
+        //MrInputs mrInputs = mapper.readValue(file, MrInputs.class)
+        JsonNode  mrInputs = mapper.readValue(file, JsonNode.class)
+
+        // pretty print
+        int nSimu = mrInputs.getAt(0).size()
+
+
+        initialise(nSimu, prop)
+
+        for (int i = 0; i < mrInputs.fieldNames().size(); ++i ) {
+            for (int r = 0; r < nSimu; ++r) {
+                switch (mrInputs.fieldNames()[i]) {
+                    case 'Refl':
+                        Refl[r] = mrInputs.get('Refl').get(r).asInt()
+                        break
+                    case 'DistProp':
+                        DistProp[r] = mrInputs.get('DistProp').get(r).asDouble()
+                        break
+                    case 'SpeedMean':
+                        SpeedMean[r] = mrInputs.get('SpeedMean').get(r).asDouble()
+                        break
+                    case 'FlowMean':
+                        FlowMean[r] = mrInputs.get('FlowMean').get(r).asDouble()
+                        break
+                }
+
+            }
+        }
+        //mrInputs.get("TV_D").get(1).toString().toFloat()
+        //mrInputs.get("TV_E").get(1).toString().toFloat()
+
+        return nSimu
         // Remplissage des variables avec le contenu du fichier plan d'exp
-        file.splitEachLine(",") { fields ->
+        /*file.splitEachLine(",") { fields ->
 
             Refl.add(fields[0].toInteger())
             Dif_hor.add(fields[1].toInteger())
@@ -761,7 +808,7 @@ class MultiRunsProcessData {
             Simu.add(fields[14].toInteger())
 
             i_read = i_read + 1
-        }
+        }*/
 
     }
 
