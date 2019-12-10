@@ -6,7 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.annotation.JsonAppend.Prop;
-import com.fasterxml.jackson.databind.node.NullNode;
+import com.fasterxml.jackson.databind.node.NullNode
+import com.google.common.primitives.Doubles;
 import geoserver.GeoServer
 import geoserver.catalog.Store
 
@@ -15,6 +16,7 @@ import geoserver.catalog.Store
  */
 import groovy.sql.Sql
 import groovy.transform.CompileStatic
+import org.apache.commons.lang.ArrayUtils
 import org.apache.commons.math3.util.DoubleArray
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.api.EmptyProgressVisitor
@@ -27,8 +29,12 @@ import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
 import org.noise_planet.noisemodelling.emission.RSParametersCnossos
 import org.noise_planet.noisemodelling.propagation.ComputeRays
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOut
+import org.noise_planet.noisemodelling.propagation.EvaluateAttenuationCnossos
+import org.noise_planet.noisemodelling.propagation.PointPath
 import org.noise_planet.noisemodelling.propagation.PropagationPath
+import org.noise_planet.noisemodelling.propagation.PropagationProcessData
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
+import org.noise_planet.noisemodelling.propagation.SegmentPath
 
 import java.sql.Connection
 import java.sql.SQLException
@@ -209,9 +215,10 @@ def run(input) {
 
 
         PropagationProcessPathData genericMeteoData = new PropagationProcessPathData()
-        int nSimu =  multiRunsProcessData.setSensitivityTable(new File(workingDir + "MR_input.json"),prop)
+        int nSimu = multiRunsProcessData.setSensitivityTable(new File(workingDir + "MR_input.json"),prop,n_Simu)
 
-        if (n_Simu >0){ nSimu = n_Simu}
+
+
 
         multiRunsProcessData.setRoadTable("SOURCES_MR",sql, prop)
 
@@ -219,6 +226,12 @@ def run(input) {
 
         System.out.println("Start time :" + df.format(new Date()))
 
+        HashMap<Integer,Double> pop = new HashMap<>()
+        // memes valeurs d e et n
+        sql.eachRow('SELECT pk, pop FROM RECEIVERS_MR;') { row ->
+            int id = (int) row[0]
+            pop.put(id, (Double) row[1])
+        }
 
         //FileInputStream fileInputStream = new FileInputStream(new File("D:\\aumond\\Documents\\CENSE\\LorientMapNoise\\rays0908.gz").getAbsolutePath())
 
@@ -230,13 +243,14 @@ def run(input) {
         int oldIdSource = -1
 
         List<double[]> simuSpectrum = new ArrayList<>()
+        List<Double> simuDBA = new ArrayList<>()
         sql.execute("drop table if exists MultiRunsResults;")
-        sql.execute("create table MultiRunsResults (idRun integer,idReceiver integer, " +
+        sql.execute("create table MultiRunsResults (idRun integer,idReceiver integer, pop double precision, " +
                 "Lden63 double precision, Lden125 double precision, Lden250 double precision, Lden500 double precision, Lden1000 double precision, Lden2000 double precision, Lden4000 double precision, Lden8000 double precision);")
 
-        def qry = 'INSERT INTO MultiRunsResults(idRun,  idReceiver, ' +
+        def qry = 'INSERT INTO MultiRunsResults(idRun,  idReceiver, pop,' +
                 'Lden63, Lden125, Lden250, Lden500, Lden1000,Lden2000, Lden4000, Lden8000) ' +
-                'VALUES (?,?,?,?,?,?,?,?,?,?);'
+                'VALUES (?,?,?,?,?,?,?,?,?,?,?);'
 
 
 
@@ -286,7 +300,7 @@ def run(input) {
                                 // Save old receiver values
                                 if (oldIdReceiver != -1) {
                                     for (int r = 0; r < nSimu; ++r) {
-                                        ps.addBatch(r as Integer, oldIdReceiver as Integer,
+                                        ps.addBatch(r as Integer, oldIdReceiver as Integer, pop.get(oldIdReceiver) as Double,
                                                 simuSpectrum.get(r)[0] as Double, simuSpectrum.get(r)[1] as Double, simuSpectrum.get(r)[2] as Double,
                                                 simuSpectrum.get(r)[3] as Double, simuSpectrum.get(r)[4]as Double, simuSpectrum.get(r)[5] as Double,
                                                 simuSpectrum.get(r)[6]as Double, simuSpectrum.get(r)[7] as Double)
@@ -301,18 +315,28 @@ def run(input) {
                             }
 
                             oldIdReceiver = idReceiver
-                            ComputeRaysOut out = new ComputeRaysOut(false, multiRunsProcessData.getGenericMeteoData(0))
+
+                            MRComputeRaysOut outD = new MRComputeRaysOut(false, multiRunsProcessData.setGenericMeteoData(0, 'day'))
+                            MRComputeRaysOut outE = new MRComputeRaysOut(false, multiRunsProcessData.setGenericMeteoData(0, 'evening'))
+                            MRComputeRaysOut outN = new MRComputeRaysOut(false, multiRunsProcessData.setGenericMeteoData(0, 'night'))
                             //double[] attenuation = out.computeAttenuation(multiRunsProcessData.getGenericMeteoData(r), idSource, paths.getLi(), idReceiver, propagationPaths)
-                            double[] attenuation = null
-                            List<PropagationPath> propagationPaths = new ArrayList<>()
+                            double[] attenuationD = null
+                            double[] attenuationE = null
+                            double[] attenuationN = null
+
+                            List<MRPropagationPath> propagationPaths = new ArrayList<>()
+
                             for (int r = 0; r < nSimu; r++) {
                                 propagationPaths.clear()
+                                //wall alpha
+                                //multiRunsProcessData.setWallAlpha(multiRunsProcessData.wallAlpha[r])
                                 for (int pP = 0; pP < paths.propagationPathList.size(); pP++) {
 
                                     paths.propagationPathList.get(pP).initPropagationPath()
+                                    paths.propagationPathList.get(pP).setAlphaModif(multiRunsProcessData.wallAlpha[r])
                                     if (paths.propagationPathList.get(pP).refPoints.size() <= multiRunsProcessData.Refl[r]
-                                            && paths.propagationPathList.get(pP).difHPoints.size() <= multiRunsProcessData.Dif_hor[r]
-                                            && paths.propagationPathList.get(pP).difVPoints.size() <= multiRunsProcessData.Dif_ver[r]
+                                            && paths.propagationPathList.get(pP).difVPoints.size() <= multiRunsProcessData.Dif_hor[r]
+                                            && paths.propagationPathList.get(pP).difHPoints.size() <= multiRunsProcessData.Dif_ver[r]
                                             && paths.propagationPathList.get(pP).SRList[0].dp <= multiRunsProcessData.DistProp[r]
                                     ) {
                                         propagationPaths.add(paths.propagationPathList.get(pP))
@@ -320,24 +344,33 @@ def run(input) {
                                 }
 
 
+
                                 if (propagationPaths.size() > 0) {
                                     //double[] attenuation = out.computeAttenuation(multiRunsProcessData.getGenericMeteoData(r), idSource, paths.getLi(), idReceiver, propagationPaths)
                                     //double[] soundLevel = sumArray(attenuation, sourceLevel.get(idSource).get(r))
-                                    if (attenuation != null) {
-                                        if (multiRunsProcessData.TempMean[r] != multiRunsProcessData.TempMean[r - 1]
+                                    if (attenuationD != null) {
+                                        if (multiRunsProcessData.meteoFav[r] != multiRunsProcessData.meteoFav[r - 1]
+                                                ||multiRunsProcessData.WindDir[r] != multiRunsProcessData.WindDir[r - 1]
+                                                || multiRunsProcessData.TempMean[r] != multiRunsProcessData.TempMean[r - 1]
                                                 || multiRunsProcessData.HumMean[r] != multiRunsProcessData.HumMean[r - 1]) {
-                                            attenuation = out.computeAttenuation(multiRunsProcessData.getGenericMeteoData(r), idSource, paths.getLi(), idReceiver, propagationPaths)
+                                            multiRunsProcessData
+                                            attenuationD = outD.MRcomputeAttenuation(multiRunsProcessData.setGenericMeteoData(r,'day'), idSource, paths.getLi(), idReceiver, propagationPaths)
+                                            attenuationE = outE.MRcomputeAttenuation(multiRunsProcessData.setGenericMeteoData(r,'evening'), idSource, paths.getLi(), idReceiver, propagationPaths)
+                                            attenuationN = outN.MRcomputeAttenuation(multiRunsProcessData.setGenericMeteoData(r,'night'), idSource, paths.getLi(), idReceiver, propagationPaths)
+
                                         }
                                     } else {
-                                        attenuation = out.computeAttenuation(multiRunsProcessData.getGenericMeteoData(r), idSource, paths.getLi(), idReceiver, propagationPaths)
+                                        attenuationD = outD.MRcomputeAttenuation(multiRunsProcessData.setGenericMeteoData(r,'day'), idSource, paths.getLi(), idReceiver, propagationPaths)
+                                        attenuationE = outE.MRcomputeAttenuation(multiRunsProcessData.setGenericMeteoData(r,'evening'), idSource, paths.getLi(), idReceiver, propagationPaths)
+                                        attenuationN = outN.MRcomputeAttenuation(multiRunsProcessData.setGenericMeteoData(r,'night'), idSource, paths.getLi(), idReceiver, propagationPaths)
                                     }
 
                                     double[] wjSourcesD = multiRunsProcessData.getWjSourcesD(idSource,r)
                                     double[] wjSourcesE = multiRunsProcessData.getWjSourcesE(idSource,r)
                                     double[] wjSourcesN = multiRunsProcessData.getWjSourcesN(idSource,r)
-                                    double[] soundLevelDay = ComputeRays.wToDba(ComputeRays.multArray(wjSourcesD, ComputeRays.dbaToW(attenuation)))
-                                    double[] soundLevelEve = ComputeRays.wToDba(ComputeRays.multArray(wjSourcesE, ComputeRays.dbaToW(attenuation)))
-                                    double[] soundLevelNig = ComputeRays.wToDba(ComputeRays.multArray(wjSourcesN, ComputeRays.dbaToW(attenuation)))
+                                    double[] soundLevelDay = ComputeRays.wToDba(ComputeRays.multArray(wjSourcesD, ComputeRays.dbaToW(attenuationD)))
+                                    double[] soundLevelEve = ComputeRays.wToDba(ComputeRays.multArray(wjSourcesE, ComputeRays.dbaToW(attenuationE)))
+                                    double[] soundLevelNig = ComputeRays.wToDba(ComputeRays.multArray(wjSourcesN, ComputeRays.dbaToW(attenuationN)))
                                     double[] lDen = new double[soundLevelDay.length]
                                     double[] lN = new double[soundLevelDay.length]
                                     for (int i = 0; i < soundLevelDay.length; ++i) {
@@ -348,6 +381,7 @@ def run(input) {
                                     }
 
                                     simuSpectrum[r] = ComputeRays.sumDbArray(simuSpectrum[r], lDen)
+
                                 }
                             }
                             computationTime += System.currentTimeMillis() - startComputationTime
@@ -355,6 +389,7 @@ def run(input) {
                         fileInput.close()
 
                 }
+                System.out.println("3 ComputationTime :" + computationTime.toString())
                 zipInputStream2.closeEntry()
                 entry2 = zipInputStream2.getNextEntry()
 
@@ -362,7 +397,7 @@ def run(input) {
 
         }
 
-        System.out.println("ComputationTime :" + computationTime.toString())
+        System.out.println("4 ComputationTime :" + computationTime.toString())
         System.out.println("SimulationTime :" + (System.currentTimeMillis() - startSimulationTime).toString())
 
         // csvFile.close()
@@ -371,10 +406,8 @@ def run(input) {
 
         fileInputStream2.close()
 
-
-
         sql.execute("drop table if exists MultiRunsResults_geom;")
-        sql.execute("create table MultiRunsResults_geom  as select a.idRun, a.idReceiver, b.THE_GEOM, a.Lden63, a.Lden125, a.Lden250, a.Lden500, a.Lden1000, a.Lden2000, a.Lden4000, a.Lden8000 FROM RECEIVERS_MR b LEFT JOIN MultiRunsResults a ON a.IDRECEIVER = b."+prop.getProperty("pkReceivers")+";")
+        sql.execute("create table MultiRunsResults_geom  as select a.idRun, a.idReceiver, b.pop, b.THE_GEOM, a.Lden63, a.Lden125, a.Lden250, a.Lden500, a.Lden1000, a.Lden2000, a.Lden4000, a.Lden8000 FROM RECEIVERS_MR b LEFT JOIN MultiRunsResults a ON a.IDRECEIVER = b."+prop.getProperty("pkReceivers")+";")
         sql.execute("drop table if exists MultiRunsResults;")
 
         // long computationTime = System.currentTimeMillis() - start;
@@ -420,6 +453,177 @@ static double[] sumArray(double[] array1, double[] array2) {
         return sum
     }
 }
+
+
+class MRPropagationPath extends PropagationPath {
+
+    double alphaModif
+
+    double getAlphaModif() {
+        return alphaModif
+    }
+
+    void setAlphaModif(double alphaModif) {
+        this.alphaModif = alphaModif
+    }
+}
+
+
+class MRComputeRaysOut extends ComputeRaysOut {
+
+    MRComputeRaysOut(boolean keepRays, PropagationProcessPathData pathData) {
+        super(keepRays, pathData)
+    }
+
+
+    static double[] MRcomputeAttenuation(PropagationProcessPathData pathData, long sourceId, double sourceLi, long receiverId, List<MRPropagationPath> propagationPath) {
+        if(pathData != null) {
+            // Compute receiver/source attenuation
+            MREvaluateAttenuationCnossos evaluateAttenuationCnossos = new MREvaluateAttenuationCnossos();
+            double[] aGlobalMeteo = null;
+            for (MRPropagationPath propath : propagationPath) {
+                List<PointPath> ptList = propath.getPointList();
+                int roseindex = getRoseIndex(ptList.get(0).coordinate, ptList.get(ptList.size() - 1).coordinate);
+
+                // Compute homogeneous conditions attenuation
+                propath.setFavorable(false);
+                evaluateAttenuationCnossos.evaluate(propath, pathData);
+                double[] aGlobalMeteoHom = evaluateAttenuationCnossos.getaGlobal();
+
+                // Compute favorable conditions attenuation
+                propath.setFavorable(true);
+                evaluateAttenuationCnossos.evaluate(propath, pathData);
+                double[] aGlobalMeteoFav = evaluateAttenuationCnossos.getaGlobal();
+
+                // Compute attenuation under the wind conditions using the ray direction
+                double[] aGlobalMeteoRay = ComputeRays.sumArrayWithPonderation(aGlobalMeteoFav, aGlobalMeteoHom, pathData.getWindRose()[roseindex]);
+
+                if (aGlobalMeteo != null) {
+                    aGlobalMeteo = ComputeRays.sumDbArray(aGlobalMeteoRay, aGlobalMeteo);
+                } else {
+                    aGlobalMeteo = aGlobalMeteoRay;
+                }
+            }
+            if (aGlobalMeteo != null) {
+                // For line source, take account of li coefficient
+                if(sourceLi > 1.0) {
+                    for (int i = 0; i < aGlobalMeteo.length; i++) {
+                        aGlobalMeteo[i] = ComputeRays.wToDba(ComputeRays.dbaToW(aGlobalMeteo[i]) * sourceLi);
+                    }
+                }
+                return aGlobalMeteo;
+            } else {
+                return new double[0];
+            }
+        } else {
+            return new double[0];
+        }
+    }
+}
+
+
+class MREvaluateAttenuationCnossos extends EvaluateAttenuationCnossos {
+    //private int nbfreq;
+    private double[] freq_lambda
+    private double[] aGlobal
+    private final static double ONETHIRD = 1.0/3.0
+
+    double[] getaGlobal() {
+        return aGlobal
+    }
+
+    @Override
+    double[] getDeltaDif(SegmentPath srpath, PropagationProcessPathData data) {
+        double[] DeltaDif = new double[data.freq_lvl.size()];
+        double cprime;
+
+        for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
+
+            double Ch = 1;// Math.min(h0 * (data.celerity / freq_lambda[idfreq]) / 250, 1);
+
+            if (srpath.eLength > 0.3) {
+                double gammaPart = Math.pow((5 * freq_lambda[idfreq]) / srpath.eLength, 2);
+                cprime = (1.0 + gammaPart) / (ONETHIRD + gammaPart);
+            } else {
+                cprime = 1.0;
+            }
+
+            //(7.11) NMP2008 P.32
+            double testForm = (40 / freq_lambda[idfreq]) * cprime * srpath.delta;
+
+            double deltaDif= 0.0
+
+            if (testForm >= -2.0) {
+                deltaDif = 10 * Ch * Math
+                        .log10(Math.max(0, 3 + testForm));
+            }
+
+            DeltaDif[idfreq] = Math.max(0,deltaDif);
+
+        }
+        return  DeltaDif;
+
+    }
+
+    static double[] getMRARef(MRPropagationPath path) {
+        double[] aRef = new double[PropagationProcessPathData.freq_lvl.size()]
+
+        for (int idf = 0; idf < PropagationProcessPathData.freq_lvl.size(); ++idf) {
+            for (int idRef = 0; idRef < path.refPoints.size(); ++idRef) {
+                //List<Double> alpha = ((PointPath) path.getPointList().get((Integer) path.refPoints.get(idRef))).alphaWall
+                List<Double> alpha = ((PointPath) path.getPointList().get((Integer) path.refPoints.get(idRef))).alphaWall.collect{it*path.getAlphaModif()}
+                aRef[idf] += -10.0D * Math.log10(1.0D - (Double) alpha.get(idf))
+            }
+        }
+
+        return aRef
+    }
+
+
+    double[] evaluate(MRPropagationPath path, PropagationProcessPathData data) {
+        aGlobal = new double[PropagationProcessPathData.freq_lvl.size()]
+        freq_lambda = new double[PropagationProcessPathData.freq_lvl.size()]
+
+        for(int idf = 0; idf < PropagationProcessPathData.freq_lvl.size(); ++idf) {
+            if (PropagationProcessPathData.freq_lvl.get(idf) > 0) {
+                freq_lambda[idf] = data.getCelerity() / (double)(Integer)PropagationProcessPathData.freq_lvl.get(idf)
+            } else {
+                freq_lambda[idf] = 1.0D
+            }
+        }
+        //setFreq_lambda(freq_lambda)
+
+        path.initPropagationPath();
+        double[] alpha_atmo = data.getAlpha_atmo();
+        double aDiv
+        if (path.refPoints.size() > 0) {
+            aDiv = getADiv(((SegmentPath)path.getSRList().get(0)).dPath);
+        } else {
+            aDiv = getADiv(((SegmentPath)path.getSRList().get(0)).d);
+        }
+
+        double[] aBoundary = getABoundary(path, data)
+        double[] aRef = getMRARef(path)
+
+        for(int idfreq = 0; idfreq < PropagationProcessPathData.freq_lvl.size(); ++idfreq) {
+            double aAtm;
+            if (path.difVPoints.size() <= 0 && path.refPoints.size() <= 0) {
+                aAtm = getAAtm(((SegmentPath)path.getSRList().get(0)).d, alpha_atmo[idfreq]);
+            } else {
+                aAtm = getAAtm(((SegmentPath)path.getSRList().get(0)).dPath, alpha_atmo[idfreq]);
+            }
+
+            aGlobal[idfreq] = -(aDiv + aAtm + aBoundary[idfreq] + aRef[idfreq]);
+        }
+
+        return aGlobal
+    }
+
+
+
+
+}
+
 // fonction pour Copier les fichiers dans un autre répertoire
 private static void copyFileUsingStream(File source, File dest) throws IOException {
     InputStream is = null
@@ -460,7 +664,10 @@ class MultiRunsProcessData {
     ArrayList<Double> DistProp = new ArrayList<Double>()
     ArrayList<Integer> Veg = new ArrayList<Integer>()
     ArrayList<Integer> TMJA = new ArrayList<Integer>()
-    ArrayList<Integer> PL = new ArrayList<Integer>()
+    ArrayList<Integer> HV = new ArrayList<Integer>()
+    ArrayList<Integer> MV = new ArrayList<Integer>()
+    ArrayList<Integer> LV = new ArrayList<Integer>()
+    ArrayList<Integer> WV = new ArrayList<Integer>()
     ArrayList<Integer> Speed = new ArrayList<Integer>()
     ArrayList<Integer> RoadType = new ArrayList<Integer>()
     ArrayList<Double> TempMean = new ArrayList<Double>()
@@ -468,7 +675,13 @@ class MultiRunsProcessData {
     ArrayList<Integer> Meteo = new ArrayList<Integer>()
     ArrayList<Double> SpeedMean = new ArrayList<Double>()
     ArrayList<Double> FlowMean = new ArrayList<Double>()
-
+    ArrayList<Double> FlowMean_MajAxes = new ArrayList<Double>()
+    ArrayList<Double> FlowMean_MedAxes = new ArrayList<Double>()
+    ArrayList<Double> FlowMean_SmaAxes = new ArrayList<Double>()
+    ArrayList<Double> wallAlpha = new ArrayList<Double>()
+    ArrayList<Double> meteoFav = new ArrayList<Double>()
+    ArrayList<Double> WindDir = new ArrayList<Double>()
+    ArrayList<Integer> RoadJunction = new ArrayList<Double>()
 
     Map<Integer, Integer> pk = new HashMap<>()
     Map<Integer, Long> OSM_ID = new HashMap<>()
@@ -494,12 +707,20 @@ class MultiRunsProcessData {
             if (prop.getProperty("computeHorizontal").toBoolean()) {Dif_hor[r] = 10}else{Dif_hor[r] = 0}
             if (prop.getProperty("computeVertical").toBoolean()) {Dif_ver[r] = 10}else{Dif_ver[r] = 0}
             DistProp[r] = prop.getProperty("maxSrcDistance").toFloat()
-            Speed[r] = 1
-            TempMean[r] = 1
-            HumMean[r] = 1
-            SpeedMean[r] = 1
-            FlowMean[r] = 1
-
+            wallAlpha[r] = prop.getProperty("wallAlpha").toFloat()
+            TempMean[r] = 12.0d // todo pop.getpro
+            HumMean[r] = 82.5d // todo pop.getpro
+            SpeedMean[r] = 1.0d
+            FlowMean[r] = 1.0d
+            FlowMean_MajAxes[r] = 1.0d
+            FlowMean_MedAxes[r] = 1.0d
+            FlowMean_SmaAxes[r] = 1.0d
+            HV[r] = 1.0d
+            MV[r] = 5.0d
+            WV[r] = 3.0d
+            meteoFav[r] = 1.0d
+            WindDir[r] = 0.0d
+            RoadJunction[r] = 0
         }
     }
 // Getter
@@ -554,21 +775,8 @@ class MultiRunsProcessData {
                 System.println(computeRatio + " % ")
             }
             ii=ii+1
-            def vl_d_per_hour = (double) TV_D.get(id) - HV_D.get(id)
-            def ml_d_per_hour = (double) 0.0
-            def pl_d_per_hour = (double) HV_D.get(id)
-            def wa_d_per_hour = (double) 0.0
-            def wb_d_per_hour = (double) 0.0
-            def vl_e_per_hour = (double) TV_E.get(id) - HV_E.get(id)
-            def ml_e_per_hour = (double) 0.0
-            def pl_e_per_hour = (double) HV_E.get(id)
-            def wa_e_per_hour = (double) 0.0
-            def wb_e_per_hour = (double) 0.0
-            def vl_n_per_hour = (double) TV_N.get(id) - HV_N.get(id)
-            def ml_n_per_hour = (double) 0.0
-            def pl_n_per_hour = (double) HV_N.get(id)
-            def wa_n_per_hour = (double) 0.0
-            def wb_n_per_hour = (double) 0.0
+
+
 
             def speed_lv = LV_SPD_D.get(id)
             def speed_pl = HV_SPD_D.get(id)
@@ -691,6 +899,35 @@ class MultiRunsProcessData {
                     "Meteo",...
                     "SpeedMean",...
                     "FlowMean"};*/
+                    def ml_d_per_hour = (double) TV_D.get(id)*MV[r]/100
+                    def pl_d_per_hour = (double) TV_D.get(id)*(HV_D.get(id)*HV[r])/100
+                    def wa_d_per_hour = (double) TV_D.get(id)*WV[r]/100
+                    def wb_d_per_hour = (double) 0.0
+                    def vl_d_per_hour = (double) TV_D.get(id) - pl_d_per_hour - ml_d_per_hour - wa_d_per_hour
+
+                    def ml_e_per_hour = (double) TV_E.get(id)*MV[r]/100
+                    def pl_e_per_hour = (double) HV_E.get(id) * (HV_E.get(id)*HV[r])/100
+                    def wa_e_per_hour = (double) TV_E.get(id)*WV[r]/100
+                    def wb_e_per_hour = (double) 0.0
+                    def vl_e_per_hour = (double) TV_E.get(id) - pl_e_per_hour - ml_e_per_hour - wa_e_per_hour
+
+                    def ml_n_per_hour = (double) TV_N.get(id) *MV[r]/100
+                    def pl_n_per_hour = (double) HV_N.get(id)* (HV_N.get(id)*HV[r])/100
+                    def wa_n_per_hour = (double) TV_N.get(id) * WV[r]/100
+                    def wb_n_per_hour = (double) 0.0
+                    def vl_n_per_hour = (double) TV_N.get(id) - pl_n_per_hour - ml_n_per_hour - wa_n_per_hour
+
+                    def total_flow_per_hour = (double) TV_D.get(id)
+
+                    if (total_flow_per_hour>1000){
+                        FlowMean[r] = FlowMean_MajAxes[r]
+                    }
+                    if (total_flow_per_hour<=1000 && total_flow_per_hour>=300){
+                        FlowMean[r] = FlowMean_MedAxes[r]
+                    }
+                    if (total_flow_per_hour<300){
+                        FlowMean[r] = FlowMean_SmaAxes[r]
+                    }
 
                     RSParametersCnossos srcParameters_d = new RSParametersCnossos(lv_d_speed * SpeedMean[r], mv_d_speed * SpeedMean[r], hv_d_speed * SpeedMean[r], wav_d_speed * SpeedMean[r], wbv_d_speed * SpeedMean[r],
                             vl_d_per_hour * FlowMean[r], ml_d_per_hour * FlowMean[r], pl_d_per_hour * FlowMean[r], wa_d_per_hour * FlowMean[r], wb_d_per_hour * FlowMean[r],
@@ -698,7 +935,7 @@ class MultiRunsProcessData {
                     RSParametersCnossos srcParameters_e = new RSParametersCnossos(lv_e_speed * SpeedMean[r], mv_e_speed * SpeedMean[r], hv_e_speed * SpeedMean[r], wav_e_speed * SpeedMean[r], wbv_e_speed * SpeedMean[r],
                             vl_e_per_hour * FlowMean[r], ml_e_per_hour * FlowMean[r], pl_e_per_hour * FlowMean[r], wa_e_per_hour * FlowMean[r], wb_e_per_hour * FlowMean[r],
                             f, TempMean[r], RS, 0, 0, 250, 1)
-                    RSParametersCnossos srcParameters_n = new RSParametersCnossos(lv_n_speed * SpeedMean[r], mv_n_speed * SpeedMean[r], hv_n_speed * SpeedMean[r], wav_n_speed * SpeedMean[r], wbv_n_speed * Speed[r],
+                    RSParametersCnossos srcParameters_n = new RSParametersCnossos(lv_n_speed * SpeedMean[r], mv_n_speed * SpeedMean[r], hv_n_speed * SpeedMean[r], wav_n_speed * SpeedMean[r], wbv_n_speed * SpeedMean[r],
                             vl_n_per_hour * FlowMean[r], ml_n_per_hour * FlowMean[r], pl_n_per_hour * FlowMean[r], wa_n_per_hour * FlowMean[r], wb_n_per_hour * FlowMean[r],
                             f, TempMean[r], RS, 0, 0, 250, 1)
 
@@ -723,6 +960,7 @@ class MultiRunsProcessData {
 
                     kk++
                 }
+
                 sl_res_d.add(res_d)
                 sl_res_e.add(res_e)
                 sl_res_n.add(res_n)
@@ -733,18 +971,42 @@ class MultiRunsProcessData {
         }
     }
 
+    static double[] pushAndPop(double[] arrayList, int nTimes){
+        def list = Doubles.asList(arrayList)
+        def stack = list as Stack
+        for (i in 1..nTimes){
+            def lastElement = stack.pop()
+            stack.insertElementAt(lastElement,0)
+        }
+        return stack as double[]
+       }
 
-
-    PropagationProcessPathData getGenericMeteoData(int r) {
+    PropagationProcessPathData setGenericMeteoData(int r, String DEN) {
         genericMeteoData.setHumidity(HumMean[r])
         genericMeteoData.setTemperature(TempMean[r])
+
+        double[] favrose = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
+        //double[] favrose_6_18 = [0.41, 0.39, 0.38, 0.37, 0.36, 0.35, 0.34, 0.34, 0.34, 0.38, 0.44, 0.47, 0.48, 0.49, 0.49, 0.47, 0.45, 0.43];
+        //double[] favrose_18_22 = [0.53, 0.45, 0.41, 0.39, 0.37, 0.36, 0.36, 0.38, 0.41, 0.53, 0.62, 0.65, 0.67, 0.67, 0.68, 0.69, 0.68, 0.64];
+        //double[] favrose_22_6 = [0.64, 0.57, 0.51, 0.48, 0.46, 0.43, 0.41, 0.38, 0.36, 0.38, 0.44, 0.49, 0.52, 0.55, 0.58, 0.61, 0.64, 0.67];
+        if (DEN == "day") favrose = [0.41, 0.39, 0.38, 0.36, 0.35, 0.34, 0.34, 0.34, 0.38, 0.44, 0.47, 0.48,  0.49, 0.47, 0.45, 0.43]
+        if (DEN == "evening") favrose = [0.41, 0.39, 0.38, 0.36, 0.35, 0.34, 0.34, 0.34, 0.38, 0.44, 0.47, 0.48,  0.49, 0.47, 0.45, 0.43]
+        if (DEN == "night") favrose = [0.41, 0.39, 0.38, 0.36, 0.35, 0.34, 0.34, 0.34, 0.38, 0.44, 0.47, 0.48,  0.49, 0.47, 0.45, 0.43]
+
+        if (windDir[r] == -60) favrose = pushAndPop(favrose,10)
+        if (windDir[r] == -30) favrose = pushAndPop(favrose,11)
+        if (windDir[r] == 30) favrose =  pushAndPop(favrose,1)
+        if (windDir[r] == 60) favrose = pushAndPop(favrose,2)
+
+        favrose = favrose.collect{it*meteoFav[r]}
+        genericMeteoData.setWindRose(favrose)
         return genericMeteoData
     }
 
 
 
 
-    int setSensitivityTable(File file, Properties prop) {
+    int setSensitivityTable(File file, Properties prop, int nbSimu) {
         //////////////////////
         // Import file text
         //////////////////////
@@ -759,34 +1021,74 @@ class MultiRunsProcessData {
         JsonNode  mrInputs = mapper.readValue(file, JsonNode.class)
 
         // pretty print
-        int nSimu = mrInputs.getAt(0).size()
+        if (nbSimu == -1) {nbSimu = mrInputs.getAt(0).size()}
 
 
-        initialise(nSimu, prop)
+        initialise(nbSimu, prop)
 
         for (int i = 0; i < mrInputs.fieldNames().size(); ++i ) {
-            for (int r = 0; r < nSimu; ++r) {
+            for (int r = 0; r < nbSimu; ++r) {
                 switch (mrInputs.fieldNames()[i]) {
                     case 'Refl':
                         Refl[r] = mrInputs.get('Refl').get(r).asInt()
                         break
+                    case 'Dif_hor' :
+                        Dif_hor[r] = mrInputs.get('Dif_hor').get(r).asInt()
+                        break
+                    case 'Dif_ver' :
+                        Dif_ver[r] = mrInputs.get('Dif_ver').get(r).asInt()
+                        break
                     case 'DistProp':
                         DistProp[r] = mrInputs.get('DistProp').get(r).asDouble()
                         break
-                    case 'SpeedMean':
+                    case 'wallAlpha' :
+                        wallAlpha[r] = mrInputs.get('wallAlpha').get(r).asDouble()
+                        break
+                    case 'TempMean' :
+                        TempMean[r] = mrInputs.get('TempMean').get(r).asDouble()
+                        break
+                    case 'HumMean' :
+                        HumMean[r] = mrInputs.get('HumMean').get(r).asDouble()
+                        break
+                    case 'SpeedMean' :
                         SpeedMean[r] = mrInputs.get('SpeedMean').get(r).asDouble()
                         break
-                    case 'FlowMean':
+                    case 'FlowMean' :
                         FlowMean[r] = mrInputs.get('FlowMean').get(r).asDouble()
+                        break
+                    case 'FlowMean_MajAxes' :
+                        FlowMean_MajAxes[r] = mrInputs.get('FlowMean_MajAxes').get(r).asDouble()
+                        break
+                    case 'FlowMean_MedAxes' :
+                        FlowMean_MedAxes[r] = mrInputs.get('FlowMean_MedAxes').get(r).asDouble()
+                        break
+                    case 'FlowMean_SmaAxes' :
+                        FlowMean_SmaAxes[r] = mrInputs.get('FlowMean_SmaAxes').get(r).asDouble()
+                        break
+                    case 'HV' :
+                        HV[r] = mrInputs.get('HV').get(r).asDouble()
+                        break
+                    case 'MV' :
+                        MV[r] = mrInputs.get('MV').get(r).asDouble()
+                        break
+                    case 'WV' :
+                        WV[r] = mrInputs.get('WV').get(r).asDouble()
+                        break
+                    case 'meteoFav' :
+                        meteoFav[r] = mrInputs.get('meteoFav').get(r).asDouble()
+                        break
+                    case 'WindDir' :
+                        WindDir[r] = mrInputs.get('WindDir').get(r).asDouble()
+                        break
+                    case 'RoadJunction' :
+                        RoadJunction[r] = mrInputs.get('RoadJunction').get(r).asInt()
                         break
                 }
 
             }
         }
-        //mrInputs.get("TV_D").get(1).toString().toFloat()
-        //mrInputs.get("TV_E").get(1).toString().toFloat()
 
-        return nSimu
+        return nbSimu
         // Remplissage des variables avec le contenu du fichier plan d'exp
         /*file.splitEachLine(",") { fields ->
 
@@ -852,7 +1154,7 @@ class MultiRunsProcessData {
 
 @CompileStatic
 class PointToPointPathsMultiRuns {
-    ArrayList<PropagationPath> propagationPathList
+    ArrayList<MRPropagationPath> propagationPathList
     double li
     long sourceId
     long receiverId
@@ -868,7 +1170,7 @@ class PointToPointPathsMultiRuns {
         out.writeLong(sourceId)
         out.writeDouble(li)
         out.writeInt(propagationPathList.size())
-        for(PropagationPath propagationPath : propagationPathList) {
+        for(MRPropagationPath propagationPath : propagationPathList) {
             propagationPath.writeStream(out);
         }
     }
@@ -891,7 +1193,7 @@ class PointToPointPathsMultiRuns {
         int propagationPathsListSize = inputStream.readInt()
         propagationPathList.ensureCapacity(propagationPathsListSize)
         for(int i=0; i < propagationPathsListSize; i++) {
-            PropagationPath propagationPath = new PropagationPath()
+            MRPropagationPath propagationPath = new MRPropagationPath()
             propagationPath.readStream(inputStream)
             propagationPathList.add(propagationPath)
         }
