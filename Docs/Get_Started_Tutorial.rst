@@ -1,8 +1,8 @@
 Get Started - Tutorial
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Requirements: Install Java
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Requirements: Install Java and set JAVA_HOME environnement variable
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Please install JAVA version v8.x. Currently only version 8 of Java is compatible
 
@@ -13,7 +13,7 @@ Please install JAVA version v8.x. Currently only version 8 of Java is compatible
 -  If JAVA_HOME environnement variable is not well settled , you can refer to `this document`_ for example.
 
 .. warning::
-    The command promprt should print :literal:`C:\\Program Files (x86)\\Java\\jre1.8.x\\` whithout the bin directory. If JAVA_HOME is settled as :literal:`C:\\Program Files (x86)\\Java\\jre1.8.x\\bin`, it will not work.
+    The command promprt should print :literal:`C:\\Program Files (x86)\\Java\\jre1.8.x\\` whithout the bin directory. If JAVA_HOME is settled as :literal:`C:\\Program Files (x86)\\Java\\jre1.8.x\\bin`, it will not work. It should also point to a JRE  (Java Runtime Environment) Java environnement and not JDK. 
     
 .. _this document : https://confluence.atlassian.com/doc/setting-the-java_home-variable-in-windows-8895.html   
 
@@ -98,6 +98,9 @@ Repeat this operation for other files:
     - Beige blocks are optional
     - if all input blocks are optional, you must modify at least one of these blocks to be able to run the process
     - Blocks get solid border when they are ready to run
+    - Find here more information about `WPS Builder`_.
+    
+.. _WPS Builder : https://docs.boundlessgeo.com/suite/1.1.0/processing/wpsbuilder/index.html#application-panels
 
 Step 5: Run Calculation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -106,9 +109,9 @@ To run Calculation you have to drag the block *Get Lday* into WPS Builder window
 
 Then, select the orange blocks and indicate the name of the corresponding table your database, for example :
 
-- Building table name : "BUILDINGS"
-- Sources table name : "ROADS"
-- Receivers table name : "RECEIVERS"
+- Building table name : :literal:`BUILDINGS`
+- Sources table name : :literal:`ROADS`
+- Receivers table name : :literal:`RECEIVERS`
 
 Then, you can run the process.
 
