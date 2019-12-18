@@ -424,7 +424,7 @@ def run(input) {
 
         long computationTime = System.currentTimeMillis() - start;
 
-        return [result: "Calculation Done ! LDEN_GEOM"]
+        return [result: "Calculation Done ! LDEN_GEOM / Rays number : " + storageFactory.getnRays()]
 
 
     }
@@ -534,13 +534,20 @@ class PropagationPathStorage extends ComputeRaysOut {
 class PropagationPathStorageFactory implements PointNoiseMap.IComputeRaysOutFactory {
     ConcurrentLinkedDeque<PointToPointPaths> pathQueue = new ConcurrentLinkedDeque<>()
     GZIPOutputStream gzipOutputStream
+    //FileOutputStream fileOutputStream
     AtomicBoolean waitForMorePaths = new AtomicBoolean(true)
     public static final int GZIP_CACHE_SIZE = (int)Math.pow(2, 19)
     String workingDir
     long exportReceiverRays
+    int nRays = 0
 
+    int getnRays() {
+        return nRays
+    }
 
     void openPathOutputFile(String path) {
+        //fileOutputStream =  new FileOutputStream(path)
+        //WriteThread writeThread = new WriteThread(pathQueue, waitForMorePaths, fileOutputStream)
         gzipOutputStream = new GZIPOutputStream(new FileOutputStream(path), GZIP_CACHE_SIZE)
         WriteThread writeThread = new WriteThread(pathQueue, waitForMorePaths, gzipOutputStream)
         new Thread(writeThread).start()
@@ -593,12 +600,19 @@ class PropagationPathStorageFactory implements PointNoiseMap.IComputeRaysOutFact
         ConcurrentLinkedDeque<PointToPointPaths> pathQueue
         AtomicBoolean waitForMorePaths
         GZIPOutputStream gzipOutputStream
+        //FileOutputStream fileOutputStream
 
         WriteThread(ConcurrentLinkedDeque<PointToPointPaths> pathQueue, AtomicBoolean waitForMorePaths, GZIPOutputStream gzipOutputStream) {
             this.pathQueue = pathQueue
             this.waitForMorePaths = waitForMorePaths
             this.gzipOutputStream = gzipOutputStream
         }
+
+       /* WriteThread(ConcurrentLinkedDeque<PointToPointPaths> pathQueue, AtomicBoolean waitForMorePaths, FileOutputStream fileOutputStream) {
+            this.pathQueue = pathQueue
+            this.waitForMorePaths = waitForMorePaths
+            this.fileOutputStream = fileOutputStream
+        }*/
 
         @Override
         void run() {
@@ -620,23 +634,30 @@ class PropagationPathStorageFactory implements PointNoiseMap.IComputeRaysOutFact
             genericMeteoData.setTemperature(10)
             ComputeRaysOut out = new ComputeRaysOut(false, genericMeteoData)
 */
-            DataOutputStream dataOutputStream = new DataOutputStream(gzipOutputStream)
+            DataOutputStream dataOutputStream = new DataOutputStream( new BufferedOutputStream(gzipOutputStream))
             while (waitForMorePaths.get()) {
                 while(!pathQueue.isEmpty()) {
                     PointToPointPaths paths = pathQueue.pop()
+                    //long start = System.currentTimeMillis();
                     paths.writePropagationPathListStream(dataOutputStream)
 
-                    if(paths.receiverId == exportReceiverRays) {
+                    //System.out.println(System.currentTimeMillis() - start )
+                    paths.countRays()
+                    nRays = nRays + paths.getnRays()
+                    /*if(paths.receiverId == exportReceiverRays) {
                         // Export rays
                         kmlDocument.writeRays(paths.getPropagationPathList())
 
-                    }
+                    }*/
 
                 }
-                Thread.sleep(5)
+                Thread.sleep(10)
             }
+
+            System.out.println("nRays : " + nRays)
             dataOutputStream.flush()
             gzipOutputStream.close()
+            //fileOutputStream.close()
             kmlDocument.writeFooter()
             compressedDoc.closeEntry()
             compressedDoc.close()
@@ -654,9 +675,20 @@ class PointToPointPaths {
     double li
     long sourceId
     long receiverId
+    int nRays =0
 
-    /**
-     * Writes the content of this object into <code>out</code>.
+    int getnRays() {
+        return nRays
+    }
+
+    void countRays() throws IOException {
+
+         for (PropagationPath propagationPath : propagationPathList) {
+            nRays++
+        }
+    }
+
+     /* Writes the content of this object into <code>out</code>.
      * @param out the stream to write into
      * @throws java.io.IOException if an I/O-error occurs
      */
@@ -668,6 +700,7 @@ class PointToPointPaths {
         out.writeInt(propagationPathList.size())
         for(PropagationPath propagationPath : propagationPathList) {
             propagationPath.writeStream(out);
+
         }
     }
 

@@ -1,12 +1,8 @@
 package org.noise_planet.noisemodelling.wps.NoiseModelling
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.ObjectMapper
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.annotation.JsonAppend.Prop;
-import com.fasterxml.jackson.databind.node.NullNode
 import com.google.common.primitives.Doubles;
 import geoserver.GeoServer
 import geoserver.catalog.Store
@@ -16,8 +12,7 @@ import geoserver.catalog.Store
  */
 import groovy.sql.Sql
 import groovy.transform.CompileStatic
-import org.apache.commons.lang.ArrayUtils
-import org.apache.commons.math3.util.DoubleArray
+import javafx.scene.control.ProgressBar
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.api.EmptyProgressVisitor
 
@@ -32,7 +27,6 @@ import org.noise_planet.noisemodelling.propagation.ComputeRaysOut
 import org.noise_planet.noisemodelling.propagation.EvaluateAttenuationCnossos
 import org.noise_planet.noisemodelling.propagation.PointPath
 import org.noise_planet.noisemodelling.propagation.PropagationPath
-import org.noise_planet.noisemodelling.propagation.PropagationProcessData
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
 import org.noise_planet.noisemodelling.propagation.SegmentPath
 
@@ -40,12 +34,18 @@ import java.sql.Connection
 import java.sql.SQLException
 import java.text.DateFormat
 import java.text.SimpleDateFormat
+import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.zip.GZIPInputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 
 title = 'Compute MultiRuns'
-description = 'Compute MultiRuns.'
+description = 'Compute MultiRuns. A ver...'
 
 inputs = [databaseName      : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database. (default : h2gisdb)', min: 0, max: 1, type: String.class],
           workingDir : [name: 'workingDir', title: 'workingDir', description: 'workingDir (ex : C:/Desktop/), shall contain Rays.zip and MR_Input.json', type: String.class],
@@ -91,7 +91,7 @@ def run(input) {
 
 
     // ----------------------------------
-    // Start... 
+    // Start...
     // ----------------------------------
 
     System.out.println("Run ...")
@@ -228,10 +228,13 @@ def run(input) {
 
         HashMap<Integer,Double> pop = new HashMap<>()
         // memes valeurs d e et n
+        int nrcv = 0
         sql.eachRow('SELECT pk, pop FROM RECEIVERS_MR;') { row ->
             int id = (int) row[0]
             pop.put(id, (Double) row[1])
+            nrcv++
         }
+
 
         //FileInputStream fileInputStream = new FileInputStream(new File("D:\\aumond\\Documents\\CENSE\\LorientMapNoise\\rays0908.gz").getAbsolutePath())
 
@@ -240,10 +243,7 @@ def run(input) {
         //System.out.println(dataInputStream)
 
         int oldIdReceiver = -1
-        int oldIdSource = -1
 
-        List<double[]> simuSpectrum = new ArrayList<>()
-        List<Double> simuDBA = new ArrayList<>()
         sql.execute("drop table if exists MultiRunsResults;")
         sql.execute("create table MultiRunsResults (idRun integer,idReceiver integer, pop double precision, " +
                 "Lden63 double precision, Lden125 double precision, Lden250 double precision, Lden500 double precision, Lden1000 double precision, Lden2000 double precision, Lden4000 double precision, Lden8000 double precision);")
@@ -251,8 +251,6 @@ def run(input) {
         def qry = 'INSERT INTO MultiRunsResults(idRun,  idReceiver, pop,' +
                 'Lden63, Lden125, Lden250, Lden500, Lden1000,Lden2000, Lden4000, Lden8000) ' +
                 'VALUES (?,?,?,?,?,?,?,?,?,?,?);'
-
-
 
         Map<Integer, List<double[]>> sourceLevel = new HashMap<>()
 
@@ -267,135 +265,74 @@ def run(input) {
         System.out.println("Run SA")
         long computationTime = 0
         long startSimulationTime = System.currentTimeMillis()
+        String anim= ".+*°"
 
         FileInputStream fileInputStream2 = new FileInputStream(new File(fileZip).getAbsolutePath())
         ZipInputStream zipInputStream2 = new ZipInputStream(fileInputStream2)
         ZipEntry entry2 = zipInputStream2.getNextEntry()
 
-        sql.withBatch(100, qry) { ps ->
-            while (entry2 != null) {
-                switch (entry2.getName()) {
-                    case 'rays.gz':
-                        System.println(entry2.getName())
-                        System.println(entry2)
-                        String filePath = workingDir + entry2.getName()
-                        extractFile(zipInputStream2, filePath)
+        AtomicBoolean doInsertResults = new AtomicBoolean(true);
+        ResultsInsertThread resultsInsertThread = new ResultsInsertThread(doInsertResults, sql)
+        new Thread(resultsInsertThread).start()
+        ThreadPoolExecutor executorService = (ThreadPoolExecutor)Executors.newFixedThreadPool(n_thread);
+        while (entry2 != null) {
+            switch (entry2.getName()) {
+                case 'rays.gz':
+                    System.println(entry2.getName())
+                    System.println(entry2)
+                    String filePath = workingDir + entry2.getName()
+                    extractFile(zipInputStream2, filePath)
 
-                        System.out.println(filePath)
-                        FileInputStream fileInput = new FileInputStream(new File(filePath))
-                        GZIPInputStream gzipInputStream = new GZIPInputStream(fileInput, GZIP_CACHE_SIZE)
-                        DataInputStream dataInputStream = new DataInputStream(gzipInputStream)
+                    System.out.println(filePath)
+                    FileInputStream fileInput = new FileInputStream(new File(filePath))
+                    GZIPInputStream gzipInputStream = new GZIPInputStream(fileInput, GZIP_CACHE_SIZE)
+                    DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(gzipInputStream))
+                    int count = 0
+                    List<PointToPointPathsMultiRuns> pointToPointPathsMultiRuns = new ArrayList<>();
+                    while (fileInput.available() > 0) {
 
-                        System.out.println(fileInput.available() )
-                        while (fileInput.available() > 0) {
+                        PointToPointPathsMultiRuns paths = new PointToPointPathsMultiRuns()
+                        paths.readPropagationPathListStream(dataInputStream)
+                        int idReceiver = (Integer) paths.receiverId
 
-                            PointToPointPathsMultiRuns paths = new PointToPointPathsMultiRuns()
-                            paths.readPropagationPathListStream(dataInputStream)
-                            long startComputationTime = System.currentTimeMillis()
-                            int idReceiver = (Integer) paths.receiverId
-                            int idSource = (Integer) paths.sourceId
-
-                            if (idReceiver != oldIdReceiver) {
-                                System.out.println("oldReceiver: " + oldIdReceiver +"Receiver: " + idReceiver )
-                                // Save old receiver values
-                                if (oldIdReceiver != -1) {
-                                    for (int r = 0; r < nSimu; ++r) {
-                                        ps.addBatch(r as Integer, oldIdReceiver as Integer, pop.get(oldIdReceiver) as Double,
-                                                simuSpectrum.get(r)[0] as Double, simuSpectrum.get(r)[1] as Double, simuSpectrum.get(r)[2] as Double,
-                                                simuSpectrum.get(r)[3] as Double, simuSpectrum.get(r)[4]as Double, simuSpectrum.get(r)[5] as Double,
-                                                simuSpectrum.get(r)[6]as Double, simuSpectrum.get(r)[7] as Double)
-                                    //    csvFile.append(String.format("%d\t%d\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n", r, oldIdReceiver, pop.get(oldIdReceiver), simuSpectrum.get(r)[0], simuSpectrum.get(r)[1], simuSpectrum.get(r)[2], simuSpectrum.get(r)[3], simuSpectrum.get(r)[4], simuSpectrum.get(r)[5], simuSpectrum.get(r)[6], simuSpectrum.get(r)[7]))
-                                    }
-                                }
-                                // Create new receiver value
-                                simuSpectrum.clear()
-                                for (int r = 0; r < nSimu; ++r) {
-                                    simuSpectrum.add(new double[PropagationProcessPathData.freq_lvl.size()])
-                                }
+                        if (idReceiver != oldIdReceiver) {
+                            while (executorService.getQueue().size()>1){
+                                System.out.println(String.format("Receiver %d ( %d queued receivers)", idReceiver, executorService.getQueue().size()))
+                                Thread.sleep(100)
+                                // Add thread
                             }
+                            if (oldIdReceiver != -1){
 
-                            oldIdReceiver = idReceiver
+                                ReceiverSimulationProcess receiverSimulationProcess =
+                                        new ReceiverSimulationProcess(resultsInsertThread.getConcurrentLinkedQueue(),
+                                                multiRunsProcessData, pointToPointPathsMultiRuns,nSimu)
+                                receiverSimulationProcess.setPop(pop.get(idReceiver))
+                                executorService.execute(receiverSimulationProcess)
+                                pointToPointPathsMultiRuns = new ArrayList<>(pointToPointPathsMultiRuns.size())
+                                count ++
+                                int x = Math.round(count*100/nrcv)
+                                String data = "  --  Propagation " + "\r" + anim.charAt( x % anim.length()) + " " + x + "%"
+                                System.out.print(data)
 
-                            MRComputeRaysOut outD = new MRComputeRaysOut(false, multiRunsProcessData.setGenericMeteoData(0, 'day'))
-                            MRComputeRaysOut outE = new MRComputeRaysOut(false, multiRunsProcessData.setGenericMeteoData(0, 'evening'))
-                            MRComputeRaysOut outN = new MRComputeRaysOut(false, multiRunsProcessData.setGenericMeteoData(0, 'night'))
-                            //double[] attenuation = out.computeAttenuation(multiRunsProcessData.getGenericMeteoData(r), idSource, paths.getLi(), idReceiver, propagationPaths)
-                            double[] attenuationD = null
-                            double[] attenuationE = null
-                            double[] attenuationN = null
-
-                            List<MRPropagationPath> propagationPaths = new ArrayList<>()
-
-                            for (int r = 0; r < nSimu; r++) {
-                                propagationPaths.clear()
-                                //wall alpha
-                                //multiRunsProcessData.setWallAlpha(multiRunsProcessData.wallAlpha[r])
-                                for (int pP = 0; pP < paths.propagationPathList.size(); pP++) {
-
-                                    paths.propagationPathList.get(pP).initPropagationPath()
-                                    paths.propagationPathList.get(pP).setAlphaModif(multiRunsProcessData.wallAlpha[r])
-                                    if (paths.propagationPathList.get(pP).refPoints.size() <= multiRunsProcessData.Refl[r]
-                                            && paths.propagationPathList.get(pP).difVPoints.size() <= multiRunsProcessData.Dif_hor[r]
-                                            && paths.propagationPathList.get(pP).difHPoints.size() <= multiRunsProcessData.Dif_ver[r]
-                                            && paths.propagationPathList.get(pP).SRList[0].dp <= multiRunsProcessData.DistProp[r]
-                                    ) {
-                                        propagationPaths.add(paths.propagationPathList.get(pP))
-                                    }
-                                }
-
-
-
-                                if (propagationPaths.size() > 0) {
-                                    //double[] attenuation = out.computeAttenuation(multiRunsProcessData.getGenericMeteoData(r), idSource, paths.getLi(), idReceiver, propagationPaths)
-                                    //double[] soundLevel = sumArray(attenuation, sourceLevel.get(idSource).get(r))
-                                    if (attenuationD != null) {
-                                        if (multiRunsProcessData.meteoFav[r] != multiRunsProcessData.meteoFav[r - 1]
-                                                ||multiRunsProcessData.WindDir[r] != multiRunsProcessData.WindDir[r - 1]
-                                                || multiRunsProcessData.TempMean[r] != multiRunsProcessData.TempMean[r - 1]
-                                                || multiRunsProcessData.HumMean[r] != multiRunsProcessData.HumMean[r - 1]) {
-                                            multiRunsProcessData
-                                            attenuationD = outD.MRcomputeAttenuation(multiRunsProcessData.setGenericMeteoData(r,'day'), idSource, paths.getLi(), idReceiver, propagationPaths)
-                                            attenuationE = outE.MRcomputeAttenuation(multiRunsProcessData.setGenericMeteoData(r,'evening'), idSource, paths.getLi(), idReceiver, propagationPaths)
-                                            attenuationN = outN.MRcomputeAttenuation(multiRunsProcessData.setGenericMeteoData(r,'night'), idSource, paths.getLi(), idReceiver, propagationPaths)
-
-                                        }
-                                    } else {
-                                        attenuationD = outD.MRcomputeAttenuation(multiRunsProcessData.setGenericMeteoData(r,'day'), idSource, paths.getLi(), idReceiver, propagationPaths)
-                                        attenuationE = outE.MRcomputeAttenuation(multiRunsProcessData.setGenericMeteoData(r,'evening'), idSource, paths.getLi(), idReceiver, propagationPaths)
-                                        attenuationN = outN.MRcomputeAttenuation(multiRunsProcessData.setGenericMeteoData(r,'night'), idSource, paths.getLi(), idReceiver, propagationPaths)
-                                    }
-
-                                    double[] wjSourcesD = multiRunsProcessData.getWjSourcesD(idSource,r)
-                                    double[] wjSourcesE = multiRunsProcessData.getWjSourcesE(idSource,r)
-                                    double[] wjSourcesN = multiRunsProcessData.getWjSourcesN(idSource,r)
-                                    double[] soundLevelDay = ComputeRays.wToDba(ComputeRays.multArray(wjSourcesD, ComputeRays.dbaToW(attenuationD)))
-                                    double[] soundLevelEve = ComputeRays.wToDba(ComputeRays.multArray(wjSourcesE, ComputeRays.dbaToW(attenuationE)))
-                                    double[] soundLevelNig = ComputeRays.wToDba(ComputeRays.multArray(wjSourcesN, ComputeRays.dbaToW(attenuationN)))
-                                    double[] lDen = new double[soundLevelDay.length]
-                                    double[] lN = new double[soundLevelDay.length]
-                                    for (int i = 0; i < soundLevelDay.length; ++i) {
-                                        lDen[i] = 10.0D * Math.log10((12.0D / 24.0D) * Math.pow(10.0D, soundLevelDay[i] / 10.0D)
-                                                + (4.0D / 24.0D) * Math.pow(10.0D, (soundLevelEve[i] + 5.0D) / 10.0D)
-                                                + (8.0D / 24.0D) * Math.pow(10.0D, (soundLevelNig[i] + 10.0D) / 10.0D))
-                                        lN[i] = soundLevelNig[i]
-                                    }
-
-                                    simuSpectrum[r] = ComputeRays.sumDbArray(simuSpectrum[r], lDen)
-
-                                }
                             }
-                            computationTime += System.currentTimeMillis() - startComputationTime
                         }
-                        fileInput.close()
 
-                }
-                System.out.println("3 ComputationTime :" + computationTime.toString())
-                zipInputStream2.closeEntry()
-                entry2 = zipInputStream2.getNextEntry()
+                        oldIdReceiver = idReceiver
+                        pointToPointPathsMultiRuns.add(paths)
+                    }
+                    fileInput.close()
 
             }
+            //System.out.println("3 ComputationTime :" + entry2.toString())
+            zipInputStream2.closeEntry()
+             entry2 = zipInputStream2.getNextEntry()
+            //System.out.println("3 ComputationTime :" + entry2.toString())
 
         }
+        executorService.shutdown()
+        executorService.awaitTermination(30, TimeUnit.DAYS)
+
+        doInsertResults.set(false)
 
         System.out.println("4 ComputationTime :" + computationTime.toString())
         System.out.println("SimulationTime :" + (System.currentTimeMillis() - startSimulationTime).toString())
@@ -415,6 +352,159 @@ def run(input) {
     }
 
 }
+
+class SimulationResult {
+    final int r
+    final int receiver
+    final double pop
+    final double[] spectrum
+
+    SimulationResult(int r, int receiver, double pop, double[] spectrum) {
+        this.r = r
+        this.receiver = receiver
+        this.pop = pop
+        this.spectrum = spectrum
+    }
+}
+
+class ResultsInsertThread implements Runnable {
+    ConcurrentLinkedQueue<SimulationResult> concurrentLinkedQueue = new ConcurrentLinkedQueue<>();
+    AtomicBoolean doInsertResults;
+    Sql sql;
+
+    ResultsInsertThread(AtomicBoolean doInsertResults, Sql sql) {
+        this.doInsertResults = doInsertResults
+        this.sql = sql
+    }
+
+    ConcurrentLinkedQueue<SimulationResult> getConcurrentLinkedQueue() {
+        return concurrentLinkedQueue
+    }
+
+    @Override
+    void run() {
+        def qry = 'INSERT INTO MultiRunsResults(idRun,  idReceiver, pop,' +
+                'Lden63, Lden125, Lden250, Lden500, Lden1000,Lden2000, Lden4000, Lden8000) ' +
+                'VALUES (?,?,?,?,?,?,?,?,?,?,?);'
+        sql.withBatch(500, qry) { ps ->
+            while (doInsertResults.get()) {
+                SimulationResult result = concurrentLinkedQueue.poll()
+                if (result != null) {
+                    ps.addBatch(result.r as Integer, result.receiver as Integer, result.pop as Double,
+                            result.spectrum[0] as Double, result.spectrum[1] as Double, result.spectrum[2] as Double,
+                            result.spectrum[3] as Double, result.spectrum[4] as Double, result.spectrum[5] as Double,
+                           result.spectrum[6] as Double, result.spectrum[7] as Double)
+                } else {
+                    Thread.sleep(100)
+                }
+            }
+        }
+    }
+}
+
+class ReceiverSimulationProcess implements Runnable {
+    ConcurrentLinkedQueue<SimulationResult> concurrentLinkedQueue;
+    MultiRunsProcessData multiRunsProcessData;
+    List<PointToPointPathsMultiRuns> pointToPointPathsMultiRuns;
+    Map<Integer,double[]> simuSpectrum = new HashMap<>()
+    SimulationResult simulationResult
+    double pop
+    int nSimu = 0
+
+    void setPop(double pop){
+            this.pop = pop
+    }
+
+    ReceiverSimulationProcess(ConcurrentLinkedQueue<SimulationResult> concurrentLinkedQueue, MultiRunsProcessData multiRunsProcessData, List<PointToPointPathsMultiRuns> pointToPointPathsMultiRuns, int nSimu) {
+        this.concurrentLinkedQueue = concurrentLinkedQueue
+        this.multiRunsProcessData = multiRunsProcessData
+        this.pointToPointPathsMultiRuns = pointToPointPathsMultiRuns
+        this.nSimu = nSimu
+    }
+
+    @Override
+    void run() {
+
+        if (nSimu <1) nSimu = multiRunsProcessData.Simu.size()
+
+        for (int r = 0; r < nSimu; ++r) {
+            simuSpectrum.put(r,new double[PropagationProcessPathData.freq_lvl.size()])
+        }
+
+        int idReceiver = -1
+        for (PointToPointPathsMultiRuns paths : pointToPointPathsMultiRuns) {
+
+            idReceiver = (Integer) paths.receiverId
+            int idSource = (Integer) paths.sourceId
+            MRComputeRaysOut outD = new MRComputeRaysOut(false, multiRunsProcessData.createGenericMeteoData(0, 'day'))
+            MRComputeRaysOut outE = new MRComputeRaysOut(false, multiRunsProcessData.createGenericMeteoData(0, 'evening'))
+            MRComputeRaysOut outN = new MRComputeRaysOut(false, multiRunsProcessData.createGenericMeteoData(0, 'night'))
+            double[] attenuationD = null
+            double[] attenuationE = null
+            double[] attenuationN = null
+
+            List<MRPropagationPath> propagationPaths = new ArrayList<>()
+
+            for (int r = 0; r < nSimu; r++) {
+                propagationPaths.clear()
+
+                for (int pP = 0; pP < paths.propagationPathList.size(); pP++) {
+
+                    paths.propagationPathList.get(pP).initPropagationPath()
+                    paths.propagationPathList.get(pP).setAlphaModif(multiRunsProcessData.wallAlpha[r])
+                    if (paths.propagationPathList.get(pP).refPoints.size() <= multiRunsProcessData.Refl[r] && paths.propagationPathList.get(pP).difVPoints.size() <= multiRunsProcessData.Dif_hor[r] && paths.propagationPathList.get(pP).difHPoints.size() <= multiRunsProcessData.Dif_ver[r] && paths.propagationPathList.get(pP).SRList[0].dp <= multiRunsProcessData.DistProp[r]) {
+                        propagationPaths.add(paths.propagationPathList.get(pP))
+                    }
+                }
+
+
+                if (propagationPaths.size() > 0) {
+
+                    if (attenuationD != null) {
+                        if (multiRunsProcessData.meteoFav[r] != multiRunsProcessData.meteoFav[r - 1] || multiRunsProcessData.WindDir[r] != multiRunsProcessData.WindDir[r - 1] || multiRunsProcessData.TempMean[r] != multiRunsProcessData.TempMean[r - 1] || multiRunsProcessData.HumMean[r] != multiRunsProcessData.HumMean[r - 1]) {
+                            multiRunsProcessData
+                            attenuationD = outD.MRcomputeAttenuation(multiRunsProcessData.createGenericMeteoData(r, 'day'), idSource, paths.getLi(), idReceiver, propagationPaths)
+                            attenuationE = outE.MRcomputeAttenuation(multiRunsProcessData.createGenericMeteoData(r, 'evening'), idSource, paths.getLi(), idReceiver, propagationPaths)
+                            attenuationN = outN.MRcomputeAttenuation(multiRunsProcessData.createGenericMeteoData(r, 'night'), idSource, paths.getLi(), idReceiver, propagationPaths)
+
+                        }
+                    } else {
+                        attenuationD = outD.MRcomputeAttenuation(multiRunsProcessData.createGenericMeteoData(r, 'day'), idSource, paths.getLi(), idReceiver, propagationPaths)
+                        attenuationE = outE.MRcomputeAttenuation(multiRunsProcessData.createGenericMeteoData(r, 'evening'), idSource, paths.getLi(), idReceiver, propagationPaths)
+                        attenuationN = outN.MRcomputeAttenuation(multiRunsProcessData.createGenericMeteoData(r, 'night'), idSource, paths.getLi(), idReceiver, propagationPaths)
+                    }
+
+                    double[] wjSourcesD = multiRunsProcessData.getWjSourcesD(idSource, r)
+                    double[] wjSourcesE = multiRunsProcessData.getWjSourcesE(idSource, r)
+                    double[] wjSourcesN = multiRunsProcessData.getWjSourcesN(idSource, r)
+                    double[] soundLevelDay = ComputeRays.wToDba(ComputeRays.multArray(wjSourcesD, ComputeRays.dbaToW(attenuationD)))
+                    double[] soundLevelEve = ComputeRays.wToDba(ComputeRays.multArray(wjSourcesE, ComputeRays.dbaToW(attenuationE)))
+                    double[] soundLevelNig = ComputeRays.wToDba(ComputeRays.multArray(wjSourcesN, ComputeRays.dbaToW(attenuationN)))
+                    double[] lDen = new double[soundLevelDay.length]
+                    double[] lN = new double[soundLevelDay.length]
+                    for (int i = 0; i < soundLevelDay.length; ++i) {
+                        lDen[i] = 10.0D * Math.log10((12.0D / 24.0D) * Math.pow(10.0D, soundLevelDay[i] / 10.0D) + (4.0D / 24.0D) * Math.pow(10.0D, (soundLevelEve[i] + 5.0D) / 10.0D) + (8.0D / 24.0D) * Math.pow(10.0D, (soundLevelNig[i] + 10.0D) / 10.0D))
+                        lN[i] = soundLevelNig[i]
+                    }
+
+                    simuSpectrum.put(r,ComputeRays.sumDbArray(simuSpectrum.get(r), lDen))
+
+                }
+
+
+            }
+
+        }
+        if (idReceiver != -1){
+            for (int r = 0; r < nSimu; r++) {
+                simulationResult = new SimulationResult(r, idReceiver, pop, simuSpectrum.get(r))
+                concurrentLinkedQueue.add(simulationResult)
+            }
+
+        }
+    }
+}
+
 
 static double[] DBToDBA(double[] db) {
     double[] dbA = [-26.2, -16.1, -8.6, -3.2, 0, 1.2, 1.0, -1.1]
@@ -454,7 +544,7 @@ static double[] sumArray(double[] array1, double[] array2) {
     }
 }
 
-
+@CompileStatic
 class MRPropagationPath extends PropagationPath {
 
     double alphaModif
@@ -468,7 +558,7 @@ class MRPropagationPath extends PropagationPath {
     }
 }
 
-
+@CompileStatic
 class MRComputeRaysOut extends ComputeRaysOut {
 
     MRComputeRaysOut(boolean keepRays, PropagationProcessPathData pathData) {
@@ -521,7 +611,7 @@ class MRComputeRaysOut extends ComputeRaysOut {
     }
 }
 
-
+@CompileStatic
 class MREvaluateAttenuationCnossos extends EvaluateAttenuationCnossos {
     //private int nbfreq;
     private double[] freq_lambda
@@ -625,6 +715,7 @@ class MREvaluateAttenuationCnossos extends EvaluateAttenuationCnossos {
 }
 
 // fonction pour Copier les fichiers dans un autre répertoire
+@CompileStatic
 private static void copyFileUsingStream(File source, File dest) throws IOException {
     InputStream is = null
     OutputStream os = null
@@ -646,13 +737,9 @@ private static void copyFileUsingStream(File source, File dest) throws IOExcepti
  * Read source database and compute the sound emission spectrum of roads sources
  */
 class MultiRunsProcessData {
-    static public Map<Integer, double[]> soundSourceLevels = new HashMap<>()
-
     public Map<Integer, List<double[]>> wjSourcesD = new HashMap<>()
     public Map<Integer, List<double[]>> wjSourcesE = new HashMap<>()
     public Map<Integer, List<double[]>> wjSourcesN = new HashMap<>()
-
-    public static PropagationProcessPathData genericMeteoData = new PropagationProcessPathData()
 
     // Init des variables
     ArrayList<Integer> Simu = new ArrayList<Integer>() // numero simu
@@ -664,10 +751,10 @@ class MultiRunsProcessData {
     ArrayList<Double> DistProp = new ArrayList<Double>()
     ArrayList<Integer> Veg = new ArrayList<Integer>()
     ArrayList<Integer> TMJA = new ArrayList<Integer>()
-    ArrayList<Integer> HV = new ArrayList<Integer>()
-    ArrayList<Integer> MV = new ArrayList<Integer>()
-    ArrayList<Integer> LV = new ArrayList<Integer>()
-    ArrayList<Integer> WV = new ArrayList<Integer>()
+    ArrayList<Double> HV = new ArrayList<Double>()
+    ArrayList<Double> MV = new ArrayList<Double>()
+    ArrayList<Double> LV = new ArrayList<Double>()
+    ArrayList<Double> WV = new ArrayList<Double>()
     ArrayList<Integer> Speed = new ArrayList<Integer>()
     ArrayList<Integer> RoadType = new ArrayList<Integer>()
     ArrayList<Double> TempMean = new ArrayList<Double>()
@@ -681,7 +768,7 @@ class MultiRunsProcessData {
     ArrayList<Double> wallAlpha = new ArrayList<Double>()
     ArrayList<Double> meteoFav = new ArrayList<Double>()
     ArrayList<Double> WindDir = new ArrayList<Double>()
-    ArrayList<Integer> RoadJunction = new ArrayList<Double>()
+    ArrayList<Integer> RoadJunction = new ArrayList<Integer>()
 
     Map<Integer, Integer> pk = new HashMap<>()
     Map<Integer, Long> OSM_ID = new HashMap<>()
@@ -706,8 +793,8 @@ class MultiRunsProcessData {
             Refl[r] = prop.getProperty("reflexion_order").toInteger()
             if (prop.getProperty("computeHorizontal").toBoolean()) {Dif_hor[r] = 10}else{Dif_hor[r] = 0}
             if (prop.getProperty("computeVertical").toBoolean()) {Dif_ver[r] = 10}else{Dif_ver[r] = 0}
-            DistProp[r] = prop.getProperty("maxSrcDistance").toFloat()
-            wallAlpha[r] = prop.getProperty("wallAlpha").toFloat()
+            DistProp[r] = prop.getProperty("maxSrcDistance").toDouble()
+            wallAlpha[r] = prop.getProperty("wallAlpha").toDouble()
             TempMean[r] = 12.0d // todo pop.getpro
             HumMean[r] = 82.5d // todo pop.getpro
             SpeedMean[r] = 1.0d
@@ -733,6 +820,7 @@ class MultiRunsProcessData {
     double[] getWjSourcesN(int idSource, int r ) {
         return this.wjSourcesN.get(idSource).get(r)
     }
+
 
     void getTrafficLevel(int nSimu) throws SQLException {
         /**
@@ -761,7 +849,7 @@ class MultiRunsProcessData {
          * @param Junc_type Type of junction ((k = 1 for a crossing with traffic lights ; k = 2 for a roundabout)
          */
         //connect
-       // Map<Integer, List<double[]>> sourceLevel = new HashMap<>()
+        // Map<Integer, List<double[]>> sourceLevel = new HashMap<>()
 
         // memes valeurs d e et n
 
@@ -769,10 +857,13 @@ class MultiRunsProcessData {
         def list = [63, 125, 250, 500, 1000, 2000, 4000, 8000]
         int ii= 0
         double computeRatio = Math.round(0*100/ pk.size())
+        String anim= "|/-\\"
+
         pk.each { id, val ->
-            if (Math.round(ii*100/ pk.size())!= computeRatio) {
-                computeRatio = Math.round(ii*100/ pk.size())
-                System.println(computeRatio + " % ")
+            if (Math.round(ii*100/ pk.size() as float)!= computeRatio) {
+                int x = Math.round(ii*100/ pk.size() as float)
+                String data = "  --  Emission " + "\r" + anim.charAt( x % anim.length()) + " " + x + "%"
+                System.out.print(data)
             }
             ii=ii+1
 
@@ -979,9 +1070,11 @@ class MultiRunsProcessData {
             stack.insertElementAt(lastElement,0)
         }
         return stack as double[]
-       }
+    }
 
-    PropagationProcessPathData setGenericMeteoData(int r, String DEN) {
+    PropagationProcessPathData createGenericMeteoData(int r, String DEN) {
+        PropagationProcessPathData genericMeteoData = new PropagationProcessPathData()
+
         genericMeteoData.setHumidity(HumMean[r])
         genericMeteoData.setTemperature(TempMean[r])
 
@@ -997,8 +1090,11 @@ class MultiRunsProcessData {
         if (windDir[r] == -30) favrose = pushAndPop(favrose,11)
         if (windDir[r] == 30) favrose =  pushAndPop(favrose,1)
         if (windDir[r] == 60) favrose = pushAndPop(favrose,2)
+        //favrose = favrose.collect{it*meteoFav[r]}
 
-        favrose = favrose.collect{it*meteoFav[r]}
+        for (int i = 0; i < favrose.length; i++) {
+            favrose[i] = favrose.collect{it*meteoFav[r]}.get(i) as double
+        }
         genericMeteoData.setWindRose(favrose)
         return genericMeteoData
     }
@@ -1010,10 +1106,10 @@ class MultiRunsProcessData {
         //////////////////////
         // Import file text
         //////////////////////
-       // int i_read = 0
+        // int i_read = 0
 
         ObjectMapper mapper = new ObjectMapper()
-       // JsonNode Data = EvaluateRoadSourceCnossos.parse(EvaluateRoadSourceCnossos.getResourceAsStream("D:\\aumond\\Documents\\Boulot\\Articles\\2019_XX_XX Sensitivity\\MR_input.json"));
+        // JsonNode Data = EvaluateRoadSourceCnossos.parse(EvaluateRoadSourceCnossos.getResourceAsStream("D:\\aumond\\Documents\\Boulot\\Articles\\2019_XX_XX Sensitivity\\MR_input.json"));
 
 
         // JSON file to Java object
@@ -1128,22 +1224,22 @@ class MultiRunsProcessData {
                 'HV_SPD_D, HV_SPD_E, HV_SPD_N, ' +
                 'PVMT FROM ' + tablename + ';') { fields ->
 
-            pk.put((int) fields[0],(int) fields[0])
-            OSM_ID.put((int) fields[0],(long) fields[1])
-            the_geom.put((int) fields[0], (Geometry) fields[2])
-            TV_D.put((int) fields[0],(double) fields[3])
-            TV_E.put((int) fields[0],(double) fields[4])
-            TV_N.put((int) fields[0],(double) fields[5])
-            HV_D.put((int) fields[0],(double) fields[6])
-            HV_E.put((int) fields[0],(double) fields[7])
-            HV_N.put((int) fields[0],(double) fields[8])
-            LV_SPD_D.put((int) fields[0],(double) fields[9])
-            LV_SPD_E.put((int) fields[0],(double) fields[10])
-            LV_SPD_N.put((int) fields[0],(double) fields[11])
-            HV_SPD_D.put((int) fields[0],(double) fields[12])
-            HV_SPD_E.put((int) fields[0],(double) fields[13])
-            HV_SPD_N.put((int) fields[0],(double) fields[14])
-            PVMT.put((int) fields[0],(String) fields[15])
+            pk.put((int) fields[prop.getProperty("pkSources")] ,(int) fields[prop.getProperty("pkSources")])
+            OSM_ID.put((int) fields[prop.getProperty("pkSources")],(long) fields["OSM_ID"])
+            the_geom.put((int) fields[prop.getProperty("pkSources")], (Geometry) fields["the_geom"])
+            TV_D.put((int) fields[prop.getProperty("pkSources")],(double) fields["TV_D"])
+            TV_E.put((int) fields[prop.getProperty("pkSources")],(double) fields["TV_E"])
+            TV_N.put((int) fields[prop.getProperty("pkSources")],(double) fields["TV_N"])
+            HV_D.put((int) fields[prop.getProperty("pkSources")],(double) fields["HV_D"])
+            HV_E.put((int) fields[prop.getProperty("pkSources")],(double) fields["HV_E"])
+            HV_N.put((int) fields[prop.getProperty("pkSources")],(double) fields["HV_N"])
+            LV_SPD_D.put((int) fields[prop.getProperty("pkSources")],(double) fields["LV_SPD_D"])
+            LV_SPD_E.put((int) fields[prop.getProperty("pkSources")],(double) fields["LV_SPD_E"])
+            LV_SPD_N.put((int) fields[prop.getProperty("pkSources")],(double) fields["LV_SPD_N"])
+            HV_SPD_D.put((int) fields[prop.getProperty("pkSources")],(double) fields["HV_SPD_D"])
+            HV_SPD_E.put((int) fields[prop.getProperty("pkSources")],(double) fields["HV_SPD_E"])
+            HV_SPD_N.put((int) fields[prop.getProperty("pkSources")],(double) fields["HV_SPD_N"])
+            PVMT.put((int) fields[prop.getProperty("pkSources")],(String) fields["PVMT"])
 
         }
 
