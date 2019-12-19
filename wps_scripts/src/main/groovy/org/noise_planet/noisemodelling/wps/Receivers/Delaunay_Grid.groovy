@@ -104,10 +104,11 @@ def run(input) {
             sql.execute(String.format("CREATE TABLE FENCE_2154 AS SELECT ST_TRANSFORM(ST_SetSRID(the_geom,4326),2154) the_geom from FENCE"))
             sql.execute(String.format("DROP TABLE IF EXISTS FENCE"))
             noiseMap.setMainEnvelope(sql.firstRow("SELECT ST_Envelope(THE_GEOM) FROM FENCE_2154")[0].getEnvelopeInternal())
-            noiseMap.setMaximumPropagationDistance(50000)
+            // Avoid
+            noiseMap.setMaximumPropagationDistance(2000)
         }else{
             noiseMap.setMainEnvelope(sql.firstRow("SELECT ST_Envelope(ST_ACCUM(THE_GEOM)) FROM "+building_table_name+"")[0].getEnvelopeInternal())
-            noiseMap.setMaximumPropagationDistance(50000)
+            noiseMap.setMaximumPropagationDistance(2000)
         }
 
         // Receiver height relative to the ground
