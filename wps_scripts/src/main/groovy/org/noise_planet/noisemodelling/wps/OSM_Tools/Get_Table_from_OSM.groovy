@@ -56,7 +56,7 @@ def run(input) {
 
     Integer srid = 3857
     if ('targetSRID' in input) {
-        targetSRID = input['targetSRID'] as Integer
+        srid = input['targetSRID'] as Integer
     }
 
 
