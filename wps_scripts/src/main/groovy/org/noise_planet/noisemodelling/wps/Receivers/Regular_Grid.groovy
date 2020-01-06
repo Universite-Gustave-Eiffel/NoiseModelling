@@ -144,7 +144,7 @@ def run(input) {
         if (input['buildingTableName']) {
             // Delete receivers inside buildings
             sql.execute("Create spatial index on "+building_table_name+"(the_geom);")
-            sql.execute("delete from "+receivers_table_name+" g where exists (select 1 from "+building_table_name+" b where ST_Z(the_geom) < b.HAUTEUR and g.the_geom && b.the_geom and ST_distance(b.the_geom, g.the_geom) < 1 limit 1);")
+            sql.execute("delete from "+receivers_table_name+" g where exists (select 1 from "+building_table_name+" b where ST_Z(the_geom) < b.HEIGHT and g.the_geom && b.the_geom and ST_distance(b.the_geom, g.the_geom) < 1 limit 1);")
         }
         if (input['sourcesTableName']) {
             // Delete receivers near sources
