@@ -128,7 +128,9 @@ def run(input) {
         sql.execute("Create spatial index on "+receivers_table_name+"(the_geom);")
         sql.execute("UPDATE "+receivers_table_name+" SET THE_GEOM = ST_UPDATEZ(The_geom,"+h+");")
         sql.execute("ALTER TABLE "+ receivers_table_name +" ADD pk INT AUTO_INCREMENT PRIMARY KEY;" )
-
+        sql.execute("ALTER TABLE "+ receivers_table_name +" DROP ID;" )
+        sql.execute("ALTER TABLE "+ receivers_table_name +" DROP ID_COL;" )
+        sql.execute("ALTER TABLE "+ receivers_table_name +" DROP ID_ROW;" )
 
         if (input['fence']) {
             // Delete receivers near sources
@@ -141,16 +143,19 @@ def run(input) {
             sql.execute("delete from " + receivers_table_name + " g where exists (select 1 from "+fence_table_name+" r where ST_Disjoint(g.the_geom, r.the_geom) limit 1);")
         }
 
+
         if (input['buildingTableName']) {
             // Delete receivers inside buildings
+            sql.execute("UPDATE "+building_table_name+" SET THE_GEOM = ST_SetSRID(The_geom,2154);")
             sql.execute("Create spatial index on "+building_table_name+"(the_geom);")
-            sql.execute("delete from "+receivers_table_name+" g where exists (select 1 from "+building_table_name+" b where ST_Z(the_geom) < b.HAUTEUR and g.the_geom && b.the_geom and ST_distance(b.the_geom, g.the_geom) < 1 limit 1);")
+            sql.execute("delete from "+receivers_table_name+" g where exists (select 1 from "+building_table_name+" b where g.the_geom && b.the_geom and ST_distance(b.the_geom, g.the_geom) < 1 limit 1);")
         }
         if (input['sourcesTableName']) {
             // Delete receivers near sources
             sql.execute("Create spatial index on "+sources_table_name+"(the_geom);")
             sql.execute("delete from "+receivers_table_name+" g where exists (select 1 from "+sources_table_name+" r where st_expand(g.the_geom, 1) && r.the_geom and st_distance(g.the_geom, r.the_geom) < 1 limit 1);")
         }
+        sql.execute("UPDATE "+receivers_table_name+" SET THE_GEOM = ST_SetSRID(The_geom,2154);")
 
 
     }

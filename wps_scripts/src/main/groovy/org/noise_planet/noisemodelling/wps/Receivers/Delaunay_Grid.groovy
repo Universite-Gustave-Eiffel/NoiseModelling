@@ -7,13 +7,17 @@ package org.noise_planet.noisemodelling.wps.Receivers
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.functions.spatial.crs.ST_SetSRID
+import org.h2gis.functions.spatial.crs.ST_Transform
+import org.h2gis.utilities.SFSUtilities
+import org.h2gis.utilities.TableLocation
 import org.locationtech.jts.geom.Geometry
 
 import groovy.sql.Sql
 
 import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.api.ProgressVisitor
-
+import org.locationtech.jts.io.WKTReader
 import org.noise_planet.noisemodelling.propagation.jdbc.TriangleNoiseMap
 import org.noise_planet.noisemodelling.propagation.RootProgressVisitor
 
@@ -68,9 +72,10 @@ def run(input) {
     building_table_name = building_table_name.toUpperCase()
 
 
-    String fence = null
+    Geometry fence = null
+    WKTReader wktReader = new WKTReader()
     if (input['fence']) {
-        fence = (String) input['fence']
+        fence = wktReader.read(input['fence'] as String)
     }
 
     // Get name of the database
@@ -90,26 +95,26 @@ def run(input) {
         sql.execute(String.format("DROP TABLE IF EXISTS %s", receivers_table_name))
         sql.execute("DROP TABLE IF EXISTS TRIANGLES")
 
-
-        sql.execute("UPDATE  "+building_table_name+" SET the_geom = ST_TRANSFORM(ST_SetSRID(the_geom,2154),2154)")
-        sql.execute("UPDATE  "+sources_table_name+" SET the_geom = ST_TRANSFORM(ST_SetSRID(the_geom,2154),2154)")
-
         // Generate receivers grid for noise map rendering
         TriangleNoiseMap noiseMap = new TriangleNoiseMap(building_table_name, sources_table_name)
 
-        if (input['fence']) {
-            sql.execute(String.format("DROP TABLE IF EXISTS FENCE"))
-            sql.execute(String.format("CREATE TABLE FENCE AS SELECT ST_AsText('"+ fence + "') the_geom"))
-            sql.execute(String.format("DROP TABLE IF EXISTS FENCE_2154"))
-            sql.execute(String.format("CREATE TABLE FENCE_2154 AS SELECT ST_TRANSFORM(ST_SetSRID(the_geom,4326),2154) the_geom from FENCE"))
-            sql.execute(String.format("DROP TABLE IF EXISTS FENCE"))
-            noiseMap.setMainEnvelope(sql.firstRow("SELECT ST_Envelope(THE_GEOM) FROM FENCE_2154")[0].getEnvelopeInternal())
-            noiseMap.setMaximumPropagationDistance(50000)
-        }else{
-            noiseMap.setMainEnvelope(sql.firstRow("SELECT ST_Envelope(ST_ACCUM(THE_GEOM)) FROM "+building_table_name+"")[0].getEnvelopeInternal())
-            noiseMap.setMaximumPropagationDistance(50000)
+        if (fence != null) {
+            // Reproject fence
+            int targetSrid = SFSUtilities.getSRID(connection, TableLocation.parse(building_table_name))
+            if(targetSrid == 0) {
+                targetSrid = SFSUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
+            }
+            if(targetSrid != 0) {
+                // Transform fence to the same coordinate system than the buildings & sources
+                fence = ST_Transform.ST_Transform(connection, ST_SetSRID.setSRID(fence, 4326), targetSrid)
+                noiseMap.setMainEnvelope(fence.getEnvelopeInternal())
+            } else {
+                System.err.println("Unable to find buildings or sources SRID, ignore fence parameters")
+            }
         }
 
+        // Avoid loading to much geometries when doing Delaunay triangulation
+        noiseMap.setMaximumPropagationDistance(2000)
         // Receiver height relative to the ground
         noiseMap.setReceiverHeight(1.6)
         // No receivers closer than road width distance

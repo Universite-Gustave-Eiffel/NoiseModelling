@@ -418,21 +418,16 @@ def run(input) {
 
             }
         }
-        
-        String outputTableName = input["outputTableName"] as String
-        outputTableName = outputTableName.toUpperCase()
 
-        //if (!outputTableName) {
-          
-         //   outputTableName = fileName
-        //}
-        //outputTableName = outputTableName.toUpperCase()
+
+        String outputTableName = "LDAY_GEOM"
+        if (input['outputTableName']) {
+            outputTableName = input['outputTableName'].toUpperCase()
+        }
 
         sql.execute("drop table if exists "+outputTableName+";")
         sql.execute("create table "+outputTableName+" as select a.IDRECEIVER, b.THE_GEOM, a.Hz63, a.Hz125, a.Hz250, a.Hz500, a.Hz1000, a.Hz2000, a.Hz4000, a.Hz8000 FROM RECEIVERS b LEFT JOIN LDAY a ON a.IDRECEIVER = b.ID;")
 
-
- 
 
         long computationTime = System.currentTimeMillis() - start;
         //return [result: "Calculation Done !"]

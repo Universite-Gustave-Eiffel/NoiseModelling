@@ -24,6 +24,7 @@ description = 'Groups all the geometries of a table and returns them in WKT OGC 
 
 inputs = [
    databaseName: [name: 'Name of the database', title: 'Name of the database', description : 'Name of the database (default : first found db)', min : 0, max : 1, type: String.class],
+   inputSRID:  [name: 'inputSRID', title: 'Projection identifier', description: 'All coordinates will be projected from the specified SRID to WGS84 coordinates. ex: 3857 is Web Mercator projection', type: Integer.class, min: 0, max: 1],
    tableName: [name: 'Table Name', title: 'Table Name', description: 'Table Name', type: String.class]
 ]
 
@@ -63,8 +64,21 @@ def run(input) {
             return [result: new GeometryFactory().createGeometryCollection()]
         }
 
+        Integer srid = SFSUtilities.getSRID(connection, TableLocation.parse(tableName))
+        System.out.println("FOUND SRID "+srid)
+        if ('inputSRID' in input) {
+            srid = input['inputSRID'] as Integer
+        }
+        System.out.println("FOUND SRID "+srid)
 
-        ResultSet rs = sql.executeQuery(String.format("select ST_ACCUM(ST_TRANSFORM(ST_SetSRID("+spatialFieldNames.get(0)+",2154),4326)) the_geom from %s", tableName))
+        String geomField = "ST_ACCUM("+spatialFieldNames.get(0)+")"
+        if(srid != 0) {
+            geomField = "ST_ACCUM(ST_TRANSFORM(ST_SetSRID("+spatialFieldNames.get(0)+","+srid+"),4326))"
+        }
+
+
+
+        ResultSet rs = sql.executeQuery(String.format("select %s the_geom from %s",geomField, tableName))
 
         Geometry geom = null
         while (rs.next()) {
