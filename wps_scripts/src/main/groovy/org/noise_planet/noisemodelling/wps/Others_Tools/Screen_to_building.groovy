@@ -59,21 +59,21 @@ def run(input) {
         Sql sql = new Sql(connection)
         System.out.println("Delete previous Screens table...")
         sql.execute(String.format("DROP TABLE IF EXISTS SCREENS"))
-        sql.execute("create table SCREENS as select * from ST_Explode('" + screen_table_name + "')")
+        sql.execute("create table SCREENS as select * from " + screen_table_name )
 
         if (input['buildingTableName']) {
             sql.execute("DROP TABLE IF EXISTS BUFFERED_SCREENS")
-            sql.execute("CREATE TABLE BUFFERED_SCREENS as select ST_BUFFER(sc.the_geom,0.1) the_geom,  HEIGHT HEIGHT from SCREENS sc")
+            sql.execute("CREATE TABLE BUFFERED_SCREENS as select ST_BUFFER(sc.the_geom,0.1, 'join=bevel') the_geom,  HEIGHT HEIGHT from SCREENS sc")
 
             sql.execute("DROP TABLE IF EXISTS BUILDINGS_SCREENS")
-            sql.execute("CREATE TABLE BUILDINGS_SCREENS as select the_geom, HEIGHT from BUFFERED_SCREENS sc UNION ALL select the_geom, HEIGHT from "+building_table_name+" ")
+            sql.execute("CREATE TABLE BUILDINGS_SCREENS as select ST_SimplifyPreserveTopology(the_geom,0.1) the_geom, HEIGHT from BUFFERED_SCREENS sc UNION ALL select the_geom, HEIGHT from "+building_table_name+" ")
 
             sql.execute("DROP TABLE IF EXISTS BUFFERED_SCREENS")
 
 
         }else{
             sql.execute("DROP TABLE IF EXISTS BUILDINGS_SCREENS")
-            sql.execute("CREATE TABLE BUILDINGS_SCREENS as select ST_BUFFER(sc.the_geom,0.1) the_geom, HEIGHT HEIGHT from SCREENS sc")
+            sql.execute("CREATE TABLE BUILDINGS_SCREENS as select ST_SimplifyPreserveTopology(ST_BUFFER(sc.the_geom,0.1, 'join=bevel'),0.1) the_geom, HEIGHT HEIGHT from SCREENS sc")
 
         }
 
