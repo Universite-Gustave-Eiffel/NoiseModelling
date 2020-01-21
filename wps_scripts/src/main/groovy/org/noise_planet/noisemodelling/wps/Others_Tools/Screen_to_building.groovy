@@ -21,7 +21,7 @@ title = 'Screen to Buildings'
 description = 'Screen to Buildings.'
 
 inputs = [buildingTableName : [name: 'Buildings table name', title: 'Buildings table name', type: String.class],
-          screenTableName  : [name: 'Screen table name', title: 'Screen table name',  description: 'nedd the following columns : Height, Absorption',type: String.class],
+          screenTableName  : [name: 'Screen table name', title: 'Screen table name',  description: 'nedd the following columns : Height',type: String.class],
           databaseName   : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database. (default : h2gisdb)', min: 0, max: 1, type: String.class],
           outputTableName: [name: 'outputTableName', description: 'Do not write the name of a table that contains a space. (default : SCREENS)', title: 'Name of output table', min: 0, max: 1, type: String.class]]
 
@@ -63,19 +63,20 @@ def run(input) {
 
         if (input['buildingTableName']) {
             sql.execute("DROP TABLE IF EXISTS BUFFERED_SCREENS")
-            sql.execute("CREATE TABLE BUFFERED_SCREENS as select ST_BUFFER(sc.the_geom,0.2, 'endcap=flat') the_geom,  HEIGHT HEIGHT, Absorption A from SCREENS sc")
+            sql.execute("CREATE TABLE BUFFERED_SCREENS as select ST_BUFFER(sc.the_geom,0.1) the_geom,  HEIGHT HEIGHT from SCREENS sc")
 
             sql.execute("DROP TABLE IF EXISTS BUILDINGS_SCREENS")
-            sql.execute("CREATE TABLE BUILDINGS_SCREENS as select the_geom, HEIGHT, A from BUFFERED_SCREENS sc UNION select the_geom, HEIGHT, null A from "+building_table_name+" ")
+            sql.execute("CREATE TABLE BUILDINGS_SCREENS as select the_geom, HEIGHT from BUFFERED_SCREENS sc UNION ALL select the_geom, HEIGHT from "+building_table_name+" ")
 
             sql.execute("DROP TABLE IF EXISTS BUFFERED_SCREENS")
 
 
         }else{
             sql.execute("DROP TABLE IF EXISTS BUILDINGS_SCREENS")
-            sql.execute("CREATE TABLE BUILDINGS_SCREENS as select ST_BUFFER(sc.the_geom,0.2, 'endcap=flat') the_geom, HEIGHT HEIGHT, Absorption A from SCREENS sc")
+            sql.execute("CREATE TABLE BUILDINGS_SCREENS as select ST_BUFFER(sc.the_geom,0.1) the_geom, HEIGHT HEIGHT from SCREENS sc")
 
         }
+
 
         sql.execute("Create spatial index on BUILDINGS_SCREENS(the_geom);")
         sql.execute("ALTER TABLE BUILDINGS_SCREENS ADD pk INT AUTO_INCREMENT PRIMARY KEY;" )
