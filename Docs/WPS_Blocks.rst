@@ -1,7 +1,7 @@
 WPS Blocks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-NoiseModelling v3.0 comes with 7 WPS blocks.
+NoiseModelling v3.0.0 comes with 7 WPS blocks.
 
 .. note ::
     - Orange blocks are mandatory
