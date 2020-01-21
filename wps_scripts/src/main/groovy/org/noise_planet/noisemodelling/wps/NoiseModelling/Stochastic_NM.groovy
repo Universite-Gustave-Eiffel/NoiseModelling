@@ -307,13 +307,13 @@ def run(input) {
 
         System.out.println("Join Results with Geometry")
         sql.execute("CREATE INDEX ON LDAY(IDRECEIVER);")
-        sql.execute("CREATE INDEX ON RECEIVERS(ID);")
+        sql.execute("CREATE INDEX ON RECEIVERS(PK);")
 
         sql.execute("drop table if exists LDAY_GEOM;")
-        sql.execute("create table LDAY_GEOM  as select a. TIME,a.IDRECEIVER, b.THE_GEOM, a.Hz63, a.Hz125, a.Hz250, a.Hz500, a.Hz1000, a.Hz2000, a.Hz4000, a.Hz8000  FROM LDAY a LEFT JOIN  RECEIVERS b  ON a.IDRECEIVER = b.ID;")
+        sql.execute("create table LDAY_GEOM  as select a. TIME,a.IDRECEIVER, b.THE_GEOM, a.Hz63, a.Hz125, a.Hz250, a.Hz500, a.Hz1000, a.Hz2000, a.Hz4000, a.Hz8000  FROM LDAY a LEFT JOIN  RECEIVERS b  ON a.IDRECEIVER = b.PK;")
 
 
-        System.out.println("Done !")
+        System.out.println("Done ! LDAY_GEOM")
 
 
         /*
@@ -363,7 +363,7 @@ def run(input) {
 
         long computationTime = System.currentTimeMillis() - start;
 
-        return [result: "Calculation Done ! LDEN_GEOM"]
+        return [result: "Calculation Done ! LDAY_GEOM"]
 
 
     }

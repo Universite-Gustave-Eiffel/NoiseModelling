@@ -1,5 +1,5 @@
 /**
- * @Author Can Arnaud
+ * @Author Pierre Aumond
  */
 
 package org.noise_planet.noisemodelling.wps.Others_Tools

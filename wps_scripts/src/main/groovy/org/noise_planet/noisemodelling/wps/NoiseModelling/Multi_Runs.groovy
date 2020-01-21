@@ -12,7 +12,6 @@ import geoserver.catalog.Store
  */
 import groovy.sql.Sql
 import groovy.transform.CompileStatic
-import javafx.scene.control.ProgressBar
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.api.EmptyProgressVisitor
 
@@ -297,8 +296,8 @@ def run(input) {
 
                         if (idReceiver != oldIdReceiver) {
                             while (executorService.getQueue().size()>1){
-                                System.out.println(String.format("Receiver %d ( %d queued receivers)", idReceiver, executorService.getQueue().size()))
-                                Thread.sleep(100)
+                                //System.out.println(String.format("Receiver %d ( %d queued receivers)", idReceiver, executorService.getQueue().size()))
+                                Thread.sleep(50)
                                 // Add thread
                             }
                             if (oldIdReceiver != -1){
@@ -311,8 +310,9 @@ def run(input) {
                                 pointToPointPathsMultiRuns = new ArrayList<>(pointToPointPathsMultiRuns.size())
                                 count ++
                                 int x = Math.round(count*100/nrcv)
-                                String data = "  --  Propagation " + "\r" + anim.charAt( x % anim.length()) + " " + x + "%"
-                                System.out.print(data)
+                                //String data = "  --  Propagation " + "\r" + anim.charAt( x % anim.length()) + " " + x + "%"
+                                String data = "  --  Propagation" + x + "%"
+                                System.out.println(data)
 
                             }
                         }
@@ -325,23 +325,28 @@ def run(input) {
             }
             //System.out.println("3 ComputationTime :" + entry2.toString())
             zipInputStream2.closeEntry()
-             entry2 = zipInputStream2.getNextEntry()
+            entry2 = zipInputStream2.getNextEntry()
             //System.out.println("3 ComputationTime :" + entry2.toString())
 
         }
+
+        System.out.println("4 ComputationTime :" + computationTime.toString())
+        System.out.println("SimulationTime :" + (System.currentTimeMillis() - startSimulationTime).toString())
+
         executorService.shutdown()
         executorService.awaitTermination(30, TimeUnit.DAYS)
 
         doInsertResults.set(false)
 
-        System.out.println("4 ComputationTime :" + computationTime.toString())
-        System.out.println("SimulationTime :" + (System.currentTimeMillis() - startSimulationTime).toString())
+
 
         // csvFile.close()
         System.out.println("End time :" + df.format(new Date()))
 
 
         fileInputStream2.close()
+//CREATE INDEX ON RECEIVERS_MR(pk);
+//CREATE INDEX ON MultiRunsResults(IDRECEIVER);
 
         sql.execute("drop table if exists MultiRunsResults_geom;")
         sql.execute("create table MultiRunsResults_geom  as select a.idRun, a.idReceiver, b.pop, b.THE_GEOM, a.Lden63, a.Lden125, a.Lden250, a.Lden500, a.Lden1000, a.Lden2000, a.Lden4000, a.Lden8000 FROM RECEIVERS_MR b LEFT JOIN MultiRunsResults a ON a.IDRECEIVER = b."+prop.getProperty("pkReceivers")+";")
@@ -461,8 +466,7 @@ class ReceiverSimulationProcess implements Runnable {
                 if (propagationPaths.size() > 0) {
 
                     if (attenuationD != null) {
-                        if (multiRunsProcessData.meteoFav[r] != multiRunsProcessData.meteoFav[r - 1] || multiRunsProcessData.WindDir[r] != multiRunsProcessData.WindDir[r - 1] || multiRunsProcessData.TempMean[r] != multiRunsProcessData.TempMean[r - 1] || multiRunsProcessData.HumMean[r] != multiRunsProcessData.HumMean[r - 1]) {
-                            multiRunsProcessData
+                        if (multiRunsProcessData.wallAlpha[r] != multiRunsProcessData.wallAlpha[r - 1] || multiRunsProcessData.meteoFav[r] != multiRunsProcessData.meteoFav[r - 1] || multiRunsProcessData.WindDir[r] != multiRunsProcessData.WindDir[r - 1] || multiRunsProcessData.TempMean[r] != multiRunsProcessData.TempMean[r - 1] || multiRunsProcessData.HumMean[r] != multiRunsProcessData.HumMean[r - 1]) {
                             attenuationD = outD.MRcomputeAttenuation(multiRunsProcessData.createGenericMeteoData(r, 'day'), idSource, paths.getLi(), idReceiver, propagationPaths)
                             attenuationE = outE.MRcomputeAttenuation(multiRunsProcessData.createGenericMeteoData(r, 'evening'), idSource, paths.getLi(), idReceiver, propagationPaths)
                             attenuationN = outN.MRcomputeAttenuation(multiRunsProcessData.createGenericMeteoData(r, 'night'), idSource, paths.getLi(), idReceiver, propagationPaths)
@@ -673,6 +677,7 @@ class MREvaluateAttenuationCnossos extends EvaluateAttenuationCnossos {
     double[] evaluate(MRPropagationPath path, PropagationProcessPathData data) {
         aGlobal = new double[PropagationProcessPathData.freq_lvl.size()]
         freq_lambda = new double[PropagationProcessPathData.freq_lvl.size()]
+        double[] aRef = new double[PropagationProcessPathData.freq_lvl.size()]
 
         for(int idf = 0; idf < PropagationProcessPathData.freq_lvl.size(); ++idf) {
             if (PropagationProcessPathData.freq_lvl.get(idf) > 0) {
@@ -693,7 +698,10 @@ class MREvaluateAttenuationCnossos extends EvaluateAttenuationCnossos {
         }
 
         double[] aBoundary = getABoundary(path, data)
-        double[] aRef = getMRARef(path)
+
+        if (path.refPoints.size() > 0){
+            aRef = getMRARef(path)
+        }
 
         for(int idfreq = 0; idfreq < PropagationProcessPathData.freq_lvl.size(); ++idfreq) {
             double aAtm;
@@ -736,6 +744,7 @@ private static void copyFileUsingStream(File source, File dest) throws IOExcepti
 /**
  * Read source database and compute the sound emission spectrum of roads sources
  */
+//@CompileStatic
 class MultiRunsProcessData {
     public Map<Integer, List<double[]>> wjSourcesD = new HashMap<>()
     public Map<Integer, List<double[]>> wjSourcesE = new HashMap<>()
@@ -862,8 +871,9 @@ class MultiRunsProcessData {
         pk.each { id, val ->
             if (Math.round(ii*100/ pk.size() as float)!= computeRatio) {
                 int x = Math.round(ii*100/ pk.size() as float)
-                String data = "  --  Emission " + "\r" + anim.charAt( x % anim.length()) + " " + x + "%"
-                System.out.print(data)
+                //String data = "  --  Emission " + "\r" + anim.charAt( x % anim.length()) + " " + x + "%"
+                String data = "  --  Emission" + x + "%"
+                System.out.println(data)
             }
             ii=ii+1
 

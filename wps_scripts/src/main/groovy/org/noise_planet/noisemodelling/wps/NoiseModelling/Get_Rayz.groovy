@@ -72,7 +72,7 @@ class TrafficRayzPropagationProcessData extends PropagationProcessData {
 
         idSource++
 
-        int pkSource = rs.getInt("PK2")
+        int pkSource = rs.getInt("PK")
         //SourcesPk.put(pk, pkSource)
         double tvD = rs.getDouble("TV_D")
         double tvE = rs.getDouble("TV_E")
