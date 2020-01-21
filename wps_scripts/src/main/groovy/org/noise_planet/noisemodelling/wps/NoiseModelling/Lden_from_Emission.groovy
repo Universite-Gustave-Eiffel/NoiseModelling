@@ -25,6 +25,7 @@ import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.Statement
 import java.sql.PreparedStatement
+
 import groovy.sql.Sql
 import org.h2gis.utilities.SFSUtilities
 import org.h2gis.api.EmptyProgressVisitor

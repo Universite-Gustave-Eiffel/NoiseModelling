@@ -8,6 +8,7 @@ import geoserver.GeoServer
 import geoserver.catalog.Store
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.functions.io.osm.OSMRead
+import org.locationtech.jts.geom.Geometry
 
 import java.sql.Connection
 import java.sql.Statement
@@ -143,33 +144,22 @@ def run(input) {
         if(convert2Roads) {
 
             String osmImport = "DROP TABLE MAP_ROADS_speed IF EXISTS;\n" +
-                    "CREATE TABLE MAP_ROADS_speed(ID_WAY BIGINT PRIMARY KEY,MAXSPEED BIGINT ) AS SELECT DISTINCT ID_WAY, VALUE MAXSPEED FROM MAP_WAY_TAG WT, MAP_TAG T WHERE WT.ID_TAG = T.ID_TAG AND T.TAG_KEY IN ('maxspeed');\n" +
+                    "CREATE TABLE MAP_ROADS_speed(ID_WAY BIGINT PRIMARY KEY,MAX_SPEED BIGINT ) AS SELECT DISTINCT ID_WAY, VALUE MAX_SPEED FROM MAP_WAY_TAG WT, MAP_TAG T WHERE WT.ID_TAG = T.ID_TAG AND T.TAG_KEY IN ('maxspeed');\n" +
                     "DROP TABLE MAP_ROADS_HGW IF EXISTS;\n" +
                     "CREATE TABLE MAP_ROADS_HGW(ID_WAY BIGINT PRIMARY KEY,HIGHWAY_TYPE varchar(30) ) AS SELECT DISTINCT ID_WAY, VALUE HIGHWAY_TYPE FROM MAP_WAY_TAG WT, MAP_TAG T WHERE WT.ID_TAG = T.ID_TAG AND T.TAG_KEY IN ('highway');\n" +
                     "DROP TABLE MAP_ROADS IF EXISTS;\n" +
-                    "CREATE TABLE MAP_ROADS AS SELECT a.ID_WAY, a.HIGHWAY_TYPE, b.MAXSPEED  FROM MAP_ROADS_HGW a LEFT JOIN MAP_ROADS_speed b ON a.ID_WAY = b.ID_WAY;"
-
+                    "CREATE TABLE MAP_ROADS AS SELECT a.ID_WAY, a.HIGHWAY_TYPE, b.MAX_SPEED  FROM MAP_ROADS_HGW a LEFT JOIN MAP_ROADS_speed b ON a.ID_WAY = b.ID_WAY;\n" +
+                    "DROP TABLE MAP_ROADS_speed IF EXISTS;\n" +
+                    "DROP TABLE MAP_ROADS_HGW IF EXISTS;"\n +
+                    "DROP TABLE IF EXISTS MAP_ROADS_GEOM;\n" +
+                    "CREATE TABLE MAP_ROADS_GEOM AS SELECT ID_WAY, MAX_SPEED," +
+                    "st_setsrid(st_updatez(ST_precisionreducer(ST_SIMPLIFYPRESERVETOPOLOGY(ST_TRANSFORM(ST_SETSRID(ST_MAKELINE(THE_GEOM), 4326), "+srid+"),0.1),1), 0.05), "+srid+") THE_GEOM, " +
+                    "HIGHWAY_TYPE T FROM (SELECT (SELECT\n" + "ST_ACCUM(THE_GEOM) THE_GEOM FROM (SELECT N.ID_NODE, N.THE_GEOM,WN.ID_WAY IDWAY FROM MAP_NODE\n" +
+                    "N,MAP_WAY_NODE WN WHERE N.ID_NODE = WN.ID_NODE ORDER BY WN.NODE_ORDER) WHERE  IDWAY = W.ID_WAY)\n" +
+                    "THE_GEOM ,W.ID_WAY, B.HIGHWAY_TYPE, B.MAX_SPEED FROM MAP_WAY W,MAP_ROADS B WHERE W.ID_WAY = B.ID_WAY) GEOM_TABLE;\n" +
+                    "DROP TABLE MAP_ROADS;\n" +
             sql.execute(osmImport)
 
-            String roadsImport = "DROP TABLE IF EXISTS MAP_ROADS;\n" +
-                    "CREATE TABLE MAP_ROADS(ID_WAY BIGINT PRIMARY KEY,HIGHWAY_TYPE varchar(30) ) AS SELECT DISTINCT ID_WAY, VALUE HIGHWAY_TYPE FROM MAP_WAY_TAG WT, MAP_TAG T WHERE WT.ID_TAG = T.ID_TAG AND T.TAG_KEY IN ('highway');\n" +
-                    "DROP TABLE IF EXISTS MAP_ROADS_GEOM;\n" +
-                    "CREATE TABLE MAP_ROADS_GEOM AS SELECT ID_WAY,  st_setsrid(st_updatez(ST_precisionreducer(ST_SIMPLIFYPRESERVETOPOLOGY(ST_TRANSFORM(ST_SETSRID(ST_MAKELINE(THE_GEOM), 4326), "+srid+"),0.1),1), 0.05), "+srid+") THE_GEOM, HIGHWAY_TYPE T FROM (SELECT (SELECT\n" + "ST_ACCUM(THE_GEOM) THE_GEOM FROM (SELECT N.ID_NODE, N.THE_GEOM,WN.ID_WAY IDWAY FROM MAP_NODE\n" +
-                    "N,MAP_WAY_NODE WN WHERE N.ID_NODE = WN.ID_NODE ORDER BY WN.NODE_ORDER) WHERE  IDWAY = W.ID_WAY)\n" +
-                    "THE_GEOM ,W.ID_WAY, B.HIGHWAY_TYPE FROM MAP_WAY W,MAP_ROADS B WHERE W.ID_WAY = B.ID_WAY) GEOM_TABLE;\n" +
-                    "DROP TABLE MAP_ROADS;\n" +
-                    "DROP TABLE IF EXISTS ROADS;\n" +
-                    "CREATE TABLE ROADS(ID SERIAL,ID_WAY long , THE_GEOM LINESTRING CHECK ST_SRID(THE_GEOM)="+srid+", CLAS_ADM int, AADF int, SPEED int) as SELECT null, ID_WAY, THE_GEOM,\n" +
-                    "CASEWHEN(T = 'trunk', 21,\n" +
-                    "CASEWHEN(T = 'primary', 41,\n" +
-                    "CASEWHEN(T = 'secondary', 41,\n" +
-                    "CASEWHEN(T = 'tertiary',41, 57)))) CLAS_ADM,\n" +
-                    "CASEWHEN(T = 'trunk', 47000,\n" +
-                    "CASEWHEN(T = 'primary', 35000,\n" +
-                    "CASEWHEN(T = 'secondary', 12000,\n" +
-                    "CASEWHEN(T = 'tertiary',7800,\n" +
-                    "CASEWHEN(T = 'residential',4000, 1600\n" +
-                    "))))) AADF, MAXSPEED SPEED FROM MAP_ROADS_GEOM where T in ('trunk', 'primary', 'secondary', 'tertiary', 'residential', 'unclassified') ;"
 
             if(aadenf) {
 
@@ -178,20 +168,10 @@ def run(input) {
                 def aadf_n =[2152,712,200,100,50,25]
                 def hv_d = [0.2,0.2,0.15,0.10,0.05,0.02]
                 def hv_e = [0.2,0.15,0.10,0.06,0.02,0.01]
-                def  hv_n =[0.2,0.05,0.05,0.03,0.01,0.0]
+                def hv_n =[0.2,0.05,0.05,0.03,0.01,0.0]
                 def speed = [110,80,50,50,30,30]
 
-
-
-
-                roadsImport = "DROP TABLE IF EXISTS MAP_ROADS;\n" +
-                        "CREATE TABLE MAP_ROADS(ID_WAY BIGINT PRIMARY KEY,HIGHWAY_TYPE varchar(30) ) AS SELECT DISTINCT ID_WAY, VALUE HIGHWAY_TYPE FROM MAP_WAY_TAG WT, MAP_TAG T WHERE WT.ID_TAG = T.ID_TAG AND T.TAG_KEY IN ('highway');\n" +
-                        "DROP TABLE IF EXISTS MAP_ROADS_GEOM;\n" +
-                        "CREATE TABLE MAP_ROADS_GEOM AS SELECT ID_WAY,  st_setsrid(st_updatez(ST_precisionreducer(ST_SIMPLIFYPRESERVETOPOLOGY(ST_TRANSFORM(ST_SETSRID(ST_MAKELINE(THE_GEOM), 4326), "+srid+"),0.1),1), 0.05), "+srid+") THE_GEOM, HIGHWAY_TYPE T FROM (SELECT (SELECT\n" + "ST_ACCUM(THE_GEOM) THE_GEOM FROM (SELECT N.ID_NODE, N.THE_GEOM,WN.ID_WAY IDWAY FROM MAP_NODE\n" +
-                        "N,MAP_WAY_NODE WN WHERE N.ID_NODE = WN.ID_NODE ORDER BY WN.NODE_ORDER) WHERE  IDWAY = W.ID_WAY)\n" +
-                        "THE_GEOM ,W.ID_WAY, B.HIGHWAY_TYPE FROM MAP_WAY W,MAP_ROADS B WHERE W.ID_WAY = B.ID_WAY) GEOM_TABLE;\n" +
-                        "DROP TABLE MAP_ROADS;\n" +
-                        "DROP TABLE IF EXISTS ROADS_AADF;\n" +
+                String roadsImport = "DROP TABLE IF EXISTS ROADS_AADF;\n" +
                         "CREATE TABLE ROADS_AADF(ID SERIAL,ID_WAY long , THE_GEOM LINESTRING CHECK ST_SRID(THE_GEOM)="+srid+", CLAS_ADM int, AADF int, CLAS_ALT int) as SELECT null, ID_WAY, THE_GEOM,\n" +
                         "CASEWHEN(T = 'trunk', 21,\n" +
                         "CASEWHEN(T = 'primary', 41,\n" +
@@ -210,31 +190,65 @@ def run(input) {
                         "CASEWHEN(T = 'secondary', 3,\n" +
                         "CASEWHEN(T = 'secondary_link', 3,\n" +
                         "CASEWHEN(T = 'tertiary', 3,\n" +
-                        "CASEWHEN(T = 'tertiary_link', 4,\n" +
-                        "CASEWHEN(T = 'residential', 4,\n" +
-                        "CASEWHEN(T = 'unclassified', 4,\n" +
+                        "CASEWHEN(T = 'tertiary_link' AND MAX_SPEED > 40, 4,\n" +
+                        "CASEWHEN(T = 'residential' AND MAX_SPEED > 40, 4,\n" +
+                        "CASEWHEN(T = 'unclassified' AND MAX_SPEED > 40, 4,\n" +
+                        "CASEWHEN(T = 'tertiary_link' AND MAX_SPEED <= 40, 5,\n" +
+                        "CASEWHEN(T = 'residential' AND MAX_SPEED <= 40, 5,\n" +
+                        "CASEWHEN(T = 'unclassified' AND MAX_SPEED <= 40, 5,\n" +
+                        "CASEWHEN(T = 'tertiary_link' AND MAX_SPEED IS NULL, 5,\n" +
+                        "CASEWHEN(T = 'residential' AND MAX_SPEED IS NULL, 5,\n" +
+                        "CASEWHEN(T = 'unclassified' AND MAX_SPEED IS NULL, 5,\n" +
                         "CASEWHEN(T = 'service', 6,\n" +
-                        "CASEWHEN(T = 'living_street',6, 6)))))))))))) CLAS_ALT  FROM MAP_ROADS_GEOM where T in ('trunk', 'primary', 'secondary', 'tertiary', 'residential', 'unclassified') ;\n" +
-                        "DROP TABLE IF EXISTS ROADS;\n" +
-                        "CREATE TABLE ROADS as SELECT null, ID_WAY, THE_GEOM," +
-                        "TV_D, " +
-                        "TV_E," +
-                        "TV_N," +
-                        "HV_D," +
-                        "HV_E," +
-                        "HV_N," +
-                        "LV_SPD_D," +
-                        "LV_SPD_E," +
-                        "LV_SPD_N" +
-                        "HV_SPD_D," +
-                        "HV_SPD_E," +
-                        "HV_SPD_N, " +
-                        "'NL08' PVMT " +
-                        "FROM ROADS_AADF;"
+                        "CASEWHEN(T = 'living_street',6, 6)))))))))))))))))) CLAS_ALT  FROM MAP_ROADS_GEOM where T in ('trunk', 'primary', 'secondary', 'tertiary', 'residential', 'unclassified') ;"
+
+                sql.execute(roadsImport)
+
+                sql.eachRow('SELECT ID_WAY, THE_GEOM, CLAS_ALT FROM ROADS_AADF ;') { row ->
+                    int idway = (int) row[0]
+                    Geometry the_geom = row[1]
+                    int classif = row[2]
+                    String roadsUpload = "DROP TABLE IF EXISTS ROADS;\n" +
+                            "CREATE TABLE ROADS as SELECT ID_WAY, THE_GEOM," +
+                            +aadf_d[]+"TV_D, " +
+                            aadf_e"TV_E," +
+                            aadf_n"TV_N," +
+                            hv_d"HV_D," +
+                            hv_e"HV_E," +
+                            hv_n"HV_N," +
+                            speed"LV_SPD_D," +
+                            "LV_SPD_E," +
+                            "LV_SPD_N" +
+                            "HV_SPD_D," +
+                            "HV_SPD_E," +
+                            "HV_SPD_N, " +
+                            "'NL08' PVMT " +
+                            "FROM ROADS_AADF;"
+                    sql.execute(roadsUpload)
+
+                }
+
+                } else{
+                    String roadsImport = "DROP TABLE IF EXISTS ROADS;\n" +
+                            "CREATE TABLE ROADS(ID SERIAL,ID_WAY long , THE_GEOM LINESTRING CHECK ST_SRID(THE_GEOM)="+srid+", CLAS_ADM int, AADF int, SPEED int) as SELECT null, ID_WAY, THE_GEOM,\n" +
+                            "CASEWHEN(T = 'trunk', 21,\n" +
+                            "CASEWHEN(T = 'primary', 41,\n" +
+                            "CASEWHEN(T = 'secondary', 41,\n" +
+                            "CASEWHEN(T = 'tertiary',41, 57)))) CLAS_ADM,\n" +
+                            "CASEWHEN(T = 'trunk', 47000,\n" +
+                            "CASEWHEN(T = 'primary', 35000,\n" +
+                            "CASEWHEN(T = 'secondary', 12000,\n" +
+                            "CASEWHEN(T = 'tertiary',7800,\n" +
+                            "CASEWHEN(T = 'residential',4000, 1600\n" +
+                            "))))) AADF, MAX_SPEED SPEED FROM MAP_ROADS_GEOM where T in ('trunk', 'primary', 'secondary', 'tertiary', 'residential', 'unclassified') ;"
+                    sql.execute(roadsImport)
+                }
+
+
+
             }
 
 
-            sql.execute(roadsImport)
             tables.add("ROADS")
 
         }
