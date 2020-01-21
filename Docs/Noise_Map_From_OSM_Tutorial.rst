@@ -1,6 +1,11 @@
 Noise Map from OSM - Tutorial
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Prerequisites
+~~~~~~~~~~~~~~~~~
+
+You need at least NoiseModelling v.3.0.4
+
 Step 1:  Importing OSM data to the database
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Exporting data from openstreetmap.org
