@@ -48,6 +48,14 @@ public class EvaluateAttenuationCnossos {
     private double[] aGlobal;
     boolean gToSigma = false; // Todo publish parameter issue #13
 
+    public void setaGlobal(double[] aGlobal) {
+        this.aGlobal = aGlobal;
+    }
+
+    public void setFreq_lambda(double[] freq_lambda) {
+        this.freq_lambda = freq_lambda;
+    }
+
     public static double dbaToW(double dBA) {
         return Math.pow(10., dBA / 10.);
     }
@@ -56,7 +64,7 @@ public class EvaluateAttenuationCnossos {
         return 10 * Math.log10(w);
     }
 
-    double[] getaGlobal() {
+    public double[] getaGlobal() {
         return aGlobal;
     }
 
@@ -68,7 +76,7 @@ public class EvaluateAttenuationCnossos {
         this.gToSigma = gToSigma;
     }
 
-    private double[] getDeltaDif(SegmentPath srpath, PropagationProcessPathData data) {
+    public double[] getDeltaDif(SegmentPath srpath, PropagationProcessPathData data) {
         double[] DeltaDif = new double[data.freq_lvl.size()];
         double cprime;
 
@@ -185,7 +193,7 @@ public class EvaluateAttenuationCnossos {
      * @param deltaDif     Δdif(S, R)
      * @return Δsol(S, O) if Asol(S,O) is given or Δsol(O,R) if Asol(O,R) is given
      */
-    private double getDeltaGround(double aGround, double deltaDifPrim, double deltaDif) {
+    public double getDeltaGround(double aGround, double deltaDifPrim, double deltaDif) {
         double attArg = 1 + (Math.pow(10, -aGround / 20) - 1) * Math.pow(10, -(deltaDifPrim - deltaDif) / 20);
         if(attArg < 0) {
             attArg = 0;
@@ -194,7 +202,7 @@ public class EvaluateAttenuationCnossos {
     }
 
 
-    private double[] getARef(PropagationPath path, PropagationProcessPathData data) {
+    public double[] getARef(PropagationPath path, PropagationProcessPathData data) {
         double[] aRef = new double[data.freq_lvl.size()];
         for (int idf = 0; idf < nbfreq; idf++) {
             for (int idRef = 0; idRef < path.refPoints.size(); idRef++) {
@@ -209,7 +217,7 @@ public class EvaluateAttenuationCnossos {
     }
 
 
-    private double[] getAGround(SegmentPath segmentPath,PropagationPath path, PropagationProcessPathData data) {
+    public double[] getAGround(SegmentPath segmentPath,PropagationPath path, PropagationProcessPathData data) {
         double[] aGround = new double[data.freq_lvl.size()];
         double aGroundmin;
 
@@ -237,7 +245,7 @@ public class EvaluateAttenuationCnossos {
      * @param data
      * @return
      */
-    private double[] getABoundary(PropagationPath path, PropagationProcessPathData data) {
+    public double[] getABoundary(PropagationPath path, PropagationProcessPathData data) {
 
         List<SegmentPath> srPath = path.getSRList();
 
