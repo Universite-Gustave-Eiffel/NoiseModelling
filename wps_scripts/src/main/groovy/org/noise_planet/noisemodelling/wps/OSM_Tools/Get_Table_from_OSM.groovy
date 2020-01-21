@@ -22,6 +22,7 @@ inputs = [pathFile       : [name: 'Path of the input File', description: 'Path o
           convert2Building: [name: 'convert2Building', title: 'convert2Building', description: 'convert2Building', type: Boolean.class],
           convert2Vegetation: [name: 'convert2Vegetation', title: 'convert2Vegetation', description: 'convert2Vegetation', type: Boolean.class],
           convert2Roads: [name: 'convert2Roads', title: 'Extract roads', description: 'Extract roads and metadata, apply default road traffic and speed', type: Boolean.class],
+          AADENF:  [name: 'AADENF', title: 'Annual average DEN flows', description: 'Convert annual average daily flows (AADF) to annual average day/evening/night flows', type: Integer.class, min: 0, max: 1],
           targetSRID:  [name: 'targetSRID', title: 'Projection identifier', description: 'All coordinates will be projected into the specified SRID. ex: 3857 is Web Mercator projection', type: Integer.class, min: 0, max: 1],
           databaseName   : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database (default : first found db)', min: 0, max: 1, type: String.class]]
 
@@ -58,6 +59,12 @@ def run(input) {
     if ('targetSRID' in input) {
         srid = input['targetSRID'] as Integer
     }
+
+    Boolean aadenf = false
+    if ('AADENF' in input) {
+        aadenf = input['AADENF'] as Integer
+    }
+
 
 
     // Get name of the database
@@ -134,6 +141,16 @@ def run(input) {
         }
 
         if(convert2Roads) {
+
+            String osmImport = "DROP TABLE MAP_ROADS_speed IF EXISTS;\n" +
+                    "CREATE TABLE MAP_ROADS_speed(ID_WAY BIGINT PRIMARY KEY,MAXSPEED BIGINT ) AS SELECT DISTINCT ID_WAY, VALUE MAXSPEED FROM MAP_WAY_TAG WT, MAP_TAG T WHERE WT.ID_TAG = T.ID_TAG AND T.TAG_KEY IN ('maxspeed');\n" +
+                    "DROP TABLE MAP_ROADS_HGW IF EXISTS;\n" +
+                    "CREATE TABLE MAP_ROADS_HGW(ID_WAY BIGINT PRIMARY KEY,HIGHWAY_TYPE varchar(30) ) AS SELECT DISTINCT ID_WAY, VALUE HIGHWAY_TYPE FROM MAP_WAY_TAG WT, MAP_TAG T WHERE WT.ID_TAG = T.ID_TAG AND T.TAG_KEY IN ('highway');\n" +
+                    "DROP TABLE MAP_ROADS IF EXISTS;\n" +
+                    "CREATE TABLE MAP_ROADS AS SELECT a.ID_WAY, a.HIGHWAY_TYPE, b.MAXSPEED  FROM MAP_ROADS_HGW a LEFT JOIN MAP_ROADS_speed b ON a.ID_WAY = b.ID_WAY;"
+
+            sql.execute(osmImport)
+
             String roadsImport = "DROP TABLE IF EXISTS MAP_ROADS;\n" +
                     "CREATE TABLE MAP_ROADS(ID_WAY BIGINT PRIMARY KEY,HIGHWAY_TYPE varchar(30) ) AS SELECT DISTINCT ID_WAY, VALUE HIGHWAY_TYPE FROM MAP_WAY_TAG WT, MAP_TAG T WHERE WT.ID_TAG = T.ID_TAG AND T.TAG_KEY IN ('highway');\n" +
                     "DROP TABLE IF EXISTS MAP_ROADS_GEOM;\n" +
@@ -142,7 +159,7 @@ def run(input) {
                     "THE_GEOM ,W.ID_WAY, B.HIGHWAY_TYPE FROM MAP_WAY W,MAP_ROADS B WHERE W.ID_WAY = B.ID_WAY) GEOM_TABLE;\n" +
                     "DROP TABLE MAP_ROADS;\n" +
                     "DROP TABLE IF EXISTS ROADS;\n" +
-                    "CREATE TABLE ROADS(ID SERIAL,ID_WAY long , THE_GEOM LINESTRING CHECK ST_SRID(THE_GEOM)="+srid+", CLAS_ADM int, AADF int) as SELECT null, ID_WAY, THE_GEOM,\n" +
+                    "CREATE TABLE ROADS(ID SERIAL,ID_WAY long , THE_GEOM LINESTRING CHECK ST_SRID(THE_GEOM)="+srid+", CLAS_ADM int, AADF int, SPEED int) as SELECT null, ID_WAY, THE_GEOM,\n" +
                     "CASEWHEN(T = 'trunk', 21,\n" +
                     "CASEWHEN(T = 'primary', 41,\n" +
                     "CASEWHEN(T = 'secondary', 41,\n" +
@@ -152,9 +169,74 @@ def run(input) {
                     "CASEWHEN(T = 'secondary', 12000,\n" +
                     "CASEWHEN(T = 'tertiary',7800,\n" +
                     "CASEWHEN(T = 'residential',4000, 1600\n" +
-                    "))))) AADF FROM MAP_ROADS_GEOM where T in ('trunk', 'primary', 'secondary', 'tertiary', 'residential', 'unclassified') ;"
-            tables.add("ROADS")
+                    "))))) AADF, MAXSPEED SPEED FROM MAP_ROADS_GEOM where T in ('trunk', 'primary', 'secondary', 'tertiary', 'residential', 'unclassified') ;"
+
+            if(aadenf) {
+
+                def aadf_d =[17936,7124,1400,700,350,175]
+                def aadf_e =[3826,1069,400,200,100,50]
+                def aadf_n =[2152,712,200,100,50,25]
+                def hv_d = [0.2,0.2,0.15,0.10,0.05,0.02]
+                def hv_e = [0.2,0.15,0.10,0.06,0.02,0.01]
+                def  hv_n =[0.2,0.05,0.05,0.03,0.01,0.0]
+                def speed = [110,80,50,50,30,30]
+
+
+
+
+                roadsImport = "DROP TABLE IF EXISTS MAP_ROADS;\n" +
+                        "CREATE TABLE MAP_ROADS(ID_WAY BIGINT PRIMARY KEY,HIGHWAY_TYPE varchar(30) ) AS SELECT DISTINCT ID_WAY, VALUE HIGHWAY_TYPE FROM MAP_WAY_TAG WT, MAP_TAG T WHERE WT.ID_TAG = T.ID_TAG AND T.TAG_KEY IN ('highway');\n" +
+                        "DROP TABLE IF EXISTS MAP_ROADS_GEOM;\n" +
+                        "CREATE TABLE MAP_ROADS_GEOM AS SELECT ID_WAY,  st_setsrid(st_updatez(ST_precisionreducer(ST_SIMPLIFYPRESERVETOPOLOGY(ST_TRANSFORM(ST_SETSRID(ST_MAKELINE(THE_GEOM), 4326), "+srid+"),0.1),1), 0.05), "+srid+") THE_GEOM, HIGHWAY_TYPE T FROM (SELECT (SELECT\n" + "ST_ACCUM(THE_GEOM) THE_GEOM FROM (SELECT N.ID_NODE, N.THE_GEOM,WN.ID_WAY IDWAY FROM MAP_NODE\n" +
+                        "N,MAP_WAY_NODE WN WHERE N.ID_NODE = WN.ID_NODE ORDER BY WN.NODE_ORDER) WHERE  IDWAY = W.ID_WAY)\n" +
+                        "THE_GEOM ,W.ID_WAY, B.HIGHWAY_TYPE FROM MAP_WAY W,MAP_ROADS B WHERE W.ID_WAY = B.ID_WAY) GEOM_TABLE;\n" +
+                        "DROP TABLE MAP_ROADS;\n" +
+                        "DROP TABLE IF EXISTS ROADS_AADF;\n" +
+                        "CREATE TABLE ROADS_AADF(ID SERIAL,ID_WAY long , THE_GEOM LINESTRING CHECK ST_SRID(THE_GEOM)="+srid+", CLAS_ADM int, AADF int, CLAS_ALT int) as SELECT null, ID_WAY, THE_GEOM,\n" +
+                        "CASEWHEN(T = 'trunk', 21,\n" +
+                        "CASEWHEN(T = 'primary', 41,\n" +
+                        "CASEWHEN(T = 'secondary', 41,\n" +
+                        "CASEWHEN(T = 'tertiary',41, 57)))) CLAS_ADM,\n" +
+                        "CASEWHEN(T = 'trunk', 47000,\n" +
+                        "CASEWHEN(T = 'primary', 35000,\n" +
+                        "CASEWHEN(T = 'secondary', 12000,\n" +
+                        "CASEWHEN(T = 'tertiary',7800,\n" +
+                        "CASEWHEN(T = 'residential',4000, 1600\n" +
+                        "))))) AADF," +
+                        "CASEWHEN(T = 'trunk', 1,\n" +
+                        "CASEWHEN(T = 'trunk_link', 1,\n" +
+                        "CASEWHEN(T = 'primary', 2,\n" +
+                        "CASEWHEN(T = 'primary_link', 2,\n" +
+                        "CASEWHEN(T = 'secondary', 3,\n" +
+                        "CASEWHEN(T = 'secondary_link', 3,\n" +
+                        "CASEWHEN(T = 'tertiary', 3,\n" +
+                        "CASEWHEN(T = 'tertiary_link', 4,\n" +
+                        "CASEWHEN(T = 'residential', 4,\n" +
+                        "CASEWHEN(T = 'unclassified', 4,\n" +
+                        "CASEWHEN(T = 'service', 6,\n" +
+                        "CASEWHEN(T = 'living_street',6, 6)))))))))))) CLAS_ALT  FROM MAP_ROADS_GEOM where T in ('trunk', 'primary', 'secondary', 'tertiary', 'residential', 'unclassified') ;\n" +
+                        "DROP TABLE IF EXISTS ROADS;\n" +
+                        "CREATE TABLE ROADS as SELECT null, ID_WAY, THE_GEOM," +
+                        "TV_D, " +
+                        "TV_E," +
+                        "TV_N," +
+                        "HV_D," +
+                        "HV_E," +
+                        "HV_N," +
+                        "LV_SPD_D," +
+                        "LV_SPD_E," +
+                        "LV_SPD_N" +
+                        "HV_SPD_D," +
+                        "HV_SPD_E," +
+                        "HV_SPD_N, " +
+                        "'NL08' PVMT " +
+                        "FROM ROADS_AADF;"
+            }
+
+
             sql.execute(roadsImport)
+            tables.add("ROADS")
+
         }
 
         osm_tables.each { tableName ->
