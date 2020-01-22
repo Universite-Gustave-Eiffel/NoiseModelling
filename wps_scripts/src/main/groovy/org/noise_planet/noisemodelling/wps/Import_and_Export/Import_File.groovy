@@ -27,6 +27,7 @@ description = 'Import file into a database table (csv, dbf, geojson, gpx, bz2, g
 
 inputs = [pathFile       : [name: 'Path of the input File', description: 'Path of the input File (including extension .csv, .shp, etc.)', title: 'Path of the input File', type: String.class],
           databaseName   : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database (default : first found db)', min: 0, max: 1, type: String.class],
+          defaultSRID   : [name: 'Default SRID', title: 'Default SRID', description: 'If the layer does not include SRID properties, it will take this value (default : 4326)', min: 0, max: 1, type: Integer.class],
           outputTableName: [name: 'outputTableName', description: 'Do not write the name of a table that contains a space. (default : file name without extension)', title: 'Name of output table', min: 0, max: 1, type: String.class]]
 
 outputs = [tableNameCreated: [name: 'tableNameCreated', title: 'tableNameCreated', type: String.class]]
@@ -46,6 +47,11 @@ def run(input) {
     String dbName = ""
     if (input['databaseName']) {
         dbName = input['databaseName'] as String
+    }
+
+    Integer defaultSRID = 4326
+    if (input['defaultSRID']) {
+        defaultSRID = input['defaultSRID'] as Integer
     }
 
     // Open connection
@@ -108,7 +114,7 @@ def run(input) {
         int srid = SFSUtilities.getSRID(connection, TableLocation.parse(outputTableName))
         if(srid == 0) {
             connection.createStatement().execute(String.format("UPDATE %s SET THE_GEOM = ST_SetSRID(the_geom,%d)",
-                    TableLocation.parse(outputTableName).toString(), 4326))
+                    TableLocation.parse(outputTableName).toString(), defaultSRID))
 
         }
 
