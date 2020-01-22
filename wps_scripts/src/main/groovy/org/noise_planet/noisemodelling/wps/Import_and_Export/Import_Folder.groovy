@@ -1,14 +1,13 @@
 /**
-* @Author Nicolas Fortin
-* @Author Pierre Aumond
-*/
+ * @Author Nicolas Fortin
+ * @Author Pierre Aumond
+ */
 
 package org.noise_planet.noisemodelling.wps.Import_and_Export
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.io.FileType
-import groovy.sql.Sql
 import org.apache.commons.io.FilenameUtils
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.api.EmptyProgressVisitor
@@ -19,8 +18,6 @@ import org.h2gis.functions.io.gpx.GPXDriverFunction
 import org.h2gis.functions.io.osm.OSMDriverFunction
 import org.h2gis.functions.io.shp.SHPDriverFunction
 import org.h2gis.functions.io.tsv.TSVDriverFunction
-import org.h2gis.functions.spatial.crs.ST_SetSRID
-import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.SFSUtilities
 import org.h2gis.utilities.TableLocation
 
@@ -62,8 +59,6 @@ def run(input) {
                 String user_ext = input["user_ext"] as String
                 String folder = input["pathFile"] as String
                 String outputTableName_full = ""
-                Sql sql = new Sql(connection)
-
 
                 def dir = new File(folder)
                 dir.eachFileRecurse (FileType.FILES) { file ->
@@ -127,7 +122,6 @@ def run(input) {
                                                 outputTableName_full = outputTableName + " & " + outputTableName_full
                                                 break
                                 }
-
                                 int srid = SFSUtilities.getSRID(connection, TableLocation.parse(outputTableName))
                                 if(srid == 0) {
                                         connection.createStatement().execute(String.format("UPDATE %s SET THE_GEOM = ST_SetSRID(the_geom,%d)",
