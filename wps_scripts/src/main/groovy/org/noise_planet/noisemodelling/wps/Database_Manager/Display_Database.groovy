@@ -53,7 +53,15 @@ def exec(Connection connection, input) {
             sb.append("</br>")
             if (showColumnName) {
                 List<String> fields = JDBCUtilities.getFieldNames(connection.getMetaData(), t)
-                fields.each { f -> sb.append(String.format("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;%s</br>", f))
+                Integer keyColumnIndex = JDBCUtilities.getIntegerPrimaryKey(connection, t)
+                int columnIndex = 1;
+                fields.each {
+                    f -> if(columnIndex == keyColumnIndex) {
+                        sb.append(String.format("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;%s&nbsp;&#128273;</br>", f))
+                    } else {
+                        sb.append(String.format("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;%s</br>", f))
+                    }
+                    columnIndex++
                 }
             }
         }
