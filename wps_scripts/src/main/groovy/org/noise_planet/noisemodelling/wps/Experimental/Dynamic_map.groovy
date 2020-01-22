@@ -1,7 +1,8 @@
 package org.noise_planet.noisemodelling.wps.Experimental
 
-/*
- * @Author Pierre Aumond
+/**
+ * @Author Pierre Aumond, Université Gustave Eiffel.
+ * @Author Arnaud Can, Université Gustave Eiffel
  */
 import geoserver.GeoServer
 import geoserver.catalog.Store

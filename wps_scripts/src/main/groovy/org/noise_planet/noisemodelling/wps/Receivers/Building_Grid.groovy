@@ -1,6 +1,6 @@
 /**
- * @Author Aumond Pierre
- * @Author Can Arnaud
+ * @Author Aumond Pierre, Université Gustave Eiffel
+ * @Author Can Arnaud, Université Gustave Eiffel
  */
 
 package org.noise_planet.noisemodelling.wps.Receivers

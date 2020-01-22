@@ -1,7 +1,7 @@
 package org.noise_planet.noisemodelling.wps.Dynamic_Tools;
 
-/*
- * @Author Pierre Aumond
+/**
+ * @Author Pierre Aumond, Université Gustave Eiffel
  */
 import groovy.sql.Sql
 import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceDynamic

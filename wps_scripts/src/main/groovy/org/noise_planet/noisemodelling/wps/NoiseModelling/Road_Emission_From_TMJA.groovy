@@ -1,10 +1,10 @@
+/**
+ * @Author Pierre Aumond, Université Gustave Eiffel
+ */
+
 package org.noise_planet.noisemodelling.wps.NoiseModelling
 
 import geoserver.GeoServer
-
-/*
- * @Author Pierre Aumond 13/11/2019
- */
 import geoserver.catalog.Store
 import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore

@@ -1,3 +1,8 @@
+/**
+ * @Author Pierre Aumond, Université Gustave Eiffel
+ * @Author Antoine Lesieur, Inria
+ */
+
 package org.noise_planet.noisemodelling.wps.Experimental
 
 
@@ -7,9 +12,7 @@ import com.google.common.primitives.Doubles;
 import geoserver.GeoServer
 import geoserver.catalog.Store
 
-/*
- * @Author Pierre Aumond
- */
+
 import groovy.sql.Sql
 import groovy.transform.CompileStatic
 import org.geotools.jdbc.JDBCDataStore

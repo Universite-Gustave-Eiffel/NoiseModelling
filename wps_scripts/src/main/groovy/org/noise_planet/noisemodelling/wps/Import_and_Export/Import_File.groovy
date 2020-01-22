@@ -1,5 +1,5 @@
 /**
- * @Author Aumond Pierre
+ * @Author Aumond Pierre, Université Gustave Eiffel
  */
 
 package org.noise_planet.noisemodelling.wps.Import_and_Export

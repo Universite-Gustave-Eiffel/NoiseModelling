@@ -3,9 +3,9 @@ package org.noise_planet.noisemodelling.wps.NoiseModelling
 import geoserver.GeoServer;
 
 /*
- * @Author Hesry Quentin
- * @Author Pierre Aumond
- * @Author Nicolas Fortin
+ * @Author Hesry Quentin, Université Gustave Eiffel
+ * @Author Pierre Aumond, Université Gustave Eiffel
+ * @Author Nicolas Fortin, Université Gustave Eiffel
  */
 
 import geoserver.catalog.Store
