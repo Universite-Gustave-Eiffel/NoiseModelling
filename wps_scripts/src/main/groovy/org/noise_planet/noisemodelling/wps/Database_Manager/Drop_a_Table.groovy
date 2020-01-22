@@ -8,8 +8,8 @@ package org.noise_planet.noisemodelling.wps.Database_Manager
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
-
 import java.sql.Connection
 import java.sql.Statement
 
