@@ -16,11 +16,11 @@ Exporting data from openstreetmap.org
 
 Import to the database
 ------------------------------------------------
-* Use the WPS block *Get_Table_from_OSM*.
+* Use the WPS block *Get_Table_from_OSM*
 
 .. note ::
-Inform the Projection identifier field with a metric SRID
-Enter the path to the file map.osm
+  Inform the Projection identifier field with a metric SRID
+  Enter the path to the file map.osm
 
 Three tables must be created: SURFACE_OSM, BUILDINGS_OSM, ROADS
 
