@@ -54,7 +54,7 @@ def run(input) {
     sources_table_name = sources_table_name.toUpperCase()
 
     // Get name of the database
-    String dbName = "h2gisdb"
+    String dbName = ""
     if (input['databaseName']) {
         dbName = input['databaseName'] as String
     }

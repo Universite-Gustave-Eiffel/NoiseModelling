@@ -51,9 +51,15 @@ Cite as: *Erwan Bocher, Gwenaël Guillaume, Judicaël Picaut, Gwendall Petit, Ni
 
 .. toctree::
     :maxdepth: 2
-    :caption: For Interface-Friendly Users
+    :caption: Tutorials
 
     Get_Started_Tutorial
+    Noise_Map_From_OSM_Tutorial
+    Tutorials_FAQ
+
+.. toctree::
+    :maxdepth: 2
+    :caption: User Interface
     WPS_Blocks
     FAQ_UF
 

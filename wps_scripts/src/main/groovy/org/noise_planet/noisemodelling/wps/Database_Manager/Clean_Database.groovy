@@ -5,7 +5,6 @@
 
 package org.noise_planet.noisemodelling.wps.Database_Manager
 
-
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import org.geotools.jdbc.JDBCDataStore
@@ -15,20 +14,8 @@ import org.h2gis.utilities.TableLocation
 import java.sql.Connection
 import java.sql.Statement
 
-import org.h2gis.functions.io.csv.*
-import org.h2gis.functions.io.dbf.*
-import org.h2gis.functions.io.geojson.*
-import org.h2gis.functions.io.json.*
-import org.h2gis.functions.io.kml.*
-import org.h2gis.functions.io.shp.*
-import org.h2gis.functions.io.tsv.*
-import org.h2gis.api.EmptyProgressVisitor
-import org.h2gis.utilities.wrapper.ConnectionWrapper
-
-import org.noisemodellingwps.utilities.WpsConnectionWrapper
-
-title = 'Clean all the database'
-description = 'Delete all tables from the database.'
+title = 'Delete all tables'
+description = 'Delete all non-system tables from the database.'
 
 inputs = [
     databaseName: [name: 'Name of the database', description : 'Name of the database', title: 'Name of the database', type: String.class]
@@ -38,7 +25,10 @@ outputs = [
     result: [name: 'Result', title: 'Result', type: String.class]
 ]
 
-def static Connection openPostgreSQLDataStoreConnection(String dbName) {
+static Connection openGeoserverDataStoreConnection(String dbName) {
+    if(dbName == null || dbName.isEmpty()) {
+        dbName = new GeoServer().catalog.getStoreNames().get(0)
+    }
     Store store = new GeoServer().catalog.getStore(dbName)
     JDBCDataStore jdbcDataStore = (JDBCDataStore)store.getDataStoreInfo().getDataStore(null)
     return jdbcDataStore.getDataSource().getConnection()
@@ -46,11 +36,11 @@ def static Connection openPostgreSQLDataStoreConnection(String dbName) {
 
 def run(input) {
     // Get name of the database
-    String dbName = "h2gisdb"
+    String dbName = ""
     if (input['databaseName']){dbName = input['databaseName'] as String}
 
     // Open connection
-    openPostgreSQLDataStoreConnection(dbName).withCloseable { Connection connection ->
+    openGeoserverDataStoreConnection(dbName).withCloseable { Connection connection ->
 
         List<String> ignorelst = ["SPATIAL_REF_SYS", "GEOMETRY_COLUMNS"]
         // Excute code
