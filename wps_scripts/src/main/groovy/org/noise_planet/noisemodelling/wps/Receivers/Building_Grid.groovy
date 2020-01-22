@@ -8,17 +8,20 @@ package org.noise_planet.noisemodelling.wps.Receivers
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.BatchingPreparedStatementWrapper
-import groovy.sql.Sql
+import groovy.transform.CompileStatic
 import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.functions.io.shp.SHPWrite
 import org.h2gis.functions.spatial.convert.ST_Force3D
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.LineString
 import org.locationtech.jts.geom.Polygon
 import org.noise_planet.noisemodelling.propagation.ComputeRays
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
-import java.sql.Connection
-
+import java.sql.*
+import groovy.sql.Sql
 
 // Change code and use : createReceiversFromBuildings see down
 title = 'Buildings Grid'
