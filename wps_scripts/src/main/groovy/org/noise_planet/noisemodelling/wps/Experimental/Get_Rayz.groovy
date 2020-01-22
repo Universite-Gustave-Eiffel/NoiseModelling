@@ -1,4 +1,4 @@
-package org.noise_planet.noisemodelling.wps.NoiseModelling
+package org.noise_planet.noisemodelling.wps.Experimental
 
 /*
  * @Author Pierre Aumond
@@ -14,8 +14,6 @@ import org.h2gis.functions.io.geojson.GeoJsonDriverFunction
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.wrapper.ConnectionWrapper
-import org.hsqldb.jdbc.JDBCConnection
-import org.hsqldb.jdbc.JDBCDriver
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Geometry
 import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
