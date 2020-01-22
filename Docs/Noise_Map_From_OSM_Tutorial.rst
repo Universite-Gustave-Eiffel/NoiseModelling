@@ -12,7 +12,7 @@ Exporting data from openstreetmap.org
 ------------------------------------------------
 * Go to https://www.openstreetmap.org
 * Zoom in on the area you want to export
-* Export the zone in .osm or .osm.gz format.
+* Export the zone in .osm or .osm.gz format
 
 Import to the database
 ------------------------------------------------
