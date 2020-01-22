@@ -18,7 +18,7 @@ Import to the database
 ------------------------------------------------
 * Use the WPS block *Get_Table_from_OSM*
 
-.. note ::
+.. note::
   Inform the Projection identifier field with a metric SRID
   Enter the path to the file map.osm
 
