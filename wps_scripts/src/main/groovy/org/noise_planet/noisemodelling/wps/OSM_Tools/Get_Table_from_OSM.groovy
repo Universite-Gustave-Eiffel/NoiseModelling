@@ -244,9 +244,6 @@ def run(input) {
                     sql.execute(roadsImport)
                 }
 
-            sql.execute("ALTER TABLE ROADS ALTER COLUMN PK INT NOT NULL;" )
-            sql.execute("ALTER TABLE ROADS ADD PRIMARY KEY (PK);  " )
-
             tables.add("ROADS")
             }
 
