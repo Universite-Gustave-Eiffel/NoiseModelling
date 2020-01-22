@@ -220,7 +220,7 @@ def run(input) {
                     sql_connect.withBatch(100, qry) { ps ->
                         ps.addBatch(idway as Integer, the_geom as Geometry,
                                 aadf_d[classif] as Integer, aadf_e[classif]  as Integer, aadf_n[classif]  as Integer,
-                                hv_d[classif] as Integer, hv_e[classif]  as Integer, hv_n[classif]  as Integer,
+                                aadf_d[classif]*hv_d[classif] as Integer, aadf_e[classif]*hv_e[classif]  as Integer, aadf_n[classif]*hv_n[classif]  as Integer,
                                 speed[classif] as Integer, speed[classif]  as Integer, speed[classif]  as Integer,
                                 speed[classif] as Integer, speed[classif]  as Integer, speed[classif]  as Integer,
                                 'NL08' as String)

@@ -216,11 +216,9 @@ def run(input) {
 
 
         sql.execute("set @grid_density=10;\n" +
-                "set @PL_D=0.1;\n" +
-                "set @SPEED_CST=50;\n" +
                 "drop table TRAFIC_DENSITY if exists;\n" +
                 "create table TRAFIC_DENSITY (the_geom geometry, TV int, PL INT, SPEED double, DENSITY_TV double, DENSITY_PL double, DENSITY_TOT double) as \n" +
-                "    select THE_GEOM, AADF - (AADF*@PL_D/100), AADF*@PL_D/100, \n" +
+                "    select THE_GEOM, TV_D  - (TV_D *@PL_D/100), TV_D *@PL_D/100, \n" +
                 "        case when @SPEED_CST < 20 then 20 \n" +
                 "            else @SPEED_CST end, \n" +
                 "        case when @SPEED_CST< 20 then 0.001*(AADF - (AADF*@PL_D/100))/20 \n" +
