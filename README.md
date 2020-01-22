@@ -1,8 +1,7 @@
 [![Build Status](https://travis-ci.org/Ifsttar/NoiseModelling.svg?branch=cnossos)](https://travis-ci.org/Ifsttar/NoiseModelling)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Documentation Status](https://readthedocs.org/projects/noisemodelling/badge/?version=latest)](https://noisemodelling.readthedocs.io/en/latest/?badge=latest)
-[![Github all releases](https://img.shields.io/github/downloads/Naereen/StrapDown.js/total.svg)](https://github.com/Ifsttar/NoiseModelling/releases/)
-[![GitHub release](https://img.shields.io/github/release/Naereen/StrapDown.js.svg)](https://github.com/Ifsttar/NoiseModelling/releases/)
+[![GitHub release](https://img.shields.io/github/release/Ifsttar/NoiseModelling)](https://github.com/Ifsttar/NoiseModelling/releases/)
 
 NoiseModelling
 ======
