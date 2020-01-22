@@ -178,7 +178,7 @@ def run(input) {
             sql.execute(String.format("drop table if exists receivers_temp"));
             sql.execute(String.format("create table receivers_temp as SELECT * from ST_EXPLODE('receivers_build')"))
 
-            queryGrid = String.format("create table "+receivers_table_name+" (ID int AUTO_INCREMENT PRIMARY KEY, the_geom GEOMETRY) as SELECT NULL, r.the_geom from receivers_temp r, FENCE_2154 f where r.the_geom && f.the_geom and ST_INTERSECTS (r.the_geom, f.the_geom)")
+            queryGrid = String.format("create table "+receivers_table_name+" (PK int AUTO_INCREMENT PRIMARY KEY, the_geom GEOMETRY) as SELECT NULL, r.the_geom from receivers_temp r, FENCE_2154 f where r.the_geom && f.the_geom and ST_INTERSECTS (r.the_geom, f.the_geom)")
             sql.execute(queryGrid)
 
         }else{
@@ -186,13 +186,13 @@ def run(input) {
             sql.execute(String.format("drop table if exists buildtemp"))
             sql.execute(String.format("create table buildtemp (id serial, the_geom polygon) as select null, ST_CONVEXHULL (the_geom) from "+building_table_name+" where ST_AREA(the_geom)>100"));
 
-            sql.execute(String.format("drop table if exists receivers_build"));
+            sql.execute(String.format("drop table if exists receivers_build"))
             sql.execute(String.format("create table receivers_build (ID int AUTO_INCREMENT PRIMARY KEY, the_geom GEOMETRY) as select NULL, ST_ToMultiPoint(ST_Densify(ST_ToMultiLine(ST_Buffer(b.the_geom, 2, 'quad_segs=0 endcap=butt')), "+delta+")) from buildtemp b"))
 
-            sql.execute(String.format("drop table if exists receivers_temp"));
+            sql.execute(String.format("drop table if exists receivers_temp"))
             sql.execute(String.format("create table receivers_temp as SELECT * from ST_EXPLODE('receivers_build')"))
 
-            queryGrid = String.format("create table "+receivers_table_name+" (ID int AUTO_INCREMENT PRIMARY KEY, the_geom GEOMETRY) as SELECT NULL, r.the_geom from receivers_temp r")
+            queryGrid = String.format("create table "+receivers_table_name+" (PK int AUTO_INCREMENT PRIMARY KEY, the_geom GEOMETRY) as SELECT NULL, r.the_geom from receivers_temp r")
 
             sql.execute(queryGrid)
 

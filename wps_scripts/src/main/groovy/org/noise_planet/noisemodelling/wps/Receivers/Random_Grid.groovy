@@ -90,7 +90,10 @@ def run(input) {
             sql.execute("delete from "+receivers_table_name+" g where exists (select 1 from "+sources_table_name+" r where st_expand(g.the_geom, 1) && r.the_geom and st_distance(g.the_geom, r.the_geom) < 1 limit 1);")
         }
 
+
+        sql.execute("ALTER TABLE "+ receivers_table_name +" ADD pk INT AUTO_INCREMENT PRIMARY KEY;" )
     }
+
     System.out.println("Process Done !")
     return [tableNameCreated: "Process done !"]
 }
