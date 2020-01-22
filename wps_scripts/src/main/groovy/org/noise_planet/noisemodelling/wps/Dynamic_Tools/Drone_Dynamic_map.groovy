@@ -8,6 +8,14 @@ import geoserver.catalog.Store
 
 import groovy.sql.Sql
 import org.locationtech.jts.math.Vector3D
+import org.noise_planet.noisemodelling.propagation.ComputeRays
+import org.noise_planet.noisemodelling.propagation.ComputeRaysOut
+import org.noise_planet.noisemodelling.propagation.FastObstructionTest
+import org.noise_planet.noisemodelling.propagation.IComputeRaysOut
+import org.noise_planet.noisemodelling.propagation.PropagationPath
+import org.noise_planet.noisemodelling.propagation.PropagationProcessData
+import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
+import org.noise_planet.noisemodelling.propagation.RootProgressVisitor
 
 import java.sql.Connection
 import java.sql.SQLException

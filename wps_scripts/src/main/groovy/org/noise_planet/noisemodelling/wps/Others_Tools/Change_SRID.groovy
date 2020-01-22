@@ -4,26 +4,19 @@
 
 package org.noise_planet.noisemodelling.wps.Others_Tools
 
-import org.h2gis.utilities.SFSUtilities
-import org.h2gis.utilities.TableLocation
-import org.h2gis.utilities.wrapper.*
-
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import org.geotools.jdbc.JDBCDataStore
-import org.geotools.data.simple.*
+import org.h2gis.utilities.SFSUtilities
+import org.h2gis.utilities.TableLocation
 
 import java.sql.Connection
-import org.locationtech.jts.geom.Geometry
-import java.sql.*
-import groovy.sql.Sql
 
-
-title = 'Change EPSG'
-description = 'Change EPSG'
+title = 'Change SRID'
+description = 'Change SRID'
 
 inputs = [tableName : [name: 'table name', title: 'table name', type: String.class],
-          newEpsg  : [name: 'epsg', title: 'epsg', type: Integer.class],
+          newEpsg  : [name: 'SRID', title: 'SRID', type: Integer.class],
           databaseName   : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database. (default : h2gisdb)', min: 0, max: 1, type: String.class]]
 
 
