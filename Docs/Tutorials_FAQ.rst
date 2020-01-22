@@ -12,10 +12,11 @@ Its extension is classically SHP, and it is always accompanied by two other file
 * SHX, file that stores the index of the geometry.
 
 Other files can also be provided :
-* .prj - coordinate system information, using the WKT (Well Known Text) format;
-* .sbn and .sbx - spatial shape index ;
-* .fbn and .fbx - spatial shape index for read-only shapefiles;
-* .ain and .aih - attribute index for active fields in a table or in a theme attribute table;
+
+* prj - coordinate system information, using the WKT (Well Known Text) format;
+* sbn and sbx - spatial shape index ;
+* fbn and fbx - spatial shape index for read-only shapefiles;
+* ain and aih - attribute index for active fields in a table or in a theme attribute table;
 * etc.
 
 **GeoJSON** (Geographic JSON) is an open format for encoding simple geospatial data sets using the JSON (JavaScript Object Notation) standard.
