@@ -1,7 +1,7 @@
 /**
-* @Author Nicolas Fortin
-* @Author Pierre Aumond
-*/
+ * @Author Nicolas Fortin
+ * @Author Pierre Aumond
+ */
 
 package org.noise_planet.noisemodelling.wps.Database_Manager
 
@@ -12,33 +12,20 @@ import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
 
 import java.sql.Connection
-import java.sql.Statement
 
-import org.h2gis.functions.io.csv.*
-import org.h2gis.functions.io.dbf.*
-import org.h2gis.functions.io.geojson.*
-import org.h2gis.functions.io.json.*
-import org.h2gis.functions.io.kml.*
-import org.h2gis.functions.io.shp.*
-import org.h2gis.functions.io.tsv.*
-import org.h2gis.api.EmptyProgressVisitor
-import org.h2gis.utilities.wrapper.ConnectionWrapper
-
-import org.noisemodellingwps.utilities.WpsConnectionWrapper
-
-title = 'Display Tables'
-description = 'Display all tables in the database'
+title = 'Display Tables names and columns'
+description = 'Displays the list of tables and their columns.'
 
 inputs = [
-   databaseName: [name: 'Name of the database', title: 'Name of the database', description : 'Name of the database (default : first found db)', min : 0, max : 1, type: String.class],
-   showColumns: [name: 'Display column names', title: 'Display column names', description: 'Display the names of the table columns (default : yes)', min : 0, max : 1, type: Boolean.class]
+        databaseName: [name: 'Name of the database', title: 'Name of the database', description : 'Name of the database (default : first found db)', min : 0, max : 1, type: String.class],
+        showColumns: [name: 'Display column names', title: 'Display column names', description: 'Display the names of the table columns (default : yes)', min : 0, max : 1, type: Boolean.class]
 ]
 
 outputs = [
-    result: [name: 'Result', title: 'Result', type: String.class]
+        result: [name: 'Result', title: 'Result', type: String.class]
 ]
 
-def static Connection openPostgreSQLDataStoreConnection(String dbName) {
+static Connection openGeoserverDataStoreConnection(String dbName) {
     if(dbName == null || dbName.isEmpty()) {
         dbName = new GeoServer().catalog.getStoreNames().get(0)
     }
@@ -84,7 +71,7 @@ def run(input) {
     if (input['databaseName']){dbName = input['databaseName'] as String}
 
     // Open connection
-    openPostgreSQLDataStoreConnection(dbName).withCloseable {
+    openGeoserverDataStoreConnection(dbName).withCloseable {
         Connection connection ->
             return [result : exec(connection, input)]
     }
