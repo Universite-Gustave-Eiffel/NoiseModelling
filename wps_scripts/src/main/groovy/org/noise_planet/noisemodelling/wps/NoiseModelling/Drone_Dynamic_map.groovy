@@ -399,14 +399,9 @@ def run(input) {
             geomFixedSources.put((int) row[0], [row[1] as Double, row[2] as Double, row[3] as Double])
         }
 
-        //sql.execute("CREATE SPATIAL INDEX ON "+sources_position_table_name+"(THE_GEOM);")
-        //sql.execute("CREATE SPATIAL INDEX ON "+sources_time_table_name+"(THE_GEOM);")
-       // sql.execute("drop table if exists closest_point;")
-       // sql.execute("create table closest_point as SELECT b.pk PK_TIME,b.the_geom, (SELECT a.PK FROM "+sources_position_table_name+" a  ORDER BY ST_Distance(a.the_geom, b.the_geom) ASC LIMIT 1) PK_POSITION FROM "+sources_time_table_name+" b ;")
         sql.execute("CREATE SPATIAL INDEX ON "+sources_position_table_name+"(THE_GEOM);")
-        sql.execute("CREATE SPATIAL INDEX ON "+sources_time_table_name+"(THE_GEOM);")
         sql.execute("drop table if exists closest_point;")
-        sql.execute("create table closest_point as SELECT b.pk PK_TIME,b.the_geom, (SELECT a.PK FROM "+sources_position_table_name+" a WHERE ST_EXPAND(b.the_geom,50,50) && a.the_geom  ORDER BY ST_Distance(a.the_geom, b.the_geom) ASC LIMIT 1) PK_POSITION FROM "+sources_time_table_name+" b ;")
+        sql.execute("create table closest_point as SELECT b.pk PK_TIME,b.the_geom, (SELECT a.PK FROM "+sources_position_table_name+" a WHERE ST_EXPAND(b.the_geom,50,50) && a.the_geom ORDER BY ST_Distance(a.the_geom, b.the_geom) ASC LIMIT 1) PK_POSITION FROM "+sources_time_table_name+" b ;")
 
         sql.execute("drop table if exists "+sources_time_table_name+"_with_pkPosition;")
         sql.execute("create table "+sources_time_table_name+"_with_pkPosition AS SELECT  a.PK PK, b.PK_POSITION PK_POSITION, a.PHI PHI, a.T T, a.idSource idSource FROM "+sources_time_table_name+" a, closest_point b WHERE a.PK = b.PK_TIME ;")

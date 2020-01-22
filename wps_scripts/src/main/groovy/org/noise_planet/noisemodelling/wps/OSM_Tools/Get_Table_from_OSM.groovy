@@ -22,7 +22,7 @@ description = 'Convert OSM/OSM.GZ file (https://www.openstreetmap.org) to a comp
 inputs = [pathFile       : [name: 'Path of the input File', description: 'Path of the input File (including extension .osm.gz)', title: 'Path of the input File', type: String.class],
           convert2Building: [name: 'convert2Building', title: 'Extract building', description: 'convert2Building', min: 0, max: 1, type: Boolean.class],
           convert2Vegetation: [name: 'convert2Vegetation', title: 'Extract surface', description: 'convert2Vegetation', min: 0, max: 1, type: Boolean.class],
-          convert2Roads: [name: 'convert2Roads', title: 'Extract roads', description: 'Extract roads and metadata, apply default road traffic and speed', type: Boolean.class],
+          convert2Roads: [name: 'convert2Roads', title: 'Extract roads', description: 'Extract roads and metadata, apply default road traffic and speed', min: 0, max: 1, type: Boolean.class],
           AADENF:  [name: 'AADENF', title: 'Annual average DEN flows', description: 'Convert annual average daily flows (AADF) to annual average day/evening/night flows', type: Boolean.class, min: 0, max: 1],
           targetSRID:  [name: 'targetSRID', title: 'Projection identifier', description: 'All coordinates will be projected into the specified SRID. ex: 3857 is Web Mercator projection', type: Integer.class, min: 0, max: 1],
           databaseName   : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database (default : first found db)', min: 0, max: 1, type: String.class]]
