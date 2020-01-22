@@ -32,6 +32,11 @@ description = 'Calculates a delaunay grid of receivers based on a single Geometr
 inputs = [buildingTableName : [name: 'Buildings table name', title: 'Buildings table name', type: String.class],
           fence  : [name: 'Fence', title: 'Fence', min: 0, max: 1, type: Geometry.class],
           sourcesTableName  : [name: 'Sources table name', title: 'Sources table name', type: String.class],
+          maxPropDist  : [name: 'Maximum Propagation Distance', title: 'Maximum Propagation Distance', description: 'Set Maximum Propagation Distance, Avoid loading to much geometries when doing Delaunay triangulation (default = 500 m)', min: 0, max: 1, type: Double.class],
+          roadWidth  : [name: 'Road Width', title: 'Road Width', description: 'Set Road Width. No receivers closer than road width distance. (default = 2m)', min: 0, max: 1, type: Double.class],
+          maxArea  : [name: 'Maximum Area', title: 'Maximum Area', description: 'Set Maximum Area. No triangles larger than provided area.(default = 2500m2)', min: 0, max: 1, type: Double.class],
+          sourceDensification  : [name: 'Source Densification', title: 'Source Densification', description: 'Set Source Densification. Densification of receivers near sound sources. (default = 8)', min: 0, max: 1, type: Double.class],
+          height    : [name: 'Height', title: 'Height', description: ' Receiver height relative to the ground in meters (default : 4m)', min: 0, max: 1, type: Double.class],
           databaseName   : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database (default : first found db)', min: 0, max: 1, type: String.class],
           outputTableName: [name: 'outputTableName', description: 'Do not write the name of a table that contains a space. (default : RECEIVERS)', title: 'Name of output table', min: 0, max: 1, type: String.class]]
 
@@ -55,15 +60,11 @@ def run(input) {
     }
     receivers_table_name = receivers_table_name.toUpperCase()
 
-
-
     String sources_table_name = "SOURCES"
     if (input['sourcesTableName']) {
         sources_table_name = input['sourcesTableName']
     }
     sources_table_name = sources_table_name.toUpperCase()
-
-
 
     String building_table_name = "BUILDINGS"
     if (input['buildingTableName']) {
@@ -71,6 +72,31 @@ def run(input) {
     }
     building_table_name = building_table_name.toUpperCase()
 
+
+    Double maxPropDist = 500.0
+    if (input['maxPropDist']) {
+        maxPropDist = input['maxPropDist']
+    }
+
+    Double height = 4.0
+    if (input['height']) {
+        height = input['height']
+    }
+
+    Double roadWidth = 2.0
+    if (input['roadWidth']) {
+        roadWidth = input['roadWidth']
+    }
+
+    Double maxArea = 2500
+    if (input['maxArea']) {
+        maxArea = input['maxArea']
+    }
+
+    Double sourceDensification = 8
+    if (input['sourceDensification']) {
+        sourceDensification = input['sourceDensification']
+    }
 
     Geometry fence = null
     WKTReader wktReader = new WKTReader()
@@ -83,6 +109,7 @@ def run(input) {
     if (input['databaseName']) {
         dbName = input['databaseName'] as String
     }
+
 
     // Open connection
     openGeoserverDataStoreConnection(dbName).withCloseable { Connection connection ->
@@ -113,16 +140,17 @@ def run(input) {
             }
         }
 
+
         // Avoid loading to much geometries when doing Delaunay triangulation
-        noiseMap.setMaximumPropagationDistance(2000)
+        noiseMap.setMaximumPropagationDistance(maxPropDist)
         // Receiver height relative to the ground
-        noiseMap.setReceiverHeight(1.6)
+        noiseMap.setReceiverHeight(height)
         // No receivers closer than road width distance
-        noiseMap.setRoadWidth(2.0)
+        noiseMap.setRoadWidth(roadWidth)
         // No triangles larger than provided area
-        noiseMap.setMaximumArea(100.0)
+        noiseMap.setMaximumArea(maxArea)
         // Densification of receivers near sound sources
-        noiseMap.setSourceDensification(8.0)
+        noiseMap.setSourceDensification(sourceDensification)
 
         noiseMap.initialize(connection, new EmptyProgressVisitor())
         AtomicInteger pk = new AtomicInteger(0)
