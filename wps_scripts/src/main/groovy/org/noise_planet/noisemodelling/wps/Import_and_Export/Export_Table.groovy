@@ -1,7 +1,7 @@
 /**
-* @Author Nicolas Fortin
-* @Author Pierre Aumond
-*/
+ * @Author Nicolas Fortin
+ * @Author Pierre Aumond
+ */
 
 package org.noise_planet.noisemodelling.wps.Import_and_Export
 
