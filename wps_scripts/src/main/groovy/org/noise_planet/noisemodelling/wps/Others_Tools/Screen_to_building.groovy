@@ -4,18 +4,12 @@
 
 package org.noise_planet.noisemodelling.wps.Others_Tools
 
-import org.h2gis.utilities.wrapper.*
-
 import geoserver.GeoServer
 import geoserver.catalog.Store
+import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
-import org.geotools.data.simple.*
 
 import java.sql.Connection
-import org.locationtech.jts.geom.Geometry
-import java.sql.*
-import groovy.sql.Sql
-
 
 title = 'Screen to Buildings'
 description = 'Screen to Buildings.'
@@ -29,15 +23,18 @@ inputs = [buildingTableName : [name: 'Buildings table name', title: 'Buildings t
 
 outputs = [tableNameCreated: [name: 'tableNameCreated', title: 'tableNameCreated', type: String.class]]
 
-def static Connection openPostgreSQLDataStoreConnection(String dbName) {
+static Connection openGeoserverDataStoreConnection(String dbName) {
+    if(dbName == null || dbName.isEmpty()) {
+        dbName = new GeoServer().catalog.getStoreNames().get(0)
+    }
     Store store = new GeoServer().catalog.getStore(dbName)
-    JDBCDataStore jdbcDataStore = (JDBCDataStore) store.getDataStoreInfo().getDataStore(null)
+    JDBCDataStore jdbcDataStore = (JDBCDataStore)store.getDataStoreInfo().getDataStore(null)
     return jdbcDataStore.getDataSource().getConnection()
 }
 
 def run(input) {
 
-    String screen_table_name =   screen_table_name = input['screenTableName']
+    String screen_table_name =  input['screenTableName']
     screen_table_name = screen_table_name.toUpperCase()
 
     String building_table_name = ""
@@ -48,16 +45,16 @@ def run(input) {
     building_table_name = building_table_name.toUpperCase()
 
     // Get name of the database
-    String dbName = "h2gisdb"
+    String dbName = ""
     if (input['databaseName']) {
         dbName = input['databaseName'] as String
     }
 
     // Open connection
-    openPostgreSQLDataStoreConnection(dbName).withCloseable { Connection connection ->
+    openGeoserverDataStoreConnection(dbName).withCloseable { Connection connection ->
         //Statement sql = connection.createStatement()
         Sql sql = new Sql(connection)
-        System.out.println("Delete previous Screens table...")
+
         sql.execute(String.format("DROP TABLE IF EXISTS SCREENS"))
         sql.execute("create table SCREENS as select * from " + screen_table_name )
 
@@ -83,7 +80,7 @@ def run(input) {
 
 
     }
-    System.out.println("Process Done !")
+
     return [tableNameCreated: "Process done ! Table BUILDINGS_SCREENS has been created"]
 }
 
