@@ -1,5 +1,5 @@
 /**
- * @Author Pierre Aumond
+ * @Author Pierre Aumond, Université Gustave Eiffel
  */
 
 package org.noise_planet.noisemodelling.wps.Others_Tools
@@ -22,9 +22,12 @@ inputs = [tableName : [name: 'table name', title: 'table name', type: String.cla
 
 outputs = [tableNameCreated: [name: 'tableNameCreated', title: 'tableNameCreated', type: String.class]]
 
-def static Connection openPostgreSQLDataStoreConnection(String dbName) {
+static Connection openGeoserverDataStoreConnection(String dbName) {
+    if(dbName == null || dbName.isEmpty()) {
+        dbName = new GeoServer().catalog.getStoreNames().get(0)
+    }
     Store store = new GeoServer().catalog.getStore(dbName)
-    JDBCDataStore jdbcDataStore = (JDBCDataStore) store.getDataStoreInfo().getDataStore(null)
+    JDBCDataStore jdbcDataStore = (JDBCDataStore)store.getDataStoreInfo().getDataStore(null)
     return jdbcDataStore.getDataSource().getConnection()
 }
 
@@ -37,13 +40,13 @@ def run(input) {
     int newEpsg = input['newEpsg']
 
     // Get name of the database
-    String dbName = "h2gisdb"
+    String dbName = ""
     if (input['databaseName']) {
         dbName = input['databaseName'] as String
     }
 
     // Open connection
-    openPostgreSQLDataStoreConnection(dbName).withCloseable { Connection connection ->
+    openGeoserverDataStoreConnection(dbName).withCloseable { Connection connection ->
         //Statement sql = connection.createStatement()
 
         int srid = SFSUtilities.getSRID(connection, TableLocation.parse(table_name))
