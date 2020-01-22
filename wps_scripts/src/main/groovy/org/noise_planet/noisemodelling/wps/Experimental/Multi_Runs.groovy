@@ -1,4 +1,4 @@
-package org.noise_planet.noisemodelling.wps
+package org.noise_planet.noisemodelling.wps.Experimental
 
 
 import com.fasterxml.jackson.databind.JsonNode;
