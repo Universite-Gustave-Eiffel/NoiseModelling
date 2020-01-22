@@ -132,12 +132,12 @@ def run(input) {
         sql.execute("ALTER TABLE "+ receivers_table_name +" DROP ID_ROW;" )
 
         if (input['fence']) {
-            System.out.println("Delete receivers near sources ...")
+            System.out.println("Delete receivers  ...")
             sql.execute("Create spatial index on FENCE_2154(the_geom);")
             sql.execute("delete from " + receivers_table_name + " g where exists (select 1 from FENCE_2154 r where ST_Disjoint(g.the_geom, r.the_geom) limit 1);")
         }
         if (input['fenceTableName']) {
-            System.out.println("Delete receivers near sources ...")
+            System.out.println("Delete receivers ...")
             sql.execute("Create spatial index on "+fence_table_name+"(the_geom);")
             sql.execute("delete from " + receivers_table_name + " g where exists (select 1 from "+fence_table_name+" r where ST_Disjoint(g.the_geom, r.the_geom) limit 1);")
         }
