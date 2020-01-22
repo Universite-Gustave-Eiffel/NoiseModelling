@@ -230,7 +230,7 @@ def run(input) {
 
                 } else{
                     String roadsImport = "DROP TABLE IF EXISTS ROADS;\n" +
-                            "CREATE TABLE ROADS(ID SERIAL,ID_WAY long , THE_GEOM LINESTRING CHECK ST_SRID(THE_GEOM)="+srid+", CLAS_ADM int, AADF int, SPEED int) as SELECT null, ID_WAY, THE_GEOM,\n" +
+                            "CREATE TABLE ROADS(PK SERIAL,ID_WAY long , THE_GEOM LINESTRING CHECK ST_SRID(THE_GEOM)="+srid+", CLAS_ADM int, AADF int, SPEED int) as SELECT null, ID_WAY, THE_GEOM,\n" +
                             "CASEWHEN(T = 'trunk', 21,\n" +
                             "CASEWHEN(T = 'primary', 41,\n" +
                             "CASEWHEN(T = 'secondary', 41,\n" +
@@ -244,6 +244,8 @@ def run(input) {
                     sql.execute(roadsImport)
                 }
 
+            sql.execute("ALTER TABLE ROADS ALTER COLUMN PK INT NOT NULL;" )
+            sql.execute("ALTER TABLE ROADS ADD PRIMARY KEY (PK);  " )
 
             tables.add("ROADS")
             }
@@ -251,7 +253,9 @@ def run(input) {
 
 
 
-
+        sql.execute("DROP TABLE MAP_ROADS_GEOM IF EXISTS;")
+        sql.execute("DROP TABLE MAP_SURFACE IF EXISTS;")
+        sql.execute("DROP TABLE MAP_ROADS_GEOM IF EXISTS;")
 
         osm_tables.each { tableName ->
             sql.execute("DROP TABLE IF EXISTS " + tableName)
