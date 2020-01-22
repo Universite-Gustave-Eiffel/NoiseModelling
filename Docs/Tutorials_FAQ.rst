@@ -32,3 +32,26 @@ OSM ?
 The geodata underlying the map is considered the primary output of the project.
 The creation and growth of OSM has been motivated by restrictions on use or availability of map data across much of the world, and the advent of inexpensive portable satellite navigation devices.
 OSM is considered a prominent example of volunteered geographic information.
+
+
+Metric SRID ?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Spatial reference systems can be referred to using a **SRID integer**, including EPSG codes.
+
+In several input files, you need to specify coordinates, e.g road network. It is
+strongly suggested not to use WGS84 coordinates (i.e. GPS coordinates). Acoustic propagation formulas make the assumption that coordinates are metric.
+Many countries and regions have custom coordinate system defined, optimized for usages in
+their appropriate areas. It might be best to ask some GIS specialists in your region of interest
+what the most commonly used local coordinate system is and use that as well for your data.
+If you don’t have any clue about what coordinate system is used in your region, it might be best
+to use the Universal Transverse Mercator coordinate system. This coordinate system divides the
+world into multiple bands, each six degrees width and separated into a northern and southern
+part, which is called UTM zones (see http://en.wikipedia.org/wiki/UTM_zones#UTM_
+zone for more details). For each zone, an optimized coordinate system is defined. Choose the
+UTM zone which covers your region (Wikipedia has a nice map showing the zones) and use its
+coordinate system.
+
+Here is the map : https://upload.wikimedia.org/wikipedia/commons/e/ed/Utm-zones.jpg
+
+.. note::
+  We recommand using the website https://epsg.io/ to find the appropriate **SRID** code for your location.
