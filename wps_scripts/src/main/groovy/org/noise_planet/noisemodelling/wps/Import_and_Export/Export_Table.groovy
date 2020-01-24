@@ -46,52 +46,59 @@ def run(input) {
 
         // Get name of the database
         String dbName = ""
-        if (input['databaseName']){dbName = input['databaseName'] as String}
+        if (input['databaseName']) {
+                dbName = input['databaseName'] as String
+        }
 
         // Open connection
         openGeoserverDataStoreConnection(dbName).withCloseable { Connection connection ->
-
-                String exportPath = input["exportPath"] as String
-                String tableToExport = input["tableToExport"] as String
-                tableToExport = tableToExport.toUpperCase()
-
-                String ext = exportPath.substring(exportPath.lastIndexOf('.') + 1, exportPath.length())
-                String success = "Table " + tableToExport + " successfully exported !"
-
-                switch (ext) {
-                        case "csv":
-                                CSVDriverFunction csvDriver = new CSVDriverFunction()
-                                csvDriver.exportTable(connection, tableToExport, new File(exportPath), new EmptyProgressVisitor())
-                                break
-                        case "dbf":
-                                DBFDriverFunction dbfDriver = new DBFDriverFunction()
-                                dbfDriver.exportTable(connection, tableToExport, new File(exportPath), new EmptyProgressVisitor())
-                                break
-                        case "geojson":
-                                GeoJsonDriverFunction geoJsonDriver = new GeoJsonDriverFunction()
-                                geoJsonDriver.exportTable(connection, tableToExport, new File(exportPath), new EmptyProgressVisitor())
-                                break
-                        case "json":
-                                JsonDriverFunction jsonDriver = new JsonDriverFunction()
-                                jsonDriver.exportTable(connection, tableToExport, new File(exportPath), new EmptyProgressVisitor())
-                                break
-                        case "kml":
-                                KMLDriverFunction kmlDriver = new KMLDriverFunction()
-                                kmlDriver.exportTable(connection, tableToExport, new File(exportPath), new EmptyProgressVisitor())
-                                break
-                        case "shp":
-                                SHPDriverFunction shpDriver = new SHPDriverFunction()
-                                shpDriver.exportTable(connection, tableToExport, new File(exportPath), new EmptyProgressVisitor())
-                                break
-                        case "tsv":
-                                TSVDriverFunction tsvDriver = new TSVDriverFunction()
-                                tsvDriver.exportTable(connection, tableToExport, new File(exportPath), new EmptyProgressVisitor())
-                                break
-                        default:
-                                success = "Error ! table not exported"
-                                break
-                }
-
-                return [result: success]
+                exec(connection, input)
         }
+}
+
+def exec(connection, input) {
+
+        String exportPath = input["exportPath"] as String
+        String tableToExport = input["tableToExport"] as String
+        tableToExport = tableToExport.toUpperCase()
+
+        String ext = exportPath.substring(exportPath.lastIndexOf('.') + 1, exportPath.length())
+        String success = "Table " + tableToExport + " successfully exported !"
+
+        switch (ext) {
+                case "csv":
+                        CSVDriverFunction csvDriver = new CSVDriverFunction()
+                        csvDriver.exportTable(connection, tableToExport, new File(exportPath), new EmptyProgressVisitor())
+                        break
+                case "dbf":
+                        DBFDriverFunction dbfDriver = new DBFDriverFunction()
+                        dbfDriver.exportTable(connection, tableToExport, new File(exportPath), new EmptyProgressVisitor())
+                        break
+                case "geojson":
+                        GeoJsonDriverFunction geoJsonDriver = new GeoJsonDriverFunction()
+                        geoJsonDriver.exportTable(connection, tableToExport, new File(exportPath), new EmptyProgressVisitor())
+                        break
+                case "json":
+                        JsonDriverFunction jsonDriver = new JsonDriverFunction()
+                        jsonDriver.exportTable(connection, tableToExport, new File(exportPath), new EmptyProgressVisitor())
+                        break
+                case "kml":
+                        KMLDriverFunction kmlDriver = new KMLDriverFunction()
+                        kmlDriver.exportTable(connection, tableToExport, new File(exportPath), new EmptyProgressVisitor())
+                        break
+                case "shp":
+                        SHPDriverFunction shpDriver = new SHPDriverFunction()
+                        shpDriver.exportTable(connection, tableToExport, new File(exportPath), new EmptyProgressVisitor())
+                        break
+                case "tsv":
+                        TSVDriverFunction tsvDriver = new TSVDriverFunction()
+                        tsvDriver.exportTable(connection, tableToExport, new File(exportPath), new EmptyProgressVisitor())
+                        break
+                default:
+                        success = "Error ! table not exported"
+                        break
+        }
+
+        return [result: success]
+
 }
