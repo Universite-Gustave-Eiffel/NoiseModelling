@@ -1,75 +1,41 @@
-package org.noise_planet.noisemodelling.wps.NoiseModelling
+package org.noise_planet.noisemodelling.wps.Experimental
 
-/*
- * @Author Pierre Aumond
+/**
+ * @Author Pierre Aumond, Université Gustave Eiffel
  */
-
-import com.opencsv.CSVWriter
-
 import geoserver.GeoServer
 import geoserver.catalog.Store
 
 import groovy.sql.Sql
-import groovy.transform.CompileStatic
-import org.locationtech.jts.algorithm.Angle
 import org.locationtech.jts.math.Vector3D
-
-import java.util.ArrayList
-import java.util.Arrays
-import java.util.List
-import java.text.DateFormat
-import java.text.DecimalFormat
-import java.text.SimpleDateFormat
-import java.lang.Double.*
-import java.sql.Connection
-import java.sql.DriverManager
-import java.sql.Statement
-import java.sql.PreparedStatement
-import java.sql.SQLException
-
-import javax.xml.stream.XMLStreamException
-
-import org.cts.crs.CRSException
-
-import org.geotools.jdbc.JDBCDataStore
-
-import groovy.transform.CompileStatic
-
-import org.h2gis.utilities.SFSUtilities
-import org.h2gis.api.EmptyProgressVisitor
-import org.h2gis.utilities.wrapper.*
-import org.h2gis.api.EmptyProgressVisitor
-import org.h2gis.api.ProgressVisitor
-import org.h2gis.functions.io.shp.SHPRead
-import org.h2gis.utilities.SpatialResultSet
-
-import org.locationtech.jts.geom.Geometry
-import org.locationtech.jts.geom.Coordinate
-
-import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
-import org.noise_planet.noisemodelling.emission.RSParametersCnossos
-
-import org.noise_planet.noisemodelling.propagation.*
 import org.noise_planet.noisemodelling.propagation.ComputeRays
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOut
-import org.noise_planet.noisemodelling.propagation.IComputeRaysOut
-import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap
 import org.noise_planet.noisemodelling.propagation.FastObstructionTest
+import org.noise_planet.noisemodelling.propagation.IComputeRaysOut
 import org.noise_planet.noisemodelling.propagation.PropagationPath
 import org.noise_planet.noisemodelling.propagation.PropagationProcessData
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
 import org.noise_planet.noisemodelling.propagation.RootProgressVisitor
 
-import org.noisemodellingwps.utilities.WpsConnectionWrapper
+import java.sql.Connection
+import java.sql.SQLException
 
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
+import org.geotools.jdbc.JDBCDataStore
 
+import groovy.transform.CompileStatic
+import org.h2gis.utilities.wrapper.*
+import org.h2gis.api.EmptyProgressVisitor
+import org.h2gis.api.ProgressVisitor
+import org.h2gis.utilities.SpatialResultSet
+
+import org.locationtech.jts.geom.Geometry
+import org.locationtech.jts.geom.Coordinate
+import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap
 
 title = 'Compute Dynamic NoiseMap'
 description = 'Compute Dynamic NoiseMap from individual moving point sources'
 
-inputs = [databaseName      : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database (default : first found db)', min: 0, max: 1, type: String.class],
+inputs = [databaseName      : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database. (default : h2gisdb)', min: 0, max: 1, type: String.class],
           buildingTableName : [name: 'Buildings table name', title: 'Buildings table name', type: String.class],
           sourcesTimeTableName  : [name: 'Sources Time table name', title: 'Sources Time table name',description: 'Column idSource, column idPosition, column idTime', type: String.class],
           sourcesPositionTableName  : [name: 'Sources position table name', title: 'Sources position table name',description: 'Column the_geom, column idPosition', type: String.class],
@@ -337,7 +303,7 @@ def run(input) {
         pointNoiseMap.setSourceHasAbsoluteZCoordinates(false)
 
         // Building height field name
-        pointNoiseMap.setHeightField("HAUTEUR")
+        pointNoiseMap.setHeightField("HEIGHT")
         // Import table with Snow, Forest, Grass, Pasture field polygons. Attribute G is associated with each polygon
         if (ground_table_name != "") {
             pointNoiseMap.setSoilTableName(ground_table_name)
@@ -391,91 +357,92 @@ def run(input) {
         def qry = 'INSERT INTO LDAY(TIME , IDRECEIVER,Hz63, Hz125, Hz250, Hz500, Hz1000,Hz2000, Hz4000, Hz8000) VALUES (?,?,?,?,?,?,?,?,?,?);'
 
         Map<Integer, Coordinate> geomReceivers = new HashMap<>()
+
         sql.eachRow('SELECT PK,ST_X(the_geom),ST_Y(the_geom),ST_Z(the_geom) FROM RECEIVERS;') { row ->
             geomReceivers.put(row[0], new Coordinate(row[1] as Double, row[2] as Double, row[3] as Double))
 
         }
 
-        Map<Integer, double[]> geomSources = new HashMap<>()
+        Map<Integer, double[]> geomFixedSources = new HashMap<>()
         sql.eachRow('SELECT PK, ST_X(the_geom),ST_Y(the_geom),ST_Z(the_geom) FROM '+sources_position_table_name+' ;') { row ->
-            geomSources.put((int) row[0], [row[1] as Double, row[2] as Double, row[3] as Double])
+            geomFixedSources.put((int) row[0], [row[1] as Double, row[2] as Double, row[3] as Double])
         }
+
+        sql.execute("CREATE SPATIAL INDEX ON "+sources_position_table_name+"(THE_GEOM);")
+        sql.execute("drop table if exists closest_point;")
+        sql.execute("create table closest_point as SELECT b.pk PK_TIME,b.the_geom, (SELECT a.PK FROM "+sources_position_table_name+" a WHERE ST_EXPAND(b.the_geom,50,50) && a.the_geom ORDER BY ST_Distance(a.the_geom, b.the_geom) ASC LIMIT 1) PK_POSITION FROM "+sources_time_table_name+" b ;")
+
+        sql.execute("drop table if exists "+sources_time_table_name+"_with_pkPosition;")
+        sql.execute("create table "+sources_time_table_name+"_with_pkPosition AS SELECT  a.PK PK, b.PK_POSITION PK_POSITION, a.PHI PHI, a.T T, a.idSource idSource FROM "+sources_time_table_name+" a, closest_point b WHERE a.PK = b.PK_TIME ;")
 
         for (int t = 1; t <= 100; t++) {
             System.out.println(t.toString())
 
             Map<Integer, double[]> soundLevels = new HashMap<>()
 
-            sql.eachRow('SELECT PK, PHI, T FROM ' + sources_time_table_name + ' WHERE T = ' + t.toString() + ';') { row ->
+            sql.eachRow('SELECT PK, PK_POSITION, PHI, T, idSource FROM ' + sources_time_table_name + '_with_pkPosition WHERE T = ' + t.toString() + ';') { row ->
 
-                int time = row[2]
-                int idSource = 1
-                int idPositionDynamic = row[0]
-                double phiHelico = row[1]
+                System.println(row)
+                int time = row[3]
+                int idSource = row[4]
+                int pk = row[0]
+                int idPositionDynamic = row[1]
+                double phiHelico = row[2]
 
                 for (int i = 0; i < allLevels.size(); i++) {
                     int idPositionFix = (Integer) allLevels.get(i).sourceId
                     if (idPositionFix == idPositionDynamic) {
                         int idReceiver = (Integer) allLevels.get(i).receiverId
-                        Coordinate A = new Coordinate(geomSources.get(idPositionFix)[0], geomSources.get(idPositionFix)[1], geomSources.get(idPositionFix)[2])
+                        System.println(idReceiver)
+                        Coordinate A = new Coordinate(geomFixedSources.get(idPositionFix)[0], geomFixedSources.get(idPositionFix)[1], geomFixedSources.get(idPositionFix)[2])
                         Coordinate B = geomReceivers.get(idReceiver)
                         Vector3D vector = new Vector3D(A, B)
 
                         double r = A.distance3D(B)
-
                         double angle = Math.atan2(vector.getY(), vector.getX())
                         if (angle < 0) angle = angle + 2 * 3.14
                         angle = angle * 360 / (2 * 3.14)
                         double phi = angle - phiHelico
                         if (phi < 0) phi = phi + 360
                         double theta = 180 - (Math.acos(vector.getZ() / r) * 180 / 3.14)
+
                         double[] soundLevel = allLevels.get(i).value
-
-                        double[] sourceLev = dynamicProcessData.getDroneLevel(sources_time_table_name, sql, t, idPositionFix, theta, phi)
-
+                        double[] sourceLev = droneProcessData.getDroneLevel(sources_time_table_name, sql, t, idPositionFix, theta, phi)
                         if (soundLevels.containsKey(idReceiver)) {
                             soundLevel = ComputeRays.sumDbArray(sumLinearArray(soundLevel, sourceLev), soundLevels.get(idReceiver))
                             soundLevels.replace(idReceiver, soundLevel)
                         } else {
-
                             soundLevels.put(idReceiver, sumLinearArray(soundLevel, sourceLev))
-
                         }
-
-
-                    }
-
-
-
-                }
-
-
-                sql.withBatch(100, qry) { ps ->
-                    for (Map.Entry<Integer, double[]> entry : soundLevels.entrySet()) {
-                        Integer key = entry.getKey()
-                        double[] value = entry.getValue()
-                        value = DBToDBA(value)
-                        ps.addBatch(t as Integer, key as Integer,
-                                value[0] as Double, value[1] as Double, value[2] as Double,
-                                value[3] as Double, value[4] as Double, value[5] as Double,
-                                value[6] as Double, value[7] as Double)
-
-
                     }
                 }
-
 
 
             }
+            System.println("print...")
+            sql.withBatch(100, qry) { ps ->
+                for (Map.Entry<Integer, double[]> entry : soundLevels.entrySet()) {
+                    Integer key = entry.getKey()
+                    double[] value = entry.getValue()
+                    value = DBToDBA(value)
+                    ps.addBatch(t as Integer, key as Integer,
+                            value[0] as Double, value[1] as Double, value[2] as Double,
+                            value[3] as Double, value[4] as Double, value[5] as Double,
+                            value[6] as Double, value[7] as Double)
+
+
+                }
+            }
+
         }
 
 
         System.out.println("Join Results with Geometry")
         sql.execute("CREATE INDEX ON LDAY(IDRECEIVER);")
-        sql.execute("CREATE INDEX ON RECEIVERS(ID);")
+        sql.execute("CREATE INDEX ON RECEIVERS(PK);")
 
-        sql.execute("drop table if exists LDAY_GEOM;")
-        sql.execute("create table LDAY_GEOM  as select a. TIME,a.IDRECEIVER, b.THE_GEOM, a.Hz63, a.Hz125, a.Hz250, a.Hz500, a.Hz1000, a.Hz2000, a.Hz4000, a.Hz8000  FROM LDAY a LEFT JOIN  RECEIVERS b  ON a.IDRECEIVER = b.ID;")
+        sql.execute("drop table if exists LDRONE_GEOM;")
+        sql.execute("create table LDRONE_GEOM  as select a.TIME ,a.IDRECEIVER, b.THE_GEOM, a.Hz63, a.Hz125, a.Hz250, a.Hz500, a.Hz1000, a.Hz2000, a.Hz4000, a.Hz8000  FROM LDAY a LEFT JOIN  RECEIVERS b  ON a.IDRECEIVER = b.PK;")
 
 
         System.out.println("Done !")
@@ -483,7 +450,7 @@ def run(input) {
 
         long computationTime = System.currentTimeMillis() - start
 
-        return [result: "Calculation Done !"]
+        return [result: "Calculation Done ! LDRONE_GEOM has been created !"]
 
 
     }

@@ -1,29 +1,15 @@
-package org.noise_planet.noisemodelling.wps.NoiseModelling
+package org.noise_planet.noisemodelling.wps.Experimental
 
-/*
- * @Author Pierre Aumond
+/**
+ * @Author Pierre Aumond, Université Gustave Eiffel.
+ * @Author Arnaud Can, Université Gustave Eiffel
  */
-
-import com.opencsv.CSVWriter
-
 import geoserver.GeoServer
 import geoserver.catalog.Store
 
 import groovy.sql.Sql
-import groovy.transform.CompileStatic
-import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceDynamic
-import org.noise_planet.noisemodelling.emission.RSParametersDynamic
-
-import java.util.ArrayList
-import java.util.List
-import java.text.DateFormat
-import java.text.DecimalFormat
-import java.text.SimpleDateFormat
 
 import java.sql.Connection
-import java.sql.DriverManager
-import java.sql.Statement
-import java.sql.PreparedStatement
 import java.sql.SQLException
 
 import javax.xml.stream.XMLStreamException
@@ -33,42 +19,19 @@ import org.cts.crs.CRSException
 import org.geotools.jdbc.JDBCDataStore
 
 import groovy.transform.CompileStatic
-
-import org.h2gis.utilities.SFSUtilities
-import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.utilities.wrapper.*
 import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.api.ProgressVisitor
-import org.h2gis.functions.io.shp.SHPRead
 import org.h2gis.utilities.SpatialResultSet
 
 import org.locationtech.jts.geom.Geometry
-import org.locationtech.jts.geom.Coordinate
-
-import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
-import org.noise_planet.noisemodelling.emission.RSParametersCnossos
-
 import org.noise_planet.noisemodelling.propagation.*
-import org.noise_planet.noisemodelling.propagation.ComputeRays
-import org.noise_planet.noisemodelling.propagation.ComputeRaysOut
-import org.noise_planet.noisemodelling.propagation.IComputeRaysOut
 import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap
-import org.noise_planet.noisemodelling.propagation.FastObstructionTest
-import org.noise_planet.noisemodelling.propagation.PropagationPath
-import org.noise_planet.noisemodelling.propagation.PropagationProcessData
-import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
-import org.noise_planet.noisemodelling.propagation.RootProgressVisitor
-
-import org.noisemodellingwps.utilities.WpsConnectionWrapper
-
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-
 
 title = 'Compute Dynamic NoiseMap'
 description = 'Compute Dynamic NoiseMap from individual moving point sources'
 
-inputs = [databaseName      : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database (default : first found db)', min: 0, max: 1, type: String.class],
+inputs = [databaseName      : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database. (default : h2gisdb)', min: 0, max: 1, type: String.class],
           buildingTableName : [name: 'Buildings table name', title: 'Buildings table name', type: String.class],
           sourcesTableName  : [name: 'Sources table name', title: 'Sources table name', type: String.class],
           receiversTableName: [name: 'Receivers table name', title: 'Receivers table name', type: String.class],
@@ -170,7 +133,6 @@ class DynamicPropagationProcessDataFactory implements PointNoiseMap.PropagationP
         return new DynamicPropagationProcessData(freeFieldFinder)
     }
 }
-
 
 static Connection openGeoserverDataStoreConnection(String dbName) {
     if(dbName == null || dbName.isEmpty()) {

@@ -1,15 +1,15 @@
 /**
-* @Author Nicolas Fortin
-* @Author Pierre Aumond
-*/
+ * @Author Nicolas Fortin, Université Gustave Eiffel
+ * @Author Pierre Aumond, Université Gustave Eiffel
+ */
 
 package org.noise_planet.noisemodelling.wps.Database_Manager
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
-
 import java.sql.Connection
 import java.sql.Statement
 
@@ -17,12 +17,12 @@ title = 'Drop_a_Table'
 description = 'Delete a table from the database'
 
 inputs = [
-  databaseName: [name: 'Name of the database', title: 'Name of the database', description : 'Name of the database (default : first found db)', min : 0, max : 1, type: String.class],
-  tableToDrop: [name: 'tableToDrop', description : 'Do not write the name of a table that contains a space.', title: 'Name of the table to drop', type: String.class]
+        databaseName: [name: 'Name of the database', title: 'Name of the database', description : 'Name of the database (default : first found db)', min : 0, max : 1, type: String.class],
+        tableToDrop: [name: 'tableToDrop', description : 'Do not write the name of a table that contains a space.', title: 'Name of the table to drop', type: String.class]
 ]
 
 outputs = [
-    result: [name: 'result', title: 'result', type: String.class]
+        result: [name: 'result', title: 'result', type: String.class]
 ]
 
 static Connection openGeoserverDataStoreConnection(String dbName) {
@@ -56,8 +56,8 @@ def run(input) {
 
                 if (tab.getTable()==table)   {
                     Statement stmt = connection.createStatement()
-                    String dropTable = "Drop table if exists " + table 
-                    stmt.execute(dropTable)   
+                    String dropTable = "Drop table if exists " + table
+                    stmt.execute(dropTable)
                     returnString = "The table " + table + " was dropped !"
                     flag = 1
                 }
@@ -65,7 +65,7 @@ def run(input) {
                 if (flag==0) returnString = "The table to drop was not found"
             }
         }
-    
+
         return [result: returnString]
     }
 }

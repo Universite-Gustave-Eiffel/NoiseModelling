@@ -1,7 +1,7 @@
 /**
-* @Author Nicolas Fortin
-* @Author Pierre Aumond
-*/
+ * @Author Nicolas Fortin, Université Gustave Eiffel
+ * @Author Pierre Aumond, Université Gustave Eiffel
+ */
 
 package org.noise_planet.noisemodelling.wps.Database_Manager
 
@@ -23,13 +23,13 @@ title = 'Visualize a Table'
 description = 'Groups all the geometries of a table and returns them in WKT OGC format. Be careful, this treatment can be blocking if the table is large.'
 
 inputs = [
-   databaseName: [name: 'Name of the database', title: 'Name of the database', description : 'Name of the database (default : first found db)', min : 0, max : 1, type: String.class],
-   inputSRID:  [name: 'inputSRID', title: 'Projection identifier', description: 'All coordinates will be projected from the specified SRID to WGS84 coordinates. ex: 3857 is Web Mercator projection', type: Integer.class, min: 0, max: 1],
-   tableName: [name: 'Table Name', title: 'Table Name', description: 'Table Name', type: String.class]
+        databaseName: [name: 'Name of the database', title: 'Name of the database', description : 'Name of the database (default : first found db)', min : 0, max : 1, type: String.class],
+        inputSRID:  [name: 'inputSRID', title: 'Projection identifier', description: 'All coordinates will be projected from the specified SRID to WGS84 coordinates. ex: 3857 is Web Mercator projection', type: Integer.class, min: 0, max: 1],
+        tableName: [name: 'Table Name', title: 'Table Name', description: 'Table Name', type: String.class]
 ]
 
 outputs = [
-    result: [name: 'Result', title: 'Result', type: Geometry.class]
+        result: [name: 'Result', title: 'Result', type: Geometry.class]
 ]
 
 

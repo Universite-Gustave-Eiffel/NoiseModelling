@@ -3,9 +3,9 @@ package org.noise_planet.noisemodelling.wps.NoiseModelling
 import geoserver.GeoServer;
 
 /*
- * @Author Hesry Quentin
- * @Author Pierre Aumond
- * @Author Nicolas Fortin
+ * @Author Hesry Quentin, Université Gustave Eiffel
+ * @Author Pierre Aumond, Université Gustave Eiffel
+ * @Author Nicolas Fortin, Université Gustave Eiffel
  */
 
 import geoserver.catalog.Store
@@ -43,7 +43,7 @@ inputs = [databaseName      : [name: 'Name of the database', title: 'Name of the
           computeVertical   : [name: 'Compute vertical diffraction', title: 'Compute vertical diffraction', description: 'Compute or not the vertical diffraction (default = false)', min: 0, max: 1, type: Boolean.class],
           computeHorizontal : [name: 'Compute horizontal diffraction', title: 'Compute horizontal diffraction', description: 'Compute or not the horizontal diffraction (default = false)', min: 0, max: 1, type: Boolean.class],
           outputTableName: [name: 'outputTableName', description: 'Do not write the name of a table that contains a space. (default : file name without extension)', title: 'Name of output table', min: 0, max: 1, type: String.class]
-          ]
+]
 
 outputs = [result: [name: 'result', title: 'Result', type: String.class]]
 
@@ -294,7 +294,7 @@ def run(input) {
     }
 
     // ----------------------------------
-    // Start... 
+    // Start...
     // ----------------------------------
 
     List<ComputeRaysOut.verticeSL> allLevels = new ArrayList<>()
@@ -426,7 +426,7 @@ def run(input) {
         }
 
         sql.execute("drop table if exists "+outputTableName+";")
-        sql.execute("create table "+outputTableName+" as select a.IDRECEIVER, b.THE_GEOM, a.Hz63, a.Hz125, a.Hz250, a.Hz500, a.Hz1000, a.Hz2000, a.Hz4000, a.Hz8000 FROM RECEIVERS b LEFT JOIN LDAY a ON a.IDRECEIVER = b.ID;")
+        sql.execute("create table "+outputTableName+" as select a.IDRECEIVER, b.THE_GEOM, a.Hz63, a.Hz125, a.Hz250, a.Hz500, a.Hz1000, a.Hz2000, a.Hz4000, a.Hz8000 FROM RECEIVERS b LEFT JOIN LDAY a ON a.IDRECEIVER = b.PK;")
 
 
         long computationTime = System.currentTimeMillis() - start;

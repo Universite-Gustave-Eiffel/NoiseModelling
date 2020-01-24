@@ -1,5 +1,5 @@
 /**
- * @Author Aumond Pierre
+ * @Author Aumond Pierre, Université Gustave Eiffel
  */
 
 package org.noise_planet.noisemodelling.wps.Import_and_Export
@@ -16,6 +16,8 @@ import org.h2gis.functions.io.gpx.GPXDriverFunction
 import org.h2gis.functions.io.osm.OSMDriverFunction
 import org.h2gis.functions.io.shp.SHPDriverFunction
 import org.h2gis.functions.io.tsv.TSVDriverFunction
+import org.h2gis.utilities.SFSUtilities
+import org.h2gis.utilities.TableLocation
 
 import java.sql.Connection
 import java.sql.Statement
@@ -25,6 +27,7 @@ description = 'Import file into a database table (csv, dbf, geojson, gpx, bz2, g
 
 inputs = [pathFile       : [name: 'Path of the input File', description: 'Path of the input File (including extension .csv, .shp, etc.)', title: 'Path of the input File', type: String.class],
           databaseName   : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database (default : first found db)', min: 0, max: 1, type: String.class],
+          defaultSRID   : [name: 'Default SRID', title: 'Default SRID', description: 'If the layer does not include SRID properties, it will take this value (default : 4326)', min: 0, max: 1, type: Integer.class],
           outputTableName: [name: 'outputTableName', description: 'Do not write the name of a table that contains a space. (default : file name without extension)', title: 'Name of output table', min: 0, max: 1, type: String.class]]
 
 outputs = [tableNameCreated: [name: 'tableNameCreated', title: 'tableNameCreated', type: String.class]]
@@ -44,6 +47,11 @@ def run(input) {
     String dbName = ""
     if (input['databaseName']) {
         dbName = input['databaseName'] as String
+    }
+
+    Integer defaultSRID = 4326
+    if (input['defaultSRID']) {
+        defaultSRID = input['defaultSRID'] as Integer
     }
 
     // Open connection
@@ -103,19 +111,26 @@ def run(input) {
                 break
         }
 
-           
+        int srid = SFSUtilities.getSRID(connection, TableLocation.parse(outputTableName))
+        if(srid == 0) {
+            connection.createStatement().execute(String.format("UPDATE %s SET THE_GEOM = ST_SetSRID(the_geom,%d)",
+                    TableLocation.parse(outputTableName).toString(), defaultSRID))
+
+        }
+
+
         def file = new File(pathFile)
         String returnString = null
 
-         if (file.exists())
-         {          
-             returnString = "The table " + outputTableName + " has been uploaded to database!"
-             }
-             else 
-             {
-                 returnString = "The input file is not found"
-                 }
- 
+        if (file.exists())
+        {
+            returnString = "The table " + outputTableName + " has been uploaded to database!"
+        }
+        else
+        {
+            returnString = "The input file is not found"
+        }
+
 
         return [tableNameCreated: returnString]
 

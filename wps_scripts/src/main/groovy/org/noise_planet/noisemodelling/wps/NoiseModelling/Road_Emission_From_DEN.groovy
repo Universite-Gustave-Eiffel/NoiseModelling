@@ -1,51 +1,25 @@
 package org.noise_planet.noisemodelling.wps.NoiseModelling
 
-/*
- * @Author Pierre Aumond 13/11/2019
+/**
+ * @Author Pierre Aumond, Université Gustave Eiffel
  */
-
-import geoserver.GeoServer
 import geoserver.catalog.Store
-
-import org.h2gis.api.ProgressVisitor
+import geoserver.GeoServer
+import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.utilities.JDBCUtilities
+import org.h2gis.utilities.SFSUtilities
+import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.TableLocation
-import org.locationtech.jts.geom.Coordinate
-import org.locationtech.jts.geom.Envelope
+import org.h2gis.utilities.wrapper.ConnectionWrapper
+import org.locationtech.jts.geom.Geometry
 import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
 import org.noise_planet.noisemodelling.emission.RSParametersCnossos
-import org.noise_planet.noisemodelling.propagation.ComputeRays
-import org.noise_planet.noisemodelling.propagation.FastObstructionTest
-import org.noise_planet.noisemodelling.propagation.PropagationProcessData
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
 
-import javax.xml.stream.XMLStreamException
-import org.cts.crs.CRSException
-
 import java.sql.Connection
-import java.sql.DriverManager
-import java.sql.ResultSet
-import java.sql.Statement
 import java.sql.PreparedStatement
-import groovy.sql.Sql
-import org.h2gis.utilities.SFSUtilities
-import org.h2gis.api.EmptyProgressVisitor
-import org.noisemodellingwps.utilities.WpsConnectionWrapper
-import org.h2gis.utilities.wrapper.*
-
-import org.noise_planet.noisemodelling.propagation.*
-import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-
-import org.h2gis.utilities.SpatialResultSet
-import org.locationtech.jts.geom.Geometry
-
-
 import java.sql.SQLException
-import java.util.ArrayList
-import java.util.List
 
 title = 'Compute Road Emission'
 description = 'Compute Road Emission Noise Map from Day Evening Night traffic flow rate and speed estimates. '
@@ -233,7 +207,7 @@ static double[][] computeLw(Long pk, Geometry geom, SpatialResultSet rs) throws 
 
     // Evening
     for (int h = LDAY_STOP_HOUR; h < LEVENING_STOP_HOUR; h++) {
-         int idFreq = 0
+        int idFreq = 0
         for(int freq : PropagationProcessPathData.freq_lvl) {
             RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedE, hvSpeedE, hvSpeedE, lvSpeedE,
                     lvSpeedE, Math.max(0, tvE - hvE), hvE, 0, 0, 0, freq, Temperature,

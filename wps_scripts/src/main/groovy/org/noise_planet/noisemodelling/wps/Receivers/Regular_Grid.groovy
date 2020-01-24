@@ -1,5 +1,5 @@
 /**
- * @Author Aumond Pierre
+ * @Author Aumond Pierre, Université Gustave Eiffel
  */
 
 package org.noise_planet.noisemodelling.wps.Receivers
@@ -25,7 +25,6 @@ inputs = [buildingTableName : [name: 'Buildings table name', title: 'Buildings t
 
 outputs = [tableNameCreated: [name: 'tableNameCreated', title: 'tableNameCreated', type: String.class]]
 
-
 static Connection openGeoserverDataStoreConnection(String dbName) {
     if(dbName == null || dbName.isEmpty()) {
         dbName = new GeoServer().catalog.getStoreNames().get(0)
@@ -34,7 +33,6 @@ static Connection openGeoserverDataStoreConnection(String dbName) {
     JDBCDataStore jdbcDataStore = (JDBCDataStore)store.getDataStoreInfo().getDataStore(null)
     return jdbcDataStore.getDataSource().getConnection()
 }
-
 def run(input) {
 
     String receivers_table_name = "RECEIVERS"
@@ -85,9 +83,9 @@ def run(input) {
 
     // Open connection
     openGeoserverDataStoreConnection(dbName).withCloseable { Connection connection ->
-        //Statement sql = connection.createStatement()
+
         Sql sql = new Sql(connection)
-        // Delete previous receivers grid
+       //Delete previous receivers grid.
         sql.execute(String.format("DROP TABLE IF EXISTS %s", receivers_table_name))
         String queryGrid = null
 
@@ -123,7 +121,7 @@ def run(input) {
 
         sql.execute(queryGrid)
 
-         // New receivers grid created
+         //New receivers grid created .
 
         sql.execute("Create spatial index on "+receivers_table_name+"(the_geom);")
         sql.execute("UPDATE "+receivers_table_name+" SET THE_GEOM = ST_UPDATEZ(The_geom,"+h+");")
@@ -133,33 +131,30 @@ def run(input) {
         sql.execute("ALTER TABLE "+ receivers_table_name +" DROP ID_ROW;" )
 
         if (input['fence']) {
-            // Delete receivers near sources
+            //Delete receivers
             sql.execute("Create spatial index on FENCE_2154(the_geom);")
             sql.execute("delete from " + receivers_table_name + " g where exists (select 1 from FENCE_2154 r where ST_Disjoint(g.the_geom, r.the_geom) limit 1);")
         }
         if (input['fenceTableName']) {
-            // Delete receivers near sources
+            //Delete receivers
             sql.execute("Create spatial index on "+fence_table_name+"(the_geom);")
             sql.execute("delete from " + receivers_table_name + " g where exists (select 1 from "+fence_table_name+" r where ST_Disjoint(g.the_geom, r.the_geom) limit 1);")
         }
 
-
         if (input['buildingTableName']) {
-            // Delete receivers inside buildings
-            sql.execute("UPDATE "+building_table_name+" SET THE_GEOM = ST_SetSRID(The_geom,2154);")
+            //Delete receivers inside buildings
             sql.execute("Create spatial index on "+building_table_name+"(the_geom);")
-            sql.execute("delete from "+receivers_table_name+" g where exists (select 1 from "+building_table_name+" b where g.the_geom && b.the_geom and ST_distance(b.the_geom, g.the_geom) < 1 limit 1);")
+            sql.execute("delete from "+receivers_table_name+" g where exists (select 1 from "+building_table_name+" b where ST_Z(g.the_geom) < b.HEIGHT and g.the_geom && b.the_geom and ST_INTERSECTS(g.the_geom, b.the_geom) and ST_distance(b.the_geom, g.the_geom) < 1 limit 1);")
         }
         if (input['sourcesTableName']) {
-            // Delete receivers near sources
+            //Delete receivers near sources
             sql.execute("Create spatial index on "+sources_table_name+"(the_geom);")
             sql.execute("delete from "+receivers_table_name+" g where exists (select 1 from "+sources_table_name+" r where st_expand(g.the_geom, 1) && r.the_geom and st_distance(g.the_geom, r.the_geom) < 1 limit 1);")
         }
-        sql.execute("UPDATE "+receivers_table_name+" SET THE_GEOM = ST_SetSRID(The_geom,2154);")
 
 
     }
 
-    return [tableNameCreated: "Process done. Table of receivers "+ receivers_table_name +" created !"]
+     return [tableNameCreated: "Process done. Table of receivers "+ receivers_table_name +" created !"]
 }
 

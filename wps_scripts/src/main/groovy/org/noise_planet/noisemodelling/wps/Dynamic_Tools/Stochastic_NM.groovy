@@ -1,7 +1,7 @@
-package org.noise_planet.noisemodelling.wps.NoiseModelling;
+package org.noise_planet.noisemodelling.wps.Dynamic_Tools;
 
-/*
- * @Author Pierre Aumond
+/**
+ * @Author Pierre Aumond, Université Gustave Eiffel
  */
 import groovy.sql.Sql
 import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceDynamic
@@ -31,7 +31,7 @@ import java.sql.SQLException
 title = 'Stochastic Map'
 description = 'Compute Stochastic Map.'
 
-inputs = [databaseName      : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database (default : first found db)', min: 0, max: 1, type: String.class],
+inputs = [databaseName      : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database. (default : h2gisdb)', min: 0, max: 1, type: String.class],
           buildingTableName : [name: 'Buildings table name', title: 'Buildings table name', type: String.class],
           sourcesTableName  : [name: 'Sources table name', title: 'Sources table name', type: String.class],
           receiversTableName: [name: 'Receivers table name', title: 'Receivers table name', type: String.class],
@@ -59,6 +59,8 @@ static Connection openGeoserverDataStoreConnection(String dbName) {
     JDBCDataStore jdbcDataStore = (JDBCDataStore)store.getDataStoreInfo().getDataStore(null)
     return jdbcDataStore.getDataSource().getConnection()
 }
+
+
 
 def run(input) {
 
@@ -160,7 +162,7 @@ def run(input) {
     // All rays storage
 
     // Open connection
-    openGeoserverDataStoreConnection(dbName).withCloseable { Connection connection ->
+    openGeoserverDataStoreConnection(dbName).withCloseable {
 
         //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postgis database
         connection = new ConnectionWrapper(connection)
@@ -217,34 +219,32 @@ def run(input) {
 
 
         sql.execute("set @grid_density=10;\n" +
-                "set @PL_D=0.1;\n" +
-                "set @SPEED_CST=50;\n" +
                 "drop table TRAFIC_DENSITY if exists;\n" +
-                "create table TRAFIC_DENSITY (the_geom geometry, TV int, PL INT, SPEED double, DENSITY_TV double, DENSITY_PL double, DENSITY_TOT double) as \n" +
-                "    select THE_GEOM, AADF - (AADF*@PL_D/100), AADF*@PL_D/100, \n" +
-                "        case when @SPEED_CST < 20 then 20 \n" +
-                "            else @SPEED_CST end, \n" +
-                "        case when @SPEED_CST< 20 then 0.001*(AADF - (AADF*@PL_D/100))/20 \n" +
-                "            else 0.001*(AADF - (AADF*@PL_D/100))/@SPEED_CST end, \n" +
-                "        case when @SPEED_CST< 20 then 0.001*(AADF*@PL_D/100)/20 \n" +
-                "            else 0.001*(AADF*@PL_D/100)/@SPEED_CST end, \n" +
-                "        case when @SPEED_CST< 20 then 0.001*(AADF)/20 \n" +
-                "            else 0.001*(AADF)/@SPEED_CST end \n" +
-                "        from ROADS WHERE (AADF IS NOT NULL);" +
+                "create table TRAFIC_DENSITY (the_geom geometry, LV int, HV INT, SPEED double, DENSITY_LV double, DENSITY_HV double, DENSITY_TV double) as \n" +
+                "    select THE_GEOM, TV_D - HV_D, HV_D , \n" +
+                "        case when LV_SPD_D  < 20 then 20 \n" +
+                "            else LV_SPD_D  end, \n" +
+                "        case when LV_SPD_D  < 20 then 0.001*(TV_D-HV_D)/20 \n" +
+                "            else 0.001*(TV_D-HV_D)/LV_SPD_D end, \n" +
+                "        case when HV_SPD_D < 20 then 0.001*HV_D/20 \n" +
+                "            else 0.001*HV_D/HV_SPD_D  end, \n" +
+                "        case when LV_SPD_D< 20 then 0.001*(TV_D)/20 \n" +
+                "            else 0.001*(TV_D)/LV_SPD_D end \n" +
+                "        from ROADS WHERE (TV_D IS NOT NULL);" +
                 "drop table if exists traf_explode;\n" +
                 "create table traf_explode as SELECT * FROM ST_Explode('TRAFIC_DENSITY');\n" +
                 "alter table traf_explode add length double as select ST_LENGTH(the_geom) ;\n" +
                 "drop table grid_traf2 if exists;\n" +
-                "create table grid_traf2 (the_geom geometry, SPEED int, DENSITY_TV double, DENSITY_PL double, DENSITY_TOT double) as SELECT ST_Tomultipoint(ST_Densify(the_geom, 10)), SPEED, DENSITY_TV, DENSITY_PL, DENSITY_TOT from traf_explode;\n" +
+                "create table grid_traf2 (the_geom geometry, SPEED int, DENSITY_LV double, DENSITY_HV double, DENSITY_TV double) as SELECT ST_Tomultipoint(ST_Densify(the_geom, 10)), SPEED, DENSITY_LV, DENSITY_HV, DENSITY_TV from traf_explode;\n" +
                 "drop table grid_traf_tot if exists;\n" +
                 "create table grid_traf_tot as SELECT * from  ST_explode('grid_traf2');\n" +
-                "alter table grid_traf_tot ADD number_veh double as select DENSITY_TOT;\n" +
+                "alter table grid_traf_tot ADD number_veh double as select DENSITY_TV;\n" +
                 "drop table grid_traf2 if exists;\n" +
                 "drop table CARS2D if exists;\n" +
-                "create table CARS2D as SELECT ST_FORCE2D(the_geom) the_geom, speed, density_TV, density_pl, density_tot, explod_id exp_id, number_veh from grid_traf_tot WHERE DENSITY_TOT > 0 and DENSITY_TOT IS NOT NULL;\n" +
+                "create table CARS2D as SELECT ST_FORCE2D(the_geom) the_geom, speed, density_LV, density_HV, density_TV, explod_id exp_id, number_veh from grid_traf_tot WHERE DENSITY_TV > 0 and DENSITY_TV IS NOT NULL;\n" +
                 "alter table CARS2D add column PK serial ;\n" +
                 "drop table CARS3D if exists;\n" +
-                "create table CARS3D as SELECT ST_UPDATEZ(ST_FORCE3D(the_geom),0.05,1) the_geom,ST_Z(ST_AddZ(ST_FORCE3D(the_geom),0.05)) z, speed, density_TV TV, density_pl PL, density_tot TOT, exp_id, number_veh from ST_Explode('CARS2D');\n" +
+                "create table CARS3D as SELECT ST_UPDATEZ(ST_FORCE3D(the_geom),0.05,1) the_geom,ST_Z(ST_AddZ(ST_FORCE3D(the_geom),0.05)) z, speed, density_LV LV, density_HV HV, DENSITY_TV TV, exp_id, number_veh from ST_Explode('CARS2D');\n" +
                 "alter table CARS3D add column PK serial ;\n" +
                 "drop table grid_traf_tot if exists;" +
                 "drop table CARS2D if exists;" +
@@ -308,13 +308,13 @@ def run(input) {
 
         System.out.println("Join Results with Geometry")
         sql.execute("CREATE INDEX ON LDAY(IDRECEIVER);")
-        sql.execute("CREATE INDEX ON RECEIVERS(ID);")
+        sql.execute("CREATE INDEX ON RECEIVERS(PK);")
 
         sql.execute("drop table if exists LDAY_GEOM;")
-        sql.execute("create table LDAY_GEOM  as select a. TIME,a.IDRECEIVER, b.THE_GEOM, a.Hz63, a.Hz125, a.Hz250, a.Hz500, a.Hz1000, a.Hz2000, a.Hz4000, a.Hz8000  FROM LDAY a LEFT JOIN  RECEIVERS b  ON a.IDRECEIVER = b.ID;")
+        sql.execute("create table LDAY_GEOM  as select a. TIME,a.IDRECEIVER, b.THE_GEOM, a.Hz63, a.Hz125, a.Hz250, a.Hz500, a.Hz1000, a.Hz2000, a.Hz4000, a.Hz8000  FROM LDAY a LEFT JOIN  RECEIVERS b  ON a.IDRECEIVER = b.PK;")
 
 
-        System.out.println("Done !")
+        System.out.println("Done ! LDAY_GEOM")
 
 
         /*
@@ -364,7 +364,7 @@ def run(input) {
 
         long computationTime = System.currentTimeMillis() - start;
 
-        return [result: "Calculation Done ! LDEN_GEOM"]
+        return [result: "Calculation Done ! LDAY_GEOM"]
 
 
     }
@@ -373,24 +373,25 @@ def run(input) {
 
 class ProbaProcessData {
 
-    Map<Integer,Double> SPEED = new HashMap<>()
-    Map<Integer,Double> TV = new HashMap<>()
-    Map<Integer,Double> PL = new HashMap<>()
+    Map<Integer,Double> SPEED_LV = new HashMap<>()
+    Map<Integer,Double> SPEED_HV = new HashMap<>()
+    Map<Integer,Double> LV = new HashMap<>()
+    Map<Integer,Double> HV = new HashMap<>()
 
     double[] getCarsLevel(int t, int idSource) throws SQLException {
         double[] res_d = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
-        double[] res_TV = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
-        double[] res_PL = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
+        double[] res_LV = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
+        double[] res_HV = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
         def list = [63, 125, 250, 500, 1000, 2000, 4000, 8000]
         // memes valeurs d e et n
 
 
         def random = Math.random()
-        if (random < TV.get(idSource)){
+        if (random < LV.get(idSource)){
             int kk=0
             for (f in list) {
 
-                double speed = SPEED.get(idSource)
+                double speed = SPEED_LV.get(idSource)
                 int acc = 0
                 int FreqParam = f
                 double Temperature = 20
@@ -406,15 +407,15 @@ class ProbaProcessData {
                 RSParametersDynamic rsParameters = new RSParametersDynamic(speed,  acc,  veh_type, acc_type, FreqParam,  Temperature,  RoadSurface,Stud, Junc_dist, Junc_type,LwStd,VehId)
                 rsParameters.setSlopePercentage(0)
 
-                res_TV[kk] = EvaluateRoadSourceDynamic.evaluate(rsParameters)
+                res_LV[kk] = EvaluateRoadSourceDynamic.evaluate(rsParameters)
                 kk++
             }
 
         }
-        if (random < PL.get(idSource)){
+        if (random < HV.get(idSource)){
             int kk=0
             for (f in list) {
-                double speed = SPEED.get(idSource)
+                double speed = SPEED_HV.get(idSource)
                 int acc = 0
                 int FreqParam = f
                 double Temperature = 20
@@ -430,7 +431,7 @@ class ProbaProcessData {
                 RSParametersDynamic rsParameters = new RSParametersDynamic(speed,  acc,  veh_type, acc_type, FreqParam,  Temperature,  RoadSurface,Stud, Junc_dist, Junc_type,LwStd,VehId)
                 rsParameters.setSlopePercentage(0)
 
-                res_PL[kk] = EvaluateRoadSourceDynamic.evaluate(rsParameters)
+                res_HV[kk] = EvaluateRoadSourceDynamic.evaluate(rsParameters)
                 kk++
             }
         }
@@ -438,8 +439,8 @@ class ProbaProcessData {
         for (f in list) {
             res_d[kk] = 10 * Math.log10(
                     (1.0 / 2.0) *
-                            ( Math.pow(10, (10 * Math.log10(Math.pow(10, res_TV[kk] / 10))) / 10)
-                                    + Math.pow(10, (10 * Math.log10(Math.pow(10, res_PL[kk] / 10))) / 10)
+                            ( Math.pow(10, (10 * Math.log10(Math.pow(10, res_LV[kk] / 10))) / 10)
+                                    + Math.pow(10, (10 * Math.log10(Math.pow(10, res_HV[kk] / 10))) / 10)
                             )
             )
             kk++
@@ -458,12 +459,13 @@ class ProbaProcessData {
         int i_read = 0;
 
         // Remplissage des variables avec le contenu du fichier plan d'exp
-        sql.eachRow('SELECT PK,  SPEED, PL,TV FROM ' + tablename +';') { row ->
+        sql.eachRow('SELECT PK,  SPEED, HV,LV FROM ' + tablename +';') { row ->
             int pk = (int) row[0]
 
-            SPEED.put(pk,(double) row[1])
-            PL.put(pk,(double) row[2])
-            TV.put(pk, (double) row[3])
+            SPEED_HV.put(pk,(double) row[1])
+            SPEED_LV.put(pk,(double) row[1])
+            HV.put(pk,(double) row[2])
+            LV.put(pk, (double) row[3])
 
         }
 
