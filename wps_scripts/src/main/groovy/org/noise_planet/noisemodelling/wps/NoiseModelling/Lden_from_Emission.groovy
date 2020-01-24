@@ -90,14 +90,11 @@ class TrafficPropagationProcessDataDEN extends PropagationProcessData {
 
         double[] lden = new double[PropagationProcessPathData.freq_lvl.size()]
         int idFreq = 0
-        for(int freq : PropagationProcessPathData.freq_lvl) {
-            lden[idFreq++] = (12 * ld[idFreq] +
-                    4 * ComputeRays.dbaToW(ComputeRays.wToDba(le[idFreq]) + 5) +
-                    8 * ComputeRays.dbaToW(ComputeRays.wToDba(ln[idFreq]) + 10)) / 24.0
+        for (int freq : PropagationProcessPathData.freq_lvl) {
+            lden[idFreq++] = (12 * ld[idFreq] + 4 * ComputeRays.dbaToW(ComputeRays.wToDba(le[idFreq]) + 5) + 8 * ComputeRays.dbaToW(ComputeRays.wToDba(ln[idFreq]) + 10)) / 24.0
         }
 
         wjSourcesDEN.add(lden)
-
 
 
     }
@@ -118,11 +115,11 @@ class TrafficPropagationProcessDataDENFactory implements PointNoiseMap.Propagati
 
 
 static Connection openGeoserverDataStoreConnection(String dbName) {
-    if(dbName == null || dbName.isEmpty()) {
+    if (dbName == null || dbName.isEmpty()) {
         dbName = new GeoServer().catalog.getStoreNames().get(0)
     }
     Store store = new GeoServer().catalog.getStore(dbName)
-    JDBCDataStore jdbcDataStore = (JDBCDataStore)store.getDataStoreInfo().getDataStore(null)
+    JDBCDataStore jdbcDataStore = (JDBCDataStore) store.getDataStoreInfo().getDataStore(null)
     return jdbcDataStore.getDataSource().getConnection()
 }
 
@@ -147,7 +144,22 @@ def static exportScene(String name, FastObstructionTest manager, ComputeRaysOut 
     }
 }
 
+
 def run(input) {
+
+    // Get name of the database
+    String dbName = ""
+    if (input['databaseName']) {
+        dbName = input['databaseName'] as String
+    }
+
+    // Open connection
+    openGeoserverDataStoreConnection(dbName).withCloseable { Connection connection -> exec(connection, input)
+    }
+}
+
+
+def exec(connection, input) {
 
 
     // -------------------
@@ -219,12 +231,6 @@ def run(input) {
         compute_horizontal_diffraction = input['computeHorizontal']
     }
 
-    // Get name of the database
-    String dbName = ""
-    if (input['databaseName']) {
-        dbName = input['databaseName'] as String
-    }
-
     // ----------------------------------
     // Start...
     // ----------------------------------
@@ -236,139 +242,135 @@ def run(input) {
     ArrayList<PropagationPath> propaMap2 = new ArrayList<>()
     // All rays storage
 
-    // Open connection
-    openGeoserverDataStoreConnection(dbName).withCloseable { Connection connection ->
 
-        //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postgis database
-        connection = new ConnectionWrapper(connection)
+    //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postgis database
+    connection = new ConnectionWrapper(connection)
 
-        // Connection to the database
-        // Init NoiseModelling
-        PointNoiseMap pointNoiseMap = new PointNoiseMap(building_table_name, sources_table_name, receivers_table_name)
-        pointNoiseMap.setComputeHorizontalDiffraction(compute_horizontal_diffraction)
-        pointNoiseMap.setComputeVerticalDiffraction(compute_vertical_diffraction)
-        pointNoiseMap.setSoundReflectionOrder(reflexion_order)
-        // Building height field name
-        pointNoiseMap.setHeightField("HEIGHT")
-        // Import table with Snow, Forest, Grass, Pasture field polygons. Attribute G is associated with each polygon
-        if (ground_table_name != "") {
-            pointNoiseMap.setSoilTableName(ground_table_name)
-        }
-        // Point cloud height above sea level POINT(X Y Z)
-        if (ground_table_name != "") {
-            pointNoiseMap.setSoilTableName(dem_table_name)
-        }
-        // Do not propagate for low emission or far away sources.
-        // error in dB
-        pointNoiseMap.setMaximumError(0.1d);
-
-        pointNoiseMap.setMaximumPropagationDistance(max_src_dist)
-        pointNoiseMap.setMaximumReflectionDistance(max_ref_dist)
-        pointNoiseMap.setWallAbsorption(wall_alpha)
-        pointNoiseMap.setThreadCount(n_thread)
-
-
-        // Init custom input in order to compute more than just attenuation
-
-        TrafficPropagationProcessDataDENFactory TrafficPropagationProcessDataDENFactory = new TrafficPropagationProcessDataDENFactory();
-        pointNoiseMap.setPropagationProcessDataFactory(TrafficPropagationProcessDataDENFactory)
-
-
-        RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1);
-
-        // Init Map
-        pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
-
-        // Set of already processed receivers
-        Set<Long> receivers = new HashSet<>();
-        ProgressVisitor progressVisitor = progressLogger.subProcess(pointNoiseMap.getGridDim() * pointNoiseMap.getGridDim());
-
-        long start = System.currentTimeMillis();
-        // Start
-
-        Map<Integer, double[]> SourceSpectrum = new HashMap<>()
-
-        // Iterate over computation areas
-        for (int i = 0; i < pointNoiseMap.getGridDim(); i++) {
-            for (int j = 0; j < pointNoiseMap.getGridDim(); j++) {
-                // Run ray propagation
-                IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, i, j, progressVisitor, receivers);
-                // Return results with level spectrum for each source/receiver tuple
-                if (out instanceof ComputeRaysOut) {
-
-                    ComputeRaysOut cellStorage = (ComputeRaysOut) out;
-
-                    allLevels.addAll(((ComputeRaysOut) out).getVerticesSoundLevel())
-
-                    //exportScene(String.format(resultPath+"/scene_%d_%d.kml", i, j), cellStorage.inputData.freeFieldFinder, cellStorage);
-                    cellStorage.receiversAttenuationLevels.each { v ->
-                        double globalDbValue = ComputeRays.wToDba(ComputeRays.sumArray(ComputeRays.dbaToW(v.value)));
-                        def idSource = out.inputData.SourcesPk.get(v.sourceId)
-                        double[] w_spectrum = ComputeRays.wToDba(out.inputData.wjSourcesDEN.get(idSource))
-                        SourceSpectrum.put(v.sourceId as Integer, w_spectrum)
-                    }
-                }
-            }
-        }
-
-
-        Map<Integer, double[]> soundLevels = new HashMap<>()
-        for (int i = 0; i < allLevels.size(); i++) {
-            int idReceiver = (Integer) allLevels.get(i).receiverId
-            int idSource = (Integer) allLevels.get(i).sourceId
-
-            double[] soundLevel = allLevels.get(i).value
-            if (!Double.isNaN(soundLevel[0]) && !Double.isNaN(soundLevel[1]) && !Double.isNaN(soundLevel[2]) && !Double.isNaN(soundLevel[3]) && !Double.isNaN(soundLevel[4]) && !Double.isNaN(soundLevel[5]) && !Double.isNaN(soundLevel[6]) && !Double.isNaN(soundLevel[7])
-
-            ) {
-                if (soundLevels.containsKey(idReceiver)) {
-                    //soundLevel = DBToDBA(soundLevel)
-
-                    soundLevel = ComputeRays.sumDbArray(sumArraySR(soundLevel, SourceSpectrum.get(idSource)), soundLevels.get(idReceiver))
-                    soundLevels.replace(idReceiver, soundLevel)
-                } else {
-                    //soundLevel = DBToDBA(soundLevel)
-                    soundLevels.put(idReceiver, sumArraySR(soundLevel, SourceSpectrum.get(idSource)))
-
-
-                }
-            } else {
-                System.err.println("NaN on Rec :" + idReceiver + "and Src :" + idSource)
-            }
-        }
-
-
-        Sql sql = new Sql(connection)
-
-        // Export data to table
-        sql.execute("drop table if exists LDEN;")
-        sql.execute("create table LDEN (IDRECEIVER integer, Hz63 double precision, Hz125 double precision, Hz250 double precision, Hz500 double precision, Hz1000 double precision, Hz2000 double precision, Hz4000 double precision, Hz8000 double precision);")
-
-        def qry = 'INSERT INTO LDEN(IDRECEIVER,Hz63, Hz125, Hz250, Hz500, Hz1000,Hz2000, Hz4000, Hz8000) VALUES (?,?,?,?,?,?,?,?,?);'
-
-        sql.withBatch(100, qry) { ps ->
-            for (s in soundLevels) {
-                ps.addBatch(s.key as Integer,
-                        s.value[0] as Double, s.value[1] as Double, s.value[2] as Double,
-                        s.value[3] as Double, s.value[4] as Double, s.value[5] as Double,
-                        s.value[6] as Double, s.value[7] as Double)
-
-            }
-        }
-
-        sql.execute("drop table if exists LDEN_GEOM;")
-        sql.execute("create table LDEN_GEOM  as select a.IDRECEIVER, b.THE_GEOM, a.Hz63, a.Hz125, a.Hz250, a.Hz500, a.Hz1000, a.Hz2000, a.Hz4000, a.Hz8000 FROM RECEIVERS b LEFT JOIN LDEN a ON a.IDRECEIVER = b.PK;")
-
-
-        // Done
-
-
-        long computationTime = System.currentTimeMillis() - start;
-
-        return [result: "Calculation Done ! LDEN_GEOM"]
-
-
+    // Connection to the database
+    // Init NoiseModelling
+    PointNoiseMap pointNoiseMap = new PointNoiseMap(building_table_name, sources_table_name, receivers_table_name)
+    pointNoiseMap.setComputeHorizontalDiffraction(compute_horizontal_diffraction)
+    pointNoiseMap.setComputeVerticalDiffraction(compute_vertical_diffraction)
+    pointNoiseMap.setSoundReflectionOrder(reflexion_order)
+    // Building height field name
+    pointNoiseMap.setHeightField("HEIGHT")
+    // Import table with Snow, Forest, Grass, Pasture field polygons. Attribute G is associated with each polygon
+    if (ground_table_name != "") {
+        pointNoiseMap.setSoilTableName(ground_table_name)
     }
+    // Point cloud height above sea level POINT(X Y Z)
+    if (ground_table_name != "") {
+        pointNoiseMap.setSoilTableName(dem_table_name)
+    }
+    // Do not propagate for low emission or far away sources.
+    // error in dB
+    pointNoiseMap.setMaximumError(0.1d);
+
+    pointNoiseMap.setMaximumPropagationDistance(max_src_dist)
+    pointNoiseMap.setMaximumReflectionDistance(max_ref_dist)
+    pointNoiseMap.setWallAbsorption(wall_alpha)
+    pointNoiseMap.setThreadCount(n_thread)
+
+
+    // Init custom input in order to compute more than just attenuation
+
+    TrafficPropagationProcessDataDENFactory TrafficPropagationProcessDataDENFactory = new TrafficPropagationProcessDataDENFactory();
+    pointNoiseMap.setPropagationProcessDataFactory(TrafficPropagationProcessDataDENFactory)
+
+
+    RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1);
+
+    // Init Map
+    pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
+
+    // Set of already processed receivers
+    Set<Long> receivers = new HashSet<>();
+    ProgressVisitor progressVisitor = progressLogger.subProcess(pointNoiseMap.getGridDim() * pointNoiseMap.getGridDim());
+
+    long start = System.currentTimeMillis();
+    // Start
+
+    Map<Integer, double[]> SourceSpectrum = new HashMap<>()
+
+    // Iterate over computation areas
+    for (int i = 0; i < pointNoiseMap.getGridDim(); i++) {
+        for (int j = 0; j < pointNoiseMap.getGridDim(); j++) {
+            // Run ray propagation
+            IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, i, j, progressVisitor, receivers);
+            // Return results with level spectrum for each source/receiver tuple
+            if (out instanceof ComputeRaysOut) {
+
+                ComputeRaysOut cellStorage = (ComputeRaysOut) out;
+
+                allLevels.addAll(((ComputeRaysOut) out).getVerticesSoundLevel())
+
+                //exportScene(String.format(resultPath+"/scene_%d_%d.kml", i, j), cellStorage.inputData.freeFieldFinder, cellStorage);
+                cellStorage.receiversAttenuationLevels.each { v ->
+                    double globalDbValue = ComputeRays.wToDba(ComputeRays.sumArray(ComputeRays.dbaToW(v.value)));
+                    def idSource = out.inputData.SourcesPk.get(v.sourceId)
+                    double[] w_spectrum = ComputeRays.wToDba(out.inputData.wjSourcesDEN.get(idSource))
+                    SourceSpectrum.put(v.sourceId as Integer, w_spectrum)
+                }
+            }
+        }
+    }
+
+
+    Map<Integer, double[]> soundLevels = new HashMap<>()
+    for (int i = 0; i < allLevels.size(); i++) {
+        int idReceiver = (Integer) allLevels.get(i).receiverId
+        int idSource = (Integer) allLevels.get(i).sourceId
+
+        double[] soundLevel = allLevels.get(i).value
+        if (!Double.isNaN(soundLevel[0]) && !Double.isNaN(soundLevel[1]) && !Double.isNaN(soundLevel[2]) && !Double.isNaN(soundLevel[3]) && !Double.isNaN(soundLevel[4]) && !Double.isNaN(soundLevel[5]) && !Double.isNaN(soundLevel[6]) && !Double.isNaN(soundLevel[7])
+
+        ) {
+            if (soundLevels.containsKey(idReceiver)) {
+                //soundLevel = DBToDBA(soundLevel)
+
+                soundLevel = ComputeRays.sumDbArray(sumArraySR(soundLevel, SourceSpectrum.get(idSource)), soundLevels.get(idReceiver))
+                soundLevels.replace(idReceiver, soundLevel)
+            } else {
+                //soundLevel = DBToDBA(soundLevel)
+                soundLevels.put(idReceiver, sumArraySR(soundLevel, SourceSpectrum.get(idSource)))
+
+
+            }
+        } else {
+            System.err.println("NaN on Rec :" + idReceiver + "and Src :" + idSource)
+        }
+    }
+
+
+    Sql sql = new Sql(connection)
+
+    // Export data to table
+    sql.execute("drop table if exists LDEN;")
+    sql.execute("create table LDEN (IDRECEIVER integer, Hz63 double precision, Hz125 double precision, Hz250 double precision, Hz500 double precision, Hz1000 double precision, Hz2000 double precision, Hz4000 double precision, Hz8000 double precision);")
+
+    def qry = 'INSERT INTO LDEN(IDRECEIVER,Hz63, Hz125, Hz250, Hz500, Hz1000,Hz2000, Hz4000, Hz8000) VALUES (?,?,?,?,?,?,?,?,?);'
+
+    sql.withBatch(100, qry) { ps ->
+        for (s in soundLevels) {
+            ps.addBatch(s.key as Integer,
+                    s.value[0] as Double, s.value[1] as Double, s.value[2] as Double,
+                    s.value[3] as Double, s.value[4] as Double, s.value[5] as Double,
+                    s.value[6] as Double, s.value[7] as Double)
+
+        }
+    }
+
+    sql.execute("drop table if exists LDEN_GEOM;")
+    sql.execute("create table LDEN_GEOM  as select a.IDRECEIVER, b.THE_GEOM, a.Hz63, a.Hz125, a.Hz250, a.Hz500, a.Hz1000, a.Hz2000, a.Hz4000, a.Hz8000 FROM RECEIVERS b LEFT JOIN LDEN a ON a.IDRECEIVER = b.PK;")
+
+
+    // Done
+
+
+    long computationTime = System.currentTimeMillis() - start;
+
+    return [result: "Calculation Done ! LDEN_GEOM"]
+
 
 }
 

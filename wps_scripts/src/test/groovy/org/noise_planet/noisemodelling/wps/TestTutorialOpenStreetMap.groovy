@@ -37,6 +37,7 @@ package org.noise_planet.noisemodelling.wps
 import org.h2gis.functions.io.shp.SHPRead
 import org.noise_planet.noisemodelling.wps.Database_Manager.Display_Database
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
+import org.noise_planet.noisemodelling.wps.NoiseModelling.Lden_from_Emission
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Road_Emission_From_AADF
 import org.noise_planet.noisemodelling.wps.OSM_Tools.Get_Table_from_OSM
 import org.noise_planet.noisemodelling.wps.Receivers.Regular_Grid
@@ -96,6 +97,14 @@ class TestTutorialOpenStreetMap extends JdbcTestCase {
 
         assertTrue(res.contains("LW_ROADS"))
 
+        res = new Lden_from_Emission().exec(connection, ["sourcesTableName": "LW_ROADS",
+        "buildingTableName": "BUILDINGS_OSM",
+        "groundTableName": "SURFACE_OSM"])
+
+        // Check database
+        res = new Display_Database().exec(connection, [])
+
+        assertTrue(res.contains("LDEN_GEOM"))
     }
 
 }
