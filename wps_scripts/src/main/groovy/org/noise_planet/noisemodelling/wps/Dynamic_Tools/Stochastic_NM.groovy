@@ -162,7 +162,7 @@ def run(input) {
     // All rays storage
 
     // Open connection
-    openGeoserverDataStoreConnection(dbName).withCloseable {
+    openGeoserverDataStoreConnection(dbName).withCloseable { Connection connection ->
 
         //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postgis database
         connection = new ConnectionWrapper(connection)
