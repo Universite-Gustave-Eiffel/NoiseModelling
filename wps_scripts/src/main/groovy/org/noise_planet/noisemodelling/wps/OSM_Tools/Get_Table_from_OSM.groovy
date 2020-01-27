@@ -95,47 +95,47 @@ def run(input) {
 
         if (convert2Building){
             String Buildings_Import = "DROP TABLE IF EXISTS MAP_BUILDINGS;\n" +
-                    "CREATE TABLE MAP_BUILDINGS(ID_WAY BIGINT PRIMARY KEY) AS SELECT DISTINCT ID_WAY\n" +
+                    "CREATE TABLE MAP_BUILDINGS(OSM_ID BIGINT PRIMARY KEY) AS SELECT DISTINCT OSM_ID\n" +
                     "FROM MAP_WAY_TAG WT, MAP_TAG T\n" +
                     "WHERE WT.ID_TAG = T.ID_TAG AND T.TAG_KEY IN ('building');\n" +
                     "DROP TABLE IF EXISTS MAP_BUILDINGS_GEOM;\n" +
                     "\n" +
-                    "CREATE TABLE MAP_BUILDINGS_GEOM AS SELECT ID_WAY,\n" +
+                    "CREATE TABLE MAP_BUILDINGS_GEOM AS SELECT OSM_ID,\n" +
                     "ST_MAKEPOLYGON(ST_MAKELINE(THE_GEOM)) THE_GEOM FROM (SELECT (SELECT\n" +
-                    "ST_ACCUM(THE_GEOM) THE_GEOM FROM (SELECT N.ID_NODE, N.THE_GEOM,WN.ID_WAY IDWAY FROM\n" +
+                    "ST_ACCUM(THE_GEOM) THE_GEOM FROM (SELECT N.ID_NODE, N.THE_GEOM,WN.OSM_ID IDWAY FROM\n" +
                     "MAP_NODE N,MAP_WAY_NODE WN WHERE N.ID_NODE = WN.ID_NODE ORDER BY\n" +
-                    "WN.NODE_ORDER) WHERE  IDWAY = W.ID_WAY) THE_GEOM ,W.ID_WAY\n" +
+                    "WN.NODE_ORDER) WHERE  IDWAY = W.OSM_ID) THE_GEOM ,W.OSM_ID\n" +
                     "FROM MAP_WAY W,MAP_BUILDINGS B\n" +
-                    "WHERE W.ID_WAY = B.ID_WAY) GEOM_TABLE WHERE ST_GEOMETRYN(THE_GEOM,1) =\n" +
+                    "WHERE W.OSM_ID = B.OSM_ID) GEOM_TABLE WHERE ST_GEOMETRYN(THE_GEOM,1) =\n" +
                     "ST_GEOMETRYN(THE_GEOM, ST_NUMGEOMETRIES(THE_GEOM)) AND ST_NUMGEOMETRIES(THE_GEOM) >\n" +
                     "2;\n" +
                     "DROP TABLE MAP_BUILDINGS;\n" +
                     "alter table MAP_BUILDINGS_GEOM add column height double;\n" +
-                    "update MAP_BUILDINGS_GEOM set height = (select round(\"VALUE\" * 3.0 + RAND() * 2,1) from MAP_WAY_TAG where id_tag = (SELECT ID_TAG FROM MAP_TAG T WHERE T.TAG_KEY = 'building:levels' LIMIT 1) and id_way = MAP_BUILDINGS_GEOM.id_way);\n" +
+                    "update MAP_BUILDINGS_GEOM set height = (select round(\"VALUE\" * 3.0 + RAND() * 2,1) from MAP_WAY_TAG where id_tag = (SELECT ID_TAG FROM MAP_TAG T WHERE T.TAG_KEY = 'building:levels' LIMIT 1) and OSM_ID = MAP_BUILDINGS_GEOM.OSM_ID);\n" +
                     "update MAP_BUILDINGS_GEOM set height = round(4 + RAND() * 2,1) where height is null;\n" +
                     "drop table if exists BUILDINGS_OSM;\n" +
-                    "create table BUILDINGS_OSM(id_way serial, the_geom geometry CHECK ST_SRID(THE_GEOM)="+srid+", height double) as select id_way,  ST_SETSRID(ST_SimplifyPreserveTopology(st_buffer(ST_TRANSFORM(ST_SETSRID(THE_GEOM, 4326), "+srid+"), -0.1, 'join=mitre'),0.1), "+srid+") the_geom , height from MAP_BUILDINGS_GEOM;\n" +
+                    "create table BUILDINGS_OSM(OSM_ID serial, the_geom geometry CHECK ST_SRID(THE_GEOM)="+srid+", height double) as select OSM_ID,  ST_SETSRID(ST_SimplifyPreserveTopology(st_buffer(ST_TRANSFORM(ST_SETSRID(THE_GEOM, 4326), "+srid+"), -0.1, 'join=mitre'),0.1), "+srid+") the_geom , height from MAP_BUILDINGS_GEOM;\n" +
                     "drop table if exists MAP_BUILDINGS_GEOM;"
             tables.add("BUILDINGS_OSM")
             sql.execute(Buildings_Import)
         }
         if (convert2Vegetation){
             String Vegetation_Import = "DROP TABLE IF EXISTS MAP_SURFACE;\n" +
-                    "CREATE TABLE MAP_SURFACE(id serial, ID_WAY BIGINT, surf_cat varchar) AS SELECT null, ID_WAY, \"VALUE\" surf_cat\n" +
+                    "CREATE TABLE MAP_SURFACE(id serial, OSM_ID BIGINT, surf_cat varchar) AS SELECT null, OSM_ID, \"VALUE\" surf_cat\n" +
                     "FROM MAP_WAY_TAG WT, MAP_TAG T\n" +
                     "WHERE WT.ID_TAG = T.ID_TAG AND T.TAG_KEY IN ('surface', 'landcover', 'natural', 'landuse', 'leisure');\n" +
                     "DROP TABLE IF EXISTS MAP_SURFACE_GEOM;\n" +
-                    "CREATE TABLE MAP_SURFACE_GEOM AS SELECT ID_WAY,\n" +
+                    "CREATE TABLE MAP_SURFACE_GEOM AS SELECT OSM_ID,\n" +
                     "ST_MAKEPOLYGON(ST_MAKELINE(THE_GEOM)) THE_GEOM, surf_cat FROM (SELECT (SELECT\n" +
-                    "ST_ACCUM(THE_GEOM) THE_GEOM FROM (SELECT N.ID_NODE, N.THE_GEOM,WN.ID_WAY IDWAY FROM\n" +
+                    "ST_ACCUM(THE_GEOM) THE_GEOM FROM (SELECT N.ID_NODE, N.THE_GEOM,WN.OSM_ID IDWAY FROM\n" +
                     "MAP_NODE N,MAP_WAY_NODE WN WHERE N.ID_NODE = WN.ID_NODE ORDER BY\n" +
-                    "WN.NODE_ORDER) WHERE  IDWAY = W.ID_WAY) THE_GEOM ,W.ID_WAY, B.surf_cat\n" +
+                    "WN.NODE_ORDER) WHERE  IDWAY = W.OSM_ID) THE_GEOM ,W.OSM_ID, B.surf_cat\n" +
                     "FROM MAP_WAY W,MAP_SURFACE B\n" +
-                    "WHERE W.ID_WAY = B.ID_WAY) GEOM_TABLE WHERE ST_GEOMETRYN(THE_GEOM,1) =\n" +
+                    "WHERE W.OSM_ID = B.OSM_ID) GEOM_TABLE WHERE ST_GEOMETRYN(THE_GEOM,1) =\n" +
                     "ST_GEOMETRYN(THE_GEOM, ST_NUMGEOMETRIES(THE_GEOM)) AND ST_NUMGEOMETRIES(THE_GEOM) >\n" +
                     "2;\n" +
                     "drop table if exists SURFACE_OSM;\n" +
-                    "create table SURFACE_OSM(id_way serial, the_geom geometry CHECK ST_SRID(THE_GEOM)="+srid+", surf_cat varchar, G double) as select id_way,  ST_TRANSFORM(ST_SETSRID(THE_GEOM, 4326), "+srid+") the_geom , surf_cat, 1 g from MAP_SURFACE_GEOM where surf_cat IN ('grass', 'village_green', 'park');\n" +
+                    "create table SURFACE_OSM(OSM_ID serial, the_geom geometry CHECK ST_SRID(THE_GEOM)="+srid+", surf_cat varchar, G double) as select OSM_ID,  ST_TRANSFORM(ST_SETSRID(THE_GEOM, 4326), "+srid+") the_geom , surf_cat, 1 g from MAP_SURFACE_GEOM where surf_cat IN ('grass', 'village_green', 'park');\n" +
                     "drop table if exists MAP_SURFACE_GEOM;"
             tables.add("SURFACE_OSM")
             sql.execute(Vegetation_Import)
@@ -144,19 +144,19 @@ def run(input) {
         if(convert2Roads) {
 
             String osmImport = "DROP TABLE MAP_ROADS_speed IF EXISTS;\n" +
-                    "CREATE TABLE MAP_ROADS_speed(ID_WAY BIGINT PRIMARY KEY,MAX_SPEED BIGINT ) AS SELECT DISTINCT ID_WAY, VALUE MAX_SPEED FROM MAP_WAY_TAG WT, MAP_TAG T WHERE WT.ID_TAG = T.ID_TAG AND T.TAG_KEY IN ('maxspeed');\n" +
+                    "CREATE TABLE MAP_ROADS_speed(OSM_ID BIGINT PRIMARY KEY,MAX_SPEED BIGINT ) AS SELECT DISTINCT OSM_ID, VALUE MAX_SPEED FROM MAP_WAY_TAG WT, MAP_TAG T WHERE WT.ID_TAG = T.ID_TAG AND T.TAG_KEY IN ('maxspeed');\n" +
                     "DROP TABLE MAP_ROADS_HGW IF EXISTS;\n" +
-                    "CREATE TABLE MAP_ROADS_HGW(ID_WAY BIGINT PRIMARY KEY,HIGHWAY_TYPE varchar(30) ) AS SELECT DISTINCT ID_WAY, VALUE HIGHWAY_TYPE FROM MAP_WAY_TAG WT, MAP_TAG T WHERE WT.ID_TAG = T.ID_TAG AND T.TAG_KEY IN ('highway');\n" +
+                    "CREATE TABLE MAP_ROADS_HGW(OSM_ID BIGINT PRIMARY KEY,HIGHWAY_TYPE varchar(30) ) AS SELECT DISTINCT OSM_ID, VALUE HIGHWAY_TYPE FROM MAP_WAY_TAG WT, MAP_TAG T WHERE WT.ID_TAG = T.ID_TAG AND T.TAG_KEY IN ('highway');\n" +
                     "DROP TABLE MAP_ROADS IF EXISTS;\n" +
-                    "CREATE TABLE MAP_ROADS AS SELECT a.ID_WAY, a.HIGHWAY_TYPE, b.MAX_SPEED  FROM MAP_ROADS_HGW a LEFT JOIN MAP_ROADS_speed b ON a.ID_WAY = b.ID_WAY;\n" +
+                    "CREATE TABLE MAP_ROADS AS SELECT a.OSM_ID, a.HIGHWAY_TYPE, b.MAX_SPEED  FROM MAP_ROADS_HGW a LEFT JOIN MAP_ROADS_speed b ON a.OSM_ID = b.OSM_ID;\n" +
                     "DROP TABLE MAP_ROADS_speed IF EXISTS;\n" +
                     "DROP TABLE MAP_ROADS_HGW IF EXISTS;\n" +
                     "DROP TABLE IF EXISTS MAP_ROADS_GEOM;\n" +
-                    "CREATE TABLE MAP_ROADS_GEOM AS SELECT ID_WAY, MAX_SPEED," +
+                    "CREATE TABLE MAP_ROADS_GEOM AS SELECT OSM_ID, MAX_SPEED," +
                     "st_setsrid(st_updatez(ST_precisionreducer(ST_SIMPLIFYPRESERVETOPOLOGY(ST_TRANSFORM(ST_SETSRID(ST_MAKELINE(THE_GEOM), 4326), "+srid+"),0.1),1), 0.05), "+srid+") THE_GEOM, " +
-                    "HIGHWAY_TYPE T FROM (SELECT (SELECT\n" + "ST_ACCUM(THE_GEOM) THE_GEOM FROM (SELECT N.ID_NODE, N.THE_GEOM,WN.ID_WAY IDWAY FROM MAP_NODE\n" +
-                    "N,MAP_WAY_NODE WN WHERE N.ID_NODE = WN.ID_NODE ORDER BY WN.NODE_ORDER) WHERE  IDWAY = W.ID_WAY)\n" +
-                    "THE_GEOM ,W.ID_WAY, B.HIGHWAY_TYPE, B.MAX_SPEED FROM MAP_WAY W,MAP_ROADS B WHERE W.ID_WAY = B.ID_WAY) GEOM_TABLE;\n" +
+                    "HIGHWAY_TYPE T FROM (SELECT (SELECT\n" + "ST_ACCUM(THE_GEOM) THE_GEOM FROM (SELECT N.ID_NODE, N.THE_GEOM,WN.OSM_ID IDWAY FROM MAP_NODE\n" +
+                    "N,MAP_WAY_NODE WN WHERE N.ID_NODE = WN.ID_NODE ORDER BY WN.NODE_ORDER) WHERE  IDWAY = W.OSM_ID)\n" +
+                    "THE_GEOM ,W.OSM_ID, B.HIGHWAY_TYPE, B.MAX_SPEED FROM MAP_WAY W,MAP_ROADS B WHERE W.OSM_ID = B.OSM_ID) GEOM_TABLE;\n" +
                     "DROP TABLE MAP_ROADS;"
             sql.execute(osmImport)
 
@@ -172,7 +172,7 @@ def run(input) {
                 def speed = [110,80,50,50,30,30]
 
                 String roadsImport = "DROP TABLE IF EXISTS ROADS_AADF;\n" +
-                        "CREATE TABLE ROADS_AADF(ID SERIAL,ID_WAY long , THE_GEOM LINESTRING CHECK ST_SRID(THE_GEOM)="+srid+", CLAS_ADM int, AADF int, CLAS_ALT int) as SELECT null, ID_WAY, THE_GEOM,\n" +
+                        "CREATE TABLE ROADS_AADF(ID SERIAL,OSM_ID long , THE_GEOM LINESTRING CHECK ST_SRID(THE_GEOM)="+srid+", CLAS_ADM int, AADF int, CLAS_ALT int) as SELECT null, OSM_ID, THE_GEOM,\n" +
                         "CASEWHEN(T = 'trunk', 21,\n" +
                         "CASEWHEN(T = 'primary', 41,\n" +
                         "CASEWHEN(T = 'secondary', 41,\n" +
@@ -208,10 +208,10 @@ def run(input) {
 
                 Sql sql_connect = new Sql(connection)
                 sql.execute("drop table if exists ROADS;")
-                sql.execute("create table ROADS (ID_WAY integer, THE_GEOM geometry, TV_D integer, TV_E integer,TV_N integer,HV_D integer,HV_E integer,HV_N integer,LV_SPD_D integer,LV_SPD_E integer,LV_SPD_N integer,HV_SPD_D integer, HV_SPD_E integer,HV_SPD_N integer, PVMT varchar(10));")
-                def qry = 'INSERT INTO ROADS(ID_WAY, THE_GEOM, TV_D, TV_E,TV_N,HV_D,HV_E,HV_N,LV_SPD_D,LV_SPD_E,LV_SPD_N,HV_SPD_D , HV_SPD_E ,HV_SPD_N , PVMT) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);'
+                sql.execute("create table ROADS (OSM_ID integer, THE_GEOM geometry, TV_D integer, TV_E integer,TV_N integer,HV_D integer,HV_E integer,HV_N integer,LV_SPD_D integer,LV_SPD_E integer,LV_SPD_N integer,HV_SPD_D integer, HV_SPD_E integer,HV_SPD_N integer, PVMT varchar(10));")
+                def qry = 'INSERT INTO ROADS(OSM_ID, THE_GEOM, TV_D, TV_E,TV_N,HV_D,HV_E,HV_N,LV_SPD_D,LV_SPD_E,LV_SPD_N,HV_SPD_D , HV_SPD_E ,HV_SPD_N , PVMT) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);'
 
-                sql_connect.eachRow('SELECT ID_WAY, THE_GEOM, CLAS_ALT FROM ROADS_AADF ;') { row ->
+                sql_connect.eachRow('SELECT OSM_ID, THE_GEOM, CLAS_ALT FROM ROADS_AADF ;') { row ->
                     int idway = (int) row[0]
                     Geometry the_geom = (Geometry) row[1]
                     int classif = (int) row[2] -1
@@ -230,7 +230,7 @@ def run(input) {
 
                 } else{
                     String roadsImport = "DROP TABLE IF EXISTS ROADS;\n" +
-                            "CREATE TABLE ROADS(PK SERIAL,ID_WAY long , THE_GEOM LINESTRING CHECK ST_SRID(THE_GEOM)="+srid+", CLAS_ADM int, AADF int, SPEED int) as SELECT null, ID_WAY, THE_GEOM,\n" +
+                            "CREATE TABLE ROADS(PK SERIAL,OSM_ID long , THE_GEOM LINESTRING CHECK ST_SRID(THE_GEOM)="+srid+", CLAS_ADM int, AADF int, SPEED int) as SELECT null, OSM_ID, THE_GEOM,\n" +
                             "CASEWHEN(T = 'trunk', 21,\n" +
                             "CASEWHEN(T = 'primary', 41,\n" +
                             "CASEWHEN(T = 'secondary', 41,\n" +
