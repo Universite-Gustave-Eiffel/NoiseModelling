@@ -64,8 +64,8 @@ def exec(Connection connection, input) {
                     columnIndex++
                 }
             }
+            sb.append("</br>")
         }
-        sb.append("</br>")
     }
 
     // print to Console windows

@@ -2,7 +2,7 @@ Get Started - Tutorial
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Requirements: Install Java and set JAVA_HOME environnement variable
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Please install JAVA version v8.x. Currently only version 8 of Java is compatible
 

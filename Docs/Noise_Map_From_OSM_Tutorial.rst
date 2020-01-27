@@ -12,15 +12,15 @@ Exporting data from openstreetmap.org
 ------------------------------------------------
 * Go to https://www.openstreetmap.org
 * Zoom in on the area you want to export
-* Export the zone in .osm or .osm.gz format.
+* Export the zone in .osm or .osm.gz format
 
 Import to the database
 ------------------------------------------------
-* Use the WPS block *Get_Table_from_OSM*.
+* Use the WPS block *Get_Table_from_OSM*
 
-.. note ::
-Inform the Projection identifier field with a metric SRID
-Enter the path to the file map.osm
+.. note::
+  Inform the Projection identifier field with a metric SRID
+  Enter the path to the file map.osm
 
 Three tables must be created: SURFACE_OSM, BUILDINGS_OSM, ROADS
 
