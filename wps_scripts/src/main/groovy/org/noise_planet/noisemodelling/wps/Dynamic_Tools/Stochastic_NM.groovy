@@ -162,7 +162,7 @@ def run(input) {
     // All rays storage
 
     // Open connection
-    openGeoserverDataStoreConnection(dbName).withCloseable {
+    openGeoserverDataStoreConnection(dbName).withCloseable { Connection connection ->
 
         //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postgis database
         connection = new ConnectionWrapper(connection)
@@ -230,7 +230,7 @@ def run(input) {
                 "            else 0.001*HV_D/HV_SPD_D  end, \n" +
                 "        case when LV_SPD_D< 20 then 0.001*(TV_D)/20 \n" +
                 "            else 0.001*(TV_D)/LV_SPD_D end \n" +
-                "        from ROADS WHERE (TV_D IS NOT NULL);" +
+                "        from "+sources_table_name+" WHERE (TV_D IS NOT NULL);" +
                 "drop table if exists traf_explode;\n" +
                 "create table traf_explode as SELECT * FROM ST_Explode('TRAFIC_DENSITY');\n" +
                 "alter table traf_explode add length double as select ST_LENGTH(the_geom) ;\n" +
