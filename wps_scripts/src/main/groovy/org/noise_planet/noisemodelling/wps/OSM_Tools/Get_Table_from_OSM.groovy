@@ -216,7 +216,7 @@ def exec(connection, input) {
 
             Sql sql_connect = new Sql(connection)
             sql.execute("drop table if exists ROADS;")
-            sql.execute("create table ROADS (ID_WAY integer, THE_GEOM geometry, TV_D integer, TV_E integer,TV_N integer,HV_D integer,HV_E integer,HV_N integer,LV_SPD_D integer,LV_SPD_E integer,LV_SPD_N integer,HV_SPD_D integer, HV_SPD_E integer,HV_SPD_N integer, PVMT varchar(10));")
+            sql.execute("create table ROADS (PK serial, ID_WAY integer, THE_GEOM geometry, TV_D integer, TV_E integer,TV_N integer,HV_D integer,HV_E integer,HV_N integer,LV_SPD_D integer,LV_SPD_E integer,LV_SPD_N integer,HV_SPD_D integer, HV_SPD_E integer,HV_SPD_N integer, PVMT varchar(10));")
             def qry = 'INSERT INTO ROADS(ID_WAY, THE_GEOM, TV_D, TV_E,TV_N,HV_D,HV_E,HV_N,LV_SPD_D,LV_SPD_E,LV_SPD_N,HV_SPD_D , HV_SPD_E ,HV_SPD_N , PVMT) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);'
 
             sql_connect.eachRow('SELECT ID_WAY, THE_GEOM, CLAS_ALT FROM ROADS_AADF ;') { row ->
@@ -268,7 +268,7 @@ def exec(connection, input) {
 
 
 
-    return [tableNameCreated: String.join(", ", tables)]
+    return [tableNameCreated: tables.isEmpty() ? "No data selection, please check selecting buildings, roads or surface" : String.join(", ", tables)]
 }
 
 
