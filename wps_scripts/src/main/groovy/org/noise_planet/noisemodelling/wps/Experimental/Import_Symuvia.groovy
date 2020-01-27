@@ -25,13 +25,14 @@ import org.h2gis.utilities.TableUtilities
 import org.xml.sax.InputSource
 import org.xml.sax.XMLReader
 import org.xml.sax.helpers.DefaultHandler
+import org.xml.sax.helpers.XMLReaderFactory
 
 import java.nio.channels.FileChannel
 import java.sql.Connection
 import java.sql.PreparedStatement
 import java.sql.SQLException
 import java.sql.Statement
-import java.util.jar.Attributes
+
 
 title = 'Import File'
 description = 'Import file into a database table (csv, dbf, geojson, gpx, bz2, gz, osm, shp, tsv)'
@@ -108,7 +109,7 @@ def run(input) {
                 OSMDriverFunction osmDriver = new OSMDriverFunction()
                 osmDriver.importFile(connection, outputTableName, new File(pathFile), new EmptyProgressVisitor())
                 break
-            case "symuvia":
+            case "xml":
                 SYMUVIADriverFunction symuviaDriver = new SYMUVIADriverFunction()
                 symuviaDriver.importFile(connection, outputTableName, new File(pathFile), new EmptyProgressVisitor())
                 break
@@ -175,26 +176,24 @@ class SYMUVIADriverFunction {
             throw new IOException(new IllegalArgumentException("This driver handle only .xml files"))
         }
         if(deleteTables){
-            SYMUVIATablesFactory.dropSYMUVIATables(connection, JDBCUtilities.isH2DataBase(connection.getMetaData()), tableReference);
+            SYMUVIATablesFactory.dropSYMUVIATables(connection, JDBCUtilities.isH2DataBase(connection.getMetaData()), tableReference)
         }
-        SYMUVIAParser symuviap = new SYMUVIAParser();
-        symuviap.read(connection, tableReference, fileName, progress);
+        SYMUVIAParser symuviap = new SYMUVIAParser()
+        symuviap.read(connection, tableReference, fileName, progress)
     }
 
-    String[] getImportFormats() {
-        return new String["xml"]
-    }
+
 
     class InstSYMUVIAElement {
 
-        private double val;
+        private double val
 
         /**
          * Constructor
          * @param val Latitude value
          */
          InstSYMUVIAElement(double val) {
-            this.val = val;
+            this.val = val
         }
 
 
@@ -205,125 +204,34 @@ class SYMUVIADriverFunction {
          * @return
          */
          double getVAL() {
-            return val;
+            return val
         }
 
 
-
-    }
-
-
-    class SYMUVIAElement {
-
-        private final HashMap<String, String> tags;
-        private long  uid;
-        private String user;
-        private int version, changeset;
-        private boolean visible;
-        private String name = "";
-
-        SYMUVIAElement() {
-            tags = new HashMap<String, String>();
-        }
-
-
-        /**
-         * The user
-         *
-         * @return
-         */
-         String getUser() {
-            return user;
-        }
-
-         void setUser(String user) {
-            this.user = user;
-        }
-
-         void setUid(String uid) {
-            if (uid != null) {
-                this.uid = Long.valueOf(uid);
-            }
-        }
-
-        /**
-         * @return The way name (extracted from tag)
-         */
-         String getName() {
-            return name;
-        }
-
-        /**
-         * @param name Way name
-         */
-         void setName(String name) {
-            this.name = name;
-        }
-
-        /**
-         *
-         * @return
-         */
-         boolean getVisible() {
-            return visible;
-        }
-
-         void setVisible(String visible) {
-            if(visible!=null){
-                this.visible = Boolean.valueOf(visible);
-            }
-        }
-
-        /**
-         *
-         * @return
-         */
-         int getVersion() {
-            return version;
-        }
-
-         void setVersion(String version) {
-            this.version = version != null ? Integer.valueOf(version) : 0;
-        }
-
-        /**
-         *
-         * @return
-         */
-
-         void setChangeset(String changeset) {
-            if(changeset!=null){
-                this.changeset = Integer.valueOf(changeset);
-            }
-        }
-
-         HashMap<String, String> getTags() {
-            return tags;
-        }
 
     }
 
      class SYMUVIAParser extends DefaultHandler {
 
-        private static final int BATCH_SIZE = 100;
-        private PreparedStatement instPreparedStmt;
-        private PreparedStatement trajPreparedStmt;
+        private static final int BATCH_SIZE = 100
+        private PreparedStatement instPreparedStmt
+        private PreparedStatement trajPreparedStmt
 
-        private int instPreparedStmtBatchSize = 0;
-        private int trajPreparedStmtBatchSize = 0;
+        private int instPreparedStmtBatchSize = 0
+        private int trajPreparedStmtBatchSize = 0
 
 
-        private InstSYMUVIAElement instSYMUVIAElement;
-        private TrajSYMUVIAElement trajSYMUVIAElement;
+        private InstSYMUVIAElement instSYMUVIAElement
+        private TrajSYMUVIAElement trajSYMUVIAElement
 
-        private ProgressVisitor progress = new EmptyProgressVisitor();
-        private FileChannel fc;
-        private long fileSize = 0;
-        private long readFileSizeEachNode = 1;
-        private long nodeCountProgress = 0;
+        private ProgressVisitor progress = new EmptyProgressVisitor()
+        private FileChannel fc
+        private long fileSize = 0
+        private long readFileSizeEachNode = 1
+        private long nodeCountProgress = 0
         // For progression information return
-        private static final int AVERAGE_NODE_SIZE = 500;
-        private double indice_val=0;
+        private static final int AVERAGE_NODE_SIZE = 500
+        private double indice_val=0
 
          SYMUVIAParser() {
 
@@ -340,56 +248,56 @@ class SYMUVIADriverFunction {
          * @throws SQLException
          */
          boolean read(Connection connection, String tableName, File inputFile, ProgressVisitor progress) throws SQLException {
-            this.progress = progress.subProcess(100);
+            this.progress = progress.subProcess(100)
             // Initialisation
-            final boolean isH2 = JDBCUtilities.isH2DataBase(connection.getMetaData());
-            boolean success = false;
-            TableLocation requestedTable = TableLocation.parse(tableName, isH2);
-            String symuviaTableName = requestedTable.getTable();
-            checkSYMUVIATables(connection, isH2, requestedTable, symuviaTableName);
-            createSYMUVIADatabaseModel(connection, isH2, requestedTable, symuviaTableName);
+            final boolean isH2 = JDBCUtilities.isH2DataBase(connection.getMetaData())
+            boolean success = false
+            TableLocation requestedTable = TableLocation.parse(tableName, isH2)
+            String symuviaTableName = requestedTable.getTable()
+            checkSYMUVIATables(connection, isH2, requestedTable, symuviaTableName)
+            createSYMUVIADatabaseModel(connection, isH2, requestedTable, symuviaTableName)
 
-            FileInputStream fs = null;
+            FileInputStream fs = null
             try {
-                fs = new FileInputStream(inputFile);
-                this.fc = fs.getChannel();
-                this.fileSize = fc.size();
+                fs = new FileInputStream(inputFile)
+                this.fc = fs.getChannel()
+                this.fileSize = fc.size()
                 // Given the file size and an average node file size.
                 // Skip how many nodes in order to update progression at a step of 1%
-                readFileSizeEachNode = Math.max(1, (this.fileSize / AVERAGE_NODE_SIZE) / 100);
-                nodeCountProgress = 0;
-                XMLReader parser = XMLReaderFactory.createXMLReader();
-                parser.setErrorHandler(this);
-                parser.setContentHandler(this);
+                readFileSizeEachNode = Math.max(1, (long)( (this.fileSize / AVERAGE_NODE_SIZE) / 100))
+                nodeCountProgress = 0
+                XMLReader parser = XMLReaderFactory.createXMLReader()
+                parser.setErrorHandler(this)
+                parser.setContentHandler(this)
                 if(inputFile.getName().endsWith(".xml")) {
-                    parser.parse(new InputSource(fs));
+                    parser.parse(new InputSource(fs))
                 } else{
-                    throw new SQLException("Supported formats are .xml");
+                    throw new SQLException("Supported formats are .xml")
                 }
-                success = true;
+                success = true
             } catch (SAXException ex) {
-                throw new SQLException(ex);
+                throw new SQLException(ex)
             } catch (IOException ex) {
-                throw new SQLException("Cannot parse the file " + inputFile.getAbsolutePath(), ex);
+                throw new SQLException("Cannot parse the file " + inputFile.getAbsolutePath(), ex)
             } finally {
                 try {
                     if (fs != null) {
-                        fs.close();
+                        fs.close()
                     }
                 } catch (IOException ex) {
-                    throw new SQLException("Cannot close the file " + inputFile.getAbsolutePath(), ex);
+                    throw new SQLException("Cannot close the file " + inputFile.getAbsolutePath(), ex)
                 }
                 // When the reading ends, close() method has to be called
                 if (instPreparedStmt != null) {
-                    instPreparedStmt.close();
+                    instPreparedStmt.close()
                 }
                 if (trajPreparedStmt != null) {
-                    trajPreparedStmt.close();
+                    trajPreparedStmt.close()
                 }
 
             }
 
-            return success;
+            return success
         }
 
         /**
@@ -404,9 +312,9 @@ class SYMUVIADriverFunction {
         private void checkSYMUVIATables(Connection connection, boolean isH2, TableLocation requestedTable, String symuviaTableName) throws SQLException {
             String[] simuTables = [SYMUVIATablesFactory.INST, (String) SYMUVIATablesFactory.TRAJ]
             for (String omsTableSuffix : simuTables) {
-                String symuviaTable = TableUtilities.caseIdentifier(requestedTable, symuviaTableName + omsTableSuffix, isH2);
+                String symuviaTable = TableUtilities.caseIdentifier(requestedTable, symuviaTableName + omsTableSuffix, isH2)
                 if (JDBCUtilities.tableExists(connection, symuviaTable)) {
-                    throw new SQLException("The table " + symuviaTable + " already exists.");
+                    throw new SQLException("The table " + symuviaTable + " already exists.")
                 }
             }
         }
@@ -421,31 +329,21 @@ class SYMUVIADriverFunction {
          * @throws SQLException
          */
         private void createSYMUVIADatabaseModel(Connection connection, boolean isH2, TableLocation requestedTable, String symuviaTableName) throws SQLException {
-            String instTableName = TableUtilities.caseIdentifier(requestedTable, symuviaTableName + SYMUVIATablesFactory.INST, isH2);
-            instPreparedStmt =  SYMUVIATablesFactory.createInstTable(connection, instTableName, isH2);
-            String trajTableName = TableUtilities.caseIdentifier(requestedTable, symuviaTableName + SYMUVIATablesFactory.TRAJ, isH2);
-            trajPreparedStmt =  SYMUVIATablesFactory.createTrajTable(connection, trajTableName, isH2);
+            String instTableName = TableUtilities.caseIdentifier(requestedTable, symuviaTableName + SYMUVIATablesFactory.INST, isH2)
+            instPreparedStmt =  SYMUVIATablesFactory.createInstTable(connection, instTableName, isH2)
+            String trajTableName = TableUtilities.caseIdentifier(requestedTable, symuviaTableName + SYMUVIATablesFactory.TRAJ, isH2)
+            trajPreparedStmt =  SYMUVIATablesFactory.createTrajTable(connection, trajTableName, isH2)
         }
          
-        void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
-            if(progress.isCanceled()) {
-                throw new SAXException("Canceled by user");
-            }
-            if (localName.compareToIgnoreCase("INST") == 0) {
-                instSYMUVIAElement = new InstSYMUVIAElement(Double.valueOf(attributes.getValue("val")));
 
-            } else if (localName.compareToIgnoreCase("TRAJ") == 0) {
-                trajSYMUVIAElement = new TrajSYMUVIAElement(Double.valueOf(attributes.getValue("abs")),Double.valueOf(attributes.getValue("acc")),Double.valueOf(attributes.getValue("dst")),Long.valueOf(attributes.getValue("id")),Double.valueOf(attributes.getValue("ord")),String.valueOf(attributes.getValue("type")),Double.valueOf(attributes.getValue("vit")));
-            }
-        }
          
         void endDocument() throws SAXException {
             // Execute remaining batch
             try {
-                instPreparedStmtBatchSize = insertBatch(instPreparedStmt, instPreparedStmtBatchSize, 1);
-                trajPreparedStmtBatchSize = insertBatch(trajPreparedStmt, trajPreparedStmtBatchSize, 1);
+                instPreparedStmtBatchSize = insertBatch(instPreparedStmt, instPreparedStmtBatchSize, 1)
+                trajPreparedStmtBatchSize = insertBatch(trajPreparedStmt, trajPreparedStmtBatchSize, 1)
             } catch (SQLException ex) {
-                throw new SAXException("Could not insert sql batch", ex);
+                throw new SAXException("Could not insert sql batch", ex)
             }
         }
 
@@ -455,59 +353,59 @@ class SYMUVIADriverFunction {
             if (localName.compareToIgnoreCase("INST") == 0) {
                 try {
 
-                    instPreparedStmt.setObject(1, instSYMUVIAElement.getVAL());
-                    indice_val=instSYMUVIAElement.getVAL();
-                    instPreparedStmt.addBatch();
-                    instPreparedStmtBatchSize++;
+                    instPreparedStmt.setObject(1, instSYMUVIAElement.getVAL())
+                    indice_val=instSYMUVIAElement.getVAL()
+                    instPreparedStmt.addBatch()
+                    instPreparedStmtBatchSize++
                 } catch (SQLException ex) {
-                    throw new SAXException("Cannot insert the node  :  " + instSYMUVIAElement.getVAL(), ex);
+                    throw new SAXException("Cannot insert the node  :  " + instSYMUVIAElement.getVAL(), ex)
                 }
             } else if (localName.compareToIgnoreCase("TRAJ") == 0) {
                 try {
-                    trajPreparedStmt.setObject(1, indice_val);
-                    trajPreparedStmt.setObject(2, trajSYMUVIAElement.getABS());
-                    trajPreparedStmt.setObject(3, trajSYMUVIAElement.getACC());
-                    trajPreparedStmt.setObject(4, trajSYMUVIAElement.getDST());
-                    trajPreparedStmt.setObject(5, trajSYMUVIAElement.getID());
-                    trajPreparedStmt.setObject(6, trajSYMUVIAElement.getORD());
-                    trajPreparedStmt.setString(7, trajSYMUVIAElement.getType());
-                    trajPreparedStmt.setObject(8, trajSYMUVIAElement.getVIT());
-                    trajPreparedStmt.addBatch();
-                    trajPreparedStmtBatchSize++;
+                    trajPreparedStmt.setObject(1, indice_val)
+                    trajPreparedStmt.setObject(2, trajSYMUVIAElement.getABS())
+                    trajPreparedStmt.setObject(3, trajSYMUVIAElement.getACC())
+                    trajPreparedStmt.setObject(4, trajSYMUVIAElement.getDST())
+                    trajPreparedStmt.setObject(5, trajSYMUVIAElement.getID())
+                    trajPreparedStmt.setObject(6, trajSYMUVIAElement.getORD())
+                    trajPreparedStmt.setString(7, trajSYMUVIAElement.getType())
+                    trajPreparedStmt.setObject(8, trajSYMUVIAElement.getVIT())
+                    trajPreparedStmt.addBatch()
+                    trajPreparedStmtBatchSize++
                 } catch (SQLException ex) {
-                    throw new SAXException("Cannot insert the traj  :  " + trajSYMUVIAElement.getABS(), ex);
+                    throw new SAXException("Cannot insert the traj  :  " + trajSYMUVIAElement.getABS(), ex)
                 }
             }
             try {
-                insertBatch();
+                insertBatch()
             } catch (SQLException ex) {
-                throw new SAXException("Could not insert sql batch", ex);
+                throw new SAXException("Could not insert sql batch", ex)
             }
             if(nodeCountProgress++ % readFileSizeEachNode == 0) {
                 // Update Progress
                 try {
-                    progress.setStep((int) (((double) fc.position() / fileSize) * 100));
-                } catch (IOException ex) {
+                    progress.setStep((int) (((double) fc.position() / fileSize) * 100))
+                } catch (IOException x) {
                     // Ignore
                 }
             }
         }
 
         private void insertBatch() throws SQLException {
-            instPreparedStmtBatchSize = insertBatch(instPreparedStmt, instPreparedStmtBatchSize);
-            trajPreparedStmtBatchSize = insertBatch(trajPreparedStmt, trajPreparedStmtBatchSize);
+            instPreparedStmtBatchSize = insertBatch(instPreparedStmt, instPreparedStmtBatchSize)
+            trajPreparedStmtBatchSize = insertBatch(trajPreparedStmt, trajPreparedStmtBatchSize)
         }
         private int insertBatch(PreparedStatement st, int batchSize, int maxBatchSize) throws SQLException {
             if(batchSize >= maxBatchSize) {
-                st.executeBatch();
-                return 0;
+                st.executeBatch()
+                return 0
             } else {
-                return batchSize;
+                return batchSize
             }
         }
 
         private int insertBatch(PreparedStatement st, int batchSize) throws SQLException {
-            return insertBatch(st, batchSize, BATCH_SIZE);
+            return insertBatch(st, batchSize, BATCH_SIZE)
         }
 
 
@@ -521,13 +419,13 @@ class SYMUVIADriverFunction {
      */
      class TrajSYMUVIAElement {
 
-        private double abs;
-        private double acc;
-        private long id;
-        private double dst;
-        private double ord;
-        private String type;
-        private double vit;
+        private double abs
+        private double acc
+        private long id
+        private double dst
+        private double ord
+        private String type
+        private double vit
 
 
         /**
@@ -541,13 +439,13 @@ class SYMUVIADriverFunction {
          * @param vit Longitude value
          */
          TrajSYMUVIAElement(double abs, double acc, double dst,long id, double ord, String type,double vit) {
-            this.abs = abs;
-            this.acc = acc;
-            this.id = id;
-            this.dst = dst;
-            this.ord = ord;
-            this.type = type;
-            this.vit = vit;
+            this.abs = abs
+            this.acc = acc
+            this.id = id
+            this.dst = dst
+            this.ord = ord
+            this.type = type
+            this.vit = vit
         }
         /**
          * The id of the element
@@ -555,7 +453,7 @@ class SYMUVIADriverFunction {
          * @return
          */
          long getID() {
-            return id;
+            return id
         }
 
         /**
@@ -563,28 +461,25 @@ class SYMUVIADriverFunction {
          *
          * @param id
          */
-         void setId(String id) {
-            this.id = Long.valueOf(id);
-        }
 
          double getABS() {
-            return abs;
+            return abs
         }
 
          double getACC() {
-            return acc;
+            return acc
         }
 
          double getDST() {
-            return dst;
+            return dst
         }
 
          double getORD() {
-            return ord;
+            return ord
         }
 
         double getVIT() {
-            return vit;
+            return vit
         }
 
         /**
@@ -593,11 +488,11 @@ class SYMUVIADriverFunction {
          * @return
          */
         String getType() {
-            return type;
+            return type
         }
 
         void setType(String type) {
-            this.type = type;
+            this.type = type
         }
 
 
@@ -619,8 +514,8 @@ class SYMUVIADriverFunction {
     class SYMUVIATablesFactory {
 
         //Suffix table names
-        public static final String TRAJ = "_traj";
-        public static final String INST = "_inst";
+        public static final String TRAJ = "_traj"
+        public static final String INST = "_inst"
 
 
         private SYMUVIATablesFactory() {
@@ -636,13 +531,13 @@ class SYMUVIADriverFunction {
          * @throws SQLException
          */
         static PreparedStatement createInstTable(Connection connection, String instTableName, boolean isH2) throws SQLException {
-            Statement stmt = connection.createStatement();
-            StringBuilder sb = new StringBuilder("CREATE TABLE ");
-            sb.append(instTableName);
-            sb.append("(val DOUBLE PRECISION);");
-            stmt.execute(sb.toString());
-            stmt.close();
-            return connection.prepareStatement("INSERT INTO " + instTableName + " VALUES (?);");
+            Statement stmt = connection.createStatement()
+            StringBuilder sb = new StringBuilder("CREATE TABLE ")
+            sb.append(instTableName)
+            sb.append("(val DOUBLE PRECISION);")
+            stmt.execute(sb.toString())
+            stmt.close()
+            return connection.prepareStatement("INSERT INTO " + instTableName + " VALUES (?);")
         }
 
 
@@ -655,9 +550,9 @@ class SYMUVIADriverFunction {
          * @throws SQLException
          */
         static PreparedStatement createTrajTable(Connection connection, String trajTableName, boolean isH2) throws SQLException {
-            Statement stmt = connection.createStatement();
-            StringBuilder sb = new StringBuilder("CREATE TABLE ");
-            sb.append(trajTableName);
+            Statement stmt = connection.createStatement()
+            StringBuilder sb = new StringBuilder("CREATE TABLE ")
+            sb.append(trajTableName)
             sb.append("(inst DOUBLE PRECISION,"
                     + "abs DOUBLE PRECISION,"
                     + "acc DOUBLE PRECISION,"
@@ -665,10 +560,10 @@ class SYMUVIADriverFunction {
                     + "id INTEGER,"
                     + "ord DOUBLE PRECISION,"
                     + "type VARCHAR,"
-                    + "vit DOUBLE PRECISION);");
-            stmt.execute(sb.toString());
-            stmt.close();
-            return connection.prepareStatement("INSERT INTO " + trajTableName + " VALUES (?,?,?,?,?,?,?,?);");
+                    + "vit DOUBLE PRECISION);")
+            stmt.execute(sb.toString())
+            stmt.close()
+            return connection.prepareStatement("INSERT INTO " + trajTableName + " VALUES (?,?,?,?,?,?,?,?);")
         }
 
 
@@ -682,21 +577,21 @@ class SYMUVIADriverFunction {
          * @throws SQLException
          */
         static void dropSYMUVIATables(Connection connection, boolean isH2, String tablePrefix) throws SQLException {
-            TableLocation requestedTable = TableLocation.parse(tablePrefix, isH2);
-            String symuviaTableName = requestedTable.getTable();
+            TableLocation requestedTable = TableLocation.parse(tablePrefix, isH2)
+            String symuviaTableName = requestedTable.getTable()
             String[] omsTables = String[INST, TRAJ]
-            StringBuilder sb =  new StringBuilder("drop table if exists ");
-            String omsTableSuffix = omsTables[0];
-            String symuviaTable = TableUtilities.caseIdentifier(requestedTable, symuviaTableName + omsTableSuffix, isH2);
-            sb.append(symuviaTable);
+            StringBuilder sb =  new StringBuilder("drop table if exists ")
+            String omsTableSuffix = omsTables[0]
+            String symuviaTable = TableUtilities.caseIdentifier(requestedTable, symuviaTableName + omsTableSuffix, isH2)
+            sb.append(symuviaTable)
             for (int i = 1; i < omsTables.length; i++) {
-                omsTableSuffix = omsTables[i];
-                symuviaTable = TableUtilities.caseIdentifier(requestedTable, symuviaTableName + omsTableSuffix, isH2);
-                sb.append(",").append(symuviaTable);
+                omsTableSuffix = omsTables[i]
+                symuviaTable = TableUtilities.caseIdentifier(requestedTable, symuviaTableName + omsTableSuffix, isH2)
+                sb.append(",").append(symuviaTable)
             }
-            Statement stmt = connection.createStatement();
-            stmt.execute(sb.toString());
-            stmt.close();
+            Statement stmt = connection.createStatement()
+            stmt.execute(sb.toString())
+            stmt.close()
         }
     }
 }
