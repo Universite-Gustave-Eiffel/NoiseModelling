@@ -32,6 +32,7 @@ import java.sql.Connection
 import java.sql.PreparedStatement
 import java.sql.SQLException
 import java.sql.Statement
+import org.xml.sax.Attributes
 
 
 title = 'Import File'
@@ -53,6 +54,7 @@ static Connection openGeoserverDataStoreConnection(String dbName) {
     return jdbcDataStore.getDataSource().getConnection()
 }
 
+
 def run(input) {
 
     // Get name of the database
@@ -61,13 +63,21 @@ def run(input) {
         dbName = input['databaseName'] as String
     }
 
+    // Open connection
+    openGeoserverDataStoreConnection(dbName).withCloseable { Connection connection ->
+        exec(connection, input)
+    }
+}
+
+
+def exec(connection, input) {
+
+
     Integer defaultSRID = 4326
     if (input['defaultSRID']) {
         defaultSRID = input['defaultSRID'] as Integer
     }
 
-    // Open connection
-    openGeoserverDataStoreConnection(dbName).withCloseable { Connection connection ->
 
 
         String pathFile = input["pathFile"] as String
@@ -85,52 +95,16 @@ def run(input) {
 
         String ext = pathFile.substring(pathFile.lastIndexOf('.') + 1, pathFile.length())
         switch (ext) {
-            case "csv":
-                CSVDriverFunction csvDriver = new CSVDriverFunction()
-                csvDriver.importFile(connection, outputTableName, new File(pathFile), new EmptyProgressVisitor())
-                break
-            case "dbf":
-                DBFDriverFunction dbfDriver = new DBFDriverFunction()
-                dbfDriver.importFile(connection, outputTableName, new File(pathFile), new EmptyProgressVisitor())
-                break
-            case "geojson":
-                GeoJsonDriverFunction geoJsonDriver = new GeoJsonDriverFunction()
-                geoJsonDriver.importFile(connection, outputTableName, new File(pathFile), new EmptyProgressVisitor())
-                break
-            case "gpx":
-                GPXDriverFunction gpxDriver = new GPXDriverFunction()
-                gpxDriver.importFile(connection, outputTableName, new File(pathFile), new EmptyProgressVisitor())
-                break
-            case "bz2":
-                OSMDriverFunction osmDriver = new OSMDriverFunction()
-                osmDriver.importFile(connection, outputTableName, new File(pathFile), new EmptyProgressVisitor())
-                break
-            case "gz":
-                OSMDriverFunction osmDriver = new OSMDriverFunction()
-                osmDriver.importFile(connection, outputTableName, new File(pathFile), new EmptyProgressVisitor())
-                break
             case "xml":
                 SYMUVIADriverFunction symuviaDriver = new SYMUVIADriverFunction()
                 symuviaDriver.importFile(connection, outputTableName, new File(pathFile), new EmptyProgressVisitor())
-                break
-            case "osm":
-                OSMDriverFunction osmDriver = new OSMDriverFunction()
-                osmDriver.importFile(connection, outputTableName, new File(pathFile), new EmptyProgressVisitor())
-                break
-            case "shp":
-                SHPDriverFunction shpDriver = new SHPDriverFunction()
-                shpDriver.importFile(connection, outputTableName, new File(pathFile), new EmptyProgressVisitor())
-                break
-            case "tsv":
-                TSVDriverFunction tsvDriver = new TSVDriverFunction()
-                tsvDriver.importFile(connection, outputTableName, new File(pathFile), new EmptyProgressVisitor())
                 break
         }
 
         int srid = SFSUtilities.getSRID(connection, TableLocation.parse(outputTableName))
         if(srid == 0) {
             connection.createStatement().execute(String.format("UPDATE %s SET THE_GEOM = ST_SetSRID(the_geom,%d)",
-                    TableLocation.parse(outputTableName).toString(), defaultSRID))
+                    TableLocation.parse(outputTableName+"_TRAJ").toString(), defaultSRID))
 
         }
 
@@ -150,7 +124,7 @@ def run(input) {
 
         return [tableNameCreated: returnString]
 
-    }
+
 }
 
 
@@ -211,29 +185,29 @@ class SYMUVIADriverFunction {
 
     }
 
-     class SYMUVIAParser extends DefaultHandler {
+    class SYMUVIAParser extends DefaultHandler {
 
-        private static final int BATCH_SIZE = 100
-        private PreparedStatement instPreparedStmt
-        private PreparedStatement trajPreparedStmt
+        private static final int BATCH_SIZE = 100;
+        private PreparedStatement instPreparedStmt;
+        private PreparedStatement trajPreparedStmt;
 
-        private int instPreparedStmtBatchSize = 0
-        private int trajPreparedStmtBatchSize = 0
+        private int instPreparedStmtBatchSize = 0;
+        private int trajPreparedStmtBatchSize = 0;
 
 
-        private InstSYMUVIAElement instSYMUVIAElement
-        private TrajSYMUVIAElement trajSYMUVIAElement
+        private InstSYMUVIAElement instSYMUVIAElement;
+        private TrajSYMUVIAElement trajSYMUVIAElement;
 
-        private ProgressVisitor progress = new EmptyProgressVisitor()
-        private FileChannel fc
-        private long fileSize = 0
-        private long readFileSizeEachNode = 1
-        private long nodeCountProgress = 0
+        private ProgressVisitor progress = new EmptyProgressVisitor();
+        private FileChannel fc;
+        private long fileSize = 0;
+        private long readFileSizeEachNode = 1;
+        private long nodeCountProgress = 0;
         // For progression information return
-        private static final int AVERAGE_NODE_SIZE = 500
-        private double indice_val=0
+        private static final int AVERAGE_NODE_SIZE = 500;
+        private double indice_val=0;
 
-         SYMUVIAParser() {
+        public SYMUVIAParser() {
 
         }
 
@@ -247,57 +221,57 @@ class SYMUVIADriverFunction {
          * @return
          * @throws SQLException
          */
-         boolean read(Connection connection, String tableName, File inputFile, ProgressVisitor progress) throws SQLException {
-            this.progress = progress.subProcess(100)
+        public boolean read(Connection connection, String tableName, File inputFile, ProgressVisitor progress) throws SQLException {
+            this.progress = progress.subProcess(100);
             // Initialisation
-            final boolean isH2 = JDBCUtilities.isH2DataBase(connection.getMetaData())
-            boolean success = false
-            TableLocation requestedTable = TableLocation.parse(tableName, isH2)
-            String symuviaTableName = requestedTable.getTable()
-            checkSYMUVIATables(connection, isH2, requestedTable, symuviaTableName)
-            createSYMUVIADatabaseModel(connection, isH2, requestedTable, symuviaTableName)
+            final boolean isH2 = JDBCUtilities.isH2DataBase(connection.getMetaData());
+            boolean success = false;
+            TableLocation requestedTable = TableLocation.parse(tableName, isH2);
+            String symuviaTableName = requestedTable.getTable();
+            checkSYMUVIATables(connection, isH2, requestedTable, symuviaTableName);
+            createSYMUVIADatabaseModel(connection, isH2, requestedTable, symuviaTableName);
 
-            FileInputStream fs = null
+            FileInputStream fs = null;
             try {
-                fs = new FileInputStream(inputFile)
-                this.fc = fs.getChannel()
-                this.fileSize = fc.size()
+                fs = new FileInputStream(inputFile);
+                this.fc = fs.getChannel();
+                this.fileSize = fc.size();
                 // Given the file size and an average node file size.
                 // Skip how many nodes in order to update progression at a step of 1%
-                readFileSizeEachNode = Math.max(1, (long)( (this.fileSize / AVERAGE_NODE_SIZE) / 100))
-                nodeCountProgress = 0
-                XMLReader parser = XMLReaderFactory.createXMLReader()
-                parser.setErrorHandler(this)
-                parser.setContentHandler(this)
+                readFileSizeEachNode = Math.max((long) 1, (long) ((this.fileSize / AVERAGE_NODE_SIZE) / 100))
+                nodeCountProgress = 0;
+                XMLReader parser = XMLReaderFactory.createXMLReader();
+                parser.setErrorHandler(this);
+                parser.setContentHandler(this);
                 if(inputFile.getName().endsWith(".xml")) {
-                    parser.parse(new InputSource(fs))
+                    parser.parse(new InputSource(fs));
                 } else{
-                    throw new SQLException("Supported formats are .xml")
+                    throw new SQLException("Supported formats are .xml");
                 }
-                success = true
+                success = true;
             } catch (SAXException ex) {
-                throw new SQLException(ex)
+                throw new SQLException(ex);
             } catch (IOException ex) {
-                throw new SQLException("Cannot parse the file " + inputFile.getAbsolutePath(), ex)
+                throw new SQLException("Cannot parse the file " + inputFile.getAbsolutePath(), ex);
             } finally {
                 try {
                     if (fs != null) {
-                        fs.close()
+                        fs.close();
                     }
                 } catch (IOException ex) {
-                    throw new SQLException("Cannot close the file " + inputFile.getAbsolutePath(), ex)
+                    throw new SQLException("Cannot close the file " + inputFile.getAbsolutePath(), ex);
                 }
                 // When the reading ends, close() method has to be called
                 if (instPreparedStmt != null) {
-                    instPreparedStmt.close()
+                    instPreparedStmt.close();
                 }
                 if (trajPreparedStmt != null) {
-                    trajPreparedStmt.close()
+                    trajPreparedStmt.close();
                 }
 
             }
 
-            return success
+            return success;
         }
 
         /**
@@ -310,11 +284,11 @@ class SYMUVIADriverFunction {
          * @throws SQLException
          */
         private void checkSYMUVIATables(Connection connection, boolean isH2, TableLocation requestedTable, String symuviaTableName) throws SQLException {
-            String[] simuTables = [SYMUVIATablesFactory.INST, (String) SYMUVIATablesFactory.TRAJ]
-            for (String omsTableSuffix : simuTables) {
-                String symuviaTable = TableUtilities.caseIdentifier(requestedTable, symuviaTableName + omsTableSuffix, isH2)
+            String[] omsTables = [SYMUVIATablesFactory.INST,SYMUVIATablesFactory.TRAJ]
+            for (String omsTableSuffix : omsTables) {
+                String symuviaTable = TableUtilities.caseIdentifier(requestedTable, symuviaTableName + omsTableSuffix, isH2);
                 if (JDBCUtilities.tableExists(connection, symuviaTable)) {
-                    throw new SQLException("The table " + symuviaTable + " already exists.")
+                    throw new SQLException("The table " + symuviaTable + " already exists.");
                 }
             }
         }
@@ -329,83 +303,96 @@ class SYMUVIADriverFunction {
          * @throws SQLException
          */
         private void createSYMUVIADatabaseModel(Connection connection, boolean isH2, TableLocation requestedTable, String symuviaTableName) throws SQLException {
-            String instTableName = TableUtilities.caseIdentifier(requestedTable, symuviaTableName + SYMUVIATablesFactory.INST, isH2)
-            instPreparedStmt =  SYMUVIATablesFactory.createInstTable(connection, instTableName, isH2)
-            String trajTableName = TableUtilities.caseIdentifier(requestedTable, symuviaTableName + SYMUVIATablesFactory.TRAJ, isH2)
-            trajPreparedStmt =  SYMUVIATablesFactory.createTrajTable(connection, trajTableName, isH2)
+            String instTableName = TableUtilities.caseIdentifier(requestedTable, symuviaTableName + SYMUVIATablesFactory.INST, isH2);
+            instPreparedStmt =  SYMUVIATablesFactory.createInstTable(connection, instTableName, isH2);
+            String trajTableName = TableUtilities.caseIdentifier(requestedTable, symuviaTableName + SYMUVIATablesFactory.TRAJ, isH2);
+            trajPreparedStmt =  SYMUVIATablesFactory.createTrajTable(connection, trajTableName, isH2);
         }
-         
 
-         
-        void endDocument() throws SAXException {
-            // Execute remaining batch
-            try {
-                instPreparedStmtBatchSize = insertBatch(instPreparedStmt, instPreparedStmtBatchSize, 1)
-                trajPreparedStmtBatchSize = insertBatch(trajPreparedStmt, trajPreparedStmtBatchSize, 1)
-            } catch (SQLException ex) {
-                throw new SAXException("Could not insert sql batch", ex)
+
+        @Override
+        void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
+            if(progress.isCanceled()) {
+                throw new SAXException("Canceled by user");
+            }
+            if (localName.compareToIgnoreCase("INST") == 0) {
+                instSYMUVIAElement = new InstSYMUVIAElement(Double.valueOf(attributes.getValue("val")));
+
+            } else if (localName.compareToIgnoreCase("TRAJ") == 0) {
+                trajSYMUVIAElement = new TrajSYMUVIAElement(Double.valueOf(attributes.getValue("abs")),Double.valueOf(attributes.getValue("acc")),Double.valueOf(attributes.getValue("dst")),Long.valueOf(attributes.getValue("id")),Double.valueOf(attributes.getValue("ord")),String.valueOf(attributes.getValue("type")),Double.valueOf(attributes.getValue("vit")));
             }
         }
 
-        
-        void endElement(String uri, String localName, String qName) throws SAXException {
+        @Override
+        public void endDocument() throws SAXException {
+            // Execute remaining batch
+            try {
+                instPreparedStmtBatchSize = insertBatch(instPreparedStmt, instPreparedStmtBatchSize, 1);
+                trajPreparedStmtBatchSize = insertBatch(trajPreparedStmt, trajPreparedStmtBatchSize, 1);
+            } catch (SQLException ex) {
+                throw new SAXException("Could not insert sql batch", ex);
+            }
+        }
+
+        @Override
+        public void endElement(String uri, String localName, String qName) throws SAXException {
 
             if (localName.compareToIgnoreCase("INST") == 0) {
                 try {
 
-                    instPreparedStmt.setObject(1, instSYMUVIAElement.getVAL())
-                    indice_val=instSYMUVIAElement.getVAL()
-                    instPreparedStmt.addBatch()
-                    instPreparedStmtBatchSize++
+                    instPreparedStmt.setObject(1, instSYMUVIAElement.getVAL());
+                    indice_val=instSYMUVIAElement.getVAL();
+                    instPreparedStmt.addBatch();
+                    instPreparedStmtBatchSize++;
                 } catch (SQLException ex) {
-                    throw new SAXException("Cannot insert the node  :  " + instSYMUVIAElement.getVAL(), ex)
+                    throw new SAXException("Cannot insert the node  :  " + instSYMUVIAElement.getVAL(), ex);
                 }
             } else if (localName.compareToIgnoreCase("TRAJ") == 0) {
                 try {
-                    trajPreparedStmt.setObject(1, indice_val)
-                    trajPreparedStmt.setObject(2, trajSYMUVIAElement.getABS())
-                    trajPreparedStmt.setObject(3, trajSYMUVIAElement.getACC())
-                    trajPreparedStmt.setObject(4, trajSYMUVIAElement.getDST())
-                    trajPreparedStmt.setObject(5, trajSYMUVIAElement.getID())
-                    trajPreparedStmt.setObject(6, trajSYMUVIAElement.getORD())
-                    trajPreparedStmt.setString(7, trajSYMUVIAElement.getType())
-                    trajPreparedStmt.setObject(8, trajSYMUVIAElement.getVIT())
-                    trajPreparedStmt.addBatch()
-                    trajPreparedStmtBatchSize++
+                    trajPreparedStmt.setObject(1, indice_val);
+                    trajPreparedStmt.setObject(2, trajSYMUVIAElement.getABS());
+                    trajPreparedStmt.setObject(3, trajSYMUVIAElement.getACC());
+                    trajPreparedStmt.setObject(4, trajSYMUVIAElement.getDST());
+                    trajPreparedStmt.setObject(5, trajSYMUVIAElement.getID());
+                    trajPreparedStmt.setObject(6, trajSYMUVIAElement.getORD());
+                    trajPreparedStmt.setString(7, trajSYMUVIAElement.getType());
+                    trajPreparedStmt.setObject(8, trajSYMUVIAElement.getVIT());
+                    trajPreparedStmt.addBatch();
+                    trajPreparedStmtBatchSize++;
                 } catch (SQLException ex) {
-                    throw new SAXException("Cannot insert the traj  :  " + trajSYMUVIAElement.getABS(), ex)
+                    throw new SAXException("Cannot insert the traj  :  " + trajSYMUVIAElement.getABS(), ex);
                 }
             }
             try {
-                insertBatch()
+                insertBatch();
             } catch (SQLException ex) {
-                throw new SAXException("Could not insert sql batch", ex)
+                throw new SAXException("Could not insert sql batch", ex);
             }
             if(nodeCountProgress++ % readFileSizeEachNode == 0) {
                 // Update Progress
                 try {
-                    progress.setStep((int) (((double) fc.position() / fileSize) * 100))
-                } catch (IOException x) {
+                    progress.setStep((int) (((double) fc.position() / fileSize) * 100));
+                } catch (IOException ex) {
                     // Ignore
                 }
             }
         }
 
         private void insertBatch() throws SQLException {
-            instPreparedStmtBatchSize = insertBatch(instPreparedStmt, instPreparedStmtBatchSize)
-            trajPreparedStmtBatchSize = insertBatch(trajPreparedStmt, trajPreparedStmtBatchSize)
+            instPreparedStmtBatchSize = insertBatch(instPreparedStmt, instPreparedStmtBatchSize);
+            trajPreparedStmtBatchSize = insertBatch(trajPreparedStmt, trajPreparedStmtBatchSize);
         }
         private int insertBatch(PreparedStatement st, int batchSize, int maxBatchSize) throws SQLException {
             if(batchSize >= maxBatchSize) {
-                st.executeBatch()
-                return 0
+                st.executeBatch();
+                return 0;
             } else {
-                return batchSize
+                return batchSize;
             }
         }
 
         private int insertBatch(PreparedStatement st, int batchSize) throws SQLException {
-            return insertBatch(st, batchSize, BATCH_SIZE)
+            return insertBatch(st, batchSize, BATCH_SIZE);
         }
 
 
