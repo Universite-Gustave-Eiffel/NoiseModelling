@@ -6,7 +6,10 @@ Presentation
 
 The OGC Web Processing Service (WPS) Interface Standard provides rules for standardizing inputs and outputs (requests and responses) for invoking geospatial processing services as a web service.
 
-WPS scripts for GeoServer are written in groovy language. They should be located in the Geoserver\\data_dir\\scripts\\wps directory.
+WPS scripts for GeoServer are written in groovy language. They are located in the Geoserver\\data_dir\\scripts\\wps directory.
+
+.. note::
+    Don't be shy, if you think your block can be useful to the community, you can redistribute it using github or by sending it directly to us.
 
 .. tip::
     The best way to make your own WPS is to be inspired by those that are already made. See how the tutorial is built or contact us for many more examples.

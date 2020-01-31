@@ -1,61 +1,24 @@
 WPS Blocks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-NoiseModelling v3.0.0 comes with 7 WPS blocks.
 
-.. note ::
-    - Orange blocks are mandatory
-    - Beige blocks are optional
-    - if all input blocks are optional, you must modify at least one of these blocks to be able to run the process
-    - Blocks get solid border when they are ready to run
+WPS general presentation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The OGC Web Processing Service (WPS) Interface Standard provides rules for standardizing inputs and outputs (requests and responses) for invoking geospatial processing services, such as polygon overlay, as a web service. The WPS standard defines how a client can request the execution of a process, and how the output from the process is handled. It defines an interface that facilitates the publishing of geospatial processes and clients’ discovery of and binding to those processes.
 
 
-Import and Export 
-~~~~~~~~~~~~~~~~~~~~~~~~
+NoiseModelling and WPS
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+NoiseModelling v3.0.0 comes with 7 WPS blocks. With each new version, new blocks are added. Be curious and check out the latest version !
+WPS scripts for GeoServer are written in groovy language. They are located in the Geoserver\\data_dir\\scripts\\wps directory.
 
-- **[Import Folder]** : Allows you to import all files (with the same format) from a folder.
+WPS Builder
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+WPS Builder allows for the creating of graphical process workflows that can be easily executed and reproduced. It allows Web Processing Services to operate through a user interface.
 
-- **[Import File]** : Allows you to import an unique file.
+We have developed a version of WPS Builder adapted to the needs of NoiseModelling. This version being very close to the original version, do not hesitate to consult the official documentation : `WPS Builder documentation`_
 
-- **[Export File]** : Allows you to export an unique file.
-
-.. note ::
-    The supported format are : csv, dbf, geojson, gpx, bz2, gz, osm, shp, tsv
-
-
-Noise Modelling
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-- **[Get Lday (Tutorial)]** : Allows you to compute your first noise map with NoiseModelling. This is a tutorial. 
-
-.. note ::
-    In this tutorial, you can use 5 different tables as input data containing the following fields: 
-        - DEM (dem_lorient.geojson) : 
-            - geometry : POINT with 3 dimensions (X,Y,Z) 
-        - BUILDING (buildings.shp) : 
-            - geometry : POLYGONS
-            - HEIGHT : building height.
-        - SOURCES (roads.shp) : 
-            - geometry : LINES
-            - ID : primary key corresponding to the roads ID 
-            - AADF field : Annual Average Daily Flow estimates
-            - CLAS_ADM : type of roads (used to estimate flow speed)
-        - RECEIVERS (receivers.shp) : 
-            - geometry : POINT with 3 dimensions (X,Y,Z) 
-            - ID : primary key
-        - GROUND (ground_type.shp) :
-            - geometry : POLYGONS
-            - G : from 0 to 1 the absorption coefficient of the ground
-
-
-Database management
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-- **[Display All]**  : Display all tables in your database. You can choose to log the column names or not.
-
-- **[Clean All]**  : Clean all tables in your database.
-
-- **[Drop a table]**  : Remove one specific table of your database.
+.. _WPS Builder documentation: https://docs.boundlessgeo.com/suite/1.1.0/processing/wpsbuilder/index.html
 
 Create your own WPS script
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~

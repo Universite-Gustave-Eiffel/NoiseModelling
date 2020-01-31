@@ -9,6 +9,8 @@ What is the color of the block in WPSBuilder?
 
 - Blocks get solid border when they are ready
 
+- Green block are unfortunately useless
+
 Can I save my WPSBuilder project ?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
