@@ -4,7 +4,9 @@ Noise Map from OSM - Tutorial
 Prerequisites
 ~~~~~~~~~~~~~~~~~
 
-You need at least NoiseModelling v.3.0.4
+- You need at least NoiseModelling v.3.0.6
+- If you have just finished the first tutorial, please clean your database with the WPS block *Clean_Database* (the name of the database is by default: h2gisdb)
+
 
 Step 1:  Importing OSM data to the database
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
