@@ -1,5 +1,15 @@
-WPS Builder FAQ
+WPS Builder
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+What is WPS Builder ?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+WPS Builder allows for the creating of graphical process workflows that can be easily executed and reproduced. It allows Web Processing Services to operate through a user interface.
+
+We have developed a version of WPS Builder adapted to the needs of NoiseModelling. This version being very close to the original version, do not hesitate to consult the official documentation : `WPS Builder documentation`_
+
+.. _WPS Builder documentation: https://docs.boundlessgeo.com/suite/1.1.0/processing/wpsbuilder/index.html
+
+
 What is the color of the block in WPSBuilder?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
