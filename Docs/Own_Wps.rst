@@ -1,4 +1,4 @@
-Create your own WPS
+Create your own WPS block
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Presentation

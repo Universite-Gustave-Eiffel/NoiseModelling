@@ -4,7 +4,9 @@ WPS Blocks
 
 WPS general presentation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-The OGC Web Processing Service (WPS) Interface Standard provides rules for standardizing inputs and outputs (requests and responses) for invoking geospatial processing services, such as polygon overlay, as a web service. The WPS standard defines how a client can request the execution of a process, and how the output from the process is handled. It defines an interface that facilitates the publishing of geospatial processes and clients’ discovery of and binding to those processes.
+The OGC Web Processing Service (WPS) Interface Standard provides rules for standardizing inputs and outputs (requests and responses) for invoking geospatial processing services, such as polygon overlay, as a web service.
+
+The WPS standard defines how a client can request the execution of a process, and how the output from the process is handled. It defines an interface that facilitates the publishing of geospatial processes and clients’ discovery of and binding to those processes.
 
 
 NoiseModelling and WPS
@@ -24,7 +26,7 @@ We have developed a version of WPS Builder adapted to the needs of NoiseModellin
 
 .. _WPS Builder documentation: https://docs.boundlessgeo.com/suite/1.1.0/processing/wpsbuilder/index.html
 
-Create your own WPS script
+Create your own WPS block
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Please see `Advanced Users Section`_, because now you want to be one !
