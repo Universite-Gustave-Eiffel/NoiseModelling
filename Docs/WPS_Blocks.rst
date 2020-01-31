@@ -9,8 +9,12 @@ The OGC Web Processing Service (WPS) Interface Standard provides rules for stand
 
 NoiseModelling and WPS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-NoiseModelling v3.0.0 comes with 7 WPS blocks. With each new version, new blocks are added. Be curious and check out the latest version !
-WPS scripts for GeoServer are written in groovy language. They are located in the Geoserver\\data_dir\\scripts\\wps directory.
+NoiseModelling v3.0.0 comes with 7 WPS blocks. WPS scripts for GeoServer are written in groovy language.
+
+They are located in :literal:`Geoserver\\data_dir\\scripts\\wps directory`
+
+.. tips::
+    With each new version, new blocks are added. Be curious and check out the latest version !
 
 WPS Builder
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
