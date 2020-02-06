@@ -50,6 +50,7 @@ description = 'Compute MultiRuns. A ver...'
 
 inputs = [databaseName      : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database. (default : h2gisdb)', min: 0, max: 1, type: String.class],
           workingDir : [name: 'workingDir', title: 'workingDir', description: 'workingDir (ex : C:/Desktop/), shall contain Rays.zip and MR_Input.json', type: String.class],
+          hasPop  : [name: 'hasPop', title: 'hasPop',min: 0, max: 1, type: Boolean.class],
           nbSimu  : [name: 'nSimu', title: 'nSimu',min: 0, max: 1, type: Integer.class],
           threadNumber      : [name: 'Thread number', title: 'Thread number', description: 'Number of thread to use on the computer (default = 1)', min: 0, max: 1, type: String.class]]
 
@@ -85,6 +86,14 @@ def run(input) {
     if (input['threadNumber']) {
         n_thread = Integer.valueOf(input['threadNumber'])
     }
+
+
+    boolean hasPop = false
+    if (input['hasPop']) {
+        hasPop = Boolean.valueOf(input['hasPop'])
+    }
+
+
 
     // Get name of the database
     String dbName = ""
@@ -228,14 +237,16 @@ def run(input) {
         int GZIP_CACHE_SIZE = (int) Math.pow(2, 19)
 
         System.out.println("Start time :" + df.format(new Date()))
-
         HashMap<Integer,Double> pop = new HashMap<>()
-        // memes valeurs d e et n
-        int nrcv = 0
-        sql.eachRow('SELECT pk, pop FROM RECEIVERS_MR;') { row ->
-            int id = (int) row[0]
-            pop.put(id, (Double) row[1])
-            nrcv++
+        if(hasPop){
+
+            // memes valeurs d e et n
+            int nrcv = 0
+            sql.eachRow('SELECT pk, pop FROM RECEIVERS_MR;') { row ->
+                int id = (int) row[0]
+                pop.put(id, (Double) row[1])
+                nrcv++
+            }
         }
 
 
@@ -248,6 +259,7 @@ def run(input) {
         int oldIdReceiver = -1
 
         sql.execute("drop table if exists MultiRunsResults;")
+
         sql.execute("create table MultiRunsResults (idRun integer,idReceiver integer, pop double precision, " +
                 "Lden63 double precision, Lden125 double precision, Lden250 double precision, Lden500 double precision, Lden1000 double precision, Lden2000 double precision, Lden4000 double precision, Lden8000 double precision);")
 
@@ -309,7 +321,9 @@ def run(input) {
                                 ReceiverSimulationProcess receiverSimulationProcess =
                                         new ReceiverSimulationProcess(resultsInsertThread.getConcurrentLinkedQueue(),
                                                 multiRunsProcessData, pointToPointPathsMultiRuns,nSimu)
-                                receiverSimulationProcess.setPop(pop.get(idReceiver))
+                                if (hasPop){
+                                    receiverSimulationProcess.setPop(pop.get(idReceiver))
+                                }
                                 executorService.execute(receiverSimulationProcess)
                                 pointToPointPathsMultiRuns = new ArrayList<>(pointToPointPathsMultiRuns.size())
                                 count ++
@@ -353,7 +367,10 @@ def run(input) {
 //CREATE INDEX ON MultiRunsResults(IDRECEIVER);
 
         sql.execute("drop table if exists MultiRunsResults_geom;")
+
         sql.execute("create table MultiRunsResults_geom  as select a.idRun, a.idReceiver, b.pop, b.THE_GEOM, a.Lden63, a.Lden125, a.Lden250, a.Lden500, a.Lden1000, a.Lden2000, a.Lden4000, a.Lden8000 FROM RECEIVERS_MR b LEFT JOIN MultiRunsResults a ON a.IDRECEIVER = b."+prop.getProperty("pkReceivers")+";")
+
+
         sql.execute("drop table if exists MultiRunsResults;")
 
         // long computationTime = System.currentTimeMillis() - start;
@@ -417,7 +434,7 @@ class ReceiverSimulationProcess implements Runnable {
     List<PointToPointPathsMultiRuns> pointToPointPathsMultiRuns;
     Map<Integer,double[]> simuSpectrum = new HashMap<>()
     SimulationResult simulationResult
-    double pop
+    double pop = Double.NaN
     int nSimu = 0
 
     void setPop(double pop){
@@ -505,8 +522,8 @@ class ReceiverSimulationProcess implements Runnable {
         }
         if (idReceiver != -1){
             for (int r = 0; r < nSimu; r++) {
-                simulationResult = new SimulationResult(r, idReceiver, pop, simuSpectrum.get(r))
-                concurrentLinkedQueue.add(simulationResult)
+                 simulationResult = new SimulationResult(r, idReceiver, pop, simuSpectrum.get(r))
+                 concurrentLinkedQueue.add(simulationResult)
             }
 
         }

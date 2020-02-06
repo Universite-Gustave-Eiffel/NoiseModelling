@@ -242,7 +242,7 @@ def run(input) {
 
     String dem_table_name = ""
     if (input['demTableName']) {
-        building_table_name = input['demTableName']
+        dem_table_name = input['demTableName']
     }
     dem_table_name = dem_table_name.toUpperCase()
 
@@ -321,8 +321,8 @@ def run(input) {
             pointNoiseMap.setSoilTableName(ground_table_name)
         }
         // Point cloud height above sea level POINT(X Y Z)
-        if (ground_table_name != "") {
-            pointNoiseMap.setSoilTableName(dem_table_name)
+        if (dem_table_name != "") {
+            pointNoiseMap.setDemTable(dem_table_name)
         }
         // Do not propagate for low emission or far away sources.
         // error in dB
