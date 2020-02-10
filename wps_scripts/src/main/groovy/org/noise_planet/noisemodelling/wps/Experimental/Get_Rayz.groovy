@@ -350,7 +350,7 @@ def run(input) {
         }
         // Do not propagate for low emission or far away sources.
         // error in dB
-        pointNoiseMap.setMaximumError(0.1d);
+        pointNoiseMap.setMaximumError(0.0d);
 
         pointNoiseMap.setMaximumPropagationDistance(max_src_dist)
         pointNoiseMap.setMaximumReflectionDistance(max_ref_dist)
@@ -643,11 +643,11 @@ class PropagationPathStorageFactory implements PointNoiseMap.IComputeRaysOutFact
                     //System.out.println(System.currentTimeMillis() - start )
                     paths.countRays()
                     nRays = nRays + paths.getnRays()
-                    /*if(paths.receiverId == exportReceiverRays) {
+                    if(paths.receiverId == exportReceiverRays) {
                         // Export rays
                         kmlDocument.writeRays(paths.getPropagationPathList())
 
-                    }*/
+                    }
 
                 }
                 Thread.sleep(10)
