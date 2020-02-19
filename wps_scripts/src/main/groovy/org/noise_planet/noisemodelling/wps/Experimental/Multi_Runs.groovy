@@ -314,21 +314,25 @@ def run(input) {
                     GZIPInputStream gzipInputStream = new GZIPInputStream(fileInput, GZIP_CACHE_SIZE)
                     DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(gzipInputStream))
                     int count = 0
-                    List<PointToPointPathsMultiRuns> pointToPointPathsMultiRuns = new ArrayList<>();
-                    while (fileInput.available() > 0) {
-                        System.out.println(fileInput)
+                    List<PointToPointPathsMultiRuns> pointToPointPathsMultiRuns = new ArrayList<>()
+                    int idReceiver = 0
+                    while (dataInputStream.available() > 0) {
+                        //System.out.println(dataInputStream)
                         PointToPointPathsMultiRuns paths = new PointToPointPathsMultiRuns()
-                        paths.readPropagationPathListStream(dataInputStream)
-                        int idReceiver = (Integer) paths.receiverId
+                        try {
+                            paths.readPropagationPathListStream(dataInputStream)
+                        } catch(EOFException ex) {
+                            break
+                        }
+                        idReceiver = (Integer) paths.receiverId
 
                         if (idReceiver != oldIdReceiver) {
                             while (executorService.getQueue().size()>1){
-                                System.out.println(String.format("Receiver %d ( %d queued receivers)", idReceiver, executorService.getQueue().size()))
+                                //System.out.println(String.format("Receiver %d ( %d queued receivers)", idReceiver, executorService.getQueue().size()))
                                 Thread.sleep(50)
                                 // Add thread
                             }
                             if (oldIdReceiver != -1){
-                                System.out.println(String.format("iciiiiiiiiiiiii"))
                                 ReceiverSimulationProcess receiverSimulationProcess =
                                         new ReceiverSimulationProcess(resultsInsertThread.getConcurrentLinkedQueue(),
                                                 multiRunsProcessData, pointToPointPathsMultiRuns,nSimu)
@@ -344,12 +348,26 @@ def run(input) {
 
                             }
                         }
-                        System.out.println(String.format("laaaaaaaaaa1"))
                         oldIdReceiver = idReceiver
                         pointToPointPathsMultiRuns.add(paths)
-                        System.out.println(String.format("laaaaaaaaaa2"))
                     }
                     fileInput.close()
+
+                    while (executorService.getQueue().size()>1){
+                        //System.out.println(String.format("Receiver %d ( %d queued receivers)", idReceiver, executorService.getQueue().size()))
+                        Thread.sleep(50)
+                        // Add thread
+                    }
+
+                    ReceiverSimulationProcess receiverSimulationProcess =
+                            new ReceiverSimulationProcess(resultsInsertThread.getConcurrentLinkedQueue(),
+                                    multiRunsProcessData, pointToPointPathsMultiRuns,nSimu)
+
+                    receiverSimulationProcess.setPop(pop.get(idReceiver))
+                    executorService.execute(receiverSimulationProcess)
+                    System.out.println("End Propagation")
+
+                    multiRunsProcessData.getTrafficLevel(0)
 
             }
             //System.out.println("3 ComputationTime :" + entry2.toString())
@@ -1324,7 +1342,7 @@ class PointToPointPathsMultiRuns {
      * @param in the stream to read
      * @throws IOException if an I/O-error occurs
      */
-    void readPropagationPathListStream( DataInputStream inputStream) throws IOException {
+    void readPropagationPathListStream(DataInputStream inputStream) throws IOException {
         if (propagationPathList==null){
             propagationPathList = new ArrayList<>()
         }
