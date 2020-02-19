@@ -45,7 +45,7 @@ import java.util.zip.GZIPInputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 
-title = 'Compute MultiRuns'
+title = 'Compute MultiRuns.'
 description = 'Compute MultiRuns. A ver...'
 
 inputs = [databaseName: [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database. (default : h2gisdb)', min: 0, max: 1, type: String.class],
@@ -299,7 +299,8 @@ def exec(Connection connection, input) {
     AtomicBoolean doInsertResults = new AtomicBoolean(true);
     ResultsInsertThread resultsInsertThread = new ResultsInsertThread(doInsertResults, sql)
     new Thread(resultsInsertThread).start()
-    ThreadPoolExecutor executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(n_thread);
+    ThreadPoolExecutor executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(n_thread)
+
     while (entry2 != null) {
         switch (entry2.getName()) {
             case 'rays.gz':
@@ -324,7 +325,7 @@ def exec(Connection connection, input) {
                         break
                     }
                     idReceiver = (Integer) paths.receiverId
-
+                    System.out.println(idReceiver)
                     if (idReceiver != oldIdReceiver) {
                         while (executorService.getQueue().size() > 1) {
                             //System.out.println(String.format("Receiver %d ( %d queued receivers)", idReceiver, executorService.getQueue().size()))
@@ -382,13 +383,14 @@ def exec(Connection connection, input) {
         // Add thread
     }
 
-
     executorService.shutdown()
     executorService.awaitTermination(30, TimeUnit.DAYS)
 
-
-
     doInsertResults.set(false)
+    while (!resultsInsertThread.getEndThread().get()) {
+        Thread.sleep(50)
+    }
+
 
     // csvFile.close()
     System.out.println("End time :" + df.format(new Date()))
@@ -407,9 +409,10 @@ def exec(Connection connection, input) {
 
     }
 
-    sql.execute("drop table if exists MultiRunsResults;")
+   // sql.execute("drop table if exists MultiRunsResults;")
 
     // long computationTime = System.currentTimeMillis() - start;
+
     return [result: "Calculation Done !"]
 
 
@@ -431,12 +434,17 @@ class SimulationResult {
 
 class ResultsInsertThread implements Runnable {
     ConcurrentLinkedQueue<SimulationResult> concurrentLinkedQueue = new ConcurrentLinkedQueue<>();
-    AtomicBoolean doInsertResults;
+    AtomicBoolean doInsertResults
     Sql sql;
+    AtomicBoolean endThread = new AtomicBoolean(false)
 
     ResultsInsertThread(AtomicBoolean doInsertResults, Sql sql) {
         this.doInsertResults = doInsertResults
         this.sql = sql
+    }
+
+    AtomicBoolean getEndThread() {
+        return endThread
     }
 
     ConcurrentLinkedQueue<SimulationResult> getConcurrentLinkedQueue() {
@@ -453,14 +461,17 @@ class ResultsInsertThread implements Runnable {
                 SimulationResult result = concurrentLinkedQueue.poll()
                 if (result != null) {
                     ps.addBatch(result.r as Integer, result.receiver as Integer, result.pop as Double,
-                            result.spectrum[0] as Double, result.spectrum[1] as Double, result.spectrum[2] as Double,
-                            result.spectrum[3] as Double, result.spectrum[4] as Double, result.spectrum[5] as Double,
-                            result.spectrum[6] as Double, result.spectrum[7] as Double)
+                            result.spectrum[0] , result.spectrum[1] , result.spectrum[2] ,
+                            result.spectrum[3], result.spectrum[4] , result.spectrum[5],
+                            result.spectrum[6] , result.spectrum[7] )
                 } else {
                     Thread.sleep(100)
                 }
             }
         }
+        endThread.set(true)
+
+
     }
 }
 
