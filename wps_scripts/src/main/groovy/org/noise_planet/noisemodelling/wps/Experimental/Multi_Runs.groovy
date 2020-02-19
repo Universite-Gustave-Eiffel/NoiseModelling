@@ -48,24 +48,37 @@ import java.util.zip.ZipInputStream
 title = 'Compute MultiRuns'
 description = 'Compute MultiRuns. A ver...'
 
-inputs = [databaseName      : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database. (default : h2gisdb)', min: 0, max: 1, type: String.class],
-          workingDir : [name: 'workingDir', title: 'workingDir', description: 'workingDir (ex : C:/Desktop/), shall contain Rays.zip and MR_Input.json', type: String.class],
-          hasPop  : [name: 'hasPop', title: 'hasPop',min: 0, max: 1, type: Boolean.class],
-          nbSimu  : [name: 'nSimu', title: 'nSimu',min: 0, max: 1, type: Integer.class],
-          threadNumber      : [name: 'Thread number', title: 'Thread number', description: 'Number of thread to use on the computer (default = 1)', min: 0, max: 1, type: String.class]]
+inputs = [databaseName: [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database. (default : h2gisdb)', min: 0, max: 1, type: String.class],
+          workingDir  : [name: 'workingDir', title: 'workingDir', description: 'workingDir (ex : C:/Desktop/), shall contain Rays.zip and MR_Input.json', type: String.class],
+          hasPop      : [name: 'hasPop', title: 'hasPop', min: 0, max: 1, type: Boolean.class],
+          nbSimu      : [name: 'nSimu', title: 'nSimu', min: 0, max: 1, type: Integer.class],
+          threadNumber: [name: 'Thread number', title: 'Thread number', description: 'Number of thread to use on the computer (default = 1)', min: 0, max: 1, type: String.class]]
 
 outputs = [result: [name: 'result', title: 'Result', type: String.class]]
 
 static Connection openGeoserverDataStoreConnection(String dbName) {
-    if(dbName == null || dbName.isEmpty()) {
+    if (dbName == null || dbName.isEmpty()) {
         dbName = new GeoServer().catalog.getStoreNames().get(0)
     }
     Store store = new GeoServer().catalog.getStore(dbName)
-    JDBCDataStore jdbcDataStore = (JDBCDataStore)store.getDataStoreInfo().getDataStore(null)
+    JDBCDataStore jdbcDataStore = (JDBCDataStore) store.getDataStoreInfo().getDataStore(null)
     return jdbcDataStore.getDataSource().getConnection()
 }
 
 def run(input) {
+    // Get name of the database
+    String dbName = ""
+    if (input['databaseName']) {
+        dbName = input['databaseName'] as String
+    }
+    // Open connection
+    openGeoserverDataStoreConnection(dbName).withCloseable {
+        Connection connection ->
+            return [result: exec(connection, input)]
+    }
+}
+
+def exec(Connection connection, input) {
 
     MultiRunsProcessData multiRunsProcessData = new MultiRunsProcessData()
     Properties prop = new Properties()
@@ -93,14 +106,11 @@ def run(input) {
         hasPop = Boolean.valueOf(input['hasPop'])
     }
 
-
-
     // Get name of the database
     String dbName = ""
     if (input['databaseName']) {
         dbName = input['databaseName'] as String
     }
-
 
     // ----------------------------------
     // Start...
@@ -111,304 +121,297 @@ def run(input) {
     List<ComputeRaysOut.verticeSL> allLevels = new ArrayList<>()
 
     // Open connection
-    openGeoserverDataStoreConnection(dbName).withCloseable { Connection connection ->
+    //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postgis database
+    connection = new ConnectionWrapper(connection)
 
-        //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postgis database
-        connection = new ConnectionWrapper(connection)
+    System.out.println("Run ...")
+    // Init output logger
 
-        System.out.println("Run ...")
-        // Init output logger
+    System.out.println(String.format("Working directory is %s", new File(workingDir).getAbsolutePath()))
 
-        System.out.println(String.format("Working directory is %s", new File(workingDir).getAbsolutePath()))
+    // Create spatial database
 
-        // Create spatial database
+    DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
 
-        DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+    Sql sql = new Sql(connection)
 
-        Sql sql = new Sql(connection)
+    // Evaluate receiver points using provided buildings
+    String fileZip = workingDir + "Rays.zip"
+    FileInputStream fileInputStream = new FileInputStream(new File(fileZip).getAbsolutePath())
+    ZipInputStream zipInputStream = new ZipInputStream(fileInputStream)
+    ZipEntry entry = zipInputStream.getNextEntry()
+    // iterates over entries in the zip file
+    while (entry != null) {
+        String filePath = workingDir + File.separator + entry.getName()
+        GeoJsonDriverFunction geoJsonDriver = new GeoJsonDriverFunction()
+        File file = new File(filePath)
+        switch (entry.getName()) {
 
+            case 'buildings.geojson':
+                sql.execute("DROP TABLE BUILDINGS_MR if exists;")
+                extractFile(zipInputStream, filePath)
+                geoJsonDriver.importFile(connection, 'BUILDINGS_MR', file, new EmptyProgressVisitor())
+                System.println("import Buildings")
+                break
 
+            case 'sources.geojson':
+                sql.execute("DROP TABLE SOURCES_MR if exists;")
+                extractFile(zipInputStream, filePath)
+                geoJsonDriver.importFile(connection, 'SOURCES_MR', file, new EmptyProgressVisitor())
+                sql.execute("ALTER TABLE SOURCES_MR ALTER COLUMN PK INT NOT NULL;")
+                sql.execute("ALTER TABLE SOURCES_MR ADD PRIMARY KEY (PK);  ")
+                System.println("import Sources")
+                break
 
+            case 'receivers.geojson':
+                sql.execute("DROP TABLE RECEIVERS_MR if exists;")
+                extractFile(zipInputStream, filePath)
+                geoJsonDriver.importFile(connection, 'RECEIVERS_MR', file, new EmptyProgressVisitor())
+                sql.execute("ALTER TABLE RECEIVERS_MR ALTER COLUMN PK INT NOT NULL;")
+                sql.execute("ALTER TABLE RECEIVERS_MR ADD PRIMARY KEY (PK);  ")
+                System.println("import RECEIVERS")
+                break
 
+            case 'ground.geojson':
+                sql.execute("DROP TABLE GROUND_TYPE_MR if exists;")
+                extractFile(zipInputStream, filePath)
+                geoJsonDriver.importFile(connection, 'GROUND_TYPE_MR', file, new EmptyProgressVisitor())
+                System.println("import GROUND_TYPE")
+                break
 
-        // Evaluate receiver points using provided buildings
-        String fileZip = workingDir +"Rays.zip"
-        FileInputStream fileInputStream = new FileInputStream(new File(fileZip).getAbsolutePath())
-        ZipInputStream zipInputStream = new ZipInputStream(fileInputStream)
-        ZipEntry entry = zipInputStream.getNextEntry()
-        // iterates over entries in the zip file
-        while (entry != null) {
-            String filePath = workingDir + File.separator + entry.getName()
-            GeoJsonDriverFunction geoJsonDriver = new GeoJsonDriverFunction()
-            File file = new File(filePath)
-            switch (entry.getName()) {
-
-                case 'buildings.geojson':
-                    sql.execute("DROP TABLE BUILDINGS_MR if exists;")
-                    extractFile(zipInputStream, filePath)
-                    geoJsonDriver.importFile(connection, 'BUILDINGS_MR', file, new EmptyProgressVisitor())
-                    System.println("import Buildings")
-                    break
-
-                case 'sources.geojson':
-                    sql.execute("DROP TABLE SOURCES_MR if exists;")
-                    extractFile(zipInputStream, filePath)
-                    geoJsonDriver.importFile(connection, 'SOURCES_MR', file, new EmptyProgressVisitor())
-                    sql.execute("ALTER TABLE SOURCES_MR ALTER COLUMN PK INT NOT NULL;")
-                    sql.execute("ALTER TABLE SOURCES_MR ADD PRIMARY KEY (PK);  ")
-                    System.println("import Sources")
-                    break
-
-                case 'receivers.geojson':
-                    sql.execute("DROP TABLE RECEIVERS_MR if exists;")
-                    extractFile(zipInputStream, filePath)
-                    geoJsonDriver.importFile(connection, 'RECEIVERS_MR', file, new EmptyProgressVisitor())
-                    sql.execute("ALTER TABLE RECEIVERS_MR ALTER COLUMN PK INT NOT NULL;")
-                    sql.execute("ALTER TABLE RECEIVERS_MR ADD PRIMARY KEY (PK);  ")
-                    System.println("import RECEIVERS")
-                    break
-
-                case 'ground.geojson':
-                    sql.execute("DROP TABLE GROUND_TYPE_MR if exists;")
-                    extractFile(zipInputStream, filePath)
-                    geoJsonDriver.importFile(connection, 'GROUND_TYPE_MR', file, new EmptyProgressVisitor())
-                    System.println("import GROUND_TYPE")
-                    break
-
-                case 'dem.geojson':
-                    sql.execute("DROP TABLE DEM_MR if exists;")
-                    extractFile(zipInputStream, filePath)
-                    geoJsonDriver.importFile(connection, 'DEM_MR', file, new EmptyProgressVisitor())
-                    System.println("import DEM")
-                    break
+            case 'dem.geojson':
+                sql.execute("DROP TABLE DEM_MR if exists;")
+                extractFile(zipInputStream, filePath)
+                geoJsonDriver.importFile(connection, 'DEM_MR', file, new EmptyProgressVisitor())
+                System.println("import DEM")
+                break
 
 
-                case 'NM.properties':
-                    extractFile(zipInputStream, filePath)
-                    prop.load(new FileInputStream(filePath))
-                    break
-            }
-            file.delete()
-            zipInputStream.closeEntry()
-            entry = zipInputStream.getNextEntry()
+            case 'NM.properties':
+                extractFile(zipInputStream, filePath)
+                prop.load(new FileInputStream(filePath))
+                break
         }
+        file.delete()
+        zipInputStream.closeEntry()
+        entry = zipInputStream.getNextEntry()
+    }
 
-        fileInputStream.close()
-        zipInputStream.close()
+    fileInputStream.close()
+    zipInputStream.close()
 
-        /* System.out.println("Read Sources")
-         sql.execute("DROP TABLE IF EXISTS RECEIVERS")
-         SHPRead.readShape(connection, "D:\\aumond\\Documents\\CENSE\\LorientMapNoise\\data\\RecepteursQuest3D.shp", "RECEIVERS")
+    /* System.out.println("Read Sources")
+     sql.execute("DROP TABLE IF EXISTS RECEIVERS")
+     SHPRead.readShape(connection, "D:\\aumond\\Documents\\CENSE\\LorientMapNoise\\data\\RecepteursQuest3D.shp", "RECEIVERS")
 
-         HashMap<Integer, Double> pop = new HashMap<>()
-         // memes valeurs d e et n
-         sql.eachRow('SELECT id, pop FROM RECEIVERS;') { row ->
-             int id = (int) row[0]
-             pop.put(id, (Double) row[1])
-         }
+     HashMap<Integer, Double> pop = new HashMap<>()
+     // memes valeurs d e et n
+     sql.eachRow('SELECT id, pop FROM RECEIVERS;') { row ->
+         int id = (int) row[0]
+         pop.put(id, (Double) row[1])
+     }
 
-         // Load roads
-         System.out.println("Read road geometries and traffic")
-         // ICA 2019 - Sensitivity
-         sql.execute("DROP TABLE ROADS2 if exists;")
-         SHPRead.readShape(connection, "D:\\aumond\\Documents\\CENSE\\LorientMapNoise\\data\\RoadsICA2.shp", "ROADS2")
-         sql.execute("DROP TABLE ROADS if exists;")
-         sql.execute('CREATE TABLE ROADS AS SELECT CAST( ID_WAY AS INTEGER ) ID_WAY , THE_GEOM, TMJA_D,TMJA_E,TMJA_N,\n' +
-                 'PL_D,PL_E,PL_N,\n' +
-                 'LV_SPEE,PV_SPEE, PVMT FROM ROADS2;')
+     // Load roads
+     System.out.println("Read road geometries and traffic")
+     // ICA 2019 - Sensitivity
+     sql.execute("DROP TABLE ROADS2 if exists;")
+     SHPRead.readShape(connection, "D:\\aumond\\Documents\\CENSE\\LorientMapNoise\\data\\RoadsICA2.shp", "ROADS2")
+     sql.execute("DROP TABLE ROADS if exists;")
+     sql.execute('CREATE TABLE ROADS AS SELECT CAST( ID_WAY AS INTEGER ) ID_WAY , THE_GEOM, TMJA_D,TMJA_E,TMJA_N,\n' +
+             'PL_D,PL_E,PL_N,\n' +
+             'LV_SPEE,PV_SPEE, PVMT FROM ROADS2;')
 
-         sql.execute('ALTER TABLE ROADS ALTER COLUMN ID_WAY SET NOT NULL;')
-         sql.execute('ALTER TABLE ROADS ADD PRIMARY KEY (ID_WAY);')
-         sql.execute("CREATE SPATIAL INDEX ON ROADS(THE_GEOM)")
+     sql.execute('ALTER TABLE ROADS ALTER COLUMN ID_WAY SET NOT NULL;')
+     sql.execute('ALTER TABLE ROADS ADD PRIMARY KEY (ID_WAY);')
+     sql.execute("CREATE SPATIAL INDEX ON ROADS(THE_GEOM)")
 
-         System.out.println("Road file loaded")
+     System.out.println("Road file loaded")
 
-         // ICA 2019 - Sensitivity
-         sql.execute("DROP TABLE ROADS3 if exists;")
-         SHPRead.readShape(connection, "D:\\aumond\\Documents\\CENSE\\LorientMapNoise\\data\\Roads09083D.shp", "ROADS3")
+     // ICA 2019 - Sensitivity
+     sql.execute("DROP TABLE ROADS3 if exists;")
+     SHPRead.readShape(connection, "D:\\aumond\\Documents\\CENSE\\LorientMapNoise\\data\\Roads09083D.shp", "ROADS3")
 
-         System.out.println("Road file loaded")*/
-
-
-        PropagationProcessPathData genericMeteoData = new PropagationProcessPathData()
-        int nSimu = multiRunsProcessData.setSensitivityTable(new File(workingDir + "MR_input.json"),prop,n_Simu)
-
-
+     System.out.println("Road file loaded")*/
 
 
-        multiRunsProcessData.setRoadTable("SOURCES_MR",sql, prop)
+    PropagationProcessPathData genericMeteoData = new PropagationProcessPathData()
+    int nSimu = multiRunsProcessData.setSensitivityTable(new File(workingDir + "MR_input.json"), prop, n_Simu)
 
-        int GZIP_CACHE_SIZE = (int) Math.pow(2, 19)
+    multiRunsProcessData.setRoadTable("SOURCES_MR", sql, prop)
 
-        System.out.println("Start time :" + df.format(new Date()))
-        HashMap<Integer,Double> pop = new HashMap<>()
-        int nrcv = 0
-        if(hasPop){
-            // memes valeurs d e et n
-            nrcv = 0
-            sql.eachRow('SELECT pk, pop FROM RECEIVERS_MR;') { row ->
-                int id = (int) row[0]
-                pop.put(id, (Double) row[1])
-                nrcv++
-            }
-        } else{
-            nrcv = 0
-            sql.eachRow('SELECT pk FROM RECEIVERS_MR;') { row ->
-                int id = (int) row[0]
-                pop.put(id, 1.0d)
-                nrcv++
-            }
+    int GZIP_CACHE_SIZE = (int) Math.pow(2, 19)
+
+    System.out.println("Start time :" + df.format(new Date()))
+    HashMap<Integer, Double> pop = new HashMap<>()
+    int nrcv = 0
+    if (hasPop) {
+        // memes valeurs d e et n
+        nrcv = 0
+        sql.eachRow('SELECT pk, pop FROM RECEIVERS_MR;') { row ->
+            int id = (int) row[0]
+            pop.put(id, (Double) row[1])
+            nrcv++
         }
+    } else {
+        nrcv = 0
+        sql.eachRow('SELECT pk FROM RECEIVERS_MR;') { row ->
+            int id = (int) row[0]
+            pop.put(id, 1.0d)
+            nrcv++
+        }
+    }
 
+    //FileInputStream fileInputStream = new FileInputStream(new File("D:\\aumond\\Documents\\CENSE\\LorientMapNoise\\rays0908.gz").getAbsolutePath())
 
-        //FileInputStream fileInputStream = new FileInputStream(new File("D:\\aumond\\Documents\\CENSE\\LorientMapNoise\\rays0908.gz").getAbsolutePath())
+    //DataInputStream dataInputStream = new DataInputStream(gzipInputStream)
+    //System.out.println(dataInputStream)
 
+    int oldIdReceiver = -1
 
-        //DataInputStream dataInputStream = new DataInputStream(gzipInputStream)
-        //System.out.println(dataInputStream)
+    sql.execute("drop table if exists MultiRunsResults;")
 
-        int oldIdReceiver = -1
+    sql.execute("create table MultiRunsResults (idRun integer,idReceiver integer, pop double precision, " +
+            "Lden63 double precision, Lden125 double precision, Lden250 double precision, Lden500 double precision, Lden1000 double precision, Lden2000 double precision, Lden4000 double precision, Lden8000 double precision);")
 
-        sql.execute("drop table if exists MultiRunsResults;")
+    def qry = 'INSERT INTO MultiRunsResults(idRun,  idReceiver, pop,' +
+            'Lden63, Lden125, Lden250, Lden500, Lden1000,Lden2000, Lden4000, Lden8000) ' +
+            'VALUES (?,?,?,?,?,?,?,?,?,?,?);'
 
-        sql.execute("create table MultiRunsResults (idRun integer,idReceiver integer, pop double precision, " +
-                "Lden63 double precision, Lden125 double precision, Lden250 double precision, Lden500 double precision, Lden1000 double precision, Lden2000 double precision, Lden4000 double precision, Lden8000 double precision);")
+    Map<Integer, List<double[]>> sourceLevel = new HashMap<>()
 
-        def qry = 'INSERT INTO MultiRunsResults(idRun,  idReceiver, pop,' +
-                'Lden63, Lden125, Lden250, Lden500, Lden1000,Lden2000, Lden4000, Lden8000) ' +
-                'VALUES (?,?,?,?,?,?,?,?,?,?,?);'
+    System.out.println("Prepare Sources")
+    def timeStart = System.currentTimeMillis()
 
-        Map<Integer, List<double[]>> sourceLevel = new HashMap<>()
+    multiRunsProcessData.getTrafficLevel(nSimu)
 
-        System.out.println("Prepare Sources")
-        def timeStart = System.currentTimeMillis()
+    def timeStart2 = System.currentTimeMillis()
+    System.out.println(timeStart2 - timeStart)
+    System.out.println("End Emission time :" + df.format(new Date()))
+    System.out.println("Run SA")
+    long computationTime = 0
+    long startSimulationTime = System.currentTimeMillis()
+    String anim = ".+*°"
 
-        multiRunsProcessData.getTrafficLevel(nSimu)
+    FileInputStream fileInputStream2 = new FileInputStream(new File(fileZip).getAbsolutePath())
+    ZipInputStream zipInputStream2 = new ZipInputStream(fileInputStream2)
+    ZipEntry entry2 = zipInputStream2.getNextEntry()
 
-        def timeStart2 = System.currentTimeMillis()
-        System.out.println(timeStart2 - timeStart)
-        System.out.println("End Emission time :" + df.format(new Date()))
-        System.out.println("Run SA")
-        long computationTime = 0
-        long startSimulationTime = System.currentTimeMillis()
-        String anim= ".+*°"
+    AtomicBoolean doInsertResults = new AtomicBoolean(true);
+    ResultsInsertThread resultsInsertThread = new ResultsInsertThread(doInsertResults, sql)
+    new Thread(resultsInsertThread).start()
+    ThreadPoolExecutor executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(n_thread);
+    while (entry2 != null) {
+        switch (entry2.getName()) {
+            case 'rays.gz':
+                System.println(entry2.getName())
+                System.println(entry2)
+                String filePath = workingDir + entry2.getName()
+                extractFile(zipInputStream2, filePath)
 
-        FileInputStream fileInputStream2 = new FileInputStream(new File(fileZip).getAbsolutePath())
-        ZipInputStream zipInputStream2 = new ZipInputStream(fileInputStream2)
-        ZipEntry entry2 = zipInputStream2.getNextEntry()
-
-        AtomicBoolean doInsertResults = new AtomicBoolean(true);
-        ResultsInsertThread resultsInsertThread = new ResultsInsertThread(doInsertResults, sql)
-        new Thread(resultsInsertThread).start()
-        ThreadPoolExecutor executorService = (ThreadPoolExecutor)Executors.newFixedThreadPool(n_thread);
-        while (entry2 != null) {
-            switch (entry2.getName()) {
-                case 'rays.gz':
-                    System.println(entry2.getName())
-                    System.println(entry2)
-                    String filePath = workingDir + entry2.getName()
-                    extractFile(zipInputStream2, filePath)
-
-                    System.out.println(filePath)
-                    FileInputStream fileInput = new FileInputStream(new File(filePath))
-                    GZIPInputStream gzipInputStream = new GZIPInputStream(fileInput, GZIP_CACHE_SIZE)
-                    DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(gzipInputStream))
-                    int count = 0
-                    List<PointToPointPathsMultiRuns> pointToPointPathsMultiRuns = new ArrayList<>()
-                    int idReceiver = 0
-                    while (dataInputStream.available() > 0) {
-                        //System.out.println(dataInputStream)
-                        PointToPointPathsMultiRuns paths = new PointToPointPathsMultiRuns()
-                        try {
-                            paths.readPropagationPathListStream(dataInputStream)
-                        } catch(EOFException ex) {
-                            break
-                        }
-                        idReceiver = (Integer) paths.receiverId
-
-                        if (idReceiver != oldIdReceiver) {
-                            while (executorService.getQueue().size()>1){
-                                //System.out.println(String.format("Receiver %d ( %d queued receivers)", idReceiver, executorService.getQueue().size()))
-                                Thread.sleep(50)
-                                // Add thread
-                            }
-                            if (oldIdReceiver != -1){
-                                ReceiverSimulationProcess receiverSimulationProcess =
-                                        new ReceiverSimulationProcess(resultsInsertThread.getConcurrentLinkedQueue(),
-                                                multiRunsProcessData, pointToPointPathsMultiRuns,nSimu)
-
-                                receiverSimulationProcess.setPop(pop.get(idReceiver))
-                                executorService.execute(receiverSimulationProcess)
-                                pointToPointPathsMultiRuns = new ArrayList<>(pointToPointPathsMultiRuns.size())
-                                count ++
-                                int x = Math.round(count*100/nrcv)
-                                String data = "  --  Propagation " + "\r" + anim.charAt( x % anim.length()) + " " + x + "%"
-                               //String data = "  --  Propagation" + x + "%"
-                                System.out.println(data)
-
-                            }
-                        }
-                        oldIdReceiver = idReceiver
-                        pointToPointPathsMultiRuns.add(paths)
+                System.out.println(filePath)
+                FileInputStream fileInput = new FileInputStream(new File(filePath))
+                GZIPInputStream gzipInputStream = new GZIPInputStream(fileInput, GZIP_CACHE_SIZE)
+                DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(gzipInputStream))
+                int count = 0
+                List<PointToPointPathsMultiRuns> pointToPointPathsMultiRuns = new ArrayList<>()
+                int idReceiver = 0
+                while (dataInputStream.available() > 0) {
+                    //System.out.println(dataInputStream)
+                    PointToPointPathsMultiRuns paths = new PointToPointPathsMultiRuns()
+                    try {
+                        paths.readPropagationPathListStream(dataInputStream)
+                    } catch (EOFException ex) {
+                        break
                     }
-                    fileInput.close()
+                    idReceiver = (Integer) paths.receiverId
 
-                    while (executorService.getQueue().size()>1){
-                        //System.out.println(String.format("Receiver %d ( %d queued receivers)", idReceiver, executorService.getQueue().size()))
-                        Thread.sleep(50)
-                        // Add thread
+                    if (idReceiver != oldIdReceiver) {
+                        while (executorService.getQueue().size() > 1) {
+                            //System.out.println(String.format("Receiver %d ( %d queued receivers)", idReceiver, executorService.getQueue().size()))
+                            Thread.sleep(50)
+                            // Add thread
+                        }
+                        if (oldIdReceiver != -1) {
+                            ReceiverSimulationProcess receiverSimulationProcess =
+                                    new ReceiverSimulationProcess(resultsInsertThread.getConcurrentLinkedQueue(),
+                                            multiRunsProcessData, pointToPointPathsMultiRuns, nSimu)
+
+                            receiverSimulationProcess.setPop(pop.get(idReceiver))
+                            executorService.execute(receiverSimulationProcess)
+                            pointToPointPathsMultiRuns = new ArrayList<>(pointToPointPathsMultiRuns.size())
+                            count++
+                            int x = Math.round(count * 100 / nrcv)
+                            String data = "  --  Propagation " + "\r" + anim.charAt(x % anim.length()) + " " + x + "%"
+                            //String data = "  --  Propagation" + x + "%"
+                            System.out.println(data)
+
+                        }
                     }
+                    oldIdReceiver = idReceiver
+                    pointToPointPathsMultiRuns.add(paths)
+                }
+                fileInput.close()
 
-                    ReceiverSimulationProcess receiverSimulationProcess =
-                            new ReceiverSimulationProcess(resultsInsertThread.getConcurrentLinkedQueue(),
-                                    multiRunsProcessData, pointToPointPathsMultiRuns,nSimu)
+                while (executorService.getQueue().size() > 1) {
+                    //System.out.println(String.format("Receiver %d ( %d queued receivers)", idReceiver, executorService.getQueue().size()))
+                    Thread.sleep(50)
+                    // Add thread
+                }
 
-                    receiverSimulationProcess.setPop(pop.get(idReceiver))
-                    executorService.execute(receiverSimulationProcess)
-                    System.out.println("End Propagation")
+                ReceiverSimulationProcess receiverSimulationProcess =
+                        new ReceiverSimulationProcess(resultsInsertThread.getConcurrentLinkedQueue(),
+                                multiRunsProcessData, pointToPointPathsMultiRuns, nSimu)
 
-                    multiRunsProcessData.getTrafficLevel(0)
-
-            }
-            //System.out.println("3 ComputationTime :" + entry2.toString())
-            zipInputStream2.closeEntry()
-            entry2 = zipInputStream2.getNextEntry()
-            //System.out.println("3 ComputationTime :" + entry2.toString())
-
+                receiverSimulationProcess.setPop(pop.get(idReceiver))
+                executorService.execute(receiverSimulationProcess)
+                System.out.println("End Propagation")
         }
+        //System.out.println("3 ComputationTime :" + entry2.toString())
+        zipInputStream2.closeEntry()
+        entry2 = zipInputStream2.getNextEntry()
+        //System.out.println("3 ComputationTime :" + entry2.toString())
 
-        System.out.println("4 ComputationTime :" + computationTime.toString())
-        System.out.println("SimulationTime :" + (System.currentTimeMillis() - startSimulationTime).toString())
+    }
 
-        executorService.shutdown()
-        executorService.awaitTermination(30, TimeUnit.DAYS)
+    System.out.println("4 ComputationTime :" + computationTime.toString())
+    System.out.println("SimulationTime :" + (System.currentTimeMillis() - startSimulationTime).toString())
 
-        doInsertResults.set(false)
-
-
-
-        // csvFile.close()
-        System.out.println("End time :" + df.format(new Date()))
+    while (executorService.getQueue().size() > 0) {
+        //System.out.println(String.format("Receiver %d ( %d queued receivers)", idReceiver, executorService.getQueue().size()))
+        Thread.sleep(50)
+        // Add thread
+    }
 
 
-        fileInputStream2.close()
+    executorService.shutdown()
+    executorService.awaitTermination(30, TimeUnit.DAYS)
+
+
+
+    doInsertResults.set(false)
+
+    // csvFile.close()
+    System.out.println("End time :" + df.format(new Date()))
+
+
+    fileInputStream2.close()
 //CREATE INDEX ON RECEIVERS_MR(pk);
 //CREATE INDEX ON MultiRunsResults(IDRECEIVER);
 
-        sql.execute("drop table if exists MultiRunsResults_geom;")
+    sql.execute("drop table if exists MultiRunsResults_geom;")
 
-        if (hasPop){
-        sql.execute("create table MultiRunsResults_geom  as select a.idRun, a.idReceiver, b.pop, b.THE_GEOM, a.Lden63, a.Lden125, a.Lden250, a.Lden500, a.Lden1000, a.Lden2000, a.Lden4000, a.Lden8000 FROM RECEIVERS_MR b LEFT JOIN MultiRunsResults a ON a.IDRECEIVER = b."+prop.getProperty("pkReceivers")+";")
-        }else{
-            sql.execute("create table MultiRunsResults_geom  as select a.idRun, a.idReceiver,  b.THE_GEOM, a.Lden63, a.Lden125, a.Lden250, a.Lden500, a.Lden1000, a.Lden2000, a.Lden4000, a.Lden8000 FROM RECEIVERS_MR b LEFT JOIN MultiRunsResults a ON a.IDRECEIVER = b."+prop.getProperty("pkReceivers")+";")
+    if (hasPop) {
+        sql.execute("create table MultiRunsResults_geom  as select a.idRun, a.idReceiver, b.pop, b.THE_GEOM, a.Lden63, a.Lden125, a.Lden250, a.Lden500, a.Lden1000, a.Lden2000, a.Lden4000, a.Lden8000 FROM RECEIVERS_MR b LEFT JOIN MultiRunsResults a ON a.IDRECEIVER = b." + prop.getProperty("pkReceivers") + ";")
+    } else {
+        sql.execute("create table MultiRunsResults_geom  as select a.idRun, a.idReceiver,  b.THE_GEOM, a.Lden63, a.Lden125, a.Lden250, a.Lden500, a.Lden1000, a.Lden2000, a.Lden4000, a.Lden8000 FROM RECEIVERS_MR b LEFT JOIN MultiRunsResults a ON a.IDRECEIVER = b." + prop.getProperty("pkReceivers") + ";")
 
-        }
-
-        sql.execute("drop table if exists MultiRunsResults;")
-
-        // long computationTime = System.currentTimeMillis() - start;
-        return [result: "Calculation Done !"]
     }
+
+    sql.execute("drop table if exists MultiRunsResults;")
+
+    // long computationTime = System.currentTimeMillis() - start;
+    return [result: "Calculation Done !"]
+
 
 }
 
@@ -452,7 +455,7 @@ class ResultsInsertThread implements Runnable {
                     ps.addBatch(result.r as Integer, result.receiver as Integer, result.pop as Double,
                             result.spectrum[0] as Double, result.spectrum[1] as Double, result.spectrum[2] as Double,
                             result.spectrum[3] as Double, result.spectrum[4] as Double, result.spectrum[5] as Double,
-                           result.spectrum[6] as Double, result.spectrum[7] as Double)
+                            result.spectrum[6] as Double, result.spectrum[7] as Double)
                 } else {
                     Thread.sleep(100)
                 }
@@ -465,13 +468,13 @@ class ReceiverSimulationProcess implements Runnable {
     ConcurrentLinkedQueue<SimulationResult> concurrentLinkedQueue;
     MultiRunsProcessData multiRunsProcessData;
     List<PointToPointPathsMultiRuns> pointToPointPathsMultiRuns;
-    Map<Integer,double[]> simuSpectrum = new HashMap<>()
+    Map<Integer, double[]> simuSpectrum = new HashMap<>()
     SimulationResult simulationResult
     double pop
     int nSimu = 0
 
-    void setPop(double pop){
-            this.pop = pop
+    void setPop(double pop) {
+        this.pop = pop
     }
 
     ReceiverSimulationProcess(ConcurrentLinkedQueue<SimulationResult> concurrentLinkedQueue, MultiRunsProcessData multiRunsProcessData, List<PointToPointPathsMultiRuns> pointToPointPathsMultiRuns, int nSimu) {
@@ -484,10 +487,10 @@ class ReceiverSimulationProcess implements Runnable {
     @Override
     void run() {
 
-        if (nSimu <1) nSimu = multiRunsProcessData.Simu.size()
+        if (nSimu < 1) nSimu = multiRunsProcessData.Simu.size()
 
         for (int r = 0; r < nSimu; ++r) {
-            this.simuSpectrum.put(r,new double[PropagationProcessPathData.freq_lvl.size()])
+            this.simuSpectrum.put(r, new double[PropagationProcessPathData.freq_lvl.size()])
         }
 
         int idReceiver = -1
@@ -545,7 +548,7 @@ class ReceiverSimulationProcess implements Runnable {
                         lN[i] = soundLevelNig[i]
                     }
 
-                    this.simuSpectrum.put(r,ComputeRays.sumDbArray(this.simuSpectrum.get(r), lDen))
+                    this.simuSpectrum.put(r, ComputeRays.sumDbArray(this.simuSpectrum.get(r), lDen))
 
                 }
 
@@ -553,10 +556,10 @@ class ReceiverSimulationProcess implements Runnable {
             }
 
         }
-        if (idReceiver != -1){
+        if (idReceiver != -1) {
             for (int r = 0; r < nSimu; r++) {
                 this.simulationResult = new SimulationResult(r, idReceiver, pop, this.simuSpectrum.get(r))
-                 concurrentLinkedQueue.add(simulationResult)
+                concurrentLinkedQueue.add(simulationResult)
             }
 
         }
@@ -625,7 +628,7 @@ class MRComputeRaysOut extends ComputeRaysOut {
 
 
     static double[] MRcomputeAttenuation(PropagationProcessPathData pathData, long sourceId, double sourceLi, long receiverId, List<MRPropagationPath> propagationPath) {
-        if(pathData != null) {
+        if (pathData != null) {
             // Compute receiver/source attenuation
             MREvaluateAttenuationCnossos evaluateAttenuationCnossos = new MREvaluateAttenuationCnossos();
             double[] aGlobalMeteo = null;
@@ -654,7 +657,7 @@ class MRComputeRaysOut extends ComputeRaysOut {
             }
             if (aGlobalMeteo != null) {
                 // For line source, take account of li coefficient
-                if(sourceLi > 1.0) {
+                if (sourceLi > 1.0) {
                     for (int i = 0; i < aGlobalMeteo.length; i++) {
                         aGlobalMeteo[i] = ComputeRays.wToDba(ComputeRays.dbaToW(aGlobalMeteo[i]) * sourceLi);
                     }
@@ -674,7 +677,7 @@ class MREvaluateAttenuationCnossos extends EvaluateAttenuationCnossos {
     //private int nbfreq;
     private double[] freq_lambda
     private double[] aGlobal
-    private final static double ONETHIRD = 1.0/3.0
+    private final static double ONETHIRD = 1.0 / 3.0
 
     double[] getaGlobal() {
         return aGlobal
@@ -699,17 +702,17 @@ class MREvaluateAttenuationCnossos extends EvaluateAttenuationCnossos {
             //(7.11) NMP2008 P.32
             double testForm = (40 / freq_lambda[idfreq]) * cprime * srpath.delta;
 
-            double deltaDif= 0.0
+            double deltaDif = 0.0
 
             if (testForm >= -2.0) {
                 deltaDif = 10 * Ch * Math
                         .log10(Math.max(0, 3 + testForm));
             }
 
-            DeltaDif[idfreq] = Math.max(0,deltaDif);
+            DeltaDif[idfreq] = Math.max(0, deltaDif);
 
         }
-        return  DeltaDif;
+        return DeltaDif;
 
     }
 
@@ -719,7 +722,9 @@ class MREvaluateAttenuationCnossos extends EvaluateAttenuationCnossos {
         for (int idf = 0; idf < PropagationProcessPathData.freq_lvl.size(); ++idf) {
             for (int idRef = 0; idRef < path.refPoints.size(); ++idRef) {
                 //List<Double> alpha = ((PointPath) path.getPointList().get((Integer) path.refPoints.get(idRef))).alphaWall
-                List<Double> alpha = ((PointPath) path.getPointList().get((Integer) path.refPoints.get(idRef))).alphaWall.collect{it*path.getAlphaModif()}
+                List<Double> alpha = ((PointPath) path.getPointList().get((Integer) path.refPoints.get(idRef))).alphaWall.collect {
+                    it * path.getAlphaModif()
+                }
                 aRef[idf] += -10.0D * Math.log10(1.0D - (Double) alpha.get(idf))
             }
         }
@@ -733,9 +738,9 @@ class MREvaluateAttenuationCnossos extends EvaluateAttenuationCnossos {
         freq_lambda = new double[PropagationProcessPathData.freq_lvl.size()]
         double[] aRef = new double[PropagationProcessPathData.freq_lvl.size()]
 
-        for(int idf = 0; idf < PropagationProcessPathData.freq_lvl.size(); ++idf) {
+        for (int idf = 0; idf < PropagationProcessPathData.freq_lvl.size(); ++idf) {
             if (PropagationProcessPathData.freq_lvl.get(idf) > 0) {
-                freq_lambda[idf] = data.getCelerity() / (double)(Integer)PropagationProcessPathData.freq_lvl.get(idf)
+                freq_lambda[idf] = data.getCelerity() / (double) (Integer) PropagationProcessPathData.freq_lvl.get(idf)
             } else {
                 freq_lambda[idf] = 1.0D
             }
@@ -746,23 +751,23 @@ class MREvaluateAttenuationCnossos extends EvaluateAttenuationCnossos {
         double[] alpha_atmo = data.getAlpha_atmo();
         double aDiv
         if (path.refPoints.size() > 0) {
-            aDiv = getADiv(((SegmentPath)path.getSRList().get(0)).dPath);
+            aDiv = getADiv(((SegmentPath) path.getSRList().get(0)).dPath);
         } else {
-            aDiv = getADiv(((SegmentPath)path.getSRList().get(0)).d);
+            aDiv = getADiv(((SegmentPath) path.getSRList().get(0)).d);
         }
 
         double[] aBoundary = getABoundary(path, data)
 
-        if (path.refPoints.size() > 0){
+        if (path.refPoints.size() > 0) {
             aRef = getMRARef(path)
         }
 
-        for(int idfreq = 0; idfreq < PropagationProcessPathData.freq_lvl.size(); ++idfreq) {
+        for (int idfreq = 0; idfreq < PropagationProcessPathData.freq_lvl.size(); ++idfreq) {
             double aAtm;
             if (path.difVPoints.size() <= 0 && path.refPoints.size() <= 0) {
-                aAtm = getAAtm(((SegmentPath)path.getSRList().get(0)).d, alpha_atmo[idfreq]);
+                aAtm = getAAtm(((SegmentPath) path.getSRList().get(0)).d, alpha_atmo[idfreq]);
             } else {
-                aAtm = getAAtm(((SegmentPath)path.getSRList().get(0)).dPath, alpha_atmo[idfreq]);
+                aAtm = getAAtm(((SegmentPath) path.getSRList().get(0)).dPath, alpha_atmo[idfreq]);
             }
 
             aGlobal[idfreq] = -(aDiv + aAtm + aBoundary[idfreq] + aRef[idfreq]);
@@ -770,8 +775,6 @@ class MREvaluateAttenuationCnossos extends EvaluateAttenuationCnossos {
 
         return aGlobal
     }
-
-
 
 
 }
@@ -835,27 +838,35 @@ class MultiRunsProcessData {
 
     Map<Integer, Integer> pk = new HashMap<>()
     Map<Integer, Long> ID_WAY = new HashMap<>()
-    Map<Integer,Geometry> the_geom = new HashMap<>()
+    Map<Integer, Geometry> the_geom = new HashMap<>()
 
-    Map<Integer,Double> TV_D = new HashMap<>()
-    Map<Integer,Double> TV_E = new HashMap<>()
-    Map<Integer,Double> TV_N = new HashMap<>()
-    Map<Integer,Double> HV_D = new HashMap<>()
-    Map<Integer,Double> HV_E = new HashMap<>()
-    Map<Integer,Double> HV_N = new HashMap<>()
-    Map<Integer,Double> LV_SPD_D = new HashMap<>()
-    Map<Integer,Double> LV_SPD_E = new HashMap<>()
-    Map<Integer,Double> LV_SPD_N = new HashMap<>()
-    Map<Integer,Double> HV_SPD_D = new HashMap<>()
-    Map<Integer,Double> HV_SPD_E = new HashMap<>()
-    Map<Integer,Double> HV_SPD_N = new HashMap<>()
-    Map<Integer,String> PVMT = new HashMap<>()
+    Map<Integer, Double> TV_D = new HashMap<>()
+    Map<Integer, Double> TV_E = new HashMap<>()
+    Map<Integer, Double> TV_N = new HashMap<>()
+    Map<Integer, Double> HV_D = new HashMap<>()
+    Map<Integer, Double> HV_E = new HashMap<>()
+    Map<Integer, Double> HV_N = new HashMap<>()
+    Map<Integer, Double> LV_SPD_D = new HashMap<>()
+    Map<Integer, Double> LV_SPD_E = new HashMap<>()
+    Map<Integer, Double> LV_SPD_N = new HashMap<>()
+    Map<Integer, Double> HV_SPD_D = new HashMap<>()
+    Map<Integer, Double> HV_SPD_E = new HashMap<>()
+    Map<Integer, Double> HV_SPD_N = new HashMap<>()
+    Map<Integer, String> PVMT = new HashMap<>()
 
-    void initialise(int nSimu, Properties prop){
+    void initialise(int nSimu, Properties prop) {
         for (int r = 0; r < nSimu; ++r) {
             Refl[r] = prop.getProperty("reflexion_order").toInteger()
-            if (prop.getProperty("computeHorizontal").toBoolean()) {Dif_hor[r] = 10}else{Dif_hor[r] = 0}
-            if (prop.getProperty("computeVertical").toBoolean()) {Dif_ver[r] = 10}else{Dif_ver[r] = 0}
+            if (prop.getProperty("computeHorizontal").toBoolean()) {
+                Dif_hor[r] = 10
+            } else {
+                Dif_hor[r] = 0
+            }
+            if (prop.getProperty("computeVertical").toBoolean()) {
+                Dif_ver[r] = 10
+            } else {
+                Dif_ver[r] = 0
+            }
             DistProp[r] = prop.getProperty("maxSrcDistance").toDouble()
             wallAlpha[r] = prop.getProperty("wallAlpha").toDouble()
             TempMean[r] = 12.0d // todo pop.getpro
@@ -874,13 +885,15 @@ class MultiRunsProcessData {
         }
     }
 // Getter
-    double[] getWjSourcesD(int idSource, int r ) {
+    double[] getWjSourcesD(int idSource, int r) {
         return this.wjSourcesD.get(idSource).get(r)
     }
-    double[] getWjSourcesE(int idSource, int r ) {
+
+    double[] getWjSourcesE(int idSource, int r) {
         return this.wjSourcesE.get(idSource).get(r)
     }
-    double[] getWjSourcesN(int idSource, int r ) {
+
+    double[] getWjSourcesN(int idSource, int r) {
         return this.wjSourcesN.get(idSource).get(r)
     }
 
@@ -918,18 +931,18 @@ class MultiRunsProcessData {
 
 
         def list = [63, 125, 250, 500, 1000, 2000, 4000, 8000]
-        int ii= 0
-        double computeRatio = Math.round(0*100/ pk.size())
-        String anim= "|/-\\"
+        int ii = 0
+        double computeRatio = Math.round(0 * 100 / pk.size())
+        String anim = "|/-\\"
 
         pk.each { id, val ->
-            if (Math.round(ii*100/ pk.size() as float)!= computeRatio) {
-                int x = Math.round(ii*100/ pk.size() as float)
+            if (Math.round(ii * 100 / pk.size() as float) != computeRatio) {
+                int x = Math.round(ii * 100 / pk.size() as float)
                 //String data = "  --  Emission " + "\r" + anim.charAt( x % anim.length()) + " " + x + "%"
                 String data = "  --  Emission" + x + "%"
                 System.out.println(data)
             }
-            ii=ii+1
+            ii = ii + 1
 
 
 
@@ -1054,33 +1067,33 @@ class MultiRunsProcessData {
                     "Meteo",...
                     "SpeedMean",...
                     "FlowMean"};*/
-                    def ml_d_per_hour = (double) TV_D.get(id)*MV[r]/100
-                    def pl_d_per_hour = (double) TV_D.get(id)*(HV_D.get(id)*HV[r])/100
-                    def wa_d_per_hour = (double) TV_D.get(id)*WV[r]/100
+                    def ml_d_per_hour = (double) TV_D.get(id) * MV[r] / 100
+                    def pl_d_per_hour = (double) TV_D.get(id) * (HV_D.get(id) * HV[r]) / 100
+                    def wa_d_per_hour = (double) TV_D.get(id) * WV[r] / 100
                     def wb_d_per_hour = (double) 0.0
                     def vl_d_per_hour = (double) TV_D.get(id) - pl_d_per_hour - ml_d_per_hour - wa_d_per_hour
 
-                    def ml_e_per_hour = (double) TV_E.get(id)*MV[r]/100
-                    def pl_e_per_hour = (double) HV_E.get(id) * (HV_E.get(id)*HV[r])/100
-                    def wa_e_per_hour = (double) TV_E.get(id)*WV[r]/100
+                    def ml_e_per_hour = (double) TV_E.get(id) * MV[r] / 100
+                    def pl_e_per_hour = (double) HV_E.get(id) * (HV_E.get(id) * HV[r]) / 100
+                    def wa_e_per_hour = (double) TV_E.get(id) * WV[r] / 100
                     def wb_e_per_hour = (double) 0.0
                     def vl_e_per_hour = (double) TV_E.get(id) - pl_e_per_hour - ml_e_per_hour - wa_e_per_hour
 
-                    def ml_n_per_hour = (double) TV_N.get(id) *MV[r]/100
-                    def pl_n_per_hour = (double) HV_N.get(id)* (HV_N.get(id)*HV[r])/100
-                    def wa_n_per_hour = (double) TV_N.get(id) * WV[r]/100
+                    def ml_n_per_hour = (double) TV_N.get(id) * MV[r] / 100
+                    def pl_n_per_hour = (double) HV_N.get(id) * (HV_N.get(id) * HV[r]) / 100
+                    def wa_n_per_hour = (double) TV_N.get(id) * WV[r] / 100
                     def wb_n_per_hour = (double) 0.0
                     def vl_n_per_hour = (double) TV_N.get(id) - pl_n_per_hour - ml_n_per_hour - wa_n_per_hour
 
                     def total_flow_per_hour = (double) TV_D.get(id)
 
-                    if (total_flow_per_hour>1000){
+                    if (total_flow_per_hour > 1000) {
                         FlowMean[r] = FlowMean_MajAxes[r]
                     }
-                    if (total_flow_per_hour<=1000 && total_flow_per_hour>=300){
+                    if (total_flow_per_hour <= 1000 && total_flow_per_hour >= 300) {
                         FlowMean[r] = FlowMean_MedAxes[r]
                     }
-                    if (total_flow_per_hour<300){
+                    if (total_flow_per_hour < 300) {
                         FlowMean[r] = FlowMean_SmaAxes[r]
                     }
 
@@ -1126,12 +1139,12 @@ class MultiRunsProcessData {
         }
     }
 
-    static double[] pushAndPop(double[] arrayList, int nTimes){
+    static double[] pushAndPop(double[] arrayList, int nTimes) {
         def list = Doubles.asList(arrayList)
         def stack = list as Stack
-        for (i in 1..nTimes){
+        for (i in 1..nTimes) {
             def lastElement = stack.pop()
-            stack.insertElementAt(lastElement,0)
+            stack.insertElementAt(lastElement, 0)
         }
         return stack as double[]
     }
@@ -1142,28 +1155,26 @@ class MultiRunsProcessData {
         genericMeteoData.setHumidity(HumMean[r])
         genericMeteoData.setTemperature(TempMean[r])
 
-        double[] favrose = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
+        double[] favrose = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         //double[] favrose_6_18 = [0.41, 0.39, 0.38, 0.37, 0.36, 0.35, 0.34, 0.34, 0.34, 0.38, 0.44, 0.47, 0.48, 0.49, 0.49, 0.47, 0.45, 0.43];
         //double[] favrose_18_22 = [0.53, 0.45, 0.41, 0.39, 0.37, 0.36, 0.36, 0.38, 0.41, 0.53, 0.62, 0.65, 0.67, 0.67, 0.68, 0.69, 0.68, 0.64];
         //double[] favrose_22_6 = [0.64, 0.57, 0.51, 0.48, 0.46, 0.43, 0.41, 0.38, 0.36, 0.38, 0.44, 0.49, 0.52, 0.55, 0.58, 0.61, 0.64, 0.67];
-        if (DEN == "day") favrose = [0.41, 0.39, 0.38, 0.36, 0.35, 0.34, 0.34, 0.34, 0.38, 0.44, 0.47, 0.48,  0.49, 0.47, 0.45, 0.43]
-        if (DEN == "evening") favrose = [0.41, 0.39, 0.38, 0.36, 0.35, 0.34, 0.34, 0.34, 0.38, 0.44, 0.47, 0.48,  0.49, 0.47, 0.45, 0.43]
-        if (DEN == "night") favrose = [0.41, 0.39, 0.38, 0.36, 0.35, 0.34, 0.34, 0.34, 0.38, 0.44, 0.47, 0.48,  0.49, 0.47, 0.45, 0.43]
+        if (DEN == "day") favrose = [0.41, 0.39, 0.38, 0.36, 0.35, 0.34, 0.34, 0.34, 0.38, 0.44, 0.47, 0.48, 0.49, 0.47, 0.45, 0.43]
+        if (DEN == "evening") favrose = [0.41, 0.39, 0.38, 0.36, 0.35, 0.34, 0.34, 0.34, 0.38, 0.44, 0.47, 0.48, 0.49, 0.47, 0.45, 0.43]
+        if (DEN == "night") favrose = [0.41, 0.39, 0.38, 0.36, 0.35, 0.34, 0.34, 0.34, 0.38, 0.44, 0.47, 0.48, 0.49, 0.47, 0.45, 0.43]
 
-        if (windDir[r] == -60) favrose = pushAndPop(favrose,10)
-        if (windDir[r] == -30) favrose = pushAndPop(favrose,11)
-        if (windDir[r] == 30) favrose =  pushAndPop(favrose,1)
-        if (windDir[r] == 60) favrose = pushAndPop(favrose,2)
+        if (windDir[r] == -60) favrose = pushAndPop(favrose, 10)
+        if (windDir[r] == -30) favrose = pushAndPop(favrose, 11)
+        if (windDir[r] == 30) favrose = pushAndPop(favrose, 1)
+        if (windDir[r] == 60) favrose = pushAndPop(favrose, 2)
         //favrose = favrose.collect{it*meteoFav[r]}
 
         for (int i = 0; i < favrose.length; i++) {
-            favrose[i] = favrose.collect{it*meteoFav[r]}.get(i) as double
+            favrose[i] = favrose.collect { it * meteoFav[r] }.get(i) as double
         }
         genericMeteoData.setWindRose(favrose)
         return genericMeteoData
     }
-
-
 
 
     int setSensitivityTable(File file, Properties prop, int nbSimu) {
@@ -1175,72 +1186,73 @@ class MultiRunsProcessData {
         ObjectMapper mapper = new ObjectMapper()
         // JsonNode Data = EvaluateRoadSourceCnossos.parse(EvaluateRoadSourceCnossos.getResourceAsStream("D:\\aumond\\Documents\\Boulot\\Articles\\2019_XX_XX Sensitivity\\MR_input.json"));
 
-
         // JSON file to Java object
         //MrInputs mrInputs = mapper.readValue(file, MrInputs.class)
-        JsonNode  mrInputs = mapper.readValue(file, JsonNode.class)
+        JsonNode mrInputs = mapper.readValue(file, JsonNode.class)
 
         // pretty print
-        if (nbSimu == -1) {nbSimu = mrInputs.getAt(0).size()}
+        if (nbSimu == -1) {
+            nbSimu = mrInputs.getAt(0).size()
+        }
 
 
         initialise(nbSimu, prop)
 
-        for (int i = 0; i < mrInputs.fieldNames().size(); ++i ) {
+        for (int i = 0; i < mrInputs.fieldNames().size(); ++i) {
             for (int r = 0; r < nbSimu; ++r) {
                 switch (mrInputs.fieldNames()[i]) {
                     case 'Refl':
                         Refl[r] = mrInputs.get('Refl').get(r).asInt()
                         break
-                    case 'Dif_hor' :
+                    case 'Dif_hor':
                         Dif_hor[r] = mrInputs.get('Dif_hor').get(r).asInt()
                         break
-                    case 'Dif_ver' :
+                    case 'Dif_ver':
                         Dif_ver[r] = mrInputs.get('Dif_ver').get(r).asInt()
                         break
                     case 'DistProp':
                         DistProp[r] = mrInputs.get('DistProp').get(r).asDouble()
                         break
-                    case 'wallAlpha' :
+                    case 'wallAlpha':
                         wallAlpha[r] = mrInputs.get('wallAlpha').get(r).asDouble()
                         break
-                    case 'TempMean' :
+                    case 'TempMean':
                         TempMean[r] = mrInputs.get('TempMean').get(r).asDouble()
                         break
-                    case 'HumMean' :
+                    case 'HumMean':
                         HumMean[r] = mrInputs.get('HumMean').get(r).asDouble()
                         break
-                    case 'SpeedMean' :
+                    case 'SpeedMean':
                         SpeedMean[r] = mrInputs.get('SpeedMean').get(r).asDouble()
                         break
-                    case 'FlowMean' :
+                    case 'FlowMean':
                         FlowMean[r] = mrInputs.get('FlowMean').get(r).asDouble()
                         break
-                    case 'FlowMean_MajAxes' :
+                    case 'FlowMean_MajAxes':
                         FlowMean_MajAxes[r] = mrInputs.get('FlowMean_MajAxes').get(r).asDouble()
                         break
-                    case 'FlowMean_MedAxes' :
+                    case 'FlowMean_MedAxes':
                         FlowMean_MedAxes[r] = mrInputs.get('FlowMean_MedAxes').get(r).asDouble()
                         break
-                    case 'FlowMean_SmaAxes' :
+                    case 'FlowMean_SmaAxes':
                         FlowMean_SmaAxes[r] = mrInputs.get('FlowMean_SmaAxes').get(r).asDouble()
                         break
-                    case 'HV' :
+                    case 'HV':
                         HV[r] = mrInputs.get('HV').get(r).asDouble()
                         break
-                    case 'MV' :
+                    case 'MV':
                         MV[r] = mrInputs.get('MV').get(r).asDouble()
                         break
-                    case 'WV' :
+                    case 'WV':
                         WV[r] = mrInputs.get('WV').get(r).asDouble()
                         break
-                    case 'meteoFav' :
+                    case 'meteoFav':
                         meteoFav[r] = mrInputs.get('meteoFav').get(r).asDouble()
                         break
-                    case 'WindDir' :
+                    case 'WindDir':
                         WindDir[r] = mrInputs.get('WindDir').get(r).asDouble()
                         break
-                    case 'RoadJunction' :
+                    case 'RoadJunction':
                         RoadJunction[r] = mrInputs.get('RoadJunction').get(r).asInt()
                         break
                 }
@@ -1281,29 +1293,29 @@ class MultiRunsProcessData {
         //////////////////////
 
 
-        sql.eachRow('SELECT '+prop.getProperty("pkSources")+', CAST(ID_WAY AS INTEGER) ID_WAY, the_geom , ' +
+        sql.eachRow('SELECT ' + prop.getProperty("pkSources") + ', CAST(ID_WAY AS INTEGER) ID_WAY, the_geom , ' +
                 'TV_D,TV_E,TV_N,' +
                 'HV_D,HV_E,HV_N, ' +
                 'LV_SPD_D, LV_SPD_E, LV_SPD_N, ' +
                 'HV_SPD_D, HV_SPD_E, HV_SPD_N, ' +
                 'PVMT FROM ' + tablename + ';') { fields ->
 
-            pk.put((int) fields[prop.getProperty("pkSources")] ,(int) fields[prop.getProperty("pkSources")])
-            ID_WAY.put((int) fields[prop.getProperty("pkSources")],(long) fields["ID_WAY"])
+            pk.put((int) fields[prop.getProperty("pkSources")], (int) fields[prop.getProperty("pkSources")])
+            ID_WAY.put((int) fields[prop.getProperty("pkSources")], (long) fields["ID_WAY"])
             the_geom.put((int) fields[prop.getProperty("pkSources")], (Geometry) fields["the_geom"])
-            TV_D.put((int) fields[prop.getProperty("pkSources")],(double) fields["TV_D"])
-            TV_E.put((int) fields[prop.getProperty("pkSources")],(double) fields["TV_E"])
-            TV_N.put((int) fields[prop.getProperty("pkSources")],(double) fields["TV_N"])
-            HV_D.put((int) fields[prop.getProperty("pkSources")],(double) fields["HV_D"])
-            HV_E.put((int) fields[prop.getProperty("pkSources")],(double) fields["HV_E"])
-            HV_N.put((int) fields[prop.getProperty("pkSources")],(double) fields["HV_N"])
-            LV_SPD_D.put((int) fields[prop.getProperty("pkSources")],(double) fields["LV_SPD_D"])
-            LV_SPD_E.put((int) fields[prop.getProperty("pkSources")],(double) fields["LV_SPD_E"])
-            LV_SPD_N.put((int) fields[prop.getProperty("pkSources")],(double) fields["LV_SPD_N"])
-            HV_SPD_D.put((int) fields[prop.getProperty("pkSources")],(double) fields["HV_SPD_D"])
-            HV_SPD_E.put((int) fields[prop.getProperty("pkSources")],(double) fields["HV_SPD_E"])
-            HV_SPD_N.put((int) fields[prop.getProperty("pkSources")],(double) fields["HV_SPD_N"])
-            PVMT.put((int) fields[prop.getProperty("pkSources")],(String) fields["PVMT"])
+            TV_D.put((int) fields[prop.getProperty("pkSources")], (double) fields["TV_D"])
+            TV_E.put((int) fields[prop.getProperty("pkSources")], (double) fields["TV_E"])
+            TV_N.put((int) fields[prop.getProperty("pkSources")], (double) fields["TV_N"])
+            HV_D.put((int) fields[prop.getProperty("pkSources")], (double) fields["HV_D"])
+            HV_E.put((int) fields[prop.getProperty("pkSources")], (double) fields["HV_E"])
+            HV_N.put((int) fields[prop.getProperty("pkSources")], (double) fields["HV_N"])
+            LV_SPD_D.put((int) fields[prop.getProperty("pkSources")], (double) fields["LV_SPD_D"])
+            LV_SPD_E.put((int) fields[prop.getProperty("pkSources")], (double) fields["LV_SPD_E"])
+            LV_SPD_N.put((int) fields[prop.getProperty("pkSources")], (double) fields["LV_SPD_N"])
+            HV_SPD_D.put((int) fields[prop.getProperty("pkSources")], (double) fields["HV_SPD_D"])
+            HV_SPD_E.put((int) fields[prop.getProperty("pkSources")], (double) fields["HV_SPD_E"])
+            HV_SPD_N.put((int) fields[prop.getProperty("pkSources")], (double) fields["HV_SPD_N"])
+            PVMT.put((int) fields[prop.getProperty("pkSources")], (String) fields["PVMT"])
 
         }
 
@@ -1324,13 +1336,13 @@ class PointToPointPathsMultiRuns {
      * @param out the stream to write into
      * @throws java.io.IOException if an I/O-error occurs
      */
-    void writePropagationPathListStream( DataOutputStream out) throws IOException {
+    void writePropagationPathListStream(DataOutputStream out) throws IOException {
 
         out.writeLong(receiverId)
         out.writeLong(sourceId)
         out.writeDouble(li)
         out.writeInt(propagationPathList.size())
-        for(MRPropagationPath propagationPath : propagationPathList) {
+        for (MRPropagationPath propagationPath : propagationPathList) {
             propagationPath.writeStream(out);
         }
     }
@@ -1343,7 +1355,7 @@ class PointToPointPathsMultiRuns {
      * @throws IOException if an I/O-error occurs
      */
     void readPropagationPathListStream(DataInputStream inputStream) throws IOException {
-        if (propagationPathList==null){
+        if (propagationPathList == null) {
             propagationPathList = new ArrayList<>()
         }
 
@@ -1352,7 +1364,7 @@ class PointToPointPathsMultiRuns {
         li = inputStream.readDouble()
         int propagationPathsListSize = inputStream.readInt()
         propagationPathList.ensureCapacity(propagationPathsListSize)
-        for(int i=0; i < propagationPathsListSize; i++) {
+        for (int i = 0; i < propagationPathsListSize; i++) {
             MRPropagationPath propagationPath = new MRPropagationPath()
             propagationPath.readStream(inputStream)
             propagationPathList.add(propagationPath)
