@@ -55,7 +55,9 @@ def run(input) {
                     TableLocation.parse(table_name).toString(),newEpsg.toInteger()))
             outputString = "Process done ! epsg changed from "+  srid.toString() +" to " + newEpsg.toString()
         } else{
-            outputString = "Error ! no epsg found !"
+            connection.createStatement().execute(String.format("UPDATE %s SET THE_GEOM = ST_SetSRID(the_geom,%d)",
+                    TableLocation.parse(table_name).toString(),newEpsg.toInteger()))
+            outputString = "Error ! no epsg found ! new EPSG set to SRID input ..."
         }
 
     }

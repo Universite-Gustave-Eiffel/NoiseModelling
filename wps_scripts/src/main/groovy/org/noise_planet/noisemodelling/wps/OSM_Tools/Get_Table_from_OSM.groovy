@@ -236,24 +236,24 @@ def exec(connection, input) {
                 }
             }
 
-            } else{
-                String roadsImport = "DROP TABLE IF EXISTS ROADS;\n" +
-                        "CREATE TABLE ROADS(PK SERIAL,ID_WAY long , THE_GEOM LINESTRING CHECK ST_SRID(THE_GEOM)="+srid+", CLAS_ADM int, AADF int, SPEED int) as SELECT null, ID_WAY, THE_GEOM,\n" +
-                        "CASEWHEN(T = 'trunk', 21,\n" +
-                        "CASEWHEN(T = 'primary', 41,\n" +
-                        "CASEWHEN(T = 'secondary', 41,\n" +
-                        "CASEWHEN(T = 'tertiary',41, 57)))) CLAS_ADM,\n" +
-                        "CASEWHEN(T = 'trunk', 47000,\n" +
-                        "CASEWHEN(T = 'primary', 35000,\n" +
-                        "CASEWHEN(T = 'secondary', 12000,\n" +
-                        "CASEWHEN(T = 'tertiary',7800,\n" +
-                        "CASEWHEN(T = 'residential',4000, 1600\n" +
-                        "))))) AADF, MAX_SPEED SPEED FROM MAP_ROADS_GEOM where T in ('trunk', 'primary', 'secondary', 'tertiary', 'residential', 'unclassified') ;"
-                sql.execute(roadsImport)
-            }
+        } else{
+            String roadsImport = "DROP TABLE IF EXISTS ROADS;\n" +
+                    "CREATE TABLE ROADS(PK SERIAL,ID_WAY long , THE_GEOM LINESTRING CHECK ST_SRID(THE_GEOM)="+srid+", CLAS_ADM int, AADF int, SPEED int) as SELECT null, ID_WAY, THE_GEOM,\n" +
+                    "CASEWHEN(T = 'trunk', 21,\n" +
+                    "CASEWHEN(T = 'primary', 41,\n" +
+                    "CASEWHEN(T = 'secondary', 41,\n" +
+                    "CASEWHEN(T = 'tertiary',41, 57)))) CLAS_ADM,\n" +
+                    "CASEWHEN(T = 'trunk', 47000,\n" +
+                    "CASEWHEN(T = 'primary', 35000,\n" +
+                    "CASEWHEN(T = 'secondary', 12000,\n" +
+                    "CASEWHEN(T = 'tertiary',7800,\n" +
+                    "CASEWHEN(T = 'residential',4000, 1600\n" +
+                    "))))) AADF, MAX_SPEED SPEED FROM MAP_ROADS_GEOM where T in ('trunk', 'primary', 'secondary', 'tertiary', 'residential', 'unclassified') ;"
+            sql.execute(roadsImport)
+        }
 
         tables.add("ROADS")
-        }
+    }
 
 
 

@@ -34,8 +34,8 @@
 
 package org.noise_planet.noisemodelling.wps
 
-import org.h2gis.functions.io.shp.SHPRead
 import org.noise_planet.noisemodelling.wps.Database_Manager.Display_Database
+import org.noise_planet.noisemodelling.wps.Experimental.Import_Symuvia
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Lden_from_Emission
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Road_Emission_From_AADF
@@ -47,64 +47,22 @@ import org.slf4j.LoggerFactory
 /**
  * Test parsing of zip file using H2GIS database
  */
-class TestTutorialOpenStreetMap extends JdbcTestCase {
-    Logger LOGGER = LoggerFactory.getLogger(TestTutorialOpenStreetMap.class)
+class TestSymuvia extends JdbcTestCase {
+    Logger LOGGER = LoggerFactory.getLogger(TestSymuvia.class)
 
     void testTutorial() {
         // Check empty database
         Object res = new Display_Database().exec(connection, [])
+
         assertEquals("", res)
         // Import OSM file
-        res = new Get_Table_from_OSM().exec(connection,
-                ["pathFile": TestTutorialOpenStreetMap.getResource("map.osm.gz").getPath(),
-                 "targetSRID" : 2154,
-                 "convert2Building" : true,
-                 "convert2Vegetation" : true,
-                 "convert2Roads" : true])
-        // Check database
+        res = new Import_Symuvia().exec(connection,
+                ["pathFile": TestSymuvia.getResource("symuvia.xml").getPath(),
+                "defaultSRID" : 2154])
+
         res = new Display_Database().exec(connection, [])
 
-        assertTrue(res.contains("SURFACE_OSM"))
-        assertTrue(res.contains("BUILDINGS_OSM"))
-        assertTrue(res.contains("ROADS"))
-
-        // Check export geojson
-        File testPath = new File("target/test.geojson")
-
-        if(testPath.exists()) {
-            testPath.delete()
-        }
-
-        res = new Export_Table().exec(connection, ["exportPath" : "target/test.geojson",
-                                                   "tableToExport": "BUILDINGS_OSM"])
-        assertTrue(testPath.exists())
-
-        // Check regular grid
-
-        res = new Regular_Grid().exec(connection, ["delta": 50,
-                                                   "sourcesTableName": "ROADS",
-                                                   "buildingTableName": "BUILDINGS_OSM"])
-
-        // Check database
-        res = new Display_Database().exec(connection, [])
-
-        assertTrue(res.contains("RECEIVERS"))
-
-        new Road_Emission_From_AADF().exec(connection, ["sourcesTableName": "ROADS"])
-
-        // Check database
-        res = new Display_Database().exec(connection, [])
-
-        assertTrue(res.contains("LW_ROADS"))
-
-        res = new Lden_from_Emission().exec(connection, ["sourcesTableName": "LW_ROADS",
-                                                         "buildingTableName": "BUILDINGS_OSM",
-                                                         "groundTableName": "SURFACE_OSM"])
-
-        // Check database
-        res = new Display_Database().exec(connection, [])
-
-        assertTrue(res.contains("LDEN_GEOM"))
+        assertTrue(res.contains("SYMUVIA_TRAJ"))
     }
 
 }
