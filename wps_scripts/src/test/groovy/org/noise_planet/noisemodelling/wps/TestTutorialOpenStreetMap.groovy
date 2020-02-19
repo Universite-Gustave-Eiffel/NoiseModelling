@@ -57,10 +57,13 @@ class TestTutorialOpenStreetMap extends JdbcTestCase {
         // Import OSM file
         res = new Get_Table_from_OSM().exec(connection,
                 ["pathFile": TestTutorialOpenStreetMap.getResource("map.osm.gz").getPath(),
-                "targetSRID" : 2154,
-                "convert2Building" : true,
+                 "targetSRID" : 2154,
+                 "AADENF:" : false,
+                 "convert2Building" : true,
                 "convert2Vegetation" : true,
                 "convert2Roads" : true])
+
+
         // Check database
         res = new Display_Database().exec(connection, [])
 
