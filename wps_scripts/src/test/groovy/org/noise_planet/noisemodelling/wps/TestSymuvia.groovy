@@ -53,13 +53,16 @@ class TestSymuvia extends JdbcTestCase {
     void testTutorial() {
         // Check empty database
         Object res = new Display_Database().exec(connection, [])
+
         assertEquals("", res)
         // Import OSM file
         res = new Import_Symuvia().exec(connection,
                 ["pathFile": TestSymuvia.getResource("symuvia.xml").getPath(),
                 "defaultSRID" : 2154])
 
-        assertTrue(res.contains("LDEN_GEOM"))
+        res = new Display_Database().exec(connection, [])
+
+        assertTrue(res.contains("SYMUVIA_TRAJ"))
     }
 
 }

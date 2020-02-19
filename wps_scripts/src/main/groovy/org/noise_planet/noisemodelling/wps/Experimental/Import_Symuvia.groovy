@@ -101,12 +101,12 @@ def exec(connection, input) {
                 break
         }
 
-        int srid = SFSUtilities.getSRID(connection, TableLocation.parse(outputTableName+"_TRAJ"))
+       /* int srid = SFSUtilities.getSRID(connection, TableLocation.parse(outputTableName+"_TRAJ"))
         if(srid == 0) {
             connection.createStatement().execute(String.format("UPDATE %s SET THE_GEOM = ST_SetSRID(the_geom,%d)",
                     TableLocation.parse(outputTableName+"_TRAJ").toString(), defaultSRID))
 
-        }
+        }*/
 
 
         def file = new File(pathFile)

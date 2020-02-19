@@ -58,12 +58,9 @@ class TestTutorialOpenStreetMap extends JdbcTestCase {
         res = new Get_Table_from_OSM().exec(connection,
                 ["pathFile": TestTutorialOpenStreetMap.getResource("map.osm.gz").getPath(),
                  "targetSRID" : 2154,
-                 "AADENF:" : false,
                  "convert2Building" : true,
-                "convert2Vegetation" : true,
-                "convert2Roads" : true])
-
-
+                 "convert2Vegetation" : true,
+                 "convert2Roads" : true])
         // Check database
         res = new Display_Database().exec(connection, [])
 
@@ -85,8 +82,8 @@ class TestTutorialOpenStreetMap extends JdbcTestCase {
         // Check regular grid
 
         res = new Regular_Grid().exec(connection, ["delta": 50,
-        "sourcesTableName": "ROADS",
-        "buildingTableName": "BUILDINGS_OSM"])
+                                                   "sourcesTableName": "ROADS",
+                                                   "buildingTableName": "BUILDINGS_OSM"])
 
         // Check database
         res = new Display_Database().exec(connection, [])
@@ -101,8 +98,8 @@ class TestTutorialOpenStreetMap extends JdbcTestCase {
         assertTrue(res.contains("LW_ROADS"))
 
         res = new Lden_from_Emission().exec(connection, ["sourcesTableName": "LW_ROADS",
-        "buildingTableName": "BUILDINGS_OSM",
-        "groundTableName": "SURFACE_OSM"])
+                                                         "buildingTableName": "BUILDINGS_OSM",
+                                                         "groundTableName": "SURFACE_OSM"])
 
         // Check database
         res = new Display_Database().exec(connection, [])
