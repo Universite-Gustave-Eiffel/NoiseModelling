@@ -60,6 +60,7 @@ Cite as: *Erwan Bocher, Gwenaël Guillaume, Judicaël Picaut, Gwendall Petit, Ni
 .. toctree::
     :maxdepth: 2
     :caption: User Interface
+
     WPS_Blocks
     FAQ_UF
 

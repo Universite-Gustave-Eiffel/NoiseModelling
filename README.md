@@ -17,7 +17,7 @@ This plugin is distributed under **GPL 3 license** and is developed by the DECID
 For more information:
 * about NoiseModelling, [see the website](http://noise-planet.org/)
 * see the [documentation](https://noisemodelling.readthedocs.io/en/latest/)
-* follow us on twitter @Noise-Planet [![Twitter Follow](https://img.shields.io/twitter/follow/noise_planet.svg?style=social&label=Follow)](https://twitter.com/Noise_Planet?lang=en)
+* follow us on twitter @Noise_Planet [![Twitter Follow](https://img.shields.io/twitter/follow/noise_planet.svg?style=social&label=Follow)](https://twitter.com/Noise_Planet?lang=en)
 
 ![alt tag](http://noise-planet.org/assets/img/logos/Logo_noisemodelling.png)
 

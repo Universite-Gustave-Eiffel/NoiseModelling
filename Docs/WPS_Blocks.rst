@@ -1,63 +1,26 @@
 WPS Blocks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-NoiseModelling v3.0.0 comes with 7 WPS blocks.
 
-.. note ::
-    - Orange blocks are mandatory
-    - Beige blocks are optional
-    - if all input blocks are optional, you must modify at least one of these blocks to be able to run the process
-    - Blocks get solid border when they are ready to run
+WPS general presentation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The OGC Web Processing Service (WPS) Interface Standard provides rules for standardizing inputs and outputs (requests and responses) for invoking geospatial processing services, such as polygon overlay, as a web service.
 
-
-Import and Export 
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-- **[Import Folder]** : Allows you to import all files (with the same format) from a folder.
-
-- **[Import File]** : Allows you to import an unique file.
-
-- **[Export File]** : Allows you to export an unique file.
-
-.. note ::
-    The supported format are : csv, dbf, geojson, gpx, bz2, gz, osm, shp, tsv
+The WPS standard defines how a client can request the execution of a process, and how the output from the process is handled. It defines an interface that facilitates the publishing of geospatial processes and clients’ discovery of and binding to those processes.
 
 
-Noise Modelling
-~~~~~~~~~~~~~~~~~~~~~~~~
+NoiseModelling and WPS
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+NoiseModelling v3.0.0 comes with 7 WPS blocks. WPS scripts for GeoServer are written in groovy language.
 
-- **[Get Lday (Tutorial)]** : Allows you to compute your first noise map with NoiseModelling. This is a tutorial. 
+They are located in :literal:`Geoserver\\data_dir\\scripts\\wps directory`
 
-.. note ::
-    In this tutorial, you can use 5 different tables as input data containing the following fields: 
-        - DEM (dem_lorient.geojson) : 
-            - geometry : POINT with 3 dimensions (X,Y,Z) 
-        - BUILDING (buildings.shp) : 
-            - geometry : POLYGONS
-            - HEIGHT : building height.
-        - SOURCES (roads.shp) : 
-            - geometry : LINES
-            - ID : primary key corresponding to the roads ID 
-            - AADF field : Annual Average Daily Flow estimates
-            - CLAS_ADM : type of roads (used to estimate flow speed)
-        - RECEIVERS (receivers.shp) : 
-            - geometry : POINT with 3 dimensions (X,Y,Z) 
-            - ID : primary key
-        - GROUND (ground_type.shp) :
-            - geometry : POLYGONS
-            - G : from 0 to 1 the absorption coefficient of the ground
+.. tips::
+    With each new version, new blocks are added. Be curious and check out the latest version !
 
 
-Database management
-~~~~~~~~~~~~~~~~~~~~~~~~
 
-- **[Display All]**  : Display all tables in your database. You can choose to log the column names or not.
-
-- **[Clean All]**  : Clean all tables in your database.
-
-- **[Drop a table]**  : Remove one specific table of your database.
-
-Create your own WPS script
+Create your own WPS block
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Please see `Advanced Users Section`_, because now you want to be one !
