@@ -41,10 +41,13 @@ import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Polygon;
 
 import java.io.BufferedInputStream;
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Types;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 
@@ -59,6 +62,7 @@ public class AscReaderDriver {
 
     /**
      * Read asc stream
+     *
      * @param connection
      * @param inputStream
      * @param progress
@@ -66,7 +70,8 @@ public class AscReaderDriver {
      * @throws SQLException
      * @throws IOException
      */
-    public void read(Connection connection, InputStream inputStream, ProgressVisitor progress, String tableReference, int srid) throws SQLException, IOException {
+    public void read(Connection connection, InputStream inputStream, ProgressVisitor progress, String tableReference,
+                     int srid) throws SQLException, IOException {
         BufferedInputStream bof = new BufferedInputStream(inputStream, BUFFER_SIZE);
         String lastWord = "";
         try {
@@ -74,30 +79,30 @@ public class AscReaderDriver {
             // Read HEADER
             // NCOLS
             lastWord = scanner.next();
-            if(!lastWord.equalsIgnoreCase("NCOLS")) {
-                throw new IOException("Unexpected word "+lastWord);
+            if (!lastWord.equalsIgnoreCase("NCOLS")) {
+                throw new IOException("Unexpected word " + lastWord);
             }
             // XXX
             lastWord = scanner.next();
             int ncols = Integer.parseInt(lastWord);
-            if(ncols <= 0) {
+            if (ncols <= 0) {
                 throw new IOException("NCOLS <= 0");
             }
             // NROWS
             lastWord = scanner.next();
-            if(!lastWord.equalsIgnoreCase("NROWS")) {
-                throw new IOException("Unexpected word "+lastWord);
+            if (!lastWord.equalsIgnoreCase("NROWS")) {
+                throw new IOException("Unexpected word " + lastWord);
             }
             // XXX
             lastWord = scanner.next();
             int nrows = Integer.parseInt(lastWord);
-            if(nrows <= 0) {
+            if (nrows <= 0) {
                 throw new IOException("NROWS <= 0");
             }
             // XLLCENTER or XLLCORNER
             lastWord = scanner.next();
-            if(!(lastWord.equalsIgnoreCase("XLLCENTER") || lastWord.equalsIgnoreCase("XLLCORNER"))) {
-                throw new IOException("Unexpected word "+lastWord);
+            if (!(lastWord.equalsIgnoreCase("XLLCENTER") || lastWord.equalsIgnoreCase("XLLCORNER"))) {
+                throw new IOException("Unexpected word " + lastWord);
             }
             boolean isXCenter = lastWord.equalsIgnoreCase("XLLCENTER");
             // XXX
@@ -106,8 +111,8 @@ public class AscReaderDriver {
 
             // YLLCENTER or YLLCORNER
             lastWord = scanner.next();
-            if(!(lastWord.equalsIgnoreCase("YLLCENTER") || lastWord.equalsIgnoreCase("YLLCORNER"))) {
-                throw new IOException("Unexpected word "+lastWord);
+            if (!(lastWord.equalsIgnoreCase("YLLCENTER") || lastWord.equalsIgnoreCase("YLLCORNER"))) {
+                throw new IOException("Unexpected word " + lastWord);
             }
             boolean isYCenter = lastWord.equalsIgnoreCase("YLLCENTER");
             // XXX
@@ -116,17 +121,17 @@ public class AscReaderDriver {
 
             // CELLSIZE
             lastWord = scanner.next();
-            if(!lastWord.equalsIgnoreCase("CELLSIZE")) {
-                throw new IOException("Unexpected word "+lastWord);
+            if (!lastWord.equalsIgnoreCase("CELLSIZE")) {
+                throw new IOException("Unexpected word " + lastWord);
             }
             // XXX
             lastWord = scanner.next();
             double cellSize = Double.parseDouble(lastWord);
             // Compute offsets
-            if(isXCenter) {
+            if (isXCenter) {
                 xValue = xValue - cellSize / 2;
             }
-            if(isYCenter) {
+            if (isYCenter) {
                 yValue = yValue + cellSize * nrows - cellSize / 2;
             } else {
                 yValue = yValue + cellSize * nrows;
@@ -135,7 +140,7 @@ public class AscReaderDriver {
             lastWord = scanner.next();
             boolean readFirst = false;
             int noData = -9999;
-            if(lastWord.equalsIgnoreCase("NODATA_VALUE")) {
+            if (lastWord.equalsIgnoreCase("NODATA_VALUE")) {
                 readFirst = true;
                 // XXX
                 lastWord = scanner.next();
@@ -143,20 +148,21 @@ public class AscReaderDriver {
             }
 
             ProgressVisitor cellProgress = new EmptyProgressVisitor();
-            if(progress != null) {
+            if (progress != null) {
                 cellProgress = progress.subProcess(nrows);
             }
 
             Statement st = connection.createStatement();
-            st.execute("CREATE TABLE "+tableReference+"(PK SERIAL NOT NULL, THE_GEOM GEOMETRY,CELL_VAL int, " +
+            st.execute("CREATE TABLE " + tableReference + "(PK SERIAL NOT NULL, THE_GEOM GEOMETRY,CELL_VAL int, " +
                     " CONSTRAINT ASC_PK PRIMARY KEY (PK))");
-            PreparedStatement preparedStatement = connection.prepareStatement("INSERT INTO "+tableReference+"(the_geom, CELL_VAL) VALUES (?, ?)");
+            PreparedStatement preparedStatement = connection.prepareStatement("INSERT INTO " + tableReference +
+                    "(the_geom, CELL_VAL) VALUES (?, ?)");
             // Read data
             GeometryFactory factory = new GeometryFactory();
             int batchSize = 0;
-            for(int i=0; i < nrows; i++) {
-                for(int j=0; j < ncols; j++) {
-                    if(readFirst) {
+            for (int i = 0; i < nrows; i++) {
+                for (int j = 0; j < ncols; j++) {
+                    if (readFirst) {
                         lastWord = scanner.next();
                     } else {
                         readFirst = true;
@@ -164,19 +170,18 @@ public class AscReaderDriver {
                     int data = Integer.parseInt(lastWord);
                     double x = xValue + j * cellSize;
                     double y = yValue - i * cellSize;
-                    Polygon cell = factory.createPolygon(new Coordinate[]{new Coordinate(x,
-                            y), new Coordinate(x, y - cellSize),
-                            new Coordinate(x + cellSize, y - cellSize), new Coordinate(x + cellSize,
+                    Polygon cell = factory.createPolygon(new Coordinate[]{new Coordinate(x, y), new Coordinate(x,
+                            y - cellSize), new Coordinate(x + cellSize, y - cellSize), new Coordinate(x + cellSize,
                             y), new Coordinate(x, y)});
                     preparedStatement.setObject(1, cell);
-                    if(data != noData) {
+                    if (data != noData) {
                         preparedStatement.setObject(2, data);
                     } else {
                         preparedStatement.setNull(2, Types.INTEGER);
                     }
                     preparedStatement.addBatch();
                     batchSize++;
-                    if(batchSize >= BATCH_MAX_SIZE) {
+                    if (batchSize >= BATCH_MAX_SIZE) {
                         preparedStatement.executeBatch();
                         preparedStatement.clearBatch();
                         batchSize = 0;
