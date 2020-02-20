@@ -36,16 +36,15 @@ package org.noise_planet.noisemodelling.ext.asc;
 
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.api.ProgressVisitor;
+import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Polygon;
 
 import java.io.BufferedInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 
@@ -97,7 +96,7 @@ public class AscReaderDriver {
             }
             // XLLCENTER or XLLCORNER
             lastWord = scanner.next();
-            if(!lastWord.equalsIgnoreCase("XLLCENTER") || !lastWord.equalsIgnoreCase("XLLCORNER")) {
+            if(!(lastWord.equalsIgnoreCase("XLLCENTER") || lastWord.equalsIgnoreCase("XLLCORNER"))) {
                 throw new IOException("Unexpected word "+lastWord);
             }
             boolean isXCenter = lastWord.equalsIgnoreCase("XLLCENTER");
@@ -107,7 +106,7 @@ public class AscReaderDriver {
 
             // YLLCENTER or YLLCORNER
             lastWord = scanner.next();
-            if(!lastWord.equalsIgnoreCase("YLLCENTER") || !lastWord.equalsIgnoreCase("YLLCORNER")) {
+            if(!(lastWord.equalsIgnoreCase("YLLCENTER") || lastWord.equalsIgnoreCase("YLLCORNER"))) {
                 throw new IOException("Unexpected word "+lastWord);
             }
             boolean isYCenter = lastWord.equalsIgnoreCase("YLLCENTER");
@@ -123,7 +122,15 @@ public class AscReaderDriver {
             // XXX
             lastWord = scanner.next();
             double cellSize = Double.parseDouble(lastWord);
-
+            // Compute offsets
+            if(isXCenter) {
+                xValue = xValue - cellSize / 2;
+            }
+            if(isYCenter) {
+                yValue = yValue + cellSize * nrows - cellSize / 2;
+            } else {
+                yValue = yValue + cellSize * nrows;
+            }
             // Optional NODATA_VALUE
             lastWord = scanner.next();
             boolean readFirst = false;
@@ -141,17 +148,44 @@ public class AscReaderDriver {
             }
 
             Statement st = connection.createStatement();
-            st.execute("CREATE TABLE "+tableReference+"(PK serial NOT NULL, the_geom geometry," +
+            st.execute("CREATE TABLE "+tableReference+"(PK SERIAL NOT NULL, THE_GEOM GEOMETRY,CELL_VAL int, " +
                     " CONSTRAINT ASC_PK PRIMARY KEY (PK))");
-            PreparedStatement preparedStatement = connection.prepareStatement("INSERT INTO "+tableReference+"(the_geom) VALUES (?)");
+            PreparedStatement preparedStatement = connection.prepareStatement("INSERT INTO "+tableReference+"(the_geom, CELL_VAL) VALUES (?, ?)");
             // Read data
             GeometryFactory factory = new GeometryFactory();
+            int batchSize = 0;
             for(int i=0; i < nrows; i++) {
                 for(int j=0; j < ncols; j++) {
-                    lastWord = scanner.next();
+                    if(readFirst) {
+                        lastWord = scanner.next();
+                    } else {
+                        readFirst = true;
+                    }
                     int data = Integer.parseInt(lastWord);
-                    preparedStatement.setObject(1, );
+                    double x = xValue + j * cellSize;
+                    double y = yValue - i * cellSize;
+                    Polygon cell = factory.createPolygon(new Coordinate[]{new Coordinate(x,
+                            y), new Coordinate(x, y - cellSize),
+                            new Coordinate(x + cellSize, y - cellSize), new Coordinate(x + cellSize,
+                            y), new Coordinate(x, y)});
+                    preparedStatement.setObject(1, cell);
+                    if(data != noData) {
+                        preparedStatement.setObject(2, data);
+                    } else {
+                        preparedStatement.setNull(2, Types.INTEGER);
+                    }
+                    preparedStatement.addBatch();
+                    batchSize++;
+                    if(batchSize >= BATCH_MAX_SIZE) {
+                        preparedStatement.executeBatch();
+                        preparedStatement.clearBatch();
+                        batchSize = 0;
+                    }
                 }
+                cellProgress.endStep();
+            }
+            if (batchSize > 0) {
+                preparedStatement.executeBatch();
             }
 
         } catch (NoSuchElementException | NumberFormatException ex) {

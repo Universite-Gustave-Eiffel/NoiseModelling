@@ -98,7 +98,8 @@ public class AscDriverFunction implements DriverFunction {
             throws SQLException, IOException {
         AscReaderDriver ascReaderDriver = new AscReaderDriver();
         try(FileInputStream fos = new FileInputStream(fileName)) {
-            ascReaderDriver.read(connection, fos, progress, tableReference);
+            // TODO READ SRID file
+            ascReaderDriver.read(connection, fos, progress, tableReference, 0);
         }
     }
 
