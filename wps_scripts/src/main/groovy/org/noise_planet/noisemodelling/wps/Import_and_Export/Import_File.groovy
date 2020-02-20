@@ -18,6 +18,7 @@ import org.h2gis.functions.io.shp.SHPDriverFunction
 import org.h2gis.functions.io.tsv.TSVDriverFunction
 import org.h2gis.utilities.SFSUtilities
 import org.h2gis.utilities.TableLocation
+import org.noise_planet.noisemodelling.ext.asc.AscDriverFunction
 
 import java.sql.Connection
 import java.sql.Statement
@@ -108,6 +109,10 @@ def run(input) {
             case "tsv":
                 TSVDriverFunction tsvDriver = new TSVDriverFunction()
                 tsvDriver.importFile(connection, outputTableName, new File(pathFile), new EmptyProgressVisitor())
+                break
+            case "asc":
+                AscDriverFunction ascDriver = new AscDriverFunction();
+                ascDriver.importFile(connection, outputTableName, fileName, new EmptyProgressVisitor())
                 break
         }
 
