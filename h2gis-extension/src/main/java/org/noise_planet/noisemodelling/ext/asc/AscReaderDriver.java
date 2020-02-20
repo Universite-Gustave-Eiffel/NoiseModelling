@@ -173,6 +173,7 @@ public class AscReaderDriver {
                     Polygon cell = factory.createPolygon(new Coordinate[]{new Coordinate(x, y), new Coordinate(x,
                             y - cellSize), new Coordinate(x + cellSize, y - cellSize), new Coordinate(x + cellSize,
                             y), new Coordinate(x, y)});
+                    cell.setSRID(srid);
                     preparedStatement.setObject(1, cell);
                     if (data != noData) {
                         preparedStatement.setObject(2, data);

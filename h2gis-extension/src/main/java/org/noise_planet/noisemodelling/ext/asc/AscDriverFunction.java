@@ -36,6 +36,7 @@ package org.noise_planet.noisemodelling.ext.asc;
 
 import org.h2gis.api.DriverFunction;
 import org.h2gis.api.ProgressVisitor;
+import org.h2gis.functions.io.utility.PRJUtil;
 import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.TableLocation;
 
@@ -97,9 +98,16 @@ public class AscDriverFunction implements DriverFunction {
     public void importFile(Connection connection, String tableReference, File fileName, ProgressVisitor progress)
             throws SQLException, IOException {
         AscReaderDriver ascReaderDriver = new AscReaderDriver();
+        int srid = 0;
+        String filePath = fileName.getAbsolutePath();
+        final int dotIndex = filePath.lastIndexOf('.');
+        final String fileNamePrefix = filePath.substring(0, dotIndex).toLowerCase();
+        File prjFile = new File(fileNamePrefix+".prj");
+        if(prjFile.exists()) {
+            srid = PRJUtil.getSRID(prjFile);
+        }
         try(FileInputStream fos = new FileInputStream(fileName)) {
-            // TODO READ SRID file
-            ascReaderDriver.read(connection, fos, progress, tableReference, 0);
+            ascReaderDriver.read(connection, fos, progress, tableReference, srid);
         }
     }
 
