@@ -30,6 +30,7 @@
         <module>noisemodelling-propagation</module>
         <module>noisemodelling-emission</module>
         <module>noisemodelling-tutorial-01</module>
+        <module>h2gis-extension</module>
     </modules>
     <scm>
         <connection>scm:git:https://github.com/Ifsttar/NoiseModelling.git</connection>
