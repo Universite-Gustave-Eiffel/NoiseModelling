@@ -112,7 +112,7 @@ def run(input) {
                 break
             case "asc":
                 AscDriverFunction ascDriver = new AscDriverFunction();
-                ascDriver.importFile(connection, outputTableName, fileName, new EmptyProgressVisitor())
+                ascDriver.importFile(connection, outputTableName, new File(pathFile), new EmptyProgressVisitor())
                 break
         }
 
