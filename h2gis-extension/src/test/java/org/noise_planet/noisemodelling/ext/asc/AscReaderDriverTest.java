@@ -153,9 +153,9 @@ public class AscReaderDriverTest {
     }
 
     @Test
-    public void testReadPrecipLimit() throws IOException, SQLException {
+    public void testReadPrecipDownscale() throws IOException, SQLException {
         AscReaderDriver reader = new AscReaderDriver();
-        reader.setLimit(50);
+        reader.setDownScale(5);
 
         try(InputStream inputStream = AscReaderDriverTest.class.getResourceAsStream("precip30min.asc")) {
             reader.read(connection, inputStream, new EmptyProgressVisitor(), "PRECIP30MIN", 4326);
@@ -167,22 +167,23 @@ public class AscReaderDriverTest {
         Statement st = connection.createStatement();
         try(ResultSet rs = st.executeQuery("SELECT COUNT(*) CPT FROM PRECIP30MIN")) {
             assertTrue(rs.next());
-            assertEquals(50, rs.getInt("CPT"));
+            assertEquals((15 / 5) * (20 / 5), rs.getInt("CPT"));
         }
     }
-
-
-
+//
+//
+//
 //    @Test
 //    public void testReadBigFile() throws IOException, SQLException {
 //        AscReaderDriver reader = new AscReaderDriver();
-//        reader.setExtractEnvelope(new Envelope(606084.78, 625191.882, 6868551.62, 6885046.96));
+//        //reader.setExtractEnvelope(new Envelope(606084.78, 625191.882, 6868551.62, 6885046.96));
+//        reader.setDownScale(10);
 //        long start = System.currentTimeMillis();
-//        try(InputStream inputStream = new FileInputStream("IDF_TOUT_asc.asc")) {
+//        try(InputStream inputStream = new FileInputStream("/home/nicolas/soft/geoserver/topog_IDF/IDF_TOUT_asc.asc")) {
 //            reader.read(connection, inputStream, new EmptyProgressVisitor(), "PRECIP30MIN", 2154);
 //        }
 //        System.out.println(String.format(Locale.ROOT, "Done in %.3f s",(System.currentTimeMillis() - start)/1e3));
 //        // Check number of extracted cells
-//        SHPWrite.exportTable(connection, "export.shp", "PRECIP30MIN");
+//        SHPWrite.exportTable(connection, "/home/nicolas/soft/geoserver/topog_IDF/export.shp", "PRECIP30MIN");
 //    }
 }

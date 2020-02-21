@@ -59,7 +59,7 @@ public class AscReaderDriver {
     private static final int BUFFER_SIZE = 16384;
     private boolean as3DPoint = false;
     private Envelope extractEnvelope = null;
-    private int limit = -1;
+    private int downScale = 1;
 
     /**
      * @return If true ASC is imported as 3D points cloud, Raster is imported in pixel polygons otherwise.
@@ -90,17 +90,17 @@ public class AscReaderDriver {
     }
 
     /**
-     * @return Maximum number of database insertions (-1 no limitation)
+     * @return Coefficient used for exporting less cells (1 all cells, 2 for size / 2)
      */
-    public int getLimit() {
-        return limit;
+    public int getDownScale() {
+        return downScale;
     }
 
     /**
-     * @param limit Set the maximum of database insertion (-1 no limitation)
+     * @param downScale Coefficient used for exporting less cells (1 all cells, 2 for size / 2)
      */
-    public void setLimit(int limit) {
-        this.limit = limit;
+    public void setDownScale(int downScale) {
+        this.downScale = downScale;
     }
 
     /**
@@ -204,7 +204,6 @@ public class AscReaderDriver {
             // Read data
             GeometryFactory factory = new GeometryFactory();
             int batchSize = 0;
-            int inserted = 0;
             int firstRow = 0;
             int firstCol = 0;
             int lastRow = nrows;
@@ -220,14 +219,14 @@ public class AscReaderDriver {
             if (progress != null) {
                 cellProgress = progress.subProcess(lastRow);
             }
-            for (int i = 0; i < nrows && (limit == -1 || inserted < limit); i++) {
-                for (int j = 0; j < ncols && (limit == -1 || inserted < limit); j++) {
+            for (int i = 0; i < nrows; i++) {
+                for (int j = 0; j < ncols; j++) {
                     if (readFirst) {
                         lastWord = scanner.next();
                     } else {
                         readFirst = true;
                     }
-                    if(extractEnvelope == null || (i >= firstRow && i <= lastRow && j >= firstCol && j <= lastCol)) {
+                    if((downScale == 1 || (i % downScale == 0 && j % downScale == 0)) && (extractEnvelope == null || (i >= firstRow && i <= lastRow && j >= firstCol && j <= lastCol))) {
                         int data = Integer.parseInt(lastWord);
                         double x = xValue + j * cellSize;
                         double y = yValue - i * cellSize;
@@ -237,11 +236,10 @@ public class AscReaderDriver {
                                 cell.setSRID(srid);
                                 preparedStatement.setObject(1, cell);
                                 preparedStatement.addBatch();
-                                inserted++;
                                 batchSize++;
                             }
                         } else {
-                            Polygon cell = factory.createPolygon(new Coordinate[]{new Coordinate(x, y), new Coordinate(x, y - cellSize), new Coordinate(x + cellSize, y - cellSize), new Coordinate(x + cellSize, y), new Coordinate(x, y)});
+                            Polygon cell = factory.createPolygon(new Coordinate[]{new Coordinate(x, y), new Coordinate(x, y - cellSize * downScale), new Coordinate(x + cellSize * downScale, y - cellSize * downScale), new Coordinate(x + cellSize * downScale, y), new Coordinate(x, y)});
                             cell.setSRID(srid);
                             preparedStatement.setObject(1, cell);
                             if (data != noData) {
@@ -250,7 +248,6 @@ public class AscReaderDriver {
                                 preparedStatement.setNull(2, Types.INTEGER);
                             }
                             preparedStatement.addBatch();
-                            inserted++;
                             batchSize++;
                         }
                         if (batchSize >= BATCH_MAX_SIZE) {
