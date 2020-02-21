@@ -12,6 +12,7 @@ import org.h2gis.utilities.SFSUtilities
 import org.h2gis.utilities.TableLocation
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.io.WKTReader
+import org.locationtech.jts.io.WKTWriter
 import org.noise_planet.noisemodelling.ext.asc.AscReaderDriver
 import org.noise_planet.noisemodelling.propagation.RootProgressVisitor
 
@@ -92,10 +93,20 @@ def exec(Connection connection, input) {
     int srid = defaultSRID;
     String filePath = new File(pathFile).getAbsolutePath();
     final int dotIndex = filePath.lastIndexOf('.');
-    final String fileNamePrefix = filePath.substring(0, dotIndex).toLowerCase();
+    final String fileNamePrefix = filePath.substring(0, dotIndex);
     File prjFile = new File(fileNamePrefix+".prj");
     if(prjFile.exists()) {
-        srid = PRJUtil.getSRID(prjFile);
+        System.out.println("Found prj file :" + prjFile.getAbsolutePath())
+        try {
+            srid = PRJUtil.getSRID(prjFile);
+            if(srid == 0) {
+                srid = defaultSRID;
+            }
+        } catch(IllegalArgumentException ex) {
+            System.err.println("PRJ file invalid, use default SRID " + prjFile.getAbsolutePath())
+        }
+    } else {
+        System.err.println("PRJ file not found " + prjFile.getAbsolutePath())
     }
 
     if (fence != null) {
@@ -104,14 +115,16 @@ def exec(Connection connection, input) {
             // Transform fence to the same coordinate system than the DEM table
             Geometry fenceGeom = null
             WKTReader wktReader = new WKTReader()
+            WKTWriter wktWriter = new WKTWriter()
             if (input['fence']) {
                 fenceGeom = wktReader.read(input['fence'] as String)
             }
+            System.out.println("Got fence :" + wktWriter.write(fenceGeom))
             Geometry fenceTransform = ST_Transform.ST_Transform(connection, ST_SetSRID.setSRID(fenceGeom, 4326), srid)
             ascDriver.setExtractEnvelope(fenceTransform.getEnvelopeInternal())
-            System.err.println("Transform fence coordinate")
+            System.out.println("Fence coordinate transformed :" + wktWriter.write(fenceTransform))
         } else {
-            System.err.println("Unable to find DEM SRID, ignore fence parameters")
+            throw new IllegalArgumentException("Unable to find DEM SRID but fence was provided")
         }
     }
 
