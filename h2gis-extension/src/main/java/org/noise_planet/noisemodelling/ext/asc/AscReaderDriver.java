@@ -36,9 +36,7 @@ package org.noise_planet.noisemodelling.ext.asc;
 
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.api.ProgressVisitor;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.geom.*;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -58,7 +56,52 @@ import java.util.Scanner;
  */
 public class AscReaderDriver {
     private static final int BATCH_MAX_SIZE = 100;
-    private static final int BUFFER_SIZE = 512;
+    private static final int BUFFER_SIZE = 16384;
+    private boolean as3DPoint = false;
+    private Envelope extractEnvelope = null;
+    private int limit = -1;
+
+    /**
+     * @return If true ASC is imported as 3D points cloud, Raster is imported in pixel polygons otherwise.
+     */
+    public boolean isAs3DPoint() {
+        return as3DPoint;
+    }
+
+    /**
+     * @param as3DPoint If true ASC is imported as 3D points cloud, Raster is imported in pixel polygons otherwise.
+     */
+    public void setAs3DPoint(boolean as3DPoint) {
+        this.as3DPoint = as3DPoint;
+    }
+
+    /**
+     * @return Imported geometries are filtered using this optional envelope
+     */
+    public Envelope getExtractEnvelope() {
+        return extractEnvelope;
+    }
+
+    /**
+     * @param extractEnvelope Imported geometries are filtered using this optional envelope. Set Null object for no filtering.
+     */
+    public void setExtractEnvelope(Envelope extractEnvelope) {
+        this.extractEnvelope = extractEnvelope;
+    }
+
+    /**
+     * @return Maximum number of database insertions (-1 no limitation)
+     */
+    public int getLimit() {
+        return limit;
+    }
+
+    /**
+     * @param limit Set the maximum of database insertion (-1 no limitation)
+     */
+    public void setLimit(int limit) {
+        this.limit = limit;
+    }
 
     /**
      * Read asc stream
@@ -147,53 +190,84 @@ public class AscReaderDriver {
                 noData = Integer.parseInt(lastWord);
             }
 
-            ProgressVisitor cellProgress = new EmptyProgressVisitor();
-            if (progress != null) {
-                cellProgress = progress.subProcess(nrows);
-            }
-
             Statement st = connection.createStatement();
-            st.execute("CREATE TABLE " + tableReference + "(PK SERIAL NOT NULL, THE_GEOM GEOMETRY,CELL_VAL int, " +
-                    " CONSTRAINT ASC_PK PRIMARY KEY (PK))");
-            PreparedStatement preparedStatement = connection.prepareStatement("INSERT INTO " + tableReference +
-                    "(the_geom, CELL_VAL) VALUES (?, ?)");
+            PreparedStatement preparedStatement;
+            if(as3DPoint) {
+                st.execute("CREATE TABLE " + tableReference + "(PK SERIAL NOT NULL, THE_GEOM GEOMETRY, " + " CONSTRAINT ASC_PK PRIMARY KEY (PK))");
+                preparedStatement = connection.prepareStatement("INSERT INTO " + tableReference +
+                        "(the_geom) VALUES (?)");
+            } else {
+                st.execute("CREATE TABLE " + tableReference + "(PK SERIAL NOT NULL, THE_GEOM GEOMETRY,Z int, " + " CONSTRAINT ASC_PK PRIMARY KEY (PK))");
+                preparedStatement = connection.prepareStatement("INSERT INTO " + tableReference +
+                        "(the_geom, Z) VALUES (?, ?)");
+            }
             // Read data
             GeometryFactory factory = new GeometryFactory();
             int batchSize = 0;
-            for (int i = 0; i < nrows; i++) {
-                for (int j = 0; j < ncols; j++) {
+            int inserted = 0;
+            int firstRow = 0;
+            int firstCol = 0;
+            int lastRow = nrows;
+            int lastCol = ncols;
+            // Compute envelope
+            if(extractEnvelope != null) {
+                firstCol = (int)Math.floor((extractEnvelope.getMinX() - xValue) / cellSize);
+                lastCol = (int)Math.ceil((extractEnvelope.getMaxX() - xValue) / cellSize);
+                firstRow = (int)Math.ceil((extractEnvelope.getMaxY() - (yValue - cellSize * nrows)) / cellSize);
+                lastRow = nrows - (int)Math.ceil((extractEnvelope.getMinY() - (yValue - cellSize * nrows)) / cellSize);
+            }
+            ProgressVisitor cellProgress = new EmptyProgressVisitor();
+            if (progress != null) {
+                cellProgress = progress.subProcess(lastRow);
+            }
+            for (int i = 0; i < nrows && inserted < limit; i++) {
+                for (int j = 0; j < ncols && inserted < limit; j++) {
                     if (readFirst) {
                         lastWord = scanner.next();
                     } else {
                         readFirst = true;
                     }
-                    int data = Integer.parseInt(lastWord);
-                    double x = xValue + j * cellSize;
-                    double y = yValue - i * cellSize;
-                    Polygon cell = factory.createPolygon(new Coordinate[]{new Coordinate(x, y), new Coordinate(x,
-                            y - cellSize), new Coordinate(x + cellSize, y - cellSize), new Coordinate(x + cellSize,
-                            y), new Coordinate(x, y)});
-                    cell.setSRID(srid);
-                    preparedStatement.setObject(1, cell);
-                    if (data != noData) {
-                        preparedStatement.setObject(2, data);
-                    } else {
-                        preparedStatement.setNull(2, Types.INTEGER);
-                    }
-                    preparedStatement.addBatch();
-                    batchSize++;
-                    if (batchSize >= BATCH_MAX_SIZE) {
-                        preparedStatement.executeBatch();
-                        preparedStatement.clearBatch();
-                        batchSize = 0;
+                    if(extractEnvelope == null || (i >= firstRow && i <= lastRow && j >= firstCol && j <= lastCol)) {
+                        int data = Integer.parseInt(lastWord);
+                        double x = xValue + j * cellSize;
+                        double y = yValue - i * cellSize;
+                        if (as3DPoint) {
+                            if (data != noData) {
+                                Point cell = factory.createPoint(new Coordinate(new Coordinate(x + cellSize / 2, y - cellSize / 2, data)));
+                                cell.setSRID(srid);
+                                preparedStatement.setObject(1, cell);
+                                preparedStatement.addBatch();
+                                inserted++;
+                                batchSize++;
+                            }
+                        } else {
+                            Polygon cell = factory.createPolygon(new Coordinate[]{new Coordinate(x, y), new Coordinate(x, y - cellSize), new Coordinate(x + cellSize, y - cellSize), new Coordinate(x + cellSize, y), new Coordinate(x, y)});
+                            cell.setSRID(srid);
+                            preparedStatement.setObject(1, cell);
+                            if (data != noData) {
+                                preparedStatement.setObject(2, data);
+                            } else {
+                                preparedStatement.setNull(2, Types.INTEGER);
+                            }
+                            preparedStatement.addBatch();
+                            inserted++;
+                            batchSize++;
+                        }
+                        if (batchSize >= BATCH_MAX_SIZE) {
+                            preparedStatement.executeBatch();
+                            preparedStatement.clearBatch();
+                            batchSize = 0;
+                        }
                     }
                 }
                 cellProgress.endStep();
+                if(i > lastRow) {
+                    break;
+                }
             }
             if (batchSize > 0) {
                 preparedStatement.executeBatch();
             }
-
         } catch (NoSuchElementException | NumberFormatException ex) {
             throw new SQLException("Unexpected word " + lastWord, ex);
         }
