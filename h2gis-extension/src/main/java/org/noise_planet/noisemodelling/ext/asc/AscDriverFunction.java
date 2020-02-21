@@ -101,7 +101,7 @@ public class AscDriverFunction implements DriverFunction {
         int srid = 0;
         String filePath = fileName.getAbsolutePath();
         final int dotIndex = filePath.lastIndexOf('.');
-        final String fileNamePrefix = filePath.substring(0, dotIndex).toLowerCase();
+        final String fileNamePrefix = filePath.substring(0, dotIndex);
         File prjFile = new File(fileNamePrefix+".prj");
         if(prjFile.exists()) {
             srid = PRJUtil.getSRID(prjFile);
