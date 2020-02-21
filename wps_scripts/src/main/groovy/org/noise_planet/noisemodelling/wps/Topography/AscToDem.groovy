@@ -23,6 +23,7 @@ description = 'Import ESRI Ascii Raster file and convert into a DEM compatible w
 
 inputs = [pathFile       : [name: 'Path of the asc File', description: 'Path of the ESRI Ascii Raster file', title: 'Path of the input File', type: String.class],
           fence             : [name: 'Fence', title: 'Optional filtering of DEM extraction', min: 0, max: 1, type: Geometry.class],
+          downscale      : [name: 'Downscale', title: 'Skip pixels on each axis', description: 'Divide the number of rows and columns read by this coefficient (default 1)', min: 0, max: 1, type: Integer.class],
           databaseName   : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database (default : first found db)', min: 0, max: 1, type: String.class],
           defaultSRID    : [name: 'Default SRID', title: 'Default SRID', description: 'If the layer does not include SRID properties, it will take this value (default : 4326)', min: 0, max: 1, type: Integer.class],
           outputTableName: [name: 'outputTableName', description: 'Do not write the name of a table that contains a space. (default : file name without extension)', title: 'Name of output table', min: 0, max: 1, type: String.class]]
@@ -56,6 +57,11 @@ def exec(Connection connection, input) {
     Integer defaultSRID = 4326
     if (input['defaultSRID']) {
         defaultSRID = input['defaultSRID'] as Integer
+    }
+
+    Integer downscale = 1
+    if (input['downscale']) {
+        downscale = Math.max(1, input['downscale'] as Integer)
     }
 
     String fence = null
@@ -107,6 +113,10 @@ def exec(Connection connection, input) {
         } else {
             System.err.println("Unable to find DEM SRID, ignore fence parameters")
         }
+    }
+
+    if(downscale > 1) {
+        ascDriver.setDownScale(downscale);
     }
 
     // Import ASC file
