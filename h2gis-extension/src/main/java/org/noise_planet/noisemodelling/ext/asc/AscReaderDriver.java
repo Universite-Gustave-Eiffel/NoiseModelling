@@ -213,15 +213,15 @@ public class AscReaderDriver {
             if(extractEnvelope != null) {
                 firstCol = (int)Math.floor((extractEnvelope.getMinX() - xValue) / cellSize);
                 lastCol = (int)Math.ceil((extractEnvelope.getMaxX() - xValue) / cellSize);
-                firstRow = (int)Math.ceil((extractEnvelope.getMaxY() - (yValue - cellSize * nrows)) / cellSize);
+                firstRow = nrows - (int)Math.ceil((extractEnvelope.getMaxY() - (yValue - cellSize * nrows)) / cellSize);
                 lastRow = nrows - (int)Math.ceil((extractEnvelope.getMinY() - (yValue - cellSize * nrows)) / cellSize);
             }
             ProgressVisitor cellProgress = new EmptyProgressVisitor();
             if (progress != null) {
                 cellProgress = progress.subProcess(lastRow);
             }
-            for (int i = 0; i < nrows && inserted < limit; i++) {
-                for (int j = 0; j < ncols && inserted < limit; j++) {
+            for (int i = 0; i < nrows && (limit == -1 || inserted < limit); i++) {
+                for (int j = 0; j < ncols && (limit == -1 || inserted < limit); j++) {
                     if (readFirst) {
                         lastWord = scanner.next();
                     } else {

@@ -2,18 +2,21 @@ package org.noise_planet.noisemodelling.ext.asc;
 
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.functions.factory.H2GISDBFactory;
+import org.h2gis.functions.io.shp.SHPWrite;
 import org.h2gis.utilities.SFSUtilities;
 import org.junit.After;
     import org.junit.Before;
 import org.junit.Test;
 import org.locationtech.jts.geom.Envelope;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Locale;
 
 import static org.junit.Assert.*;
 
@@ -167,4 +170,19 @@ public class AscReaderDriverTest {
             assertEquals(50, rs.getInt("CPT"));
         }
     }
+
+
+
+//    @Test
+//    public void testReadBigFile() throws IOException, SQLException {
+//        AscReaderDriver reader = new AscReaderDriver();
+//        reader.setExtractEnvelope(new Envelope(606084.78, 625191.882, 6868551.62, 6885046.96));
+//        long start = System.currentTimeMillis();
+//        try(InputStream inputStream = new FileInputStream("IDF_TOUT_asc.asc")) {
+//            reader.read(connection, inputStream, new EmptyProgressVisitor(), "PRECIP30MIN", 2154);
+//        }
+//        System.out.println(String.format(Locale.ROOT, "Done in %.3f s",(System.currentTimeMillis() - start)/1e3));
+//        // Check number of extracted cells
+//        SHPWrite.exportTable(connection, "export.shp", "PRECIP30MIN");
+//    }
 }
