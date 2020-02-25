@@ -1,11 +1,10 @@
 package org.noise_planet.noisemodelling.wps.NoiseModelling
 
-import geoserver.GeoServer
-import geoserver.catalog.Store
-
 /**
  * @Author Pierre Aumond, Université Gustave Eiffel
  */
+import geoserver.catalog.Store
+import geoserver.GeoServer
 import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.utilities.JDBCUtilities
@@ -25,8 +24,8 @@ import java.sql.SQLException
 title = 'Compute Road Emission'
 description = 'Compute Road Emission Noise Map from Day Evening Night traffic flow rate and speed estimates. '
 
-inputs = [databaseName    : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database (default : first found db)', min: 0, max: 1, type: String.class],
-          sourcesTableName: [name                                       : 'Sources table name', title: 'Sources table name', description: "Table with fields :<br/> " +
+inputs = [databaseName      : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database (default : first found db)', min: 0, max: 1, type: String.class],
+          sourcesTableName  : [name: 'Sources table name', title: 'Sources table name',description: "Table with fields :<br/> " +
                   "PK Integer (Primary Key)<br/>" +
                   "TV_D double, Hourly average light and heavy vehicle count (6-18h)<br/>" +
                   "TV_E double, Hourly average light and heavy vehicle count (18-22h)<br/>" +
@@ -46,11 +45,11 @@ outputs = [result: [name: 'result', title: 'Result', type: String.class]]
 
 
 static Connection openGeoserverDataStoreConnection(String dbName) {
-    if (dbName == null || dbName.isEmpty()) {
+    if(dbName == null || dbName.isEmpty()) {
         dbName = new GeoServer().catalog.getStoreNames().get(0)
     }
     Store store = new GeoServer().catalog.getStore(dbName)
-    JDBCDataStore jdbcDataStore = (JDBCDataStore) store.getDataStoreInfo().getDataStore(null)
+    JDBCDataStore jdbcDataStore = (JDBCDataStore)store.getDataStoreInfo().getDataStore(null)
     return jdbcDataStore.getDataSource().getConnection()
 }
 
@@ -86,18 +85,19 @@ def run(input) {
         connection = new ConnectionWrapper(connection)
         System.out.println("Connection to the database ok ...")
 
+
         //Get the geometry field of the source table
         TableLocation sourceTableIdentifier = TableLocation.parse(sources_table_name)
         List<String> geomFields = SFSUtilities.getGeometryFields(connection, sourceTableIdentifier)
-        if (geomFields.isEmpty()) {
+        if(geomFields.isEmpty()) {
             output = String.format("The table %s does not exists or does not contain a geometry field", sourceTableIdentifier)
             throw new SQLException(String.format("The table %s does not exists or does not contain a geometry field", sourceTableIdentifier));
         }
-        String sourceGeomName = geomFields.get(0);
+        String sourceGeomName =  geomFields.get(0);
 
         //Get the primary key field of the source table
         int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, sources_table_name);
-        if (pkIndex < 1) {
+        if(pkIndex < 1) {
             output = String.format("Source table %s does not contain a primary key", sourceTableIdentifier)
             throw new IllegalArgumentException(String.format("Source table %s does not contain a primary key", sourceTableIdentifier));
         }
@@ -130,21 +130,21 @@ def run(input) {
                 Geometry geo = rs.getGeometry()
                 def results = computeLw(rs.getLong(pkIndex), geo, rs)
 
-                ps.addBatch(rs.getLong(pkIndex) as Integer, geo as Geometry,
+                ps.addBatch(rs.getLong(pkIndex) as Integer,geo as Geometry,
                         results[0][0] as Double, results[0][1] as Double, results[0][2] as Double,
-                        results[0][3] as Double, results[0][4] as Double, results[0][5] as Double,
-                        results[0][6] as Double, results[0][7] as Double,
+                        results[0][3] as Double, results[0][4]as Double, results[0][5] as Double,
+                        results[0][6]as Double, results[0][7] as Double,
                         results[1][0] as Double, results[1][1] as Double, results[1][2] as Double,
-                        results[1][3] as Double, results[1][4] as Double, results[1][5] as Double,
-                        results[1][6] as Double, results[1][7] as Double,
+                        results[1][3] as Double, results[1][4]as Double, results[1][5] as Double,
+                        results[1][6]as Double, results[1][7] as Double,
                         results[2][0] as Double, results[2][1] as Double, results[2][2] as Double,
-                        results[2][3] as Double, results[2][4] as Double, results[2][5] as Double,
-                        results[2][6] as Double, results[2][7] as Double)
+                        results[2][3] as Double, results[2][4]as Double, results[2][5] as Double,
+                        results[2][6]as Double, results[2][7] as Double)
             }
         }
 
         sql.execute("UPDATE LW_ROADS SET THE_GEOM = ST_UPDATEZ(The_geom,0.05);")
-        sql.execute("ALTER TABLE LW_ROADS ADD pk INT AUTO_INCREMENT PRIMARY KEY;")
+        sql.execute("ALTER TABLE LW_ROADS ADD pk INT AUTO_INCREMENT PRIMARY KEY;" )
         long computationTime = System.currentTimeMillis() - start;
         output = "The Table LW_ROADS have been created"
         return [result: output]
@@ -178,7 +178,7 @@ static double[][] computeLw(Long pk, Geometry geom, SpatialResultSet rs) throws 
     int LDAY_START_HOUR = 6
     int LDAY_STOP_HOUR = 18
     int LEVENING_STOP_HOUR = 22
-    int[] nightHours = [22, 23, 0, 1, 2, 3, 4, 5]
+    int[] nightHours=[22, 23, 0, 1, 2, 3, 4, 5]
 
     // Compute day average level
     double[] ld = new double[PropagationProcessPathData.freq_lvl.size()];
@@ -188,38 +188,51 @@ static double[][] computeLw(Long pk, Geometry geom, SpatialResultSet rs) throws 
     double Temperature = 20.0d
     double Ts_stud = 0
     double Pm_stud = 0
-    double Junc_dist = 300
+    double Junc_dist = 0
     int Junc_type = 0
 
-
-    int idFreq = 0
-    for (int freq : PropagationProcessPathData.freq_lvl) {
-        RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedD, hvSpeedD, hvSpeedD, lvSpeedD,
-                lvSpeedD, Math.max(0, tvD - hvD), hvD, 0, 0, 0, freq, Temperature,
-                pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type);
-        ld[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
+    for (int h = LDAY_START_HOUR; h < LDAY_STOP_HOUR; h++) {
+        int idFreq = 0
+        for (int freq : PropagationProcessPathData.freq_lvl) {
+            RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedD, hvSpeedD, hvSpeedD, lvSpeedD,
+                    lvSpeedD, Math.max(0, tvD - hvD), hvD, 0, 0, 0, freq, Temperature,
+                    pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type);
+            ld[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
+        }
+    }
+    // Average
+    for (int i = 0; i < ld.length; i++) {
+        ld[i] = ld[i] / (LDAY_STOP_HOUR - LDAY_START_HOUR);
     }
 
     // Evening
+    for (int h = LDAY_STOP_HOUR; h < LEVENING_STOP_HOUR; h++) {
+        int idFreq = 0
+        for(int freq : PropagationProcessPathData.freq_lvl) {
+            RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedE, hvSpeedE, hvSpeedE, lvSpeedE,
+                    lvSpeedE, Math.max(0, tvE - hvE), hvE, 0, 0, 0, freq, Temperature,
+                    pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type);
+            le[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
+        }
+    }
 
-    idFreq = 0
-    for (int freq : PropagationProcessPathData.freq_lvl) {
-        RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedE, hvSpeedE, hvSpeedE, lvSpeedE,
-                lvSpeedE, Math.max(0, tvE - hvE), hvE, 0, 0, 0, freq, Temperature,
-                pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type);
-        le[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
+    for(int i=0; i<le.size(); i++) {
+        le[i] = (le[i] / (LEVENING_STOP_HOUR - LDAY_STOP_HOUR))
     }
 
     // Night
-
-    idFreq = 0
-    for (int freq : PropagationProcessPathData.freq_lvl) {
-        RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedN, hvSpeedN, hvSpeedN, lvSpeedN,
-                lvSpeedN, Math.max(0, tvN - hvN), hvN, 0, 0, 0, freq, Temperature,
-                pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type);
-        ln[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
+    for (int h : nightHours) {
+        int idFreq = 0
+        for(int freq : PropagationProcessPathData.freq_lvl) {
+            RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedN, hvSpeedN, hvSpeedN, lvSpeedN,
+                    lvSpeedN, Math.max(0, tvN - hvN), hvN, 0, 0, 0, freq, Temperature,
+                    pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type);
+            ln[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
+        }
+    }
+    for(int i=0; i<ln.size(); i++) {
+        ln[i] = (ln[i] / nightHours.length)
     }
 
-
-    return [ld, le, ln]
+    return [ld,le,ln]
 }
