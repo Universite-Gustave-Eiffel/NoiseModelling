@@ -25,18 +25,18 @@ import java.sql.SQLException
 title = 'Compute Road Emission'
 description = 'Compute Road Emission Noise Map from Estimated Annual average daily flows (TMJA) estimates. '
 
-inputs = [databaseName      : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database (default : first found db)', min: 0, max: 1, type: String.class],
-          sourcesTableName  : [name: 'Sources table name', title: 'Sources table name', type: String.class]]
+inputs = [databaseName    : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database (default : first found db)', min: 0, max: 1, type: String.class],
+          sourcesTableName: [name: 'Sources table name', title: 'Sources table name', type: String.class]]
 
 outputs = [result: [name: 'result', title: 'Result', type: String.class]]
 
 
 static Connection openGeoserverDataStoreConnection(String dbName) {
-    if(dbName == null || dbName.isEmpty()) {
+    if (dbName == null || dbName.isEmpty()) {
         dbName = new GeoServer().catalog.getStoreNames().get(0)
     }
     Store store = new GeoServer().catalog.getStore(dbName)
-    JDBCDataStore jdbcDataStore = (JDBCDataStore)store.getDataStoreInfo().getDataStore(null)
+    JDBCDataStore jdbcDataStore = (JDBCDataStore) store.getDataStoreInfo().getDataStore(null)
     return jdbcDataStore.getDataSource().getConnection()
 }
 
@@ -72,19 +72,18 @@ def run(input) {
         connection = new ConnectionWrapper(connection)
         System.out.println("Connection to the database ok ...")
 
-
         //Get the geometry field of the source table
         TableLocation sourceTableIdentifier = TableLocation.parse(sources_table_name)
         List<String> geomFields = SFSUtilities.getGeometryFields(connection, sourceTableIdentifier)
-        if(geomFields.isEmpty()) {
+        if (geomFields.isEmpty()) {
             output = String.format("The table %s does not exists or does not contain a geometry field", sourceTableIdentifier)
             throw new SQLException(String.format("The table %s does not exists or does not contain a geometry field", sourceTableIdentifier));
         }
-        String sourceGeomName =  geomFields.get(0);
+        String sourceGeomName = geomFields.get(0);
 
         //Get the primary key field of the source table
         int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, sources_table_name);
-        if(pkIndex < 1) {
+        if (pkIndex < 1) {
             output = String.format("Source table %s does not contain a primary key", sourceTableIdentifier)
             throw new IllegalArgumentException(String.format("Source table %s does not contain a primary key", sourceTableIdentifier));
         }
@@ -117,21 +116,21 @@ def run(input) {
                 Geometry geo = rs.getGeometry()
                 def results = computeLw(rs.getLong(pkIndex), geo, rs)
 
-                ps.addBatch(rs.getLong(pkIndex) as Integer,geo as Geometry,
+                ps.addBatch(rs.getLong(pkIndex) as Integer, geo as Geometry,
                         results[0][0] as Double, results[0][1] as Double, results[0][2] as Double,
-                        results[0][3] as Double, results[0][4]as Double, results[0][5] as Double,
-                        results[0][6]as Double, results[0][7] as Double,
+                        results[0][3] as Double, results[0][4] as Double, results[0][5] as Double,
+                        results[0][6] as Double, results[0][7] as Double,
                         results[1][0] as Double, results[1][1] as Double, results[1][2] as Double,
-                        results[1][3] as Double, results[1][4]as Double, results[1][5] as Double,
-                        results[1][6]as Double, results[1][7] as Double,
+                        results[1][3] as Double, results[1][4] as Double, results[1][5] as Double,
+                        results[1][6] as Double, results[1][7] as Double,
                         results[2][0] as Double, results[2][1] as Double, results[2][2] as Double,
-                        results[2][3] as Double, results[2][4]as Double, results[2][5] as Double,
-                        results[2][6]as Double, results[2][7] as Double)
+                        results[2][3] as Double, results[2][4] as Double, results[2][5] as Double,
+                        results[2][6] as Double, results[2][7] as Double)
             }
         }
 
         sql.execute("UPDATE LW_ROADS SET THE_GEOM = ST_UPDATEZ(The_geom,0.05);")
-        sql.execute("ALTER TABLE LW_ROADS ADD pk INT AUTO_INCREMENT PRIMARY KEY;" )
+        sql.execute("ALTER TABLE LW_ROADS ADD pk INT AUTO_INCREMENT PRIMARY KEY;")
         long computationTime = System.currentTimeMillis() - start;
         output = "The Table LW_ROADS have been created"
         return [result: output]
@@ -175,10 +174,10 @@ static double[][] computeLw(Long pk, Geometry geom, SpatialResultSet rs) throws 
     int LDAY_START_HOUR = 6
     int LDAY_STOP_HOUR = 18
     int LEVENING_STOP_HOUR = 22
-    int[] nightHours=[22, 23, 0, 1, 2, 3, 4, 5]
+    int[] nightHours = [22, 23, 0, 1, 2, 3, 4, 5]
     def HV_PERCENTAGE = 0.2 // ratio of heavy vehicule by default
     int idSource = 0
-    idSource = idSource +1
+    idSource = idSource + 1
 
     /**
      * Vehicles category Table 3 P.31 CNOSSOS_EU_JRC_REFERENCE_REPORT
@@ -228,61 +227,37 @@ static double[][] computeLw(Long pk, Geometry geom, SpatialResultSet rs) throws 
     double speedWav = 30
     double speedWbv = 30
 
-    for (int h = LDAY_START_HOUR; h < LDAY_STOP_HOUR; h++) {
-        int idFreq = 0
-        if (tmja>0 && q_vl_d==0){
-            q_vl_d = tmja * (1 - HV_PERCENTAGE) * (lv_hourly_distribution[h] / 100.0)
-            q_pl_d = tmja * HV_PERCENTAGE * (hv_hourly_distribution[h] / 100.0)
-        }
-        for (int freq : PropagationProcessPathData.freq_lvl) {
-            RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(v_vl_d, speedMv, v_pl_d, speedWav,
-                    speedWbv, q_vl_d, mvPerHour, q_pl_d, wavPerHour, wbvPerHour, freq, Temperature,
-                    roadSurface, Ts_stud, Pm_stud, Junc_dist, Junc_type);
-            ld[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
-        }
-    }
 
-    // Average
-    for (int i = 0; i < ld.length; i++) {
-        ld[i] = ld[i] / (LDAY_STOP_HOUR - LDAY_START_HOUR);
+    int idFreq = 0
+
+    for (int freq : PropagationProcessPathData.freq_lvl) {
+        RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(v_vl_d, speedMv, v_pl_d, speedWav,
+                speedWbv, q_vl_d, mvPerHour, q_pl_d, wavPerHour, wbvPerHour, freq, Temperature,
+                roadSurface, Ts_stud, Pm_stud, Junc_dist, Junc_type);
+        ld[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
     }
 
     // Evening
-    for (int h = LDAY_STOP_HOUR; h < LEVENING_STOP_HOUR; h++) {
-         int idFreq = 0
-        if (tmja>0 && q_vl_e==0){
-            q_vl_e = tmja * (1 - HV_PERCENTAGE) * (lv_hourly_distribution[h] / 100.0)
-            q_pl_e = tmja * HV_PERCENTAGE * (hv_hourly_distribution[h] / 100.0)
-        }
-        for(int freq : PropagationProcessPathData.freq_lvl) {
-            RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(v_vl_e, speedMv, v_pl_e, speedWav,
-                    speedWbv, q_vl_e, mvPerHour, q_pl_e, wavPerHour, wbvPerHour, freq, Temperature,
-                    roadSurface, Ts_stud, Pm_stud, Junc_dist, Junc_type);
-            le[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
-        }
-    }
+    idFreq = 0
 
-    for(int i=0; i<le.size(); i++) {
-        le[i] = (le[i] / (LEVENING_STOP_HOUR - LDAY_STOP_HOUR))
+    for (int freq : PropagationProcessPathData.freq_lvl) {
+        RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(v_vl_e, speedMv, v_pl_e, speedWav,
+                speedWbv, q_vl_e, mvPerHour, q_pl_e, wavPerHour, wbvPerHour, freq, Temperature,
+                roadSurface, Ts_stud, Pm_stud, Junc_dist, Junc_type);
+        le[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
     }
 
     // Night
-    for (int h : nightHours) {
-        int idFreq = 0
-        if (tmja>0 && q_vl_n==0){
-            q_vl_n = tmja * (1 - HV_PERCENTAGE) * (lv_hourly_distribution[h] / 100.0)
-            q_pl_n = tmja * HV_PERCENTAGE * (hv_hourly_distribution[h] / 100.0)
-        }
-        for(int freq : PropagationProcessPathData.freq_lvl) {
-            RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(v_vl_n, speedMv, v_pl_n, speedWav,
-                    speedWbv, q_vl_n, mvPerHour, q_pl_n, wavPerHour, wbvPerHour, freq, Temperature,
-                    roadSurface, Ts_stud, Pm_stud, Junc_dist, Junc_type);
-            ln[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
-        }
-    }
-    for(int i=0; i<ln.size(); i++) {
-        ln[i] = (ln[i] / nightHours.length)
+    idFreq = 0
+
+    for (int freq : PropagationProcessPathData.freq_lvl) {
+        RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(v_vl_n, speedMv, v_pl_n, speedWav,
+                speedWbv, q_vl_n, mvPerHour, q_pl_n, wavPerHour, wbvPerHour, freq, Temperature,
+                roadSurface, Ts_stud, Pm_stud, Junc_dist, Junc_type);
+        ln[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
     }
 
-    return [ld,le,ln]
+
+
+    return [ld, le, ln]
 }
