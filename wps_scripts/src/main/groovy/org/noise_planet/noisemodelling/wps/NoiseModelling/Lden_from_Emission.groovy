@@ -1,14 +1,13 @@
 package org.noise_planet.noisemodelling.wps.NoiseModelling
 
-import geoserver.GeoServer;
+import geoserver.GeoServer
+import geoserver.catalog.Store;
 
 /**
  * @Author Hesry Quentin, Université Gustave Eiffel
  * @Author Pierre Aumond, Université Gustave Eiffel
  * @Author Nicolas Fortin, Université Gustave Eiffel
  */
-
-import geoserver.catalog.Store
 import groovy.sql.Sql
 import org.cts.crs.CRSException
 import org.geotools.jdbc.JDBCDataStore
@@ -92,6 +91,7 @@ class TrafficPropagationProcessDataDEN extends PropagationProcessData {
         int idFreq = 0
         for (int freq : PropagationProcessPathData.freq_lvl) {
             lden[idFreq++] = (12 * ld[idFreq] + 4 * ComputeRays.dbaToW(ComputeRays.wToDba(le[idFreq]) + 5) + 8 * ComputeRays.dbaToW(ComputeRays.wToDba(ln[idFreq]) + 10)) / 24.0
+
         }
 
         wjSourcesDEN.add(lden)
@@ -160,7 +160,6 @@ def run(input) {
 
 
 def exec(connection, input) {
-
 
     // -------------------
     // Get inputs
@@ -242,7 +241,6 @@ def exec(connection, input) {
     ArrayList<PropagationPath> propaMap2 = new ArrayList<>()
     // All rays storage
 
-
     //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postgis database
     connection = new ConnectionWrapper(connection)
 
@@ -271,7 +269,6 @@ def exec(connection, input) {
     pointNoiseMap.setWallAbsorption(wall_alpha)
     pointNoiseMap.setThreadCount(n_thread)
 
-
     // Init custom input in order to compute more than just attenuation
 
     TrafficPropagationProcessDataDENFactory TrafficPropagationProcessDataDENFactory = new TrafficPropagationProcessDataDENFactory();
@@ -292,10 +289,13 @@ def exec(connection, input) {
 
     Map<Integer, double[]> SourceSpectrum = new HashMap<>()
 
+    System.println("Taille de la grille :" + pointNoiseMap.getGridDim())
     // Iterate over computation areas
     for (int i = 0; i < pointNoiseMap.getGridDim(); i++) {
         for (int j = 0; j < pointNoiseMap.getGridDim(); j++) {
+            System.println("Compute... i:" + i.toString() + " j: " + j.toString())
             // Run ray propagation
+
             IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, i, j, progressVisitor, receivers);
             // Return results with level spectrum for each source/receiver tuple
             if (out instanceof ComputeRaysOut) {
@@ -362,7 +362,6 @@ def exec(connection, input) {
 
     sql.execute("drop table if exists LDEN_GEOM;")
     sql.execute("create table LDEN_GEOM  as select a.IDRECEIVER, b.THE_GEOM, a.Hz63, a.Hz125, a.Hz250, a.Hz500, a.Hz1000, a.Hz2000, a.Hz4000, a.Hz8000 FROM RECEIVERS b LEFT JOIN LDEN a ON a.IDRECEIVER = b.PK;")
-
 
     // Done
 
