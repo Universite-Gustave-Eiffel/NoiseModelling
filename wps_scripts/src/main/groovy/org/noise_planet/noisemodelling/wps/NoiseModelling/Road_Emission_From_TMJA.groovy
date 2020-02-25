@@ -241,7 +241,6 @@ static double[][] computeLw(Long pk, Geometry geom, SpatialResultSet rs) throws 
             ld[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
         }
     }
-
     // Average
     for (int i = 0; i < ld.length; i++) {
         ld[i] = ld[i] / (LDAY_STOP_HOUR - LDAY_START_HOUR);
