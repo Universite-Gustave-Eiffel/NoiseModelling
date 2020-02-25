@@ -262,11 +262,6 @@ def exec(Connection connection, input) {
     sql.execute("create table MultiRunsResults (idRun integer,idReceiver integer, pop double precision, " +
             "Lden63 double precision, Lden125 double precision, Lden250 double precision, Lden500 double precision, Lden1000 double precision, Lden2000 double precision, Lden4000 double precision, Lden8000 double precision);")
 
-    def qry = 'INSERT INTO MultiRunsResults(idRun,  idReceiver, pop,' +
-            'Lden63, Lden125, Lden250, Lden500, Lden1000,Lden2000, Lden4000, Lden8000) ' +
-            'VALUES (?,?,?,?,?,?,?,?,?,?,?);'
-
-    Map<Integer, List<double[]>> sourceLevel = new HashMap<>()
 
     System.out.println("Prepare Sources")
     def timeStart = System.currentTimeMillis()
@@ -284,11 +279,15 @@ def exec(Connection connection, input) {
     FileInputStream fileInputStream2 = new FileInputStream(new File(fileZip).getAbsolutePath())
     ZipInputStream zipInputStream2 = new ZipInputStream(fileInputStream2)
     ZipEntry entry2 = zipInputStream2.getNextEntry()
-
+    System.out.println("Unzip files")
     AtomicBoolean doInsertResults = new AtomicBoolean(true);
     ResultsInsertThread resultsInsertThread = new ResultsInsertThread(doInsertResults, sql)
+    System.out.println("Start Thread")
     new Thread(resultsInsertThread).start()
+    System.out.println("newFixedThreadPool")
     ThreadPoolExecutor executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(n_thread)
+
+    System.out.println("Rays.gz")
 
     while (entry2 != null) {
         switch (entry2.getName()) {
@@ -305,6 +304,7 @@ def exec(Connection connection, input) {
                 int count = 0
                 List<PointToPointPathsMultiRuns> pointToPointPathsMultiRuns = new ArrayList<>()
                 int idReceiver = 0
+                System.out.println("Read dataInputStream")
                 while (dataInputStream.available() > 0) {
                     //System.out.println(dataInputStream)
                     PointToPointPathsMultiRuns paths = new PointToPointPathsMultiRuns()
@@ -371,11 +371,9 @@ def exec(Connection connection, input) {
         Thread.sleep(50)
         // Add thread
     }
-    System.out.println("ici1")
 
     executorService.shutdown()
     executorService.awaitTermination(30, TimeUnit.DAYS)
-    System.out.println("ici3")
 
     doInsertResults.set(false)
     resultsInsertThread.setDoInsertResults(doInsertResults)
@@ -384,7 +382,6 @@ def exec(Connection connection, input) {
         Thread.sleep(50)
     }
 
-    System.out.println("ici2")
 
     // csvFile.close()
     System.out.println("End time :" + df.format(new Date()))
@@ -395,7 +392,7 @@ def exec(Connection connection, input) {
     //sql.execute("CREATE INDEX ON MultiRunsResults(IDRECEIVER);")
 
     sql.execute("drop table if exists MultiRunsResults_geom;")
-    System.out.println("ici")
+
     if (hasPop) {
         sql.execute("create table MultiRunsResults_geom  as select a.idRun, b.pk idReceiver, b.id_build,  b.pop, b.THE_GEOM, a.Lden63, a.Lden125, a.Lden250, a.Lden500, a.Lden1000, a.Lden2000, a.Lden4000, a.Lden8000 FROM RECEIVERS_MR b LEFT JOIN MultiRunsResults a ON a.IDRECEIVER = b." + prop.getProperty("pkReceivers") + ";")
     } else {
@@ -467,9 +464,10 @@ class ResultsInsertThread implements Runnable {
                     Thread.sleep(100)
                 }
             }
-            System.out.print('-')
+
         }
         endThread.set(true)
+
 
 
     }

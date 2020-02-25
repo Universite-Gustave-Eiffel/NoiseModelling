@@ -14,7 +14,7 @@ class TestMultRuns extends JdbcTestCase  {
 
         new Multi_Runs().exec(connection,
                 ["workingDir":TestMultRuns.class.getResource("multirun/").getPath(),
-                 "nbSimu" : 4])
+                 "nbSimu" : 4, "threadNumber" : 0])
 
         // Check database
         res = new Display_Database().exec(connection, [])
