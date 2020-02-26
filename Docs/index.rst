@@ -20,7 +20,19 @@ This plugin is distributed under `GPL 3 license`_ and is developed by the DECIDE
 -  to **contribute to NoiseModelling** from the source code, follow the instructions
 -  to **contact the development team**, use the email contact@noise-planet.org or let an issue : https://github.com/Ifsttar/NoiseModelling/issues
 
-Cite as: *Erwan Bocher, Gwenaël Guillaume, Judicaël Picaut, Gwendall Petit, Nicolas Fortin. NoiseModelling: An Open Source GIS Based Tool to Produce Environmental Noise Maps. ISPRS International Journal of Geo-Information, MDPI, 2019, 8 (3), pp.130. ⟨10.3390/ijgi8030130⟩. ⟨hal-02057736⟩*
+**Cite as**: *Erwan Bocher, Gwenaël Guillaume, Judicaël Picaut, Gwendall Petit, Nicolas Fortin. NoiseModelling: An Open Source GIS Based Tool to Produce Environmental Noise Maps. ISPRS International Journal of Geo-Information, MDPI, 2019, 8 (3), pp.130. ⟨10.3390/ijgi8030130⟩. ⟨hal-02057736⟩*
+
+**Fundings:**
+
+*Research projects :*
+
+- *ANR Eval-PDU (ANR-08-VILL-0005) 2008-2011*
+- *ANR CENSE (ANR-16-CE22-0012) 2017-2021*
+
+*Institutional fundings :*
+
+- *Univ Gustave Eiffel (formerly Ifsttar, formerly LCPC), CNRS, UBS, ECN, Cerema*
+
 
 .. important::
     - The guide is currently not complete. Additions are underway.
