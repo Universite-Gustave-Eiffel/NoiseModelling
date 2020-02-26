@@ -35,6 +35,7 @@ package org.noise_planet.noisemodelling.wps.Database_Manager
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
+import groovy.time.TimeCategory
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
@@ -65,8 +66,12 @@ static Connection openGeoserverDataStoreConnection(String dbName) {
 
 def exec(Connection connection, input) {
 
+    // output string, the information given back to the user
+    String resultString = null
+
     // print to command window
     System.out.println('Start : Add primary key column or constraint')
+    def start = new Date()
 
     // Get name of the table
     String table = input["table"] as String
@@ -77,9 +82,6 @@ def exec(Connection connection, input) {
     String pkName = input['pkName'] as String
     // do it case-insensitive
     pkName = pkName.toUpperCase()
-
-    // output string, the information given back to the user
-    String resultString = null
 
     // Create a connection statement to interact with the database in SQL
     Statement stmt = connection.createStatement()
@@ -111,6 +113,7 @@ def exec(Connection connection, input) {
     // print to command window
     System.out.println('Result : ' + resultString)
     System.out.println('End : Add primary key column or constraint')
+    System.out.println('Duration : ' + TimeCategory.minus( new Date(), start ))
 
     // print to WPS Builder
     return resultString

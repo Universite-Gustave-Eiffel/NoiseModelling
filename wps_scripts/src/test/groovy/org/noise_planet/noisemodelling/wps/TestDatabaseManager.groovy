@@ -36,6 +36,7 @@ package org.noise_planet.noisemodelling.wps
 
 import org.h2gis.functions.io.shp.SHPRead
 import org.noise_planet.noisemodelling.wps.Database_Manager.Add_Primary_Key
+import org.noise_planet.noisemodelling.wps.Database_Manager.Clean_Database
 import org.noise_planet.noisemodelling.wps.Database_Manager.Display_Database
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -71,6 +72,15 @@ class TestDatabaseManager extends JdbcTestCase {
                  "table" : "receivers"])
 
         assertEquals("RECEIVERS has a new primary key constraint on PK.", res)
+    }
+
+    void testCleanDatabase() {
+        SHPRead.readShape(connection, TestDatabaseManager.getResource("receivers.shp").getPath())
+
+        String res = new Clean_Database().exec(connection,
+                ["areYouSure": true ])
+
+        assertEquals("The table(s) RECEIVERS was/were dropped.", res)
     }
 
 
