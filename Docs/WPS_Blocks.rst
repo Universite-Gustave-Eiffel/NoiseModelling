@@ -15,7 +15,7 @@ NoiseModelling v3.0.0 comes with 7 WPS blocks. WPS scripts for GeoServer are wri
 
 They are located in :literal:`Geoserver\\data_dir\\scripts\\wps directory`
 
-.. note::
+.. tip::
     To know the functionality of each WPS block, wait a few moments with your mouse on the block, a tooltip text will appear.
 
 .. note::
