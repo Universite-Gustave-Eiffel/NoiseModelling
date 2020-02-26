@@ -28,8 +28,8 @@
  * or contact directly:
  * info_at_ orbisgis.org
  *
- * @Author Nicolas Fortin, Université Gustave Eiffel
- * @Author Pierre Aumond, Université Gustave Eiffel
+ * @Author Nicolas Fortin, Univ Gustave Eiffel
+ * @Author Pierre Aumond, Univ Gustave Eiffel
  */
 
 package org.noise_planet.noisemodelling.wps.Database_Manager
@@ -72,10 +72,7 @@ def exec(Connection connection, input) {
     def start = new Date()
 
     // Get name of the table
-    Boolean areYouSure = false
-    if ('areYouSure' in input) {
-        areYouSure = input['areYouSure'] as Boolean
-    }
+    Boolean areYouSure  = input['areYouSure'] as Boolean
 
     // list of the system tables
     List<String> ignorelst = ["SPATIAL_REF_SYS", "GEOMETRY_COLUMNS"]

@@ -38,6 +38,7 @@ import org.h2gis.functions.io.shp.SHPRead
 import org.noise_planet.noisemodelling.wps.Database_Manager.Add_Primary_Key
 import org.noise_planet.noisemodelling.wps.Database_Manager.Clean_Database
 import org.noise_planet.noisemodelling.wps.Database_Manager.Display_Database
+import org.noise_planet.noisemodelling.wps.Database_Manager.Drop_a_Table
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -83,6 +84,14 @@ class TestDatabaseManager extends JdbcTestCase {
         assertEquals("The table(s) RECEIVERS was/were dropped.", res)
     }
 
+    void testDropTable() {
+        SHPRead.readShape(connection, TestDatabaseManager.getResource("receivers.shp").getPath())
+
+        String res = new Drop_a_Table().exec(connection,
+                ["tableToDrop": "receivers" ])
+
+        assertEquals("The table RECEIVERS was dropped !", res)
+    }
 
 
     void testDisplayTables1() {

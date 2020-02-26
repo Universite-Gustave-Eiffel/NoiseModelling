@@ -28,7 +28,7 @@
  * or contact directly:
  * info_at_ orbisgis.org
  *
- * @Author Nicolas Fortin, Université Gustave Eiffel
+ * @Author Nicolas Fortin, Univ Gustave Eiffel
  */
 
 package org.noise_planet.noisemodelling.wps.Database_Manager
@@ -71,10 +71,7 @@ def exec(Connection connection, input) {
     System.out.println('Start : Display database')
     def start = new Date()
 
-    Boolean showColumnName = false
-    if ('showColumns' in input) {
-        showColumnName = input['showColumns'] as Boolean
-    }
+    Boolean showColumnName = input['showColumns'] as Boolean
 
     // list of the system tables
     List<String> ignorelst = ["SPATIAL_REF_SYS", "GEOMETRY_COLUMNS"]

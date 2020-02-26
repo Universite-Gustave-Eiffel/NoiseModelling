@@ -28,7 +28,7 @@
  * or contact directly:
  * info_at_ orbisgis.org
  *
- * @Author Pierre Aumond, Universite Gustave Eiffel
+ * @Author Pierre Aumond, Univ Gustave Eiffel
  */
 
 package org.noise_planet.noisemodelling.wps.Database_Manager
