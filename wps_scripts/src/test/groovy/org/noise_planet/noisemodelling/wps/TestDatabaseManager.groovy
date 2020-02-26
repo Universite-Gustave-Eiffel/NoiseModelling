@@ -35,18 +35,48 @@
 package org.noise_planet.noisemodelling.wps
 
 import org.h2gis.functions.io.shp.SHPRead
+import org.noise_planet.noisemodelling.wps.Database_Manager.Add_Primary_Key
+import org.noise_planet.noisemodelling.wps.Database_Manager.Display_Database
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.noise_planet.noisemodelling.wps.Database_Manager.*;
+
+import java.sql.Statement
 
 /**
  * Test parsing of zip file using H2GIS database
  */
-class TestDisplayTables extends JdbcTestCase {
-    Logger LOGGER = LoggerFactory.getLogger(TestDisplayTables.class)
+class TestDatabaseManager extends JdbcTestCase {
+    Logger LOGGER = LoggerFactory.getLogger(TestDatabaseManager.class)
+
+
+    void testAddPrimaryKey1() {
+        SHPRead.readShape(connection, TestDatabaseManager.getResource("receivers.shp").getPath())
+        Statement stmt = connection.createStatement()
+        stmt.execute("ALTER TABLE receivers DROP PRIMARY KEY;")
+
+        String res = new Add_Primary_Key().exec(connection,
+                ["pkName": "ID",
+                 "table" : "receivers"])
+
+        assertEquals("RECEIVERS has a new primary key column which is called ID.", res)
+    }
+
+    void testAddPrimaryKey2() {
+        SHPRead.readShape(connection, TestDatabaseManager.getResource("receivers.shp").getPath())
+        Statement stmt = connection.createStatement()
+        stmt.execute("ALTER TABLE receivers DROP PRIMARY KEY;")
+
+        String res = new Add_Primary_Key().exec(connection,
+                ["pkName": "PK",
+                 "table" : "receivers"])
+
+        assertEquals("RECEIVERS has a new primary key constraint on PK.", res)
+    }
+
+
 
     void testDisplayTables1() {
-        SHPRead.readShape(connection, TestDisplayTables.getResource("buildings.shp").getPath())
+        SHPRead.readShape(connection, TestDatabaseManager.getResource("buildings.shp").getPath())
         String res = new Display_Database().exec(connection, [])
         assertEquals("BUILDINGS</br></br>", res)
     }
