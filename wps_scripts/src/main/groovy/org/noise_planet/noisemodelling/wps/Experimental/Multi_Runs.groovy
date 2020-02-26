@@ -1,25 +1,36 @@
 /**
- * @Author Pierre Aumond, Universite Gustave Eiffel
+ * @Author Pierre Aumond, Université Gustave Eiffel
  * @Author Antoine Lesieur, Inria
  */
 
 package org.noise_planet.noisemodelling.wps.Experimental
 
-import com.fasterxml.jackson.databind.JsonNode
+
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.google.common.primitives.Doubles
+import com.google.common.primitives.Doubles;
 import geoserver.GeoServer
 import geoserver.catalog.Store
+
+
 import groovy.sql.Sql
 import groovy.transform.CompileStatic
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.api.EmptyProgressVisitor
+
 import org.h2gis.functions.io.geojson.GeoJsonDriverFunction
 import org.h2gis.utilities.wrapper.ConnectionWrapper
+
 import org.locationtech.jts.geom.Geometry
 import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
 import org.noise_planet.noisemodelling.emission.RSParametersCnossos
-import org.noise_planet.noisemodelling.propagation.*
+import org.noise_planet.noisemodelling.propagation.ComputeRays
+import org.noise_planet.noisemodelling.propagation.ComputeRaysOut
+import org.noise_planet.noisemodelling.propagation.EvaluateAttenuationCnossos
+import org.noise_planet.noisemodelling.propagation.PointPath
+import org.noise_planet.noisemodelling.propagation.PropagationPath
+import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
+import org.noise_planet.noisemodelling.propagation.SegmentPath
 
 import java.sql.Connection
 import java.sql.SQLException
@@ -206,12 +217,12 @@ def exec(Connection connection, input) {
      sql.execute("DROP TABLE ROADS2 if exists;")
      SHPRead.readShape(connection, "D:\\aumond\\Documents\\CENSE\\LorientMapNoise\\data\\RoadsICA2.shp", "ROADS2")
      sql.execute("DROP TABLE ROADS if exists;")
-     sql.execute('CREATE TABLE ROADS AS SELECT CAST( OSM_ID AS INTEGER ) OSM_ID , THE_GEOM, TMJA_D,TMJA_E,TMJA_N,\n' +
+     sql.execute('CREATE TABLE ROADS AS SELECT CAST( ID_WAY AS INTEGER ) ID_WAY , THE_GEOM, TMJA_D,TMJA_E,TMJA_N,\n' +
              'PL_D,PL_E,PL_N,\n' +
              'LV_SPEE,PV_SPEE, PVMT FROM ROADS2;')
 
-     sql.execute('ALTER TABLE ROADS ALTER COLUMN OSM_ID SET NOT NULL;')
-     sql.execute('ALTER TABLE ROADS ADD PRIMARY KEY (OSM_ID);')
+     sql.execute('ALTER TABLE ROADS ALTER COLUMN ID_WAY SET NOT NULL;')
+     sql.execute('ALTER TABLE ROADS ADD PRIMARY KEY (ID_WAY);')
      sql.execute("CREATE SPATIAL INDEX ON ROADS(THE_GEOM)")
 
      System.out.println("Road file loaded")
@@ -314,7 +325,7 @@ def exec(Connection connection, input) {
                         break
                     }
                     idReceiver = (Integer) paths.receiverId
-                    //System.out.println(idReceiver)
+                    System.out.println(idReceiver)
                     if (idReceiver != oldIdReceiver) {
                         while (executorService.getQueue().size() > 1) {
                             //System.out.println(String.format("Receiver %d ( %d queued receivers)", idReceiver, executorService.getQueue().size()))
@@ -371,39 +382,34 @@ def exec(Connection connection, input) {
         Thread.sleep(50)
         // Add thread
     }
-    System.out.println("ici1")
 
     executorService.shutdown()
     executorService.awaitTermination(30, TimeUnit.DAYS)
-    System.out.println("ici3")
 
     doInsertResults.set(false)
-    resultsInsertThread.setDoInsertResults(doInsertResults)
-
     while (!resultsInsertThread.getEndThread().get()) {
         Thread.sleep(50)
     }
 
-    System.out.println("ici2")
 
     // csvFile.close()
     System.out.println("End time :" + df.format(new Date()))
 
 
     fileInputStream2.close()
-    sql.execute("CREATE INDEX ON RECEIVERS_MR(pk);")
-    //sql.execute("CREATE INDEX ON MultiRunsResults(IDRECEIVER);")
+//CREATE INDEX ON RECEIVERS_MR(pk);
+//CREATE INDEX ON MultiRunsResults(IDRECEIVER);
 
     sql.execute("drop table if exists MultiRunsResults_geom;")
-    System.out.println("ici")
+
     if (hasPop) {
-        sql.execute("create table MultiRunsResults_geom  as select a.idRun, b.pk idReceiver, b.id_build,  b.pop, b.THE_GEOM, a.Lden63, a.Lden125, a.Lden250, a.Lden500, a.Lden1000, a.Lden2000, a.Lden4000, a.Lden8000 FROM RECEIVERS_MR b LEFT JOIN MultiRunsResults a ON a.IDRECEIVER = b." + prop.getProperty("pkReceivers") + ";")
+        sql.execute("create table MultiRunsResults_geom  as select a.idRun, a.idReceiver, b.pop, b.THE_GEOM, a.Lden63, a.Lden125, a.Lden250, a.Lden500, a.Lden1000, a.Lden2000, a.Lden4000, a.Lden8000 FROM RECEIVERS_MR b LEFT JOIN MultiRunsResults a ON a.IDRECEIVER = b." + prop.getProperty("pkReceivers") + ";")
     } else {
-        sql.execute("create table MultiRunsResults_geom  as select a.idRun, b.pk idReceiver,  b.THE_GEOM, a.Lden63, a.Lden125, a.Lden250, a.Lden500, a.Lden1000, a.Lden2000, a.Lden4000, a.Lden8000 FROM RECEIVERS_MR b LEFT JOIN MultiRunsResults a ON a.IDRECEIVER = b.pk;")
+        sql.execute("create table MultiRunsResults_geom  as select a.idRun, a.idReceiver,  b.THE_GEOM, a.Lden63, a.Lden125, a.Lden250, a.Lden500, a.Lden1000, a.Lden2000, a.Lden4000, a.Lden8000 FROM RECEIVERS_MR b LEFT JOIN MultiRunsResults a ON a.IDRECEIVER = b." + prop.getProperty("pkReceivers") + ";")
 
     }
 
-    // sql.execute("drop table if exists MultiRunsResults;")
+   // sql.execute("drop table if exists MultiRunsResults;")
 
     // long computationTime = System.currentTimeMillis() - start;
 
@@ -441,11 +447,6 @@ class ResultsInsertThread implements Runnable {
         return endThread
     }
 
-    void setDoInsertResults(AtomicBoolean doInsertResults) {
-        this.doInsertResults = doInsertResults
-    }
-
-
     ConcurrentLinkedQueue<SimulationResult> getConcurrentLinkedQueue() {
         return concurrentLinkedQueue
     }
@@ -460,14 +461,13 @@ class ResultsInsertThread implements Runnable {
                 SimulationResult result = concurrentLinkedQueue.poll()
                 if (result != null) {
                     ps.addBatch(result.r as Integer, result.receiver as Integer, result.pop as Double,
-                            result.spectrum[0], result.spectrum[1], result.spectrum[2],
-                            result.spectrum[3], result.spectrum[4], result.spectrum[5],
-                            result.spectrum[6], result.spectrum[7])
+                            result.spectrum[0] , result.spectrum[1] , result.spectrum[2] ,
+                            result.spectrum[3], result.spectrum[4] , result.spectrum[5],
+                            result.spectrum[6] , result.spectrum[7] )
                 } else {
                     Thread.sleep(100)
                 }
             }
-            System.out.print('-')
         }
         endThread.set(true)
 
@@ -556,10 +556,8 @@ class ReceiverSimulationProcess implements Runnable {
                     double[] lN = new double[soundLevelDay.length]
                     for (int i = 0; i < soundLevelDay.length; ++i) {
                         lDen[i] = 10.0D * Math.log10((12.0D / 24.0D) * Math.pow(10.0D, soundLevelDay[i] / 10.0D) + (4.0D / 24.0D) * Math.pow(10.0D, (soundLevelEve[i] + 5.0D) / 10.0D) + (8.0D / 24.0D) * Math.pow(10.0D, (soundLevelNig[i] + 10.0D) / 10.0D))
-
                         lN[i] = soundLevelNig[i]
                     }
-
 
                     this.simuSpectrum.put(r, ComputeRays.sumDbArray(this.simuSpectrum.get(r), lDen))
 
@@ -850,7 +848,7 @@ class MultiRunsProcessData {
     ArrayList<Integer> RoadJunction = new ArrayList<Integer>()
 
     Map<Integer, Integer> pk = new HashMap<>()
-    Map<Integer, Long> OSM_ID = new HashMap<>()
+    Map<Integer, Long> ID_WAY = new HashMap<>()
     Map<Integer, Geometry> the_geom = new HashMap<>()
 
     Map<Integer, Double> TV_D = new HashMap<>()
@@ -951,12 +949,17 @@ class MultiRunsProcessData {
         pk.each { id, val ->
             if (Math.round(ii * 100 / pk.size() as float) != computeRatio) {
                 int x = Math.round(ii * 100 / pk.size() as float)
-                String data = "  --  Emission " + "\r" + anim.charAt(x % anim.length()) + " " + x + "%"
-                //String data = "  --  Emission" + x + "%"
+                //String data = "  --  Emission " + "\r" + anim.charAt( x % anim.length()) + " " + x + "%"
+                String data = "  --  Emission" + x + "%"
                 System.out.println(data)
             }
             ii = ii + 1
 
+
+
+            def speed_lv = LV_SPD_D.get(id)
+            def speed_pl = HV_SPD_D.get(id)
+            def speed_lv_d = LV_SPD_D.get(id)
 
             def lv_d_speed = LV_SPD_D.get(id)
             def mv_d_speed = (double) 0.0
@@ -1301,7 +1304,7 @@ class MultiRunsProcessData {
         //////////////////////
 
 
-        sql.eachRow('SELECT ' + prop.getProperty("pkSources") + ', CAST(OSM_ID AS INTEGER) OSM_ID, the_geom , ' +
+        sql.eachRow('SELECT ' + prop.getProperty("pkSources") + ', CAST(ID_WAY AS INTEGER) ID_WAY, the_geom , ' +
                 'TV_D,TV_E,TV_N,' +
                 'HV_D,HV_E,HV_N, ' +
                 'LV_SPD_D, LV_SPD_E, LV_SPD_N, ' +
@@ -1309,7 +1312,7 @@ class MultiRunsProcessData {
                 'PVMT FROM ' + tablename + ';') { fields ->
 
             pk.put((int) fields[prop.getProperty("pkSources")], (int) fields[prop.getProperty("pkSources")])
-            OSM_ID.put((int) fields[prop.getProperty("pkSources")], (long) fields["OSM_ID"])
+            ID_WAY.put((int) fields[prop.getProperty("pkSources")], (long) fields["ID_WAY"])
             the_geom.put((int) fields[prop.getProperty("pkSources")], (Geometry) fields["the_geom"])
             TV_D.put((int) fields[prop.getProperty("pkSources")], (double) fields["TV_D"])
             TV_E.put((int) fields[prop.getProperty("pkSources")], (double) fields["TV_E"])
