@@ -51,9 +51,7 @@ inputs = [
         areYouSure: [name: 'Are you sure ?', title: 'Are you sure?', description: 'Are you sure you want to delete all the tables in the database?', type: Boolean.class]
 ]
 
-outputs = [
-        result: [name: 'Result', title: 'Result', type: String.class]
-]
+outputs = [result: [name: 'Result output string', title: 'Result output string', description: 'This type of result does not allow the blocks to be linked together.',  type: String.class]]
 
 static Connection openGeoserverDataStoreConnection(String dbName) {
     if (dbName == null || dbName.isEmpty()) {
@@ -74,7 +72,10 @@ def exec(Connection connection, input) {
     def start = new Date()
 
     // Get name of the table
-    Boolean areYouSure = input["areYouSure"] as Boolean
+    Boolean areYouSure = false
+    if ('areYouSure' in input) {
+        areYouSure = input['areYouSure'] as Boolean
+    }
 
     // list of the system tables
     List<String> ignorelst = ["SPATIAL_REF_SYS", "GEOMETRY_COLUMNS"]
@@ -83,7 +84,7 @@ def exec(Connection connection, input) {
         // Build the result string with every tables
         StringBuilder sb = new StringBuilder()
 
-        // Remove all tables from the database
+        // Get every table names
         List<String> tables = JDBCUtilities.getTableNames(connection.getMetaData(), null, "PUBLIC", "%", null)
         // Loop over the tables
         tables.each { t ->
@@ -128,5 +129,4 @@ def run(input) {
         Connection connection ->
             return [result: exec(connection, input)]
     }
-
 }
