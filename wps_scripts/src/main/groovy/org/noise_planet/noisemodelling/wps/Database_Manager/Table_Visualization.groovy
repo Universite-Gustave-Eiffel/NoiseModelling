@@ -1,4 +1,33 @@
 /**
+ * NoiseModelling is a free and open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
+ *
+ * This version is developed at French IRSTV Institute and at IFSTTAR
+ * (http://www.ifsttar.fr/) as part of the Eval-PDU project, funded by the
+ * French Agence Nationale de la Recherche (ANR) under contract ANR-08-VILL-0005-01.
+ *
+ * Noisemap is distributed under GPL 3 license. Its reference contact is Judicaël
+ * Picaut <judicael.picaut@ifsttar.fr>. It is maintained by Nicolas Fortin
+ * as part of the "Atelier SIG" team of the IRSTV Institute <http://www.irstv.fr/>.
+ *
+ * Copyright (C) 2011 IFSTTAR
+ * Copyright (C) 2011-2012 IRSTV (FR CNRS 2488)
+ *
+ * Noisemap is free software: you can redistribute it and/or modify it under the
+ * terms of the GNU General Public License as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option) any later
+ * version.
+ *
+ * Noisemap is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * Noisemap. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * For more information, please consult: <http://www.orbisgis.org/>
+ * or contact directly:
+ * info_at_ orbisgis.org
+ *
  * @Author Nicolas Fortin, Université Gustave Eiffel
  * @Author Pierre Aumond, Université Gustave Eiffel
  */
@@ -7,6 +36,7 @@ package org.noise_planet.noisemodelling.wps.Database_Manager
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
+import groovy.time.TimeCategory
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.SFSUtilities
@@ -19,75 +49,106 @@ import java.sql.Connection
 import java.sql.ResultSet
 import java.sql.Statement
 
-title = 'Visualize a Table'
-description = 'Groups all the geometries of a table and returns them in WKT OGC format. Be careful, this treatment can be blocking if the table is large.'
+title = 'Diplay a table on a map.'
+description = 'Display a table containing a geometric field on a map. Technically, it groups all the geometries of a table and returns them in WKT OGC format. Be careful, this treatment can be blocking if the table is large.'
 
 inputs = [
-        databaseName: [name: 'Name of the database', title: 'Name of the database', description : 'Name of the database (default : first found db)', min : 0, max : 1, type: String.class],
-        inputSRID:  [name: 'inputSRID', title: 'Projection identifier', description: 'All coordinates will be projected from the specified SRID to WGS84 coordinates. ex: 3857 is Web Mercator projection', type: Integer.class, min: 0, max: 1],
-        tableName: [name: 'Table Name', title: 'Table Name', description: 'Table Name', type: String.class]
+        inputSRID: [name: 'Projection identifier', title: 'Projection identifier', description: 'Original projection identifier (also called SRID) of your table. It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection). All coordinates will be projected from the specified EPSG to WGS84 coordinates. Default value : 4326', type: Integer.class, min: 0, max: 1],
+        tableName: [name: 'Name of the table', title: 'Name of the table', description: 'Name of the table you want to display.', type: String.class]
 ]
 
-outputs = [
-        result: [name: 'Result', title: 'Result', type: Geometry.class]
-]
+outputs = [result: [name: 'Result output geometry', title: 'Result output geometry', description: 'This is the output geometry in WKT OGC format', type: Geometry.class]]
 
 
 static Connection openGeoserverDataStoreConnection(String dbName) {
-    if(dbName == null || dbName.isEmpty()) {
+    if (dbName == null || dbName.isEmpty()) {
         dbName = new GeoServer().catalog.getStoreNames().get(0)
     }
     Store store = new GeoServer().catalog.getStore(dbName)
-    JDBCDataStore jdbcDataStore = (JDBCDataStore)store.getDataStoreInfo().getDataStore(null)
+    JDBCDataStore jdbcDataStore = (JDBCDataStore) store.getDataStoreInfo().getDataStore(null)
     return jdbcDataStore.getDataSource().getConnection()
 }
+
+def exec(Connection connection, input) {
+
+    // output geometry, the information given back to the user
+    Geometry geom = null
+
+    // print to command window
+    System.out.println('Start : Drop a table')
+    def start = new Date()
+
+    // Get name of the table
+    String tableName = input["tableName"] as String
+    // do it case-insensitive
+    tableName = tableName.toUpperCase()
+
+    // Default SRID (WGS84)
+    Integer srid = 4326
+    // Get user SRID
+    if (input['inputSRID']) {
+        srid = input['inputSRID'] as Integer
+    }
+
+    // Create a connection statement to interact with the database in SQL
+    Statement stmt = connection.createStatement()
+
+    // Read Geometry Index and type of the table
+    List<String> spatialFieldNames = SFSUtilities.getGeometryFields(connection, TableLocation.parse(tableName, JDBCUtilities.isH2DataBase(connection.getMetaData())))
+
+    // If the table does not contain a geometry field
+    if (spatialFieldNames.isEmpty()) {
+        System.err.println("The table %s does not contain a geometry field")
+        geom = new GeometryFactory().createGeometryCollection()
+        return geom
+    }
+
+    // Get the SRID of the table
+    Integer tableSrid = SFSUtilities.getSRID(connection, TableLocation.parse(tableName))
+
+    if (tableSrid != 0 && tableSrid != srid && input['inputSRID']) throw new Exception("The table already has a different SRID than the one you gave.")
+
+    // Replace default SRID by the srid of the table
+    if (tableSrid != 0) srid = tableSrid
+
+    // Display the actual SRID in the command window
+    System.out.println("The actual SRID of the table is " + srid)
+
+    // Project geometry in WGS84 (EPSG:4326) and groups all the geometries of the table
+    String geomField = "ST_ACCUM(ST_TRANSFORM(ST_SetSRID(" + spatialFieldNames.get(0) + "," + srid + "),4326))"
+    ResultSet rs = stmt.executeQuery(String.format("select %s the_geom from %s", geomField, tableName))
+
+    // Get the geometry field from the table
+    while (rs.next()) {
+        geom = (Geometry) rs.getObject(1)
+    }
+
+    // print to command window
+    if (asWKT(geom).size() > 100) {
+        System.out.println('Result (100 first characters) : ' + asWKT(geom).substring(0,100) + '...')
+    } else {
+        System.out.println('Result : ' + asWKT(geom))
+    }
+
+    System.out.println('End : Display a table on a map')
+    System.out.println('Duration : ' + TimeCategory.minus(new Date(), start))
+
+    // print to WPS Builder
+    return geom
+}
+
 
 def run(input) {
 
     // Get name of the database
-    String dbName = ""
-    if (input['databaseName']){dbName = input['databaseName'] as String}
+    // by default an embedded h2gis database is created
+    // Advanced user can replace this database for a postGis or h2Gis server database.
+    String dbName = "h2gisdb"
 
     // Open connection
-    openGeoserverDataStoreConnection(dbName).withCloseable { Connection connection ->
-        Statement sql = connection.createStatement();
-
-
-        // Execute
-        String tableName = input["tableName"] as String
-        tableName = tableName.toUpperCase()
-
-        // Read Geometry Index and type
-        List<String> spatialFieldNames = SFSUtilities.getGeometryFields(connection, TableLocation.parse(tableName, JDBCUtilities.isH2DataBase(connection.getMetaData())))
-        if (spatialFieldNames.isEmpty()) {
-            System.err.println("The table %s does not contain a geometry field")
-            return [result: new GeometryFactory().createGeometryCollection()]
-        }
-
-        Integer srid = SFSUtilities.getSRID(connection, TableLocation.parse(tableName))
-        System.out.println("FOUND SRID "+srid)
-        if ('inputSRID' in input) {
-            srid = input['inputSRID'] as Integer
-        }
-        System.out.println("FOUND SRID "+srid)
-
-        String geomField = "ST_ACCUM("+spatialFieldNames.get(0)+")"
-        if(srid != 0) {
-            geomField = "ST_ACCUM(ST_TRANSFORM(ST_SetSRID("+spatialFieldNames.get(0)+","+srid+"),4326))"
-        }
-
-
-
-        ResultSet rs = sql.executeQuery(String.format("select %s the_geom from %s",geomField, tableName))
-
-        Geometry geom = null
-        while (rs.next()) {
-            geom = (Geometry) rs.getObject(1)
-        }
-
-
-        // print to Console windows
-        return [result: geom]
+    openGeoserverDataStoreConnection(dbName).withCloseable {
+        Connection connection ->
+            return [result: exec(connection, input)]
     }
 }
 
@@ -97,7 +158,7 @@ def run(input) {
  * @return The String representation
  */
 static String asWKT(Geometry geometry) {
-    if(geometry==null) {
+    if (geometry == null) {
         return null
     }
     WKTWriter wktWriter = new WKTWriter()
