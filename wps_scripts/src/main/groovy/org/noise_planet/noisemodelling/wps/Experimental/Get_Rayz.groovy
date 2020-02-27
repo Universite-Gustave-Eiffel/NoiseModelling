@@ -107,51 +107,36 @@ class TrafficRayzPropagationProcessData extends PropagationProcessData {
         double Junc_dist = 0
         int Junc_type = 0
 
-        for (int h = LDAY_START_HOUR; h < LDAY_STOP_HOUR; h++) {
-            int idFreq = 0
-            for (int freq : PropagationProcessPathData.freq_lvl) {
-                RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedD, hvSpeedD, hvSpeedD, lvSpeedD,
-                        lvSpeedD, Math.max(0, tvD - hvD), hvD, 0, 0, 0, freq, Temperature,
-                        pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type);
-                ld[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
-            }
-        }
-        // Average
-        for (int i = 0; i < ld.length; i++) {
-            ld[i] = ld[i] / (LDAY_STOP_HOUR - LDAY_START_HOUR);
+
+        int idFreq = 0
+        for (int freq : PropagationProcessPathData.freq_lvl) {
+            RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedD, hvSpeedD, hvSpeedD, lvSpeedD,
+                    lvSpeedD, Math.max(0, tvD - hvD), hvD, 0, 0, 0, freq, Temperature,
+                    pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type);
+            ld[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
         }
 
-        // Evening
-        for (int h = LDAY_STOP_HOUR; h < LEVENING_STOP_HOUR; h++) {
-            int idFreq = 0
-            for(int freq : PropagationProcessPathData.freq_lvl) {
-                RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedE, hvSpeedE, hvSpeedE, lvSpeedE,
-                        lvSpeedE, Math.max(0, tvE - hvE), hvE, 0, 0, 0, freq, Temperature,
-                        pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type);
-                le[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
-            }
+
+
+       idFreq = 0
+        for(int freq : PropagationProcessPathData.freq_lvl) {
+            RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedE, hvSpeedE, hvSpeedE, lvSpeedE,
+                    lvSpeedE, Math.max(0, tvE - hvE), hvE, 0, 0, 0, freq, Temperature,
+                    pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type);
+            le[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
         }
 
-        for(int i=0; i<le.size(); i++) {
-            le[i] = (le[i] / (LEVENING_STOP_HOUR - LDAY_STOP_HOUR))
-        }
-
-        // Night
-        for (int h : nightHours) {
-            int idFreq = 0
-            for(int freq : PropagationProcessPathData.freq_lvl) {
-                RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedN, hvSpeedN, hvSpeedN, lvSpeedN,
-                        lvSpeedN, Math.max(0, tvN - hvN), hvN, 0, 0, 0, freq, Temperature,
-                        pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type);
-                ln[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
-            }
-        }
-        for(int i=0; i<ln.size(); i++) {
-            ln[i] = (ln[i] / nightHours.length)
+        idFreq = 0
+        for(int freq : PropagationProcessPathData.freq_lvl) {
+            RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedN, hvSpeedN, hvSpeedN, lvSpeedN,
+                    lvSpeedN, Math.max(0, tvN - hvN), hvN, 0, 0, 0, freq, Temperature,
+                    pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type);
+            ln[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
         }
 
         double[] lden = new double[PropagationProcessPathData.freq_lvl.size()]
-        int idFreq = 0
+
+        idFreq = 0
         for(int freq : PropagationProcessPathData.freq_lvl) {
             lden[idFreq++] = (12 * ld[idFreq] +
                     4 * ComputeRays.dbaToW(ComputeRays.wToDba(le[idFreq]) + 5) +

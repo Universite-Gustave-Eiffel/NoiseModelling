@@ -98,8 +98,13 @@ def exec(Connection connection, input) {
 
     if (pkIndex > 0) {
         resultString = String.format("Source table %s does already contain a primary key", table)
-        throw new IllegalArgumentException(String.format("Source table %s does already contain a primary key", tableLocation))
+        // print to command window
+        System.out.println('ERROR : ' + resultString)
+        System.out.println('Duration : ' + TimeCategory.minus(new Date(), start))
+        // print to WPS Builder
+        return resultString
     }
+
 
     if (pkUserIndex > 0) {
         stmt.execute("ALTER TABLE " + table + " ALTER COLUMN " + pkName + " INT NOT NULL;")
