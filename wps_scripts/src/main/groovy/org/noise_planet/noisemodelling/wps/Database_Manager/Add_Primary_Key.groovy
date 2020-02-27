@@ -46,10 +46,10 @@ import java.sql.Statement
 
 title = 'Add primary key column or constraint'
 description = 'Add a primary key column or add a primary key constraint to a column of a table. ' +
-        'It is strongly advised to add a primary key on one of the columns for the ' +
+        '</br>  It is strongly advised to add a primary key on one of the columns for the ' +
         'source and receiver tables before doing a calculation.'
 
-inputs = [pkName: [name: 'Name of the column', title: 'Name of the column', description: 'Name of the column to be added, or for which the main key constraint will be added. Primary keys must contain UNIQUE values, and cannot contain NULL values.', type: String.class],
+inputs = [pkName: [name: 'Name of the column', title: 'Name of the column', description: 'Name of the column to be added, or for which the main key constraint will be added. </br> Primary keys must contain UNIQUE values, and cannot contain NULL values.', type: String.class],
           table : [name: 'Name of the table', description: 'Name of the table to which a primary key will be added.', title: 'Name of the table', type: String.class]]
 
 outputs = [result: [name: 'Result output string', title: 'Result output string', description: 'This type of result does not allow the blocks to be linked together.', type: String.class]]

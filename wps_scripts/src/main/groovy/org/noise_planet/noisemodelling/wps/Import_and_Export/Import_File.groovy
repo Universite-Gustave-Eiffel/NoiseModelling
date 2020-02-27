@@ -1,11 +1,42 @@
 /**
- * @Author Aumond Pierre, Université Gustave Eiffel
+ * NoiseModelling is a free and open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
+ *
+ * This version is developed at French IRSTV Institute and at IFSTTAR
+ * (http://www.ifsttar.fr/) as part of the Eval-PDU project, funded by the
+ * French Agence Nationale de la Recherche (ANR) under contract ANR-08-VILL-0005-01.
+ *
+ * Noisemap is distributed under GPL 3 license. Its reference contact is Judicaël
+ * Picaut <judicael.picaut@ifsttar.fr>. It is maintained by Nicolas Fortin
+ * as part of the "Atelier SIG" team of the IRSTV Institute <http://www.irstv.fr/>.
+ *
+ * Copyright (C) 2011 IFSTTAR
+ * Copyright (C) 2011-2012 IRSTV (FR CNRS 2488)
+ *
+ * Noisemap is free software: you can redistribute it and/or modify it under the
+ * terms of the GNU General Public License as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option) any later
+ * version.
+ *
+ * Noisemap is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * Noisemap. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * For more information, please consult: <http://www.orbisgis.org/>
+ * or contact directly:
+ * info_at_ orbisgis.org
+ *
+ * @Author Nicolas Fortin, Université Gustave Eiffel
+ * @Author Pierre Aumond, Université Gustave Eiffel
  */
 
 package org.noise_planet.noisemodelling.wps.Import_and_Export
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
+import groovy.time.TimeCategory
 import org.apache.commons.io.FilenameUtils
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.api.EmptyProgressVisitor
@@ -16,6 +47,7 @@ import org.h2gis.functions.io.gpx.GPXDriverFunction
 import org.h2gis.functions.io.osm.OSMDriverFunction
 import org.h2gis.functions.io.shp.SHPDriverFunction
 import org.h2gis.functions.io.tsv.TSVDriverFunction
+import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.SFSUtilities
 import org.h2gis.utilities.TableLocation
 import org.noise_planet.noisemodelling.ext.asc.AscDriverFunction
@@ -24,120 +56,174 @@ import java.sql.Connection
 import java.sql.Statement
 
 title = 'Import File'
-description = 'Import file into a database table (csv, dbf, geojson, gpx, bz2, gz, osm, shp, tsv)'
+description = 'Import file into the database. </br> Valid file extensions : (csv, dbf, geojson, gpx, bz2, gz, osm, shp, tsv). </br> '
 
-inputs = [pathFile       : [name: 'Path of the input File', description: 'Path of the input File (including extension .csv, .shp, etc.)', title: 'Path of the input File', type: String.class],
-          databaseName   : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database (default : first found db)', min: 0, max: 1, type: String.class],
-          defaultSRID   : [name: 'Default SRID', title: 'Default SRID', description: 'If the layer does not include SRID properties, it will take this value (default : 4326)', min: 0, max: 1, type: Integer.class],
-          outputTableName: [name: 'outputTableName', description: 'Do not write the name of a table that contains a space. (default : file name without extension)', title: 'Name of output table', min: 0, max: 1, type: String.class]]
+inputs = [pathFile : [name: 'Path of the input File', description: 'Path of the file you want to import, including its extension. </br> For example : c:/home/receivers.geojson', title: 'Path of the input File', type: String.class],
+          inputSRID: [name: 'Projection identifier', title: 'Projection identifier', description: 'Original projection identifier (also called SRID) of your table. It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection). </br>  All coordinates will be projected from the specified EPSG to WGS84 coordinates. </br> This entry is optional because many formats already include the projection and you can also import files without geometry attributes.</br>  <b> Default value : 4326 </b> ', type: Integer.class, min: 0, max: 1],
+          tableName: [name: 'Output table name', title: 'Name of created table', description: 'Name of the table you want to create from the file. </br> <b> Default value : it will take the name of the file without its extension (special characters will be removed and whitespaces will be replace by an underscore. </b> ', min: 0, max: 1, type: String.class]]
 
-outputs = [tableNameCreated: [name: 'tableNameCreated', title: 'tableNameCreated', type: String.class]]
 
 static Connection openGeoserverDataStoreConnection(String dbName) {
-    if(dbName == null || dbName.isEmpty()) {
+    if (dbName == null || dbName.isEmpty()) {
         dbName = new GeoServer().catalog.getStoreNames().get(0)
     }
     Store store = new GeoServer().catalog.getStore(dbName)
-    JDBCDataStore jdbcDataStore = (JDBCDataStore)store.getDataStoreInfo().getDataStore(null)
+    JDBCDataStore jdbcDataStore = (JDBCDataStore) store.getDataStoreInfo().getDataStore(null)
     return jdbcDataStore.getDataSource().getConnection()
+}
+
+def exec(Connection connection, input) {
+
+    // output string, the information given back to the user
+    String resultString = null
+
+    // print to command window
+    System.out.println('Start : Import File')
+    def start = new Date()
+
+    // Default SRID (WGS84)
+    Integer srid = 4326
+    // Get user SRID
+    if (input['inputSRID']) {
+        srid = input['inputSRID'] as Integer
+    }
+
+    // Get the path of the file to import
+    String pathFile = input["pathFile"] as String
+
+    def file = new File(pathFile)
+    if (!file.exists()) {
+        resultString = pathFile + " is not found."
+        // print to command window
+        System.out.println('ERROR : ' + resultString)
+        System.out.println('Duration : ' + TimeCategory.minus(new Date(), start))
+        // print to WPS Builder
+        return resultString
+    }
+
+    // Get name of the table
+    String tableName = input["tableName"] as String
+    // do it case-insensitive
+    tableName = tableName.toUpperCase()
+
+    // By default the name of the output table is the same than the file name
+    if (!tableName) {
+        // get the name of the fileName
+        String fileName = FilenameUtils.removeExtension(new File(pathFile).getName())
+        // replace whitespaces by _ in the file name
+        fileName.replaceAll("\\s", "_")
+        // remove special characters in the file name
+        fileName.replaceAll("[^a-zA-Z0-9 ]+", "_")
+        // the tableName will be called as the fileName
+        tableName = fileName
+    }
+
+    // Create a connection statement to interact with the database in SQL
+    Statement stmt = connection.createStatement()
+
+    // Drop the table if already exists
+    String dropOutputTable = "drop table if exists " + tableName
+    stmt.execute(dropOutputTable)
+
+    // Get the extension of the file
+    String ext = pathFile.substring(pathFile.lastIndexOf('.') + 1, pathFile.length())
+    switch (ext) {
+        case "csv":
+            CSVDriverFunction csvDriver = new CSVDriverFunction()
+            csvDriver.importFile(connection, tableName, new File(pathFile), new EmptyProgressVisitor())
+            break
+        case "dbf":
+            DBFDriverFunction dbfDriver = new DBFDriverFunction()
+            dbfDriver.importFile(connection, tableName, new File(pathFile), new EmptyProgressVisitor())
+            break
+        case "geojson":
+            GeoJsonDriverFunction geoJsonDriver = new GeoJsonDriverFunction()
+            geoJsonDriver.importFile(connection, tableName, new File(pathFile), new EmptyProgressVisitor())
+            break
+        case "gpx":
+            GPXDriverFunction gpxDriver = new GPXDriverFunction()
+            gpxDriver.importFile(connection, tableName, new File(pathFile), new EmptyProgressVisitor())
+            break
+        case "bz2":
+            OSMDriverFunction osmDriver = new OSMDriverFunction()
+            osmDriver.importFile(connection, tableName, new File(pathFile), new EmptyProgressVisitor())
+            break
+        case "gz":
+            OSMDriverFunction osmDriver = new OSMDriverFunction()
+            osmDriver.importFile(connection, tableName, new File(pathFile), new EmptyProgressVisitor())
+            break
+        case "osm":
+            OSMDriverFunction osmDriver = new OSMDriverFunction()
+            osmDriver.importFile(connection, tableName, new File(pathFile), new EmptyProgressVisitor())
+            break
+        case "shp":
+            SHPDriverFunction shpDriver = new SHPDriverFunction()
+            shpDriver.importFile(connection, tableName, new File(pathFile), new EmptyProgressVisitor())
+            break
+        case "tsv":
+            TSVDriverFunction tsvDriver = new TSVDriverFunction()
+            tsvDriver.importFile(connection, tableName, new File(pathFile), new EmptyProgressVisitor())
+            break
+        case "asc":
+            AscDriverFunction ascDriver = new AscDriverFunction();
+            ascDriver.importFile(connection, tableName, new File(pathFile), new EmptyProgressVisitor())
+            break
+    }
+
+    // Read Geometry Index and type of the table
+    List<String> spatialFieldNames = SFSUtilities.getGeometryFields(connection, TableLocation.parse(tableName, JDBCUtilities.isH2DataBase(connection.getMetaData())))
+
+    // If the table does not contain a geometry field
+    if (spatialFieldNames.isEmpty()) {
+        System.out.println("The table does not contain a geometry field.")
+    }
+
+    // Get the SRID of the table
+    Integer tableSrid = SFSUtilities.getSRID(connection, TableLocation.parse(tableName))
+
+    if (tableSrid != 0 && tableSrid != srid && input['inputSRID']) {
+        resultString = "The table already has a different SRID than the one you gave."
+        // print to command window
+        System.out.println('ERROR : ' + resultString)
+        System.out.println('Duration : ' + TimeCategory.minus(new Date(), start))
+        // print to WPS Builder
+        return resultString
+    }
+
+    // Replace default SRID by the srid of the table
+    if (tableSrid != 0) srid = tableSrid
+
+    // Display the actual SRID in the command window
+    System.out.println("The SRID of the table is " + srid)
+
+    // If the table does not have an associated SRID, add a SRID
+    if (tableSrid == 0 && !spatialFieldNames.isEmpty()) {
+        connection.createStatement().execute(String.format("UPDATE %s SET " + spatialFieldNames.get(0) + " = ST_SetSRID(" + spatialFieldNames.get(0) + ",%d)",
+                TableLocation.parse(tableName).toString(), srid))
+    }
+
+    resultString = "The table " + tableName + " has been uploaded to database!"
+
+    // print to command window
+    System.out.println('Result : ' + resultString)
+    System.out.println('End : Import File')
+    System.out.println('Duration : ' + TimeCategory.minus(new Date(), start))
+
+    // print to WPS Builder
+    return resultString
+
 }
 
 def run(input) {
 
     // Get name of the database
-    String dbName = ""
-    if (input['databaseName']) {
-        dbName = input['databaseName'] as String
-    }
-
-    Integer defaultSRID = 4326
-    if (input['defaultSRID']) {
-        defaultSRID = input['defaultSRID'] as Integer
-    }
+    // by default an embedded h2gis database is created
+    // Advanced user can replace this database for a postGis or h2Gis server database.
+    String dbName = "h2gisdb"
 
     // Open connection
-    openGeoserverDataStoreConnection(dbName).withCloseable { Connection connection ->
-
-
-        String pathFile = input["pathFile"] as String
-        String fileName = FilenameUtils.removeExtension(new File(pathFile).getName())
-
-        String outputTableName = input["outputTableName"] as String
-        if (!outputTableName) {
-            outputTableName = fileName
-        }
-        outputTableName = outputTableName.toUpperCase()
-
-        Statement stmt = connection.createStatement()
-        String dropOutputTable = "drop table if exists " + outputTableName
-        stmt.execute(dropOutputTable)
-
-        String ext = pathFile.substring(pathFile.lastIndexOf('.') + 1, pathFile.length())
-        switch (ext) {
-            case "csv":
-                CSVDriverFunction csvDriver = new CSVDriverFunction()
-                csvDriver.importFile(connection, outputTableName, new File(pathFile), new EmptyProgressVisitor())
-                break
-            case "dbf":
-                DBFDriverFunction dbfDriver = new DBFDriverFunction()
-                dbfDriver.importFile(connection, outputTableName, new File(pathFile), new EmptyProgressVisitor())
-                break
-            case "geojson":
-                GeoJsonDriverFunction geoJsonDriver = new GeoJsonDriverFunction()
-                geoJsonDriver.importFile(connection, outputTableName, new File(pathFile), new EmptyProgressVisitor())
-                break
-            case "gpx":
-                GPXDriverFunction gpxDriver = new GPXDriverFunction()
-                gpxDriver.importFile(connection, outputTableName, new File(pathFile), new EmptyProgressVisitor())
-                break
-            case "bz2":
-                OSMDriverFunction osmDriver = new OSMDriverFunction()
-                osmDriver.importFile(connection, outputTableName, new File(pathFile), new EmptyProgressVisitor())
-                break
-            case "gz":
-                OSMDriverFunction osmDriver = new OSMDriverFunction()
-                osmDriver.importFile(connection, outputTableName, new File(pathFile), new EmptyProgressVisitor())
-                break
-            case "osm":
-                OSMDriverFunction osmDriver = new OSMDriverFunction()
-                osmDriver.importFile(connection, outputTableName, new File(pathFile), new EmptyProgressVisitor())
-                break
-            case "shp":
-                SHPDriverFunction shpDriver = new SHPDriverFunction()
-                shpDriver.importFile(connection, outputTableName, new File(pathFile), new EmptyProgressVisitor())
-                break
-            case "tsv":
-                TSVDriverFunction tsvDriver = new TSVDriverFunction()
-                tsvDriver.importFile(connection, outputTableName, new File(pathFile), new EmptyProgressVisitor())
-                break
-            case "asc":
-                AscDriverFunction ascDriver = new AscDriverFunction();
-                ascDriver.importFile(connection, outputTableName, new File(pathFile), new EmptyProgressVisitor())
-                break
-        }
-
-        int srid = SFSUtilities.getSRID(connection, TableLocation.parse(outputTableName))
-        if(srid == 0) {
-            connection.createStatement().execute(String.format("UPDATE %s SET THE_GEOM = ST_SetSRID(the_geom,%d)",
-                    TableLocation.parse(outputTableName).toString(), defaultSRID))
-
-        }
-
-
-        def file = new File(pathFile)
-        String returnString = null
-
-        if (file.exists())
-        {
-            returnString = "The table " + outputTableName + " has been uploaded to database!"
-        }
-        else
-        {
-            returnString = "The input file is not found"
-        }
-
-
-        return [tableNameCreated: returnString]
-
+    openGeoserverDataStoreConnection(dbName).withCloseable {
+        Connection connection ->
+            return [result: exec(connection, input)]
     }
 }

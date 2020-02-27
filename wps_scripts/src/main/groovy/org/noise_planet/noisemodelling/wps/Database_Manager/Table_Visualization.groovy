@@ -50,10 +50,10 @@ import java.sql.ResultSet
 import java.sql.Statement
 
 title = 'Diplay a table on a map.'
-description = 'Display a table containing a geometric field on a map. Technically, it groups all the geometries of a table and returns them in WKT OGC format. Be careful, this treatment can be blocking if the table is large.'
+description = 'Display a table containing a geometric field on a map. </br> Technically, it groups all the geometries of a table and returns them in WKT OGC format. </br> Be careful, this treatment can be blocking if the table is large.'
 
 inputs = [
-        inputSRID: [name: 'Projection identifier', title: 'Projection identifier', description: 'Original projection identifier (also called SRID) of your table. It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection). All coordinates will be projected from the specified EPSG to WGS84 coordinates. Default value : 4326', type: Integer.class, min: 0, max: 1],
+        inputSRID: [name: 'Projection identifier', title: 'Projection identifier', description: 'Original projection identifier (also called SRID) of your table. It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection). </br>  All coordinates will be projected from the specified EPSG to WGS84 coordinates. </br> This entry is optional because many formats already include the projection and you can also import files without geometry attributes.</br>  <b> Default value : 4326 </b> ', type: Integer.class, min: 0, max: 1],
         tableName: [name: 'Name of the table', title: 'Name of the table', description: 'Name of the table you want to display.', type: String.class]
 ]
 
@@ -98,7 +98,7 @@ def exec(Connection connection, input) {
 
     // If the table does not contain a geometry field
     if (spatialFieldNames.isEmpty()) {
-        System.err.println("The table %s does not contain a geometry field")
+        System.err.println("The table does not contain a geometry field")
         geom = new GeometryFactory().createGeometryCollection()
         return geom
     }
@@ -114,9 +114,14 @@ def exec(Connection connection, input) {
     // Display the actual SRID in the command window
     System.out.println("The actual SRID of the table is " + srid)
 
+    if (tableSrid == 0) {
+        connection.createStatement().execute(String.format("UPDATE %s SET " + spatialFieldNames.get(0) + " = ST_SetSRID(" + spatialFieldNames.get(0) + ",%d)",
+                TableLocation.parse(tableName).toString(), srid))
+    }
+
     // Project geometry in WGS84 (EPSG:4326) and groups all the geometries of the table
-    String geomField = "ST_ACCUM(ST_TRANSFORM(ST_SetSRID(" + spatialFieldNames.get(0) + "," + srid + "),4326))"
-    ResultSet rs = stmt.executeQuery(String.format("select %s the_geom from %s", geomField, tableName))
+    String geomField = "ST_ACCUM(ST_TRANSFORM(" + spatialFieldNames.get(0) + " ,4326))"
+    ResultSet rs = stmt.executeQuery(String.format("select %s " + spatialFieldNames.get(0) + " from %s", geomField, tableName))
 
     // Get the geometry field from the table
     while (rs.next()) {
@@ -129,7 +134,6 @@ def exec(Connection connection, input) {
     } else {
         System.out.println('Result : ' + asWKT(geom))
     }
-
     System.out.println('End : Display a table on a map')
     System.out.println('Duration : ' + TimeCategory.minus(new Date(), start))
 

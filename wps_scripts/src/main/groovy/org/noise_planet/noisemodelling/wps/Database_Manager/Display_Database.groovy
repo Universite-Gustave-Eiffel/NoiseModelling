@@ -43,11 +43,11 @@ import org.h2gis.utilities.TableLocation
 import java.sql.Connection
 
 title = 'Display the list of tables (and their attributes).'
-description = 'Displays the list of tables that are in the database. Optional: It is also possible to display their attributes (columns).' +
+description = 'Displays the list of tables that are in the database. </br> Optional: It is also possible to display their attributes (columns). </br> ' +
         ' For a visualization of an extract of a table or an entire table, other tools will be better adapted as the database tool dBeaver.'
 
 inputs = [
-        showColumns: [name: 'Display column names', title: 'Display column names', description: 'Do you want to display also the column of the database ? note : A small yellow key symbol will appear if the column as a primary key constraint.', type: Boolean.class]
+        showColumns: [name: 'Display columns of the tables', title: 'Display columns of the tables', description: 'Do you want to display also the column of the tables ? </br> note : A small yellow key symbol will appear if the column as a primary key constraint.', type: Boolean.class]
 ]
 
 outputs = [result: [name: 'Result output string', title: 'Result output string', description: 'This type of result does not allow the blocks to be linked together.', type: String.class]]
