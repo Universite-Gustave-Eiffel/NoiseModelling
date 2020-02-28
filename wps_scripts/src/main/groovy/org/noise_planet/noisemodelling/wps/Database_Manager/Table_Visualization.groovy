@@ -75,7 +75,7 @@ def exec(Connection connection, input) {
     Geometry geom = null
 
     // print to command window
-    System.out.println('Start : Drop a table')
+    System.out.println('Start : Display a table on a map')
     def start = new Date()
 
     // Get name of the table

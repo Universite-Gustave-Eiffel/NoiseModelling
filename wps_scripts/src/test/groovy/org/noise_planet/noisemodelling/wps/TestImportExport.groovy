@@ -34,12 +34,10 @@
 
 package org.noise_planet.noisemodelling.wps
 
-import org.h2gis.functions.io.shp.SHPRead
-import org.noise_planet.noisemodelling.wps.Import_and_Export.*
+import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File
+import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_Folder
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
-import java.sql.Statement
 
 /**
  * Test parsing of zip file using H2GIS database
@@ -65,6 +63,18 @@ class TestImportExport extends JdbcTestCase {
                  "tableName" : "receivers"])
 
         assertEquals("The table already has a different SRID than the one you gave.", res)
+    }
+
+    void testImportFolder() {
+
+        File file = new File(TestImportExport.getResource("receivers.shp").getPath()).getParentFile()
+        String res = new Import_Folder().exec(connection,
+                ["pathFolder": file.getPath(),
+                 "inputSRID" : "2154",
+                 "importExt" : "shp"])
+
+
+        assertEquals("The table(s) ROADS2 & ROADS & RECEIVERS & GROUND_TYPE & BUILDINGS & null has/have been uploaded to database !", res)
     }
 
 }

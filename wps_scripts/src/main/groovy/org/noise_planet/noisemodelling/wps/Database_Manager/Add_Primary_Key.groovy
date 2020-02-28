@@ -96,6 +96,7 @@ def exec(Connection connection, input) {
     ResultSet rs = stmt.executeQuery("SELECT * FROM " + table)
     int pkUserIndex = JDBCUtilities.getFieldIndex(rs.getMetaData(), pkName)
 
+
     if (pkIndex > 0) {
         resultString = String.format("Source table %s does already contain a primary key", table)
         // print to command window
