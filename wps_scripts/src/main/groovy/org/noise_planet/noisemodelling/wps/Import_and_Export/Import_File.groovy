@@ -58,7 +58,7 @@ import java.sql.Statement
 title = 'Import File'
 description = 'Import file into the database. </br> Valid file extensions : (csv, dbf, geojson, gpx, bz2, gz, osm, shp, tsv). </br>'
 
-inputs = [pathFile : [name: 'Path of the input File', description: 'Path of the file you want to import, including its extension. </br> For example : c:/home/receivers.geojson', title: 'Path of the input File', type: String.class],
+inputs = [pathFile : [name: 'Path of the input File', title: 'Path of the input File', description: 'Path of the file you want to import, including its extension. </br> For example : c:/home/receivers.geojson',  type: String.class],
           inputSRID: [name: 'Projection identifier', title: 'Projection identifier', description: 'Original projection identifier (also called SRID) of your table. It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection). </br>  All coordinates will be projected from the specified EPSG to WGS84 coordinates. </br> This entry is optional because many formats already include the projection and you can also import files without geometry attributes.</br>  <b> Default value : 4326 </b> ', type: Integer.class, min: 0, max: 1],
           tableName: [name: 'Output table name', title: 'Name of created table', description: 'Name of the table you want to create from the file. </br> <b> Default value : it will take the name of the file without its extension (special characters will be removed and whitespaces will be replace by an underscore. </b> ', min: 0, max: 1, type: String.class]]
 

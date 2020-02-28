@@ -34,6 +34,8 @@
 
 package org.noise_planet.noisemodelling.wps
 
+import org.h2gis.functions.io.shp.SHPRead
+import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_Folder
 import org.slf4j.Logger
@@ -48,9 +50,9 @@ class TestImportExport extends JdbcTestCase {
     void testImportFile1() {
 
         String res = new Import_File().exec(connection,
-                ["pathFile": TestImportExport.getResource("receivers.shp").getPath(),
-                 "inputSRID" : "2154",
-                 "tableName" : "receivers"])
+                ["pathFile" : TestImportExport.getResource("receivers.shp").getPath(),
+                 "inputSRID": "2154",
+                 "tableName": "receivers"])
 
         assertEquals("The table RECEIVERS has been uploaded to database!", res)
     }
@@ -58,9 +60,9 @@ class TestImportExport extends JdbcTestCase {
     void testImportFile2() {
 
         String res = new Import_File().exec(connection,
-                ["pathFile": TestImportExport.getResource("receivers.shp").getPath(),
-                 "inputSRID" : "4362",
-                 "tableName" : "receivers"])
+                ["pathFile" : TestImportExport.getResource("receivers.shp").getPath(),
+                 "inputSRID": "4362",
+                 "tableName": "receivers"])
 
         assertEquals("The table already has a different SRID than the one you gave.", res)
     }
@@ -75,6 +77,18 @@ class TestImportExport extends JdbcTestCase {
 
 
         assertEquals("The table(s) ROADS2 & ROADS & RECEIVERS & GROUND_TYPE & BUILDINGS & null has/have been uploaded to database !", res)
+    }
+
+    void testExportFile() {
+
+        SHPRead.readShape(connection, TestDatabaseManager.getResource("receivers.shp").getPath())
+
+        String res = new Export_Table().exec(connection,
+                ["exportPath"   : TestDatabaseManager.getResource("receivers.shp").getPath(),
+                 "tableToExport": "RECEIVERS"])
+
+
+        assertEquals("The table RECEIVERS successfully exported !", res)
     }
 
 }
