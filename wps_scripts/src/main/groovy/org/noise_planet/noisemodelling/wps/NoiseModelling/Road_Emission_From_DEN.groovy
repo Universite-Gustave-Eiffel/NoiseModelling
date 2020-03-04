@@ -108,14 +108,14 @@ def run(input) {
         // create empty LW_ROADS
         sql.execute("drop table if exists LW_ROADS;")
         sql.execute("create table LW_ROADS (IDSOURCE integer, the_geom Geometry, " +
-                "Ld63 double precision, Ld125 double precision, Ld250 double precision, Ld500 double precision, Ld1000 double precision, Ld2000 double precision, Ld4000 double precision, Ld8000 double precision," +
-                "Le63 double precision, Le125 double precision, Le250 double precision, Le500 double precision, Le1000 double precision, Le2000 double precision, Le4000 double precision, Le8000 double precision," +
-                "Ln63 double precision, Ln125 double precision, Ln250 double precision, Ln500 double precision, Ln1000 double precision, Ln2000 double precision, Ln4000 double precision, Ln8000 double precision);")
+                "LWD63 double precision, LWD125 double precision, LWD250 double precision, LWD500 double precision, LWD1000 double precision, LWD2000 double precision, LWD4000 double precision, LWD8000 double precision," +
+                "LWE63 double precision, LWE125 double precision, LWE250 double precision, LWE500 double precision, LWE1000 double precision, LWE2000 double precision, LWE4000 double precision, LWE8000 double precision," +
+                "LWN63 double precision, LWN125 double precision, LWN250 double precision, LWN500 double precision, LWN1000 double precision, LWN2000 double precision, LWN4000 double precision, LWN8000 double precision);")
 
         def qry = 'INSERT INTO LW_ROADS(IDSOURCE,the_geom, ' +
-                'Ld63, Ld125, Ld250, Ld500, Ld1000,Ld2000, Ld4000, Ld8000,' +
-                'Le63, Le125, Le250, Le500, Le1000,Le2000, Le4000, Le8000,' +
-                'Ln63, Ln125, Ln250, Ln500, Ln1000,Ln2000, Ln4000, Ln8000) ' +
+                'LWD63, LWD125, LWD250, LWD500, LWD1000,LWD2000, LWD4000, LWD8000,' +
+                'LWE63, LWE125, LWE250, LWE500, LWE1000,LWE2000, LWE4000, LWE8000,' +
+                'LWN63, LWN125, LWN250, LWN500, LWN1000,LWN2000, LWN4000, LWN8000) ' +
                 'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);'
 
 

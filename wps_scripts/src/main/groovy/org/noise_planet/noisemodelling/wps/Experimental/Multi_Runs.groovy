@@ -477,7 +477,7 @@ class ReceiverSimulationProcess implements Runnable {
     ConcurrentLinkedQueue<SimulationResult> concurrentLinkedQueue;
     MultiRunsProcessData multiRunsProcessData;
     List<PointToPointPathsMultiRuns> pointToPointPathsMultiRuns;
-    Map<Integer, double[]> simuSpectrum = new HashMap<>()
+
     SimulationResult simulationResult
     double pop
     int nSimu = 0
@@ -496,10 +496,11 @@ class ReceiverSimulationProcess implements Runnable {
     @Override
     void run() {
 
+        Map<Integer, double[]> simuSpectrum = new HashMap<>()
         if (nSimu < 1) nSimu = multiRunsProcessData.Simu.size()
 
         for (int r = 0; r < nSimu; ++r) {
-            this.simuSpectrum.put(r, new double[PropagationProcessPathData.freq_lvl.size()])
+            simuSpectrum.put(r, new double[PropagationProcessPathData.freq_lvl.size()])
         }
 
         int idReceiver = -1
@@ -559,7 +560,7 @@ class ReceiverSimulationProcess implements Runnable {
                     }
 
 
-                    this.simuSpectrum.put(r, ComputeRays.sumDbArray(this.simuSpectrum.get(r), lDen))
+                    simuSpectrum.put(r, ComputeRays.sumDbArray(simuSpectrum.get(r), lDen))
 
                 }
 
@@ -569,7 +570,7 @@ class ReceiverSimulationProcess implements Runnable {
         }
         if (idReceiver != -1) {
             for (int r = 0; r < nSimu; r++) {
-                this.simulationResult = new SimulationResult(r, idReceiver, pop, this.simuSpectrum.get(r))
+                this.simulationResult = new SimulationResult(r, idReceiver, pop, simuSpectrum.get(r))
                 concurrentLinkedQueue.add(simulationResult)
             }
 
