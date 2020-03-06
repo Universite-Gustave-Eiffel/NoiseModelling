@@ -318,8 +318,12 @@ def exec(Connection connection, input) {
     System.println("Combine attenuation matrix with sound level of the sources... ")
     // Iterate over attenuation matrix
     Map<Integer, double[]> soundLevels = new HashMap<>()
+    k = 0
+    int currentVal = 0
     for (int i = 0; i < allLevels.size(); i++) {
 
+        k++
+        currentVal = ProgressBar(Math.round(10*i/allLevels.size()).toInteger(),currentVal)
         // get attenuation matrix value
         double[] soundLevel = allLevels.get(i).value
 
@@ -535,4 +539,21 @@ def static exportScene(String name, FastObstructionTest manager, ComputeRaysOut 
     } catch (XMLStreamException | CRSException ex) {
         throw new IOException(ex)
     }
+}
+
+
+
+/**
+ * Spartan ProgressBar
+ * @param newVal
+ * @param currentVal
+ * @return
+ */
+static int ProgressBar(int newVal, int currentVal)
+{
+    if(newVal != currentVal) {
+        currentVal = newVal
+        System.print( 10*currentVal + '% ... ')
+    }
+    return currentVal
 }
