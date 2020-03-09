@@ -31,6 +31,7 @@ import org.cts.crs.CRSException
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.api.ProgressVisitor
+import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
@@ -39,6 +40,7 @@ import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap
 
 import javax.xml.stream.XMLStreamException
 import java.sql.Connection
+import java.sql.DatabaseMetaData
 import java.sql.SQLException
 
 title = 'Calculation of the Lden map from the road noise emission table'
@@ -379,7 +381,7 @@ def exec(Connection connection, input) {
     // Drop table LDEN_GEOM if exists
     sql.execute("drop table if exists LDEN_GEOM;")
     // Associate Geometry column to the table LDEN
-    sql.execute("create table LDEN_GEOM  as select a.IDRECEIVER, b.THE_GEOM, a.Hz63, a.Hz125, a.Hz250, a.Hz500, a.Hz1000, a.Hz2000, a.Hz4000, a.Hz8000 FROM RECEIVERS b LEFT JOIN LDEN a ON a.IDRECEIVER = b.PK;")
+    sql.execute("create table LDEN_GEOM  as select a.IDRECEIVER, b.THE_GEOM, a.Hz63, a.Hz125, a.Hz250, a.Hz500, a.Hz1000, a.Hz2000, a.Hz4000, a.Hz8000 FROM "+receivers_table_name+" b LEFT JOIN LDEN a ON a.IDRECEIVER = b.PK;")
 
     // Drop temporary tables
     sql.execute("drop table if exists LDEN;")

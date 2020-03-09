@@ -66,16 +66,23 @@ inputs = [
                                      '- <b> THE_GEOM </b> : the 2D geometry of the building (POLYGON or MULTIPOLYGON). </br>' +
                                      '- <b> HEIGHT </b> : the height of the building (FLOAT)',
                              type       : String.class],
-        tableSources      : [name       : 'Sources table name', title: 'Sources table name',
-                             description: '<b>Name of the Sources table.</b></br>  ' +
-                                     '</br>  The table shall contain : </br> ' +
-                                     '- <b> PK </b> : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY). </br> ' +
-                                     '- <b> THE_GEOM </b> : the 3D geometry of the sources (POINT, MULTIPOINT, LINESTRING, MULTILINESTRING). According to CNOSSOS-EU, you need to set a height of 0.05 m for a road traffic emission.</br> ' +
-                                     '- <b> LWD63, LWD125, LWD250, LWD500, LWD1000, LWD2000, LWD4000, LWD8000 </b> : 8 columns giving the day emission sound level for each octave band (FLOAT). </br> ' +
-                                     '- <b> LWE* </b> : 8 columns giving the evening emission sound level for each octave band (FLOAT).</br> ' +
-                                     '- <b> LWN* </b> : 8 columns giving the night emission sound level for each octave band (FLOAT).</br> ' +
-                                     '</br> </br> <b> This table can be generated from the WPS Block "Road_Emission_From_DEN". </b>',
-                             type       : String.class],
+        roadsTableName: [name                                                                           : 'Roads table name', title: 'Roads table name', description: "<b>Name of the Roads table.</b>  </br>  " +
+                "<br>  The table shall contain : </br>" +
+                "- <b> PK </b> : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY)<br/>" +
+                "- <b> TV_D </b> : Hourly average light and heavy vehicle count (6-18h) (DOUBLE)<br/>" +
+                "- <b>TV_E </b> :  Hourly average light and heavy vehicle count (18-22h) (DOUBLE)<br/>" +
+                "- <b> TV_N </b> :  Hourly average light and heavy vehicle count (22-6h) (DOUBLE)<br/>" +
+                "- <b> HV_D </b> :  Hourly average heavy vehicle count (6-18h) (DOUBLE)<br/>" +
+                "- <b> HV_E </b> :  Hourly average heavy vehicle count (18-22h) (DOUBLE)<br/>" +
+                "- <b> HV_N </b> :  Hourly average heavy vehicle count (22-6h) (DOUBLE)<br/>" +
+                "- <b> LV_SPD_D </b> :  Hourly average light vehicle speed (6-18h) (DOUBLE)<br/>" +
+                "- <b> LV_SPD_E </b> :  Hourly average light vehicle speed (18-22h) (DOUBLE)<br/>" +
+                "- <b> LV_SPD_N </b> :  Hourly average light vehicle speed (22-6h) (DOUBLE)<br/>" +
+                "- <b> HV_SPD_D </b> :  Hourly average heavy vehicle speed (6-18h) (DOUBLE)<br/>" +
+                "- <b> HV_SPD_E </b> :  Hourly average heavy vehicle speed (18-22h) (DOUBLE)<br/>" +
+                "- <b> HV_SPD_N </b> :  Hourly average heavy vehicle speed (22-6h) (DOUBLE)<br/>" +
+                "- <b> PVMT </b> :  CNOSSOS road pavement identifier (ex: NL05) (VARCHAR)" +
+                "</br> </br> <b> This table can be generated from the WPS Block 'Get_Table_from_OSM'. </b>.", type: String.class],
         tableReceivers    : [name       : 'Receivers table name', title: 'Receivers table name',
                              description: '<b>Name of the Receivers table.</b></br>  ' +
                                      '</br>  The table shall contain : </br> ' +
@@ -124,7 +131,13 @@ inputs = [
         confDiffHorizontal: [name       : 'Diffraction on horizontal edges', title: 'Diffraction on horizontal edges',
                              description: 'Compute or not the diffraction on horizontal edges.' +
                                      '</br> </br> <b> Default value : false </b>',
-                             min        : 0, max: 1, type: Boolean.class]]
+                             min        : 0, max: 1, type: Boolean.class],
+        exportReceiverRays: [name       : 'Export Rays for one receiver', title: 'Export Rays for one receiver',
+                             description: 'PK of the receiver for which you want to export the rays (INTEGER).' +
+                                     '</br> If the value is set to -1, no rays will be exported.' +
+                                     '</br> The export format is kml (compatible with google earth).' +
+                                     '</br> </br> <b> Default value : -1 </b>',
+                             min        : 0, max: 1, type: Integer.class]]
 
 outputs = [result: [name: 'Result output string', title: 'Result output string', description: 'This type of result does not allow the blocks to be linked together.', type: String.class]]
 
@@ -160,7 +173,7 @@ def exec(Connection connection, input) {
     connection = new ConnectionWrapper(connection)
 
     // output string, the information given back to the user
-    String resultString = null
+    String resultString
 
     // print to command window
     System.out.println('Start : Get Rayz')
@@ -179,7 +192,6 @@ def exec(Connection connection, input) {
     Set<Long> receivers = new HashSet<>()
     // All rays storage
     String pkName
-    int exportReceiverRays = -1
 
     // -------------------
     // Get every inputs
@@ -227,14 +239,18 @@ def exec(Connection connection, input) {
     }
     properties.setProperty("confDiffHorizontal", compute_horizontal_diffraction.toString())
 
+    int exportReceiverRays = -1
+    if (input['exportReceiverRays']) {
+        exportReceiverRays = Integer.valueOf(input['exportReceiverRays'])
+    }
 
-    String working_dir = input['workingDir']
+    String working_dir = input['exportPath']
 
     // --------------------------------------------
     // Initialize NoiseModelling propagation part
     // --------------------------------------------
 
-    String sources_table_name = input['tableSources']
+    String sources_table_name = input['roadsTableName']
     // do it case-insensitive
     sources_table_name = sources_table_name.toUpperCase()
     String fileName = "sources.geojson"
@@ -320,7 +336,7 @@ def exec(Connection connection, input) {
 
     // Do not propagate for low emission or far away sources
     // Maximum error in dB
-    pointNoiseMap.setMaximumError(0.0d)
+    //pointNoiseMap.setMaximumError(0.0d)
     // Init Map
     pointNoiseMap.initialize(connection, new EmptyProgressVisitor())
 
@@ -331,7 +347,6 @@ def exec(Connection connection, input) {
 
     TrafficRayzPropagationProcessDataFactory trafficRayzPropagationProcessDataFactory = new TrafficRayzPropagationProcessDataFactory()
     pointNoiseMap.setPropagationProcessDataFactory(trafficRayzPropagationProcessDataFactory)
-
 
     // --------------------------------------------
     // Set storage parameters
@@ -372,6 +387,9 @@ def exec(Connection connection, input) {
             }
         }
     }
+    System.println("Done - 100 % ")
+
+    //Thread.sleep(3000)
 
     storageFactory.closeWriteThread()
 
@@ -382,7 +400,7 @@ def exec(Connection connection, input) {
     srcFiles.add("NM.properties")
     fileWriter.close()
 
-    // Zip all NoiseModellong Get Rays files in folder
+    // Zip all NoiseModellong Get Rays files in folder and delete others
     FileOutputStream fos = new FileOutputStream(working_dir + "Rays.zip")
     ZipOutputStream zipOut = new ZipOutputStream(fos)
     for (String srcFile : srcFiles) {
@@ -398,6 +416,7 @@ def exec(Connection connection, input) {
         }
         fis.close()
         fileSuccessfullyDeleted = new File(working_dir + srcFile).delete()
+        System.println(srcFile + ' has been added to the zip file')
     }
     zipOut.close()
     fos.close()
@@ -441,11 +460,7 @@ class PropagationPathStorage extends ComputeRaysOut {
 
     @Override
     double[] computeAttenuation(PropagationProcessPathData pathData, long sourceId, double sourceLi, long receiverId, List<PropagationPath> propagationPath) {
-        /*if (receiverId==11 && sourceId == 42171){
-            receiverId == 11
-        }*/
         double[] attenuation = super.computeAttenuation(pathData, sourceId, sourceLi, receiverId, propagationPath)
-
         return attenuation
     }
 
@@ -512,7 +527,9 @@ class PropagationPathStorage extends ComputeRaysOut {
 
 }
 
-
+/**
+ * Export paths on disk
+ */
 @CompileStatic
 class PropagationPathStorageFactory implements PointNoiseMap.IComputeRaysOutFactory {
     ConcurrentLinkedDeque<PointToPointPaths> pathQueue = new ConcurrentLinkedDeque<>()
@@ -529,8 +546,6 @@ class PropagationPathStorageFactory implements PointNoiseMap.IComputeRaysOutFact
     }
 
     void openPathOutputFile(String path) {
-        //fileOutputStream =  new FileOutputStream(path)
-        //WriteThread writeThread = new WriteThread(pathQueue, waitForMorePaths, fileOutputStream)
         gzipOutputStream = new GZIPOutputStream(new FileOutputStream(path), GZIP_CACHE_SIZE)
         WriteThread writeThread = new WriteThread(pathQueue, waitForMorePaths, gzipOutputStream)
         new Thread(writeThread).start()
@@ -552,7 +567,7 @@ class PropagationPathStorageFactory implements PointNoiseMap.IComputeRaysOutFact
         geoJSONDocument.writeFooter()*/
         KMLDocument kmlDocument
         ZipOutputStream compressedDoc
-        System.println("Cellid" + inputData.cellId.toString())
+        System.println("Export domain : Cell number " + inputData.cellId.toString())
         compressedDoc = new ZipOutputStream(new FileOutputStream(path))
         compressedDoc.putNextEntry(new ZipEntry("doc.kml"))
         kmlDocument = new KMLDocument(compressedDoc)
@@ -568,7 +583,7 @@ class PropagationPathStorageFactory implements PointNoiseMap.IComputeRaysOutFact
 
     @Override
     IComputeRaysOut create(PropagationProcessData propagationProcessData, PropagationProcessPathData propagationProcessPathData) {
-        if (exportReceiverRays > 0) exportDomain(propagationProcessData, new File(this.workingDir, String.format("domain_%d.kmz", propagationProcessData.cellId)).absolutePath)
+        if (exportReceiverRays > 0) exportDomain(propagationProcessData, new File(this.workingDir, String.format("Domain_part_%d.kmz", propagationProcessData.cellId)).absolutePath)
         return new PropagationPathStorage(propagationProcessData, propagationProcessPathData, pathQueue)
     }
 
@@ -603,21 +618,18 @@ class PropagationPathStorageFactory implements PointNoiseMap.IComputeRaysOutFact
             KMLDocument kmlDocument
             ZipOutputStream compressedDoc
 
-            compressedDoc = new ZipOutputStream(new FileOutputStream(
-                    String.format(workingDir + "RaysFromRecv" + exportReceiverRays + ".kmz")))
-            compressedDoc.putNextEntry(new ZipEntry("doc.kml"))
-            kmlDocument = new KMLDocument(compressedDoc)
-            kmlDocument.writeHeader()
-            kmlDocument.setInputCRS("EPSG:2154")
-            kmlDocument.setOffset(new Coordinate(0, 0, 0))
-
-            /*PropagationProcessPathData genericMeteoData = new PropagationProcessPathData()
-            genericMeteoData.setHumidity(70)
-            genericMeteoData.setTemperature(10)
-            ComputeRaysOut out = new ComputeRaysOut(false, genericMeteoData)
-*/
+            if (exportReceiverRays > 0){
+                compressedDoc = new ZipOutputStream(new FileOutputStream(
+                        String.format(workingDir + "RaysFromRec_" + exportReceiverRays + ".kmz")))
+                compressedDoc.putNextEntry(new ZipEntry("doc.kml"))
+                kmlDocument = new KMLDocument(compressedDoc)
+                kmlDocument.writeHeader()
+                kmlDocument.setInputCRS("EPSG:2154")
+                kmlDocument.setOffset(new Coordinate(0, 0, 0))
+            }
             DataOutputStream dataOutputStream = new DataOutputStream(new BufferedOutputStream(gzipOutputStream))
-            while (waitForMorePaths.get()) {
+
+            while (waitForMorePaths.get() || !pathQueue.isEmpty()) {
                 while (!pathQueue.isEmpty()) {
                     PointToPointPaths paths = pathQueue.pop()
                     //long start = System.currentTimeMillis();
@@ -636,11 +648,14 @@ class PropagationPathStorageFactory implements PointNoiseMap.IComputeRaysOutFact
                 Thread.sleep(10)
             }
 
-            System.out.println("nRays : " + nRays)
+            System.out.println("The number of stored rays is  : " + nRays)
             dataOutputStream.flush()
             gzipOutputStream.close()
             //fileOutputStream.close()
-            kmlDocument.writeFooter()
+            if (exportReceiverRays > 0)   {
+                kmlDocument.writeFooter()
+                System.out.println("A kml file has been exported for receiver " + exportReceiverRays)
+            }
             compressedDoc.closeEntry()
             compressedDoc.close()
 
@@ -649,7 +664,9 @@ class PropagationPathStorageFactory implements PointNoiseMap.IComputeRaysOutFact
     }
 }
 
-
+/**
+ * Write Path in local table
+ */
 @CompileStatic
 class PointToPointPaths {
     ArrayList<PropagationPath> propagationPathList
@@ -681,7 +698,7 @@ class PointToPointPaths {
         out.writeDouble(li)
         out.writeInt(propagationPathList.size())
         for (PropagationPath propagationPath : propagationPathList) {
-            propagationPath.writeStream(out);
+            propagationPath.writeStream(out)
 
         }
     }
@@ -689,8 +706,21 @@ class PointToPointPaths {
 
 }
 
+
 /**
- * Read source database and compute the sound emission spectrum of roads sources*/
+ * TrafficRayzPropagationProcessDataFactory
+ */
+class TrafficRayzPropagationProcessDataFactory implements PointNoiseMap.PropagationProcessDataFactory {
+    @Override
+    PropagationProcessData create(FastObstructionTest freeFieldFinder) {
+        return new TrafficRayzPropagationProcessData(freeFieldFinder);
+    }
+}
+
+/**
+ * Read source database and compute the sound emission spectrum of roads sources
+ */
+@CompileStatic
 class TrafficRayzPropagationProcessData extends PropagationProcessData {
     // Lden values
     public List<double[]> wjSourcesDEN = new ArrayList<>()
@@ -710,7 +740,6 @@ class TrafficRayzPropagationProcessData extends PropagationProcessData {
         idSource++
 
         int pkSource = rs.getInt("PK")
-        //SourcesPk.put(pk, pkSource)
         double tvD = rs.getDouble("TV_D")
         double tvE = rs.getDouble("TV_E")
         double tvN = rs.getDouble("TV_N")
@@ -728,12 +757,7 @@ class TrafficRayzPropagationProcessData extends PropagationProcessData {
         double hvSpeedN = rs.getDouble("HV_SPD_N")
 
         // Annual Average Daily Flow (AADF) estimates
-        String pavement = rs.getString("PVMT");
-
-        int LDAY_START_HOUR = 6
-        int LDAY_STOP_HOUR = 18
-        int LEVENING_STOP_HOUR = 22
-        int[] nightHours = [22, 23, 0, 1, 2, 3, 4, 5]
+        String pavement = rs.getString("PVMT")
 
         // Compute day average level
         double[] ld = new double[PropagationProcessPathData.freq_lvl.size()];
@@ -751,7 +775,7 @@ class TrafficRayzPropagationProcessData extends PropagationProcessData {
         for (int freq : PropagationProcessPathData.freq_lvl) {
             RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedD, hvSpeedD, hvSpeedD, lvSpeedD,
                     lvSpeedD, Math.max(0, tvD - hvD), hvD, 0, 0, 0, freq, Temperature,
-                    pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type);
+                    pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type)
             ld[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
         }
 
@@ -761,7 +785,7 @@ class TrafficRayzPropagationProcessData extends PropagationProcessData {
         for (int freq : PropagationProcessPathData.freq_lvl) {
             RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedE, hvSpeedE, hvSpeedE, lvSpeedE,
                     lvSpeedE, Math.max(0, tvE - hvE), hvE, 0, 0, 0, freq, Temperature,
-                    pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type);
+                    pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type)
             le[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
         }
 
@@ -769,7 +793,7 @@ class TrafficRayzPropagationProcessData extends PropagationProcessData {
         for (int freq : PropagationProcessPathData.freq_lvl) {
             RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedN, hvSpeedN, hvSpeedN, lvSpeedN,
                     lvSpeedN, Math.max(0, tvN - hvN), hvN, 0, 0, 0, freq, Temperature,
-                    pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type);
+                    pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type)
             ln[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
         }
 
@@ -792,10 +816,3 @@ class TrafficRayzPropagationProcessData extends PropagationProcessData {
     }
 }
 
-
-class TrafficRayzPropagationProcessDataFactory implements PointNoiseMap.PropagationProcessDataFactory {
-    @Override
-    PropagationProcessData create(FastObstructionTest freeFieldFinder) {
-        return new TrafficRayzPropagationProcessData(freeFieldFinder);
-    }
-}

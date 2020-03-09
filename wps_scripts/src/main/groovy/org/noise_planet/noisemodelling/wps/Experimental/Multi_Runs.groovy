@@ -224,6 +224,7 @@ def exec(Connection connection, input) {
 
 
     PropagationProcessPathData genericMeteoData = new PropagationProcessPathData()
+
     int nSimu = multiRunsProcessData.setSensitivityTable(new File(workingDir + "MR_input.json"), prop, n_Simu)
 
     multiRunsProcessData.setRoadTable("SOURCES_MR", sql, prop)
@@ -326,7 +327,7 @@ def exec(Connection connection, input) {
                                     new ReceiverSimulationProcess(resultsInsertThread.getConcurrentLinkedQueue(),
                                             multiRunsProcessData, pointToPointPathsMultiRuns, nSimu)
 
-                            receiverSimulationProcess.setPop(pop.get(idReceiver))
+                            //receiverSimulationProcess.setPop(pop.get(idReceiver))
                             executorService.execute(receiverSimulationProcess)
                             pointToPointPathsMultiRuns = new ArrayList<>(pointToPointPathsMultiRuns.size())
                             count++
@@ -352,7 +353,7 @@ def exec(Connection connection, input) {
                         new ReceiverSimulationProcess(resultsInsertThread.getConcurrentLinkedQueue(),
                                 multiRunsProcessData, pointToPointPathsMultiRuns, nSimu)
 
-                receiverSimulationProcess.setPop(pop.get(idReceiver))
+                //receiverSimulationProcess.setPop(pop.get(idReceiver))
                 executorService.execute(receiverSimulationProcess)
                 System.out.println("End Propagation")
         }
@@ -394,9 +395,9 @@ def exec(Connection connection, input) {
     sql.execute("drop table if exists MultiRunsResults_geom;")
 
     if (hasPop) {
-        sql.execute("create table MultiRunsResults_geom  as select a.idRun, b.pk idReceiver, b.id_build,  b.pop, b.THE_GEOM, a.Lden63, a.Lden125, a.Lden250, a.Lden500, a.Lden1000, a.Lden2000, a.Lden4000, a.Lden8000 FROM RECEIVERS_MR b LEFT JOIN MultiRunsResults a ON a.IDRECEIVER = b." + prop.getProperty("pkReceivers") + ";")
+        sql.execute("create table MultiRunsResults_geom  as select a.idRun, b.pk idReceiver, b.id_build,  b.pop, b.THE_GEOM, a.Lden63, a.Lden125, a.Lden250, a.Lden500, a.Lden1000, a.Lden2000, a.Lden4000, a.Lden8000 FROM RECEIVERS_MR b LEFT JOIN MultiRunsResults a ON a.IDRECEIVER = b." + prop.getProperty('pkReceivers') + ";")
     } else {
-        sql.execute("create table MultiRunsResults_geom  as select a.idRun, b.pk idReceiver,  b.THE_GEOM, a.Lden63, a.Lden125, a.Lden250, a.Lden500, a.Lden1000, a.Lden2000, a.Lden4000, a.Lden8000 FROM RECEIVERS_MR b LEFT JOIN MultiRunsResults a ON a.IDRECEIVER = b.pk;")
+        sql.execute("create table MultiRunsResults_geom  as select a.idRun, b.pk idReceiver,  b.THE_GEOM, a.Lden63, a.Lden125, a.Lden250, a.Lden500, a.Lden1000, a.Lden2000, a.Lden4000, a.Lden8000 FROM RECEIVERS_MR b LEFT JOIN MultiRunsResults a ON a.IDRECEIVER = b."+ prop.getProperty('pkReceivers') +" ;")
 
     }
 
@@ -453,7 +454,8 @@ class ResultsInsertThread implements Runnable {
                 'Lden63, Lden125, Lden250, Lden500, Lden1000,Lden2000, Lden4000, Lden8000) ' +
                 'VALUES (?,?,?,?,?,?,?,?,?,?,?);'
         sql.withBatch(500, qry) { ps ->
-            while (doInsertResults.get()) {
+            System.println(ps)
+            while (doInsertResults.get() || !concurrentLinkedQueue.isEmpty() ) {
                 SimulationResult result = concurrentLinkedQueue.poll()
                 if (result != null) {
                     ps.addBatch(result.r as Integer, result.receiver as Integer, result.pop as Double,
@@ -843,6 +845,7 @@ class MultiRunsProcessData {
     ArrayList<Double> FlowMean_MajAxes = new ArrayList<Double>()
     ArrayList<Double> FlowMean_MedAxes = new ArrayList<Double>()
     ArrayList<Double> FlowMean_SmaAxes = new ArrayList<Double>()
+    ArrayList<Double> FlowMean_AllAxes = new ArrayList<Double>()
     ArrayList<Double> wallAlpha = new ArrayList<Double>()
     ArrayList<Double> meteoFav = new ArrayList<Double>()
     ArrayList<Double> WindDir = new ArrayList<Double>()
@@ -868,19 +871,19 @@ class MultiRunsProcessData {
 
     void initialise(int nSimu, Properties prop) {
         for (int r = 0; r < nSimu; ++r) {
-            Refl[r] = prop.getProperty("reflexion_order").toInteger()
-            if (prop.getProperty("computeHorizontal").toBoolean()) {
+            Refl[r] = prop.getProperty("confReflOrder").toInteger()
+            if (prop.getProperty("confDiffHorizontal").toBoolean()) {
                 Dif_hor[r] = 10
             } else {
                 Dif_hor[r] = 0
             }
-            if (prop.getProperty("computeVertical").toBoolean()) {
+            if (prop.getProperty("confDiffVertical").toBoolean()) {
                 Dif_ver[r] = 10
             } else {
                 Dif_ver[r] = 0
             }
-            DistProp[r] = prop.getProperty("maxSrcDistance").toDouble()
-            wallAlpha[r] = prop.getProperty("wallAlpha").toDouble()
+            DistProp[r] = prop.getProperty("confMaxSrcDist").toDouble()
+            wallAlpha[r] = prop.getProperty("paramWallAlpha").toDouble()
             TempMean[r] = 12.0d // todo pop.getpro
             HumMean[r] = 82.5d // todo pop.getpro
             SpeedMean[r] = 1.0d
@@ -888,6 +891,7 @@ class MultiRunsProcessData {
             FlowMean_MajAxes[r] = 1.0d
             FlowMean_MedAxes[r] = 1.0d
             FlowMean_SmaAxes[r] = 1.0d
+            FlowMean_AllAxes[r] = 1.0d
             HV[r] = 1.0d
             MV[r] = 5.0d
             WV[r] = 3.0d
@@ -1104,6 +1108,10 @@ class MultiRunsProcessData {
                         FlowMean[r] = FlowMean_SmaAxes[r]
                     }
 
+                    FlowMean[r] = FlowMean_AllAxes[r]
+
+
+
                     RSParametersCnossos srcParameters_d = new RSParametersCnossos(lv_d_speed * SpeedMean[r], mv_d_speed * SpeedMean[r], hv_d_speed * SpeedMean[r], wav_d_speed * SpeedMean[r], wbv_d_speed * SpeedMean[r],
                             vl_d_per_hour * FlowMean[r], ml_d_per_hour * FlowMean[r], pl_d_per_hour * FlowMean[r], wa_d_per_hour * FlowMean[r], wb_d_per_hour * FlowMean[r],
                             f, TempMean[r], RS, 0, 0, 250, 1)
@@ -1243,6 +1251,9 @@ class MultiRunsProcessData {
                         break
                     case 'FlowMean_SmaAxes':
                         FlowMean_SmaAxes[r] = mrInputs.get('FlowMean_SmaAxes').get(r).asDouble()
+                        break
+                    case 'FlowMean_AllAxes':
+                        FlowMean_AllAxes[r] = mrInputs.get('FlowMean_AllAxes').get(r).asDouble()
                         break
                     case 'HV':
                         HV[r] = mrInputs.get('HV').get(r).asDouble()

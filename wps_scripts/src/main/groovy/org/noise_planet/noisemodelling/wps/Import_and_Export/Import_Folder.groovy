@@ -89,7 +89,7 @@ def exec(Connection connection, input) {
     def dir = new File(folder)
 
     // name of the imported tables
-    String outputTableName_full = null
+    String outputTableName_full = ""
 
     // Create a connection statement to interact with the database in SQL
     Statement stmt = connection.createStatement()
@@ -162,6 +162,18 @@ def exec(Connection connection, input) {
                     break
             }
 
+
+            int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, outputTableName)
+            String pkName = ''
+            if (pkIndex > 0) {
+                pkName = JDBCUtilities.getFieldName(connection.getMetaData(), outputTableName, pkIndex)
+            }
+
+            if (pkName == "PK2"){
+                stmt.execute("ALTER TABLE " + outputTableName + " DROP PK2;")
+                stmt.execute("ALTER TABLE " + outputTableName + " ALTER COLUMN PK INT NOT NULL;")
+                stmt.execute("ALTER TABLE " + outputTableName + " ADD PRIMARY KEY (PK);  ")
+            }
 
             // Read Geometry Index and type of the table
             List<String> spatialFieldNames = SFSUtilities.getGeometryFields(connection, TableLocation.parse(outputTableName, JDBCUtilities.isH2DataBase(connection.getMetaData())))

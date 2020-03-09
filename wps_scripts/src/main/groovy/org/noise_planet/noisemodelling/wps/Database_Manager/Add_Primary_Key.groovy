@@ -74,9 +74,6 @@ def exec(Connection connection, input) {
     // Create a connection statement to interact with the database in SQL
     Statement stmt = connection.createStatement()
 
-    // get the table location in the database
-    TableLocation tableLocation = TableLocation.parse(table)
-
     // get the index of the primary key column (if exists > 0)
     int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, table)
 
