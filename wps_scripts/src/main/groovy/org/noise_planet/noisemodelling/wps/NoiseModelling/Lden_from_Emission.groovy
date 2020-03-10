@@ -343,6 +343,7 @@ def exec(Connection connection, input) {
                 // apply A ponderation
                 //soundLevel = DBToDBA(soundLevel)
                 // add Leq value to the pre-existing sound level on this receiver
+
                 soundLevel = ComputeRays.sumDbArray(sumArraySR(soundLevel, SourceSpectrum.get(idSource)), soundLevels.get(idReceiver))
                 soundLevels.replace(idReceiver, soundLevel)
             } else {
@@ -381,7 +382,7 @@ def exec(Connection connection, input) {
     // Drop table LDEN_GEOM if exists
     sql.execute("drop table if exists LDEN_GEOM;")
     // Associate Geometry column to the table LDEN
-    sql.execute("create table LDEN_GEOM  as select a.IDRECEIVER, b.THE_GEOM, a.Hz63, a.Hz125, a.Hz250, a.Hz500, a.Hz1000, a.Hz2000, a.Hz4000, a.Hz8000 FROM "+receivers_table_name+" b LEFT JOIN LDEN a ON a.IDRECEIVER = b.PK;")
+    sql.execute("create table LDEN_GEOM  as select a.IDRECEIVER, b.*, a.Hz63, a.Hz125, a.Hz250, a.Hz500, a.Hz1000, a.Hz2000, a.Hz4000, a.Hz8000 FROM "+receivers_table_name+" b LEFT JOIN LDEN a ON a.IDRECEIVER = b.PK;")
 
     // Drop temporary tables
     sql.execute("drop table if exists LDEN;")
@@ -428,7 +429,7 @@ static double[] sumArraySR(double[] array1, double[] array2) {
             sum[i] = (array1[i]) + (array2[i]);
         }
 
-        return sum;
+        return sum
     }
 }
 

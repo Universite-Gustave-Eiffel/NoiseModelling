@@ -260,14 +260,14 @@ static double[][] computeLw(Long pk, Geometry geom, SpatialResultSet rs) throws 
     double Temperature = 20.0d
     double Ts_stud = 0
     double Pm_stud = 0
-    double Junc_dist = 0
+    double Junc_dist = 300
     int Junc_type = 0
 
     // Day
     int idFreq = 0
     for (int freq : PropagationProcessPathData.freq_lvl) {
         RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedD, hvSpeedD, hvSpeedD, lvSpeedD,
-                lvSpeedD, Math.max(0, tvD - hvD), hvD, 0, 0, 0, freq, Temperature,
+                lvSpeedD, Math.max(0, tvD - hvD), 0, hvD, 0, 0, freq, Temperature,
                 pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type)
         ld[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
     }
@@ -276,8 +276,8 @@ static double[][] computeLw(Long pk, Geometry geom, SpatialResultSet rs) throws 
     idFreq = 0
     for (int freq : PropagationProcessPathData.freq_lvl) {
         RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedE, hvSpeedE, hvSpeedE, lvSpeedE,
-                lvSpeedE, Math.max(0, tvE - hvE), hvE, 0, 0, 0, freq, Temperature,
-                pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type);
+                lvSpeedE, Math.max(0, tvE - hvE), 0, hvE, 0, 0, freq, Temperature,
+                pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type)
         le[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
     }
 
@@ -285,8 +285,8 @@ static double[][] computeLw(Long pk, Geometry geom, SpatialResultSet rs) throws 
     idFreq = 0
     for (int freq : PropagationProcessPathData.freq_lvl) {
         RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedN, hvSpeedN, hvSpeedN, lvSpeedN,
-                lvSpeedN, Math.max(0, tvN - hvN), hvN, 0, 0, 0, freq, Temperature,
-                pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type);
+                lvSpeedN, Math.max(0, tvN - hvN),0 , hvN, 0, 0, freq, Temperature,
+                pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type)
         ln[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
     }
 

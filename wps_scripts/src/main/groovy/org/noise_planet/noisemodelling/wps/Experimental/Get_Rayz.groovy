@@ -244,6 +244,10 @@ def exec(Connection connection, input) {
         exportReceiverRays = Integer.valueOf(input['exportReceiverRays'])
     }
 
+    // Default values in NoiseModelling
+    properties.setProperty("paramTemp", '15')
+    properties.setProperty("paramHum", '70')
+
     String working_dir = input['exportPath']
 
     // --------------------------------------------
