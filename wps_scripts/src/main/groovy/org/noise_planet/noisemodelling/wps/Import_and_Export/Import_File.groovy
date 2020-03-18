@@ -93,8 +93,6 @@ def exec(Connection connection, input) {
 
     // Get name of the table
     String tableName = input["tableName"] as String
-    // do it case-insensitive
-    tableName = tableName.toUpperCase()
 
     // By default the name of the output table is the same than the file name
     if (!tableName) {
@@ -107,6 +105,9 @@ def exec(Connection connection, input) {
         // the tableName will be called as the fileName
         tableName = fileName
     }
+
+    // do it case-insensitive
+    tableName = tableName.toUpperCase()
 
     // Create a connection statement to interact with the database in SQL
     Statement stmt = connection.createStatement()

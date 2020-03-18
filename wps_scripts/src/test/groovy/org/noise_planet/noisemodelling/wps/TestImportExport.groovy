@@ -62,7 +62,7 @@ class TestImportExport extends JdbcTestCase {
                  "importExt" : "shp"])
 
 
-        assertEquals("The table(s) ROADS2 & ROADS & RECEIVERS & GROUND_TYPE & BUILDINGS & null has/have been uploaded to database !", res)
+        assertEquals("The table(s) ROADS2 & ROADS & RECEIVERS & GROUND_TYPE & BUILDINGS &  has/have been uploaded to database !", res)
     }
 
     void testExportFile() {
