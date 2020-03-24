@@ -71,7 +71,7 @@ class TestNoiseModelling extends JdbcTestCase {
                  "tableReceivers": "RECEIVERS"])
 
 
-        assertEquals("The table RECEIVERS successfully exported !", res)
+        assertEquals("Calculation Done ! The table LDEN_GEOM has been created.", res)
     }
 
 }

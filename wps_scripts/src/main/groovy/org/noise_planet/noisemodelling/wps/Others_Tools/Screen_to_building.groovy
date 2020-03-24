@@ -8,6 +8,8 @@ import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.utilities.JDBCUtilities
+import org.h2gis.utilities.SFSUtilities
 
 import java.sql.Connection
 
@@ -41,7 +43,7 @@ def run(input) {
     // Open connection
     openGeoserverDataStoreConnection(dbName).withCloseable {
         Connection connection ->
-            return [result: exec(connection, input)]
+            return exec(connection, input)
     }
 }
 
@@ -59,18 +61,26 @@ def exec(Connection connection, input) {
 
     Sql sql = new Sql(connection)
 
+    double distance_truncate_screens = 0.5
+
     // Check for intersections between walls
-    int intersectingWalls = sql.firstRow("select count(*) interswalls from "+screen_table_name+" E1, "+screen_table_name+" E2 where E1.pk < E2.pk AND ST_Distance(E1.the_geom, E2.the_geom) < 0.2;")[0]
+    int intersectingWalls = sql.firstRow("select count(*) interswalls from "+screen_table_name+" E1, "+screen_table_name+" E2 where E1.pk < E2.pk AND ST_Distance(E1.the_geom, E2.the_geom) < "+distance_truncate_screens+";")[0] as Integer
     if(intersectingWalls > 0) {
-        return [tableNameCreated: String.format(Locale.ROOT, "%d screens are too close to each other (< 0.2m), please modify or delete them before including them in the simulation.", intersectingWalls)]
+        sql.execute("CREATE SPATIAL INDEX IF NOT EXISTS SCREEN_INDEX ON "+screen_table_name+"(the_geom)")
+        sql.execute("drop table if exists tmp_relation_screen_screen")
+        sql.execute("create table tmp_relation_screen_screen as select s1.pk as PK_SCREEN, S2.PK as PK2_SCREEN FROM "+screen_table_name+" S1, "+screen_table_name+" S2 WHERE S1.PK < S2.PK AND S1.THE_GEOM && S2.THE_GEOM AND ST_DISTANCE(S1.THE_GEOM, S2.THE_GEOM) <= "+distance_truncate_screens)
+        sql.execute("drop table if exists tmp_screen_truncated")
+        sql.execute("create table tmp_screen_truncated as select PK_SCREEN, ST_DIFFERENCE(s1.the_geom,  ST_BUFFER(ST_ACCUM(s2.the_geom), "+distance_truncate_screens+")) the_geom,s1.height from tmp_relation_screen_screen r, "+screen_table_name+" s1, "+screen_table_name+" s2 WHERE PK_SCREEN = S1.pk AND PK2_SCREEN = S2.PK  GROUP BY pk_screen, s1.height;")
+        sql.execute("DROP TABLE IF EXISTS TMP_NEW_SCREENS;")
+        sql.execute("create table TMP_NEW_SCREENS as select s.pk, s.the_geom, s.height from  "+screen_table_name+" s where pk not in (select pk_screen from tmp_screen_truncated) UNION ALL select pk_screen, the_geom, height from tmp_screen_truncated;");
+        screen_table_name = "TMP_NEW_SCREENS"
     }
 
     if (input['buildingTableName']) {
 
         // Remove parts of the screen too close from buildings
-        double distance_truncate_screens = 2.0
         // Find screen intersecting buildings
-        sql.execute("CREATE SPATIAL INDEX SCREEN_INDEX ON "+screen_table_name+"(the_geom)")
+        sql.execute("CREATE SPATIAL INDEX IF NOT EXISTS SCREEN_INDEX ON "+screen_table_name+"(the_geom)")
         sql.execute("drop table if exists tmp_relation_screen_building;")
         sql.execute("create table tmp_relation_screen_building as select b.pk as PK_building, s.pk as pk_screen" +
                 " from "+building_table_name+" b, "+screen_table_name+" s where b.the_geom && s.the_geom and" +
@@ -78,7 +88,7 @@ def exec(Connection connection, input) {
         // For intersecting screens, remove parts closer than distance_truncate_screens
         sql.execute("drop table if exists tmp_screen_truncated;")
         sql.execute("create table tmp_screen_truncated as select pk_screen, ST_DIFFERENCE(s.the_geom, " +
-                "ST_BUFFER(ST_ACCUM(b.the_geom), 2)) the_geom,s.height from tmp_relation_screen_building r, " +
+                "ST_BUFFER(ST_ACCUM(b.the_geom), "+distance_truncate_screens+")) the_geom,s.height from tmp_relation_screen_building r, " +
                 building_table_name+" b, "+screen_table_name+" s WHERE PK_building = b.pk AND pk_screen = s.pk " +
                 "GROUP BY pk_screen, s.height;")
 
