@@ -19,6 +19,8 @@
 
 
 package org.noise_planet.noisemodelling.wps
+
+import org.h2gis.functions.io.shp.SHPRead
 import org.junit.Test
 import org.noise_planet.noisemodelling.wps.Database_Manager.Display_Database
 import org.noise_planet.noisemodelling.wps.Experimental.Multi_Runs
@@ -27,6 +29,12 @@ class TestMultRuns extends JdbcTestCase  {
 
     @Test
     void testMultiRun() {
+
+        SHPRead.readShape(connection, TestMultRuns.class.getResource("buildings.geojson").getPath())
+
+        SHPRead.readShape(connection, TestMultRuns.class.getResource("receivers.geojson").getPath())
+
+        SHPRead.readShape(connection, TestMultRuns.class.getResource("sources.geojson").getPath())
 
         Object res = new Display_Database().exec(connection, [])
         assertEquals("", res)

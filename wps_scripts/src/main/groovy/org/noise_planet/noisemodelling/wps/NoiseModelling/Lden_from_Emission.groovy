@@ -332,6 +332,9 @@ def exec(Connection connection, input) {
         //get id from receiver and sound sources
         int idReceiver = (Integer) allLevels.get(i).receiverId
         int idSource = (Integer) allLevels.get(i).sourceId
+        System.println(idReceiver)
+        System.println(idSource)
+        System.println(soundLevel)
 
         // if any attenuation matrix value is set to NaN
         if (!Double.isNaN(soundLevel[0]) && !Double.isNaN(soundLevel[1])
@@ -419,14 +422,14 @@ static double[] DBToDBA(double[] db) {
  * @param array2
  * @return sum of to array
  */
-static double[] sumArraySR(double[] array1, double[] array2) {
+double[] sumArraySR(double[] array1, double[] array2) {
     if (array1.length != array2.length) {
-        throw new IllegalArgumentException("Not same size array");
+        throw new IllegalArgumentException("Not same size array")
     } else {
-        double[] sum = new double[array1.length];
+        double[] sum = new double[array1.length]
 
         for (int i = 0; i < array1.length; ++i) {
-            sum[i] = (array1[i]) + (array2[i]);
+            sum[i] = (array1[i]) + (array2[i])
         }
 
         return sum
