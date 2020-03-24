@@ -206,12 +206,12 @@ def exec(Connection connection, input) {
      sql.execute("DROP TABLE ROADS2 if exists;")
      SHPRead.readShape(connection, "D:\\aumond\\Documents\\CENSE\\LorientMapNoise\\data\\RoadsICA2.shp", "ROADS2")
      sql.execute("DROP TABLE ROADS if exists;")
-     sql.execute('CREATE TABLE ROADS AS SELECT CAST( OSM_ID AS INTEGER ) OSM_ID , THE_GEOM, TMJA_D,TMJA_E,TMJA_N,\n' +
+     sql.execute('CREATE TABLE ROADS AS SELECT CAST( ID_WAY AS INTEGER ) ID_WAY , THE_GEOM, TMJA_D,TMJA_E,TMJA_N,\n' +
              'PL_D,PL_E,PL_N,\n' +
              'LV_SPEE,PV_SPEE, PVMT FROM ROADS2;')
 
-     sql.execute('ALTER TABLE ROADS ALTER COLUMN OSM_ID SET NOT NULL;')
-     sql.execute('ALTER TABLE ROADS ADD PRIMARY KEY (OSM_ID);')
+     sql.execute('ALTER TABLE ROADS ALTER COLUMN ID_WAY SET NOT NULL;')
+     sql.execute('ALTER TABLE ROADS ADD PRIMARY KEY (ID_WAY);')
      sql.execute("CREATE SPATIAL INDEX ON ROADS(THE_GEOM)")
 
      System.out.println("Road file loaded")
@@ -477,9 +477,9 @@ class ResultsInsertThread implements Runnable {
 }
 
 class ReceiverSimulationProcess implements Runnable {
-    ConcurrentLinkedQueue<SimulationResult> concurrentLinkedQueue;
-    MultiRunsProcessData multiRunsProcessData;
-    List<PointToPointPathsMultiRuns> pointToPointPathsMultiRuns;
+    ConcurrentLinkedQueue<SimulationResult> concurrentLinkedQueue
+    MultiRunsProcessData multiRunsProcessData
+    List<PointToPointPathsMultiRuns> pointToPointPathsMultiRuns
 
     SimulationResult simulationResult
     double pop
@@ -507,6 +507,7 @@ class ReceiverSimulationProcess implements Runnable {
         }
 
         int idReceiver = -1
+
         for (PointToPointPathsMultiRuns paths : pointToPointPathsMultiRuns) {
 
             idReceiver = (Integer) paths.receiverId
@@ -522,6 +523,7 @@ class ReceiverSimulationProcess implements Runnable {
 
             for (int r = 0; r < nSimu; r++) {
                 propagationPaths.clear()
+
 
                 for (int pP = 0; pP < paths.propagationPathList.size(); pP++) {
 
@@ -571,6 +573,7 @@ class ReceiverSimulationProcess implements Runnable {
             }
 
         }
+
         if (idReceiver != -1) {
             for (int r = 0; r < nSimu; r++) {
                 this.simulationResult = new SimulationResult(r, idReceiver, pop, simuSpectrum.get(r))
@@ -578,6 +581,7 @@ class ReceiverSimulationProcess implements Runnable {
             }
 
         }
+
     }
 }
 
@@ -645,44 +649,44 @@ class MRComputeRaysOut extends ComputeRaysOut {
     static double[] MRcomputeAttenuation(PropagationProcessPathData pathData, long sourceId, double sourceLi, long receiverId, List<MRPropagationPath> propagationPath) {
         if (pathData != null) {
             // Compute receiver/source attenuation
-            MREvaluateAttenuationCnossos evaluateAttenuationCnossos = new MREvaluateAttenuationCnossos();
-            double[] aGlobalMeteo = null;
+            MREvaluateAttenuationCnossos evaluateAttenuationCnossos = new MREvaluateAttenuationCnossos()
+            double[] aGlobalMeteo = null
             for (MRPropagationPath propath : propagationPath) {
-                List<PointPath> ptList = propath.getPointList();
-                int roseindex = getRoseIndex(ptList.get(0).coordinate, ptList.get(ptList.size() - 1).coordinate);
+                List<PointPath> ptList = propath.getPointList()
+                int roseindex = getRoseIndex(ptList.get(0).coordinate, ptList.get(ptList.size() - 1).coordinate)
 
                 // Compute homogeneous conditions attenuation
-                propath.setFavorable(false);
-                evaluateAttenuationCnossos.evaluate(propath, pathData);
-                double[] aGlobalMeteoHom = evaluateAttenuationCnossos.getaGlobal();
+                propath.setFavorable(false)
+                evaluateAttenuationCnossos.evaluate(propath, pathData)
+                double[] aGlobalMeteoHom = evaluateAttenuationCnossos.getaGlobal()
 
                 // Compute favorable conditions attenuation
-                propath.setFavorable(true);
-                evaluateAttenuationCnossos.evaluate(propath, pathData);
-                double[] aGlobalMeteoFav = evaluateAttenuationCnossos.getaGlobal();
+                propath.setFavorable(true)
+                evaluateAttenuationCnossos.evaluate(propath, pathData)
+                double[] aGlobalMeteoFav = evaluateAttenuationCnossos.getaGlobal()
 
                 // Compute attenuation under the wind conditions using the ray direction
-                double[] aGlobalMeteoRay = ComputeRays.sumArrayWithPonderation(aGlobalMeteoFav, aGlobalMeteoHom, pathData.getWindRose()[roseindex]);
+                double[] aGlobalMeteoRay = ComputeRays.sumArrayWithPonderation(aGlobalMeteoFav, aGlobalMeteoHom, pathData.getWindRose()[roseindex])
 
                 if (aGlobalMeteo != null) {
-                    aGlobalMeteo = ComputeRays.sumDbArray(aGlobalMeteoRay, aGlobalMeteo);
+                    aGlobalMeteo = ComputeRays.sumDbArray(aGlobalMeteoRay, aGlobalMeteo)
                 } else {
-                    aGlobalMeteo = aGlobalMeteoRay;
+                    aGlobalMeteo = aGlobalMeteoRay
                 }
             }
             if (aGlobalMeteo != null) {
                 // For line source, take account of li coefficient
                 if (sourceLi > 1.0) {
                     for (int i = 0; i < aGlobalMeteo.length; i++) {
-                        aGlobalMeteo[i] = ComputeRays.wToDba(ComputeRays.dbaToW(aGlobalMeteo[i]) * sourceLi)
+                        aGlobalMeteo[i] = ComputeRays.wToDba(ComputeRays.dbaToW(aGlobalMeteo[i]) *  sourceLi)
                     }
                 }
-                return aGlobalMeteo;
+                return aGlobalMeteo
             } else {
-                return new double[0];
+                return new double[0]
             }
         } else {
-            return new double[0];
+            return new double[0]
         }
     }
 }
@@ -831,6 +835,8 @@ class MultiRunsProcessData {
     ArrayList<Integer> Dif_hor = new ArrayList<Integer>()
     ArrayList<Integer> Dif_ver = new ArrayList<Integer>()
     ArrayList<Double> DistProp = new ArrayList<Double>()
+    ArrayList<Double> DistRefl = new ArrayList<Double>()
+
     ArrayList<Integer> Veg = new ArrayList<Integer>()
     ArrayList<Integer> TMJA = new ArrayList<Integer>()
     ArrayList<Double> HV = new ArrayList<Double>()
@@ -854,7 +860,7 @@ class MultiRunsProcessData {
     ArrayList<Integer> RoadJunction = new ArrayList<Integer>()
 
     Map<Integer, Integer> pk = new HashMap<>()
-    Map<Integer, Long> OSM_ID = new HashMap<>()
+    Map<Integer, Long> ID_WAY = new HashMap<>()
     Map<Integer, Geometry> the_geom = new HashMap<>()
 
     Map<Integer, Double> TV_D = new HashMap<>()
@@ -885,6 +891,8 @@ class MultiRunsProcessData {
                 Dif_ver[r] = 0
             }
             DistProp[r] = prop.getProperty("confMaxSrcDist").toDouble()
+            DistRefl[r] = prop.getProperty("confMaxReflDist").toDouble()
+
             wallAlpha[r] = prop.getProperty("paramWallAlpha").toDouble()
             TempMean[r] = prop.getProperty("paramTemp").toDouble()
             HumMean[r] = prop.getProperty("paramHum").toDouble()
@@ -894,8 +902,8 @@ class MultiRunsProcessData {
             FlowMean_MedAxes[r] = 1.0d
             FlowMean_SmaAxes[r] = 1.0d
             FlowMean_AllAxes[r] = 1.0d
-            HV[r] = 1.0d //1.0d
-            MV[r] = 0.0d//5.0d
+            HV[r] = 1.0d
+            MV[r] = 0.0d //5.0d
             WV[r] = 0.0d//3.0d
             meteoFav[r] = 0.0d// 1.0d
             WindDir[r] = 0.0d
@@ -1086,24 +1094,26 @@ class MultiRunsProcessData {
                     "SpeedMean",...
                     "FlowMean"};*/
                     def ml_d_per_hour = (double) TV_D.get(id) * MV[r] / 100
-                    def pl_d_per_hour = (double) HV_D.get(id) * HV[r]
+                    def pl_d_per_hour = (double) HV_D.get(id)* HV[r]//(0.01*HV_D.get(id)*TV_D.get(id)) * HV[r]
                     def wa_d_per_hour = (double) TV_D.get(id) * WV[r] / 100
                     def wb_d_per_hour = (double) 0.0
                     def vl_d_per_hour = (double) TV_D.get(id) - pl_d_per_hour - ml_d_per_hour - wa_d_per_hour
 
                     def ml_e_per_hour = (double) TV_E.get(id) * MV[r] / 100
-                    def pl_e_per_hour = (double) HV_E.get(id)
+                    def pl_e_per_hour = (double) HV_E.get(id)* HV[r]//(0.01*HV_E.get(id)*TV_E.get(id)) * HV[r]
                     def wa_e_per_hour = (double) TV_E.get(id) * WV[r] / 100
                     def wb_e_per_hour = (double) 0.0
                     def vl_e_per_hour = (double) TV_E.get(id) - pl_e_per_hour - ml_e_per_hour - wa_e_per_hour
 
                     def ml_n_per_hour = (double) TV_N.get(id) * MV[r] / 100
-                    def pl_n_per_hour = (double) HV_N.get(id)
+                    def pl_n_per_hour = (double) HV_N.get(id)* HV[r]//(0.01*HV_N.get(id)*TV_N.get(id)) * HV[r]
                     def wa_n_per_hour = (double) TV_N.get(id) * WV[r] / 100
                     def wb_n_per_hour = (double) 0.0
                     def vl_n_per_hour = (double) TV_N.get(id) - pl_n_per_hour - ml_n_per_hour - wa_n_per_hour
 
                     def total_flow_per_hour = (double) TV_D.get(id)
+
+
 
                     if (total_flow_per_hour > 1000) {
                         FlowMean[r] = FlowMean_MajAxes[r]
@@ -1115,8 +1125,8 @@ class MultiRunsProcessData {
                         FlowMean[r] = FlowMean_SmaAxes[r]
                     }
 
-                    FlowMean[r] = FlowMean_AllAxes[r]
 
+                    FlowMean[r] = FlowMean_AllAxes[r]
 
 
                     RSParametersCnossos srcParameters_d = new RSParametersCnossos(lv_d_speed * SpeedMean[r], mv_d_speed * SpeedMean[r], hv_d_speed * SpeedMean[r], wav_d_speed * SpeedMean[r], wbv_d_speed * SpeedMean[r],
@@ -1160,6 +1170,7 @@ class MultiRunsProcessData {
             wjSourcesE.put(id, sl_res_e)
             wjSourcesN.put(id, sl_res_n)
             wjSourcesDEN.put(id, sl_res_den)
+
         }
     }
 
@@ -1179,8 +1190,8 @@ class MultiRunsProcessData {
         //genericMeteoData.setHumidity(HumMean[r])
         //genericMeteoData.setTemperature(TempMean[r])
 
-        /*double[] favrose = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        //double[] favrose_6_18 = [0.41, 0.39, 0.38, 0.37, 0.36, 0.35, 0.34, 0.34, 0.34, 0.38, 0.44, 0.47, 0.48, 0.49, 0.49, 0.47, 0.45, 0.43];
+        double[] favrose = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+         /*//double[] favrose_6_18 = [0.41, 0.39, 0.38, 0.37, 0.36, 0.35, 0.34, 0.34, 0.34, 0.38, 0.44, 0.47, 0.48, 0.49, 0.49, 0.47, 0.45, 0.43];
         //double[] favrose_18_22 = [0.53, 0.45, 0.41, 0.39, 0.37, 0.36, 0.36, 0.38, 0.41, 0.53, 0.62, 0.65, 0.67, 0.67, 0.68, 0.69, 0.68, 0.64];
         //double[] favrose_22_6 = [0.64, 0.57, 0.51, 0.48, 0.46, 0.43, 0.41, 0.38, 0.36, 0.38, 0.44, 0.49, 0.52, 0.55, 0.58, 0.61, 0.64, 0.67];
         if (DEN == "day") favrose = [0.41, 0.39, 0.38, 0.36, 0.35, 0.34, 0.34, 0.34, 0.38, 0.44, 0.47, 0.48, 0.49, 0.47, 0.45, 0.43]
@@ -1195,8 +1206,8 @@ class MultiRunsProcessData {
 
         for (int i = 0; i < favrose.length; i++) {
             favrose[i] = favrose.collect { it * meteoFav[r] }.get(i) as double
-        }
-        genericMeteoData.setWindRose(favrose)*/
+        }*/
+        genericMeteoData.setWindRose(favrose)
         return genericMeteoData
     }
 
@@ -1236,6 +1247,9 @@ class MultiRunsProcessData {
                         break
                     case 'DistProp':
                         DistProp[r] = mrInputs.get('DistProp').get(r).asDouble()
+                        break
+                    case 'DistRefl':
+                        DistRefl[r] = mrInputs.get('DistRefl').get(r).asDouble()
                         break
                     case 'wallAlpha':
                         wallAlpha[r] = mrInputs.get('wallAlpha').get(r).asDouble()
@@ -1339,7 +1353,7 @@ class MultiRunsProcessData {
         //////////////////////
 
 
-        sql.eachRow('SELECT ' + prop.getProperty("pkSources") + ', CAST(OSM_ID AS INTEGER) OSM_ID, the_geom , ' +
+        sql.eachRow('SELECT ' + prop.getProperty("pkSources") + ', CAST(ID_WAY AS INTEGER) ID_WAY, the_geom , ' +
                 'TV_D,TV_E,TV_N,' +
                 'HV_D,HV_E,HV_N, ' +
                 'LV_SPD_D, LV_SPD_E, LV_SPD_N, ' +
@@ -1347,7 +1361,7 @@ class MultiRunsProcessData {
                 'PVMT FROM ' + tablename + ';') { fields ->
 
             pk.put((int) fields[prop.getProperty("pkSources")], (int) fields[prop.getProperty("pkSources")])
-            OSM_ID.put((int) fields[prop.getProperty("pkSources")], (long) fields["OSM_ID"])
+            ID_WAY.put((int) fields[prop.getProperty("pkSources")], (long) fields["ID_WAY"])
             the_geom.put((int) fields[prop.getProperty("pkSources")], (Geometry) fields["the_geom"])
             TV_D.put((int) fields[prop.getProperty("pkSources")], (double) fields["TV_D"])
             TV_E.put((int) fields[prop.getProperty("pkSources")], (double) fields["TV_E"])

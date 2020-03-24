@@ -748,9 +748,10 @@ class TrafficRayzPropagationProcessData extends PropagationProcessData {
         double tvE = rs.getDouble("TV_E")
         double tvN = rs.getDouble("TV_N")
 
-        double hvD = rs.getDouble("HV_D")
-        double hvE = rs.getDouble("HV_E")
-        double hvN = rs.getDouble("HV_N")
+        // todo remove this...
+        double hvD = 0.01*rs.getDouble("HV_D")*rs.getDouble("TV_D")
+        double hvE = 0.01*rs.getDouble("HV_E")*rs.getDouble("TV_E")
+        double hvN = 0.01*rs.getDouble("HV_N")*rs.getDouble("TV_N")
 
         double lvSpeedD = rs.getDouble("LV_SPD_D")
         double lvSpeedE = rs.getDouble("LV_SPD_E")
