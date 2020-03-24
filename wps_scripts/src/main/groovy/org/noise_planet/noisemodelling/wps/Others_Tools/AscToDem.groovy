@@ -49,7 +49,7 @@ def run(input) {
     // Open connection
     openGeoserverDataStoreConnection(dbName).withCloseable {
         Connection connection ->
-            return [result : exec(connection, input)]
+            return exec(connection, input)
     }
 
 }
