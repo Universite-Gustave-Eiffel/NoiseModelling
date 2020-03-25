@@ -20,34 +20,65 @@
 
 package org.noise_planet.noisemodelling.wps
 
-import org.h2gis.functions.io.shp.SHPRead
+import org.h2gis.functions.io.geojson.GeoJsonRead
+
 import org.junit.Test
+import org.noise_planet.noisemodelling.wps.Database_Manager.Add_Primary_Key
 import org.noise_planet.noisemodelling.wps.Database_Manager.Display_Database
+import org.noise_planet.noisemodelling.wps.Experimental.Get_Rayz
 import org.noise_planet.noisemodelling.wps.Experimental.Multi_Runs
+import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
+import org.noise_planet.noisemodelling.wps.NoiseModelling.Lden_from_Emission
+import org.noise_planet.noisemodelling.wps.NoiseModelling.Road_Emission_From_DEN
 
 class TestMultRuns extends JdbcTestCase  {
 
     @Test
     void testMultiRun() {
 
-        SHPRead.readShape(connection, TestMultRuns.class.getResource("multirun/buildings.geojson").getPath())
+        GeoJsonRead.readGeoJson(connection, TestMultRuns.class.getResource("multirun/buildings.geojson").getPath())
+        GeoJsonRead.readGeoJson(connection, TestMultRuns.class.getResource("multirun/receivers.geojson").getPath())
+        GeoJsonRead.readGeoJson(connection, TestMultRuns.class.getResource("multirun/sources.geojson").getPath())
 
-        SHPRead.readShape(connection, TestMultRuns.class.getResource("receivers.geojson").getPath())
+        new Add_Primary_Key().exec(connection,
+                ["pkName":"PK",
+                 "table" : "RECEIVERS"])
 
-        SHPRead.readShape(connection, TestMultRuns.class.getResource("sources.geojson").getPath())
+        new Add_Primary_Key().exec(connection,
+                 ["pkName":"PK",
+                  "table" : "SOURCES"])
 
-        Object res = new Display_Database().exec(connection, [])
-        assertEquals("", res)
+
+        new Road_Emission_From_DEN().exec(connection,
+                ["roadsTableName":"SOURCES"])
+
+        new Lden_from_Emission().exec(connection,
+                ["tableBuilding"   : "BUILDINGS",
+                 "tableSources"   : "LW_ROADS",
+                 "tableReceivers": "RECEIVERS"])
+
+
+        new Get_Rayz().exec(connection,
+                ["tableBuilding"   : "BUILDINGS",
+                 "roadsTableName"   : "SOURCES",
+                 "tableReceivers": "RECEIVERS",
+                 "exportPath"   : TestMultRuns.class.getResource("multirun/").getPath()])
 
 
         new Multi_Runs().exec(connection,
-                ["workingDir":TestMultRuns.class.getResource("multirun/").getPath(),
-                 "nbSimu" : 4, "threadNumber" : 0])
+                ["workingDir":TestMultRuns.class.getResource("multirun/").getPath()])
 
-        // Check database
-        res = new Display_Database().exec(connection, [])
 
-        assertTrue(res.contains("MULTIRUNSRESULTS_GEOM"))
+        new Export_Table().exec(connection,
+                ["exportPath"   : TestMultRuns.class.getResource("multirun/").getPath().toString() + "mr.geojson",
+                 "tableToExport": "LDEN_GEOM"])
+
+        new Export_Table().exec(connection,
+                ["exportPath"   : TestMultRuns.class.getResource("multirun/").getPath().toString() + "mr.geojson",
+                 "tableToExport": "MultiRunsResults_geom"])
+
+
+      //  assertTrue(res.contains("MULTIRUNSRESULTS_GEOM"))
     }
 
 
