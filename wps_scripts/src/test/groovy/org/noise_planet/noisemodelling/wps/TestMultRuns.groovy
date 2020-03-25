@@ -30,7 +30,7 @@ class TestMultRuns extends JdbcTestCase  {
     @Test
     void testMultiRun() {
 
-        SHPRead.readShape(connection, TestMultRuns.class.getResource("buildings.geojson").getPath())
+        SHPRead.readShape(connection, TestMultRuns.class.getResource("multirun/buildings.geojson").getPath())
 
         SHPRead.readShape(connection, TestMultRuns.class.getResource("receivers.geojson").getPath())
 
