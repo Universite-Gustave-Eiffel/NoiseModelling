@@ -78,11 +78,7 @@ def exec(Connection connection, input) {
     // Create a connection statement to interact with the database in SQL
     Sql sql = new Sql(connection)
 
-    // Project geometry in WGS84 (EPSG:4326) and groups all the geometries of the table
-
     List output = sql.rows(String.format("select * from %s LIMIT %s", tableName, linesNumber.toString()))
-
-    System.out.println(mapToTable(output))
 
     System.out.println('End : Display first rows of a table')
     System.out.println('Duration : ' + TimeCategory.minus(new Date(), start))
@@ -120,7 +116,7 @@ static String asWKT(Geometry geometry) {
 }
 
 /**
- *
+ * Convert a list to HTML table
  * @param list
  * @return
  */
