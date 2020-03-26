@@ -1074,10 +1074,12 @@ class MultiRunsProcessData {
                             RS ="NL04"
                             break
                     }*/
-                    String RS = "NL08"
+                    /*String RS = "NL08"
                     if (RoadType[r] == 1) {
-                        RS = road_pav
-                    }
+                        //RS = road_pav
+                        RS = PVMT.get(id)
+                    }*/
+                    String RS = PVMT.get(id)
 
                     /*"Refl",...
                     "Dif_hor",...

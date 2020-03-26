@@ -25,6 +25,7 @@ import org.h2gis.functions.io.geojson.GeoJsonRead
 import org.junit.Test
 import org.noise_planet.noisemodelling.wps.Database_Manager.Add_Primary_Key
 import org.noise_planet.noisemodelling.wps.Database_Manager.Display_Database
+import org.noise_planet.noisemodelling.wps.Database_Manager.Table_Visualization_Data
 import org.noise_planet.noisemodelling.wps.Experimental.Get_Rayz
 import org.noise_planet.noisemodelling.wps.Experimental.Multi_Runs
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
@@ -69,16 +70,36 @@ class TestMultRuns extends JdbcTestCase  {
                 ["workingDir":TestMultRuns.class.getResource("multirun/").getPath()])
 
 
-        new Export_Table().exec(connection,
-                ["exportPath"   : TestMultRuns.class.getResource("multirun/").getPath().toString() + "mr.geojson",
-                 "tableToExport": "LDEN_GEOM"])
+        // ICI tu verras valeur au recepteur 4004 / 63 Hz = 65.2966
+        String res2 =  new Table_Visualization_Data().exec(connection,
+                ["tableName": "LDEN_GEOM"])
 
-        new Export_Table().exec(connection,
-                ["exportPath"   : TestMultRuns.class.getResource("multirun/").getPath().toString() + "mr.geojson",
-                 "tableToExport": "MultiRunsResults_geom"])
+        // ICI tu verras valeur au recepteur 4004 / 63 Hz = 65.2972
+      String res =   new Table_Visualization_Data().exec(connection,
+                ["tableName": "MultiRunsResults_geom"])
+        // DONC POUR MOI C'est OK.... c'est juste une mini erreur ptet à la température par défaut ou le sol ou un truc du genre, pas de quoi se préocupper.
 
 
-      //  assertTrue(res.contains("MULTIRUNSRESULTS_GEOM"))
+        // Ici je vais forcer à calculer les rayons avec un ordre de reflexion
+        new Get_Rayz().exec(connection,
+                ["tableBuilding"   : "BUILDINGS",
+                 "roadsTableName"   : "SOURCES",
+                 "tableReceivers": "RECEIVERS",
+                 "confReflOrder": 1,
+                 "exportPath"   : TestMultRuns.class.getResource("multirun/").getPath()])
+
+        // Mais tu pourras voir dans le MR_input que j'exclue les rayons avec 1 ordre de reflextion du calcul....
+        new Multi_Runs().exec(connection,
+                ["workingDir":TestMultRuns.class.getResource("multirun/").getPath()])
+
+        //.... du coup  les résultats devraient être identiques
+        // mais ICI tu verras valeur au recepteur 4004 / 63 Hz = 70.26 !!!!!!!!
+        String res3 =   new Table_Visualization_Data().exec(connection,
+                ["tableName": "MultiRunsResults_geom"])
+
+
+
+        assertTrue(res.contains("MULTIRUNSRESULTS_GEOM"))
     }
 
 
