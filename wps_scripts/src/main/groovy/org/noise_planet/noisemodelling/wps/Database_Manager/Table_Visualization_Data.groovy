@@ -103,19 +103,6 @@ def run(input) {
 }
 
 /**
- * Convert a Geometry value into a Well Known Text value.
- * @param geometry Geometry instance
- * @return The String representation
- */
-static String asWKT(Geometry geometry) {
-    if (geometry == null) {
-        return null
-    }
-    WKTWriter wktWriter = new WKTWriter()
-    return wktWriter.write(geometry)
-}
-
-/**
  * Convert a list to HTML table
  * @param list
  * @return

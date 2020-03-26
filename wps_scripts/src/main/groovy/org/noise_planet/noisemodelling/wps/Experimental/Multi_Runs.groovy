@@ -1074,7 +1074,7 @@ class MultiRunsProcessData {
                             RS ="NL04"
                             break
                     }*/
-                    String RS = "NL05"
+                    String RS = "NL08"
                     if (RoadType[r] == 1) {
                         RS = road_pav
                     }

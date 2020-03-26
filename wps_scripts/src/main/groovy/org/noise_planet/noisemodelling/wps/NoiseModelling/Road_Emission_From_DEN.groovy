@@ -34,6 +34,7 @@ import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
 import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
 import org.noise_planet.noisemodelling.emission.RSParametersCnossos
+import org.noise_planet.noisemodelling.propagation.ComputeRays
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
 
 import java.sql.Connection
@@ -136,12 +137,12 @@ def exec(Connection connection, input) {
 
     // drop table LW_ROADS if exists and the create and prepare the table
     sql.execute("drop table if exists LW_ROADS;")
-    sql.execute("create table LW_ROADS (IDSOURCE integer, the_geom Geometry, " +
+    sql.execute("create table LW_ROADS (pk integer, the_geom Geometry, " +
             "LWD63 double precision, LWD125 double precision, LWD250 double precision, LWD500 double precision, LWD1000 double precision, LWD2000 double precision, LWD4000 double precision, LWD8000 double precision," +
             "LWE63 double precision, LWE125 double precision, LWE250 double precision, LWE500 double precision, LWE1000 double precision, LWE2000 double precision, LWE4000 double precision, LWE8000 double precision," +
             "LWN63 double precision, LWN125 double precision, LWN250 double precision, LWN500 double precision, LWN1000 double precision, LWN2000 double precision, LWN4000 double precision, LWN8000 double precision);")
 
-    def qry = 'INSERT INTO LW_ROADS(IDSOURCE,the_geom, ' +
+    def qry = 'INSERT INTO LW_ROADS(pk,the_geom, ' +
             'LWD63, LWD125, LWD250, LWD500, LWD1000,LWD2000, LWD4000, LWD8000,' +
             'LWE63, LWE125, LWE250, LWE500, LWE1000,LWE2000, LWE4000, LWE8000,' +
             'LWN63, LWN125, LWN250, LWN500, LWN1000,LWN2000, LWN4000, LWN8000) ' +
@@ -193,7 +194,8 @@ def exec(Connection connection, input) {
     // Add Z dimension to the road segments
     sql.execute("UPDATE LW_ROADS SET THE_GEOM = ST_UPDATEZ(The_geom,0.05);")
     // Add primary key to the road table
-    sql.execute("ALTER TABLE LW_ROADS ADD pk INT AUTO_INCREMENT PRIMARY KEY;")
+    sql.execute("ALTER TABLE LW_ROADS ALTER COLUMN PK INT NOT NULL;")
+    sql.execute("ALTER TABLE LW_ROADS ADD PRIMARY KEY (PK);  ")
 
     resultString = "Calculation Done ! The table LW_ROADS has been created."
 
@@ -289,6 +291,7 @@ static double[][] computeLw(Long pk, Geometry geom, SpatialResultSet rs) throws 
                 pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type)
         ln[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
     }
+
 
     return [ld, le, ln]
 }
