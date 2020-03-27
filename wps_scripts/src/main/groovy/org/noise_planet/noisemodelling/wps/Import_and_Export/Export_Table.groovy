@@ -35,6 +35,8 @@ import org.h2gis.functions.io.kml.KMLDriverFunction
 import org.h2gis.functions.io.shp.SHPDriverFunction
 import org.h2gis.functions.io.tsv.TSVDriverFunction
 import org.h2gis.utilities.JDBCUtilities
+import org.h2gis.utilities.SFSUtilities
+import org.h2gis.utilities.TableLocation
 
 import java.sql.Connection
 
@@ -115,11 +117,21 @@ def exec(Connection connection, input) {
             tsvDriver.exportTable(connection, tableToExport, new File(exportPath), new EmptyProgressVisitor())
             break
         default:
-            return resultString = "Error, no table has been exported"
+            return resultString = "The file extension is not valid. No table has been exported"
             break
     }
 
-    resultString = "The table " + tableToExport + " successfully exported !"
+
+    //get SRID of the table
+    int srid = SFSUtilities.getSRID(connection, TableLocation.parse(tableToExport))
+    // if a SRID exists
+    if (srid <0) {
+        System.println("Warning ! No SRID found !")
+        resultString = "The table " + tableToExport + " successfully exported  with no SRID ! "
+    }else{
+        resultString = "The table " + tableToExport + " successfully exported  with the SRID : " + srid
+    }
+
 
     // print to command window
     System.out.println('Result : ' + resultString)
