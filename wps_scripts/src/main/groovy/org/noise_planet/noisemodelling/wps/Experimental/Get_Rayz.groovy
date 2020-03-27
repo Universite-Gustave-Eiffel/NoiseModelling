@@ -502,8 +502,10 @@ class PropagationPathStorage extends ComputeRaysOut {
                 pathPk.setIdReceiver((int) paths.receiverId)
                 pathPk.setIdSource((int) paths.sourceId)
                 paths.propagationPathList.add(pathPk)
-                receiverPaths.add(paths)
+
             }
+            receiverPaths.add(paths)
+
             double[] aGlobalMeteo = propagationPathStorage.computeAttenuation(propagationPathStorage.genericMeteoData, sourceId, sourceLi, receiverId, propagationPath);
             if (aGlobalMeteo != null && aGlobalMeteo.length > 0) {
 

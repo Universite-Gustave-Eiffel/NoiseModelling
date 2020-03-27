@@ -50,15 +50,6 @@ class TestMultRuns extends JdbcTestCase  {
                   "table" : "SOURCES"])
 
 
-        new Road_Emission_From_DEN().exec(connection,
-                ["roadsTableName":"SOURCES"])
-
-        new Lden_from_Emission().exec(connection,
-                ["tableBuilding"   : "BUILDINGS",
-                 "tableSources"   : "LW_ROADS",
-                 "tableReceivers": "RECEIVERS"])
-
-
         new Get_Rayz().exec(connection,
                 ["tableBuilding"   : "BUILDINGS",
                  "roadsTableName"   : "SOURCES",
@@ -70,17 +61,9 @@ class TestMultRuns extends JdbcTestCase  {
                 ["workingDir":TestMultRuns.class.getResource("multirun/").getPath()])
 
 
-        // ICI tu verras valeur au recepteur 4004 / 63 Hz = 65.2966
-        String res2 =  new Table_Visualization_Data().exec(connection,
-                ["tableName": "LDEN_GEOM"])
-
-        // ICI tu verras valeur au recepteur 4004 / 63 Hz = 65.2972
       String res =   new Table_Visualization_Data().exec(connection,
                 ["tableName": "MultiRunsResults_geom"])
-        // DONC POUR MOI C'est OK.... c'est juste une mini erreur ptet à la température par défaut ou le sol ou un truc du genre, pas de quoi se préocupper.
 
-
-        // Ici je vais forcer à calculer les rayons avec un ordre de reflexion
         new Get_Rayz().exec(connection,
                 ["tableBuilding"   : "BUILDINGS",
                  "roadsTableName"   : "SOURCES",
@@ -88,18 +71,15 @@ class TestMultRuns extends JdbcTestCase  {
                  "confReflOrder": 1,
                  "exportPath"   : TestMultRuns.class.getResource("multirun/").getPath()])
 
-        // Mais tu pourras voir dans le MR_input que j'exclue les rayons avec 1 ordre de reflextion du calcul....
         new Multi_Runs().exec(connection,
                 ["workingDir":TestMultRuns.class.getResource("multirun/").getPath()])
 
-        //.... du coup  les résultats devraient être identiques
-        // mais ICI tu verras valeur au recepteur 4004 / 63 Hz = 70.26 !!!!!!!!
         String res3 =   new Table_Visualization_Data().exec(connection,
                 ["tableName": "MultiRunsResults_geom"])
 
 
 
-        assertTrue(res.contains("MULTIRUNSRESULTS_GEOM"))
+        assertTrue(res == res3)
     }
 
 
