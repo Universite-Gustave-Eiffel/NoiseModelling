@@ -34,6 +34,7 @@ import org.h2gis.functions.io.json.JsonDriverFunction
 import org.h2gis.functions.io.kml.KMLDriverFunction
 import org.h2gis.functions.io.shp.SHPDriverFunction
 import org.h2gis.functions.io.tsv.TSVDriverFunction
+import org.h2gis.utilities.JDBCUtilities
 
 import java.sql.Connection
 
@@ -74,6 +75,13 @@ def exec(Connection connection, input) {
     String tableToExport = input["tableToExport"] as String
     // do it case-insensitive
     tableToExport = tableToExport.toUpperCase()
+
+    List<String> fields = JDBCUtilities.getFieldNames(connection.getMetaData(), tableToExport)
+    if (fields.size()<1)
+    {
+        return resultString = "The table is empty and can not be exported."
+    }
+
 
     // run export
     String ext = exportPath.substring(exportPath.lastIndexOf('.') + 1, exportPath.length())
