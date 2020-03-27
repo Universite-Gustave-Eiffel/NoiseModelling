@@ -82,7 +82,7 @@ def run(input) {
         String sourceGeomName = geomFields.get(0);
 
         //Get the primary key field of the source table
-        int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, sources_table_name);
+        int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, sources_table_name)
         if (pkIndex < 1) {
             output = String.format("Source table %s does not contain a primary key", sourceTableIdentifier)
             throw new IllegalArgumentException(String.format("Source table %s does not contain a primary key", sourceTableIdentifier));
