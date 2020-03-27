@@ -46,7 +46,7 @@ title = 'Compute road emission noise map from road table.'
 description = 'Compute Road Emission Noise Map from Day Evening Night traffic flow rate and speed estimates (specific format, see input details). ' +
         '</br> </br> <b> The output table is called : LW_ROADS </b> '
 
-inputs = [roadsTableName: [name                                                                           : 'Roads table name', title: 'Roads table name', description: "<b>Name of the Roads table.</b>  </br>  " +
+inputs = [tableRoads: [name                                                                           : 'Roads table name', title: 'Roads table name', description: "<b>Name of the Roads table.</b>  </br>  " +
         "<br>  The table shall contain : </br>" +
         "- <b> PK </b> : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY)<br/>" +
         "- <b> TV_D </b> : Hourly average light and heavy vehicle count (6-18h) (DOUBLE)<br/>" +
@@ -108,7 +108,7 @@ def exec(Connection connection, input) {
     // Get every inputs
     // -------------------
 
-    String sources_table_name = input['roadsTableName']
+    String sources_table_name = input['tableRoads']
     // do it case-insensitive
     sources_table_name = sources_table_name.toUpperCase()
 

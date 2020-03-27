@@ -48,7 +48,7 @@ description = 'Calculation of the Lden map from the road noise emission table (D
         '</br> </br> <b> The output table is called : LDEN_GEOM </b> ' +
         'and contain : </br>' +
         '-  <b> IDRECEIVER  </b> : an identifier (INTEGER, PRIMARY KEY). </br>' +
-        '- <b> THE_GEOM </b> : the 3D geometry of the sources (POINT, MULTIPOINT, LINESTRING, MULTILINESTRING). According to CNOSSOS-EU, you need to set a height of 0.05 m for a road traffic emission.</br> ' +
+        '- <b> THE_GEOM </b> : the 3D geometry of the receivers (POINT).</br> ' +
         '-  <b> Hz63, Hz125, Hz250, Hz500, Hz1000,Hz2000, Hz4000, Hz8000 </b> : 8 columns giving the day emission sound level for each octave band (FLOAT).'
 
 inputs = [
@@ -332,9 +332,6 @@ def exec(Connection connection, input) {
         //get id from receiver and sound sources
         int idReceiver = (Integer) allLevels.get(i).receiverId
         int idSource = (Integer) allLevels.get(i).sourceId
-        System.println(idReceiver)
-        System.println(idSource)
-        System.println(soundLevel)
 
         // if any attenuation matrix value is set to NaN
         if (!Double.isNaN(soundLevel[0]) && !Double.isNaN(soundLevel[1])
@@ -346,7 +343,6 @@ def exec(Connection connection, input) {
                 // apply A ponderation
                 //soundLevel = DBToDBA(soundLevel)
                 // add Leq value to the pre-existing sound level on this receiver
-
                 soundLevel = ComputeRays.sumDbArray(sumArraySR(soundLevel, SourceSpectrum.get(idSource)), soundLevels.get(idReceiver))
                 soundLevels.replace(idReceiver, soundLevel)
             } else {
