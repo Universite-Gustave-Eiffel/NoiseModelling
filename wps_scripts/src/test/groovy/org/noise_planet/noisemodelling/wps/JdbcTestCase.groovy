@@ -27,12 +27,9 @@ import org.junit.Ignore
 
 import java.sql.Connection
 
+@Ignore
 class JdbcTestCase  extends GroovyTestCase {
     Connection connection;
-
-    @Ignore
-    void testVoid() {
-    }
 
     @Before
     void setUp() {
