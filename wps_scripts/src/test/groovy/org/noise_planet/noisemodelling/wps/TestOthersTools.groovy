@@ -15,29 +15,44 @@
  * Copyright (C) 2011-2012 IRSTV (FR CNRS 2488) and Ifsttar
  * Copyright (C) 2013-2019 Ifsttar and CNRS
  * Copyright (C) 2020 Université Gustave Eiffel and CNRS
-*/
+ */
+
 
 package org.noise_planet.noisemodelling.wps
 
-import org.h2gis.functions.factory.H2GISDBFactory
-import org.h2gis.utilities.SFSUtilities
-import org.junit.After
-import org.junit.Before
-import org.junit.Ignore
+import org.h2gis.functions.io.shp.SHPRead
+import org.noise_planet.noisemodelling.wps.Others_Tools.Change_SRID
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
-import java.sql.Connection
+/**
+ * Test parsing of zip file using H2GIS database
+ */
+class TestOthersTools extends JdbcTestCase {
+    Logger LOGGER = LoggerFactory.getLogger(TestOthersTools.class)
 
-@Ignore
-class JdbcTestCase  extends GroovyTestCase {
-    Connection connection;
+    void testChangeSRID1() {
 
-    @Before
-    void setUp() {
-        connection = SFSUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(UUID.randomUUID().toString(), true, "MODE=PostgreSQL"))
+        SHPRead.readShape(connection, TestDatabaseManager.getResource("roads.shp").getPath())
+
+        String res = new Change_SRID().exec(connection,
+                ["newSRID": "2154",
+                 "tableName": "roads"])
+
+        assertEquals("The table already counts 2154 as SRID.", res)
+    }
+    void testChangeSRID2() {
+
+        SHPRead.readShape(connection, TestDatabaseManager.getResource("roads.shp").getPath())
+
+        String res = new Change_SRID().exec(connection,
+                ["newSRID": "4326",
+                 "tableName": "roads"])
+
+        assertEquals("SRID changed from 2154 to 4326.", res)
     }
 
-    @After
-    void tearDown() {
-        connection.close()
-    }
+
+
+
 }

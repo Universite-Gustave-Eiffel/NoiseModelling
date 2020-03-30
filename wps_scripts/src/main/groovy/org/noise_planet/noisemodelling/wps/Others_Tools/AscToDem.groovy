@@ -1,4 +1,4 @@
-package org.noise_planet.noisemodelling.wps.Topography
+package org.noise_planet.noisemodelling.wps.Others_Tools
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
@@ -13,7 +13,7 @@ import org.h2gis.utilities.TableLocation
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.io.WKTReader
 import org.locationtech.jts.io.WKTWriter
-import org.noise_planet.noisemodelling.ext.asc.AscReaderDriver
+//import org.noise_planet.noisemodelling.ext.asc.AscReaderDriver
 import org.noise_planet.noisemodelling.propagation.RootProgressVisitor
 
 import java.sql.Connection
@@ -49,7 +49,7 @@ def run(input) {
     // Open connection
     openGeoserverDataStoreConnection(dbName).withCloseable {
         Connection connection ->
-            return [result : exec(connection, input)]
+            return exec(connection, input)
     }
 
 }
@@ -86,7 +86,7 @@ def exec(Connection connection, input) {
                 new File(pathFile).getAbsolutePath())]
     }
 
-    AscReaderDriver ascDriver = new AscReaderDriver();
+   /* AscReaderDriver ascDriver = new AscReaderDriver();
     ascDriver.setAs3DPoint(true)
     ascDriver.setExtractEnvelope()
 
@@ -136,7 +136,7 @@ def exec(Connection connection, input) {
     RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1);
     new FileInputStream(new File(pathFile)).withStream { inputStream ->
         ascDriver.read(connection, inputStream, progressLogger, TableLocation.parse(outputTableName).toString(), srid);
-    }
+    }*/
 
     return [tableNameCreated: outputTableName]
 

@@ -24,7 +24,7 @@
         <jts-io-version>1.15.1</jts-io-version>
         <h2-version>1.4.197</h2-version>
         <h2-group>org.orbisgis</h2-group>
-        <h2gis-version>1.5.0</h2gis-version>
+        <h2gis-version>1.5.1-SNAPSHOT</h2gis-version>
     </properties>
     <modules>
         <module>noisemodelling-propagation</module>

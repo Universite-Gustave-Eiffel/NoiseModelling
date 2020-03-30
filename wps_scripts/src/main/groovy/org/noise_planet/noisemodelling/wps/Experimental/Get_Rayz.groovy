@@ -1,11 +1,29 @@
-package org.noise_planet.noisemodelling.wps.Experimental
-
 /**
+ * NoiseModelling is a free and open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
+ *
+ * This version is developed by Université Gustave Eiffel and CNRS
+ * <http://noise-planet.org/noisemodelling.html>
+ * as part of:
+ * the Eval-PDU project (ANR-08-VILL-0005) 2008-2011, funded by the Agence Nationale de la Recherche (French)
+ * the CENSE project (ANR-16-CE22-0012) 2017-2021, funded by the Agence Nationale de la Recherche (French)
+ * the Nature4cities (N4C) project, funded by European Union’s Horizon 2020 research and innovation programme under grant agreement No 730468
+ *
+ * Noisemap is distributed under GPL 3 license.
+ *
+ * Contact: contact@noise-planet.org
+ *
+ * Copyright (C) 2011-2012 IRSTV (FR CNRS 2488) and Ifsttar
+ * Copyright (C) 2013-2019 Ifsttar and CNRS
+ * Copyright (C) 2020 Université Gustave Eiffel and CNRS
+ *
  * @Author Pierre Aumond, Université Gustave Eiffel
  */
 
+package org.noise_planet.noisemodelling.wps.Experimental
+
 import geoserver.GeoServer
 import geoserver.catalog.Store
+import groovy.time.TimeCategory
 import groovy.transform.CompileStatic
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.api.EmptyProgressVisitor
@@ -29,414 +47,405 @@ import java.util.zip.GZIPOutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
-title = 'Export Rays.zip'
-description = 'Compute all the rays and keep it in zip file.'
+title = 'Get all rays'
+description = 'Get all rays between sources and receivers. It will keep the results in a Zip file.' +
+        '</br>This zip file contains : ' +
+        '</br>- a gunzip file with the rays.' +
+        '</br>- a param file with the parameter of the calculation.' +
+        '</br>- the table that were used by the program in a geojson format.' +
+        '</br> </br> <b>The output is called : Rays.zip and it saved on your hardrive at the Folder path destination.</b> \''
 
-inputs = [databaseName      : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database. (default : h2gisdb)', min: 0, max: 1, type: String.class],
-          workingDir : [name: 'workingDir', title: 'Output Directory', description: 'Where Rays will be exported (ex : C:/Desktop/)', type: String.class],
-          buildingTableName : [name: 'Buildings table name', title: 'Buildings table name', type: String.class],
-          sourcesTableName  : [name: 'Sources table name', title: 'Sources table name', type: String.class],
-          receiversTableName: [name: 'Receivers table name', title: 'Receivers table name', type: String.class],
-          demTableName      : [name: 'DEM table name', title: 'DEM table name', min: 0, max: 1, type: String.class],
-          groundTableName   : [name: 'Ground table name', title: 'Ground table name', min: 0, max: 1, type: String.class],
-          reflexionOrder    : [name: 'Number of reflexion', title: 'Number of reflexion', description: 'Maximum number of reflexion to consider (default = 0)', min: 0, max: 1, type: String.class],
-          maxSrcDistance    : [name: 'Max Source Distance', title: 'Max Source Distance', description: 'Maximum distance to consider a sound source (default = 100 m)', min: 0, max: 1, type: String.class],
-          maxRefDistance    : [name: 'Max Reflexion Distance', title: 'Max Reflexion Distance', description: 'Maximum distance to consider a reflexion (default = 50 m)', min: 0, max: 1, type: String.class],
-          wallAlpha         : [name: 'wallAlpha', title: 'Wall alpha', description: 'Wall abosrption (default = 0.1)', min: 0, max: 1, type: String.class],
-          threadNumber      : [name: 'Thread number', title: 'Thread number', description: 'Number of thread to use on the computer (default = 1)', min: 0, max: 1, type: String.class],
-          computeVertical   : [name: 'Compute vertical diffraction', title: 'Compute vertical diffraction', description: 'Compute or not the vertical diffraction (default = false)', min: 0, max: 1, type: Boolean.class],
-          exportReceiverRays   : [name: 'Export Rays of one receiver', title: 'Export Rays of one receiver', description: 'Primary Key Id of the receiver to export (default = -1 (no receivers exported))', min: 0, max: 1, type: Integer.class],
-          computeHorizontal : [name: 'Compute horizontal diffraction', title: 'Compute horizontal diffraction', description: 'Compute or not the horizontal diffraction (default = false)', min: 0, max: 1, type: Boolean.class]]
+inputs = [
+        exportPath        : [name       : 'Export folder',
+                             title      : 'Path of the folder',
+                             description: 'Path of the folder where you want to export the rays.  </br> For example : c:/home/outputRays/ ',
+                             type       : String.class],
+        tableBuilding     : [name       : 'Buildings table name', title: 'Buildings table name',
+                             description: '<b>Name of the Buildings table.</b>  </br>  ' +
+                                     '<br>  The table shall contain : </br>' +
+                                     '- <b> THE_GEOM </b> : the 2D geometry of the building (POLYGON or MULTIPOLYGON). </br>' +
+                                     '- <b> HEIGHT </b> : the height of the building (FLOAT)',
+                             type       : String.class],
+        roadsTableName: [name                                                                           : 'Roads table name', title: 'Roads table name', description: "<b>Name of the Roads table.</b>  </br>  " +
+                "<br>  The table shall contain : </br>" +
+                "- <b> PK </b> : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY)<br/>" +
+                "- <b> TV_D </b> : Hourly average light and heavy vehicle count (6-18h) (DOUBLE)<br/>" +
+                "- <b>TV_E </b> :  Hourly average light and heavy vehicle count (18-22h) (DOUBLE)<br/>" +
+                "- <b> TV_N </b> :  Hourly average light and heavy vehicle count (22-6h) (DOUBLE)<br/>" +
+                "- <b> HV_D </b> :  Hourly average heavy vehicle count (6-18h) (DOUBLE)<br/>" +
+                "- <b> HV_E </b> :  Hourly average heavy vehicle count (18-22h) (DOUBLE)<br/>" +
+                "- <b> HV_N </b> :  Hourly average heavy vehicle count (22-6h) (DOUBLE)<br/>" +
+                "- <b> LV_SPD_D </b> :  Hourly average light vehicle speed (6-18h) (DOUBLE)<br/>" +
+                "- <b> LV_SPD_E </b> :  Hourly average light vehicle speed (18-22h) (DOUBLE)<br/>" +
+                "- <b> LV_SPD_N </b> :  Hourly average light vehicle speed (22-6h) (DOUBLE)<br/>" +
+                "- <b> HV_SPD_D </b> :  Hourly average heavy vehicle speed (6-18h) (DOUBLE)<br/>" +
+                "- <b> HV_SPD_E </b> :  Hourly average heavy vehicle speed (18-22h) (DOUBLE)<br/>" +
+                "- <b> HV_SPD_N </b> :  Hourly average heavy vehicle speed (22-6h) (DOUBLE)<br/>" +
+                "- <b> PVMT </b> :  CNOSSOS road pavement identifier (ex: NL05) (VARCHAR)" +
+                "</br> </br> <b> This table can be generated from the WPS Block 'Get_Table_from_OSM'. </b>.", type: String.class],
+        tableReceivers    : [name       : 'Receivers table name', title: 'Receivers table name',
+                             description: '<b>Name of the Receivers table.</b></br>  ' +
+                                     '</br>  The table shall contain : </br> ' +
+                                     '- <b> PK </b> : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY). </br> ' +
+                                     '- <b> THE_GEOM </b> : the 3D geometry of the sources (POINT, MULTIPOINT).</br> ' +
+                                     '</br> </br> <b> This table can be generated from the WPS Blocks in the "Receivers" folder. </b>',
+                             type       : String.class],
+        tableDEM          : [name       : 'DEM table name', title: 'DEM table name',
+                             description: '<b>Name of the Digital Elevation Model table.</b></br>  ' +
+                                     '</br>The table shall contain : </br> ' +
+                                     '- <b> THE_GEOM </b> : the 3D geometry of the sources (POINT, MULTIPOINT).</br> ' +
+                                     '</br> </br> <b> This table can be generated from the WPS Block "AscToDem". </b>',
+                             min        : 0, max: 1, type: String.class],
+        tableGroundAbs    : [name       : 'Ground absorption table name', title: 'Ground absorption table name',
+                             description: '<b>Name of the surface/ground acoustic absorption table.</b></br>  ' +
+                                     '</br>The table shall contain : </br> ' +
+                                     '- <b> THE_GEOM </b> : the 2D geometry of the sources (POLYGON or MULTIPOLYGON).</br> ' +
+                                     '- <b> G </b> : the acoustic absorption of a ground (FLOAT between 0 : very hard and 1 : very soft).</br> ',
+                             min        : 0, max: 1, type: String.class],
+        paramWallAlpha    : [name       : 'wallAlpha', title: 'Wall absorption coefficient',
+                             description: 'Wall absorption coefficient (FLOAT between 0 : fully absorbent and strictly less than 1 : fully reflective)' +
+                                     '</br> </br> <b> Default value : 0.1 </b> ',
+                             min        : 0, max: 1, type: String.class],
+        confReflOrder     : [name       : 'Order of reflexion', title: 'Order of reflexion',
+                             description: 'Maximum number of reflections to be taken into account (INTEGER).' +
+                                     '</br> </br> <b> Default value : 1 </b>',
+                             min        : 0, max: 1, type: String.class],
+        confMaxSrcDist    : [name       : 'Maximum source-receiver distance', title: 'Maximum source-receiver distance',
+                             description: 'Maximum distance between source and receiver (FLOAT, in meters).' +
+                                     '</br> </br> <b> Default value : 150 </b>',
+                             min        : 0, max: 1, type: String.class],
+        confMaxReflDist   : [name       : 'Maximum source-reflexion distance', title: 'Maximum source-reflexion distance',
+                             description: 'Maximum reflection distance from the source (FLOAT, in meters).' +
+                                     '</br> </br> <b> Default value : 50 </b>',
+                             min        : 0, max: 1, type: String.class],
+        confThreadNumber  : [name       : 'Thread number', title: 'Thread number',
+                             description: 'Number of thread to use on the computer (INTEGER).' +
+                                     '</br> To set this value, look at the number of cores you have.' +
+                                     '</br> If it is set to 0, use the maximum number of cores available.' +
+                                     '</br> </br> <b> Default value : 1 </b>',
+                             min        : 0, max: 1, type: String.class],
+        confDiffVertical  : [name       : 'Diffraction on vertical edges', title: 'Diffraction on vertical edges',
+                             description: 'Compute or not the diffraction on vertical edges.' +
+                                     '</br> </br> <b> Default value : false </b>',
+                             min        : 0, max: 1, type: Boolean.class],
+        confDiffHorizontal: [name       : 'Diffraction on horizontal edges', title: 'Diffraction on horizontal edges',
+                             description: 'Compute or not the diffraction on horizontal edges.' +
+                                     '</br> </br> <b> Default value : false </b>',
+                             min        : 0, max: 1, type: Boolean.class],
+        exportReceiverRays: [name       : 'Export Rays for one receiver', title: 'Export Rays for one receiver',
+                             description: 'PK of the receiver for which you want to export the rays (INTEGER).' +
+                                     '</br> If the value is set to -1, no rays will be exported.' +
+                                     '</br> The export format is kml (compatible with google earth).' +
+                                     '</br> </br> <b> Default value : -1 </b>',
+                             min        : 0, max: 1, type: Integer.class]]
 
-outputs = [result: [name: 'result', title: 'Result', type: String.class]]
+outputs = [result: [name: 'Result output string', title: 'Result output string', description: 'This type of result does not allow the blocks to be linked together.', type: String.class]]
 
-/**
- * Read source database and compute the sound emission spectrum of roads sources*/
-class TrafficRayzPropagationProcessData extends PropagationProcessData {
-    // Lden values
-    public List<double[]> wjSourcesDEN = new ArrayList<>()
-    //public Map<Long, Integer> SourcesPk = new HashMap<>()
-
-
-    TrafficRayzPropagationProcessData(FastObstructionTest freeFieldFinder) {
-        super(freeFieldFinder)
-    }
-
-    int idSource = 0
-
-    @Override
-    void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException {
-        super.addSource(pk, geom, rs)
-
-        idSource++
-
-        int pkSource = rs.getInt("PK")
-        //SourcesPk.put(pk, pkSource)
-        double tvD = rs.getDouble("TV_D")
-        double tvE = rs.getDouble("TV_E")
-        double tvN = rs.getDouble("TV_N")
-
-        double hvD = rs.getDouble("HV_D")
-        double hvE = rs.getDouble("HV_E")
-        double hvN = rs.getDouble("HV_N")
-
-        double lvSpeedD = rs.getDouble("LV_SPD_D")
-        double lvSpeedE = rs.getDouble("LV_SPD_E")
-        double lvSpeedN = rs.getDouble("LV_SPD_N")
-
-        double hvSpeedD = rs.getDouble("HV_SPD_D")
-        double hvSpeedE = rs.getDouble("HV_SPD_E")
-        double hvSpeedN = rs.getDouble("HV_SPD_N")
-
-        // Annual Average Daily Flow (AADF) estimates
-        String pavement = rs.getString("PVMT");
-
-        int LDAY_START_HOUR = 6
-        int LDAY_STOP_HOUR = 18
-        int LEVENING_STOP_HOUR = 22
-        int[] nightHours=[22, 23, 0, 1, 2, 3, 4, 5]
-
-        // Compute day average level
-        double[] ld = new double[PropagationProcessPathData.freq_lvl.size()];
-        double[] le = new double[PropagationProcessPathData.freq_lvl.size()];
-        double[] ln = new double[PropagationProcessPathData.freq_lvl.size()];
-
-        double Temperature = 20.0d
-        double Ts_stud = 0
-        double Pm_stud = 0
-        double Junc_dist = 0
-        int Junc_type = 0
-
-        for (int h = LDAY_START_HOUR; h < LDAY_STOP_HOUR; h++) {
-            int idFreq = 0
-            for (int freq : PropagationProcessPathData.freq_lvl) {
-                RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedD, hvSpeedD, hvSpeedD, lvSpeedD,
-                        lvSpeedD, Math.max(0, tvD - hvD), hvD, 0, 0, 0, freq, Temperature,
-                        pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type);
-                ld[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
-            }
-        }
-        // Average
-        for (int i = 0; i < ld.length; i++) {
-            ld[i] = ld[i] / (LDAY_STOP_HOUR - LDAY_START_HOUR);
-        }
-
-        // Evening
-        for (int h = LDAY_STOP_HOUR; h < LEVENING_STOP_HOUR; h++) {
-            int idFreq = 0
-            for(int freq : PropagationProcessPathData.freq_lvl) {
-                RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedE, hvSpeedE, hvSpeedE, lvSpeedE,
-                        lvSpeedE, Math.max(0, tvE - hvE), hvE, 0, 0, 0, freq, Temperature,
-                        pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type);
-                le[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
-            }
-        }
-
-        for(int i=0; i<le.size(); i++) {
-            le[i] = (le[i] / (LEVENING_STOP_HOUR - LDAY_STOP_HOUR))
-        }
-
-        // Night
-        for (int h : nightHours) {
-            int idFreq = 0
-            for(int freq : PropagationProcessPathData.freq_lvl) {
-                RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedN, hvSpeedN, hvSpeedN, lvSpeedN,
-                        lvSpeedN, Math.max(0, tvN - hvN), hvN, 0, 0, 0, freq, Temperature,
-                        pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type);
-                ln[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
-            }
-        }
-        for(int i=0; i<ln.size(); i++) {
-            ln[i] = (ln[i] / nightHours.length)
-        }
-
-        double[] lden = new double[PropagationProcessPathData.freq_lvl.size()]
-        int idFreq = 0
-        for(int freq : PropagationProcessPathData.freq_lvl) {
-            lden[idFreq++] = (12 * ld[idFreq] +
-                    4 * ComputeRays.dbaToW(ComputeRays.wToDba(le[idFreq]) + 5) +
-                    8 * ComputeRays.dbaToW(ComputeRays.wToDba(ln[idFreq]) + 10)) / 24.0
-        }
-
-        wjSourcesDEN.add(lden)
-
-    }
-
-    @Override
-    public double[] getMaximalSourcePower(int sourceId) {
-        return wjSourcesDEN.get(sourceId)
-    }
-}
-
-
-class TrafficRayzPropagationProcessDataFactory implements PointNoiseMap.PropagationProcessDataFactory {
-    @Override
-    public PropagationProcessData create(FastObstructionTest freeFieldFinder) {
-        return new TrafficRayzPropagationProcessData(freeFieldFinder);
-    }
-}
-
+// Open Connection to Geoserver
 static Connection openGeoserverDataStoreConnection(String dbName) {
-    if(dbName == null || dbName.isEmpty()) {
+    if (dbName == null || dbName.isEmpty()) {
         dbName = new GeoServer().catalog.getStoreNames().get(0)
     }
     Store store = new GeoServer().catalog.getStore(dbName)
-    JDBCDataStore jdbcDataStore = (JDBCDataStore)store.getDataStoreInfo().getDataStore(null)
+    JDBCDataStore jdbcDataStore = (JDBCDataStore) store.getDataStoreInfo().getDataStore(null)
     return jdbcDataStore.getDataSource().getConnection()
 }
 
+// run the script
 def run(input) {
-    def srcFiles =[]
-    String fileName =""
-    GeoJsonDriverFunction geoJsonDriver = new GeoJsonDriverFunction()
-    Properties properties = new Properties()
-    // -------------------
-    // Get inputs
-    // -------------------
 
-    String working_dir = "D:\\aumond\\Documents\\Boulot\\Articles\\2019_XX_XX Sensitivity"
-    if (input['workingDir']) {
-        working_dir = input['workingDir']
+    // Get name of the database
+    // by default an embedded h2gis database is created
+    // Advanced user can replace this database for a postGis or h2Gis server database.
+    String dbName = "h2gisdb"
+
+    // Open connection
+    openGeoserverDataStoreConnection(dbName).withCloseable {
+        Connection connection ->
+            return [result: exec(connection, input)]
     }
+}
 
+// main function of the script
+def exec(Connection connection, input) {
 
+    //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postGIS database
+    connection = new ConnectionWrapper(connection)
+
+    // output string, the information given back to the user
+    String resultString
+
+    // print to command window
+    System.out.println('Start : Get Rayz')
+    def start = new Date()
+
+    // -------------------------
+    // Initialize some variables
+    // -------------------------
+
+    def srcFiles = []
+    GeoJsonDriverFunction geoJsonDriver = new GeoJsonDriverFunction()
+    // create properties file
+    Properties properties = new Properties()
+    List<ComputeRaysOut.verticeSL> allLevels = new ArrayList<>()
+    // Set of already processed receivers
+    Set<Long> receivers = new HashSet<>()
+    // All rays storage
+    String pkName
+
+    // -------------------
+    // Get every inputs
+    // -------------------
 
     int reflexion_order = 0
-    if (input['reflexionOrder']) {
-        reflexion_order = Integer.valueOf(input['reflexionOrder'])
+    if (input['confReflOrder']) {
+        reflexion_order = Integer.valueOf(input['confReflOrder'])
     }
-    properties.setProperty("reflexion_order", reflexion_order.toString())
+    properties.setProperty("confReflOrder", reflexion_order.toString())
 
-
-    double max_src_dist = 200
-    if (input['maxSrcDistance']) {
-        max_src_dist = Double.valueOf(input['maxSrcDistance'])
+    double max_src_dist = 150
+    if (input['confMaxSrcDist']) {
+        max_src_dist = Double.valueOf(input['confMaxSrcDist'])
     }
-    properties.setProperty("maxSrcDistance", max_src_dist.toString())
+    properties.setProperty("confMaxSrcDist", max_src_dist.toString())
 
     double max_ref_dist = 50
-    if (input['maxRefDistance']) {
-        max_ref_dist = Double.valueOf(input['maxRefDistance'])
+    if (input['confMaxReflDist']) {
+        max_ref_dist = Double.valueOf(input['confMaxReflDist'])
     }
-    properties.setProperty("maxRefDistance", max_ref_dist.toString())
+    properties.setProperty("confMaxReflDist", max_ref_dist.toString())
 
     double wall_alpha = 0.1
-    if (input['wallAlpha']) {
-        wall_alpha = Double.valueOf(input['wallAlpha'])
+    if (input['paramWallAlpha']) {
+        wall_alpha = Double.valueOf(input['paramWallAlpha'])
     }
-    properties.setProperty("wallAlpha", wall_alpha.toString())
+    properties.setProperty("paramWallAlpha", wall_alpha.toString())
 
+    int n_thread = 1
+    if (input['confThreadNumber']) {
+        n_thread = Integer.valueOf(input['confThreadNumber'])
+    }
+    properties.setProperty("confThreadNumber", n_thread.toString())
 
-    long exportReceiverRays =-1
+    boolean compute_vertical_diffraction = false
+    if (input['confDiffVertical']) {
+        compute_vertical_diffraction = input['confDiffVertical']
+    }
+    properties.setProperty("confDiffVertical", compute_vertical_diffraction.toString())
+
+    boolean compute_horizontal_diffraction = false
+    if (input['confDiffHorizontal']) {
+        compute_horizontal_diffraction = input['confDiffHorizontal']
+    }
+    properties.setProperty("confDiffHorizontal", compute_horizontal_diffraction.toString())
+
+    int exportReceiverRays = -1
     if (input['exportReceiverRays']) {
         exportReceiverRays = Integer.valueOf(input['exportReceiverRays'])
     }
 
-    int n_thread = 1
-    if (input['threadNumber']) {
-        n_thread = Integer.valueOf(input['threadNumber'])
+    // Default values in NoiseModelling
+    properties.setProperty("paramTemp", '15')
+    properties.setProperty("paramHum", '70')
+
+    String working_dir = input['exportPath']
+
+    // --------------------------------------------
+    // Initialize NoiseModelling propagation part
+    // --------------------------------------------
+
+    String sources_table_name = input['roadsTableName']
+    // do it case-insensitive
+    sources_table_name = sources_table_name.toUpperCase()
+    String fileName = "sources.geojson"
+    srcFiles.add(fileName)
+    // export table to geojson
+    geoJsonDriver.exportTable(connection, sources_table_name, new File(working_dir + fileName), new EmptyProgressVisitor())
+    // Get pk index
+    int indexPk = JDBCUtilities.getIntegerPrimaryKey(connection, sources_table_name)
+    if (indexPk > 0) {
+        pkName = JDBCUtilities.getFieldName(connection.getMetaData(), sources_table_name, indexPk)
+    }
+    properties.setProperty("pkSources", pkName)
+
+
+    String receivers_table_name = input['tableReceivers']
+    receivers_table_name = receivers_table_name.toUpperCase()
+    fileName = "receivers.geojson"
+    srcFiles.add(fileName)
+    // export table to geojson
+    geoJsonDriver.exportTable(connection, receivers_table_name, new File(working_dir + fileName), new EmptyProgressVisitor())
+    // Get pk index
+    indexPk = JDBCUtilities.getIntegerPrimaryKey(connection, receivers_table_name)
+    if (indexPk > 0) {
+        pkName = JDBCUtilities.getFieldName(connection.getMetaData(), receivers_table_name, indexPk)
+    }
+    properties.setProperty("pkReceivers", pkName)
+
+
+    String building_table_name = input['tableBuilding']
+    building_table_name = building_table_name.toUpperCase()
+    fileName = "buildings.geojson"
+    srcFiles.add(fileName)
+    // export table to geojson
+    geoJsonDriver.exportTable(connection, building_table_name, new File(working_dir + fileName), new EmptyProgressVisitor())
+
+
+
+    String dem_table_name = ""
+    if (input['tableDEM']) {
+        dem_table_name = input['tableDEM']
+        dem_table_name = dem_table_name.toUpperCase()
+        fileName = "dem.geojson"
+        srcFiles.add(fileName)
+        // export table to geojson
+        geoJsonDriver.exportTable(connection, dem_table_name, new File(working_dir + fileName), new EmptyProgressVisitor())
+        properties.setProperty("tableDEM", "TRUE")
     }
 
-    boolean compute_vertical_diffraction = false
-    if (input['computeVertical']) {
-        compute_vertical_diffraction = input['computeVertical']
-    }
-    properties.setProperty("computeVertical", compute_vertical_diffraction.toString())
 
-    boolean compute_horizontal_diffraction = false
-    if (input['computeHorizontal']) {
-        compute_horizontal_diffraction = input['computeHorizontal']
-    }
-    properties.setProperty("computeHorizontal", compute_horizontal_diffraction.toString())
-
-    // Get name of the database
-    String dbName = ""
-    if (input['databaseName']) {
-        dbName = input['databaseName'] as String
+    String ground_table_name = ""
+    if (input['tableGroundAbs']) {
+        ground_table_name = input['tableGroundAbs']
+        ground_table_name = ground_table_name.toUpperCase()
+        fileName = "groundabs.geojson"
+        srcFiles.add(fileName)
+        // export table to geojson
+        geoJsonDriver.exportTable(connection, ground_table_name, new File(working_dir + fileName), new EmptyProgressVisitor())
+        properties.setProperty("tableGroundAbs", "TRUE")
     }
 
-    // ----------------------------------
-    // Start... 
-    // ----------------------------------
+    // --------------------------------------------
+    // Initialize NoiseModelling propagation part
+    // --------------------------------------------
+    PointNoiseMap pointNoiseMap = new PointNoiseMap(building_table_name, sources_table_name, receivers_table_name)
+    pointNoiseMap.setComputeHorizontalDiffraction(compute_horizontal_diffraction)
+    pointNoiseMap.setComputeVerticalDiffraction(compute_vertical_diffraction)
+    pointNoiseMap.setSoundReflectionOrder(reflexion_order)
+    // Building height field name
+    pointNoiseMap.setHeightField("HEIGHT")
+    // Import table with Snow, Forest, Grass, Pasture field polygons. Attribute G is associated with each polygon
+    if (ground_table_name != "") {
+        pointNoiseMap.setSoilTableName(ground_table_name)
+    }
+    // Point cloud height above sea level POINT(X Y Z)
+    if (dem_table_name != "") {
+        pointNoiseMap.setDemTable(dem_table_name)
+    }
 
-    System.out.println("Run ...")
+    pointNoiseMap.setMaximumPropagationDistance(max_src_dist)
+    pointNoiseMap.setMaximumReflectionDistance(max_ref_dist)
+    pointNoiseMap.setWallAbsorption(wall_alpha)
+    pointNoiseMap.setThreadCount(n_thread)
 
-    List<ComputeRaysOut.verticeSL> allLevels = new ArrayList<>()
-    // Attenuation matrix table
-    ArrayList<PropagationPath> propaMap2 = new ArrayList<>()
-    // All rays storage
-
-    // Open connection
-    openGeoserverDataStoreConnection(dbName).withCloseable { Connection connection ->
-
-
-        //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postgis database
-        connection = new ConnectionWrapper(connection)
-        String pkName = ""
-        String sources_table_name = "SOURCES"
-        if (input['sourcesTableName']) {
-            sources_table_name = input['sourcesTableName']
-            sources_table_name = sources_table_name.toUpperCase()
-            fileName = "sources.geojson"
-            srcFiles.add(fileName)
-            geoJsonDriver.exportTable(connection, sources_table_name, new File(working_dir+fileName), new EmptyProgressVisitor())
-            int indexPk = JDBCUtilities.getIntegerPrimaryKey(connection, sources_table_name)
-            if(indexPk > 0) {
-                pkName = JDBCUtilities.getFieldName(connection.getMetaData(), sources_table_name, indexPk)
-            }
-            properties.setProperty("pkSources", pkName)
-        }
-
-        String receivers_table_name = "RECEIVERS"
-        if (input['receiversTableName']) {
-            receivers_table_name = input['receiversTableName']
-            receivers_table_name = receivers_table_name.toUpperCase()
-            fileName = "receivers.geojson"
-            srcFiles.add(fileName)
-            geoJsonDriver.exportTable(connection, receivers_table_name, new File(working_dir+fileName), new EmptyProgressVisitor())
-            int indexPk = JDBCUtilities.getIntegerPrimaryKey(connection, receivers_table_name)
-            if(indexPk > 0) {
-                pkName = JDBCUtilities.getFieldName(connection.getMetaData(), receivers_table_name, indexPk)
-            }
-            properties.setProperty("pkReceivers", pkName)
-        }
-
-        String building_table_name = "BUILDINGS"
-        if (input['buildingTableName']) {
-            building_table_name = input['buildingTableName']
-            building_table_name = building_table_name.toUpperCase()
-            fileName = "buildings.geojson"
-            srcFiles.add(fileName)
-            geoJsonDriver.exportTable(connection, building_table_name, new File(working_dir+fileName), new EmptyProgressVisitor())
-            properties.setProperty("buildings", "TRUE")
-        }
-
-        String dem_table_name = ""
-        if (input['demTableName']) {
-            dem_table_name = input['demTableName']
-            dem_table_name = dem_table_name.toUpperCase()
-            fileName = "dem.geojson"
-            srcFiles.add(fileName)
-            geoJsonDriver.exportTable(connection, dem_table_name, new File(working_dir+fileName), new EmptyProgressVisitor())
-            properties.setProperty("demTableName", "TRUE")
-        }
+    // Do not propagate for low emission or far away sources
+    // Maximum error in dB
+    //pointNoiseMap.setMaximumError(0.0d)
+    // Init Map
+    pointNoiseMap.initialize(connection, new EmptyProgressVisitor())
 
 
-        String ground_table_name = ""
-        if (input['groundTableName']) {
-            ground_table_name = input['groundTableName']
-            ground_table_name = ground_table_name.toUpperCase()
-            fileName = "ground.geojson"
-            srcFiles.add(fileName)
-            geoJsonDriver.exportTable(connection, ground_table_name, new File(working_dir+fileName), new EmptyProgressVisitor())
-            properties.setProperty("groundTableName", "TRUE")
-        }
+    // --------------------------------------------
+    // Initialize NoiseModelling emission part
+    // --------------------------------------------
 
-        System.out.println("Connection to the database ok ...")
-        // Init NoiseModelling
-        PointNoiseMap pointNoiseMap = new PointNoiseMap(building_table_name, sources_table_name, receivers_table_name)
-        pointNoiseMap.setComputeHorizontalDiffraction(compute_horizontal_diffraction)
-        pointNoiseMap.setComputeVerticalDiffraction(compute_vertical_diffraction)
-        pointNoiseMap.setSoundReflectionOrder(reflexion_order)
-        // Building height field name
-        pointNoiseMap.setHeightField("HEIGHT")
-        // Import table with Snow, Forest, Grass, Pasture field polygons. Attribute G is associated with each polygon
-        if (ground_table_name != "") {
-            pointNoiseMap.setSoilTableName(ground_table_name)
-        }
-        // Point cloud height above sea level POINT(X Y Z)
-        if (dem_table_name != "") {
-            pointNoiseMap.setDemTable(dem_table_name)
-        }
-        // Do not propagate for low emission or far away sources.
-        // error in dB
-        pointNoiseMap.setMaximumError(0.0d);
+    TrafficRayzPropagationProcessDataFactory trafficRayzPropagationProcessDataFactory = new TrafficRayzPropagationProcessDataFactory()
+    pointNoiseMap.setPropagationProcessDataFactory(trafficRayzPropagationProcessDataFactory)
 
-        pointNoiseMap.setMaximumPropagationDistance(max_src_dist)
-        pointNoiseMap.setMaximumReflectionDistance(max_ref_dist)
-        pointNoiseMap.setWallAbsorption(wall_alpha)
-        pointNoiseMap.setThreadCount(n_thread)
+    // --------------------------------------------
+    // Set storage parameters
+    // --------------------------------------------
 
-        TrafficRayzPropagationProcessDataFactory trafficRayzPropagationProcessDataFactory = new TrafficRayzPropagationProcessDataFactory()
-        pointNoiseMap.setPropagationProcessDataFactory(trafficRayzPropagationProcessDataFactory)
+    // Init custom input in order to compute more than just attenuation
+    PropagationPathStorageFactory storageFactory = new PropagationPathStorageFactory()
+    pointNoiseMap.setComputeRaysOutFactory(storageFactory)
+    storageFactory.setWorkingDir(working_dir)
+    if (exportReceiverRays!=-1) storageFactory.setExportReceiverRays(exportReceiverRays)
+    srcFiles.add("rays.gz")
+    storageFactory.openPathOutputFile(new File(working_dir + "/rays.gz").absolutePath)
 
-        // Init custom input in order to compute more than just attenuation
-        PropagationPathStorageFactory storageFactory = new PropagationPathStorageFactory()
-        pointNoiseMap.setComputeRaysOutFactory(storageFactory)
-        storageFactory.setWorkingDir(working_dir)
-        storageFactory.setExportReceiverRays(exportReceiverRays)
+    // --------------------------------------------
+    // Run Calculations
+    // --------------------------------------------
 
-        RootProgressVisitor progressLogger = new RootProgressVisitor(2, true, 1)
+    // Init ProgressLogger (loading bar)
+    RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1)
+    ProgressVisitor progressVisitor = progressLogger.subProcess(pointNoiseMap.getGridDim() * pointNoiseMap.getGridDim())
+    int fullGridSize = pointNoiseMap.getGridDim() * pointNoiseMap.getGridDim()
 
-        System.out.println("Init Map ...")
+    System.println("Start calculation... ")
 
-        long start = System.currentTimeMillis();
+    // Iterate over computation areas
+    int k=0
+    for (int i = 0; i < pointNoiseMap.getGridDim(); i++) {
+        for (int j = 0; j < pointNoiseMap.getGridDim(); j++) {
+            System.println("Compute... " + 100 * k++ / fullGridSize + " % ")
 
-        System.out.println("Start ...")
-        srcFiles.add("rays.gz")
-        storageFactory.openPathOutputFile(new File(working_dir + "/rays.gz").absolutePath)
-        pointNoiseMap.initialize(connection, progressLogger)
-        progressLogger.endStep()
-        // Set of already processed receivers
-        Set<Long> receivers = new HashSet<>()
-        ProgressVisitor progressVisitor = progressLogger.subProcess(pointNoiseMap.getGridDim()*pointNoiseMap.getGridDim())
-        for (int i = 0; i < pointNoiseMap.getGridDim(); i++) {
-            for (int j = 0; j < pointNoiseMap.getGridDim(); j++) {
-                System.println("Compute... i:" + i.toString() + " j: " +j.toString() )
-                IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, i, j, progressVisitor, receivers)
-                if (out instanceof ComputeRaysOut) {
-                    allLevels.addAll(((ComputeRaysOut) out).getVerticesSoundLevel())
-                }
+            // Run ray propagation
+            IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, i, j, progressVisitor, receivers)
+
+            // Return results with level spectrum for each source/receiver tuple
+            if (out instanceof ComputeRaysOut) {
+                // Set attenuation matrix values
+                allLevels.addAll(((ComputeRaysOut) out).getVerticesSoundLevel())
             }
         }
-        storageFactory.closeWriteThread()
-
-        String newAppConfigPropertiesFile = working_dir + "NM.properties"
-        FileWriter fileWriter = new FileWriter(newAppConfigPropertiesFile)
-        properties.store(fileWriter, "store to properties file")
-        srcFiles.add("NM.properties")
-        fileWriter.close()
-
-        FileOutputStream fos = new FileOutputStream(working_dir + "Rays.zip")
-        ZipOutputStream zipOut = new ZipOutputStream(fos)
-        for (String srcFile : srcFiles) {
-            File fileToZip = new File(new File(working_dir + srcFile).absolutePath)
-            FileInputStream fis = new FileInputStream(fileToZip)
-            ZipEntry zipEntry = new ZipEntry(fileToZip.getName())
-            zipOut.putNextEntry(zipEntry)
-
-            byte[] bytes = new byte[1024]
-            int length
-            while((length = fis.read(bytes)) >= 0) {
-                zipOut.write(bytes, 0, length)
-            }
-            fis.close()
-            fileSuccessfullyDeleted =  new File(working_dir + srcFile).delete()
-        }
-        zipOut.close()
-        fos.close()
-
-
-
-        System.out.println("Done !")
-
-
-        long computationTime = System.currentTimeMillis() - start;
-
-        return [result: "Calculation Done ! LDEN_GEOM / Rays number : " + storageFactory.getnRays()]
-
-
     }
+    System.println("Done - 100 % ")
+
+    //Thread.sleep(3000)
+
+    storageFactory.closeWriteThread()
+
+    // Create properties file and save it
+    String newAppConfigPropertiesFile = working_dir + "NM.properties"
+    FileWriter fileWriter = new FileWriter(newAppConfigPropertiesFile)
+    properties.store(fileWriter, "store to properties file")
+    srcFiles.add("NM.properties")
+    fileWriter.close()
+
+    // Zip all NoiseModellong Get Rays files in folder and delete others
+    FileOutputStream fos = new FileOutputStream(working_dir + "Rays.zip")
+    ZipOutputStream zipOut = new ZipOutputStream(fos)
+    for (String srcFile : srcFiles) {
+        File fileToZip = new File(new File(working_dir + srcFile).absolutePath)
+        FileInputStream fis = new FileInputStream(fileToZip)
+        ZipEntry zipEntry = new ZipEntry(fileToZip.getName())
+        zipOut.putNextEntry(zipEntry)
+
+        byte[] bytes = new byte[1024]
+        int length
+        while ((length = fis.read(bytes)) >= 0) {
+            zipOut.write(bytes, 0, length)
+        }
+        fis.close()
+        fileSuccessfullyDeleted = new File(working_dir + srcFile).delete()
+        System.println(srcFile + ' has been added to the zip file')
+    }
+    zipOut.close()
+    fos.close()
+
+
+
+    resultString = "Done ! The Rayz.zip file has been created in the folder : " + working_dir
+
+    // print to command window
+    System.out.println('Result : ' + resultString)
+    System.out.println('End : LDEN from Emission')
+    System.out.println('Duration : ' + TimeCategory.minus(new Date(), start))
+
+    // print to WPS Builder
+    return resultString
 
 }
 
 
 
-@CompileStatic
 /**
  * Collect path computed by ComputeRays and store it into provided queue (with consecutive receiverId)
  * remove receiverpath or put to keep rays or not
  */
+@CompileStatic
 class PropagationPathStorage extends ComputeRaysOut {
     // Thread safe queue object
     protected TrafficRayzPropagationProcessData inputData
@@ -455,11 +464,7 @@ class PropagationPathStorage extends ComputeRaysOut {
 
     @Override
     double[] computeAttenuation(PropagationProcessPathData pathData, long sourceId, double sourceLi, long receiverId, List<PropagationPath> propagationPath) {
-        /*if (receiverId==11 && sourceId == 42171){
-            receiverId == 11
-        }*/
         double[] attenuation = super.computeAttenuation(pathData, sourceId, sourceLi, receiverId, propagationPath)
-
         return attenuation
     }
 
@@ -494,13 +499,15 @@ class PropagationPathStorage extends ComputeRaysOut {
                 // Copy path content in order to keep original ids for other method calls
                 PropagationPath pathPk = new PropagationPath(path.isFavorable(), path.getPointList(),
                         path.getSegmentList(), path.getSRList())
-                pathPk.setIdReceiver((int)paths.receiverId)
-                pathPk.setIdSource((int)paths.sourceId)
+                pathPk.setIdReceiver((int) paths.receiverId)
+                pathPk.setIdSource((int) paths.sourceId)
                 paths.propagationPathList.add(pathPk)
-                receiverPaths.add(paths)
+
             }
+            receiverPaths.add(paths)
+
             double[] aGlobalMeteo = propagationPathStorage.computeAttenuation(propagationPathStorage.genericMeteoData, sourceId, sourceLi, receiverId, propagationPath);
-            if (aGlobalMeteo != null && aGlobalMeteo.length > 0)  {
+            if (aGlobalMeteo != null && aGlobalMeteo.length > 0) {
 
                 propagationPathStorage.receiversAttenuationLevels.add(new ComputeRaysOut.verticeSL(paths.receiverId, paths.sourceId, aGlobalMeteo))
                 return aGlobalMeteo
@@ -508,7 +515,6 @@ class PropagationPathStorage extends ComputeRaysOut {
                 return new double[0]
             }
         }
-
 
 
         @Override
@@ -527,15 +533,16 @@ class PropagationPathStorage extends ComputeRaysOut {
 
 }
 
-
-
+/**
+ * Export paths on disk
+ */
 @CompileStatic
 class PropagationPathStorageFactory implements PointNoiseMap.IComputeRaysOutFactory {
     ConcurrentLinkedDeque<PointToPointPaths> pathQueue = new ConcurrentLinkedDeque<>()
     GZIPOutputStream gzipOutputStream
     //FileOutputStream fileOutputStream
     AtomicBoolean waitForMorePaths = new AtomicBoolean(true)
-    public static final int GZIP_CACHE_SIZE = (int)Math.pow(2, 19)
+    public static final int GZIP_CACHE_SIZE = (int) Math.pow(2, 19)
     String workingDir
     long exportReceiverRays
     int nRays = 0
@@ -545,8 +552,6 @@ class PropagationPathStorageFactory implements PointNoiseMap.IComputeRaysOutFact
     }
 
     void openPathOutputFile(String path) {
-        //fileOutputStream =  new FileOutputStream(path)
-        //WriteThread writeThread = new WriteThread(pathQueue, waitForMorePaths, fileOutputStream)
         gzipOutputStream = new GZIPOutputStream(new FileOutputStream(path), GZIP_CACHE_SIZE)
         WriteThread writeThread = new WriteThread(pathQueue, waitForMorePaths, gzipOutputStream)
         new Thread(writeThread).start()
@@ -568,13 +573,13 @@ class PropagationPathStorageFactory implements PointNoiseMap.IComputeRaysOutFact
         geoJSONDocument.writeFooter()*/
         KMLDocument kmlDocument
         ZipOutputStream compressedDoc
-        System.println( "Cellid" + inputData.cellId.toString())
+        System.println("Export domain : Cell number " + inputData.cellId.toString())
         compressedDoc = new ZipOutputStream(new FileOutputStream(path))
         compressedDoc.putNextEntry(new ZipEntry("doc.kml"))
         kmlDocument = new KMLDocument(compressedDoc)
         kmlDocument.writeHeader()
         kmlDocument.setInputCRS("EPSG:2154")
-        kmlDocument.setOffset(new Coordinate(0,0,0))
+        kmlDocument.setOffset(new Coordinate(0, 0, 0))
         kmlDocument.writeTopographic(inputData.freeFieldFinder.getTriangles(), inputData.freeFieldFinder.getVertices())
         kmlDocument.writeBuildings(inputData.freeFieldFinder)
         kmlDocument.writeFooter()
@@ -584,7 +589,7 @@ class PropagationPathStorageFactory implements PointNoiseMap.IComputeRaysOutFact
 
     @Override
     IComputeRaysOut create(PropagationProcessData propagationProcessData, PropagationProcessPathData propagationProcessPathData) {
-        if (exportReceiverRays>0) exportDomain(propagationProcessData, new File(this.workingDir, String.format("domain_%d.kmz", propagationProcessData.cellId)).absolutePath)
+        if (exportReceiverRays > 0) exportDomain(propagationProcessData, new File(this.workingDir, String.format("Domain_part_%d.kmz", propagationProcessData.cellId)).absolutePath)
         return new PropagationPathStorage(propagationProcessData, propagationProcessPathData, pathQueue)
     }
 
@@ -607,11 +612,11 @@ class PropagationPathStorageFactory implements PointNoiseMap.IComputeRaysOutFact
             this.gzipOutputStream = gzipOutputStream
         }
 
-       /* WriteThread(ConcurrentLinkedDeque<PointToPointPaths> pathQueue, AtomicBoolean waitForMorePaths, FileOutputStream fileOutputStream) {
-            this.pathQueue = pathQueue
-            this.waitForMorePaths = waitForMorePaths
-            this.fileOutputStream = fileOutputStream
-        }*/
+        /* WriteThread(ConcurrentLinkedDeque<PointToPointPaths> pathQueue, AtomicBoolean waitForMorePaths, FileOutputStream fileOutputStream) {
+             this.pathQueue = pathQueue
+             this.waitForMorePaths = waitForMorePaths
+             this.fileOutputStream = fileOutputStream
+         }*/
 
         @Override
         void run() {
@@ -619,23 +624,19 @@ class PropagationPathStorageFactory implements PointNoiseMap.IComputeRaysOutFact
             KMLDocument kmlDocument
             ZipOutputStream compressedDoc
 
-            compressedDoc = new ZipOutputStream(new FileOutputStream(
-                    String.format(workingDir + "RaysFromRecv"+ exportReceiverRays +".kmz")))
-            compressedDoc.putNextEntry(new ZipEntry("doc.kml"))
-            kmlDocument = new KMLDocument(compressedDoc)
-            kmlDocument.writeHeader()
-            kmlDocument.setInputCRS("EPSG:2154")
-            kmlDocument.setOffset(new Coordinate(0,0,0))
+            if (exportReceiverRays > 0){
+                compressedDoc = new ZipOutputStream(new FileOutputStream(
+                        String.format(workingDir + "RaysFromRec_" + exportReceiverRays + ".kmz")))
+                compressedDoc.putNextEntry(new ZipEntry("doc.kml"))
+                kmlDocument = new KMLDocument(compressedDoc)
+                kmlDocument.writeHeader()
+                kmlDocument.setInputCRS("EPSG:2154")
+                kmlDocument.setOffset(new Coordinate(0, 0, 0))
+            }
+            DataOutputStream dataOutputStream = new DataOutputStream(new BufferedOutputStream(gzipOutputStream))
 
-
-            /*PropagationProcessPathData genericMeteoData = new PropagationProcessPathData()
-            genericMeteoData.setHumidity(70)
-            genericMeteoData.setTemperature(10)
-            ComputeRaysOut out = new ComputeRaysOut(false, genericMeteoData)
-*/
-            DataOutputStream dataOutputStream = new DataOutputStream( new BufferedOutputStream(gzipOutputStream))
-            while (waitForMorePaths.get()) {
-                while(!pathQueue.isEmpty()) {
+            while (waitForMorePaths.get() || !pathQueue.isEmpty()) {
+                while (!pathQueue.isEmpty()) {
                     PointToPointPaths paths = pathQueue.pop()
                     //long start = System.currentTimeMillis();
                     paths.writePropagationPathListStream(dataOutputStream)
@@ -643,7 +644,7 @@ class PropagationPathStorageFactory implements PointNoiseMap.IComputeRaysOutFact
                     //System.out.println(System.currentTimeMillis() - start )
                     paths.countRays()
                     nRays = nRays + paths.getnRays()
-                    if(paths.receiverId == exportReceiverRays) {
+                    if (paths.receiverId == exportReceiverRays) {
                         // Export rays
                         kmlDocument.writeRays(paths.getPropagationPathList())
 
@@ -653,28 +654,32 @@ class PropagationPathStorageFactory implements PointNoiseMap.IComputeRaysOutFact
                 Thread.sleep(10)
             }
 
-            System.out.println("nRays : " + nRays)
+            System.out.println("The number of stored rays is  : " + nRays)
             dataOutputStream.flush()
             gzipOutputStream.close()
             //fileOutputStream.close()
-            kmlDocument.writeFooter()
+            if (exportReceiverRays > 0)   {
+                kmlDocument.writeFooter()
+                System.out.println("A kml file has been exported for receiver " + exportReceiverRays)
+            }
             compressedDoc.closeEntry()
             compressedDoc.close()
-
 
 
         }
     }
 }
 
-
+/**
+ * Write Path in local table
+ */
 @CompileStatic
 class PointToPointPaths {
     ArrayList<PropagationPath> propagationPathList
     double li
     long sourceId
     long receiverId
-    int nRays =0
+    int nRays = 0
 
     int getnRays() {
         return nRays
@@ -682,27 +687,139 @@ class PointToPointPaths {
 
     void countRays() throws IOException {
 
-         for (PropagationPath propagationPath : propagationPathList) {
+        for (PropagationPath propagationPath : propagationPathList) {
             nRays++
         }
     }
 
-     /* Writes the content of this object into <code>out</code>.
-     * @param out the stream to write into
-     * @throws java.io.IOException if an I/O-error occurs
-     */
-    void writePropagationPathListStream( DataOutputStream out) throws IOException {
+    /* Writes the content of this object into <code>out</code>.
+    * @param out the stream to write into
+    * @throws java.io.IOException if an I/O-error occurs
+    */
+
+    void writePropagationPathListStream(DataOutputStream out) throws IOException {
 
         out.writeLong(receiverId)
         out.writeLong(sourceId)
         out.writeDouble(li)
         out.writeInt(propagationPathList.size())
-        for(PropagationPath propagationPath : propagationPathList) {
-            propagationPath.writeStream(out);
+        for (PropagationPath propagationPath : propagationPathList) {
+            propagationPath.writeStream(out)
 
         }
     }
 
 
-
 }
+
+
+/**
+ * TrafficRayzPropagationProcessDataFactory
+ */
+class TrafficRayzPropagationProcessDataFactory implements PointNoiseMap.PropagationProcessDataFactory {
+    @Override
+    PropagationProcessData create(FastObstructionTest freeFieldFinder) {
+        return new TrafficRayzPropagationProcessData(freeFieldFinder);
+    }
+}
+
+/**
+ * Read source database and compute the sound emission spectrum of roads sources
+ */
+@CompileStatic
+class TrafficRayzPropagationProcessData extends PropagationProcessData {
+    // Lden values
+    public List<double[]> wjSourcesDEN = new ArrayList<>()
+    //public Map<Long, Integer> SourcesPk = new HashMap<>()
+
+
+    TrafficRayzPropagationProcessData(FastObstructionTest freeFieldFinder) {
+        super(freeFieldFinder)
+    }
+
+    int idSource = 0
+
+    @Override
+    void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException {
+        super.addSource(pk, geom, rs)
+
+        idSource++
+
+        int pkSource = rs.getInt("PK")
+        double tvD = rs.getDouble("TV_D")
+        double tvE = rs.getDouble("TV_E")
+        double tvN = rs.getDouble("TV_N")
+
+        // todo remove this...
+        double hvD = 0.01*rs.getDouble("HV_D")*rs.getDouble("TV_D")
+        double hvE = 0.01*rs.getDouble("HV_E")*rs.getDouble("TV_E")
+        double hvN = 0.01*rs.getDouble("HV_N")*rs.getDouble("TV_N")
+
+        double lvSpeedD = rs.getDouble("LV_SPD_D")
+        double lvSpeedE = rs.getDouble("LV_SPD_E")
+        double lvSpeedN = rs.getDouble("LV_SPD_N")
+
+        double hvSpeedD = rs.getDouble("HV_SPD_D")
+        double hvSpeedE = rs.getDouble("HV_SPD_E")
+        double hvSpeedN = rs.getDouble("HV_SPD_N")
+
+        // Annual Average Daily Flow (AADF) estimates
+        String pavement = rs.getString("PVMT")
+
+        // Compute day average level
+        double[] ld = new double[PropagationProcessPathData.freq_lvl.size()];
+        double[] le = new double[PropagationProcessPathData.freq_lvl.size()];
+        double[] ln = new double[PropagationProcessPathData.freq_lvl.size()];
+
+        double Temperature = 20.0d
+        double Ts_stud = 0
+        double Pm_stud = 0
+        double Junc_dist = 0
+        int Junc_type = 0
+
+
+        int idFreq = 0
+        for (int freq : PropagationProcessPathData.freq_lvl) {
+            RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedD, hvSpeedD, hvSpeedD, lvSpeedD,
+                    lvSpeedD, Math.max(0, tvD - hvD), hvD, 0, 0, 0, freq, Temperature,
+                    pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type)
+            ld[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
+        }
+
+
+
+        idFreq = 0
+        for (int freq : PropagationProcessPathData.freq_lvl) {
+            RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedE, hvSpeedE, hvSpeedE, lvSpeedE,
+                    lvSpeedE, Math.max(0, tvE - hvE), hvE, 0, 0, 0, freq, Temperature,
+                    pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type)
+            le[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
+        }
+
+        idFreq = 0
+        for (int freq : PropagationProcessPathData.freq_lvl) {
+            RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedN, hvSpeedN, hvSpeedN, lvSpeedN,
+                    lvSpeedN, Math.max(0, tvN - hvN), hvN, 0, 0, 0, freq, Temperature,
+                    pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type)
+            ln[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
+        }
+
+        double[] lden = new double[PropagationProcessPathData.freq_lvl.size()]
+
+        idFreq = 0
+        for (int freq : PropagationProcessPathData.freq_lvl) {
+            lden[idFreq++] = (12 * ld[idFreq] +
+                    4 * ComputeRays.dbaToW(ComputeRays.wToDba(le[idFreq]) + 5) +
+                    8 * ComputeRays.dbaToW(ComputeRays.wToDba(ln[idFreq]) + 10)) / 24.0
+        }
+
+        wjSourcesDEN.add(lden)
+
+    }
+
+    @Override
+    double[] getMaximalSourcePower(int sourceId) {
+        return wjSourcesDEN.get(sourceId)
+    }
+}
+

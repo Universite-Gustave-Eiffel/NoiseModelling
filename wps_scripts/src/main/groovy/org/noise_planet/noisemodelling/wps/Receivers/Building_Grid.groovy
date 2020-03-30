@@ -80,10 +80,9 @@ def run(input) {
     }
     sources_table_name = sources_table_name.toUpperCase()
 
-    String building_table_name = "BUILDINGS"
-    if (input['buildingTableName']) {
-        building_table_name = input['buildingTableName']
-    }
+
+
+    String building_table_name = input['buildingTableName']
     building_table_name = building_table_name.toUpperCase()
 
     String fence = null
@@ -113,8 +112,9 @@ def run(input) {
 
 
             if (hasPop){
+                System.print('oooooooooooooooooooo')
                 sql.execute("DROP TABLE IF EXISTS GLUED_BUILDINGS")
-                sql.execute("CREATE TABLE GLUED_BUILDINGS(id_build serial, the_geom GEOMETRY, pop FLOAT) AS SELECT null, ST_BUFFER(B.THE_GEOM, 2.0,'endcap=square join=bevel'), POP FROM "+building_table_name+" B, FENCE_2154 A WHERE A.THE_GEOM && B.THE_GEOM AND ST_INTERSECTS(A.THE_GEOM, B.THE_GEOM)")
+                sql.execute("CREATE TABLE GLUED_BUILDINGS(id_build serial, the_geom GEOMETRY, POP FLOAT) AS SELECT null, ST_BUFFER(B.THE_GEOM, 2.0,'endcap=square join=bevel'), POP FROM "+building_table_name+" B, FENCE_2154 A WHERE A.THE_GEOM && B.THE_GEOM AND ST_INTERSECTS(A.THE_GEOM, B.THE_GEOM)")
                 sql.execute("DROP TABLE IF EXISTS RECEIVERS")
                 sql.execute("CREATE TABLE RECEIVERS(pk serial, the_geom GEOMETRY, id_build INT, pop FLOAT)")
                 boolean pushed = false
@@ -167,7 +167,7 @@ def run(input) {
             sql.execute("Create spatial index on "+building_table_name+"(the_geom);")
             sql.execute("delete from "+receivers_table_name+" g where exists (select 1 from "+building_table_name+" b where ST_Z(g.the_geom) < b.HEIGHT+2 and g.the_geom && b.the_geom and ST_INTERSECTS(g.the_geom, ST_BUFFER(B.THE_GEOM, 2.0,'endcap=square join=bevel')) limit 1);")
 
-            sql.execute("DROP TABLE GLUED_BUILDINGS")
+           // sql.execute("DROP TABLE GLUED_BUILDINGS")
 
         }else if (input['fenceTableName']) {
             sql.execute(String.format("drop table if exists buildtemp"))
@@ -183,7 +183,7 @@ def run(input) {
         }else{
 
             sql.execute(String.format("drop table if exists buildtemp"))
-            sql.execute(String.format("create table buildtemp (id serial, the_geom polygon) as select null, ST_CONVEXHULL (the_geom) from "+building_table_name+" where ST_AREA(the_geom)>100"));
+            sql.execute(String.format("create table buildtemp (id serial, the_geom polygon) as select null, ST_CONVEXHULL(the_geom) from "+building_table_name+" where ST_AREA(the_geom)>100"));
 
             sql.execute(String.format("drop table if exists receivers_build"))
             sql.execute(String.format("create table receivers_build (ID int AUTO_INCREMENT PRIMARY KEY, the_geom GEOMETRY) as select NULL, ST_ToMultiPoint(ST_Densify(ST_ToMultiLine(ST_Buffer(b.the_geom, 2, 'quad_segs=0 endcap=butt')), "+delta+")) from buildtemp b"))
