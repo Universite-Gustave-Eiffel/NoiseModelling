@@ -33,7 +33,7 @@ class JdbcTestCase  extends GroovyTestCase {
 
     @Before
     void setUp() {
-        connection = SFSUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(UUID.randomUUID().toString(), true, "MODE=PostgreSQL"))
+        connection = SFSUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(UUID.randomUUID().toString(), true))
     }
 
     @After

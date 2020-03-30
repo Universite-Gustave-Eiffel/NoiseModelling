@@ -11,8 +11,13 @@ import groovy.sql.BatchingPreparedStatementWrapper
 import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.functions.spatial.convert.ST_Force3D
+import org.h2gis.functions.spatial.crs.ST_SetSRID
+import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.JDBCUtilities
+import org.h2gis.utilities.SFSUtilities
+import org.h2gis.utilities.TableLocation
 import org.locationtech.jts.geom.Coordinate
+import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.LineString
 import org.locationtech.jts.geom.Polygon
@@ -22,7 +27,7 @@ import java.sql.Connection
 
 // Change code and use : createReceiversFromBuildings see down
 title = 'Buildings Grid'
-description = 'Calculates a regular grid of receivers avoiding buildings.' +
+description = 'Calculates a regular grid of receivers around buildings.' +
         '</br> </br> <b> The output table is called : RECEIVERS </b> '
 
 inputs = [
@@ -118,16 +123,25 @@ def exec(connection, input) {
     String queryGrid = null
 
     if (input['fence']) {
+        // Reproject fence
+        def fenceGeom = new Envelope()
+        int targetSrid = SFSUtilities.getSRID(connection, TableLocation.parse(building_table_name))
+        if(targetSrid == 0 && input['sourcesTableName']) {
+            targetSrid = SFSUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
+        }
+        if(targetSrid != 0) {
+            // Transform fence to the same coordinate system than the buildings & sources
+            fenceGeom = ST_Transform.ST_Transform(connection, ST_SetSRID.setSRID(input['fence'] as Geometry, 4326), targetSrid).envelopeInternal
+        } else {
+            System.err.println("Unable to find buildings or sources SRID, ignore fence parameters")
+        }
         sql.execute(String.format("DROP TABLE IF EXISTS FENCE"))
-        sql.execute(String.format("CREATE TABLE FENCE AS SELECT ST_AsText('"+ fence + "') the_geom"))
-        sql.execute(String.format("DROP TABLE IF EXISTS FENCE_2154"))
-        sql.execute(String.format("CREATE TABLE FENCE_2154 AS SELECT ST_TRANSFORM(ST_SetSRID(the_geom,4326),2154) the_geom from FENCE"))
-        sql.execute(String.format("DROP TABLE IF EXISTS FENCE"))
-
+        sql.execute(String.format("CREATE TABLE FENCE AS SELECT ST_AsText('"+ fenceGeom + "') the_geom"))
+        fence_table_name = "FENCE"
 
         if (hasPop){
             sql.execute("DROP TABLE IF EXISTS GLUED_BUILDINGS")
-            sql.execute("CREATE TABLE GLUED_BUILDINGS(id_build serial, the_geom GEOMETRY, POP FLOAT) AS SELECT null, ST_BUFFER(B.THE_GEOM, 2.0,'endcap=square join=bevel'), POP FROM "+building_table_name+" B, FENCE_2154 A WHERE A.THE_GEOM && B.THE_GEOM AND ST_INTERSECTS(A.THE_GEOM, B.THE_GEOM)")
+            sql.execute("CREATE TABLE GLUED_BUILDINGS(id_build serial, the_geom GEOMETRY, POP FLOAT) AS SELECT null, ST_BUFFER(B.THE_GEOM, 2.0,'endcap=square join=bevel'), POP FROM "+building_table_name+" B, FENCE A WHERE A.THE_GEOM && B.THE_GEOM AND ST_INTERSECTS(A.THE_GEOM, B.THE_GEOM)")
             sql.execute("DROP TABLE IF EXISTS RECEIVERS")
             sql.execute("CREATE TABLE RECEIVERS(pk serial, the_geom GEOMETRY, id_build INT, pop FLOAT)")
             boolean pushed = false
@@ -152,7 +166,7 @@ def exec(connection, input) {
             }
         }else{
             sql.execute("DROP TABLE IF EXISTS GLUED_BUILDINGS")
-            sql.execute("CREATE TABLE GLUED_BUILDINGS(id_build serial, the_geom GEOMETRY) AS SELECT null, ST_BUFFER(B.THE_GEOM, 2.0,'endcap=square join=bevel') FROM "+building_table_name+" B, FENCE_2154 A WHERE A.THE_GEOM && B.THE_GEOM AND ST_INTERSECTS(A.THE_GEOM, B.THE_GEOM)")
+            sql.execute("CREATE TABLE GLUED_BUILDINGS(id_build serial, the_geom GEOMETRY) AS SELECT null, ST_BUFFER(B.THE_GEOM, 2.0,'endcap=square join=bevel') FROM "+building_table_name+" B, "+fence_table_name+" A WHERE A.THE_GEOM && B.THE_GEOM AND ST_INTERSECTS(A.THE_GEOM, B.THE_GEOM)")
             sql.execute("DROP TABLE IF EXISTS RECEIVERS")
             sql.execute("CREATE TABLE RECEIVERS(pk serial, the_geom GEOMETRY, id_build INT)")
             boolean pushed = false
@@ -184,13 +198,13 @@ def exec(connection, input) {
 
     }else if (input['fenceTableName']) {
         sql.execute(String.format("drop table if exists buildtemp"))
-        sql.execute(String.format("create table buildtemp (id serial, the_geom polygon) as select null, ST_CONVEXHULL (the_geom) from "+fence_table_name));
+        sql.execute(String.format("create table buildtemp (id serial, the_geom polygon) as select null, ST_CONVEXHULL (the_geom) from "+building_table_name));
         sql.execute(String.format("drop table if exists receivers_build"));
         sql.execute(String.format("create table receivers_build (ID int AUTO_INCREMENT PRIMARY KEY, the_geom GEOMETRY) as select NULL, ST_ToMultiPoint(ST_Densify(ST_ToMultiLine(ST_Buffer(b.the_geom, 2, 'quad_segs=0 endcap=butt')), "+delta+")) from buildtemp b"))
         sql.execute(String.format("drop table if exists receivers_temp"));
         sql.execute(String.format("create table receivers_temp as SELECT * from ST_EXPLODE('receivers_build')"))
 
-        queryGrid = String.format("create table "+receivers_table_name+" (PK int AUTO_INCREMENT PRIMARY KEY, the_geom GEOMETRY) as SELECT NULL, r.the_geom from receivers_temp r, FENCE_2154 f where r.the_geom && f.the_geom and ST_INTERSECTS (r.the_geom, f.the_geom)")
+        queryGrid = String.format("create table "+receivers_table_name+" (PK int AUTO_INCREMENT PRIMARY KEY, the_geom GEOMETRY) as SELECT NULL, r.the_geom from receivers_temp r where ST_INTERSECTS (r.the_geom, (SELECT ST_ENVELOPE(ST_COLLECT(THE_GEOM)) the_geom FROM "+fence_table_name+"))")
         sql.execute(queryGrid)
 
     }else{
@@ -219,8 +233,8 @@ def exec(connection, input) {
 
     if (input['fence']) {
         // Delete receivers near sources
-        sql.execute("Create spatial index on FENCE_2154(the_geom);")
-        sql.execute("delete from " + receivers_table_name + " g where exists (select 1 from FENCE_2154 r where ST_Disjoint(g.the_geom, r.the_geom) limit 1);")
+        sql.execute("Create spatial index if not exists on "+fence_table_name+"(the_geom);")
+        sql.execute("delete from " + receivers_table_name + " g where exists (select 1 from "+fence_table_name+" r where ST_Disjoint(g.the_geom, r.the_geom) limit 1);")
     }
 
     if (input['sourcesTableName']) {
