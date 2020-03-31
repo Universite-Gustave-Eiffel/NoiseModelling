@@ -145,7 +145,7 @@ def exec(connection, input) {
     sql.execute("drop table if exists tmp_relation_screen_building;")
     sql.execute("create spatial index on tmp_receivers_lines(the_geom)")
     // list buildings that will remove receivers (if height is superior than receiver height
-    sql.execute("create table tmp_relation_screen_building as select b.pk as PK_building, s.pk as pk_screen from "+building_table_name+" b, tmp_receivers_lines s where st_expand(b.the_geom, 2, 2) && s.the_geom and s.pk != b.pk and ST_Distance(b.the_geom, s.the_geom) <= 2 and b.height > " + h)
+    sql.execute("create table tmp_relation_screen_building as select b.pk as PK_building, s.pk as pk_screen from "+building_table_name+" b, tmp_receivers_lines s where b.the_geom && s.the_geom and s.pk != b.pk and ST_Intersects(b.the_geom, s.the_geom) and b.height > " + h)
     sql.execute("drop table if exists tmp_screen_truncated;")
     // truncate receiver lines
     sql.execute("create table tmp_screen_truncated as select r.pk_screen, ST_DIFFERENCE(s.the_geom, ST_BUFFER(ST_ACCUM(b.the_geom), 2)) the_geom from tmp_relation_screen_building r, "+building_table_name+" b, tmp_receivers_lines s WHERE PK_building = b.pk AND pk_screen = s.pk  GROUP BY pk_screen;")
@@ -155,22 +155,34 @@ def exec(connection, input) {
     sql.execute("drop table if exists " + receivers_table_name)
     if(!hasPop) {
         sql.execute("create table " + receivers_table_name + "(pk serial, the_geom geometry,build_pk integer) as select null, st_updatez(the_geom," + h + "), pk building_pk from ST_EXPLODE('TMP_SCREENS');")
+
+        if (input['sourcesTableName']) {
+            // Delete receivers near sources
+            sql.execute("Create spatial index on "+sources_table_name+"(the_geom);")
+            sql.execute("delete from "+receivers_table_name+" g where exists (select 1 from "+sources_table_name+" r where st_expand(g.the_geom, 1) && r.the_geom and st_distance(g.the_geom, r.the_geom) < 1 limit 1);")
+        }
+
     } else {
         // building have population attribute
         // set population attribute divided by number of receiver to each receiver
+        sql.execute("DROP TABLE IF EXISTS tmp_receivers")
+        sql.execute("create table tmp_receivers(pk serial, the_geom geometry,build_pk integer) as select null, st_updatez(the_geom," + h + "), pk building_pk from ST_EXPLODE('TMP_SCREENS');")
 
+        if (input['sourcesTableName']) {
+            // Delete receivers near sources
+            sql.execute("Create spatial index on "+sources_table_name+"(the_geom);")
+            sql.execute("delete from tmp_receivers g where exists (select 1 from "+sources_table_name+" r where st_expand(g.the_geom, 1) && r.the_geom and st_distance(g.the_geom, r.the_geom) < 1 limit 1);")
+        }
+
+        sql.execute("CREATE INDEX REC_BUILD ON tmp_receivers(build_pk)")
+        sql.execute("create table " + receivers_table_name + "(pk serial, the_geom geometry,build_pk integer, pop float) as select r.pk, r.the_geom, r.build_pk, b.pop / (select count(*) from tmp_receivers rr where rr.build_pk = r.build_pk limit 1) as pop from tmp_receivers r,"+building_table_name+ " b where r.build_pk = b.pk;")
+        sql.execute("drop table if exists tmp_receivers")
     }
     // cleaning
     sql.execute("drop table TMP_SCREENS")
     sql.execute("drop table tmp_screen_truncated")
     sql.execute("drop table tmp_relation_screen_building")
     sql.execute("drop table tmp_receivers_lines")
-
-    if (input['sourcesTableName']) {
-        // Delete receivers near sources
-        sql.execute("Create spatial index on "+sources_table_name+"(the_geom);")
-        sql.execute("delete from "+receivers_table_name+" g where exists (select 1 from "+sources_table_name+" r where st_expand(g.the_geom, 1) && r.the_geom and st_distance(g.the_geom, r.the_geom) < 1 limit 1);")
-    }
 
     // Process Done
     return [tableNameCreated: "Process done. Table of receivers "+ receivers_table_name +" created !"]
