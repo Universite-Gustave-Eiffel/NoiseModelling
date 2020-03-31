@@ -21,8 +21,12 @@ import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.LineString
+import org.locationtech.jts.geom.MultiLineString
+import org.locationtech.jts.geom.Point
 import org.locationtech.jts.geom.Polygon
+import org.locationtech.jts.geom.PrecisionModel
 import org.noise_planet.noisemodelling.propagation.ComputeRays
+import org.noise_planet.noisemodelling.propagation.utils.Densifier3D
 
 import java.sql.Connection
 
@@ -80,6 +84,89 @@ def run(input) {
     }
 }
 
+/**
+ *
+ * @param geom Geometry
+ * @param segmentSizeConstraint Maximal distance between points
+ * @param[out] pts computed points
+ * @return Fixed distance between points
+ */
+double splitLineStringIntoPoints(LineString geom, double segmentSizeConstraint,
+                                               List<Coordinate> pts) {
+    // If the linear sound source length is inferior than half the distance between the nearest point of the sound
+    // source and the receiver then it can be modelled as a single point source
+    double geomLength = geom.getLength();
+    if(geomLength < segmentSizeConstraint) {
+        // Return mid point
+        Coordinate[] points = geom.getCoordinates();
+        double segmentLength = 0;
+        final double targetSegmentSize = geomLength / 2.0;
+        for (int i = 0; i < points.length - 1; i++) {
+            Coordinate a = points[i];
+            final Coordinate b = points[i + 1];
+            double length = a.distance3D(b);
+            if(length + segmentLength > targetSegmentSize) {
+                double segmentLengthFraction = (targetSegmentSize - segmentLength) / length;
+                Coordinate midPoint = new Coordinate(a.x + segmentLengthFraction * (b.x - a.x),
+                        a.y + segmentLengthFraction * (b.y - a.y),
+                        a.z + segmentLengthFraction * (b.z - a.z));
+                pts.add(midPoint);
+                break;
+            }
+            segmentLength += length;
+        }
+        return geom.getLength();
+    } else {
+        double targetSegmentSize = geomLength / Math.ceil(geomLength / segmentSizeConstraint);
+        Coordinate[] points = geom.getCoordinates();
+        double segmentLength = 0.0;
+
+        // Mid point of segmented line source
+        def midPoint = null;
+        for (int i = 0; i < points.length - 1; i++) {
+            Coordinate a = points[i];
+            final Coordinate b = points[i + 1];
+            double length = a.distance3D(b);
+            if(Double.isNaN(length)) {
+                length = a.distance(b);
+            }
+            while (length + segmentLength > targetSegmentSize) {
+                //LineSegment segment = new LineSegment(a, b);
+                double segmentLengthFraction = (targetSegmentSize - segmentLength) / length;
+                Coordinate splitPoint = new Coordinate();
+                splitPoint.x = a.x + segmentLengthFraction * (b.x - a.x);
+                splitPoint.y = a.y + segmentLengthFraction * (b.y - a.y);
+                splitPoint.z = a.z + segmentLengthFraction * (b.z - a.z);
+                if(midPoint == null && length + segmentLength > targetSegmentSize / 2) {
+                    segmentLengthFraction = (targetSegmentSize / 2.0 - segmentLength) / length;
+                    midPoint = new Coordinate(a.x + segmentLengthFraction * (b.x - a.x),
+                            a.y + segmentLengthFraction * (b.y - a.y),
+                            a.z + segmentLengthFraction * (b.z - a.z));
+                }
+                pts.add(midPoint);
+                a = splitPoint;
+                length = a.distance3D(b);
+                if(Double.isNaN(length)) {
+                    length = a.distance(b);
+                }
+                segmentLength = 0;
+                midPoint = null;
+            }
+            if(midPoint == null && length + segmentLength > targetSegmentSize / 2) {
+                double segmentLengthFraction = (targetSegmentSize / 2.0 - segmentLength) / length;
+                midPoint = new Coordinate(a.x + segmentLengthFraction * (b.x - a.x),
+                        a.y + segmentLengthFraction * (b.y - a.y),
+                        a.z + segmentLengthFraction * (b.z - a.z));
+            }
+            segmentLength += length;
+        }
+        if(midPoint != null) {
+            pts.add(midPoint);
+        }
+        return targetSegmentSize;
+    }
+}
+
 def exec(connection, input) {
 
     String receivers_table_name = "RECEIVERS"
@@ -92,12 +179,12 @@ def exec(connection, input) {
 
     Double delta = 10
     if (input['delta']) {
-        delta = input['delta']
+        delta = input['delta'] as Double
     }
 
     Double h = 4.0d
     if (input['height']) {
-        h = input['height']
+        h = input['height'] as Double
     }
 
     String sources_table_name = "SOURCES"
@@ -119,12 +206,12 @@ def exec(connection, input) {
     String queryGrid = null
 
     // Reproject fence
+    int targetSrid = SFSUtilities.getSRID(connection, TableLocation.parse(building_table_name))
+    if (targetSrid == 0 && input['sourcesTableName']) {
+        targetSrid = SFSUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
+    }
     def fenceGeom = null
     if (input['fence']) {
-        int targetSrid = SFSUtilities.getSRID(connection, TableLocation.parse(building_table_name))
-        if (targetSrid == 0 && input['sourcesTableName']) {
-            targetSrid = SFSUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
-        }
         if (targetSrid != 0) {
             // Transform fence to the same coordinate system than the buildings & sources
             fenceGeom = ST_Transform.ST_Transform(connection, ST_SetSRID.setSRID(input['fence'] as Geometry, 4326), targetSrid)
@@ -148,25 +235,51 @@ def exec(connection, input) {
     sql.execute("create table tmp_relation_screen_building as select b.pk as PK_building, s.pk as pk_screen from "+building_table_name+" b, tmp_receivers_lines s where b.the_geom && s.the_geom and s.pk != b.pk and ST_Intersects(b.the_geom, s.the_geom) and b.height > " + h)
     sql.execute("drop table if exists tmp_screen_truncated;")
     // truncate receiver lines
-    sql.execute("create table tmp_screen_truncated as select r.pk_screen, ST_DIFFERENCE(s.the_geom, ST_BUFFER(ST_ACCUM(b.the_geom), 2)) the_geom from tmp_relation_screen_building r, "+building_table_name+" b, tmp_receivers_lines s WHERE PK_building = b.pk AND pk_screen = s.pk  GROUP BY pk_screen;")
-    sql.execute("DROP TABLE IF EXISTS TMP_SCREENS;")
+    sql.execute("create table tmp_screen_truncated as select r.pk_screen, ST_DIFFERENCE(s.the_geom, ST_BUFFER(ST_ACCUM(b.the_geom), 2)) the_geom from tmp_relation_screen_building r, "+building_table_name+" b, tmp_receivers_lines s WHERE PK_building = b.pk AND pk_screen = s.pk  GROUP BY pk_screen, s.the_geom;")
+    sql.execute("DROP TABLE IF EXISTS TMP_SCREENS_MERGE;")
     // union of truncated receivers and non tructated, split line to points
-    sql.execute("create table TMP_SCREENS as select s.pk, st_tomultipoint(st_densify(s.the_geom, 5)) the_geom from tmp_receivers_lines s where not st_isempty(s.the_geom) and pk not in (select pk_screen from tmp_screen_truncated) UNION ALL select pk_screen, st_tomultipoint(st_densify(the_geom, 5)) from tmp_screen_truncated where not st_isempty(the_geom);")
+    sql.execute("create table TMP_SCREENS_MERGE (pk serial, the_geom geometry) as select s.pk, s.the_geom the_geom from tmp_receivers_lines s where not st_isempty(s.the_geom) and pk not in (select pk_screen from tmp_screen_truncated) UNION ALL select pk_screen, the_geom from tmp_screen_truncated where not st_isempty(the_geom);")
+    // Collect all lines and convert into points using custom method
+    sql.execute("CREATE TABLE TMP_SCREENS(pk integer, the_geom geometry)")
+    def qry = 'INSERT INTO TMP_SCREENS(pk , the_geom) VALUES (?,?);'
+    GeometryFactory factory = new GeometryFactory(new PrecisionModel(), targetSrid);
+    sql.withBatch(100, qry) { ps ->
+        sql.eachRow("SELECT pk, the_geom from TMP_SCREENS_MERGE") { row ->
+            List<Coordinate> pts = new ArrayList<Coordinate>()
+            def geom = row[1] as Geometry
+            if(geom instanceof LineString) {
+                splitLineStringIntoPoints(geom as LineString, delta, pts)
+            } else if(geom instanceof MultiLineString) {
+                for(int idgeom = 0; idgeom < geom.numGeometries; idgeom++) {
+                    splitLineStringIntoPoints(geom.getGeometryN(idgeom) as LineString, delta, pts)
+                }
+            }
+            for(int idp = 0; idp < pts.size(); idp++) {
+                Coordinate pt = pts.get(idp);
+                if(!Double.isNaN(pt.x) && !Double.isNaN(pt.y)) {
+                    Coordinate newCoord = new Coordinate(pt.x, pt.y, h)
+                    ps.addBatch(row[0] as Integer, factory.createPoint(newCoord))
+                }
+            }
+        }
+    }
+    sql.execute("drop table if exists TMP_SCREENS_MERGE")
     sql.execute("drop table if exists " + receivers_table_name)
+
     if(!hasPop) {
-        sql.execute("create table " + receivers_table_name + "(pk serial, the_geom geometry,build_pk integer) as select null, st_updatez(the_geom," + h + "), pk building_pk from ST_EXPLODE('TMP_SCREENS');")
+        sql.execute("create table " + receivers_table_name + "(pk serial, the_geom geometry,build_pk integer) as select null, the_geom, pk building_pk from TMP_SCREENS;")
 
         if (input['sourcesTableName']) {
             // Delete receivers near sources
             sql.execute("Create spatial index on "+sources_table_name+"(the_geom);")
-            sql.execute("delete from "+receivers_table_name+" g where exists (select 1 from "+sources_table_name+" r where st_expand(g.the_geom, 1) && r.the_geom and st_distance(g.the_geom, r.the_geom) < 1 limit 1);")
+            sql.execute("delete from "+receivers_table_name+" g where exists (select 1 from "+sources_table_name+" r where st_expand(g.the_geom, 1, 1) && r.the_geom and st_distance(g.the_geom, r.the_geom) < 1 limit 1);")
         }
 
     } else {
         // building have population attribute
         // set population attribute divided by number of receiver to each receiver
         sql.execute("DROP TABLE IF EXISTS tmp_receivers")
-        sql.execute("create table tmp_receivers(pk serial, the_geom geometry,build_pk integer) as select null, st_updatez(the_geom," + h + "), pk building_pk from ST_EXPLODE('TMP_SCREENS');")
+        sql.execute("create table tmp_receivers(pk serial, the_geom geometry,build_pk integer) as select null, the_geom, pk building_pk from TMP_SCREENS;")
 
         if (input['sourcesTableName']) {
             // Delete receivers near sources

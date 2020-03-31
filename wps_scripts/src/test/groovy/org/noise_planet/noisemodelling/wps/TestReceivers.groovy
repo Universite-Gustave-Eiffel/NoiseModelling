@@ -28,7 +28,17 @@ class TestReceivers extends JdbcTestCase {
         def receivers_in_buildings = sql.firstRow("SELECT COUNT(*) from receivers r, buildings b where r.the_geom && b.the_geom and st_intersects(r.the_geom, b.the_geom) and ST_Z(r.the_geom) < b.height ")[0] as Integer
         assertEquals(0, receivers_in_buildings)
 
-        // SHPWrite.exportTable(connection, "target/receivers.shp", "RECEIVERS")
+        sql.execute("CREATE SPATIAL INDEX ON RECEIVERS(the_geom)")
+        sql.execute("CREATE INDEX ON RECEIVERS(build_pk)")
+
+        // check effective distance between receivers
+
+        def average_receiver_min_distance = sql.firstRow("SELECT AVG((select ST_DISTANCE(R.THE_GEOM, RR.THE_GEOM) dist from receivers rr where rr.build_pk = r.build_pk and r.pk != rr.pk ORDER BY ST_DISTANCE(R.THE_GEOM, RR.THE_GEOM) LIMIT 1)) avgdist from receivers r")[0] as Double
+
+        //SHPWrite.exportTable(connection, "target/receivers.shp", "RECEIVERS")
+        //SHPWrite.exportTable(connection, "target/receivers_line.shp", "TMP_SCREENS_MERGE")
+        assertEquals(5, average_receiver_min_distance, 0.6)
+
     }
 
     public void testBuildingGridWithPop() {
