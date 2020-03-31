@@ -231,7 +231,7 @@ def exec(connection, input) {
         filter_geom_query = " WHERE the_geom && ST_GeomFromText('" + fenceGeom + "') AND ST_INTERSECTS(the_geom, ST_GeomFromText('" + fenceGeom + "'))";
     }
     // create line of receivers
-    sql.execute("create table tmp_receivers_lines as select pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, 2, 'join=bevel')), 0.5) the_geom from "+building_table_name+filter_geom_query)
+    sql.execute("create table tmp_receivers_lines as select pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, 2, 'join=bevel')), 0.05) the_geom from "+building_table_name+filter_geom_query)
     sql.execute("drop table if exists tmp_relation_screen_building;")
     sql.execute("create spatial index on tmp_receivers_lines(the_geom)")
     // list buildings that will remove receivers (if height is superior than receiver height
