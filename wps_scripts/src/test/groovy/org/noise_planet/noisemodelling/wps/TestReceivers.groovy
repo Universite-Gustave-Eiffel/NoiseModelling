@@ -55,11 +55,13 @@ class TestReceivers extends JdbcTestCase {
                                                "height" : 6,
                                                "sourcesTableName" : "ROADS",
                                                "fenceTableName" : "BUILDINGS"])
+
         //SHPWrite.exportTable(connection, "target/receivers.shp", "RECEIVERS")
+        //SHPWrite.exportTable(connection, "target/buildings.shp", "BUILDINGS")
 
         def receivers_pop = sql.firstRow("SELECT sum(pop) from receivers")[0] as Double
 
-        def buildings_pop = sql.firstRow("SELECT sum(pop) from buildings")[0] as Double
+        def buildings_pop = sql.firstRow("SELECT sum(pop) from buildings where pk in (select distinct build_pk from receivers)")[0] as Double
 
         assertEquals(0, buildings_pop - receivers_pop, 0.1);
     }
