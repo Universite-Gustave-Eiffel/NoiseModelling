@@ -9,13 +9,14 @@ class TestReceivers extends JdbcTestCase {
 
 
 
-    public void testRegularGrid() {
+    public void testBuildingGrid() {
         SHPRead.readShape(connection, TestReceivers.getResource("buildings.shp").getPath())
 
         SHPRead.readShape(connection, TestReceivers.getResource("roads.shp").getPath())
 
         new Building_Grid().exec(connection,  ["tableBuilding" : "BUILDINGS",
                                                "delta" : 5,
+                                                "height" : 6,
                                                "sourcesTableName" : "ROADS",
                                                "fenceTableName" : "BUILDINGS"])
         SHPWrite.exportTable(connection, "target/receivers.shp", "RECEIVERS")
