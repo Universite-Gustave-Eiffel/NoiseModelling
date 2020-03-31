@@ -32,7 +32,7 @@ import java.sql.Connection
 
 // Change code and use : createReceiversFromBuildings see down
 title = 'Buildings Grid'
-description = 'Calculates a regular grid of receivers around buildings.' +
+description = 'Generates receivers placed 2 meters from building facades at specified height.' +
         '</br> </br> <b> The output table is called : RECEIVERS </b> '
 
 inputs = [
@@ -200,6 +200,9 @@ def exec(connection, input) {
 
     Boolean hasPop = JDBCUtilities.hasField(connection, building_table_name, "POP")
 
+    if(!JDBCUtilities.hasField(connection, building_table_name, "HEIGHT")) {
+        return [tableNameCreated: "Buildings table must have HEIGHT field"]
+    }
     //Statement sql = connection.createStatement()
     Sql sql = new Sql(connection)
     sql.execute(String.format("DROP TABLE IF EXISTS %s", receivers_table_name))
