@@ -291,7 +291,7 @@ def exec(connection, input) {
         }
 
         sql.execute("CREATE INDEX REC_BUILD ON tmp_receivers(build_pk)")
-        sql.execute("create table " + receivers_table_name + "(pk serial, the_geom geometry,build_pk integer, pop float) as select r.pk, r.the_geom, r.build_pk, b.pop / (select count(*) from tmp_receivers rr where rr.build_pk = r.build_pk limit 1) as pop from tmp_receivers r,"+building_table_name+ " b where r.build_pk = b.pk;")
+        sql.execute("create table " + receivers_table_name + "(pk serial, the_geom geometry,build_pk integer, pop float) as select r.pk, r.the_geom, r.build_pk, b.pop / (select count(*) from tmp_receivers rr where rr.build_pk = r.build_pk limit 1)::float as pop from tmp_receivers r,"+building_table_name+ " b where r.build_pk = b.pk;")
         sql.execute("drop table if exists tmp_receivers")
     }
     // cleaning
