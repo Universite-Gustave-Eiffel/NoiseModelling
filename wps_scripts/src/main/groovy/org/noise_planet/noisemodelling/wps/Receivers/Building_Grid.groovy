@@ -168,6 +168,7 @@ def exec(Connection connection, input) {
     // truncate receiver lines
     sql.execute("create table tmp_screen_truncated as select r.pk_screen, ST_DIFFERENCE(s.the_geom, ST_BUFFER(ST_ACCUM(b.the_geom), 2)) the_geom from tmp_relation_screen_building r, "+building_table_name+" b, tmp_receivers_lines s WHERE PK_building = b.pk AND pk_screen = s.pk  GROUP BY pk_screen, s.the_geom;")
     sql.execute("DROP TABLE IF EXISTS TMP_SCREENS_MERGE;")
+    sql.execute("DROP TABLE IF EXISTS TMP_SCREENS;")
     // union of truncated receivers and non tructated, split line to points
     sql.execute("create table TMP_SCREENS_MERGE (pk serial, the_geom geometry) as select s.pk, s.the_geom the_geom from tmp_receivers_lines s where not st_isempty(s.the_geom) and pk not in (select pk_screen from tmp_screen_truncated) UNION ALL select pk_screen, the_geom from tmp_screen_truncated where not st_isempty(the_geom);")
     // Collect all lines and convert into points using custom method
@@ -222,8 +223,10 @@ def exec(Connection connection, input) {
             sql.execute("delete from tmp_receivers g where exists (select 1 from "+sources_table_name+" r where st_expand(g.the_geom, 1) && r.the_geom and st_distance(g.the_geom, r.the_geom) < 1 limit 1);")
         }
 
-        sql.execute("CREATE INDEX REC_BUILD ON tmp_receivers(build_pk)")
-        sql.execute("create table " + receivers_table_name + "(pk serial, the_geom geometry,build_pk integer, pop float) as select r.pk, r.the_geom, r.build_pk, b.pop / (select count(*) from tmp_receivers rr where rr.build_pk = r.build_pk limit 1)::float as pop from tmp_receivers r,"+building_table_name+ " b where r.build_pk = b.pk;")
+        sql.execute("CREATE INDEX ON tmp_receivers(build_pk)")
+        sql.execute("CREATE INDEX ON "+building_table_name+ "(pk)")
+        sql.execute("create table " + receivers_table_name + "(pk serial, the_geom geometry,build_pk integer, pop float) as select null, a.the_geom, a.build_pk, b.pop/(SELECT COUNT(*) from tmp_receivers aa where a.build_pk = aa.build_pk group by aa.build_pk)::float from tmp_receivers a, "+building_table_name+ " b where b.pk = a.build_pk;")
+        //sql.execute("create table " + receivers_table_name + "(pk serial, the_geom geometry,build_pk integer, pop float) as select r.pk, r.the_geom, r.build_pk, b.pop / (select count(*) from tmp_receivers rr where rr.build_pk = r.build_pk limit 1)::float as pop from tmp_receivers r,"+building_table_name+ " b where r.build_pk = b.pk;")
         sql.execute("drop table if exists tmp_receivers")
     }
     // cleaning

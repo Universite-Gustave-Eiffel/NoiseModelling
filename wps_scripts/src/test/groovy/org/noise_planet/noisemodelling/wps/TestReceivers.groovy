@@ -22,14 +22,11 @@ package org.noise_planet.noisemodelling.wps
 
 import groovy.sql.Sql
 import org.h2gis.functions.io.shp.SHPRead
-import org.h2gis.functions.io.shp.SHPWrite
 import org.noise_planet.noisemodelling.wps.Receivers.Building_Grid
 
 class TestReceivers extends JdbcTestCase {
 
-
-
-    public void testBuildingGrid() {
+    void testBuildingGrid() {
         def sql = new Sql(connection)
 
         SHPRead.readShape(connection, TestReceivers.getResource("buildings.shp").getPath())
@@ -61,7 +58,7 @@ class TestReceivers extends JdbcTestCase {
 
     }
 
-    public void testBuildingGridWithPop() {
+    void testBuildingGridWithPop() {
         def sql = new Sql(connection)
 
         SHPRead.readShape(connection, TestReceivers.getResource("buildings.shp").getPath(), "BUILDINGS_NOPOP")
