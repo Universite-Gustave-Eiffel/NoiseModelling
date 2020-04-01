@@ -37,7 +37,7 @@ import java.sql.Statement
 title = 'Change or set SRID'
 description = 'Transforms table from its original coordinate reference system (CRS) to the CRS specified by Spatial Reference Identifier (SRID). </br> If the table does not have an associated SRID, the new SRID is associated with the table.'
 
-inputs = [newSRID: [name: 'Projection identifier', title: 'Projection identifier', description: 'New projection identifier (also called SRID) of your table. It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection). </br>  All coordinates will be projected from the specified EPSG to WGS84 coordinates. </br> This entry is optional because many formats already include the projection and you can also import files without geometry attributes.'],
+inputs = [newSRID  : [name: 'Projection identifier', title: 'Projection identifier', description: 'New projection identifier (also called SRID) of your table. It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection). </br>  All coordinates will be projected from the specified EPSG to WGS84 coordinates. </br> This entry is optional because many formats already include the projection and you can also import files without geometry attributes.'],
           tableName: [name: 'Name of the table', title: 'Name of the table', description: 'Name of the table you want to display.', type: String.class]
 ]
 
@@ -78,7 +78,6 @@ def exec(Connection connection, input) {
     Statement stmt = connection.createStatement()
 
 
-
     // get the PrimaryKey field if exists to keep it in the final table
     int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, tableName)
 
@@ -93,7 +92,7 @@ def exec(Connection connection, input) {
             if (f != "THE_GEOM") {
                 sbFields.append(String.format(" , %s ", f))
             }
-            if (pkIndex == k)  pkField = f.toString()
+            if (pkIndex == k) pkField = f.toString()
             k++
     }
 
@@ -101,26 +100,26 @@ def exec(Connection connection, input) {
     //get SRID of the table
     int srid = SFSUtilities.getSRID(connection, TableLocation.parse(tableName))
     // if a SRID exists
-    if (srid >0) {
+    if (srid > 0) {
         if (srid == newSrid)
-            resultString = "The table already counts "+ newSrid.toString() +" as SRID."
-        else{
-            stmt.execute("CREATE table temp as select ST_Transform(the_geom,"+newSrid.toInteger()+") THE_GEOM" + sbFields + " FROM " + TableLocation.parse(tableName).toString())
+            resultString = "The table already counts " + newSrid.toString() + " as SRID."
+        else {
+            stmt.execute("CREATE table temp as select ST_Transform(the_geom," + newSrid.toInteger() + ") THE_GEOM" + sbFields + " FROM " + TableLocation.parse(tableName).toString())
             stmt.execute("DROP TABLE" + TableLocation.parse(tableName).toString())
-            stmt.execute("CREATE TABLE" + TableLocation.parse(tableName).toString() +" AS SELECT * FROM TEMP")
+            stmt.execute("CREATE TABLE" + TableLocation.parse(tableName).toString() + " AS SELECT * FROM TEMP")
             stmt.execute("DROP TABLE TEMP")
-            if (pkField != ""){
+            if (pkField != "") {
                 stmt.execute("ALTER TABLE " + tableName.toString() + " ALTER COLUMN " + pkField + " INT NOT NULL;")
                 stmt.execute("ALTER TABLE " + tableName.toString() + " ADD PRIMARY KEY (" + pkField + ");  ")
             }
-            resultString = "SRID changed from "+  srid.toString() +" to " + newSrid.toString() + "."
+            resultString = "SRID changed from " + srid.toString() + " to " + newSrid.toString() + "."
         }
-    } else{     // if the table doesn't have any associated SRID
-        stmt.execute("CREATE table temp as select ST_SetSRID(the_geom,"+newSrid.toInteger()+") THE_GEOM" + sbFields + " FROM " + TableLocation.parse(tableName).toString())
+    } else {     // if the table doesn't have any associated SRID
+        stmt.execute("CREATE table temp as select ST_SetSRID(the_geom," + newSrid.toInteger() + ") THE_GEOM" + sbFields + " FROM " + TableLocation.parse(tableName).toString())
         stmt.execute("DROP TABLE" + TableLocation.parse(tableName).toString())
-        stmt.execute("CREATE TABLE" + TableLocation.parse(tableName).toString() +" AS SELECT * FROM TEMP")
+        stmt.execute("CREATE TABLE" + TableLocation.parse(tableName).toString() + " AS SELECT * FROM TEMP")
         stmt.execute("DROP TABLE TEMP")
-        if (pkField != ""){
+        if (pkField != "") {
             stmt.execute("ALTER TABLE " + tableName.toString() + " ALTER COLUMN " + pkField + " INT NOT NULL;")
             stmt.execute("ALTER TABLE " + tableName.toString() + " ADD PRIMARY KEY (" + pkField + ");  ")
         }

@@ -149,7 +149,7 @@ def run(input) {
 def exec(Connection connection, input) {
 
     // Get external tools
-    File sourceFile = new File("src\\main\\groovy\\org\\noise_planet\\noisemodelling\\wpsTools\\GeneralTools.groovy")
+    File sourceFile = new File("src/main/groovy/org/noise_planet/noisemodelling/wpsTools/GeneralTools.groovy")
     Class groovyClass = new GroovyClassLoader(getClass().getClassLoader()).parseClass(sourceFile)
     GroovyObject tools = (GroovyObject) groovyClass.newInstance()
 

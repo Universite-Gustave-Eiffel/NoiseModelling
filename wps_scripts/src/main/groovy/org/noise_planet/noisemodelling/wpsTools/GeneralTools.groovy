@@ -1,10 +1,13 @@
 package org.noise_planet.noisemodelling.wpsTools
 
+import groovy.sql.Sql
 import org.cts.crs.CRSException
 import org.h2gis.utilities.SpatialResultSet
 import org.locationtech.jts.geom.Geometry
 import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
+import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceDynamic
 import org.noise_planet.noisemodelling.emission.RSParametersCnossos
+import org.noise_planet.noisemodelling.emission.RSParametersDynamic
 import org.noise_planet.noisemodelling.propagation.ComputeRays
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOut
 import org.noise_planet.noisemodelling.propagation.FastObstructionTest
@@ -32,6 +35,28 @@ class GeneralTools {
         }
         return currentVal
     }
+
+
+/**
+ *
+ * @param array1
+ * @param array2
+ * @return
+ */
+    static double[] sumLinearArray(double[] array1, double[] array2) {
+        if (array1.length != array2.length) {
+            throw new IllegalArgumentException("Not same size array")
+        } else {
+            double[] sum = new double[array1.length]
+
+            for (int i = 0; i < array1.length; ++i) {
+                sum[i] = array1[i] + array2[i]
+            }
+
+            return sum
+        }
+    }
+
 
     /**
      * Export scene to kml format
@@ -320,3 +345,156 @@ class TrafficPropagationProcessDataDENFactory implements PointNoiseMap.Propagati
 
 
 
+
+/**
+ *
+ */
+class ProbabilisticProcessData {
+
+    Map<Integer, Double> SPEED_LV = new HashMap<>()
+    Map<Integer, Double> SPEED_HV = new HashMap<>()
+    Map<Integer, Double> LV = new HashMap<>()
+    Map<Integer, Double> HV = new HashMap<>()
+
+    double[] getCarsLevel(int idSource) throws SQLException {
+        double[] res_d = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        double[] res_LV = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        double[] res_HV = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        def list = [63, 125, 250, 500, 1000, 2000, 4000, 8000]
+        // memes valeurs d e et n
+
+
+        def random = Math.random()
+        if (random < LV.get(idSource)) {
+            int kk = 0
+            for (f in list) {
+
+                double speed = SPEED_LV.get(idSource)
+                int acc = 0
+                int FreqParam = f
+                double Temperature = 20
+                int RoadSurface = 0
+                boolean Stud = true
+                double Junc_dist = 200
+                int Junc_type = 1
+                int veh_type = 1
+                int acc_type = 1
+                double LwStd = 1
+                int VehId = 10
+
+                RSParametersDynamic rsParameters = new RSParametersDynamic(speed, acc, veh_type, acc_type, FreqParam, Temperature, RoadSurface, Stud, Junc_dist, Junc_type, LwStd, VehId)
+                rsParameters.setSlopePercentage(0)
+
+                res_LV[kk] = EvaluateRoadSourceDynamic.evaluate(rsParameters)
+                kk++
+            }
+
+        }
+        if (random < HV.get(idSource)) {
+            int kk = 0
+            for (f in list) {
+                double speed = SPEED_HV.get(idSource)
+                int acc = 0
+                int FreqParam = f
+                double Temperature = 20
+                int RoadSurface = 0
+                boolean Stud = true
+                double Junc_dist = 200
+                int Junc_type = 1
+                int veh_type = 3
+                int acc_type = 1
+                double LwStd = 1
+                int VehId = 10
+
+                RSParametersDynamic rsParameters = new RSParametersDynamic(speed, acc, veh_type, acc_type, FreqParam, Temperature, RoadSurface, Stud, Junc_dist, Junc_type, LwStd, VehId)
+                rsParameters.setSlopePercentage(0)
+
+                res_HV[kk] = EvaluateRoadSourceDynamic.evaluate(rsParameters)
+                kk++
+            }
+        }
+        int kk = 0
+        for (f in list) {
+            res_d[kk] = 10 * Math.log10(
+                    (1.0 / 2.0) *
+                            (Math.pow(10, (10 * Math.log10(Math.pow(10, res_LV[kk] / 10))) / 10)
+                                    + Math.pow(10, (10 * Math.log10(Math.pow(10, res_HV[kk] / 10))) / 10)
+                            )
+            )
+            kk++
+        }
+
+
+        return res_d
+    }
+
+    void setProbaTable(String tablename, Sql sql) {
+        //////////////////////
+        // Import file text
+        //////////////////////
+        int i_read = 0;
+
+        // Remplissage des variables avec le contenu du fichier plan d'exp
+        sql.eachRow('SELECT PK,  SPEED, HV,LV FROM ' + tablename + ';') { row ->
+            int pk = (int) row[0]
+
+            SPEED_HV.put(pk, (double) row[1])
+            SPEED_LV.put(pk, (double) row[1])
+            HV.put(pk, (double) row[2])
+            LV.put(pk, (double) row[3])
+
+        }
+
+
+    }
+
+}
+
+
+/**
+ * Read source database and compute the sound emission spectrum of roads sources
+ */
+class ProbabilisticPropagationProcessData extends PropagationProcessData {
+
+    protected List<double[]> wjSourcesD = new ArrayList<>()
+
+    public ProbabilisticPropagationProcessData(FastObstructionTest freeFieldFinder) {
+        super(freeFieldFinder)
+    }
+
+    @Override
+    public void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException {
+
+        super.addSource(pk, geom, rs)
+
+        double db_m63 = 90
+        double db_m125 = 90
+        double db_m250 = 90
+        double db_m500 = 90
+        double db_m1000 = 90
+        double db_m2000 = 90
+        double db_m4000 = 90
+        double db_m8000 = 90
+
+        double[] res_d = [db_m63, db_m125, db_m250, db_m500, db_m1000, db_m2000, db_m4000, db_m8000]
+        wjSourcesD.add(ComputeRays.dbaToW(res_d))
+    }
+
+    @Override
+    public double[] getMaximalSourcePower(int sourceId) {
+        return wjSourcesD.get(sourceId)
+    }
+
+
+}
+
+/**
+ *
+ */
+class ProbabilisticPropagationProcessDataFactory implements PointNoiseMap.PropagationProcessDataFactory {
+
+    @Override
+    PropagationProcessData create(FastObstructionTest freeFieldFinder) {
+        return new ProbabilisticPropagationProcessData(freeFieldFinder)
+    }
+}

@@ -9,7 +9,7 @@ import org.noise_planet.noisemodelling.wps.Others_Tools.Screen_to_building
 class TestScreenToBuildings extends JdbcTestCase {
 
     @Test
-    public void testTruncateScreens() {
+    void testTruncateScreens() {
         String screen1 = "LINESTRING (224146.48 6758063.29, 224164.4 6757986.29, 224164.81 6757970.4) "
         String screen2 = "LINESTRING (224206.98 6757997.9, 224213.9 6757964.7, 224210.24 6757964.29, 224206.98 6757997.9)"
         String fence = "POLYGON ((224163.73 6757984.27, 224163.67 6757985.37, 224166.23 6757985.4, 224166.18 6757984.29, 224163.73 6757984.27))"
