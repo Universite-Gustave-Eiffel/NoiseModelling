@@ -22,7 +22,7 @@ package org.noise_planet.noisemodelling.wps
 
 import org.h2gis.functions.io.shp.SHPRead
 import org.h2gis.utilities.JDBCUtilities
-import org.noise_planet.noisemodelling.wps.NoiseModelling.Road_Emission_From_DEN
+import org.noise_planet.noisemodelling.wps.NoiseModelling.Road_Emission_from_Traffic
 import org.noise_planet.noisemodelling.wps.Others_Tools.Add_LAEQ_LEQ_columns
 import org.noise_planet.noisemodelling.wps.Others_Tools.Change_SRID
 import org.slf4j.Logger
@@ -59,7 +59,7 @@ class TestOthersTools extends JdbcTestCase {
 
         SHPRead.readShape(connection, TestDatabaseManager.getResource("roads2.shp").getPath())
 
-        new Road_Emission_From_DEN().exec(connection,
+        new Road_Emission_from_Traffic().exec(connection,
                 ["tableRoads": "ROADS2"])
 
         String res = new Add_LAEQ_LEQ_columns().exec(connection,
@@ -74,7 +74,7 @@ class TestOthersTools extends JdbcTestCase {
 
         SHPRead.readShape(connection, TestDatabaseManager.getResource("roads2.shp").getPath())
 
-        new Road_Emission_From_DEN().exec(connection,
+        new Road_Emission_from_Traffic().exec(connection,
                 ["tableRoads": "ROADS2"])
 
         String res = new Add_LAEQ_LEQ_columns().exec(connection,

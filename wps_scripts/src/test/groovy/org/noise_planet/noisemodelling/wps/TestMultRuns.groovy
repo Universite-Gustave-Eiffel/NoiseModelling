@@ -24,13 +24,9 @@ import org.h2gis.functions.io.geojson.GeoJsonRead
 
 import org.junit.Test
 import org.noise_planet.noisemodelling.wps.Database_Manager.Add_Primary_Key
-import org.noise_planet.noisemodelling.wps.Database_Manager.Display_Database
 import org.noise_planet.noisemodelling.wps.Database_Manager.Table_Visualization_Data
 import org.noise_planet.noisemodelling.wps.Experimental.Get_Rayz
 import org.noise_planet.noisemodelling.wps.Experimental.Multi_Runs
-import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
-import org.noise_planet.noisemodelling.wps.NoiseModelling.Lden_from_Emission
-import org.noise_planet.noisemodelling.wps.NoiseModelling.Road_Emission_From_DEN
 
 class TestMultRuns extends JdbcTestCase  {
 

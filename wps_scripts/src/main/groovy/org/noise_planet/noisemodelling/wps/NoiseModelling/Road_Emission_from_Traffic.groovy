@@ -94,6 +94,12 @@ def run(input) {
 // main function of the script
 def exec(Connection connection, input) {
 
+    // Get external tools
+    File sourceFile = new File("src\\main\\groovy\\org\\noise_planet\\noisemodelling\\wpsTools\\GeneralTools.groovy")
+    Class groovyClass = new GroovyClassLoader(getClass().getClassLoader()).parseClass(sourceFile)
+    GroovyObject tools = (GroovyObject) groovyClass.newInstance()
+
+
     //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postGIS database
     connection = new ConnectionWrapper(connection)
 
@@ -170,7 +176,7 @@ def exec(Connection connection, input) {
 
         while (rs.next()) {
             k++
-            currentVal = ProgressBar(Math.round(10*k/nbRoads).toInteger(),currentVal)
+            currentVal = tools.invokeMethod("ProgressBar", [Math.round(10*k/nbRoads).toInteger(),currentVal])
             //System.println(rs)
             Geometry geo = rs.getGeometry()
 
@@ -209,20 +215,7 @@ def exec(Connection connection, input) {
 
 }
 
-/**
- * Spartan ProgressBar
- * @param newVal
- * @param currentVal
- * @return
- */
-static int ProgressBar(int newVal, int currentVal)
-{
-    if(newVal != currentVal) {
-        currentVal = newVal
-        System.print( 10*currentVal + '% ... ')
-    }
-    return currentVal
-}
+
 
 /**
  * Compute noise emission levels from input traffic data

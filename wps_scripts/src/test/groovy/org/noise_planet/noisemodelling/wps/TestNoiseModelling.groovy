@@ -22,8 +22,9 @@ package org.noise_planet.noisemodelling.wps
 
 import org.h2gis.functions.io.shp.SHPRead
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File
-import org.noise_planet.noisemodelling.wps.NoiseModelling.Lden_from_Emission
-import org.noise_planet.noisemodelling.wps.NoiseModelling.Road_Emission_From_DEN
+import org.noise_planet.noisemodelling.wps.NoiseModelling.Lday_from_Traffic
+import org.noise_planet.noisemodelling.wps.NoiseModelling.Lden_from_Road_Emission
+import org.noise_planet.noisemodelling.wps.NoiseModelling.Road_Emission_from_Traffic
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -37,19 +38,44 @@ class TestNoiseModelling extends JdbcTestCase {
 
         SHPRead.readShape(connection, TestDatabaseManager.getResource("roads2.shp").getPath())
 
-        String res = new Road_Emission_From_DEN().exec(connection,
+        String res = new Road_Emission_from_Traffic().exec(connection,
                 ["tableRoads": "ROADS2"])
 
 
         assertEquals("Calculation Done ! The table LW_ROADS has been created.", res)
     }
 
+    void testLdayFromTraffic() {
+
+        SHPRead.readShape(connection, TestDatabaseManager.getResource("roads.shp").getPath())
+
+        //SHPRead.readShape(connection, TestDatabaseManager.getResource("buildings.shp").getPath())
+        new Import_File().exec(connection,
+                ["pathFile" : TestImportExport.getResource("buildings.shp").getPath(),
+                 "inputSRID": "2154",
+                 "tableName": "buildings"])
+
+        //SHPRead.readShape(connection, TestDatabaseManager.getResource("receivers.shp").getPath())
+        new Import_File().exec(connection,
+                ["pathFile" : TestImportExport.getResource("receivers.shp").getPath(),
+                 "inputSRID": "2154",
+                 "tableName": "receivers"])
+
+
+       String res = new Lday_from_Traffic().exec(connection,
+                ["tableBuilding"   : "BUILDINGS",
+                 "tableRoads"   : "ROADS",
+                 "tableReceivers": "RECEIVERS"])
+
+
+        assertEquals("Calculation Done ! The table LDAY_GEOM has been created.", res)
+    }
 
     void testLdenFromEmission() {
 
         SHPRead.readShape(connection, TestDatabaseManager.getResource("roads2.shp").getPath())
 
-        String res = new Road_Emission_From_DEN().exec(connection,
+        String res = new Road_Emission_from_Traffic().exec(connection,
                 ["tableRoads": "ROADS2"])
 
         //SHPRead.readShape(connection, TestDatabaseManager.getResource("buildings.shp").getPath())
@@ -65,7 +91,7 @@ class TestNoiseModelling extends JdbcTestCase {
                  "tableName": "receivers"])
 
 
-        res = new Lden_from_Emission().exec(connection,
+        res = new Lden_from_Road_Emission().exec(connection,
                 ["tableBuilding"   : "BUILDINGS",
                  "tableSources"   : "LW_ROADS",
                  "tableReceivers": "RECEIVERS"])

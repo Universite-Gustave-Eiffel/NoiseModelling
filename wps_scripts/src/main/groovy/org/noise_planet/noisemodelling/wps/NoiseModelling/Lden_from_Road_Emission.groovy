@@ -66,7 +66,7 @@ inputs = [
                                      '- <b> LWD63, LWD125, LWD250, LWD500, LWD1000, LWD2000, LWD4000, LWD8000 </b> : 8 columns giving the day emission sound level for each octave band (FLOAT). </br> ' +
                                      '- <b> LWE* </b> : 8 columns giving the evening emission sound level for each octave band (FLOAT).</br> ' +
                                      '- <b> LWN* </b> : 8 columns giving the night emission sound level for each octave band (FLOAT).</br> ' +
-                                     '</br> </br> <b> This table can be generated from the WPS Block "Road_Emission_From_DEN". </b>',
+                                     '</br> </br> <b> This table can be generated from the WPS Block "Road_Emission_from_Traffic". </b>',
                              type       : String.class],
         tableReceivers    : [name: 'Receivers table name', title: 'Receivers table name',
                              description: '<b>Name of the Receivers table.</b></br>  ' +
@@ -147,6 +147,11 @@ def run(input) {
 
 // main function of the script
 def exec(Connection connection, input) {
+
+    // Get external tools
+    File sourceFile = new File("src\\main\\groovy\\org\\noise_planet\\noisemodelling\\wpsTools\\GeneralTools.groovy")
+    Class groovyClass = new GroovyClassLoader(getClass().getClassLoader()).parseClass(sourceFile)
+    GroovyObject tools = (GroovyObject) groovyClass.newInstance()
 
     //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postGIS database
     connection = new ConnectionWrapper(connection)
@@ -269,9 +274,9 @@ def exec(Connection connection, input) {
     // Initialize NoiseModelling emission part
     // --------------------------------------------
 
-    TrafficPropagationProcessDataDENFactory TrafficPropagationProcessDataDENFactory = new TrafficPropagationProcessDataDENFactory()
-    pointNoiseMap.setPropagationProcessDataFactory(TrafficPropagationProcessDataDENFactory)
-
+    Class classRef = Class.forName("org.noise_planet.noisemodelling.wpsTools.TrafficPropagationProcessDataDENFactory")
+    Object trafficPropagationProcessDataDENFactory = classRef.newInstance()
+    pointNoiseMap.setPropagationProcessDataFactory(trafficPropagationProcessDataDENFactory)
 
     // --------------------------------------------
     // Run Calculations
@@ -325,7 +330,7 @@ def exec(Connection connection, input) {
     for (int i = 0; i < allLevels.size(); i++) {
 
         k++
-        currentVal = ProgressBar(Math.round(10*i/allLevels.size()).toInteger(),currentVal)
+        currentVal = tools.invokeMethod("ProgressBar", [Math.round(10 * i / allLevels.size()).toInteger(), currentVal])
         // get attenuation matrix value
         double[] soundLevel = allLevels.get(i).value
 
@@ -343,13 +348,15 @@ def exec(Connection connection, input) {
                 // apply A ponderation
                 //soundLevel = DBToDBA(soundLevel)
                 // add Leq value to the pre-existing sound level on this receiver
-                soundLevel = ComputeRays.sumDbArray(sumArraySR(soundLevel, SourceSpectrum.get(idSource)), soundLevels.get(idReceiver))
+                double[] sumArray = tools.invokeMethod("sumArraySR", [soundLevel, SourceSpectrum.get(idSource)])
+                soundLevel = ComputeRays.sumDbArray(sumArray, soundLevels.get(idReceiver))
                 soundLevels.replace(idReceiver, soundLevel)
             } else {
                 // apply A ponderation
                 //soundLevel = DBToDBA(soundLevel)
                 // add a new Leq value on this receiver
-                soundLevels.put(idReceiver, sumArraySR(soundLevel, SourceSpectrum.get(idSource)))
+                double[] sumArray =  tools.invokeMethod("sumArraySR", [soundLevel, SourceSpectrum.get(idSource)])
+                soundLevels.put(idReceiver, sumArray)
             }
 
         } else {
@@ -398,164 +405,4 @@ def exec(Connection connection, input) {
 
 }
 
-/**
- * Apply A ponderation to an octave band array from 63 to 8000 Hz
- * @param db
- * @return db
- */
-static double[] DBToDBA(double[] db) {
-    double[] dbA = [-26.2, -16.1, -8.6, -3.2, 0, 1.2, 1.0, -1.1]
-    for (int i = 0; i < db.length; ++i) {
-        db[i] = db[i] + dbA[i]
-    }
-    return db
 
-}
-
-/**
- * Sum two Array "octave band by octave band"
- * @param array1
- * @param array2
- * @return sum of to array
- */
-double[] sumArraySR(double[] array1, double[] array2) {
-    if (array1.length != array2.length) {
-        throw new IllegalArgumentException("Not same size array")
-    } else {
-        double[] sum = new double[array1.length]
-
-        for (int i = 0; i < array1.length; ++i) {
-            sum[i] = (array1[i]) + (array2[i])
-        }
-
-        return sum
-    }
-}
-
-/**
- * Class to read sound sources
- */
-class TrafficPropagationProcessDataDEN extends PropagationProcessData {
-
-    public List<double[]> wjSourcesDEN = new ArrayList<>()
-    public Map<Long, Integer> SourcesPk = new HashMap<>()
-
-
-    TrafficPropagationProcessDataDEN(FastObstructionTest freeFieldFinder) {
-        super(freeFieldFinder)
-    }
-
-    int idSource = 0
-
-    /**
-     * Read Sound sources table and add to wjSourcesDEN variable
-     * @param pk
-     * @param geom
-     * @param rs
-     * @throws SQLException
-     */
-    @Override
-    void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException {
-        super.addSource(pk, geom, rs)
-        SourcesPk.put(pk, idSource++)
-
-        // Read average 24h traffic
-        double[] ld = [ComputeRays.dbaToW(rs.getDouble('LWD63')),
-                       ComputeRays.dbaToW(rs.getDouble('LWD125')),
-                       ComputeRays.dbaToW(rs.getDouble('LWD250')),
-                       ComputeRays.dbaToW(rs.getDouble('LWD500')),
-                       ComputeRays.dbaToW(rs.getDouble('LWD1000')),
-                       ComputeRays.dbaToW(rs.getDouble('LWD2000')),
-                       ComputeRays.dbaToW(rs.getDouble('LWD4000')),
-                       ComputeRays.dbaToW(rs.getDouble('LWD8000'))]
-
-        double[] le = [ComputeRays.dbaToW(rs.getDouble('LWE63')),
-                       ComputeRays.dbaToW(rs.getDouble('LWE125')),
-                       ComputeRays.dbaToW(rs.getDouble('LWE250')),
-                       ComputeRays.dbaToW(rs.getDouble('LWE500')),
-                       ComputeRays.dbaToW(rs.getDouble('LWE1000')),
-                       ComputeRays.dbaToW(rs.getDouble('LWE2000')),
-                       ComputeRays.dbaToW(rs.getDouble('LWE4000')),
-                       ComputeRays.dbaToW(rs.getDouble('LWE8000'))]
-
-        double[] ln = [ComputeRays.dbaToW(rs.getDouble('LWN63')),
-                       ComputeRays.dbaToW(rs.getDouble('LWN125')),
-                       ComputeRays.dbaToW(rs.getDouble('LWN250')),
-                       ComputeRays.dbaToW(rs.getDouble('LWN500')),
-                       ComputeRays.dbaToW(rs.getDouble('LWN1000')),
-                       ComputeRays.dbaToW(rs.getDouble('LWN2000')),
-                       ComputeRays.dbaToW(rs.getDouble('LWN4000')),
-                       ComputeRays.dbaToW(rs.getDouble('LWN8000'))]
-
-        double[] lden = new double[PropagationProcessPathData.freq_lvl.size()]
-
-        int idFreq = 0
-        // Combine day evening night sound levels
-        for (int freq : PropagationProcessPathData.freq_lvl) {
-            lden[idFreq++] = (12 * ld[idFreq] + 4 * ComputeRays.dbaToW(ComputeRays.wToDba(le[idFreq]) + 5) + 8 * ComputeRays.dbaToW(ComputeRays.wToDba(ln[idFreq]) + 10)) / 24.0
-        }
-        wjSourcesDEN.add(lden)
-    }
-
-    @Override
-    double[] getMaximalSourcePower(int sourceId) {
-        return wjSourcesDEN.get(sourceId)
-    }
-}
-
-
-/**
- * ???
- */
-class TrafficPropagationProcessDataDENFactory implements PointNoiseMap.PropagationProcessDataFactory {
-    @Override
-    PropagationProcessData create(FastObstructionTest freeFieldFinder) {
-        return new TrafficPropagationProcessDataDEN(freeFieldFinder)
-    }
-}
-
-/**
- * Export scene to kml format
- * @param name
- * @param manager
- * @param result
- * @return
- * @throws IOException
- */
-def static exportScene(String name, FastObstructionTest manager, ComputeRaysOut result) throws IOException {
-    try {
-        FileOutputStream outData = new FileOutputStream(name)
-        KMLDocument kmlDocument = new KMLDocument(outData)
-        kmlDocument.setInputCRS("EPSG:2154")
-        kmlDocument.writeHeader()
-        if (manager != null) {
-            kmlDocument.writeTopographic(manager.getTriangles(), manager.getVertices())
-        }
-        if (result != null) {
-            kmlDocument.writeRays(result.getPropagationPaths())
-        }
-        if (manager != null && manager.isHasBuildingWithHeight()) {
-            kmlDocument.writeBuildings(manager)
-        }
-        kmlDocument.writeFooter()
-    } catch (XMLStreamException | CRSException ex) {
-        throw new IOException(ex)
-    }
-}
-
-
-
-/**
- * Spartan ProgressBar
- * @param newVal
- * @param currentVal
- * @return
- */
-static int ProgressBar(int newVal, int currentVal)
-{
-    if(newVal != currentVal) {
-        currentVal = newVal
-        System.print( 10*currentVal + '% ... ')
-    }
-    return currentVal
-}

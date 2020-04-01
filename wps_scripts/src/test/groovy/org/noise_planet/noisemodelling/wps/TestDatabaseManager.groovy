@@ -45,7 +45,7 @@ class TestDatabaseManager extends JdbcTestCase {
 
         String res = new Add_Primary_Key().exec(connection,
                 ["pkName": "ID",
-                 "table" : "receivers"])
+                 "tableName" : "receivers"])
 
         assertEquals("RECEIVERS has a new primary key column which is called ID.", res)
     }
@@ -57,7 +57,7 @@ class TestDatabaseManager extends JdbcTestCase {
 
         String res = new Add_Primary_Key().exec(connection,
                 ["pkName": "PK",
-                 "table" : "receivers"])
+                 "tableName" : "receivers"])
 
         assertEquals("RECEIVERS has a new primary key constraint on PK.", res)
     }
