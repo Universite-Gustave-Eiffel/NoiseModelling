@@ -21,6 +21,9 @@
 package org.noise_planet.noisemodelling.wps
 
 import org.h2gis.functions.io.shp.SHPRead
+import org.h2gis.utilities.JDBCUtilities
+import org.noise_planet.noisemodelling.wps.NoiseModelling.Road_Emission_From_DEN
+import org.noise_planet.noisemodelling.wps.Others_Tools.Add_LAEQ_LEQ_columns
 import org.noise_planet.noisemodelling.wps.Others_Tools.Change_SRID
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -52,7 +55,36 @@ class TestOthersTools extends JdbcTestCase {
         assertEquals("SRID changed from 2154 to 4326.", res)
     }
 
+    void testAddLeqLaeqColumns1() {
 
+        SHPRead.readShape(connection, TestDatabaseManager.getResource("roads2.shp").getPath())
+
+        new Road_Emission_From_DEN().exec(connection,
+                ["tableRoads": "ROADS2"])
+
+        String res = new Add_LAEQ_LEQ_columns().exec(connection,
+                ["prefix": "HZ",
+                 "tableName": "LW_ROADS"])
+
+        assertEquals("This table does not contain column with this suffix : HZ", res)
+    }
+
+
+    void testAddLeqLaeqColumns2() {
+
+        SHPRead.readShape(connection, TestDatabaseManager.getResource("roads2.shp").getPath())
+
+        new Road_Emission_From_DEN().exec(connection,
+                ["tableRoads": "ROADS2"])
+
+        String res = new Add_LAEQ_LEQ_columns().exec(connection,
+                ["prefix": "LWD",
+                 "tableName": "LW_ROADS"])
+
+        List<String> fields = JDBCUtilities.getFieldNames(connection.getMetaData(), "LW_ROADS")
+
+        assertEquals(true, fields.contains("LEQ"))
+    }
 
 
 }

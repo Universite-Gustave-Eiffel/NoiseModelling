@@ -40,37 +40,37 @@ description = 'Generates receivers placed 2 meters from building facades at spec
         '</br> </br> <b> The output table is called : RECEIVERS </b>'
 
 inputs = [
-          tableBuilding     : [name       : 'Buildings table name', title: 'Buildings table name',
-                             description: '<b>Name of the Buildings table.</b>  </br>  ' +
-                                     '<br>  The table shall contain : </br>' +
-                                     '- <b> THE_GEOM </b> : the 2D geometry of the building (POLYGON or MULTIPOLYGON). </br>' +
-                                     '- <b> HEIGHT </b> : the height of the building (FLOAT)' +
-                                     '- <b> POP </b> : optional field, building population to add in the receiver attribute (FLOAT)',
-                             type       : String.class],
-          fence  : [name: 'Fence geometry', title: 'Extent filter', description: 'Create receivers only in the' +
-                  ' provided polygon', min: 0, max: 1, type: Geometry.class],
-          fenceTableName  : [name: 'Fence geometry from table', title: 'Filter using table bouding box',
-                             description: 'Extract the bounding box of the specified table then create only receivers' +
-                                     ' on the table bounding box' +
-                                     '<br>  The table shall contain : </br>' +
-                                     '- <b> THE_GEOM </b> : any geometry type. </br>', min: 0, max: 1, type: String.class],
-          sourcesTableName  : [name: 'Sources table name',title: 'Sources table name', description: 'Keep only receivers at least at 1 meters of' +
-                  ' provided sources geometries' +
-                  '<br>  The table shall contain : </br>' +
-                  '- <b> THE_GEOM </b> : any geometry type. </br>', min: 0, max: 1, type: String.class],
-          delta    : [name: 'Receivers minimal distance', title: 'Distance between receivers',
-                      description: 'Distance between receivers in the Cartesian plane in meters', type: Double.class],
-          height    : [name: 'height', title: 'height', description: 'Height of receivers in meters ' +
-                  '</br> </br> <b> Default value : 4 </b> ', min: 0, max: 1, type: Double.class]]
+        tableBuilding   : [name       : 'Buildings table name', title: 'Buildings table name',
+                           description: '<b>Name of the Buildings table.</b>  </br>  ' +
+                                   '<br>  The table shall contain : </br>' +
+                                   '- <b> THE_GEOM </b> : the 2D geometry of the building (POLYGON or MULTIPOLYGON). </br>' +
+                                   '- <b> HEIGHT </b> : the height of the building (FLOAT)' +
+                                   '- <b> POP </b> : optional field, building population to add in the receiver attribute (FLOAT)',
+                           type       : String.class],
+        fence           : [name         : 'Fence geometry', title: 'Extent filter', description: 'Create receivers only in the' +
+                ' provided polygon', min: 0, max: 1, type: Geometry.class],
+        fenceTableName  : [name                                                         : 'Fence geometry from table', title: 'Filter using table bouding box',
+                           description                                                  : 'Extract the bounding box of the specified table then create only receivers' +
+                                   ' on the table bounding box' +
+                                   '<br>  The table shall contain : </br>' +
+                                   '- <b> THE_GEOM </b> : any geometry type. </br>', min: 0, max: 1, type: String.class],
+        sourcesTableName: [name                                      : 'Sources table name', title: 'Sources table name', description: 'Keep only receivers at least at 1 meters of' +
+                ' provided sources geometries' +
+                '<br>  The table shall contain : </br>' +
+                '- <b> THE_GEOM </b> : any geometry type. </br>', min: 0, max: 1, type: String.class],
+        delta           : [name       : 'Receivers minimal distance', title: 'Distance between receivers',
+                           description: 'Distance between receivers in the Cartesian plane in meters', type: Double.class],
+        height          : [name                               : 'height', title: 'height', description: 'Height of receivers in meters ' +
+                '</br> </br> <b> Default value : 4 </b> ', min: 0, max: 1, type: Double.class]]
 
 outputs = [result: [name: 'Result output string', title: 'Result output string', description: 'This type of result does not allow the blocks to be linked together.', type: String.class]]
 
 static Connection openGeoserverDataStoreConnection(String dbName) {
-    if(dbName == null || dbName.isEmpty()) {
+    if (dbName == null || dbName.isEmpty()) {
         dbName = new GeoServer().catalog.getStoreNames().get(0)
     }
     Store store = new GeoServer().catalog.getStore(dbName)
-    JDBCDataStore jdbcDataStore = (JDBCDataStore)store.getDataStoreInfo().getDataStore(null)
+    JDBCDataStore jdbcDataStore = (JDBCDataStore) store.getDataStoreInfo().getDataStore(null)
     return jdbcDataStore.getDataSource().getConnection()
 }
 
@@ -88,7 +88,6 @@ def run(input) {
             return [result: exec(connection, input)]
     }
 }
-
 
 
 def exec(Connection connection, input) {
@@ -126,7 +125,7 @@ def exec(Connection connection, input) {
     if (hasPop) System.println("The building table has a column named POP.")
     if (!hasPop) System.println("The building table has not a column named POP.")
 
-    if(!JDBCUtilities.hasField(connection, building_table_name, "HEIGHT")) {
+    if (!JDBCUtilities.hasField(connection, building_table_name, "HEIGHT")) {
         resultString = "Buildings table must have HEIGHT field"
         return resultString
     }
@@ -155,18 +154,18 @@ def exec(Connection connection, input) {
 
     sql.execute("drop table if exists tmp_receivers_lines")
     def filter_geom_query = ""
-    if(fenceGeom != null) {
+    if (fenceGeom != null) {
         filter_geom_query = " WHERE the_geom && ST_GeomFromText('" + fenceGeom + "') AND ST_INTERSECTS(the_geom, ST_GeomFromText('" + fenceGeom + "'))";
     }
     // create line of receivers
-    sql.execute("create table tmp_receivers_lines as select pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, 2, 'join=bevel')), 0.05) the_geom from "+building_table_name+filter_geom_query)
+    sql.execute("create table tmp_receivers_lines as select pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, 2, 'join=bevel')), 0.05) the_geom from " + building_table_name + filter_geom_query)
     sql.execute("drop table if exists tmp_relation_screen_building;")
     sql.execute("create spatial index on tmp_receivers_lines(the_geom)")
     // list buildings that will remove receivers (if height is superior than receiver height
-    sql.execute("create table tmp_relation_screen_building as select b.pk as PK_building, s.pk as pk_screen from "+building_table_name+" b, tmp_receivers_lines s where b.the_geom && s.the_geom and s.pk != b.pk and ST_Intersects(b.the_geom, s.the_geom) and b.height > " + h)
+    sql.execute("create table tmp_relation_screen_building as select b.pk as PK_building, s.pk as pk_screen from " + building_table_name + " b, tmp_receivers_lines s where b.the_geom && s.the_geom and s.pk != b.pk and ST_Intersects(b.the_geom, s.the_geom) and b.height > " + h)
     sql.execute("drop table if exists tmp_screen_truncated;")
     // truncate receiver lines
-    sql.execute("create table tmp_screen_truncated as select r.pk_screen, ST_DIFFERENCE(s.the_geom, ST_BUFFER(ST_ACCUM(b.the_geom), 2)) the_geom from tmp_relation_screen_building r, "+building_table_name+" b, tmp_receivers_lines s WHERE PK_building = b.pk AND pk_screen = s.pk  GROUP BY pk_screen, s.the_geom;")
+    sql.execute("create table tmp_screen_truncated as select r.pk_screen, ST_DIFFERENCE(s.the_geom, ST_BUFFER(ST_ACCUM(b.the_geom), 2)) the_geom from tmp_relation_screen_building r, " + building_table_name + " b, tmp_receivers_lines s WHERE PK_building = b.pk AND pk_screen = s.pk  GROUP BY pk_screen, s.the_geom;")
     sql.execute("DROP TABLE IF EXISTS TMP_SCREENS_MERGE;")
     sql.execute("DROP TABLE IF EXISTS TMP_SCREENS;")
     // union of truncated receivers and non tructated, split line to points
@@ -179,16 +178,16 @@ def exec(Connection connection, input) {
         sql.eachRow("SELECT pk, the_geom from TMP_SCREENS_MERGE") { row ->
             List<Coordinate> pts = new ArrayList<Coordinate>()
             def geom = row[1] as Geometry
-            if(geom instanceof LineString) {
+            if (geom instanceof LineString) {
                 splitLineStringIntoPoints(geom as LineString, delta, pts)
-            } else if(geom instanceof MultiLineString) {
-                for(int idgeom = 0; idgeom < geom.numGeometries; idgeom++) {
+            } else if (geom instanceof MultiLineString) {
+                for (int idgeom = 0; idgeom < geom.numGeometries; idgeom++) {
                     splitLineStringIntoPoints(geom.getGeometryN(idgeom) as LineString, delta, pts)
                 }
             }
-            for(int idp = 0; idp < pts.size(); idp++) {
+            for (int idp = 0; idp < pts.size(); idp++) {
                 Coordinate pt = pts.get(idp);
-                if(!Double.isNaN(pt.x) && !Double.isNaN(pt.y)) {
+                if (!Double.isNaN(pt.x) && !Double.isNaN(pt.y)) {
                     Coordinate newCoord = new Coordinate(pt.x, pt.y, h)
                     ps.addBatch(row[0] as Integer, factory.createPoint(newCoord))
                 }
@@ -198,15 +197,15 @@ def exec(Connection connection, input) {
     sql.execute("drop table if exists TMP_SCREENS_MERGE")
     sql.execute("drop table if exists " + receivers_table_name)
 
-    if(!hasPop) {
+    if (!hasPop) {
         System.println('create RECEIVERS table...')
         sql.execute("create table " + receivers_table_name + "(pk serial, the_geom geometry,build_pk integer) as select null, the_geom, pk building_pk from TMP_SCREENS;")
 
         if (input['sourcesTableName']) {
             // Delete receivers near sources
             System.println('Delete receivers near sources...')
-            sql.execute("Create spatial index on "+sources_table_name+"(the_geom);")
-            sql.execute("delete from "+receivers_table_name+" g where exists (select 1 from "+sources_table_name+" r where st_expand(g.the_geom, 1, 1) && r.the_geom and st_distance(g.the_geom, r.the_geom) < 1 limit 1);")
+            sql.execute("Create spatial index on " + sources_table_name + "(the_geom);")
+            sql.execute("delete from " + receivers_table_name + " g where exists (select 1 from " + sources_table_name + " r where st_expand(g.the_geom, 1, 1) && r.the_geom and st_distance(g.the_geom, r.the_geom) < 1 limit 1);")
         }
 
     } else {
@@ -219,14 +218,13 @@ def exec(Connection connection, input) {
         if (input['sourcesTableName']) {
             // Delete receivers near sources
             System.println('Delete receivers near sources...')
-            sql.execute("Create spatial index on "+sources_table_name+"(the_geom);")
-            sql.execute("delete from tmp_receivers g where exists (select 1 from "+sources_table_name+" r where st_expand(g.the_geom, 1) && r.the_geom and st_distance(g.the_geom, r.the_geom) < 1 limit 1);")
+            sql.execute("Create spatial index on " + sources_table_name + "(the_geom);")
+            sql.execute("delete from tmp_receivers g where exists (select 1 from " + sources_table_name + " r where st_expand(g.the_geom, 1) && r.the_geom and st_distance(g.the_geom, r.the_geom) < 1 limit 1);")
         }
 
         sql.execute("CREATE INDEX ON tmp_receivers(build_pk)")
-        sql.execute("CREATE INDEX ON "+building_table_name+ "(pk)")
-        sql.execute("create table " + receivers_table_name + "(pk serial, the_geom geometry,build_pk integer, pop float) as select null, a.the_geom, a.build_pk, b.pop/(SELECT COUNT(*) from tmp_receivers aa where a.build_pk = aa.build_pk group by aa.build_pk)::float from tmp_receivers a, "+building_table_name+ " b where b.pk = a.build_pk;")
-        //sql.execute("create table " + receivers_table_name + "(pk serial, the_geom geometry,build_pk integer, pop float) as select r.pk, r.the_geom, r.build_pk, b.pop / (select count(*) from tmp_receivers rr where rr.build_pk = r.build_pk limit 1)::float as pop from tmp_receivers r,"+building_table_name+ " b where r.build_pk = b.pk;")
+        sql.execute("CREATE INDEX ON " + building_table_name + "(pk)")
+        sql.execute("create table " + receivers_table_name + "(pk serial, the_geom geometry,build_pk integer, pop float) as select null, a.the_geom, a.build_pk, b.pop/COUNT(DISTINCT aa.pk)::float from tmp_receivers a, " + building_table_name + " b,tmp_receivers aa where b.pk = a.build_pk and a.build_pk = aa.build_pk GROUP BY a.the_geom, a.build_pk, b.pop;")
         sql.execute("drop table if exists tmp_receivers")
     }
     // cleaning
@@ -236,7 +234,7 @@ def exec(Connection connection, input) {
     sql.execute("drop table tmp_receivers_lines")
 
     // Process Done
-    resultString = "Process done. Table of receivers "+ receivers_table_name +" created !"
+    resultString = "Process done. Table of receivers " + receivers_table_name + " created !"
 
     // print to command window
     System.out.println('Result : ' + resultString)
@@ -249,13 +247,11 @@ def exec(Connection connection, input) {
 }
 
 
-
-
 /**
  *
  * @param geom Geometry
  * @param segmentSizeConstraint Maximal distance between points
- * @param[out] pts computed points
+ * @param [out]pts computed points
  * @return Fixed distance between points
  */
 double splitLineStringIntoPoints(LineString geom, double segmentSizeConstraint,
@@ -263,7 +259,7 @@ double splitLineStringIntoPoints(LineString geom, double segmentSizeConstraint,
     // If the linear sound source length is inferior than half the distance between the nearest point of the sound
     // source and the receiver then it can be modelled as a single point source
     double geomLength = geom.getLength();
-    if(geomLength < segmentSizeConstraint) {
+    if (geomLength < segmentSizeConstraint) {
         // Return mid point
         Coordinate[] points = geom.getCoordinates();
         double segmentLength = 0;
@@ -272,7 +268,7 @@ double splitLineStringIntoPoints(LineString geom, double segmentSizeConstraint,
             Coordinate a = points[i];
             final Coordinate b = points[i + 1];
             double length = a.distance3D(b);
-            if(length + segmentLength > targetSegmentSize) {
+            if (length + segmentLength > targetSegmentSize) {
                 double segmentLengthFraction = (targetSegmentSize - segmentLength) / length;
                 Coordinate midPoint = new Coordinate(a.x + segmentLengthFraction * (b.x - a.x),
                         a.y + segmentLengthFraction * (b.y - a.y),
@@ -294,7 +290,7 @@ double splitLineStringIntoPoints(LineString geom, double segmentSizeConstraint,
             Coordinate a = points[i];
             final Coordinate b = points[i + 1];
             double length = a.distance3D(b);
-            if(Double.isNaN(length)) {
+            if (Double.isNaN(length)) {
                 length = a.distance(b);
             }
             while (length + segmentLength > targetSegmentSize) {
@@ -304,7 +300,7 @@ double splitLineStringIntoPoints(LineString geom, double segmentSizeConstraint,
                 splitPoint.x = a.x + segmentLengthFraction * (b.x - a.x);
                 splitPoint.y = a.y + segmentLengthFraction * (b.y - a.y);
                 splitPoint.z = a.z + segmentLengthFraction * (b.z - a.z);
-                if(midPoint == null && length + segmentLength > targetSegmentSize / 2) {
+                if (midPoint == null && length + segmentLength > targetSegmentSize / 2) {
                     segmentLengthFraction = (targetSegmentSize / 2.0 - segmentLength) / length;
                     midPoint = new Coordinate(a.x + segmentLengthFraction * (b.x - a.x),
                             a.y + segmentLengthFraction * (b.y - a.y),
@@ -313,13 +309,13 @@ double splitLineStringIntoPoints(LineString geom, double segmentSizeConstraint,
                 pts.add(midPoint);
                 a = splitPoint;
                 length = a.distance3D(b);
-                if(Double.isNaN(length)) {
+                if (Double.isNaN(length)) {
                     length = a.distance(b);
                 }
                 segmentLength = 0;
                 midPoint = null;
             }
-            if(midPoint == null && length + segmentLength > targetSegmentSize / 2) {
+            if (midPoint == null && length + segmentLength > targetSegmentSize / 2) {
                 double segmentLengthFraction = (targetSegmentSize / 2.0 - segmentLength) / length;
                 midPoint = new Coordinate(a.x + segmentLengthFraction * (b.x - a.x),
                         a.y + segmentLengthFraction * (b.y - a.y),
@@ -327,7 +323,7 @@ double splitLineStringIntoPoints(LineString geom, double segmentSizeConstraint,
             }
             segmentLength += length;
         }
-        if(midPoint != null) {
+        if (midPoint != null) {
             pts.add(midPoint);
         }
         return targetSegmentSize;

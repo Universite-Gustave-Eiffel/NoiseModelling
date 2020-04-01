@@ -38,7 +38,7 @@ class TestNoiseModelling extends JdbcTestCase {
         SHPRead.readShape(connection, TestDatabaseManager.getResource("roads2.shp").getPath())
 
         String res = new Road_Emission_From_DEN().exec(connection,
-                ["roadsTableName": "ROADS2"])
+                ["tableRoads": "ROADS2"])
 
 
         assertEquals("Calculation Done ! The table LW_ROADS has been created.", res)
@@ -50,7 +50,7 @@ class TestNoiseModelling extends JdbcTestCase {
         SHPRead.readShape(connection, TestDatabaseManager.getResource("roads2.shp").getPath())
 
         String res = new Road_Emission_From_DEN().exec(connection,
-                ["roadsTableName": "ROADS2"])
+                ["tableRoads": "ROADS2"])
 
         //SHPRead.readShape(connection, TestDatabaseManager.getResource("buildings.shp").getPath())
         res = new Import_File().exec(connection,
