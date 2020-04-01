@@ -225,20 +225,24 @@ def exec(connection, input) {
         fenceGeom = sql.firstRow("SELECT ST_ENVELOPE(ST_COLLECT(the_geom)) the_geom from " + input['fenceTableName'])[0] as Geometry
     }
 
+    def buildingPk = JDBCUtilities.getFieldName(connection.getMetaData(), building_table_name, JDBCUtilities.getIntegerPrimaryKey(connection, building_table_name));
+    if(buildingPk == "") {
+        return  [tableNameCreated: "Buildings table must have a primary key"]
+    }
     sql.execute("drop table if exists tmp_receivers_lines")
     def filter_geom_query = ""
     if(fenceGeom != null) {
         filter_geom_query = " WHERE the_geom && ST_GeomFromText('" + fenceGeom + "') AND ST_INTERSECTS(the_geom, ST_GeomFromText('" + fenceGeom + "'))";
     }
     // create line of receivers
-    sql.execute("create table tmp_receivers_lines as select pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, 2, 'join=bevel')), 0.05) the_geom from "+building_table_name+filter_geom_query)
+    sql.execute("create table tmp_receivers_lines as select "+buildingPk+" as pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, 2, 'join=bevel')), 0.05) the_geom from "+building_table_name+filter_geom_query)
     sql.execute("drop table if exists tmp_relation_screen_building;")
     sql.execute("create spatial index on tmp_receivers_lines(the_geom)")
     // list buildings that will remove receivers (if height is superior than receiver height
-    sql.execute("create table tmp_relation_screen_building as select b.pk as PK_building, s.pk as pk_screen from "+building_table_name+" b, tmp_receivers_lines s where b.the_geom && s.the_geom and s.pk != b.pk and ST_Intersects(b.the_geom, s.the_geom) and b.height > " + h)
+    sql.execute("create table tmp_relation_screen_building as select b."+buildingPk+" as PK_building, s.pk as pk_screen from "+building_table_name+" b, tmp_receivers_lines s where b.the_geom && s.the_geom and s.pk != b."+buildingPk+" and ST_Intersects(b.the_geom, s.the_geom) and b.height > " + h)
     sql.execute("drop table if exists tmp_screen_truncated;")
     // truncate receiver lines
-    sql.execute("create table tmp_screen_truncated as select r.pk_screen, ST_DIFFERENCE(s.the_geom, ST_BUFFER(ST_ACCUM(b.the_geom), 2)) the_geom from tmp_relation_screen_building r, "+building_table_name+" b, tmp_receivers_lines s WHERE PK_building = b.pk AND pk_screen = s.pk  GROUP BY pk_screen, s.the_geom;")
+    sql.execute("create table tmp_screen_truncated as select r.pk_screen, ST_DIFFERENCE(s.the_geom, ST_BUFFER(ST_ACCUM(b.the_geom), 2)) the_geom from tmp_relation_screen_building r, "+building_table_name+" b, tmp_receivers_lines s WHERE PK_building = b."+buildingPk+" AND pk_screen = s.pk  GROUP BY pk_screen, s.the_geom;")
     sql.execute("DROP TABLE IF EXISTS TMP_SCREENS_MERGE;")
     // union of truncated receivers and non tructated, split line to points
     sql.execute("create table TMP_SCREENS_MERGE (pk serial, the_geom geometry) as select s.pk, s.the_geom the_geom from tmp_receivers_lines s where not st_isempty(s.the_geom) and pk not in (select pk_screen from tmp_screen_truncated) UNION ALL select pk_screen, the_geom from tmp_screen_truncated where not st_isempty(the_geom);")
@@ -291,7 +295,7 @@ def exec(connection, input) {
         }
 
         sql.execute("CREATE INDEX REC_BUILD ON tmp_receivers(build_pk)")
-        sql.execute("create table " + receivers_table_name + "(pk serial, the_geom geometry,build_pk integer, pop float) as select r.pk, r.the_geom, r.build_pk, b.pop / (select count(*) from tmp_receivers rr where rr.build_pk = r.build_pk limit 1)::float as pop from tmp_receivers r,"+building_table_name+ " b where r.build_pk = b.pk;")
+        sql.execute("create table " + receivers_table_name + "(pk serial, the_geom geometry,build_pk integer, pop float) as select r.pk, r.the_geom, r.build_pk, b.pop / (select count(*) from tmp_receivers rr where rr.build_pk = r.build_pk limit 1)::float as pop from tmp_receivers r,"+building_table_name+ " b where r.build_pk = b."+buildingPk+";")
         sql.execute("drop table if exists tmp_receivers")
     }
     // cleaning
