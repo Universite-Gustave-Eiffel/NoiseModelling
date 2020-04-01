@@ -317,9 +317,11 @@ def exec(Connection connection, input) {
     // --------------------------------------------
 
     // IF THE FORMAT IS AADF, it is possible to activate this one
-    Class classRef = Class.forName("org.noise_planet.noisemodelling.wpsTools.TrafficPropagationProcessDataFactory")
-    Object trafficPropagationProcessDataFactory = classRef.newInstance()
+    Object trafficPropagationProcessDataFactory =  Class.forName("org.noise_planet.noisemodelling.wpsTools.TrafficPropagationProcessDataFactory").newInstance()
     pointNoiseMap.setPropagationProcessDataFactory(trafficPropagationProcessDataFactory)
+
+    Object trafficPropagationProcessData = Class.forName("org.noise_planet.noisemodelling.wpsTools.TrafficPropagationProcessData").newInstance()
+    trafficPropagationProcessData.invokeMethod("setInputFormat",["Classic"])
 
     // --------------------------------------------
     // Run Calculations

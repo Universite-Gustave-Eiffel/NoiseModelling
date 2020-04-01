@@ -99,7 +99,6 @@ def exec(Connection connection, input) {
     Class groovyClass = new GroovyClassLoader(getClass().getClassLoader()).parseClass(sourceFile)
     GroovyObject tools = (GroovyObject) groovyClass.newInstance()
 
-
     //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postGIS database
     connection = new ConnectionWrapper(connection)
 
@@ -159,6 +158,10 @@ def exec(Connection connection, input) {
     // Start calculation and fill the table
     // --------------------------------------
 
+    // Get Class to compute LW
+    Object trafficPropagationProcessData = Class.forName("org.noise_planet.noisemodelling.wpsTools.TrafficPropagationProcessData").newInstance()
+    trafficPropagationProcessData.invokeMethod("setInputFormat",["EmissionDEN"])
+
     // Get size of the table (number of road segments
     PreparedStatement st = connection.prepareStatement("SELECT COUNT(*) AS total FROM " + sources_table_name)
     ResultSet rs1 = st.executeQuery().unwrap(ResultSet.class)
@@ -181,7 +184,7 @@ def exec(Connection connection, input) {
             Geometry geo = rs.getGeometry()
 
             // Compute emission sound level for each road segment
-            def results = computeLw(rs.getLong(pkIndex), geo, rs)
+            def results = trafficPropagationProcessData.invokeMethod("computeLw", ["Classic",rs])
 
             // fill the LW_ROADS table
             ps.addBatch(rs.getLong(pkIndex) as Integer, geo as Geometry,
@@ -216,75 +219,3 @@ def exec(Connection connection, input) {
 }
 
 
-
-/**
- * Compute noise emission levels from input traffic data
- * @param pk
- * @param geom
- * @param rs
- * @return
- * @throws SQLException
- */
-static double[][] computeLw(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException {
-
-    // Get input traffic data
-    double tvD = rs.getDouble("TV_D")
-    double tvE = rs.getDouble("TV_E")
-    double tvN = rs.getDouble("TV_N")
-
-    double hvD = rs.getDouble("HV_D")
-    double hvE = rs.getDouble("HV_E")
-    double hvN = rs.getDouble("HV_N")
-
-    double lvSpeedD = rs.getDouble("LV_SPD_D")
-    double lvSpeedE = rs.getDouble("LV_SPD_E")
-    double lvSpeedN = rs.getDouble("LV_SPD_N")
-
-    double hvSpeedD = rs.getDouble("HV_SPD_D")
-    double hvSpeedE = rs.getDouble("HV_SPD_E")
-    double hvSpeedN = rs.getDouble("HV_SPD_N")
-
-    String pavement = rs.getString("PVMT")
-
-    // init ld, le ln
-    double[] ld = new double[PropagationProcessPathData.freq_lvl.size()]
-    double[] le = new double[PropagationProcessPathData.freq_lvl.size()]
-    double[] ln = new double[PropagationProcessPathData.freq_lvl.size()]
-
-    // this options can be activated if needed
-    double Temperature = 20.0d
-    double Ts_stud = 0
-    double Pm_stud = 0
-    double Junc_dist = 300
-    int Junc_type = 0
-
-    // Day
-    int idFreq = 0
-    for (int freq : PropagationProcessPathData.freq_lvl) {
-        RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedD, hvSpeedD, hvSpeedD, lvSpeedD,
-                lvSpeedD, Math.max(0, tvD - hvD), 0, hvD, 0, 0, freq, Temperature,
-                pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type)
-        ld[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
-    }
-
-    // Evening
-    idFreq = 0
-    for (int freq : PropagationProcessPathData.freq_lvl) {
-        RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedE, hvSpeedE, hvSpeedE, lvSpeedE,
-                lvSpeedE, Math.max(0, tvE - hvE), 0, hvE, 0, 0, freq, Temperature,
-                pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type)
-        le[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
-    }
-
-    // Night
-    idFreq = 0
-    for (int freq : PropagationProcessPathData.freq_lvl) {
-        RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedN, hvSpeedN, hvSpeedN, lvSpeedN,
-                lvSpeedN, Math.max(0, tvN - hvN),0 , hvN, 0, 0, freq, Temperature,
-                pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type)
-        ln[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
-    }
-
-
-    return [ld, le, ln]
-}

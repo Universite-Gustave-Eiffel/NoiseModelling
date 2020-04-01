@@ -47,7 +47,7 @@ class TestNoiseModelling extends JdbcTestCase {
 
     void testLdayFromTraffic() {
 
-        SHPRead.readShape(connection, TestDatabaseManager.getResource("roads.shp").getPath())
+        SHPRead.readShape(connection, TestDatabaseManager.getResource("roads2.shp").getPath())
 
         //SHPRead.readShape(connection, TestDatabaseManager.getResource("buildings.shp").getPath())
         new Import_File().exec(connection,
@@ -64,7 +64,7 @@ class TestNoiseModelling extends JdbcTestCase {
 
        String res = new Lday_from_Traffic().exec(connection,
                 ["tableBuilding"   : "BUILDINGS",
-                 "tableRoads"   : "ROADS",
+                 "tableRoads"   : "ROADS2",
                  "tableReceivers": "RECEIVERS"])
 
 
