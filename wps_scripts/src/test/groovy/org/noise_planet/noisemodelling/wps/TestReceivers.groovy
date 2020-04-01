@@ -22,6 +22,12 @@ package org.noise_planet.noisemodelling.wps
 
 import groovy.sql.Sql
 import org.h2gis.functions.io.shp.SHPRead
+import org.h2gis.functions.spatial.crs.ST_SetSRID
+import org.h2gis.functions.spatial.crs.ST_Transform
+import org.locationtech.jts.geom.Envelope
+import org.locationtech.jts.geom.Geometry
+import org.locationtech.jts.geom.GeometryFactory
+import org.locationtech.jts.io.WKTReader
 import org.noise_planet.noisemodelling.wps.Receivers.Building_Grid
 
 class TestReceivers extends JdbcTestCase {
@@ -81,5 +87,26 @@ class TestReceivers extends JdbcTestCase {
         def buildings_pop = sql.firstRow("SELECT sum(pop) from buildings where pk in (select distinct build_pk from receivers)")[0] as Double
 
         assertEquals(0, buildings_pop - receivers_pop, 0.1);
+    }
+    void testBuildingGridFence() {
+        def sql = new Sql(connection)
+
+        SHPRead.readShape(connection, TestReceivers.getResource("buildings.shp").getPath())
+        sql.execute("CREATE SPATIAL INDEX ON BUILDINGS(THE_GEOM)")
+        sql.execute("CREATE INDEX bheight ON BUILDINGS(height)")
+
+        GeometryFactory f = new GeometryFactory();
+        def g = f.toGeometry(new Envelope(223556.5, 223765.7,6758256.91, 6758576.3))
+        def gFence = ST_Transform.ST_Transform(connection, ST_SetSRID.setSRID(g, 2154), 4326)
+        new Building_Grid().exec(connection,  ["tableBuilding" : "BUILDINGS",
+                                               "delta" : 5,
+                                               "height" : 6,
+                                               "fence" : gFence])
+
+        assertTrue(sql.firstRow("SELECT count(*) cpt from receivers")[0] > 0)
+
+        def receivers_pop = sql.firstRow("SELECT count(*) cpt from receivers r where not ST_Intersects(r.the_geom, ST_GeomFromText('"+g.toString()+"'))")[0] as Integer
+
+        assertEquals(0, receivers_pop);
     }
 }

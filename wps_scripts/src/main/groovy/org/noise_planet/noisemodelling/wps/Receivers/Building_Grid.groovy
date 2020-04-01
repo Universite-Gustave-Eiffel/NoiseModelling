@@ -90,6 +90,7 @@ def run(input) {
 }
 
 
+
 def exec(Connection connection, input) {
 
     // output string, the information given back to the user
@@ -152,20 +153,25 @@ def exec(Connection connection, input) {
         fenceGeom = sql.firstRow("SELECT ST_ENVELOPE(ST_COLLECT(the_geom)) the_geom from " + input['fenceTableName'])[0] as Geometry
     }
 
+    def buildingPk = JDBCUtilities.getFieldName(connection.getMetaData(), building_table_name, JDBCUtilities.getIntegerPrimaryKey(connection, building_table_name));
+    if(buildingPk == "") {
+        return  "Buildings table must have a primary key"
+    }
+
     sql.execute("drop table if exists tmp_receivers_lines")
     def filter_geom_query = ""
     if (fenceGeom != null) {
         filter_geom_query = " WHERE the_geom && ST_GeomFromText('" + fenceGeom + "') AND ST_INTERSECTS(the_geom, ST_GeomFromText('" + fenceGeom + "'))";
     }
     // create line of receivers
-    sql.execute("create table tmp_receivers_lines as select pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, 2, 'join=bevel')), 0.05) the_geom from " + building_table_name + filter_geom_query)
+    sql.execute("create table tmp_receivers_lines as select "+buildingPk+" as pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, 2, 'join=bevel')), 0.05) the_geom from "+building_table_name+filter_geom_query)
     sql.execute("drop table if exists tmp_relation_screen_building;")
     sql.execute("create spatial index on tmp_receivers_lines(the_geom)")
     // list buildings that will remove receivers (if height is superior than receiver height
-    sql.execute("create table tmp_relation_screen_building as select b.pk as PK_building, s.pk as pk_screen from " + building_table_name + " b, tmp_receivers_lines s where b.the_geom && s.the_geom and s.pk != b.pk and ST_Intersects(b.the_geom, s.the_geom) and b.height > " + h)
+    sql.execute("create table tmp_relation_screen_building as select b."+buildingPk+" as PK_building, s.pk as pk_screen from "+building_table_name+" b, tmp_receivers_lines s where b.the_geom && s.the_geom and s.pk != b.pk and ST_Intersects(b.the_geom, s.the_geom) and b.height > " + h)
     sql.execute("drop table if exists tmp_screen_truncated;")
     // truncate receiver lines
-    sql.execute("create table tmp_screen_truncated as select r.pk_screen, ST_DIFFERENCE(s.the_geom, ST_BUFFER(ST_ACCUM(b.the_geom), 2)) the_geom from tmp_relation_screen_building r, " + building_table_name + " b, tmp_receivers_lines s WHERE PK_building = b.pk AND pk_screen = s.pk  GROUP BY pk_screen, s.the_geom;")
+    sql.execute("create table tmp_screen_truncated as select r.pk_screen, ST_DIFFERENCE(s.the_geom, ST_BUFFER(ST_ACCUM(b.the_geom), 2)) the_geom from tmp_relation_screen_building r, "+building_table_name+" b, tmp_receivers_lines s WHERE PK_building = b."+buildingPk+" AND pk_screen = s.pk  GROUP BY pk_screen, s.the_geom;")
     sql.execute("DROP TABLE IF EXISTS TMP_SCREENS_MERGE;")
     sql.execute("DROP TABLE IF EXISTS TMP_SCREENS;")
     // union of truncated receivers and non tructated, split line to points
@@ -208,6 +214,10 @@ def exec(Connection connection, input) {
             sql.execute("delete from " + receivers_table_name + " g where exists (select 1 from " + sources_table_name + " r where st_expand(g.the_geom, 1, 1) && r.the_geom and st_distance(g.the_geom, r.the_geom) < 1 limit 1);")
         }
 
+        if(fenceGeom != null) {
+            // delete receiver not in fence filter
+            sql.execute("delete from "+receivers_table_name+" g where not ST_INTERSECTS(g.the_geom , ST_GeomFromText('"+fenceGeom+"'));")
+        }
     } else {
         System.println('create RECEIVERS table...')
         // building have population attribute
@@ -222,9 +232,13 @@ def exec(Connection connection, input) {
             sql.execute("delete from tmp_receivers g where exists (select 1 from " + sources_table_name + " r where st_expand(g.the_geom, 1) && r.the_geom and st_distance(g.the_geom, r.the_geom) < 1 limit 1);")
         }
 
+        if(fenceGeom != null) {
+            // delete receiver not in fence filter
+            sql.execute("delete from tmp_receivers g where not ST_INTERSECTS(g.the_geom , ST_GeomFromText('"+fenceGeom+"'));")
+        }
+
         sql.execute("CREATE INDEX ON tmp_receivers(build_pk)")
-        sql.execute("CREATE INDEX ON " + building_table_name + "(pk)")
-        sql.execute("create table " + receivers_table_name + "(pk serial, the_geom geometry,build_pk integer, pop float) as select null, a.the_geom, a.build_pk, b.pop/COUNT(DISTINCT aa.pk)::float from tmp_receivers a, " + building_table_name + " b,tmp_receivers aa where b.pk = a.build_pk and a.build_pk = aa.build_pk GROUP BY a.the_geom, a.build_pk, b.pop;")
+        sql.execute("create table " + receivers_table_name + "(pk serial, the_geom geometry,build_pk integer, pop float) as select null, a.the_geom, a.build_pk, b.pop/COUNT(DISTINCT aa.pk)::float from tmp_receivers a, "+building_table_name+ " b,tmp_receivers aa where b."+buildingPk+" = a.build_pk and a.build_pk = aa.build_pk GROUP BY a.the_geom, a.build_pk, b.pop;")
         sql.execute("drop table if exists tmp_receivers")
     }
     // cleaning
@@ -245,6 +259,8 @@ def exec(Connection connection, input) {
     return resultString
 
 }
+
+
 
 
 /**
