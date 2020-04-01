@@ -214,6 +214,10 @@ def exec(Connection connection, input) {
             sql.execute("delete from "+receivers_table_name+" g where exists (select 1 from "+sources_table_name+" r where st_expand(g.the_geom, 1, 1) && r.the_geom and st_distance(g.the_geom, r.the_geom) < 1 limit 1);")
         }
 
+        if(fenceGeom != null) {
+            // delete receiver not in fence filter
+            sql.execute("delete from "+receivers_table_name+" g where not ST_INTERSECTS(g.the_geom , ST_GeomFromText('"+fenceGeom+"'));")
+        }
     } else {
         System.println('create RECEIVERS table...')
         // building have population attribute
@@ -226,6 +230,11 @@ def exec(Connection connection, input) {
             System.println('Delete receivers near sources...')
             sql.execute("Create spatial index on "+sources_table_name+"(the_geom);")
             sql.execute("delete from tmp_receivers g where exists (select 1 from "+sources_table_name+" r where st_expand(g.the_geom, 1) && r.the_geom and st_distance(g.the_geom, r.the_geom) < 1 limit 1);")
+        }
+
+        if(fenceGeom != null) {
+            // delete receiver not in fence filter
+            sql.execute("delete from tmp_receivers g where not ST_INTERSECTS(g.the_geom , ST_GeomFromText('"+fenceGeom+"'));")
         }
 
         sql.execute("CREATE INDEX ON tmp_receivers(build_pk)")
