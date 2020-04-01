@@ -296,10 +296,11 @@ def exec(Connection connection, input) {
     // --------------------------------------------
     // Initialize NoiseModelling emission part
     // --------------------------------------------
+    Object trafficPropagationProcessDataFactory = Class.forName("org.noise_planet.noisemodelling.wpsTools.WpsPropagationProcessDataFactory").newInstance()
+    pointNoiseMap.setPropagationProcessDataFactory(trafficPropagationProcessDataFactory)
 
-    Class classRef = Class.forName("org.noise_planet.noisemodelling.wpsTools.ProbabilisticPropagationProcessDataFactory")
-    Object probaPropagationProcessDataFactory = classRef.newInstance()
-    pointNoiseMap.setPropagationProcessDataFactory(probaPropagationProcessDataFactory)
+    Object trafficPropagationProcessData = Class.forName("org.noise_planet.noisemodelling.wpsTools.WpsPropagationProcessData").newInstance()
+    trafficPropagationProcessData.invokeMethod("setInputFormat",["Proba"])
 
     // --------------------------------------------
     // Run Calculations
@@ -361,11 +362,10 @@ def exec(Connection connection, input) {
             "drop table if exists traf_explode;" +
             "drop table TRAFIC_DENSITY if exists;")
 
-    classRef = Class.forName("org.noise_planet.noisemodelling.wpsTools.ProbabilisticProcessData")
-    Object probaProcessData = classRef.newInstance()
 
-
+    Object probaProcessData = Class.forName("org.noise_planet.noisemodelling.wpsTools.ProbabilisticProcessData").newInstance()
     probaProcessData.invokeMethod("setProbaTable",["ROADS_PROBA", sql])
+
     sql.execute("drop table ROADS_PROBA if exists;")
 
     System.out.println('Intermediate  time : ' + TimeCategory.minus(new Date(), start))

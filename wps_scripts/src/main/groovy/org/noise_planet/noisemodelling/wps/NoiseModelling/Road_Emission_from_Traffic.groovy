@@ -159,7 +159,7 @@ def exec(Connection connection, input) {
     // --------------------------------------
 
     // Get Class to compute LW
-    Object trafficPropagationProcessData = Class.forName("org.noise_planet.noisemodelling.wpsTools.TrafficPropagationProcessData").newInstance()
+    Object trafficPropagationProcessData = Class.forName("org.noise_planet.noisemodelling.wpsTools.WpsPropagationProcessData").newInstance()
     trafficPropagationProcessData.invokeMethod("setInputFormat",["EmissionDEN"])
 
     // Get size of the table (number of road segments

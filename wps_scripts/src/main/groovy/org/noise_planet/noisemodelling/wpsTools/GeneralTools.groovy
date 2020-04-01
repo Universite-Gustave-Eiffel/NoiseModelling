@@ -127,7 +127,7 @@ class GeneralTools {
 /**
  * Read source database and compute the sound emission spectrum of roads sources
  * */
-class TrafficPropagationProcessData extends PropagationProcessData {
+class WpsPropagationProcessData extends PropagationProcessData {
     // Lden values
     public List<double[]> wjSourcesD = new ArrayList<>()
     public List<double[]> wjSourcesE = new ArrayList<>()
@@ -139,7 +139,7 @@ class TrafficPropagationProcessData extends PropagationProcessData {
     public String inputFormat = new String()
     int idSource = 0
 
-    TrafficPropagationProcessData(FastObstructionTest freeFieldFinder) {
+    WpsPropagationProcessData(FastObstructionTest freeFieldFinder) {
         super(freeFieldFinder)
     }
 
@@ -152,13 +152,14 @@ class TrafficPropagationProcessData extends PropagationProcessData {
         super.addSource(pk, geom, rs)
         SourcesPk.put(pk, idSource++)
 
+
         def res = computeLw(inputFormat, rs)
         wjSourcesD.add(res[0])
         wjSourcesE.add(res[1])
         wjSourcesN.add(res[2])
         wjSourcesDEN.add(res[3])
-    }
 
+    }
 
     double[][] computeLw(String Format, SpatialResultSet rs) throws SQLException {
 
@@ -167,6 +168,13 @@ class TrafficPropagationProcessData extends PropagationProcessData {
         double[] le = new double[PropagationProcessPathData.freq_lvl.size()]
         double[] ln = new double[PropagationProcessPathData.freq_lvl.size()]
         double[] lden = new double[PropagationProcessPathData.freq_lvl.size()]
+
+        if (Format == 'Proba') {
+            double val = ComputeRays.dbaToW((BigDecimal) 90.0)
+            ld = [val,val,val,val,val,val,val,val]
+            le = [val,val,val,val,val,val,val,val]
+            ln = [val,val,val,val,val,val,val,val]
+        }
 
         if (Format == 'EmissionDEN') {
             // Read average 24h traffic
@@ -420,10 +428,10 @@ class TrafficPropagationProcessData extends PropagationProcessData {
 /**
  *
  */
-class TrafficPropagationProcessDataFactory implements PointNoiseMap.PropagationProcessDataFactory {
+class WpsPropagationProcessDataFactory implements PointNoiseMap.PropagationProcessDataFactory {
     @Override
-    public PropagationProcessData create(FastObstructionTest freeFieldFinder) {
-        return new TrafficPropagationProcessData(freeFieldFinder);
+    PropagationProcessData create(FastObstructionTest freeFieldFinder) {
+        return new WpsPropagationProcessData(freeFieldFinder);
     }
 }
 
@@ -529,53 +537,4 @@ class ProbabilisticProcessData {
 
     }
 
-}
-
-
-/**
- * Read source database and compute the sound emission spectrum of roads sources
- */
-class ProbabilisticPropagationProcessData extends PropagationProcessData {
-
-    protected List<double[]> wjSourcesD = new ArrayList<>()
-
-    public ProbabilisticPropagationProcessData(FastObstructionTest freeFieldFinder) {
-        super(freeFieldFinder)
-    }
-
-    @Override
-    public void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException {
-
-        super.addSource(pk, geom, rs)
-
-        double db_m63 = 90
-        double db_m125 = 90
-        double db_m250 = 90
-        double db_m500 = 90
-        double db_m1000 = 90
-        double db_m2000 = 90
-        double db_m4000 = 90
-        double db_m8000 = 90
-
-        double[] res_d = [db_m63, db_m125, db_m250, db_m500, db_m1000, db_m2000, db_m4000, db_m8000]
-        wjSourcesD.add(ComputeRays.dbaToW(res_d))
-    }
-
-    @Override
-    public double[] getMaximalSourcePower(int sourceId) {
-        return wjSourcesD.get(sourceId)
-    }
-
-
-}
-
-/**
- *
- */
-class ProbabilisticPropagationProcessDataFactory implements PointNoiseMap.PropagationProcessDataFactory {
-
-    @Override
-    PropagationProcessData create(FastObstructionTest freeFieldFinder) {
-        return new ProbabilisticPropagationProcessData(freeFieldFinder)
-    }
 }

@@ -274,10 +274,10 @@ def exec(Connection connection, input) {
     // Initialize NoiseModelling emission part
     // --------------------------------------------
 
-    Object trafficPropagationProcessDataFactory = Class.forName("org.noise_planet.noisemodelling.wpsTools.TrafficPropagationProcessDataFactory").newInstance()
+    Object trafficPropagationProcessDataFactory = Class.forName("org.noise_planet.noisemodelling.wpsTools.WpsPropagationProcessDataFactory").newInstance()
     pointNoiseMap.setPropagationProcessDataFactory(trafficPropagationProcessDataFactory)
 
-    Object trafficPropagationProcessData = Class.forName("org.noise_planet.noisemodelling.wpsTools.TrafficPropagationProcessData").newInstance()
+    Object trafficPropagationProcessData = Class.forName("org.noise_planet.noisemodelling.wpsTools.WpsPropagationProcessData").newInstance()
     trafficPropagationProcessData.invokeMethod("setInputFormat",["Classic"])
 
     // --------------------------------------------

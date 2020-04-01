@@ -290,7 +290,7 @@ def run(input) {
 
         // Init custom input in order to compute more than just attenuation
 
-        //TrafficPropagationProcessDataFactory trafficPropagationProcessDataFactory = new TrafficPropagationProcessDataFactory();
+        //WpsPropagationProcessDataFactory trafficPropagationProcessDataFactory = new WpsPropagationProcessDataFactory();
         //pointNoiseMap.setPropagationProcessDataFactory(trafficPropagationProcessDataFactory);
 
         //PropagationPathStorageFactory storageFactory = new PropagationPathStorageFactory()
