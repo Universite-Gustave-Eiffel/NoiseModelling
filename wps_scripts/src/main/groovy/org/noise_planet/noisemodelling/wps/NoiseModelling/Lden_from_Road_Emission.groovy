@@ -27,21 +27,17 @@ import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
 import groovy.time.TimeCategory
-import org.cts.crs.CRSException
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.api.ProgressVisitor
-import org.h2gis.utilities.JDBCUtilities
-import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.wrapper.ConnectionWrapper
-import org.locationtech.jts.geom.Geometry
-import org.noise_planet.noisemodelling.propagation.*
+import org.noise_planet.noisemodelling.propagation.ComputeRays
+import org.noise_planet.noisemodelling.propagation.ComputeRaysOut
+import org.noise_planet.noisemodelling.propagation.IComputeRaysOut
+import org.noise_planet.noisemodelling.propagation.RootProgressVisitor
 import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap
 
-import javax.xml.stream.XMLStreamException
 import java.sql.Connection
-import java.sql.DatabaseMetaData
-import java.sql.SQLException
 
 title = 'Calculation of the Lden map from the road noise emission table'
 description = 'Calculation of the Lden map from the road noise emission table (DEN format, see input details). </br> Tables must be projected in a metric coordinate system (SRID). Use "Change_SRID" WPS Block if needed. ' +

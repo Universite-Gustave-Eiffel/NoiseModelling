@@ -22,8 +22,8 @@ package org.noise_planet.noisemodelling.wps
 import org.noise_planet.noisemodelling.wps.Database_Manager.Display_Database
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Lden_from_Road_Emission
-import org.noise_planet.noisemodelling.wps.Experimental.Road_Emission_From_AADF
-import org.noise_planet.noisemodelling.wps.OSM_Tools.Get_Table_from_OSM
+import org.noise_planet.noisemodelling.wps.NoiseModelling.Road_Emission_from_Traffic
+import org.noise_planet.noisemodelling.wps.Others_Tools.OsmToInputData
 import org.noise_planet.noisemodelling.wps.Receivers.Regular_Grid
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -39,17 +39,18 @@ class TestTutorialOpenStreetMap extends JdbcTestCase {
         Object res = new Display_Database().exec(connection, [])
         assertEquals("", res)
         // Import OSM file
-        res = new Get_Table_from_OSM().exec(connection,
+        res = new OsmToInputData().exec(connection,
                 ["pathFile": TestTutorialOpenStreetMap.getResource("map.osm.gz").getPath(),
                  "targetSRID" : 2154,
                  "convert2Building" : true,
-                 "convert2Vegetation" : true,
+                 "convert2Ground" : true,
                  "convert2Roads" : true])
+
         // Check database
         res = new Display_Database().exec(connection, [])
 
-        assertTrue(res.contains("SURFACE_OSM"))
-        assertTrue(res.contains("BUILDINGS_OSM"))
+        assertTrue(res.contains("GROUND"))
+        assertTrue(res.contains("BUILDINGS"))
         assertTrue(res.contains("ROADS"))
 
         // Check export geojson
@@ -60,21 +61,21 @@ class TestTutorialOpenStreetMap extends JdbcTestCase {
         }
 
         res = new Export_Table().exec(connection, ["exportPath" : "target/test.geojson",
-                                                   "tableToExport": "BUILDINGS_OSM"])
+                                                   "tableToExport": "BUILDINGS"])
         assertTrue(testPath.exists())
 
         // Check regular grid
 
         res = new Regular_Grid().exec(connection, ["delta": 50,
                                                    "sourcesTableName": "ROADS",
-                                                   "buildingTableName": "BUILDINGS_OSM"])
+                                                   "buildingTableName": "BUILDINGS"])
 
         // Check database
         res = new Display_Database().exec(connection, [])
 
         assertTrue(res.contains("RECEIVERS"))
 
-        new Road_Emission_From_AADF().exec(connection, ["sourcesTableName": "ROADS"])
+        new Road_Emission_from_Traffic().exec(connection, ["tableRoads": "ROADS"])
 
         // Check database
         res = new Display_Database().exec(connection, [])
@@ -82,8 +83,8 @@ class TestTutorialOpenStreetMap extends JdbcTestCase {
         assertTrue(res.contains("LW_ROADS"))
 
         res = new Lden_from_Road_Emission().exec(connection, ["tableSources"  : "LW_ROADS",
-                                                              "tableBuilding" : "BUILDINGS_OSM",
-                                                              "tableGroundAbs": "SURFACE_OSM",
+                                                              "tableBuilding" : "BUILDINGS",
+                                                              "tableGroundAbs": "GROUND",
                                                               "tableReceivers": "RECEIVERS"])
 
         // Check database
