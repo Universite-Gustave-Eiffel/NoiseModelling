@@ -29,6 +29,7 @@ import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.io.WKTReader
 import org.noise_planet.noisemodelling.wps.Receivers.Building_Grid
+import org.noise_planet.noisemodelling.wps.Receivers.Delaunay_Grid
 
 class TestReceivers extends JdbcTestCase {
 
@@ -108,5 +109,18 @@ class TestReceivers extends JdbcTestCase {
         def receivers_pop = sql.firstRow("SELECT count(*) cpt from receivers r where not ST_Intersects(r.the_geom, ST_GeomFromText('"+g.toString()+"'))")[0] as Integer
 
         assertEquals(0, receivers_pop);
+    }
+
+    public void testDelaunayGrid() {
+        def sql = new Sql(connection)
+
+        SHPRead.readShape(connection, TestReceivers.getResource("buildings.shp").getPath())
+        SHPRead.readShape(connection, TestReceivers.getResource("roads.shp").getPath())
+        sql.execute("CREATE SPATIAL INDEX ON BUILDINGS(THE_GEOM)")
+        sql.execute("CREATE SPATIAL INDEX ON ROADS(THE_GEOM)")
+
+        new Delaunay_Grid().exec(connection, ["buildingTableName" : "BUILDINGS",
+        "sourcesTableName" : "ROADS"]);
+
     }
 }
