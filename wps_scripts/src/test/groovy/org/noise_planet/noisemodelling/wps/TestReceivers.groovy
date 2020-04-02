@@ -22,6 +22,7 @@ package org.noise_planet.noisemodelling.wps
 
 import groovy.sql.Sql
 import org.h2gis.functions.io.shp.SHPRead
+import org.h2gis.functions.io.shp.SHPWrite
 import org.h2gis.functions.spatial.crs.ST_SetSRID
 import org.h2gis.functions.spatial.crs.ST_Transform
 import org.locationtech.jts.geom.Envelope
@@ -29,6 +30,7 @@ import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.io.WKTReader
 import org.noise_planet.noisemodelling.wps.Receivers.Building_Grid
+import org.noise_planet.noisemodelling.wps.Receivers.Delaunay_Grid
 
 class TestReceivers extends JdbcTestCase {
 
@@ -108,5 +110,30 @@ class TestReceivers extends JdbcTestCase {
         def receivers_pop = sql.firstRow("SELECT count(*) cpt from receivers r where not ST_Intersects(r.the_geom, ST_GeomFromText('"+g.toString()+"'))")[0] as Integer
 
         assertEquals(0, receivers_pop);
+    }
+
+    public void testDelaunayGrid() {
+        def sql = new Sql(connection)
+
+        SHPRead.readShape(connection, TestReceivers.getResource("buildings.shp").getPath())
+        SHPRead.readShape(connection, TestReceivers.getResource("roads.shp").getPath())
+        sql.execute("CREATE SPATIAL INDEX ON BUILDINGS(THE_GEOM)")
+        sql.execute("CREATE SPATIAL INDEX ON ROADS(THE_GEOM)")
+
+        new Delaunay_Grid().exec(connection, ["buildingTableName" : "BUILDINGS",
+        "sourcesTableName" : "ROADS"]);
+
+        sql.execute("CREATE SPATIAL INDEX ON RECEIVERS(THE_GEOM)")
+
+        // Check if index and geoms is corresponding
+        def res = sql.firstRow("SELECT MAX((SELECT ST_DISTANCE(T.THE_GEOM, R.THE_GEOM) D FROM RECEIVERS R WHERE R.PK = T.PK_1)) D1," +
+                " MAX((SELECT ST_DISTANCE(T.THE_GEOM, R.THE_GEOM) D FROM RECEIVERS R WHERE R.PK = T.PK_2)) D2," +
+                " MAX((SELECT ST_DISTANCE(T.THE_GEOM, R.THE_GEOM) D FROM RECEIVERS R WHERE R.PK = T.PK_3)) D3 FROM TRIANGLES T");
+        def max_dist_a = res[0] as Double
+        def max_dist_b = res[1] as Double
+        def max_dist_c = res[2] as Double
+        assertEquals(0.0, max_dist_a, 1e-6d);
+        assertEquals(0.0, max_dist_b, 1e-6d);
+        assertEquals(0.0, max_dist_c, 1e-6d);
     }
 }
