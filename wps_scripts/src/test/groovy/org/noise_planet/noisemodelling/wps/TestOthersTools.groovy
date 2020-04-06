@@ -26,7 +26,7 @@ import org.h2gis.functions.io.shp.SHPWrite
 import org.h2gis.utilities.JDBCUtilities
 import org.junit.Test
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Road_Emission_from_Traffic
-import org.noise_planet.noisemodelling.wps.Others_Tools.Add_LAEQ_LEQ_columns
+import org.noise_planet.noisemodelling.wps.Others_Tools.Add_Laeq_Leq_columns
 import org.noise_planet.noisemodelling.wps.Others_Tools.Change_SRID
 import org.noise_planet.noisemodelling.wps.Others_Tools.Screen_to_building
 import org.slf4j.Logger
@@ -66,7 +66,7 @@ class TestOthersTools extends JdbcTestCase {
         new Road_Emission_from_Traffic().exec(connection,
                 ["tableRoads": "ROADS2"])
 
-        String res = new Add_LAEQ_LEQ_columns().exec(connection,
+        String res = new Add_Laeq_Leq_columns().exec(connection,
                 ["prefix": "HZ",
                  "tableName": "LW_ROADS"])
 
@@ -81,7 +81,7 @@ class TestOthersTools extends JdbcTestCase {
         new Road_Emission_from_Traffic().exec(connection,
                 ["tableRoads": "ROADS2"])
 
-        String res = new Add_LAEQ_LEQ_columns().exec(connection,
+        String res = new Add_Laeq_Leq_columns().exec(connection,
                 ["prefix": "LWD",
                  "tableName": "LW_ROADS"])
 
@@ -101,7 +101,9 @@ class TestOthersTools extends JdbcTestCase {
         sql.executeInsert("INSERT INTO SCREENS(pk, THE_GEOM, HEIGHT) VALUES (2001,?, 66), (2002,?, 99)", [screen1, screen2])
         SHPRead.readShape(connection, TestOthersTools.getResource("buildings.shp").getPath())
 
-        new Screen_to_building().exec(connection, ["buildingTableName": "BUILDINGS", "screenTableName": "SCREENS"])
+        new Screen_to_building().exec(connection,
+                ["tableBuilding": "BUILDINGS",
+                 "tableScreens": "SCREENS"])
 
         SHPWrite.exportTable(connection, "target/BUILDINGS_SCREENS.shp", "BUILDINGS_SCREENS")
 
