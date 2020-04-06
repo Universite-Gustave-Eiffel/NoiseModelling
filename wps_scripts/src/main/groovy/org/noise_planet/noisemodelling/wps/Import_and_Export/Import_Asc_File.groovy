@@ -51,7 +51,7 @@ description = 'Import ESRI Ascii Raster file and convert into a Digital Elevatio
         'and contain : </br>' +
         '- <b> THE_GEOM </b> : the 3D point cloud of the DEM (POINT).</br> '
 
-inputs = [pathFile : [name: 'Path of the input File', title: 'Path of the input File', description: 'Path of the file you want to import, including its extension. </br> For example : c:/home/receivers.asc', type: String.class],
+inputs = [pathFile : [name: 'Path of the input File', title: 'Path of the ESRI Ascii Raster file', description: 'Path of the ESRI Ascii Raster file you want to import, including its extension. </br> For example : c:/home/receivers.asc', type: String.class],
           inputSRID: [name: 'Projection identifier', title: 'Projection identifier', description: 'Original projection identifier (also called SRID) of your table. It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection). (INTEGER) </br>  All coordinates will be projected from the specified EPSG to WGS84 coordinates. </br> This entry is optional because many formats already include the projection and you can also import files without geometry attributes.</br> </br> <b> Default value : 4326 </b> ', type: Integer.class, min: 0, max: 1],
           fence    : [name: 'Fence geometry', title: 'Fence geometry', description: 'Create DEM table only in the provided polygon', min: 0, max: 1, type: Geometry.class],
           downscale: [name: 'SkipPixels', title: 'Skip pixels on each axis', description: 'Divide the number of rows and columns read by the following coefficient (FLOAT) </br> </br> <b> Default value : 1.0 </b>', min: 0, max: 1, type: Integer.class]]
@@ -108,7 +108,6 @@ def exec(Connection connection, input) {
         fence = (String) input['fence']
     }
 
-
     String pathFile = input["pathFile"] as String
 
     def file = new File(pathFile)
@@ -121,14 +120,12 @@ def exec(Connection connection, input) {
         return resultString
     }
 
-    String outputTableName = 'DEM'
+    String outputTableName = 'ASC'
 
     // Create a connection statement to interact with the database in SQL
     Statement stmt = connection.createStatement()
 
-    // Drop the table if already exists
-    String dropOutputTable = "drop table if exists " + outputTableName
-    stmt.execute(dropOutputTable)
+
 
     // Get the extension of the file
     String ext = pathFile.substring(pathFile.lastIndexOf('.') + 1, pathFile.length())
@@ -148,20 +145,20 @@ def exec(Connection connection, input) {
 
     }
 
-    AscReaderDriver ascDriver = new AscReaderDriver();
+    AscReaderDriver ascDriver = new AscReaderDriver()
     ascDriver.setAs3DPoint(true)
     ascDriver.setExtractEnvelope()
 
     int srid = defaultSRID
 
-    String filePath = new File(pathFile).getAbsolutePath();
-    final int dotIndex = filePath.lastIndexOf('.');
-    final String fileNamePrefix = filePath.substring(0, dotIndex);
-    File prjFile = new File(fileNamePrefix + ".prj");
+    String filePath = new File(pathFile).getAbsolutePath()
+    final int dotIndex = filePath.lastIndexOf('.')
+    final String fileNamePrefix = filePath.substring(0, dotIndex)
+    File prjFile = new File(fileNamePrefix + ".prj")
     if (prjFile.exists()) {
         System.out.println("Found prj file :" + prjFile.getAbsolutePath())
         try {
-            srid = PRJUtil.getSRID(prjFile);
+            srid = PRJUtil.getSRID(prjFile)
             if (srid == 0) {
                 srid = defaultSRID;
             }
@@ -190,20 +187,25 @@ def exec(Connection connection, input) {
         }
     }
     if (downscale > 1) {
-        ascDriver.setDownScale(downscale);
+        ascDriver.setDownScale(downscale)
     }
+
     // Import ASC file
     RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1)
     new FileInputStream(new File(pathFile)).withStream { inputStream ->
-        ascDriver.read(connection, inputStream, progressLogger, TableLocation.parse(outputTableName).toString(), srid)
+        ascDriver.read(connection, inputStream, progressLogger, TableLocation.parse('DEM').toString(), srid)
     }
+
+    // Drop the table if already exists
+    String dropOutputTable = "drop table if exists " + outputTableName
+    stmt.execute(dropOutputTable)
 
 
     // Display the actual SRID in the command window
-    System.out.println("The SRID of the table is " + srid)
+    System.out.println("The SRID of your table is " + srid)
 
 
-    resultString = "The table " + outputTableName + " has been uploaded to database!"
+    resultString = "The table DEM has been uploaded to database ! </br>  Its SRID is : " + srid + ". </br> Remember that to calculate a noise map, your SRID must be in metric coordinates. Please use the Wps block 'Change SRID' if needed."
 
     // print to command window
     System.out.println('Result : ' + resultString)
