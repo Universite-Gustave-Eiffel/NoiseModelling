@@ -85,7 +85,7 @@ inputs = [tableBuilding     : [name       : 'Buildings table name', title: 'Buil
                                description: '<b>Name of the Digital Elevation Model table.</b></br>  ' +
                                        '</br>The table shall contain : </br> ' +
                                        '- <b> THE_GEOM </b> : the 3D geometry of the sources (POINT, MULTIPOINT).</br> ' +
-                                       '</br> </br> <b> This table can be generated from the WPS Block "AscToDem". </b>',
+                                       '</br> </br> <b> This table can be generated from the WPS Block "Import_Asc_File". </b>',
                                min        : 0, max: 1, type: String.class],
           tableGroundAbs    : [name       : 'Ground absorption table name', title: 'Ground absorption table name',
                                description: '<b>Name of the surface/ground acoustic absorption table.</b></br>  ' +

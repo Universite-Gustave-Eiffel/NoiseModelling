@@ -55,7 +55,7 @@ inputs = [
                                    ' on the table bounding box' +
                                    '<br>  The table shall contain : </br>' +
                                    '- <b> THE_GEOM </b> : any geometry type. </br>', min: 0, max: 1, type: String.class],
-        sourcesTableName: [name                                      : 'Sources table name', title: 'Sources table name', description: 'Keep only receivers at least at 1 meters of' +
+        sourcesTableName: [name          : 'Sources table name', title: 'Sources table name', description: 'Keep only receivers at least at 1 meters of' +
                 ' provided sources geometries' +
                 '<br>  The table shall contain : </br>' +
                 '- <b> THE_GEOM </b> : any geometry type. </br>', min: 0, max: 1, type: String.class],
