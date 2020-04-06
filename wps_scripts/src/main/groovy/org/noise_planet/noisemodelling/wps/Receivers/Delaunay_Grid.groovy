@@ -179,6 +179,6 @@ def exec(Connection connection, input) {
 
     sql.execute("Create spatial index on "+receivers_table_name+"(the_geom);")
 
-    return "Table TRIANGLES and " + receivers_table_name + " created"
+    return "Table " + receivers_table_name + " created"
 }
 

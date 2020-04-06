@@ -22,13 +22,10 @@ package org.noise_planet.noisemodelling.wps
 
 import groovy.sql.Sql
 import org.h2gis.functions.io.shp.SHPRead
-import org.h2gis.functions.io.shp.SHPWrite
 import org.h2gis.functions.spatial.crs.ST_SetSRID
 import org.h2gis.functions.spatial.crs.ST_Transform
 import org.locationtech.jts.geom.Envelope
-import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
-import org.locationtech.jts.io.WKTReader
 import org.noise_planet.noisemodelling.wps.Receivers.Building_Grid
 import org.noise_planet.noisemodelling.wps.Receivers.Delaunay_Grid
 
