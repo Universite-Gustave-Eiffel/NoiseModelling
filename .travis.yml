@@ -5,6 +5,8 @@ jdk:
 
 script:
   - mvn test -B
+  - git clone --depth=1 https://github.com/nicolas-f/h2gis.git
+  - cd h2gis && git checkout fixloop && mvn install -DskipTests
   - cd wps_scripts && travis_retry ./gradlew test --info --stacktrace
 
 before_cache:

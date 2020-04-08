@@ -13,12 +13,14 @@ import java.sql.Connection
 import groovy.sql.Sql
 
 title = 'Random Grid'
-description = '[H2GIS] Calculates a random grid of receivers based on a single Geometry geom or a table tableName of Geometries with delta as offset in the Cartesian plane in meters.'
+description = '[H2GIS] Calculates a random grid of receivers based on a single Geometry geom or a table tableName of Geometries with delta as offset in the Cartesian plane in meters. Return a table named RECEIVERS'
 
-inputs = [buildingTableName : [name: 'Buildings table name', title: 'Buildings table name',  type: String.class],
-          sourcesTableName  : [name: 'Sources table name', title: 'Sources table name', min: 0, max: 1, type: String.class],
-          nReceivers    : [name: 'nReceivers', title: 'nReceivers', description: 'Number of receivers', type: Integer.class],
-          databaseName   : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database (default : first found db)', min: 0, max: 1, type: String.class],
+inputs = [buildingTableName : [name: 'Buildings table name', title: 'Buildings table name',description: 'A table with polygon geometries, receivers inside will be removed', type: String.class],
+          sourcesTableName: [name                                      : 'Sources table name', title: 'Sources table name', description: 'Keep only receivers at least at 1 meters of' +
+        ' provided sources geometries' +
+        '<br>  The table shall contain : </br>' +
+        '- <b> THE_GEOM </b> : any geometry type. </br>', min: 0, max: 1, type: String.class],
+          nReceivers    : [name: 'Number of receivers', title: 'Number of receivers', description: 'Number of receivers to return', type: Integer.class],
           outputTableName: [name: 'outputTableName', description: 'Do not write the name of a table that contains a space. (default : RECEIVERS)', title: 'Name of output table', min: 0, max: 1, type: String.class]]
 
 outputs = [result: [name: 'Result output string', title: 'Result output string', description: 'This type of result does not allow the blocks to be linked together.', type: String.class]]

@@ -28,6 +28,7 @@ import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory
 import org.noise_planet.noisemodelling.wps.Receivers.Building_Grid
 import org.noise_planet.noisemodelling.wps.Receivers.Delaunay_Grid
+import org.noise_planet.noisemodelling.wps.Receivers.Random_Grid
 
 class TestReceivers extends JdbcTestCase {
 
@@ -132,5 +133,19 @@ class TestReceivers extends JdbcTestCase {
         assertEquals(0.0, max_dist_a, 1e-6d);
         assertEquals(0.0, max_dist_b, 1e-6d);
         assertEquals(0.0, max_dist_c, 1e-6d);
+    }
+
+    public void testRandomGrid() {
+
+        def sql = new Sql(connection)
+
+        SHPRead.readShape(connection, TestReceivers.getResource("buildings.shp").getPath())
+        SHPRead.readShape(connection, TestReceivers.getResource("roads.shp").getPath())
+
+        new Random_Grid().exec(connection,  ["buildingTableName" : "BUILDINGS",
+                                             "sourcesTableName" : "ROADS",
+                                             "nReceivers" : 200])
+
+        assertEquals(200, sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS")[0] as Integer)
     }
 }
