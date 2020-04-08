@@ -146,6 +146,6 @@ class TestReceivers extends JdbcTestCase {
                                              "sourcesTableName" : "ROADS",
                                              "nReceivers" : 200])
 
-        assertEquals(200, sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS")[0] as Integer)
+        assertTrue(200 >= (sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS")[0] as Integer))
     }
 }
