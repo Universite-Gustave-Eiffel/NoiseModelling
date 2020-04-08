@@ -13,27 +13,46 @@ import java.sql.Connection
 import groovy.sql.Sql
 
 title = 'Random Grid'
-description = '[H2GIS] Calculates a random grid of receivers based on a single Geometry geom or a table tableName of Geometries with delta as offset in the Cartesian plane in meters.'
+description = '[H2GIS] Calculates a random grid of receivers based on a single Geometry geom or a table tableName of Geometries with delta as offset in the Cartesian plane in meters. Return a table named RECEIVERS'
 
-inputs = [buildingTableName : [name: 'Buildings table name', title: 'Buildings table name',  type: String.class],
-          sourcesTableName  : [name: 'Sources table name', title: 'Sources table name', min: 0, max: 1, type: String.class],
-          nReceivers    : [name: 'nReceivers', title: 'nReceivers', description: 'Number of receivers', type: Integer.class],
-          databaseName   : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database (default : first found db)', min: 0, max: 1, type: String.class],
+inputs = [buildingTableName : [name: 'Buildings table name', title: 'Buildings table name',description: 'A table with polygon geometries, receivers inside will be removed', type: String.class],
+          sourcesTableName: [name                                      : 'Sources table name', title: 'Sources table name', description: 'Keep only receivers at least at 1 meters of' +
+        ' provided sources geometries' +
+        '<br>  The table shall contain : </br>' +
+        '- <b> THE_GEOM </b> : any geometry type. </br>', min: 0, max: 1, type: String.class],
+          nReceivers    : [name: 'Number of receivers', title: 'Number of receivers', description: 'Number of receivers to return', type: Integer.class],
           outputTableName: [name: 'outputTableName', description: 'Do not write the name of a table that contains a space. (default : RECEIVERS)', title: 'Name of output table', min: 0, max: 1, type: String.class]]
 
-outputs = [tableNameCreated: [name: 'tableNameCreated', title: 'tableNameCreated', type: String.class]]
+outputs = [result: [name: 'Result output string', title: 'Result output string', description: 'This type of result does not allow the blocks to be linked together.', type: String.class]]
 
 static Connection openGeoserverDataStoreConnection(String dbName) {
-    if(dbName == null || dbName.isEmpty()) {
+    if (dbName == null || dbName.isEmpty()) {
         dbName = new GeoServer().catalog.getStoreNames().get(0)
     }
     Store store = new GeoServer().catalog.getStore(dbName)
-    JDBCDataStore jdbcDataStore = (JDBCDataStore)store.getDataStoreInfo().getDataStore(null)
+    JDBCDataStore jdbcDataStore = (JDBCDataStore) store.getDataStoreInfo().getDataStore(null)
     return jdbcDataStore.getDataSource().getConnection()
 }
 
+
 def run(input) {
 
+    // Get name of the database
+    // by default an embedded h2gis database is created
+    // Advanced user can replace this database for a postGis or h2Gis server database.
+    String dbName = "h2gisdb"
+
+    // Open connection
+    openGeoserverDataStoreConnection(dbName).withCloseable {
+        Connection connection ->
+            return [result: exec(connection, input)]
+    }
+}
+
+
+
+
+def exec(Connection connection, input) {
     String receivers_table_name = "RECEIVERS"
 
     Integer nReceivers = 100
@@ -53,14 +72,6 @@ def run(input) {
     }
     building_table_name = building_table_name.toUpperCase()
 
-    // Get name of the database
-    String dbName = ""
-    if (input['databaseName']) {
-        dbName = input['databaseName'] as String
-    }
-
-    // Open connection
-    openGeoserverDataStoreConnection(dbName).withCloseable { Connection connection ->
         //Statement sql = connection.createStatement()
         Sql sql = new Sql(connection)
         //Delete previous receivers grid...
@@ -93,8 +104,8 @@ def run(input) {
             sql.execute("delete from "+receivers_table_name+" g where exists (select 1 from "+sources_table_name+" r where st_expand(g.the_geom, 1) && r.the_geom and st_distance(g.the_geom, r.the_geom) < 1 limit 1);")
         }
         sql.execute("ALTER TABLE "+ receivers_table_name +" ADD pk INT AUTO_INCREMENT PRIMARY KEY;" )
-    }
 
-   //Process Done !
-    return [tableNameCreated: "Process done !"]
+
+    //Process Done !
+    return "Table " + receivers_table_name + " created !"
 }
