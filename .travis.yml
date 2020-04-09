@@ -3,8 +3,8 @@ jdk:
     - openjdk8
 
 before_install:
-  - git clone --depth=1 https://github.com/nicolas-f/h2gis.git
-  - cd h2gis && git checkout fixloop && mvn install -DskipTests
+  - git clone --depth=1 -b fixloop https://github.com/nicolas-f/h2gis.git
+  - cd h2gis && mvn install -DskipTests
 
 script:
   - mvn test -B
