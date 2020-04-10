@@ -82,7 +82,7 @@ inputs = [
                 "- <b> HV_SPD_E </b> :  Hourly average heavy vehicle speed (18-22h) (DOUBLE)<br/>" +
                 "- <b> HV_SPD_N </b> :  Hourly average heavy vehicle speed (22-6h) (DOUBLE)<br/>" +
                 "- <b> PVMT </b> :  CNOSSOS road pavement identifier (ex: NL05) (VARCHAR)" +
-                "</br> </br> <b> This table can be generated from the WPS Block 'Get_Table_from_OSM'. </b>.", type: String.class],
+                "</br> </br> <b> This table can be generated from the WPS Block 'OsmToInputData'. </b>.", type: String.class],
         tableReceivers    : [name       : 'Receivers table name', title: 'Receivers table name',
                              description: '<b>Name of the Receivers table.</b></br>  ' +
                                      '</br>  The table shall contain : </br> ' +
@@ -94,7 +94,7 @@ inputs = [
                              description: '<b>Name of the Digital Elevation Model table.</b></br>  ' +
                                      '</br>The table shall contain : </br> ' +
                                      '- <b> THE_GEOM </b> : the 3D geometry of the sources (POINT, MULTIPOINT).</br> ' +
-                                     '</br> </br> <b> This table can be generated from the WPS Block "AscToDem". </b>',
+                                     '</br> </br> <b> This table can be generated from the WPS Block "Import_Asc_File". </b>',
                              min        : 0, max: 1, type: String.class],
         tableGroundAbs    : [name       : 'Ground absorption table name', title: 'Ground absorption table name',
                              description: '<b>Name of the surface/ground acoustic absorption table.</b></br>  ' +

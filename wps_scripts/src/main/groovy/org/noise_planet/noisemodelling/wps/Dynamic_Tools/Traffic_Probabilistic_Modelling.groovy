@@ -73,7 +73,7 @@ inputs = [
                 "- <b> LV_SPD_D </b> :  Hourly average light vehicle speed (DOUBLE)<br/>" +
                 "- <b> HV_SPD_D </b> :  Hourly average heavy vehicle speed  (DOUBLE)<br/>" +
                 "- <b> PVMT </b> :  CNOSSOS road pavement identifier (ex: NL05) (VARCHAR)" +
-                "</br> </br> <b> This table can be generated from the WPS Block 'Get_Table_from_OSM'. </b>.", type: String.class],
+                "</br> </br> <b> This table can be generated from the WPS Block 'OsmToInputData'. </b>.", type: String.class],
         tableReceivers    : [name       : 'Receivers table name', title: 'Receivers table name',
                              description: '<b>Name of the Receivers table.</b></br>  ' +
                                      '</br>  The table shall contain : </br> ' +
@@ -85,7 +85,7 @@ inputs = [
                              description: '<b>Name of the Digital Elevation Model table.</b></br>  ' +
                                      '</br>The table shall contain : </br> ' +
                                      '- <b> THE_GEOM </b> : the 3D geometry of the sources (POINT, MULTIPOINT).</br> ' +
-                                     '</br> </br> <b> This table can be generated from the WPS Block "AscToDem". </b>',
+                                     '</br> </br> <b> This table can be generated from the WPS Block "Import_Asc_File". </b>',
                              min        : 0, max: 1, type: String.class],
         tableGroundAbs    : [name       : 'Ground absorption table name', title: 'Ground absorption table name',
                              description: '<b>Name of the surface/ground acoustic absorption table.</b></br>  ' +
@@ -296,10 +296,11 @@ def exec(Connection connection, input) {
     // --------------------------------------------
     // Initialize NoiseModelling emission part
     // --------------------------------------------
+    Object trafficPropagationProcessDataFactory = Class.forName("org.noise_planet.noisemodelling.wpsTools.WpsPropagationProcessDataFactory").newInstance()
+    pointNoiseMap.setPropagationProcessDataFactory(trafficPropagationProcessDataFactory)
 
-    Class classRef = Class.forName("org.noise_planet.noisemodelling.wpsTools.ProbabilisticPropagationProcessDataFactory")
-    Object probaPropagationProcessDataFactory = classRef.newInstance()
-    pointNoiseMap.setPropagationProcessDataFactory(probaPropagationProcessDataFactory)
+    Object trafficPropagationProcessData = Class.forName("org.noise_planet.noisemodelling.wpsTools.WpsPropagationProcessData").newInstance()
+    trafficPropagationProcessData.invokeMethod("setInputFormat",["Proba"])
 
     // --------------------------------------------
     // Run Calculations
@@ -361,11 +362,10 @@ def exec(Connection connection, input) {
             "drop table if exists traf_explode;" +
             "drop table TRAFIC_DENSITY if exists;")
 
-    classRef = Class.forName("org.noise_planet.noisemodelling.wpsTools.ProbabilisticProcessData")
-    Object probaProcessData = classRef.newInstance()
 
-
+    Object probaProcessData = Class.forName("org.noise_planet.noisemodelling.wpsTools.ProbabilisticProcessData").newInstance()
     probaProcessData.invokeMethod("setProbaTable",["ROADS_PROBA", sql])
+
     sql.execute("drop table ROADS_PROBA if exists;")
 
     System.out.println('Intermediate  time : ' + TimeCategory.minus(new Date(), start))

@@ -27,21 +27,17 @@ import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
 import groovy.time.TimeCategory
-import org.cts.crs.CRSException
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.api.ProgressVisitor
-import org.h2gis.utilities.JDBCUtilities
-import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.wrapper.ConnectionWrapper
-import org.locationtech.jts.geom.Geometry
-import org.noise_planet.noisemodelling.propagation.*
+import org.noise_planet.noisemodelling.propagation.ComputeRays
+import org.noise_planet.noisemodelling.propagation.ComputeRaysOut
+import org.noise_planet.noisemodelling.propagation.IComputeRaysOut
+import org.noise_planet.noisemodelling.propagation.RootProgressVisitor
 import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap
 
-import javax.xml.stream.XMLStreamException
 import java.sql.Connection
-import java.sql.DatabaseMetaData
-import java.sql.SQLException
 
 title = 'Calculation of the Lden map from the road noise emission table'
 description = 'Calculation of the Lden map from the road noise emission table (DEN format, see input details). </br> Tables must be projected in a metric coordinate system (SRID). Use "Change_SRID" WPS Block if needed. ' +
@@ -79,7 +75,7 @@ inputs = [
                              description: '<b>Name of the Digital Elevation Model table.</b></br>  ' +
                                      '</br>The table shall contain : </br> ' +
                                      '- <b> THE_GEOM </b> : the 3D geometry of the sources (POINT, MULTIPOINT).</br> ' +
-                                     '</br> </br> <b> This table can be generated from the WPS Block "AscToDem". </b>',
+                                     '</br> </br> <b> This table can be generated from the WPS Block "Import_Asc_File". </b>',
                              min: 0, max: 1, type: String.class],
         tableGroundAbs      : [name: 'Ground absorption table name', title: 'Ground absorption table name',
                              description: '<b>Name of the surface/ground acoustic absorption table.</b></br>  ' +
@@ -274,10 +270,10 @@ def exec(Connection connection, input) {
     // Initialize NoiseModelling emission part
     // --------------------------------------------
 
-    Object trafficPropagationProcessDataFactory = Class.forName("org.noise_planet.noisemodelling.wpsTools.TrafficPropagationProcessDataFactory").newInstance()
+    Object trafficPropagationProcessDataFactory = Class.forName("org.noise_planet.noisemodelling.wpsTools.WpsPropagationProcessDataFactory").newInstance()
     pointNoiseMap.setPropagationProcessDataFactory(trafficPropagationProcessDataFactory)
 
-    Object trafficPropagationProcessData = Class.forName("org.noise_planet.noisemodelling.wpsTools.TrafficPropagationProcessData").newInstance()
+    Object trafficPropagationProcessData = Class.forName("org.noise_planet.noisemodelling.wpsTools.WpsPropagationProcessData").newInstance()
     trafficPropagationProcessData.invokeMethod("setInputFormat",["Classic"])
 
     // --------------------------------------------

@@ -32,6 +32,7 @@ import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.SFSUtilities
 import org.h2gis.utilities.TableLocation
 import org.locationtech.jts.geom.*
+import org.locationtech.jts.io.WKTReader
 
 import java.sql.Connection
 
@@ -49,12 +50,12 @@ inputs = [
                            type       : String.class],
         fence           : [name         : 'Fence geometry', title: 'Extent filter', description: 'Create receivers only in the' +
                 ' provided polygon', min: 0, max: 1, type: Geometry.class],
-        fenceTableName  : [name                                                         : 'Fence geometry from table', title: 'Filter using table bouding box',
-                           description                                                  : 'Extract the bounding box of the specified table then create only receivers' +
+        fenceTableName  : [name   : 'Fence geometry from table', title: 'Filter using table bounding box',
+                           description : 'Extract the bounding box of the specified table then create only receivers' +
                                    ' on the table bounding box' +
                                    '<br>  The table shall contain : </br>' +
                                    '- <b> THE_GEOM </b> : any geometry type. </br>', min: 0, max: 1, type: String.class],
-        sourcesTableName: [name                                      : 'Sources table name', title: 'Sources table name', description: 'Keep only receivers at least at 1 meters of' +
+        sourcesTableName: [name          : 'Sources table name', title: 'Sources table name', description: 'Keep only receivers at least at 1 meters of' +
                 ' provided sources geometries' +
                 '<br>  The table shall contain : </br>' +
                 '- <b> THE_GEOM </b> : any geometry type. </br>', min: 0, max: 1, type: String.class],
@@ -141,16 +142,25 @@ def exec(Connection connection, input) {
         targetSrid = SFSUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
     }
 
-    def fenceGeom = null
-    if (input['fence']) {
+    String fenceGeom = null
+    if (input['fence'] != null ) {
         if (targetSrid != 0) {
+            WKTReader wktReader = new WKTReader()
+            Geometry fence = (Geometry) wktReader.read(input['fence'] as String)
             // Transform fence to the same coordinate system than the buildings & sources
-            fenceGeom = ST_Transform.ST_Transform(connection, ST_SetSRID.setSRID(input['fence'] as Geometry, 4326), targetSrid)
+            sql.execute("DROP TABLE FENCE IF EXISTS;")
+            sql.execute("CREATE TABLE FENCE AS SELECT ST_GeomFromText('"  + ST_Transform.ST_Transform(connection, ST_SetSRID.setSRID(fence, 4326), targetSrid) + "') the_geom ;")
+            System.println('The fence is : ' + fence)
+            fenceGeom = "ok"
         } else {
             System.err.println("Unable to find buildings or sources SRID, ignore fence parameters")
         }
-    } else if (input['fenceTableName']) {
-        fenceGeom = sql.firstRow("SELECT ST_ENVELOPE(ST_COLLECT(the_geom)) the_geom from " + input['fenceTableName'])[0] as Geometry
+    } else if (input['fenceTableName'] != null ) {
+        fenceGeom = input['fenceTableName'] as String
+        sql.execute("DROP TABLE FENCE IF EXISTS;")
+        fenceGeom = sql.execute("CREATE TABLE FENCE AS SELECT ST_ENVELOPE(ST_COLLECT(the_geom)) the_geom from " + fenceGeom)
+        System.println('The table fence is : ' + fenceGeom)
+        fenceGeom = "ok"
     }
 
     def buildingPk = JDBCUtilities.getFieldName(connection.getMetaData(), building_table_name, JDBCUtilities.getIntegerPrimaryKey(connection, building_table_name));
@@ -160,11 +170,36 @@ def exec(Connection connection, input) {
 
     sql.execute("drop table if exists tmp_receivers_lines")
     def filter_geom_query = ""
+    System.println('ICI')
     if (fenceGeom != null) {
-        filter_geom_query = " WHERE the_geom && ST_GeomFromText('" + fenceGeom + "') AND ST_INTERSECTS(the_geom, ST_GeomFromText('" + fenceGeom + "'))";
+        System.println('Cut into Buildings')
+
+        // Build the result string with every tables
+        StringBuilder sbFields = new StringBuilder()
+        // Get the column names to keep all column in the final table
+        List<String> fields = JDBCUtilities.getFieldNames(connection.getMetaData(), building_table_name)
+        int k = 1
+        fields.each {
+            f ->
+                if (f != "THE_GEOM") {
+                    sbFields.append(String.format(" , a.%s ", f))
+                }
+                k++
+        }
+
+        //filter_geom_query = " WHERE the_geom && FENCE.the_geom AND ST_INTERSECTS(the_geom, FENCE.the_geom)"
+        sql.execute("Create spatial index on FENCE(the_geom);")
+        sql.execute("Create spatial index on " + building_table_name + "(the_geom);")
+        sql.execute("DROP TABLE tmp_buildings IF EXISTS;")
+        sql.execute("CREATE TABLE tmp_buildings as select  ST_Intersection(a.the_geom, b.the_geom) the_geom "+sbFields+"  from " + building_table_name + " a, FENCE b  WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom);")
+        building_table_name = "tmp_buildings"
     }
+
+
+
+
     // create line of receivers
-    sql.execute("create table tmp_receivers_lines as select "+buildingPk+" as pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, 2, 'join=bevel')), 0.05) the_geom from "+building_table_name+filter_geom_query)
+    sql.execute("create table tmp_receivers_lines as select "+buildingPk+" as pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, 2, 'join=bevel')), 0.05) the_geom from "+building_table_name)
     sql.execute("drop table if exists tmp_relation_screen_building;")
     sql.execute("create spatial index on tmp_receivers_lines(the_geom)")
     // list buildings that will remove receivers (if height is superior than receiver height
@@ -214,10 +249,10 @@ def exec(Connection connection, input) {
             sql.execute("delete from " + receivers_table_name + " g where exists (select 1 from " + sources_table_name + " r where st_expand(g.the_geom, 1, 1) && r.the_geom and st_distance(g.the_geom, r.the_geom) < 1 limit 1);")
         }
 
-        if(fenceGeom != null) {
+       /* if(fenceGeom != null) {
             // delete receiver not in fence filter
-            sql.execute("delete from "+receivers_table_name+" g where not ST_INTERSECTS(g.the_geom , ST_GeomFromText('"+fenceGeom+"'));")
-        }
+            sql.execute("delete from "+receivers_table_name+" g where not ST_INTERSECTS(g.the_geom , FENCE.the_geom);")
+        }*/
     } else {
         System.println('create RECEIVERS table...')
         // building have population attribute
@@ -232,10 +267,10 @@ def exec(Connection connection, input) {
             sql.execute("delete from tmp_receivers g where exists (select 1 from " + sources_table_name + " r where st_expand(g.the_geom, 1) && r.the_geom and st_distance(g.the_geom, r.the_geom) < 1 limit 1);")
         }
 
-        if(fenceGeom != null) {
+       /* if(fenceGeom != null) {
             // delete receiver not in fence filter
-            sql.execute("delete from tmp_receivers g where not ST_INTERSECTS(g.the_geom , ST_GeomFromText('"+fenceGeom+"'));")
-        }
+            sql.execute("delete from tmp_receivers g where not ST_INTERSECTS(g.the_geom , FENCE.the_geom);")
+        }*/
 
         sql.execute("CREATE INDEX ON tmp_receivers(build_pk)")
         sql.execute("create table " + receivers_table_name + "(pk serial, the_geom geometry,build_pk integer, pop float) as select null, a.the_geom, a.build_pk, b.pop/COUNT(DISTINCT aa.pk)::float from tmp_receivers a, "+building_table_name+ " b,tmp_receivers aa where b."+buildingPk+" = a.build_pk and a.build_pk = aa.build_pk GROUP BY a.the_geom, a.build_pk, b.pop;")
@@ -246,7 +281,7 @@ def exec(Connection connection, input) {
     sql.execute("drop table tmp_screen_truncated")
     sql.execute("drop table tmp_relation_screen_building")
     sql.execute("drop table tmp_receivers_lines")
-
+    sql.execute("drop table if exists tmp_buildings;")
     // Process Done
     resultString = "Process done. Table of receivers " + receivers_table_name + " created !"
 

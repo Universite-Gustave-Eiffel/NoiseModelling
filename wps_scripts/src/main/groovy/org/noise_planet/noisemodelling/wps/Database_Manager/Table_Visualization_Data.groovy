@@ -75,7 +75,7 @@ def exec(Connection connection, input) {
     System.out.println('Duration : ' + TimeCategory.minus(new Date(), start))
 
     // print to WPS Builder
-    return mapToTable(output)
+    return mapToTable(output, sql, tableName)
 }
 
 
@@ -98,12 +98,14 @@ def run(input) {
  * @param list
  * @return
  */
-static String mapToTable(List<Map> list) {
+static String mapToTable(List<Map> list, Sql sql, String tableName) {
 
     StringBuilder output = new StringBuilder()
 
     Map first = list.first()
 
+    output.append("The total number of rows is " + sql.firstRow('SELECT COUNT(*) FROM ' + tableName)[0])
+    output.append("</br> </br> ")
     output.append("<table  border=' 1px solid black'><thead><tr>")
 
     first.each { key, val ->

@@ -21,7 +21,9 @@
 package org.noise_planet.noisemodelling.wps
 
 import org.h2gis.functions.io.shp.SHPRead
+import org.noise_planet.noisemodelling.wps.Database_Manager.Display_Database
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
+import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_Asc_File
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_Folder
 import org.slf4j.Logger
@@ -52,6 +54,16 @@ class TestImportExport extends JdbcTestCase {
 
         assertEquals("The table already has a different SRID than the one you gave.", res)
     }
+
+    void testImportAsc() {
+
+        String res = new Import_Asc_File().exec(connection,
+                ["pathFile" : TestImportExport.getResource("precip30min.asc").getPath(),
+                 "inputSRID": "2154"])
+
+        assertEquals("The table DEM has been uploaded to database ! </br>  Its SRID is : 4326. </br> Remember that to calculate a noise map, your SRID must be in metric coordinates. Please use the Wps block 'Change SRID' if needed.", res)
+    }
+
 
     void testImportFolder() {
 

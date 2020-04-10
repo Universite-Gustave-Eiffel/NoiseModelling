@@ -26,30 +26,25 @@ import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
 import groovy.time.TimeCategory
-import org.cts.crs.CRSException
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.api.ProgressVisitor
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.SFSUtilities
-import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
-import org.locationtech.jts.geom.Geometry
-import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
-import org.noise_planet.noisemodelling.emission.RSParametersCnossos
-import org.noise_planet.noisemodelling.propagation.*
+import org.noise_planet.noisemodelling.propagation.ComputeRays
+import org.noise_planet.noisemodelling.propagation.ComputeRaysOut
+import org.noise_planet.noisemodelling.propagation.IComputeRaysOut
+import org.noise_planet.noisemodelling.propagation.RootProgressVisitor
 import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap
 
-import javax.xml.stream.XMLStreamException
 import java.sql.Connection
 import java.sql.SQLException
 
-
-
-
 title = 'Compute Lday from given tables'
 description = 'Compute Lday noise map from Day Evening Night traffic flow rate and speed estimates (specific format, see input details).' +
+        '</br> Tables must be projected in a metric coordinate system (SRID). Use "Change_SRID" WPS Block if needed.' +
         '</br> </br> <b> The output table is called : LDAY_GEOM </b> ' +
         'and contain : </br>' +
         '-  <b> IDRECEIVER  </b> : an identifier (INTEGER, PRIMARY KEY). </br>' +
@@ -62,7 +57,7 @@ inputs = [tableBuilding     : [name       : 'Buildings table name', title: 'Buil
                                        '- <b> THE_GEOM </b> : the 2D geometry of the building (POLYGON or MULTIPOLYGON). </br>' +
                                        '- <b> HEIGHT </b> : the height of the building (FLOAT)',
                                type       : String.class],
-          tableRoads        : [name                                                                                 : 'Roads table name', title: 'Roads table name', description: "<b>Name of the Roads table.</b>  </br>  " +
+          tableRoads        : [name   : 'Roads table name', title: 'Roads table name', description: "<b>Name of the Roads table.</b>  </br>  " +
                   "<br>  The table shall contain : </br>" +
                   "- <b> PK </b> : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY)<br/>" +
                   "- <b> TV_D </b> : Hourly average light and heavy vehicle count (6-18h) (DOUBLE)<br/>" +
@@ -78,7 +73,7 @@ inputs = [tableBuilding     : [name       : 'Buildings table name', title: 'Buil
                   "- <b> HV_SPD_E </b> :  Hourly average heavy vehicle speed (18-22h) (DOUBLE)<br/>" +
                   "- <b> HV_SPD_N </b> :  Hourly average heavy vehicle speed (22-6h) (DOUBLE)<br/>" +
                   "- <b> PVMT </b> :  CNOSSOS road pavement identifier (ex: NL05) (VARCHAR)" +
-                  "</br> </br> <b> This table can be generated from the WPS Block 'Get_Table_from_OSM'. </b>.", type: String.class],
+                  "</br> </br> <b> This table can be generated from the WPS Block 'OsmToInputData'. </b>.", type: String.class],
           tableReceivers    : [name       : 'Receivers table name', title: 'Receivers table name',
                                description: '<b>Name of the Receivers table.</b></br>  ' +
                                        '</br>  The table shall contain : </br> ' +
@@ -90,7 +85,7 @@ inputs = [tableBuilding     : [name       : 'Buildings table name', title: 'Buil
                                description: '<b>Name of the Digital Elevation Model table.</b></br>  ' +
                                        '</br>The table shall contain : </br> ' +
                                        '- <b> THE_GEOM </b> : the 3D geometry of the sources (POINT, MULTIPOINT).</br> ' +
-                                       '</br> </br> <b> This table can be generated from the WPS Block "AscToDem". </b>',
+                                       '</br> </br> <b> This table can be generated from the WPS Block "Import_Asc_File". </b>',
                                min        : 0, max: 1, type: String.class],
           tableGroundAbs    : [name       : 'Ground absorption table name', title: 'Ground absorption table name',
                                description: '<b>Name of the surface/ground acoustic absorption table.</b></br>  ' +
@@ -317,10 +312,10 @@ def exec(Connection connection, input) {
     // --------------------------------------------
 
     // IF THE FORMAT IS AADF, it is possible to activate this one
-    Object trafficPropagationProcessDataFactory =  Class.forName("org.noise_planet.noisemodelling.wpsTools.TrafficPropagationProcessDataFactory").newInstance()
+    Object trafficPropagationProcessDataFactory =  Class.forName("org.noise_planet.noisemodelling.wpsTools.WpsPropagationProcessDataFactory").newInstance()
     pointNoiseMap.setPropagationProcessDataFactory(trafficPropagationProcessDataFactory)
 
-    Object trafficPropagationProcessData = Class.forName("org.noise_planet.noisemodelling.wpsTools.TrafficPropagationProcessData").newInstance()
+    Object trafficPropagationProcessData = Class.forName("org.noise_planet.noisemodelling.wpsTools.WpsPropagationProcessData").newInstance()
     trafficPropagationProcessData.invokeMethod("setInputFormat",["Classic"])
 
     // --------------------------------------------
