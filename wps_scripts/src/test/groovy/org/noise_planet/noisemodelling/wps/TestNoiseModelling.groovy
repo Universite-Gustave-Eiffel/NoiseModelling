@@ -36,7 +36,7 @@ class TestNoiseModelling extends JdbcTestCase {
 
     void testRoadEmissionFromDEN() {
 
-        SHPRead.readShape(connection, TestDatabaseManager.getResource("roads2.shp").getPath())
+        SHPRead.readShape(connection, TestDatabaseManager.getResource("ROADS2.shp").getPath())
 
         String res = new Road_Emission_from_Traffic().exec(connection,
                 ["tableRoads": "ROADS2"])
@@ -47,7 +47,7 @@ class TestNoiseModelling extends JdbcTestCase {
 
     void testLdayFromTraffic() {
 
-        SHPRead.readShape(connection, TestNoiseModelling.getResource("roads2.shp").getPath())
+        SHPRead.readShape(connection, TestNoiseModelling.getResource("ROADS2.shp").getPath())
 
         //SHPRead.readShape(connection, TestDatabaseManager.getResource("buildings.shp").getPath())
         new Import_File().exec(connection,
@@ -73,7 +73,7 @@ class TestNoiseModelling extends JdbcTestCase {
 
     void testLdenFromEmission() {
 
-        SHPRead.readShape(connection, TestNoiseModelling.getResource("roads2.shp").getPath())
+        SHPRead.readShape(connection, TestNoiseModelling.getResource("ROADS2.shp").getPath())
 
         String res = new Road_Emission_from_Traffic().exec(connection,
                 ["tableRoads": "ROADS2"])
