@@ -8,7 +8,7 @@ repositories {
         dirs 'libs'
     }
     maven {
-        url "http://repo.boundlessgeo.com/main"
+        url "https://repo.osgeo.org/repository/release/"
     }
     maven {
         url "http://download.osgeo.org/webdav/geotools/"
