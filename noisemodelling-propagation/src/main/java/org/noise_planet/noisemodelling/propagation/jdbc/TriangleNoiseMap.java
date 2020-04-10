@@ -283,9 +283,6 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         List<Triangle> triangles = new ArrayList<>();
         for(Triangle triangle : cellMesh.getTriangles()) {
             if(triangle.getAttribute() == 0) {
-                for(int v = 0; v < 3; v++) {
-                    triangle.set(v, triangle.get(v) + receiverPK.get());
-                }
                 triangles.add(triangle);
             }
         }
@@ -299,6 +296,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
             Statement st = connection.createStatement();
             st.execute("CREATE TABLE "+TableLocation.parse(trianglesTableName)+"(pk serial NOT NULL, the_geom geometry , PK_1 integer not null, PK_2 integer not null, PK_3 integer not null, cell_id integer not null, PRIMARY KEY (PK))");
         }
+        int receiverPkOffset = receiverPK.get();
         // Add vertices to receivers
         PreparedStatement ps = connection.prepareStatement("INSERT INTO "+TableLocation.parse(receiverTableName)+" VALUES (?, ST_MAKEPOINT(?,?,?));");
         int batchSize = 0;
@@ -324,9 +322,9 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         for(Triangle t : triangles) {
             ps.setObject(1, geometryFactory.createPolygon(new Coordinate[]{vertices.get(t.getA()),
                     vertices.get(t.getB()), vertices.get(t.getC()), vertices.get(t.getA())}));
-            ps.setInt(2, t.getA());
-            ps.setInt(3, t.getC());
-            ps.setInt(4, t.getB());
+            ps.setInt(2, t.getA() + receiverPkOffset);
+            ps.setInt(3, t.getC() + receiverPkOffset);
+            ps.setInt(4, t.getB() + receiverPkOffset);
             ps.setInt(5, cellI * gridDim + cellJ);
             ps.addBatch();
             batchSize++;

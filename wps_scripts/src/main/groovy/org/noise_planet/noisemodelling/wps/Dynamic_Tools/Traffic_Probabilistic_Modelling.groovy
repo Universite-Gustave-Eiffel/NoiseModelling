@@ -18,6 +18,7 @@
  *
  * @Author Pierre Aumond, Univ Gustave Eiffel
  */
+
 package org.noise_planet.noisemodelling.wps.Dynamic_Tools
 
 import groovy.sql.Sql
@@ -72,7 +73,7 @@ inputs = [
                 "- <b> LV_SPD_D </b> :  Hourly average light vehicle speed (DOUBLE)<br/>" +
                 "- <b> HV_SPD_D </b> :  Hourly average heavy vehicle speed  (DOUBLE)<br/>" +
                 "- <b> PVMT </b> :  CNOSSOS road pavement identifier (ex: NL05) (VARCHAR)" +
-                "</br> </br> <b> This table can be generated from the WPS Block 'Get_Table_from_OSM'. </b>.", type: String.class],
+                "</br> </br> <b> This table can be generated from the WPS Block 'OsmToInputData'. </b>.", type: String.class],
         tableReceivers    : [name       : 'Receivers table name', title: 'Receivers table name',
                              description: '<b>Name of the Receivers table.</b></br>  ' +
                                      '</br>  The table shall contain : </br> ' +
@@ -84,7 +85,7 @@ inputs = [
                              description: '<b>Name of the Digital Elevation Model table.</b></br>  ' +
                                      '</br>The table shall contain : </br> ' +
                                      '- <b> THE_GEOM </b> : the 3D geometry of the sources (POINT, MULTIPOINT).</br> ' +
-                                     '</br> </br> <b> This table can be generated from the WPS Block "AscToDem". </b>',
+                                     '</br> </br> <b> This table can be generated from the WPS Block "Import_Asc_File". </b>',
                              min        : 0, max: 1, type: String.class],
         tableGroundAbs    : [name       : 'Ground absorption table name', title: 'Ground absorption table name',
                              description: '<b>Name of the surface/ground acoustic absorption table.</b></br>  ' +
@@ -158,6 +159,12 @@ def run(input) {
 
 // main function of the script
 def exec(Connection connection, input) {
+
+    // Get external tools
+    File sourceFile = new File("src/main/groovy/org/noise_planet/noisemodelling/wpsTools/GeneralTools.groovy")
+    Class groovyClass = new GroovyClassLoader(getClass().getClassLoader()).parseClass(sourceFile)
+    GroovyObject tools = (GroovyObject) groovyClass.newInstance()
+
 
     //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postGIS database
     connection = new ConnectionWrapper(connection)
@@ -289,9 +296,11 @@ def exec(Connection connection, input) {
     // --------------------------------------------
     // Initialize NoiseModelling emission part
     // --------------------------------------------
+    Object trafficPropagationProcessDataFactory = Class.forName("org.noise_planet.noisemodelling.wpsTools.WpsPropagationProcessDataFactory").newInstance()
+    pointNoiseMap.setPropagationProcessDataFactory(trafficPropagationProcessDataFactory)
 
-    ProbabilisticPropagationProcessDataFactory probaPropagationProcessDataFactory = new ProbabilisticPropagationProcessDataFactory()
-    pointNoiseMap.setPropagationProcessDataFactory(probaPropagationProcessDataFactory)
+    Object trafficPropagationProcessData = Class.forName("org.noise_planet.noisemodelling.wpsTools.WpsPropagationProcessData").newInstance()
+    trafficPropagationProcessData.invokeMethod("setInputFormat",["Proba"])
 
     // --------------------------------------------
     // Run Calculations
@@ -353,8 +362,10 @@ def exec(Connection connection, input) {
             "drop table if exists traf_explode;" +
             "drop table TRAFIC_DENSITY if exists;")
 
-    ProbabilisticProcessData probaProcessData = new ProbabilisticProcessData()
-    probaProcessData.setProbaTable("ROADS_PROBA", sql)
+
+    Object probaProcessData = Class.forName("org.noise_planet.noisemodelling.wpsTools.ProbabilisticProcessData").newInstance()
+    probaProcessData.invokeMethod("setProbaTable",["ROADS_PROBA", sql])
+
     sql.execute("drop table ROADS_PROBA if exists;")
 
     System.out.println('Intermediate  time : ' + TimeCategory.minus(new Date(), start))
@@ -375,7 +386,7 @@ def exec(Connection connection, input) {
         for (int i = 0; i < allLevels.size(); i++) {
 
             k++
-            currentVal = ProgressBar(Math.round(10*i/(allLevels.size()*nIterations)).toInteger(),currentVal)
+            currentVal = tools.invokeMethod("ProgressBar", [Math.round(10*i/(allLevels.size()*nIterations)).toInteger(),currentVal])
 
             // get attenuation matrix value
             double[] soundLevel = allLevels.get(i).value
@@ -386,7 +397,8 @@ def exec(Connection connection, input) {
 
             // get source SoundLevel
             if (!sourceLev.containsKey(idSource)) {
-                sourceLev.put(idSource, probaProcessData.getCarsLevel(it, idSource))
+                double[] carsLevel = probaProcessData.invokeMethod("getCarsLevel",[it, idSource])
+                sourceLev.put(idSource, carsLevel)
             }
 
             if (sourceLev.get(idSource)[0] > 0) {
@@ -398,11 +410,15 @@ def exec(Connection connection, input) {
 
                     if (soundLevels.containsKey(idReceiver)) {
                         // add Leq value to the pre-existing sound level on this receiver
-                        soundLevel = ComputeRays.sumDbArray(sumLinearArray(soundLevel, sourceLev.get(idSource)), soundLevels.get(idReceiver))
+                        double[] sumArray = tools.invokeMethod("sumArraySR", [soundLevel, SourceSpectrum.get(idSource)])
+                        soundLevel = ComputeRays.sumDbArray(sumArray, soundLevels.get(idReceiver))
                         soundLevels.replace(idReceiver, soundLevel)
                     } else {
+                        // apply A ponderation
+                        //soundLevel = DBToDBA(soundLevel)
                         // add a new Leq value on this receiver
-                        soundLevels.put(idReceiver, sumLinearArray(soundLevel, sourceLev.get(idSource)))
+                        double[] sumArray =  tools.invokeMethod("sumArraySR", [soundLevel, SourceSpectrum.get(idSource)])
+                        soundLevels.put(idReceiver, sumArray)
                     }
                 }
             }
@@ -440,236 +456,3 @@ def exec(Connection connection, input) {
     return resultString
 }
 
-/**
- *
- */
-class ProbabilisticProcessData {
-
-    Map<Integer, Double> SPEED_LV = new HashMap<>()
-    Map<Integer, Double> SPEED_HV = new HashMap<>()
-    Map<Integer, Double> LV = new HashMap<>()
-    Map<Integer, Double> HV = new HashMap<>()
-
-    double[] getCarsLevel(int idSource) throws SQLException {
-        double[] res_d = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        double[] res_LV = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        double[] res_HV = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        def list = [63, 125, 250, 500, 1000, 2000, 4000, 8000]
-        // memes valeurs d e et n
-
-
-        def random = Math.random()
-        if (random < LV.get(idSource)) {
-            int kk = 0
-            for (f in list) {
-
-                double speed = SPEED_LV.get(idSource)
-                int acc = 0
-                int FreqParam = f
-                double Temperature = 20
-                int RoadSurface = 0
-                boolean Stud = true
-                double Junc_dist = 200
-                int Junc_type = 1
-                int veh_type = 1
-                int acc_type = 1
-                double LwStd = 1
-                int VehId = 10
-
-                RSParametersDynamic rsParameters = new RSParametersDynamic(speed, acc, veh_type, acc_type, FreqParam, Temperature, RoadSurface, Stud, Junc_dist, Junc_type, LwStd, VehId)
-                rsParameters.setSlopePercentage(0)
-
-                res_LV[kk] = EvaluateRoadSourceDynamic.evaluate(rsParameters)
-                kk++
-            }
-
-        }
-        if (random < HV.get(idSource)) {
-            int kk = 0
-            for (f in list) {
-                double speed = SPEED_HV.get(idSource)
-                int acc = 0
-                int FreqParam = f
-                double Temperature = 20
-                int RoadSurface = 0
-                boolean Stud = true
-                double Junc_dist = 200
-                int Junc_type = 1
-                int veh_type = 3
-                int acc_type = 1
-                double LwStd = 1
-                int VehId = 10
-
-                RSParametersDynamic rsParameters = new RSParametersDynamic(speed, acc, veh_type, acc_type, FreqParam, Temperature, RoadSurface, Stud, Junc_dist, Junc_type, LwStd, VehId)
-                rsParameters.setSlopePercentage(0)
-
-                res_HV[kk] = EvaluateRoadSourceDynamic.evaluate(rsParameters)
-                kk++
-            }
-        }
-        int kk = 0
-        for (f in list) {
-            res_d[kk] = 10 * Math.log10(
-                    (1.0 / 2.0) *
-                            (Math.pow(10, (10 * Math.log10(Math.pow(10, res_LV[kk] / 10))) / 10)
-                                    + Math.pow(10, (10 * Math.log10(Math.pow(10, res_HV[kk] / 10))) / 10)
-                            )
-            )
-            kk++
-        }
-
-
-        return res_d
-    }
-
-    void setProbaTable(String tablename, Sql sql) {
-        //////////////////////
-        // Import file text
-        //////////////////////
-        int i_read = 0;
-
-        // Remplissage des variables avec le contenu du fichier plan d'exp
-        sql.eachRow('SELECT PK,  SPEED, HV,LV FROM ' + tablename + ';') { row ->
-            int pk = (int) row[0]
-
-            SPEED_HV.put(pk, (double) row[1])
-            SPEED_LV.put(pk, (double) row[1])
-            HV.put(pk, (double) row[2])
-            LV.put(pk, (double) row[3])
-
-        }
-
-
-    }
-
-}
-
-
-/**
- * Read source database and compute the sound emission spectrum of roads sources
- */
-class ProbabilisticPropagationProcessData extends PropagationProcessData {
-
-    protected List<double[]> wjSourcesD = new ArrayList<>()
-
-    public ProbabilisticPropagationProcessData(FastObstructionTest freeFieldFinder) {
-        super(freeFieldFinder)
-    }
-
-    @Override
-    public void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException {
-
-        super.addSource(pk, geom, rs)
-
-        double db_m63 = 90
-        double db_m125 = 90
-        double db_m250 = 90
-        double db_m500 = 90
-        double db_m1000 = 90
-        double db_m2000 = 90
-        double db_m4000 = 90
-        double db_m8000 = 90
-
-        double[] res_d = [db_m63, db_m125, db_m250, db_m500, db_m1000, db_m2000, db_m4000, db_m8000]
-        wjSourcesD.add(ComputeRays.dbaToW(res_d))
-    }
-
-    @Override
-    public double[] getMaximalSourcePower(int sourceId) {
-        return wjSourcesD.get(sourceId)
-    }
-
-
-}
-
-/**
- *
- */
-class ProbabilisticPropagationProcessDataFactory implements PointNoiseMap.PropagationProcessDataFactory {
-
-    @Override
-    PropagationProcessData create(FastObstructionTest freeFieldFinder) {
-        return new ProbabilisticPropagationProcessData(freeFieldFinder)
-    }
-}
-
-
-/**
- *
- * @param array1
- * @param array2
- * @return
- */
-static double[] sumLinearArray(double[] array1, double[] array2) {
-    if (array1.length != array2.length) {
-        throw new IllegalArgumentException("Not same size array")
-    } else {
-        double[] sum = new double[array1.length]
-
-        for (int i = 0; i < array1.length; ++i) {
-            sum[i] = array1[i] + array2[i]
-        }
-
-        return sum
-    }
-}
-
-
-/**
- * Spartan ProgressBar
- * @param newVal
- * @param currentVal
- * @return
- */
-static int ProgressBar(int newVal, int currentVal)
-{
-    if(newVal != currentVal) {
-        currentVal = newVal
-        System.print( 10*currentVal + '% ... ')
-    }
-    return currentVal
-}
-
-
-
-/*
-   writer.close()
-
-
-   Map<Integer, double[]> soundLevels2 = new HashMap<>()
-
-   System.println("Write results to csv file...")
-   CSVWriter writer2 = new CSVWriter(new FileWriter(working_dir + "/ResultatsProba.csv"))
-
-   for (int i=0;i< allLevels.size() ; i++) {
-       int idReceiver = (Integer) allLevels.get(i).receiverId
-       int idSource = (Integer) allLevels.get(i).sourceId
-       double[] soundLevel = allLevels.get(i).value
-       if (!Double.isNaN(soundLevel[0])
-               && !Double.isNaN(soundLevel[1])
-               && !Double.isNaN(soundLevel[2])
-               && !Double.isNaN(soundLevel[3])
-               && !Double.isNaN(soundLevel[4])
-               && !Double.isNaN(soundLevel[5])
-               && !Double.isNaN(soundLevel[6])
-               && !Double.isNaN(soundLevel[7])
-
-       ) {
-
-           writer2.writeNext([idReceiver,idSource, DBToDBA(soundLevel)] as String[])
-
-
-
-           // if (soundLevels.containsKey(idReceiver)) {
-           //     soundLevel = ComputeRays.sumDbArray(soundLevel, soundLevels.get(idReceiver))
-           //     soundLevels.replace(idReceiver, soundLevel)
-           // } else {
-           //     soundLevels.put(idReceiver, soundLevel)
-           // }
-       } else {
-           System.println("NaN on Rec :" + idReceiver + "and Src :" + idSource)
-       }
-   }
-
-   writer2.close()
-*/

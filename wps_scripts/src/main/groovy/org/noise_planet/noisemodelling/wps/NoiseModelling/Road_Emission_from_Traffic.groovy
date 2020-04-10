@@ -32,10 +32,6 @@ import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
-import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
-import org.noise_planet.noisemodelling.emission.RSParametersCnossos
-import org.noise_planet.noisemodelling.propagation.ComputeRays
-import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
 
 import java.sql.Connection
 import java.sql.PreparedStatement
@@ -46,7 +42,7 @@ title = 'Compute road emission noise map from road table.'
 description = 'Compute Road Emission Noise Map from Day Evening Night traffic flow rate and speed estimates (specific format, see input details). ' +
         '</br> </br> <b> The output table is called : LW_ROADS </b> '
 
-inputs = [tableRoads: [name                                                                           : 'Roads table name', title: 'Roads table name', description: "<b>Name of the Roads table.</b>  </br>  " +
+inputs = [tableRoads: [name: 'Roads table name', title: 'Roads table name', description: "<b>Name of the Roads table.</b>  </br>  " +
         "<br>  The table shall contain : </br>" +
         "- <b> PK </b> : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY)<br/>" +
         "- <b> TV_D </b> : Hourly average light and heavy vehicle count (6-18h) (DOUBLE)<br/>" +
@@ -62,7 +58,7 @@ inputs = [tableRoads: [name                                                     
         "- <b> HV_SPD_E </b> :  Hourly average heavy vehicle speed (18-22h) (DOUBLE)<br/>" +
         "- <b> HV_SPD_N </b> :  Hourly average heavy vehicle speed (22-6h) (DOUBLE)<br/>" +
         "- <b> PVMT </b> :  CNOSSOS road pavement identifier (ex: NL05) (VARCHAR)" +
-        "</br> </br> <b> This table can be generated from the WPS Block 'Get_Table_from_OSM'. </b>.", type: String.class]]
+        "</br> </br> <b> This table can be generated from the WPS Block 'OsmToInputData'. </b>.", type: String.class]]
 
 outputs = [result: [name: 'Result output string', title: 'Result output string', description: 'This type of result does not allow the blocks to be linked together.', type: String.class]]
 
@@ -94,6 +90,11 @@ def run(input) {
 // main function of the script
 def exec(Connection connection, input) {
 
+    // Get external tools
+    File sourceFile = new File("src/main/groovy/org/noise_planet/noisemodelling/wpsTools/GeneralTools.groovy")
+    Class groovyClass = new GroovyClassLoader(getClass().getClassLoader()).parseClass(sourceFile)
+    GroovyObject tools = (GroovyObject) groovyClass.newInstance()
+
     //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postGIS database
     connection = new ConnectionWrapper(connection)
 
@@ -108,7 +109,7 @@ def exec(Connection connection, input) {
     // Get every inputs
     // -------------------
 
-    String sources_table_name = input['tableRoads']
+    String sources_table_name = input['tableRoads'] as String
     // do it case-insensitive
     sources_table_name = sources_table_name.toUpperCase()
 
@@ -153,6 +154,10 @@ def exec(Connection connection, input) {
     // Start calculation and fill the table
     // --------------------------------------
 
+    // Get Class to compute LW
+    Object trafficPropagationProcessData = Class.forName("org.noise_planet.noisemodelling.wpsTools.WpsPropagationProcessData").newInstance()
+    trafficPropagationProcessData.invokeMethod("setInputFormat",["EmissionDEN"])
+
     // Get size of the table (number of road segments
     PreparedStatement st = connection.prepareStatement("SELECT COUNT(*) AS total FROM " + sources_table_name)
     ResultSet rs1 = st.executeQuery().unwrap(ResultSet.class)
@@ -170,12 +175,12 @@ def exec(Connection connection, input) {
 
         while (rs.next()) {
             k++
-            currentVal = ProgressBar(Math.round(10*k/nbRoads).toInteger(),currentVal)
+            currentVal = tools.invokeMethod("ProgressBar", [Math.round(10*k/nbRoads).toInteger(),currentVal])
             //System.println(rs)
             Geometry geo = rs.getGeometry()
 
             // Compute emission sound level for each road segment
-            def results = computeLw(rs.getLong(pkIndex), geo, rs)
+            def results = trafficPropagationProcessData.invokeMethod("computeLw", ["Classic",rs])
 
             // fill the LW_ROADS table
             ps.addBatch(rs.getLong(pkIndex) as Integer, geo as Geometry,
@@ -209,89 +214,4 @@ def exec(Connection connection, input) {
 
 }
 
-/**
- * Spartan ProgressBar
- * @param newVal
- * @param currentVal
- * @return
- */
-static int ProgressBar(int newVal, int currentVal)
-{
-    if(newVal != currentVal) {
-        currentVal = newVal
-        System.print( 10*currentVal + '% ... ')
-    }
-    return currentVal
-}
 
-/**
- * Compute noise emission levels from input traffic data
- * @param pk
- * @param geom
- * @param rs
- * @return
- * @throws SQLException
- */
-static double[][] computeLw(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException {
-
-    // Get input traffic data
-    double tvD = rs.getDouble("TV_D")
-    double tvE = rs.getDouble("TV_E")
-    double tvN = rs.getDouble("TV_N")
-
-    double hvD = rs.getDouble("HV_D")
-    double hvE = rs.getDouble("HV_E")
-    double hvN = rs.getDouble("HV_N")
-
-    double lvSpeedD = rs.getDouble("LV_SPD_D")
-    double lvSpeedE = rs.getDouble("LV_SPD_E")
-    double lvSpeedN = rs.getDouble("LV_SPD_N")
-
-    double hvSpeedD = rs.getDouble("HV_SPD_D")
-    double hvSpeedE = rs.getDouble("HV_SPD_E")
-    double hvSpeedN = rs.getDouble("HV_SPD_N")
-
-    String pavement = rs.getString("PVMT")
-
-    // init ld, le ln
-    double[] ld = new double[PropagationProcessPathData.freq_lvl.size()]
-    double[] le = new double[PropagationProcessPathData.freq_lvl.size()]
-    double[] ln = new double[PropagationProcessPathData.freq_lvl.size()]
-
-    // this options can be activated if needed
-    double Temperature = 20.0d
-    double Ts_stud = 0
-    double Pm_stud = 0
-    double Junc_dist = 300
-    int Junc_type = 0
-
-    // Day
-    int idFreq = 0
-    for (int freq : PropagationProcessPathData.freq_lvl) {
-        RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedD, hvSpeedD, hvSpeedD, lvSpeedD,
-                lvSpeedD, Math.max(0, tvD - hvD), 0, hvD, 0, 0, freq, Temperature,
-                pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type)
-        ld[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
-    }
-
-    // Evening
-    idFreq = 0
-    for (int freq : PropagationProcessPathData.freq_lvl) {
-        RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedE, hvSpeedE, hvSpeedE, lvSpeedE,
-                lvSpeedE, Math.max(0, tvE - hvE), 0, hvE, 0, 0, freq, Temperature,
-                pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type)
-        le[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
-    }
-
-    // Night
-    idFreq = 0
-    for (int freq : PropagationProcessPathData.freq_lvl) {
-        RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedN, hvSpeedN, hvSpeedN, lvSpeedN,
-                lvSpeedN, Math.max(0, tvN - hvN),0 , hvN, 0, 0, freq, Temperature,
-                pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type)
-        ln[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
-    }
-
-
-    return [ld, le, ln]
-}

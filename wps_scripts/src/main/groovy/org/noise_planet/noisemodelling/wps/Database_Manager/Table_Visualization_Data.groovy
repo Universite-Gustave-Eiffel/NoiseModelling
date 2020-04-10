@@ -16,7 +16,6 @@
  * Copyright (C) 2013-2019 Ifsttar and CNRS
  * Copyright (C) 2020 Université Gustave Eiffel and CNRS
  *
- * @Author Nicolas Fortin, Université Gustave Eiffel
  * @Author Pierre Aumond, Université Gustave Eiffel
  */
 
@@ -27,16 +26,8 @@ import geoserver.catalog.Store
 import groovy.sql.Sql
 import groovy.time.TimeCategory
 import org.geotools.jdbc.JDBCDataStore
-import org.h2gis.utilities.JDBCUtilities
-import org.h2gis.utilities.SFSUtilities
-import org.h2gis.utilities.TableLocation
-import org.locationtech.jts.geom.Geometry
-import org.locationtech.jts.geom.GeometryFactory
-import org.locationtech.jts.io.WKTWriter
 
 import java.sql.Connection
-import java.sql.ResultSet
-import java.sql.Statement
 
 title = 'Display first rows of a table.'
 description = 'Display first rows of a table containing. </br> Be careful, this treatment can be blocking if the table is large.'
@@ -84,7 +75,7 @@ def exec(Connection connection, input) {
     System.out.println('Duration : ' + TimeCategory.minus(new Date(), start))
 
     // print to WPS Builder
-    return mapToTable(output)
+    return mapToTable(output, sql, tableName)
 }
 
 
@@ -107,12 +98,14 @@ def run(input) {
  * @param list
  * @return
  */
-static String mapToTable(List<Map> list) {
+static String mapToTable(List<Map> list, Sql sql, String tableName) {
 
     StringBuilder output = new StringBuilder()
 
     Map first = list.first()
 
+    output.append("The total number of rows is " + sql.firstRow('SELECT COUNT(*) FROM ' + tableName)[0])
+    output.append("</br> </br> ")
     output.append("<table  border=' 1px solid black'><thead><tr>")
 
     first.each { key, val ->

@@ -21,7 +21,9 @@
 package org.noise_planet.noisemodelling.wps
 
 import org.h2gis.functions.io.shp.SHPRead
+import org.noise_planet.noisemodelling.wps.Database_Manager.Display_Database
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
+import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_Asc_File
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_Folder
 import org.slf4j.Logger
@@ -53,6 +55,16 @@ class TestImportExport extends JdbcTestCase {
         assertEquals("The table already has a different SRID than the one you gave.", res)
     }
 
+    void testImportAsc() {
+
+        String res = new Import_Asc_File().exec(connection,
+                ["pathFile" : TestImportExport.getResource("precip30min.asc").getPath(),
+                 "inputSRID": "2154"])
+
+        assertEquals("The table DEM has been uploaded to database ! </br>  Its SRID is : 4326. </br> Remember that to calculate a noise map, your SRID must be in metric coordinates. Please use the Wps block 'Change SRID' if needed.", res)
+    }
+
+
     void testImportFolder() {
 
         File file = new File(TestImportExport.getResource("receivers.shp").getPath()).getParentFile()
@@ -61,16 +73,19 @@ class TestImportExport extends JdbcTestCase {
                  "inputSRID" : "2154",
                  "importExt" : "shp"])
 
-
-        assertEquals("The table(s) ROADS2 & ROADS & RECEIVERS & GROUND_TYPE & BUILDINGS &  has/have been uploaded to database !", res)
+        assertTrue(res.contains("ROADS2"))
+        assertTrue(res.contains("ROADS"))
+        assertTrue(res.contains("RECEIVERS"))
+        assertTrue(res.contains("GROUND_TYPE"))
+        assertTrue(res.contains("BUILDINGS"))
     }
 
     void testExportFile() {
 
-        SHPRead.readShape(connection, TestDatabaseManager.getResource("receivers.shp").getPath())
+        SHPRead.readShape(connection, TestImportExport.getResource("receivers.shp").getPath())
 
         String res = new Export_Table().exec(connection,
-                ["exportPath"   : TestDatabaseManager.getResource("receivers.shp").getPath(),
+                ["exportPath"   : TestImportExport.getResource("receivers.shp").getPath(),
                  "tableToExport": "RECEIVERS"])
 
 

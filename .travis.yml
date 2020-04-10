@@ -1,7 +1,11 @@
+dist: trusty
 language: java
 jdk:
-    - openjdk8
+  - oraclejdk8
 
+before_install:
+  - git clone --depth=1 -b fixloop https://github.com/nicolas-f/h2gis.git
+  - cd h2gis && mvn install  -Dcobertura.skip -DskipTests && cd ..
 
 script:
   - mvn test -B
