@@ -82,6 +82,7 @@ This plugin is distributed under `GPL 3 license`_ and is developed by the DECIDE
 
     Own_Wps
     dBeaver
+    NoiseModellingScripting
 
 .. toctree::
     :maxdepth: 2
