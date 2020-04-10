@@ -80,7 +80,7 @@ You can import these layers in your database using the *Import File* or *Import 
 - Select *Path of the input File* block and type ``data_dir/data/wpsdata/buildings.shp`` in the field **pathFile**: 
 - Then click on *Run Process* after selecting the yellow block
 
-.. figure:: images/tutorial/Tutorial1_Image1.PNG
+.. figure:: images/tutorial/Tutorial1_Image1bis.gif
    :align: center
 
 Files are uploaded to database when the Console window displays :literal:`The table x has been uploaded to database.`
@@ -100,14 +100,16 @@ Repeat this operation for other files:
     - Beige blocks are optional
     - if all input blocks are optional, you must modify at least one of these blocks to be able to run the process
     - Blocks get solid border when they are ready to run
-    - Find here more information about `WPS Builder`_.
-    
-.. _WPS Builder : https://docs.boundlessgeo.com/suite/1.1.0/processing/wpsbuilder/index.html#application-panels
+    - Find `here`_ more information about `WPS Builder`_.
+
+.. _here : https://noisemodelling.readthedocs.io/en/latest/FAQ_UF.html
+
+.. _WPS Builder : https://noisemodelling.readthedocs.io/en/latest/FAQ_UF.html
 
 Step 5: Run Calculation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To run Calculation you have to drag the block *Get Lday* into WPS Builder window.
+To run Calculation you have to drag the block *Lday_from_Traffic* into WPS Builder window.
 
 Then, select the orange blocks and indicate the name of the corresponding table your database, for example :
 
