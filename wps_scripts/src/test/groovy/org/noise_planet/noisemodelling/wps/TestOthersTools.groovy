@@ -40,7 +40,7 @@ class TestOthersTools extends JdbcTestCase {
 
     void testChangeSRID1() {
 
-        SHPRead.readShape(connection, TestDatabaseManager.getResource("roads.shp").getPath())
+        SHPRead.readShape(connection, TestOthersTools.getResource("roads.shp").getPath())
 
         String res = new Change_SRID().exec(connection,
                 ["newSRID": "2154",
@@ -50,7 +50,7 @@ class TestOthersTools extends JdbcTestCase {
     }
     void testChangeSRID2() {
 
-        SHPRead.readShape(connection, TestDatabaseManager.getResource("roads.shp").getPath())
+        SHPRead.readShape(connection, TestOthersTools.getResource("roads.shp").getPath())
 
         String res = new Change_SRID().exec(connection,
                 ["newSRID": "4326",
@@ -61,7 +61,7 @@ class TestOthersTools extends JdbcTestCase {
 
     void testAddLeqLaeqColumns1() {
 
-        SHPRead.readShape(connection, TestDatabaseManager.getResource("roads2.shp").getPath())
+        SHPRead.readShape(connection, TestOthersTools.getResource("roads2.shp").getPath())
 
         new Road_Emission_from_Traffic().exec(connection,
                 ["tableRoads": "ROADS2"])
@@ -76,7 +76,7 @@ class TestOthersTools extends JdbcTestCase {
 
     void testAddLeqLaeqColumns2() {
 
-        SHPRead.readShape(connection, TestDatabaseManager.getResource("roads2.shp").getPath())
+        SHPRead.readShape(connection, TestOthersTools.getResource("roads2.shp").getPath())
 
         new Road_Emission_from_Traffic().exec(connection,
                 ["tableRoads": "ROADS2"])

@@ -30,7 +30,7 @@ import org.noise_planet.noisemodelling.wps.Experimental.Multi_Runs
 
 class TestMultRuns extends JdbcTestCase  {
 
-    
+
     void testMultiRun() {
 
         GeoJsonRead.readGeoJson(connection, TestMultRuns.class.getResource("multirun/buildings.geojson").getPath())

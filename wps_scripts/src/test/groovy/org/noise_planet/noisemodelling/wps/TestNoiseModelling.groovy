@@ -47,17 +47,17 @@ class TestNoiseModelling extends JdbcTestCase {
 
     void testLdayFromTraffic() {
 
-        SHPRead.readShape(connection, TestDatabaseManager.getResource("roads2.shp").getPath())
+        SHPRead.readShape(connection, TestNoiseModelling.getResource("roads2.shp").getPath())
 
         //SHPRead.readShape(connection, TestDatabaseManager.getResource("buildings.shp").getPath())
         new Import_File().exec(connection,
-                ["pathFile" : TestImportExport.getResource("buildings.shp").getPath(),
+                ["pathFile" : TestNoiseModelling.getResource("buildings.shp").getPath(),
                  "inputSRID": "2154",
                  "tableName": "buildings"])
 
         //SHPRead.readShape(connection, TestDatabaseManager.getResource("receivers.shp").getPath())
         new Import_File().exec(connection,
-                ["pathFile" : TestImportExport.getResource("receivers.shp").getPath(),
+                ["pathFile" : TestNoiseModelling.getResource("receivers.shp").getPath(),
                  "inputSRID": "2154",
                  "tableName": "receivers"])
 
@@ -73,20 +73,18 @@ class TestNoiseModelling extends JdbcTestCase {
 
     void testLdenFromEmission() {
 
-        SHPRead.readShape(connection, TestDatabaseManager.getResource("roads2.shp").getPath())
+        SHPRead.readShape(connection, TestNoiseModelling.getResource("roads2.shp").getPath())
 
         String res = new Road_Emission_from_Traffic().exec(connection,
                 ["tableRoads": "ROADS2"])
 
-        //SHPRead.readShape(connection, TestDatabaseManager.getResource("buildings.shp").getPath())
         res = new Import_File().exec(connection,
-                ["pathFile" : TestImportExport.getResource("buildings.shp").getPath(),
+                ["pathFile" : TestNoiseModelling.getResource("buildings.shp").getPath(),
                  "inputSRID": "2154",
                  "tableName": "buildings"])
 
-        //SHPRead.readShape(connection, TestDatabaseManager.getResource("receivers.shp").getPath())
         res = new Import_File().exec(connection,
-                ["pathFile" : TestImportExport.getResource("receivers.shp").getPath(),
+                ["pathFile" : TestNoiseModelling.getResource("receivers.shp").getPath(),
                  "inputSRID": "2154",
                  "tableName": "receivers"])
 

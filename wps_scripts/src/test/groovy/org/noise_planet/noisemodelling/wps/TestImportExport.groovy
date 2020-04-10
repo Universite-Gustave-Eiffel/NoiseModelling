@@ -73,16 +73,19 @@ class TestImportExport extends JdbcTestCase {
                  "inputSRID" : "2154",
                  "importExt" : "shp"])
 
-
-        assertEquals("The table(s) ROADS2 & ROADS & RECEIVERS & GROUND_TYPE & BUILDINGS &  has/have been uploaded to database !", res)
+        assertTrue(res.contains("ROADS2"))
+        assertTrue(res.contains("ROADS"))
+        assertTrue(res.contains("RECEIVERS"))
+        assertTrue(res.contains("GROUND_TYPE"))
+        assertTrue(res.contains("BUILDINGS"))
     }
 
     void testExportFile() {
 
-        SHPRead.readShape(connection, TestDatabaseManager.getResource("receivers.shp").getPath())
+        SHPRead.readShape(connection, TestImportExport.getResource("receivers.shp").getPath())
 
         String res = new Export_Table().exec(connection,
-                ["exportPath"   : TestDatabaseManager.getResource("receivers.shp").getPath(),
+                ["exportPath"   : TestImportExport.getResource("receivers.shp").getPath(),
                  "tableToExport": "RECEIVERS"])
 
 
