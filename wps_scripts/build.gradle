@@ -10,7 +10,6 @@ repositories {
     maven {
         url "http://repo.boundlessgeo.com/main"
     }
-
     maven {
         url "http://download.osgeo.org/webdav/geotools/"
     }
@@ -43,9 +42,9 @@ dependencies {
     compile group: 'org.orbisgis', name: 'noisemodelling-emission', version: '3.0.1-SNAPSHOT'
     compile group: 'org.orbisgis', name: 'noisemodelling-propagation', version: '3.0.1-SNAPSHOT'
     compile group: 'org.orbisgis', name: 'h2gis-extension', version: '3.0.1-SNAPSHOT'
-   
+
     compile 'com.opencsv:opencsv:4.0'
-    testCompile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.25' 
+    testCompile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.25'
     testCompile 'junit:junit:4.12'
 }
 

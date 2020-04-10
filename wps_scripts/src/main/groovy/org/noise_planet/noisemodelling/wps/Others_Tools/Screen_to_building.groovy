@@ -126,7 +126,7 @@ def exec(Connection connection, input) {
         screen_table_name = "TMP_NEW_SCREENS"
     }
 
-    if (input['buildingTableName']) {
+    if (building_table_name) {
 
         // Remove parts of the screen too close from buildings
         // Find screen intersecting buildings

@@ -30,7 +30,7 @@ import org.noise_planet.noisemodelling.wps.Experimental.Multi_Runs
 
 class TestMultRuns extends JdbcTestCase  {
 
-    @Test
+    
     void testMultiRun() {
 
         GeoJsonRead.readGeoJson(connection, TestMultRuns.class.getResource("multirun/buildings.geojson").getPath())
@@ -39,11 +39,11 @@ class TestMultRuns extends JdbcTestCase  {
 
         new Add_Primary_Key().exec(connection,
                 ["pkName":"PK",
-                 "table" : "RECEIVERS"])
+                 "tableName" : "RECEIVERS"])
 
         new Add_Primary_Key().exec(connection,
                  ["pkName":"PK",
-                  "table" : "SOURCES"])
+                  "tableName" : "SOURCES"])
 
 
         new Get_Rayz().exec(connection,
@@ -75,7 +75,7 @@ class TestMultRuns extends JdbcTestCase  {
 
 
 
-        assertTrue(res == res3)
+        assertEquals(res, res3)
     }
 
 
