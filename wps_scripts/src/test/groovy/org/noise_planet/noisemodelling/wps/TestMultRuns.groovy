@@ -31,52 +31,53 @@ import org.noise_planet.noisemodelling.wps.Experimental.Multi_Runs
 class TestMultRuns extends JdbcTestCase  {
 
 
-    void testMultiRun() {
-
-        GeoJsonRead.readGeoJson(connection, TestMultRuns.class.getResource("multirun/buildings.geojson").getPath())
-        GeoJsonRead.readGeoJson(connection, TestMultRuns.class.getResource("multirun/receivers.geojson").getPath())
-        GeoJsonRead.readGeoJson(connection, TestMultRuns.class.getResource("multirun/sources.geojson").getPath())
-
-        new Add_Primary_Key().exec(connection,
-                ["pkName":"PK",
-                 "tableName" : "RECEIVERS"])
-
-        new Add_Primary_Key().exec(connection,
-                 ["pkName":"PK",
-                  "tableName" : "SOURCES"])
-
-
-        new Get_Rayz().exec(connection,
-                ["tableBuilding"   : "BUILDINGS",
-                 "roadsTableName"   : "SOURCES",
-                 "tableReceivers": "RECEIVERS",
-                 "exportPath"   : TestMultRuns.class.getResource("multirun/").getPath()])
-
-
-        new Multi_Runs().exec(connection,
-                ["workingDir":TestMultRuns.class.getResource("multirun/").getPath()])
-
-
-      String res =   new Table_Visualization_Data().exec(connection,
-                ["tableName": "MultiRunsResults_geom"])
-
-        new Get_Rayz().exec(connection,
-                ["tableBuilding"   : "BUILDINGS",
-                 "roadsTableName"   : "SOURCES",
-                 "tableReceivers": "RECEIVERS",
-                 "confReflOrder": 1,
-                 "exportPath"   : TestMultRuns.class.getResource("multirun/").getPath()])
-
-        new Multi_Runs().exec(connection,
-                ["workingDir":TestMultRuns.class.getResource("multirun/").getPath()])
-
-        String res3 =   new Table_Visualization_Data().exec(connection,
-                ["tableName": "MultiRunsResults_geom"])
-
-
-
-        assertEquals(res, res3)
-    }
+//
+//    void testMultiRun() {
+//
+//        GeoJsonRead.readGeoJson(connection, TestMultRuns.class.getResource("multirun/buildings.geojson").getPath())
+//        GeoJsonRead.readGeoJson(connection, TestMultRuns.class.getResource("multirun/receivers.geojson").getPath())
+//        GeoJsonRead.readGeoJson(connection, TestMultRuns.class.getResource("multirun/sources.geojson").getPath())
+//
+//        new Add_Primary_Key().exec(connection,
+//                ["pkName":"PK",
+//                 "tableName" : "RECEIVERS"])
+//
+//        new Add_Primary_Key().exec(connection,
+//                 ["pkName":"PK",
+//                  "tableName" : "SOURCES"])
+//
+//
+//        new Get_Rayz().exec(connection,
+//                ["tableBuilding"   : "BUILDINGS",
+//                 "roadsTableName"   : "SOURCES",
+//                 "tableReceivers": "RECEIVERS",
+//                 "exportPath"   : TestMultRuns.class.getResource("multirun/").getPath()])
+//
+//
+//        new Multi_Runs().exec(connection,
+//                ["workingDir":TestMultRuns.class.getResource("multirun/").getPath()])
+//
+//
+//      String res =   new Table_Visualization_Data().exec(connection,
+//                ["tableName": "MultiRunsResults_geom"])
+//
+//        new Get_Rayz().exec(connection,
+//                ["tableBuilding"   : "BUILDINGS",
+//                 "roadsTableName"   : "SOURCES",
+//                 "tableReceivers": "RECEIVERS",
+//                 "confReflOrder": 1,
+//                 "exportPath"   : TestMultRuns.class.getResource("multirun/").getPath()])
+//
+//        new Multi_Runs().exec(connection,
+//                ["workingDir":TestMultRuns.class.getResource("multirun/").getPath()])
+//
+//        String res3 =   new Table_Visualization_Data().exec(connection,
+//                ["tableName": "MultiRunsResults_geom"])
+//
+//
+//
+//        assertEquals(res, res3)
+//    }
 
 
 }

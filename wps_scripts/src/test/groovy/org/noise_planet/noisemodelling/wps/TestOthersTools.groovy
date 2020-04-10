@@ -61,7 +61,7 @@ class TestOthersTools extends JdbcTestCase {
 
     void testAddLeqLaeqColumns1() {
 
-        SHPRead.readShape(connection, TestOthersTools.getResource("roads2.shp").getPath())
+        SHPRead.readShape(connection, TestOthersTools.getResource("ROADS2.shp").getPath())
 
         new Road_Emission_from_Traffic().exec(connection,
                 ["tableRoads": "ROADS2"])
@@ -76,7 +76,7 @@ class TestOthersTools extends JdbcTestCase {
 
     void testAddLeqLaeqColumns2() {
 
-        SHPRead.readShape(connection, TestOthersTools.getResource("roads2.shp").getPath())
+        SHPRead.readShape(connection, TestOthersTools.getResource("ROADS2.shp").getPath())
 
         new Road_Emission_from_Traffic().exec(connection,
                 ["tableRoads": "ROADS2"])
