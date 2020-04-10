@@ -49,9 +49,11 @@ Your local server is now started.
     Your server will be open as long as the command window is open. If you close it, the server will automatically be closed and you will not be able to continue with the tutorial.
 
 .. tip::
-    You can consult it via your web browser : http://localhost:8080/geoserver/web/
-    login (default): admin
-    password (default): admin
+    You can consult it via your web browser : http://localhost:9580/geoserver/web/
+    
+    - **login (default):** admin
+    
+    - **password (default):** admin
 
 .. _GeoServer : http://geoserver.org/
 .. _H2GIS : http://www.h2gis.org/
