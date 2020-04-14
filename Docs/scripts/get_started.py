@@ -12,7 +12,7 @@ import_file = Template('<p0:Execute xmlns:p0="http://www.opengis.net/wps/1.0.0" 
 
 get_lday = Template('<p0:Execute xmlns:p0="http://www.opengis.net/wps/1.0.0" service="WPS" '
                     'version="1.0.0"><p1:Identifier xmlns:p1="http://www.opengis.net/ows/1.1">NoiseModelling'
-                    ':Lday_from_Traffic</p1:Identifier><p0 :DataInputs><p0:Input><p1:Identifier '
+                    ':Lday_from_Traffic</p1:Identifier><p0:DataInputs><p0:Input><p1:Identifier '
                     'xmlns:p1="http://www.opengis.net/ows/1.1">tableReceivers</p1:Identifier><p0:Data><p0:LiteralData'
                     '>$table_receivers</p0:LiteralData></p0:Data></p0:Input><p0:Input><p1:Identifier '
                     'xmlns:p1="http://www.opengis.net/ows/1.1">tableBuilding</p1:Identifier><p0:Data><p0:LiteralData'
