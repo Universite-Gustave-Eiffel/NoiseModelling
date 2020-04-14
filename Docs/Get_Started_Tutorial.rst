@@ -90,7 +90,7 @@ Repeat this operation for other files:
 - ``data_dir/data/wpsdata/buildings.shp``
 - ``data_dir/data/wpsdata/ground_type.shp``
 - ``data_dir/data/wpsdata/receivers.shp``
-- ``data_dir/data/wpsdata/roads.shp``
+- ``data_dir/data/wpsdata/roads2.shp``
 - ``data_dir/data/wpsdata/dem.geojson``
 
 .. note::
