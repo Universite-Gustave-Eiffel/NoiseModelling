@@ -21,32 +21,21 @@
 
 package org.noise_planet.noisemodelling.wps.Dynamic_Tools
 
-import groovy.sql.Sql
-import groovy.time.TimeCategory
-import org.h2gis.api.EmptyProgressVisitor
-import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceDynamic
-import org.noise_planet.noisemodelling.emission.RSParametersDynamic
-
-
 import geoserver.GeoServer
 import geoserver.catalog.Store
-
-
+import groovy.sql.Sql
+import groovy.time.TimeCategory
 import org.geotools.jdbc.JDBCDataStore
-
-import java.sql.Connection
-
-import org.h2gis.utilities.wrapper.*
-
-import org.noise_planet.noisemodelling.propagation.*
+import org.h2gis.api.EmptyProgressVisitor
+import org.h2gis.api.ProgressVisitor
+import org.h2gis.utilities.wrapper.ConnectionWrapper
+import org.noise_planet.noisemodelling.propagation.ComputeRays
+import org.noise_planet.noisemodelling.propagation.ComputeRaysOut
+import org.noise_planet.noisemodelling.propagation.IComputeRaysOut
+import org.noise_planet.noisemodelling.propagation.RootProgressVisitor
 import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap
 
-
-import org.h2gis.utilities.SpatialResultSet
-import org.locationtech.jts.geom.Geometry
-import org.h2gis.api.ProgressVisitor
-
-import java.sql.SQLException
+import java.sql.Connection
 
 title = 'Road traffic probabilistic modeling'
 description = 'Compute road traffic probabilistic modeling as describe in <b>Aumond, P., Jacquesson, L., & Can, A. (2018). Probabilistic modeling framework for multisource sound mapping. Applied Acoustics, 139, 34-43. </b>.' +
@@ -160,8 +149,13 @@ def run(input) {
 // main function of the script
 def exec(Connection connection, input) {
 
+
+    //Load GeneralTools.groovy
+    File  sourceFile = new File(new File("").absolutePath+"/data_dir/scripts/wpsTools/GeneralTools.groovy")
+    //if we are in dev, the path is not the same as for geoserver
+    if (new File("").absolutePath.substring(new File("").absolutePath.length() - 11) == 'wps_scripts') sourceFile = new File(new File("").absolutePath+"/src/main/groovy/org/noise_planet/noisemodelling/wpsTools/GeneralTools.groovy")
+
     // Get external tools
-    File sourceFile = new File("src/main/groovy/org/noise_planet/noisemodelling/wpsTools/GeneralTools.groovy")
     Class groovyClass = new GroovyClassLoader(getClass().getClassLoader()).parseClass(sourceFile)
     GroovyObject tools = (GroovyObject) groovyClass.newInstance()
 
