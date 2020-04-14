@@ -119,7 +119,7 @@ Then, select the orange blocks and indicate the name of the corresponding table 
 
 Then, you can run the process.
 
-.. figure:: images/tutorial/Tutorial1_Image2.PNG
+.. figure:: images/tutorial/Tutorial1_Image2bis.PNG
    :align: center
 
 The table LDAY_GEOM will be created in your database.
@@ -140,7 +140,10 @@ You can now export the output table in your favorite export format using *Export
 .. figure:: images/tutorial/Tutorial1_Image3.PNG
    :align: center
 
-For example, you can choose to export the table in shp format. This format can be read with many GIS tools such as the open source software Qgis.
+For example, you can choose to export the table in shp format. This format can be read with many GIS tools such as the open source softwares `QGIS`_ and `SAGA`_.
 
 .. figure:: images/tutorial/Tutorial1_Image4.PNG
    :align: center
+
+.. _QGIS : https://www.qgis.org/fr/site/
+.. _SAGA : http://www.saga-gis.org/en/index.html
