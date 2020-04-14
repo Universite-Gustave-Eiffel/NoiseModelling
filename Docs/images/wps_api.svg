@@ -660,9 +660,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="1.979899"
-     inkscape:cx="57.935567"
-     inkscape:cy="837.48651"
+     inkscape:zoom="1.4"
+     inkscape:cx="-144.37383"
+     inkscape:cy="802.89679"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="true"
@@ -683,7 +683,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -749,13 +749,17 @@
        inkscape:connector-curvature="0"
        id="path4021-9"
        d="m 42.333333,66.283326 c 11.90625,0 9.26042,13.22916 0,13.22916 -11.906253,0 -11.906253,0 -22.448913,-0.037 -9.30109,0.037 -9.30109,-17.160905 5.25099,-17.160905 5.29167,-9.260417 17.197923,-3.96875 17.197923,3.968755 z"
-       style="fill:#97d9ff;fill-opacity:1;stroke:#000000;stroke-width:0.329;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:normal" />
+       style="fill:#97d9ff;fill-opacity:1;stroke:#000000;stroke-width:0.329;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:normal"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300" />
     <text
        id="text4025-2"
        y="74.012932"
        x="21.597326"
        style="font-style:normal;font-weight:normal;font-size:4.93888889px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332;"
-       xml:space="preserve"><tspan
+       xml:space="preserve"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300"><tspan
          style="font-size:4.93888889px;stroke-width:0.26458332;"
          y="74.012932"
          x="21.597326"
@@ -766,7 +770,9 @@
        style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
        x="5.6696429"
        y="91.002975"
-       id="text5241"><tspan
+       id="text5241"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300"><tspan
          sodipodi:role="line"
          id="tspan5239"
          x="5.6696429"
@@ -774,11 +780,13 @@
          style="font-size:6.3499999px;stroke-width:0.26458332">GeoServer</tspan></text>
     <path
        style="display:inline;fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.26499999;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#marker8282)"
-       d="M 42.862505,48.291666 V 85.333333"
+       d="m 42.862505,48.291666 -5e-6,36.512501"
        id="path5247"
        inkscape:connector-type="polyline"
        inkscape:connector-curvature="0"
-       sodipodi:nodetypes="cc" />
+       sodipodi:nodetypes="cc"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300" />
     <rect
        style="fill:#f7fff7;fill-opacity:1;stroke:#000000;stroke-width:0.329;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
        id="rect5556-0-4-0-0-9-3"
@@ -796,23 +804,25 @@
        x="48.491333"
        y="-43.985767"
        id="text5988"
-       transform="rotate(90)"><tspan
+       transform="rotate(90)"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300"><tspan
          sodipodi:role="line"
          id="tspan5986"
          x="48.491333"
          y="-43.985767"
-         style="font-size:2.82222223px;stroke-width:0.26458332">1. GET ../geoserver/wps/..</tspan></text>
+         style="font-size:2.82222223px;stroke-width:0.26458332">1. POST ../geoserver/wps/..</tspan></text>
     <text
        xml:space="preserve"
        style="font-size:3.17499995px;line-height:1.25;letter-spacing:0px;word-spacing:0px;opacity:1;vector-effect:none;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.25999999;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
-       x="8.1746387"
+       x="14.619091"
        y="97.163353"
        id="text5560-6-6-2-8-8-6-2"
        inkscape:export-filename="/home/nicolas/ownCloud/ifsttar/documents/projets/openwarble/resources/process.png"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300"><tspan
          sodipodi:role="line"
-         x="8.1746387"
+         x="14.619091"
          y="97.163353"
          style="font-size:4.93888903px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.25999999"
          id="tspan7861-1-68-8-9">wps service</tspan></text>
@@ -847,13 +857,17 @@
        id="path6283"
        inkscape:connector-type="polyline"
        inkscape:connector-curvature="0"
-       sodipodi:nodetypes="cc" />
+       sodipodi:nodetypes="cc"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300" />
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
        x="23.181915"
        y="103.27264"
-       id="text5988-4"><tspan
+       id="text5988-4"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300"><tspan
          sodipodi:role="line"
          id="tspan5986-7"
          x="23.181915"
@@ -861,17 +875,21 @@
          style="font-size:2.82222223px;stroke-width:0.26458332">2. run groovy code</tspan></text>
     <path
        style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#marker6817)"
-       d="M 11.90625,111.79167 V 98.5625"
+       d="m 11.90625,111.79167 0,-11.906253"
        id="path6807"
        inkscape:connector-type="polyline"
        inkscape:connector-curvature="0"
-       sodipodi:nodetypes="cc" />
+       sodipodi:nodetypes="cc"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300" />
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
        x="12.60931"
        y="108.65494"
-       id="text5988-4-0"><tspan
+       id="text5988-4-0"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300"><tspan
          sodipodi:role="line"
          x="12.60931"
          y="108.65494"
@@ -879,18 +897,22 @@
          id="tspan7013">3. process response</tspan></text>
     <path
        style="display:inline;fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.26499999;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-start:url(#Arrow1Mstart)"
-       d="M 18.520799,48.027072 V 85.068727"
+       d="m 18.520833,48.820833 -3.4e-5,36.247894"
        id="path5247-0"
        inkscape:connector-type="polyline"
        inkscape:connector-curvature="0"
-       sodipodi:nodetypes="cc" />
+       sodipodi:nodetypes="cc"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300" />
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
        x="48.22673"
        y="-19.644043"
        id="text5988-5"
-       transform="rotate(90)"><tspan
+       transform="rotate(90)"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300"><tspan
          sodipodi:role="line"
          id="tspan5986-9"
          x="48.22673"
@@ -901,6 +923,8 @@
        d="m 29.092293,23.15625 v 0"
        id="path8922"
        inkscape:connector-type="polyline"
-       inkscape:connector-curvature="0" />
+       inkscape:connector-curvature="0"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300" />
   </g>
 </svg>
