@@ -1,9 +1,5 @@
 package org.noise_planet.noisemodelling.wpsTools
 
-import org.noise_planet.noisemodelling.propagation.FastObstructionTest
-import org.noise_planet.noisemodelling.propagation.PropagationProcessData
-import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap
-
 import org.h2gis.utilities.SpatialResultSet
 import org.locationtech.jts.geom.Geometry
 import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
@@ -12,9 +8,9 @@ import org.noise_planet.noisemodelling.propagation.ComputeRays
 import org.noise_planet.noisemodelling.propagation.FastObstructionTest
 import org.noise_planet.noisemodelling.propagation.PropagationProcessData
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
+import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap
 
 import java.sql.SQLException
-
 
 /**
  *

@@ -329,16 +329,9 @@ def exec(Connection connection, input) {
     // Initialize NoiseModelling emission part
     // --------------------------------------------
 
-    //Class groovyClass = new GroovyClassLoader(getClass().getClassLoader()).parseClass(sourceFile)
-    //GroovyObject tools = (GroovyObject) groovyClass.newInstance()
-   /* Object trafficPropagationProcessDataFactory =  Class.forName("org.noise_planet.noisemodelling.wpsTools.WpsPropagationProcessDataFactory").newInstance()
-    pointNoiseMap.setPropagationProcessDataFactory(trafficPropagationProcessDataFactory)
-
-    Object trafficPropagationProcessData = Class.forName("org.noise_planet.noisemodelling.wpsTools.WpsPropagationProcessData").newInstance()
-    trafficPropagationProcessData.invokeMethod("setInputFormat",["Classic"])*/
-
-    // IF THE FORMAT IS AADF, it is possible to activate this one
     pointNoiseMap.setPropagationProcessDataFactory(wpsPropagationProcessDataFactoryClass)
+
+    // IF THE FORMAT IS AADF, it is possible to change "Classic"
     wpsPropagationProcessDataClass.invokeMethod("setInputFormat",["Classic"])
 
     // --------------------------------------------
