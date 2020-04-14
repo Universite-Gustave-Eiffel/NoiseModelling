@@ -144,8 +144,12 @@ def run(input) {
 // main function of the script
 def exec(Connection connection, input) {
 
+    //Load GeneralTools.groovy
+    File  sourceFile = new File(new File("").absolutePath+"/data_dir/scripts/wpsTools/GeneralTools.groovy")
+    //if we are in dev, the path is not the same as for geoserver
+    if (new File("").absolutePath.substring(new File("").absolutePath.length() - 11) == 'wps_scripts') sourceFile = new File(new File("").absolutePath+"/src/main/groovy/org/noise_planet/noisemodelling/wpsTools/GeneralTools.groovy")
+
     // Get external tools
-    File sourceFile = new File("src/main/groovy/org/noise_planet/noisemodelling/wpsTools/GeneralTools.groovy")
     Class groovyClass = new GroovyClassLoader(getClass().getClassLoader()).parseClass(sourceFile)
     GroovyObject tools = (GroovyObject) groovyClass.newInstance()
 

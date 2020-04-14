@@ -154,10 +154,28 @@ def run(input) {
 // main function of the script
 def exec(Connection connection, input) {
 
+    //Load GeneralTools.groovy
+    File generalTools = new File(new File("").absolutePath+"/data_dir/scripts/wpsTools/GeneralTools.groovy")
+    File wpsPropagationProcessData = new File(new File("").absolutePath+"/data_dir/scripts/wpsTools/WpsPropagationProcessData.groovy")
+    File wpsPropagationProcessDataFactory = new File(new File("").absolutePath+"/data_dir/scripts/wpsTools/WpsPropagationProcessDataFactory.groovy")
+
+    //if we are in dev, the path is not the same as for geoserver
+    if (new File("").absolutePath.substring(new File("").absolutePath.length() - 11) == 'wps_scripts') {
+        generalTools = new File(new File("").absolutePath+"/src/main/groovy/org/noise_planet/noisemodelling/wpsTools/GeneralTools.groovy")
+        wpsPropagationProcessData = new File(new File("").absolutePath+"/src/main/groovy/org/noise_planet/noisemodelling/wpsTools/WpsPropagationProcessData.groovy")
+        wpsPropagationProcessDataFactory = new File(new File("").absolutePath+"/src/main/groovy/org/noise_planet/noisemodelling/wpsTools/WpsPropagationProcessDataFactory.groovy")
+    }
+
     // Get external tools
-    File sourceFile = new File("src/main/groovy/org/noise_planet/noisemodelling/wpsTools/GeneralTools.groovy")
-    Class groovyClass = new GroovyClassLoader(getClass().getClassLoader()).parseClass(sourceFile)
+    Class groovyClass = new GroovyClassLoader(getClass().getClassLoader()).parseClass(generalTools)
     GroovyObject tools = (GroovyObject) groovyClass.newInstance()
+
+    groovyClass = new GroovyClassLoader(getClass().getClassLoader()).parseClass(wpsPropagationProcessData)
+    GroovyObject wpsPropagationProcessDataClass = (GroovyObject) groovyClass.newInstance()
+
+    groovyClass = new GroovyClassLoader(getClass().getClassLoader()).parseClass(wpsPropagationProcessDataFactory)
+    GroovyObject wpsPropagationProcessDataFactoryClass = (GroovyObject) groovyClass.newInstance()
+
 
     //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postGIS database
     connection = new ConnectionWrapper(connection)
@@ -166,7 +184,7 @@ def exec(Connection connection, input) {
     String resultString = null
 
     // print to command window
-    System.out.println('Start : LDEN from Emission')
+    System.out.println('Start : LDAY from Traffic')
     def start = new Date()
 
     // -------------------
@@ -311,12 +329,17 @@ def exec(Connection connection, input) {
     // Initialize NoiseModelling emission part
     // --------------------------------------------
 
-    // IF THE FORMAT IS AADF, it is possible to activate this one
-    Object trafficPropagationProcessDataFactory =  Class.forName("org.noise_planet.noisemodelling.wpsTools.WpsPropagationProcessDataFactory").newInstance()
+    //Class groovyClass = new GroovyClassLoader(getClass().getClassLoader()).parseClass(sourceFile)
+    //GroovyObject tools = (GroovyObject) groovyClass.newInstance()
+   /* Object trafficPropagationProcessDataFactory =  Class.forName("org.noise_planet.noisemodelling.wpsTools.WpsPropagationProcessDataFactory").newInstance()
     pointNoiseMap.setPropagationProcessDataFactory(trafficPropagationProcessDataFactory)
 
     Object trafficPropagationProcessData = Class.forName("org.noise_planet.noisemodelling.wpsTools.WpsPropagationProcessData").newInstance()
-    trafficPropagationProcessData.invokeMethod("setInputFormat",["Classic"])
+    trafficPropagationProcessData.invokeMethod("setInputFormat",["Classic"])*/
+
+    // IF THE FORMAT IS AADF, it is possible to activate this one
+    pointNoiseMap.setPropagationProcessDataFactory(wpsPropagationProcessDataFactoryClass)
+    wpsPropagationProcessDataClass.invokeMethod("setInputFormat",["Classic"])
 
     // --------------------------------------------
     // Run Calculations
