@@ -147,3 +147,15 @@ For example, you can choose to export the table in shp format. This format can b
 
 .. _QGIS : https://www.qgis.org/fr/site/
 .. _SAGA : http://www.saga-gis.org/en/index.html
+
+
+Step 7: Know the possibilities
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Now that you have finished this first step, take the time to read the description of each of the WPS blocks present in your version of NoiseModelling.
+
+By clicking on each of the inputs or outputs, you can also get additional information.
+
+.. figure:: images/tutorial/Tutorial1_ImageLast.gif
+   :align: center
+
