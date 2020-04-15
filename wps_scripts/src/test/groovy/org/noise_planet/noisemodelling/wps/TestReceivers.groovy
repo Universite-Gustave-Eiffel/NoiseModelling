@@ -24,11 +24,14 @@ import groovy.sql.Sql
 import org.h2gis.functions.io.shp.SHPRead
 import org.h2gis.functions.spatial.crs.ST_SetSRID
 import org.h2gis.functions.spatial.crs.ST_Transform
+import org.h2gis.utilities.SFSUtilities
+import org.h2gis.utilities.TableLocation
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory
 import org.noise_planet.noisemodelling.wps.Receivers.Building_Grid
 import org.noise_planet.noisemodelling.wps.Receivers.Delaunay_Grid
 import org.noise_planet.noisemodelling.wps.Receivers.Random_Grid
+import org.noise_planet.noisemodelling.wps.Receivers.Regular_Grid
 
 class TestReceivers extends JdbcTestCase {
 
@@ -62,6 +65,10 @@ class TestReceivers extends JdbcTestCase {
         //SHPWrite.exportTable(connection, "target/receivers_line.shp", "TMP_SCREENS_MERGE")
         assertEquals(5, average_receiver_min_distance, 0.6)
 
+
+        assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
+
+
     }
 
     void testBuildingGridWithPop() {
@@ -87,6 +94,10 @@ class TestReceivers extends JdbcTestCase {
         def buildings_pop = sql.firstRow("SELECT sum(pop) from buildings where pk in (select distinct build_pk from receivers)")[0] as Double
 
         assertEquals(0, buildings_pop - receivers_pop, 0.1);
+
+
+        assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
+
     }
     void testBuildingGridFence() {
         def sql = new Sql(connection)
@@ -108,20 +119,27 @@ class TestReceivers extends JdbcTestCase {
         def receivers_pop = sql.firstRow("SELECT count(*) cpt from receivers r where not ST_Intersects(r.the_geom, ST_GeomFromText('"+g.toString()+"'))")[0] as Integer
 
         assertEquals(0, receivers_pop);
+
+
+        assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
+
     }
 
+    public void testDelaunayGrid() {
+        def sql = new Sql(connection)
+
+        SHPRead.readShape(connection, TestReceivers.getResource("buildings.shp").getPath())
+        SHPRead.readShape(connection, TestReceivers.getResource("roads.shp").getPath())
+        sql.execute("CREATE SPATIAL INDEX ON BUILDINGS(THE_GEOM)")
+        sql.execute("CREATE SPATIAL INDEX ON ROADS(THE_GEOM)")
+
+        new Delaunay_Grid().exec(connection, ["buildingTableName" : "BUILDINGS",
+        "sourcesTableName" : "ROADS"]);
+
+
+        assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
+
 //    TODO activate when TRIANGLES table will not be deleted anymore
-//    public void testDelaunayGrid() {
-//        def sql = new Sql(connection)
-//
-//        SHPRead.readShape(connection, TestReceivers.getResource("buildings.shp").getPath())
-//        SHPRead.readShape(connection, TestReceivers.getResource("roads.shp").getPath())
-//        sql.execute("CREATE SPATIAL INDEX ON BUILDINGS(THE_GEOM)")
-//        sql.execute("CREATE SPATIAL INDEX ON ROADS(THE_GEOM)")
-//
-//        new Delaunay_Grid().exec(connection, ["buildingTableName" : "BUILDINGS",
-//        "sourcesTableName" : "ROADS"]);
-//
 //        sql.execute("CREATE SPATIAL INDEX ON RECEIVERS(THE_GEOM)")
 //
 //        // Check if index and geoms is corresponding
@@ -134,7 +152,7 @@ class TestReceivers extends JdbcTestCase {
 //        assertEquals(0.0, max_dist_a, 1e-6d);
 //        assertEquals(0.0, max_dist_b, 1e-6d);
 //        assertEquals(0.0, max_dist_c, 1e-6d);
-//    }
+    }
 
     public void testRandomGrid() {
 
@@ -148,6 +166,7 @@ class TestReceivers extends JdbcTestCase {
                                              "nReceivers" : 200])
 
         assertTrue(200 >= (sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS")[0] as Integer))
+        assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
     }
 
     public void testRandomGridFence() {
@@ -163,5 +182,21 @@ class TestReceivers extends JdbcTestCase {
                                             "fenceTableName" : "BUILDINGS"])
 
         assertTrue(200 >= (sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS")[0] as Integer))
+
+        assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
+    }
+
+    public void testRegularGrid() {
+
+        def sql = new Sql(connection)
+
+        SHPRead.readShape(connection, TestReceivers.getResource("buildings.shp").getPath())
+        SHPRead.readShape(connection, TestReceivers.getResource("roads.shp").getPath())
+
+        new Regular_Grid().exec(connection,  ["buildingTableName": "BUILDINGS",
+                                              "sourcesTableName" : "ROADS",
+                                              "delta" : 50])
+
+        assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
     }
 }
