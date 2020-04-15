@@ -148,4 +148,19 @@ class TestReceivers extends JdbcTestCase {
 
         assertTrue(200 >= (sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS")[0] as Integer))
     }
+
+    public void testRandomGridFence() {
+
+        def sql = new Sql(connection)
+
+        SHPRead.readShape(connection, TestReceivers.getResource("buildings.shp").getPath())
+        SHPRead.readShape(connection, TestReceivers.getResource("roads.shp").getPath())
+
+        new Random_Grid().exec(connection,  ["buildingTableName" : "BUILDINGS",
+                                             "sourcesTableName" : "ROADS",
+                                             "nReceivers" : 200,
+                                            "fenceTableName" : "BUILDINGS"])
+
+        assertTrue(200 >= (sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS")[0] as Integer))
+    }
 }
