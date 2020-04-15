@@ -51,7 +51,7 @@ inputs = [buildingTableName: [name       : 'Buildings table name', title: 'Build
                               type       : String.class],
           sourcesTableName : [name                                     : 'Sources table name', title: 'Sources table name', description: 'Keep only receivers at least at 1 meters of provided sources geometries' +
                   '<br>  The table shall contain : </br>' +
-                  '- <b> THE_GEOM </b> : any geometry type. </br>', min: 0, max: 1, type: String.class],
+                  '- <b> THE_GEOM </b> : any geometry type. </br>', type: String.class],
           nReceivers       : [name: 'Number of receivers', title: 'Number of receivers', description: 'Number of receivers to return </br> </br> <b> Default value : 100 </b> ', type: Integer.class],
           height          : [name                               : 'height', title: 'height', description: 'Height of receivers in meters (FLOAT)' +
                   '</br> </br> <b> Default value : 4 </b> ', min: 0, max: 1, type: Double.class],
