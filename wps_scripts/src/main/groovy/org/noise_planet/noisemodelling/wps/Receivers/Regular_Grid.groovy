@@ -15,11 +15,18 @@ title = 'Regular Grid'
 description = 'Calculates a regular grid of receivers based on a single Geometry geom or a table tableName of Geometries with delta as offset in the Cartesian plane in meters.'
 
 inputs = [buildingTableName : [name: 'Buildings table name', title: 'Buildings table name', type: String.class],
-          fence             : [name: 'Fence', title: 'Fence', min: 0, max: 1, type: Geometry.class],
-          fenceTableName    : [name: 'Fence table name', title: 'Fence table name', min: 0, max: 1, type: String.class],
-          sourcesTableName  : [name: 'Sources table name', title: 'Sources table name', min: 0, max: 1, type: String.class],
+          fence           : [name         : 'Fence geometry', title: 'Extent filter', description: 'Create receivers only in the' +
+                  ' provided polygon', min: 0, max: 1, type: Geometry.class],
+          fenceTableName  : [name                                                         : 'Fence geometry from table', title: 'Filter using table bounding box',
+                             description                                                  : 'Extract the bounding box of the specified table then create only receivers' +
+                                     ' on the table bounding box' +
+                                     '<br>  The table shall contain : </br>' +
+                                     '- <b> THE_GEOM </b> : any geometry type. </br>', min: 0, max: 1, type: String.class],
+          sourcesTableName: [name          : 'Sources table name', title: 'Sources table name', description: 'Keep only receivers at least at 1 meters of' +
+                  ' provided sources geometries' +
+                  '<br>  The table shall contain : </br>' +
+                  '- <b> THE_GEOM </b> : any geometry type. </br>', min: 0, max: 1, type: String.class],
           delta             : [name: 'offset', title: 'offset', description: 'Offset in the Cartesian plane in meters', type: Double.class],
-          databaseName      : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database (default : first found db)', min: 0, max: 1, type: String.class],
           receiverstablename: [name: 'receiverstablename', description: 'Do not write the name of a table that contains a space. (default : RECEIVERS)', title: 'Name of receivers table', min: 0, max: 1, type: String.class],
           height            : [name: 'height', title: 'height', description: 'Height of receivers in meters', min: 0, max: 1, type: Double.class]]
 

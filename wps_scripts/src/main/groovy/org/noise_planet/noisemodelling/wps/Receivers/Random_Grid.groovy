@@ -123,14 +123,14 @@ def exec(Connection connection, input) {
             + " FROM " + building_table_name
             + ");")
 
-    sql.execute("create table " + receivers_table_name + " as select ST_MAKEPOINT(RAND()*(" + min_max.maxX.toString() + " - " + min_max.minX.toString() + ") + " + min_max.minX.toString() + ", RAND()*(" + min_max.maxY.toString() + " - " + min_max.minY.toString() + ") + " + min_max.minY.toString() + ") as the_geom from system_range(0," + nReceivers.toString() + ");")
+    sql.execute("create table " + receivers_table_name + " as select ST_MAKEPOINT(RAND()*(" + min_max.maxX.toString() + " - " + min_max.minX.toString() + ") + " + min_max.minX.toString() + ", RAND()*(" + min_max.maxY.toString() + " - " + min_max.minY.toString() + ") + " + min_max.minY.toString() + ", "+h+") as the_geom from system_range(0," + nReceivers.toString() + ");")
     sql.execute("Create spatial index on " + receivers_table_name + "(the_geom);")
 
     System.out.println('Delete receivers where buildings...')
     if (input['buildingTableName']) {
         //Delete receivers inside buildings .
         sql.execute("Create spatial index on " + building_table_name + "(the_geom);")
-        sql.execute("delete from " + receivers_table_name + " g where exists (select 1 from " + building_table_name + " b where g.the_geom && b.the_geom and ST_distance(b.the_geom, g.the_geom) < 1 limit 1);")
+        sql.execute("delete from " + receivers_table_name + " g where exists (select 1 from " + building_table_name + " b where g.the_geom && b.the_geom and ST_distance(b.the_geom, g.the_geom) < 1 and b.height >= "+h+" limit 1);")
     }
 
     System.out.println('Delete receivers where sound sources...')
