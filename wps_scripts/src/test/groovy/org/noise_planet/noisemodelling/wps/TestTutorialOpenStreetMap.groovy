@@ -20,6 +20,7 @@
 package org.noise_planet.noisemodelling.wps
 
 import org.noise_planet.noisemodelling.wps.Database_Manager.Display_Database
+import org.noise_planet.noisemodelling.wps.Database_Manager.Table_Visualization_Data
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Lden_from_Road_Emission
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Road_Emission_from_Traffic
@@ -87,8 +88,10 @@ class TestTutorialOpenStreetMap extends JdbcTestCase {
                                                               "tableGroundAbs": "GROUND",
                                                               "tableReceivers": "RECEIVERS"])
 
+        res =  new Display_Database().exec(connection, [])
+
         // Check database
-        res = new Display_Database().exec(connection, [])
+        new Table_Visualization_Data().exec(connection, ["tableName": "LDEN_GEOM"])
 
         assertTrue(res.contains("LDEN_GEOM"))
     }

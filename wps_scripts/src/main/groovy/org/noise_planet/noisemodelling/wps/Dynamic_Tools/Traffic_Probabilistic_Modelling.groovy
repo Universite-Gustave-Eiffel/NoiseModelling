@@ -293,7 +293,7 @@ def exec(Connection connection, input) {
 
     // Do not propagate for low emission or far away sources
     // Maximum error in dB
-    pointNoiseMap.setMaximumError(0.1d)
+    pointNoiseMap.setMaximumError(0.0d)
     // Init Map
     pointNoiseMap.initialize(connection, new EmptyProgressVisitor())
 
@@ -322,6 +322,7 @@ def exec(Connection connection, input) {
             System.println("Compute... " + 100*k++/fullGridSize + " % ")
 
             IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, i, j, progressVisitor, receivers)
+
             if (out instanceof ComputeRaysOut) {
                 allLevels.addAll(((ComputeRaysOut) out).getVerticesSoundLevel())
             }
@@ -400,7 +401,7 @@ def exec(Connection connection, input) {
 
             // get source SoundLevel
             if (!sourceLev.containsKey(idSource)) {
-                double[] carsLevel = probaProcessData.invokeMethod("getCarsLevel",[it, idSource])
+                double[] carsLevel = probabilisticProcessData.getCarsLevel(idSource)
                 sourceLev.put(idSource, carsLevel)
             }
 
@@ -476,7 +477,7 @@ class WpsPropagationProcessDataProba extends PropagationProcessData {
 
     public Map<Long, Integer> SourcesPk = new HashMap<>()
 
-    public String inputFormat = "Classic"
+    public String inputFormat = "Proba"
     int idSource = 0
 
     WpsPropagationProcessDataProba(FastObstructionTest freeFieldFinder) {
@@ -487,7 +488,6 @@ class WpsPropagationProcessDataProba extends PropagationProcessData {
     void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException {
         super.addSource(pk, geom, rs)
         SourcesPk.put(pk, idSource++)
-
 
         def res = computeLw(inputFormat, rs)
         wjSourcesD.add(res[0])
@@ -768,7 +768,6 @@ class WpsPropagationProcessDataProbaFactory implements PointNoiseMap.Propagation
         return new WpsPropagationProcessDataProba(freeFieldFinder)
     }
 }
-
 
 
 /**
