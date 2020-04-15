@@ -43,9 +43,15 @@ class TestDynamicTools extends JdbcTestCase  {
                 ["pathFile": TestTutorialOpenStreetMap.getResource("map.osm.gz").getPath(),
                  "targetSRID" : 2154,
                  "convert2Building" : true,
-                 "convert2Vegetation" : false,
+                 "convert2Ground" : true,
                  "convert2Roads" : true])
 
+        // Check database
+        res = new Display_Database().exec(connection, [])
+
+        assertTrue(res.contains("GROUND"))
+        assertTrue(res.contains("BUILDINGS"))
+        assertTrue(res.contains("ROADS"))
 
         res = new Traffic_Probabilistic_Modelling().exec(connection, ["tableRoads"  : "ROADS",
                                                                       "tableBuilding" : "BUILDINGS",

@@ -22,7 +22,6 @@ package org.noise_planet.noisemodelling.wps
 
 import groovy.sql.Sql
 import org.h2gis.functions.io.shp.SHPRead
-import org.h2gis.functions.io.shp.SHPWrite
 import org.h2gis.utilities.JDBCUtilities
 import org.junit.Test
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Road_Emission_from_Traffic

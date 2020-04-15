@@ -7,7 +7,14 @@ package org.noise_planet.noisemodelling.wps.Receivers
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.functions.spatial.crs.ST_SetSRID
+import org.h2gis.functions.spatial.crs.ST_Transform
+import org.h2gis.utilities.SFSUtilities
+import org.h2gis.utilities.TableLocation
 import org.locationtech.jts.geom.Geometry
+import org.locationtech.jts.geom.GeometryFactory
+import org.locationtech.jts.io.WKTReader
+
 import java.sql.*
 import groovy.sql.Sql
 
@@ -15,11 +22,18 @@ title = 'Regular Grid'
 description = 'Calculates a regular grid of receivers based on a single Geometry geom or a table tableName of Geometries with delta as offset in the Cartesian plane in meters.'
 
 inputs = [buildingTableName : [name: 'Buildings table name', title: 'Buildings table name', type: String.class],
-          fence             : [name: 'Fence', title: 'Fence', min: 0, max: 1, type: Geometry.class],
-          fenceTableName    : [name: 'Fence table name', title: 'Fence table name', min: 0, max: 1, type: String.class],
-          sourcesTableName  : [name: 'Sources table name', title: 'Sources table name', min: 0, max: 1, type: String.class],
+          fence           : [name         : 'Fence geometry', title: 'Extent filter', description: 'Create receivers only in the' +
+                  ' provided polygon', min: 0, max: 1, type: Geometry.class],
+          fenceTableName  : [name                                                         : 'Fence geometry from table', title: 'Filter using table bounding box',
+                             description                                                  : 'Extract the bounding box of the specified table then create only receivers' +
+                                     ' on the table bounding box' +
+                                     '<br>  The table shall contain : </br>' +
+                                     '- <b> THE_GEOM </b> : any geometry type. </br>', min: 0, max: 1, type: String.class],
+          sourcesTableName: [name          : 'Sources table name', title: 'Sources table name', description: 'Keep only receivers at least at 1 meters of' +
+                  ' provided sources geometries' +
+                  '<br>  The table shall contain : </br>' +
+                  '- <b> THE_GEOM </b> : any geometry type. </br>', min: 0, max: 1, type: String.class],
           delta             : [name: 'offset', title: 'offset', description: 'Offset in the Cartesian plane in meters', type: Double.class],
-          databaseName      : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database (default : first found db)', min: 0, max: 1, type: String.class],
           receiverstablename: [name: 'receiverstablename', description: 'Do not write the name of a table that contains a space. (default : RECEIVERS)', title: 'Name of receivers table', min: 0, max: 1, type: String.class],
           height            : [name: 'height', title: 'height', description: 'Height of receivers in meters', min: 0, max: 1, type: Double.class]]
 
@@ -57,13 +71,6 @@ def exec(connection, input) {
     }
     receivers_table_name = receivers_table_name.toUpperCase()
 
-    String fence_table_name = "FENCE_2154"
-    if (input['fenceTableName']) {
-        fence_table_name = input['fenceTableName']
-    }
-    fence_table_name = fence_table_name.toUpperCase()
-
-
     Double delta = 10
     if (input['delta']) {
         delta = input['delta']
@@ -86,11 +93,7 @@ def exec(connection, input) {
     }
     building_table_name = building_table_name.toUpperCase()
 
-    String fence = null
-    if (input['fence']) {
-        fence = (String) input['fence']
-    }
-
+    int srid = SFSUtilities.getSRID(connection, TableLocation.parse(building_table_name))
 
     Sql sql = new Sql(connection)
     //Delete previous receivers grid.
@@ -98,56 +101,37 @@ def exec(connection, input) {
     String queryGrid = null
 
 
+    // Reproject fence
+    int targetSrid = SFSUtilities.getSRID(connection, TableLocation.parse(building_table_name))
+    if (targetSrid == 0 && input['sourcesTableName']) {
+        targetSrid = SFSUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
+    }
+
+    Geometry fenceGeom = null
     if (input['fence']) {
-        sql.execute(String.format("DROP TABLE IF EXISTS FENCE"))
-        sql.execute(String.format("CREATE TABLE FENCE AS SELECT ST_AsText('" + fence + "') the_geom"))
-        sql.execute(String.format("DROP TABLE IF EXISTS FENCE_2154"))
-        sql.execute(String.format("CREATE TABLE FENCE_2154 AS SELECT ST_TRANSFORM(ST_SetSRID(the_geom,4326),2154) the_geom from FENCE"))
-        sql.execute(String.format("DROP TABLE IF EXISTS FENCE"))
-
-        queryGrid = String.format("CREATE TABLE " + receivers_table_name + " AS SELECT * FROM ST_MakeGridPoints('FENCE_2154'," + delta + "," + delta + ");")
-
-
-    } else {
-        if (input['fenceTableName']) {
-
-            queryGrid = String.format("CREATE TABLE " + receivers_table_name + " AS SELECT * FROM ST_MakeGridPoints('" + fence_table_name + "'," + delta + "," + delta + ");")
-
-
+        if (targetSrid != 0) {
+            // Transform fence to the same coordinate system than the buildings & sources
+            WKTReader wktReader = new WKTReader()
+            fence = wktReader.read(input['fence'] as String)
+            fenceGeom = ST_Transform.ST_Transform(connection, ST_SetSRID.setSRID(fence, 4326), targetSrid)
         } else {
-            queryGrid = String.format("CREATE TABLE " + receivers_table_name + " AS SELECT * FROM ST_MakeGridPoints('" + building_table_name + "'," + delta + "," + delta + ");")
+            System.err.println("Unable to find buildings or sources SRID, ignore fence parameters")
         }
+    } else if (input['fenceTableName']) {
+        fenceGeom = (new GeometryFactory()).toGeometry(SFSUtilities.getTableEnvelope(connection, TableLocation.parse(input['fenceTableName'] as String), "THE_GEOM"))
+    } else {
+        fenceGeom = (new GeometryFactory()).toGeometry(SFSUtilities.getTableEnvelope(connection, TableLocation.parse(building_table_name), "THE_GEOM"))
     }
 
-    sql.execute(queryGrid)
-
-    //New receivers grid created .
-
-    sql.execute("Create spatial index on " + receivers_table_name + "(the_geom);")
-    sql.execute("UPDATE " + receivers_table_name + " SET THE_GEOM = ST_UPDATEZ(The_geom," + h + ");")
-    sql.execute("ALTER TABLE " + receivers_table_name + " ADD pk INT AUTO_INCREMENT PRIMARY KEY;")
-    sql.execute("ALTER TABLE " + receivers_table_name + " DROP ID;")
-    sql.execute("ALTER TABLE " + receivers_table_name + " DROP ID_COL;")
-    sql.execute("ALTER TABLE " + receivers_table_name + " DROP ID_ROW;")
-
-    if (input['fence']) {
-        //Delete receivers
-        sql.execute("Create spatial index on FENCE_2154(the_geom);")
-        sql.execute("delete from " + receivers_table_name + " g where exists (select 1 from FENCE_2154 r where ST_Disjoint(g.the_geom, r.the_geom) limit 1);")
-    }
-    if (input['fenceTableName']) {
-        //Delete receivers
-        sql.execute("Create spatial index on " + fence_table_name + "(the_geom);")
-        sql.execute("delete from " + receivers_table_name + " g where exists (select 1 from " + fence_table_name + " r where ST_Disjoint(g.the_geom, r.the_geom) limit 1);")
-    }
+    sql.execute("CREATE TABLE " + receivers_table_name + "(PK SERIAL, THE_GEOM GEOMETRY) AS SELECT null, ST_SETSRID(ST_UPDATEZ(THE_GEOM, "+h+"), "+srid+") THE_GEOM FROM ST_MakeGridPoints(ST_GeomFromText('"+fenceGeom+"')," + delta + "," + delta + ");")
 
     if (input['buildingTableName']) {
-        //Delete receivers inside buildings
+        System.out.println("Delete receivers inside buildings")
         sql.execute("Create spatial index on " + building_table_name + "(the_geom);")
         sql.execute("delete from " + receivers_table_name + " g where exists (select 1 from " + building_table_name + " b where ST_Z(g.the_geom) < b.HEIGHT and g.the_geom && b.the_geom and ST_INTERSECTS(g.the_geom, b.the_geom) and ST_distance(b.the_geom, g.the_geom) < 1 limit 1);")
     }
     if (input['sourcesTableName']) {
-        //Delete receivers near sources
+        System.out.println("Delete receivers near sources")
         sql.execute("Create spatial index on " + sources_table_name + "(the_geom);")
         sql.execute("delete from " + receivers_table_name + " g where exists (select 1 from " + sources_table_name + " r where st_expand(g.the_geom, 1) && r.the_geom and st_distance(g.the_geom, r.the_geom) < 1 limit 1);")
     }

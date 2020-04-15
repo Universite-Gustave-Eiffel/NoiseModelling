@@ -32,6 +32,7 @@ import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.SFSUtilities
 import org.h2gis.utilities.TableLocation
 import org.locationtech.jts.geom.*
+import org.locationtech.jts.io.WKTReader
 
 import java.sql.Connection
 
@@ -60,7 +61,7 @@ inputs = [
                 '- <b> THE_GEOM </b> : any geometry type. </br>', min: 0, max: 1, type: String.class],
         delta           : [name       : 'Receivers minimal distance', title: 'Distance between receivers',
                            description: 'Distance between receivers in the Cartesian plane in meters', type: Double.class],
-        height          : [name                               : 'height', title: 'height', description: 'Height of receivers in meters ' +
+        height          : [name                               : 'height', title: 'height', description: 'Height of receivers in meters (FLOAT)' +
                 '</br> </br> <b> Default value : 4 </b> ', min: 0, max: 1, type: Double.class]]
 
 outputs = [result: [name: 'Result output string', title: 'Result output string', description: 'This type of result does not allow the blocks to be linked together.', type: String.class]]
@@ -141,17 +142,20 @@ def exec(Connection connection, input) {
         targetSrid = SFSUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
     }
 
-    def fenceGeom = null
+    Geometry fenceGeom = null
     if (input['fence']) {
         if (targetSrid != 0) {
             // Transform fence to the same coordinate system than the buildings & sources
-            fenceGeom = ST_Transform.ST_Transform(connection, ST_SetSRID.setSRID(input['fence'] as Geometry, 4326), targetSrid)
+            WKTReader wktReader = new WKTReader()
+            fence = wktReader.read(input['fence'] as String)
+            fenceGeom = ST_Transform.ST_Transform(connection, ST_SetSRID.setSRID(fence, 4326), targetSrid)
         } else {
             System.err.println("Unable to find buildings or sources SRID, ignore fence parameters")
         }
     } else if (input['fenceTableName']) {
-        fenceGeom = sql.firstRow("SELECT ST_ENVELOPE(ST_COLLECT(the_geom)) the_geom from " + input['fenceTableName'])[0] as Geometry
+        fenceGeom = (new GeometryFactory()).toGeometry(SFSUtilities.getTableEnvelope(connection, TableLocation.parse(input['fenceTableName'] as String), "THE_GEOM"))
     }
+
 
     def buildingPk = JDBCUtilities.getFieldName(connection.getMetaData(), building_table_name, JDBCUtilities.getIntegerPrimaryKey(connection, building_table_name));
     if(buildingPk == "") {
@@ -194,6 +198,7 @@ def exec(Connection connection, input) {
             for (int idp = 0; idp < pts.size(); idp++) {
                 Coordinate pt = pts.get(idp);
                 if (!Double.isNaN(pt.x) && !Double.isNaN(pt.y)) {
+                    // define coordinates of receivers
                     Coordinate newCoord = new Coordinate(pt.x, pt.y, h)
                     ps.addBatch(row[0] as Integer, factory.createPoint(newCoord))
                 }
@@ -205,7 +210,9 @@ def exec(Connection connection, input) {
 
     if (!hasPop) {
         System.println('create RECEIVERS table...')
-        sql.execute("create table " + receivers_table_name + "(pk serial, the_geom geometry,build_pk integer) as select null, the_geom, pk building_pk from TMP_SCREENS;")
+
+
+        sql.execute("create table " + receivers_table_name + "(pk serial, the_geom geometry,build_pk integer) as select null, ST_SetSRID(the_geom," + targetSrid.toInteger() + ") , pk building_pk from TMP_SCREENS;")
 
         if (input['sourcesTableName']) {
             // Delete receivers near sources
@@ -223,7 +230,7 @@ def exec(Connection connection, input) {
         // building have population attribute
         // set population attribute divided by number of receiver to each receiver
         sql.execute("DROP TABLE IF EXISTS tmp_receivers")
-        sql.execute("create table tmp_receivers(pk serial, the_geom geometry,build_pk integer) as select null, the_geom, pk building_pk from TMP_SCREENS;")
+        sql.execute("create table tmp_receivers(pk serial, the_geom geometry,build_pk integer) as select null, ST_SetSRID(the_geom," + targetSrid.toInteger() + "), pk building_pk from TMP_SCREENS;")
 
         if (input['sourcesTableName']) {
             // Delete receivers near sources
