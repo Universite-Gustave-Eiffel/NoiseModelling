@@ -142,7 +142,7 @@ class TestReceivers extends JdbcTestCase {
         SHPRead.readShape(connection, TestReceivers.getResource("buildings.shp").getPath())
         SHPRead.readShape(connection, TestReceivers.getResource("roads.shp").getPath())
 
-        new Random_Grid().exec(connection,  ["tableBuilding" : "BUILDINGS",
+        new Random_Grid().exec(connection,  ["buildingTableName" : "BUILDINGS",
                                              "sourcesTableName" : "ROADS",
                                              "nReceivers" : 200])
 

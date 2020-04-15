@@ -27,6 +27,12 @@ import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.time.TimeCategory
 import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.functions.spatial.crs.ST_SetSRID
+import org.h2gis.functions.spatial.crs.ST_Transform
+import org.h2gis.utilities.SFSUtilities
+import org.h2gis.utilities.TableLocation
+import org.locationtech.jts.geom.Envelope
+import org.locationtech.jts.geom.Geometry
 
 import java.sql.Connection
 
@@ -46,7 +52,14 @@ inputs = [buildingTableName: [name       : 'Buildings table name', title: 'Build
                   '- <b> THE_GEOM </b> : any geometry type. </br>', min: 0, max: 1, type: String.class],
           nReceivers       : [name: 'Number of receivers', title: 'Number of receivers', description: 'Number of receivers to return </br> </br> <b> Default value : 100 </b> ', type: Integer.class],
           height          : [name                               : 'height', title: 'height', description: 'Height of receivers in meters (FLOAT)' +
-                  '</br> </br> <b> Default value : 4 </b> ', min: 0, max: 1, type: Double.class]]
+                  '</br> </br> <b> Default value : 4 </b> ', min: 0, max: 1, type: Double.class],
+          fence           : [name         : 'Fence geometry', title: 'Extent filter', description: 'Create receivers only in the' +
+        ' provided polygon', min: 0, max: 1, type: Geometry.class],
+          fenceTableName  : [name                                                         : 'Fence geometry from table', title: 'Filter using table bounding box',
+                             description                                                  : 'Extract the bounding box of the specified table then create only receivers' +
+                                     ' on the table bounding box' +
+                                     '<br>  The table shall contain : </br>' +
+                                     '- <b> THE_GEOM </b> : any geometry type. </br>', min: 0, max: 1, type: String.class]]
 
 outputs = [result: [name: 'Result output string', title: 'Result output string', description: 'This type of result does not allow the blocks to be linked together.', type: String.class]]
 
@@ -104,26 +117,45 @@ def exec(Connection connection, input) {
     }
     sources_table_name = sources_table_name.toUpperCase()
 
+
     String building_table_name = input['buildingTableName']
     building_table_name = building_table_name.toUpperCase()
 
-
     Sql sql = new Sql(connection)
+
+    // Reproject fence
+    int targetSrid = SFSUtilities.getSRID(connection, TableLocation.parse(building_table_name))
+    if (targetSrid == 0 && input['sourcesTableName']) {
+        targetSrid = SFSUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
+    }
+
+    def fenceGeom = null
+    if (input['fence']) {
+        if (targetSrid != 0) {
+            // Transform fence to the same coordinate system than the buildings & sources
+            fenceGeom = ST_Transform.ST_Transform(connection, ST_SetSRID.setSRID(input['fence'] as Geometry, 4326), targetSrid)
+        } else {
+            System.err.println("Unable to find buildings or sources SRID, ignore fence parameters")
+        }
+    } else if (input['fenceTableName']) {
+        fenceGeom = sql.firstRow("SELECT ST_ENVELOPE(ST_COLLECT(the_geom)) the_geom from " + input['fenceTableName'])[0] as Geometry
+    }
+
 
     //Delete previous receivers grid...
     sql.execute(String.format("DROP TABLE IF EXISTS %s", receivers_table_name))
 
-    def min_max = sql.firstRow("SELECT ST_XMAX(the_geom) as maxX, ST_XMIN(the_geom) as minX, ST_YMAX(the_geom) as maxY, ST_YMIN(the_geom) as minY"
-            + " FROM "
-            + "("
-            + " SELECT ST_Collect(the_geom) as the_geom "
-            + " FROM " + sources_table_name
-            + " UNION ALL "
-            + " SELECT the_geom "
-            + " FROM " + building_table_name
-            + ");")
+    def filter_geom_query = ""
 
-    sql.execute("create table " + receivers_table_name + " as select ST_MAKEPOINT(RAND()*(" + min_max.maxX.toString() + " - " + min_max.minX.toString() + ") + " + min_max.minX.toString() + ", RAND()*(" + min_max.maxY.toString() + " - " + min_max.minY.toString() + ") + " + min_max.minY.toString() + ", "+h+") as the_geom from system_range(0," + nReceivers.toString() + ");")
+    Envelope envelope
+    if (fenceGeom == null) {
+        envelope = SFSUtilities.getTableEnvelope(connection, TableLocation.parse(sources_table_name), "THE_GEOM");
+        envelope.expandToInclude(SFSUtilities.getTableEnvelope(connection, TableLocation.parse(building_table_name), "THE_GEOM"))
+    } else {
+        envelope = fenceGeom.envelopeInternal
+    }
+
+    sql.execute("create table " + receivers_table_name + " as select ST_MAKEPOINT(RAND()*(" + envelope.maxX + " - " + envelope.minX.toString() + ") + " + envelope.minX.toString() + ", RAND()*(" + envelope.maxY.toString() + " - " + envelope.minY.toString() + ") + " + envelope.minY.toString() + ", "+h+") as the_geom from system_range(0," + nReceivers.toString() + ");")
     sql.execute("Create spatial index on " + receivers_table_name + "(the_geom);")
 
     System.out.println('Delete receivers where buildings...')
