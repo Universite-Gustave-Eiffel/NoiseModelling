@@ -199,7 +199,7 @@ def exec(Connection connection, input) {
                 "update MAP_BUILDINGS_GEOM set height = (select round(\"VALUE\" * 3.0 + RAND() * 2,1) from MAP_WAY_TAG where id_tag = (SELECT ID_TAG FROM MAP_TAG T WHERE T.TAG_KEY = 'building:levels' LIMIT 1) and id_way = MAP_BUILDINGS_GEOM.id_way);\n" +
                 "update MAP_BUILDINGS_GEOM set height = round(4 + RAND() * 2,1) where height is null;\n" +
                 "drop table if exists BUILDINGS;\n" +
-                "create table BUILDINGS(id_way serial, the_geom geometry CHECK ST_SRID(THE_GEOM)=" + srid + ", height double) as select id_way,  ST_SETSRID(ST_SimplifyPreserveTopology(st_buffer(ST_TRANSFORM(ST_SETSRID(THE_GEOM, 4326), " + srid + "), -0.1, 'join=mitre'),0.1), " + srid + ") the_geom , height from MAP_BUILDINGS_GEOM;\n" +
+                "create table BUILDINGS(PK serial, the_geom geometry CHECK ST_SRID(THE_GEOM)=" + srid + ", height double) as select id_way,  ST_SETSRID(ST_SimplifyPreserveTopology(st_buffer(ST_TRANSFORM(ST_SETSRID(THE_GEOM, 4326), " + srid + "), -0.1, 'join=mitre'),0.1), " + srid + ") the_geom , height from MAP_BUILDINGS_GEOM;\n" +
                 "drop table if exists MAP_BUILDINGS_GEOM;"
 
         sql.execute(Buildings_Import)
@@ -224,12 +224,12 @@ def exec(Connection connection, input) {
                 "ST_GEOMETRYN(THE_GEOM, ST_NUMGEOMETRIES(THE_GEOM)) AND ST_NUMGEOMETRIES(THE_GEOM) >\n" +
                 "2;\n" +
                 "drop table if exists GROUND;\n" +
-                "create table GROUND(id_way serial, the_geom geometry CHECK ST_SRID(THE_GEOM)=" + srid + ", surf_cat varchar, G double) as select id_way,  ST_TRANSFORM(ST_SETSRID(THE_GEOM, 4326), " + srid + ") the_geom , surf_cat, 1 g from MAP_SURFACE_GEOM where surf_cat IN ('grass', 'village_green', 'park');\n" +
+                "create table GROUND(PK serial, the_geom geometry CHECK ST_SRID(THE_GEOM)=" + srid + ", surf_cat varchar, G double) as select id_way,  ST_TRANSFORM(ST_SETSRID(THE_GEOM, 4326), " + srid + ") the_geom , surf_cat, 1 g from MAP_SURFACE_GEOM where surf_cat IN ('grass', 'village_green', 'park');\n" +
                 "drop table if exists MAP_SURFACE_GEOM;"
 
-        sql.execute("DROP TABLE MAP_SURFACE IF EXISTS;")
-
         sql.execute(Ground_Import)
+        sql.execute("DROP TABLE IF EXISTS MAP_SURFACE;")
+
         System.println('The table GROUND has been created.')
         resultString = resultString + ' <br> The table GROUND has been created.'
     }

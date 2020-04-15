@@ -60,7 +60,7 @@ inputs = [
                 '- <b> THE_GEOM </b> : any geometry type. </br>', min: 0, max: 1, type: String.class],
         delta           : [name       : 'Receivers minimal distance', title: 'Distance between receivers',
                            description: 'Distance between receivers in the Cartesian plane in meters', type: Double.class],
-        height          : [name                               : 'height', title: 'height', description: 'Height of receivers in meters ' +
+        height          : [name                               : 'height', title: 'height', description: 'Height of receivers in meters (FLOAT)' +
                 '</br> </br> <b> Default value : 4 </b> ', min: 0, max: 1, type: Double.class]]
 
 outputs = [result: [name: 'Result output string', title: 'Result output string', description: 'This type of result does not allow the blocks to be linked together.', type: String.class]]
