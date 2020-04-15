@@ -194,6 +194,7 @@ def exec(Connection connection, input) {
             for (int idp = 0; idp < pts.size(); idp++) {
                 Coordinate pt = pts.get(idp);
                 if (!Double.isNaN(pt.x) && !Double.isNaN(pt.y)) {
+                    // define coordinates of receivers
                     Coordinate newCoord = new Coordinate(pt.x, pt.y, h)
                     ps.addBatch(row[0] as Integer, factory.createPoint(newCoord))
                 }
