@@ -31,10 +31,10 @@ title = 'Delaunay Grid'
 description = 'Calculates a delaunay grid of receivers based on a single Geometry geom or a table tableName of Geometries with delta as offset in the Cartesian plane in meters.'
 
 inputs = [tableBuilding : [name: 'Buildings table name', title: 'Buildings table name',
-                               description: '<b>Name of the Buildings table.</b>  </br>  ' +
-                                       '<br>  The table shall contain : </br>' +
-                                       '- <b> THE_GEOM </b> : the 2D geometry of the building (POLYGON or MULTIPOLYGON). </br>',
-                               type: String.class],
+                           description: '<b>Name of the Buildings table.</b>  </br>  ' +
+                                   '<br>  The table shall contain : </br>' +
+                                   '- <b> THE_GEOM </b> : the 2D geometry of the building (POLYGON or MULTIPOLYGON). </br>',
+                           type: String.class],
           fence           : [name         : 'Fence geometry', title: 'Extent filter', description: 'Create receivers only in the' +
                   ' provided polygon', min: 0, max: 1, type: Geometry.class],
           sourcesTableName  : [name: 'Sources table name',
@@ -53,7 +53,7 @@ inputs = [tableBuilding : [name: 'Buildings table name', title: 'Buildings table
           maxArea  : [name: 'Maximum Area',
                       title: 'Maximum Area',
                       description: 'Set Maximum Area in m2. No triangles larger than provided area. Smaller area will create more receivers. (FLOAT)' +
-                  '</br> </br> <b> Default value : 2500 </b> ',
+                              '</br> </br> <b> Default value : 2500 </b> ',
                       min: 0, max: 1, type: Double.class],
           sourceDensification  : [name: 'Source densification',
                                   title: 'Source densification',
@@ -63,11 +63,11 @@ inputs = [tableBuilding : [name: 'Buildings table name', title: 'Buildings table
           height    : [name: 'Height',
                        title: 'Height',
                        description: ' Receiver height relative to the ground in meters (FLOAT).' +
-                  '</br> </br> <b> Default value : 4 </b>',
+                               '</br> </br> <b> Default value : 4 </b>',
                        min: 0, max: 1, type: Double.class],
           outputTableName: [name: 'outputTableName',
                             description: 'Do not write the name of a table that contains a space. ' +
-                  '</br> </br> <b> Default value : RECEIVERS </b>',
+                                    '</br> </br> <b> Default value : RECEIVERS </b>',
                             title: 'Name of output table',
                             min: 0, max: 1, type: String.class]]
 
@@ -215,15 +215,12 @@ def exec(Connection connection, input) {
         }
     }
 
-    sql.execute("Create spatial index on "+receivers_table_name+"(the_geom);")
+    sql.execute("UPDATE "+receivers_table_name+" SET THE_GEOM = ST_SETSRID(THE_GEOM, "+srid+")")
 
-    sql.execute("CREATE table temp as select ST_SetSRID(the_geom," + srid.toInteger() + ") THE_GEOM FROM " + TableLocation.parse(receivers_table_name).toString())
-    sql.execute("DROP TABLE" + TableLocation.parse(receivers_table_name).toString())
-    sql.execute("CREATE TABLE" + TableLocation.parse(receivers_table_name).toString() + " AS SELECT * FROM TEMP")
-    sql.execute("DROP TABLE TEMP")
-    sql.execute("ALTER TABLE " + TableLocation.parse(receivers_table_name).toString() + " ADD  PK INT AUTO_INCREMENT PRIMARY KEY;")
-
+    // TODO remove when ISO contouring is restored
     sql.execute("DROP TABLE IF EXISTS TRIANGLES")
+
+    sql.execute("Create spatial index on "+receivers_table_name+"(the_geom);")
 
     // Process Done
     resultString = "Process done. " + receivers_table_name + " created. "

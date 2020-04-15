@@ -19,6 +19,8 @@
 
 package org.noise_planet.noisemodelling.wps
 
+import org.h2gis.utilities.SFSUtilities
+import org.h2gis.utilities.TableLocation
 import org.noise_planet.noisemodelling.wps.Database_Manager.Display_Database
 import org.noise_planet.noisemodelling.wps.Database_Manager.Table_Visualization_Data
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
@@ -46,6 +48,9 @@ class TestTutorialOpenStreetMap extends JdbcTestCase {
                  "convert2Building" : true,
                  "convert2Ground" : true,
                  "convert2Roads" : true])
+
+        // Check SRID
+        assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("BUILDINGS")))
 
         // Check database
         res = new Display_Database().exec(connection, [])

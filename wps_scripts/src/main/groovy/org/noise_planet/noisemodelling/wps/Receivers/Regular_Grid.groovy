@@ -71,13 +71,6 @@ def exec(connection, input) {
     }
     receivers_table_name = receivers_table_name.toUpperCase()
 
-    String fence_table_name = "FENCE_2154"
-    if (input['fenceTableName']) {
-        fence_table_name = input['fenceTableName']
-    }
-    fence_table_name = fence_table_name.toUpperCase()
-
-
     Double delta = 10
     if (input['delta']) {
         delta = input['delta']
@@ -100,67 +93,45 @@ def exec(connection, input) {
     }
     building_table_name = building_table_name.toUpperCase()
 
+    int srid = SFSUtilities.getSRID(connection, TableLocation.parse(building_table_name))
+
     Sql sql = new Sql(connection)
     //Delete previous receivers grid.
     sql.execute(String.format("DROP TABLE IF EXISTS %s", receivers_table_name))
     String queryGrid = null
 
 
-    if (input['fence']) {
-        sql.execute(String.format("DROP TABLE IF EXISTS FENCE"))
-        sql.execute(String.format("CREATE TABLE FENCE AS SELECT ST_AsText('" + fence + "') the_geom"))
-        sql.execute(String.format("DROP TABLE IF EXISTS FENCE_2154"))
-        sql.execute(String.format("CREATE TABLE FENCE_2154 AS SELECT ST_TRANSFORM(ST_SetSRID(the_geom,4326),2154) the_geom from FENCE"))
-        sql.execute(String.format("DROP TABLE IF EXISTS FENCE"))
-
-        queryGrid = String.format("CREATE TABLE " + receivers_table_name + " AS SELECT * FROM ST_MakeGridPoints('FENCE_2154'," + delta + "," + delta + ");")
-
-
-    } else {
-        if (input['fenceTableName']) {
-
-            queryGrid = String.format("CREATE TABLE " + receivers_table_name + " AS SELECT * FROM ST_MakeGridPoints('" + fence_table_name + "'," + delta + "," + delta + ");")
-
-
-        } else {
-            queryGrid = String.format("CREATE TABLE " + receivers_table_name + " AS SELECT * FROM ST_MakeGridPoints('" + building_table_name + "'," + delta + "," + delta + ");")
-        }
+    // Reproject fence
+    int targetSrid = SFSUtilities.getSRID(connection, TableLocation.parse(building_table_name))
+    if (targetSrid == 0 && input['sourcesTableName']) {
+        targetSrid = SFSUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
     }
-
-    sql.execute(queryGrid)
-
-    //New receivers grid created .
-
-    sql.execute("Create spatial index on " + receivers_table_name + "(the_geom);")
-    sql.execute("UPDATE " + receivers_table_name + " SET THE_GEOM = ST_UPDATEZ(The_geom," + h + ");")
-    sql.execute("ALTER TABLE " + receivers_table_name + " ADD pk INT AUTO_INCREMENT PRIMARY KEY;")
-    sql.execute("ALTER TABLE " + receivers_table_name + " DROP ID;")
-    sql.execute("ALTER TABLE " + receivers_table_name + " DROP ID_COL;")
-    sql.execute("ALTER TABLE " + receivers_table_name + " DROP ID_ROW;")
 
     Geometry fenceGeom = null
     if (input['fence']) {
         if (targetSrid != 0) {
             // Transform fence to the same coordinate system than the buildings & sources
             WKTReader wktReader = new WKTReader()
-            Geometry fence = wktReader.read(input['fence'] as String)
+            fence = wktReader.read(input['fence'] as String)
             fenceGeom = ST_Transform.ST_Transform(connection, ST_SetSRID.setSRID(fence, 4326), targetSrid)
-            sql.execute("delete from " + receivers_table_name + " g where ST_Intersects(g.the_geom, ST_GeomFromText('"+fenceGeom+"'));")
         } else {
             System.err.println("Unable to find buildings or sources SRID, ignore fence parameters")
         }
     } else if (input['fenceTableName']) {
         fenceGeom = (new GeometryFactory()).toGeometry(SFSUtilities.getTableEnvelope(connection, TableLocation.parse(input['fenceTableName'] as String), "THE_GEOM"))
-        sql.execute("delete from " + receivers_table_name + " g where ST_Intersects(g.the_geom, ST_GeomFromText('"+fenceGeom+"'));")
+    } else {
+        fenceGeom = (new GeometryFactory()).toGeometry(SFSUtilities.getTableEnvelope(connection, TableLocation.parse(building_table_name), "THE_GEOM"))
     }
 
+    sql.execute("CREATE TABLE " + receivers_table_name + "(PK SERIAL, THE_GEOM GEOMETRY) AS SELECT null, ST_SETSRID(ST_UPDATEZ(THE_GEOM, "+h+"), "+srid+") THE_GEOM FROM ST_MakeGridPoints(ST_GeomFromText('"+fenceGeom+"')," + delta + "," + delta + ");")
+
     if (input['buildingTableName']) {
-        //Delete receivers inside buildings
+        System.out.println("Delete receivers inside buildings")
         sql.execute("Create spatial index on " + building_table_name + "(the_geom);")
         sql.execute("delete from " + receivers_table_name + " g where exists (select 1 from " + building_table_name + " b where ST_Z(g.the_geom) < b.HEIGHT and g.the_geom && b.the_geom and ST_INTERSECTS(g.the_geom, b.the_geom) and ST_distance(b.the_geom, g.the_geom) < 1 limit 1);")
     }
     if (input['sourcesTableName']) {
-        //Delete receivers near sources
+        System.out.println("Delete receivers near sources")
         sql.execute("Create spatial index on " + sources_table_name + "(the_geom);")
         sql.execute("delete from " + receivers_table_name + " g where exists (select 1 from " + sources_table_name + " r where st_expand(g.the_geom, 1) && r.the_geom and st_distance(g.the_geom, r.the_geom) < 1 limit 1);")
     }
