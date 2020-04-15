@@ -101,7 +101,7 @@ class TestReceivers extends JdbcTestCase {
         new Building_Grid().exec(connection,  ["tableBuilding" : "BUILDINGS",
                                                "delta" : 5,
                                                "height" : 6,
-                                               "fence" : gFence])
+                                               "fence" : gFence.toString()]) // in WPS Fence is an instance of geoscript.geom.Polygon not jts
 
         assertTrue(sql.firstRow("SELECT count(*) cpt from receivers")[0] > 0)
 
@@ -142,9 +142,24 @@ class TestReceivers extends JdbcTestCase {
         SHPRead.readShape(connection, TestReceivers.getResource("buildings.shp").getPath())
         SHPRead.readShape(connection, TestReceivers.getResource("roads.shp").getPath())
 
-        new Random_Grid().exec(connection,  ["tableBuilding" : "BUILDINGS",
+        new Random_Grid().exec(connection,  ["buildingTableName" : "BUILDINGS",
                                              "sourcesTableName" : "ROADS",
                                              "nReceivers" : 200])
+
+        assertTrue(200 >= (sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS")[0] as Integer))
+    }
+
+    public void testRandomGridFence() {
+
+        def sql = new Sql(connection)
+
+        SHPRead.readShape(connection, TestReceivers.getResource("buildings.shp").getPath())
+        SHPRead.readShape(connection, TestReceivers.getResource("roads.shp").getPath())
+
+        new Random_Grid().exec(connection,  ["buildingTableName" : "BUILDINGS",
+                                             "sourcesTableName" : "ROADS",
+                                             "nReceivers" : 200,
+                                            "fenceTableName" : "BUILDINGS"])
 
         assertTrue(200 >= (sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS")[0] as Integer))
     }
