@@ -15,13 +15,21 @@ import groovy.sql.Sql
 title = 'Random Grid'
 description = '[H2GIS] Calculates a random grid of receivers based on a single Geometry geom or a table tableName of Geometries with delta as offset in the Cartesian plane in meters. Return a table named RECEIVERS'
 
-inputs = [buildingTableName : [name: 'Buildings table name', title: 'Buildings table name',description: 'A table with polygon geometries, receivers inside will be removed', type: String.class],
+inputs = [
+        tableBuilding   : [name       : 'Buildings table name', title: 'Buildings table name',
+                           description: '<b>Name of the Buildings table.</b>  </br>  ' +
+                                   '<br>  The table shall contain : </br>' +
+                                   '- <b> THE_GEOM </b> : the 2D geometry of the building (POLYGON or MULTIPOLYGON). </br>' +
+                                   '- <b> HEIGHT </b> : the height of the building (FLOAT)',
+                           type       : String.class],
           sourcesTableName: [name                                      : 'Sources table name', title: 'Sources table name', description: 'Keep only receivers at least at 1 meters of' +
         ' provided sources geometries' +
         '<br>  The table shall contain : </br>' +
         '- <b> THE_GEOM </b> : any geometry type. </br>', min: 0, max: 1, type: String.class],
           nReceivers    : [name: 'Number of receivers', title: 'Number of receivers', description: 'Number of receivers to return', type: Integer.class],
-          outputTableName: [name: 'outputTableName', description: 'Do not write the name of a table that contains a space. (default : RECEIVERS)', title: 'Name of output table', min: 0, max: 1, type: String.class]]
+          outputTableName: [name: 'outputTableName', description: 'Do not write the name of a table that contains a space. (default : RECEIVERS)', title: 'Name of output table', min: 0, max: 1, type: String.class],
+          height          : [name                               : 'height', title: 'height', description: 'Height of receivers in meters ' +
+                  '</br> </br> <b> Default value : 4 </b> ', min: 0, max: 1, type: Double.class]]
 
 outputs = [result: [name: 'Result output string', title: 'Result output string', description: 'This type of result does not allow the blocks to be linked together.', type: String.class]]
 
@@ -67,43 +75,48 @@ def exec(Connection connection, input) {
     sources_table_name = sources_table_name.toUpperCase()
 
     String building_table_name = "BUILDINGS"
-    if (input['buildingTableName']) {
-        building_table_name = input['buildingTableName']
+    if (input['tableBuilding']) {
+        building_table_name = input['tableBuilding']
     }
     building_table_name = building_table_name.toUpperCase()
 
-        //Statement sql = connection.createStatement()
-        Sql sql = new Sql(connection)
-        //Delete previous receivers grid...
-        sql.execute(String.format("DROP TABLE IF EXISTS %s", receivers_table_name))
+    Double h = 4.0d
+    if (input['height']) {
+        h = input['height'] as Double
+    }
 
-        def min_max = sql.firstRow("SELECT ST_XMAX(the_geom) as maxX, ST_XMIN(the_geom) as minX, ST_YMAX(the_geom) as maxY, ST_YMIN(the_geom) as minY"
-                +" FROM "
-                +"("
-                +" SELECT ST_Collect(the_geom) as the_geom "
-                +" FROM " + sources_table_name
-                +" UNION ALL "
-                +" SELECT the_geom "
-                +" FROM " + building_table_name
-                +");")
+    //Statement sql = connection.createStatement()
+    Sql sql = new Sql(connection)
+    //Delete previous receivers grid...
+    sql.execute(String.format("DROP TABLE IF EXISTS %s", receivers_table_name))
 
-        sql.execute("create table "+receivers_table_name+" as select ST_MAKEPOINT(RAND()*("+min_max.maxX.toString()+" - "+min_max.minX.toString()+") + "+min_max.minX.toString()+", RAND()*("+min_max.maxY.toString()+" - "+min_max.minY.toString()+") + "+min_max.minY.toString()+") as the_geom from system_range(0,"+nReceivers.toString()+");")
+    def min_max = sql.firstRow("SELECT ST_XMAX(the_geom) as maxX, ST_XMIN(the_geom) as minX, ST_YMAX(the_geom) as maxY, ST_YMIN(the_geom) as minY"
+            +" FROM "
+            +"("
+            +" SELECT ST_Collect(the_geom) as the_geom "
+            +" FROM " + sources_table_name
+            +" UNION ALL "
+            +" SELECT the_geom "
+            +" FROM " + building_table_name
+            +");")
+
+    sql.execute("create table "+receivers_table_name+" as select ST_MAKEPOINT(RAND()*("+min_max.maxX.toString()+" - "+min_max.minX.toString()+") + "+min_max.minX.toString()+", RAND()*("+min_max.maxY.toString()+" - "+min_max.minY.toString()+") + "+min_max.minY.toString()+", "+h+") as the_geom from system_range(0,"+nReceivers.toString()+");")
 
 
-        //New receivers grid created .
+    //New receivers grid created .
 
-        sql.execute("Create spatial index on "+receivers_table_name+"(the_geom);")
-        if (input['buildingTableName']) {
-            //Delete receivers inside buildings .
-            sql.execute("Create spatial index on "+building_table_name+"(the_geom);")
-            sql.execute("delete from "+receivers_table_name+" g where exists (select 1 from "+building_table_name+" b where g.the_geom && b.the_geom and ST_distance(b.the_geom, g.the_geom) < 1 limit 1);")
-        }
-        if (input['sourcesTableName']) {
-            //Delete receivers near sources
-            sql.execute("Create spatial index on "+sources_table_name+"(the_geom);")
-            sql.execute("delete from "+receivers_table_name+" g where exists (select 1 from "+sources_table_name+" r where st_expand(g.the_geom, 1) && r.the_geom and st_distance(g.the_geom, r.the_geom) < 1 limit 1);")
-        }
-        sql.execute("ALTER TABLE "+ receivers_table_name +" ADD pk INT AUTO_INCREMENT PRIMARY KEY;" )
+    sql.execute("Create spatial index on "+receivers_table_name+"(the_geom);")
+    if (input['tableBuilding']) {
+        //Delete receivers inside buildings .
+        sql.execute("Create spatial index on "+building_table_name+"(the_geom);")
+        sql.execute("delete from "+receivers_table_name+" g where exists (select 1 from "+building_table_name+" b where g.the_geom && b.the_geom and ST_distance(b.the_geom, g.the_geom) < 1 AND b.height > "+h+" limit 1);")
+    }
+    if (input['sourcesTableName']) {
+        //Delete receivers near sources
+        sql.execute("Create spatial index on "+sources_table_name+"(the_geom);")
+        sql.execute("delete from "+receivers_table_name+" g where exists (select 1 from "+sources_table_name+" r where st_expand(g.the_geom, 1) && r.the_geom and st_distance(g.the_geom, r.the_geom) < 1 limit 1);")
+    }
+    sql.execute("ALTER TABLE "+ receivers_table_name +" ADD pk INT AUTO_INCREMENT PRIMARY KEY;" )
 
 
     //Process Done !
