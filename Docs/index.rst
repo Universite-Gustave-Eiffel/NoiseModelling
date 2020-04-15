@@ -34,16 +34,12 @@ This plugin is distributed under `GPL 3 license`_ and is developed by the DECIDE
 - *Univ Gustave Eiffel (formerly Ifsttar, formerly LCPC), CNRS, UBS, ECN, Cerema*
 
 
-.. important::
-    - The guide is currently not complete. Additions are underway.
-
 .. note::
+    - The official documentation is available in English only.
     -  Some illustrations may refer to previous versions of NoiseModelling.
     -  If you observe some mistakes or errors, please contact us at contact@noise-planet.org or let an issue `here`_.
     -  You can also contribute to the documentation
-
-.. note::
-	 The official documentation is available in English only.
+	 
 
 .. _visit the offical NoiseModelling website: http://noise-planet.org/noisemodelling.html
 
