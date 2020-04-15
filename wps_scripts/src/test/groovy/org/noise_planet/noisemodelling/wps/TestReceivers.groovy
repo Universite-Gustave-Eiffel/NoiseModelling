@@ -186,7 +186,26 @@ class TestReceivers extends JdbcTestCase {
         assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
     }
 
-    public void testRegularGrid() {
+    public void testRegularGridFence() {
+
+        def sql = new Sql(connection)
+
+        SHPRead.readShape(connection, TestReceivers.getResource("buildings.shp").getPath())
+        SHPRead.readShape(connection, TestReceivers.getResource("roads.shp").getPath())
+
+        GeometryFactory f = new GeometryFactory();
+        def g = f.toGeometry(new Envelope(223556.5, 223765.7,6758256.91, 6758576.3))
+        def gFence = ST_Transform.ST_Transform(connection, ST_SetSRID.setSRID(g, 2154), 4326)
+
+        new Regular_Grid().exec(connection,  ["buildingTableName": "BUILDINGS",
+                                              "sourcesTableName" : "ROADS",
+                                              "delta" : 50,
+                                              "fence" : gFence.toString()])
+
+        assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
+    }
+
+    public void testRegularGridFenceTable() {
 
         def sql = new Sql(connection)
 
@@ -195,7 +214,8 @@ class TestReceivers extends JdbcTestCase {
 
         new Regular_Grid().exec(connection,  ["buildingTableName": "BUILDINGS",
                                               "sourcesTableName" : "ROADS",
-                                              "delta" : 50])
+                                              "delta" : 50,
+                                              "fenceTableName" : "BUILDINGS"])
 
         assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
     }
