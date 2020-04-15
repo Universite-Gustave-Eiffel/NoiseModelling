@@ -1,5 +1,5 @@
-Contributions using NoiseModelling
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Some contributions using NoiseModelling
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Dynamic Noise maps
 ~~~~~~~~~~~~~~~~~~~~~~~~~
