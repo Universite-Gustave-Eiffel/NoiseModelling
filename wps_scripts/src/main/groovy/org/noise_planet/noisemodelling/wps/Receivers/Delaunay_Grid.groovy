@@ -156,6 +156,9 @@ def exec(Connection connection, input) {
         sourceDensification = input['sourceDensification']
     }
 
+
+    int srid = SFSUtilities.getSRID(connection, TableLocation.parse(building_table_name))
+
     Geometry fence = null
     WKTReader wktReader = new WKTReader()
     if (input['fence']) {
@@ -213,6 +216,14 @@ def exec(Connection connection, input) {
     }
 
     sql.execute("Create spatial index on "+receivers_table_name+"(the_geom);")
+
+    sql.execute("CREATE table temp as select ST_SetSRID(the_geom," + srid.toInteger() + ") THE_GEOM FROM " + TableLocation.parse(receivers_table_name).toString())
+    sql.execute("DROP TABLE" + TableLocation.parse(receivers_table_name).toString())
+    sql.execute("CREATE TABLE" + TableLocation.parse(receivers_table_name).toString() + " AS SELECT * FROM TEMP")
+    sql.execute("DROP TABLE TEMP")
+    sql.execute("ALTER TABLE " + TableLocation.parse(receivers_table_name).toString() + " ADD  PK INT AUTO_INCREMENT PRIMARY KEY;")
+
+    sql.execute("DROP TABLE IF EXISTS TRIANGLES")
 
     // Process Done
     resultString = "Process done. " + receivers_table_name + " created. "

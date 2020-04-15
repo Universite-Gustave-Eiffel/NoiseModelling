@@ -439,7 +439,7 @@ def exec(Connection connection, input) {
     // Drop table LDEN_GEOM if exists
     sql.execute("drop table if exists LDAY_GEOM;")
     // Associate Geometry column to the table LDEN
-    sql.execute("create table LDAY_GEOM  as select a.IDRECEIVER, b.*, a.Hz63, a.Hz125, a.Hz250, a.Hz500, a.Hz1000, a.Hz2000, a.Hz4000, a.Hz8000 FROM " + receivers_table_name + " b LEFT JOIN LDAY a ON a.IDRECEIVER = b.PK;")
+    sql.execute("create table LDAY_GEOM  as select b.*, a.Hz63, a.Hz125, a.Hz250, a.Hz500, a.Hz1000, a.Hz2000, a.Hz4000, a.Hz8000 FROM " + receivers_table_name + " b LEFT JOIN LDAY a ON a.IDRECEIVER = b.PK;")
 
     // Drop temporary tables
     sql.execute("drop table if exists LDAY;")
