@@ -159,7 +159,8 @@ def exec(Connection connection, input) {
         envelope = fenceGeom.envelopeInternal
     }
 
-    sql.execute("create table " + receivers_table_name + " as select ST_MAKEPOINT(RAND()*(" + envelope.maxX + " - " + envelope.minX.toString() + ") + " + envelope.minX.toString() + ", RAND()*(" + envelope.maxY.toString() + " - " + envelope.minY.toString() + ") + " + envelope.minY.toString() + ", "+h+") as the_geom from system_range(0," + nReceivers.toString() + ");")
+
+    sql.execute("create table " + receivers_table_name + " as select ST_SetSRID(ST_MAKEPOINT(RAND()*(" + envelope.maxX + " - " + envelope.minX.toString() + ") + " + envelope.minX.toString() + ", RAND()*(" + envelope.maxY.toString() + " - " + envelope.minY.toString() + ") + " + envelope.minY.toString() + ", "+h+"), " + targetSrid.toInteger() + ") as the_geom from system_range(0," + nReceivers.toString() + ");")
     sql.execute("Create spatial index on " + receivers_table_name + "(the_geom);")
 
     System.out.println('Delete receivers where buildings...')
