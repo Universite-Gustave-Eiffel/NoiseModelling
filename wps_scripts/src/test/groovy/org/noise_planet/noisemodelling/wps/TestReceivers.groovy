@@ -101,7 +101,7 @@ class TestReceivers extends JdbcTestCase {
         new Building_Grid().exec(connection,  ["tableBuilding" : "BUILDINGS",
                                                "delta" : 5,
                                                "height" : 6,
-                                               "fence" : gFence])
+                                               "fence" : gFence.toString()]) // in WPS Fence is an instance of geoscript.geom.Polygon not jts
 
         assertTrue(sql.firstRow("SELECT count(*) cpt from receivers")[0] > 0)
 

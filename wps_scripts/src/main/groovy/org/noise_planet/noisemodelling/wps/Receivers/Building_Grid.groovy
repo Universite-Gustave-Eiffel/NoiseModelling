@@ -32,6 +32,7 @@ import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.SFSUtilities
 import org.h2gis.utilities.TableLocation
 import org.locationtech.jts.geom.*
+import org.locationtech.jts.io.WKTReader
 
 import java.sql.Connection
 
@@ -141,17 +142,20 @@ def exec(Connection connection, input) {
         targetSrid = SFSUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
     }
 
-    def fenceGeom = null
+    Geometry fenceGeom = null
     if (input['fence']) {
         if (targetSrid != 0) {
             // Transform fence to the same coordinate system than the buildings & sources
-            fenceGeom = ST_Transform.ST_Transform(connection, ST_SetSRID.setSRID(input['fence'] as Geometry, 4326), targetSrid)
+            WKTReader wktReader = new WKTReader()
+            fence = wktReader.read(input['fence'] as String)
+            fenceGeom = ST_Transform.ST_Transform(connection, ST_SetSRID.setSRID(fence, 4326), targetSrid)
         } else {
             System.err.println("Unable to find buildings or sources SRID, ignore fence parameters")
         }
     } else if (input['fenceTableName']) {
-        fenceGeom = sql.firstRow("SELECT ST_ENVELOPE(ST_COLLECT(the_geom)) the_geom from " + input['fenceTableName'])[0] as Geometry
+        fenceGeom = (new GeometryFactory()).toGeometry(SFSUtilities.getTableEnvelope(connection, TableLocation.parse(input['fenceTableName'] as String), "THE_GEOM"))
     }
+
 
     def buildingPk = JDBCUtilities.getFieldName(connection.getMetaData(), building_table_name, JDBCUtilities.getIntegerPrimaryKey(connection, building_table_name));
     if(buildingPk == "") {

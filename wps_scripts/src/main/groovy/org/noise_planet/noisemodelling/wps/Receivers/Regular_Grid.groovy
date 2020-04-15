@@ -7,7 +7,14 @@ package org.noise_planet.noisemodelling.wps.Receivers
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.functions.spatial.crs.ST_SetSRID
+import org.h2gis.functions.spatial.crs.ST_Transform
+import org.h2gis.utilities.SFSUtilities
+import org.h2gis.utilities.TableLocation
 import org.locationtech.jts.geom.Geometry
+import org.locationtech.jts.geom.GeometryFactory
+import org.locationtech.jts.io.WKTReader
+
 import java.sql.*
 import groovy.sql.Sql
 
@@ -93,12 +100,6 @@ def exec(connection, input) {
     }
     building_table_name = building_table_name.toUpperCase()
 
-    String fence = null
-    if (input['fence']) {
-        fence = (String) input['fence']
-    }
-
-
     Sql sql = new Sql(connection)
     //Delete previous receivers grid.
     sql.execute(String.format("DROP TABLE IF EXISTS %s", receivers_table_name))
@@ -137,15 +138,20 @@ def exec(connection, input) {
     sql.execute("ALTER TABLE " + receivers_table_name + " DROP ID_COL;")
     sql.execute("ALTER TABLE " + receivers_table_name + " DROP ID_ROW;")
 
+    Geometry fenceGeom = null
     if (input['fence']) {
-        //Delete receivers
-        sql.execute("Create spatial index on FENCE_2154(the_geom);")
-        sql.execute("delete from " + receivers_table_name + " g where exists (select 1 from FENCE_2154 r where ST_Disjoint(g.the_geom, r.the_geom) limit 1);")
-    }
-    if (input['fenceTableName']) {
-        //Delete receivers
-        sql.execute("Create spatial index on " + fence_table_name + "(the_geom);")
-        sql.execute("delete from " + receivers_table_name + " g where exists (select 1 from " + fence_table_name + " r where ST_Disjoint(g.the_geom, r.the_geom) limit 1);")
+        if (targetSrid != 0) {
+            // Transform fence to the same coordinate system than the buildings & sources
+            WKTReader wktReader = new WKTReader()
+            Geometry fence = wktReader.read(input['fence'] as String)
+            fenceGeom = ST_Transform.ST_Transform(connection, ST_SetSRID.setSRID(fence, 4326), targetSrid)
+            sql.execute("delete from " + receivers_table_name + " g where ST_Intersects(g.the_geom, ST_GeomFromText('"+fenceGeom+"'));")
+        } else {
+            System.err.println("Unable to find buildings or sources SRID, ignore fence parameters")
+        }
+    } else if (input['fenceTableName']) {
+        fenceGeom = (new GeometryFactory()).toGeometry(SFSUtilities.getTableEnvelope(connection, TableLocation.parse(input['fenceTableName'] as String), "THE_GEOM"))
+        sql.execute("delete from " + receivers_table_name + " g where ST_Intersects(g.the_geom, ST_GeomFromText('"+fenceGeom+"'));")
     }
 
     if (input['buildingTableName']) {
