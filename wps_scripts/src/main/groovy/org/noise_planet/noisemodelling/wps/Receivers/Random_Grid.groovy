@@ -143,7 +143,6 @@ def exec(Connection connection, input) {
     System.out.println('Add Primary Key column...')
     sql.execute("ALTER TABLE " + receivers_table_name + " ADD pk INT AUTO_INCREMENT PRIMARY KEY;")
 
-
     // Process Done
     resultString = "Process done. Table of receivers " + receivers_table_name + " created !"
 

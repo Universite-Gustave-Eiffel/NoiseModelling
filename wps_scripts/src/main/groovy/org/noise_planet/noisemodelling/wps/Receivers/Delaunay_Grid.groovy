@@ -6,6 +6,7 @@ package org.noise_planet.noisemodelling.wps.Receivers
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
+import groovy.time.TimeCategory
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.functions.spatial.crs.ST_SetSRID
 import org.h2gis.functions.spatial.crs.ST_Transform
@@ -34,24 +35,51 @@ inputs = [tableBuilding : [name: 'Buildings table name', title: 'Buildings table
                                        '<br>  The table shall contain : </br>' +
                                        '- <b> THE_GEOM </b> : the 2D geometry of the building (POLYGON or MULTIPOLYGON). </br>',
                                type: String.class],
-          fence  : [name: 'Fence', title: 'Receiver position filter', description: 'Receivers will only be created inside the specified area', min: 0, max: 1, type: Geometry.class],
-          sourcesTableName  : [name: 'Sources table name', title: 'Sources table name',description: 'Road table, receivers will not be created on the specified road width', type: String.class],
-          maxPropDist  : [name: 'Maximum Propagation Distance', title: 'Maximum Propagation Distance', description: 'Set Maximum Propagation Distance, Avoid loading to much geometries when doing Delaunay triangulation (default = <b>500</b> m)', min: 0, max: 1, type: Double.class],
-          roadWidth  : [name: 'Road Width', title: 'Source Width', description: 'Set Road Width. No receivers closer than road width distance. (default = <b>2</b> m)', min: 0, max: 1, type: Double.class],
-          maxArea  : [name: 'Maximum Area', title: 'Maximum Area', description: 'Set Maximum Area. No triangles larger than provided area.(default = <b>2500</b>m2) Smaller area will create more receivers', min: 0, max: 1, type: Double.class],
-          sourceDensification  : [name: 'Source Densification', title: 'Source Densification', description: 'Set additional receivers near sound sources (roads). (default = 8)', min: 0, max: 1, type: Double.class],
-          height    : [name: 'Height', title: 'Height', description: ' Receiver height relative to the ground in meters (default : <b>4</b>m)', min: 0, max: 1, type: Double.class],
-          outputTableName: [name: 'outputTableName', description: 'Do not write the name of a table that contains a space. (default : <b>RECEIVERS</b>)', title: 'Name of output table', min: 0, max: 1, type: String.class]]
+          fence           : [name         : 'Fence geometry', title: 'Extent filter', description: 'Create receivers only in the' +
+                  ' provided polygon', min: 0, max: 1, type: Geometry.class],
+          sourcesTableName  : [name: 'Sources table name',
+                               title: 'Sources table name',
+                               description: 'Road table, receivers will not be created on the specified road width',
+                               type: String.class],
+          maxPropDist  : [name: 'Maximum Propagation Distance',
+                          title: 'Maximum Propagation Distance',
+                          description: 'Set Maximum propagation distance in meters. Avoid loading to much geometries when doing Delaunay triangulation. (FLOAT)' +
+                                  '</br> </br> <b> Default value : 500 </b>',
+                          min: 0, max: 1, type: Double.class],
+          roadWidth  : [name: 'Road Width', title: 'Source Width',
+                        description: 'Set Road Width in meters. No receivers closer than road width distance.(FLOAT) ' +
+                                '</br> </br> <b> Default value : 2 </b>',
+                        min: 0, max: 1, type: Double.class],
+          maxArea  : [name: 'Maximum Area',
+                      title: 'Maximum Area',
+                      description: 'Set Maximum Area in m2. No triangles larger than provided area. Smaller area will create more receivers. (FLOAT)' +
+                  '</br> </br> <b> Default value : 2500 </b> ',
+                      min: 0, max: 1, type: Double.class],
+          sourceDensification  : [name: 'Source densification',
+                                  title: 'Source densification',
+                                  description: 'Set additional receivers near sound sources (roads). This is the maximum distance between the points that compose the polygon near the source in meter. (FLOAT)' +
+                                          '</br> </br> <b> Default value : 8 </b> ',
+                                  min: 0, max: 1, type: Double.class],
+          height    : [name: 'Height',
+                       title: 'Height',
+                       description: ' Receiver height relative to the ground in meters (FLOAT).' +
+                  '</br> </br> <b> Default value : 4 </b>',
+                       min: 0, max: 1, type: Double.class],
+          outputTableName: [name: 'outputTableName',
+                            description: 'Do not write the name of a table that contains a space. ' +
+                  '</br> </br> <b> Default value : RECEIVERS </b>',
+                            title: 'Name of output table',
+                            min: 0, max: 1, type: String.class]]
 
 outputs = [result: [name: 'Result output string', title: 'Result output string', description: 'This type of result does not allow the blocks to be linked together.', type: String.class]]
 
 
 static Connection openGeoserverDataStoreConnection(String dbName) {
-    if(dbName == null || dbName.isEmpty()) {
+    if (dbName == null || dbName.isEmpty()) {
         dbName = new GeoServer().catalog.getStoreNames().get(0)
     }
     Store store = new GeoServer().catalog.getStore(dbName)
-    JDBCDataStore jdbcDataStore = (JDBCDataStore)store.getDataStoreInfo().getDataStore(null)
+    JDBCDataStore jdbcDataStore = (JDBCDataStore) store.getDataStoreInfo().getDataStore(null)
     return jdbcDataStore.getDataSource().getConnection()
 }
 
@@ -73,6 +101,14 @@ def run(input) {
 
 
 def exec(Connection connection, input) {
+
+    // output string, the information given back to the user
+    String resultString = null
+
+    // print to command window
+    System.out.println('Start : Delaunay grid')
+    def start = new Date()
+
 
     String receivers_table_name = "RECEIVERS"
     if (input['outputTableName']) {
@@ -176,9 +212,18 @@ def exec(Connection connection, input) {
         }
     }
 
-
     sql.execute("Create spatial index on "+receivers_table_name+"(the_geom);")
 
-    return "Table " + receivers_table_name + " created"
+    // Process Done
+    resultString = "Process done. " + receivers_table_name + " created. "
+
+    // print to command window
+    System.out.println('Result : ' + resultString)
+    System.out.println('End : Delaunay grid')
+    System.out.println('Duration : ' + TimeCategory.minus(new Date(), start))
+
+    // print to WPS Builder
+    return resultString
+
 }
 
