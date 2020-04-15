@@ -5,7 +5,7 @@ Prerequisites
 ~~~~~~~~~~~~~~~~~
 
 - You need at least NoiseModelling v.3.0.6
-- If you have just finished the first tutorial, please clean your database with the WPS block *Clean_Database* (the name of the database is by default: h2gisdb)
+- If you have just finished the first tutorial, please clean your database with the WPS block *Clean_Database*
 
 
 Step 1:  Importing OSM data to the database
@@ -21,22 +21,26 @@ Import to the database
 * Use the WPS block *Get_Table_from_OSM*
 
 .. note::
-  Inform the Projection identifier field with a metric SRID
-  Enter the path to the file map.osm
+  - Inform the Projection identifier field with a metric SRID
+  - Enter the path to the file map.osm
 
-Three tables must be created: SURFACE_OSM, BUILDINGS_OSM, ROADS
+.. warning::
+   The current import script from open street map can produce geometries incompatible with NoiseModelling. If an area is a problem try to reduce the area. A much more robust version of this script will be available soon. 
+  
+Three tables must be created: GROUND, BUILDINGS, ROADS
 
 Step 2: Viewing tables and data layers
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Using WPSBuilder
 --------------------------------
 * The contents of the database can be viewed using *Display_Database*.
-* A spatial layer can be visualized using *Table_Visualization*.
+* A spatial layer can be visualized using *Table_Visualization_Map*.
+* A data table can be visualized using *Table_Visualization_Data*.
 
 Viewing the database
 --------------------------------
 * **Export a table**
-It is also possible to export the tables via *Export_Table* in shapefile or GeoJSON format.
+It is also possible to export the tables via *Export_Table* in Shapefile, CSV or GeoJSON format.
 
 * **Viewing a table**
 Then import these tables into your preferred Geographic Information System (*e.g.* OrbisGIS, QQIS).
@@ -60,7 +64,8 @@ Step 4: Using Noise Modelling
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Associating an emission noise level with roads
 ------------------------------------------------------------------------------
-The *Road_Emission_From_AADF* block is used to generate - from a ROADS layer containing an AADF (Estimated Annual average daily flows) column such as the one from OSM - A road layer, called LW_ROADS, containing LW emission noise level values in accordance with the emission laws of the CNOSSOS model.
+The *Road_Emission_from_Traffic* block is used to generate a road layer, called LW_ROADS, containing LW emission noise level values in accordance with the emission laws of the CNOSSOS model. The format of the input road layer can be found in the description of the WPS Bloc.
+
 Don't forget to view your resulting layer in WPSBuilder or OrsbisGIS/QGIS to verify that it meets your expectations.
 
 Source to Receiver Propagation
