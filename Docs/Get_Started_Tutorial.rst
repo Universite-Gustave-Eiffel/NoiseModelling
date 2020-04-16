@@ -25,7 +25,8 @@ Step 1: Download the latest release
 
 .. note::
     - Only from version 3.0, NoiseModelling releases include the user interface described in this tutorial. 
-    - The chosen directory can be anywhere but be sure that you have write access. If you are using the computer of your company, the Program Files folder is probably not a good idea. 
+    - The chosen directory can be anywhere but be sure that you have write access. If you are using the computer of your company, the Program Files folder is probably not a good idea.
+    - The archive contains the required softwares in 2 folders: :literal:`geoserver` and :literal:`WPSBuilder`
 
 .. _Github : https://github.com/Ifsttar/NoiseModelling/releases
 
@@ -34,6 +35,7 @@ Step 2: Run GeoServer
 
 NoiseModelling connects to a PostGIS or H2GIS database. The database needs to be hosted by a server. 
 In this tutorial the server type is `GeoServer`_ and the database type is `H2GIS`_. 
+Those tools are included in the archive.
 
 To run the server, please execute "startup" from your own Geoserver folder :
 
@@ -42,6 +44,9 @@ To run the server, please execute "startup" from your own Geoserver folder :
 
 and wait until :literal:`INFO:oejs.Server:main:Started` is written in your command prompt.
 
+
+.. warning::
+    The server launch can take some time. Be patient.
 
 Your local server is now started. 
 
@@ -54,6 +59,9 @@ Your local server is now started.
     - **login (default):** admin
     
     - **password (default):** admin
+
+.. warning::
+    On older versions, the url was: http://localhost:8080/geoserver/web/ 
 
 .. _GeoServer : http://geoserver.org/
 .. _H2GIS : http://www.h2gis.org/
@@ -72,7 +80,7 @@ Step 4: Upload files to database
 
 To compute your first noise map, you will need 5 layers: Buildings, Roads, Ground type, Topography (DEM) and Receivers.
 
-In the Geoserver\\data_dir\\data\\wpsdata folder, you will find 5 files (4 shapefile and 1 geojson) corresponding to these layers.
+In the Geoserver\\data_dir\\data\\wpsdata folder, you will find 5 files (4 shapefiles and 1 geojson) corresponding to these layers.
 
 You can import these layers in your database using the *Import File* or *Import Folder* blocks.
 
@@ -116,7 +124,7 @@ To run Calculation you have to drag the block *Lday_from_Traffic* into WPS Build
 Then, select the orange blocks and indicate the name of the corresponding table your database, for example :
 
 - Building table name : :literal:`BUILDINGS`
-- Sources table name : :literal:`ROADS`
+- Sources table name : :literal:`ROADS2`
 - Receivers table name : :literal:`RECEIVERS`
 
 Then, you can run the process.
