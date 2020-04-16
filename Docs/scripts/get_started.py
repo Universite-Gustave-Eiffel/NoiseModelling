@@ -31,7 +31,7 @@ export_table = Template('<p0:Execute xmlns:p0="http://www.opengis.net/wps/1.0.0"
                         'xmlns:p1="http://www.opengis.net/ows/1.1">tableToExport</p1:Identifier><p0:Data><p0'
                         ':LiteralData>$table_to_export</p0:LiteralData></p0:Data></p0:Input><p0:Input><p1:Identifier '
                         'xmlns:p1="http://www.opengis.net/ows/1.1">exportPath</p1:Identifier><p0:Data><p0:LiteralData'
-                        '>lday_geom.shp</p0:LiteralData></p0:Data></p0:Input></p0:DataInputs><p0:ResponseForm><p0'
+                        '>$export_path</p0:LiteralData></p0:Data></p0:Input></p0:DataInputs><p0:ResponseForm><p0'
                         ':RawDataOutput><p1:Identifier '
                         'xmlns:p1="http://www.opengis.net/ows/1.1">result</p1:Identifier></p0:RawDataOutput></p0'
                         ':ResponseForm></p0:Execute>')
@@ -58,4 +58,4 @@ call_geoserver(import_file.substitute({"path": "data_dir/data/wpsdata/dem.geojso
 call_geoserver(get_lday.substitute({"table_receivers": "RECEIVERS", "table_buildings": "BUILDINGS"
                                        , "table_roads": "ROADS", "table_dem": "DEM"}))
 
-call_geoserver(export_table.substitute({"table_to_export": "LDAY_GEOM"}))
+call_geoserver(export_table.substitute({"table_to_export": "LDAY_GEOM", "export_path" : "lday_geom.shp"}))
