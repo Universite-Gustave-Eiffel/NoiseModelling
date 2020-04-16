@@ -263,8 +263,6 @@ def exec(Connection connection, input) {
     List<ComputeRaysOut.verticeSL> allLevels = new ArrayList<>()
     // Set of already processed receivers
     Set<Long> receivers = new HashSet<>()
-    // Spectrum of the sound source
-    Map<Integer, double[]> SourceSpectrum = new HashMap<>()
 
 
     // --------------------------------------------
@@ -414,14 +412,14 @@ def exec(Connection connection, input) {
 
                     if (soundLevels.containsKey(idReceiver)) {
                         // add Leq value to the pre-existing sound level on this receiver
-                        double[] sumArray = tools.invokeMethod("sumArraySR", [soundLevel, SourceSpectrum.get(idSource)])
+                        double[] sumArray = tools.invokeMethod("sumArraySR", [soundLevel, sourceLev.get(idSource)])
                         soundLevel = ComputeRays.sumDbArray(sumArray, soundLevels.get(idReceiver))
                         soundLevels.replace(idReceiver, soundLevel)
                     } else {
                         // apply A ponderation
                         //soundLevel = DBToDBA(soundLevel)
                         // add a new Leq value on this receiver
-                        double[] sumArray =  tools.invokeMethod("sumArraySR", [soundLevel, SourceSpectrum.get(idSource)])
+                        double[] sumArray =  tools.invokeMethod("sumArraySR", [soundLevel, sourceLev.get(idSource)])
                         soundLevels.put(idReceiver, sumArray)
                     }
                 }
