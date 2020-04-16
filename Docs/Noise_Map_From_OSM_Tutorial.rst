@@ -18,7 +18,7 @@ Exporting data from openstreetmap.org
 
 Import to the database
 ------------------------------------------------
-* Use the WPS block *Get_Table_from_OSM*
+* Use the WPS block *OsmToInputData*
 
 .. note::
   - Inform the Projection identifier field with a metric SRID
