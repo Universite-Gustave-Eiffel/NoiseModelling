@@ -29,6 +29,7 @@ import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Lden_from_Road_Emission
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Road_Emission_from_Traffic
 import org.noise_planet.noisemodelling.wps.Others_Tools.OsmToInputData
+import org.noise_planet.noisemodelling.wps.Receivers.Building_Grid
 import org.noise_planet.noisemodelling.wps.Receivers.Regular_Grid
 
 class TestDynamicTools extends JdbcTestCase  {
@@ -36,7 +37,6 @@ class TestDynamicTools extends JdbcTestCase  {
     @Test
     void testRoadProba() {
 
-        SHPRead.readShape(connection, TestDatabaseManager.getResource("receivers.shp").getPath())
 
         // Import OSM file
         String res = new OsmToInputData().exec(connection,
@@ -45,6 +45,12 @@ class TestDynamicTools extends JdbcTestCase  {
                  "convert2Building" : true,
                  "convert2Ground" : true,
                  "convert2Roads" : true])
+
+        new Building_Grid().exec(connection,  ["tableBuilding"   : "BUILDINGS",
+                                               "delta"           : 10,
+                                               "height"          : 4,
+                                               "sourcesTableName": "ROADS",
+                                               "fenceTableName"  : "BUILDINGS"])
 
         // Check database
         res = new Display_Database().exec(connection, [])
@@ -55,6 +61,7 @@ class TestDynamicTools extends JdbcTestCase  {
 
         res = new Traffic_Probabilistic_Modelling().exec(connection, ["tableRoads"  : "ROADS",
                                                                       "tableBuilding" : "BUILDINGS",
+                                                                      "nIterations" : 10,
                                                                       "tableReceivers": "RECEIVERS"])
 
         // Check database
