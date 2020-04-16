@@ -92,6 +92,9 @@ Repeat this operation for other files:
 - ``data_dir/data/wpsdata/roads2.shp``
 - ``data_dir/data/wpsdata/dem.geojson``
 
+.. note::   
+    You can find all files in your own Geoserver folder, at direction geoserver/data_dir/data/wpsdata/
+
 .. note::
     - if you have the message :literal:`Error opening database`, please refer to the note in Step 1.
     - The process is supposed to be quick (<5 sec.). In case of out of time, try to restart the Geoserver (see Step 2).
@@ -134,12 +137,14 @@ The table LDAY_GEOM will be created in your database.
 Step 6: Export (& see) the results
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can now export the output table in your favorite export format using *Export Table* block.
+You can now export the output table in your favorite export format using *Export Table* block giving the path of the file you want to create (including its extension, for example : c:/home/receivers.geojson).
 
 .. figure:: images/tutorial/Tutorial1_Image3.PNG
    :align: center
 
 For example, you can choose to export the table in shp format. This format can be read with many GIS tools such as the open source softwares `QGIS`_ and `SAGA`_.
+
+To obtain the following image, use the syling vector options in your GIS and assign a color gradient to a frequency band column of your exported LDAY_GEOM table.
 
 .. figure:: images/tutorial/Tutorial1_Image4.PNG
    :align: center
