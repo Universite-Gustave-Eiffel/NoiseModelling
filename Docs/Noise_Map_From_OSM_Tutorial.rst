@@ -56,12 +56,14 @@ OrbisGIS/QGIS allow you to add an OSM background map.
 * **Change colors**
 OrbisGIS/QGIS allow you to change layer colors (e.g. Surface_osm in green, Buildings_OSM in gray, ROADS in red).
 
-Step 3: Generating a Receiver Group
+Step 3: Generating a Receiver Grid
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Generating the Receiver Grid
----------------------------------------
-Use *Regular_Grid with* a spacing of 50 m between the receivers.
+
+Use *Regular_Grid* with a distance between the receivers of 50 m.
+Use the previously generated BUILDINGS table as the buildings table.
+Other parameters are optional.
+
 Don't forget to view your resulting layer in WPSBuilder or OrsbisGIS/QGIS to check that it meets your expectations.
 
 Step 4: Using Noise Modelling
