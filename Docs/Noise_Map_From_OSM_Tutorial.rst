@@ -7,6 +7,8 @@ Prerequisites
 - You need at least NoiseModelling v.3.0.6
 - If you have just finished the first tutorial, please clean your database with the WPS block *Clean_Database*
 
+.. warning::
+   Don't forget to check the *Are you sure* check box before running the process. 
 
 Step 1:  Importing OSM data to the database
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -14,15 +16,17 @@ Exporting data from openstreetmap.org
 ------------------------------------------------
 * Go to https://www.openstreetmap.org
 * Zoom in on the area you want to export
-* Export the zone in .osm or .osm.gz format
+* Export the zone in .osm or .osm.gz format with *Export* button
 
 Import to the database
 ------------------------------------------------
 * Use the WPS block *OsmToInputData*
 
 .. note::
-  - Inform the Projection identifier field with a metric SRID
+  - Noise Modelling use metric projections, please identifies a local projection for your area of interest and its SRID
+  - Inform the target projection identifier field with the corresponding SRID
   - Enter the path to the file map.osm
+  - Check all check box 
 
 .. warning::
    The current import script from open street map can produce geometries incompatible with NoiseModelling. If an area is a problem try to reduce the area. A much more robust version of this script will be available soon. 
@@ -43,7 +47,7 @@ Viewing the database
 It is also possible to export the tables via *Export_Table* in Shapefile, CSV or GeoJSON format.
 
 * **Viewing a table**
-Then import these tables into your preferred Geographic Information System (*e.g.* OrbisGIS, QQIS).
+Then import these tables into your preferred Geographic Information System (*e.g.* OrbisGIS, QGIS).
 You can then graphically visualize your data layer, but also the data it contains. Take the time to familiarize yourself with your chosen GIS.
 
 * **Adding a background map**
