@@ -42,7 +42,7 @@ import java.sql.Connection
 
 
 title = 'Export table'
-description = 'Export table from the databse to a local file. </br> Valid file extensions : (csv, dbf, geojson, gpx, bz2, gz, osm, shp, tsv).'
+description = 'Export table from the database to a local file. </br> Valid file extensions : (csv, dbf, geojson, gpx, bz2, gz, osm, shp, tsv).'
 
 inputs = [
         exportPath   : [name: 'Export path', title: 'Path of the file you want to export', description: 'Path of the file, including its extension. </br> For example : c:/home/receivers.geojson', type: String.class],
