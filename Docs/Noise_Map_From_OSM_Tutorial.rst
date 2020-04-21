@@ -51,7 +51,7 @@ Then import these tables into your preferred Geographic Information System (*e.g
 You can then graphically visualize your data layer, but also the data it contains. Take the time to familiarize yourself with your chosen GIS.
 
 * **Adding a background map**
-OrbisGIS/QGIS allow you to add an OSM background map.
+OrbisGIS/QGIS allow you to add an OSM background map : https://wiki.openstreetmap.org/wiki/QGIS
 
 * **Change colors**
 OrbisGIS/QGIS allow you to change layer colors (e.g. Surface_osm in green, Buildings_OSM in gray, ROADS in red).
