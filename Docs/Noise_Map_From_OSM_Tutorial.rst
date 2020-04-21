@@ -59,8 +59,7 @@ OrbisGIS/QGIS allow you to change layer colors (e.g. Surface_osm in green, Build
 Step 3: Generating a Receiver Grid
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
-Use *Regular_Grid* with a distance between the receivers of 50 m.
+Use *Regular_Grid* with a distance between the receivers of 50 m (offset).
 Use the previously generated BUILDINGS table as the buildings table.
 Other parameters are optional.
 
@@ -76,10 +75,15 @@ Don't forget to view your resulting layer in WPSBuilder or OrsbisGIS/QGIS to ver
 
 Source to Receiver Propagation
 ------------------------------------------------------------------------------
-The *Lden_from_Emission* block allows to generate a layer of receiver points with associated sound levels corresponding to the sound level emitted by the sources propagated to the receivers according to the CNOSSOS propagation laws.
+The *Lden_from_Road_Emission* block allows to generate a layer of receiver points with associated sound levels corresponding to the sound level emitted by the sources (created table LW_ROADS) propagated to the receivers according to the CNOSSOS propagation laws.
 
 Step 5: Viewing the result
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Add Global Leq Value
+----------------------
+You can use *Add_Laeq_Leq_columns* to add global Leq and LAeq columns to your output table LDEN_GEOM.
+
 Exporting
 --------------
 You can then export the output table LDEN_GEOM via *Export_Table* in shapefile or GeoJSON format.
