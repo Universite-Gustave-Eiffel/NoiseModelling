@@ -33,7 +33,6 @@ import org.slf4j.LoggerFactory;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  *
@@ -41,6 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProcessDataFactory, PointNoiseMap.IComputeRaysOutFactory {
     LDENConfig ldenConfig;
     TableWriter tableWriter;
+    Thread tableWriterThread;
 
 
     public LDENPointNoiseMapFactory(Connection connection, LDENConfig ldenConfig) {
@@ -51,21 +51,38 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
      * Start creating and filling database tables
      */
     void start() {
-
+        tableWriterThread = new Thread(tableWriter);
+        tableWriterThread.start();
     }
 
     /**
      * Write the last results and stop the sql writing thread
      */
     void stop() {
-
+        ldenConfig.exitWhenDone = true;
+        while (tableWriterThread.isAlive()) {
+            try {
+                Thread.sleep(150);
+            } catch (InterruptedException e) {
+                // ignore
+                break;
+            }
+        }
     }
 
     /**
      * Abort writing results and kill the writing thread
      */
     void cancel() {
-
+        ldenConfig.aborted = true;
+        while (tableWriterThread.isAlive()) {
+            try {
+                Thread.sleep(150);
+            } catch (InterruptedException e) {
+                // ignore
+                break;
+            }
+        }
     }
 
     @Override
@@ -88,14 +105,44 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
             this.ldenConfig = ldenConfig;
         }
 
+        private String forgeCreateTable(String tableName) {
+            StringBuilder sb = new StringBuilder("create table ");
+            sb.append(tableName);
+            sb.append(" (IDRECEIVER integer");
+            if(!ldenConfig.mergeSources) {
+                sb.append(", IDSOURCE integer");
+            }
+            for (int idfreq = 0; idfreq < PropagationProcessPathData.freq_lvl.size(); idfreq++) {
+                sb.append(", HZ");
+                sb.append(PropagationProcessPathData.freq_lvl.get(idfreq));
+                sb.append(" double precision");
+            }
+            sb.append(")");
+            return sb.toString();
+        }
+
         @Override
         public void run() {
             // Drop and create tables
             try(Statement sql = connection.createStatement()) {
+                if(ldenConfig.computeLDay) {
+                    sql.execute(String.format("DROP TABLE %s IF EXISTS", ldenConfig.lDayTable));
+                    sql.execute(forgeCreateTable(ldenConfig.lDayTable));
+                }
+                if(ldenConfig.computeLEvening) {
+                    sql.execute(String.format("DROP TABLE %s IF EXISTS", ldenConfig.lEveningTable));
+                    sql.execute(forgeCreateTable(ldenConfig.lEveningTable));
+                }
+                if(ldenConfig.computeLNight) {
+                    sql.execute(String.format("DROP TABLE %s IF EXISTS", ldenConfig.lNightTable));
+                    sql.execute(forgeCreateTable(ldenConfig.lNightTable));
+                }
+                if(ldenConfig.computeLDEN) {
+                    sql.execute(String.format("DROP TABLE %s IF EXISTS", ldenConfig.lDenTable));
+                    sql.execute(forgeCreateTable(ldenConfig.lDenTable));
+                }
                 while (!ldenConfig.aborted) {
-                    if(ldenConfig.computeLDay) {
-                        sql.execute(String.format("DROP TABLE %s IF EXISTS", ldenConfig.lDayTable));
-                    }
+                    //TODO pop values
                 }
             } catch (SQLException e) {
                 LOGGER.error("SQL Writer exception", e);

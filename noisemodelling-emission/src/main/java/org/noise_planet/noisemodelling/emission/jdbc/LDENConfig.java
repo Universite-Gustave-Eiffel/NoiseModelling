@@ -21,7 +21,9 @@
  */
 package org.noise_planet.noisemodelling.emission.jdbc;
 
-
+/**
+ * Configuration of NoiseModelling computation based on database data using standard Lden outputs
+ */
 public class LDENConfig {
     enum INPUT_MODE { INPUT_MODE_TRAFFIC_FLOW, INPUT_MODE_LW_DEN, INPUT_MODE_PROBA}
     final INPUT_MODE input_mode;

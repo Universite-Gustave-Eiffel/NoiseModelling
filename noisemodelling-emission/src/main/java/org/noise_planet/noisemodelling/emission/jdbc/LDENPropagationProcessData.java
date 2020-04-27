@@ -64,14 +64,19 @@ public class LDENPropagationProcessData extends PropagationProcessData {
     public void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException {
         super.addSource(pk, geom, rs);
         SourcesPk.put(pk, idSource++);
-
-
         double[][] res = computeLw(rs);
-        wjSourcesD.add(res[0]);
-        wjSourcesE.add(res[1]);
-        wjSourcesN.add(res[2]);
-        wjSourcesDEN.add(res[3]);
-
+        if(ldenConfig.computeLDay) {
+            wjSourcesD.add(res[0]);
+        }
+        if(ldenConfig.computeLEvening) {
+            wjSourcesE.add(res[1]);
+        }
+        if(ldenConfig.computeLNight) {
+            wjSourcesN.add(res[2]);
+        }
+        if(ldenConfig.computeLDEN) {
+            wjSourcesDEN.add(res[3]);
+        }
     }
 
     double[][] computeLw(SpatialResultSet rs) throws SQLException {
