@@ -89,6 +89,13 @@ public class LDENPropagationProcessData extends PropagationProcessData {
      * @return Emission spectrum
      */
     public double[] getEmissionFromResultSet(ResultSet rs, String period, double slope) throws SQLException {
+        if (sourceFields == null) {
+            sourceFields = new HashMap<>();
+            int fieldId = 1;
+            for (String fieldName : JDBCUtilities.getFieldNames(rs.getMetaData())) {
+                sourceFields.put(fieldName.toUpperCase(), fieldId++);
+            }
+        }
         double[] lvl = new double[PropagationProcessPathData.freq_lvl.size()];
         // Set default values
         double tv = 0; // old format "total vehicles"
@@ -123,8 +130,8 @@ public class LDENPropagationProcessData extends PropagationProcessData {
         if(sourceFields.containsKey("WAV_SPD_"+period)) {
             wav_speed = rs.getDouble(sourceFields.get("WAV_SPD_"+period));
         }
-        if(sourceFields.containsKey("HBV_SPD_"+period)) {
-            wbv_speed = rs.getDouble(sourceFields.get("HBV_SPD_"+period));
+        if(sourceFields.containsKey("WBV_SPD_"+period)) {
+            wbv_speed = rs.getDouble(sourceFields.get("WBV_SPD_"+period));
         }
         if(sourceFields.containsKey("LV_"+period)) {
             lvPerHour = rs.getDouble(sourceFields.get("LV_"+period));
@@ -181,6 +188,7 @@ public class LDENPropagationProcessData extends PropagationProcessData {
                     wbv_speed,lvPerHour, mvPerHour, hgvPerHour, wavPerHour, wbvPerHour, freq, temperature,
                     roadSurface, tsStud, pmStud, junctionDistance, junctionType);
             rsParametersCnossos.setSlopePercentage(slope);
+            rsParametersCnossos.setCoeffVer(1);
             lvl[idFreq++] = EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos);
         }
         return lvl;
@@ -216,21 +224,18 @@ public class LDENPropagationProcessData extends PropagationProcessData {
                         PropagationProcessPathData.freq_lvl.get(idfreq)));
             }
         } else if(ldenConfig.input_mode == LDENConfig.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW) {
-            if(sourceFields == null) {
-                sourceFields = new HashMap<>();
-                int fieldId = 1;
-                for(String fieldName : JDBCUtilities.getFieldNames(rs.getMetaData())) {
-                    sourceFields.put(fieldName.toUpperCase(), fieldId++);
-                }
-            }
             // Extract road slope
             double slope = 0;
             try {
                 Geometry g = rs.getGeometry();
-                if(g != null && !g.isEmpty()) {
+                if(freeFieldFinder!=null && g != null && !g.isEmpty()) {
                     Coordinate[] c = g.getCoordinates();
-                    if(c.length >= 2 && !Double.isNaN(c[0].z) && !Double.isNaN(c[c.length - 1].z)) {
-                        slope = RSParameters.computeSlope(c[0].z, c[c.length - 1].z, g.getLength());
+                    if(c.length >= 2) {
+                        double z0 = freeFieldFinder.getHeightAtPosition(c[0]);
+                        double z1 = freeFieldFinder.getHeightAtPosition(c[1]);
+                        if(!Double.isNaN(z0) && !Double.isNaN(z1)) {
+                            slope = RSParameters.computeSlope(z0, z1, g.getLength());
+                        }
                     }
                 }
             } catch (SQLException ex) {
