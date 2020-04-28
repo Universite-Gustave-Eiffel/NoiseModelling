@@ -22,6 +22,7 @@
 
 package org.noise_planet.noisemodelling.emission.jdbc;
 
+import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SpatialResultSet;
 import org.locationtech.jts.geom.Geometry;
 import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos;
@@ -31,17 +32,16 @@ import org.noise_planet.noisemodelling.propagation.FastObstructionTest;
 import org.noise_planet.noisemodelling.propagation.PropagationProcessData;
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Read source database and compute the sound emission spectrum of roads sources
  */
 public class LDENPropagationProcessData extends PropagationProcessData {
     String lwFrequencyPrepend = "LW";
+    public Map<String, Integer> sourceFields = null;
 
     // Lden values
     public List<double[]> wjSourcesD = new ArrayList<>();
@@ -79,7 +79,109 @@ public class LDENPropagationProcessData extends PropagationProcessData {
         }
     }
 
-    double[][] computeLw(SpatialResultSet rs) throws SQLException {
+    /**
+     * @param rs result set of source
+     * @param period D or E or N
+     * @return Emission spectrum
+     */
+    public double[] getEmissionFromResultSet(ResultSet rs, String period) throws SQLException {
+        double[] lvl = new double[PropagationProcessPathData.freq_lvl.size()];
+        // Set default values
+        double tv = 0; // old format "total vehicles"
+        double hv = 0; // old format "heavy vehicles"
+        double lv_speed = 0;
+        double mv_speed = 0;
+        double hgv_speed = 0;
+        double wav_speed = 0;
+        double wbv_speed = 0;
+        double lvPerHour = 0;
+        double mvPerHour = 0;
+        double hgvPerHour = 0;
+        double wavPerHour = 0;
+        double wbvPerHour = 0;
+        double temperature = 20.0;
+        String roadSurface = "NL08";
+        double tsStud = 0;
+        double pmStud = 0;
+        double junctionDistance = 100; // no acceleration of deceleration changes with dist >= 100
+        int junctionType = 2;
+
+        // Read fields
+        if(sourceFields.containsKey("LV_SPD_"+period)) {
+            lv_speed = rs.getDouble(sourceFields.get("LV_SPD_"+period));
+        }
+        if(sourceFields.containsKey("MV_SPD_"+period)) {
+            mv_speed = rs.getDouble(sourceFields.get("MV_SPD_"+period));
+        }
+        if(sourceFields.containsKey("HGV_SPD_"+period)) {
+            hgv_speed = rs.getDouble(sourceFields.get("HGV_SPD_"+period));
+        }
+        if(sourceFields.containsKey("WAV_SPD_"+period)) {
+            wav_speed = rs.getDouble(sourceFields.get("WAV_SPD_"+period));
+        }
+        if(sourceFields.containsKey("HBV_SPD_"+period)) {
+            wbv_speed = rs.getDouble(sourceFields.get("HBV_SPD_"+period));
+        }
+        if(sourceFields.containsKey("LV_"+period)) {
+            lvPerHour = rs.getDouble(sourceFields.get("LV_"+period));
+        }
+        if(sourceFields.containsKey("MV_"+period)) {
+            mvPerHour = rs.getDouble(sourceFields.get("LV_"+period));
+        }
+        if(sourceFields.containsKey("HGV_"+period)) {
+            hgvPerHour = rs.getDouble(sourceFields.get("HGV_"+period));
+        }
+        if(sourceFields.containsKey("WAV_"+period)) {
+            wavPerHour = rs.getDouble(sourceFields.get("WAV_"+period));
+        }
+        if(sourceFields.containsKey("WBV_"+period)) {
+            wbvPerHour = rs.getDouble(sourceFields.get("WBV_"+period));
+        }
+        if(sourceFields.containsKey("PVMT")) {
+            roadSurface= rs.getString(sourceFields.get("PVMT"));
+        }
+        if(sourceFields.containsKey("TEMP_"+period)) {
+            temperature = rs.getDouble(sourceFields.get("TEMP_"+period));
+        }
+        if(sourceFields.containsKey("TS_STUD")) {
+            tsStud = rs.getDouble(sourceFields.get("TS_STUD"));
+        }
+        if(sourceFields.containsKey("PM_STUD")) {
+            pmStud = rs.getDouble(sourceFields.get("PM_STUD"));
+        }
+        if(sourceFields.containsKey("JUNC_DIST")) {
+            junctionDistance = rs.getDouble(sourceFields.get("JUNC_DIST"));
+        }
+        if(sourceFields.containsKey("JUNC_TYPE")) {
+            junctionType = rs.getInt(sourceFields.get("JUNC_TYPE"));
+        }
+
+        // old fields
+        if(sourceFields.containsKey("TV_"+period)) {
+            tv = rs.getDouble(sourceFields.get("TV_"+period));
+        }
+        if(sourceFields.containsKey("HV_"+period)) {
+            hv = rs.getDouble(sourceFields.get("HV_"+period));
+        }
+
+        if(tv > 0) {
+            lvPerHour = tv - (hv + mvPerHour + hgvPerHour + wavPerHour + wbvPerHour);
+        }
+        if(hv > 0) {
+            hgvPerHour = hv;
+        }
+        // Compute emission
+        int idFreq = 0;
+        for (int freq : PropagationProcessPathData.freq_lvl) {
+            RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lv_speed, mv_speed, hgv_speed, wav_speed,
+                    wbv_speed,lvPerHour, mvPerHour, hgvPerHour, wavPerHour, wbvPerHour, freq, temperature,
+                    roadSurface, tsStud, pmStud, junctionDistance, junctionType);
+            lvl[idFreq++] = EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos);
+        }
+        return lvl;
+    }
+
+    public double[][] computeLw(SpatialResultSet rs) throws SQLException {
 
         // Compute day average level
         double[] ld = new double[PropagationProcessPathData.freq_lvl.size()];
@@ -109,59 +211,21 @@ public class LDENPropagationProcessData extends PropagationProcessData {
                         PropagationProcessPathData.freq_lvl.get(idfreq)));
             }
         } else if(ldenConfig.input_mode == LDENConfig.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW) {
-            // Get input traffic data
-            double tvD = rs.getDouble("TV_D");
-            double tvE = rs.getDouble("TV_E");
-            double tvN = rs.getDouble("TV_N");
-
-            double hvD = rs.getDouble("HV_D");
-            double hvE = rs.getDouble("HV_E");
-            double hvN = rs.getDouble("HV_N");
-
-            double lvSpeedD = rs.getDouble("LV_SPD_D");
-            double lvSpeedE = rs.getDouble("LV_SPD_E");
-            double lvSpeedN = rs.getDouble("LV_SPD_N");
-
-            double hvSpeedD = rs.getDouble("HV_SPD_D");
-            double hvSpeedE = rs.getDouble("HV_SPD_E");
-            double hvSpeedN = rs.getDouble("HV_SPD_N");
-
-            String pavement = rs.getString("PVMT");
-
-            // this options can be activated if needed
-            double Temperature = 20.0d;
-            double Ts_stud = 0;
-            double Pm_stud = 0;
-            double Junc_dist = 300;
-            int Junc_type = 0;
-
-            // Day
-            int idFreq = 0;
-            for (int freq : PropagationProcessPathData.freq_lvl) {
-                RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedD, hvSpeedD, hvSpeedD, lvSpeedD,
-                        lvSpeedD, Math.max(0, tvD - hvD), 0, hvD, 0, 0, freq, Temperature,
-                        pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type);
-                ld[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos);
+            if(sourceFields == null) {
+                sourceFields = new HashMap<>();
+                int fieldId = 1;
+                for(String fieldName : JDBCUtilities.getFieldNames(rs.getMetaData())) {
+                    sourceFields.put(fieldName.toUpperCase(), fieldId++);
+                }
             }
+            // Day
+            ld = getEmissionFromResultSet(rs, "D");
 
             // Evening
-            idFreq = 0;
-            for (int freq : PropagationProcessPathData.freq_lvl) {
-                RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedE, hvSpeedE, hvSpeedE, lvSpeedE,
-                        lvSpeedE, Math.max(0, tvE - hvE), 0, hvE, 0, 0, freq, Temperature,
-                        pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type);
-                le[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos);
-            }
+            le = getEmissionFromResultSet(rs, "E");
 
             // Night
-            idFreq = 0;
-            for (int freq : PropagationProcessPathData.freq_lvl) {
-                RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedN, hvSpeedN, hvSpeedN, lvSpeedN,
-                        lvSpeedN, Math.max(0, tvN - hvN), 0, hvN, 0, 0, freq, Temperature,
-                        pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type);
-                ln[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos);
-            }
-
+            ln = getEmissionFromResultSet(rs, "N");
 
         }
 

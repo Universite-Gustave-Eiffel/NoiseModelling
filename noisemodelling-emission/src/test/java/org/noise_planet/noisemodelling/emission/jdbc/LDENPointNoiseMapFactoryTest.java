@@ -8,9 +8,6 @@ import org.h2gis.utilities.SFSUtilities;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.noise_planet.noisemodelling.propagation.ComputeRays;
-import org.noise_planet.noisemodelling.propagation.ComputeRaysOut;
-import org.noise_planet.noisemodelling.propagation.IComputeRaysOut;
 import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap;
 
 import java.io.IOException;
@@ -44,17 +41,19 @@ public class LDENPointNoiseMapFactoryTest {
         SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("buildings.shp").getFile());
         SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("receivers.shp").getFile());
 
-        LDENPointNoiseMapFactory factory = new LDENPointNoiseMapFactory(LDENPointNoiseMapFactory.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW);
+        LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW);
 
-        assertFalse(JDBCUtilities.tableExists(connection, factory.lDayTable));
-        assertFalse(JDBCUtilities.tableExists(connection, factory.lEveningTable));
-        assertFalse(JDBCUtilities.tableExists(connection, factory.lNightTable));
-        assertFalse(JDBCUtilities.tableExists(connection, factory.lDenTable));
+        LDENPointNoiseMapFactory factory = new LDENPointNoiseMapFactory(connection, ldenConfig);
 
-        factory.setComputeLDay(true);
-        factory.setComputeLEvening(true);
-        factory.setComputeLNight(true);
-        factory.setMergeSources(true);
+        assertFalse(JDBCUtilities.tableExists(connection, ldenConfig.lDayTable));
+        assertFalse(JDBCUtilities.tableExists(connection, ldenConfig.lEveningTable));
+        assertFalse(JDBCUtilities.tableExists(connection, ldenConfig.lNightTable));
+        assertFalse(JDBCUtilities.tableExists(connection, ldenConfig.lDenTable));
+
+        ldenConfig.setComputeLDay(true);
+        ldenConfig.setComputeLEvening(true);
+        ldenConfig.setComputeLNight(true);
+        ldenConfig.setMergeSources(true);
 
         PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS", "ROADS_TRAFF",
                 "RECEIVERS");
@@ -78,9 +77,9 @@ public class LDENPointNoiseMapFactoryTest {
             }
         }
 
-        assertTrue(JDBCUtilities.tableExists(connection, factory.lDayTable));
-        assertTrue(JDBCUtilities.tableExists(connection, factory.lEveningTable));
-        assertTrue(JDBCUtilities.tableExists(connection, factory.lNightTable));
-        assertTrue(JDBCUtilities.tableExists(connection, factory.lDenTable));
+        assertTrue(JDBCUtilities.tableExists(connection, ldenConfig.lDayTable));
+        assertTrue(JDBCUtilities.tableExists(connection, ldenConfig.lEveningTable));
+        assertTrue(JDBCUtilities.tableExists(connection, ldenConfig.lNightTable));
+        assertTrue(JDBCUtilities.tableExists(connection, ldenConfig.lDenTable));
     }
 }

@@ -224,9 +224,10 @@ public class EvaluateRoadSourceCnossos {
 
 
         // Rolling noise acceleration correction
-        lvRoadLvl = lvRoadLvl + getCr("1", Junc_type,coeffVer) * Math.max(1-Math.abs(Junc_dist)/100,0) ;
-        medRoadLvl = medRoadLvl + getCr("2", Junc_type,coeffVer)  * Math.max(1-Math.abs(Junc_dist)/100,0);
-        hgvRoadLvl = hgvRoadLvl + getCr("3", Junc_type,coeffVer)  * Math.max(1-Math.abs(Junc_dist)/100,0);
+        double coefficientJunctionDistance = Math.max(1 - Math.abs(Junc_dist) / 100, 0);
+        lvRoadLvl = lvRoadLvl + getCr("1", Junc_type,coeffVer) * coefficientJunctionDistance;
+        medRoadLvl = medRoadLvl + getCr("2", Junc_type,coeffVer)  * coefficientJunctionDistance;
+        hgvRoadLvl = hgvRoadLvl + getCr("3", Junc_type,coeffVer)  * coefficientJunctionDistance;
 
         //Studied tyres
         if (Pm_stud >0 && Ts_stud > 0) {
@@ -260,9 +261,9 @@ public class EvaluateRoadSourceCnossos {
 
         // Propulsion noise acceleration correction
 
-        lvMotorLvl = lvMotorLvl + getCp("1", Junc_type,coeffVer) * Math.max(1-Math.abs(Junc_dist)/100,0) ;
-        medMotorLvl = medMotorLvl + getCp("2", Junc_type,coeffVer)  * Math.max(1-Math.abs(Junc_dist)/100,0);
-        hgvMotorLvl = hgvMotorLvl + getCp("3", Junc_type,coeffVer)  * Math.max(1-Math.abs(Junc_dist)/100,0);
+        lvMotorLvl = lvMotorLvl + getCp("1", Junc_type,coeffVer) * coefficientJunctionDistance;
+        medMotorLvl = medMotorLvl + getCp("2", Junc_type,coeffVer)  * coefficientJunctionDistance;
+        hgvMotorLvl = hgvMotorLvl + getCp("3", Junc_type,coeffVer)  * coefficientJunctionDistance;
 
 
         // Correction gradient for light vehicle
