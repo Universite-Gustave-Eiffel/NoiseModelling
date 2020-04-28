@@ -23,7 +23,9 @@
 package org.noise_planet.noisemodelling.emission.jdbc;
 
 import org.h2gis.utilities.JDBCUtilities;
+import org.h2gis.utilities.SFSUtilities;
 import org.h2gis.utilities.SpatialResultSet;
+import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
 import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos;
 import org.noise_planet.noisemodelling.emission.RSParametersCnossos;
@@ -31,6 +33,7 @@ import org.noise_planet.noisemodelling.propagation.ComputeRays;
 import org.noise_planet.noisemodelling.propagation.FastObstructionTest;
 import org.noise_planet.noisemodelling.propagation.PropagationProcessData;
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
+import org.orbisgis.noisemap.core.RSParameters;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -82,9 +85,10 @@ public class LDENPropagationProcessData extends PropagationProcessData {
     /**
      * @param rs result set of source
      * @param period D or E or N
+     * @param slope Gradient percentage of road from -12 % to 12 %
      * @return Emission spectrum
      */
-    public double[] getEmissionFromResultSet(ResultSet rs, String period) throws SQLException {
+    public double[] getEmissionFromResultSet(ResultSet rs, String period, double slope) throws SQLException {
         double[] lvl = new double[PropagationProcessPathData.freq_lvl.size()];
         // Set default values
         double tv = 0; // old format "total vehicles"
@@ -176,6 +180,7 @@ public class LDENPropagationProcessData extends PropagationProcessData {
             RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lv_speed, mv_speed, hgv_speed, wav_speed,
                     wbv_speed,lvPerHour, mvPerHour, hgvPerHour, wavPerHour, wbvPerHour, freq, temperature,
                     roadSurface, tsStud, pmStud, junctionDistance, junctionType);
+            rsParametersCnossos.setSlopePercentage(slope);
             lvl[idFreq++] = EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos);
         }
         return lvl;
@@ -218,14 +223,27 @@ public class LDENPropagationProcessData extends PropagationProcessData {
                     sourceFields.put(fieldName.toUpperCase(), fieldId++);
                 }
             }
+            // Extract road slope
+            double slope = 0;
+            try {
+                Geometry g = rs.getGeometry();
+                if(g != null && !g.isEmpty()) {
+                    Coordinate[] c = g.getCoordinates();
+                    if(c.length >= 2 && !Double.isNaN(c[0].z) && !Double.isNaN(c[c.length - 1].z)) {
+                        slope = RSParameters.computeSlope(c[0].z, c[c.length - 1].z, g.getLength());
+                    }
+                }
+            } catch (SQLException ex) {
+                // ignore
+            }
             // Day
-            ld = getEmissionFromResultSet(rs, "D");
+            ld = getEmissionFromResultSet(rs, "D", slope);
 
             // Evening
-            le = getEmissionFromResultSet(rs, "E");
+            le = getEmissionFromResultSet(rs, "E", slope);
 
             // Night
-            ln = getEmissionFromResultSet(rs, "N");
+            ln = getEmissionFromResultSet(rs, "N", slope);
 
         }
 
