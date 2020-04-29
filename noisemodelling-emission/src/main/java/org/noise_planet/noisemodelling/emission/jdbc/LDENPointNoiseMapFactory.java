@@ -158,14 +158,19 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
         private String forgeCreateTable(String tableName) {
             StringBuilder sb = new StringBuilder("create table ");
             sb.append(tableName);
-            sb.append(" (IDRECEIVER integer");
             if(!ldenConfig.mergeSources) {
-                sb.append(", IDSOURCE integer");
+                sb.append(" (IDRECEIVER bigint NOT NULL");
+                sb.append(", IDSOURCE bigint NOT NULL");
+            } else {
+                sb.append(" (IDRECEIVER serial");
             }
             for (int idfreq = 0; idfreq < PropagationProcessPathData.freq_lvl.size(); idfreq++) {
                 sb.append(", HZ");
                 sb.append(PropagationProcessPathData.freq_lvl.get(idfreq));
                 sb.append(" double precision");
+            }
+            if(!ldenConfig.mergeSources) {
+                sb.append(", PRIMARY KEY(IDRECEIVER, IDSOURCE)");
             }
             sb.append(")");
             return sb.toString();

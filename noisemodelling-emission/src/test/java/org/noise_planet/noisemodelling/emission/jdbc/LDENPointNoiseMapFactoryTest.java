@@ -102,7 +102,8 @@ public class LDENPointNoiseMapFactoryTest {
         ldenConfig.setComputeLDay(true);
         ldenConfig.setComputeLEvening(true);
         ldenConfig.setComputeLNight(true);
-        ldenConfig.setMergeSources(true);
+        ldenConfig.setComputeLDEN(true);
+        ldenConfig.setMergeSources(true); // No idsource column
 
         PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS", "ROADS_TRAFF",
                 "RECEIVERS");
