@@ -21,6 +21,8 @@
  */
 package org.noise_planet.noisemodelling.emission.jdbc;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 /**
  * Configuration of NoiseModelling computation based on database data using standard Lden outputs
  */
@@ -41,6 +43,10 @@ public class LDENConfig {
     boolean computeLEvening = false;
     boolean computeLNight = false;
     boolean computeLDEN = true;
+    // Maximum result stack to be inserted in database
+    // if the stack is full, the computation core is waiting
+    int outputMaximumQueue = 50000;
+    AtomicLong queueSize = new AtomicLong(0);
 
     boolean mergeSources = true;
 
@@ -59,6 +65,15 @@ public class LDENConfig {
 
     public void setComputeLNight(boolean computeLNight) {
         this.computeLNight = computeLNight;
+    }
+
+    /**
+     * Maximum result stack to be inserted in database
+     * if the stack is full, the computation core is waiting
+     * @param outputMaximumQueue Maximum number of elements in stack
+     */
+    public void setOutputMaximumQueue(int outputMaximumQueue) {
+        this.outputMaximumQueue = outputMaximumQueue;
     }
 
     /**

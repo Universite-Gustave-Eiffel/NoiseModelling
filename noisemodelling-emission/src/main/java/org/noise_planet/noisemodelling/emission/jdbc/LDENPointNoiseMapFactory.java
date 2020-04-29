@@ -22,17 +22,18 @@
 
 package org.noise_planet.noisemodelling.emission.jdbc;
 
-import org.noise_planet.noisemodelling.propagation.FastObstructionTest;
-import org.noise_planet.noisemodelling.propagation.IComputeRaysOut;
-import org.noise_planet.noisemodelling.propagation.PropagationProcessData;
-import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
+import org.h2gis.utilities.TableLocation;
+import org.locationtech.jts.geom.Coordinate;
+import org.noise_planet.noisemodelling.propagation.*;
 import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 /**
  *
@@ -41,10 +42,13 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
     LDENConfig ldenConfig;
     TableWriter tableWriter;
     Thread tableWriterThread;
+    static final int BATCH_MAX_SIZE = 500;
+    public boolean keep_rays = false;
+    LDENComputeRaysOut.LdenData ldenData = new LDENComputeRaysOut.LdenData();
 
 
     public LDENPointNoiseMapFactory(Connection connection, LDENConfig ldenConfig) {
-        tableWriter = new TableWriter(connection, ldenConfig);
+        tableWriter = new TableWriter(connection, ldenConfig, ldenData);
     }
 
     /**
@@ -86,23 +90,68 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
     }
 
     @Override
-    public PropagationProcessData create(FastObstructionTest freeFieldFinder) {
+    public LDENPropagationProcessData create(FastObstructionTest freeFieldFinder) {
         return new LDENPropagationProcessData(freeFieldFinder, ldenConfig);
     }
 
     @Override
     public IComputeRaysOut create(PropagationProcessData threadData, PropagationProcessPathData pathData) {
-        return null;
+        return new LDENComputeRaysOut(keep_rays, pathData, (LDENPropagationProcessData)threadData, ldenData);
     }
 
     private static class TableWriter implements Runnable {
         Logger LOGGER = LoggerFactory.getLogger(TableWriter.class);
         private Connection connection;
         LDENConfig ldenConfig;
+        LDENComputeRaysOut.LdenData ldenData;
 
-        public TableWriter(Connection connection, LDENConfig ldenConfig) {
+        public TableWriter(Connection connection, LDENConfig ldenConfig, LDENComputeRaysOut.LdenData ldenData) {
             this.connection = connection;
             this.ldenConfig = ldenConfig;
+            this.ldenData = ldenData;
+        }
+
+        /**
+         * Pop values from stack and insert rows
+         * @param tableName Table to feed
+         * @param stack Stack to pop from
+         * @throws SQLException Got an error
+         */
+        void processStack(String tableName, ConcurrentLinkedDeque<ComputeRaysOut.VerticeSL> stack) throws SQLException {
+            StringBuilder query = new StringBuilder("INSERT INTO ");
+            query.append(TableLocation.parse(tableName));
+            query.append(" VALUES (? "); // ID_RECEIVER
+            if(!ldenConfig.mergeSources) {
+                query.append(", ?"); // ID_SOURCE
+            }
+            for(int idfreq=0; idfreq < PropagationProcessPathData.freq_lvl.size(); idfreq++) {
+                query.append(", ?"); // freq value
+            }
+            query.append(");");
+            PreparedStatement ps = connection.prepareStatement(query.toString());
+            int batchSize = 0;
+            while(!stack.isEmpty()) {
+                ComputeRaysOut.VerticeSL row = stack.pop();
+                ldenConfig.queueSize.decrementAndGet();
+                int parameterIndex = 1;
+                ps.setLong(parameterIndex++, row.receiverId);
+                if(!ldenConfig.mergeSources) {
+                    ps.setLong(parameterIndex++, row.sourceId);
+                }
+                for(int idfreq=0;idfreq < PropagationProcessPathData.freq_lvl.size(); idfreq++) {
+                    ps.setDouble(parameterIndex++, row.value[idfreq]);
+                }
+                ps.addBatch();
+                batchSize++;
+                if (batchSize >= BATCH_MAX_SIZE) {
+                    ps.executeBatch();
+                    ps.clearBatch();
+                    batchSize = 0;
+                }
+            }
+            if (batchSize > 0) {
+                ps.executeBatch();
+            }
         }
 
         private String forgeCreateTable(String tableName) {
@@ -142,7 +191,22 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
                     sql.execute(forgeCreateTable(ldenConfig.lDenTable));
                 }
                 while (!ldenConfig.aborted) {
-                    //TODO pop values
+                    try {
+                        if(!ldenData.lDayLevels.isEmpty()) {
+                            processStack(ldenConfig.lDayTable, ldenData.lDayLevels);
+                        } else if(!ldenData.lEveningLevels.isEmpty()) {
+                            processStack(ldenConfig.lEveningTable, ldenData.lEveningLevels);
+                        } else if(!ldenData.lNightLevels.isEmpty()) {
+                            processStack(ldenConfig.lNightTable, ldenData.lNightLevels);
+                        } else if(!ldenData.lDenLevels.isEmpty()) {
+                            processStack(ldenConfig.lDenTable, ldenData.lDenLevels);
+                        } else {
+                            Thread.sleep(50);
+                        }
+                    } catch (InterruptedException ex) {
+                        // ignore
+                        break;
+                    }
                 }
             } catch (SQLException e) {
                 LOGGER.error("SQL Writer exception", e);

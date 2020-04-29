@@ -5,9 +5,7 @@ import org.cts.op.CoordinateOperationException;
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.api.ProgressVisitor;
 import org.h2gis.functions.io.geojson.GeoJsonRead;
-import org.h2gis.functions.io.shp.SHPRead;
 import org.h2gis.utilities.SFSUtilities;
-import org.locationtech.jts.geom.Coordinate;
 import org.noise_planet.noisemodelling.propagation.*;
 import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap;
 import org.slf4j.Logger;
@@ -116,7 +114,7 @@ class Main {
                 if(out instanceof ComputeRaysOut) {
                     ComputeRaysOut cellStorage = (ComputeRaysOut) out;
                     exportScene(String.format("target/scene_%d_%d.kml", i, j), cellStorage.inputData.freeFieldFinder, cellStorage);
-                    for(ComputeRaysOut.verticeSL v : cellStorage.receiversAttenuationLevels) {
+                    for(ComputeRaysOut.VerticeSL v : cellStorage.receiversAttenuationLevels) {
                         double globalDbValue = ComputeRays.wToDba(ComputeRays.sumArray(ComputeRays.dbaToW(v.value)));
                         System.out.println(String.format("%d\t%d\t%.2f", v.receiverId, v.sourceId, globalDbValue));
                     }

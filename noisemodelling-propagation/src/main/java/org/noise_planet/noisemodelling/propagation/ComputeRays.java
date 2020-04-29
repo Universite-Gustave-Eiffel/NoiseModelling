@@ -135,6 +135,23 @@ public class ComputeRays {
         return globlvl;
     }
 
+    /**
+     * Element wise sum array without any other operations.
+     * @param array1 First array
+     * @param array2 Second array
+     * @return Sum of the two arrays
+     */
+    public static double[] sumArray(double array1[], double array2[]) {
+        if(array1.length != array2.length) {
+            throw new IllegalArgumentException("Arrays with different size");
+        }
+        double[] ret = new double[array1.length];
+        for (int idfreq = 0; idfreq < array1.length; idfreq++) {
+            ret[idfreq] = array1[idfreq] + array2[idfreq];
+        }
+        return ret;
+    }
+
     public ComputeRays(PropagationProcessData data) {
         this.data = data;
         Runtime runtime = Runtime.getRuntime();

@@ -115,14 +115,20 @@ public class LDENPointNoiseMapFactoryTest {
         // Set of already processed receivers
         Set<Long> receivers = new HashSet<>();
 
-
-        // Iterate over computation areas
-        for (int i = 0; i < pointNoiseMap.getGridDim(); i++) {
-            for (int j = 0; j < pointNoiseMap.getGridDim(); j++) {
-                // Run ray propagation
-                pointNoiseMap.evaluateCell(connection, i, j, new EmptyProgressVisitor(), receivers);
+        try {
+            factory.start();
+            pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
+            // Iterate over computation areas
+            for (int i = 0; i < pointNoiseMap.getGridDim(); i++) {
+                for (int j = 0; j < pointNoiseMap.getGridDim(); j++) {
+                    // Run ray propagation
+                    pointNoiseMap.evaluateCell(connection, i, j, new EmptyProgressVisitor(), receivers);
+                }
             }
+        }finally {
+            factory.stop();
         }
+
 
         assertTrue(JDBCUtilities.tableExists(connection, ldenConfig.lDayTable));
         assertTrue(JDBCUtilities.tableExists(connection, ldenConfig.lEveningTable));
