@@ -50,10 +50,10 @@ public class LDENConfig {
 
     boolean mergeSources = true;
 
-    String lDayTable = "LDAY_GEOM";
-    String lEveningTable = "LEVENING_GEOM";
-    String lNightTable = "LNIGHT_GEOM";
-    String lDenTable = "LDEN_GEOM";
+    String lDayTable = "LDAY_RESULT";
+    String lEveningTable = "LEVENING_RESULT";
+    String lNightTable = "LNIGHT_RESULT";
+    String lDenTable = "LDEN_RESULT";
 
     public void setComputeLDay(boolean computeLDay) {
         this.computeLDay = computeLDay;
@@ -104,5 +104,21 @@ public class LDENConfig {
 
     public void setlDenTable(String lDenTable) {
         this.lDenTable = lDenTable;
+    }
+
+    public String getlDayTable() {
+        return lDayTable;
+    }
+
+    public String getlEveningTable() {
+        return lEveningTable;
+    }
+
+    public String getlNightTable() {
+        return lNightTable;
+    }
+
+    public String getlDenTable() {
+        return lDenTable;
     }
 }

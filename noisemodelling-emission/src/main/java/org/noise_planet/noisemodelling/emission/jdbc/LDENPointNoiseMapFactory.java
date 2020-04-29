@@ -49,6 +49,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
 
     public LDENPointNoiseMapFactory(Connection connection, LDENConfig ldenConfig) {
         tableWriter = new TableWriter(connection, ldenConfig, ldenData);
+        this.ldenConfig = ldenConfig;
     }
 
     /**
@@ -201,7 +202,11 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
                         } else if(!ldenData.lDenLevels.isEmpty()) {
                             processStack(ldenConfig.lDenTable, ldenData.lDenLevels);
                         } else {
-                            Thread.sleep(50);
+                            if(ldenConfig.exitWhenDone) {
+                                break;
+                            } else {
+                                Thread.sleep(50);
+                            }
                         }
                     } catch (InterruptedException ex) {
                         // ignore

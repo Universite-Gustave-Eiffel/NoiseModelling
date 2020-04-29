@@ -1,6 +1,7 @@
 package org.noise_planet.noisemodelling.emission.jdbc;
 
 import org.h2gis.api.EmptyProgressVisitor;
+import org.h2gis.api.ProgressVisitor;
 import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.functions.io.shp.SHPRead;
 import org.h2gis.utilities.JDBCUtilities;
@@ -10,6 +11,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos;
 import org.noise_planet.noisemodelling.emission.RSParametersCnossos;
+import org.noise_planet.noisemodelling.propagation.RootProgressVisitor;
 import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap;
 
 import java.io.IOException;
@@ -111,28 +113,51 @@ public class LDENPointNoiseMapFactoryTest {
         pointNoiseMap.setMaximumPropagationDistance(100.0);
         pointNoiseMap.setComputeHorizontalDiffraction(false);
         pointNoiseMap.setComputeVerticalDiffraction(false);
+        pointNoiseMap.setSoundReflectionOrder(0);
 
         // Set of already processed receivers
         Set<Long> receivers = new HashSet<>();
 
         try {
             factory.start();
+            RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1);
+
             pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
+
+            pointNoiseMap.setGridDim(1); // force grid to 1x1
+
             // Iterate over computation areas
             for (int i = 0; i < pointNoiseMap.getGridDim(); i++) {
                 for (int j = 0; j < pointNoiseMap.getGridDim(); j++) {
                     // Run ray propagation
-                    pointNoiseMap.evaluateCell(connection, i, j, new EmptyProgressVisitor(), receivers);
+                    pointNoiseMap.evaluateCell(connection, i, j, progressLogger, receivers);
                 }
             }
         }finally {
             factory.stop();
         }
-
+        connection.commit();
 
         assertTrue(JDBCUtilities.tableExists(connection, ldenConfig.lDayTable));
         assertTrue(JDBCUtilities.tableExists(connection, ldenConfig.lEveningTable));
         assertTrue(JDBCUtilities.tableExists(connection, ldenConfig.lNightTable));
         assertTrue(JDBCUtilities.tableExists(connection, ldenConfig.lDenTable));
+
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) CPT FROM " + ldenConfig.lDayTable)) {
+            assertTrue(rs.next());
+            assertEquals(830, rs.getInt(1));
+        }
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) CPT FROM " + ldenConfig.lEveningTable)) {
+            assertTrue(rs.next());
+            assertEquals(830, rs.getInt(1));
+        }
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) CPT FROM " + ldenConfig.lNightTable)) {
+            assertTrue(rs.next());
+            assertEquals(830, rs.getInt(1));
+        }
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) CPT FROM " + ldenConfig.lDenTable)) {
+            assertTrue(rs.next());
+            assertEquals(830, rs.getInt(1));
+        }
     }
 }
