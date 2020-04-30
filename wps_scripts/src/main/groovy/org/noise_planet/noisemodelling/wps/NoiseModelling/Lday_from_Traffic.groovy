@@ -229,7 +229,7 @@ def exec(Connection connection, input) {
     //Get the geometry field of the receiver table
     TableLocation receiverTableIdentifier = TableLocation.parse(receivers_table_name)
     List<String> geomFieldsRcv = SFSUtilities.getGeometryFields(connection, receiverTableIdentifier)
-    if (geomFields.isEmpty()) {
+    if (geomFieldsRcv.isEmpty()) {
         resultString = String.format("The table %s does not exists or does not contain a geometry field", receiverTableIdentifier)
         throw new SQLException(String.format("The table %s does not exists or does not contain a geometry field", receiverTableIdentifier))
     }
