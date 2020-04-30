@@ -243,11 +243,11 @@ public class RSParametersCnossos {
         this.wavPerHour = Math.max(0, wavPerHour);
         this.wbvPerHour = Math.max(0, wbvPerHour);
         this.FreqParam = Math.max(0, FreqParam);
-        this.Temperature = Math.max(5, Math.min(35, Temperature)); // taking graph drawing limits of cnossos eu report
+        this.Temperature = Temperature;
         this.roadSurface = roadSurface;
         this.Ts_stud = Math.max(0, Math.min(12, Ts_stud));
         this.Pm_stud = Math.max(0, Math.min(1, Pm_stud));
-        this.Junc_dist = Math.max(0, Math.min(100, Junc_dist)); // Should not exceed 100 meters see III.2.5. Effect of the acceleration and deceleration of vehicles
+        this.Junc_dist = Math.max(0, Junc_dist);
         this.Junc_type = Math.max(0, Math.min(2, Junc_type));
         setSpeedLv(lv_speed);
         setSpeedMv(mv_speed);
