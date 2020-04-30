@@ -136,4 +136,8 @@ public class LDENConfig {
     public boolean isComputeLDEN() {
         return computeLDEN;
     }
+
+    public boolean isMergeSources() {
+        return mergeSources;
+    }
 }

@@ -184,6 +184,53 @@ def run(input) {
     }
 }
 
+def forgeCreateTable(Sql sql, String tableName, LDENConfig ldenConfig, String geomField, String tableReceiver, String tableResult) {
+    StringBuilder sb = new StringBuilder("create table ");
+    sb.append(tableName);
+    if(!ldenConfig.mergeSources) {
+        sb.append(" (IDRECEIVER bigint NOT NULL");
+        sb.append(", IDSOURCE bigint NOT NULL");
+    } else {
+        sb.append(" (IDRECEIVER bigint NOT NULL");
+    }
+    sb.append(", THE_GEOM geometry")
+    for (int idfreq = 0; idfreq < PropagationProcessPathData.freq_lvl.size(); idfreq++) {
+        sb.append(", HZ");
+        sb.append(PropagationProcessPathData.freq_lvl.get(idfreq));
+        sb.append(" double precision");
+    }
+    sb.append(") AS SELECT PK");
+    if(!ldenConfig.mergeSources) {
+        sb.append(", IDSOURCE");
+    }
+    sb.append(", ")
+    sb.append(geomField)
+    for (int idfreq = 0; idfreq < PropagationProcessPathData.freq_lvl.size(); idfreq++) {
+        sb.append(", HZ");
+        sb.append(PropagationProcessPathData.freq_lvl.get(idfreq));
+    }
+    sb.append(" FROM ")
+    sb.append(tableReceiver)
+    if(!ldenConfig.mergeSources) {
+        // idsource can't be null so we can't left join
+        sb.append(" a, ")
+        sb.append(tableResult)
+        sb.append(" b WHERE a.PK = b.IDRECEIVER")
+    } else {
+        sb.append(" a LEFT JOIN ")
+        sb.append(tableResult)
+        sb.append(" b ON a.PK = b.IDRECEIVER")
+    }
+    sql.execute(sb.toString())
+    // apply pk
+    System.out.println("Add primary key on " + tableName)
+    if(!ldenConfig.mergeSources) {
+        sql.execute("ALTER TABLE " + tableName + " ADD PRIMARY KEY(IDRECEIVER, IDSOURCE)")
+    } else {
+        sql.execute("ALTER TABLE " + tableName + " ADD PRIMARY KEY(IDRECEIVER)")
+    }
+}
+
 // main function of the script
 def exec(Connection connection, input) {
     //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postGIS database
@@ -407,28 +454,32 @@ def exec(Connection connection, input) {
     if(ldenConfig.computeLDay) {
         sql.execute("drop table if exists LDAY_GEOM;")
         System.out.println('create table LDAY_GEOM')
-        sql.execute("create table LDAY_GEOM  as select b."+geomFieldsRcv.get(0)+", a.* FROM " + receivers_table_name + " b LEFT JOIN "+ldenConfig.lDayTable+" a ON a.IDRECEIVER = b.PK;")
+        forgeCreateTable(sql, "LDAY_GEOM", ldenConfig, geomFieldsRcv.get(0), receivers_table_name,
+                ldenConfig.lDayTable)
         createdTables.append(" LDAY_GEOM")
         sql.execute("drop table if exists "+TableLocation.parse(ldenConfig.getlDayTable()))
     }
     if(ldenConfig.computeLEvening) {
         sql.execute("drop table if exists LEVENING_GEOM;")
         System.out.println('create table LEVENING_GEOM')
-        sql.execute("create table LEVENING_GEOM  as select b."+geomFieldsRcv.get(0)+", a.* FROM " + receivers_table_name + " b LEFT JOIN "+ldenConfig.lEveningTable+" a ON a.IDRECEIVER = b.PK;")
+        forgeCreateTable(sql, "LEVENING_GEOM", ldenConfig, geomFieldsRcv.get(0), receivers_table_name,
+                ldenConfig.lEveningTable)
         createdTables.append(" LEVENING_GEOM")
         sql.execute("drop table if exists "+TableLocation.parse(ldenConfig.getlEveningTable()))
     }
     if(ldenConfig.computeLNight) {
         sql.execute("drop table if exists LNIGHT_GEOM;")
         System.out.println('create table LNIGHT_GEOM')
-        sql.execute("create table LNIGHT_GEOM  as select b."+geomFieldsRcv.get(0)+", a.* FROM " + receivers_table_name + " b LEFT JOIN "+ldenConfig.lNightTable+" a ON a.IDRECEIVER = b.PK;")
+        forgeCreateTable(sql, "LNIGHT_GEOM", ldenConfig, geomFieldsRcv.get(0), receivers_table_name,
+                ldenConfig.lNightTable)
         createdTables.append(" LNIGHT_GEOM")
         sql.execute("drop table if exists "+TableLocation.parse(ldenConfig.getlNightTable()))
     }
     if(ldenConfig.computeLDEN) {
         sql.execute("drop table if exists LDEN_GEOM;")
         System.out.println('create table LDEN_GEOM')
-        sql.execute("create table LDEN_GEOM  as select b."+geomFieldsRcv.get(0)+", a.* FROM " + receivers_table_name + " b LEFT JOIN "+ldenConfig.lDenTable+" a ON a.IDRECEIVER = b.PK;")
+        forgeCreateTable(sql, "LDEN_GEOM", ldenConfig, geomFieldsRcv.get(0), receivers_table_name,
+                ldenConfig.lDenTable)
         createdTables.append(" LDEN_GEOM")
         sql.execute("drop table if exists "+TableLocation.parse(ldenConfig.getlDenTable()))
     }
