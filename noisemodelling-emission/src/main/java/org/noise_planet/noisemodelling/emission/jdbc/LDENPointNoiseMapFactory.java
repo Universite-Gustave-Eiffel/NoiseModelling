@@ -133,7 +133,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
             int batchSize = 0;
             while(!stack.isEmpty()) {
                 ComputeRaysOut.VerticeSL row = stack.pop();
-                ldenConfig.queueSize.decrementAndGet();
+                ldenData.queueSize.decrementAndGet();
                 int parameterIndex = 1;
                 ps.setLong(parameterIndex++, row.receiverId);
                 if(!ldenConfig.mergeSources) {

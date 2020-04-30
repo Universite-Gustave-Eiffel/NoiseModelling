@@ -107,7 +107,7 @@ def exec(Connection connection, input) {
 
     System.out.println("Run ...")
 
-    List<ComputeRaysOut.verticeSL> allLevels = new ArrayList<>()
+    List<ComputeRaysOut.VerticeSL> allLevels = new ArrayList<>()
 
     // Open connection
     //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postgis database

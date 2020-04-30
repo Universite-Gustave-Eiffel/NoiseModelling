@@ -248,7 +248,7 @@ def run(input) {
 
     System.out.println("Run ...")
 
-    List<ComputeRaysOut.verticeSL> allLevels = new ArrayList<>()
+    List<ComputeRaysOut.VerticeSL> allLevels = new ArrayList<>()
     // Attenuation matrix table
     ArrayList<PropagationPath> propaMap2 = new ArrayList<>()
     // All rays storage

@@ -46,7 +46,6 @@ public class LDENConfig {
     // Maximum result stack to be inserted in database
     // if the stack is full, the computation core is waiting
     int outputMaximumQueue = 50000;
-    AtomicLong queueSize = new AtomicLong(0);
 
     boolean mergeSources = true;
 

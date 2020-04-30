@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class LDENComputeRaysOut extends ComputeRaysOut {
     LdenData ldenData;
@@ -41,7 +42,7 @@ public class LDENComputeRaysOut extends ComputeRaysOut {
         }
 
         public void pushInStack(ConcurrentLinkedDeque<VerticeSL> stack, VerticeSL data) {
-            while(ldenConfig.queueSize.get() > ldenConfig.outputMaximumQueue) {
+            while(ldenComputeRaysOut.ldenData.queueSize.get() > ldenConfig.outputMaximumQueue) {
                 try {
                     Thread.sleep(10);
                 } catch (InterruptedException ex) {
@@ -53,7 +54,7 @@ public class LDENComputeRaysOut extends ComputeRaysOut {
                 }
             }
             stack.add(data);
-            ldenConfig.queueSize.incrementAndGet();
+            ldenComputeRaysOut.ldenData.queueSize.incrementAndGet();
         }
 
         @Override
@@ -131,6 +132,7 @@ public class LDENComputeRaysOut extends ComputeRaysOut {
     }
 
     static class LdenData {
+        AtomicLong queueSize = new AtomicLong(0);
         public ConcurrentLinkedDeque<VerticeSL> lDayLevels = new ConcurrentLinkedDeque<>();
         public ConcurrentLinkedDeque<VerticeSL> lEveningLevels = new ConcurrentLinkedDeque<>();
         public ConcurrentLinkedDeque<VerticeSL> lNightLevels = new ConcurrentLinkedDeque<>();
