@@ -60,9 +60,9 @@ public class LDENComputeRaysOut extends ComputeRaysOut {
         @Override
         public void finalizeReceiver(final long receiverId) {
             long receiverPK = receiverId;
-            if(multiThreadParent.inputData != null) {
-                if(receiverId < multiThreadParent.inputData.receiversPk.size()) {
-                    receiverPK = multiThreadParent.inputData.receiversPk.get((int)receiverId);
+            if(ldenComputeRaysOut.inputData != null) {
+                if(receiverId < ldenComputeRaysOut.inputData.receiversPk.size()) {
+                    receiverPK = ldenComputeRaysOut.inputData.receiversPk.get((int)receiverId);
                 }
             }
             if(!ldenConfig.mergeSources) {
@@ -81,10 +81,10 @@ public class LDENComputeRaysOut extends ComputeRaysOut {
                 for (Map.Entry<Long, double[]> entry : levelsPerSourceLines.entrySet()) {
                     final long sourceId = entry.getKey();
                     sourcePK = sourceId;
-                    if(multiThreadParent.inputData != null) {
+                    if(ldenComputeRaysOut.inputData != null) {
                         // Retrieve original source identifier
-                        if(entry.getKey() < multiThreadParent.inputData.sourcesPk.size()) {
-                            sourcePK = multiThreadParent.inputData.sourcesPk.get((int)sourceId);
+                        if(entry.getKey() < ldenComputeRaysOut.inputData.sourcesPk.size()) {
+                            sourcePK = ldenComputeRaysOut.inputData.sourcesPk.get((int)sourceId);
                         }
                     }
                     if(ldenConfig.computeLDay) {

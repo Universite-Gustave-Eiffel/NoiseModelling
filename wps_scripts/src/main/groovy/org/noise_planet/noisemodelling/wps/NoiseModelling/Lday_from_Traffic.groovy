@@ -189,6 +189,9 @@ def exec(Connection connection, input) {
     //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postGIS database
     connection = new ConnectionWrapper(connection)
 
+    // Create a sql connection to interact with the database in SQL
+    Sql sql = new Sql(connection)
+
     // output string, the information given back to the user
     String resultString = null
 
@@ -381,39 +384,46 @@ def exec(Connection connection, input) {
 
     System.println("Start calculation... ")
 
-    // Iterate over computation areas
-    int k = 0
-    for (int i = 0; i < pointNoiseMap.getGridDim(); i++) {
-        for (int j = 0; j < pointNoiseMap.getGridDim(); j++) {
-            System.println("Compute... " + 100 * k++ / fullGridSize + " % ")
-            // Run ray propagation
-            pointNoiseMap.evaluateCell(connection, i, j, progressVisitor, receivers)
+    try {
+        ldenProcessing.start()
+        // Iterate over computation areas
+        int k = 0
+        for (int i = 0; i < pointNoiseMap.getGridDim(); i++) {
+            for (int j = 0; j < pointNoiseMap.getGridDim(); j++) {
+                System.println("Compute... " + 100 * k++ / fullGridSize + " % ")
+                // Run ray propagation
+                pointNoiseMap.evaluateCell(connection, i, j, progressVisitor, receivers)
+            }
         }
+    } finally {
+        ldenProcessing.stop()
     }
 
     System.out.println('Intermediate  time : ' + TimeCategory.minus(new Date(), start))
 
-    // Drop table LDEN_GEOM if exists
-    sql.execute("drop table if exists LDAY_GEOM;")
     // Associate Geometry column to the table LDEN
     StringBuilder createdTables = new StringBuilder()
 
     if(ldenConfig.computeLDay) {
+        sql.execute("drop table if exists LDAY_GEOM;")
         sql.execute("create table LDAY_GEOM  as select b."+geomFieldsRcv.get(0)+", a.* FROM " + receivers_table_name + " b, "+ldenConfig.lDayTable+" a where a.IDRECEIVER = b.PK;")
         createdTables.append(" LDAY_GEOM")
         sql.execute("drop table if exists "+TableLocation.parse(ldenConfig.getlDayTable()))
     }
     if(ldenConfig.computeLEvening) {
+        sql.execute("drop table if exists LEVENING_GEOM;")
         sql.execute("create table LEVENING_GEOM  as select b."+geomFieldsRcv.get(0)+", a.* FROM " + receivers_table_name + " b, "+ldenConfig.lEveningTable+" a where a.IDRECEIVER = b.PK;")
         createdTables.append(" LEVENING_GEOM")
         sql.execute("drop table if exists "+TableLocation.parse(ldenConfig.getlEveningTable()))
     }
     if(ldenConfig.computeLNight) {
+        sql.execute("drop table if exists LNIGHT_GEOM;")
         sql.execute("create table LNIGHT_GEOM  as select b."+geomFieldsRcv.get(0)+", a.* FROM " + receivers_table_name + " b, "+ldenConfig.lNightTable+" a where a.IDRECEIVER = b.PK;")
         createdTables.append(" LNIGHT_GEOM")
         sql.execute("drop table if exists "+TableLocation.parse(ldenConfig.getlNightTable()))
     }
     if(ldenConfig.computeLDEN) {
+        sql.execute("drop table if exists LDEN_GEOM;")
         sql.execute("create table LDEN_GEOM  as select b."+geomFieldsRcv.get(0)+", a.* FROM " + receivers_table_name + " b, "+ldenConfig.lDenTable+" a where a.IDRECEIVER = b.PK;")
         createdTables.append(" LDEN_GEOM")
         sql.execute("drop table if exists "+TableLocation.parse(ldenConfig.getlDenTable()))

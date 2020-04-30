@@ -55,7 +55,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
     /**
      * Start creating and filling database tables
      */
-    void start() {
+    public void start() {
         tableWriterThread = new Thread(tableWriter);
         tableWriterThread.start();
     }
@@ -63,7 +63,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
     /**
      * Write the last results and stop the sql writing thread
      */
-    void stop() {
+    public void stop() {
         ldenConfig.exitWhenDone = true;
         while (tableWriterThread.isAlive()) {
             try {
@@ -78,7 +78,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
     /**
      * Abort writing results and kill the writing thread
      */
-    void cancel() {
+    public void cancel() {
         ldenConfig.aborted = true;
         while (tableWriterThread.isAlive()) {
             try {

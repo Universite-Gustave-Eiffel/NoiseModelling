@@ -67,8 +67,10 @@ class TestNoiseModelling extends JdbcTestCase {
                  "tableRoads"   : "ROADS2",
                  "tableReceivers": "RECEIVERS"])
 
-
-        assertEquals("Calculation Done ! The table LDAY_GEOM has been created.", res)
+        assertTrue(res.contains("LDAY_GEOM"))
+        assertTrue(res.contains("LEVENING_GEOM"))
+        assertTrue(res.contains("LNIGHT_GEOM"))
+        assertTrue(res.contains("LDEN_GEOM"))
     }
 
     void testLdenFromEmission() {
