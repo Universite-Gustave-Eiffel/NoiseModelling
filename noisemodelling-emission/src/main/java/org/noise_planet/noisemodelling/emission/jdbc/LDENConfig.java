@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * Configuration of NoiseModelling computation based on database data using standard Lden outputs
  */
 public class LDENConfig {
-    enum INPUT_MODE { INPUT_MODE_TRAFFIC_FLOW, INPUT_MODE_LW_DEN, INPUT_MODE_PROBA}
+    public enum INPUT_MODE { INPUT_MODE_TRAFFIC_FLOW, INPUT_MODE_LW_DEN, INPUT_MODE_PROBA}
     final INPUT_MODE input_mode;
 
     public LDENConfig(INPUT_MODE input_mode) {
@@ -119,5 +119,21 @@ public class LDENConfig {
 
     public String getlDenTable() {
         return lDenTable;
+    }
+
+    public boolean isComputeLDay() {
+        return computeLDay;
+    }
+
+    public boolean isComputeLEvening() {
+        return computeLEvening;
+    }
+
+    public boolean isComputeLNight() {
+        return computeLNight;
+    }
+
+    public boolean isComputeLDEN() {
+        return computeLDEN;
     }
 }
