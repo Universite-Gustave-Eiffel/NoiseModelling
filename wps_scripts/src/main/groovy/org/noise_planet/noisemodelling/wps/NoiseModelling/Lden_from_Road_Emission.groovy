@@ -374,25 +374,29 @@ def exec(Connection connection, input) {
 
     if(ldenConfig.computeLDay) {
         sql.execute("drop table if exists LDAY_GEOM;")
-        sql.execute("create table LDAY_GEOM  as select b."+geomFieldsRcv.get(0)+", a.* FROM " + receivers_table_name + " b, "+ldenConfig.lDayTable+" a where a.IDRECEIVER = b.PK;")
+        System.out.println('create table LDAY_GEOM')
+        sql.execute("create table LDAY_GEOM  as select b."+geomFieldsRcv.get(0)+", a.* FROM " + receivers_table_name + " b LEFT JOIN "+ldenConfig.lDayTable+" a ON a.IDRECEIVER = b.PK;")
         createdTables.append(" LDAY_GEOM")
-        sql.execute("drop table if exists "+ TableLocation.parse(ldenConfig.getlDayTable()))
+        sql.execute("drop table if exists "+TableLocation.parse(ldenConfig.getlDayTable()))
     }
     if(ldenConfig.computeLEvening) {
         sql.execute("drop table if exists LEVENING_GEOM;")
-        sql.execute("create table LEVENING_GEOM  as select b."+geomFieldsRcv.get(0)+", a.* FROM " + receivers_table_name + " b, "+ldenConfig.lEveningTable+" a where a.IDRECEIVER = b.PK;")
+        System.out.println('create table LEVENING_GEOM')
+        sql.execute("create table LEVENING_GEOM  as select b."+geomFieldsRcv.get(0)+", a.* FROM " + receivers_table_name + " b LEFT JOIN "+ldenConfig.lEveningTable+" a ON a.IDRECEIVER = b.PK;")
         createdTables.append(" LEVENING_GEOM")
         sql.execute("drop table if exists "+TableLocation.parse(ldenConfig.getlEveningTable()))
     }
     if(ldenConfig.computeLNight) {
         sql.execute("drop table if exists LNIGHT_GEOM;")
-        sql.execute("create table LNIGHT_GEOM  as select b."+geomFieldsRcv.get(0)+", a.* FROM " + receivers_table_name + " b, "+ldenConfig.lNightTable+" a where a.IDRECEIVER = b.PK;")
+        System.out.println('create table LNIGHT_GEOM')
+        sql.execute("create table LNIGHT_GEOM  as select b."+geomFieldsRcv.get(0)+", a.* FROM " + receivers_table_name + " b LEFT JOIN "+ldenConfig.lNightTable+" a ON a.IDRECEIVER = b.PK;")
         createdTables.append(" LNIGHT_GEOM")
         sql.execute("drop table if exists "+TableLocation.parse(ldenConfig.getlNightTable()))
     }
     if(ldenConfig.computeLDEN) {
         sql.execute("drop table if exists LDEN_GEOM;")
-        sql.execute("create table LDEN_GEOM  as select b."+geomFieldsRcv.get(0)+", a.* FROM " + receivers_table_name + " b, "+ldenConfig.lDenTable+" a where a.IDRECEIVER = b.PK;")
+        System.out.println('create table LDEN_GEOM')
+        sql.execute("create table LDEN_GEOM  as select b."+geomFieldsRcv.get(0)+", a.* FROM " + receivers_table_name + " b LEFT JOIN "+ldenConfig.lDenTable+" a ON a.IDRECEIVER = b.PK;")
         createdTables.append(" LDEN_GEOM")
         sql.execute("drop table if exists "+TableLocation.parse(ldenConfig.getlDenTable()))
     }

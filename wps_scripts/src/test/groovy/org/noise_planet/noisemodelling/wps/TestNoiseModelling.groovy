@@ -25,6 +25,7 @@ import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Lday_from_Traffic
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Lden_from_Road_Emission
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Road_Emission_from_Traffic
+import org.noise_planet.noisemodelling.wps.Receivers.Building_Grid
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -73,6 +74,35 @@ class TestNoiseModelling extends JdbcTestCase {
         assertTrue(res.contains("LDEN_GEOM"))
     }
 
+//    void testLdayFromTrafficLongRun() {
+//
+//        SHPRead.readShape(connection, TestNoiseModelling.getResource("ROADS2.shp").getPath())
+//
+//        //SHPRead.readShape(connection, TestDatabaseManager.getResource("buildings.shp").getPath())
+//        new Import_File().exec(connection,
+//                ["pathFile" : TestNoiseModelling.getResource("buildings.shp").getPath(),
+//                 "inputSRID": "2154",
+//                 "tableName": "buildings"])
+//
+//        new Building_Grid().exec(connection,
+//                ["tableBuilding" : "BUILDINGS",
+//                 "delta" : 5,
+//                 "sourcesTableName": "ROADS2"])
+//
+//
+//        String res = new Lday_from_Traffic().exec(connection,
+//                ["tableBuilding"   : "BUILDINGS",
+//                 "tableRoads"   : "ROADS2",
+//                 "tableReceivers": "RECEIVERS",
+//                "confThreadNumber" : 0,
+//                "confMaxSrcDist": 400,
+//                "confDiffHorizontal": true])
+//
+//        assertTrue(res.contains("LDAY_GEOM"))
+//        assertTrue(res.contains("LEVENING_GEOM"))
+//        assertTrue(res.contains("LNIGHT_GEOM"))
+//        assertTrue(res.contains("LDEN_GEOM"))
+//    }
     void testLdenFromEmission() {
 
         SHPRead.readShape(connection, TestNoiseModelling.getResource("ROADS2.shp").getPath())
