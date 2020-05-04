@@ -224,7 +224,7 @@ def exec(Connection connection, input) {
                 "ST_GEOMETRYN(THE_GEOM, ST_NUMGEOMETRIES(THE_GEOM)) AND ST_NUMGEOMETRIES(THE_GEOM) >\n" +
                 "2;\n" +
                 "drop table if exists GROUND;\n" +
-                "create table GROUND(PK serial, the_geom geometry CHECK ST_SRID(THE_GEOM)=" + srid + ", surf_cat varchar, G double) as select id_way,  ST_TRANSFORM(ST_SETSRID(THE_GEOM, 4326), " + srid + ") the_geom , surf_cat, 1 g from MAP_SURFACE_GEOM where surf_cat IN ('grass', 'village_green', 'park');\n" +
+                "create table GROUND(PK serial, the_geom geometry CHECK ST_SRID(THE_GEOM)=" + srid + ", surf_cat varchar, G double) as select null,  ST_TRANSFORM(ST_SETSRID(THE_GEOM, 4326), " + srid + ") the_geom , surf_cat, 1 g from MAP_SURFACE_GEOM where surf_cat IN ('grass', 'village_green', 'park');\n" +
                 "drop table if exists MAP_SURFACE_GEOM;"
 
         sql.execute(Ground_Import)
