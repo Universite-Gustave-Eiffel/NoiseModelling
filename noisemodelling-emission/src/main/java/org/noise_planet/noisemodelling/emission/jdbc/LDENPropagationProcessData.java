@@ -261,6 +261,10 @@ public class LDENPropagationProcessData extends PropagationProcessData {
     }
 
     public double[] getMaximalSourcePower(int sourceId) {
-        return wjSourcesD.get(sourceId);
+        if(sourceId < wjSourcesD.size()) {
+            return wjSourcesD.get(sourceId);
+        } else {
+            return new double[0];
+        }
     }
 }

@@ -23,7 +23,6 @@
 package org.noise_planet.noisemodelling.emission.jdbc;
 
 import org.h2gis.utilities.TableLocation;
-import org.locationtech.jts.geom.Coordinate;
 import org.noise_planet.noisemodelling.propagation.*;
 import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap;
 import org.slf4j.Logger;
@@ -43,13 +42,27 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
     TableWriter tableWriter;
     Thread tableWriterThread;
     static final int BATCH_MAX_SIZE = 500;
-    public boolean keep_rays = false;
+    public boolean keepRays = false;
     LDENComputeRaysOut.LdenData ldenData = new LDENComputeRaysOut.LdenData();
 
 
     public LDENPointNoiseMapFactory(Connection connection, LDENConfig ldenConfig) {
         tableWriter = new TableWriter(connection, ldenConfig, ldenData);
         this.ldenConfig = ldenConfig;
+    }
+
+    /**
+     * @return Store propagation rays
+     */
+    public boolean isKeepRays() {
+        return keepRays;
+    }
+
+    /**
+     * @param keepRays true to store propagation rays
+     */
+    public void setKeepRays(boolean keepRays) {
+        this.keepRays = keepRays;
     }
 
     /**
@@ -97,7 +110,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
 
     @Override
     public IComputeRaysOut create(PropagationProcessData threadData, PropagationProcessPathData pathData) {
-        return new LDENComputeRaysOut(keep_rays, pathData, (LDENPropagationProcessData)threadData, ldenData);
+        return new LDENComputeRaysOut(keepRays, pathData, (LDENPropagationProcessData)threadData, ldenData);
     }
 
     private static class TableWriter implements Runnable {
