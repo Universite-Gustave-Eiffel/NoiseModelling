@@ -4,7 +4,7 @@ Noise Map from OSM - Tutorial
 Prerequisites
 ~~~~~~~~~~~~~~~~~
 
-- You need at least NoiseModelling v.3.0.6
+- You need at least NoiseModelling v.3.0.6, the best is always to use last release.
 - If you have just finished the first tutorial, please clean your database with the WPS block *Clean_Database*
 
 .. warning::
@@ -16,7 +16,10 @@ Exporting data from openstreetmap.org
 ------------------------------------------------
 * Go to https://www.openstreetmap.org
 * Zoom in on the area you want to export
-* Export the zone in .osm or .osm.gz format with *Export* button
+* Export the zone in .osm or .osm.gz format with *Export* button 
+
+.. warning::
+   For Mac users, safari may automatically rename the file to "map.osm.xml". Simply delete the ".xml" extension before import.
 
 Import to the database
 ------------------------------------------------
