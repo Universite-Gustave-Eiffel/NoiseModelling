@@ -20,6 +20,7 @@
 
 package org.noise_planet.noisemodelling.wps
 
+import groovy.sql.Sql
 import org.h2gis.functions.io.shp.SHPRead
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Lday_from_Traffic
@@ -69,9 +70,58 @@ class TestNoiseModelling extends JdbcTestCase {
                  "tableReceivers": "RECEIVERS"])
 
         assertTrue(res.contains("LDAY_GEOM"))
+
+        def sql = new Sql(connection)
+
+        def leqs = sql.firstRow("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000) FROM LDAY_GEOM")
+
+        assertEquals(79.0, leqs[0] as Double, 2.0)
+        assertEquals(71.0, leqs[1] as Double, 2.0)
+        assertEquals(70.0, leqs[2] as Double, 2.0)
+        assertEquals(72.0, leqs[3] as Double, 2.0)
+        assertEquals(76.0, leqs[4] as Double, 2.0)
+        assertEquals(74.0, leqs[5] as Double, 2.0)
+        assertEquals(66.0, leqs[6] as Double, 2.0)
+        assertEquals(57.0, leqs[7] as Double, 2.0)
+
         assertTrue(res.contains("LEVENING_GEOM"))
+
+        leqs = sql.firstRow("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000) FROM LEVENING_GEOM")
+
+        assertEquals(73.0, leqs[0] as Double, 2.0)
+        assertEquals(65.0, leqs[1] as Double, 2.0)
+        assertEquals(64.0, leqs[2] as Double, 2.0)
+        assertEquals(66.0, leqs[3] as Double, 2.0)
+        assertEquals(71.0, leqs[4] as Double, 2.0)
+        assertEquals(68.0, leqs[5] as Double, 2.0)
+        assertEquals(60.0, leqs[6] as Double, 2.0)
+        assertEquals(51.0, leqs[7] as Double, 2.0)
+
         assertTrue(res.contains("LNIGHT_GEOM"))
+
+        leqs = sql.firstRow("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000) FROM LNIGHT_GEOM")
+
+        assertEquals(79.0, leqs[0] as Double, 2.0)
+        assertEquals(71.0, leqs[1] as Double, 2.0)
+        assertEquals(70.0, leqs[2] as Double, 2.0)
+        assertEquals(72.0, leqs[3] as Double, 2.0)
+        assertEquals(76.0, leqs[4] as Double, 2.0)
+        assertEquals(74.0, leqs[5] as Double, 2.0)
+        assertEquals(66.0, leqs[6] as Double, 2.0)
+        assertEquals(57.0, leqs[7] as Double, 2.0)
+
         assertTrue(res.contains("LDEN_GEOM"))
+
+        leqs = sql.firstRow("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000) FROM LDEN_GEOM")
+
+        assertEquals(79.0, leqs[0] as Double, 2.0)
+        assertEquals(71.0, leqs[1] as Double, 2.0)
+        assertEquals(70.0, leqs[2] as Double, 2.0)
+        assertEquals(72.0, leqs[3] as Double, 2.0)
+        assertEquals(77.0, leqs[4] as Double, 2.0)
+        assertEquals(74.0, leqs[5] as Double, 2.0)
+        assertEquals(66.0, leqs[6] as Double, 2.0)
+        assertEquals(57.0, leqs[7] as Double, 2.0)
     }
 
 //    void testLdayFromTrafficLongRun() {

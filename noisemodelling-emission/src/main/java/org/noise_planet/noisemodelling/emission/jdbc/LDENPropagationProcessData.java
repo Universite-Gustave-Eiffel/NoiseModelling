@@ -86,7 +86,7 @@ public class LDENPropagationProcessData extends PropagationProcessData {
      * @param rs result set of source
      * @param period D or E or N
      * @param slope Gradient percentage of road from -12 % to 12 %
-     * @return Emission spectrum
+     * @return Emission spectrum in dB
      */
     public double[] getEmissionFromResultSet(ResultSet rs, String period, double slope) throws SQLException {
         if (sourceFields == null) {
@@ -254,7 +254,7 @@ public class LDENPropagationProcessData extends PropagationProcessData {
 
         // Combine day evening night sound levels
         for (int idfreq = 0; idfreq < PropagationProcessPathData.freq_lvl.size(); idfreq++) {
-            lden[idfreq] = (12 * ld[idfreq] + 4 * ComputeRays.dbaToW(ComputeRays.wToDba(le[idfreq]) + 5) + 8 * ComputeRays.dbaToW(ComputeRays.wToDba(ln[idfreq]) + 10)) / 24.0;
+            lden[idfreq] = ComputeRays.wToDba((12 * ComputeRays.dbaToW(ld[idfreq]) + 4 * ComputeRays.dbaToW(le[idfreq] + 5) + 8 * ComputeRays.dbaToW(ln[idfreq] + 10)) / 24.0);
         }
 
         return new double[][] {ld, le, ln, lden};
