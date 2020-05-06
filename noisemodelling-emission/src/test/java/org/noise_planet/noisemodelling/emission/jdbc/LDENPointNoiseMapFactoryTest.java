@@ -173,14 +173,14 @@ public class LDENPointNoiseMapFactoryTest {
             for(int idfreq = 1; idfreq <= PropagationProcessPathData.freq_lvl.size(); idfreq++) {
                 leqs[idfreq - 1] = rs.getDouble(idfreq);
             }
-            assertEquals(79.0, leqs[0], 2.0);
-            assertEquals(71.0, leqs[1], 2.0);
-            assertEquals(70.0, leqs[2], 2.0);
-            assertEquals(72.0, leqs[3], 2.0);
-            assertEquals(76.0, leqs[4], 2.0);
-            assertEquals(74.0, leqs[5], 2.0);
-            assertEquals(66.0, leqs[6], 2.0);
-            assertEquals(57.0, leqs[7], 2.0);
+            assertEquals(83, leqs[0], 2.0);
+            assertEquals(74, leqs[1], 2.0);
+            assertEquals(73, leqs[2], 2.0);
+            assertEquals(75, leqs[3], 2.0);
+            assertEquals(79, leqs[4], 2.0);
+            assertEquals(77, leqs[5], 2.0);
+            assertEquals(68, leqs[6], 2.0);
+            assertEquals(59, leqs[7], 2.0);
         }
 
 
@@ -191,14 +191,14 @@ public class LDENPointNoiseMapFactoryTest {
             for (int idfreq = 1; idfreq <= PropagationProcessPathData.freq_lvl.size(); idfreq++) {
                 leqs[idfreq - 1] = rs.getDouble(idfreq);
             }
-            assertEquals(73.0, leqs[0], 2.0);
-            assertEquals(65.0, leqs[1], 2.0);
-            assertEquals(64.0, leqs[2], 2.0);
-            assertEquals(66.0, leqs[3], 2.0);
-            assertEquals(71.0, leqs[4], 2.0);
-            assertEquals(68.0, leqs[5], 2.0);
-            assertEquals(60.0, leqs[6], 2.0);
-            assertEquals(51.0, leqs[7], 2.0);
+            assertEquals(76.0, leqs[0], 2.0);
+            assertEquals(69.0, leqs[1], 2.0);
+            assertEquals(68.0, leqs[2], 2.0);
+            assertEquals(70.0, leqs[3], 2.0);
+            assertEquals(74.0, leqs[4], 2.0);
+            assertEquals(71.0, leqs[5], 2.0);
+            assertEquals(62.0, leqs[6], 2.0);
+            assertEquals(53.0, leqs[7], 2.0);
         }
 
 
@@ -208,14 +208,14 @@ public class LDENPointNoiseMapFactoryTest {
             for (int idfreq = 1; idfreq <= PropagationProcessPathData.freq_lvl.size(); idfreq++) {
                 leqs[idfreq - 1] = rs.getDouble(idfreq);
             }
-            assertEquals(79.0, leqs[0], 2.0);
-            assertEquals(71.0, leqs[1], 2.0);
-            assertEquals(70.0, leqs[2], 2.0);
-            assertEquals(72.0, leqs[3], 2.0);
-            assertEquals(76.0, leqs[4], 2.0);
-            assertEquals(74.0, leqs[5], 2.0);
-            assertEquals(66.0, leqs[6], 2.0);
-            assertEquals(57.0, leqs[7], 2.0);
+            assertEquals(83.0, leqs[0], 2.0);
+            assertEquals(74.0, leqs[1], 2.0);
+            assertEquals(73.0, leqs[2], 2.0);
+            assertEquals(75.0, leqs[3], 2.0);
+            assertEquals(79.0, leqs[4], 2.0);
+            assertEquals(76.0, leqs[5], 2.0);
+            assertEquals(68.0, leqs[6], 2.0);
+            assertEquals(58.0, leqs[7], 2.0);
         }
 
         try(ResultSet rs = connection.createStatement().executeQuery("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000) FROM "+ ldenConfig.lDenTable)) {
@@ -224,14 +224,14 @@ public class LDENPointNoiseMapFactoryTest {
             for (int idfreq = 1; idfreq <= PropagationProcessPathData.freq_lvl.size(); idfreq++) {
                 leqs[idfreq - 1] = rs.getDouble(idfreq);
             }
-            assertEquals(79.0, leqs[0], 2.0);
-            assertEquals(71.0, leqs[1], 2.0);
-            assertEquals(70.0, leqs[2], 2.0);
-            assertEquals(72.0, leqs[3], 2.0);
-            assertEquals(77.0, leqs[4], 2.0);
-            assertEquals(74.0, leqs[5], 2.0);
-            assertEquals(66.0, leqs[6], 2.0);
-            assertEquals(57.0, leqs[7], 2.0);
+            assertEquals(82.0, leqs[0], 2.0);
+            assertEquals(75.0, leqs[1], 2.0);
+            assertEquals(74.0, leqs[2], 2.0);
+            assertEquals(76.0, leqs[3], 2.0);
+            assertEquals(80.0, leqs[4], 2.0);
+            assertEquals(77.0, leqs[5], 2.0);
+            assertEquals(68.0, leqs[6], 2.0);
+            assertEquals(59.0, leqs[7], 2.0);
         }
     }
 }

@@ -36,7 +36,7 @@ public class LDENConfig {
 
     // Cnossos revisions have multiple coefficients for road emission formulae
     // this parameter will be removed when the final version of Cnossos will be published
-    int coefficientVersion = 1;
+    int coefficientVersion = 2;
 
     // Process status
     boolean exitWhenDone = false;

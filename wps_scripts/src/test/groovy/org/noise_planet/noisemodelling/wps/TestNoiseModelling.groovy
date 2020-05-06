@@ -31,6 +31,39 @@ import org.noise_planet.noisemodelling.wps.Receivers.Building_Grid
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertEquals
+
 /**
  * Test parsing of zip file using H2GIS database
  */
@@ -76,53 +109,53 @@ class TestNoiseModelling extends JdbcTestCase {
 
         def leqs = sql.firstRow("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000) FROM LDAY_GEOM")
 
-        assertEquals(79.0, leqs[0] as Double, 2.0)
-        assertEquals(71.0, leqs[1] as Double, 2.0)
-        assertEquals(70.0, leqs[2] as Double, 2.0)
-        assertEquals(72.0, leqs[3] as Double, 2.0)
-        assertEquals(76.0, leqs[4] as Double, 2.0)
-        assertEquals(74.0, leqs[5] as Double, 2.0)
-        assertEquals(66.0, leqs[6] as Double, 2.0)
-        assertEquals(57.0, leqs[7] as Double, 2.0)
+        assertEquals(83, leqs[0] as Double, 2.0)
+        assertEquals(74, leqs[1] as Double, 2.0)
+        assertEquals(73, leqs[2] as Double, 2.0)
+        assertEquals(75, leqs[3] as Double, 2.0)
+        assertEquals(79, leqs[4] as Double, 2.0)
+        assertEquals(77, leqs[5] as Double, 2.0)
+        assertEquals(68, leqs[6] as Double, 2.0)
+        assertEquals(59, leqs[7] as Double, 2.0)
 
         assertTrue(res.contains("LEVENING_GEOM"))
 
         leqs = sql.firstRow("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000) FROM LEVENING_GEOM")
 
-        assertEquals(73.0, leqs[0] as Double, 2.0)
-        assertEquals(65.0, leqs[1] as Double, 2.0)
-        assertEquals(64.0, leqs[2] as Double, 2.0)
-        assertEquals(66.0, leqs[3] as Double, 2.0)
-        assertEquals(71.0, leqs[4] as Double, 2.0)
-        assertEquals(68.0, leqs[5] as Double, 2.0)
-        assertEquals(60.0, leqs[6] as Double, 2.0)
-        assertEquals(51.0, leqs[7] as Double, 2.0)
+        assertEquals(76.0, leqs[0] as Double, 2.0)
+        assertEquals(69.0, leqs[1] as Double, 2.0)
+        assertEquals(68.0, leqs[2] as Double, 2.0)
+        assertEquals(70.0, leqs[3] as Double, 2.0)
+        assertEquals(74.0, leqs[4] as Double, 2.0)
+        assertEquals(71.0, leqs[5] as Double, 2.0)
+        assertEquals(62.0, leqs[6] as Double, 2.0)
+        assertEquals(53.0, leqs[7] as Double, 2.0)
 
         assertTrue(res.contains("LNIGHT_GEOM"))
 
         leqs = sql.firstRow("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000) FROM LNIGHT_GEOM")
 
-        assertEquals(79.0, leqs[0] as Double, 2.0)
-        assertEquals(71.0, leqs[1] as Double, 2.0)
-        assertEquals(70.0, leqs[2] as Double, 2.0)
-        assertEquals(72.0, leqs[3] as Double, 2.0)
-        assertEquals(76.0, leqs[4] as Double, 2.0)
-        assertEquals(74.0, leqs[5] as Double, 2.0)
-        assertEquals(66.0, leqs[6] as Double, 2.0)
-        assertEquals(57.0, leqs[7] as Double, 2.0)
+        assertEquals(83.0, leqs[0] as Double, 2.0)
+        assertEquals(74.0, leqs[1] as Double, 2.0)
+        assertEquals(73.0, leqs[2] as Double, 2.0)
+        assertEquals(75.0, leqs[3] as Double, 2.0)
+        assertEquals(79.0, leqs[4] as Double, 2.0)
+        assertEquals(76.0, leqs[5] as Double, 2.0)
+        assertEquals(68.0, leqs[6] as Double, 2.0)
+        assertEquals(58.0, leqs[7] as Double, 2.0)
 
         assertTrue(res.contains("LDEN_GEOM"))
 
         leqs = sql.firstRow("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000) FROM LDEN_GEOM")
 
-        assertEquals(79.0, leqs[0] as Double, 2.0)
-        assertEquals(71.0, leqs[1] as Double, 2.0)
-        assertEquals(70.0, leqs[2] as Double, 2.0)
-        assertEquals(72.0, leqs[3] as Double, 2.0)
-        assertEquals(77.0, leqs[4] as Double, 2.0)
-        assertEquals(74.0, leqs[5] as Double, 2.0)
-        assertEquals(66.0, leqs[6] as Double, 2.0)
-        assertEquals(57.0, leqs[7] as Double, 2.0)
+        assertEquals(82.0, leqs[0] as Double, 2.0)
+        assertEquals(75.0, leqs[1] as Double, 2.0)
+        assertEquals(74.0, leqs[2] as Double, 2.0)
+        assertEquals(76.0, leqs[3] as Double, 2.0)
+        assertEquals(80.0, leqs[4] as Double, 2.0)
+        assertEquals(77.0, leqs[5] as Double, 2.0)
+        assertEquals(68.0, leqs[6] as Double, 2.0)
+        assertEquals(59.0, leqs[7] as Double, 2.0)
     }
 
 //    void testLdayFromTrafficLongRun() {
@@ -181,16 +214,5 @@ class TestNoiseModelling extends JdbcTestCase {
         assertTrue(res.contains("LEVENING_GEOM"))
         assertTrue(res.contains("LNIGHT_GEOM"))
         assertTrue(res.contains("LDEN_GEOM"))
-    }
-
-    void testRoadEmissionFromDEN2() {
-
-        SHPRead.readShape(connection, TestDatabaseManager.getResource("ROADS2.shp").getPath())
-
-        String res = new Road_Emission_from_Traffic31().exec(connection,
-                ["tableRoads": "ROADS2"])
-
-
-        assertEquals("Calculation Done ! The table LW_ROADS has been created.", res)
     }
 }
