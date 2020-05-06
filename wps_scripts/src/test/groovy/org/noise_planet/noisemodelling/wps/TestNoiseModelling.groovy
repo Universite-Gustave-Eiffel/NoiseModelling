@@ -26,6 +26,7 @@ import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Lday_from_Traffic
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Lden_from_Road_Emission
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Road_Emission_from_Traffic
+import org.noise_planet.noisemodelling.wps.NoiseModelling.Road_Emission_from_Traffic31
 import org.noise_planet.noisemodelling.wps.Receivers.Building_Grid
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -182,4 +183,14 @@ class TestNoiseModelling extends JdbcTestCase {
         assertTrue(res.contains("LDEN_GEOM"))
     }
 
+    void testRoadEmissionFromDEN2() {
+
+        SHPRead.readShape(connection, TestDatabaseManager.getResource("ROADS2.shp").getPath())
+
+        String res = new Road_Emission_from_Traffic31().exec(connection,
+                ["tableRoads": "ROADS2"])
+
+
+        assertEquals("Calculation Done ! The table LW_ROADS has been created.", res)
+    }
 }

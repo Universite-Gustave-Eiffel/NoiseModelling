@@ -188,7 +188,7 @@ public class LDENPropagationProcessData extends PropagationProcessData {
                     wbv_speed,lvPerHour, mvPerHour, hgvPerHour, wavPerHour, wbvPerHour, freq, temperature,
                     roadSurface, tsStud, pmStud, junctionDistance, junctionType);
             rsParametersCnossos.setSlopePercentage(slope);
-            rsParametersCnossos.setCoeffVer(1);
+            rsParametersCnossos.setCoeffVer(ldenConfig.coefficientVersion);
             lvl[idFreq++] = EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos);
         }
         return lvl;

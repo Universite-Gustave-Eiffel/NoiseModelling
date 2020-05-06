@@ -43,6 +43,7 @@ public class LDENPointNoiseMapFactoryTest {
     public void testNoiseEmission() throws SQLException, IOException {
         SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("roads_traff.shp").getFile());
         LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW);
+        ldenConfig.setCoefficientVersion(1);
         LDENPropagationProcessData process = new LDENPropagationProcessData(null, ldenConfig);
         try(Statement st = connection.createStatement()) {
             double lv_speed = 70;

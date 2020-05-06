@@ -34,6 +34,10 @@ public class LDENConfig {
         this.input_mode = input_mode;
     }
 
+    // Cnossos revisions have multiple coefficients for road emission formulae
+    // this parameter will be removed when the final version of Cnossos will be published
+    int coefficientVersion = 1;
+
     // Process status
     boolean exitWhenDone = false;
     boolean aborted = false;
@@ -64,6 +68,18 @@ public class LDENConfig {
 
     public void setComputeLNight(boolean computeLNight) {
         this.computeLNight = computeLNight;
+    }
+
+    /**
+     * @param coefficientVersion Cnossos revisions have multiple coefficients for road emission formulae this parameter
+     *                          will be removed when the final version of Cnossos will be published
+     */
+    public void setCoefficientVersion(int coefficientVersion) {
+        this.coefficientVersion = coefficientVersion;
+    }
+
+    public int getCoefficientVersion() {
+        return coefficientVersion;
     }
 
     /**
