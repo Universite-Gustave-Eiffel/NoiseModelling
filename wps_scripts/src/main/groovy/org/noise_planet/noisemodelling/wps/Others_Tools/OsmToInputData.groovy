@@ -131,19 +131,19 @@ def exec(Connection connection, input) {
 
     String pathFile = input["pathFile"] as String
 
-    Boolean convert2Building = false
+    Boolean ignoreBuilding = false
     if ('convert2Building' in input) {
-        convert2Building = input['convert2Building'] as Boolean
+        ignoreBuilding = input['convert2Building'] as Boolean
     }
 
-    Boolean convert2Ground = false
+    Boolean ignoreGround = false
     if ('convert2Ground' in input) {
-        convert2Ground = input['convert2Ground'] as Boolean
+        ignoreGround = input['convert2Ground'] as Boolean
     }
 
-    Boolean convert2Roads = false
+    Boolean ignoreRoads = false
     if ('convert2Roads' in input) {
-        convert2Roads = input['convert2Roads'] as Boolean
+        ignoreRoads = input['convert2Roads'] as Boolean
     }
 
     Integer srid = 3857
@@ -178,15 +178,18 @@ def exec(Connection connection, input) {
 
 
     // IMPORT BUILDINGS
-    if (!convert2Building) {
+    if (!ignoreBuilding) {
         String Buildings_Import = '''
                 DROP TABLE IF EXISTS MAP_BUILDINGS;
+                -- list ways associated to building tag
                 CREATE TABLE MAP_BUILDINGS(ID_WAY BIGINT PRIMARY KEY) AS SELECT DISTINCT ID_WAY
                 FROM MAP_WAY_TAG WT, MAP_TAG T WHERE WT.ID_TAG = T.ID_TAG AND T.TAG_KEY IN ('building');
                 
+                -- add ways reffered as building from relation table (using outer ring only)
                 insert into MAP_BUILDINGS SELECT DISTINCT ID_WAY
                 FROM MAP_RELATION_TAG WT, MAP_TAG T, MAP_WAY_MEMBER WM WHERE WT.ID_TAG = T.ID_TAG AND T.TAG_KEY IN ('building') AND WM.ID_RELATION = WT.ID_RELATION AND ROLE = 'outer';
                 
+                -- create polygons from the selected ways and re-project coordinates
                 DROP TABLE IF EXISTS MAP_BUILDINGS_GEOM;
                 CREATE TABLE MAP_BUILDINGS_GEOM(ID_WAY INTEGER PRIMARY KEY, THE_GEOM GEOMETRY) AS SELECT ID_WAY,
                 ST_TRANSFORM(ST_SETSRID(ST_MAKEPOLYGON(ST_MAKELINE(THE_GEOM)), 4326), '''+srid+''') THE_GEOM FROM (SELECT (SELECT
@@ -198,16 +201,19 @@ def exec(Connection connection, input) {
                 ST_GEOMETRYN(THE_GEOM, ST_NUMGEOMETRIES(THE_GEOM));
                 
                 CREATE SPATIAL INDEX IF NOT EXISTS BUILDINGS_INDEX ON MAP_BUILDINGS_GEOM(the_geom);
-                
+                -- list buildings that intersects with other buildings that have a greater area
                 drop table if exists tmp_relation_buildings_buildings;
                 create table tmp_relation_buildings_buildings as select s1.ID_WAY as PK_BUILDING, S2.ID_WAY as PK2_BUILDING FROM MAP_BUILDINGS_GEOM S1, MAP_BUILDINGS_GEOM S2 WHERE ST_AREA(S1.THE_GEOM) < ST_AREA(S2.THE_GEOM) AND S1.THE_GEOM && S2.THE_GEOM AND ST_DISTANCE(S1.THE_GEOM, S2.THE_GEOM) <= 0.1;
                 
+                -- Alter that small area buildings by removing shared area
                 drop table if exists tmp_buildings_truncated;
-                create table tmp_buildings_truncated as select PK_BUILDING, ST_DIFFERENCE(s1.the_geom,  ST_BUFFER(ST_ACCUM(s2.the_geom), 0.1)) the_geom from tmp_relation_buildings_buildings r, MAP_BUILDINGS_GEOM s1, MAP_BUILDINGS_GEOM s2 WHERE PK_BUILDING = S1.ID_WAY AND PK2_BUILDING = S2.ID_WAY  GROUP BY PK_BUILDING;
+                create table tmp_buildings_truncated as select PK_BUILDING, ST_DIFFERENCE(s1.the_geom,  ST_BUFFER(ST_ACCUM(s2.the_geom), 0.1, 'join=mitre')) the_geom from tmp_relation_buildings_buildings r, MAP_BUILDINGS_GEOM s1, MAP_BUILDINGS_GEOM s2 WHERE PK_BUILDING = S1.ID_WAY AND PK2_BUILDING = S2.ID_WAY  GROUP BY PK_BUILDING;
                 
+                -- merge original buildings with altered buildings 
                 DROP TABLE IF EXISTS BUILDINGS;
                 create table BUILDINGS(ID_WAY INTEGER PRIMARY KEY, THE_GEOM GEOMETRY)  as select s.id_way, ST_SETSRID(s.the_geom, '''+srid+''') from  MAP_BUILDINGS_GEOM s where id_way not in (select PK_BUILDING from tmp_buildings_truncated) UNION ALL select PK_BUILDING, ST_SETSRID(the_geom, '''+srid+''') from tmp_buildings_truncated WHERE NOT st_isempty(the_geom);
-                
+
+                drop table if exists tmp_buildings_truncated;
                 alter table BUILDINGS add column height double;
                 -- Update height from way attributes
                 update BUILDINGS set height = (select round("VALUE" * 3.0 + RAND() * 2,1) from MAP_WAY_TAG where id_tag = (SELECT ID_TAG FROM MAP_TAG T WHERE T.TAG_KEY = 'building:levels' LIMIT 1) and id_way = BUILDINGS.id_way);
@@ -223,7 +229,7 @@ def exec(Connection connection, input) {
     }
 
     // IMPORT GROUND
-    if (!convert2Ground) {
+    if (!ignoreGround) {
         String Ground_Import = "DROP TABLE IF EXISTS MAP_SURFACE;\n" +
                 "CREATE TABLE MAP_SURFACE(id serial, ID_WAY BIGINT, surf_cat varchar) AS SELECT null, ID_WAY, \"VALUE\" surf_cat\n" +
                 "FROM MAP_WAY_TAG WT, MAP_TAG T\n" +
@@ -250,7 +256,7 @@ def exec(Connection connection, input) {
     }
 
     // IMPORT GROUND
-    if (!convert2Roads) {
+    if (!ignoreRoads) {
         String Roads_Import = "DROP TABLE MAP_ROADS_speed IF EXISTS;\n" +
                 "CREATE TABLE MAP_ROADS_speed(ID_WAY BIGINT PRIMARY KEY,MAX_SPEED BIGINT ) AS SELECT DISTINCT ID_WAY, VALUE MAX_SPEED FROM MAP_WAY_TAG WT, MAP_TAG T WHERE WT.ID_TAG = T.ID_TAG AND T.TAG_KEY IN ('maxspeed');\n" +
                 "DROP TABLE MAP_ROADS_HGW IF EXISTS;\n" +
