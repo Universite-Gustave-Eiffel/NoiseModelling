@@ -45,9 +45,9 @@ class TestTutorialOpenStreetMap extends JdbcTestCase {
         res = new OsmToInputData().exec(connection,
                 ["pathFile": TestTutorialOpenStreetMap.getResource("map.osm.gz").getPath(),
                  "targetSRID" : 2154,
-                 "convert2Building" : true,
-                 "convert2Ground" : true,
-                 "convert2Roads" : true])
+                 "convert2Building" : false,
+                 "convert2Ground" : false,
+                 "convert2Roads" : false])
 
         // Check SRID
         assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("BUILDINGS")))

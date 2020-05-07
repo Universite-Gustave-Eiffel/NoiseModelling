@@ -45,9 +45,9 @@ inputs = [pathFile        : [name       : 'Path of the OSM file',
                              title      : 'Path of the OSM file',
                              description: 'Path of the OSM file including extension. </br> For example : c:/home/area.osm.gz',
                              type       : String.class],
-          convert2Building: [name       : 'Import Buildings',
-                             title      : 'Import Buildings',
-                             description: 'If the box is checked, the table BUILDINGS will be extracted. ' +
+          convert2Building: [name       : 'Do not import Buildings',
+                             title      : 'Do not import Buildings',
+                             description: 'If the box is checked, the table BUILDINGS will NOT be extracted. ' +
                                      '<br>  The table will contain : </br>' +
                                      '- <b> THE_GEOM </b> : the 2D geometry of the building (POLYGON or MULTIPOLYGON). </br>' +
                                      '- <b> HEIGHT </b> : the height of the building (FLOAT). ' +
@@ -55,17 +55,17 @@ inputs = [pathFile        : [name       : 'Path of the OSM file',
                                      'Finally, if no information is available, a height of 5 m is set by default.',
                              min        : 0, max: 1,
                              type       : Boolean.class],
-          convert2Ground  : [name       : 'Import Surface acoustic absorption',
-                             title      : 'Import Surface acoustic absorption',
-                             description: 'If the box is checked, the table GROUND will be extracted.' +
+          convert2Ground  : [name       : 'Do not import Surface acoustic absorption',
+                             title      : 'Do not import Surface acoustic absorption',
+                             description: 'If the box is checked, the table GROUND will NOT be extracted.' +
                                      '</br>The table will contain : </br> ' +
                                      '- <b> THE_GEOM </b> : the 2D geometry of the sources (POLYGON or MULTIPOLYGON).</br> ' +
                                      '- <b> G </b> : the acoustic absorption of a ground (FLOAT between 0 : very hard and 1 : very soft).</br> ',
                              min        : 0, max: 1,
                              type       : Boolean.class],
-          convert2Roads   : [name       : 'Import Roads',
-                             title      : 'Import Roads',
-                             description: 'If the box is checked, the table ROADS will be extracted. ' +
+          convert2Roads   : [name       : 'Do not import Roads',
+                             title      : 'Do not import Roads',
+                             description: 'If the box is checked, the table ROADS will NOT be extracted. ' +
                                      "<br>  The table will contain : </br>" +
                                      "- <b> PK </b> : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY)<br/>" +
                                      "- <b> TV_D </b> : Hourly average light and heavy vehicle count (6-18h) (DOUBLE)<br/>" +
@@ -178,7 +178,7 @@ def exec(Connection connection, input) {
 
 
     // IMPORT BUILDINGS
-    if (convert2Building) {
+    if (!convert2Building) {
         String Buildings_Import = '''
                 DROP TABLE IF EXISTS MAP_BUILDINGS;
                 CREATE TABLE MAP_BUILDINGS(ID_WAY BIGINT PRIMARY KEY) AS SELECT DISTINCT ID_WAY
@@ -223,7 +223,7 @@ def exec(Connection connection, input) {
     }
 
     // IMPORT GROUND
-    if (convert2Ground) {
+    if (!convert2Ground) {
         String Ground_Import = "DROP TABLE IF EXISTS MAP_SURFACE;\n" +
                 "CREATE TABLE MAP_SURFACE(id serial, ID_WAY BIGINT, surf_cat varchar) AS SELECT null, ID_WAY, \"VALUE\" surf_cat\n" +
                 "FROM MAP_WAY_TAG WT, MAP_TAG T\n" +
@@ -239,7 +239,7 @@ def exec(Connection connection, input) {
                 "ST_GEOMETRYN(THE_GEOM, ST_NUMGEOMETRIES(THE_GEOM)) AND ST_NUMGEOMETRIES(THE_GEOM) >\n" +
                 "2;\n" +
                 "drop table if exists GROUND;\n" +
-                "create table GROUND(PK serial, the_geom geometry CHECK ST_SRID(THE_GEOM)=" + srid + ", surf_cat varchar, G double) as select id_way,  ST_TRANSFORM(ST_SETSRID(THE_GEOM, 4326), " + srid + ") the_geom , surf_cat, 1 g from MAP_SURFACE_GEOM where surf_cat IN ('grass', 'village_green', 'park');\n" +
+                "create table GROUND(PK serial, the_geom geometry CHECK ST_SRID(THE_GEOM)=" + srid + ", surf_cat varchar, G double) as select null,  ST_TRANSFORM(ST_SETSRID(THE_GEOM, 4326), " + srid + ") the_geom , surf_cat, 1 g from MAP_SURFACE_GEOM where surf_cat IN ('grass', 'village_green', 'park');\n" +
                 "drop table if exists MAP_SURFACE_GEOM;"
 
         sql.execute(Ground_Import)
@@ -250,7 +250,7 @@ def exec(Connection connection, input) {
     }
 
     // IMPORT GROUND
-    if (convert2Roads) {
+    if (!convert2Roads) {
         String Roads_Import = "DROP TABLE MAP_ROADS_speed IF EXISTS;\n" +
                 "CREATE TABLE MAP_ROADS_speed(ID_WAY BIGINT PRIMARY KEY,MAX_SPEED BIGINT ) AS SELECT DISTINCT ID_WAY, VALUE MAX_SPEED FROM MAP_WAY_TAG WT, MAP_TAG T WHERE WT.ID_TAG = T.ID_TAG AND T.TAG_KEY IN ('maxspeed');\n" +
                 "DROP TABLE MAP_ROADS_HGW IF EXISTS;\n" +
@@ -350,7 +350,7 @@ def exec(Connection connection, input) {
 
 
 
-    resultString = resultString + "Calculation Done !"
+    resultString = resultString + "<br> Calculation Done !"
 
     // print to command window
     System.out.println('Result : ' + resultString)
