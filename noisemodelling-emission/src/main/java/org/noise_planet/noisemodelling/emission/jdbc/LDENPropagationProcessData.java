@@ -137,7 +137,7 @@ public class LDENPropagationProcessData extends PropagationProcessData {
             lvPerHour = rs.getDouble(sourceFields.get("LV_"+period));
         }
         if(sourceFields.containsKey("MV_"+period)) {
-            mvPerHour = rs.getDouble(sourceFields.get("LV_"+period));
+            mvPerHour = rs.getDouble(sourceFields.get("MV_"+period));
         }
         if(sourceFields.containsKey("HGV_"+period)) {
             hgvPerHour = rs.getDouble(sourceFields.get("HGV_"+period));
