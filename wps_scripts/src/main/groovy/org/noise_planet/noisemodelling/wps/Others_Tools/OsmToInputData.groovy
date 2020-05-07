@@ -211,14 +211,14 @@ def exec(Connection connection, input) {
                 
                 -- merge original buildings with altered buildings 
                 DROP TABLE IF EXISTS BUILDINGS;
-                create table BUILDINGS(ID_WAY INTEGER PRIMARY KEY, THE_GEOM GEOMETRY)  as select s.id_way, ST_SETSRID(s.the_geom, '''+srid+''') from  MAP_BUILDINGS_GEOM s where id_way not in (select PK_BUILDING from tmp_buildings_truncated) UNION ALL select PK_BUILDING, ST_SETSRID(the_geom, '''+srid+''') from tmp_buildings_truncated WHERE NOT st_isempty(the_geom);
+                create table BUILDINGS(PK INTEGER PRIMARY KEY, THE_GEOM GEOMETRY)  as select s.id_way, ST_SETSRID(s.the_geom, '''+srid+''') from  MAP_BUILDINGS_GEOM s where id_way not in (select PK_BUILDING from tmp_buildings_truncated) UNION ALL select PK_BUILDING, ST_SETSRID(the_geom, '''+srid+''') from tmp_buildings_truncated WHERE NOT st_isempty(the_geom);
 
                 drop table if exists tmp_buildings_truncated;
                 alter table BUILDINGS add column height double;
                 -- Update height from way attributes
-                update BUILDINGS set height = (select round("VALUE" * 3.0 + RAND() * 2,1) from MAP_WAY_TAG where id_tag = (SELECT ID_TAG FROM MAP_TAG T WHERE T.TAG_KEY = 'building:levels' LIMIT 1) and id_way = BUILDINGS.id_way);
+                update BUILDINGS set height = (select round("VALUE" * 3.0 + RAND() * 2,1) from MAP_WAY_TAG where id_tag = (SELECT ID_TAG FROM MAP_TAG T WHERE T.TAG_KEY = 'building:levels' LIMIT 1) and id_way = BUILDINGS.pk);
                 -- update height from relation attributes
-                update BUILDINGS set height = (select round("TAG_VALUE" * 3.0 + RAND() * 2,1) from MAP_RELATION_TAG WT, MAP_WAY_MEMBER WM where id_tag = (SELECT ID_TAG FROM MAP_TAG T WHERE T.TAG_KEY = 'building:levels' LIMIT 1) and WM.ID_RELATION = WT.ID_RELATION AND wm.id_way = BUILDINGS.id_way);
+                update BUILDINGS set height = (select round("TAG_VALUE" * 3.0 + RAND() * 2,1) from MAP_RELATION_TAG WT, MAP_WAY_MEMBER WM where id_tag = (SELECT ID_TAG FROM MAP_TAG T WHERE T.TAG_KEY = 'building:levels' LIMIT 1) and WM.ID_RELATION = WT.ID_RELATION AND wm.id_way = BUILDINGS.pk);
                 -- update for buildings without height infos
                 update BUILDINGS set height = round(4 + RAND() * 2,1) where height is null;
                 
