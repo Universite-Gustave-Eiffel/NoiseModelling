@@ -260,7 +260,7 @@ def exec(Connection connection, input) {
     // -------------------------
 
     // Attenuation matrix table
-    List<ComputeRaysOut.verticeSL> allLevels = new ArrayList<>()
+    List<ComputeRaysOut.VerticeSL> allLevels = new ArrayList<>()
     // Set of already processed receivers
     Set<Long> receivers = new HashSet<>()
 

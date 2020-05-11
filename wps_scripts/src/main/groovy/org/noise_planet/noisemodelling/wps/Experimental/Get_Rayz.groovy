@@ -187,7 +187,7 @@ def exec(Connection connection, input) {
     GeoJsonDriverFunction geoJsonDriver = new GeoJsonDriverFunction()
     // create properties file
     Properties properties = new Properties()
-    List<ComputeRaysOut.verticeSL> allLevels = new ArrayList<>()
+    List<ComputeRaysOut.VerticeSL> allLevels = new ArrayList<>()
     // Set of already processed receivers
     Set<Long> receivers = new HashSet<>()
     // All rays storage
@@ -509,7 +509,7 @@ class PropagationPathStorage extends ComputeRaysOut {
             double[] aGlobalMeteo = propagationPathStorage.computeAttenuation(propagationPathStorage.genericMeteoData, sourceId, sourceLi, receiverId, propagationPath);
             if (aGlobalMeteo != null && aGlobalMeteo.length > 0) {
 
-                propagationPathStorage.receiversAttenuationLevels.add(new ComputeRaysOut.verticeSL(paths.receiverId, paths.sourceId, aGlobalMeteo))
+                propagationPathStorage.receiversAttenuationLevels.add(new ComputeRaysOut.VerticeSL(paths.receiverId, paths.sourceId, aGlobalMeteo))
                 return aGlobalMeteo
             } else {
                 return new double[0]

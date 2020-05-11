@@ -5,9 +5,9 @@ import org.cts.op.CoordinateOperationException;
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.api.ProgressVisitor;
 import org.h2gis.functions.io.geojson.GeoJsonRead;
-import org.h2gis.functions.io.shp.SHPRead;
 import org.h2gis.utilities.SFSUtilities;
-import org.locationtech.jts.geom.Coordinate;
+import org.noise_planet.noisemodelling.emission.jdbc.LDENConfig;
+import org.noise_planet.noisemodelling.emission.jdbc.LDENPointNoiseMapFactory;
 import org.noise_planet.noisemodelling.propagation.*;
 import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap;
 import org.slf4j.Logger;
@@ -55,17 +55,29 @@ class Main {
         Connection connection = SFSUtilities.wrapConnection(DbUtilities.createSpatialDataBase(dbName, true));
         Statement sql = connection.createStatement();
 
-        // Convert Open Street Map data to buildings, roads and receivers
-        logger.info("Extract OpenStreetMap objects");
-        sql.execute(String.format("CALL OSMREAD('%s', 'MAP')", Main.class.getResource("map.osm.gz").getFile()));
+        // Import BUILDINGS
 
-        sql.execute(String.format("RUNSCRIPT FROM '%s'", Main.class.getResource("import_buildings.sql").getFile()));
+        logger.info("Import buildings");
 
-        sql.execute(String.format("RUNSCRIPT FROM '%s'", Main.class.getResource("import_roads.sql").getFile()));
+        GeoJsonRead.readGeoJson(connection, Main.class.getResource("buildings.geojson").getFile(), "BUILDINGS");
 
-        sql.execute(String.format("RUNSCRIPT FROM '%s'", Main.class.getResource("import_vegetation.sql").getFile()));
+        // Import noise source
 
-        sql.execute(String.format("RUNSCRIPT FROM '%s'", Main.class.getResource("create_receivers.sql").getFile()));
+        logger.info("Import noise source");
+
+        GeoJsonRead.readGeoJson(connection, Main.class.getResource("lw_roads.geojson").getFile(), "LW_ROADS");
+        // Set primary key
+        sql.execute("ALTER TABLE LW_ROADS ALTER COLUMN PK INTEGER NOT NULL");
+        sql.execute("ALTER TABLE LW_ROADS ADD PRIMARY KEY (PK)");
+
+        // Import BUILDINGS
+
+        logger.info("Import evaluation coordinates");
+
+        GeoJsonRead.readGeoJson(connection, Main.class.getResource("receivers.geojson").getFile(), "RECEIVERS");
+        // Set primary key
+        sql.execute("ALTER TABLE RECEIVERS ALTER COLUMN PK INTEGER NOT NULL");
+        sql.execute("ALTER TABLE RECEIVERS ADD PRIMARY KEY (PK)");
 
 
         // Import MNT
@@ -74,19 +86,15 @@ class Main {
 
         GeoJsonRead.readGeoJson(connection, Main.class.getResource("dem_lorient.geojson").getFile(), "DEM");
 
-
-
         // Init NoiseModelling
-        PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS_RAW", "ROADS", "RECEIVERS");
+        PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS", "LW_ROADS", "RECEIVERS");
 
-        pointNoiseMap.setMaximumPropagationDistance(200.0d);
+        pointNoiseMap.setMaximumPropagationDistance(500.0d);
         pointNoiseMap.setSoundReflectionOrder(0);
         pointNoiseMap.setComputeHorizontalDiffraction(true);
         pointNoiseMap.setComputeVerticalDiffraction(true);
         // Building height field name
         pointNoiseMap.setHeightField("HEIGHT");
-        // Import table with Snow, Forest, Grass, Pasture field polygons. Attribute G is associated with each polygon
-        pointNoiseMap.setSoilTableName("SURFACE_RAW");
         // Point cloud height above sea level POINT(X Y Z)
         pointNoiseMap.setDemTable("DEM");
         // Do not propagate for low emission or far away sources.
@@ -94,37 +102,49 @@ class Main {
         pointNoiseMap.setMaximumError(0.1d);
 
         // Init custom input in order to compute more than just attenuation
+        // LW_ROADS contain Day Evening Night emission spectrum
+        LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN);
 
-        TrafficPropagationProcessDataFactory trafficPropagationProcessDataFactory = new TrafficPropagationProcessDataFactory();
-        pointNoiseMap.setPropagationProcessDataFactory(trafficPropagationProcessDataFactory);
+        LDENPointNoiseMapFactory tableWriter = new LDENPointNoiseMapFactory(connection, ldenConfig);
+
+        tableWriter.setKeepRays(true);
+
+        pointNoiseMap.setPropagationProcessDataFactory(tableWriter);
+        pointNoiseMap.setComputeRaysOutFactory(tableWriter);
+
         RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1);
 
         pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
+
+        // force the creation of a 2x2 cells
+        pointNoiseMap.setGridDim(2);
+
 
         // Set of already processed receivers
         Set<Long> receivers = new HashSet<>();
         ProgressVisitor progressVisitor = progressLogger.subProcess(pointNoiseMap.getGridDim()*pointNoiseMap.getGridDim());
         logger.info("start");
         long start = System.currentTimeMillis();
-        System.out.println("Rec\tSource\tLevel");
+
         // Iterate over computation areas
-        for (int i = 0; i < pointNoiseMap.getGridDim(); i++) {
-            for (int j = 0; j < pointNoiseMap.getGridDim(); j++) {
-                // Run ray propagation
-                IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, i, j, progressVisitor, receivers);
-                // Return results with level spectrum for each source/receiver tuple
-                if(out instanceof ComputeRaysOut) {
-                    ComputeRaysOut cellStorage = (ComputeRaysOut) out;
-                    exportScene(String.format("target/scene_%d_%d.kml", i, j), cellStorage.inputData.freeFieldFinder, cellStorage);
-                    for(ComputeRaysOut.verticeSL v : cellStorage.receiversAttenuationLevels) {
-                        double globalDbValue = ComputeRays.wToDba(ComputeRays.sumArray(ComputeRays.dbaToW(v.value)));
-                        System.out.println(String.format("%d\t%d\t%.2f", v.receiverId, v.sourceId, globalDbValue));
+        try {
+            tableWriter.start();
+            for (int i = 0; i < pointNoiseMap.getGridDim(); i++) {
+                for (int j = 0; j < pointNoiseMap.getGridDim(); j++) {
+                    // Run ray propagation
+                    IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, i, j, progressVisitor, receivers);
+                    // Export as a Google Earth 3d scene
+                    if (out instanceof ComputeRaysOut) {
+                        ComputeRaysOut cellStorage = (ComputeRaysOut) out;
+                        exportScene(String.format(Locale.ROOT,"target/scene_%d_%d.kml", i, j), cellStorage.inputData.freeFieldFinder, cellStorage);
                     }
                 }
             }
+        } finally {
+            tableWriter.stop();
         }
         long computationTime = System.currentTimeMillis() - start;
-        logger.info(String.format("Computed in %d ms, %.2f ms per receiver", computationTime,computationTime / (double)receivers.size()));
+        logger.info(String.format(Locale.ROOT, "Computed in %d ms, %.2f ms per receiver", computationTime,computationTime / (double)receivers.size()));
 
     }
 

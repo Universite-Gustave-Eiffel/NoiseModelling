@@ -26,6 +26,8 @@ import geoserver.catalog.Store
 import groovy.sql.Sql
 import groovy.time.TimeCategory
 import org.geotools.jdbc.JDBCDataStore
+import org.locationtech.jts.geom.Geometry
+import org.locationtech.jts.io.WKTWriter
 
 import java.sql.Connection
 
@@ -113,7 +115,7 @@ static String mapToTable(List<Map> list, Sql sql, String tableName) {
     }
 
     output.append("</tr></thead><tbody>")
-
+    WKTWriter wktWriter = new WKTWriter(3)
     list.each { map ->
         if (map.size() > 0) {
 
@@ -122,7 +124,11 @@ static String mapToTable(List<Map> list, Sql sql, String tableName) {
             output.append("<tr>")
 
             values.each {
-                output.append "<td><div style='width: 150px;'>${it}</div></td>"
+                def val = it
+                if(it instanceof Geometry) {
+                    val = wktWriter.write(it)
+                }
+                output.append "<td><div style='width: 150px;'>${val}</div></td>"
             }
 
             output.append("</tr>")

@@ -237,18 +237,18 @@ public class RSParametersCnossos {
      * @param Junc_type Type of junction ((k = 1 for a crossing with traffic lights ; k = 2 for a roundabout)
      */
     public RSParametersCnossos(double lv_speed, double mv_speed, double hgv_speed, double wav_speed, double wbv_speed, double lvPerHour, double mvPerHour, double hgvPerHour, double wavPerHour, double wbvPerHour, int FreqParam, double Temperature, String roadSurface, double Ts_stud, double Pm_stud, double Junc_dist, int Junc_type) {
-        this.lvPerHour = lvPerHour;
-        this.mvPerHour = mvPerHour;
-        this.hgvPerHour = hgvPerHour;
-        this.wavPerHour = wavPerHour;
-        this.wbvPerHour = wbvPerHour;
-        this.FreqParam = FreqParam;
+        this.lvPerHour = Math.max(0, lvPerHour);
+        this.mvPerHour = Math.max(0, mvPerHour);
+        this.hgvPerHour = Math.max(0, hgvPerHour);
+        this.wavPerHour = Math.max(0, wavPerHour);
+        this.wbvPerHour = Math.max(0, wbvPerHour);
+        this.FreqParam = Math.max(0, FreqParam);
         this.Temperature = Temperature;
         this.roadSurface = roadSurface;
-        this.Ts_stud = Ts_stud;
-        this.Pm_stud = Pm_stud;
-        this.Junc_dist = Junc_dist;
-        this.Junc_type = Junc_type;
+        this.Ts_stud = Math.max(0, Math.min(12, Ts_stud));
+        this.Pm_stud = Math.max(0, Math.min(1, Pm_stud));
+        this.Junc_dist = Math.max(0, Junc_dist);
+        this.Junc_type = Math.max(0, Math.min(2, Junc_type));
         setSpeedLv(lv_speed);
         setSpeedMv(mv_speed);
         setSpeedHgv(hgv_speed);

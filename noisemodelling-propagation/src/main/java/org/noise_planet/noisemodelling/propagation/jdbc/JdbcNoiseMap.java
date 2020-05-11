@@ -296,7 +296,7 @@ public abstract class JdbcNoiseMap {
      * @throws java.sql.SQLException
      */
     public void initialize(Connection connection, ProgressVisitor progression) throws SQLException {
-        if(maximumPropagationDistance < maximumReflectionDistance) {
+        if(soundReflectionOrder > 0 && maximumPropagationDistance < maximumReflectionDistance) {
             throw new SQLException(new IllegalArgumentException(
                     "Maximum wall seeking distance cannot be superior than maximum propagation distance"));
         }

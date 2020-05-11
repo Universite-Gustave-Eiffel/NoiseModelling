@@ -41,10 +41,7 @@ class TestDynamicTools extends JdbcTestCase  {
         // Import OSM file
         String res = new OsmToInputData().exec(connection,
                 ["pathFile": TestTutorialOpenStreetMap.getResource("map.osm.gz").getPath(),
-                 "targetSRID" : 2154,
-                 "convert2Building" : true,
-                 "convert2Ground" : true,
-                 "convert2Roads" : true])
+                 "targetSRID" : 2154])
 
         new Building_Grid().exec(connection,  ["tableBuilding"   : "BUILDINGS",
                                                "delta"           : 10,

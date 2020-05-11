@@ -53,7 +53,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Pierre Aumond
  */
 public class ComputeRaysOut implements IComputeRaysOut {
-    public ConcurrentLinkedDeque<verticeSL> receiversAttenuationLevels = new ConcurrentLinkedDeque<>();
+    public ConcurrentLinkedDeque<VerticeSL> receiversAttenuationLevels = new ConcurrentLinkedDeque<>();
     public List<PropagationPath> propagationPaths = Collections.synchronizedList(new ArrayList<PropagationPath>());
 
     public PropagationProcessPathData genericMeteoData;
@@ -127,7 +127,7 @@ public class ComputeRaysOut implements IComputeRaysOut {
                     receiverId = inputData.receiversPk.get((int)receiverId);
                 }
             }
-            receiversAttenuationLevels.add(new ComputeRaysOut.verticeSL(receiverId, sourceId, aGlobalMeteo));
+            receiversAttenuationLevels.add(new VerticeSL(receiverId, sourceId, aGlobalMeteo));
             return aGlobalMeteo;
         } else {
             return new double[0];
@@ -183,7 +183,7 @@ public class ComputeRaysOut implements IComputeRaysOut {
         return new ThreadRaysOut(this);
     }
 
-    public List<ComputeRaysOut.verticeSL> getVerticesSoundLevel() {
+    public List<VerticeSL> getVerticesSoundLevel() {
         return new ArrayList<>(receiversAttenuationLevels);
     }
 
@@ -231,12 +231,12 @@ public class ComputeRaysOut implements IComputeRaysOut {
     /**
      * Noise level or attenuation level for each source/receiver
      */
-    public static class verticeSL {
+    public static class VerticeSL {
         public final long sourceId;
         public final long receiverId;
         public final double[] value;
 
-        public verticeSL(long receiverId, long sourceId, double[] value) {
+        public VerticeSL(long receiverId, long sourceId, double[] value) {
             this.sourceId = sourceId;
             this.receiverId = receiverId;
             this.value = value;
@@ -244,8 +244,8 @@ public class ComputeRaysOut implements IComputeRaysOut {
     }
 
     public static class ThreadRaysOut implements IComputeRaysOut {
-        private ComputeRaysOut multiThreadParent;
-        protected List<ComputeRaysOut.verticeSL> receiverAttenuationLevels = new ArrayList<>();
+        protected ComputeRaysOut multiThreadParent;
+        protected List<VerticeSL> receiverAttenuationLevels = new ArrayList<>();
 
         public ThreadRaysOut(ComputeRaysOut multiThreadParent) {
             this.multiThreadParent = multiThreadParent;
@@ -271,7 +271,7 @@ public class ComputeRaysOut implements IComputeRaysOut {
                 }
             }
             if (aGlobalMeteo != null) {
-                receiverAttenuationLevels.add(new ComputeRaysOut.verticeSL(receiverId, sourceId, aGlobalMeteo));
+                receiverAttenuationLevels.add(new VerticeSL(receiverId, sourceId, aGlobalMeteo));
                 return aGlobalMeteo;
             } else {
                 return new double[0];
@@ -279,7 +279,7 @@ public class ComputeRaysOut implements IComputeRaysOut {
         }
 
         protected void pushResult(long receiverId, long sourceId, double[] level) {
-            multiThreadParent.receiversAttenuationLevels.add(new verticeSL(receiverId, sourceId, level));
+            multiThreadParent.receiversAttenuationLevels.add(new VerticeSL(receiverId, sourceId, level));
         }
 
         @Override
@@ -295,7 +295,7 @@ public class ComputeRaysOut implements IComputeRaysOut {
                 // Push merged sources into multi-thread parent
                 // Merge levels for each receiver for lines sources
                 Map<Long, double[]> levelsPerSourceLines = new HashMap<>();
-                for (ComputeRaysOut.verticeSL lvl : receiverAttenuationLevels) {
+                for (VerticeSL lvl : receiverAttenuationLevels) {
                     if (!levelsPerSourceLines.containsKey(lvl.sourceId)) {
                         levelsPerSourceLines.put(lvl.sourceId, lvl.value);
                     } else {

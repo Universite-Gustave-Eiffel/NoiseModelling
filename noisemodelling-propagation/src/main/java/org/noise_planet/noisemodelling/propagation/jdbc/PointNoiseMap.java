@@ -78,7 +78,7 @@ public class PointNoiseMap extends JdbcNoiseMap {
     public PropagationProcessData prepareCell(Connection connection,int cellI, int cellJ,
                                               ProgressVisitor progression, Set<Long> skipReceivers) throws SQLException {
         MeshBuilder mesh = new MeshBuilder();
-        int ij = cellI * gridDim + cellJ;
+        int ij = cellI * gridDim + cellJ + 1;
         if(verbose) {
             logger.info("Begin processing of cell " + ij + " / " + gridDim * gridDim);
         }

@@ -89,7 +89,8 @@ class TestImportExport extends JdbcTestCase {
                  "tableToExport": "RECEIVERS"])
 
 
-        assertEquals("The table RECEIVERS successfully exported  with the SRID : 2154", res)
+        assertTrue(res.contains("RECEIVERS"))
+        assertTrue(res.contains("2154"))
     }
 
 }

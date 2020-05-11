@@ -11,19 +11,20 @@ public class RootProgressVisitor extends DefaultProgressVisitor {
     private PropertyChangeSupport propertyChangeSupport = new PropertyChangeSupport(this);
     private boolean canceled = false;
     private boolean logProgression = false;
-    private int progressionLogStep = 1;
     private Logger logger = LoggerFactory.getLogger(RootProgressVisitor.class);
-    private int lastLoggedProgression = 0;
+    private String lastLoggedProgression = "";
+    private double minimumSecondsBetweenPrint = 1.0;
+    private long lastPrint = 0;
 
     public RootProgressVisitor(long subprocessSize) {
         super(subprocessSize, null);
     }
 
 
-    public RootProgressVisitor(long subprocessSize, boolean logProgression, int progressionLogStep) {
+    public RootProgressVisitor(long subprocessSize, boolean logProgression, double minimumSecondsBetweenPrint) {
         super(subprocessSize, null);
         this.logProgression = logProgression;
-        this.progressionLogStep = progressionLogStep;
+        this.minimumSecondsBetweenPrint = minimumSecondsBetweenPrint;
     }
 
     @Override
@@ -43,10 +44,14 @@ public class RootProgressVisitor extends DefaultProgressVisitor {
         double newProgress = getProgression();
         propertyChangeSupport.firePropertyChange("PROGRESS", oldProgress, newProgress);
         if(logProgression) {
-            int newLogProgress = Double.valueOf(newProgress * 100).intValue();
-            if(newLogProgress - lastLoggedProgression >= progressionLogStep) {
+            String newLogProgress = String.format("%.2f %%", newProgress * 100);
+            if(!newLogProgress.equals(lastLoggedProgression)) {
                 lastLoggedProgression = newLogProgress;
-                logger.info(String.format("%d %%", newLogProgress));
+                long t = System.currentTimeMillis();
+                if((t - lastPrint) / 1000.0 > minimumSecondsBetweenPrint) {
+                    logger.info(newLogProgress);
+                    lastPrint = t;
+                }
             }
         }
     }

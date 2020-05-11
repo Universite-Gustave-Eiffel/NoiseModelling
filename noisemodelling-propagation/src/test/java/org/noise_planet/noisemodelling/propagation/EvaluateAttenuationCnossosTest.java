@@ -13,12 +13,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.*;
 
 import static org.junit.Assert.*;
-import static org.noise_planet.noisemodelling.propagation.KMLDocument.exportScene;
 
 public class EvaluateAttenuationCnossosTest {
 
@@ -1671,7 +1669,7 @@ public class EvaluateAttenuationCnossosTest {
 
         // Merge levels for each receiver for point sources
         Map<Long, double[]> levelsPerReceiver = new HashMap<>();
-        for(ComputeRaysOut.verticeSL lvl : propDataOut.receiversAttenuationLevels) {
+        for(ComputeRaysOut.VerticeSL lvl : propDataOut.receiversAttenuationLevels) {
             if(!levelsPerReceiver.containsKey(lvl.receiverId)) {
                 levelsPerReceiver.put(lvl.receiverId, lvl.value);
             } else {
@@ -1684,7 +1682,7 @@ public class EvaluateAttenuationCnossosTest {
 
         // Merge levels for each receiver for lines sources
         Map<Long, double[]> levelsPerReceiverLines = new HashMap<>();
-        for(ComputeRaysOut.verticeSL lvl : propDataOutTest.receiversAttenuationLevels) {
+        for(ComputeRaysOut.VerticeSL lvl : propDataOutTest.receiversAttenuationLevels) {
             if(!levelsPerReceiverLines.containsKey(lvl.receiverId)) {
                 levelsPerReceiverLines.put(lvl.receiverId, lvl.value);
             } else {

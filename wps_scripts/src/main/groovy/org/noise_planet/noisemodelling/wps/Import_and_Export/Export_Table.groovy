@@ -38,6 +38,7 @@ import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.SFSUtilities
 import org.h2gis.utilities.TableLocation
 
+import java.nio.file.Paths
 import java.sql.Connection
 
 
@@ -125,11 +126,13 @@ def exec(Connection connection, input) {
     //get SRID of the table
     int srid = SFSUtilities.getSRID(connection, TableLocation.parse(tableToExport))
     // if a SRID exists
-    if (srid <0) {
+    if (srid < 0) {
         System.println("Warning ! No SRID found !")
-        resultString = "The table " + tableToExport + " successfully exported  with no SRID ! "
-    }else{
-        resultString = "The table " + tableToExport + " successfully exported  with the SRID : " + srid
+        resultString = "The table " + tableToExport + " successfully exported to <b>" +
+                new File(exportPath).absolutePath + "</b>  without SRID ! "
+    } else {
+        resultString = "The table " + tableToExport + " successfully exported to <b>" +
+                new File(exportPath).absolutePath + "</b>  with the SRID : " + srid
     }
 
 

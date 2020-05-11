@@ -73,7 +73,7 @@ public class PointNoiseMapTest {
             pointNoiseMap.setComputeRaysOutFactory(new JDBCComputeRaysOut(true));
             pointNoiseMap.setPropagationProcessDataFactory(new JDBCPropagationData());
 
-            List<ComputeRaysOut.verticeSL> allLevels = new ArrayList<>();
+            List<ComputeRaysOut.VerticeSL> allLevels = new ArrayList<>();
             ArrayList<PropagationPath> propaMap = new ArrayList<>();
             Set<Long> receivers = new HashSet<>();
             pointNoiseMap.setThreadCount(1);
