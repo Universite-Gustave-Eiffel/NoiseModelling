@@ -73,9 +73,7 @@ Step 3: Run WPSBuilder
 
 The WPSBuilder is the user interface used to communicate between the GeoServer and NoiseModelling.
 
-To launch WPSBuilder, please execute “index.html” from your own WPSBuilder folder using your preferred web browser:
-
-- WPSBuilder\\index.html
+To launch WPSBuilder, go to http://localhost:9580 using your preferred web browser.
 
 Step 4: Upload files to database
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
