@@ -1170,6 +1170,7 @@ public class ComputeRays {
                     }
                 }
             } catch (Exception ex) {
+                LOGGER.error(ex.getLocalizedMessage(), ex);
                 if(progressVisitor != null) {
                     progressVisitor.cancel();
                 }

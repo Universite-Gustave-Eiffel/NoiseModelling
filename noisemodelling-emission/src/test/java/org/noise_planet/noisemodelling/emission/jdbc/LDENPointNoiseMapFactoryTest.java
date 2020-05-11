@@ -167,7 +167,7 @@ public class LDENPointNoiseMapFactoryTest {
         }
 
         // Check dB ranges of result
-        try(ResultSet rs = connection.createStatement().executeQuery("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000) FROM "+ ldenConfig.lDayTable)) {
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000), MAX(LEQ), MAX(LAEQ) FROM "+ ldenConfig.lDayTable)) {
             assertTrue(rs.next());
             double[] leqs = new double[PropagationProcessPathData.freq_lvl.size()];
             for(int idfreq = 1; idfreq <= PropagationProcessPathData.freq_lvl.size(); idfreq++) {
@@ -181,11 +181,14 @@ public class LDENPointNoiseMapFactoryTest {
             assertEquals(77, leqs[5], 2.0);
             assertEquals(68, leqs[6], 2.0);
             assertEquals(59, leqs[7], 2.0);
+
+            assertEquals(85, rs.getDouble(9), 2.0);
+            assertEquals(82,rs.getDouble(10), 2.0);
         }
 
 
 
-        try(ResultSet rs = connection.createStatement().executeQuery("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000) FROM "+ ldenConfig.lEveningTable)) {
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000), MAX(LEQ), MAX(LAEQ) FROM "+ ldenConfig.lEveningTable)) {
             assertTrue(rs.next());
             double[] leqs = new double[PropagationProcessPathData.freq_lvl.size()];
             for (int idfreq = 1; idfreq <= PropagationProcessPathData.freq_lvl.size(); idfreq++) {
@@ -199,10 +202,13 @@ public class LDENPointNoiseMapFactoryTest {
             assertEquals(71.0, leqs[5], 2.0);
             assertEquals(62.0, leqs[6], 2.0);
             assertEquals(53.0, leqs[7], 2.0);
+
+            assertEquals(80, rs.getDouble(9), 2.0);
+            assertEquals(77,rs.getDouble(10), 2.0);
         }
 
 
-        try(ResultSet rs = connection.createStatement().executeQuery("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000) FROM "+ ldenConfig.lNightTable)) {
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000), MAX(LEQ), MAX(LAEQ) FROM "+ ldenConfig.lNightTable)) {
             assertTrue(rs.next());
             double[] leqs = new double[PropagationProcessPathData.freq_lvl.size()];
             for (int idfreq = 1; idfreq <= PropagationProcessPathData.freq_lvl.size(); idfreq++) {
@@ -216,9 +222,12 @@ public class LDENPointNoiseMapFactoryTest {
             assertEquals(76.0, leqs[5], 2.0);
             assertEquals(68.0, leqs[6], 2.0);
             assertEquals(58.0, leqs[7], 2.0);
+
+            assertEquals(85, rs.getDouble(9), 2.0);
+            assertEquals(82,rs.getDouble(10), 2.0);
         }
 
-        try(ResultSet rs = connection.createStatement().executeQuery("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000) FROM "+ ldenConfig.lDenTable)) {
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000), MAX(LEQ), MAX(LAEQ) FROM "+ ldenConfig.lDenTable)) {
             assertTrue(rs.next());
             double[] leqs = new double[PropagationProcessPathData.freq_lvl.size()];
             for (int idfreq = 1; idfreq <= PropagationProcessPathData.freq_lvl.size(); idfreq++) {
@@ -232,6 +241,9 @@ public class LDENPointNoiseMapFactoryTest {
             assertEquals(77.0, leqs[5], 2.0);
             assertEquals(68.0, leqs[6], 2.0);
             assertEquals(59.0, leqs[7], 2.0);
+
+            assertEquals(86, rs.getDouble(9), 2.0);
+            assertEquals(83,rs.getDouble(10), 2.0);
         }
     }
 }
