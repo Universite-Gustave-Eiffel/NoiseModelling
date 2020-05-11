@@ -217,9 +217,6 @@ def exec(Connection connection, input) {
 
     sql.execute("UPDATE "+receivers_table_name+" SET THE_GEOM = ST_SETSRID(THE_GEOM, "+srid+")")
 
-    // TODO remove when ISO contouring is restored
-    sql.execute("DROP TABLE IF EXISTS TRIANGLES")
-
     sql.execute("Create spatial index on "+receivers_table_name+"(the_geom);")
 
     // Process Done
