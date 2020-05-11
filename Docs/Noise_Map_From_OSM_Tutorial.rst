@@ -29,7 +29,7 @@ Import to the database
   - Noise Modelling use metric projections, please identifies a local projection for your area of interest and its SRID
   - Inform the target projection identifier field with the corresponding SRID
   - Enter the path to the file map.osm
-  - Check all check box 
+  - Select OsmToInputData box then click on the green button
 
 .. warning::
    The current import script from open street map can produce geometries incompatible with NoiseModelling. If an area is a problem try to reduce the area. A much more robust version of this script will be available soon. 
@@ -66,15 +66,15 @@ Use *Regular_Grid* with a distance between the receivers of 50 m (offset).
 Use the previously generated BUILDINGS table as the buildings table.
 Other parameters are optional.
 
-Don't forget to view your resulting layer in WPSBuilder or OrsbisGIS/QGIS to check that it meets your expectations.
+Don't forget to view your resulting layer in WPSBuilder or OrbisGIS/QGIS to check that it meets your expectations.
 
 Step 4: Using Noise Modelling
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Associating an emission noise level with roads
 ------------------------------------------------------------------------------
-The *Road_Emission_from_Traffic* block is used to generate a road layer, called LW_ROADS, containing LW emission noise level values in accordance with the emission laws of the CNOSSOS model. The format of the input road layer can be found in the description of the WPS Bloc.
+The *Road_Emission_from_Traffic* block is used to generate a road layer, called LW_ROADS, containing LW emission noise level values in accordance with the emission laws of the CNOSSOS model. The format of the input road layer can be found in the description of the WPS Block.
 
-Don't forget to view your resulting layer in WPSBuilder or OrsbisGIS/QGIS to verify that it meets your expectations.
+Don't forget to view your resulting layer in WPSBuilder or OrbisGIS/QGIS to verify that it meets your expectations.
 
 Source to Receiver Propagation
 ------------------------------------------------------------------------------
@@ -83,14 +83,12 @@ The *Lden_from_Road_Emission* block allows to generate a layer of receiver point
 Step 5: Viewing the result
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Add Global Leq Value
-----------------------
-You can use *Add_Laeq_Leq_columns* to add global Leq and LAeq columns to your output table LDEN_GEOM.
-
 Exporting
 --------------
-You can then export the output table LDEN_GEOM via *Export_Table* in shapefile or GeoJSON format.
+You can then export one of the output table LDAY_GEOM, LEVENING_GEOM, LNIGHT_GEOM and LDEN_GEOM via *Export_Table* in shapefile or GeoJSON format.
 
 Viewing
 --------------
-You can view this layer in your favorite GIS. You can then apply a color gradient to your receiver points based on sound levels.
+You can view this layer in your favorite GIS. You can then apply a color gradient to your receiver points based on one of the sound levels column.
+
+

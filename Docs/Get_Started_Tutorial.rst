@@ -134,7 +134,7 @@ Then, you can run the process.
 .. figure:: images/tutorial/Tutorial1_Image2bis.PNG
    :align: center
 
-The table LDAY_GEOM will be created in your database.
+The tables LDAY_GEOM, LEVENING_GEOM, LNIGHT_GEOM and LDEN_GEOM will be created in your database.
 
 .. note::
     If you want to know more about the format of the input tables, you can refer to the `WPS Blocks`_ section.
@@ -154,7 +154,7 @@ You can now export the output table in your favorite export format using *Export
 
 For example, you can choose to export the table in shp format. This format can be read with many GIS tools such as the open source softwares `QGIS`_ and `SAGA`_.
 
-To obtain the following image, use the syling vector options in your GIS and assign a color gradient to a frequency band column of your exported LDAY_GEOM table.
+To obtain the following image, use the syling vector options in your GIS and assign a color gradient to LAEQ column of your exported LDAY_GEOM table.
 
 .. figure:: images/tutorial/Tutorial1_Image4.PNG
    :align: center
