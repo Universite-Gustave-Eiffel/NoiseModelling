@@ -16,6 +16,9 @@ repositories {
     maven {
         url "http://maven.geo-solutions.it/"
     }
+    maven {
+        url "http://nexus.orbisgis.org/repository/orbisgis-snapshot/"
+    }
 }
 
 test {
