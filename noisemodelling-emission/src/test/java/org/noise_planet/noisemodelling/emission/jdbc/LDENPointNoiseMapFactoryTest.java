@@ -1,7 +1,6 @@
 package org.noise_planet.noisemodelling.emission.jdbc;
 
 import org.h2gis.api.EmptyProgressVisitor;
-import org.h2gis.api.ProgressVisitor;
 import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.functions.io.shp.SHPRead;
 import org.h2gis.utilities.JDBCUtilities;
@@ -9,15 +8,15 @@ import org.h2gis.utilities.SFSUtilities;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos;
-import org.noise_planet.noisemodelling.emission.RSParametersCnossos;
-import org.noise_planet.noisemodelling.propagation.EvaluateAttenuationCnossos;
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 import org.noise_planet.noisemodelling.propagation.RootProgressVisitor;
 import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap;
 
 import java.io.IOException;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.HashSet;
 import java.util.Set;
 

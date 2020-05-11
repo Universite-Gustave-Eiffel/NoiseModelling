@@ -171,9 +171,9 @@ def forgeCreateTable(Sql sql, String tableName, LDENConfig ldenConfig, String ge
     for (int idfreq = 0; idfreq < PropagationProcessPathData.freq_lvl.size(); idfreq++) {
         sb.append(", HZ");
         sb.append(PropagationProcessPathData.freq_lvl.get(idfreq));
-        sb.append(" double precision");
+        sb.append(" numeric(5, 2)");
     }
-    sb.append(") AS SELECT PK");
+    sb.append(", LAEQ numeric(5, 2), LEQ numeric(5, 2) ) AS SELECT PK");
     if(!ldenConfig.mergeSources) {
         sb.append(", IDSOURCE");
     }
@@ -183,7 +183,7 @@ def forgeCreateTable(Sql sql, String tableName, LDENConfig ldenConfig, String ge
         sb.append(", HZ");
         sb.append(PropagationProcessPathData.freq_lvl.get(idfreq));
     }
-    sb.append(" FROM ")
+    sb.append(", LAEQ, LEQ FROM ")
     sb.append(tableReceiver)
     if(!ldenConfig.mergeSources) {
         // idsource can't be null so we can't left join
