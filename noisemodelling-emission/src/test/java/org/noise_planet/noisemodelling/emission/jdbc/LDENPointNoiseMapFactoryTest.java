@@ -3,6 +3,7 @@ package org.noise_planet.noisemodelling.emission.jdbc;
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.functions.io.shp.SHPRead;
+import org.h2gis.functions.spatial.operators.ST_Union;
 import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SFSUtilities;
 import org.junit.After;
