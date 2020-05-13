@@ -57,7 +57,7 @@ public abstract class JdbcNoiseMap {
     /** maximum dB Error, stop calculation if the sum of further sources contributions are smaller than this value */
     public double maximumError = Double.NEGATIVE_INFINITY;
     protected String heightField = "";
-    protected GeometryFactory geometryFactory = new GeometryFactory();
+    protected GeometryFactory geometryFactory;
     protected int parallelComputationCount = 0;
     // Initialised attributes
     protected int gridDim = 0;
@@ -303,6 +303,9 @@ public abstract class JdbcNoiseMap {
         if(sourcesTableName.isEmpty()) {
             throw new SQLException("A sound source table must be provided");
         }
+        geometryFactory = new GeometryFactory(new PrecisionModel(),
+                SFSUtilities.getSRID(connection, TableLocation.parse(sourcesTableName)));
+
         // Steps of execution
         // Evaluation of the main bounding box (sourcesTableName+buildingsTableName)
         // Split domain into 4^subdiv cells

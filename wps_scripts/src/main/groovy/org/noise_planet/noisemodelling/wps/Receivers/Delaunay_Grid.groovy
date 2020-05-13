@@ -147,12 +147,12 @@ def exec(Connection connection, input) {
     }
 
     Double maxArea = 2500
-    if (input['maxArea']) {
+    if (input.containsKey('maxArea')) {
         maxArea = input['maxArea']
     }
 
     Double sourceDensification = 8
-    if (input['sourceDensification']) {
+    if (input.containsKey('sourceDensification')) {
         sourceDensification = input['sourceDensification']
     }
 
@@ -200,6 +200,7 @@ def exec(Connection connection, input) {
     // No receivers closer than road width distance
     noiseMap.setRoadWidth(roadWidth)
     // No triangles larger than provided area
+    System.out.println(String.format(Locale.ROOT, "Maximum area : %.2f squared meters", maxArea));
     noiseMap.setMaximumArea(maxArea)
     // Densification of receivers near sound sources
     noiseMap.setSourceDensification(sourceDensification)

@@ -1,13 +1,16 @@
 package org.noise_planet.noisemodelling.emission.jdbc;
 
 import org.h2gis.utilities.JDBCUtilities;
-import org.h2gis.utilities.SFSUtilities;
 import org.h2gis.utilities.TableLocation;
 import org.h2gis.utilities.jts_utils.Contouring;
 import org.h2gis.utilities.jts_utils.TriMarkers;
-import org.locationtech.jts.geom.*;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.GeometryCollection;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.geom.PrecisionModel;
 import org.locationtech.jts.operation.union.CascadedPolygonUnion;
-import org.locationtech.jts.operation.union.UnaryUnionOp;
 import org.noise_planet.noisemodelling.propagation.ComputeRays;
 
 import java.sql.*;
@@ -21,6 +24,7 @@ public class BezierContouring {
     String pointTableField = "LAEQ";
     List<Double> isoLevels;
     int srid;
+    public static final List<Double> NF31_133_ISO = Collections.unmodifiableList(Arrays.asList(35.0,40.0,45.0,50.0,55.0,60.0,65.0,70.0,75.0,80.0,200.0));
 
     /**
      * @param isoLevels Iso levels in dB
@@ -29,7 +33,7 @@ public class BezierContouring {
         this.isoLevels = new ArrayList<>(isoLevels.size());
         this.srid = srid;
         for(double lvl : isoLevels) {
-            isoLevels.add(ComputeRays.dbaToW(lvl));
+            this.isoLevels.add(ComputeRays.dbaToW(lvl));
         }
     }
 
@@ -102,7 +106,7 @@ public class BezierContouring {
     void processCell(Connection connection, int cellId, Map<Short, ArrayList<Geometry>> polys) throws SQLException {
         int batchSize = 0;
         try(PreparedStatement ps = connection.prepareStatement("INSERT INTO " + TableLocation.parse(outputTable)
-                + "(cellid, the_geom, isolevel) VALUES (?, ?, ?);")) {
+                + "(cell_id, the_geom, ISOLVL) VALUES (?, ?, ?);")) {
             for (Map.Entry<Short, ArrayList<Geometry>> entry : polys.entrySet()) {
                 // Merge triangles
                 CascadedPolygonUnion union = new CascadedPolygonUnion(entry.getValue());
@@ -139,18 +143,18 @@ public class BezierContouring {
         }
         String pkField = fields.get(pk - 1);
         GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), srid);
-        Map<Short, ArrayList<Geometry>> polys = new HashMap<>();
+        Map<Short, ArrayList<Geometry>> polyMap = new HashMap<>();
         int lastCellId = -1;
         try(Statement st = connection.createStatement()) {
             st.execute("DROP TABLE IF EXISTS " + TableLocation.parse(outputTable));
             st.execute("CREATE TABLE " + TableLocation.parse(outputTable) + "(PK SERIAL, CELL_ID INTEGER, THE_GEOM GEOMETRY, ISOLVL INTEGER);");
-            String query = "SELECT CELL_ID, t.pk, ST_X(p1.the_geom) xa,ST_Y(p1.the_geom) ya,ST_X(p1.the_geom) xb,ST_Y(p1.the_geom) yb,ST_X(p1.the_geom) xc,ST_Y(p1.the_geom) yc, p1."+pointTableField+" lvla, p2."+pointTableField+" lvlb, p3."+pointTableField+" lvlc FROM "+triangleTable+" t, "+pointTable+" p1,"+pointTable+" p2,"+pointTable+" p3 WHERE t.PK_1 = p1."+pkField+" and t.PK_2 = p2."+pkField+" AND t.PK_3 = p3."+pkField+" order by cell_id;";
+            String query = "SELECT CELL_ID, ST_X(p1.the_geom) xa,ST_Y(p1.the_geom) ya,ST_X(p2.the_geom) xb,ST_Y(p2.the_geom) yb,ST_X(p3.the_geom) xc,ST_Y(p3.the_geom) yc, p1."+pointTableField+" lvla, p2."+pointTableField+" lvlb, p3."+pointTableField+" lvlc FROM "+triangleTable+" t, "+pointTable+" p1,"+pointTable+" p2,"+pointTable+" p3 WHERE t.PK_1 = p1."+pkField+" and t.PK_2 = p2."+pkField+" AND t.PK_3 = p3."+pkField+" order by cell_id;";
             try(ResultSet rs = st.executeQuery(query)) {
                 // Cache columns index
                 int xa = 0, xb = 0, xc = 0, ya = 0, yb = 0, yc = 0, lvla = 0, lvlb = 0, lvlc = 0, cell_id = 0;
                 ResultSetMetaData resultSetMetaData = rs.getMetaData();
                 for (int columnId = 1; columnId <= resultSetMetaData.getColumnCount(); columnId++) {
-                    switch (resultSetMetaData.getColumnName(columnId).toUpperCase()) {
+                    switch (resultSetMetaData.getColumnLabel(columnId).toUpperCase()) {
                         case "XA":
                             xa = columnId;
                             break;
@@ -191,8 +195,8 @@ public class BezierContouring {
                     int cellId = rs.getInt(cell_id);
                     // Process polygons of last cell
                     if(cellId != lastCellId && lastCellId != -1) {
-                        processCell(connection, cellId, polys);
-                        polys.clear();
+                        processCell(connection, cellId, polyMap);
+                        polyMap.clear();
                     }
                     lastCellId = cellId;
                     // Split current triangle
@@ -206,10 +210,10 @@ public class BezierContouring {
                     // Split triangle
                     Map<Short, Deque<TriMarkers>> res = Contouring.processTriangle(triMarkers, isoLevels);
                     for(Map.Entry<Short, Deque<TriMarkers>> entry : res.entrySet()) {
-                        if(!polys.containsKey(entry.getKey())) {
-                            polys.put(entry.getKey(), new ArrayList<>());
+                        if(!polyMap.containsKey(entry.getKey())) {
+                            polyMap.put(entry.getKey(), new ArrayList<>());
                         }
-                        ArrayList<Geometry> polygonsArray = polys.get(entry.getKey());
+                        ArrayList<Geometry> polygonsArray = polyMap.get(entry.getKey());
                         for(TriMarkers tri : entry.getValue()) {
                             Polygon poly = geometryFactory.createPolygon(new Coordinate[]{tri.p0, tri.p1, tri.p2, tri.p0});
                             polygonsArray.add(poly);
@@ -217,6 +221,10 @@ public class BezierContouring {
                     }
                 }
             }
+            if(!polyMap.isEmpty()) {
+                processCell(connection, lastCellId, polyMap);
+            }
         }
+        connection.commit();
     }
 }
