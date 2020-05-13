@@ -45,26 +45,26 @@ public class BezierContouring {
     /**
      * Interpolation method from
      * @link http://agg.sourceforge.net/antigrain.com/research/bezier_interpolation/index.html#PAGE_BEZIER_INTERPOLATION
-     * @param a
-     * @param b
-     * @param c
-     * @param d
+     * @param p0
+     * @param p1
+     * @param p2
+     * @param p3
      * @param smooth_value
      * @return
      */
-    static Coordinate[] computeControlPoints(Coordinate a, Coordinate b, Coordinate c, Coordinate d, double smooth_value) {
+    static Coordinate[] computeControlPoints(Coordinate p0, Coordinate p1, Coordinate p2, Coordinate p3, double smooth_value) {
         // Assume we need to calculate the control
         // points between (x1,y1) and (x2,y2).
         // Then x0,y0 - the previous vertex,
         //      x3,y3 - the next one.
-        final double x0 = a.x;
-        final double y0 = a.y;
-        final double x1 = b.x;
-        final double y1 = b.y;
-        final double x2 = c.x;
-        final double y2 = c.y;
-        final double x3 = d.x;
-        final double y3 = d.y;
+        final double x0 = p0.x;
+        final double y0 = p0.y;
+        final double x1 = p1.x;
+        final double y1 = p1.y;
+        final double x2 = p2.x;
+        final double y2 = p2.y;
+        final double x3 = p3.x;
+        final double y3 = p3.y;
 
         double xc1 = (x0 + x1) / 2.0;
         double yc1 = (y0 + y1) / 2.0;
@@ -74,7 +74,7 @@ public class BezierContouring {
         double yc3 = (y2 + y3) / 2.0;
 
         double len1 = Math.sqrt((x1-x0) * (x1-x0) + (y1-y0) * (y1-y0));
-        double lentest = a.distance(b);
+        double lentest = p0.distance(p1);
         double len2 = Math.sqrt((x2-x1) * (x2-x1) + (y2-y1) * (y2-y1));
         double len3 = Math.sqrt((x3-x2) * (x3-x2) + (y3-y2) * (y3-y2));
 
@@ -160,14 +160,16 @@ public class BezierContouring {
 
     static Coordinate[] interpolate(Coordinate[] coordinates, double smoothValue) {
         ArrayList<Coordinate> pts = new ArrayList<>(coordinates.length * NUM_STEPS);
-        for(int i = 0; i < coordinates.length - 1; i++) {
+        pts.add(coordinates[0]);
+        for(int i = 0; i < coordinates.length; i++) {
             Coordinate p0 = i - 1 < 0 ? coordinates[coordinates.length - 1] : coordinates[i - 1];
             Coordinate p1 = coordinates[i];
-            Coordinate p2 = coordinates[i + 1];
-            Coordinate p3 = i + 2 == coordinates.length ? coordinates[0] : coordinates[i + 2];
+            Coordinate p2 = i + 1 >= coordinates.length ? coordinates[i + 1 - coordinates.length] : coordinates[i + 1];
+            Coordinate p3 = i + 2 >= coordinates.length ? coordinates[i + 2 - coordinates.length] : coordinates[i + 2];
             Coordinate[] anchors = computeControlPoints(p0, p1, p2, p3, smoothValue);
             pts.addAll(curve4(p1, anchors[0], anchors[1], p2));
         }
+
         return pts.toArray(new Coordinate[0]);
     }
     /**

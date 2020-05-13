@@ -8,6 +8,8 @@ import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 
+import java.util.Arrays;
+
 public class BezierContouringTest {
 
     @Test
@@ -16,7 +18,7 @@ public class BezierContouringTest {
         WKTReader wktReader = new WKTReader();
         Geometry geom = wktReader.read(poly);
         Coordinate[] coordinates = geom.getCoordinates();
-        Coordinate[] res = BezierContouring.interpolate(coordinates, 1.0);
+        Coordinate[] res = BezierContouring.interpolate(Arrays.copyOfRange(coordinates, 0, coordinates.length -1), 1.0);
         GeometryFactory factory = new GeometryFactory();
         LineString polyRes = factory.createLineString(res);
         System.out.println(polyRes.toString());
