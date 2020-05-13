@@ -10,6 +10,8 @@ import org.locationtech.jts.io.WKTReader;
 
 import java.util.Arrays;
 
+import static org.junit.Assert.assertTrue;
+
 public class BezierContouringTest {
 
     @Test
@@ -18,9 +20,24 @@ public class BezierContouringTest {
         WKTReader wktReader = new WKTReader();
         Geometry geom = wktReader.read(poly);
         Coordinate[] coordinates = geom.getCoordinates();
+
         Coordinate[] res = BezierContouring.interpolate(Arrays.copyOfRange(coordinates, 0, coordinates.length -1), 0.5);
-        GeometryFactory factory = new GeometryFactory();
-        LineString polyRes = factory.createLineString(res);
-        System.out.println(polyRes.toString());
+
+        assertTrue(coordinates.length < res.length);
+
+        // All points of input geom must be present in output geom
+        for(Coordinate c : coordinates) {
+            boolean found = false;
+            for(Coordinate p : res) {
+                if(p.distance(c) < 1e-6) {
+                    found = true;
+                    break;
+                }
+            }
+            assertTrue(found);
+        }
+        //GeometryFactory factory = new GeometryFactory();
+        //LineString polyRes = factory.createLineString(res);
+        //System.out.println(polyRes.toString());
     }
 }

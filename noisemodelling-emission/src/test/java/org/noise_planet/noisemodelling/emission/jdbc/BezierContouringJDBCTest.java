@@ -2,6 +2,7 @@ package org.noise_planet.noisemodelling.emission.jdbc;
 
 import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.functions.io.geojson.GeoJsonRead;
+import org.h2gis.functions.io.shp.SHPWrite;
 import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SFSUtilities;
 import org.junit.After;
@@ -68,5 +69,7 @@ public class BezierContouringJDBCTest {
         assertTrue(fieldValues.contains("7"));
         assertTrue(fieldValues.contains("8"));
         assertTrue(fieldValues.contains("9"));
+
+        SHPWrite.exportTable(connection, "target/contouring.shp", "CONTOURING_NOISE_MAP");
     }
 }

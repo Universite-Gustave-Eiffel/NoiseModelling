@@ -4,12 +4,7 @@ import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.TableLocation;
 import org.h2gis.utilities.jts_utils.Contouring;
 import org.h2gis.utilities.jts_utils.TriMarkers;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryCollection;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.Polygon;
-import org.locationtech.jts.geom.PrecisionModel;
+import org.locationtech.jts.geom.*;
 import org.locationtech.jts.operation.union.CascadedPolygonUnion;
 import org.noise_planet.noisemodelling.propagation.ComputeRays;
 
@@ -24,6 +19,7 @@ public class BezierContouring {
     String outputTable = "CONTOURING_NOISE_MAP";
     String pointTableField = "LAEQ";
     List<Double> isoLevels;
+    boolean smooth = true;
     int srid;
     public static final List<Double> NF31_133_ISO = Collections.unmodifiableList(Arrays.asList(35.0,40.0,45.0,50.0,55.0,60.0,65.0,70.0,75.0,80.0,200.0));
 
@@ -38,6 +34,13 @@ public class BezierContouring {
         }
     }
 
+    /**
+     * @param smooth If true smooth generated polygons
+     */
+    public void setSmooth(boolean smooth) {
+        this.smooth = smooth;
+    }
+
     public String getPointTableField() {
         return pointTableField;
     }
@@ -45,11 +48,12 @@ public class BezierContouring {
     /**
      * Interpolation method from
      * @link http://agg.sourceforge.net/antigrain.com/research/bezier_interpolation/index.html#PAGE_BEZIER_INTERPOLATION
-     * @param anchor1
-     * @param control1
-     * @param control2
-     * @param anchor2
-     * @return
+     * @param anchor1 Anchor point, start coordinate of Bezier curve
+     * @param control1 First control point
+     * @param control2 Second control point
+     * @param anchor2 Anchor point, end coordinate of Bezier curve
+     * @param numSteps Number of intermediate points
+     * @return Bezier points
      */
     static List<Coordinate> curve4(Coordinate anchor1, Coordinate control1, Coordinate control2, Coordinate anchor2, int numSteps)   //Anchor2
     {
@@ -102,6 +106,13 @@ public class BezierContouring {
         return ret;
     }
 
+    /**
+     * Smooth provided closed ring using method :
+     * @link http://agg.sourceforge.net/antigrain.com/research/bezier_interpolation/index.html#PAGE_BEZIER_INTERPOLATION
+     * @param coordinates Ring coordinates
+     * @param smoothValue Smoothing coefficient
+     * @return Interpolated points
+     */
     static Coordinate[] interpolate(Coordinate[] coordinates, double smoothValue) {
         int totalPoints = coordinates.length * NUM_STEPS;
         ArrayList<Coordinate> pts = new ArrayList<>(totalPoints);
@@ -227,6 +238,7 @@ public class BezierContouring {
      */
     void processCell(Connection connection, int cellId, Map<Short, ArrayList<Geometry>> polys) throws SQLException {
         int batchSize = 0;
+        GeometryFactory factory = new GeometryFactory(new PrecisionModel(), srid);
         try(PreparedStatement ps = connection.prepareStatement("INSERT INTO " + TableLocation.parse(outputTable)
                 + "(cell_id, the_geom, ISOLVL) VALUES (?, ?, ?);")) {
             for (Map.Entry<Short, ArrayList<Geometry>> entry : polys.entrySet()) {
@@ -236,8 +248,16 @@ public class BezierContouring {
                 ArrayList<Polygon> polygons = new ArrayList<>();
                 explode(mergeTriangles, polygons);
                 for(Polygon polygon : polygons) {
-                    // TODO bezier interpolation
-                    polygon.setSRID(srid);
+                    if(smooth) {
+                        Coordinate[] extRing = polygon.getExteriorRing().getCoordinates();
+                        Coordinate[] newExtRing = interpolate(extRing, 0.5);
+                        LinearRing[] holes = new LinearRing[polygon.getNumInteriorRing()];
+                        for(int idHole = 0; idHole < holes.length; idHole++) {
+                            Coordinate[] newHole = interpolate(polygon.getInteriorRingN(idHole).getCoordinates(), 0.5);
+                            holes[idHole] = factory.createLinearRing(newHole);
+                        }
+                        polygon = factory.createPolygon(factory.createLinearRing(newExtRing), holes);
+                    }
                     int parameterIndex = 1;
                     ps.setInt(parameterIndex++, cellId);
                     ps.setObject(parameterIndex++, polygon);
