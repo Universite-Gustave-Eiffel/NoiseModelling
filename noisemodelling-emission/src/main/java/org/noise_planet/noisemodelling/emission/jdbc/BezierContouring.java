@@ -6,6 +6,7 @@ import org.h2gis.utilities.jts_utils.Contouring;
 import org.h2gis.utilities.jts_utils.TriMarkers;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.operation.union.CascadedPolygonUnion;
+import org.locationtech.jts.simplify.TopologyPreservingSimplifier;
 import org.noise_planet.noisemodelling.propagation.ComputeRays;
 
 import java.sql.*;
@@ -20,6 +21,8 @@ public class BezierContouring {
     String pointTableField = "LAEQ";
     List<Double> isoLevels;
     boolean smooth = true;
+    double smoothCoefficient = 1.0;
+
     int srid;
     public static final List<Double> NF31_133_ISO = Collections.unmodifiableList(Arrays.asList(35.0,40.0,45.0,50.0,55.0,60.0,65.0,70.0,75.0,80.0,200.0));
 
@@ -39,6 +42,14 @@ public class BezierContouring {
      */
     public void setSmooth(boolean smooth) {
         this.smooth = smooth;
+    }
+
+    public double getSmoothCoefficient() {
+        return smoothCoefficient;
+    }
+
+    public void setSmoothCoefficient(double smoothCoefficient) {
+        this.smoothCoefficient = smoothCoefficient;
     }
 
     public String getPointTableField() {
@@ -114,8 +125,6 @@ public class BezierContouring {
      * @return Interpolated points
      */
     static Coordinate[] interpolate(Coordinate[] coordinates, double smoothValue) {
-        int totalPoints = coordinates.length * NUM_STEPS;
-        ArrayList<Coordinate> pts = new ArrayList<>(totalPoints);
         Coordinate[] midPoint = new Coordinate[coordinates.length];
         double[] len = new double[coordinates.length];
         // precompute values
@@ -126,6 +135,8 @@ public class BezierContouring {
             len[i] = coordinates[i].distance(coordinates[i2]);
             totalLength += len[i];
         }
+        int totalPoints = Math.max(coordinates.length * 5, (int)(totalLength * 0.25));
+        ArrayList<Coordinate> pts = new ArrayList<>(totalPoints);
         pts.add(coordinates[0]);
         for(int i = 0; i < coordinates.length; i++) {
             // Compute Bezier control points
@@ -248,9 +259,15 @@ public class BezierContouring {
                 ArrayList<Polygon> polygons = new ArrayList<>();
                 explode(mergeTriangles, polygons);
                 for(Polygon polygon : polygons) {
+                    TopologyPreservingSimplifier simplifier = new TopologyPreservingSimplifier(polygon);
+                    simplifier.setDistanceTolerance(0.01);
+                    Geometry res = simplifier.getResultGeometry();
+                    if(res instanceof Polygon) {
+                        polygon = (Polygon) res;
+                    }
                     if(smooth) {
                         Coordinate[] extRing = polygon.getExteriorRing().getCoordinates();
-                        Coordinate[] newExtRing = interpolate(extRing, 0.5);
+                        Coordinate[] newExtRing = interpolate(extRing, smoothCoefficient);
                         LinearRing[] holes = new LinearRing[polygon.getNumInteriorRing()];
                         for(int idHole = 0; idHole < holes.length; idHole++) {
                             Coordinate[] newHole = interpolate(polygon.getInteriorRingN(idHole).getCoordinates(), 0.5);

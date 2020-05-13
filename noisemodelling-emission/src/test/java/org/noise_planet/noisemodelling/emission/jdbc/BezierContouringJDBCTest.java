@@ -53,6 +53,7 @@ public class BezierContouringJDBCTest {
         BezierContouring bezierContouring = new BezierContouring(BezierContouring.NF31_133_ISO, 2154);
         bezierContouring.setPointTable("LDEN_GEOM");
         bezierContouring.setPointTableField("LAEQ");
+        bezierContouring.setSmooth(true);
         bezierContouring.createTable(connection);
         System.out.println("Contouring done in " + (System.currentTimeMillis() - start) + " ms");
 
