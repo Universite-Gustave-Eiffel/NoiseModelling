@@ -17,6 +17,7 @@ import java.sql.*;
 import java.util.*;
 
 public class BezierContouring {
+    static final int NUM_STEPS = 20;
     static final int BATCH_MAX_SIZE = 500;
     String pointTable = "LDEN_RESULT";
     String triangleTable = "TRIANGLES";
@@ -41,7 +42,134 @@ public class BezierContouring {
         return pointTableField;
     }
 
+    /**
+     * Interpolation method from
+     * @link http://agg.sourceforge.net/antigrain.com/research/bezier_interpolation/index.html#PAGE_BEZIER_INTERPOLATION
+     * @param a
+     * @param b
+     * @param c
+     * @param d
+     * @param smooth_value
+     * @return
+     */
+    static Coordinate[] computeControlPoints(Coordinate a, Coordinate b, Coordinate c, Coordinate d, double smooth_value) {
+        // Assume we need to calculate the control
+        // points between (x1,y1) and (x2,y2).
+        // Then x0,y0 - the previous vertex,
+        //      x3,y3 - the next one.
+        final double x0 = a.x;
+        final double y0 = a.y;
+        final double x1 = b.x;
+        final double y1 = b.y;
+        final double x2 = c.x;
+        final double y2 = c.y;
+        final double x3 = d.x;
+        final double y3 = d.y;
 
+        double xc1 = (x0 + x1) / 2.0;
+        double yc1 = (y0 + y1) / 2.0;
+        double xc2 = (x1 + x2) / 2.0;
+        double yc2 = (y1 + y2) / 2.0;
+        double xc3 = (x2 + x3) / 2.0;
+        double yc3 = (y2 + y3) / 2.0;
+
+        double len1 = Math.sqrt((x1-x0) * (x1-x0) + (y1-y0) * (y1-y0));
+        double lentest = a.distance(b);
+        double len2 = Math.sqrt((x2-x1) * (x2-x1) + (y2-y1) * (y2-y1));
+        double len3 = Math.sqrt((x3-x2) * (x3-x2) + (y3-y2) * (y3-y2));
+
+        double k1 = len1 / (len1 + len2);
+        double k2 = len2 / (len2 + len3);
+
+        double xm1 = xc1 + (xc2 - xc1) * k1;
+        double ym1 = yc1 + (yc2 - yc1) * k1;
+
+        double xm2 = xc2 + (xc3 - xc2) * k2;
+        double ym2 = yc2 + (yc3 - yc2) * k2;
+
+        // Resulting control points. Here smooth_value is mentioned
+        // above coefficient K whose value should be in range [0...1].
+        double ctrl1_x = xm1 + (xc2 - xm1) * smooth_value + x1 - xm1;
+        double ctrl1_y = ym1 + (yc2 - ym1) * smooth_value + y1 - ym1;
+
+        double ctrl2_x = xm2 + (xc2 - xm2) * smooth_value + x2 - xm2;
+        double ctrl2_y = ym2 + (yc2 - ym2) * smooth_value + y2 - ym2;
+
+        return new Coordinate[] {new Coordinate(ctrl1_x, ctrl1_y), new Coordinate(ctrl2_x, ctrl2_y)};
+    }
+
+    /**
+     * Interpolation method from
+     * @link http://agg.sourceforge.net/antigrain.com/research/bezier_interpolation/index.html#PAGE_BEZIER_INTERPOLATION
+     * @param anchor1
+     * @param control1
+     * @param control2
+     * @param anchor2
+     * @return
+     */
+    static List<Coordinate> curve4(Coordinate anchor1, Coordinate control1, Coordinate control2, Coordinate anchor2)   //Anchor2
+    {
+        double subdiv_step  = 1.0 / (NUM_STEPS + 1);
+        double subdiv_step2 = subdiv_step*subdiv_step;
+        double subdiv_step3 = subdiv_step*subdiv_step*subdiv_step;
+
+        double pre1 = 3.0 * subdiv_step;
+        double pre2 = 3.0 * subdiv_step2;
+        double pre4 = 6.0 * subdiv_step2;
+        double pre5 = 6.0 * subdiv_step3;
+
+        double tmp1x = anchor1.x - control1.x * 2.0 + control2.x;
+        double tmp1y = anchor1.y - control1.y * 2.0 + control2.y;
+
+        double tmp2x = (control1.x - control2.x)*3.0 - anchor1.x + anchor2.x;
+        double tmp2y = (control1.y - control2.y)*3.0 - anchor1.y + anchor2.y;
+
+        double fx = anchor1.x;
+        double fy = anchor1.y;
+
+        double dfx = (control1.x - anchor1.x)*pre1 + tmp1x*pre2 + tmp2x*subdiv_step3;
+        double dfy = (control1.y - anchor1.y)*pre1 + tmp1y*pre2 + tmp2y*subdiv_step3;
+
+        double ddfx = tmp1x*pre4 + tmp2x*pre5;
+        double ddfy = tmp1y*pre4 + tmp2y*pre5;
+
+        double dddfx = tmp2x*pre5;
+        double dddfy = tmp2y*pre5;
+
+        int step = NUM_STEPS;
+
+        // Suppose, we have some abstract object Polygon which
+        // has method AddVertex(x, y), similar to LineTo in
+        // many graphical APIs.
+        // Note, that the loop has only operation add!
+        List<Coordinate> ret = new ArrayList<>(NUM_STEPS);
+        while(step-- > 0)
+        {
+            fx   += dfx;
+            fy   += dfy;
+            dfx  += ddfx;
+            dfy  += ddfy;
+            ddfx += dddfx;
+            ddfy += dddfy;
+            ret.add(new Coordinate(fx, fy));
+        }
+        ret.add(new Coordinate(anchor2.x, anchor2.y)); // Last step must go exactly to anchor2.x, anchor2.y
+
+        return ret;
+    }
+
+    static Coordinate[] interpolate(Coordinate[] coordinates, double smoothValue) {
+        ArrayList<Coordinate> pts = new ArrayList<>(coordinates.length * NUM_STEPS);
+        for(int i = 0; i < coordinates.length - 1; i++) {
+            Coordinate p0 = i - 1 < 0 ? coordinates[coordinates.length - 1] : coordinates[i - 1];
+            Coordinate p1 = coordinates[i];
+            Coordinate p2 = coordinates[i + 1];
+            Coordinate p3 = i + 2 == coordinates.length ? coordinates[0] : coordinates[i + 2];
+            Coordinate[] anchors = computeControlPoints(p0, p1, p2, p3, smoothValue);
+            pts.addAll(curve4(p1, anchors[0], anchors[1], p2));
+        }
+        return pts.toArray(new Coordinate[0]);
+    }
     /**
      * @param pointTableField Field with level in dB(A)
      */
