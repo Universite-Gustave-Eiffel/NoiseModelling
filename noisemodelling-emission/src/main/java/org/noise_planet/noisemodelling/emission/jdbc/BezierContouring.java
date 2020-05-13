@@ -45,70 +45,15 @@ public class BezierContouring {
     /**
      * Interpolation method from
      * @link http://agg.sourceforge.net/antigrain.com/research/bezier_interpolation/index.html#PAGE_BEZIER_INTERPOLATION
-     * @param p0
-     * @param p1
-     * @param p2
-     * @param p3
-     * @param smooth_value
-     * @return
-     */
-    static Coordinate[] computeControlPoints(Coordinate p0, Coordinate p1, Coordinate p2, Coordinate p3, double smooth_value) {
-        // Assume we need to calculate the control
-        // points between (x1,y1) and (x2,y2).
-        // Then x0,y0 - the previous vertex,
-        //      x3,y3 - the next one.
-        final double x0 = p0.x;
-        final double y0 = p0.y;
-        final double x1 = p1.x;
-        final double y1 = p1.y;
-        final double x2 = p2.x;
-        final double y2 = p2.y;
-        final double x3 = p3.x;
-        final double y3 = p3.y;
-
-        double xc1 = (x0 + x1) / 2.0;
-        double yc1 = (y0 + y1) / 2.0;
-        double xc2 = (x1 + x2) / 2.0;
-        double yc2 = (y1 + y2) / 2.0;
-        double xc3 = (x2 + x3) / 2.0;
-        double yc3 = (y2 + y3) / 2.0;
-
-        double len1 = p0.distance(p1);
-        double len2 = p1.distance(p2);
-        double len3 = p2.distance(p3);
-
-        double k1 = len1 / (len1 + len2);
-        double k2 = len2 / (len2 + len3);
-
-        double xm1 = xc1 + (xc2 - xc1) * k1;
-        double ym1 = yc1 + (yc2 - yc1) * k1;
-
-        double xm2 = xc2 + (xc3 - xc2) * k2;
-        double ym2 = yc2 + (yc3 - yc2) * k2;
-
-        // Resulting control points. Here smooth_value is mentioned
-        // above coefficient K whose value should be in range [0...1].
-        double ctrl1_x = xm1 + (xc2 - xm1) * smooth_value + x1 - xm1;
-        double ctrl1_y = ym1 + (yc2 - ym1) * smooth_value + y1 - ym1;
-
-        double ctrl2_x = xm2 + (xc2 - xm2) * smooth_value + x2 - xm2;
-        double ctrl2_y = ym2 + (yc2 - ym2) * smooth_value + y2 - ym2;
-
-        return new Coordinate[] {new Coordinate(ctrl1_x, ctrl1_y), new Coordinate(ctrl2_x, ctrl2_y)};
-    }
-
-    /**
-     * Interpolation method from
-     * @link http://agg.sourceforge.net/antigrain.com/research/bezier_interpolation/index.html#PAGE_BEZIER_INTERPOLATION
      * @param anchor1
      * @param control1
      * @param control2
      * @param anchor2
      * @return
      */
-    static List<Coordinate> curve4(Coordinate anchor1, Coordinate control1, Coordinate control2, Coordinate anchor2)   //Anchor2
+    static List<Coordinate> curve4(Coordinate anchor1, Coordinate control1, Coordinate control2, Coordinate anchor2, int numSteps)   //Anchor2
     {
-        double subdiv_step  = 1.0 / (NUM_STEPS + 1);
+        double subdiv_step  = 1.0 / (numSteps + 1);
         double subdiv_step2 = subdiv_step*subdiv_step;
         double subdiv_step3 = subdiv_step*subdiv_step*subdiv_step;
 
@@ -135,13 +80,13 @@ public class BezierContouring {
         double dddfx = tmp2x*pre5;
         double dddfy = tmp2y*pre5;
 
-        int step = NUM_STEPS;
+        int step = numSteps;
 
         // Suppose, we have some abstract object Polygon which
         // has method AddVertex(x, y), similar to LineTo in
         // many graphical APIs.
         // Note, that the loop has only operation add!
-        List<Coordinate> ret = new ArrayList<>(NUM_STEPS);
+        List<Coordinate> ret = new ArrayList<>(numSteps);
         while(step-- > 0)
         {
             fx   += dfx;
@@ -158,45 +103,42 @@ public class BezierContouring {
     }
 
     static Coordinate[] interpolate(Coordinate[] coordinates, double smoothValue) {
-        ArrayList<Coordinate> pts = new ArrayList<>(coordinates.length * NUM_STEPS);
+        int totalPoints = coordinates.length * NUM_STEPS;
+        ArrayList<Coordinate> pts = new ArrayList<>(totalPoints);
         Coordinate[] midPoint = new Coordinate[coordinates.length];
         double[] len = new double[coordinates.length];
+        // precompute values
+        double totalLength = 0;
         for(int i = 0; i < coordinates.length; i++) {
             final int i2 = i + 1 >= coordinates.length ? i + 1 - coordinates.length : i + 1;
             midPoint[i] = new Coordinate((coordinates[i].x + coordinates[i2].x) / 2, (coordinates[i].y + coordinates[i2].y) / 2);
             len[i] = coordinates[i].distance(coordinates[i2]);
+            totalLength += len[i];
         }
-
         pts.add(coordinates[0]);
         for(int i = 0; i < coordinates.length; i++) {
+            // Compute Bezier control points
             final int i0 = i - 1 < 0 ? coordinates.length - 1 : i - 1;
             final int i2 = i + 1 >= coordinates.length ? i + 1 - coordinates.length : i + 1;
-            final int i3 = i + 2 >= coordinates.length ? i + 2 - coordinates.length : i + 2;
 
-            Coordinate p0 = coordinates[i0];
             Coordinate p1 = coordinates[i];
             Coordinate p2 = coordinates[i2];
-            Coordinate p3 = coordinates[i3];
 
-            final double x0 = p0.x;
-            final double y0 = p0.y;
             final double x1 = p1.x;
             final double y1 = p1.y;
             final double x2 = p2.x;
             final double y2 = p2.y;
-            final double x3 = p3.x;
-            final double y3 = p3.y;
 
-            double xc1 = (x0 + x1) / 2.0;
-            double yc1 = (y0 + y1) / 2.0;
-            double xc2 = (x1 + x2) / 2.0;
-            double yc2 = (y1 + y2) / 2.0;
-            double xc3 = (x2 + x3) / 2.0;
-            double yc3 = (y2 + y3) / 2.0;
+            double xc1 = midPoint[i0].x;
+            double yc1 = midPoint[i0].y;
+            double xc2 = midPoint[i].x;
+            double yc2 = midPoint[i].y;
+            double xc3 = midPoint[i2].x;
+            double yc3 = midPoint[i2].y;
 
-            double len1 = p0.distance(p1);
-            double len2 = p1.distance(p2);
-            double len3 = p2.distance(p3);
+            double len1 = len[i0];
+            double len2 = len[i];
+            double len3 = len[i2];
 
             double k1 = len1 / (len1 + len2);
             double k2 = len2 / (len2 + len3);
@@ -215,7 +157,9 @@ public class BezierContouring {
             double ctrl2_x = xm2 + (xc2 - xm2) * smoothValue + x2 - xm2;
             double ctrl2_y = ym2 + (yc2 - ym2) * smoothValue + y2 - ym2;
 
-            pts.addAll(curve4(p1, new Coordinate(ctrl1_x, ctrl1_y), new Coordinate(ctrl2_x, ctrl2_y), p2));
+            int numSteps = (int)Math.ceil(totalPoints * (len2/totalLength));
+            // Compute bezier curve
+            pts.addAll(curve4(p1, new Coordinate(ctrl1_x, ctrl1_y), new Coordinate(ctrl2_x, ctrl2_y), p2, numSteps));
         }
 
         return pts.toArray(new Coordinate[0]);
