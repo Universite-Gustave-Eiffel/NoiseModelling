@@ -221,7 +221,7 @@ def exec(Connection connection, input) {
     sql.execute("Create spatial index on "+receivers_table_name+"(the_geom);")
 
     // Process Done
-    resultString = "Process done. " + receivers_table_name + " created. "
+    resultString = "Process done. " + receivers_table_name + " and TRIANGLES tables created. "
 
     // print to command window
     System.out.println('Result : ' + resultString)
