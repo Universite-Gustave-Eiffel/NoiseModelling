@@ -50,8 +50,22 @@ public class BezierContouring {
         return smoothCoefficient;
     }
 
+    /**
+     * @param smoothCoefficient Coefficient of polygons smoothing [0-1]
+     */
     public void setSmoothCoefficient(double smoothCoefficient) {
         this.smoothCoefficient = smoothCoefficient;
+    }
+
+    /**
+     * @param epsilon Merge distance of polygons vertices
+     */
+    public void setEpsilon(double epsilon) {
+        this.epsilon = epsilon;
+    }
+
+    public double getEpsilon() {
+        return epsilon;
     }
 
     public String getPointTableField() {
