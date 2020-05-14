@@ -378,6 +378,7 @@ public class BezierContouring {
             }
             // Using precomputed (shared) Bezier control points smooth polygons
             for (Map.Entry<Short, ArrayList<Geometry>> entry : polys.entrySet()) {
+                ArrayList<Geometry> newPolygons = new ArrayList<>();
                 if(entry.getValue().size() == 1) {
                     ArrayList<Polygon> polygons = new ArrayList<>();
                     explode(entry.getValue().get(0), polygons);
@@ -388,9 +389,10 @@ public class BezierContouring {
                             Coordinate[] hole = generateBezierCurves(polygon.getInteriorRingN(idHole).getCoordinates(), segmentTree, deltaPoints);
                             holes[idHole] = factory.createLinearRing(hole);
                         }
-                        entry.getValue().clear();
-                        entry.getValue().add(factory.createPolygon(factory.createLinearRing(extRing), holes));
+                        newPolygons.add(factory.createPolygon(factory.createLinearRing(extRing), holes));
                     }
+                    entry.getValue().clear();
+                    entry.getValue().addAll(newPolygons);
                 }
             }
         }
