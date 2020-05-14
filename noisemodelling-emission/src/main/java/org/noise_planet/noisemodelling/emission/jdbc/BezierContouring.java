@@ -14,7 +14,6 @@ import java.sql.*;
 import java.util.*;
 
 public class BezierContouring {
-    static final int NUM_STEPS = 10;
     static final int BATCH_MAX_SIZE = 500;
     String pointTable = "LDEN_RESULT";
     String triangleTable = "TRIANGLES";
@@ -24,6 +23,7 @@ public class BezierContouring {
     boolean smooth = true;
     double smoothCoefficient = 1.0;
     double deltaPoints = 0.5; // minimal distance between bezier points
+    double epsilon = 0.05;
 
     int srid;
     public static final List<Double> NF31_133_ISO = Collections.unmodifiableList(Arrays.asList(35.0,40.0,45.0,50.0,55.0,60.0,65.0,70.0,75.0,80.0,200.0));
@@ -119,77 +119,7 @@ public class BezierContouring {
         return ret;
     }
 
-    /**
-     * Smooth provided closed ring using method :
-     * @link http://agg.sourceforge.net/antigrain.com/research/bezier_interpolation/index.html#PAGE_BEZIER_INTERPOLATION
-     * @param coordinates Ring coordinates
-     * @param smoothValue Smoothing coefficient
-     * @return Interpolated points
-     */
-    static Coordinate[] interpolate(Coordinate[] coordinates, double smoothValue, double epsilon) {
-        Coordinate[] midPoint = new Coordinate[coordinates.length];
-        double[] len = new double[coordinates.length];
-        // precompute values
-        double totalLength = 0;
-        for(int i = 0; i < coordinates.length; i++) {
-            final int i2 = i + 1 >= coordinates.length ? i + 1 - (coordinates.length - 1) : i + 1;
-            midPoint[i] = new Coordinate((coordinates[i].x + coordinates[i2].x) / 2, (coordinates[i].y + coordinates[i2].y) / 2);
-            len[i] = coordinates[i].distance(coordinates[i2]);
-            totalLength += len[i];
-        }
-        int totalPoints = Math.max(coordinates.length * 5, (int)(totalLength * 0.25));
-        ArrayList<Coordinate> pts = new ArrayList<>(totalPoints);
-        pts.add(coordinates[0]);
-        for(int i = 0; i < coordinates.length - 1; i++) {
-            // Compute Bezier control points
-            final int i0 = i - 1 < 0 ? coordinates.length - 2 : i - 1;
-            final int i2 = i + 1;
-
-            Coordinate p1 = coordinates[i];
-            Coordinate p2 = coordinates[i2];
-
-            final double x1 = p1.x;
-            final double y1 = p1.y;
-            final double x2 = p2.x;
-            final double y2 = p2.y;
-
-            double xc1 = midPoint[i0].x;
-            double yc1 = midPoint[i0].y;
-            double xc2 = midPoint[i].x;
-            double yc2 = midPoint[i].y;
-            double xc3 = midPoint[i2].x;
-            double yc3 = midPoint[i2].y;
-
-            double len1 = len[i0];
-            double len2 = len[i];
-            double len3 = len[i2];
-
-            double k1 = len1 / (len1 + len2);
-            double k2 = len2 / (len2 + len3);
-
-            double xm1 = xc1 + (xc2 - xc1) * k1;
-            double ym1 = yc1 + (yc2 - yc1) * k1;
-
-            double xm2 = xc2 + (xc3 - xc2) * k2;
-            double ym2 = yc2 + (yc3 - yc2) * k2;
-
-            // Resulting control points. Here smooth_value is mentioned
-            // above coefficient K whose value should be in range [0...1].
-            double ctrl1_x = xm1 + (xc2 - xm1) * smoothValue + x1 - xm1;
-            double ctrl1_y = ym1 + (yc2 - ym1) * smoothValue + y1 - ym1;
-
-            double ctrl2_x = xm2 + (xc2 - xm2) * smoothValue + x2 - xm2;
-            double ctrl2_y = ym2 + (yc2 - ym2) * smoothValue + y2 - ym2;
-
-            int numSteps = Math.max(4, (int)Math.ceil(len2 / epsilon));
-            // Compute bezier curve
-            pts.addAll(curve4(p1, new Coordinate(ctrl1_x, ctrl1_y), new Coordinate(ctrl2_x, ctrl2_y), p2, numSteps));
-        }
-
-        return pts.toArray(new Coordinate[0]);
-    }
-
-    static Coordinate[] generateBezierCurves(Coordinate[] coordinates, Quadtree segmentTree, double epsilon) {
+    static Coordinate[] generateBezierCurves(Coordinate[] coordinates, Quadtree segmentTree, double pointsDelta) {
         ArrayList<Coordinate> pts = new ArrayList<>();
         pts.add(coordinates[0]);
         for(int i = 0; i < coordinates.length - 1; i++) {
@@ -205,7 +135,7 @@ public class BezierContouring {
                     if(s.getControlPoints().size() > 2) {
                         insert = true;
                         // If this segment is shared by two polygons
-                        int numSteps = Math.max(4, (int)Math.ceil(p1.distance(p2) / epsilon));
+                        int numSteps = Math.max(4, (int)Math.ceil(p1.distance(p2) / pointsDelta));
                         // Compute bezier curve
                         Coordinate ctrl1 = s.getControlPoints().get(0);
                         Coordinate ctrl2 = s.getControlPoints().get(1);
@@ -373,12 +303,6 @@ public class BezierContouring {
                 ArrayList<Polygon> polygons = new ArrayList<>();
                 explode(mergeTriangles, polygons);
                 for(Polygon polygon : polygons) {
-//                    TopologyPreservingSimplifier simplifier = new TopologyPreservingSimplifier(polygon);
-//                    simplifier.setDistanceTolerance(deltaPoints);
-//                    Geometry res = simplifier.getResultGeometry();
-//                    if(res instanceof Polygon) {
-//                        polygon = (Polygon) res;
-//                    }
                     Coordinate[] extRing = polygon.getExteriorRing().getCoordinates();
                     computeBezierControlPoints(extRing, smoothCoefficient, segmentTree);
                     LinearRing[] holes = new LinearRing[polygon.getNumInteriorRing()];
@@ -403,7 +327,14 @@ public class BezierContouring {
                             Coordinate[] hole = generateBezierCurves(polygon.getInteriorRingN(idHole).getCoordinates(), segmentTree, deltaPoints);
                             holes[idHole] = factory.createLinearRing(hole);
                         }
-                        newPolygons.add(factory.createPolygon(factory.createLinearRing(extRing), holes));
+                        polygon = factory.createPolygon(factory.createLinearRing(extRing), holes);
+                        TopologyPreservingSimplifier simplifier = new TopologyPreservingSimplifier(polygon);
+                        simplifier.setDistanceTolerance(epsilon);
+                        Geometry res = simplifier.getResultGeometry();
+                        if(res instanceof Polygon) {
+                            polygon = (Polygon) res;
+                        }
+                        newPolygons.add(polygon);
                     }
                     entry.getValue().clear();
                     entry.getValue().addAll(newPolygons);
