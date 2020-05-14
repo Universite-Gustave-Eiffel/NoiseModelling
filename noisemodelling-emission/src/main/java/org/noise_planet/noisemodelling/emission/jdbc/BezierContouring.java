@@ -207,7 +207,15 @@ public class BezierContouring {
                         // If this segment is shared by two polygons
                         int numSteps = Math.max(4, (int)Math.ceil(p1.distance(p2) / epsilon));
                         // Compute bezier curve
-                        pts.addAll(curve4(p1, s.getControlPoints().get(0), s.getControlPoints().get(1), p2, numSteps));
+                        Coordinate ctrl1 = s.getControlPoints().get(0);
+                        Coordinate ctrl2 = s.getControlPoints().get(1);
+                        // if the control point is defined by other side
+                        // reverse control point order
+                        if(!s.p0.equals(p1)) {
+                            ctrl1 = s.getControlPoints().get(1);
+                            ctrl2 = s.getControlPoints().get(0);
+                        }
+                        pts.addAll(curve4(p1, ctrl1, ctrl2, p2, numSteps));
                     }
                     break;
                 }
@@ -365,6 +373,12 @@ public class BezierContouring {
                 ArrayList<Polygon> polygons = new ArrayList<>();
                 explode(mergeTriangles, polygons);
                 for(Polygon polygon : polygons) {
+//                    TopologyPreservingSimplifier simplifier = new TopologyPreservingSimplifier(polygon);
+//                    simplifier.setDistanceTolerance(deltaPoints);
+//                    Geometry res = simplifier.getResultGeometry();
+//                    if(res instanceof Polygon) {
+//                        polygon = (Polygon) res;
+//                    }
                     Coordinate[] extRing = polygon.getExteriorRing().getCoordinates();
                     computeBezierControlPoints(extRing, smoothCoefficient, segmentTree);
                     LinearRing[] holes = new LinearRing[polygon.getNumInteriorRing()];
@@ -411,12 +425,6 @@ public class BezierContouring {
                     explode(factory.createGeometryCollection(entry.getValue().toArray(new Geometry[0])), polygons);
                 }
                 for(Polygon polygon : polygons) {
-                    TopologyPreservingSimplifier simplifier = new TopologyPreservingSimplifier(polygon);
-                    simplifier.setDistanceTolerance(deltaPoints);
-                    Geometry res = simplifier.getResultGeometry();
-                    if(res instanceof Polygon) {
-                        polygon = (Polygon) res;
-                    }
                     int parameterIndex = 1;
                     ps.setInt(parameterIndex++, cellId);
                     ps.setObject(parameterIndex++, polygon);
@@ -535,13 +543,8 @@ public class BezierContouring {
         List<Coordinate> controlPoints = new ArrayList<>();
 
         public Segment(Coordinate p0, Coordinate p1) {
-            if(p0.x < p1.x || p0.y < p1.y) {
-                this.p0 = p0;
-                this.p1 = p1;
-            } else {
-                this.p0 = p1;
-                this.p1 = p0;
-            }
+            this.p0 = p0;
+            this.p1 = p1;
         }
 
         @Override
@@ -550,7 +553,8 @@ public class BezierContouring {
                 return false;
             }
             Segment other = (Segment) obj;
-            return this.p0.equals(other.p0) && this.p1.equals(other.p1);
+            return (this.p0.equals(other.p0) && this.p1.equals(other.p1)) ||
+                    (this.p1.equals(other.p0) && this.p0.equals(other.p1));
         }
 
         Envelope getEnvelope(){
