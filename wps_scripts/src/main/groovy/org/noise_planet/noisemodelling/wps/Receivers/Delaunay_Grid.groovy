@@ -200,7 +200,6 @@ def exec(Connection connection, input) {
     // No receivers closer than road width distance
     noiseMap.setRoadWidth(roadWidth)
     // No triangles larger than provided area
-    System.out.println(String.format(Locale.ROOT, "Maximum area : %.2f squared meters", maxArea));
     noiseMap.setMaximumArea(maxArea)
     // Densification of receivers near sound sources
     noiseMap.setSourceDensification(sourceDensification)
@@ -220,8 +219,10 @@ def exec(Connection connection, input) {
 
     sql.execute("Create spatial index on "+receivers_table_name+"(the_geom);")
 
+    int nbReceivers = sql.firstRow("SELECT COUNT(*) FROM " + receivers_table_name)[0] as Integer
+
     // Process Done
-    resultString = "Process done. " + receivers_table_name + " and TRIANGLES tables created. "
+    resultString = "Process done. " + receivers_table_name + " ("+nbReceivers+" receivers) and TRIANGLES tables created. "
 
     // print to command window
     System.out.println('Result : ' + resultString)

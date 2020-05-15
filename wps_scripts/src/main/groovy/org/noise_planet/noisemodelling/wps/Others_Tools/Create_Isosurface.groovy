@@ -115,6 +115,8 @@ def exec(Connection connection, input) {
 
     System.out.println(String.format(Locale.ROOT, 'Duration : %d ms', System.currentTimeMillis() - start));
 
+    resultString = "Table " + bezierContouring.getOutputTable() + " created"
+
     // print to WPS Builder
     return resultString
 }
