@@ -161,6 +161,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
                     Double value = row.value[idfreq];
                     if(!Double.isFinite(value)) {
                         value = -99.0;
+                        row.value[idfreq] = value;
                     }
                     ps.setDouble(parameterIndex++, value);
                 }

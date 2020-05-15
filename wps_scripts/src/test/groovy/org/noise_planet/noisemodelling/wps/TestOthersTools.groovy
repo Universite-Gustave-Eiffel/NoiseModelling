@@ -133,7 +133,7 @@ class TestOthersTools extends JdbcTestCase {
         def sql = new Sql(connection)
 
         SHPRead.readShape(connection, TestReceivers.getResource("buildings.shp").getPath())
-        SHPRead.readShape(connection, TestReceivers.getResource("roads2.shp").getPath())
+        SHPRead.readShape(connection, TestReceivers.getResource("ROADS2.shp").getPath())
         sql.execute("CREATE SPATIAL INDEX ON BUILDINGS(THE_GEOM)")
         sql.execute("CREATE SPATIAL INDEX ON ROADS2(THE_GEOM)")
 
