@@ -2,11 +2,13 @@ package org.noise_planet.noisemodelling.emission.jdbc;
 
 import org.noise_planet.noisemodelling.propagation.*;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.IntToDoubleFunction;
 
 public class LDENComputeRaysOut extends ComputeRaysOut {
     LdenData ldenData;
@@ -34,6 +36,7 @@ public class LDENComputeRaysOut extends ComputeRaysOut {
 
         void processAndPushResult(long receiverPK, List<double[]> wjSources, ConcurrentLinkedDeque<VerticeSL> result) {
             double[] levels = new double[PropagationProcessPathData.freq_lvl.size()];
+            Arrays.fill(levels, -99.0);
             for (VerticeSL lvl : receiverAttenuationLevels) {
                 levels = ComputeRays.sumDbArray(levels,
                         ComputeRays.sumArray(wjSources.get((int) lvl.sourceId), lvl.value));
