@@ -16,7 +16,8 @@
  * Copyright (C) 2013-2019 Ifsttar and CNRS
  * Copyright (C) 2020 Université Gustave Eiffel and CNRS
  *
- * @Author Pierre Aumond, Univ Gustave Eiffel
+ * @Author Pierre Aumond, Université Gustave Eiffel
+ * @Author Nicolas Fortin, Université Gustave Eiffel
  */
 
 
