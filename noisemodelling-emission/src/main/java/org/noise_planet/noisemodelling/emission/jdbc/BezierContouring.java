@@ -11,6 +11,7 @@ import org.locationtech.jts.simplify.TopologyPreservingSimplifier;
 import org.noise_planet.noisemodelling.propagation.ComputeRays;
 
 import java.sql.*;
+import java.text.DecimalFormat;
 import java.util.*;
 
 public class BezierContouring {
@@ -20,6 +21,7 @@ public class BezierContouring {
     String outputTable = "CONTOURING_NOISE_MAP";
     String pointTableField = "LAEQ";
     List<Double> isoLevels;
+    List<String> isoLabels;
     boolean smooth = true;
     double smoothCoefficient = 1.0;
     double deltaPoints = 0.5; // minimal distance between bezier points
@@ -33,10 +35,24 @@ public class BezierContouring {
      */
     public BezierContouring(List<Double> isoLevels, int srid) {
         this.isoLevels = new ArrayList<>(isoLevels.size());
+        this.isoLabels = new ArrayList<>(isoLevels.size());
         this.srid = srid;
-        for(double lvl : isoLevels) {
+        DecimalFormat format = new DecimalFormat("#.##");
+        for (int idiso = 0; idiso < isoLevels.size(); idiso++) {
+            double lvl = isoLevels.get(idiso);
             this.isoLevels.add(ComputeRays.dbaToW(lvl));
+            if (idiso == 0) {
+                this.isoLabels.add(String.format(Locale.ROOT, "< %s", format.format(lvl)));
+            } else if(idiso < isoLevels.size() - 1){
+                this.isoLabels.add(String.format(Locale.ROOT, "%s-%s", format.format(isoLevels.get(idiso - 1)), format.format(lvl)));
+            } else {
+                this.isoLabels.add(String.format(Locale.ROOT, "> %s", format.format(isoLevels.get(idiso - 1))));
+            }
         }
+    }
+
+    public void setIsoLabels(List<String> isoLabels) {
+        this.isoLabels = isoLabels;
     }
 
     /**
@@ -358,7 +374,7 @@ public class BezierContouring {
         // Second step insertion
         int batchSize = 0;
         try(PreparedStatement ps = connection.prepareStatement("INSERT INTO " + TableLocation.parse(outputTable)
-                + "(cell_id, the_geom, ISOLVL) VALUES (?, ?, ?);")) {
+                + "(cell_id, the_geom, ISOLVL, ISOLABEL) VALUES (?, ?, ?, ?);")) {
             for (Map.Entry<Short, ArrayList<Geometry>> entry : polys.entrySet()) {
                 ArrayList<Polygon> polygons = new ArrayList<>();
                 if(!smooth) {
@@ -374,6 +390,7 @@ public class BezierContouring {
                     ps.setInt(parameterIndex++, cellId);
                     ps.setObject(parameterIndex++, polygon);
                     ps.setInt(parameterIndex++, entry.getKey());
+                    ps.setString(parameterIndex++, isoLabels.get(entry.getKey()));
                     ps.addBatch();
                     batchSize++;
                     if (batchSize >= BATCH_MAX_SIZE) {
@@ -401,7 +418,7 @@ public class BezierContouring {
         int lastCellId = -1;
         try(Statement st = connection.createStatement()) {
             st.execute("DROP TABLE IF EXISTS " + TableLocation.parse(outputTable));
-            st.execute("CREATE TABLE " + TableLocation.parse(outputTable) + "(PK SERIAL, CELL_ID INTEGER, THE_GEOM GEOMETRY, ISOLVL INTEGER);");
+            st.execute("CREATE TABLE " + TableLocation.parse(outputTable) + "(PK SERIAL, CELL_ID INTEGER, THE_GEOM GEOMETRY, ISOLVL INTEGER, ISOLABEL VARCHAR);");
             String query = "SELECT CELL_ID, ST_X(p1.the_geom) xa,ST_Y(p1.the_geom) ya,ST_X(p2.the_geom) xb,ST_Y(p2.the_geom) yb,ST_X(p3.the_geom) xc,ST_Y(p3.the_geom) yc, p1."+pointTableField+" lvla, p2."+pointTableField+" lvlb, p3."+pointTableField+" lvlc FROM "+triangleTable+" t, "+pointTable+" p1,"+pointTable+" p2,"+pointTable+" p3 WHERE t.PK_1 = p1."+pkField+" and t.PK_2 = p2."+pkField+" AND t.PK_3 = p3."+pkField+" order by cell_id;";
             try(ResultSet rs = st.executeQuery(query)) {
                 // Cache columns index
