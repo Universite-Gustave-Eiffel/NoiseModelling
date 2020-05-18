@@ -23,7 +23,6 @@
 package org.noise_planet.noisemodelling.emission.jdbc;
 
 import org.h2gis.utilities.JDBCUtilities;
-import org.h2gis.utilities.SFSUtilities;
 import org.h2gis.utilities.SpatialResultSet;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
@@ -46,7 +45,7 @@ public class LDENPropagationProcessData extends PropagationProcessData {
     String lwFrequencyPrepend = "LW";
     public Map<String, Integer> sourceFields = null;
 
-    // Lden values
+    // Source value in energetic  e = pow(10, dbVal / 10.0)
     public List<double[]> wjSourcesD = new ArrayList<>();
     public List<double[]> wjSourcesE = new ArrayList<>();
     public List<double[]> wjSourcesN = new ArrayList<>();
@@ -208,9 +207,9 @@ public class LDENPropagationProcessData extends PropagationProcessData {
         if (ldenConfig.input_mode == LDENConfig.INPUT_MODE.INPUT_MODE_PROBA) {
             double val = ComputeRays.dbaToW(90.0);
             for(int idfreq = 0; idfreq < PropagationProcessPathData.freq_lvl.size(); idfreq++) {
-                ld[idfreq] = val;
-                le[idfreq] = val;
-                ln[idfreq] = val;
+                ld[idfreq] = ComputeRays.dbaToW(val);
+                le[idfreq] = ComputeRays.dbaToW(val);
+                ln[idfreq] = ComputeRays.dbaToW(val);
             }
         } else if (ldenConfig.input_mode == LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN) {
             // Read average 24h traffic
@@ -245,27 +244,33 @@ public class LDENPropagationProcessData extends PropagationProcessData {
                 // ignore
             }
             // Day
-            ld = getEmissionFromResultSet(rs, "D", slope);
+            ld = ComputeRays.dbaToW(getEmissionFromResultSet(rs, "D", slope));
 
             // Evening
-            le = getEmissionFromResultSet(rs, "E", slope);
+            le = ComputeRays.dbaToW(getEmissionFromResultSet(rs, "E", slope));
 
             // Night
-            ln = getEmissionFromResultSet(rs, "N", slope);
+            ln = ComputeRays.dbaToW(getEmissionFromResultSet(rs, "N", slope));
 
         }
 
         // Combine day evening night sound levels
         for (int idfreq = 0; idfreq < PropagationProcessPathData.freq_lvl.size(); idfreq++) {
-            lden[idfreq] = ComputeRays.wToDba((12 * ComputeRays.dbaToW(ld[idfreq]) + 4 * ComputeRays.dbaToW(le[idfreq] + 5) + 8 * ComputeRays.dbaToW(ln[idfreq] + 10)) / 24.0);
+            lden[idfreq] = (12 * ld[idfreq] + 4 * ComputeRays.dbaToW(ComputeRays.wToDba(le[idfreq]) + 5) + 8 * ComputeRays.dbaToW(ComputeRays.wToDba(ln[idfreq]) + 10)) / 24.0;
         }
 
         return new double[][] {ld, le, ln, lden};
     }
 
     public double[] getMaximalSourcePower(int sourceId) {
-        if(sourceId < wjSourcesD.size()) {
+        if(ldenConfig.computeLDEN && sourceId < wjSourcesDEN.size()) {
+            return wjSourcesDEN.get(sourceId);
+        } else if(ldenConfig.computeLDay && sourceId < wjSourcesD.size()) {
             return wjSourcesD.get(sourceId);
+        } else if(ldenConfig.computeLEvening && sourceId < wjSourcesE.size()) {
+            return wjSourcesE.get(sourceId);
+        } else if(ldenConfig.computeLNight && sourceId < wjSourcesN.size()) {
+            return wjSourcesN.get(sourceId);
         } else {
             return new double[0];
         }

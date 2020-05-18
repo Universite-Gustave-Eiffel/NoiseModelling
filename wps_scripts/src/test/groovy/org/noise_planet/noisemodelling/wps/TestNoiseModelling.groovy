@@ -22,6 +22,7 @@ package org.noise_planet.noisemodelling.wps
 
 import groovy.sql.Sql
 import org.h2gis.functions.io.shp.SHPRead
+import org.h2gis.functions.io.shp.SHPWrite
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_traffic
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_source
@@ -180,4 +181,40 @@ class TestNoiseModelling extends JdbcTestCase {
         assertTrue(res.contains("LNIGHT_GEOM"))
         assertTrue(res.contains("LDEN_GEOM"))
     }
+
+
+
+//    void testLdenFromEmissionLocal() {
+//        def sql = new Sql(connection)
+//
+//        SHPRead.readShape(connection, "C:\\Users\\kento\\Documents\\NoiseModelling\\LW_ROADS.shp")
+//
+//        sql.execute("ALTER TABLE LW_ROADS DROP COLUMN PK2")
+//        sql.execute("ALTER TABLE LW_ROADS ALTER COLUMN PK INTEGER NOT NULL")
+//        sql.execute("ALTER TABLE LW_ROADS ADD PRIMARY KEY (PK)")
+//
+//        SHPRead.readShape(connection, "C:\\Users\\kento\\Documents\\NoiseModelling\\BUILDINGS.shp")
+//
+//        sql.execute("ALTER TABLE BUILDINGS DROP COLUMN PK2")
+//        sql.execute("ALTER TABLE BUILDINGS ALTER COLUMN PK INTEGER NOT NULL")
+//        sql.execute("ALTER TABLE BUILDINGS ADD PRIMARY KEY (PK)")
+//
+//        SHPRead.readShape(connection, "C:\\Users\\kento\\Documents\\NoiseModelling\\RECEIVERS.shp")
+//
+//        sql.execute("ALTER TABLE RECEIVERS DROP COLUMN PK2")
+//        sql.execute("ALTER TABLE RECEIVERS ALTER COLUMN PK INTEGER NOT NULL")
+//        sql.execute("ALTER TABLE RECEIVERS ADD PRIMARY KEY (PK)")
+//
+//        def res = new Noise_level_from_source().exec(connection,
+//                ["tableBuilding"   : "BUILDINGS",
+//                 "tableSources"   : "LW_ROADS",
+//                 "tableReceivers": "RECEIVERS"])
+//
+//        assertTrue(res.contains("LDAY_GEOM"))
+//        assertTrue(res.contains("LEVENING_GEOM"))
+//        assertTrue(res.contains("LNIGHT_GEOM"))
+//        assertTrue(res.contains("LDEN_GEOM"))
+//
+//        SHPWrite.exportTable(connection, "C:\\Users\\kento\\Documents\\NoiseModelling\\LDEN_GEOM.shp", "LDEN_GEOM")
+//    }
 }

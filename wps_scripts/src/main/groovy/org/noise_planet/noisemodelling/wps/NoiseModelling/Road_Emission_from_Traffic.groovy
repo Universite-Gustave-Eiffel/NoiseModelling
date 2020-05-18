@@ -203,18 +203,20 @@ def exec(Connection connection, input) {
 
             // Compute emission sound level for each road segment
             def results = ldenData.computeLw(rs)
-
+            def lday = ComputeRays.wToDba(results[0])
+            def levening = ComputeRays.wToDba(results[1])
+            def lnight = ComputeRays.wToDba(results[2])
             // fill the LW_ROADS table
             ps.addBatch(rs.getLong(pkIndex) as Integer, geo as Geometry,
-                    results[0][0] as Double, results[0][1] as Double, results[0][2] as Double,
-                    results[0][3] as Double, results[0][4] as Double, results[0][5] as Double,
-                    results[0][6] as Double, results[0][7] as Double,
-                    results[1][0] as Double, results[1][1] as Double, results[1][2] as Double,
-                    results[1][3] as Double, results[1][4] as Double, results[1][5] as Double,
-                    results[1][6] as Double, results[1][7] as Double,
-                    results[2][0] as Double, results[2][1] as Double, results[2][2] as Double,
-                    results[2][3] as Double, results[2][4] as Double, results[2][5] as Double,
-                    results[2][6] as Double, results[2][7] as Double)
+                    lday[0] as Double, lday[1] as Double, lday[2] as Double,
+                    lday[3] as Double, lday[4] as Double, lday[5] as Double,
+                    lday[6] as Double, lday[7] as Double,
+                    levening[0] as Double, levening[1] as Double, levening[2] as Double,
+                    levening[3] as Double, levening[4] as Double, levening[5] as Double,
+                    levening[6] as Double, levening[7] as Double,
+                    lnight[0] as Double, lnight[1] as Double, lnight[2] as Double,
+                    lnight[3] as Double, lnight[4] as Double, lnight[5] as Double,
+                    lnight[6] as Double, lnight[7] as Double)
         }
     }
 
