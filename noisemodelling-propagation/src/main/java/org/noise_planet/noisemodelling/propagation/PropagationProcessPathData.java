@@ -61,7 +61,7 @@ public class PropagationProcessPathData {
     public static final List<Integer> freq_lvl = Arrays.asList(63, 125, 250, 500, 1000, 2000, 4000, 8000);
     public static final List<Double> freq_lvl_exact = Arrays.asList(63.0957, 125.8925, 251.1888, 501.1872, 1000.0, 1995.26231, 3981.07171, 7943.28235);
     public static final List<Double> freq_lvl_a_weighting = Arrays.asList(-26.2, -16.1, -8.6, -3.2, 0.0, 1.2, 1.0, -1.1);
-    static final double[] DEFAULT_WIND_ROSE = new double[]{0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
+    public static final double[] DEFAULT_WIND_ROSE = new double[]{0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
     /** Temperature in celsius */
     private double temperature = 15;
     private double celerity = 340;
