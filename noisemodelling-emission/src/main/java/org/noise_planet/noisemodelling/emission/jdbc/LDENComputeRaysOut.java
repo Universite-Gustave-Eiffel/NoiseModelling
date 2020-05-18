@@ -43,6 +43,10 @@ public class LDENComputeRaysOut extends ComputeRaysOut {
             pushInStack(result, new VerticeSL(receiverPK, -1, ComputeRays.wToDba(levels)));
         }
 
+        /**
+         * @param stack Stack to feed
+         * @param data receiver noise level in dB
+         */
         public void pushInStack(ConcurrentLinkedDeque<VerticeSL> stack, VerticeSL data) {
             while(ldenComputeRaysOut.ldenData.queueSize.get() > ldenConfig.outputMaximumQueue) {
                 try {
