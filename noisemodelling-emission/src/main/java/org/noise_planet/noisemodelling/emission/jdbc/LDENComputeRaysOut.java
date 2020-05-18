@@ -53,6 +53,10 @@ public class LDENComputeRaysOut extends ComputeRaysOut {
                     break;
                 }
                 if(ldenConfig.aborted) {
+                    if(multiThreadParent != null && this.multiThreadParent.inputData != null &&
+                            this.multiThreadParent.inputData.cellProg != null) {
+                        this.multiThreadParent.inputData.cellProg.cancel();
+                    }
                     return;
                 }
             }

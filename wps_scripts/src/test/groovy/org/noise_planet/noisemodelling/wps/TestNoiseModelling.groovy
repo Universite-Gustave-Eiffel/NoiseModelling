@@ -23,8 +23,8 @@ package org.noise_planet.noisemodelling.wps
 import groovy.sql.Sql
 import org.h2gis.functions.io.shp.SHPRead
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File
-import org.noise_planet.noisemodelling.wps.NoiseModelling.Lday_from_Traffic
-import org.noise_planet.noisemodelling.wps.NoiseModelling.Lden_from_Road_Emission
+import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_traffic
+import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_source
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Road_Emission_from_Traffic
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -63,7 +63,7 @@ class TestNoiseModelling extends JdbcTestCase {
                  "tableName": "receivers"])
 
 
-       String res = new Lday_from_Traffic().exec(connection,
+       String res = new Noise_level_from_traffic().exec(connection,
                 ["tableBuilding"   : "BUILDINGS",
                  "tableRoads"   : "ROADS2",
                  "tableReceivers": "RECEIVERS"])
@@ -139,7 +139,7 @@ class TestNoiseModelling extends JdbcTestCase {
 //                 "sourcesTableName": "ROADS2"])
 //
 //
-//        String res = new Lday_from_Traffic().exec(connection,
+//        String res = new Noise_level_from_traffic().exec(connection,
 //                ["tableBuilding"   : "BUILDINGS",
 //                 "tableRoads"   : "ROADS2",
 //                 "tableReceivers": "RECEIVERS",
@@ -170,7 +170,7 @@ class TestNoiseModelling extends JdbcTestCase {
                  "tableName": "receivers"])
 
 
-        res = new Lden_from_Road_Emission().exec(connection,
+        res = new Noise_level_from_source().exec(connection,
                 ["tableBuilding"   : "BUILDINGS",
                  "tableSources"   : "LW_ROADS",
                  "tableReceivers": "RECEIVERS"])

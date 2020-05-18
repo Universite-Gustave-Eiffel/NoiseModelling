@@ -52,7 +52,7 @@ import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap
 import java.sql.Connection
 import java.sql.SQLException
 
-title = 'Compute Lday from given tables'
+title = 'Compute LDay,Levening,LNight,Lden from road traffic'
 description = 'Compute Lday noise map from Day Evening Night traffic flow rate and speed estimates (specific format, see input details).' +
         '</br> Tables must be projected in a metric coordinate system (SRID). Use "Change_SRID" WPS Block if needed.' +
         '</br> </br> <b> The output tables are called : LDAY_GEOM LEVENING_GEOM LNIGHT_GEOM LDEN_GEOM </b> ' +

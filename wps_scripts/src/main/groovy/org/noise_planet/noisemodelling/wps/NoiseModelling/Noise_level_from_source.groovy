@@ -51,7 +51,7 @@ import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap
 import java.sql.Connection
 import java.sql.SQLException
 
-title = 'Calculation of the Lden map from the road noise emission table'
+title = 'Calculation of the Lden,LDay,LEvening,LNight map from the noise emission table'
 description = 'Calculation of the Lden map from the road noise emission table (DEN format, see input details). </br> Tables must be projected in a metric coordinate system (SRID). Use "Change_SRID" WPS Block if needed. ' +
         '</br> </br> <b> The output table is called : LDEN_GEOM, LDAY_GEOM, LEVENING_GEOM, LNIGHT_GEOM </b> ' +
         'and contain : </br>' +

@@ -24,7 +24,7 @@ import org.h2gis.utilities.TableLocation
 import org.noise_planet.noisemodelling.wps.Database_Manager.Display_Database
 import org.noise_planet.noisemodelling.wps.Database_Manager.Table_Visualization_Data
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
-import org.noise_planet.noisemodelling.wps.NoiseModelling.Lden_from_Road_Emission
+import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_source
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Road_Emission_from_Traffic
 import org.noise_planet.noisemodelling.wps.Others_Tools.OsmToInputData
 import org.noise_planet.noisemodelling.wps.Receivers.Regular_Grid
@@ -88,7 +88,7 @@ class TestTutorialOpenStreetMap extends JdbcTestCase {
 
         assertTrue(res.contains("LW_ROADS"))
 
-        res = new Lden_from_Road_Emission().exec(connection, ["tableSources"  : "LW_ROADS",
+        res = new Noise_level_from_source().exec(connection, ["tableSources"  : "LW_ROADS",
                                                               "tableBuilding" : "BUILDINGS",
                                                               "tableGroundAbs": "GROUND",
                                                               "tableReceivers": "RECEIVERS"])
