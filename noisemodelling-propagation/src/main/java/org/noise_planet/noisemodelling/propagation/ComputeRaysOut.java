@@ -236,6 +236,12 @@ public class ComputeRaysOut implements IComputeRaysOut {
         public final long receiverId;
         public final double[] value;
 
+        /**
+         *
+         * @param receiverId Receiver identifier
+         * @param sourceId Source identifier
+         * @param value Noise level in dB
+         */
         public VerticeSL(long receiverId, long sourceId, double[] value) {
             this.sourceId = sourceId;
             this.receiverId = receiverId;

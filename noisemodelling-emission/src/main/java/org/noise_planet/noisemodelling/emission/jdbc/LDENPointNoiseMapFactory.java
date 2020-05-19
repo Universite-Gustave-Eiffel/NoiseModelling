@@ -22,6 +22,7 @@
 
 package org.noise_planet.noisemodelling.emission.jdbc;
 
+import org.h2.jdbc.JdbcBatchUpdateException;
 import org.h2gis.utilities.TableLocation;
 import org.noise_planet.noisemodelling.propagation.*;
 import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap;

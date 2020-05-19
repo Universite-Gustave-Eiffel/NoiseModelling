@@ -21,16 +21,11 @@
 package org.noise_planet.noisemodelling.wps
 
 
-import org.h2gis.functions.io.shp.SHPRead
 import org.junit.Test
 import org.noise_planet.noisemodelling.wps.Database_Manager.Display_Database
 import org.noise_planet.noisemodelling.wps.Dynamic_Tools.Traffic_Probabilistic_Modelling
-import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
-import org.noise_planet.noisemodelling.wps.NoiseModelling.Lden_from_Road_Emission
-import org.noise_planet.noisemodelling.wps.NoiseModelling.Road_Emission_from_Traffic
 import org.noise_planet.noisemodelling.wps.Others_Tools.OsmToInputData
 import org.noise_planet.noisemodelling.wps.Receivers.Building_Grid
-import org.noise_planet.noisemodelling.wps.Receivers.Regular_Grid
 
 class TestDynamicTools extends JdbcTestCase  {
 

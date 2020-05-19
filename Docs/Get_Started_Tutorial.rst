@@ -121,7 +121,7 @@ Repeat this operation for other files:
 Step 5: Run Calculation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To run Calculation you have to drag the block *Lday_from_Traffic* into WPS Builder window.
+To run Calculation you have to drag the block *Noise_level_from_traffic* into WPS Builder window.
 
 Then, select the orange blocks and indicate the name of the corresponding table your database, for example :
 

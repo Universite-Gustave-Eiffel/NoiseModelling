@@ -26,8 +26,7 @@ import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.SFSUtilities
 import org.h2gis.utilities.TableLocation
 import org.junit.Test
-import org.noise_planet.noisemodelling.emission.jdbc.BezierContouring
-import org.noise_planet.noisemodelling.wps.NoiseModelling.Lday_from_Traffic
+import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_traffic
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Road_Emission_from_Traffic
 import org.noise_planet.noisemodelling.wps.Others_Tools.Add_Laeq_Leq_columns
 import org.noise_planet.noisemodelling.wps.Others_Tools.Change_SRID
@@ -36,17 +35,6 @@ import org.noise_planet.noisemodelling.wps.Others_Tools.Screen_to_building
 import org.noise_planet.noisemodelling.wps.Receivers.Delaunay_Grid
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
-import static org.junit.Assert.assertTrue
-import static org.junit.Assert.assertTrue
-import static org.junit.Assert.assertTrue
-import static org.junit.Assert.assertTrue
-import static org.junit.Assert.assertTrue
-import static org.junit.Assert.assertTrue
-import static org.junit.Assert.assertTrue
-import static org.junit.Assert.assertTrue
-import static org.junit.Assert.assertTrue
-import static org.junit.Assert.assertTrue
 
 /**
  * Test parsing of zip file using H2GIS database
@@ -139,12 +127,15 @@ class TestOthersTools extends JdbcTestCase {
 
         new Delaunay_Grid().exec(connection, ["buildingTableName": "BUILDINGS",
                                               "sourcesTableName" : "ROADS2",
-                                              "sourceDensification": 0, maxArea:0]);
+                                              "sourceDensification": 0]);
 
 
-        new Lday_from_Traffic().exec(connection, [tableBuilding:"BUILDINGS", tableRoads: "ROADS2",
-                                                  tableReceivers : "RECEIVERS", confSkipLday : true,
-                                                  confSkipLnight: true, confSkipLevening : true])
+        new Noise_level_from_traffic().exec(connection, [tableBuilding :"BUILDINGS", tableRoads: "ROADS2",
+                                                         tableReceivers: "RECEIVERS", confSkipLday: true,
+                                                         confSkipLnight: true, confSkipLevening: true,
+                                                         confMaxSrcDist:100, confTemperature:20, confHumidity:50,
+                                                         confFavorableOccurrences: "0.5, 0.1, 0.1, 0.1, 0.2, 0.5," +
+                                                                 " 0.7, 0.8, 0.8, 0.6, 0.5, 0.5, 0.5, 0.5, 0.5, 0.2"])
 
         new Create_Isosurface().exec(connection, [resultTable : "LDEN_GEOM"])
 
