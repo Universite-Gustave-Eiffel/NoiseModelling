@@ -29,7 +29,7 @@ Import to the database
   - Noise Modelling use metric projections, please identifies a local projection for your area of interest and its SRID
   - Inform the target projection identifier field with the corresponding SRID
   - Enter the path to the file map.osm
-  - Check all check box 
+  - Select OsmToInputData box then click on the green button
 
 .. warning::
    The current import script from open street map can produce geometries incompatible with NoiseModelling. If an area is a problem try to reduce the area. A much more robust version of this script will be available soon. 
@@ -67,7 +67,7 @@ The locations of noise level evaluation points needs to be defined.
 Use *Delaunay_Grid* with the previously generated BUILDINGS table as the buildings table, and ROADS as *Sources table name*.
 Other parameters are optional.
 
-Don't forget to view your resulting layer in WPSBuilder or OrsbisGIS/QGIS to check that it meets your expectations.
+Don't forget to view your resulting layer in WPSBuilder or OrbisGIS/QGIS to check that it meets your expectations.
 
 This processing block will give the possibility to generate a noise map later.
 
@@ -75,9 +75,9 @@ Step 4: Using Noise Modelling
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Associating an emission noise level with roads
 ------------------------------------------------------------------------------
-The *Road_Emission_from_Traffic* block is used to generate a road layer, called LW_ROADS, containing LW emission noise level values in accordance with the emission laws of the CNOSSOS model. The format of the input road layer can be found in the description of the WPS Bloc.
+The *Road_Emission_from_Traffic* block is used to generate a road layer, called LW_ROADS, containing LW emission noise level values in accordance with the emission laws of the CNOSSOS model. The format of the input road layer can be found in the description of the WPS Block.
 
-Don't forget to view your resulting layer in WPSBuilder or OrsbisGIS/QGIS to verify that it meets your expectations.
+Don't forget to view your resulting layer in WPSBuilder or OrbisGIS/QGIS to verify that it meets your expectations.
 
 Source to Receiver Propagation
 ------------------------------------------------------------------------------
