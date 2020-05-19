@@ -82,8 +82,6 @@ public class PropagationProcessData {
     public double maxSrcDist = DEFAULT_MAX_PROPAGATION_DISTANCE;
     /** Maximum reflection wall distance from receiver->source line */
     public double maxRefDist = DEFAULT_MAXIMUM_REF_DIST;
-    /** Minimum distance between source and receiver */
-    public double minRecDist = DEFAULT_RECEIVER_DIST;
     /** Source factor absorption */
     public double gS = DEFAULT_GS;
 

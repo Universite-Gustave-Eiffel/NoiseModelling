@@ -59,14 +59,17 @@ OrbisGIS/QGIS allow you to add an OSM background map : https://wiki.openstreetma
 * **Change colors**
 OrbisGIS/QGIS allow you to change layer colors (e.g. Surface_osm in green, Buildings_OSM in gray, ROADS in red).
 
-Step 3: Generating a Receiver Grid
+Step 3: Generating a Receiver table
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Use *Regular_Grid* with a distance between the receivers of 50 m (offset).
-Use the previously generated BUILDINGS table as the buildings table.
+The locations of noise level evaluation points needs to be defined.
+
+Use *Delaunay_Grid* with the previously generated BUILDINGS table as the buildings table, and ROADS as *Sources table name*.
 Other parameters are optional.
 
 Don't forget to view your resulting layer in WPSBuilder or OrbisGIS/QGIS to check that it meets your expectations.
+
+This processing block will give the possibility to generate a noise map later.
 
 Step 4: Using Noise Modelling
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -78,17 +81,22 @@ Don't forget to view your resulting layer in WPSBuilder or OrbisGIS/QGIS to veri
 
 Source to Receiver Propagation
 ------------------------------------------------------------------------------
-The *Lden_from_Road_Emission* block allows to generate a layer of receiver points with associated sound levels corresponding to the sound level emitted by the sources (created table LW_ROADS) propagated to the receivers according to the CNOSSOS propagation laws.
+The *Noise_level_from_source* block allows to generate a layer of receiver points with associated sound levels corresponding to the sound level emitted by the sources (created table LW_ROADS) propagated to the receivers according to the CNOSSOS propagation laws.
 
-Step 5: Viewing the result
+Step 5: Create Isosurfaces map
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Create an interpolation of levels between receivers points using the block *Create_Isosurface*.
+
+Set *LDEN_GEOM* as *Name of the noise table*.
+
+Step 6: Viewing the result
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Exporting
 --------------
-You can then export one of the output table LDAY_GEOM, LEVENING_GEOM, LNIGHT_GEOM and LDEN_GEOM via *Export_Table* in shapefile or GeoJSON format.
+You can then export the output table CONTOURING_NOISE_MAP via *Export_Table* in shapefile or GeoJSON format.
 
 Viewing
 --------------
-You can view this layer in your favorite GIS. You can then apply a color gradient to your receiver points based on one of the sound levels column.
-
-
+You can view this layer in your favorite GIS. You can then apply a color gradient on ISOLVL field, the noise level intervals are in ISOLABEL field.

@@ -51,9 +51,9 @@ import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap
 import java.sql.Connection
 import java.sql.SQLException
 
-title = 'Calculation of the Lden map from the road noise emission table'
+title = 'Calculation of the Lden,LDay,LEvening,LNight map from the noise emission table'
 description = 'Calculation of the Lden map from the road noise emission table (DEN format, see input details). </br> Tables must be projected in a metric coordinate system (SRID). Use "Change_SRID" WPS Block if needed. ' +
-        '</br> </br> <b> The output table is called : LDEN_GEOM </b> ' +
+        '</br> </br> <b> The output table is called : LDEN_GEOM, LDAY_GEOM, LEVENING_GEOM, LNIGHT_GEOM </b> ' +
         'and contain : </br>' +
         '-  <b> IDRECEIVER  </b> : an identifier (INTEGER, PRIMARY KEY). </br>' +
         '- <b> THE_GEOM </b> : the 3D geometry of the receivers (POINT).</br> ' +
@@ -144,7 +144,20 @@ inputs = [
         confExportSourceId: [name       : 'keep source id', title: 'Separate receiver level by source identifier',
                              description: 'Keep source identifier in output in order to get noise contribution of each noise source.' +
                                      '</br> </br> <b> Default value : false </b>',
-                             min        : 0, max: 1, type: Boolean.class]]
+                             min        : 0, max: 1, type: Boolean.class],
+        confHumidity: [name       : 'Relative humidity', title: 'Relative humidity',
+                       description: 'Humidity for noise propagation, default value is <b>70</b>',
+                       min        : 0, max: 1, type: Double.class],
+        confTemperature: [name       : 'Temperature', title: 'Air temperature',
+                       description: 'Air temperature in degree celsius, default value is <b>15</b>',
+                       min        : 0, max: 1, type: Double.class],
+        confFavorableOccurrences  : [name: 'Probability of occurrences table', title: 'Probability of occurrences table',
+                             description: 'Table of probability of occurrences of favourable propagation conditions.' +
+                                     'The north slice is the last array index not the first one<br/>' +
+                                     'Slice width are 22.5&#176;: (16 slices)<br/><ul>' +
+                                     '<li>The first column 22.5&#176; contain occurrences between 11.25 to 33.75 &#176;</li>' +
+                                     '<li>The last column 360&#176; contains occurrences between 348.75&#176; to 360&#176; and 0 to 11.25&#176;</li></ul>Default value <b>0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5</b>',
+                             min: 0, max: 1, type: String.class]]
 
 outputs = [result: [name: 'Result output string', title: 'Result output string', description: 'This type of result does not allow the blocks to be linked together.', type: String.class]]
 
@@ -355,6 +368,26 @@ def exec(Connection connection, input) {
     pointNoiseMap.setComputeHorizontalDiffraction(compute_horizontal_diffraction)
     pointNoiseMap.setComputeVerticalDiffraction(compute_vertical_diffraction)
     pointNoiseMap.setSoundReflectionOrder(reflexion_order)
+
+    // Set environmental parameters
+    PropagationProcessPathData environmentalData = new PropagationProcessPathData()
+
+    if(input.containsKey('confHumidity')) {
+        environmentalData.setHumidity(input['confHumidity'] as Double)
+    }
+    if(input.containsKey('confTemperature')) {
+        environmentalData.setTemperature(input['confTemperature'] as Double)
+    }
+    if(input.containsKey('confFavorableOccurrences')) {
+        StringTokenizer tk = new StringTokenizer(input['confFavorableOccurrences'] as String, ',')
+        double[] favOccurrences = new double[PropagationProcessPathData.DEFAULT_WIND_ROSE.length]
+        for(int i = 0; i < favOccurrences.length; i++) {
+            favOccurrences[i] = Math.max(0, Math.min(1, Double.valueOf(tk.nextToken().trim())))
+        }
+        environmentalData.setWindRose(favOccurrences)
+    }
+
+    pointNoiseMap.setPropagationProcessPathData(environmentalData)
     // Building height field name
     pointNoiseMap.setHeightField("HEIGHT")
     // Import table with Snow, Forest, Grass, Pasture field polygons. Attribute G is associated with each polygon

@@ -139,19 +139,18 @@ class TestReceivers extends JdbcTestCase {
 
         assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
 
-//    TODO activate when TRIANGLES table will not be deleted anymore
-//        sql.execute("CREATE SPATIAL INDEX ON RECEIVERS(THE_GEOM)")
-//
-//        // Check if index and geoms is corresponding
-//        def res = sql.firstRow("SELECT MAX((SELECT ST_DISTANCE(T.THE_GEOM, R.THE_GEOM) D FROM RECEIVERS R WHERE R.PK = T.PK_1)) D1," +
-//                " MAX((SELECT ST_DISTANCE(T.THE_GEOM, R.THE_GEOM) D FROM RECEIVERS R WHERE R.PK = T.PK_2)) D2," +
-//                " MAX((SELECT ST_DISTANCE(T.THE_GEOM, R.THE_GEOM) D FROM RECEIVERS R WHERE R.PK = T.PK_3)) D3 FROM TRIANGLES T");
-//        def max_dist_a = res[0] as Double
-//        def max_dist_b = res[1] as Double
-//        def max_dist_c = res[2] as Double
-//        assertEquals(0.0, max_dist_a, 1e-6d);
-//        assertEquals(0.0, max_dist_b, 1e-6d);
-//        assertEquals(0.0, max_dist_c, 1e-6d);
+        sql.execute("CREATE SPATIAL INDEX ON RECEIVERS(THE_GEOM)")
+
+        // Check if index and geoms is corresponding
+        def res = sql.firstRow("SELECT MAX((SELECT ST_DISTANCE(T.THE_GEOM, R.THE_GEOM) D FROM RECEIVERS R WHERE R.PK = T.PK_1)) D1," +
+                " MAX((SELECT ST_DISTANCE(T.THE_GEOM, R.THE_GEOM) D FROM RECEIVERS R WHERE R.PK = T.PK_2)) D2," +
+                " MAX((SELECT ST_DISTANCE(T.THE_GEOM, R.THE_GEOM) D FROM RECEIVERS R WHERE R.PK = T.PK_3)) D3 FROM TRIANGLES T");
+        def max_dist_a = res[0] as Double
+        def max_dist_b = res[1] as Double
+        def max_dist_c = res[2] as Double
+        assertEquals(0.0, max_dist_a, 1e-6d);
+        assertEquals(0.0, max_dist_b, 1e-6d);
+        assertEquals(0.0, max_dist_c, 1e-6d);
     }
 
     public void testRandomGrid() {

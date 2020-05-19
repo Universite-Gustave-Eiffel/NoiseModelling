@@ -22,6 +22,7 @@
 
 package org.noise_planet.noisemodelling.emission.jdbc;
 
+import org.h2.jdbc.JdbcBatchUpdateException;
 import org.h2gis.utilities.TableLocation;
 import org.noise_planet.noisemodelling.propagation.*;
 import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap;
@@ -158,7 +159,12 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
                     ps.setLong(parameterIndex++, row.sourceId);
                 }
                 for(int idfreq=0;idfreq < PropagationProcessPathData.freq_lvl.size(); idfreq++) {
-                    ps.setDouble(parameterIndex++, row.value[idfreq]);
+                    Double value = row.value[idfreq];
+                    if(!Double.isFinite(value)) {
+                        value = -99.0;
+                        row.value[idfreq] = value;
+                    }
+                    ps.setDouble(parameterIndex++, value);
                 }
                 // laeq value
                 ps.setDouble(parameterIndex++, ComputeRays.wToDba(ComputeRays.sumArray(ComputeRays.dbaToW(ComputeRays.sumArray(row.value, a_weighting)))));

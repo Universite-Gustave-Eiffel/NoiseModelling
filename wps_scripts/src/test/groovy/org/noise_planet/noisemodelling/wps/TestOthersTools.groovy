@@ -23,11 +23,16 @@ package org.noise_planet.noisemodelling.wps
 import groovy.sql.Sql
 import org.h2gis.functions.io.shp.SHPRead
 import org.h2gis.utilities.JDBCUtilities
+import org.h2gis.utilities.SFSUtilities
+import org.h2gis.utilities.TableLocation
 import org.junit.Test
+import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_traffic
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Road_Emission_from_Traffic
 import org.noise_planet.noisemodelling.wps.Others_Tools.Add_Laeq_Leq_columns
 import org.noise_planet.noisemodelling.wps.Others_Tools.Change_SRID
+import org.noise_planet.noisemodelling.wps.Others_Tools.Create_Isosurface
 import org.noise_planet.noisemodelling.wps.Others_Tools.Screen_to_building
+import org.noise_planet.noisemodelling.wps.Receivers.Delaunay_Grid
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -111,6 +116,42 @@ class TestOthersTools extends JdbcTestCase {
 
     }
 
+
+    public void testDelaunayGrid() {
+        def sql = new Sql(connection)
+
+        SHPRead.readShape(connection, TestReceivers.getResource("buildings.shp").getPath())
+        SHPRead.readShape(connection, TestReceivers.getResource("ROADS2.shp").getPath())
+        sql.execute("CREATE SPATIAL INDEX ON BUILDINGS(THE_GEOM)")
+        sql.execute("CREATE SPATIAL INDEX ON ROADS2(THE_GEOM)")
+
+        new Delaunay_Grid().exec(connection, ["buildingTableName": "BUILDINGS",
+                                              "sourcesTableName" : "ROADS2",
+                                              "sourceDensification": 0]);
+
+
+        new Noise_level_from_traffic().exec(connection, [tableBuilding :"BUILDINGS", tableRoads: "ROADS2",
+                                                         tableReceivers: "RECEIVERS", confSkipLday: true,
+                                                         confSkipLnight: true, confSkipLevening: true,
+                                                         confMaxSrcDist:100, confTemperature:20, confHumidity:50,
+                                                         confFavorableOccurrences: "0.5, 0.1, 0.1, 0.1, 0.2, 0.5," +
+                                                                 " 0.7, 0.8, 0.8, 0.6, 0.5, 0.5, 0.5, 0.5, 0.5, 0.2"])
+
+        new Create_Isosurface().exec(connection, [resultTable : "LDEN_GEOM"])
+
+        assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("CONTOURING_NOISE_MAP")))
+
+
+        List<String> fieldValues = JDBCUtilities.getUniqueFieldValues(connection, "CONTOURING_NOISE_MAP", "ISOLVL");
+        assertTrue(fieldValues.contains("0"));
+        assertTrue(fieldValues.contains("1"));
+        assertTrue(fieldValues.contains("2"));
+        assertTrue(fieldValues.contains("3"));
+        assertTrue(fieldValues.contains("4"));
+        assertTrue(fieldValues.contains("5"));
+        assertTrue(fieldValues.contains("6"));
+        assertTrue(fieldValues.contains("7"));
+    }
 
 
 }
