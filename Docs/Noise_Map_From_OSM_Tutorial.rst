@@ -93,6 +93,7 @@ Set *LDEN_GEOM* as *Name of the noise table*.
 Step 6: Viewing the result
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+
 Exporting
 --------------
 You can then export the output table CONTOURING_NOISE_MAP via *Export_Table* in shapefile or GeoJSON format.
@@ -100,3 +101,7 @@ You can then export the output table CONTOURING_NOISE_MAP via *Export_Table* in 
 Viewing
 --------------
 You can view this layer in your favorite GIS. You can then apply a color gradient on ISOLVL field, the noise level intervals are in ISOLABEL field.
+
+
+.. figure:: images/tutorial/Tutorial2_ContouringNoiseMap.png
+   :align: center
