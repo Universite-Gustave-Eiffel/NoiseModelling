@@ -127,12 +127,15 @@ class TestOthersTools extends JdbcTestCase {
 
         new Delaunay_Grid().exec(connection, ["buildingTableName": "BUILDINGS",
                                               "sourcesTableName" : "ROADS2",
-                                              "sourceDensification": 0, maxArea:0]);
+                                              "sourceDensification": 0]);
 
 
         new Noise_level_from_traffic().exec(connection, [tableBuilding :"BUILDINGS", tableRoads: "ROADS2",
                                                          tableReceivers: "RECEIVERS", confSkipLday: true,
-                                                         confSkipLnight: true, confSkipLevening: true])
+                                                         confSkipLnight: true, confSkipLevening: true,
+                                                         confMaxSrcDist:100, confTemperature:20, confHumidity:50,
+                                                         confFavorableOccurrences: "0.5, 0.1, 0.1, 0.1, 0.2, 0.5," +
+                                                                 " 0.7, 0.8, 0.8, 0.6, 0.5, 0.5, 0.5, 0.5, 0.5, 0.2"])
 
         new Create_Isosurface().exec(connection, [resultTable : "LDEN_GEOM"])
 

@@ -124,35 +124,6 @@ class TestNoiseModelling extends JdbcTestCase {
         assertEquals(59.0, leqs[7] as Double, 2.0)
     }
 
-//    void testLdayFromTrafficLongRun() {
-//
-//        SHPRead.readShape(connection, TestNoiseModelling.getResource("ROADS2.shp").getPath())
-//
-//        //SHPRead.readShape(connection, TestDatabaseManager.getResource("buildings.shp").getPath())
-//        new Import_File().exec(connection,
-//                ["pathFile" : TestNoiseModelling.getResource("buildings.shp").getPath(),
-//                 "inputSRID": "2154",
-//                 "tableName": "buildings"])
-//
-//        new Building_Grid().exec(connection,
-//                ["tableBuilding" : "BUILDINGS",
-//                 "delta" : 5,
-//                 "sourcesTableName": "ROADS2"])
-//
-//
-//        String res = new Noise_level_from_traffic().exec(connection,
-//                ["tableBuilding"   : "BUILDINGS",
-//                 "tableRoads"   : "ROADS2",
-//                 "tableReceivers": "RECEIVERS",
-//                "confThreadNumber" : 0,
-//                "confMaxSrcDist": 400,
-//                "confDiffHorizontal": true])
-//
-//        assertTrue(res.contains("LDAY_GEOM"))
-//        assertTrue(res.contains("LEVENING_GEOM"))
-//        assertTrue(res.contains("LNIGHT_GEOM"))
-//        assertTrue(res.contains("LDEN_GEOM"))
-//    }
     void testLdenFromEmission() {
 
         SHPRead.readShape(connection, TestNoiseModelling.getResource("ROADS2.shp").getPath())
@@ -182,39 +153,4 @@ class TestNoiseModelling extends JdbcTestCase {
         assertTrue(res.contains("LDEN_GEOM"))
     }
 
-
-
-//    void testLdenFromEmissionLocal() {
-//        def sql = new Sql(connection)
-//
-//        SHPRead.readShape(connection, "C:\\Users\\kento\\Documents\\NoiseModelling\\LW_ROADS.shp")
-//
-//        sql.execute("ALTER TABLE LW_ROADS DROP COLUMN PK2")
-//        sql.execute("ALTER TABLE LW_ROADS ALTER COLUMN PK INTEGER NOT NULL")
-//        sql.execute("ALTER TABLE LW_ROADS ADD PRIMARY KEY (PK)")
-//
-//        SHPRead.readShape(connection, "C:\\Users\\kento\\Documents\\NoiseModelling\\BUILDINGS.shp")
-//
-//        sql.execute("ALTER TABLE BUILDINGS DROP COLUMN PK2")
-//        sql.execute("ALTER TABLE BUILDINGS ALTER COLUMN PK INTEGER NOT NULL")
-//        sql.execute("ALTER TABLE BUILDINGS ADD PRIMARY KEY (PK)")
-//
-//        SHPRead.readShape(connection, "C:\\Users\\kento\\Documents\\NoiseModelling\\RECEIVERS.shp")
-//
-//        sql.execute("ALTER TABLE RECEIVERS DROP COLUMN PK2")
-//        sql.execute("ALTER TABLE RECEIVERS ALTER COLUMN PK INTEGER NOT NULL")
-//        sql.execute("ALTER TABLE RECEIVERS ADD PRIMARY KEY (PK)")
-//
-//        def res = new Noise_level_from_source().exec(connection,
-//                ["tableBuilding"   : "BUILDINGS",
-//                 "tableSources"   : "LW_ROADS",
-//                 "tableReceivers": "RECEIVERS"])
-//
-//        assertTrue(res.contains("LDAY_GEOM"))
-//        assertTrue(res.contains("LEVENING_GEOM"))
-//        assertTrue(res.contains("LNIGHT_GEOM"))
-//        assertTrue(res.contains("LDEN_GEOM"))
-//
-//        SHPWrite.exportTable(connection, "C:\\Users\\kento\\Documents\\NoiseModelling\\LDEN_GEOM.shp", "LDEN_GEOM")
-//    }
 }
