@@ -149,29 +149,29 @@ def exec(Connection connection, input) {
     building_table_name = building_table_name.toUpperCase()
 
 
-    Double maxPropDist = 500.0
+    Double maxPropDist = 150.0
     if (input['maxPropDist']) {
-        maxPropDist = input['maxPropDist']
+        maxPropDist = input['maxPropDist'] as Double
     }
 
     Double height = 4.0
     if (input['height']) {
-        height = input['height']
+        height = input['height'] as Double
     }
 
     Double roadWidth = 2.0
     if (input['roadWidth']) {
-        roadWidth = input['roadWidth']
+        roadWidth = input['roadWidth'] as Double
     }
 
     Double maxArea = 2500
     if (input.containsKey('maxArea')) {
-        maxArea = input['maxArea']
+        maxArea = input['maxArea'] as Double
     }
 
-    Double sourceDensification = 8
+    Double sourceDensification = 8.0
     if (input.containsKey('sourceDensification')) {
-        sourceDensification = input['sourceDensification']
+        sourceDensification = input['sourceDensification'] as Double
     }
 
 
@@ -222,12 +222,14 @@ def exec(Connection connection, input) {
     // Densification of receivers near sound sources
     noiseMap.setSourceDensification(sourceDensification)
 
+    System.out.println("Delaunay initialize")
     noiseMap.initialize(connection, new EmptyProgressVisitor())
     AtomicInteger pk = new AtomicInteger(0)
     ProgressVisitor progressVisitorNM = progressLogger.subProcess(noiseMap.getGridDim() * noiseMap.getGridDim())
 
     for (int i = 0; i < noiseMap.getGridDim(); i++) {
         for (int j = 0; j < noiseMap.getGridDim(); j++) {
+            System.out.println("Compute cell "+(i * noiseMap.getGridDim() + j + 1)+" of "+noiseMap.getGridDim() * noiseMap.getGridDim())
             noiseMap.generateReceivers(connection, i, j, receivers_table_name, "TRIANGLES", pk)
             progressVisitorNM.endStep()
         }
