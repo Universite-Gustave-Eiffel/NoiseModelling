@@ -24,12 +24,13 @@ This plugin is distributed under `GPL 3 license`_ and is developed by the DECIDE
 
 **Fundings:**
 
-*Research projects :*
+*Research projects:*
 
 - *ANR Eval-PDU (ANR-08-VILL-0005) 2008-2011*
 - *ANR CENSE (ANR-16-CE22-0012) 2017-2021*
+- *the Nature4cities (N4C) project, funded by European Union’s Horizon 2020 research and innovation programme under grant agreement No 730468*
 
-*Institutional fundings :*
+*Institutional fundings:*
 
 - *Univ Gustave Eiffel (formerly Ifsttar, formerly LCPC), CNRS, UBS, ECN, Cerema*
 
