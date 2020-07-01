@@ -236,7 +236,7 @@ public abstract class JdbcNoiseMap {
      * @param propagationProcessData (Out) Propagation process input data
      * @throws SQLException
      */
-    protected void fetchCellSource(Connection connection,Envelope fetchEnvelope, PropagationProcessData propagationProcessData)
+    public void fetchCellSource(Connection connection,Envelope fetchEnvelope, PropagationProcessData propagationProcessData)
             throws SQLException {
         TableLocation sourceTableIdentifier = TableLocation.parse(sourcesTableName);
         List<String> geomFields = SFSUtilities.getGeometryFields(connection, sourceTableIdentifier);
