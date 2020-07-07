@@ -139,7 +139,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
          */
         void processStack(String tableName, ConcurrentLinkedDeque<ComputeRaysOut.VerticeSL> stack) throws SQLException {
             StringBuilder query = new StringBuilder("INSERT INTO ");
-            query.append(TableLocation.parse(tableName));
+            query.append(tableName);
             query.append(" VALUES (? "); // ID_RECEIVER
             if(!ldenConfig.mergeSources) {
                 query.append(", ?"); // ID_SOURCE
@@ -192,7 +192,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
                 sb.append(" (IDRECEIVER bigint NOT NULL");
                 sb.append(", IDSOURCE bigint NOT NULL");
             } else {
-                sb.append(" (IDRECEIVER serial");
+                sb.append(" (IDRECEIVER SERIAL PRIMARY KEY");
             }
             for (int idfreq = 0; idfreq < PropagationProcessPathData.freq_lvl.size(); idfreq++) {
                 sb.append(", HZ");
@@ -212,19 +212,19 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
             // Drop and create tables
             try(Statement sql = connection.createStatement()) {
                 if(ldenConfig.computeLDay) {
-                    sql.execute(String.format("DROP TABLE %s IF EXISTS", ldenConfig.lDayTable));
+                    sql.execute(String.format("DROP TABLE IF EXISTS %s", ldenConfig.lDayTable));
                     sql.execute(forgeCreateTable(ldenConfig.lDayTable));
                 }
                 if(ldenConfig.computeLEvening) {
-                    sql.execute(String.format("DROP TABLE %s IF EXISTS", ldenConfig.lEveningTable));
+                    sql.execute(String.format("DROP TABLE IF EXISTS %s", ldenConfig.lEveningTable));
                     sql.execute(forgeCreateTable(ldenConfig.lEveningTable));
                 }
                 if(ldenConfig.computeLNight) {
-                    sql.execute(String.format("DROP TABLE %s IF EXISTS", ldenConfig.lNightTable));
+                    sql.execute(String.format("DROP TABLE IF EXISTS %s", ldenConfig.lNightTable));
                     sql.execute(forgeCreateTable(ldenConfig.lNightTable));
                 }
                 if(ldenConfig.computeLDEN) {
-                    sql.execute(String.format("DROP TABLE %s IF EXISTS", ldenConfig.lDenTable));
+                    sql.execute(String.format("DROP TABLE IF EXISTS %s", ldenConfig.lDenTable));
                     sql.execute(forgeCreateTable(ldenConfig.lDenTable));
                 }
                 while (!ldenConfig.aborted) {
@@ -251,6 +251,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
                 }
             } catch (SQLException e) {
                 LOGGER.error("SQL Writer exception", e);
+                LOGGER.error(e.getLocalizedMessage(), e.getNextException());
                 ldenConfig.aborted = true;
             }
             LOGGER.info("Exit TableWriter");
