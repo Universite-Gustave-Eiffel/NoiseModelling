@@ -1,14 +1,11 @@
 apply plugin: 'groovy'
 apply plugin: 'java'
-apply plugin: "maven"
-apply plugin: 'maven-publish'
 
 group = "org.noise_planet.noisemodelling.wps"
 version = "1.0-SNAPSHOT"
 
 repositories {
     mavenLocal()
-    mavenCentral()
     flatDir {
         dirs 'libs'
     }
@@ -27,6 +24,7 @@ repositories {
     maven {
         url "http://dl.bintray.com/matsim/matsim"
     }
+    mavenCentral()
 }
 
 test {
