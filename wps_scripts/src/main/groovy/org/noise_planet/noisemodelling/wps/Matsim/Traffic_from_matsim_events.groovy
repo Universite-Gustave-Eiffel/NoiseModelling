@@ -1,16 +1,12 @@
 
-package org.noise_planet.noisemodelling.wps.Experimental
+package org.noise_planet.noisemodelling.wps.Matsim
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
 
 import org.geotools.jdbc.JDBCDataStore
 
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.LineString;
-
+import org.locationtech.jts.geom.Coordinate
 import org.matsim.api.core.v01.Coord;
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.network.Link;
@@ -30,10 +26,7 @@ import org.matsim.vehicles.Vehicle;
 import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos;
 import org.noise_planet.noisemodelling.emission.RSParametersCnossos;
 
-import java.sql.Connection;
-import java.sql.Statement;
-
-import java.util.*;
+import java.sql.Connection
 
 import groovy.sql.Sql
 import groovy.sql.GroovyRowResult
@@ -204,11 +197,6 @@ def exec(Connection connection, input) {
 
             LinkStatStruct linkStatStruct = entry.getValue();
             outFile.write(linkStatStruct.toTableString() + "\n");
-            // if (link2GeometryTable.isEmpty() && link2GeometryFile.isEmpty()) {
-            //     sql.execute(linkStatStruct.toSqlInsert(outTableName));
-            // } else {
-            //     sql.execute(linkStatStruct.toSqlInsertWithGeom(outTableName, geomString));
-            // }
             sql.execute(linkStatStruct.toSqlInsertWithGeom(outTableName, geomString));
         }
         outFile.close();
@@ -529,33 +517,6 @@ public class LinkStatStruct {
         return out;
     }
 
-    public String toSqlInsert(String tableName) {
-        String insert_start = "INSERT INTO MATSIM_ROADS (LINK_ID, OSM_ID, THE_GEOM, LV, LV_SPD, TIMESTRING) VALUES ( ";
-        String insert_end = " );  ";
-        String sql = "";
-        
-        String[] den = ["D", "E", "N"];
-        String[] clock = new String[24];
-        for (int i = 0; i < 24; i++) {
-            clock[i] = (i + "_" + (i+1));
-        }
-        String[] timeStrings = DEN ? den : clock;
-        for (String timeString : timeStrings) {
-            sql += insert_start
-            sql += "'" + link.getId().toString() + "', ";
-            sql += "'" + getOsmId() + "', ";
-            sql += "'" + getGeometryString() + "', ";
-            sql += getVehicleCount(timeString) + ", ";
-            if (getVehicleCount(timeString) != 0) {
-                sql += (Math.round(3.6 * link.getLength() / getMeanTravelTime(timeString))) + ", ";
-            } else {
-                sql += "0, ";
-            }
-            sql += "'" + timeString + "'";
-            sql += insert_end
-        }
-        return sql;
-    }
     public String toSqlInsertWithGeom(String tableName, String geom) {
 
         if (geom == '' || geom == null || geom.matches("LINESTRING\\(\\d+\\.\\d+ \\d+\\.\\d+\\)")) {

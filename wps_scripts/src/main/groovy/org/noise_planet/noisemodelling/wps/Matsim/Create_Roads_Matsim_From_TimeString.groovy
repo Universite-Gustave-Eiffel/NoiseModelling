@@ -1,9 +1,9 @@
 
-package org.noise_planet.noisemodelling.wps.Experimental
+package org.noise_planet.noisemodelling.wps.Matsim
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
-
+import org.apache.xpath.operations.Bool
 import org.geotools.jdbc.JDBCDataStore
 
 import org.locationtech.jts.geom.Coordinate;
@@ -66,7 +66,15 @@ inputs = [
         title: 'Table name',
         description: 'Table name',
         type: String.class
-    ]
+    ],
+    computeLw: [
+            name: 'Add LW values in output Table : default false',
+            title: 'Add LW values in output Table : default false',
+            description: 'Add LW values in output Table : default false',
+            min: 0,
+            max: 1,
+            type: Boolean.class
+    ],
 ]
 
 outputs = [
@@ -118,13 +126,13 @@ def exec(Connection connection, input) {
     sql.execute("CREATE TABLE " + outTableName + '''( 
         PK integer PRIMARY KEY, 
         THE_GEOM geometry,
-        LV_D double,
-        LV_SPD_D double
+        LV_D double precision,
+        LV_SPD_D double precision,        
     );''')
     
     sql.execute("MERGE INTO " + outTableName + '''
-    SELECT R.ID PK, R.THE_GEOM THE_GEOM, S.TV LV_D, S.TV_SPD LV_SPD_D
-    FROM ''' + roadsTableName + ''' R, ''' + statsTableName + ''' S
-    WHERE R.LINK_ID = S.LINK_ID AND S.TIMESTRING = \'''' + timeString + '''\';
+        SELECT R.ID PK, R.THE_GEOM THE_GEOM, S.TV LV_D, S.TV_SPD LV_SPD_D
+        FROM ''' + roadsTableName + ''' R, ''' + statsTableName + ''' S
+        WHERE R.LINK_ID = S.LINK_ID AND S.TIMESTRING = \'''' + timeString + '''\';
     ''')
 }

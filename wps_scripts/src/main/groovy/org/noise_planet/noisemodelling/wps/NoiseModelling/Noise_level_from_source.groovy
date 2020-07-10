@@ -295,7 +295,7 @@ def exec(Connection connection, input) {
         wall_alpha = Double.valueOf(input['paramWallAlpha'])
     }
 
-    int n_thread = 1
+    int n_thread = 8
     if (input['confThreadNumber']) {
         n_thread = Integer.valueOf(input['confThreadNumber'])
     }
@@ -409,6 +409,9 @@ def exec(Connection connection, input) {
     pointNoiseMap.setMaximumError(0.1d)
     // Init Map
     pointNoiseMap.initialize(connection, new EmptyProgressVisitor())
+
+
+    pointNoiseMap.setGridDim(5)
 
     // --------------------------------------------
     // Initialize NoiseModelling emission part
