@@ -34,7 +34,9 @@ import org.h2gis.utilities.SFSUtilities
 import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
+import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
+import org.locationtech.jts.geom.GeometryFactory
 import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
 import org.noise_planet.noisemodelling.emission.RSParametersCnossos
 import org.noise_planet.noisemodelling.emission.jdbc.LDENConfig
@@ -47,6 +49,8 @@ import org.noise_planet.noisemodelling.propagation.PropagationProcessData
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
 import org.noise_planet.noisemodelling.propagation.RootProgressVisitor
 import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import java.sql.Connection
 import java.sql.SQLException
@@ -234,6 +238,7 @@ def run(input) {
 
 // main function of the script
 def exec(Connection connection, input) {
+    Logger logger = LoggerFactory.getLogger("Noise_level_from_source");
     //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postGIS database
     connection = new ConnectionWrapper(connection)
 
@@ -433,7 +438,9 @@ def exec(Connection connection, input) {
         int k=0
         for (int i = 0; i < pointNoiseMap.getGridDim(); i++) {
             for (int j = 0; j < pointNoiseMap.getGridDim(); j++) {
-                System.println("Compute... " + 100*k++/fullGridSize + " % ")
+				Envelope cellEnvelope = pointNoiseMap.getCellEnv(pointNoiseMap.getMainEnvelope(), i,
+				j, pointNoiseMap.getCellWidth(), pointNoiseMap.getCellHeight());
+				logger.info("Compute domain is " + new GeometryFactory().toGeometry(cellEnvelope))
                 // Run ray propagation
                 pointNoiseMap.evaluateCell(connection, i, j, progressVisitor, receivers)
             }
