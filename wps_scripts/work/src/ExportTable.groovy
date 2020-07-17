@@ -19,8 +19,8 @@ class ExportTable {
 
     public static void exportTable(Connection connection) {
         exportTable(connection, [
-                "tableToExport" : "LDAY_GEOM",
-                "exportPath": "C:\\Users\\valen\\Documents\\IFSTTAR\\Results\\test.geojson"
+                "tableToExport" : "RECEIVERS",
+                "exportPath": "C:\\Users\\valen\\Documents\\IFSTTAR\\Results\\receivers.geojson"
         ])
     }
     public static void exportTable(Connection connection, options) {

@@ -42,14 +42,6 @@ inputs = [
         description: 'Path of the Matsim output folder </br> For example : c:/home/mastim/output',
         type: String.class
     ],
-    link2GeometryTable: [
-        name: 'table name of the pt2matsim file generated when importing OSM network',
-        title: 'Table name of the geometry file',
-        description: 'Table name of the geometry file',
-        min: 0,
-        max: 1,
-        type: String.class
-    ],
     link2GeometryFile: [
         name: 'File of the pt2matsim file generated when importing OSM network',
         title: 'File of the geometry file',
@@ -57,6 +49,12 @@ inputs = [
         min: 0,
         max: 1,
         type: String.class
+    ],
+    timeSlice: [
+            name: 'How to separate Roads statistics ? DEN, hour, quarter',
+            title: 'How to separate Roads statistics ? DEN, hour, quarter',
+            description: 'How to separate Roads statistics ? DEN, hour, quarter',
+            type: String.class
     ],
     outTableName: [
         name: 'Output table name',
@@ -115,14 +113,17 @@ def exec(Connection connection, input) {
 
     String statsTableName = outTableName + "_STATS"
 
-    String link2GeometryTable = "LINK2GEOM";
-    if (input['link2GeometryTable']) {
-        link2GeometryTable = input['link2GeometryTable'];
-    }
-
     String link2GeometryFile = "";
     if (input["link2GeometryFile"]) {
         link2GeometryFile = input["link2GeometryFile"];
+    }
+
+    String timeSlice = "hour";
+    if (input["timeSlice"] == "DEN") {
+        timeSlice = input["timeSlice"];
+    }
+    if (input["timeSlice"] == "quarter") {
+        timeSlice = input["timeSlice"];
     }
 
     String eventFile = folder + "\\output_events.xml.gz";
@@ -138,6 +139,7 @@ def exec(Connection connection, input) {
     EventsManager evMgr = EventsUtils.createEventsManager();
     ProcessOutputEventHandler evHandler = new ProcessOutputEventHandler();
 
+    evHandler.setTimeSlice(timeSlice)
     evHandler.initLinks((Map<Id<Link>, Link>) links);
 
     evMgr.addHandler(evHandler);
@@ -163,7 +165,7 @@ def exec(Connection connection, input) {
         LINK_ID varchar(255),
         TV  integer,
         TV_SPD double,
-        TIMESTRING varchar(10)
+        TIMESTRING varchar(255)
     );''')
     sql.execute("CREATE INDEX " + statsTableName + "_LINK_ID_IDX ON " + statsTableName + " (LINK_ID);")
 
@@ -181,16 +183,10 @@ def exec(Connection connection, input) {
 
     try {
         FileWriter outFile = new FileWriter(folder + "\\analysis.csv");
-        outFile.write(LinkStatStruct.getTableStringHeader(false) + "\n");
+        outFile.write(LinkStatStruct.getTableStringHeader(timeSlice) + "\n");
         for (Map.Entry<Id<Link>, LinkStatStruct> entry : evHandler.links.entrySet()) {
             String linkId = entry.getKey().toString();
             String geomString = "";
-            if (!link2GeometryTable.isEmpty() && link2GeometryFile.isEmpty()) {
-                GroovyRowResult result = sql.firstRow("SELECT GEOMETRY FROM " + link2GeometryTable + " WHERE LINKID='" + linkId + "'")
-                if (result) {
-                    geomString = result[0];
-                }
-            }
             if (!link2GeometryFile.isEmpty()) {
                 geomString = link2geomData.get(linkId);
             }
@@ -210,6 +206,12 @@ public class ProcessOutputEventHandler implements LinkEnterEventHandler, LinkLea
 
     Map<Id<Link>, LinkStatStruct> links = new HashMap<Id<Link>, LinkStatStruct>();
 
+    String timeSlice = "hour"
+
+    public void setTimeSlice(String slice) {
+        timeSlice = slice;
+    }
+
     @Override
     public void handleEvent(LinkEnterEvent event) {
         // System.out.println("Link Entered ! " + event.toString());
@@ -219,7 +221,7 @@ public class ProcessOutputEventHandler implements LinkEnterEventHandler, LinkLea
         double time = event.getTime();
 
         if (!links.containsKey(linkId)) {
-            LinkStatStruct stats = new LinkStatStruct();
+            LinkStatStruct stats = new LinkStatStruct(timeSlice);
             links.put(linkId, stats);
         }
 
@@ -240,7 +242,7 @@ public class ProcessOutputEventHandler implements LinkEnterEventHandler, LinkLea
         double time = event.getTime();
 
         if (!links.containsKey(linkId)) {
-            LinkStatStruct stats = new LinkStatStruct();
+            LinkStatStruct stats = new LinkStatStruct(timeSlice);
             links.put(linkId, stats);
         }
 
@@ -255,7 +257,7 @@ public class ProcessOutputEventHandler implements LinkEnterEventHandler, LinkLea
             Link link = entry.getValue();
 
             if (!links.containsKey(linkId)) {
-                LinkStatStruct stats = new LinkStatStruct();
+                LinkStatStruct stats = new LinkStatStruct(timeSlice);
                 stats.setLink(link);
                 links.put(linkId, stats);
             }
@@ -270,7 +272,16 @@ public class LinkStatStruct {
     private Map<Id<Vehicle>, Double> enterTimes = new HashMap<Id<Vehicle>, Double>();
     private Map<String, ArrayList<Double> > acousticLevels = new HashMap<String, ArrayList<Double> >();
     private Link link;
-    private boolean DEN = false;
+
+    String timeSlice = "hour";
+
+    static String[] den = ["D", "E", "N"];
+    static String[] hourClock = ["0_1", "1_2", "2_3", "3_4", "4_5", "5_6", "6_7", "7_8", "8_9", "9_10", "10_11", "11_12", "12_13", "13_14", "14_15", "15_16", "16_17", "17_18", "18_19", "19_20", "20_21", "21_22", "22_23", "23_24"];
+    static String[] quarterClock = ["0h00_0h15", "0h15_0h30", "0h30_0h45", "0h45_1h00", "1h00_1h15", "1h15_1h30", "1h30_1h45", "1h45_2h00", "2h00_2h15", "2h15_2h30", "2h30_2h45", "2h45_3h00", "3h00_3h15", "3h15_3h30", "3h30_3h45", "3h45_4h00", "4h00_4h15", "4h15_4h30", "4h30_4h45", "4h45_5h00", "5h00_5h15", "5h15_5h30", "5h30_5h45", "5h45_6h00", "6h00_6h15", "6h15_6h30", "6h30_6h45", "6h45_7h00", "7h00_7h15", "7h15_7h30", "7h30_7h45", "7h45_8h00", "8h00_8h15", "8h15_8h30", "8h30_8h45", "8h45_9h00", "9h00_9h15", "9h15_9h30", "9h30_9h45", "9h45_10h00", "10h00_10h15", "10h15_10h30", "10h30_10h45", "10h45_11h00", "11h00_11h15", "11h15_11h30", "11h30_11h45", "11h45_12h00", "12h00_12h15", "12h15_12h30", "12h30_12h45", "12h45_13h00", "13h00_13h15", "13h15_13h30", "13h30_13h45", "13h45_14h00", "14h00_14h15", "14h15_14h30", "14h30_14h45", "14h45_15h00", "15h00_15h15", "15h15_15h30", "15h30_15h45", "15h45_16h00", "16h00_16h15", "16h15_16h30", "16h30_16h45", "16h45_17h00", "17h00_17h15", "17h15_17h30", "17h30_17h45", "17h45_18h00", "18h00_18h15", "18h15_18h30", "18h30_18h45", "18h45_19h00", "19h00_19h15", "19h15_19h30", "19h30_19h45", "19h45_20h00", "20h00_20h15", "20h15_20h30", "20h30_20h45", "20h45_21h00", "21h00_21h15", "21h15_21h30", "21h30_21h45", "21h45_22h00", "22h00_22h15", "22h15_22h30", "22h30_22h45", "22h45_23h00", "23h00_23h15", "23h15_23h30", "23h30_23h45", "23h45_24h00"];
+
+    public LinkStatStruct(String timeSlice) {
+        this.timeSlice = timeSlice;
+    }
 
     public void vehicleEnterAt(Id<Vehicle> vehicleId, double time) {
         String timeString = getTimeString(time);
@@ -342,7 +353,7 @@ public class LinkStatStruct {
         return min;
     }
     private String getTimeString(double time) {
-        if (DEN) {
+        if (timeSlice == "DEN") {
             String timeString = "D";
             if (time >= 6 * 3600 && time < 18 * 3600) {
                 timeString = "D";
@@ -354,7 +365,24 @@ public class LinkStatStruct {
                 timeString = "N";
             }
             return timeString;
-        } else {
+        }
+        else if (timeSlice == "quarter") {
+            int hour = (int) (time / 3600);
+            int min = (int) (time - hour) / 60;
+            if (min >= 0 && min < 15) {
+                return hour + "h00" + "_" + hour + "h15";
+            }
+            if (min >= 15 && min < 30) {
+                return hour + "h15" + "_" + hour + "h30";
+            }
+            if (min >= 30 && min < 45) {
+                return hour + "h30" + "_" + hour + "h45";
+            }
+            if (min >= 45 && min < 60) {
+                return hour + "h45" + "_" + (hour + 1) + "h00";
+            }
+        }
+        else {
             int start = (int) (time / 3600);
             return start + "_" + (start + 1);
         }
@@ -439,12 +467,16 @@ public class LinkStatStruct {
         out += "Link Id : " + link.getId().toString() + " ----------- \n";
         out += "Osm Id : " + getOsmId() + "\n";
         out += "Geometry : " + getGeometryString() + "\n";
-        String[] den = ["D", "E", "N"];
-        String[] clock = new String[24];
-        for (int i = 0; i < 24; i++) {
-            clock[i] = (i + "_" + (i+1));
+        String[] timeStrings;
+        if (timeSlice == "den") {
+            timeStrings = den;
         }
-        String[] timeStrings = DEN ? den : clock;
+        if (timeSlice == "hour") {
+            timeStrings = hourClock;
+        }
+        if (timeSlice == "quarter") {
+            timeStrings = quarterClock;
+        }
         for (String timeString : timeStrings) {
             out += ("\tTime : " + timeString + " ----------- \n");
             out += ("\t\tVehicle Counter : " + getVehicleCount(timeString) + "\n");
@@ -474,17 +506,21 @@ public class LinkStatStruct {
         }
         return out;
     }
-    public static String getTableStringHeader(boolean DEN) {
+    public static String getTableStringHeader(String timeSlice) {
         String out = "";
         out += "LINK_ID\t";
         out += "OSM_ID\t";
         out += "THE_GEOM\t";
-        String[] den = ["D", "E", "N"];
-        String[] clock = new String[24];
-        for (int i = 0; i < 24; i++) {
-            clock[i] = (i + "_" + (i+1));
+        String[] timeStrings;
+        if (timeSlice == "den") {
+            timeStrings = den;
         }
-        String[] timeStrings = DEN ? den : clock;
+        if (timeSlice == "hour") {
+            timeStrings = hourClock;
+        }
+        if (timeSlice == "quarter") {
+            timeStrings = quarterClock;
+        }
         for (String timeString : timeStrings) {
             out += "LV_" + timeString + "\t";
         }
@@ -498,12 +534,16 @@ public class LinkStatStruct {
         out += link.getId().toString() + "\t";
         out += getOsmId() + "\t";
         out += getGeometryString() + "\t";
-        String[] den = ["D", "E", "N"];
-        String[] clock = new String[24];
-        for (int i = 0; i < 24; i++) {
-            clock[i] = (i + "_" + (i+1));
+        String[] timeStrings;
+        if (timeSlice == "den") {
+            timeStrings = den;
         }
-        String[] timeStrings = DEN ? den : clock;
+        if (timeSlice == "hour") {
+            timeStrings = hourClock;
+        }
+        if (timeSlice == "quarter") {
+            timeStrings = quarterClock;
+        }
         for (String timeString : timeStrings) {
             out += (getVehicleCount(timeString) + "\t");
         }
@@ -534,12 +574,16 @@ public class LinkStatStruct {
         
         insert_start = "INSERT INTO " + tableName + "_STATS (LINK_ID, TV, TV_SPD, TIMESTRING) VALUES ( ";
 
-        String[] den = ["D", "E", "N"];
-        String[] clock = new String[24];
-        for (int i = 0; i < 24; i++) {
-            clock[i] = (i + "_" + (i+1));
+        String[] timeStrings;
+        if (timeSlice == "den") {
+            timeStrings = den;
         }
-        String[] timeStrings = DEN ? den : clock;
+        if (timeSlice == "hour") {
+            timeStrings = hourClock;
+        }
+        if (timeSlice == "quarter") {
+            timeStrings = quarterClock;
+        }
         for (String timeString : timeStrings) {
             sql += insert_start
             sql += "'" + link.getId().toString() + "', ";

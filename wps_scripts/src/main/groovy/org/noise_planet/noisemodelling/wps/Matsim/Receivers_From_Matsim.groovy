@@ -25,6 +25,22 @@ inputs = [
         description: 'Path of the Matsim facilities file',
         type: String.class
     ],
+    buildingsOsmPbfPath : [
+            name: 'Path of the osm pbf file containing the buildings',
+            title: 'Path of the osm pbf file containing the buildings',
+            description: 'Path of the osm pbf file containing the buildings',
+            min: 0,
+            max: 1,
+            type: String.class
+    ],
+    buildingsTableName : [
+            name: 'Name of the table containing the buildings',
+            title: 'Name of the table containing the buildings',
+            description: 'Name of the table containing the buildings',
+            min: 0,
+            max: 1,
+            type: String.class
+    ],
     filter: [
             name: 'Filter on facilities Ids : default \'*\'',
             title: 'Filter on facilities Ids',
@@ -73,7 +89,6 @@ def run(input) {
     }
 }
 
-
 def exec(connection, input) {
 
     String outTableName = "RECEIVERS"
@@ -82,10 +97,19 @@ def exec(connection, input) {
     }
     outTableName = outTableName.toUpperCase()
 
+
+    String buildingTableName = "BUILDINGS"
+    if (input['buildingTableName']) {
+        buildingTableName = input['buildingTableName']
+    }
+    buildingTableName = buildingTableName.toUpperCase()
+
     String filter = "*"
     if (input['filter']) {
         filter = input['filter']
     }
+
+    double height = 4.0;
 
     String facilitiesPath = input['facilitiesPath']
 
@@ -110,11 +134,12 @@ def exec(connection, input) {
         String facilityId = entry.getKey().toString();
         ActivityFacility facility = entry.getValue();
         Coord c = facility.getCoord();
-        String geom = String.format("POINT(%s %s)", Double.toString(c.getX()), Double.toString(c.getY()));
+        String geom = String.format("POINT(%s %s %s)", Double.toString(c.getX()), Double.toString(c.getY()), Double.toString(height));
         String types = facility.getActivityOptions().keySet().join(',');
         String query = "INSERT INTO " + outTableName + "(FACILITY_ID, THE_GEOM, TYPES) VALUES( '" + facilityId + "', '" + geom + "', '" + types + "')";
         sql.execute(query);
     }
+    // TODO : sql.execute("CREATE SPATIAL INDEX ON ");
 
     return [result: "Process done. Table of receivers " + outTableName + " created !"]
 }

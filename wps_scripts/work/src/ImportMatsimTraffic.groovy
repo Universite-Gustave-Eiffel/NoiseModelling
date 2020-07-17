@@ -21,8 +21,8 @@ class ImportMatsimTraffic {
         importMatsimTraffic(connection, [
                 "folder" : "C:\\Users\\valen\\Documents\\IFSTTAR\\GitHub\\matsim-example-project\\scenarios\\nantes_0.01",
                 "outTableName" : "MATSIM_ROADS",
-                "link2GeometryTable" : "LINK2GEOM",
-                "link2GeometryFile" : "network.csv" // relative path
+                "link2GeometryFile" : "network.csv", // relative path
+                "timeSlice": "quarter" // DEN, hour, quarter
         ])
     }
     public static void importMatsimTraffic(Connection connection, options) {
