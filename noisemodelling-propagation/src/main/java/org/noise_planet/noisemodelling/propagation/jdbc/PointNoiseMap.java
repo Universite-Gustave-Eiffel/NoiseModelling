@@ -1,10 +1,7 @@
 package org.noise_planet.noisemodelling.propagation.jdbc;
 
 import org.h2gis.api.ProgressVisitor;
-import org.h2gis.utilities.JDBCUtilities;
-import org.h2gis.utilities.SFSUtilities;
-import org.h2gis.utilities.SpatialResultSet;
-import org.h2gis.utilities.TableLocation;
+import org.h2gis.utilities.*;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
 import org.noise_planet.noisemodelling.propagation.ComputeRays;
@@ -77,6 +74,7 @@ public class PointNoiseMap extends JdbcNoiseMap {
      */
     public PropagationProcessData prepareCell(Connection connection,int cellI, int cellJ,
                                               ProgressVisitor progression, Set<Long> skipReceivers) throws SQLException {
+        boolean isH2 = JDBCUtilities.isH2DataBase(connection.getMetaData());
         MeshBuilder mesh = new MeshBuilder();
         int ij = cellI * gridDim + cellJ + 1;
         if(verbose) {
@@ -138,14 +136,14 @@ public class PointNoiseMap extends JdbcNoiseMap {
         int intPk = JDBCUtilities.getIntegerPrimaryKey(connection, receiverTableName);
         String pkSelect = "";
         if(intPk >= 1) {
-            pkSelect = ", " + JDBCUtilities.getFieldName(connection.getMetaData(), receiverTableName, intPk);
+            pkSelect = ", " + TableLocation.quoteIdentifier(JDBCUtilities.getFieldName(connection.getMetaData(), receiverTableName, intPk), isH2);
         } else {
             throw new SQLException(String.format("Table %s missing primary key for receiver identification", receiverTableName));
         }
         try (PreparedStatement st = connection.prepareStatement(
-                "SELECT " + TableLocation.quoteIdentifier(receiverGeomName) + pkSelect + " FROM " +
+                "SELECT " + TableLocation.quoteIdentifier(receiverGeomName, isH2) + pkSelect + " FROM " +
                         receiverTableName + " WHERE " +
-                        TableLocation.quoteIdentifier(receiverGeomName) + " && ?::geometry")) {
+                        TableLocation.quoteIdentifier(receiverGeomName, isH2) + " && ?::geometry")) {
             st.setObject(1, geometryFactory.toGeometry(cellEnvelope));
             try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
                 while (rs.next()) {

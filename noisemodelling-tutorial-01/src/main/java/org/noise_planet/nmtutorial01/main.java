@@ -2,9 +2,13 @@ package org.noise_planet.nmtutorial01;
 
 import org.cts.crs.CRSException;
 import org.cts.op.CoordinateOperationException;
+import org.h2.tools.Csv;
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.api.ProgressVisitor;
+import org.h2gis.functions.io.csv.CSVDriverFunction;
+import org.h2gis.functions.io.dbf.DBFWrite;
 import org.h2gis.functions.io.geojson.GeoJsonRead;
+import org.h2gis.functions.io.shp.SHPWrite;
 import org.h2gis.utilities.SFSUtilities;
 import org.noise_planet.noisemodelling.emission.jdbc.LDENConfig;
 import org.noise_planet.noisemodelling.emission.jdbc.LDENPointNoiseMapFactory;
@@ -89,7 +93,7 @@ class Main {
         // Init NoiseModelling
         PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS", "LW_ROADS", "RECEIVERS");
 
-        pointNoiseMap.setMaximumPropagationDistance(500.0d);
+        pointNoiseMap.setMaximumPropagationDistance(160.0d);
         pointNoiseMap.setSoundReflectionOrder(0);
         pointNoiseMap.setComputeHorizontalDiffraction(true);
         pointNoiseMap.setComputeVerticalDiffraction(true);
@@ -104,6 +108,11 @@ class Main {
         // Init custom input in order to compute more than just attenuation
         // LW_ROADS contain Day Evening Night emission spectrum
         LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN);
+
+        ldenConfig.setComputeLDay(true);
+        ldenConfig.setComputeLEvening(true);
+        ldenConfig.setComputeLNight(true);
+        ldenConfig.setComputeLDEN(true);
 
         LDENPointNoiseMapFactory tableWriter = new LDENPointNoiseMapFactory(connection, ldenConfig);
 
@@ -145,6 +154,12 @@ class Main {
         }
         long computationTime = System.currentTimeMillis() - start;
         logger.info(String.format(Locale.ROOT, "Computed in %d ms, %.2f ms per receiver", computationTime,computationTime / (double)receivers.size()));
+        // Export result tables as csv files
+        CSVDriverFunction csv = new CSVDriverFunction();
+        csv.exportTable(connection, ldenConfig.getlDayTable(), new File("target/"+ldenConfig.getlDayTable()+".csv"), new EmptyProgressVisitor());
+        csv.exportTable(connection, ldenConfig.getlEveningTable(), new File("target/"+ldenConfig.getlEveningTable()+".csv"), new EmptyProgressVisitor());
+        csv.exportTable(connection, ldenConfig.getlNightTable(), new File("target/"+ldenConfig.getlNightTable()+".csv"), new EmptyProgressVisitor());
+        csv.exportTable(connection, ldenConfig.getlDenTable(), new File("target/"+ldenConfig.getlDenTable()+".csv"), new EmptyProgressVisitor());
 
     }
 
