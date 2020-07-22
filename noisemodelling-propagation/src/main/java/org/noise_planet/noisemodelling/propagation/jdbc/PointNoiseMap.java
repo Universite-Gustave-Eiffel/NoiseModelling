@@ -2,8 +2,10 @@ package org.noise_planet.noisemodelling.propagation.jdbc;
 
 import org.h2gis.api.ProgressVisitor;
 import org.h2gis.utilities.*;
+import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.Point;
 import org.noise_planet.noisemodelling.propagation.ComputeRays;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOut;
 import org.noise_planet.noisemodelling.propagation.FastObstructionTest;
@@ -18,13 +20,9 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.AbstractCollection;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Compute noise propagation at specified receiver points.
@@ -172,6 +170,41 @@ public class PointNoiseMap extends JdbcNoiseMap {
     }
 
     /**
+     * Fetch all receivers and compute cells that contains receivers
+     * @param connection
+     * @return Cell index with number of receivers
+     * @throws SQLException
+     */
+    public Map<CellIndex, Integer> searchPopulatedCells(Connection connection) throws SQLException {
+        if(mainEnvelope == null) {
+            throw new IllegalStateException("Call initialize before calling searchPopulatedCells");
+        }
+        Map<CellIndex, Integer> cellIndices = new HashMap<>();
+        List<String> geometryFields = SFSUtilities.getGeometryFields(connection, TableLocation.parse(receiverTableName));
+        String geometryField;
+        if(geometryFields.isEmpty()) {
+            throw new SQLException("The table "+receiverTableName+" does not contain a Geometry field, then the extent " +
+                    "cannot be computed");
+        }
+        geometryField = geometryFields.get(0);
+        ResultSet rs = connection.createStatement().executeQuery("SELECT " + geometryField + " FROM " + receiverTableName);
+        Envelope refEnv = getCellEnv(mainEnvelope, 0,
+                0, getCellWidth(), getCellHeight());
+        try (SpatialResultSet srs = rs.unwrap(SpatialResultSet.class)) {
+            while (srs.next()) {
+                Geometry pt = srs.getGeometry();
+                if(pt instanceof Point && !pt.isEmpty()) {
+                    Coordinate ptCoord = pt.getCoordinate();
+                    CellIndex cellIndex = new CellIndex(Math.min(gridDim - 1, (int)((ptCoord.x - mainEnvelope.getMinX()) / refEnv.getWidth())), Math.min(gridDim - 1, (int)((ptCoord.y - mainEnvelope.getMinY()) / refEnv.getHeight())));
+                    // Increment value if cell exists, set 1 otherwise
+                    cellIndices.merge(cellIndex, 1, Integer::sum);
+                }
+            }
+        }
+        return cellIndices;
+    }
+
+    /**
      * Launch sound propagation
      * @param connection
      * @param cellI
@@ -216,5 +249,49 @@ public class PointNoiseMap extends JdbcNoiseMap {
 
     public interface IComputeRaysOutFactory {
         IComputeRaysOut create(PropagationProcessData threadData, PropagationProcessPathData pathData);
+    }
+
+    /**
+     * Cell metadata computed from receivers table
+     */
+    public static class CellIndex implements Comparable<CellIndex> {
+        int longitudeIndex;
+        int latitudeIndex;
+
+        public CellIndex(int longitudeIndex, int latitudeIndex) {
+            this.longitudeIndex = longitudeIndex;
+            this.latitudeIndex = latitudeIndex;
+        }
+
+        public int getLongitudeIndex() {
+            return longitudeIndex;
+        }
+
+        public int getLatitudeIndex() {
+            return latitudeIndex;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            CellIndex cellIndex = (CellIndex) o;
+            return longitudeIndex == cellIndex.longitudeIndex && latitudeIndex == cellIndex.latitudeIndex;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(longitudeIndex, latitudeIndex);
+        }
+
+        @Override
+        public int compareTo(CellIndex o) {
+            int comp = Integer.compare(latitudeIndex, o.latitudeIndex);
+            if(comp != 0) {
+                return comp;
+            } else {
+                return Integer.compare(longitudeIndex, o.longitudeIndex);
+            }
+        }
     }
 }

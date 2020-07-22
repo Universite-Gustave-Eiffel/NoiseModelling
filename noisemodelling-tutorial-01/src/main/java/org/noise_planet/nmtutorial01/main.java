@@ -26,10 +26,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Locale;
-import java.util.Set;
+import java.util.*;
 
 class Main {
     public static void main(String[] args) throws SQLException, IOException {
@@ -131,22 +128,23 @@ class Main {
 
         // Set of already processed receivers
         Set<Long> receivers = new HashSet<>();
-        ProgressVisitor progressVisitor = progressLogger.subProcess(pointNoiseMap.getGridDim()*pointNoiseMap.getGridDim());
+
         logger.info("start");
         long start = System.currentTimeMillis();
 
         // Iterate over computation areas
         try {
             tableWriter.start();
-            for (int i = 0; i < pointNoiseMap.getGridDim(); i++) {
-                for (int j = 0; j < pointNoiseMap.getGridDim(); j++) {
-                    // Run ray propagation
-                    IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, i, j, progressVisitor, receivers);
-                    // Export as a Google Earth 3d scene
-                    if (out instanceof ComputeRaysOut) {
-                        ComputeRaysOut cellStorage = (ComputeRaysOut) out;
-                        exportScene(String.format(Locale.ROOT,"target/scene_%d_%d.kml", i, j), cellStorage.inputData.freeFieldFinder, cellStorage);
-                    }
+            // Fetch cell identifiers with receivers
+            Map<PointNoiseMap.CellIndex, Integer> cells = pointNoiseMap.searchPopulatedCells(connection);
+            ProgressVisitor progressVisitor = progressLogger.subProcess(cells.size());
+            for(PointNoiseMap.CellIndex cellIndex : new TreeSet<>(cells.keySet())) {
+                // Run ray propagation
+                IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers);
+                // Export as a Google Earth 3d scene
+                if (out instanceof ComputeRaysOut) {
+                    ComputeRaysOut cellStorage = (ComputeRaysOut) out;
+                    exportScene(String.format(Locale.ROOT,"target/scene_%d_%d.kml", cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex()), cellStorage.inputData.freeFieldFinder, cellStorage);
                 }
             }
         } finally {
