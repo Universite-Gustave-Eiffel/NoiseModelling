@@ -1,6 +1,7 @@
 package org.noise_planet.noisemodelling.emission.jdbc;
 
 import org.h2gis.api.EmptyProgressVisitor;
+import org.h2gis.api.ProgressVisitor;
 import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.functions.io.shp.SHPRead;
 import org.h2gis.utilities.JDBCUtilities;
@@ -18,7 +19,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 import static org.junit.Assert.*;
 
@@ -127,14 +130,14 @@ public class LDENPointNoiseMapFactoryTest {
 
             pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
 
-            pointNoiseMap.setGridDim(1); // force grid to 1x1
+            pointNoiseMap.setGridDim(4); // force grid size
 
+            Map<PointNoiseMap.CellIndex, Integer> cells = pointNoiseMap.searchPopulatedCells(connection);
+            ProgressVisitor progressVisitor = progressLogger.subProcess(cells.size());
             // Iterate over computation areas
-            for (int i = 0; i < pointNoiseMap.getGridDim(); i++) {
-                for (int j = 0; j < pointNoiseMap.getGridDim(); j++) {
-                    // Run ray propagation
-                    pointNoiseMap.evaluateCell(connection, i, j, progressLogger, receivers);
-                }
+            for(PointNoiseMap.CellIndex cellIndex : new TreeSet<>(cells.keySet())) {
+                // Run ray propagation
+                pointNoiseMap.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers);
             }
         }finally {
             factory.stop();

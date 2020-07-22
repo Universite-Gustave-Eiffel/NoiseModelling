@@ -188,12 +188,14 @@ public class PointNoiseMap extends JdbcNoiseMap {
         }
         geometryField = geometryFields.get(0);
         ResultSet rs = connection.createStatement().executeQuery("SELECT " + geometryField + " FROM " + receiverTableName);
+        Envelope refEnv = getCellEnv(mainEnvelope, 0,
+                0, getCellWidth(), getCellHeight());
         try (SpatialResultSet srs = rs.unwrap(SpatialResultSet.class)) {
             while (srs.next()) {
                 Geometry pt = srs.getGeometry();
                 if(pt instanceof Point && !pt.isEmpty()) {
                     Coordinate ptCoord = pt.getCoordinate();
-                    CellIndex cellIndex = new CellIndex((int)((ptCoord.x - mainEnvelope.getMinX()) / mainEnvelope.getWidth()), (int)((ptCoord.y - mainEnvelope.getMinY()) / mainEnvelope.getHeight()));
+                    CellIndex cellIndex = new CellIndex(Math.min(gridDim - 1, (int)((ptCoord.x - mainEnvelope.getMinX()) / refEnv.getWidth())), Math.min(gridDim - 1, (int)((ptCoord.y - mainEnvelope.getMinY()) / refEnv.getHeight())));
                     // Increment value if cell exists, set 1 otherwise
                     cellIndices.merge(cellIndex, 1, Integer::sum);
                 }

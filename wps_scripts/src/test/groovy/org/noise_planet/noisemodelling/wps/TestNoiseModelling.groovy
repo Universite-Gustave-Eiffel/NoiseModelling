@@ -21,8 +21,11 @@
 package org.noise_planet.noisemodelling.wps
 
 import groovy.sql.Sql
+import org.h2gis.functions.io.geojson.GeoJsonRead
 import org.h2gis.functions.io.shp.SHPRead
 import org.h2gis.functions.io.shp.SHPWrite
+import org.noise_planet.noisemodelling.ext.asc.AscRead
+import org.noise_planet.noisemodelling.ext.asc.AscReaderDriver
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_traffic
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_source
