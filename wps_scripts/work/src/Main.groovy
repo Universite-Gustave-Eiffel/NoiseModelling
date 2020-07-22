@@ -21,7 +21,7 @@ class Main {
         boolean doImportMatsimTraffic = false;
         boolean doCreateReceiversGrid = false;
         boolean doCreateReceiversFromMatsim = false;
-        boolean doCalculateRoadEmission = true;
+        boolean doCalculateRoadEmission = false;
         boolean doCalculateNoiseMap = false;
         boolean doExportResults = false;
 
@@ -40,7 +40,7 @@ class Main {
             CreateReceiversGrid.createReceiversGrid(connection);
         }
         if (doCreateReceiversFromMatsim && !doCreateReceiversGrid) {
-            CreateReceiversFromMatsim.createReceiversFromMatsim(connection);
+            ImportActivitesFromMatsim.importActivitesFromMatsim(connection);
         }
 
         def timeStrings = timeSlice == "hour" ? hourTimeStrings : quarterHourTimeStrings;

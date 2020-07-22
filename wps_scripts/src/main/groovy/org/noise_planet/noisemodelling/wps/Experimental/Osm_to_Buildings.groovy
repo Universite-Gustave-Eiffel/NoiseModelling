@@ -45,16 +45,6 @@ inputs = [pathFile        : [name       : 'Path of the OSM file',
                              title      : 'Path of the OSM file',
                              description: 'Path of the OSM file including extension. </br> For example : c:/home/area.osm.gz',
                              type       : String.class],
-          convert2Building: [name       : 'Do not import Buildings',
-                             title      : 'Do not import Buildings',
-                             description: 'If the box is checked, the table BUILDINGS will NOT be extracted. ' +
-                                     '<br>  The table will contain : </br>' +
-                                     '- <b> THE_GEOM </b> : the 2D geometry of the building (POLYGON or MULTIPOLYGON). </br>' +
-                                     '- <b> HEIGHT </b> : the height of the building (FLOAT). ' +
-                                     'If the height of the buildings is not available then it is deducted from the number of floors (if available) with the addition of a small random variation from one building to another. ' +
-                                     'Finally, if no information is available, a height of 5 m is set by default.',
-                             min        : 0, max: 1,
-                             type       : Boolean.class],
           targetSRID      : [name       : 'Target projection identifier', title: 'Target projection identifier',
                              description: 'Target projection identifier (also called SRID) of your table. It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection). </br>  The target SRID must be in metric coordinates. </br>', type: Integer.class],
 ]
@@ -102,11 +92,6 @@ def exec(Connection connection, input) {
 
     String pathFile = input["pathFile"] as String
 
-    Boolean ignoreBuilding = false
-    if ('convert2Building' in input) {
-        ignoreBuilding = input['convert2Building'] as Boolean
-    }
-
     Integer srid = 3857
     if ('targetSRID' in input) {
         srid = input['targetSRID'] as Integer
@@ -139,7 +124,7 @@ def exec(Connection connection, input) {
     System.out.println('SQL INSERT done : ' + TimeCategory.minus(new Date(), start))
 
     sql.execute('''
-        CREATE INDEX IF NOT EXISTS BUILDINGS_INDEX ON MAP_BUILDINGS_GEOM(the_geom);
+        CREATE SPATIAL INDEX IF NOT EXISTS BUILDINGS_INDEX ON ''' + tableName + '''(the_geom);
         -- list buildings that intersects with other buildings that have a greater area
         drop table if exists tmp_relation_buildings_buildings;
         create table tmp_relation_buildings_buildings as select s1.ID_WAY as PK_BUILDING, S2.ID_WAY as PK2_BUILDING FROM MAP_BUILDINGS_GEOM S1, MAP_BUILDINGS_GEOM S2 WHERE ST_AREA(S1.THE_GEOM) < ST_AREA(S2.THE_GEOM) AND S1.THE_GEOM && S2.THE_GEOM AND ST_DISTANCE(S1.THE_GEOM, S2.THE_GEOM) <= 0.1;

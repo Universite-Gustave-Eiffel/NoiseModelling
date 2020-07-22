@@ -1,16 +1,29 @@
 package org.noise_planet.noisemodelling.wps.Matsim
 
+import crosby.binary.osmosis.OsmosisReader
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import org.geotools.jdbc.JDBCDataStore
+import org.locationtech.jts.geom.Coordinate
+import org.locationtech.jts.geom.Geometry
+import org.locationtech.jts.geom.GeometryFactory
 import org.matsim.api.core.v01.Coord
-import org.matsim.api.core.v01.Id
 import org.matsim.api.core.v01.Scenario
 import org.matsim.core.config.ConfigUtils
 import org.matsim.core.scenario.ScenarioUtils
 import org.matsim.facilities.ActivityFacilities
 import org.matsim.facilities.ActivityFacility
 import org.matsim.facilities.MatsimFacilitiesReader
+import org.openstreetmap.osmosis.core.container.v0_6.EntityContainer
+import org.openstreetmap.osmosis.core.container.v0_6.NodeContainer
+import org.openstreetmap.osmosis.core.container.v0_6.RelationContainer
+import org.openstreetmap.osmosis.core.container.v0_6.WayContainer
+import org.openstreetmap.osmosis.core.domain.v0_6.Node
+import org.openstreetmap.osmosis.core.domain.v0_6.Relation
+import org.openstreetmap.osmosis.core.domain.v0_6.Tag
+import org.openstreetmap.osmosis.core.domain.v0_6.Way
+import org.openstreetmap.osmosis.core.domain.v0_6.WayNode
+import org.openstreetmap.osmosis.core.task.v0_6.Sink
 
 import java.sql.*
 import groovy.sql.Sql
@@ -52,7 +65,7 @@ inputs = [
     outTableName: [
             name: 'Output table name',
             title: 'Name of created table',
-            description: 'Name of the table you want to create: RECEIVERS',
+            description: 'Name of the table you want to create: ACTIVITIES',
             min: 0,
             max: 1,
             type: String.class
@@ -91,18 +104,11 @@ def run(input) {
 
 def exec(connection, input) {
 
-    String outTableName = "RECEIVERS"
+    String outTableName = "ACTIVITIES"
     if (input['outTableName']) {
         outTableName = input['outTableName']
     }
     outTableName = outTableName.toUpperCase()
-
-
-    String buildingTableName = "BUILDINGS"
-    if (input['buildingTableName']) {
-        buildingTableName = input['buildingTableName']
-    }
-    buildingTableName = buildingTableName.toUpperCase()
 
     String filter = "*"
     if (input['filter']) {
@@ -123,10 +129,11 @@ def exec(connection, input) {
         TYPES varchar(255)
     );''')
     sql.execute("CREATE INDEX ON " + outTableName + "(FACILITY_ID)");
+    sql.execute("CREATE SPATIAL INDEX ON " + outTableName + "(THE_GEOM)");
 
     Scenario scenario = ScenarioUtils.loadScenario(ConfigUtils.createConfig())
-    MatsimFacilitiesReader reader = new MatsimFacilitiesReader(scenario)
-    reader.readFile(facilitiesPath);
+    MatsimFacilitiesReader facilitiesReader = new MatsimFacilitiesReader(scenario)
+    facilitiesReader.readFile(facilitiesPath);
 
     ActivityFacilities facilities = scenario.getActivityFacilities();
 
@@ -136,11 +143,9 @@ def exec(connection, input) {
         Coord c = facility.getCoord();
         String geom = String.format("POINT(%s %s %s)", Double.toString(c.getX()), Double.toString(c.getY()), Double.toString(height));
         String types = facility.getActivityOptions().keySet().join(',');
-        String query = "INSERT INTO " + outTableName + "(FACILITY_ID, THE_GEOM, TYPES) VALUES( '" + facilityId + "', '" + geom + "', '" + types + "')";
+        String query = "INSERT INTO " + outTableName + "(FACILITY_ID, THE_GEOM, TYPES) VALUES( '" + facilityId + "', ST_GeomFromText('" + geom + "', 2154), '" + types + "')";
         sql.execute(query);
     }
-    // TODO : sql.execute("CREATE SPATIAL INDEX ON ");
 
     return [result: "Process done. Table of receivers " + outTableName + " created !"]
 }
-

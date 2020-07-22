@@ -26,7 +26,6 @@ repositories {
     }
     mavenCentral()
 }
-
 test {
     afterTest { desc, result ->
         println "Executing test ${desc.name} [${desc.className}] with result: ${result.resultType}"
@@ -42,7 +41,7 @@ dependencies {
         exclude group: 'org.locationtech.jts'
     }
     compile 'org.postgresql:postgresql:9.4-1201-jdbc41'
-    compile 'org.codehaus.groovy:groovy-all:2.5.5'
+    compile 'org.codehaus.groovy:groovy-all:3.0.4'
     compile group: 'org.ejml', name: 'all', version: '0.29'
     compile group: 'org.eclipse.emf', name: 'org.eclipse.emf.ecore', version: '2.10.1'
     compile group: 'org.orbisgis', name: 'h2gis', version: '1.5.1-SNAPSHOT'

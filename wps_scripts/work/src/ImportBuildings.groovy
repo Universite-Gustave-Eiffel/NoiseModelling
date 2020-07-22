@@ -19,8 +19,8 @@ class ImportBuildings {
 
     public static void importBuildings(Connection connection) {
         importBuildings(connection, [
-                "pathFile"        : "C:\\Users\\valen\\Documents\\IFSTTAR\\OsmMaps\\proce-plus.pbf",
-                "convert2Building": false,
+                // "pathFile"        : "C:\\Users\\valen\\Documents\\IFSTTAR\\OsmMaps\\proce-plus.pbf",
+                "pathFile"        : "/home/valoo/Projects/IFSTTAR/OsmMaps/nantes.pbf",
                 "targetSRID"      : 2154
         ])
     }
