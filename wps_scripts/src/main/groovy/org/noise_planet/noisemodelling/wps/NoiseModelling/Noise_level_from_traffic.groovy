@@ -461,8 +461,7 @@ def exec(Connection connection, input) {
 
     // Init ProgressLogger (loading bar)
     RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1)
-    ProgressVisitor progressVisitor = progressLogger.subProcess(pointNoiseMap.getGridDim() * pointNoiseMap.getGridDim())
-    int fullGridSize = pointNoiseMap.getGridDim() * pointNoiseMap.getGridDim()
+
 
     System.println("Start calculation... ")
 
@@ -470,12 +469,12 @@ def exec(Connection connection, input) {
         ldenProcessing.start()
         // Iterate over computation areas
         int k = 0
-        for (int i = 0; i < pointNoiseMap.getGridDim(); i++) {
-            for (int j = 0; j < pointNoiseMap.getGridDim(); j++) {
-                System.println("Compute... " + 100 * k++ / fullGridSize + " % ")
-                // Run ray propagation
-                pointNoiseMap.evaluateCell(connection, i, j, progressVisitor, receivers)
-            }
+        Map cells = pointNoiseMap.searchPopulatedCells(connection)
+        ProgressVisitor progressVisitor = progressLogger.subProcess(cells.size())
+        new TreeSet<>(cells.keySet()).each { cellIndex ->
+            // Run ray propagation
+            System.println(String.format("Compute... %.3f %% (%d receivers in this cell)", 100 * k++ / cells.size(), cells.get(cellIndex)))
+            pointNoiseMap.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers)
         }
     } finally {
         ldenProcessing.stop()

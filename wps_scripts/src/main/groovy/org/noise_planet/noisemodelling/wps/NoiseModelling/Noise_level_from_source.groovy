@@ -34,7 +34,9 @@ import org.h2gis.utilities.SFSUtilities
 import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
+import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
+import org.locationtech.jts.geom.GeometryFactory
 import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
 import org.noise_planet.noisemodelling.emission.RSParametersCnossos
 import org.noise_planet.noisemodelling.emission.jdbc.LDENConfig
@@ -47,6 +49,8 @@ import org.noise_planet.noisemodelling.propagation.PropagationProcessData
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
 import org.noise_planet.noisemodelling.propagation.RootProgressVisitor
 import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import java.sql.Connection
 import java.sql.SQLException
@@ -234,6 +238,7 @@ def run(input) {
 
 // main function of the script
 def exec(Connection connection, input) {
+    Logger logger = LoggerFactory.getLogger("Noise_level_from_source");
     //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postGIS database
     connection = new ConnectionWrapper(connection)
 
@@ -426,20 +431,22 @@ def exec(Connection connection, input) {
 
     // Init ProgressLogger (loading bar)
     RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1)
-    ProgressVisitor progressVisitor = progressLogger.subProcess(pointNoiseMap.getGridDim() * pointNoiseMap.getGridDim())
-    int fullGridSize = pointNoiseMap.getGridDim() * pointNoiseMap.getGridDim()
 
     System.println("Start calculation... ")
     try {
         ldenProcessing.start()
         // Iterate over computation areas
-        int k=0
-        for (int i = 0; i < pointNoiseMap.getGridDim(); i++) {
-            for (int j = 0; j < pointNoiseMap.getGridDim(); j++) {
-                System.println("Compute... " + 100*k++/fullGridSize + " % ")
-                // Run ray propagation
-                pointNoiseMap.evaluateCell(connection, i, j, progressVisitor, receivers)
-            }
+        int k = 0
+        Map cells = pointNoiseMap.searchPopulatedCells(connection);
+        ProgressVisitor progressVisitor = progressLogger.subProcess(cells.size());
+        new TreeSet<>(cells.keySet()).each { cellIndex ->
+            Envelope cellEnvelope = pointNoiseMap.getCellEnv(pointNoiseMap.getMainEnvelope(),
+                    cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), pointNoiseMap.getCellWidth(),
+                    pointNoiseMap.getCellHeight());
+            logger.info("Compute domain is " + new GeometryFactory().toGeometry(cellEnvelope))
+            System.println(String.format("Compute... %.3f %% (%d receivers in this cell)", 100 * k++ / cells.size(), cells.get(cellIndex)))
+            // Run ray propagation
+            pointNoiseMap.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers)
         }
     } finally {
         ldenProcessing.stop()
