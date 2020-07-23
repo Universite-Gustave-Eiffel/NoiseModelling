@@ -1,10 +1,10 @@
 import org.h2gis.functions.factory.H2GISDBFactory
 import org.h2gis.utilities.SFSUtilities
-import org.noise_planet.noisemodelling.wps.Matsim.Traffic_from_matsim_events
+import org.noise_planet.noisemodelling.wps.Matsim.Calculate_Matsim_Agent_Exposure
 
 import java.sql.Connection
 
-class ImportMatsimTraffic {
+class CalculateMatsimAgentExposure {
 
     public static void main(String[] args) {
 
@@ -14,22 +14,21 @@ class ImportMatsimTraffic {
         // connection = DriverManager.getConnection("jdbc:h2:" + dbFilePath + ";LOCK_MODE=0;LOG=0;DB_CLOSE_DELAY=5", "sa", "sa");
         connection = SFSUtilities.wrapConnection(H2GISDBFactory.openSpatialDataBase(dbName));
 
-        importMatsimTraffic(connection);
+        calculateMatsimAgentExposure(connection);
     }
 
-    public static void importMatsimTraffic(Connection connection) {
-        importMatsimTraffic(connection, [
+    public static void calculateMatsimAgentExposure(Connection connection) {
+        calculateMatsimAgentExposure(connection, [
                 // "folder" : "C:\\Users\\valen\\Documents\\IFSTTAR\\GitHub\\matsim-example-project\\scenarios\\nantes_0.01",
                 "folder" : "/home/valoo/Projects/IFSTTAR/Scenarios/nantes_0.01",
-                "outTableName" : "MATSIM_ROADS",
-                "link2GeometryFile" : "network.csv", // relative path
+                "outTableName" : "AGENTS",
                 "timeSlice": "hour" // DEN, hour, quarter
         ])
     }
-    public static void importMatsimTraffic(Connection connection, options) {
+    public static void calculateMatsimAgentExposure(Connection connection, options) {
         println "-------------------------------"
-        println "Importing Matsim traffic results"
+        println "Caltulating Matsim agents exposures"
         println "-------------------------------"
-        new Traffic_from_matsim_events().exec(connection, options)
+        new Calculate_Matsim_Agent_Exposure().exec(connection, options)
     }
 }

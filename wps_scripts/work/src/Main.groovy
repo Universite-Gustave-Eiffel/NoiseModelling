@@ -21,9 +21,9 @@ class Main {
         boolean doImportMatsimTraffic = false;
         boolean doCreateReceiversGrid = false;
         boolean doCreateReceiversFromMatsim = false;
-        boolean doCalculateRoadEmission = false;
-        boolean doCalculateNoiseMap = false;
-        boolean doExportResults = false;
+        boolean doCalculateRoadEmission = true;
+        boolean doCalculateNoiseMap = true;
+        boolean doExportResults = true;
 
         String timeSlice = "hour";
 
@@ -74,7 +74,7 @@ class Main {
             for (timeString in timeStrings) {
                 ExportTable.exportTable(connection, [
                         "tableToExport": "RESULT_GEOM_" + timeString,
-                        "exportPath"   : "C:\\Users\\valen\\Documents\\IFSTTAR\\Results\\RES_" + timeString + ".geojson"
+                        "exportPath"   : "/home/valoo/Projects/IFSTTAR/Results/RES_" + timeString + ".geojson"
                 ])
             }
         }

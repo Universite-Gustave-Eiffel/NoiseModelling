@@ -19,7 +19,7 @@ class Create0dBSourceFromRoads {
 
     public static void create0dBSourceFromRoads(Connection connection) {
         create0dBSourceFromRoads(connection, [
-                "roadsTableName": "ROADS_0_1",
+                "roadsTableName": "MATSIM_ROADS",
                 "sourceTableName": "SOURCES_0DB"
         ])
     }

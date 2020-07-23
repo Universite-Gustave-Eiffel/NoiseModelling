@@ -19,8 +19,9 @@ class ExportTable {
 
     public static void exportTable(Connection connection) {
         exportTable(connection, [
-                "tableToExport" : "RECEIVERS",
-                "exportPath": "C:\\Users\\valen\\Documents\\IFSTTAR\\Results\\receivers.geojson"
+                "tableToExport" : "AGENTS",
+                // "exportPath": "C:\\Users\\valen\\Documents\\IFSTTAR\\Results\\receivers.shp"
+                "exportPath": "/home/valoo/Projects/IFSTTAR/Results/agents.geojson"
         ])
     }
     public static void exportTable(Connection connection, options) {

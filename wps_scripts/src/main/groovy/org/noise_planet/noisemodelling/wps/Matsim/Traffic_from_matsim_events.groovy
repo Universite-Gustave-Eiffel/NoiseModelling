@@ -29,7 +29,6 @@ import org.noise_planet.noisemodelling.emission.RSParametersCnossos;
 import java.sql.Connection
 
 import groovy.sql.Sql
-import groovy.sql.GroovyRowResult
 
 title = 'Import data from Mastim output'
 
@@ -126,9 +125,9 @@ def exec(Connection connection, input) {
         timeSlice = input["timeSlice"];
     }
 
-    String eventFile = folder + "\\output_events.xml.gz";
-    String networkFile = folder + "\\nantes_network.xml.gz";
-    String configFile = folder + "\\nantes_config.xml";
+    String eventFile = folder + "/output_events.xml.gz";
+    String networkFile = folder + "/nantes_network.xml.gz";
+    String configFile = folder + "/nantes_config.xml";
 
     Network network = ScenarioUtils.loadScenario(ConfigUtils.createConfig()).getNetwork();
     MatsimNetworkReader networkReader = new MatsimNetworkReader(network);
@@ -171,7 +170,7 @@ def exec(Connection connection, input) {
 
     Map<String, String> link2geomData = new HashMap<>();
     if (!link2GeometryFile.isEmpty()) {
-        BufferedReader br = new BufferedReader(new FileReader(folder + "\\" + link2GeometryFile));
+        BufferedReader br = new BufferedReader(new FileReader(folder + "/" + link2GeometryFile));
         String line =  null;
         while ((line = br.readLine()) != null) {
             String[] str = line.split(",", 2);
@@ -182,8 +181,8 @@ def exec(Connection connection, input) {
     }
 
     try {
-        FileWriter outFile = new FileWriter(folder + "\\analysis.csv");
-        outFile.write(LinkStatStruct.getTableStringHeader(timeSlice) + "\n");
+        FileWriter outFile = new FileWriter(folder + "/analysis.csv");
+        outFile.write(PersonStatStruc.getTableStringHeader(timeSlice) + "\n");
         for (Map.Entry<Id<Link>, LinkStatStruct> entry : evHandler.links.entrySet()) {
             String linkId = entry.getKey().toString();
             String geomString = "";
