@@ -1,12 +1,8 @@
 package org.noise_planet.noisemodelling.wps.Matsim
 
-import crosby.binary.osmosis.OsmosisReader
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import org.geotools.jdbc.JDBCDataStore
-import org.locationtech.jts.geom.Coordinate
-import org.locationtech.jts.geom.Geometry
-import org.locationtech.jts.geom.GeometryFactory
 import org.matsim.api.core.v01.Coord
 import org.matsim.api.core.v01.Scenario
 import org.matsim.core.config.ConfigUtils
@@ -14,16 +10,6 @@ import org.matsim.core.scenario.ScenarioUtils
 import org.matsim.facilities.ActivityFacilities
 import org.matsim.facilities.ActivityFacility
 import org.matsim.facilities.MatsimFacilitiesReader
-import org.openstreetmap.osmosis.core.container.v0_6.EntityContainer
-import org.openstreetmap.osmosis.core.container.v0_6.NodeContainer
-import org.openstreetmap.osmosis.core.container.v0_6.RelationContainer
-import org.openstreetmap.osmosis.core.container.v0_6.WayContainer
-import org.openstreetmap.osmosis.core.domain.v0_6.Node
-import org.openstreetmap.osmosis.core.domain.v0_6.Relation
-import org.openstreetmap.osmosis.core.domain.v0_6.Tag
-import org.openstreetmap.osmosis.core.domain.v0_6.Way
-import org.openstreetmap.osmosis.core.domain.v0_6.WayNode
-import org.openstreetmap.osmosis.core.task.v0_6.Sink
 
 import java.sql.*
 import groovy.sql.Sql

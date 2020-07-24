@@ -19,31 +19,52 @@ class Main {
         boolean doCleanDB = false;
         boolean doImportBuildings = false;
         boolean doImportMatsimTraffic = false;
-        boolean doCreateReceiversGrid = false;
         boolean doCreateReceiversFromMatsim = false;
-        boolean doCalculateRoadEmission = true;
-        boolean doCalculateNoiseMap = true;
+        boolean doCalculateNoisePropagation = false;
+        boolean doCalculateRoadEmission = false;
+        boolean doCalculateNoiseMap = false;
         boolean doExportResults = true;
+        boolean doCalcuateExposure = false;
 
-        String timeSlice = "hour";
+        String timeSlice = "quarter";
+        String osmFile = "/home/valoo/Projects/IFSTTAR/OsmMaps/nantes.pbf";
+        String matsimFolder = "/home/valoo/Projects/IFSTTAR/Scenarios/nantes_0.1"
+        String resultsFolder = "/home/valoo/Projects/IFSTTAR/Results"
 
         if (doCleanDB) {
             CleanDB.cleanDB(connection);
         }
         if (doImportBuildings) {
-            ImportBuildings.importBuildings(connection);
+            ImportBuildings.importBuildings(connection, [
+                    "pathFile"        : osmFile,
+                    "targetSRID"      : 2154
+            ]);
         }
         if (doImportMatsimTraffic) {
-            ImportMatsimTraffic.importMatsimTraffic(connection);
+            ImportMatsimTraffic.importMatsimTraffic(connection, [
+                    "folder" : matsimFolder,
+                    "outTableName" : "MATSIM_ROADS",
+                    "link2GeometryFile" : "network.csv", // relative path
+                    "timeSlice": timeSlice, // DEN, hour, quarter
+                    "skipUnused": "true"
+            ]);
         }
-        if (doCreateReceiversGrid && !doCreateReceiversFromMatsim) {
-            CreateReceiversGrid.createReceiversGrid(connection);
-        }
-        if (doCreateReceiversFromMatsim && !doCreateReceiversGrid) {
-            ImportActivitesFromMatsim.importActivitesFromMatsim(connection);
+        if (doCreateReceiversFromMatsim) {
+            ImportActivitesFromMatsim.importActivitesFromMatsim(connection, [
+                    "facilitiesPath" : matsimFolder + "/nantes_facilities.xml.gz",
+                    "filter" : "*",
+                    "outTableName" : "ACTIVITIES"
+            ]);
+            CreateReceiversOnBuildings.createReceiversOnBuildings(connection);
+            ChoseReceiversFromActivities.choseReceiversFromActivities(connection);
         }
 
-        def timeStrings = timeSlice == "hour" ? hourTimeStrings : quarterHourTimeStrings;
+        if (doCalculateNoisePropagation) {
+            Create0dBSourceFromRoads.create0dBSourceFromRoads(connection);
+            CalculateNoiseMapFromSource.calculateNoiseMap(connection);
+        }
+
+        def timeStrings = (timeSlice == "hour") ? hourTimeStrings : quarterHourTimeStrings;
         // def timeStrings = ["0_1"]
 
         if (doCalculateRoadEmission) {
@@ -60,6 +81,7 @@ class Main {
                 ])
             }
         }
+
         if (doCalculateNoiseMap) {
             for (timeString in timeStrings) {
                 CalculateNoiseMapFromAttenuation.calculateNoiseMap(connection, [
@@ -74,37 +96,18 @@ class Main {
             for (timeString in timeStrings) {
                 ExportTable.exportTable(connection, [
                         "tableToExport": "RESULT_GEOM_" + timeString,
-                        "exportPath"   : "/home/valoo/Projects/IFSTTAR/Results/RES_" + timeString + ".geojson"
+                        "exportPath"   : resultsFolder + "/RES_" + timeString + ".geojson"
                 ])
             }
         }
-
-        if (false) { // OLD METHOD
-            for (timeString in timeStrings) {
-                CreateRoadsFromTimeString.createRoadsFromTimeString(connection, [
-                    "roadsTableName" : "MATSIM_ROADS",
-                    "statsTableName" : "MATSIM_ROADS_STATS",
-                    "timeString" : timeString,
-                    "outTableName" : "ROADS_"+timeString
-                ])
-                CalculateNoiseMapFromTraffic.calculateNoiseMap(connection, [
-                    "tableBuilding": "BUILDINGS",
-                    "tableReceivers" : "RECEIVERS",
-                    "tableRoads" : "ROADS_"+timeString,
-                    "confMaxSrcDist": 150,
-                    "confReflOrder": 1,
-                    "confSkipLevening": true,
-                    "confSkipLnight": true,
-                    "confSkipLden": true,
-                    "confExportSourceId": true
-                ])
-                ExportTable.exportTable(connection, [
-                    "tableToExport" : "LDAY_GEOM",
-                    "exportPath": "C:\\Users\\valen\\Documents\\IFSTTAR\\Results\\RES_"+timeString+".shp"
-                ])
-            }
+        if (doCalcuateExposure) {
+            CalculateMatsimAgentExposure.calculateMatsimAgentExposure(connection, [
+                    "folder" : matsimFolder,
+                    "outTableName" : "AGENTS",
+                    "dataTablePrefix": "RESULT_GEOM_",
+                    "timeSlice": timeSlice // DEN, hour, quarter
+            ])
         }
-
 
         connection.close()
     }

@@ -22,7 +22,9 @@ class CalculateMatsimAgentExposure {
                 // "folder" : "C:\\Users\\valen\\Documents\\IFSTTAR\\GitHub\\matsim-example-project\\scenarios\\nantes_0.01",
                 "folder" : "/home/valoo/Projects/IFSTTAR/Scenarios/nantes_0.01",
                 "outTableName" : "AGENTS",
-                "timeSlice": "hour" // DEN, hour, quarter
+                "dataTablePrefix": "RESULT_GEOM_",
+                "timeSlice": "quarter", // DEN, hour, quarter,
+                "plotOneAgentId": 211266,
         ])
     }
     public static void calculateMatsimAgentExposure(Connection connection, options) {

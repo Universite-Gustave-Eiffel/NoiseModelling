@@ -55,6 +55,12 @@ inputs = [
             description: 'How to separate Roads statistics ? DEN, hour, quarter',
             type: String.class
     ],
+    skipUnused: [
+            name: 'Skip unused links ?',
+            title: 'Skip unused links ?',
+            description: 'Skip unused links ?',
+            type: String.class
+    ],
     outTableName: [
         name: 'Output table name',
         title: 'Name of created table',
@@ -125,6 +131,11 @@ def exec(Connection connection, input) {
         timeSlice = input["timeSlice"];
     }
 
+    boolean skipUnused = false;
+    if (input["skipUnused"]) {
+        skipUnused = input["skipUnused"] as boolean;
+    }
+
     String eventFile = folder + "/output_events.xml.gz";
     String networkFile = folder + "/nantes_network.xml.gz";
     String configFile = folder + "/nantes_config.xml";
@@ -146,7 +157,7 @@ def exec(Connection connection, input) {
     MatsimEventsReader eventsReader = new MatsimEventsReader(evMgr);
 
     eventsReader.readFile(eventFile);
-    
+
     // Open connection
     Sql sql = new Sql(connection)
     sql.execute("DROP TABLE IF EXISTS " + outTableName)
@@ -167,6 +178,7 @@ def exec(Connection connection, input) {
         TIMESTRING varchar(255)
     );''')
     sql.execute("CREATE INDEX " + statsTableName + "_LINK_ID_IDX ON " + statsTableName + " (LINK_ID);")
+    sql.execute("CREATE INDEX " + statsTableName + "_TIMESTRING_IDX ON " + statsTableName + " (TIMESTRING);")
 
     Map<String, String> link2geomData = new HashMap<>();
     if (!link2GeometryFile.isEmpty()) {
@@ -182,15 +194,20 @@ def exec(Connection connection, input) {
 
     try {
         FileWriter outFile = new FileWriter(folder + "/analysis.csv");
-        outFile.write(PersonStatStruc.getTableStringHeader(timeSlice) + "\n");
+        outFile.write(LinkStatStruct.getTableStringHeader(timeSlice) + "\n");
         for (Map.Entry<Id<Link>, LinkStatStruct> entry : evHandler.links.entrySet()) {
             String linkId = entry.getKey().toString();
+            LinkStatStruct linkStatStruct = entry.getValue();
+
+            if (skipUnused && !linkStatStruct.isUsed) {
+                continue;
+            }
+
             String geomString = "";
             if (!link2GeometryFile.isEmpty()) {
                 geomString = link2geomData.get(linkId);
             }
 
-            LinkStatStruct linkStatStruct = entry.getValue();
             outFile.write(linkStatStruct.toTableString() + "\n");
             sql.execute(linkStatStruct.toSqlInsertWithGeom(outTableName, geomString));
         }
@@ -205,7 +222,7 @@ public class ProcessOutputEventHandler implements LinkEnterEventHandler, LinkLea
 
     Map<Id<Link>, LinkStatStruct> links = new HashMap<Id<Link>, LinkStatStruct>();
 
-    String timeSlice = "hour"
+    String timeSlice;
 
     public void setTimeSlice(String slice) {
         timeSlice = slice;
@@ -272,7 +289,9 @@ public class LinkStatStruct {
     private Map<String, ArrayList<Double> > acousticLevels = new HashMap<String, ArrayList<Double> >();
     private Link link;
 
-    String timeSlice = "hour";
+    public boolean isUsed = false;
+
+    String timeSlice;
 
     static String[] den = ["D", "E", "N"];
     static String[] hourClock = ["0_1", "1_2", "2_3", "3_4", "4_5", "5_6", "6_7", "7_8", "8_9", "9_10", "10_11", "11_12", "12_13", "13_14", "14_15", "15_16", "16_17", "17_18", "18_19", "19_20", "20_21", "21_22", "22_23", "23_24"];
@@ -283,7 +302,7 @@ public class LinkStatStruct {
     }
 
     public void vehicleEnterAt(Id<Vehicle> vehicleId, double time) {
-        String timeString = getTimeString(time);
+        isUsed = true;
         if (!enterTimes.containsKey(vehicleId)) {
             enterTimes.put(vehicleId, time);
         }
@@ -367,7 +386,7 @@ public class LinkStatStruct {
         }
         else if (timeSlice == "quarter") {
             int hour = (int) (time / 3600);
-            int min = (int) (time - hour) / 60;
+            int min = (int) (time - (hour * 3600)) / 60;
             if (min >= 0 && min < 15) {
                 return hour + "h00" + "_" + hour + "h15";
             }

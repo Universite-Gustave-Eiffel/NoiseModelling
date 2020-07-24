@@ -21,7 +21,7 @@ class ImportActivitesFromMatsim {
     public static void importActivitesFromMatsim(Connection connection) {
         importActivitesFromMatsim(connection, [
                 // "facilitiesPath" : "C:\\Users\\valen\\Documents\\IFSTTAR\\GitHub\\matsim-example-project\\scenarios\\nantes_0.01\\nantes_facilities.xml.gz",
-                "facilitiesPath" : "/home/valoo/Projects/IFSTTAR/Scenarios/nantes_0.01/nantes_facilities.xml.gz",
+                "facilitiesPath" : "/home/valoo/Projects/IFSTTAR/Scenarios/nantes_0.1/nantes_facilities.xml.gz",
                 "filter" : "*",
                 "outTableName" : "ACTIVITIES"
         ])

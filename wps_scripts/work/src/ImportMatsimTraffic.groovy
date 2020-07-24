@@ -20,10 +20,11 @@ class ImportMatsimTraffic {
     public static void importMatsimTraffic(Connection connection) {
         importMatsimTraffic(connection, [
                 // "folder" : "C:\\Users\\valen\\Documents\\IFSTTAR\\GitHub\\matsim-example-project\\scenarios\\nantes_0.01",
-                "folder" : "/home/valoo/Projects/IFSTTAR/Scenarios/nantes_0.01",
+                "folder" : "/home/valoo/Projects/IFSTTAR/Scenarios/nantes_0.1",
                 "outTableName" : "MATSIM_ROADS",
                 "link2GeometryFile" : "network.csv", // relative path
-                "timeSlice": "hour" // DEN, hour, quarter
+                "timeSlice": "quarter", // DEN, hour, quarter
+                "skipUnused": "true"
         ])
     }
     public static void importMatsimTraffic(Connection connection, options) {
