@@ -12,24 +12,23 @@ class Main {
 
         Connection connection;
         String dbName = "h2gisdb"
-        // String dbFilePath = (new File(dbName)).getAbsolutePath();
-        // connection = DriverManager.getConnection("jdbc:h2:" + dbFilePath + ";LOCK_MODE=0;LOG=0;DB_CLOSE_DELAY=5", "sa", "sa");
         connection = SFSUtilities.wrapConnection(H2GISDBFactory.openSpatialDataBase(dbName));
 
         boolean doCleanDB = false;
         boolean doImportBuildings = false;
         boolean doImportMatsimTraffic = false;
-        boolean doCreateReceiversFromMatsim = false;
+        boolean doCreateReceiversFromMatsim = true;
         boolean doCalculateNoisePropagation = false;
         boolean doCalculateRoadEmission = false;
         boolean doCalculateNoiseMap = false;
-        boolean doExportResults = true;
+        boolean doExportResults = false;
         boolean doCalcuateExposure = false;
 
         String timeSlice = "quarter";
         String osmFile = "/home/valoo/Projects/IFSTTAR/OsmMaps/nantes.pbf";
-        String matsimFolder = "/home/valoo/Projects/IFSTTAR/Scenarios/nantes_0.1"
+        String matsimFolder = "/home/valoo/Projects/IFSTTAR/Scenarios/nantes_0.01"
         String resultsFolder = "/home/valoo/Projects/IFSTTAR/Results"
+        String ignoreAgents = "1, 2, 3, 4, 5, 6, 7, 8, 9"
 
         if (doCleanDB) {
             CleanDB.cleanDB(connection);
@@ -46,7 +45,8 @@ class Main {
                     "outTableName" : "MATSIM_ROADS",
                     "link2GeometryFile" : "network.csv", // relative path
                     "timeSlice": timeSlice, // DEN, hour, quarter
-                    "skipUnused": "true"
+                    "skipUnused": "true",
+                    "ignoreAgents": ignoreAgents
             ]);
         }
         if (doCreateReceiversFromMatsim) {

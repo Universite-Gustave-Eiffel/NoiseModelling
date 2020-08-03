@@ -80,12 +80,11 @@ def exec(connection, input) {
         receiversTable = input['receiversTable']
     }
 
-    double height = 4.0;
-
     Sql sql = new Sql(connection)
     //Delete previous receivers
     sql.execute(String.format("DROP TABLE IF EXISTS %s", outTableName))
-    sql.execute("CREATE TABLE " + outTableName + '''( 
+
+    String query = "CREATE TABLE " + outTableName + '''( 
         PK integer PRIMARY KEY AUTO_INCREMENT,
         FACILITY_ID varchar(255),
         ORIGIN_GEOM geometry,
@@ -94,11 +93,12 @@ def exec(connection, input) {
     ) AS
     SELECT A.PK, A.FACILITY_ID, A.THE_GEOM AS ORIGIN_GEOM, (
         SELECT R.THE_GEOM 
-        FROM ALL_RECEIVERS R
-        WHERE ST_EXPAND(A.THE_GEOM, 200, 100) && R.THE_GEOM
+        FROM ''' + receiversTable+ ''' R
+        WHERE ST_EXPAND(A.THE_GEOM, 200, 200) && R.THE_GEOM
         ORDER BY ST_Distance(A.THE_GEOM, R.THE_GEOM) ASC LIMIT 1
     ) AS THE_GEOM, A.TYPES 
-    FROM ACTIVITIES A ''')
+    FROM ''' + activitiesTable + ''' A ''';
+    sql.execute(query);
     sql.execute("CREATE INDEX ON " + outTableName + "(FACILITY_ID)");
     sql.execute("CREATE SPATIAL INDEX ON " + outTableName + "(THE_GEOM)");
 

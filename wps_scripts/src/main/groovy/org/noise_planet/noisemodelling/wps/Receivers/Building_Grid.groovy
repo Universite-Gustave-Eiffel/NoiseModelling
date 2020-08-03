@@ -272,6 +272,7 @@ def exec(Connection connection, input) {
 
         sql.execute("CREATE INDEX ON tmp_receivers(build_pk)")
         sql.execute("create table " + receivers_table_name + "(pk serial, the_geom geometry,build_pk integer, pop float) as select null, a.the_geom, a.build_pk, b.pop/COUNT(DISTINCT aa.pk)::float from tmp_receivers a, "+building_table_name+ " b,tmp_receivers aa where b."+buildingPk+" = a.build_pk and a.build_pk = aa.build_pk GROUP BY a.the_geom, a.build_pk, b.pop;")
+
         sql.execute("drop table if exists tmp_receivers")
     }
     // cleaning
@@ -280,6 +281,8 @@ def exec(Connection connection, input) {
     sql.execute("drop table tmp_relation_screen_building")
     sql.execute("drop table tmp_receivers_lines")
     sql.execute("drop table if exists tmp_buildings;")
+    System.println('Creating spatial index...')
+    sql.execute("CREATE SPATIAL INDEX ON " + receivers_table_name + "(THE_GEOM)");
     // Process Done
     resultString = "Process done. Table of receivers " + receivers_table_name + " created !"
 

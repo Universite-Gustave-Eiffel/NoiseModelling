@@ -76,7 +76,6 @@ static Connection openGeoserverDataStoreConnection(String dbName) {
     return jdbcDataStore.getDataSource().getConnection()
 }
 
-
 def run(input) {
 
     // Get name of the database

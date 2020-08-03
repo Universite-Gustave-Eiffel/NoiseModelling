@@ -8,13 +8,18 @@ import org.geotools.jdbc.JDBCDataStore
 
 import org.locationtech.jts.geom.Coordinate
 import org.matsim.api.core.v01.Coord;
-import org.matsim.api.core.v01.Id;
+import org.matsim.api.core.v01.Id
+import org.matsim.api.core.v01.events.VehicleEntersTrafficEvent
+import org.matsim.api.core.v01.events.VehicleLeavesTrafficEvent
+import org.matsim.api.core.v01.events.handler.VehicleEntersTrafficEventHandler
+import org.matsim.api.core.v01.events.handler.VehicleLeavesTrafficEventHandler;
 import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.network.Network;
 import org.matsim.api.core.v01.events.LinkEnterEvent;
 import org.matsim.api.core.v01.events.LinkLeaveEvent;
 import org.matsim.api.core.v01.events.handler.LinkEnterEventHandler;
-import org.matsim.api.core.v01.events.handler.LinkLeaveEventHandler;
+import org.matsim.api.core.v01.events.handler.LinkLeaveEventHandler
+import org.matsim.api.core.v01.population.Person;
 import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.events.EventsUtils;
 import org.matsim.core.api.experimental.events.EventsManager;
@@ -29,6 +34,8 @@ import org.noise_planet.noisemodelling.emission.RSParametersCnossos;
 import java.sql.Connection
 
 import groovy.sql.Sql
+
+import java.time.LocalDateTime
 
 title = 'Import data from Mastim output'
 
@@ -59,6 +66,16 @@ inputs = [
             name: 'Skip unused links ?',
             title: 'Skip unused links ?',
             description: 'Skip unused links ?',
+            min: 0,
+            max: 1,
+            type: String.class
+    ],
+    ignoreAgents: [
+            name: 'List of agents ids to ignore in import',
+            title: 'List of agents ids to ignore in import',
+            description: 'List of agents ids to ignore in import',
+            min: 0,
+            max: 1,
             type: String.class
     ],
     outTableName: [
@@ -136,28 +153,42 @@ def exec(Connection connection, input) {
         skipUnused = input["skipUnused"] as boolean;
     }
 
+    String[] ignoreAgents = new String[0];
+    if (input["ignoreAgents"]) {
+        String inputIgnoreAgents = input["ignoreAgents"] as String;
+        ignoreAgents = inputIgnoreAgents.trim().split("\\s*,\\s*");
+    }
+
     String eventFile = folder + "/output_events.xml.gz";
     String networkFile = folder + "/nantes_network.xml.gz";
+
     String configFile = folder + "/nantes_config.xml";
 
     Network network = ScenarioUtils.loadScenario(ConfigUtils.createConfig()).getNetwork();
     MatsimNetworkReader networkReader = new MatsimNetworkReader(network);
+    println "START READING NETWORK FILE ... "
     networkReader.readFile(networkFile);
+    println "READING NETWORK FILE ... DONE"
 
     Map<Id<Link>, Link> links = (Map<Id<Link>, Link>) network.getLinks();
 
     EventsManager evMgr = EventsUtils.createEventsManager();
     ProcessOutputEventHandler evHandler = new ProcessOutputEventHandler();
 
-    evHandler.setTimeSlice(timeSlice)
+    evHandler.setTimeSlice(timeSlice);
+    evHandler.setIgnoreAgents(ignoreAgents);
     evHandler.initLinks((Map<Id<Link>, Link>) links);
 
     evMgr.addHandler(evHandler);
 
     MatsimEventsReader eventsReader = new MatsimEventsReader(evMgr);
 
+    println "START READING EVENTS FILE ... "
     eventsReader.readFile(eventFile);
+    println "READING EVENTS FILE ... DONE"
 
+
+    println "START CREATE SQL TABLES ... "
     // Open connection
     Sql sql = new Sql(connection)
     sql.execute("DROP TABLE IF EXISTS " + outTableName)
@@ -167,19 +198,19 @@ def exec(Connection connection, input) {
         OSM_ID varchar(255),
         THE_GEOM geometry
     );''')
-    sql.execute("CREATE INDEX " + outTableName + "_LINK_ID_IDX ON " + outTableName + " (LINK_ID);")
 
     sql.execute("DROP TABLE IF EXISTS " + statsTableName)
     sql.execute("CREATE TABLE " + statsTableName + '''( 
         id integer PRIMARY KEY AUTO_INCREMENT, 
         LINK_ID varchar(255),
-        TV  integer,
-        TV_SPD double,
+        LW63 double precision, LW125 double precision, LW250 double precision, LW500 double precision, LW1000 double precision, LW2000 double precision, LW4000 double precision, LW8000 double precision,
+        ALT_LW63 double precision, ALT_LW125 double precision, ALT_LW250 double precision, ALT_LW500 double precision, ALT_LW1000 double precision, ALT_LW2000 double precision, ALT_LW4000 double precision, ALT_LW8000 double precision,
+        IS_ALT_DIFF boolean DEFAULT false,
         TIMESTRING varchar(255)
     );''')
-    sql.execute("CREATE INDEX " + statsTableName + "_LINK_ID_IDX ON " + statsTableName + " (LINK_ID);")
-    sql.execute("CREATE INDEX " + statsTableName + "_TIMESTRING_IDX ON " + statsTableName + " (TIMESTRING);")
+    println "CREATE SQL TABLES ... DONE "
 
+    println "START READ link2geomData ... "
     Map<String, String> link2geomData = new HashMap<>();
     if (!link2GeometryFile.isEmpty()) {
         BufferedReader br = new BufferedReader(new FileReader(folder + "/" + link2GeometryFile));
@@ -191,41 +222,71 @@ def exec(Connection connection, input) {
             }
         }
     }
+    println "READ link2geomData ... DONE "
 
-    try {
-        FileWriter outFile = new FileWriter(folder + "/analysis.csv");
-        outFile.write(LinkStatStruct.getTableStringHeader(timeSlice) + "\n");
-        for (Map.Entry<Id<Link>, LinkStatStruct> entry : evHandler.links.entrySet()) {
-            String linkId = entry.getKey().toString();
-            LinkStatStruct linkStatStruct = entry.getValue();
 
-            if (skipUnused && !linkStatStruct.isUsed) {
-                continue;
-            }
-
-            String geomString = "";
-            if (!link2GeometryFile.isEmpty()) {
-                geomString = link2geomData.get(linkId);
-            }
-
-            outFile.write(linkStatStruct.toTableString() + "\n");
-            sql.execute(linkStatStruct.toSqlInsertWithGeom(outTableName, geomString));
+    println "START INSERT INTO TABLES ... "
+    int counter = 0;
+    int doprint = 1;
+    for (Map.Entry<Id<Link>, LinkStatStruct> entry : evHandler.links.entrySet()) {
+        String linkId = entry.getKey().toString();
+        LinkStatStruct linkStatStruct = entry.getValue();
+        if (counter >= doprint) {
+            print (LocalDateTime.now() as String)
+            println " link counter : " + counter
+            doprint *= 4
         }
-        outFile.close();
-    } catch (IOException e) {
-        e.printStackTrace();
+        counter ++
+
+        if (skipUnused && !linkStatStruct.isUsed) {
+            continue;
+        }
+
+        String geomString = "";
+        if (!link2GeometryFile.isEmpty()) {
+            geomString = link2geomData.get(linkId);
+        }
+
+        sql.execute(linkStatStruct.toSqlInsertWithGeom(outTableName, geomString));
     }
+
+    println "INSERT CREATE INDEXES ..."
+    sql.execute("CREATE INDEX " + outTableName + "_LINK_ID_IDX ON " + outTableName + " (LINK_ID);")
+    sql.execute("CREATE INDEX " + statsTableName + "_LINK_ID_IDX ON " + statsTableName + " (LINK_ID);")
+    sql.execute("CREATE INDEX " + statsTableName + "_TIMESTRING_IDX ON " + statsTableName + " (TIMESTRING);")
+    println "CREATE INDEXES ... DONE"
 
 }
 
-public class ProcessOutputEventHandler implements LinkEnterEventHandler, LinkLeaveEventHandler {
+public class ProcessOutputEventHandler implements
+        LinkEnterEventHandler, LinkLeaveEventHandler, VehicleEntersTrafficEventHandler, VehicleLeavesTrafficEventHandler {
 
     Map<Id<Link>, LinkStatStruct> links = new HashMap<Id<Link>, LinkStatStruct>();
-
+    Map<Id<Vehicle>, Id<Person>> personsInVehicle = new HashMap<Id<Vehicle>, Id<Person>>();
     String timeSlice;
+
+    String[] ignoreAgents = new String[0];
+
+    public void setIgnoreAgents(String[] ignoreAgents) {
+        this.ignoreAgents = ignoreAgents;
+    }
 
     public void setTimeSlice(String slice) {
         timeSlice = slice;
+    }
+
+    @Override
+    public void handleEvent(VehicleEntersTrafficEvent event) {
+        if (!personsInVehicle.containsKey(event.getVehicleId())) {
+            personsInVehicle.put(event.getVehicleId(), event.getPersonId());
+        }
+    }
+
+    @Override
+    public void handleEvent(VehicleLeavesTrafficEvent event) {
+        if (personsInVehicle.containsKey(event.getVehicleId())) {
+            personsInVehicle.remove(event.getVehicleId());
+        }
     }
 
     @Override
@@ -234,6 +295,7 @@ public class ProcessOutputEventHandler implements LinkEnterEventHandler, LinkLea
 
         Id<Link> linkId = event.getLinkId();
         Id<Vehicle> vehicleId = event.getVehicleId();
+
         double time = event.getTime();
 
         if (!links.containsKey(linkId)) {
@@ -254,7 +316,13 @@ public class ProcessOutputEventHandler implements LinkEnterEventHandler, LinkLea
 
         Id<Link> linkId = event.getLinkId();
         Id<Vehicle> vehicleId = event.getVehicleId();
-
+        boolean isIgnored = false;
+        if (personsInVehicle.containsKey(vehicleId)) {
+            Id<Person> personId =  personsInVehicle.get(vehicleId);
+            if (ignoreAgents.contains(personId.toString())) {
+                isIgnored = true;
+            }
+        }
         double time = event.getTime();
 
         if (!links.containsKey(linkId)) {
@@ -263,7 +331,7 @@ public class ProcessOutputEventHandler implements LinkEnterEventHandler, LinkLea
         }
 
         LinkStatStruct stats = links.get(linkId);
-        stats.vehicleLeaveAt(vehicleId, time);
+        stats.vehicleLeaveAt(vehicleId, time, isIgnored);
         links.put(linkId, stats);
     }
 
@@ -285,6 +353,8 @@ public class LinkStatStruct {
 
     private Map<String, Integer> vehicleCounter = new HashMap<String, Integer>();
     private Map<String, ArrayList<Double> > travelTimes = new HashMap<String, ArrayList<Double> >();
+    private Map<String, Integer> altVehicleCounter = new HashMap<String, Integer>();
+    private Map<String, ArrayList<Double> > altTravelTimes = new HashMap<String, ArrayList<Double> >();
     private Map<Id<Vehicle>, Double> enterTimes = new HashMap<Id<Vehicle>, Double>();
     private Map<String, ArrayList<Double> > acousticLevels = new HashMap<String, ArrayList<Double> >();
     private Link link;
@@ -301,6 +371,10 @@ public class LinkStatStruct {
         this.timeSlice = timeSlice;
     }
 
+    boolean isAlternativeDifferent(String timeString) {
+        return vehicleCounter.get(timeString) != altVehicleCounter.get(timeString);
+    }
+
     public void vehicleEnterAt(Id<Vehicle> vehicleId, double time) {
         isUsed = true;
         if (!enterTimes.containsKey(vehicleId)) {
@@ -308,15 +382,27 @@ public class LinkStatStruct {
         }
     }
     public void vehicleLeaveAt(Id<Vehicle> vehicleId, double time) {
+        vehicleLeaveAt(vehicleId, time, false);
+    }
+    public void vehicleLeaveAt(Id<Vehicle> vehicleId, double time, boolean isIgnored) {
         String timeString = getTimeString(time);
         if (!travelTimes.containsKey(timeString)) {
             travelTimes.put(timeString, new ArrayList<Double>());
         }
+        if (!altTravelTimes.containsKey(timeString)) {
+            altTravelTimes.put(timeString, new ArrayList<Double>());
+        }
         if (enterTimes.containsKey(vehicleId)) {
             double enterTime = enterTimes.get(vehicleId);
             travelTimes.get(timeString).add(time - enterTime);
+            if (!isIgnored) {
+                altTravelTimes.get(timeString).add(time - enterTime);
+            }
             enterTimes.remove(vehicleId);
             incrementVehicleCount(timeString);
+            if (!isIgnored) {
+                incrementAltVehicleCount(timeString)
+            }
         }
     }
     public void incrementVehicleCount(String timeString) {
@@ -326,11 +412,24 @@ public class LinkStatStruct {
         }
         vehicleCounter.put(timeString, vehicleCounter.get(timeString) + 1);
     }
+    public void incrementAltVehicleCount(String timeString) {
+        if (!altVehicleCounter.containsKey(timeString)) {
+            altVehicleCounter.put(timeString, 1);
+            return;
+        }
+        altVehicleCounter.put(timeString, altVehicleCounter.get(timeString) + 1);
+    }
     public int getVehicleCount(String timeString) {
         if (!vehicleCounter.containsKey(timeString)) {
             return 0;
         }
         return vehicleCounter.get(timeString);
+    }
+    public int getAltVehicleCount(String timeString) {
+        if (!altVehicleCounter.containsKey(timeString)) {
+            return 0;
+        }
+        return altVehicleCounter.get(timeString);
     }
     public double getMeanTravelTime(String timeString) {
         if (!vehicleCounter.containsKey(timeString)) {
@@ -345,6 +444,19 @@ public class LinkStatStruct {
         }
         return (sum / vehicleCounter.get(timeString));
     }
+    public double getAltMeanTravelTime(String timeString) {
+        if (!altVehicleCounter.containsKey(timeString)) {
+            return 0.0;
+        }
+        if (altVehicleCounter.get(timeString) == 0) {
+            return 0.0;
+        }
+        double sum = 0.0;
+        for (int i = 0; i < altTravelTimes.get(timeString).size(); i++) {
+            sum += altTravelTimes.get(timeString).get(i);
+        }
+        return (sum / altVehicleCounter.get(timeString));
+    }
 
     public double getMaxTravelTime(String timeString) {
         if (!vehicleCounter.containsKey(timeString)) {
@@ -358,7 +470,31 @@ public class LinkStatStruct {
         }
         return max;
     }
+    public double getAltMaxTravelTime(String timeString) {
+        if (!altVehicleCounter.containsKey(timeString)) {
+            return 0.0;
+        }
+        double max = 0.0;
+        for (int i = 0; i < altTravelTimes.get(timeString).size(); i++) {
+            if (altTravelTimes.get(timeString).get(i) > max) {
+                max = altTravelTimes.get(timeString).get(i);
+            }
+        }
+        return max;
+    }
     public double getMinTravelTime(String timeString) {
+        if (!vehicleCounter.containsKey(timeString)) {
+            return 0.0;
+        }
+        double min = -1;
+        for (int i = 0; i < travelTimes.get(timeString).size(); i++) {
+            if (min <= 0 || travelTimes.get(timeString).get(i) < min) {
+                min = travelTimes.get(timeString).get(i);
+            }
+        }
+        return min;
+    }
+    public double getAltMinTravelTime(String timeString) {
         if (!vehicleCounter.containsKey(timeString)) {
             return 0.0;
         }
@@ -413,9 +549,38 @@ public class LinkStatStruct {
     public double[] getSourceLevels(String timeString) {
         double vehicleCount = getVehicleCount(timeString);
         double averageSpeed = Math.round(3.6 * link.getLength() / getMeanTravelTime(timeString));
-
         int[] freqs = [63, 125, 250, 500, 1000, 2000, 4000, 8000];
         double[] result = new double[freqs.length];
+
+        if (vehicleCount == 0) {
+            for (int i = 0; i < freqs.length; i++) {
+                result[i] = -99.0;
+            }
+            return result;
+        }
+        for (int i = 0; i < freqs.length; i++) {
+            RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(
+                    averageSpeed,0.0,0.0,0.0,0.0,
+                    vehicleCount,0.0,0.0,0.0,0.0,
+                    freqs[i],20.0,"NL08",0.0,0.0,
+                    100,2);
+
+            result[i] = EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos);
+        }
+        return result;
+    }
+    public double[] getAltSourceLevels(String timeString) {
+        double vehicleCount = getAltVehicleCount(timeString);
+        double averageSpeed = Math.round(3.6 * link.getLength() / getAltMeanTravelTime(timeString));
+        int[] freqs = [63, 125, 250, 500, 1000, 2000, 4000, 8000];
+        double[] result = new double[freqs.length];
+
+        if (vehicleCount == 0) {
+            for (int i = 0; i < freqs.length; i++) {
+                result[i] = -99.0;
+            }
+            return result;
+        }
         for (int i = 0; i < freqs.length; i++) {
             RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(
                     averageSpeed,0.0,0.0,0.0,0.0,
@@ -480,101 +645,6 @@ public class LinkStatStruct {
             return String.valueOf(Long.parseLong(link.getId().toString()) / 1000);
         }
     }
-    public String toString() {
-        String out = "";
-        out += "Link Id : " + link.getId().toString() + " ----------- \n";
-        out += "Osm Id : " + getOsmId() + "\n";
-        out += "Geometry : " + getGeometryString() + "\n";
-        String[] timeStrings;
-        if (timeSlice == "den") {
-            timeStrings = den;
-        }
-        if (timeSlice == "hour") {
-            timeStrings = hourClock;
-        }
-        if (timeSlice == "quarter") {
-            timeStrings = quarterClock;
-        }
-        for (String timeString : timeStrings) {
-            out += ("\tTime : " + timeString + " ----------- \n");
-            out += ("\t\tVehicle Counter : " + getVehicleCount(timeString) + "\n");
-            if (getVehicleCount(timeString) != 0) {
-                int[] freqs = [63, 125, 250, 500, 1000, 2000, 4000, 8000];
-                out += ("\t\tLw : [");
-                double[] levels = getSourceLevels(timeString);
-                for (int i = 0; i < levels.length; i++) {
-                    if (i > 0) {
-                        out += ", ";
-                    }
-                    out += String.format(Locale.ROOT,"%.2f", levels[i]);
-                }
-                out += ("]\n");
-                //outFile.write("\t\tTravel Times : " + linkStatStruct.travelTimes.toString() + "\n");
-                //System.out.println("\t\tTravel Times : " + linkStatStruct.travelTimes.toString() + "");
-                out += ("\t\tMean Travel Times : " + Math.round(getMeanTravelTime(timeString)) + " seconds\n");
-                out += ("\t\tLength : " + link.getLength() + " meters\n");
-                String minSpeed = Math.round(3.6 * link.getLength() / getMaxTravelTime(timeString));
-                out += ("\t\tMin Speed : " + minSpeed + " km/h\n");
-                String meanSpeed = Math.round(3.6 * link.getLength() / getMeanTravelTime(timeString));
-                out += ("\t\tMean Speed : " + meanSpeed + " km/h\n");
-                String maxSpeed = Math.round(3.6 * link.getLength() / getMinTravelTime(timeString));
-                out += ("\t\tMax Speed : " + maxSpeed + " km/h\n");
-                out += ("\t\tSpeed Limit : " + Math.round(3.6 * link.getFreespeed()) + " km/h\n");
-            }
-        }
-        return out;
-    }
-    public static String getTableStringHeader(String timeSlice) {
-        String out = "";
-        out += "LINK_ID\t";
-        out += "OSM_ID\t";
-        out += "THE_GEOM\t";
-        String[] timeStrings;
-        if (timeSlice == "den") {
-            timeStrings = den;
-        }
-        if (timeSlice == "hour") {
-            timeStrings = hourClock;
-        }
-        if (timeSlice == "quarter") {
-            timeStrings = quarterClock;
-        }
-        for (String timeString : timeStrings) {
-            out += "LV_" + timeString + "\t";
-        }
-        for (String timeString : timeStrings) {
-            out += "LV_SPD_" + timeString + "\t";
-        }
-        return out;
-    }
-    public String toTableString() {
-        String out = "";
-        out += link.getId().toString() + "\t";
-        out += getOsmId() + "\t";
-        out += getGeometryString() + "\t";
-        String[] timeStrings;
-        if (timeSlice == "den") {
-            timeStrings = den;
-        }
-        if (timeSlice == "hour") {
-            timeStrings = hourClock;
-        }
-        if (timeSlice == "quarter") {
-            timeStrings = quarterClock;
-        }
-        for (String timeString : timeStrings) {
-            out += (getVehicleCount(timeString) + "\t");
-        }
-        for (String timeString : timeStrings) {
-            if (getVehicleCount(timeString) != 0) {
-                out += (Math.round(3.6 * link.getLength() / getMeanTravelTime(timeString)) + "\t");
-            } else {
-                out += "0\t";
-            }
-        }
-        return out;
-    }
-
     public String toSqlInsertWithGeom(String tableName, String geom) {
 
         if (geom == '' || geom == null || geom.matches("LINESTRING\\(\\d+\\.\\d+ \\d+\\.\\d+\\)")) {
@@ -590,7 +660,10 @@ public class LinkStatStruct {
         sql += "'" + geom + "'";
         sql += insert_end
         
-        insert_start = "INSERT INTO " + tableName + "_STATS (LINK_ID, TV, TV_SPD, TIMESTRING) VALUES ( ";
+        insert_start = "INSERT INTO " + tableName + '''_STATS (LINK_ID,
+            LW63, LW125, LW250, LW500, LW1000, LW2000, LW4000, LW8000,
+        ALT_LW63, ALT_LW125, ALT_LW250, ALT_LW500, ALT_LW1000, ALT_LW2000, ALT_LW4000, ALT_LW8000,
+        IS_ALT_DIFF, TIMESTRING) VALUES (''';
 
         String[] timeStrings;
         if (timeSlice == "den") {
@@ -605,12 +678,17 @@ public class LinkStatStruct {
         for (String timeString : timeStrings) {
             sql += insert_start
             sql += "'" + link.getId().toString() + "', ";
-            sql += getVehicleCount(timeString) + ", ";
-            if (getVehicleCount(timeString) != 0) {
-                sql += (Math.round(3.6 * link.getLength() / getMeanTravelTime(timeString))) + ", ";
-            } else {
-                sql += "0, ";
+            double[] levels = getSourceLevels(timeString);
+            for (int i = 0; i < levels.length; i++) {
+                sql += String.format(Locale.ROOT,"%.2f", levels[i]);
+                sql += ", ";
             }
+            levels = getAltSourceLevels(timeString);
+            for (int i = 0; i < levels.length; i++) {
+                sql += String.format(Locale.ROOT,"%.2f", levels[i]);
+                sql += ", ";
+            }
+            sql += Boolean.toString(isAlternativeDifferent(timeString)) + ", "
             sql += "'" + timeString + "'";
             sql += insert_end
         }
