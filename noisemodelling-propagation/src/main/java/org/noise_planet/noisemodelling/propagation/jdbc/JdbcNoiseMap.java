@@ -6,6 +6,8 @@ import org.h2gis.api.ProgressVisitor;
 import org.h2gis.utilities.SFSUtilities;
 import org.h2gis.utilities.SpatialResultSet;
 import org.h2gis.utilities.TableLocation;
+import org.locationtech.jts.io.WKTReader;
+import org.locationtech.jts.io.WKTWriter;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOut;
 import org.noise_planet.noisemodelling.propagation.GeoWithSoilType;
 import org.noise_planet.noisemodelling.propagation.MeshBuilder;
@@ -213,7 +215,13 @@ public abstract class JdbcNoiseMap {
                     //if we don't have height of building
                     Geometry building = rs.getGeometry();
                     if(building != null) {
-                        Geometry intersectedGeometry = building.intersection(envGeo);
+                        Geometry intersectedGeometry = null;
+                        try {
+                            intersectedGeometry = building.intersection(envGeo);
+                        } catch (TopologyException ex) {
+                            WKTWriter wktWriter = new WKTWriter(3);
+                            logger.error(String.format("Error with input buildings geometry\n%s\n%s",wktWriter.write(building),wktWriter.write(envGeo)), ex);
+                        }
                         if(intersectedGeometry instanceof Polygon || intersectedGeometry instanceof MultiPolygon) {
                             MeshBuilder.PolygonWithHeight poly = mesh.addGeometry(intersectedGeometry,
                                     heightField.isEmpty() ? Double.MAX_VALUE : rs.getDouble(heightField),
