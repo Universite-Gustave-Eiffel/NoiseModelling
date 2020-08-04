@@ -28,16 +28,22 @@ First you have to add some libraries. We will use PostgreSQL/PostGIS wrapper ava
 
 The new dependency here is postgis-jts-osgi. It contains some code to convert PostGIS geometries objects into/from JTS objects.
 
-In your code you have to import the wrapper class:
+In your code you have to import the PostGIS wrapper class and some utility class:
 
 .. literalinclude:: scripts/postgis_nm.java
-   :emphasize-lines: 6
    :language: java
+   :lines: 6-7,19-26
    :linenos:
 
 Then use it to connect to you local or remote PostGIS database and obtain a valid JDBC connection object:
 
 .. literalinclude:: scripts/postgis_nm.java
-   :emphasize-lines: 36-45
+   :language: java
+   :lines: 36-45
+   :linenos:
+
+Finally you can use the NoiseModelling functions as usual:
+
+.. literalinclude:: scripts/postgis_nm.java
    :language: java
    :linenos:
