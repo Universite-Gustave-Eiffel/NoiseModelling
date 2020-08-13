@@ -26,10 +26,18 @@ Import to the database
 * Use the WPS block *OsmToInputData*
 
 .. note::
-  - Noise Modelling use metric projections, please identifies a local projection for your area of interest and its SRID
+   About the Coordinate System (EPSG code)
+   
+   In several input files, you need to specify coordinates, e.g road network. You can't use the WGS84 coordinates (i.e. GPS coordinates). Acoustic propagation formulas make the assumption that coordinates are metric. Many countries and regions have custom coordinate system defined, optimized for usages in their appropriate areas. It might be best to ask some GIS specialists in your region of interest what the most commonly used local coordinate system is and use that as well for your data. If you don’t have any clue about what coordinate system is used in your region, it might be best to use the Universal Transverse Mercator coordinate system. This coordinate system divides the world into multiple bands, each six degrees width and separated into a northern and southern part, which is called UTM zones (see http://en.wikipedia.org/wiki/UTM_zones#UTM_zone for more details). For each zone, an optimized coordinate system is defined. Choose the UTM zone which covers your region (Wikipedia has a nice map showing the zones) and use its coordinate system.
+
+   Here is the map : https://upload.wikimedia.org/wikipedia/commons/e/ed/Utm-zones.jpg
+
+.. note::
   - Inform the target projection identifier field with the corresponding SRID
   - Enter the path to the file map.osm
   - Select OsmToInputData box then click on the green button
+
+
 
 .. warning::
    The current import script from open street map can produce geometries incompatible with NoiseModelling. If an area is a problem try to reduce the area. A much more robust version of this script will be available soon. 
