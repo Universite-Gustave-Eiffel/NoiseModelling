@@ -68,7 +68,7 @@ inputs = [
             description: 'Skip unused links ?',
             min: 0,
             max: 1,
-            type: String.class
+            type: Boolean.class
     ],
     ignoreAgents: [
             name: 'List of agents ids to ignore in import',

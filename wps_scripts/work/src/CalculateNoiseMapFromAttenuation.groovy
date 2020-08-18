@@ -20,20 +20,25 @@ class CalculateNoiseMapFromAttenuation {
 
     public static void calculateNoiseMap(Connection connection) {
         calculateNoiseMap(connection, [
-                "roadsTableWithLw": "LW_ROADS",
-                "attenuationTable" : "LDAY_GEOM",
-                "outTableName" : "RESULT_GEOM",
+            "matsimRoads": "MATSIM_ROADS",
+            "attenuationTable" : "LDAY_GEOM",
+            "timeString": "6h30_6h45",
+            "outTableName" : "RESULT_GEOM_6h30_6h45",
         ])
     }
 
     public static void calculateNoiseMap(Connection connection, options) {
         println "-------------------------------"
-        println "Calculate Noise Map From Attenuation Matrice - " + options.get("roadsTableWithLw")
+        println "Calculate Noise Map From Attenuation Matrice - " + options.get("timeString")
         println "-------------------------------"
         new Noise_Map_From_Attenuation_Matrice().exec(connection, options)
         new Add_Laeq_Leq_columns().exec(connection, [
                 "prefix": "HZ",
                 "tableName": options.get("outTableName")
+        ])
+        new Add_Laeq_Leq_columns().exec(connection, [
+                "prefix": "HZ",
+                "tableName": "ALT_" + options.get("outTableName")
         ])
     }
 }

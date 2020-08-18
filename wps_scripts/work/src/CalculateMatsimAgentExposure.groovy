@@ -10,8 +10,6 @@ class CalculateMatsimAgentExposure {
 
         Connection connection;
         String dbName = "h2gisdb"
-        // String dbFilePath = (new File(dbName)).getAbsolutePath();
-        // connection = DriverManager.getConnection("jdbc:h2:" + dbFilePath + ";LOCK_MODE=0;LOG=0;DB_CLOSE_DELAY=5", "sa", "sa");
         connection = SFSUtilities.wrapConnection(H2GISDBFactory.openSpatialDataBase(dbName));
 
         calculateMatsimAgentExposure(connection);
@@ -20,11 +18,11 @@ class CalculateMatsimAgentExposure {
     public static void calculateMatsimAgentExposure(Connection connection) {
         calculateMatsimAgentExposure(connection, [
                 // "folder" : "C:\\Users\\valen\\Documents\\IFSTTAR\\GitHub\\matsim-example-project\\scenarios\\nantes_0.01",
-                "folder" : "/home/valoo/Projects/IFSTTAR/Scenarios/nantes_0.1",
-                "outTableName" : "AGENTS",
+                "folder" : "/home/valoo/Projects/IFSTTAR/Scenarios/nantes_0.01",
+                "outTableName" : "EXPOSURES",
                 "dataTablePrefix": "RESULT_GEOM_",
                 "timeSlice": "quarter", // DEN, hour, quarter,
-                "plotOneAgentId": 428887    ,
+                "plotOneAgentId": 0,
         ])
     }
     public static void calculateMatsimAgentExposure(Connection connection, options) {

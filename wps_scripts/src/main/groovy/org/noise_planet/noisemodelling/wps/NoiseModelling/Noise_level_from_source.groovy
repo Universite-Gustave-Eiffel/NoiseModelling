@@ -469,6 +469,7 @@ def exec(Connection connection, input) {
                 ldenConfig.lDayTable)
         createdTables.append(" LDAY_GEOM")
         sql.execute("drop table if exists "+TableLocation.parse(ldenConfig.getlDayTable()))
+        sql.execute("CREATE INDEX ON LDAY_GEOM (IDSOURCE)");
     }
     if(ldenConfig.computeLEvening) {
         sql.execute("drop table if exists LEVENING_GEOM;")

@@ -25,7 +25,7 @@ import org.matsim.core.config.ConfigUtils
 import org.matsim.core.population.io.PopulationReader
 import org.matsim.core.scenario.ScenarioUtils
 
-import org.jfree.data.time.Second;
+import java.time.*
 
 import javax.swing.JFrame
 import java.awt.BorderLayout
@@ -126,7 +126,7 @@ def exec(Connection connection, input) {
         timeSlice = input["timeSlice"];
     }
 
-    agentId = 0;
+    int agentId = 0;
     if (input["plotOneAgentId"] as int != 0) {
         agentId = input["plotOneAgentId"];
     }
@@ -163,7 +163,7 @@ def exec(Connection connection, input) {
     }
     Statement stmt = connection.createStatement();
 
-    int print = 1
+    int doprint = 1
     int counter = 0
     for (Map.Entry<Id<Person>, Person> entry : persons.entrySet()) {
         String personId = entry.getKey().toString();
@@ -373,9 +373,10 @@ def exec(Connection connection, input) {
             f.setLocationRelativeTo(null);
             f.setVisible(true);
         }
-        if (counter == print) {
-            println "INFO Person # " + counter
-            print *= 4
+        if (counter == doprint) {
+            print (LocalDateTime.now() as String);
+            println "\tINFO Person # " + counter
+            doprint *= 4
         }
         // println "Person id : " + personId + " : " + String.format("%.1f", LAeq) + " dB(A)"
 

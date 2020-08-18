@@ -46,8 +46,8 @@ title = 'Export table'
 description = 'Export table from the database to a local file. </br> Valid file extensions : (csv, dbf, geojson, gpx, bz2, gz, osm, shp, tsv).'
 
 inputs = [
-        exportPath   : [name: 'Export path', title: 'Path of the file you want to export', description: 'Path of the file, including its extension. </br> For example : c:/home/receivers.geojson', type: String.class],
-        tableToExport: [name: 'Name of the table to export', title: 'Name of the table', description: 'Name of the table you want to export.', type: String.class]
+        exportPath   : [name: 'Export path', title: 'Path of the file you want to export', description: 'Path of the file, including its extension. </br> For example : c:/home/receivers.geojson', type: String.class, extra: "path"],
+        tableToExport: [name: 'Name of the table to export', title: 'Name of the table', description: 'Name of the table you want to export.', extra: "table", type: String.class]
 ]
 
 outputs = [result: [name: 'Result output string', title: 'Result output string', description: 'This type of result does not allow the blocks to be linked together.', type: String.class]]

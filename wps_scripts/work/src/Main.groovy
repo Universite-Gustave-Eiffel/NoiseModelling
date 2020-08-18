@@ -17,17 +17,17 @@ class Main {
         boolean doCleanDB = false;
         boolean doImportBuildings = false;
         boolean doImportMatsimTraffic = false;
-        boolean doCreateReceiversFromMatsim = true;
+        boolean doCreateReceiversFromMatsim = false;
         boolean doCalculateNoisePropagation = false;
         boolean doCalculateRoadEmission = false;
-        boolean doCalculateNoiseMap = false;
-        boolean doExportResults = false;
+        boolean doCalculateNoiseMap = true;
+        boolean doExportResults = true;
         boolean doCalcuateExposure = false;
 
         String timeSlice = "quarter";
         String osmFile = "/home/valoo/Projects/IFSTTAR/OsmMaps/nantes.pbf";
         String matsimFolder = "/home/valoo/Projects/IFSTTAR/Scenarios/nantes_0.01"
-        String resultsFolder = "/home/valoo/Projects/IFSTTAR/Results"
+        String resultsFolder = "/home/valoo/Projects/IFSTTAR/Results/GeoData/AgentsImpact_0.01"
         String ignoreAgents = "1, 2, 3, 4, 5, 6, 7, 8, 9"
 
         if (doCleanDB) {
@@ -85,9 +85,16 @@ class Main {
         if (doCalculateNoiseMap) {
             for (timeString in timeStrings) {
                 CalculateNoiseMapFromAttenuation.calculateNoiseMap(connection, [
-                        "roadsTableWithLw": "ROADS_" + timeString + "_LW",
+                        "matsimRoads": "MATSIM_ROADS",
+                        "timeString": timeString,
                         "attenuationTable": "LDAY_GEOM",
                         "outTableName"    : "RESULT_GEOM_" + timeString,
+                ])
+                CalculateMapDifference.calculateDifference(connection, [
+                        "mainMapTable" : "ALT_RESULT_GEOM_" + timeString,
+                        "secondMapTable" : "RESULT_GEOM_" + timeString,
+                        "invert" : true,
+                        "outTable" : "DIFF_RESULT_GEOM_" + timeString,
                 ])
             }
         }
@@ -97,6 +104,14 @@ class Main {
                 ExportTable.exportTable(connection, [
                         "tableToExport": "RESULT_GEOM_" + timeString,
                         "exportPath"   : resultsFolder + "/RES_" + timeString + ".geojson"
+                ])
+                ExportTable.exportTable(connection, [
+                        "tableToExport": "ALT_RESULT_GEOM_" + timeString,
+                        "exportPath"   : resultsFolder + "/ALT_RES_" + timeString + ".geojson"
+                ])
+                ExportTable.exportTable(connection, [
+                        "tableToExport": "DIFF_RESULT_GEOM_" + timeString,
+                        "exportPath"   : resultsFolder + "/DIFF_RES_" + timeString + ".geojson"
                 ])
             }
         }

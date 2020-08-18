@@ -22,12 +22,14 @@ inputs = [
         name: 'Path of the Matsim facilities file',
         title: 'Path of the Matsim facilities file',
         description: 'Path of the Matsim facilities file',
+        extra: 'path',
         type: String.class
     ],
     buildingsOsmPbfPath : [
             name: 'Path of the osm pbf file containing the buildings',
             title: 'Path of the osm pbf file containing the buildings',
             description: 'Path of the osm pbf file containing the buildings',
+            extra: 'path',
             min: 0,
             max: 1,
             type: String.class
@@ -36,6 +38,8 @@ inputs = [
             name: 'Name of the table containing the buildings',
             title: 'Name of the table containing the buildings',
             description: 'Name of the table containing the buildings',
+            extra: 'table',
+            default: 'BUILDINGS',
             min: 0,
             max: 1,
             type: String.class
