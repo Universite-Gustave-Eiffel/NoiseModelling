@@ -217,6 +217,11 @@ public class PointNoiseMap extends JdbcNoiseMap {
                                         ProgressVisitor progression, Set<Long> skipReceivers) throws SQLException {
         PropagationProcessData threadData = prepareCell(connection, cellI, cellJ, progression, skipReceivers);
 
+        if(verbose) {
+            logger.info(String.format("This computation area contains %d receivers %d sound sources and %d buildings",
+                    threadData.receivers.size(), threadData.sourceGeometries.size(),
+                    threadData.freeFieldFinder.getBuildingCount()));
+        }
         IComputeRaysOut computeRaysOut;
         if(computeRaysOutFactory == null) {
             computeRaysOut = new ComputeRaysOut(false, propagationProcessPathData, threadData);
