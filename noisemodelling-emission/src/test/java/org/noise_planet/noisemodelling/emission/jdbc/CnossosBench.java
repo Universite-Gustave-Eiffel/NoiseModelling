@@ -4,11 +4,13 @@ import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.api.ProgressVisitor;
 import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.functions.io.geojson.GeoJsonRead;
+import org.h2gis.functions.io.shp.SHPWrite;
 import org.h2gis.utilities.SFSUtilities;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
+import org.noise_planet.noisemodelling.propagation.IComputeRaysOut;
 import org.noise_planet.noisemodelling.propagation.RootProgressVisitor;
 import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap;
 
@@ -63,6 +65,7 @@ public class CnossosBench {
         ldenConfig.setComputeLEvening(false);
         ldenConfig.setComputeLNight(false);
         ldenConfig.setComputeLDEN(false);
+        ldenConfig.setExportRays(true);
         ldenConfig.setMergeSources(true); // No idsource column
 
         LDENPointNoiseMapFactory factory = new LDENPointNoiseMapFactory(connection, ldenConfig);
@@ -85,7 +88,8 @@ public class CnossosBench {
         pointNoiseMap.setGridDim(1); // force grid size
 
         StringBuilder sb = new StringBuilder();
-        for(int refOrder = 0; refOrder < 5; refOrder++) {
+        SHPWrite.exportTable(connection, "target/buildings.shp", "BUILDINGS");
+        for(int refOrder = 1; refOrder < 12; refOrder++) {
             pointNoiseMap.setSoundReflectionOrder(refOrder);
             try {
                 factory.start();
@@ -98,6 +102,7 @@ public class CnossosBench {
                 assertTrue(rs.next());
                 sb.append(refOrder).append(",").append(rs.getDouble(1)).append("\n");
             }
+            SHPWrite.exportTable(connection, "target/rays_"+refOrder+".shp", ldenConfig.raysTable);
         }
         System.out.print(sb.toString());
 

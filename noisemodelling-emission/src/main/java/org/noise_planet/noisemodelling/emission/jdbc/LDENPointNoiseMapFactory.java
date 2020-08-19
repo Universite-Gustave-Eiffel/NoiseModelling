@@ -43,7 +43,6 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
     TableWriter tableWriter;
     Thread tableWriterThread;
     static final int BATCH_MAX_SIZE = 500;
-    public boolean keepRays = false;
     LDENComputeRaysOut.LdenData ldenData = new LDENComputeRaysOut.LdenData();
 
 
@@ -56,14 +55,14 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
      * @return Store propagation rays
      */
     public boolean isKeepRays() {
-        return keepRays;
+        return ldenConfig.exportRays;
     }
 
     /**
      * @param keepRays true to store propagation rays
      */
     public void setKeepRays(boolean keepRays) {
-        this.keepRays = keepRays;
+        ldenConfig.setExportRays(keepRays);
     }
 
     /**
@@ -73,14 +72,6 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
         ldenConfig.exitWhenDone = false;
         tableWriterThread = new Thread(tableWriter);
         tableWriterThread.start();
-        while (!tableWriterThread.isAlive()) {
-            try {
-                Thread.sleep(150);
-            } catch (InterruptedException e) {
-                // ignore
-                break;
-            }
-        }
     }
 
     /**
@@ -120,7 +111,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
 
     @Override
     public IComputeRaysOut create(PropagationProcessData threadData, PropagationProcessPathData pathData) {
-        return new LDENComputeRaysOut(keepRays, pathData, (LDENPropagationProcessData)threadData, ldenData);
+        return new LDENComputeRaysOut(pathData, (LDENPropagationProcessData)threadData, ldenData);
     }
 
     private static class TableWriter implements Runnable {
@@ -138,6 +129,32 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
             for(int idfreq = 0; idfreq < a_weighting.length; idfreq++) {
                 a_weighting[idfreq] = PropagationProcessPathData.freq_lvl_a_weighting.get(idfreq);
             }
+        }
+
+        void processRaysStack(ConcurrentLinkedDeque<PropagationPath> stack) throws SQLException {
+            String query = "INSERT INTO " + ldenConfig.raysTable + " VALUES (null, ?, ?, ?)";
+            // PK, GEOM, ID_RECEIVER, ID_SOURCE
+            PreparedStatement ps = connection.prepareStatement(query);
+            int batchSize = 0;
+            while(!stack.isEmpty()) {
+                PropagationPath row = stack.pop();
+                ldenData.queueSize.decrementAndGet();
+                int parameterIndex = 1;
+                ps.setObject(parameterIndex++, row.asGeom());
+                ps.setLong(parameterIndex++, row.getIdReceiver());
+                ps.setLong(parameterIndex++, row.getIdSource());
+                ps.addBatch();
+                batchSize++;
+                if (batchSize >= BATCH_MAX_SIZE) {
+                    ps.executeBatch();
+                    ps.clearBatch();
+                    batchSize = 0;
+                }
+            }
+            if (batchSize > 0) {
+                ps.executeBatch();
+            }
+
         }
 
         /**
@@ -220,6 +237,10 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
         public void run() {
             // Drop and create tables
             try(Statement sql = connection.createStatement()) {
+                if(ldenConfig.exportRays) {
+                    sql.execute(String.format("DROP TABLE IF EXISTS %s", ldenConfig.raysTable));
+                    sql.execute("CREATE TABLE "+ldenConfig.raysTable+"(pk serial primary key, the_geom geometry, IDRECEIVER bigint NOT NULL, IDSOURCE bigint NOT NULL)");
+                }
                 if(ldenConfig.computeLDay) {
                     sql.execute(String.format("DROP TABLE IF EXISTS %s", ldenConfig.lDayTable));
                     sql.execute(forgeCreateTable(ldenConfig.lDayTable));
@@ -246,6 +267,8 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
                             processStack(ldenConfig.lNightTable, ldenData.lNightLevels);
                         } else if(!ldenData.lDenLevels.isEmpty()) {
                             processStack(ldenConfig.lDenTable, ldenData.lDenLevels);
+                        } else if(!ldenData.rays.isEmpty()) {
+                            processRaysStack(ldenData.rays);
                         } else {
                             if(ldenConfig.exitWhenDone) {
                                 break;
