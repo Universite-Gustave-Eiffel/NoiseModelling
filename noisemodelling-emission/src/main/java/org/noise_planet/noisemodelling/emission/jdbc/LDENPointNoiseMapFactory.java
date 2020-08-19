@@ -70,8 +70,17 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
      * Start creating and filling database tables
      */
     public void start() {
+        ldenConfig.exitWhenDone = false;
         tableWriterThread = new Thread(tableWriter);
         tableWriterThread.start();
+        while (!tableWriterThread.isAlive()) {
+            try {
+                Thread.sleep(150);
+            } catch (InterruptedException e) {
+                // ignore
+                break;
+            }
+        }
     }
 
     /**

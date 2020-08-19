@@ -17,10 +17,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -55,10 +52,9 @@ public class CnossosBench {
 
         try(Statement st = connection.createStatement()) {
             st.execute("CREATE TABLE BUILDINGS(pk serial primary key, geom geometry, height double) as select null, ST_Transform(st_setsrid(the_geom,4326), 2154) geom, 4  from testrefl_buildings");
-            st.execute(String.format("CREATE TABLE SRC(pk serial primary key, geom geometry, lwd63 double, lwd125 double," +
-                    " lwd250 double, lwd500 double, lwd1000 double, lwd2000 double, lwd4000 double, lwd8000 double as select null, ST_Transform(st_setsrid(ST_MakePoint(%.5f, %.5f, 0.05),4326), 2154) the_geom, 80, 80, 80, 80, 80, 80, 80, 80",src.x, src.y));
+            st.execute(String.format(Locale.ROOT,"CREATE TABLE SRC(pk serial primary key, geom geometry, lwd63 double, lwd125 double, lwd250 double, lwd500 double, lwd1000 double, lwd2000 double, lwd4000 double, lwd8000 double,lwe63 double, lwe125 double, lwe250 double, lwe500 double, lwe1000 double, lwe2000 double, lwe4000 double, lwe8000 double, lwn63 double, lwn125 double, lwn250 double, lwn500 double, lwn1000 double, lwn2000 double, lwn4000 double, lwn8000 double) as select null, ST_Transform(st_setsrid(ST_MakePoint(%.5f, %.5f, 0.05),4326), 2154) the_geom, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80",src.x, src.y));
 
-            st.execute(String.format("CREATE TABLE RECEIVERS(pk serial primary key, geom geometry) as select null, ST_Transform(st_setsrid(ST_MakePoint(%.5f, %.5f, 1.6),4326), 2154) the_geom",receiver.x, receiver.y));
+            st.execute(String.format(Locale.ROOT,"CREATE TABLE RECEIVERS(pk serial primary key, geom geometry) as select null, ST_Transform(st_setsrid(ST_MakePoint(%.5f, %.5f, 1.6),4326), 2154) the_geom",receiver.x, receiver.y));
         }
 
         LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN);
@@ -82,26 +78,28 @@ public class CnossosBench {
         pointNoiseMap.setComputeHorizontalDiffraction(false);
         pointNoiseMap.setComputeVerticalDiffraction(false);
 
+        RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1);
 
-        pointNoiseMap.setSoundReflectionOrder(0);
+        pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
 
-        try {
-            factory.start();
-            RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1);
+        pointNoiseMap.setGridDim(1); // force grid size
 
-            pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
-
-            pointNoiseMap.setGridDim(1); // force grid size
-
-            pointNoiseMap.evaluateCell(connection, 0, 0, progressLogger, new HashSet<>());
-        }finally {
-            factory.stop();
+        StringBuilder sb = new StringBuilder();
+        for(int refOrder = 0; refOrder < 5; refOrder++) {
+            pointNoiseMap.setSoundReflectionOrder(refOrder);
+            try {
+                factory.start();
+                pointNoiseMap.evaluateCell(connection, 0, 0, progressLogger, new HashSet<>());
+            } finally {
+                factory.stop();
+            }
+            // Check receiver values
+            try(ResultSet rs = connection.createStatement().executeQuery("SELECT leq FROM " + ldenConfig.lDayTable)) {
+                assertTrue(rs.next());
+                sb.append(refOrder).append(",").append(rs.getDouble(1)).append("\n");
+            }
         }
+        System.out.print(sb.toString());
 
-        // Check receiver values
-        try(ResultSet rs = connection.createStatement().executeQuery("SELECT leq FROM " + ldenConfig.lDayTable)) {
-            assertTrue(rs.next());
-            assertEquals(45.5, rs.getDouble(1),0.1);
-        }
     }
 }
