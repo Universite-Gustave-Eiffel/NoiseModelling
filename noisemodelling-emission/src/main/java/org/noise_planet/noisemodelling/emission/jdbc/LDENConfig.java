@@ -47,6 +47,7 @@ public class LDENConfig {
     boolean computeLEvening = false;
     boolean computeLNight = false;
     boolean computeLDEN = true;
+    boolean exportRays = false;
     // Maximum result stack to be inserted in database
     // if the stack is full, the computation core is waiting
     int outputMaximumQueue = 50000;
@@ -57,6 +58,7 @@ public class LDENConfig {
     String lEveningTable = "LEVENING_RESULT";
     String lNightTable = "LNIGHT_RESULT";
     String lDenTable = "LDEN_RESULT";
+    String raysTable = "RAYS";
 
     public void setComputeLDay(boolean computeLDay) {
         this.computeLDay = computeLDay;
@@ -68,6 +70,22 @@ public class LDENConfig {
 
     public void setComputeLNight(boolean computeLNight) {
         this.computeLNight = computeLNight;
+    }
+
+    /**
+     * Export rays in table
+     * @return True if exported, false (default) otherwise
+     */
+    public boolean isExportRays() {
+        return exportRays;
+    }
+
+    /**
+     * Export rays in table (beware this could take a lot of storage space)
+     * @param exportRays True to export rays in table RAYS (by default)
+     */
+    public void setExportRays(boolean exportRays) {
+        this.exportRays = exportRays;
     }
 
     /**

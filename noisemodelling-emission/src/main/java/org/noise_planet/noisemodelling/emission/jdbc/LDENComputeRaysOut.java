@@ -2,10 +2,7 @@ package org.noise_planet.noisemodelling.emission.jdbc;
 
 import org.noise_planet.noisemodelling.propagation.*;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.IntToDoubleFunction;
@@ -14,8 +11,8 @@ public class LDENComputeRaysOut extends ComputeRaysOut {
     LdenData ldenData;
     LDENPropagationProcessData ldenPropagationProcessData;
 
-    public LDENComputeRaysOut(boolean keepRays, PropagationProcessPathData pathData, LDENPropagationProcessData inputData, LdenData ldenData) {
-        super(keepRays, pathData, inputData);
+    public LDENComputeRaysOut(PropagationProcessPathData pathData, LDENPropagationProcessData inputData, LdenData ldenData) {
+        super(inputData.ldenConfig.exportRays, pathData, inputData);
         this.ldenData = ldenData;
         this.ldenPropagationProcessData = inputData;
     }
@@ -67,8 +64,37 @@ public class LDENComputeRaysOut extends ComputeRaysOut {
             ldenComputeRaysOut.ldenData.queueSize.incrementAndGet();
         }
 
+        /**
+         * @param stack Stack to feed
+         * @param data rays
+         */
+        public void pushInStack(ConcurrentLinkedDeque<PropagationPath> stack, Collection<PropagationPath> data) {
+            while(ldenComputeRaysOut.ldenData.queueSize.get() > ldenConfig.outputMaximumQueue) {
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException ex) {
+                    ldenConfig.aborted = true;
+                    break;
+                }
+                if(ldenConfig.aborted) {
+                    if(multiThreadParent != null && this.multiThreadParent.inputData != null &&
+                            this.multiThreadParent.inputData.cellProg != null) {
+                        this.multiThreadParent.inputData.cellProg.cancel();
+                    }
+                    return;
+                }
+            }
+            stack.addAll(data);
+            ldenComputeRaysOut.ldenData.queueSize.addAndGet(data.size());
+        }
+
         @Override
         public void finalizeReceiver(final long receiverId) {
+            if(multiThreadParent.keepRays && !propagationPaths.isEmpty()) {
+                // Push propagation rays
+                pushInStack(ldenComputeRaysOut.ldenData.rays, propagationPaths);
+                propagationPaths.clear();
+            }
             long receiverPK = receiverId;
             if(ldenComputeRaysOut.inputData != null) {
                 if(receiverId < ldenComputeRaysOut.inputData.receiversPk.size()) {
@@ -147,5 +173,6 @@ public class LDENComputeRaysOut extends ComputeRaysOut {
         public ConcurrentLinkedDeque<VerticeSL> lEveningLevels = new ConcurrentLinkedDeque<>();
         public ConcurrentLinkedDeque<VerticeSL> lNightLevels = new ConcurrentLinkedDeque<>();
         public ConcurrentLinkedDeque<VerticeSL> lDenLevels = new ConcurrentLinkedDeque<>();
+        public ConcurrentLinkedDeque<PropagationPath> rays = new ConcurrentLinkedDeque<>();
     }
 }
