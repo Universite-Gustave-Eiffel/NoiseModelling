@@ -48,14 +48,7 @@ import org.locationtech.jts.triangulate.quadedge.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -324,6 +317,9 @@ public class ComputeRays {
 
     public List<PropagationPath> computeReflexion(Coordinate receiverCoord,
                                             Coordinate srcCoord, boolean favorable, List<FastObstructionTest.Wall> nearBuildingsWalls) {
+//                for(FastObstructionTest.Wall wall : nearBuildingsWalls) {
+//                    System.out.println(String.format(Locale.ROOT, "walls.add(new FastObstructionTest.Wall(new Coordinate(%.2f,%.2f), new Coordinate(%.2f,%.2f) , %d));", wall.p0.x, wall.p0.y, wall.p1.x, wall.p1.y, wall.getBuildingId()));
+//                }
         // Compute receiver mirror
         LineSegment srcReceiver = new LineSegment(srcCoord, receiverCoord);
         LineIntersector linters = new RobustLineIntersector();
@@ -387,7 +383,6 @@ public class ComputeRays {
                     rayPath.add(reflResult);
                     if (receiverReflectionCursor
                             .getParentMirror() == null) { // Direct to the receiver
-                        validReflection = true;
                         break; // That was the last reflection
                     } else {
                         // There is another reflection
@@ -408,6 +403,16 @@ public class ComputeRays {
                     }
                 } else {
                     break;
+                }
+            }
+            if (receiverReflectionCursor
+                    .getParentMirror() == null) {
+                System.out.println("Reflection: ");
+                receiverReflectionCursor = receiverReflection;
+                while (receiverReflectionCursor != null) {
+                    Coordinate p = receiverReflectionCursor.getReceiverPos();
+                    System.out.println(String.format(Locale.ROOT, "\t%d\t%.2f, %.2f", receiverReflectionCursor.getBuildingId(), p.x, p.y));
+                    receiverReflectionCursor = receiverReflectionCursor.getParentMirror();
                 }
             }
             if (validReflection && !rayPath.isEmpty()) {

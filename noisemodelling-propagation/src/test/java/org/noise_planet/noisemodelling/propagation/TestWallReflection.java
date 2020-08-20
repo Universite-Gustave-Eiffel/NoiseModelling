@@ -33,6 +33,7 @@
  */
 package org.noise_planet.noisemodelling.propagation;
 
+import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.GeometryFactory;
@@ -42,12 +43,7 @@ import junit.framework.TestCase;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.Assert.assertArrayEquals;
 
@@ -109,6 +105,91 @@ public class TestWallReflection extends TestCase {
 		
 	}
 
+	public static List<MirrorReceiverResult> getReceiverImages(Coordinate receiver, Coordinate source, List<FastObstructionTest.Wall> walls, int order) {
+        MirrorReceiverIterator.It mirrorReceiverResults =
+                new MirrorReceiverIterator.It(receiver, walls, new LineSegment(source, receiver), 9999, order, 9999);
+
+        List<MirrorReceiverResult> res = new ArrayList<>();
+        for(MirrorReceiverResult r : mirrorReceiverResults) {
+            res.add(r);
+        }
+        return res;
+    }
+
+    public static int[] asWallArray(MirrorReceiverResult res) {
+	    int depth = 0;
+        MirrorReceiverResult cursor = res;
+        while(cursor != null) {
+            depth++;
+            cursor = cursor.getParentMirror();
+        }
+        int[] walls = new int[depth];
+        cursor = res;
+        int i=0;
+        while(cursor != null) {
+            walls[(depth - 1) - (i++)] = cursor.getBuildingId();
+            cursor = cursor.getParentMirror();
+        }
+        return walls;
+    }
+
+    public void testWallReceiverImageOrder3() {
+        List<FastObstructionTest.Wall> walls = new ArrayList<>();
+        walls.add(new FastObstructionTest.Wall(new Coordinate(355265.87,6688353.34), new Coordinate(355267.89,6688335.39) , 2));
+        walls.add(new FastObstructionTest.Wall(new Coordinate(355267.89,6688335.39), new Coordinate(355080.59,6688318.03) , 2));
+        walls.add(new FastObstructionTest.Wall(new Coordinate(355091.25,6688308.90), new Coordinate(355268.15,6688325.84) , 1));
+        walls.add(new FastObstructionTest.Wall(new Coordinate(355079.33,6688338.38), new Coordinate(355265.87,6688353.34) , 2));
+        walls.add(new FastObstructionTest.Wall(new Coordinate(355080.59,6688318.03), new Coordinate(355079.33,6688338.38) , 2));
+        walls.add(new FastObstructionTest.Wall(new Coordinate(355270.96,6688300.54), new Coordinate(355093.28,6688287.69) , 1));
+        walls.add(new FastObstructionTest.Wall(new Coordinate(355093.28,6688287.69), new Coordinate(355091.25,6688308.90) , 1));
+        walls.add(new FastObstructionTest.Wall(new Coordinate(355268.15,6688325.84), new Coordinate(355270.96,6688300.54) , 1));
+        Coordinate receiver = new Coordinate(355261.53293337114, 6688329.444505501, 1.6);
+        Coordinate source = new Coordinate(355104.51057583705, 6688315.152817895, 0.05);
+
+        List<MirrorReceiverResult> res = getReceiverImages(receiver, source, walls, 3);
+
+        // expect 6 receiver image for 3 reflection order
+        assertEquals(6, res.size());
+        assertArrayEquals(new int[]{2} ,asWallArray(res.get(0)));
+        assertArrayEquals(new int[]{2, 1} ,asWallArray(res.get(1)));
+        assertArrayEquals(new int[]{2, 1, 2} ,asWallArray(res.get(2)));
+        assertArrayEquals(new int[]{1} ,asWallArray(res.get(3)));
+        assertArrayEquals(new int[]{1, 2} ,asWallArray(res.get(4)));
+        assertArrayEquals(new int[]{1, 2, 1} ,asWallArray(res.get(5)));
+
+    }
+
+    @Test
+    public void testCrossTableIterator() {
+        MirrorReceiverIterator.CrossTableIterator crossTableIterator = new MirrorReceiverIterator.CrossTableIterator(3, 8);
+        assertTrue(crossTableIterator.hasNext());
+        assertArrayEquals(new Integer[]{0}, crossTableIterator.next().toArray(new Integer[]{}));
+        crossTableIterator.skipLevel();
+        assertTrue(crossTableIterator.hasNext());
+        assertArrayEquals(new Integer[]{1}, crossTableIterator.next().toArray(new Integer[]{}));
+        assertTrue(crossTableIterator.hasNext());
+        assertArrayEquals(new Integer[]{1, 0}, crossTableIterator.next().toArray(new Integer[]{}));
+        crossTableIterator.skipLevel();
+        assertTrue(crossTableIterator.hasNext());
+        assertArrayEquals(new Integer[]{1, 2}, crossTableIterator.next().toArray(new Integer[]{}));
+        assertTrue(crossTableIterator.hasNext());
+        assertArrayEquals(new Integer[]{1, 2, 0}, crossTableIterator.next().toArray(new Integer[]{}));
+        assertTrue(crossTableIterator.hasNext());
+        assertArrayEquals(new Integer[]{1, 2, 1}, crossTableIterator.next().toArray(new Integer[]{}));
+        assertTrue(crossTableIterator.hasNext());
+        assertArrayEquals(new Integer[]{1, 2, 3}, crossTableIterator.next().toArray(new Integer[]{}));
+        crossTableIterator.skipLevel(); // skip but we are already at max level
+        assertTrue(crossTableIterator.hasNext());
+        assertArrayEquals(new Integer[]{1, 2, 4}, crossTableIterator.next().toArray(new Integer[]{}));
+    }
+
+    @Test
+    public void testCrossTableIterator2() {
+        MirrorReceiverIterator.CrossTableIterator crossTableIterator = new MirrorReceiverIterator.CrossTableIterator(3, 8);
+        crossTableIterator.setNext(new ArrayList<>(Arrays.asList(1, 7, 0)), 2);
+        crossTableIterator.skipLevel();
+        assertArrayEquals(new Integer[]{2}, crossTableIterator.next().toArray(new Integer[]{}));
+    }
     public void testWallReceiverImage() {
         Coordinate a = new Coordinate(2, 3);
         Coordinate b = new Coordinate(6, 3);
@@ -194,7 +275,7 @@ public class TestWallReflection extends TestCase {
         equalsTest(new int[]{2}, it.next());
         equalsTest(new int[]{2, 0}, it.next());
         it.skipLevel();
-        assertFalse(it.hasNext());
+        equalsTest(new int[]{2, 1}, it.next());
     }
 
     public void testSingleWall() {
