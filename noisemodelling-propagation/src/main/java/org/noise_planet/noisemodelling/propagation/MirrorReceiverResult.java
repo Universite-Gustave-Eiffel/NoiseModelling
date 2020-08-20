@@ -35,6 +35,8 @@ package org.noise_planet.noisemodelling.propagation;
 
 import org.locationtech.jts.geom.Coordinate;
 
+import java.util.Objects;
+
 /**
  *  Information for Receiver image.
  * @author Nicolas Fortin
@@ -100,5 +102,18 @@ public class MirrorReceiverResult {
         this.parentMirror = cpy.parentMirror;
         this.wallId = cpy.wallId;
         this.buildingId = cpy.buildingId;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        MirrorReceiverResult that = (MirrorReceiverResult) o;
+        return wallId == that.wallId && buildingId == that.buildingId && receiverPos.equals(that.receiverPos) && Objects.equals(parentMirror, that.parentMirror);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(receiverPos, parentMirror, wallId, buildingId);
     }
 }

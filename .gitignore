@@ -4,5 +4,6 @@ target/
 nbactions.xml
 *.versionsBackup
 .attach*
-Docs/build/
-Docs/venv/
+Docs/build
+Docs/venv
+
