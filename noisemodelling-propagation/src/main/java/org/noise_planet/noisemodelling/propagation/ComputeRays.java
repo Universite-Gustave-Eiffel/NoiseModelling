@@ -315,6 +315,23 @@ public class ComputeRays {
         }
     }
 
+    public static int[] asWallArray(MirrorReceiverResult res) {
+        int depth = 0;
+        MirrorReceiverResult cursor = res;
+        while(cursor != null) {
+            depth++;
+            cursor = cursor.getParentMirror();
+        }
+        int[] walls = new int[depth];
+        cursor = res;
+        int i=0;
+        while(cursor != null) {
+            walls[(depth - 1) - (i++)] = cursor.getBuildingId();
+            cursor = cursor.getParentMirror();
+        }
+        return walls;
+    }
+
     public List<PropagationPath> computeReflexion(Coordinate receiverCoord,
                                             Coordinate srcCoord, boolean favorable, List<FastObstructionTest.Wall> nearBuildingsWalls) {
 //                for(FastObstructionTest.Wall wall : nearBuildingsWalls) {
@@ -328,10 +345,11 @@ public class ComputeRays {
 
 
         MirrorReceiverIterator.It mirroredReceivers = new MirrorReceiverIterator.It(receiverCoord, nearBuildingsWalls,
-                srcReceiver, data.maxRefDist, data.reflexionOrder, data.maxSrcDist);
+                srcReceiver, Integer.MAX_VALUE, data.reflexionOrder, data.maxSrcDist);
 
         for (MirrorReceiverResult receiverReflection : mirroredReceivers) {
-
+            // Print wall reflections
+            //System.out.println(Arrays.toString(asWallArray(receiverReflection)));
             List<MirrorReceiverResult> rayPath = new ArrayList<>(data.reflexionOrder + 2);
             boolean validReflection = false;
             MirrorReceiverResult receiverReflectionCursor = receiverReflection;
@@ -403,16 +421,6 @@ public class ComputeRays {
                     }
                 } else {
                     break;
-                }
-            }
-            if (receiverReflectionCursor
-                    .getParentMirror() == null) {
-                System.out.println("Reflection: ");
-                receiverReflectionCursor = receiverReflection;
-                while (receiverReflectionCursor != null) {
-                    Coordinate p = receiverReflectionCursor.getReceiverPos();
-                    System.out.println(String.format(Locale.ROOT, "\t%d\t%.2f, %.2f", receiverReflectionCursor.getBuildingId(), p.x, p.y));
-                    receiverReflectionCursor = receiverReflectionCursor.getParentMirror();
                 }
             }
             if (validReflection && !rayPath.isEmpty()) {

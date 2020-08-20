@@ -72,10 +72,18 @@ public class LDENConfig {
         this.computeLNight = computeLNight;
     }
 
+    /**
+     * Export rays in table
+     * @return True if exported, false (default) otherwise
+     */
     public boolean isExportRays() {
         return exportRays;
     }
 
+    /**
+     * Export rays in table (beware this could take a lot of storage space)
+     * @param exportRays True to export rays in table RAYS (by default)
+     */
     public void setExportRays(boolean exportRays) {
         this.exportRays = exportRays;
     }

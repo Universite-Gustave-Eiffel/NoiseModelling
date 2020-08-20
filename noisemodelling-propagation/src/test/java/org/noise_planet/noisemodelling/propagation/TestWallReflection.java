@@ -190,6 +190,29 @@ public class TestWallReflection extends TestCase {
         crossTableIterator.skipLevel();
         assertArrayEquals(new Integer[]{2}, crossTableIterator.next().toArray(new Integer[]{}));
     }
+
+
+    @Test
+    public void testWallReceiverImageOrder4() {
+
+        List<FastObstructionTest.Wall> walls = new ArrayList<>();
+        walls.add(new FastObstructionTest.Wall(new Coordinate(355265.87,6688353.34), new Coordinate(355267.89,6688335.39) , 2));
+        walls.add(new FastObstructionTest.Wall(new Coordinate(355267.89,6688335.39), new Coordinate(355080.59,6688318.03) , 2));
+        walls.add(new FastObstructionTest.Wall(new Coordinate(355091.25,6688308.90), new Coordinate(355268.15,6688325.84) , 1));
+        walls.add(new FastObstructionTest.Wall(new Coordinate(355079.33,6688338.38), new Coordinate(355265.87,6688353.34) , 2));
+        walls.add(new FastObstructionTest.Wall(new Coordinate(355080.59,6688318.03), new Coordinate(355079.33,6688338.38) , 2));
+        walls.add(new FastObstructionTest.Wall(new Coordinate(355270.96,6688300.54), new Coordinate(355093.28,6688287.69) , 1));
+        walls.add(new FastObstructionTest.Wall(new Coordinate(355093.28,6688287.69), new Coordinate(355091.25,6688308.90) , 1));
+        walls.add(new FastObstructionTest.Wall(new Coordinate(355268.15,6688325.84), new Coordinate(355270.96,6688300.54) , 1));
+        Coordinate receiver = new Coordinate(355261.53293337114, 6688329.444505501, 1.6);
+        Coordinate source = new Coordinate(355104.51057583705, 6688315.152817895, 0.05);
+
+        List<MirrorReceiverResult> res = getReceiverImages(receiver, source, walls, 4);
+
+        // expect 8 receiver image for 4 reflection order
+        assertEquals(8, res.size());
+    }
+
     public void testWallReceiverImage() {
         Coordinate a = new Coordinate(2, 3);
         Coordinate b = new Coordinate(6, 3);

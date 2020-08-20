@@ -286,7 +286,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
                 LOGGER.error(e.getLocalizedMessage(), e.getNextException());
                 ldenConfig.aborted = true;
             }
-            LOGGER.info("Exit TableWriter");
+            // LOGGER.info("Exit TableWriter");
         }
     }
 }

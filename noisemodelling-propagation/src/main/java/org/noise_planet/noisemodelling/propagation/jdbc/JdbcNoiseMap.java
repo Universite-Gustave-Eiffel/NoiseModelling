@@ -68,6 +68,14 @@ public abstract class JdbcNoiseMap {
         this.sourcesTableName = sourcesTableName;
     }
 
+    public boolean isVerbose() {
+        return verbose;
+    }
+
+    public void setVerbose(boolean verbose) {
+        this.verbose = verbose;
+    }
+
     /**
      * @return Get building absorption coefficient column name
      */

@@ -80,31 +80,31 @@ public class CnossosBench {
         pointNoiseMap.setMaximumPropagationDistance(300.0);
         pointNoiseMap.setComputeHorizontalDiffraction(false);
         pointNoiseMap.setComputeVerticalDiffraction(false);
-
-        RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1);
+        pointNoiseMap.setVerbose(false);
 
         pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
 
         pointNoiseMap.setGridDim(1); // force grid size
 
-        StringBuilder sb = new StringBuilder();
+        List<Double> levels = new ArrayList<>();
         SHPWrite.exportTable(connection, "target/buildings.shp", "BUILDINGS");
-        for(int refOrder = 3; refOrder < 4; refOrder++) {
+        for(int refOrder = 0; refOrder < 100; refOrder++) {
             pointNoiseMap.setSoundReflectionOrder(refOrder);
             try {
                 factory.start();
-                pointNoiseMap.evaluateCell(connection, 0, 0, progressLogger, new HashSet<>());
+                pointNoiseMap.evaluateCell(connection, 0, 0, new EmptyProgressVisitor(), new HashSet<>());
             } finally {
                 factory.stop();
             }
             // Check receiver values
             try(ResultSet rs = connection.createStatement().executeQuery("SELECT leq FROM " + ldenConfig.lDayTable)) {
                 assertTrue(rs.next());
-                sb.append(refOrder).append(",").append(rs.getDouble(1)).append("\n");
+                levels.add(rs.getDouble(1));
             }
-            SHPWrite.exportTable(connection, "target/rays_"+refOrder+".shp", ldenConfig.raysTable);
+            //SHPWrite.exportTable(connection, "target/rays_"+refOrder+".shp", ldenConfig.raysTable);
         }
-        System.out.print(sb.toString());
+        // Should not exceed 9 dB
+        assertEquals(0, levels.get(levels.size() - 1) - levels.get(0), 9.0);
 
     }
 }
