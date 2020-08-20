@@ -80,6 +80,7 @@ This plugin is distributed under `GPL 3 license`_ and is developed by the DECIDE
     Own_Wps
     dBeaver
     NoiseModellingScripting
+    NoiseModellingOnPostGIS
 
 .. toctree::
     :maxdepth: 2
