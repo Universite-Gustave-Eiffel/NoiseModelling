@@ -132,7 +132,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
         }
 
         void processRaysStack(ConcurrentLinkedDeque<PropagationPath> stack) throws SQLException {
-            String query = "INSERT INTO " + ldenConfig.raysTable + " VALUES (null, ?, ?, ?)";
+            String query = "INSERT INTO " + ldenConfig.raysTable + "(the_geom , IDRECEIVER , IDSOURCE ) VALUES (?, ?, ?)";
             // PK, GEOM, ID_RECEIVER, ID_SOURCE
             PreparedStatement ps = connection.prepareStatement(query);
             int batchSize = 0;
