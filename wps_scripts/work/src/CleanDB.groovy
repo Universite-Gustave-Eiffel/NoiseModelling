@@ -10,8 +10,6 @@ class CleanDB {
 
         Connection connection;
         String dbName = "h2gisdb"
-        // String dbFilePath = (new File(dbName)).getAbsolutePath();
-        // connection = DriverManager.getConnection("jdbc:h2:" + dbFilePath + ";LOCK_MODE=0;LOG=0;DB_CLOSE_DELAY=5", "sa", "sa");
         connection = SFSUtilities.wrapConnection(H2GISDBFactory.openSpatialDataBase(dbName));
 
         cleanDB(connection);

@@ -118,7 +118,7 @@ def exec(Connection connection, input) {
     );''')
 
     for (Building building: handler.buildings) {
-        sql.execute("INSERT INTO " + tableName + " VALUES (" + building.id + ", ST_MAKEVALID(ST_SIMPLIFYPRESERVETOPOLOGY(ST_Transform(ST_GeomFromText('" + building.geom + "', 4326), "+srid+"),0.1)), " + building.height + ")")
+        sql.execute("INSERT INTO " + tableName + " VALUES (" + building.id + ", ST_MakeValid(ST_SIMPLIFYPRESERVETOPOLOGY(ST_Transform(ST_GeomFromText('" + building.geom + "', 4326), "+srid+"),0.1)), " + building.height + ")")
     }
     
     System.out.println('SQL INSERT done : ' + TimeCategory.minus(new Date(), start))
@@ -138,7 +138,7 @@ def exec(Connection connection, input) {
         create table BUILDINGS(PK INTEGER PRIMARY KEY, THE_GEOM GEOMETRY, HEIGHT real)  as select s.id_way, ST_SETSRID(s.the_geom, '''+srid+'''), s.HEIGHT from  MAP_BUILDINGS_GEOM s where id_way not in (select PK_BUILDING from tmp_buildings_truncated) UNION ALL select PK_BUILDING, ST_SETSRID(the_geom, '''+srid+'''), HEIGHT from tmp_buildings_truncated WHERE NOT st_isempty(the_geom);
 
         drop table if exists tmp_buildings_truncated;
-        drop table if exists tmp_relation_buildings_buildings
+        drop table if exists tmp_relation_buildings_buildings;
         drop table if exists MAP_BUILDINGS_GEOM;
     ''');
 

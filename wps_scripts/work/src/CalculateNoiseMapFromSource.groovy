@@ -22,12 +22,12 @@ class CalculateNoiseMapFromSource {
                 "tableBuilding": "BUILDINGS",
                 "tableReceivers" : "RECEIVERS",
                 "tableSources" : "SOURCES_0DB",
-                "confMaxSrcDist": 200,
-                "confReflOrder": 1,
+                "confMaxSrcDist": 300,
+                "confReflOrder": 3,
                 "confSkipLevening": true,
                 "confSkipLnight": true,
                 "confSkipLden": true,
-                "confThreadNumber": 6,
+                "confThreadNumber": 14,
                 "confExportSourceId": true
         ])
     }

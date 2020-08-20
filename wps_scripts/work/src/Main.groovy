@@ -12,13 +12,19 @@ class Main {
 
         Connection connection;
         String dbName = "h2gisdb"
-        connection = SFSUtilities.wrapConnection(H2GISDBFactory.openSpatialDataBase(dbName));
+        boolean createDB = false;
+        if (createDB) {
+            connection = SFSUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(dbName, true));
+        }
+        else {
+            connection = SFSUtilities.wrapConnection(H2GISDBFactory.openSpatialDataBase(dbName));
+        }
 
         boolean doCleanDB = false;
         boolean doImportBuildings = false;
         boolean doImportMatsimTraffic = false;
         boolean doCreateReceiversFromMatsim = false;
-        boolean doCalculateNoisePropagation = false;
+        boolean doCalculateNoisePropagation = true;
         boolean doCalculateRoadEmission = false;
         boolean doCalculateNoiseMap = true;
         boolean doExportResults = true;
@@ -26,9 +32,9 @@ class Main {
 
         String timeSlice = "quarter";
         String osmFile = "/home/valoo/Projects/IFSTTAR/OsmMaps/nantes.pbf";
-        String matsimFolder = "/home/valoo/Projects/IFSTTAR/Scenarios/nantes_0.01"
+        String matsimFolder = "/home/valoo/Projects/IFSTTAR/eqasim-nantes/output_0.25/simulation_output"
         String resultsFolder = "/home/valoo/Projects/IFSTTAR/Results/GeoData/AgentsImpact_0.01"
-        String ignoreAgents = "1, 2, 3, 4, 5, 6, 7, 8, 9"
+        String ignoreAgents = ""
 
         if (doCleanDB) {
             CleanDB.cleanDB(connection);
@@ -50,12 +56,12 @@ class Main {
             ]);
         }
         if (doCreateReceiversFromMatsim) {
+            CreateReceiversOnBuildings.createReceiversOnBuildings(connection);
             ImportActivitesFromMatsim.importActivitesFromMatsim(connection, [
-                    "facilitiesPath" : matsimFolder + "/nantes_facilities.xml.gz",
+                    "facilitiesPath" : matsimFolder + "/output_facilities.xml.gz",
                     "filter" : "*",
                     "outTableName" : "ACTIVITIES"
             ]);
-            CreateReceiversOnBuildings.createReceiversOnBuildings(connection);
             ChoseReceiversFromActivities.choseReceiversFromActivities(connection);
         }
 

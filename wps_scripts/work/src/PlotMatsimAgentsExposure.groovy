@@ -1,6 +1,5 @@
 import org.h2gis.functions.factory.H2GISDBFactory
 import org.h2gis.utilities.SFSUtilities
-import org.noise_planet.noisemodelling.wps.Matsim.Calculate_Matsim_Agent_Exposure
 import org.noise_planet.noisemodelling.wps.Matsim.Plot_Exposition_Distribution
 
 import java.sql.Connection

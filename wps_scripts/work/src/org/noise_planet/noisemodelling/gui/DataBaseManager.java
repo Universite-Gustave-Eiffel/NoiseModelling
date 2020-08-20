@@ -4,9 +4,6 @@ import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SFSUtilities;
 import org.h2gis.utilities.TableLocation;
-import org.orbisgis.orbisdata.datamanager.api.dataset.ISpatialTable;
-import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS;
-import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2gisSpatialTable;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -90,12 +87,14 @@ public class DataBaseManager {
         connection.close();
     }
 
+/*
     public H2gisSpatialTable getSpatialTable(String table) throws SQLException, ClassNotFoundException {
         Connection connection = openConnection();
         H2gisSpatialTable spatialTable = null;
         H2GIS h2gis = H2GIS.open(connection);
-        spatialTable = (H2gisSpatialTable) h2gis.getSpatialTable(table);
+        spatialTable = (H2gisSpatialTable) h2gis.getSpatialTablegetSpatialTable(table);
         connection.close();
         return spatialTable;
     }
+*/
 }
