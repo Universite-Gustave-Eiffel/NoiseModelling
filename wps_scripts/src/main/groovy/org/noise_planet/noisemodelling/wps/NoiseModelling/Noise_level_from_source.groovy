@@ -300,7 +300,7 @@ def exec(Connection connection, input) {
         wall_alpha = Double.valueOf(input['paramWallAlpha'])
     }
 
-    int n_thread = 1
+    int n_thread = 8
     if (input['confThreadNumber']) {
         n_thread = Integer.valueOf(input['confThreadNumber'])
     }
@@ -415,6 +415,9 @@ def exec(Connection connection, input) {
     // Init Map
     pointNoiseMap.initialize(connection, new EmptyProgressVisitor())
 
+
+    pointNoiseMap.setGridDim(5)
+
     // --------------------------------------------
     // Initialize NoiseModelling emission part
     // --------------------------------------------
@@ -466,6 +469,7 @@ def exec(Connection connection, input) {
                 ldenConfig.lDayTable)
         createdTables.append(" LDAY_GEOM")
         sql.execute("drop table if exists "+TableLocation.parse(ldenConfig.getlDayTable()))
+        sql.execute("CREATE INDEX ON LDAY_GEOM (IDSOURCE)");
     }
     if(ldenConfig.computeLEvening) {
         sql.execute("drop table if exists LEVENING_GEOM;")

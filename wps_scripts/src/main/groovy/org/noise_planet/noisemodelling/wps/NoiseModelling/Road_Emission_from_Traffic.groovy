@@ -70,7 +70,15 @@ inputs = [tableRoads: [name: 'Roads table name', title: 'Roads table name', desc
         "<li><b> PM_STUD </b> : Average proportion of vehicles equipped with studded tyres during TS_STUD period (0-1) (DOUBLE)</li>" +
         "<li><b> JUNC_DIST </b> : Distance to junction in meters (DOUBLE)</li>" +
         "<li><b> JUNC_TYPE </b> : Type of junction (k=0 none, k = 1 for a crossing with traffic lights ; k = 2 for a roundabout) (INTEGER)</li>" +
-        "</ul></br><b> This table can be generated from the WPS Block 'OsmToInputData'. </b>.", type: String.class]]
+        "</ul></br><b> This table can be generated from the WPS Block 'OsmToInputData'. </b>.", type: String.class],
+
+        outTable: [
+              name: 'Output table name',
+              title: 'Name of created table',
+              description: 'Name of the table you want to create: ROADS_LW',
+              type: String.class
+        ]
+]
 
 outputs = [result: [name: 'Result output string', title: 'Result output string', description: 'This type of result does not allow the blocks to be linked together.', type: String.class]]
 
@@ -133,6 +141,10 @@ def exec(Connection connection, input) {
     // do it case-insensitive
     sources_table_name = sources_table_name.toUpperCase()
 
+    String outTable = input['outTable'] as String
+    // do it case-insensitive
+    outTable = outTable.toUpperCase()
+
     //Get the geometry field of the source table
     TableLocation sourceTableIdentifier = TableLocation.parse(sources_table_name)
     List<String> geomFields = SFSUtilities.getGeometryFields(connection, sourceTableIdentifier)
@@ -157,13 +169,13 @@ def exec(Connection connection, input) {
     Sql sql = new Sql(connection)
 
     // drop table LW_ROADS if exists and the create and prepare the table
-    sql.execute("drop table if exists LW_ROADS;")
-    sql.execute("create table LW_ROADS (pk integer, the_geom Geometry, " +
+    sql.execute("drop table if exists " + outTable + ";")
+    sql.execute("create table " + outTable + " (pk integer, the_geom Geometry, " +
             "LWD63 double precision, LWD125 double precision, LWD250 double precision, LWD500 double precision, LWD1000 double precision, LWD2000 double precision, LWD4000 double precision, LWD8000 double precision," +
             "LWE63 double precision, LWE125 double precision, LWE250 double precision, LWE500 double precision, LWE1000 double precision, LWE2000 double precision, LWE4000 double precision, LWE8000 double precision," +
             "LWN63 double precision, LWN125 double precision, LWN250 double precision, LWN500 double precision, LWN1000 double precision, LWN2000 double precision, LWN4000 double precision, LWN8000 double precision);")
 
-    def qry = 'INSERT INTO LW_ROADS(pk,the_geom, ' +
+    def qry = 'INSERT INTO ' + outTable + '(pk,the_geom, ' +
             'LWD63, LWD125, LWD250, LWD500, LWD1000,LWD2000, LWD4000, LWD8000,' +
             'LWE63, LWE125, LWE250, LWE500, LWE1000,LWE2000, LWE4000, LWE8000,' +
             'LWN63, LWN125, LWN250, LWN500, LWN1000,LWN2000, LWN4000, LWN8000) ' +
@@ -221,16 +233,16 @@ def exec(Connection connection, input) {
     }
 
     // Add Z dimension to the road segments
-    sql.execute("UPDATE LW_ROADS SET THE_GEOM = ST_UPDATEZ(The_geom,0.05);")
+    sql.execute("UPDATE " + outTable + " SET THE_GEOM = ST_UPDATEZ(The_geom,0.05);")
     // Add primary key to the road table
-    sql.execute("ALTER TABLE LW_ROADS ALTER COLUMN PK INT NOT NULL;")
-    sql.execute("ALTER TABLE LW_ROADS ADD PRIMARY KEY (PK);  ")
+    sql.execute("ALTER TABLE " + outTable + " ALTER COLUMN PK INT NOT NULL;")
+    sql.execute("ALTER TABLE " + outTable + " ADD PRIMARY KEY (PK);  ")
 
-    resultString = "Calculation Done ! The table LW_ROADS has been created."
+    resultString = "Calculation Done ! The table " + outTable + " has been created."
 
     // print to command window
     System.out.println('\nResult : ' + resultString)
-    System.out.println('End : LW_ROADS from Emission')
+    System.out.println('End : ' + outTable + ' from Emission')
     System.out.println('Duration : ' + TimeCategory.minus(new Date(), start))
 
     // print to WPS Builder
