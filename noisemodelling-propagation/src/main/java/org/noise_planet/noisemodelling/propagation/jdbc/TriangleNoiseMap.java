@@ -6,6 +6,7 @@ import org.h2gis.utilities.TableLocation;
 import org.locationtech.jts.algorithm.Orientation;
 import org.locationtech.jts.densify.Densifier;
 import org.locationtech.jts.geom.*;
+import org.locationtech.jts.io.WKTWriter;
 import org.locationtech.jts.operation.buffer.BufferOp;
 import org.locationtech.jts.operation.buffer.BufferParameters;
 import org.locationtech.jts.simplify.TopologyPreservingSimplifier;
@@ -118,33 +119,43 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
             }
             toUniteFinal.add(bufferBuildings); // Add buildingsTableName to triangulation
         }
-        // Merge roads
-        if (minRecDist > 0.01) {
-            LinkedList<Geometry> toUniteRoads = new LinkedList<Geometry>(delaunaySegments);
-            if (!toUniteRoads.isEmpty()) {
-                // Build Polygons buffer from roads lines
-                Geometry bufferRoads = merge(toUniteRoads, minRecDist / 2);
-                // Remove small artifacts due to multiple buffer crosses
-                bufferRoads = TopologyPreservingSimplifier.simplify(bufferRoads,
-                        minRecDist / 2);
-                // Densify roads to set more receiver near roads.
-                if(srcPtDist > 0){
-                    bufferRoads = Densifier.densify(bufferRoads, srcPtDist);
-                } else if (triangleSide > 0) {
-                    bufferRoads = Densifier.densify(bufferRoads, triangleSide);
+        Geometry geom1 = geometryFactory.createPolygon();
+        Geometry geom2 = geometryFactory.createPolygon();
+        try {
+            // Merge roads
+            if (minRecDist > 0.01) {
+                LinkedList<Geometry> toUniteRoads = new LinkedList<Geometry>(delaunaySegments);
+                if (!toUniteRoads.isEmpty()) {
+                    // Build Polygons buffer from roads lines
+                    Geometry bufferRoads = merge(toUniteRoads, minRecDist / 2);
+                    // Remove small artifacts due to multiple buffer crosses
+                    bufferRoads = TopologyPreservingSimplifier.simplify(bufferRoads,
+                            minRecDist / 2);
+                    // Densify roads to set more receiver near roads.
+                    if(srcPtDist > 0){
+                        bufferRoads = Densifier.densify(bufferRoads, srcPtDist);
+                    } else if (triangleSide > 0) {
+                        bufferRoads = Densifier.densify(bufferRoads, triangleSide);
+                    }
+                    //Add points buffer to the final triangulation, this will densify sound level extraction near
+                    //toUniteFinal.add(makeBufferSegmentsNearRoads(toUniteRoads,srcPtDist));
+                    //roads, and helps to reduce over estimation due to inappropriate interpolation.
+                    toUniteFinal.add(bufferRoads); // Merge roads with minRecDist m
+                    // buffer
                 }
-                //Add points buffer to the final triangulation, this will densify sound level extraction near
-                //toUniteFinal.add(makeBufferSegmentsNearRoads(toUniteRoads,srcPtDist));
-                //roads, and helps to reduce over estimation due to inappropriate interpolation.
-                toUniteFinal.add(bufferRoads); // Merge roads with minRecDist m
-                // buffer
             }
+            Geometry union = merge(toUniteFinal, 0.); // Merge roads and buildingsTableName
+            // together
+            // Remove geometries out of the bounding box
+            geom1 = union;
+            geom2 = boundingBox;
+            union = union.intersection(boundingBox);
+            explodeAndAddPolygon(union, delaunayTool);
+        } catch (TopologyException ex) {
+            WKTWriter wktWriter = new WKTWriter(3);
+            logger.error(String.format("Error with input geometries\n%s\n%s",wktWriter.write(geom1),wktWriter.write(geom2)), ex);
+            throw ex;
         }
-        Geometry union = merge(toUniteFinal, 0.); // Merge roads and buildingsTableName
-        // together
-        // Remove geometries out of the bounding box
-        union = union.intersection(boundingBox);
-        explodeAndAddPolygon(union, delaunayTool);
     }
 
 

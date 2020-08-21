@@ -238,7 +238,7 @@ def run(input) {
 
 // main function of the script
 def exec(Connection connection, input) {
-    Logger logger = LoggerFactory.getLogger("Noise_level_from_source");
+    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_source");
     //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postGIS database
     connection = new ConnectionWrapper(connection)
 

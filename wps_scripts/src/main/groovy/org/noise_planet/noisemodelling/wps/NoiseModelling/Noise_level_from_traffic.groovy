@@ -37,8 +37,10 @@ import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
 import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
 import org.noise_planet.noisemodelling.emission.RSParametersCnossos
+import org.noise_planet.noisemodelling.emission.jdbc.LDENComputeRaysOut
 import org.noise_planet.noisemodelling.emission.jdbc.LDENConfig
 import org.noise_planet.noisemodelling.emission.jdbc.LDENPointNoiseMapFactory
+import org.noise_planet.noisemodelling.emission.jdbc.LDENPropagationProcessData
 import org.noise_planet.noisemodelling.propagation.ComputeRays
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOut
 import org.noise_planet.noisemodelling.propagation.FastObstructionTest
@@ -474,7 +476,13 @@ def exec(Connection connection, input) {
         new TreeSet<>(cells.keySet()).each { cellIndex ->
             // Run ray propagation
             System.println(String.format("Compute... %.3f %% (%d receivers in this cell)", 100 * k++ / cells.size(), cells.get(cellIndex)))
-            pointNoiseMap.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers)
+            IComputeRaysOut ro = pointNoiseMap.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers)
+            if(ro instanceof LDENComputeRaysOut) {
+                LDENPropagationProcessData ldenPropagationProcessData = (LDENPropagationProcessData)ro.inputData;
+                System.out.println(String.format("This computation area contains %d receivers %d sound sources and %d buildings",
+                        ldenPropagationProcessData.receivers.size(), ldenPropagationProcessData.sourceGeometries.size(),
+                        ldenPropagationProcessData.freeFieldFinder.getBuildingCount()));
+            }
         }
     } finally {
         ldenProcessing.stop()

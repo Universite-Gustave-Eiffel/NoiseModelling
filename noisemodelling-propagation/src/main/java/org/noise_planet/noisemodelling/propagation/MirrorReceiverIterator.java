@@ -37,11 +37,7 @@ import org.locationtech.jts.algorithm.Orientation;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.LineSegment;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 /**
  * Iterator through mirrored receiver
@@ -158,7 +154,7 @@ public class MirrorReceiverIterator implements Iterator<MirrorReceiverResult> {
     }
 
     /**
-     * Occlusion test on two walls. Segments are CCW oriented.
+     * Occlusion test on two walls. Segments are CW oriented.
      *
      * @param wall1
      * @param wall2
@@ -169,7 +165,7 @@ public class MirrorReceiverIterator implements Iterator<MirrorReceiverResult> {
     }
 
     /**
-     * Occlusion test on two walls. Segments are CCW oriented.
+     * Occlusion test on two walls. Segments are CW oriented.
      *
      * @param wall1
      * @param pt
@@ -211,6 +207,7 @@ public class MirrorReceiverIterator implements Iterator<MirrorReceiverResult> {
         private final int maxDepth;
         private final int wallCount;
         private List<Integer> current;
+        private int lastDepth = 1;
 
         public CrossTableIterator(int maxDepth, int wallCount) {
             this.maxDepth = maxDepth;
@@ -221,10 +218,33 @@ public class MirrorReceiverIterator implements Iterator<MirrorReceiverResult> {
             }
         }
 
+        public void setNext(List<Integer> next, int lastDepth) {
+            this.lastDepth = lastDepth;
+            this.current = next;
+        }
+
+        /**
+         * Skip last returned wall id (do not process sub-walls)
+         */
         public void skipLevel() {
-            if(!current.isEmpty()) {
-                current.set(current.size() - 1, wallCount - 1);
-                next();
+            if(!current.isEmpty() && lastDepth < current.size()) {
+                while (lastDepth < current.size()) {
+                    // remove skipped sub-walls
+                    current.remove(lastDepth);
+                }
+                if(current.size() < lastDepth && wallCount > 1) {
+                    current.add(nextVal(-1, current.get(current.size() - 1)));
+                } else {
+                    do {
+                        current.set(current.size() - 1, nextVal(current.get(current.size() - 1),
+                                current.size() > 1 ? current.get(current.size() - 2) : -1) );
+                        if(current.get(current.size() - 1) >= wallCount) {
+                            current.remove(current.size() - 1);
+                        } else {
+                            break;
+                        }
+                    } while(!current.isEmpty());
+                }
             }
         }
 
@@ -244,6 +264,7 @@ public class MirrorReceiverIterator implements Iterator<MirrorReceiverResult> {
         @Override
         public List<Integer> next() {
             List<Integer> currentIndex = new ArrayList<>(current);
+            lastDepth = current.size();
             // Go to next value
             if(current.size() < maxDepth && wallCount > 1) {
                 current.add(nextVal(-1, current.get(current.size() - 1)));
