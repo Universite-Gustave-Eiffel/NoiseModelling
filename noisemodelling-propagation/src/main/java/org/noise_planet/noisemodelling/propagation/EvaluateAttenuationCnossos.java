@@ -334,13 +334,13 @@ public class EvaluateAttenuationCnossos {
         aGlobal = new double[data.freq_lvl.size()];
         double[] aBoundary ;
         double[] aRef ;
-        nbfreq = PropagationProcessPathData.freq_lvl.size();
+        nbfreq = data.freq_lvl.size();
 
         // Init wave length for each frequency
         freq_lambda = new double[nbfreq];
         for (int idf = 0; idf < nbfreq; idf++) {
-            if (PropagationProcessPathData.freq_lvl.get(idf) > 0) {
-                freq_lambda[idf] = data.getCelerity() / PropagationProcessPathData.freq_lvl.get(idf);
+            if (data.freq_lvl.get(idf) > 0) {
+                freq_lambda[idf] = data.getCelerity() / data.freq_lvl.get(idf);
             } else {
                 freq_lambda[idf] = 1;
             }
