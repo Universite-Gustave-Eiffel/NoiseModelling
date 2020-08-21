@@ -85,7 +85,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
         }
         // Sort frequencies values
         Collections.sort(frequencyValues);
-
+        // Get associated values for each frequency
         List<Double> exactFrequencies = new ArrayList<>();
         List<Double> aWeighting = new ArrayList<>();
         for(int freq : frequencyValues) {
@@ -93,8 +93,8 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
             exactFrequencies.add(PropagationProcessPathData.DEFAULT_FREQUENCIES_EXACT_THIRD_OCTAVE[index]);
             aWeighting.add(PropagationProcessPathData.DEFAULT_FREQUENCIES_A_WEIGHTING_THIRD_OCTAVE[index]);
         }
-        ldenConfig.propagationProcessPathData = new PropagationProcessPathData(frequencyValues, exactFrequencies,
-                aWeighting);
+        ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData(frequencyValues, exactFrequencies,
+                aWeighting));
     }
 
     /**
