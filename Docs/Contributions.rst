@@ -1,6 +1,11 @@
 Some contributions using NoiseModelling
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Standard Noise maps
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- WANG Z., NOVACK T., YAN Y., ZIPF A. Quiet Route Planning for Pedestrians in Traffic Noise Polluted Environments. IEEE Transactions on Intelligent Transportation Systems 2020. https://ieeexplore.ieee.org/document/9139350/keywords#keywords
+
 Dynamic Noise maps
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 - CAN A., AUMOND P., BECARIE C., LECLERCQ L. Approche dynamique pour l’étude de l’emprise spatiale du bruit de trafic routier aux heures de pointe, Recherche en Transport Sécurité, 2018.
