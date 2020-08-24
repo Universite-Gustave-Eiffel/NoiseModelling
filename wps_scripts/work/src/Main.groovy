@@ -28,12 +28,12 @@ class Main {
         boolean doCalculateRoadEmission = false;
         boolean doCalculateNoiseMap = true;
         boolean doExportResults = true;
-        boolean doCalcuateExposure = false;
+        boolean doCalcuateExposure = true;
 
         String timeSlice = "quarter";
         String osmFile = "/home/valoo/Projects/IFSTTAR/OsmMaps/nantes.pbf";
         String matsimFolder = "/home/valoo/Projects/IFSTTAR/eqasim-nantes/output_0.25/simulation_output"
-        String resultsFolder = "/home/valoo/Projects/IFSTTAR/Results/GeoData/AgentsImpact_0.01"
+        String resultsFolder = "/home/valoo/Projects/IFSTTAR/eqasim-nantes/output_0.25/noise_output"
         String ignoreAgents = ""
 
         if (doCleanDB) {

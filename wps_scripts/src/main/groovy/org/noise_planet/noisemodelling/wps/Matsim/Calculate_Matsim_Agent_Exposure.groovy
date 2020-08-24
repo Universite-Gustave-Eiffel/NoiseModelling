@@ -127,7 +127,7 @@ def exec(Connection connection, input) {
     }
 
     int agentId = 0;
-    if (input["plotOneAgentId"] as int != 0) {
+    if (input["plotOneAgentId"] && input["plotOneAgentId"] as int != 0) {
         agentId = input["plotOneAgentId"];
     }
     println agentId;
