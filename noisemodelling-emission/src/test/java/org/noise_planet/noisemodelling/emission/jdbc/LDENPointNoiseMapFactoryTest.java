@@ -45,6 +45,7 @@ public class LDENPointNoiseMapFactoryTest {
     public void testNoiseEmission() throws SQLException, IOException {
         SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("roads_traff.shp").getFile());
         LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW);
+        ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData());
         ldenConfig.setCoefficientVersion(1);
         LDENPropagationProcessData process = new LDENPropagationProcessData(null, ldenConfig);
         try(Statement st = connection.createStatement()) {
@@ -125,10 +126,11 @@ public class LDENPointNoiseMapFactoryTest {
         Set<Long> receivers = new HashSet<>();
 
         try {
-            factory.start();
             RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1);
 
             pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
+
+            factory.start();
 
             pointNoiseMap.setGridDim(4); // force grid size
 

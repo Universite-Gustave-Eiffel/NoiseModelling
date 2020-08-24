@@ -48,53 +48,58 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
     LDENConfig ldenConfig;
     TableWriter tableWriter;
     Thread tableWriterThread;
+    Connection connection;
     static final int BATCH_MAX_SIZE = 500;
     LDENComputeRaysOut.LdenData ldenData = new LDENComputeRaysOut.LdenData();
 
 
     public LDENPointNoiseMapFactory(Connection connection, LDENConfig ldenConfig) {
-        tableWriter = new TableWriter(connection, ldenConfig, ldenData);
         this.ldenConfig = ldenConfig;
+        this.connection = connection;
     }
 
     @Override
     public void initialize(Connection connection, PointNoiseMap pointNoiseMap) throws SQLException {
-        // Fetch source fields
-        List<String> sourceField = JDBCUtilities.getFieldNames(connection.getMetaData(), pointNoiseMap.getSourcesTableName());
-        List<Integer> frequencyValues = new ArrayList<>();
-        List<Integer> allFrequencyValues = Arrays.asList(PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE);
-        String period = "";
-        if(ldenConfig.computeLDay) {
-            period = "D";
-        } else if(ldenConfig.computeLEvening) {
-            period = "E";
-        } else if(ldenConfig.computeLNight) {
-            period = "N";
-        }
-        String freqField = ldenConfig.lwFrequencyPrepend+period;
-        if(!period.isEmpty()) {
-            for (String fieldName : sourceField) {
-                if (fieldName.startsWith(freqField)) {
-                    int freq = Integer.parseInt(fieldName.substring(freqField.length()));
-                    int index = allFrequencyValues.indexOf(freq);
-                    if (index >= 0) {
-                        frequencyValues.add(freq);
+        if(ldenConfig.input_mode == LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN) {
+            // Fetch source fields
+            List<String> sourceField = JDBCUtilities.getFieldNames(connection.getMetaData(), pointNoiseMap.getSourcesTableName());
+            List<Integer> frequencyValues = new ArrayList<>();
+            List<Integer> allFrequencyValues = Arrays.asList(PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE);
+            String period = "";
+            if (ldenConfig.computeLDay) {
+                period = "D";
+            } else if (ldenConfig.computeLEvening) {
+                period = "E";
+            } else if (ldenConfig.computeLNight) {
+                period = "N";
+            }
+            String freqField = ldenConfig.lwFrequencyPrepend + period;
+            if (!period.isEmpty()) {
+                for (String fieldName : sourceField) {
+                    if (fieldName.startsWith(freqField)) {
+                        int freq = Integer.parseInt(fieldName.substring(freqField.length()));
+                        int index = allFrequencyValues.indexOf(freq);
+                        if (index >= 0) {
+                            frequencyValues.add(freq);
+                        }
                     }
                 }
             }
+            // Sort frequencies values
+            Collections.sort(frequencyValues);
+            // Get associated values for each frequency
+            List<Double> exactFrequencies = new ArrayList<>();
+            List<Double> aWeighting = new ArrayList<>();
+            for (int freq : frequencyValues) {
+                int index = allFrequencyValues.indexOf(freq);
+                exactFrequencies.add(PropagationProcessPathData.DEFAULT_FREQUENCIES_EXACT_THIRD_OCTAVE[index]);
+                aWeighting.add(PropagationProcessPathData.DEFAULT_FREQUENCIES_A_WEIGHTING_THIRD_OCTAVE[index]);
+            }
+            ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData(frequencyValues, exactFrequencies, aWeighting));
+        } else {
+            // Traffic flow cnossos frequencies are octave bands from 63 to 8000 Hz
+            ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData(false));
         }
-        // Sort frequencies values
-        Collections.sort(frequencyValues);
-        // Get associated values for each frequency
-        List<Double> exactFrequencies = new ArrayList<>();
-        List<Double> aWeighting = new ArrayList<>();
-        for(int freq : frequencyValues) {
-            int index = allFrequencyValues.indexOf(freq);
-            exactFrequencies.add(PropagationProcessPathData.DEFAULT_FREQUENCIES_EXACT_THIRD_OCTAVE[index]);
-            aWeighting.add(PropagationProcessPathData.DEFAULT_FREQUENCIES_A_WEIGHTING_THIRD_OCTAVE[index]);
-        }
-        ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData(frequencyValues, exactFrequencies,
-                aWeighting));
     }
 
     /**
@@ -115,6 +120,10 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
      * Start creating and filling database tables
      */
     public void start() {
+        if(ldenConfig.propagationProcessPathData == null) {
+            throw new IllegalStateException("start() function must be called after PointNoiseMap initialization call");
+        }
+        tableWriter = new TableWriter(connection, ldenConfig, ldenData);
         ldenConfig.exitWhenDone = false;
         tableWriterThread = new Thread(tableWriter);
         tableWriterThread.start();

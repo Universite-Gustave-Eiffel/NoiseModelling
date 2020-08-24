@@ -33,11 +33,6 @@
  */
 package org.noise_planet.noisemodelling.propagation;
 
-import org.h2gis.api.ProgressVisitor;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.Geometry;
-
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
