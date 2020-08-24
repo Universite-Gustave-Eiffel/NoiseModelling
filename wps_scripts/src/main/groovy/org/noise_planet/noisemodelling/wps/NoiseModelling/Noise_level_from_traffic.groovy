@@ -409,7 +409,7 @@ def exec(Connection connection, input) {
 
 
     // Set environmental parameters
-    PropagationProcessPathData environmentalData = new PropagationProcessPathData()
+    PropagationProcessPathData environmentalData = new PropagationProcessPathData(false)
 
     if(input.containsKey('confHumidity')) {
         environmentalData.setHumidity(input['confHumidity'] as Double)

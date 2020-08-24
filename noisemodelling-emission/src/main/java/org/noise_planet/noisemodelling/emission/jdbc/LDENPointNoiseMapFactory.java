@@ -98,10 +98,22 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
             if(frequencyValues.isEmpty()) {
                 throw new SQLException("Source table "+pointNoiseMap.getSourcesTableName()+" does not contains any frequency bands");
             }
-            ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData(frequencyValues, exactFrequencies, aWeighting));
+            // Instance of PropagationProcessPathData maybe already set
+            if(pointNoiseMap.getPropagationProcessPathData() == null) {
+                ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData(frequencyValues, exactFrequencies, aWeighting));
+                pointNoiseMap.setPropagationProcessPathData(ldenConfig.propagationProcessPathData);
+            } else {
+                pointNoiseMap.getPropagationProcessPathData().setFrequencies(frequencyValues);
+                pointNoiseMap.getPropagationProcessPathData().setFrequenciesExact(exactFrequencies);
+                pointNoiseMap.getPropagationProcessPathData().setFrequenciesAWeighting(aWeighting);
+                ldenConfig.setPropagationProcessPathData(pointNoiseMap.getPropagationProcessPathData());
+            }
         } else {
-            // Traffic flow cnossos frequencies are octave bands from 63 to 8000 Hz
-            ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData(false));
+            if(pointNoiseMap.getPropagationProcessPathData() == null) {
+                // Traffic flow cnossos frequencies are octave bands from 63 to 8000 Hz
+                ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData(false));
+                pointNoiseMap.setPropagationProcessPathData(ldenConfig.propagationProcessPathData);
+            }
         }
     }
 

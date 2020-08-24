@@ -56,9 +56,9 @@ public class PropagationProcessPathData {
     public static final Double[] DEFAULT_FREQUENCIES_EXACT_THIRD_OCTAVE = new Double[] {50.1187234, 63.0957344, 79.4328235, 100.0, 125.892541, 158.489319, 199.526231, 251.188643, 316.227766, 398.107171, 501.187234, 630.957344, 794.328235, 1000.0, 11258.92541, 1584.89319, 1995.26231, 2511.88643, 3162.27766, 3981.07171, 5011.87234, 6309.57344, 7943.28235, 10000.0};
     public static final Double[] DEFAULT_FREQUENCIES_A_WEIGHTING_THIRD_OCTAVE = new Double[] {-30.2, -26.2, -22.5, -19.1, -16.1, -13.4, -10.9, -8.6, -6.6, -4.8, -3.2, -1.9, -0.8, 0.0, 0.6, 1.0, 1.2, 1.3, 1.2, 1.0, 0.5, -0.1, -1.1, -2.5};
     /** Frequency bands values, by third octave */
-    public final List<Integer> freq_lvl;
-    public final List<Double> freq_lvl_exact;
-    public final List<Double> freq_lvl_a_weighting;
+    public List<Integer> freq_lvl;
+    public List<Double> freq_lvl_exact;
+    public List<Double> freq_lvl_a_weighting;
     // Wind rose for each directions
     public static final double[] DEFAULT_WIND_ROSE = new double[]{0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
     /** Temperature in celsius */
@@ -109,6 +109,30 @@ public class PropagationProcessPathData {
 
     void init() {
         this.alpha_atmo = getAtmoCoeffArray(freq_lvl_exact,  temperature,  pressure,  humidity);
+    }
+
+    public List<Integer> getFrequencies() {
+        return freq_lvl;
+    }
+
+    public void setFrequencies(List<Integer> freq_lvl) {
+        this.freq_lvl = freq_lvl;
+    }
+
+    public List<Double> getFrequenciesExact() {
+        return freq_lvl_exact;
+    }
+
+    public void setFrequenciesExact(List<Double> freq_lvl_exact) {
+        this.freq_lvl_exact = freq_lvl_exact;
+    }
+
+    public List<Double> getFrequenciesAWeighting() {
+        return freq_lvl_a_weighting;
+    }
+
+    public void setFrequenciesAWeighting(List<Double> freq_lvl_a_weighting) {
+        this.freq_lvl_a_weighting = freq_lvl_a_weighting;
     }
 
     /**
