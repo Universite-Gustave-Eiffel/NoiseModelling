@@ -765,6 +765,11 @@ class WpsPropagationProcessDataProbaFactory implements PointNoiseMap.Propagation
     PropagationProcessData create(FastObstructionTest freeFieldFinder) {
         return new WpsPropagationProcessDataProba(freeFieldFinder)
     }
+
+    @Override
+    void initialize(Connection connection, PointNoiseMap pointNoiseMap) throws SQLException {
+
+    }
 }
 
 

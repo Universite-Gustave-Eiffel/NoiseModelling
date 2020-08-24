@@ -212,17 +212,20 @@ public class LDENPropagationProcessData extends PropagationProcessData {
             }
         } else if (ldenConfig.input_mode == LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN) {
             // Read average 24h traffic
-            for (int idfreq = 0; idfreq < ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
-                ld[idfreq] = ComputeRays.dbaToW(rs.getDouble(ldenConfig.lwFrequencyPrepend + "D" +
-                        ldenConfig.propagationProcessPathData.freq_lvl.get(idfreq)));
+            if(ldenConfig.computeLDay || ldenConfig.computeLDEN) {
+                for (int idfreq = 0; idfreq < ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
+                    ld[idfreq] = ComputeRays.dbaToW(rs.getDouble(ldenConfig.lwFrequencyPrepend + "D" + ldenConfig.propagationProcessPathData.freq_lvl.get(idfreq)));
+                }
             }
-            for (int idfreq = 0; idfreq < ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
-                le[idfreq] = ComputeRays.dbaToW(rs.getDouble(ldenConfig.lwFrequencyPrepend + "E" +
-                        ldenConfig.propagationProcessPathData.freq_lvl.get(idfreq)));
+            if(ldenConfig.computeLEvening || ldenConfig.computeLDEN) {
+                for (int idfreq = 0; idfreq < ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
+                    le[idfreq] = ComputeRays.dbaToW(rs.getDouble(ldenConfig.lwFrequencyPrepend + "E" + ldenConfig.propagationProcessPathData.freq_lvl.get(idfreq)));
+                }
             }
-            for (int idfreq = 0; idfreq < ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
-                ln[idfreq] = ComputeRays.dbaToW(rs.getDouble(ldenConfig.lwFrequencyPrepend + "N" +
-                        ldenConfig.propagationProcessPathData.freq_lvl.get(idfreq)));
+            if(ldenConfig.computeLNight || ldenConfig.computeLDEN) {
+                for (int idfreq = 0; idfreq < ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
+                    ln[idfreq] = ComputeRays.dbaToW(rs.getDouble(ldenConfig.lwFrequencyPrepend + "N" + ldenConfig.propagationProcessPathData.freq_lvl.get(idfreq)));
+                }
             }
         } else if(ldenConfig.input_mode == LDENConfig.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW) {
             // Extract road slope
