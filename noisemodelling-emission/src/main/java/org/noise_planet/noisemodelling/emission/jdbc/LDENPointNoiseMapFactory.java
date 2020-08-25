@@ -113,6 +113,8 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
                 // Traffic flow cnossos frequencies are octave bands from 63 to 8000 Hz
                 ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData(false));
                 pointNoiseMap.setPropagationProcessPathData(ldenConfig.propagationProcessPathData);
+            } else {
+                ldenConfig.setPropagationProcessPathData(pointNoiseMap.getPropagationProcessPathData());
             }
         }
     }
