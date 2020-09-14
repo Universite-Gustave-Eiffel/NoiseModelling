@@ -16,20 +16,17 @@
  */
 
 
-package org.noise_planet.noisemodelling.wps.Others_Tools
+package org.noise_planet.noisemodelling.wps.Acoustic_Tools
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
-import groovy.time.TimeCategory
 import org.geotools.jdbc.JDBCDataStore
-import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.SFSUtilities
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.noise_planet.noisemodelling.emission.jdbc.BezierContouring
 
 import java.sql.Connection
-import java.sql.Statement
 
 title = 'Create Isosurface polygons from NoiseModelling result and Triangles'
 

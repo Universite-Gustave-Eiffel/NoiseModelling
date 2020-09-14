@@ -15,7 +15,7 @@
  * @Author Arnaud Can, Université Gustave Eiffel
  */
 
-package org.noise_planet.noisemodelling.wps.Others_Tools
+package org.noise_planet.noisemodelling.wps.Acoustic_Tools
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
