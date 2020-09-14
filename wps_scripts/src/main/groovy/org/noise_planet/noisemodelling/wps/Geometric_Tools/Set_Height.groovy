@@ -20,6 +20,8 @@ import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.utilities.SFSUtilities
+import org.h2gis.utilities.TableLocation
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -94,13 +96,12 @@ def exec(Connection connection, input) {
 
     Double h = input['height']
 
-    /*sql.execute("DROP TABLE TEMP IF EXISTS;")
-    sql.execute("CREATE TABLE TEMP AS SELECT ST_FORCE3D(THE_GEOM) THE_GEOM FROM  "+table_name+";")
+    //get SRID of the table
+    int srid = SFSUtilities.getSRID(connection, TableLocation.parse(table_name))
 
-    sql.execute("DROP TABLE "+table_name+" IF EXISTS;")
-    sql.execute("CREATE TABLE "+table_name+" AS SELECT * FROM TEMP;")*/
-    sql.execute("UPDATE " + table_name + " SET THE_GEOM = ST_UPDATEZ(ST_FORCE3D(THE_GEOM), " + h + ");")
+    if (srid==4326) throw new Exception("This SRID is not metric. Please use another SRID for your table.")
 
+    sql.execute("UPDATE " + table_name + " SET THE_GEOM = ST_SETSRID(ST_UPDATEZ(THE_GEOM," +h+"),"+srid+");")
 
     resultString = "Process done. Table of receivers " + table_name + " has now a new height set to " + h + "."
 

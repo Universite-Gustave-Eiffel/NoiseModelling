@@ -20,6 +20,10 @@ import org.noise_planet.noisemodelling.wps.Geometric_Tools.Screen_to_building
 import org.noise_planet.noisemodelling.wps.Geometric_Tools.Set_Height
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+
+import java.sql.SQLException
+import java.sql.Statement
+
 /**
  * Test parsing of zip file using H2GIS database
  */
@@ -72,7 +76,6 @@ class TestGeometricTools extends JdbcTestCase {
 
     @Test
     void testSetHeight1() {
-
         SHPRead.readShape(connection, TestGeometricTools.getResource("receivers.shp").getPath())
         def sql = new Sql(connection)
 
@@ -80,14 +83,13 @@ class TestGeometricTools extends JdbcTestCase {
                 ["height": 0.05,
                  "tableName": "receivers"])
 
-        println(sql.rows("SCRIPT NODATA DROP TABLE receivers;"))
-        assertEquals(0, sql.firstRow("SELECT THE_GEOM FROM RECEIVERS"))
-
+        assertEquals(0.05, sql.firstRow("SELECT ST_Z(THE_GEOM) FROM RECEIVERS")[0])
     }
+
+
 
     @Test
     void testSetHeight2() {
-
         SHPRead.readShape(connection, TestGeometricTools.getResource("roads.shp").getPath())
         def sql = new Sql(connection)
 
@@ -95,8 +97,7 @@ class TestGeometricTools extends JdbcTestCase {
                 ["height": 0.05,
                  "tableName": "roads"])
 
-        assertEquals(0, sql.firstRow("SELECT THE_GEOM FROM roads"))
-
+        assertEquals(0.05, sql.firstRow("SELECT ST_Z(THE_GEOM) FROM ROADS")[0])
     }
 
 
