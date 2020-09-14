@@ -22,18 +22,13 @@ import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
-import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
-import org.locationtech.jts.geom.Geometry
-import org.noise_planet.noisemodelling.emission.jdbc.LDENPointNoiseMapFactory
-import org.noise_planet.noisemodelling.propagation.ComputeRays
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import java.sql.Connection
 import java.sql.SQLException
-
 // ----------------
 // This is a short template.
 // Some doubts may remain about writing a WPS script. 
@@ -50,34 +45,34 @@ description = 'Description of the WPS.' +
         '-  <b> NAME OF ATTRIBUTE 2 </b> : description attribute 2 (POINT).'
 
 inputs = [
-    input1     : [
-        name  : 'Title of the input bloc', // This is not use in WPS Builder. The real title of the WPS bloc is the title item.
-        title : 'Title of the input bloc', // Please be short 
-        description: '<b>Name of the input table.</b>  </br>  ' + // Please be long
-                '<br>  The table shall contain : </br>' +
-                '- <b> NAME OF ATTRIBUTE 1 </b> : description attribute 1 (POLYGON or MULTIPOLYGON). </br>' +
-                '- <b> NAME OF ATTRIBUTE 2 </b> : description attribute 2 (FLOAT)',
-        type       : String.class // Input type
-    ],
-     input2     : [
-        name  : 'Title of the input bloc', // This is not use in WPS Builder. The real title of the WPS bloc is the title item.
-        title : 'Title of the input bloc', // Please be short 
-        description: '<b>Name of the input table.</b>  </br>  ' + // Please be long
-                '<br>  The table shall contain : </br>' +
-                '- <b> NAME OF ATTRIBUTE 1 </b> : description attribute 1 (POLYGON or MULTIPOLYGON). </br>' +
-                '- <b> NAME OF ATTRIBUTE 2 </b> : description attribute 2 (FLOAT)',
-        min  : 0, max: 1, // it makes this bloc optional
-        type  : Integer.class // Input type
-    ]
+        input1     : [
+                name  : 'Title of the input bloc', // This is not use in WPS Builder. The real title of the WPS bloc is the title item.
+                title : 'Title of the input bloc', // Please be short
+                description: '<b>Name of the input table.</b>  </br>  ' + // Please be long
+                        '<br>  The table shall contain : </br>' +
+                        '- <b> NAME OF ATTRIBUTE 1 </b> : description attribute 1 (POLYGON or MULTIPOLYGON). </br>' +
+                        '- <b> NAME OF ATTRIBUTE 2 </b> : description attribute 2 (FLOAT)',
+                type       : String.class // Input type
+        ],
+        input2     : [
+                name  : 'Title of the input bloc', // This is not use in WPS Builder. The real title of the WPS bloc is the title item.
+                title : 'Title of the input bloc', // Please be short
+                description: '<b>Name of the input table.</b>  </br>  ' + // Please be long
+                        '<br>  The table shall contain : </br>' +
+                        '- <b> NAME OF ATTRIBUTE 1 </b> : description attribute 1 (POLYGON or MULTIPOLYGON). </br>' +
+                        '- <b> NAME OF ATTRIBUTE 2 </b> : description attribute 2 (FLOAT)',
+                min  : 0, max: 1, // it makes this bloc optional
+                type  : Integer.class // Input type
+        ]
 ]
 
 outputs = [
-    result: [
-        name: 'Result output string', // This is not use in WPS Builder. The real title of the WPS bloc is the title item.
-        title: 'Result output string', // Please be short  
-        description: 'This type of result does not allow the blocks to be linked together.',  // This is not use in WPS Builder.
-        type: String.class
-    ]
+        result: [
+                name: 'Result output string', // This is not use in WPS Builder. The real title of the WPS bloc is the title item.
+                title: 'Result output string', // Please be short
+                description: 'This type of result does not allow the blocks to be linked together.',  // This is not use in WPS Builder.
+                type: String.class
+        ]
 ]
 
 // Open Connection to Geoserver
@@ -128,7 +123,7 @@ def exec(Connection connection, input) {
     // Please use logger.info at least when the script starts, ends and creates a table. 
     // You can use the warning but the user could not be noticed. Please fill in the resultString variable with your warnings.
     // Don't register errors by this logger, use "throw Exception" instead.
-    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")  
+    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
 
     // print to command window
     logger.info('Start : Template')
@@ -147,17 +142,17 @@ def exec(Connection connection, input) {
 
     // Please throw Exception in this format
     if (geomFields.isEmpty()) {
-         throw new SQLException(String.format("The table %s does not exists or does not contain a geometry field", sourceTableIdentifier))
+        throw new SQLException(String.format("The table %s does not exists or does not contain a geometry field", sourceTableIdentifier))
     }
 
-     String receivers_table_name = input['input2']
+    String receivers_table_name = input['input2']
     // do it case-insensitive
     receivers_table_name = receivers_table_name.toUpperCase()
 
     // -------------------
     // Calculation
     // -------------------
-   
+
     def a = 0
     a=a+1
 

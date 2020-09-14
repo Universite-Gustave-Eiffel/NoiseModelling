@@ -62,6 +62,16 @@ class TestDatabaseManager extends JdbcTestCase {
         assertEquals("RECEIVERS has a new primary key constraint on PK.", res)
     }
 
+    void testAddPrimaryKey3() {
+        SHPRead.readShape(connection, TestDatabaseManager.getResource("receivers.shp").getPath())
+
+        String res = new Add_Primary_Key().exec(connection,
+                ["pkName": "PK",
+                 "tableName" : "receivers"])
+
+        assertEquals("Warning : Source table RECEIVERS did already contain a primary key. The constraint has been removed. </br>RECEIVERS has a new primary key constraint on PK.", res)
+    }
+
     void testCleanDatabase() {
         SHPRead.readShape(connection, TestDatabaseManager.getResource("receivers.shp").getPath())
 
