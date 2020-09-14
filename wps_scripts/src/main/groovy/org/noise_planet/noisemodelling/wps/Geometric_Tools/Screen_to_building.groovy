@@ -24,7 +24,6 @@ import geoserver.catalog.Store
 import groovy.sql.Sql
 import groovy.time.TimeCategory
 import org.geotools.jdbc.JDBCDataStore
-import org.h2gis.utilities.wrapper.ConnectionWrapper
 
 import java.sql.Connection
 
