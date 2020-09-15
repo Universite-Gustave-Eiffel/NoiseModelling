@@ -183,6 +183,7 @@ def exec(Connection connection, input) {
 
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
     logger.info('Start : Traffic_from_matsim_events')
+    logger.info("inputs {}", input)
 
     String folder = input["folder"];
     

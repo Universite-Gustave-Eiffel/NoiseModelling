@@ -96,6 +96,7 @@ def exec(Connection connection, input) {
 
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
     logger.info('Start : Chose_Receivers_From_Matsim_Activities')
+    logger.info("inputs {}", input)
 
     String outTableName = input['outTableName']
     String activitiesTable = input['activitiesTable']

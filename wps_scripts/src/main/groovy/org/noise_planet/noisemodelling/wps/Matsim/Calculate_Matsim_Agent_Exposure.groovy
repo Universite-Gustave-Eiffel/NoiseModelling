@@ -135,6 +135,7 @@ def exec(Connection connection, input) {
 
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
     logger.info('Start : Calculate_Matsim_Agent_Exposure')
+    logger.info("inputs {}", input)
 
     String folder = input["folder"];
     String outTableName = input['outTableName'];

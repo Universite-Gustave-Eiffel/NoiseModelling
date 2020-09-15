@@ -106,6 +106,7 @@ def exec(Connection connection, input) {
 
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
     logger.info('Start : Calculate_Noise_Map_Difference')
+    logger.info("inputs {}", input)
 
     String mainMapTable = input['mainMapTable']
     String secondMapTable = input['secondMapTable']

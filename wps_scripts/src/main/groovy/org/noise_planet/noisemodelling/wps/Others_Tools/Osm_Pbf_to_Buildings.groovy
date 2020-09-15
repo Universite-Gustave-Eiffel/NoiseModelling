@@ -108,10 +108,8 @@ def exec(Connection connection, input) {
     String resultString
 
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
-    // output string, the information given back to the user
-
-    // print to command window
     logger.info('Start : Get Buildings from PBF OSM')
+    logger.info("inputs {}", input)
 
     // -------------------
     // Get every inputs

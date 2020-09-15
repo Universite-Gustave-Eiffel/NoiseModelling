@@ -111,6 +111,7 @@ def exec(Connection connection, input) {
 
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
     logger.info('Start : Noise_Map_From_Attenuation_Matrix')
+    logger.info("inputs {}", input)
 
     String matsimRoads = input['matsimRoads']
     String matsimRoadsStats = input['matsimRoadsStats']

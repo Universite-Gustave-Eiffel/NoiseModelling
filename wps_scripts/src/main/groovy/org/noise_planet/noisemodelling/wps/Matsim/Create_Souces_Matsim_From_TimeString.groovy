@@ -108,6 +108,7 @@ def exec(Connection connection, input) {
 
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
     logger.info('Start : Create_Sources_Matsim_From_TimeString')
+    logger.info("inputs {}", input)
 
     String roadsTableName = input["roadsTableName"] as String;
     String statsTableName =  roadsTableName + "_STATS";
