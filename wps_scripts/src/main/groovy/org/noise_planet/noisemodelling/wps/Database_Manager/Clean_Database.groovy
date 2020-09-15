@@ -68,6 +68,7 @@ def exec(Connection connection, input) {
 
     // print to command window
     logger.info('Start : Clean Database')
+    logger.info("inputs {}", input) // log inputs of the run
 
     // Get name of the table
     Boolean areYouSure  = input['areYouSure'] as Boolean

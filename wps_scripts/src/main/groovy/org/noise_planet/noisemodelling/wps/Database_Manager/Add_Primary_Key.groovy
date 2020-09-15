@@ -73,6 +73,7 @@ def exec(Connection connection, input) {
 
     // Create a logger to display messages in the geoserver logs and in the command prompt.
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
+    logger.info("inputs {}", input) // log inputs of the run
 
     // print to command window
     logger.info('Start : Add primary key column or constraint')

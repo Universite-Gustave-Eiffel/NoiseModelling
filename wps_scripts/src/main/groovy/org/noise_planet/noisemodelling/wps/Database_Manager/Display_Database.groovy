@@ -19,22 +19,37 @@ package org.noise_planet.noisemodelling.wps.Database_Manager
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
-import groovy.time.TimeCategory
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import java.sql.Connection
 
 title = 'Display the list of tables (and their attributes).'
-description = 'Displays the list of tables that are in the database. </br> Optional: It is also possible to display their attributes (columns). </br> ' +
-        ' For a visualization of an extract of a table or an entire table, other tools will be better adapted as the database tool dBeaver.'
+description = 'Displays the list of tables that are in the database. ' +
+        '</br> Optional: It is also possible to display their attributes (columns). ' +
+        '</br> For a visualization of an extract of a table or an entire table, you can use Table_Visualization_Data.'
 
 inputs = [
-        showColumns: [name: 'Display columns of the tables', title: 'Display columns of the tables', description: 'Do you want to display also the column of the tables ? </br> note : A small yellow key symbol will appear if the column as a primary key constraint.', type: Boolean.class]
+        showColumns: [
+                name: 'Display columns of the tables',
+                title: 'Display columns of the tables',
+                description: 'Do you want to display also the column of the tables ? ' +
+                        '</br> note : A small yellow key symbol will appear if the column as a primary key constraint.',
+                type: Boolean.class
+        ]
 ]
 
-outputs = [result: [name: 'Result output string', title: 'Result output string', description: 'This type of result does not allow the blocks to be linked together.', type: String.class]]
+outputs = [
+        result: [
+                name: 'Result output string',
+                title: 'Result output string',
+                description: 'This type of result does not allow the blocks to be linked together.',
+                type: String.class
+        ]
+]
 
 
 static Connection openGeoserverDataStoreConnection(String dbName) {
@@ -51,9 +66,12 @@ def exec(Connection connection, input) {
     // output string, the information given back to the user
     String resultString = null
 
+    // Create a logger to display messages in the geoserver logs and in the command prompt.
+    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
+
     // print to command window
-    System.out.println('Start : Display database')
-    def start = new Date()
+    logger.info('Start : Display database')
+    logger.info("inputs {}", input) // log inputs of the run
 
     Boolean showColumnName = input['showColumns'] as Boolean
 
@@ -90,9 +108,7 @@ def exec(Connection connection, input) {
     }
 
     // print to command window
-    System.out.println('Result : ' + sb.toString())
-    System.out.println('End : Display database')
-    System.out.println('Duration : ' + TimeCategory.minus(new Date(), start))
+    logger.info('End : Display database')
 
     // print to WPS Builder
     return sb.toString()
