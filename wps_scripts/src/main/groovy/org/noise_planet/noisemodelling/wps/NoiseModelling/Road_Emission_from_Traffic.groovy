@@ -217,6 +217,7 @@ def exec(Connection connection, input) {
 
     // Add Z dimension to the road segments
     sql.execute("UPDATE LW_ROADS SET THE_GEOM = ST_UPDATEZ(The_geom,0.05);")
+
     // Add primary key to the road table
     sql.execute("ALTER TABLE LW_ROADS ALTER COLUMN PK INT NOT NULL;")
     sql.execute("ALTER TABLE LW_ROADS ADD PRIMARY KEY (PK);  ")

@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory
 
 import java.sql.Connection
 import java.sql.SQLException
+
 // ----------------
 // This is a short template.
 // Some doubts may remain about writing a WPS script. 
@@ -127,6 +128,7 @@ def exec(Connection connection, input) {
 
     // print to command window
     logger.info('Start : Template')
+    logger.info("inputs {}", input) // log inputs of the run
 
     // -------------------
     // Get every inputs

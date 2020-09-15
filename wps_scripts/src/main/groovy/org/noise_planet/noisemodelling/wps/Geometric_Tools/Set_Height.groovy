@@ -90,6 +90,7 @@ def exec(Connection connection, input) {
 
     // print to command window
     logger.info('Start : Set new height')
+    logger.info("inputs {}", input) // log inputs of the run
 
     String table_name = input['tableName']  as String
     table_name = table_name.toUpperCase()

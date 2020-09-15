@@ -15,6 +15,7 @@
  * @Author Hesry Quentin, Université Gustave Eiffel
  * @Author Nicolas Fortin, Université Gustave Eiffel
  */
+
 package org.noise_planet.noisemodelling.wps.NoiseModelling
 
 import geoserver.GeoServer
@@ -25,21 +26,12 @@ import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.api.ProgressVisitor
 import org.h2gis.utilities.SFSUtilities
-import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Envelope
-import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
-import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
-import org.noise_planet.noisemodelling.emission.RSParametersCnossos
 import org.noise_planet.noisemodelling.emission.jdbc.LDENConfig
 import org.noise_planet.noisemodelling.emission.jdbc.LDENPointNoiseMapFactory
-import org.noise_planet.noisemodelling.propagation.ComputeRays
-import org.noise_planet.noisemodelling.propagation.ComputeRaysOut
-import org.noise_planet.noisemodelling.propagation.FastObstructionTest
-import org.noise_planet.noisemodelling.propagation.IComputeRaysOut
-import org.noise_planet.noisemodelling.propagation.PropagationProcessData
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
 import org.noise_planet.noisemodelling.propagation.RootProgressVisitor
 import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap
