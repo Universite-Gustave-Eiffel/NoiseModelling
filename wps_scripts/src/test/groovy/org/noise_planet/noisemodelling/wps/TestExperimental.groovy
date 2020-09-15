@@ -13,20 +13,18 @@
 package org.noise_planet.noisemodelling.wps
 
 import org.h2gis.functions.io.geojson.GeoJsonRead
-
-import org.junit.Test
 import org.noise_planet.noisemodelling.wps.Database_Manager.Add_Primary_Key
 import org.noise_planet.noisemodelling.wps.Database_Manager.Table_Visualization_Data
 import org.noise_planet.noisemodelling.wps.Experimental.Get_Rayz
 import org.noise_planet.noisemodelling.wps.Experimental.Multi_Runs
 
-class TestMultRuns extends JdbcTestCase  {
+class TestExperimental extends JdbcTestCase  {
 
     void testMultiRun() {
 
-        GeoJsonRead.readGeoJson(connection, TestMultRuns.class.getResource("multirun/buildings.geojson").getPath())
-        GeoJsonRead.readGeoJson(connection, TestMultRuns.class.getResource("multirun/receivers.geojson").getPath())
-        GeoJsonRead.readGeoJson(connection, TestMultRuns.class.getResource("multirun/sources.geojson").getPath())
+        GeoJsonRead.readGeoJson(connection, TestExperimental.class.getResource("multirun/buildings.geojson").getPath())
+        GeoJsonRead.readGeoJson(connection, TestExperimental.class.getResource("multirun/receivers.geojson").getPath())
+        GeoJsonRead.readGeoJson(connection, TestExperimental.class.getResource("multirun/sources.geojson").getPath())
 
         new Add_Primary_Key().exec(connection,
                 ["pkName":"PK",
@@ -41,11 +39,11 @@ class TestMultRuns extends JdbcTestCase  {
                 ["tableBuilding"   : "BUILDINGS",
                  "roadsTableName"   : "SOURCES",
                  "tableReceivers": "RECEIVERS",
-                 "exportPath"   : TestMultRuns.class.getResource("multirun/").getPath()])
+                 "exportPath"   : TestExperimental.class.getResource("multirun/").getPath()])
 
 
         new Multi_Runs().exec(connection,
-                ["workingDir":TestMultRuns.class.getResource("multirun/").getPath()])
+                ["workingDir":TestExperimental.class.getResource("multirun/").getPath()])
 
 
       String res =   new Table_Visualization_Data().exec(connection,
@@ -56,10 +54,10 @@ class TestMultRuns extends JdbcTestCase  {
                  "roadsTableName"   : "SOURCES",
                  "tableReceivers": "RECEIVERS",
                  "confReflOrder": 1,
-                 "exportPath"   : TestMultRuns.class.getResource("multirun/").getPath()])
+                 "exportPath"   : TestExperimental.class.getResource("multirun/").getPath()])
 
         new Multi_Runs().exec(connection,
-                ["workingDir":TestMultRuns.class.getResource("multirun/").getPath()])
+                ["workingDir":TestExperimental.class.getResource("multirun/").getPath()])
 
         String res3 =   new Table_Visualization_Data().exec(connection,
                 ["tableName": "MultiRunsResults_geom"])
