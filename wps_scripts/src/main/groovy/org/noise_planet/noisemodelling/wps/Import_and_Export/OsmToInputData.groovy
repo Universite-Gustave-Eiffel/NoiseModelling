@@ -21,10 +21,11 @@ package org.noise_planet.noisemodelling.wps.Import_and_Export
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
-import groovy.time.TimeCategory
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.functions.io.osm.OSMRead
 import org.locationtech.jts.geom.Geometry
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import java.sql.Connection
 import java.sql.Statement
@@ -84,7 +85,14 @@ inputs = [pathFile        : [name       : 'Path of the OSM file',
                              description: 'Target projection identifier (also called SRID) of your table. It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection). </br>  The target SRID must be in metric coordinates. </br>', type: Integer.class],
 ]
 
-outputs = [result: [name: 'Result output string', title: 'Result output string', description: 'This type of result does not allow the blocks to be linked together.', type: String.class]]
+outputs = [
+        result: [
+                name       : 'Result output string',
+                title      : 'Result output string',
+                description: 'This type of result does not allow the blocks to be linked together.',
+                type       : String.class
+        ]
+]
 
 // Open Connection to Geoserver
 static Connection openGeoserverDataStoreConnection(String dbName) {
@@ -117,10 +125,12 @@ def exec(Connection connection, input) {
     // output string, the information given back to the user
     String resultString = ""
 
-    // print to command window
-    System.out.println('Start : Get Input Data from OSM')
-    def start = new Date()
+    // Create a logger to display messages in the geoserver logs and in the command prompt.
+    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
 
+    // print to command window
+    logger.info('Start : Get Input Data from OSM')
+    logger.info("inputs {}", input) // log inputs of the run
     // -------------------
     // Get every inputs
     // -------------------
@@ -220,7 +230,7 @@ def exec(Connection connection, input) {
                 
                 drop table if exists MAP_BUILDINGS_GEOM;'''
         sql.execute(Buildings_Import)
-        System.println('The table BUILDINGS has been created.')
+        logger.info('The table BUILDINGS has been created.')
         resultString = resultString + ' <br> The table BUILDINGS has been created.'
     }
 
@@ -247,7 +257,7 @@ def exec(Connection connection, input) {
         sql.execute(Ground_Import)
         sql.execute("DROP TABLE IF EXISTS MAP_SURFACE;")
 
-        System.println('The table GROUND has been created.')
+        logger.info('The table GROUND has been created.')
         resultString = resultString + ' <br> The table GROUND has been created.'
     }
 
@@ -340,7 +350,7 @@ def exec(Connection connection, input) {
         sql.execute("DROP TABLE MAP_ROADS_GEOM IF EXISTS;")
         sql.execute("DROP TABLE ROADS_AADF IF EXISTS;")
 
-        System.println('The table ROADS has been created.')
+        logger.info('The table ROADS has been created.')
         resultString = resultString + ' <br> The table ROADS has been created.'
     }
 
@@ -355,9 +365,8 @@ def exec(Connection connection, input) {
     resultString = resultString + "<br> Calculation Done !"
 
     // print to command window
-    System.out.println('Result : ' + resultString)
-    System.out.println('End : Osm To Input Data')
-    System.out.println('Duration : ' + TimeCategory.minus(new Date(), start))
+    logger.info(resultString)
+    logger.info('End : Osm To Input Data')
 
     // print to WPS Builder
     return resultString

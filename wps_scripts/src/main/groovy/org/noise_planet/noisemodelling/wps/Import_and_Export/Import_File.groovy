@@ -19,7 +19,6 @@ package org.noise_planet.noisemodelling.wps.Import_and_Export
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
-import groovy.time.TimeCategory
 import org.apache.commons.io.FilenameUtils
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.api.EmptyProgressVisitor
@@ -34,6 +33,8 @@ import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.SFSUtilities
 import org.h2gis.utilities.TableLocation
 //import org.noise_planet.noisemodelling.ext.asc.AscDriverFunction
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import java.sql.Connection
 import java.sql.Statement
@@ -41,12 +42,42 @@ import java.sql.Statement
 title = 'Import File'
 description = 'Import file into the database. </br> Valid file extensions : (csv, dbf, geojson, gpx, bz2, gz, osm, shp, tsv). </br>'
 
-inputs = [pathFile : [name: 'Path of the input File', title: 'Path of the input File', description: 'Path of the file you want to import, including its extension. </br> For example : c:/home/receivers.geojson',  type: String.class],
-          inputSRID: [name: 'Projection identifier', title: 'Projection identifier', description: 'Original projection identifier (also called SRID) of your table. It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection). </br>  All coordinates will be projected from the specified EPSG to WGS84 coordinates. </br> This entry is optional because many formats already include the projection and you can also import files without geometry attributes.</br> </br> <b> Default value : 4326 </b> ', type: Integer.class, min: 0, max: 1],
-          tableName: [name: 'Output table name', title: 'Name of created table', description: 'Name of the table you want to create from the file. </br> <b> Default value : it will take the name of the file without its extension (special characters will be removed and whitespaces will be replace by an underscore. </b> ', min: 0, max: 1, type: String.class]]
+inputs = [
+        pathFile : [
+                name: 'Path of the input File',
+                title: 'Path of the input File',
+                description: 'Path of the file you want to import, including its extension. ' +
+                        '</br> For example : c:/home/receivers.geojson',
+                type: String.class
+        ],
+          inputSRID: [
+                  name: 'Projection identifier',
+                  title: 'Projection identifier',
+                  description: 'Original projection identifier (also called SRID) of your table. It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection). ' +
+                          '</br>  All coordinates will be projected from the specified EPSG to WGS84 coordinates. ' +
+                          '</br> This entry is optional because many formats already include the projection and you can also import files without geometry attributes.</br> ' +
+                          '</br> <b> Default value : 4326 </b> ',
+                  type: Integer.class,
+                  min: 0, max: 1
+          ],
+          tableName: [
+                  name: 'Output table name',
+                  title: 'Name of created table',
+                  description: 'Name of the table you want to create from the file. ' +
+                          '</br> <b> Default value : it will take the name of the file without its extension (special characters will be removed and whitespaces will be replace by an underscore. </b> ',
+                  min: 0, max: 1,
+                  type: String.class
+          ]
+]
 
-outputs = [result: [name: 'Result output string', title: 'Result output string', description: 'This type of result does not allow the blocks to be linked together.', type: String.class]]
-
+outputs = [
+        result: [
+                name       : 'Result output string',
+                title      : 'Result output string',
+                description: 'This type of result does not allow the blocks to be linked together.',
+                type       : String.class
+        ]
+]
 
 static Connection openGeoserverDataStoreConnection(String dbName) {
     if (dbName == null || dbName.isEmpty()) {
@@ -76,9 +107,13 @@ def exec(Connection connection, input) {
     // output string, the information given back to the user
     String resultString = null
 
+    // Create a logger to display messages in the geoserver logs and in the command prompt.
+    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
+
     // print to command window
-    System.out.println('Start : Import File')
-    def start = new Date()
+    logger.info('Start : Import File')
+    logger.info("inputs {}", input) // log inputs of the run
+
 
     // Default SRID (WGS84)
     Integer srid = 4326
@@ -93,11 +128,7 @@ def exec(Connection connection, input) {
     def file = new File(pathFile)
     if (!file.exists()) {
         resultString = pathFile + " is not found."
-        // print to command window
-        System.out.println('ERROR : ' + resultString)
-        System.out.println('Duration : ' + TimeCategory.minus(new Date(), start))
-        // print to WPS Builder
-        return resultString
+        throw new Exception('ERROR : ' + resultString)
     }
 
     // Get name of the table
@@ -175,7 +206,7 @@ def exec(Connection connection, input) {
 
     // If the table does not contain a geometry field
     if (spatialFieldNames.isEmpty()) {
-        System.out.println("The table does not contain a geometry field.")
+        logger.warn("The table does not contain a geometry field.")
     }
 
     // Get the SRID of the table
@@ -183,18 +214,14 @@ def exec(Connection connection, input) {
 
     if (tableSrid != 0 && tableSrid != srid && input['inputSRID']) {
         resultString = "The table already has a different SRID than the one you gave."
-        // print to command window
-        System.out.println('ERROR : ' + resultString)
-        System.out.println('Duration : ' + TimeCategory.minus(new Date(), start))
-        // print to WPS Builder
-        return resultString
+        throw new Exception('ERROR : ' + resultString)
     }
 
     // Replace default SRID by the srid of the table
     if (tableSrid != 0) srid = tableSrid
 
     // Display the actual SRID in the command window
-    System.out.println("The SRID of the table is " + srid)
+    logger.info("The SRID of the table is " + srid)
 
     // If the table does not have an associated SRID, add a SRID
     if (tableSrid == 0 && !spatialFieldNames.isEmpty()) {
@@ -205,9 +232,8 @@ def exec(Connection connection, input) {
     resultString = "The table " + tableName + " has been uploaded to database!"
 
     // print to command window
-    System.out.println('Result : ' + resultString)
-    System.out.println('End : Import File')
-    System.out.println('Duration : ' + TimeCategory.minus(new Date(), start))
+    logger.info(resultString)
+    logger.info('End : Import File')
 
     // print to WPS Builder
     return resultString

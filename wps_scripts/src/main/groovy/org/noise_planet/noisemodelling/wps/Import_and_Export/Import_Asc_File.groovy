@@ -18,7 +18,6 @@ package org.noise_planet.noisemodelling.wps.Import_and_Export
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
-import groovy.time.TimeCategory
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.functions.io.utility.PRJUtil
@@ -31,6 +30,8 @@ import org.locationtech.jts.io.WKTWriter
 import org.noise_planet.noisemodelling.ext.asc.AscDriverFunction
 import org.noise_planet.noisemodelling.ext.asc.AscReaderDriver
 import org.noise_planet.noisemodelling.propagation.RootProgressVisitor
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import java.sql.Connection
 import java.sql.Statement
@@ -41,13 +42,48 @@ description = 'Import ESRI Ascii Raster file and convert into a Digital Elevatio
         'and contain : </br>' +
         '- <b> THE_GEOM </b> : the 3D point cloud of the DEM (POINT).</br> '
 
-inputs = [pathFile : [name: 'Path of the input File', title: 'Path of the ESRI Ascii Raster file', description: 'Path of the ESRI Ascii Raster file you want to import, including its extension. </br> For example : c:/home/receivers.asc', type: String.class],
-          inputSRID: [name: 'Projection identifier', title: 'Projection identifier', description: 'Original projection identifier (also called SRID) of your table. It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection). (INTEGER) </br>  All coordinates will be projected from the specified EPSG to WGS84 coordinates. </br> This entry is optional because many formats already include the projection and you can also import files without geometry attributes.</br> </br> <b> Default value : 4326 </b> ', type: Integer.class, min: 0, max: 1],
-          fence    : [name: 'Fence geometry', title: 'Fence geometry', description: 'Create DEM table only in the provided polygon', min: 0, max: 1, type: Geometry.class],
-          downscale: [name: 'SkipPixels', title: 'Skip pixels on each axis', description: 'Divide the number of rows and columns read by the following coefficient (FLOAT) </br> </br> <b> Default value : 1.0 </b>', min: 0, max: 1, type: Integer.class]]
+inputs = [
+        pathFile : [
+        name: 'Path of the input File',
+        title: 'Path of the ESRI Ascii Raster file',
+        description: 'Path of the ESRI Ascii Raster file you want to import, including its extension. ' +
+                '</br> For example : c:/home/receivers.asc',
+        type: String.class],
+          inputSRID: [
+                  name: 'Projection identifier',
+                  title: 'Projection identifier',
+                  description: 'Original projection identifier (also called SRID) of your table. It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection). (INTEGER) ' +
+                          '</br>  All coordinates will be projected from the specified EPSG to WGS84 coordinates. ' +
+                          '</br> This entry is optional because many formats already include the projection and you can also import files without geometry attributes.' +
+                          '</br> </br> <b> Default value : 4326 </b> ',
+                  type: Integer.class,
+                  min: 0, max: 1
+          ],
+          fence    : [
+                  name: 'Fence geometry',
+                  title: 'Fence geometry',
+                  description: 'Create DEM table only in the provided polygon',
+                  min: 0, max: 1,
+                  type: Geometry.class
+          ],
+          downscale: [
+                  name: 'Skip pixels on each axis',
+                  title: 'Skip pixels on each axis',
+                  description: 'Divide the number of rows and columns read by the following coefficient (FLOAT) ' +
+                          '</br> </br> <b> Default value : 1.0 </b>',
+                  min: 0, max: 1,
+                  type: Integer.class
+          ]
+]
 
-outputs = [result: [name: 'Result output string', title: 'Result output string', description: 'This type of result does not allow the blocks to be linked together.', type: String.class]]
-
+outputs = [
+        result: [
+                name       : 'Result output string',
+                title      : 'Result output string',
+                description: 'This type of result does not allow the blocks to be linked together.',
+                type       : String.class
+        ]
+]
 
 static Connection openGeoserverDataStoreConnection(String dbName) {
     if (dbName == null || dbName.isEmpty()) {
@@ -77,9 +113,13 @@ def exec(Connection connection, input) {
     // output string, the information given back to the user
     String resultString = null
 
+    // Create a logger to display messages in the geoserver logs and in the command prompt.
+    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
+
     // print to command window
-    System.out.println('Start : Import Asc File')
-    def start = new Date()
+    logger.info('Start : Import Asc File')
+    logger.info("inputs {}", input) // log inputs of the run
+
 
     // Default SRID (WGS84)
     Integer defaultSRID = 4326
@@ -122,10 +162,7 @@ def exec(Connection connection, input) {
     if (ext != "asc") {
         resultString = "The extension is not valid"
         // print to command window
-        System.out.println('ERROR : ' + resultString)
-        System.out.println('Duration : ' + TimeCategory.minus(new Date(), start))
-        // print to WPS Builder
-        return resultString
+        throw new Exception('ERROR : ' + resultString)
     }
     switch (ext) {
         case "asc":
@@ -146,7 +183,7 @@ def exec(Connection connection, input) {
     final String fileNamePrefix = filePath.substring(0, dotIndex)
     File prjFile = new File(fileNamePrefix + ".prj")
     if (prjFile.exists()) {
-        System.out.println("Found prj file :" + prjFile.getAbsolutePath())
+        logger.info("Found prj file :" + prjFile.getAbsolutePath())
         try {
             srid = PRJUtil.getSRID(prjFile)
             if (srid == 0) {
@@ -168,10 +205,10 @@ def exec(Connection connection, input) {
             if (input['fence']) {
                 fenceGeom = wktReader.read(input['fence'] as String)
             }
-            System.out.println("Got fence :" + wktWriter.write(fenceGeom))
+            logger.info("Got fence :" + wktWriter.write(fenceGeom))
             Geometry fenceTransform = ST_Transform.ST_Transform(connection, ST_SetSRID.setSRID(fenceGeom, 4326), srid)
             ascDriver.setExtractEnvelope(fenceTransform.getEnvelopeInternal())
-            System.out.println("Fence coordinate transformed :" + wktWriter.write(fenceTransform))
+            logger.info("Fence coordinate transformed :" + wktWriter.write(fenceTransform))
         } else {
             throw new IllegalArgumentException("Unable to find DEM SRID but fence was provided")
         }
@@ -192,15 +229,13 @@ def exec(Connection connection, input) {
 
 
     // Display the actual SRID in the command window
-    System.out.println("The SRID of your table is " + srid)
-
+    logger.info("The SRID of your table is " + srid)
 
     resultString = "The table DEM has been uploaded to database ! </br>  Its SRID is : " + srid + ". </br> Remember that to calculate a noise map, your SRID must be in metric coordinates. Please use the Wps block 'Change SRID' if needed."
 
     // print to command window
-    System.out.println('Result : ' + resultString)
-    System.out.println('End : Import File')
-    System.out.println('Duration : ' + TimeCategory.minus(new Date(), start))
+    logger.info(resultString)
+    logger.info('End : Import Asc File')
 
     // print to WPS Builder
     return resultString

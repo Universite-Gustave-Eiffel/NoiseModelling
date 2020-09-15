@@ -13,6 +13,7 @@
 package org.noise_planet.noisemodelling.wps
 
 import org.h2gis.functions.io.shp.SHPRead
+import org.junit.Assert
 import org.noise_planet.noisemodelling.wps.Database_Manager.Display_Database
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_Asc_File
@@ -38,13 +39,17 @@ class TestImportExport extends JdbcTestCase {
     }
 
     void testImportFile2() {
+        try {
+            String res = new Import_File().exec(connection,
+                    ["pathFile" : TestImportExport.getResource("receivers.shp").getPath(),
+                     "inputSRID": "4362",
+                     "tableName": "receivers"])
+        }
+        catch (Exception e) {
+            String expectedMessage = "ERROR : The table already has a different SRID than the one you gave.";
+            Assert.assertEquals( "Exception message must be correct", expectedMessage, e.getMessage() );
+        }
 
-        String res = new Import_File().exec(connection,
-                ["pathFile" : TestImportExport.getResource("receivers.shp").getPath(),
-                 "inputSRID": "4362",
-                 "tableName": "receivers"])
-
-        assertEquals("The table already has a different SRID than the one you gave.", res)
     }
 
     void testImportAsc() {

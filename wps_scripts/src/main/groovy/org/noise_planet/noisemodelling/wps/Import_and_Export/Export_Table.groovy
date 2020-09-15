@@ -19,7 +19,6 @@ package org.noise_planet.noisemodelling.wps.Import_and_Export
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
-import groovy.time.TimeCategory
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.functions.io.csv.CSVDriverFunction
@@ -32,21 +31,37 @@ import org.h2gis.functions.io.tsv.TSVDriverFunction
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.SFSUtilities
 import org.h2gis.utilities.TableLocation
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
-import java.nio.file.Paths
 import java.sql.Connection
-
 
 title = 'Export table'
 description = 'Export table from the database to a local file. </br> Valid file extensions : (csv, dbf, geojson, gpx, bz2, gz, osm, shp, tsv).'
 
 inputs = [
-        exportPath   : [name: 'Export path', title: 'Path of the file you want to export', description: 'Path of the file, including its extension. </br> For example : c:/home/receivers.geojson', type: String.class],
-        tableToExport: [name: 'Name of the table to export', title: 'Name of the table', description: 'Name of the table you want to export.', type: String.class]
+        exportPath   : [
+                name: 'Export path', title: 'Path of the file you want to export',
+                description: 'Path of the file, including its extension. ' +
+                        '</br> For example : c:/home/receivers.geojson',
+                type: String.class
+        ],
+        tableToExport: [
+                name: 'Name of the table to export',
+                title: 'Name of the table',
+                description: 'Name of the table you want to export.',
+                type: String.class
+        ]
 ]
 
-outputs = [result: [name: 'Result output string', title: 'Result output string', description: 'This type of result does not allow the blocks to be linked together.', type: String.class]]
-
+outputs = [
+        result: [
+                name       : 'Result output string',
+                title      : 'Result output string',
+                description: 'This type of result does not allow the blocks to be linked together.',
+                type       : String.class
+        ]
+]
 
 static Connection openGeoserverDataStoreConnection(String dbName) {
     if (dbName == null || dbName.isEmpty()) {
@@ -62,9 +77,13 @@ def exec(Connection connection, input) {
     // output string, the information given back to the user
     String resultString = null
 
+    // Create a logger to display messages in the geoserver logs and in the command prompt.
+    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
+
     // print to command window
-    System.out.println('Start : Export File')
-    def start = new Date()
+    logger.info('Start : Export File')
+    logger.info("inputs {}", input) // log inputs of the run
+
 
     // get Export Path
     String exportPath = input["exportPath"] as String
@@ -77,7 +96,7 @@ def exec(Connection connection, input) {
     List<String> fields = JDBCUtilities.getFieldNames(connection.getMetaData(), tableToExport)
     if (fields.size()<1)
     {
-        return resultString = "The table is empty and can not be exported."
+        throw new Exception("The table is empty and can not be exported.")
     }
 
 
@@ -113,7 +132,7 @@ def exec(Connection connection, input) {
             tsvDriver.exportTable(connection, tableToExport, new File(exportPath), new EmptyProgressVisitor())
             break
         default:
-            return resultString = "The file extension is not valid. No table has been exported"
+            throw new Exception("The file extension is not valid. No table has been exported.")
             break
     }
 
@@ -132,10 +151,8 @@ def exec(Connection connection, input) {
 
 
     // print to command window
-    System.out.println('Result : ' + resultString)
-    System.out.println('End : Export File')
-    System.out.println('Duration : ' + TimeCategory.minus(new Date(), start))
-
+    logger.info(resultString)
+    logger.info('End : Export File')
     // print to WPS Builder
     return resultString
 
