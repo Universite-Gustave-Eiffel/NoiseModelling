@@ -20,7 +20,6 @@ package org.noise_planet.noisemodelling.wps.Database_Manager
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
-import groovy.time.TimeCategory
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.SFSUtilities
@@ -28,6 +27,8 @@ import org.h2gis.utilities.TableLocation
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.io.WKTWriter
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import java.sql.Connection
 import java.sql.ResultSet
@@ -37,12 +38,32 @@ title = 'Diplay a table on a map.'
 description = 'Display a table containing a geometric field on a map. </br> Technically, it groups all the geometries of a table and returns them in WKT OGC format. </br> Be careful, this treatment can be blocking if the table is large.'
 
 inputs = [
-        inputSRID: [name: 'Projection identifier', title: 'Projection identifier', description: 'Original projection identifier (also called SRID) of your table. It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection). </br>  All coordinates will be projected from the specified EPSG to WGS84 coordinates. </br> This entry is optional because many formats already include the projection and you can also import files without geometry attributes.</br>  <b> Default value : 4326 </b> ', type: Integer.class, min: 0, max: 1],
-        tableName: [name: 'Name of the table', title: 'Name of the table', description: 'Name of the table you want to display.', type: String.class]
+        inputSRID: [
+                name       : 'Projection identifier',
+                title      : 'Projection identifier',
+                description: 'Original projection identifier (also called SRID) of your table. It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection). ' +
+                        '</br>  All coordinates will be projected from the specified EPSG to WGS84 coordinates. ' +
+                        '</br> This entry is optional because many formats already include the projection and you can also import files without geometry attributes.' +
+                        '</br>  <b> Default value : 4326 </b> ',
+                type       : Integer.class,
+                min        : 0, max: 1
+        ],
+        tableName: [
+                name       : 'Name of the table',
+                title      : 'Name of the table',
+                description: 'Name of the table you want to display.',
+                type       : String.class
+        ]
 ]
 
-outputs = [result: [name: 'Result output geometry', title: 'Result output geometry', description: 'This is the output geometry in WKT OGC format', type: Geometry.class]]
-
+outputs = [
+        result: [
+                name       : 'Result output string',
+                title      : 'Result output string',
+                description: 'This type of result does not allow the blocks to be linked together.',
+                type       : String.class
+        ]
+]
 
 static Connection openGeoserverDataStoreConnection(String dbName) {
     if (dbName == null || dbName.isEmpty()) {
@@ -58,9 +79,15 @@ def exec(Connection connection, input) {
     // output geometry, the information given back to the user
     Geometry geom = null
 
+    // Create a connection statement to interact with the database in SQL
+    Statement stmt = connection.createStatement()
+
+    // Create a logger to display messages in the geoserver logs and in the command prompt.
+    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
+
     // print to command window
-    System.out.println('Start : Display a table on a map')
-    def start = new Date()
+    logger.info('Start : Display a table on a map')
+    logger.info("inputs {}", input) // log inputs of the run
 
     // Get name of the table
     String tableName = input["tableName"] as String
@@ -74,17 +101,12 @@ def exec(Connection connection, input) {
         srid = input['inputSRID'] as Integer
     }
 
-    // Create a connection statement to interact with the database in SQL
-    Statement stmt = connection.createStatement()
-
     // Read Geometry Index and type of the table
     List<String> spatialFieldNames = SFSUtilities.getGeometryFields(connection, TableLocation.parse(tableName, JDBCUtilities.isH2DataBase(connection.getMetaData())))
 
     // If the table does not contain a geometry field
     if (spatialFieldNames.isEmpty()) {
-        System.err.println("The table does not contain a geometry field")
-        geom = new GeometryFactory().createGeometryCollection()
-        return geom
+        throw new Exception("The table does not contain a geometry field")
     }
 
     // Get the SRID of the table
@@ -96,7 +118,7 @@ def exec(Connection connection, input) {
     if (tableSrid != 0) srid = tableSrid
 
     // Display the actual SRID in the command window
-    System.out.println("The actual SRID of the table is " + srid)
+    logger.info("The actual SRID of the table is " + srid)
 
     if (tableSrid == 0) {
         connection.createStatement().execute(String.format("UPDATE %s SET " + spatialFieldNames.get(0) + " = ST_SetSRID(" + spatialFieldNames.get(0) + ",%d)",
@@ -114,12 +136,12 @@ def exec(Connection connection, input) {
 
     // print to command window
     if (asWKT(geom).size() > 100) {
-        System.out.println('Result (100 first characters) : ' + asWKT(geom).substring(0,100) + '...')
+        logger.info('Result (100 first characters) : ' + asWKT(geom).substring(0, 100) + '...')
     } else {
-        System.out.println('Result : ' + asWKT(geom))
+        logger.info('Result : ' + asWKT(geom))
     }
-    System.out.println('End : Display a table on a map')
-    System.out.println('Duration : ' + TimeCategory.minus(new Date(), start))
+
+    logger.info('End : Display a table on a map')
 
     // print to WPS Builder
     return geom

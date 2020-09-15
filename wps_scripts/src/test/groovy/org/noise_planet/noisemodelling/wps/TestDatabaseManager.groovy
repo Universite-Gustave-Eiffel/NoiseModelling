@@ -109,6 +109,7 @@ class TestDatabaseManager extends JdbcTestCase {
         String res = new Table_Visualization_Data().exec(connection,
                 ["tableName": "receivers" ])
         assertTrue(res.contains("The total number of rows is 830"))
+        assertTrue(res.contains("The srid of the table is 2154"))
         assertTrue(res.contains("POINT (223495.9880411485 6757167.98900822 0)"))
     }
 }
