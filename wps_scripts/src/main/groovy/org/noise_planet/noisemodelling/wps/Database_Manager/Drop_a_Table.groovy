@@ -19,10 +19,11 @@ package org.noise_planet.noisemodelling.wps.Database_Manager
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
-import groovy.time.TimeCategory
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import java.sql.Connection
 import java.sql.Statement
@@ -31,10 +32,22 @@ title = 'Remove a table from the database.'
 description = 'Remove a table from the database.'
 
 inputs = [
-        tableToDrop: [name: 'tableToDrop', title: 'Name of the table to drop.', description: 'Name of the table to drop.', type: String.class]
+        tableToDrop: [
+                name       : 'Name of the table to drop.',
+                title      : 'Name of the table to drop.',
+                description: 'Name of the table to drop.',
+                type       : String.class
+        ]
 ]
 
-outputs = [result: [name: 'Result output string', title: 'Result output string', description: 'This type of result does not allow the blocks to be linked together.', type: String.class]]
+outputs = [
+        result: [
+                name       : 'Result output string',
+                title      : 'Result output string',
+                description: 'This type of result does not allow the blocks to be linked together.',
+                type       : String.class
+        ]
+]
 
 static Connection openGeoserverDataStoreConnection(String dbName) {
     if (dbName == null || dbName.isEmpty()) {
@@ -49,9 +62,13 @@ def exec(Connection connection, input) {
     // output string, the information given back to the user
     String resultString = null
 
+    // Create a logger to display messages in the geoserver logs and in the command prompt.
+    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
+
     // print to command window
-    System.out.println('Start : Drop a table')
-    def start = new Date()
+    logger.info('Start : Drop a table')
+    logger.info("inputs {}", input) // log inputs of the run
+
 
     // Get name of the table to drop
     String tableToDrop = input['tableToDrop'] as String
@@ -83,12 +100,13 @@ def exec(Connection connection, input) {
         }
     }
 
-    if (flag == 0) resultString = "The table " + tableToDrop + " was not found"
+    if (flag == 0) {
+        logger.warn("The table " + tableToDrop + " was not found")
+        resultString = "The table " + tableToDrop + " was not found"
+    }
 
     // print to command window
-    System.out.println('Result : ' + resultString)
-    System.out.println('End : Drop a table')
-    System.out.println('Duration : ' + TimeCategory.minus(new Date(), start))
+    logger.info('End : Drop a table')
 
     // print to WPS Builder
     return resultString

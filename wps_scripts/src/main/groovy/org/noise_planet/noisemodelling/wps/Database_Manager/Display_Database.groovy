@@ -34,20 +34,20 @@ description = 'Displays the list of tables that are in the database. ' +
 
 inputs = [
         showColumns: [
-                name: 'Display columns of the tables',
-                title: 'Display columns of the tables',
+                name       : 'Display columns of the tables',
+                title      : 'Display columns of the tables',
                 description: 'Do you want to display also the column of the tables ? ' +
                         '</br> note : A small yellow key symbol will appear if the column as a primary key constraint.',
-                type: Boolean.class
+                type       : Boolean.class
         ]
 ]
 
 outputs = [
         result: [
-                name: 'Result output string',
-                title: 'Result output string',
+                name       : 'Result output string',
+                title      : 'Result output string',
                 description: 'This type of result does not allow the blocks to be linked together.',
-                type: String.class
+                type       : String.class
         ]
 ]
 
