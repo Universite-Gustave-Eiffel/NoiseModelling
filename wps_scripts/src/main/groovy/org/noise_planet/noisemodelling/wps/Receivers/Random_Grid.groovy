@@ -16,7 +16,6 @@
  */
 
 
-
 package org.noise_planet.noisemodelling.wps.Receivers
 
 import geoserver.GeoServer
@@ -39,27 +38,64 @@ import groovy.sql.Sql
 title = 'Random Grid'
 description = '[H2GIS] Calculates a random grid of receivers. Return a table named RECEIVERS'
 
-inputs = [buildingTableName: [name       : 'Buildings table name', title: 'Buildings table name',
-                              description: '<b>Name of the Buildings table.</b>  </br>  ' +
-                                      '<br>  The table shall contain : </br>' +
-                                      '- <b> THE_GEOM </b> : the 2D geometry of the building (POLYGON or MULTIPOLYGON). </br>' +
-                                      '- <b> HEIGHT </b> : the height of the building (FLOAT)',
-                              type       : String.class],
-          sourcesTableName : [name                                     : 'Sources table name', title: 'Sources table name', description: 'Keep only receivers at least at 1 meters of provided sources geometries' +
-                  '<br>  The table shall contain : </br>' +
-                  '- <b> THE_GEOM </b> : any geometry type. </br>', type: String.class],
-          nReceivers       : [name: 'Number of receivers', title: 'Number of receivers', description: 'Number of receivers to return </br> </br> <b> Default value : 100 </b> ', type: Integer.class],
-          height          : [name                               : 'height', title: 'height', description: 'Height of receivers in meters (FLOAT)' +
-                  '</br> </br> <b> Default value : 4 </b> ', min: 0, max: 1, type: Double.class],
-          fence           : [name         : 'Fence geometry', title: 'Extent filter', description: 'Create receivers only in the' +
-        ' provided polygon', min: 0, max: 1, type: Geometry.class],
-          fenceTableName  : [name                                                         : 'Fence geometry from table', title: 'Filter using table bounding box',
-                             description                                                  : 'Extract the bounding box of the specified table then create only receivers' +
-                                     ' on the table bounding box' +
-                                     '<br>  The table shall contain : </br>' +
-                                     '- <b> THE_GEOM </b> : any geometry type. </br>', min: 0, max: 1, type: String.class]]
+inputs = [
+        buildingTableName: [
+                name       : 'Buildings table name',
+                title      : 'Buildings table name',
+                description: '<b>Name of the Buildings table.</b>  </br>  ' +
+                        '<br>  The table shall contain : </br>' +
+                        '- <b> THE_GEOM </b> : the 2D geometry of the building (POLYGON or MULTIPOLYGON). </br>' +
+                        '- <b> HEIGHT </b> : the height of the building (FLOAT)',
+                type       : String.class
+        ],
+        sourcesTableName : [
+                name       : 'Sources table name',
+                title      : 'Sources table name',
+                description: 'Keep only receivers at least at 1 meters of provided sources geometries' +
+                        '<br>  The table shall contain : </br>' +
+                        '- <b> THE_GEOM </b> : any geometry type. </br>',
+                type       : String.class
+        ],
+        nReceivers       : [
+                name       : 'Number of receivers',
+                title      : 'Number of receivers',
+                description: 'Number of receivers to return </br> </br> <b> Default value : 100 </b> ',
+                type       : Integer.class
+        ],
+        height           : [
+                name : 'height',
+                title: 'height', description: 'Height of receivers in meters (FLOAT)' +
+                '</br> </br> <b> Default value : 4 </b> ',
+                min  : 0, max: 1,
+                type : Double.class
+        ],
+        fence            : [
+                name       : 'Fence geometry',
+                title      : 'Extent filter',
+                description: 'Create receivers only in the' +
+                        ' provided polygon',
+                min        : 0, max: 1,
+                type       : Geometry.class
+        ],
+        fenceTableName   : [name       : 'Fence geometry from table',
+                            title      : 'Filter using table bounding box',
+                            description: 'Extract the bounding box of the specified table then create only receivers' +
+                                    ' on the table bounding box' +
+                                    '<br>  The table shall contain : </br>' +
+                                    '- <b> THE_GEOM </b> : any geometry type. </br>',
+                            min        : 0, max: 1,
+                            type       : String.class
+        ]
+]
 
-outputs = [result: [name: 'Result output string', title: 'Result output string', description: 'This type of result does not allow the blocks to be linked together.', type: String.class]]
+outputs = [
+        result: [
+                name       : 'Result output string',
+                title      : 'Result output string',
+                description: 'This type of result does not allow the blocks to be linked together.',
+                type       : String.class
+        ]
+]
 
 
 static Connection openGeoserverDataStoreConnection(String dbName) {
@@ -85,7 +121,6 @@ def run(input) {
             return [result: exec(connection, input)]
     }
 }
-
 
 
 def exec(Connection connection, input) {
@@ -156,14 +191,14 @@ def exec(Connection connection, input) {
     }
 
 
-    sql.execute("create table " + receivers_table_name + " as select ST_SetSRID(ST_MAKEPOINT(RAND()*(" + envelope.maxX + " - " + envelope.minX.toString() + ") + " + envelope.minX.toString() + ", RAND()*(" + envelope.maxY.toString() + " - " + envelope.minY.toString() + ") + " + envelope.minY.toString() + ", "+h+"), " + targetSrid.toInteger() + ") as the_geom from system_range(0," + nReceivers.toString() + ");")
+    sql.execute("create table " + receivers_table_name + " as select ST_SetSRID(ST_MAKEPOINT(RAND()*(" + envelope.maxX + " - " + envelope.minX.toString() + ") + " + envelope.minX.toString() + ", RAND()*(" + envelope.maxY.toString() + " - " + envelope.minY.toString() + ") + " + envelope.minY.toString() + ", " + h + "), " + targetSrid.toInteger() + ") as the_geom from system_range(0," + nReceivers.toString() + ");")
     sql.execute("Create spatial index on " + receivers_table_name + "(the_geom);")
 
     System.out.println('Delete receivers where buildings...')
     if (input['buildingTableName']) {
         //Delete receivers inside buildings .
         sql.execute("Create spatial index on " + building_table_name + "(the_geom);")
-        sql.execute("delete from " + receivers_table_name + " g where exists (select 1 from " + building_table_name + " b where g.the_geom && b.the_geom and ST_distance(b.the_geom, g.the_geom) < 1 and b.height >= "+h+" limit 1);")
+        sql.execute("delete from " + receivers_table_name + " g where exists (select 1 from " + building_table_name + " b where g.the_geom && b.the_geom and ST_distance(b.the_geom, g.the_geom) < 1 and b.height >= " + h + " limit 1);")
     }
 
     System.out.println('Delete receivers where sound sources...')

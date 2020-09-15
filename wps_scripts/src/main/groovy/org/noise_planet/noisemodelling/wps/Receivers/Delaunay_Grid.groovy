@@ -44,48 +44,85 @@ import org.h2gis.utilities.wrapper.*
 title = 'Delaunay Grid'
 description = 'Calculates a delaunay grid of receivers based on a single Geometry geom or a table tableName of Geometries with delta as offset in the Cartesian plane in meters.'
 
-inputs = [tableBuilding : [name: 'Buildings table name', title: 'Buildings table name',
-                           description: '<b>Name of the Buildings table.</b>  </br>  ' +
-                                   '<br>  The table shall contain : </br>' +
-                                   '- <b> THE_GEOM </b> : the 2D geometry of the building (POLYGON or MULTIPOLYGON). </br>',
-                           type: String.class],
-          fence           : [name         : 'Fence geometry', title: 'Extent filter', description: 'Create receivers only in the' +
-                  ' provided polygon', min: 0, max: 1, type: Geometry.class],
-          sourcesTableName  : [name: 'Sources table name',
-                               title: 'Sources table name',
-                               description: 'Road table, receivers will not be created on the specified road width',
-                               type: String.class],
-          maxPropDist  : [name: 'Maximum Propagation Distance',
-                          title: 'Maximum Propagation Distance',
-                          description: 'Set Maximum propagation distance in meters. Avoid loading to much geometries when doing Delaunay triangulation. (FLOAT)' +
-                                  '</br> </br> <b> Default value : 500 </b>',
-                          min: 0, max: 1, type: Double.class],
-          roadWidth  : [name: 'Road Width', title: 'Source Width',
-                        description: 'Set Road Width in meters. No receivers closer than road width distance.(FLOAT) ' +
-                                '</br> </br> <b> Default value : 2 </b>',
-                        min: 0, max: 1, type: Double.class],
-          maxArea  : [name: 'Maximum Area',
-                      title: 'Maximum Area',
-                      description: 'Set Maximum Area in m2. No triangles larger than provided area. Smaller area will create more receivers. (FLOAT)' +
-                              '</br> </br> <b> Default value : 2500 </b> ',
-                      min: 0, max: 1, type: Double.class],
-          sourceDensification  : [name: 'Source densification',
-                                  title: 'Source densification',
-                                  description: 'Set additional receivers near sound sources (roads). This is the maximum distance between the points that compose the polygon near the source in meter. (FLOAT)' +
-                                          '</br> </br> <b> Default value : 8 </b> ',
-                                  min: 0, max: 1, type: Double.class],
-          height    : [name: 'Height',
-                       title: 'Height',
-                       description: ' Receiver height relative to the ground in meters (FLOAT).' +
-                               '</br> </br> <b> Default value : 4 </b>',
-                       min: 0, max: 1, type: Double.class],
-          outputTableName: [name: 'outputTableName',
-                            description: 'Do not write the name of a table that contains a space. ' +
-                                    '</br> </br> <b> Default value : RECEIVERS </b>',
-                            title: 'Name of output table',
-                            min: 0, max: 1, type: String.class]]
+inputs = [
+        tableBuilding      : [
+                name       : 'Buildings table name',
+                title      : 'Buildings table name',
+                description: '<b>Name of the Buildings table.</b>  </br>  ' +
+                        '<br>  The table shall contain : </br>' +
+                        '- <b> THE_GEOM </b> : the 2D geometry of the building (POLYGON or MULTIPOLYGON). </br>',
+                type       : String.class
+        ],
+        fence              : [
+                name       : 'Fence geometry', title: 'Extent filter',
+                description: 'Create receivers only in the provided polygon',
+                min        : 0, max: 1,
+                type       : Geometry.class
+        ],
+        sourcesTableName   : [
+                name       : 'Sources table name',
+                title      : 'Sources table name',
+                description: 'Road table, receivers will not be created on the specified road width',
+                type       : String.class
+        ],
+        maxPropDist        : [
+                name       : 'Maximum Propagation Distance',
+                title      : 'Maximum Propagation Distance',
+                description: 'Set Maximum propagation distance in meters. Avoid loading to much geometries when doing Delaunay triangulation. (FLOAT)' +
+                        '</br> </br> <b> Default value : 500 </b>',
+                min        : 0, max: 1,
+                type       : Double.class
+        ],
+        roadWidth          : [
+                name       : 'Source Width',
+                title      : 'Source Width',
+                description: 'Set Road Width in meters. No receivers closer than road width distance.(FLOAT) ' +
+                        '</br> </br> <b> Default value : 2 </b>',
+                min        : 0, max: 1,
+                type       : Double.class
+        ],
+        maxArea            : [
+                name       : 'Maximum Area',
+                title      : 'Maximum Area',
+                description: 'Set Maximum Area in m2. No triangles larger than provided area. Smaller area will create more receivers. (FLOAT)' +
+                        '</br> </br> <b> Default value : 2500 </b> ',
+                min        : 0, max: 1,
+                type       : Double.class
+        ],
+        sourceDensification: [
+                name       : 'Source densification',
+                title      : 'Source densification',
+                description: 'Set additional receivers near sound sources (roads). This is the maximum distance between the points that compose the polygon near the source in meter. (FLOAT)' +
+                        '</br> </br> <b> Default value : 8 </b> ',
+                min        : 0, max: 1,
+                type       : Double.class
+        ],
+        height             : [
+                name       : 'Height',
+                title      : 'Height',
+                description: ' Receiver height relative to the ground in meters (FLOAT).' +
+                        '</br> </br> <b> Default value : 4 </b>',
+                min        : 0, max: 1,
+                type       : Double.class
+        ],
+        outputTableName    : [
+                name       : 'outputTableName',
+                description: 'Do not write the name of a table that contains a space. ' +
+                        '</br> </br> <b> Default value : RECEIVERS </b>',
+                title      : 'Name of output table',
+                min        : 0, max: 1,
+                type       : String.class
+        ]
+]
 
-outputs = [result: [name: 'Result output string', title: 'Result output string', description: 'This type of result does not allow the blocks to be linked together.', type: String.class]]
+outputs = [
+        result: [
+                name       : 'Result output string',
+                title      : 'Result output string',
+                description: 'This type of result does not allow the blocks to be linked together.',
+                type       : String.class
+        ]
+]
 
 
 static Connection openGeoserverDataStoreConnection(String dbName) {
@@ -111,7 +148,6 @@ def run(input) {
             return [result: exec(connection, input)]
     }
 }
-
 
 
 def exec(Connection connection, input) {
@@ -194,10 +230,10 @@ def exec(Connection connection, input) {
     if (fence != null) {
         // Reproject fence
         int targetSrid = SFSUtilities.getSRID(connection, TableLocation.parse(building_table_name))
-        if(targetSrid == 0) {
+        if (targetSrid == 0) {
             targetSrid = SFSUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
         }
-        if(targetSrid != 0) {
+        if (targetSrid != 0) {
             // Transform fence to the same coordinate system than the buildings & sources
             fence = ST_Transform.ST_Transform(connection, ST_SetSRID.setSRID(fence, 4326), targetSrid)
             noiseMap.setMainEnvelope(fence.getEnvelopeInternal())
@@ -225,20 +261,20 @@ def exec(Connection connection, input) {
 
     for (int i = 0; i < noiseMap.getGridDim(); i++) {
         for (int j = 0; j < noiseMap.getGridDim(); j++) {
-            System.out.println("Compute cell "+(i * noiseMap.getGridDim() + j + 1)+" of "+noiseMap.getGridDim() * noiseMap.getGridDim())
+            System.out.println("Compute cell " + (i * noiseMap.getGridDim() + j + 1) + " of " + noiseMap.getGridDim() * noiseMap.getGridDim())
             noiseMap.generateReceivers(connection, i, j, receivers_table_name, "TRIANGLES", pk)
             progressVisitorNM.endStep()
         }
     }
 
-    sql.execute("UPDATE "+receivers_table_name+" SET THE_GEOM = ST_SETSRID(THE_GEOM, "+srid+")")
+    sql.execute("UPDATE " + receivers_table_name + " SET THE_GEOM = ST_SETSRID(THE_GEOM, " + srid + ")")
 
-    sql.execute("Create spatial index on "+receivers_table_name+"(the_geom);")
+    sql.execute("Create spatial index on " + receivers_table_name + "(the_geom);")
 
     int nbReceivers = sql.firstRow("SELECT COUNT(*) FROM " + receivers_table_name)[0] as Integer
 
     // Process Done
-    resultString = "Process done. " + receivers_table_name + " ("+nbReceivers+" receivers) and TRIANGLES tables created. "
+    resultString = "Process done. " + receivers_table_name + " (" + nbReceivers + " receivers) and TRIANGLES tables created. "
 
     // print to command window
     System.out.println('Result : ' + resultString)
