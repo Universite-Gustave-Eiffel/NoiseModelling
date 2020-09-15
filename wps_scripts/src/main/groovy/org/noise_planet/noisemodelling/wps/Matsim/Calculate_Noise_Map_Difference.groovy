@@ -1,40 +1,56 @@
+/**
+ * NoiseModelling is an open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
+ *
+ * This version is developed by Université Gustave Eiffel and CNRS
+ * <http://noise-planet.org/noisemodelling.html>
+ *
+ * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE provided with this software.
+ *
+ * Contact: contact@noise-planet.org
+ *
+ */
+/**
+ * @Author Valentin Le Bescond, Université Gustave Eiffel
+ */
+
 package org.noise_planet.noisemodelling.wps.Matsim
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
-import org.geotools.jdbc.JDBCDataStore
-import org.matsim.api.core.v01.Coord
-import org.matsim.api.core.v01.Id
-import org.matsim.api.core.v01.Scenario
-import org.matsim.core.config.ConfigUtils
-import org.matsim.core.scenario.ScenarioUtils
-import org.matsim.facilities.ActivityFacilities
-import org.matsim.facilities.ActivityFacility
-import org.matsim.facilities.MatsimFacilitiesReader
-
-import java.sql.*
 import groovy.sql.Sql
+import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.utilities.wrapper.ConnectionWrapper
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+
+import java.sql.Connection
 
 title = 'Map Difference'
-description = 'Map Difference'
+description = 'Map Difference. Cal'
 
 inputs = [
         mainMapTable : [
-                name: 'Intput Roads table name',
-                title: 'Name of created table',
-                description: 'Name of the table you want to create: ROADS',
+                name: 'Primary map table name',
+                title: 'Primary map table name',
+                description: 'Name of the table containing the primary noise map data.' +
+                        '<br/>The table must contain the following fields : ' +
+                        '<br/>PK, THE_GEOM, HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000, LAEQ, LEQ',
                 type: String.class
         ],
         secondMapTable: [
-                name: 'Intput Roads table name',
-                title: 'Name of created table',
-                description: 'Name of the table you want to create: ROADS',
+                name: 'Secondary map table name',
+                title: 'Secondary map table name',
+                description: 'Name of the table containing the second noise map data.' +
+                        '<br/>The table must contain the following fields : ' +
+                        '<br/>PK, THE_GEOM, HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000, LAEQ, LEQ',
                 type: String.class
         ],
         invert: [
-                name: 'Intput Roads table name',
-                title: 'Name of created table',
-                description: 'Name of the table you want to create: ROADS',
+                name: 'Invert the substraction',
+                title: 'Invert the substraction ?',
+                description: 'Invert the substraction ?' +
+                        '<br/>False (default) : Primary map - Second map' +
+                        '<br/>True : Second map - Primary map',
                 min: 0,
                 max: 1,
                 type: Boolean.class
@@ -42,7 +58,9 @@ inputs = [
         outTable: [
                 name: 'Output table name',
                 title: 'Name of created table',
-                description: 'Name of the table you want to create',
+                description: 'Name of the table you want to create' +
+                        '<br/>The table will contain the following fields : ' +
+                        '<br/>PK, THE_GEOM, HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000, LAEQ, LEQ',
                 type: String.class
         ]
 ]
@@ -77,34 +95,32 @@ def run(input) {
     }
 }
 
+// main function of the script
+def exec(Connection connection, input) {
 
-def exec(connection, input) {
+    connection = new ConnectionWrapper(connection)
 
-    String mainMapTable = "ALT_RESULT_GEOM_13H45_14H00"
-    if (input['mainMapTable']) {
-        mainMapTable = input['mainMapTable']
-    }
+    Sql sql = new Sql(connection)
 
-    String secondMapTable = "RESULT_GEOM_13H45_14H00"
-    if (input['secondMapTable']) {
-        secondMapTable = input['secondMapTable']
-    }
+    String resultString
+
+    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
+    logger.info('Start : Calculate_Noise_Map_Difference')
+
+    String mainMapTable = input['mainMapTable']
+    String secondMapTable = input['secondMapTable']
 
     boolean invert = false;
     if (input['invert']) {
         invert = input['invert'] as boolean;
     }
 
-    String outTable = "DIFF_RESULT_GEOM_13H45_14H00"
-    if (input['outTable']) {
-        outTable = input['outTable']
-    }
+    String outTable = input['outTable']
 
-    Sql sql = new Sql(connection)
     sql.execute(String.format("DROP TABLE IF EXISTS %s", outTable))
 
     String query = "CREATE TABLE " + outTable + '''( 
-            ID integer PRIMARY KEY,
+            PK integer PRIMARY KEY,
             THE_GEOM geometry,
             HZ63 double precision,
             HZ125 double precision,
@@ -135,6 +151,9 @@ def exec(connection, input) {
 
     sql.execute(query)
 
-    return [result: "Process done. Table " + outTable + " created !"]
+    logger.info('End : Calculate_Noise_Map_Difference')
+    resultString = "Process done. Table " + outTable + " created !"
+    logger.info('Result : ' + resultString)
+    return resultString;
 }
 

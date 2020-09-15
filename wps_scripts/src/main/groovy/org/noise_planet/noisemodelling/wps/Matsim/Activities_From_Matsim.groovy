@@ -1,8 +1,24 @@
+/**
+ * NoiseModelling is an open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
+ *
+ * This version is developed by Université Gustave Eiffel and CNRS
+ * <http://noise-planet.org/noisemodelling.html>
+ *
+ * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE provided with this software.
+ *
+ * Contact: contact@noise-planet.org
+ *
+ */
+/**
+ * @Author Valentin Le Bescond, Université Gustave Eiffel
+ */
+
 package org.noise_planet.noisemodelling.wps.Matsim
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.matsim.api.core.v01.Coord
 import org.matsim.api.core.v01.Scenario
 import org.matsim.core.config.ConfigUtils
@@ -10,54 +26,38 @@ import org.matsim.core.scenario.ScenarioUtils
 import org.matsim.facilities.ActivityFacilities
 import org.matsim.facilities.ActivityFacility
 import org.matsim.facilities.MatsimFacilitiesReader
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import java.sql.*
 import groovy.sql.Sql
 
-title = 'Regular Grid'
-description = 'Create receivers based on a Matsim "facilities" file.'
+title = 'Import Matsim "facilities" file'
+description = 'Import Matsim "facilities" file containing agents activities location.'
 
 inputs = [
     facilitiesPath : [
         name: 'Path of the Matsim facilities file',
         title: 'Path of the Matsim facilities file',
         description: 'Path of the Matsim facilities file',
-        extra: 'path',
         type: String.class
     ],
-    buildingsOsmPbfPath : [
-            name: 'Path of the osm pbf file containing the buildings',
-            title: 'Path of the osm pbf file containing the buildings',
-            description: 'Path of the osm pbf file containing the buildings',
-            extra: 'path',
-            min: 0,
-            max: 1,
-            type: String.class
-    ],
-    buildingsTableName : [
-            name: 'Name of the table containing the buildings',
-            title: 'Name of the table containing the buildings',
-            description: 'Name of the table containing the buildings',
-            extra: 'table',
-            default: 'BUILDINGS',
-            min: 0,
-            max: 1,
-            type: String.class
-    ],
-    filter: [
-            name: 'Filter on facilities Ids : default \'*\'',
-            title: 'Filter on facilities Ids',
-            description: 'Filter on facilities Ids',
-            min: 0,
-            max: 1,
-            type: String.class
+    SRID : [
+        name: 'Projection identifier',
+        title: 'Projection identifier',
+        description: 'Original projection identifier (also called SRID) of your table.' +
+                'It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection).' +
+                '</br><b> Default value : 4326 </b> ',
+        min: 0,
+        max: 1,
+        type: Integer.class
     ],
     outTableName: [
             name: 'Output table name',
             title: 'Name of created table',
-            description: 'Name of the table you want to create: ACTIVITIES',
-            min: 0,
-            max: 1,
+            description: 'Name of the table you want to create' +
+                    '<br/>The table will contain the following fields : ' +
+                    '<br/>PK, FACILITY_ID, THE_GEOM, TYPES',
             type: String.class
     ]
 ]
@@ -80,6 +80,7 @@ static Connection openGeoserverDataStoreConnection(String dbName) {
     return jdbcDataStore.getDataSource().getConnection()
 }
 
+
 def run(input) {
 
     // Get name of the database
@@ -91,24 +92,28 @@ def run(input) {
     }
 }
 
-def exec(connection, input) {
+// main function of the script
+def exec(Connection connection, input) {
 
-    String outTableName = "ACTIVITIES"
-    if (input['outTableName']) {
-        outTableName = input['outTableName']
-    }
-    outTableName = outTableName.toUpperCase()
+    connection = new ConnectionWrapper(connection)
 
-    String filter = "*"
-    if (input['filter']) {
-        filter = input['filter']
+    Sql sql = new Sql(connection)
+
+    String resultString
+
+    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
+    logger.info('Start : Activities_From_Matsim')
+
+    String facilitiesPath = input['facilitiesPath']
+    String outTableName = input['outTableName']
+
+    String SRID = "4326"
+    if (input['SRID']) {
+        SRID = input['SRID'];
     }
 
     double height = 4.0;
 
-    String facilitiesPath = input['facilitiesPath']
-
-    Sql sql = new Sql(connection)
     //Delete previous receivers
     sql.execute(String.format("DROP TABLE IF EXISTS %s", outTableName))
     sql.execute("CREATE TABLE " + outTableName + '''( 
@@ -132,9 +137,12 @@ def exec(connection, input) {
         Coord c = facility.getCoord();
         String geom = String.format("POINT(%s %s %s)", Double.toString(c.getX()), Double.toString(c.getY()), Double.toString(height));
         String types = facility.getActivityOptions().keySet().join(',');
-        String query = "INSERT INTO " + outTableName + "(FACILITY_ID, THE_GEOM, TYPES) VALUES( '" + facilityId + "', ST_GeomFromText('" + geom + "', 2154), '" + types + "')";
+        String query = "INSERT INTO " + outTableName + "(FACILITY_ID, THE_GEOM, TYPES) VALUES( '" + facilityId + "', ST_GeomFromText('" + geom + "', " + SRID + "), '" + types + "')";
         sql.execute(query);
     }
 
-    return [result: "Process done. Table of receivers " + outTableName + " created !"]
+    logger.info('End : Activities_From_Matsim')
+    resultString = "Process done. Table of receivers " + outTableName + " created !"
+    logger.info('Result : ' + resultString)
+    return resultString
 }

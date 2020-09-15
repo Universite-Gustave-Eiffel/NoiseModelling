@@ -75,7 +75,7 @@ class Main {
 
         if (doCalculateRoadEmission) {
             for (timeString in timeStrings) {
-                CreateRoadsFromTimeString.createRoadsFromTimeString(connection, [
+                CreateSourcesFromTimeString.createSourcesFromTimeString(connection, [
                         "roadsTableName" : "MATSIM_ROADS",
                         "statsTableName" : "MATSIM_ROADS_STATS",
                         "timeString" : timeString,

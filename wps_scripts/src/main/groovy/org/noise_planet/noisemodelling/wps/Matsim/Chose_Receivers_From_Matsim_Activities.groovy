@@ -1,34 +1,56 @@
+/**
+ * NoiseModelling is an open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
+ *
+ * This version is developed by Université Gustave Eiffel and CNRS
+ * <http://noise-planet.org/noisemodelling.html>
+ *
+ * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE provided with this software.
+ *
+ * Contact: contact@noise-planet.org
+ *
+ */
+/**
+ * @Author Valentin Le Bescond, Université Gustave Eiffel
+ */
+
 package org.noise_planet.noisemodelling.wps.Matsim
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.utilities.wrapper.ConnectionWrapper
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import java.sql.*
 import groovy.sql.Sql
 
 title = 'Chose Receivers From Matsim Activities'
-description = 'Chose one receiver per Mastim Activity'
+description = 'Chose one receiver per Mastim Activity. Created a table '
 
 inputs = [
         activitiesTable : [
                 name: 'Name of the table containing the activities',
                 title: 'Name of the table containing the activities',
-                description: 'Name of the table containing the activities',
+                description: 'Name of the table containing the activities' +
+                        '<br/>The table must contain the following fields : ' +
+                        '<br/>PK, FACILITY_ID, THE_GEOM, TYPES',
                 type: String.class
         ],
         receiversTableName : [
                 name: 'Name of the table containing the receivers',
                 title: 'Name of the table containing the receivers',
-                description: 'Name of the table containing the receivers',
+                description: 'Name of the table containing the receivers' +
+                        '<br/>The table must contain the following fields : ' +
+                        '<br/>PK, THE_GEOM',
                 type: String.class
         ],
         outTableName: [
                 name: 'Output table name',
                 title: 'Name of created table',
-                description: 'Name of the table you want to create: ACTIVITIES',
-                min: 0,
-                max: 1,
+                description: 'Name of the table you want to create' +
+                        '<br/>The table will contain the following fields : ' +
+                        '<br/>PK, FACILITY_ID, ORIGIN_GEOM, THE_GEOM, TYPES',
                 type: String.class
         ]
 ]
@@ -63,25 +85,22 @@ def run(input) {
     }
 }
 
-def exec(connection, input) {
+// main function of the script
+def exec(Connection connection, input) {
 
-    String outTableName = "RECEIVERS"
-    if (input['outTableName']) {
-        outTableName = input['outTableName']
-    }
-
-    String activitiesTable = "ACTIVITIES"
-    if (input['activitiesTable']) {
-        activitiesTable = input['activitiesTable']
-    }
-
-    String receiversTable = "ALL_RECEIVERS"
-    if (input['receiversTable']) {
-        receiversTable = input['receiversTable']
-    }
+    connection = new ConnectionWrapper(connection)
 
     Sql sql = new Sql(connection)
-    //Delete previous receivers
+
+    String resultString = null
+
+    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
+    logger.info('Start : Chose_Receivers_From_Matsim_Activities')
+
+    String outTableName = input['outTableName']
+    String activitiesTable = input['activitiesTable']
+    String receiversTable = input['receiversTable']
+
     sql.execute(String.format("DROP TABLE IF EXISTS %s", outTableName))
 
     String query = "CREATE TABLE " + outTableName + '''( 
@@ -104,10 +123,13 @@ def exec(connection, input) {
 
     sql.execute("UPDATE " + outTableName + " SET THE_GEOM = CASE " + '''
         WHEN THE_GEOM IS NULL 
-        THEN ORIGIN_GEOM 
+        THEN ST_UpdateZ(ORIGIN_GEOM, 4.0)
         ELSE THE_GEOM 
         END
     ''')
 
-    return [result: "Process done. Table of receivers " + outTableName + " created !"]
+    logger.info('End : Chose_Receivers_From_Matsim_Activities')
+    resultString = "Process done. Table of receivers " + outTableName + " created !"
+    logger.info('Result : ' + resultString)
+    return resultString;
 }

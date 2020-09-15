@@ -1,6 +1,6 @@
 import org.h2gis.functions.factory.H2GISDBFactory
 import org.h2gis.utilities.SFSUtilities
-import org.noise_planet.noisemodelling.wps.Experimental.Noise_Map_From_Attenuation_Matrice
+import org.noise_planet.noisemodelling.wps.Matsim.Noise_Map_From_Attenuation_Matrix
 import org.noise_planet.noisemodelling.wps.Others_Tools.Add_Laeq_Leq_columns
 
 import java.sql.Connection
@@ -31,7 +31,7 @@ class CalculateNoiseMapFromAttenuation {
         println "-------------------------------"
         println "Calculate Noise Map From Attenuation Matrice - " + options.get("timeString")
         println "-------------------------------"
-        new Noise_Map_From_Attenuation_Matrice().exec(connection, options)
+        new Noise_Map_From_Attenuation_Matrix().exec(connection, options)
         new Add_Laeq_Leq_columns().exec(connection, [
                 "prefix": "HZ",
                 "tableName": options.get("outTableName")

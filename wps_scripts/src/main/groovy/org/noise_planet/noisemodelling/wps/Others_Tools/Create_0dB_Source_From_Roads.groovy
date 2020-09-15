@@ -1,33 +1,45 @@
+/**
+ * NoiseModelling is an open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
+ *
+ * This version is developed by Université Gustave Eiffel and CNRS
+ * <http://noise-planet.org/noisemodelling.html>
+ *
+ * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE provided with this software.
+ *
+ * Contact: contact@noise-planet.org
+ *
+ */
+/**
+ * @Author Valentin Le Bescond, Université Gustave Eiffel
+ */
+
 package org.noise_planet.noisemodelling.wps.Others_Tools
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
-import org.geotools.jdbc.JDBCDataStore
-import org.matsim.api.core.v01.Coord
-import org.matsim.api.core.v01.Id
-import org.matsim.api.core.v01.Scenario
-import org.matsim.core.config.ConfigUtils
-import org.matsim.core.scenario.ScenarioUtils
-import org.matsim.facilities.ActivityFacilities
-import org.matsim.facilities.ActivityFacility
-import org.matsim.facilities.MatsimFacilitiesReader
-
-import java.sql.*
 import groovy.sql.Sql
+import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.utilities.wrapper.ConnectionWrapper
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
-title = 'Regular Grid'
-description = 'Create receivers based on a Matsim "facilities" file.'
+import java.sql.Connection
+
+title = 'Create 0db Source From Roads'
+description = 'Creates a SOURCE table from a ROAD table.' +
+        '<br/>The SOURCE table can then be used in the <b>Noise_level_from_source</b> WPS block'
 
 inputs = [
         roadsTableName: [
-                name: 'Intput Roads table name',
-                title: 'Name of created table',
-                description: 'Name of the table you want to create: ROADS',
+                name: 'Input table name',
+                title: 'Intput table name',
+                description: 'The name of the Roads table.'+
+                    '<br/>Must contain at least a <b>PK<b> field with a primary key index and a <b>THE_GEOM</b> geometry field',
                 type: String.class
         ],
-        sourceTableName: [
-                name: 'Output Source table name',
-                title: 'Name of created table',
+        sourcesTableName: [
+                name: 'Output table name',
+                title: 'Output table name',
                 description: 'Name of the table you want to create: SOURCES_0DB',
                 type: String.class
         ]
@@ -66,19 +78,19 @@ def run(input) {
 
 def exec(connection, input) {
 
-    String roadsTableName = "ROADS"
-    if (input['roadsTableName']) {
-        roadsTableName = input['roadsTableName']
-    }
-    roadsTableName = roadsTableName.toUpperCase()
-
-    String sourceTableName = "SOURCES_0DB"
-    if (input['sourceTableName']) {
-        sourceTableName = input['sourceTableName']
-    }
-    sourceTableName = sourceTableName.toUpperCase()
+    connection = new ConnectionWrapper(connection)
 
     Sql sql = new Sql(connection)
+
+    String resultString = null
+
+    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
+    logger.info('Start : Create_0db_Source_From_Roads')
+
+    String roadsTableName = input['roadsTableName']
+
+    String sourcesTableName = input['sourceTableName']
+
     sql.execute(String.format("DROP TABLE IF EXISTS %s", sourceTableName))
 
     String query = "CREATE TABLE " + sourceTableName + '''( 
@@ -97,6 +109,9 @@ def exec(connection, input) {
 
     sql.execute(query)
 
-    return [result: "Process done. Table " + sourceTableName + " created !"]
+    logger.info('End : Create_0db_Source_From_Roads')
+    resultString = "Process done. Table " + sourcesTableName + " created !"
+    logger.info('Result : ' + resultString)
+    return [result: resultString]
 }
 

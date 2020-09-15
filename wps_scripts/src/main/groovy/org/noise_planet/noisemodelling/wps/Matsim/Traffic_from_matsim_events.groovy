@@ -1,42 +1,52 @@
+/**
+ * NoiseModelling is an open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
+ *
+ * This version is developed by Université Gustave Eiffel and CNRS
+ * <http://noise-planet.org/noisemodelling.html>
+ *
+ * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE provided with this software.
+ *
+ * Contact: contact@noise-planet.org
+ *
+ */
+/**
+ * @Author Valentin Le Bescond, Université Gustave Eiffel
+ */
 
 package org.noise_planet.noisemodelling.wps.Matsim
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
-
+import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
-
+import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Coordinate
-import org.matsim.api.core.v01.Coord;
+import org.matsim.api.core.v01.Coord
 import org.matsim.api.core.v01.Id
+import org.matsim.api.core.v01.events.LinkEnterEvent
+import org.matsim.api.core.v01.events.LinkLeaveEvent
 import org.matsim.api.core.v01.events.VehicleEntersTrafficEvent
 import org.matsim.api.core.v01.events.VehicleLeavesTrafficEvent
-import org.matsim.api.core.v01.events.handler.VehicleEntersTrafficEventHandler
-import org.matsim.api.core.v01.events.handler.VehicleLeavesTrafficEventHandler;
-import org.matsim.api.core.v01.network.Link;
-import org.matsim.api.core.v01.network.Network;
-import org.matsim.api.core.v01.events.LinkEnterEvent;
-import org.matsim.api.core.v01.events.LinkLeaveEvent;
-import org.matsim.api.core.v01.events.handler.LinkEnterEventHandler;
+import org.matsim.api.core.v01.events.handler.LinkEnterEventHandler
 import org.matsim.api.core.v01.events.handler.LinkLeaveEventHandler
+import org.matsim.api.core.v01.events.handler.VehicleEntersTrafficEventHandler
+import org.matsim.api.core.v01.events.handler.VehicleLeavesTrafficEventHandler
+import org.matsim.api.core.v01.network.Link
+import org.matsim.api.core.v01.network.Network
 import org.matsim.api.core.v01.population.Person
-import org.matsim.core.config.Config;
+import org.matsim.core.api.experimental.events.EventsManager
 import org.matsim.core.config.ConfigUtils
-import org.matsim.core.config.groups.QSimConfigGroup;
-import org.matsim.core.events.EventsUtils;
-import org.matsim.core.api.experimental.events.EventsManager;
-import org.matsim.core.events.MatsimEventsReader;
-import org.matsim.core.network.io.MatsimNetworkReader;
-import org.matsim.core.scenario.ScenarioUtils;
-import org.matsim.vehicles.Vehicle;
-
-import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos;
-import org.noise_planet.noisemodelling.emission.RSParametersCnossos;
+import org.matsim.core.events.EventsUtils
+import org.matsim.core.events.MatsimEventsReader
+import org.matsim.core.network.io.MatsimNetworkReader
+import org.matsim.core.scenario.ScenarioUtils
+import org.matsim.vehicles.Vehicle
+import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
+import org.noise_planet.noisemodelling.emission.RSParametersCnossos
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import java.sql.Connection
-
-import groovy.sql.Sql
-
 import java.time.LocalDateTime
 
 title = 'Import data from Mastim output'
@@ -47,43 +57,82 @@ inputs = [
     folder: [
         name: 'Path of the Matsim output folder',
         title: 'Path of the Matsim output folder',
-        description: 'Path of the Matsim output folder </br> For example : c:/home/mastim/output',
+        description: 'Path of the Matsim output folder </br> For example : /home/mastim/simulation_output' +
+                '<br/>The folder must contain at least the following files: ' +
+                '<br/><br/> - output_network.xml.gz' +
+                '<br/><br/> - output_events.xml.gz',
         type: String.class
     ],
+    timeSlice: [
+        name: 'Time Quantification',
+        title: 'Time Quantification',
+        description: 'How to handle time when reading traffic data ?' +
+                '<br/>Must be one of the following strings: ' +
+                '<br/><br/> - <b>DEN</b>, to analyse data in day (6h-18h), evening (18h-22h) and night (22h-6h) time periods' +
+                '<br/><br/> - <b>hour</b>, to analyse data in 60-minutes time periods' +
+                '<br/><br/> - <b>quarter</b>, to analyse data in 15-minutes time periods' +
+                '<br/>Default : <b>hour</b>',
+        type: String.class
+    ],
+    populationFactor: [
+            name: 'Population Factor',
+            title: 'Population Factor',
+            description: 'Set the population factor of the MATSim simulation' +
+                    '<br/>Must be a decimal number between 0 and 1' +
+                    '<br/>Default: 1.0',
+            min: 0,
+            max: 1,
+            type: String.class
+    ],
     link2GeometryFile: [
-        name: 'File of the pt2matsim file generated when importing OSM network',
-        title: 'File of the geometry file',
-        description: 'File of the geometry file',
+        name: 'Network CSV file',
+        title: 'Network CSV file',
+        description: 'The path of the pt2matsim CSV file generated when importing OSM network. Ignored if not set.' +
+                '<br/>The file must contain at least two columns : ' +
+                '<br/><br/> - The link ID' +
+                '<br/><br/> - The WKT geometry',
         min: 0,
         max: 1,
         type: String.class
     ],
-    timeSlice: [
-            name: 'How to separate Roads statistics ? DEN, hour, quarter',
-            title: 'How to separate Roads statistics ? DEN, hour, quarter',
-            description: 'How to separate Roads statistics ? DEN, hour, quarter',
-            type: String.class
-    ],
     skipUnused: [
-            name: 'Skip unused links ?',
-            title: 'Skip unused links ?',
-            description: 'Skip unused links ?',
+        name: 'Skip unused links ?',
+        title: 'Skip unused links ?',
+        description: 'Define if links with unused traffic should be omitted in the output table.' +
+                '<br/>Default: True',
+        min: 0,
+        max: 1,
+        type: Boolean.class
+    ],
+    perVehicleLevel: [
+            name: 'Calculate All vehicles noise source ?',
+            title: 'Calculate All vehicles noise source ?',
+            description: 'Choose between :' +
+                    '<br/><b>False</b>Calculating the average speed of all vehicles and the applying CNOSSOS model to get noise source power level' +
+                    '<br/><b>True</b>Applying CNOSSOS model to every vehicle and sum all vehicles noise power per time perdiod to get the total noise source power level' +
+                    '<br/>Default: False',
             min: 0,
             max: 1,
             type: Boolean.class
     ],
     ignoreAgents: [
-            name: 'List of agents ids to ignore in import',
-            title: 'List of agents ids to ignore in import',
-            description: 'List of agents ids to ignore in import',
-            min: 0,
-            max: 1,
-            type: String.class
+        name: 'List of agents ids to ignore in import',
+        title: 'List of agents ids to ignore in import',
+        description: 'List of agents ids to ignore in import. These agents will be filtered out when reading the event file.' +
+                '<br/>Please note that their contribution to the general traffic (congestion, vehicle or pt occupancy, etc.) still exists in the other agents bahavior.' +
+                '<br/>Default: [], an empty list',
+        min: 0,
+        max: 1,
+        type: String.class
     ],
     outTableName: [
         name: 'Output table name',
-        title: 'Name of created table',
-        description: 'Name of the table you want to create from the file. </br> <b> Default value : ROADS</b>',
+        title: 'Output table name',
+        description: 'Name of the table you want to create.' +
+                '<br/>A table with this name will be created plus another with a "_STATS" suffix' +
+                '<br/>For exemple if set to "MATSIM_ROADS":' +
+                '<br/><br/> - the table MATSIM_ROADS, with the link ID and the geometry field' +
+                '<br/><br/> - the table MATSIM_ROADS_STATS, with the link ID and the geometry field',
         min: 0,
         max: 1,
         type: String.class
@@ -120,22 +169,26 @@ def run(input) {
     // Open connection
     openGeoserverDataStoreConnection(dbName).withCloseable {
         Connection connection ->
-            exec(connection, input)
-            return [result: "OK"]
+            return [result: exec(connection, input)]
     }
 }
 
 // main function of the script
 def exec(Connection connection, input) {
-    
+
+    connection = new ConnectionWrapper(connection)
+    Sql sql = new Sql(connection)
+
+    String resultString = null
+
+    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
+    logger.info('Start : Traffic_from_matsim_events')
+
     String folder = input["folder"];
     
-    String outTableName = "MATSIM_ROADS";
-    if (input['outTableName']) {
-        outTableName = input['outTableName'];
-    }
-
+    String outTableName = input['outTableName'];
     String statsTableName = outTableName + "_STATS"
+    String altStatsTableName = statsTableName + "_ALT"
 
     String link2GeometryFile = "";
     if (input["link2GeometryFile"]) {
@@ -149,6 +202,9 @@ def exec(Connection connection, input) {
     if (input["timeSlice"] == "quarter") {
         timeSlice = input["timeSlice"];
     }
+     if (!["DEN", "hour", "quarter"].contains(timeSlice)) {
+         logger.warn('timeSlice not in ["DEN", "hour", "quarter"], setting it to "hour"')
+     }
 
     boolean skipUnused = false;
     if (input["skipUnused"]) {
@@ -170,16 +226,23 @@ def exec(Connection connection, input) {
         String inputIgnoreAgents = input["ignoreAgents"] as String;
         ignoreAgents = inputIgnoreAgents.trim().split("\\s*,\\s*");
     }
-
+    File f;
     String eventFile = folder + "/output_events.xml.gz";
+    f = new File(eventFile);
+    if(!f.exists() || f.isDirectory()) {
+        throw new FileNotFoundException(eventFile, "output_events.xml.gz not found in MATSim folder");
+    }
     String networkFile = folder + "/output_network.xml.gz";
-    String configFile = folder + "/output_config.xml";
+    f = new File(eventFile);
+    if(!f.exists() || f.isDirectory()) {
+        throw new FileNotFoundException(eventFile, "output_network.xml.gz not found in MATSim folder");
+    }
 
     Network network = ScenarioUtils.loadScenario(ConfigUtils.createConfig()).getNetwork();
     MatsimNetworkReader networkReader = new MatsimNetworkReader(network);
-    println "START READING NETWORK FILE ... "
+    logger.info("Start reading network file ... ");
     networkReader.readFile(networkFile);
-    println "READING NETWORK FILE ... DONE"
+    logger.info("Done reading network file ");
 
     Map<Id<Link>, Link> links = (Map<Id<Link>, Link>) network.getLinks();
 
@@ -188,23 +251,23 @@ def exec(Connection connection, input) {
 
     evHandler.setTimeSlice(timeSlice);
     evHandler.setIgnoreAgents(ignoreAgents);
+    evHandler.setPerVehicleLevel(perVehicleLevel);
+    evHandler.setPopulationFactor(populationFactor);
     evHandler.initLinks((Map<Id<Link>, Link>) links);
 
     evMgr.addHandler(evHandler);
 
     MatsimEventsReader eventsReader = new MatsimEventsReader(evMgr);
 
-    println "START READING EVENTS FILE ... "
+    logger.info("Start reading event file ... ");
     eventsReader.readFile(eventFile);
-    println "READING EVENTS FILE ... DONE"
+    logger.info("Done reading event file ");
 
-
-    println "START CREATE SQL TABLES ... "
+    logger.info("Create SQL tables : " + outTableName + " & " + statsTableName);
     // Open connection
-    Sql sql = new Sql(connection)
     sql.execute("DROP TABLE IF EXISTS " + outTableName)
     sql.execute("CREATE TABLE " + outTableName + '''( 
-        id integer PRIMARY KEY AUTO_INCREMENT, 
+        PK integer PRIMARY KEY AUTO_INCREMENT, 
         LINK_ID varchar(255),
         OSM_ID varchar(255),
         THE_GEOM geometry
@@ -212,18 +275,26 @@ def exec(Connection connection, input) {
 
     sql.execute("DROP TABLE IF EXISTS " + statsTableName)
     sql.execute("CREATE TABLE " + statsTableName + '''( 
-        id integer PRIMARY KEY AUTO_INCREMENT, 
+        PK integer PRIMARY KEY AUTO_INCREMENT, 
         LINK_ID varchar(255),
         LW63 double precision, LW125 double precision, LW250 double precision, LW500 double precision, LW1000 double precision, LW2000 double precision, LW4000 double precision, LW8000 double precision,
-        ALT_LW63 double precision, ALT_LW125 double precision, ALT_LW250 double precision, ALT_LW500 double precision, ALT_LW1000 double precision, ALT_LW2000 double precision, ALT_LW4000 double precision, ALT_LW8000 double precision,
-        IS_ALT_DIFF boolean DEFAULT false,
         TIMESTRING varchar(255)
     );''')
-    println "CREATE SQL TABLES ... DONE "
 
-    println "START READ link2geomData ... "
+    if (ignoreAgents.length > 0) {
+        sql.execute("DROP TABLE IF EXISTS " + altStatsTableName)
+        sql.execute("CREATE TABLE " + altStatsTableName + '''( 
+            PK integer PRIMARY KEY AUTO_INCREMENT, 
+            LINK_ID varchar(255),
+            LW63 double precision, LW125 double precision, LW250 double precision, LW500 double precision, LW1000 double precision, LW2000 double precision, LW4000 double precision, LW8000 double precision,
+            TIMESTRING varchar(255)
+        );''')
+    }
+    logger.info("Done Creating SQL tables");
+
     Map<String, String> link2geomData = new HashMap<>();
     if (!link2GeometryFile.isEmpty()) {
+        logger.info("Start Reading link2geom file ...");
         BufferedReader br = new BufferedReader(new FileReader(folder + "/" + link2GeometryFile));
         String line =  null;
         while ((line = br.readLine()) != null) {
@@ -232,10 +303,10 @@ def exec(Connection connection, input) {
                 link2geomData.put(str[0], str[1].trim().replace("\"", ""));
             }
         }
+        logger.info("Done Reading link2geom file");
     }
-    println "READ link2geomData ... DONE "
 
-    println "START INSERT INTO TABLES ... "
+    logger.info("Start Inserting Into SQL tables...");
     int counter = 0;
     int doprint = 1;
     for (Map.Entry<Id<Link>, LinkStatStruct> entry : evHandler.links.entrySet()) {
@@ -257,15 +328,31 @@ def exec(Connection connection, input) {
             geomString = link2geomData.get(linkId);
         }
 
-        sql.execute(linkStatStruct.toSqlInsertWithGeom(outTableName, geomString));
+        sql.execute(linkStatStruct.toSqlInsertWithGeom(outTableName, statsTableName, geomString, false));
+        if (ignoreAgents.length > 0) {
+            sql.execute(linkStatStruct.toSqlInsertWithGeom(outTableName, altStatsTableName, geomString, true));
+        }
+    }
+    logger.info("DONE Inserting Into SQL tables...");
+
+    logger.info("Start Creating indexes on tables ...")
+    logger.info("CREATE INDEX " + outTableName + "_LINK_ID_IDX ON " + outTableName + " (LINK_ID);")
+    sql.execute("CREATE INDEX " + outTableName + "_LINK_ID_IDX ON " + outTableName + " (LINK_ID);")
+    logger.info("CREATE INDEX " + statsTableName + "_LINK_ID_IDX ON " + statsTableName + " (LINK_ID);")
+    sql.execute("CREATE INDEX " + statsTableName + "_LINK_ID_IDX ON " + statsTableName + " (LINK_ID);")
+    logger.info("CREATE INDEX " + statsTableName + "_TIMESTRING_IDX ON " + statsTableName + " (TIMESTRING);")
+    sql.execute("CREATE INDEX " + statsTableName + "_TIMESTRING_IDX ON " + statsTableName + " (TIMESTRING);")
+    if (ignoreAgents.length > 0) {
+        logger.info("CREATE INDEX " + altStatsTableName + "_LINK_ID_IDX ON " + altStatsTableName + " (LINK_ID);")
+        sql.execute("CREATE INDEX " + altStatsTableName + "_LINK_ID_IDX ON " + altStatsTableName + " (LINK_ID);")
+        logger.info("CREATE INDEX " + altStatsTableName + "_TIMESTRING_IDX ON " + statsTableName + " (TIMESTRING);")
+        sql.execute("CREATE INDEX " + altStatsTableName + "_TIMESTRING_IDX ON " + altStatsTableName + " (TIMESTRING);")
     }
 
-    println "INSERT CREATE INDEXES ..."
-    sql.execute("CREATE INDEX " + outTableName + "_LINK_ID_IDX ON " + outTableName + " (LINK_ID);")
-    sql.execute("CREATE INDEX " + statsTableName + "_LINK_ID_IDX ON " + statsTableName + " (LINK_ID);")
-    sql.execute("CREATE INDEX " + statsTableName + "_TIMESTRING_IDX ON " + statsTableName + " (TIMESTRING);")
-    println "CREATE INDEXES ... DONE"
-
+    logger.info("Done Creating indexes on tables.")
+    resultString = "Roads stats imported from matsim traffic output"
+    logger.info('Result : ' + resultString)
+    return resultString
 }
 
 public class ProcessOutputEventHandler implements
@@ -332,7 +419,6 @@ public class ProcessOutputEventHandler implements
 
     @Override
     public void handleEvent(LinkLeaveEvent event) {
-        // System.out.println("Link Leaved ! " + event.toString());
 
         Id<Link> linkId = event.getLinkId();
         Id<Vehicle> vehicleId = event.getVehicleId();
@@ -698,7 +784,7 @@ public class LinkStatStruct {
             return String.valueOf(Long.parseLong(link.getId().toString()) / 1000);
         }
     }
-    public String toSqlInsertWithGeom(String tableName, String geom) {
+    public String toSqlInsertWithGeom(String tableName, String statsTableName, String geom, boolean alt) {
 
         if (geom == '' || geom == null || geom.matches("LINESTRING\\(\\d+\\.\\d+ \\d+\\.\\d+\\)")) {
             geom = getGeometryString();
@@ -712,10 +798,9 @@ public class LinkStatStruct {
         sql += "'" + getOsmId() + "', ";
         sql += "'" + geom + "'";
         sql += insert_end
-        
-        insert_start = "INSERT INTO " + tableName + '''_STATS (LINK_ID,
+
+        insert_start = "INSERT INTO " + statsTableName + ''' (LINK_ID,
             LW63, LW125, LW250, LW500, LW1000, LW2000, LW4000, LW8000,
-        ALT_LW63, ALT_LW125, ALT_LW250, ALT_LW500, ALT_LW1000, ALT_LW2000, ALT_LW4000, ALT_LW8000,
         IS_ALT_DIFF, TIMESTRING) VALUES (''';
 
         String[] timeStrings;
@@ -731,17 +816,17 @@ public class LinkStatStruct {
         for (String timeString : timeStrings) {
             sql += insert_start
             sql += "'" + link.getId().toString() + "', ";
-            double[] levels = getSourceLevels(timeString, perVehicleLevel);
+            double[] levels;
+            if (!alt) {
+                levels = getSourceLevels(timeString, perVehicleLevel);
+            } else {
+                levels = getAltSourceLevels(timeString, perVehicleLevel);
+            }
             for (int i = 0; i < levels.length; i++) {
                 sql += String.format(Locale.ROOT,"%.2f", levels[i]);
                 sql += ", ";
             }
-            levels = getAltSourceLevels(timeString, perVehicleLevel);
-            for (int i = 0; i < levels.length; i++) {
-                sql += String.format(Locale.ROOT,"%.2f", levels[i]);
-                sql += ", ";
-            }
-            sql += Boolean.toString(isAlternativeDifferent(timeString)) + ", "
+            // sql += Boolean.toString(isAlternativeDifferent(timeString)) + ", "
             sql += "'" + timeString + "'";
             sql += insert_end
         }

@@ -1,6 +1,6 @@
 import org.h2gis.functions.factory.H2GISDBFactory
 import org.h2gis.utilities.SFSUtilities
-import org.noise_planet.noisemodelling.wps.Experimental.Osm_to_Buildings
+import org.noise_planet.noisemodelling.wps.Others_Tools.Osm_Pbf_to_Buildings
 
 import java.sql.Connection
 
@@ -26,6 +26,6 @@ class ImportBuildings {
         println "-------------------------------"
         println "Importing Buildings from Osm"
         println "-------------------------------"
-        new Osm_to_Buildings().exec(connection, options)
+        new Osm_Pbf_to_Buildings().exec(connection, options)
     }
 }

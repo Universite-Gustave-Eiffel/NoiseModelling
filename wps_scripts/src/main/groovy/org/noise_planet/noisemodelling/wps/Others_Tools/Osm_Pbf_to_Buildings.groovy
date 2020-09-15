@@ -1,15 +1,29 @@
-package org.noise_planet.noisemodelling.wps.Experimental;
+/**
+ * NoiseModelling is an open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
+ *
+ * This version is developed by Université Gustave Eiffel and CNRS
+ * <http://noise-planet.org/noisemodelling.html>
+ *
+ * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE provided with this software.
+ *
+ * Contact: contact@noise-planet.org
+ *
+ */
+/**
+ * @Author Valentin Le Bescond, Université Gustave Eiffel
+ */
+
+package org.noise_planet.noisemodelling.wps.Others_Tools;
 
 import geoserver.GeoServer;
 import geoserver.catalog.Store;
 
 import groovy.sql.Sql;
-import groovy.time.TimeCategory;
 
-import org.geotools.jdbc.JDBCDataStore;
+import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.utilities.wrapper.ConnectionWrapper;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.geom.Coordinate;
 
 import org.openstreetmap.osmosis.core.container.v0_6.EntityContainer;
@@ -23,33 +37,41 @@ import org.openstreetmap.osmosis.core.domain.v0_6.WayNode;
 import org.openstreetmap.osmosis.core.domain.v0_6.Node;
 import org.openstreetmap.osmosis.core.task.v0_6.Sink;
  
-import crosby.binary.osmosis.OsmosisReader;
- 
+import crosby.binary.osmosis.OsmosisReader
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory;
+
 import java.sql.Connection;
-import java.sql.Statement;
 
-import java.io.InputStream;
-import java.io.File;
 
-import java.util.Random;
+title = 'Import buidlings from an OSM PBF file'
+description = 'Import Buidlings from an OSM PBF file.'
 
-title = 'Import buidlings from OSM'
-description = 'Convert OSM/OSM.GZ file (https://www.openstreetmap.org) to input tables. ' +
-        ' <br>Be careful, this treatment can be blocking if the table is large. Some bugs have also been detected for some specific areas.' +
-        '<br> The user can choose to create one to three output tables : <br>' +
-        '-  <b> BUILDINGS  </b> : a table containing the building. </br>' +
-        '-  <b> GROUND  </b> : surface/ground acoustic absorption table. </br>' +
-        '-  <b> ROADS  </b> : a table containing the roads. </br>'
-
-inputs = [pathFile        : [name       : 'Path of the OSM file',
-                             title      : 'Path of the OSM file',
-                             description: 'Path of the OSM file including extension. </br> For example : c:/home/area.osm.gz',
-                             type       : String.class],
-          targetSRID      : [name       : 'Target projection identifier', title: 'Target projection identifier',
-                             description: 'Target projection identifier (also called SRID) of your table. It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection). </br>  The target SRID must be in metric coordinates. </br>', type: Integer.class],
+inputs = [
+    pathFile: [
+        name: 'Path of the OSM file',
+        title: 'Path of the OSM file',
+        description: 'Path of the OSM file including extension. </br> For example : c:/home/area.osm.gz',
+        type: String.class
+    ],
+    targetSRID: [
+        name: 'Target projection identifier',
+        title: 'Target projection identifier',
+        description: 'Target projection identifier (also called SRID) of your table. ' +
+                'It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection).' +
+                '</br>The target SRID must be in metric coordinates. </br>',
+        type: Integer.class
+    ],
 ]
 
-outputs = [result: [name: 'Result output string', title: 'Result output string', description: 'This type of result does not allow the blocks to be linked together.', type: String.class]]
+outputs = [
+        result: [
+                name: 'Result output string',
+                title: 'Result output string',
+                description: 'This type of result does not allow the blocks to be linked together.',
+                type: String.class
+        ]
+]
 
 // Open Connection to Geoserver
 static Connection openGeoserverDataStoreConnection(String dbName) {
@@ -79,12 +101,17 @@ def run(input) {
 // main function of the script
 def exec(Connection connection, input) {
 
+    connection = new ConnectionWrapper(connection)
+
+    Sql sql = new Sql(connection)
+
+    String resultString
+
+    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
     // output string, the information given back to the user
-    String resultString = ""
 
     // print to command window
-    System.out.println('Start : Get Input Data from OSM')
-    def start = new Date()
+    logger.info('Start : Get Buildings from PBF OSM')
 
     // -------------------
     // Get every inputs
@@ -103,11 +130,8 @@ def exec(Connection connection, input) {
     reader.setSink(handler);
     reader.run();
 
-    System.out.println('PBF Read done : ' + TimeCategory.minus(new Date(), start))
+    logger.info('PBF Read done')
 
-    // Create a sql connection to interact with the database in SQL
-    Statement sql = connection.createStatement()
-    
     String tableName = "MAP_BUILDINGS_GEOM";
 
     sql.execute("DROP TABLE IF EXISTS " + tableName)
@@ -120,8 +144,8 @@ def exec(Connection connection, input) {
     for (Building building: handler.buildings) {
         sql.execute("INSERT INTO " + tableName + " VALUES (" + building.id + ", ST_MakeValid(ST_SIMPLIFYPRESERVETOPOLOGY(ST_Transform(ST_GeomFromText('" + building.geom + "', 4326), "+srid+"),0.1)), " + building.height + ")")
     }
-    
-    System.out.println('SQL INSERT done : ' + TimeCategory.minus(new Date(), start))
+
+    logger.info('SQL INSERT done')
 
     sql.execute('''
         CREATE SPATIAL INDEX IF NOT EXISTS BUILDINGS_INDEX ON ''' + tableName + '''(the_geom);
@@ -151,13 +175,10 @@ def exec(Connection connection, input) {
     resultString += "<br>\n"
     resultString += "buildings : " + handler.nb_buildings
     resultString += "<br>\n"
-    // print to WPS Builder
-    System.out.println('Result : ' + resultString)
-    System.out.println('End : Osm To Input Data')
-    System.out.println('Duration : ' + TimeCategory.minus(new Date(), start))
+
+    logger.info('End : Get Buildings from PBF OSM')
+    logger.info('Result : ' + resultString)
     return resultString
-
-
 }
 
 public class OsmHandler implements Sink {

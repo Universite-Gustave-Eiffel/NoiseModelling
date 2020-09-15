@@ -1,9 +1,25 @@
+/**
+ * NoiseModelling is an open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
+ *
+ * This version is developed by Université Gustave Eiffel and CNRS
+ * <http://noise-planet.org/noisemodelling.html>
+ *
+ * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE provided with this software.
+ *
+ * Contact: contact@noise-planet.org
+ *
+ */
+/**
+ * @Author Valentin Le Bescond, Université Gustave Eiffel
+ */
+
 package org.noise_planet.noisemodelling.wps.Matsim
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.jfree.chart.ChartFactory
 import org.jfree.chart.ChartPanel
 import org.jfree.chart.JFreeChart
@@ -24,6 +40,8 @@ import org.matsim.api.core.v01.population.Population
 import org.matsim.core.config.ConfigUtils
 import org.matsim.core.population.io.PopulationReader
 import org.matsim.core.scenario.ScenarioUtils
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import java.time.*
 
@@ -34,36 +52,41 @@ import java.sql.ResultSet
 import java.sql.Statement
 
 title = 'Calculate Mastim agents exposure'
-
-description = 'Calculate Mastim agents exposure'
+description = 'Calculate Mastim agents noise exposure'
 
 inputs = [
         folder: [
                 name: 'Path of the Matsim output folder',
                 title: 'Path of the Matsim output folder',
-                description: 'Path of the Matsim output folder </br> For example : c:/home/mastim/output',
+                description: 'Path of the Matsim output folder </br> For example : /home/mastim/simulation_output' +
+                        '<br/>The folder must contain at least the following files: ' +
+                        '<br/><br/> - output_plans.xml.gz',
                 type: String.class
         ],
         dataTablePrefix: [
                 name: 'Table Prefix For the noise data',
                 title: 'Table Prefix For the noise data',
-                description: 'Table Prefix For the noise data',
-                min: 0,
-                max: 1,
+                description: 'Table Prefix For the noise data' +
+                        '<br/>This will determine the prefix for the noise data tables' +
+                        '<br/>For exemple with a prefix "RES_" and a timeSlice "hour", you will get data from: ' +
+                        '<br/>RES_0_1, RES_1_2, RES_2_3, ..., RES_22_23, RES_23_24',
                 type: String.class
         ],
         timeSlice: [
-                name: 'How to separate Roads statistics ? DEN, hour, quarter',
-                title: 'How to separate Roads statistics ? DEN, hour, quarter',
-                description: 'How to separate Roads statistics ? DEN, hour, quarter',
+                name: 'How to separate Roads statistics ? hour, quarter',
+                title: 'How to separate Roads statistics ? hour, quarter',
+                description: 'How to separate Roads statistics ? hour, quarter. "DEN" timslice is not supported for now' +
+                        '<br/>This will determine the timstring suffix for the noise data tables' +
+                        '<br/>For exemple with a prefix "RES_" and a timeSlice "hour", you will get data from: ' +
+                        '<br/>RES_0_1, RES_1_2, RES_2_3, ..., RES_22_23, RES_23_24',
                 type: String.class
         ],
         outTableName: [
                 name: 'Output table name',
                 title: 'Name of created table',
-                description: 'Name of the table you want to create from the file. </br> <b> Default value : ROADS</b>',
-                min: 0,
-                max: 1,
+                description: 'Name of the table you want to create from the file.' +
+                        '<br/>The table will contain the following fields :' +
+                        '<br/>PK, PERSON_ID, HOME_FACILITY_ID, HOME_GEOM, WORK_FACILITY_ID, WORK_GEOM, LAEQ, HOME_LAEQ, DIFF_LAEQ',
                 type: String.class
         ]
 ]
@@ -98,39 +121,43 @@ def run(input) {
     // Open connection
     openGeoserverDataStoreConnection(dbName).withCloseable {
         Connection connection ->
-            exec(connection, input)
-            return [result: "OK"]
+            return [result: exec(connection, input)]
     }
 }
 
 // main function of the script
 def exec(Connection connection, input) {
 
+    connection = new ConnectionWrapper(connection)
+    Sql sql = new Sql(connection)
+
+    String resultString = null
+
+    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
+    logger.info('Start : Calculate_Matsim_Agent_Exposure')
+
     String folder = input["folder"];
-
-    String outTableName = "AGENTS";
-    if (input['outTableName']) {
-        outTableName = input['outTableName'];
-    }
-
-    String dataTablePrefix = "RESULT_GEOM_";
-    if (input["dataTablePrefix"]) {
-        dataTablePrefix = input["dataTablePrefix"];
-    }
+    String outTableName = input['outTableName'];
+    String dataTablePrefix = input["dataTablePrefix"];
 
     String timeSlice = "hour";
+    /*
     if (input["timeSlice"] == "DEN") {
         timeSlice = input["timeSlice"];
     }
+    */
     if (input["timeSlice"] == "quarter") {
         timeSlice = input["timeSlice"];
     }
+    if (!["hour", "quarter"].contains(timeSlice)) {
+        logger.warn('timeSlice not in ["hour", "quarter"], setting it to "hour"')
+    }
 
+    // Undocumented on purpouse for now
     int agentId = 0;
     if (input["plotOneAgentId"] && input["plotOneAgentId"] as int != 0) {
         agentId = input["plotOneAgentId"];
     }
-    println agentId;
 
     String[] den = ["D", "E", "N"];
     String[] hourClock = ["0_1", "1_2", "2_3", "3_4", "4_5", "5_6", "6_7", "7_8", "8_9", "9_10", "10_11", "11_12", "12_13", "13_14", "14_15", "15_16", "16_17", "17_18", "18_19", "19_20", "20_21", "21_22", "22_23", "23_24"];
@@ -145,12 +172,10 @@ def exec(Connection connection, input) {
 
     Map<Id<Person>, Person> persons = (Map<Id<Person>, Person>) population.getPersons();
 
-    Sql sql = new Sql(connection)
-
     if (agentId == 0) {
         sql.execute("DROP TABLE IF EXISTS " + outTableName)
         sql.execute("CREATE TABLE " + outTableName + ''' ( 
-            ID integer PRIMARY KEY AUTO_INCREMENT, 
+            PK integer PRIMARY KEY AUTO_INCREMENT, 
             PERSON_ID varchar(255),
             HOME_FACILITY_ID varchar(255),
             HOME_GEOM geometry,
@@ -374,11 +399,9 @@ def exec(Connection connection, input) {
             f.setVisible(true);
         }
         if (counter == doprint) {
-            print (LocalDateTime.now() as String);
-            println "\tINFO Person # " + counter
+            logger.info("Person # " + counter)
             doprint *= 4
         }
-        // println "Person id : " + personId + " : " + String.format("%.1f", LAeq) + " dB(A)"
 
         if (agentId == 0) {
             /*
@@ -396,4 +419,10 @@ def exec(Connection connection, input) {
         }
         counter++;
     }
+
+    logger.info('End : Calculate_Matsim_Agent_Exposure')
+    resultString = "Process done. Table of receivers " + outTableName + " created !"
+    logger.info('Result : ' + resultString)
+    return resultString
+
 }
