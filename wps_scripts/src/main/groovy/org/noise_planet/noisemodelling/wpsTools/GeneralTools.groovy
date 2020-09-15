@@ -18,25 +18,13 @@
 
 package org.noise_planet.noisemodelling.wpsTools
 
-import groovy.sql.Sql
+
 import org.cts.crs.CRSException
-import org.h2gis.utilities.SpatialResultSet
-import org.locationtech.jts.geom.Geometry
-import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
-import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceDynamic
-import org.noise_planet.noisemodelling.emission.RSParametersCnossos
-import org.noise_planet.noisemodelling.emission.RSParametersDynamic
-import org.noise_planet.noisemodelling.propagation.ComputeRays
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOut
 import org.noise_planet.noisemodelling.propagation.FastObstructionTest
 import org.noise_planet.noisemodelling.propagation.KMLDocument
-import org.noise_planet.noisemodelling.propagation.PropagationProcessData
-import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
-import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap
 
 import javax.xml.stream.XMLStreamException
-import java.sql.SQLException
-
 
 class GeneralTools {
 
