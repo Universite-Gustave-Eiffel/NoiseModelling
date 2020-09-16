@@ -22,7 +22,7 @@ import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_source
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Road_Emission_from_Traffic
 import org.noise_planet.noisemodelling.wps.Acoustic_Tools.Create_Isosurface
-import org.noise_planet.noisemodelling.wps.Import_and_Export.OsmToInputData
+import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_OSM
 import org.noise_planet.noisemodelling.wps.Receivers.Delaunay_Grid
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -40,7 +40,7 @@ class TestTutorialOpenStreetMap extends JdbcTestCase {
         Object res = new Display_Database().exec(connection, [])
         assertEquals("", res)
         // Import OSM file
-        res = new OsmToInputData().exec(connection,
+        res = new Import_OSM().exec(connection,
                 ["pathFile": TestTutorialOpenStreetMap.getResource("map.osm.gz").getPath(),
                  "targetSRID" : 2154,
                  "convert2Building" : false,

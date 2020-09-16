@@ -18,6 +18,7 @@ import org.junit.Assert
 import org.junit.Test
 import org.noise_planet.noisemodelling.wps.Database_Manager.Display_Database
 import org.noise_planet.noisemodelling.wps.Database_Manager.Table_Visualization_Data
+import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_OSM_BBBike
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_Symuvia
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_Asc_File
@@ -129,5 +130,22 @@ class TestImportExport extends JdbcTestCase {
         assertTrue(res.contains("RECEIVERS"))
         assertTrue(res.contains("2154"))
     }
+
+    @Test
+    void testImportOSMBBBike() {
+
+        new Import_OSM_BBBike().exec(connection,
+                ["importFolder"   : TestImportExport.class.getResource("BBBike/").getPath(),
+                 "inputSRID": 2154])
+
+        String res = new Display_Database().exec(connection, [])
+
+        assertEquals("BUILDINGS</br></br>GROUND</br></br>ROADS</br></br>", res)
+
+    }
+
+
+
+
 
 }

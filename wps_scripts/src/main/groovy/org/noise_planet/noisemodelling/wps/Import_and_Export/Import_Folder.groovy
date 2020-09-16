@@ -37,6 +37,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import java.sql.Connection
+import java.sql.ResultSet
 import java.sql.Statement
 
 title = 'Import all files from a folder'
@@ -137,7 +138,7 @@ def exec(Connection connection, input) {
             String outputTableName = fileName.toUpperCase()
 
             // Drop the table if already exists
-            String dropOutputTable = "drop table if exists " + outputTableName
+            String dropOutputTable = "drop table if exists \"" + outputTableName + "\";"
             stmt.execute(dropOutputTable)
 
             switch (ext) {
@@ -189,16 +190,14 @@ def exec(Connection connection, input) {
             }
 
 
-            int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, outputTableName)
-            String pkName = ''
-            if (pkIndex > 0) {
-                pkName = JDBCUtilities.getFieldName(connection.getMetaData(), outputTableName, pkIndex)
-            }
+            ResultSet rs = stmt.executeQuery("SELECT * FROM \"" + outputTableName + "\"")
 
-            if (pkName == "PK2"){
-                stmt.execute("ALTER TABLE " + outputTableName + " DROP PK2;")
-                stmt.execute("ALTER TABLE " + outputTableName + " ALTER COLUMN PK INT NOT NULL;")
-                stmt.execute("ALTER TABLE " + outputTableName + " ADD PRIMARY KEY (PK);  ")
+            int pk2Field = JDBCUtilities.getFieldIndex(rs.getMetaData(), "PK2")
+            int pkField = JDBCUtilities.getFieldIndex(rs.getMetaData(), "PK")
+
+            if (pk2Field > 0 && pkField > 0) {
+                stmt.execute("ALTER TABLE " + outputTableName + " DROP COLUMN PK2;")
+                logger.warn("The PK2 column automatically created by the SHP driver has been deleted.")
             }
 
             // Read Geometry Index and type of the table
@@ -227,6 +226,20 @@ def exec(Connection connection, input) {
             if (tableSrid == 0 && !spatialFieldNames.isEmpty()) {
                 connection.createStatement().execute(String.format("UPDATE %s SET " + spatialFieldNames.get(0) + " = ST_SetSRID(" + spatialFieldNames.get(0) + ",%d)",
                         TableLocation.parse(outputTableName).toString(), srid))
+            }
+
+            // If the table has a PK column and doesn't have any Primary Key Constraint, then automatically associate a Primary Key
+            ResultSet rs2 = stmt.executeQuery("SELECT * FROM \"" + outputTableName + "\"")
+            int pkUserIndex = JDBCUtilities.getFieldIndex(rs2.getMetaData(), "PK")
+            int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, outputTableName)
+
+            if (pkIndex == 0) {
+                if (pkUserIndex > 0) {
+                    stmt.execute("ALTER TABLE " + outputTableName + " ALTER COLUMN PK INT NOT NULL;")
+                    stmt.execute("ALTER TABLE " + outputTableName + " ADD PRIMARY KEY (PK);  ")
+                    resultString = resultString + String.format(outputTableName + " has a new primary key constraint on PK")
+                    logger.info(String.format(outputTableName + " has a new primary key constraint on PK"))
+                }
             }
 
         }

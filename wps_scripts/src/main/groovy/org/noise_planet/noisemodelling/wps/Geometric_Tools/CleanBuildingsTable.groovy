@@ -108,7 +108,7 @@ def exec(Connection connection, input) {
     // -------------------------
 
     sql.execute('drop table if exists buildings_temp;' +
-            'create table buildings_temp as select ST_MAKEVALID(ST_precisionreducer(ST_SIMPLIFYPRESERVETOPOLOGY(THE_GEOM,0.1),0.1)) THE_GEOM, PK, HEIGHT from buildings  WHERE ST_Perimeter(THE_GEOM)<1000;')
+            'create table buildings_temp as select ST_MAKEVALID(ST_precisionreducer(ST_SIMPLIFYPRESERVETOPOLOGY(THE_GEOM,0.1),0.1)) THE_GEOM, PK, HEIGHT from '+building_table_name+'  WHERE ST_Perimeter(THE_GEOM)<1000;')
 
     logger.info('Make valid every buildings - ok')
 
@@ -126,8 +126,8 @@ def exec(Connection connection, input) {
 
     logger.info('Intersection remove buildings with intersections')
 
-    sql.execute("DROP TABLE IF EXISTS BUILDINGS;")
-    sql.execute("create table BUILDINGS(PK INTEGER PRIMARY KEY, THE_GEOM GEOMETRY, HEIGHT FLOAT)  as select s.PK, s.the_geom, s.HEIGHT from  BUILDINGS_TEMP s where PK not in (select PK_BUILDING from tmp_buildings_truncated) UNION ALL select PK_BUILDING, the_geom, HEIGHT from tmp_buildings_truncated WHERE NOT st_isempty(the_geom);")
+    sql.execute("DROP TABLE IF EXISTS "+building_table_name+";")
+    sql.execute("create table "+building_table_name+"(PK INTEGER PRIMARY KEY, THE_GEOM GEOMETRY, HEIGHT FLOAT)  as select s.PK, s.the_geom, s.HEIGHT from  BUILDINGS_TEMP s where PK not in (select PK_BUILDING from tmp_buildings_truncated) UNION ALL select PK_BUILDING, the_geom, HEIGHT from tmp_buildings_truncated WHERE NOT st_isempty(the_geom);")
 
     sql.execute("drop table if exists tmp_buildings_truncated;")
 

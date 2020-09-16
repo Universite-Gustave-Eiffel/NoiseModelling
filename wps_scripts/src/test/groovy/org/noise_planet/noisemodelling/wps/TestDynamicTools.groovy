@@ -16,7 +16,7 @@ package org.noise_planet.noisemodelling.wps
 import org.junit.Test
 import org.noise_planet.noisemodelling.wps.Database_Manager.Display_Database
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Traffic_Probabilistic_Modelling
-import org.noise_planet.noisemodelling.wps.Import_and_Export.OsmToInputData
+import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_OSM
 import org.noise_planet.noisemodelling.wps.Receivers.Building_Grid
 
 class TestDynamicTools extends JdbcTestCase  {
@@ -26,7 +26,7 @@ class TestDynamicTools extends JdbcTestCase  {
 
 
         // Import OSM file
-        String res = new OsmToInputData().exec(connection,
+        String res = new Import_OSM().exec(connection,
                 ["pathFile": TestTutorialOpenStreetMap.getResource("map.osm.gz").getPath(),
                  "targetSRID" : 2154])
 

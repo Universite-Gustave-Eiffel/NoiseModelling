@@ -73,7 +73,7 @@ inputs = [tableBuilding     : [name       : 'Buildings table name', title: 'Buil
                   "<li><b> PM_STUD </b> : Average proportion of vehicles equipped with studded tyres during TS_STUD period (0-1) (DOUBLE)</li>" +
                   "<li><b> JUNC_DIST </b> : Distance to junction in meters (DOUBLE)</li>" +
                   "<li><b> JUNC_TYPE </b> : Type of junction (k=0 none, k = 1 for a crossing with traffic lights ; k = 2 for a roundabout) (INTEGER)</li>" +
-                  "</ul></br><b> This table can be generated from the WPS Block 'OsmToInputData'. </b>.", type: String.class],
+                  "</ul></br><b> This table can be generated from the WPS Block 'Import_OSM'. </b>.", type: String.class],
           tableReceivers    : [name       : 'Receivers table name', title: 'Receivers table name',
                                description: '<b>Name of the Receivers table.</b></br>  ' +
                                        '</br>  The table shall contain : </br> ' +

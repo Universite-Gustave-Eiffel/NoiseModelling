@@ -65,7 +65,7 @@ inputs = [tableRoads: [name: 'Roads table name', title: 'Roads table name', desc
         "<li><b> PM_STUD </b> : Average proportion of vehicles equipped with studded tyres during TS_STUD period (0-1) (DOUBLE)</li>" +
         "<li><b> JUNC_DIST </b> : Distance to junction in meters (DOUBLE)</li>" +
         "<li><b> JUNC_TYPE </b> : Type of junction (k=0 none, k = 1 for a crossing with traffic lights ; k = 2 for a roundabout) (INTEGER)</li>" +
-        "</ul></br><b> This table can be generated from the WPS Block 'OsmToInputData'. </b>.", type: String.class]]
+        "</ul></br><b> This table can be generated from the WPS Block 'Import_OSM'. </b>.", type: String.class]]
 
 outputs = [result: [name: 'Result output string', title: 'Result output string', description: 'This type of result does not allow the blocks to be linked together.', type: String.class]]
 
