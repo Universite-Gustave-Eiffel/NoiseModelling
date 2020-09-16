@@ -25,25 +25,16 @@ import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.api.ProgressVisitor
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.SFSUtilities
-import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
-import org.locationtech.jts.geom.Geometry
-import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
-import org.noise_planet.noisemodelling.emission.RSParametersCnossos
 import org.noise_planet.noisemodelling.emission.jdbc.LDENComputeRaysOut
 import org.noise_planet.noisemodelling.emission.jdbc.LDENConfig
 import org.noise_planet.noisemodelling.emission.jdbc.LDENPointNoiseMapFactory
 import org.noise_planet.noisemodelling.emission.jdbc.LDENPropagationProcessData
-import org.noise_planet.noisemodelling.propagation.ComputeRays
-import org.noise_planet.noisemodelling.propagation.ComputeRaysOut
-import org.noise_planet.noisemodelling.propagation.FastObstructionTest
 import org.noise_planet.noisemodelling.propagation.IComputeRaysOut
-import org.noise_planet.noisemodelling.propagation.PropagationProcessData
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
 import org.noise_planet.noisemodelling.propagation.RootProgressVisitor
 import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap
-
 
 import java.sql.Connection
 import java.sql.SQLException

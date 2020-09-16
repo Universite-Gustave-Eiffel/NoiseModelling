@@ -14,6 +14,7 @@ package org.noise_planet.noisemodelling.wps
 
 import org.h2gis.functions.io.shp.SHPRead
 import org.junit.Assert
+import org.junit.Test
 import org.noise_planet.noisemodelling.wps.Database_Manager.Display_Database
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_Symuvia
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
@@ -29,27 +30,25 @@ import org.slf4j.LoggerFactory
 class TestImportExport extends JdbcTestCase {
     Logger LOGGER = LoggerFactory.getLogger(TestImportExport.class)
 
-    class TestSymuvia extends JdbcTestCase {
-        Logger LOGGER = LoggerFactory.getLogger(TestSymuvia.class)
+    @Test
+    void testTutorial() {
+        // Check empty database
+        Object res = new Display_Database().exec(connection, [])
 
-        void testTutorial() {
-            // Check empty database
-            Object res = new Display_Database().exec(connection, [])
+        assertEquals("", res)
+        // Import OSM file
+        res = new Import_Symuvia().exec(connection,
+                ["pathFile": TestSymuvia.getResource("symuvia.xml").getPath(),
+                 "defaultSRID" : 2154])
 
-            assertEquals("", res)
-            // Import OSM file
-            res = new Import_Symuvia().exec(connection,
-                    ["pathFile": TestSymuvia.getResource("symuvia.xml").getPath(),
-                     "defaultSRID" : 2154])
+        res = new Display_Database().exec(connection, [])
 
-            res = new Display_Database().exec(connection, [])
-
-            assertTrue(res.contains("SYMUVIA_TRAJ"))
-        }
-
+        assertTrue(res.contains("SYMUVIA_TRAJ"))
     }
 
 
+
+    @Test
     void testImportFile1() {
 
         String res = new Import_File().exec(connection,
@@ -60,6 +59,7 @@ class TestImportExport extends JdbcTestCase {
         assertEquals("The table RECEIVERS has been uploaded to database!", res)
     }
 
+    @Test
     void testImportFile2() {
         try {
             String res = new Import_File().exec(connection,
@@ -74,6 +74,7 @@ class TestImportExport extends JdbcTestCase {
 
     }
 
+    @Test
     void testImportAsc() {
 
         String res = new Import_Asc_File().exec(connection,
@@ -83,7 +84,7 @@ class TestImportExport extends JdbcTestCase {
         assertEquals("The table DEM has been uploaded to database ! </br>  Its SRID is : 4326. </br> Remember that to calculate a noise map, your SRID must be in metric coordinates. Please use the Wps block 'Change SRID' if needed.", res)
     }
 
-
+    @Test
     void testImportFolder() {
 
         File file = new File(TestImportExport.getResource("receivers.shp").getPath()).getParentFile()
@@ -99,6 +100,7 @@ class TestImportExport extends JdbcTestCase {
         assertTrue(res.contains("BUILDINGS"))
     }
 
+    @Test
     void testExportFile() {
 
         SHPRead.readShape(connection, TestImportExport.getResource("receivers.shp").getPath())
