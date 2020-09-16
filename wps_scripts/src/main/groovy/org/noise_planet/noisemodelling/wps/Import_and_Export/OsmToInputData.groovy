@@ -38,51 +38,67 @@ description = 'Convert OSM/OSM.GZ file (https://www.openstreetmap.org) to input 
         '-  <b> GROUND  </b> : surface/ground acoustic absorption table. </br>' +
         '-  <b> ROADS  </b> : a table containing the roads. </br>'
 
-inputs = [pathFile        : [name       : 'Path of the OSM file',
-                             title      : 'Path of the OSM file',
-                             description: 'Path of the OSM file including extension. </br> For example : c:/home/area.osm.gz',
-                             type       : String.class],
-          convert2Building: [name       : 'Do not import Buildings',
-                             title      : 'Do not import Buildings',
-                             description: 'If the box is checked, the table BUILDINGS will NOT be extracted. ' +
-                                     '<br>  The table will contain : </br>' +
-                                     '- <b> THE_GEOM </b> : the 2D geometry of the building (POLYGON or MULTIPOLYGON). </br>' +
-                                     '- <b> HEIGHT </b> : the height of the building (FLOAT). ' +
-                                     'If the height of the buildings is not available then it is deducted from the number of floors (if available) with the addition of a small random variation from one building to another. ' +
-                                     'Finally, if no information is available, a height of 5 m is set by default.',
-                             min        : 0, max: 1,
-                             type       : Boolean.class],
-          convert2Ground  : [name       : 'Do not import Surface acoustic absorption',
-                             title      : 'Do not import Surface acoustic absorption',
-                             description: 'If the box is checked, the table GROUND will NOT be extracted.' +
-                                     '</br>The table will contain : </br> ' +
-                                     '- <b> THE_GEOM </b> : the 2D geometry of the sources (POLYGON or MULTIPOLYGON).</br> ' +
-                                     '- <b> G </b> : the acoustic absorption of a ground (FLOAT between 0 : very hard and 1 : very soft).</br> ',
-                             min        : 0, max: 1,
-                             type       : Boolean.class],
-          convert2Roads   : [name       : 'Do not import Roads',
-                             title      : 'Do not import Roads',
-                             description: 'If the box is checked, the table ROADS will NOT be extracted. ' +
-                                     "<br>  The table will contain : </br>" +
-                                     "- <b> PK </b> : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY)<br/>" +
-                                     "- <b> TV_D </b> : Hourly average light and heavy vehicle count (6-18h) (DOUBLE)<br/>" +
-                                     "- <b>TV_E </b> :  Hourly average light and heavy vehicle count (18-22h) (DOUBLE)<br/>" +
-                                     "- <b> TV_N </b> :  Hourly average light and heavy vehicle count (22-6h) (DOUBLE)<br/>" +
-                                     "- <b> HV_D </b> :  Hourly average heavy vehicle count (6-18h) (DOUBLE)<br/>" +
-                                     "- <b> HV_E </b> :  Hourly average heavy vehicle count (18-22h) (DOUBLE)<br/>" +
-                                     "- <b> HV_N </b> :  Hourly average heavy vehicle count (22-6h) (DOUBLE)<br/>" +
-                                     "- <b> LV_SPD_D </b> :  Hourly average light vehicle speed (6-18h) (DOUBLE)<br/>" +
-                                     "- <b> LV_SPD_E </b> :  Hourly average light vehicle speed (18-22h) (DOUBLE)<br/>" +
-                                     "- <b> LV_SPD_N </b> :  Hourly average light vehicle speed (22-6h) (DOUBLE)<br/>" +
-                                     "- <b> HV_SPD_D </b> :  Hourly average heavy vehicle speed (6-18h) (DOUBLE)<br/>" +
-                                     "- <b> HV_SPD_E </b> :  Hourly average heavy vehicle speed (18-22h) (DOUBLE)<br/>" +
-                                     "- <b> HV_SPD_N </b> :  Hourly average heavy vehicle speed (22-6h) (DOUBLE)<br/>" +
-                                     "- <b> PVMT </b> :  CNOSSOS road pavement identifier (ex: NL05) (VARCHAR)" +
-                                     "</br> </br> <b> This information is created using the importance of the roads in OSM.</b>.",
-                             min        : 0, max: 1,
-                             type       : Boolean.class],
-          targetSRID      : [name       : 'Target projection identifier', title: 'Target projection identifier',
-                             description: 'Target projection identifier (also called SRID) of your table. It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection). </br>  The target SRID must be in metric coordinates. </br>', type: Integer.class],
+inputs = [
+        pathFile        : [
+                name       : 'Path of the OSM file',
+
+                title      : 'Path of the OSM file',
+                description: 'Path of the OSM file including extension. ' +
+                        '</br> For example : c:/home/area.osm.gz',
+                type       : String.class
+        ],
+        convert2Building: [
+                name       : 'Do not import Buildings',
+                title      : 'Do not import Buildings',
+                description: 'If the box is checked, the table BUILDINGS will NOT be extracted. ' +
+                        '<br>  The table will contain : </br>' +
+                        '- <b> THE_GEOM </b> : the 2D geometry of the building (POLYGON or MULTIPOLYGON). </br>' +
+                        '- <b> HEIGHT </b> : the height of the building (FLOAT). ' +
+                        'If the height of the buildings is not available then it is deducted from the number of floors (if available) with the addition of a small random variation from one building to another. ' +
+                        'Finally, if no information is available, a height of 5 m is set by default.',
+                min        : 0, max: 1,
+                type       : Boolean.class
+        ],
+        convert2Ground  : [
+                name       : 'Do not import Surface acoustic absorption',
+                title      : 'Do not import Surface acoustic absorption',
+                description: 'If the box is checked, the table GROUND will NOT be extracted.' +
+                        '</br>The table will contain : </br> ' +
+                        '- <b> THE_GEOM </b> : the 2D geometry of the sources (POLYGON or MULTIPOLYGON).</br> ' +
+                        '- <b> G </b> : the acoustic absorption of a ground (FLOAT between 0 : very hard and 1 : very soft).</br> ',
+                min        : 0, max: 1,
+                type       : Boolean.class
+        ],
+        convert2Roads   : [
+                name       : 'Do not import Roads',
+                title      : 'Do not import Roads',
+                description: 'If the box is checked, the table ROADS will NOT be extracted. ' +
+                        "<br>  The table will contain : </br>" +
+                        "- <b> PK </b> : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY)<br/>" +
+                        "- <b> TV_D </b> : Hourly average light and heavy vehicle count (6-18h) (DOUBLE)<br/>" +
+                        "- <b>TV_E </b> :  Hourly average light and heavy vehicle count (18-22h) (DOUBLE)<br/>" +
+                        "- <b> TV_N </b> :  Hourly average light and heavy vehicle count (22-6h) (DOUBLE)<br/>" +
+                        "- <b> HV_D </b> :  Hourly average heavy vehicle count (6-18h) (DOUBLE)<br/>" +
+                        "- <b> HV_E </b> :  Hourly average heavy vehicle count (18-22h) (DOUBLE)<br/>" +
+                        "- <b> HV_N </b> :  Hourly average heavy vehicle count (22-6h) (DOUBLE)<br/>" +
+                        "- <b> LV_SPD_D </b> :  Hourly average light vehicle speed (6-18h) (DOUBLE)<br/>" +
+                        "- <b> LV_SPD_E </b> :  Hourly average light vehicle speed (18-22h) (DOUBLE)<br/>" +
+                        "- <b> LV_SPD_N </b> :  Hourly average light vehicle speed (22-6h) (DOUBLE)<br/>" +
+                        "- <b> HV_SPD_D </b> :  Hourly average heavy vehicle speed (6-18h) (DOUBLE)<br/>" +
+                        "- <b> HV_SPD_E </b> :  Hourly average heavy vehicle speed (18-22h) (DOUBLE)<br/>" +
+                        "- <b> HV_SPD_N </b> :  Hourly average heavy vehicle speed (22-6h) (DOUBLE)<br/>" +
+                        "- <b> PVMT </b> :  CNOSSOS road pavement identifier (ex: NL05) (VARCHAR)" +
+                        "</br> </br> <b> This information is created using the importance of the roads in OSM.</b>.",
+                min        : 0, max: 1,
+                type       : Boolean.class
+        ],
+        targetSRID      : [
+                name       : 'Target projection identifier',
+                title      : 'Target projection identifier',
+                description: 'Target projection identifier (also called SRID) of your table. It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection). ' +
+                        '</br>  The target SRID must be in metric coordinates. </br>',
+                type       : Integer.class
+        ],
 ]
 
 outputs = [
@@ -192,13 +208,13 @@ def exec(Connection connection, input) {
                 FROM MAP_WAY_TAG WT, MAP_TAG T WHERE WT.ID_TAG = T.ID_TAG AND T.TAG_KEY IN ('building');
                 
                 -- add ways reffered as building from relation table (using outer ring only)
-                insert into MAP_BUILDINGS SELECT DISTINCT ID_WAY
+                MERGE into MAP_BUILDINGS SELECT DISTINCT ID_WAY
                 FROM MAP_RELATION_TAG WT, MAP_TAG T, MAP_WAY_MEMBER WM WHERE WT.ID_TAG = T.ID_TAG AND T.TAG_KEY IN ('building') AND WM.ID_RELATION = WT.ID_RELATION AND ROLE = 'outer';
                 
                 -- create polygons from the selected ways and re-project coordinates
                 DROP TABLE IF EXISTS MAP_BUILDINGS_GEOM;
                 CREATE TABLE MAP_BUILDINGS_GEOM(ID_WAY INTEGER PRIMARY KEY, THE_GEOM GEOMETRY) AS SELECT ID_WAY,
-                ST_TRANSFORM(ST_SETSRID(ST_MAKEPOLYGON(ST_MAKELINE(THE_GEOM)), 4326), '''+srid+''') THE_GEOM FROM (SELECT (SELECT
+                ST_TRANSFORM(ST_SETSRID(ST_MAKEPOLYGON(ST_MAKELINE(THE_GEOM)), 4326), ''' + srid + ''') THE_GEOM FROM (SELECT (SELECT
                 ST_ACCUM(THE_GEOM) THE_GEOM FROM (SELECT N.ID_NODE, N.THE_GEOM,WN.ID_WAY IDWAY FROM
                 MAP_NODE N,MAP_WAY_NODE WN WHERE N.ID_NODE = WN.ID_NODE ORDER BY
                 WN.NODE_ORDER) WHERE  IDWAY = W.ID_WAY) THE_GEOM ,W.ID_WAY
@@ -217,7 +233,7 @@ def exec(Connection connection, input) {
                 
                 -- merge original buildings with altered buildings 
                 DROP TABLE IF EXISTS BUILDINGS;
-                create table BUILDINGS(PK INTEGER PRIMARY KEY, THE_GEOM GEOMETRY)  as select s.id_way, ST_SETSRID(s.the_geom, '''+srid+''') from  MAP_BUILDINGS_GEOM s where id_way not in (select PK_BUILDING from tmp_buildings_truncated) UNION ALL select PK_BUILDING, ST_SETSRID(the_geom, '''+srid+''') from tmp_buildings_truncated WHERE NOT st_isempty(the_geom);
+                create table BUILDINGS(PK INTEGER PRIMARY KEY, THE_GEOM GEOMETRY)  as select s.id_way, ST_SETSRID(s.the_geom, ''' + srid + ''') from  MAP_BUILDINGS_GEOM s where id_way not in (select PK_BUILDING from tmp_buildings_truncated) UNION ALL select PK_BUILDING, ST_SETSRID(the_geom, ''' + srid + ''') from tmp_buildings_truncated WHERE NOT st_isempty(the_geom);
 
                 drop table if exists tmp_buildings_truncated;
                 alter table BUILDINGS add column height double;
@@ -361,7 +377,6 @@ def exec(Connection connection, input) {
     }
 
 
-
     resultString = resultString + "<br> Calculation Done !"
 
     // print to command window
@@ -375,6 +390,8 @@ def exec(Connection connection, input) {
 }
 
 
+
+// If user want to use AADF
 /* String roadsImport = "DROP TABLE IF EXISTS ROADS;\n" +
         "CREATE TABLE ROADS(PK SERIAL,ID_WAY long , THE_GEOM LINESTRING CHECK ST_SRID(THE_GEOM)="+srid+", CLAS_ADM int, AADF int, SPEED int) as SELECT null, ID_WAY, THE_GEOM,\n" +
         "CASEWHEN(T = 'trunk', 21,\n" +
