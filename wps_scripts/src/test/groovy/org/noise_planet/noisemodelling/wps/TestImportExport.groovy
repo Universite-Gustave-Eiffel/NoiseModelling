@@ -15,6 +15,7 @@ package org.noise_planet.noisemodelling.wps
 import org.h2gis.functions.io.shp.SHPRead
 import org.junit.Assert
 import org.noise_planet.noisemodelling.wps.Database_Manager.Display_Database
+import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_Symuvia
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_Asc_File
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File
@@ -27,6 +28,27 @@ import org.slf4j.LoggerFactory
  */
 class TestImportExport extends JdbcTestCase {
     Logger LOGGER = LoggerFactory.getLogger(TestImportExport.class)
+
+    class TestSymuvia extends JdbcTestCase {
+        Logger LOGGER = LoggerFactory.getLogger(TestSymuvia.class)
+
+        void testTutorial() {
+            // Check empty database
+            Object res = new Display_Database().exec(connection, [])
+
+            assertEquals("", res)
+            // Import OSM file
+            res = new Import_Symuvia().exec(connection,
+                    ["pathFile": TestSymuvia.getResource("symuvia.xml").getPath(),
+                     "defaultSRID" : 2154])
+
+            res = new Display_Database().exec(connection, [])
+
+            assertTrue(res.contains("SYMUVIA_TRAJ"))
+        }
+
+    }
+
 
     void testImportFile1() {
 

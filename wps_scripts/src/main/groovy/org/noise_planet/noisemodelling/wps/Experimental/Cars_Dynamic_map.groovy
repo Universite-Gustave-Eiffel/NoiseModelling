@@ -1,36 +1,27 @@
 package org.noise_planet.noisemodelling.wps.Experimental
 
-/**
- * @Author Pierre Aumond, Université Gustave Eiffel
+/*
+ * @Author Pierre Aumond
  */
+
 import geoserver.GeoServer
 import geoserver.catalog.Store
-
 import groovy.sql.Sql
-import org.locationtech.jts.math.Vector3D
-import org.noise_planet.noisemodelling.propagation.ComputeRays
-import org.noise_planet.noisemodelling.propagation.ComputeRaysOut
-import org.noise_planet.noisemodelling.propagation.FastObstructionTest
-import org.noise_planet.noisemodelling.propagation.IComputeRaysOut
-import org.noise_planet.noisemodelling.propagation.PropagationPath
-import org.noise_planet.noisemodelling.propagation.PropagationProcessData
-import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
-import org.noise_planet.noisemodelling.propagation.RootProgressVisitor
-
-import java.sql.Connection
-import java.sql.SQLException
-
-import org.geotools.jdbc.JDBCDataStore
-
 import groovy.transform.CompileStatic
-import org.h2gis.utilities.wrapper.*
+import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.api.ProgressVisitor
 import org.h2gis.utilities.SpatialResultSet
-
-import org.locationtech.jts.geom.Geometry
+import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Coordinate
+import org.locationtech.jts.geom.Geometry
+import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceDynamic
+import org.noise_planet.noisemodelling.emission.RSParametersDynamic
+import org.noise_planet.noisemodelling.propagation.*
 import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap
+
+import java.sql.Connection
+import java.sql.SQLException
 
 title = 'Compute Dynamic NoiseMap'
 description = 'Compute Dynamic NoiseMap from individual moving point sources'
@@ -48,14 +39,16 @@ inputs = [databaseName      : [name: 'Name of the database', title: 'Name of the
           wallAlpha         : [name: 'wallAlpha', title: 'Wall alpha', description: 'Wall abosrption (default = 0.1)', min: 0, max: 1, type: String.class],
           threadNumber      : [name: 'Thread number', title: 'Thread number', description: 'Number of thread to use on the computer (default = 1)', min: 0, max: 1, type: String.class],
           computeVertical   : [name: 'Compute vertical diffraction', title: 'Compute vertical diffraction', description: 'Compute or not the vertical diffraction (default = false)', min: 0, max: 1, type: Boolean.class],
-          computeHorizontal : [name: 'Compute horizontal diffraction', title: 'Compute horizontal diffraction', description: 'Compute or not the horizontal diffraction (default = false)', min: 0, max: 1, type: Boolean.class]]
-
+          computeHorizontal : [name: 'Compute horizontal diffraction', title: 'Compute horizontal diffraction', description: 'Compute or not the horizontal diffraction (default = false)', min: 0, max: 1, type: Boolean.class],
+          tini   : [name: 'T_ini', title: 'T_ini', description: 'Define the initial time step (default = 1)', min: 0, max: 1, type: String.class],
+          tend   : [name: 'T_end', title: 'T_end', description: 'Define the final time step (default = 100)', min: 0, max: 1, type: String.class]]
+     // TO DO : mettre plutôt un t_ini et un t_end   
 outputs = [result: [name: 'result', title: 'Result', type: String.class]]
 
 /**
  *
  */
-class DroneProcessData {
+class CarsProcessData {
 
     static double[] thirdOctaveToOctave(double[] values) {
         double[] valueoct = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
@@ -65,80 +58,78 @@ class DroneProcessData {
         return valueoct
     }
 
+    double[] getCarLevel(String tablename, Sql sql, int t, int idSource) throws SQLException {
+        double[] res_d = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
+        def list = [63, 125, 250, 500, 1000, 2000, 4000, 8000]
+        //System.println('res_d'+res_d)
+        sql.eachRow('SELECT PK, ID_VEH, speed,acc, veh_type ,t FROM ' + tablename + ' WHERE PK = ' + idSource.toString() + ' AND T = ' + t.toString() + ';') { row ->
+               
+                String veh_type = (String) row[4]
+                
+                int veh_type_int = 0
 
-    static double[] readDroneFile(String filename, int theta, int phi)
-            throws Exception {
-        String line = null
-        //System.out.println("line "+ phi+ ":" + theta)
-        double[] lvl = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+                switch(veh_type) {
+                    case 'VL':
+                        veh_type_int = 1
+                        break
+                    case 'PL':
+                        veh_type_int = 3
+                        break
+                                           case 'TypeTrolley':
+                        veh_type_int = 3
+                        break
+                    case 'BUS':
+                        veh_type_int = 3
+                        break
+                }
+        
+                //if (veh_type=="VL") {veh_type_int = 0}
+                //if (veh_type=="PL") {veh_type_int = 2}
 
-        // wrap a BufferedReader around FileReader
-        BufferedReader bufferedReader = new BufferedReader(new FileReader(filename))
+                int id_veh = (int) row[1]
+                double speed = row[2]
+                double acc =  row[3]
+                
+                double Temperature = 20
+                int RoadSurface = 0
+                boolean Stud = false
+                double Junc_dist = 200
+                int Junc_type = 1
+                int acc_type= 1
+                double LwStd= 0
+                int kk=0
+                for (f in list) {   
+                    
+                    int FreqParam = f
 
-        // use the readLine method of the BufferedReader to read one line at a time.
-        // the readLine method returns null when there is nothing else to read.
-        int k = 1
-        int ntheta = 0
-        int nphi = 0
+                    RSParametersDynamic rsParameters = new RSParametersDynamic(speed,  acc,  veh_type_int, acc_type, FreqParam,  Temperature,  RoadSurface,Stud, Junc_dist, Junc_type,LwStd,id_veh)
+                    //RSParametersDynamic rsParameters = new RSParametersDynamic(speed,  acc,  1, acc_type, FreqParam,  Temperature,  RoadSurface,Stud, Junc_dist, Junc_type,LwStd,id_veh)
+                    
+                    //System.println(rsParameters)
+                    rsParameters.setSlopePercentage(0)
+                    //System.println('avant')
+                    res_d[kk] = EvaluateRoadSourceDynamic.evaluate(rsParameters)
 
-        while ((line = bufferedReader.readLine()) != null) {
-            if (k == 4) {
-                String[] values = line.split("  ")
-                nphi = Integer.valueOf(values[1])
-                if (phi == nphi) phi = 0
-            }
-            if (k == 6) {
-                String[] values = line.split("  ")
-                ntheta = Integer.valueOf(values[1])
-                if (theta == ntheta) theta = 0
-            }
-            if (k == (14 + (nphi + 2) * theta + phi)) {
-                //System.out.println("line "+ (14+(nphi+2)*theta+phi))
-                String[] values = line.split("     ")
+                    //res_d[kk] = 10 * Math.log10(Math.pow(10, res_d[kk]/ 10) + Math.pow(10, 4)  )
 
-                double[] parsed = new double[values.length]
-                for (int i = 0; i < values.length; i++) parsed[i] = Double.valueOf(values[i])
-                lvl = thirdOctaveToOctave(parsed)
-
-                break
-            }
-            k++
+                    //System.println(EvaluateRoadSourceDynamic.evaluate(rsParameters))
+                    //System.println('apres')
+                    kk++
+                }
+                 System.println( res_d)
         }
-
-        // close the BufferedReader when we're done
-        bufferedReader.close()
-        return lvl
-    }
-
-    double[] getDroneLevel(String tablename, Sql sql, int t, int idSource, double theta, double phi) throws SQLException {
-        double[] res_d = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-
-        // memes valeurs d e et n
-        sql.eachRow('SELECT PK, speed,flightmode,t FROM ' + tablename + ' WHERE PK = ' + idSource.toString() + ' AND T = ' + t.toString() + ';') { row ->
-
-            int speed = (int) row[1]
-            int thetathird = (int) Math.round(theta / 3)
-            int phithird = (int) Math.round(phi / 3)
-            String regimen = row[2]
-            int id = (int) row[0]
-            //System.out.println("Source :" + id)
-            int time = (int) row[3]
-            res_d = readDroneFile("D:\\aumond\\Documents\\PROJETS\\2019_2020_DRONE\\Raw_Data\\ASCII_Noise_" + speed + "kts_0deg_Step3deg.txt", thetathird, phithird)
-        }
-        //System.out.println(res_d)
-
+      
         return res_d
     }
-
 }
 
 /** Read source database and compute the sound emission spectrum of roads sources **/
 @CompileStatic
-class DronePropagationProcessData extends PropagationProcessData {
+class CarsPropagationProcessData extends PropagationProcessData {
 
     protected List<double[]> wjSourcesD = new ArrayList<>()
 
-    public DronePropagationProcessData(FastObstructionTest freeFieldFinder) {
+    public CarsPropagationProcessData(FastObstructionTest freeFieldFinder) {
         super(freeFieldFinder)
     }
 
@@ -173,7 +164,7 @@ class DronePropagationProcessData extends PropagationProcessData {
 }
 
 
-class DronePropagationProcessDataFactory implements PointNoiseMap.PropagationProcessDataFactory {
+class CarsPropagationProcessDataFactory implements PointNoiseMap.PropagationProcessDataFactory {
     @Override
     PropagationProcessData create(FastObstructionTest freeFieldFinder) {
         return new CarsPropagationProcessData(freeFieldFinder)
@@ -181,12 +172,9 @@ class DronePropagationProcessDataFactory implements PointNoiseMap.PropagationPro
 }
 
 
-static Connection openGeoserverDataStoreConnection(String dbName) {
-    if(dbName == null || dbName.isEmpty()) {
-        dbName = new GeoServer().catalog.getStoreNames().get(0)
-    }
+def static Connection openPostgreSQLDataStoreConnection(String dbName) {
     Store store = new GeoServer().catalog.getStore(dbName)
-    JDBCDataStore jdbcDataStore = (JDBCDataStore)store.getDataStoreInfo().getDataStore(null)
+    JDBCDataStore jdbcDataStore = (JDBCDataStore) store.getDataStoreInfo().getDataStore(null)
     return jdbcDataStore.getDataSource().getConnection()
 }
 
@@ -239,6 +227,16 @@ def run(input) {
         reflexion_order = Integer.valueOf(input['reflexionOrder'])
     }
 
+    double t_end = 100
+    if (input['tend']) {
+        t_end = Double.valueOf(input['tend'])
+    }
+
+    double t_ini = 1
+    if (input['tini']) {
+        t_ini = Double.valueOf(input['tini'])
+    }
+
     double max_src_dist = 100
     if (input['maxSrcDistance']) {
         max_src_dist = Double.valueOf(input['maxSrcDistance'])
@@ -270,7 +268,7 @@ def run(input) {
     }
 
     // Get name of the database
-    String dbName = ""
+    String dbName = "h2gisdb"
     if (input['databaseName']) {
         dbName = input['databaseName'] as String
     }
@@ -288,7 +286,7 @@ def run(input) {
     // All rays storage
 
     // Open connection
-    openGeoserverDataStoreConnection(dbName).withCloseable { Connection connection ->
+    openPostgreSQLDataStoreConnection(dbName).withCloseable { Connection connection ->
 
         //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postgis database
         connection = new ConnectionWrapper(connection)
@@ -322,8 +320,8 @@ def run(input) {
         pointNoiseMap.setThreadCount(n_thread)
 
         // Init custom input in order to compute more than just attenuation
-        CarsPropagationProcessDataFactory dronePropagationProcessDataFactory = new CarsPropagationProcessDataFactory()
-        pointNoiseMap.setPropagationProcessDataFactory(dronePropagationProcessDataFactory)
+        CarsPropagationProcessDataFactory carsPropagationProcessDataFactory = new CarsPropagationProcessDataFactory()
+        pointNoiseMap.setPropagationProcessDataFactory(carsPropagationProcessDataFactory)
 
         RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1);
 
@@ -347,14 +345,17 @@ def run(input) {
         }
 
 
-
-        DroneProcessData droneProcessData = new DroneProcessData()
+        CarsProcessData carsProcessData = new CarsProcessData()
 
         Sql sql = new Sql(connection)
+        //sql.withStatement { stmt -> stmt.setQueryTimeout(60); }
         System.out.println("Export data to table")
         sql.execute("drop table if exists LDAY;")
         sql.execute("create table LDAY (TIME integer, IDRECEIVER integer, Hz63 double precision, Hz125 double precision, Hz250 double precision, Hz500 double precision, Hz1000 double precision, Hz2000 double precision, Hz4000 double precision, Hz8000 double precision);")
         def qry = 'INSERT INTO LDAY(TIME , IDRECEIVER,Hz63, Hz125, Hz250, Hz500, Hz1000,Hz2000, Hz4000, Hz8000) VALUES (?,?,?,?,?,?,?,?,?,?);'
+
+        System.out.println("LDay created")
+
 
         Map<Integer, Coordinate> geomReceivers = new HashMap<>()
 
@@ -362,52 +363,58 @@ def run(input) {
             geomReceivers.put(row[0], new Coordinate(row[1] as Double, row[2] as Double, row[3] as Double))
 
         }
+        System.out.println("l399")
 
         Map<Integer, double[]> geomFixedSources = new HashMap<>()
         sql.eachRow('SELECT PK, ST_X(the_geom),ST_Y(the_geom),ST_Z(the_geom) FROM '+sources_position_table_name+' ;') { row ->
             geomFixedSources.put((int) row[0], [row[1] as Double, row[2] as Double, row[3] as Double])
         }
+        System.out.println("l405")
 
         sql.execute("CREATE SPATIAL INDEX ON "+sources_position_table_name+"(THE_GEOM);")
+                System.out.println("spatial index on sources positions created")
+        System.out.println("l409")
+
+        //sql.execute("CREATE SPATIAL INDEX ON "+sources_time_table_name+"(THE_GEOM);")
+          //      System.out.println("spatial index on trajectories")
+
+        // as output, closest_point contains as number of lines the number of time steps times the vehicles concerned within sources_time_table_name (TRAJ_SYMUVIA for isntance) trajectory. 
+        // PK_TIME is the time steps, PK_POSITION is the indice in the table sources_position_table_name
         sql.execute("drop table if exists closest_point;")
-        sql.execute("create table closest_point as SELECT b.pk PK_TIME,b.the_geom, (SELECT a.PK FROM "+sources_position_table_name+" a WHERE ST_EXPAND(b.the_geom,50,50) && a.the_geom ORDER BY ST_Distance(a.the_geom, b.the_geom) ASC LIMIT 1) PK_POSITION FROM "+sources_time_table_name+" b ;")
+        sql.execute("create table closest_point as SELECT b.pk PK_TIME,b.the_geom, (SELECT a.PK FROM "+sources_position_table_name+" a WHERE ST_EXPAND(b.the_geom,25,25) && a.the_geom  ORDER BY ST_Distance(a.the_geom, b.the_geom) ASC LIMIT 1) PK_POSITION FROM "+sources_time_table_name+" b WHERE b.T >="+t_ini+" AND b.T <="+t_end+" ;")
+        System.out.println("closest_point created")
 
+
+        //sql.execute("drop table if exists Traj_light;")
+        //sql.execute("create table Traj_light (PK int PRIMARY KEY, the_geom GEOMETRY, ID int, ID_VEH int, SPEED float, ACC float, T int, VEH_TYPE string) as SELECT b.PK, b.the_geom, b.ID, b.ID_VEH, b.SPEED, b.ACC,   FROM "+sources_time_table_name+" b WHERE WHERE b.T >="+t_ini+" AND b.T <="+t_end+" ; ")
+
+        // attention, Arnaud added the_geom column on 23/01/2020
         sql.execute("drop table if exists "+sources_time_table_name+"_with_pkPosition;")
-        sql.execute("create table "+sources_time_table_name+"_with_pkPosition AS SELECT  a.PK PK, b.PK_POSITION PK_POSITION, a.PHI PHI, a.T T, a.idSource idSource FROM "+sources_time_table_name+" a, closest_point b WHERE a.PK = b.PK_TIME ;")
+        sql.execute("create table "+sources_time_table_name+"_with_pkPosition AS SELECT  a.PK PK, a.the_geom the_geom, b.PK_POSITION PK_POSITION, a.T T, a.ID_VEH ID_VEH FROM "+sources_time_table_name+" a, closest_point b WHERE a.PK = b.PK_TIME ;")
 
-        for (int t = 1; t <= 100; t++) {
+        System.out.println(" Table "+sources_time_table_name+"_with_pkPosition created")
+
+        for (int t = t_ini; t <= t_end; t++) {
             System.out.println(t.toString())
 
             Map<Integer, double[]> soundLevels = new HashMap<>()
 
-            sql.eachRow('SELECT PK, PK_POSITION, PHI, T, idSource FROM ' + sources_time_table_name + '_with_pkPosition WHERE T = ' + t.toString() + ';') { row ->
+            sql.eachRow('SELECT PK, PK_POSITION, T, ID_VEH FROM ' + sources_time_table_name + '_with_pkPosition WHERE T = ' + t.toString() + ';') { row ->
 
-                System.println(row)
-                int time = row[3]
-                int idSource = row[4]
+                //System.println(row)
+                int time = row[2]
+                int idSource = row[3]
                 int pk = row[0]
                 int idPositionDynamic = row[1]
-                double phiHelico = row[2]
 
                 for (int i = 0; i < allLevels.size(); i++) {
                     int idPositionFix = (Integer) allLevels.get(i).sourceId
                     if (idPositionFix == idPositionDynamic) {
                         int idReceiver = (Integer) allLevels.get(i).receiverId
-                        System.println(idReceiver)
-                        Coordinate A = new Coordinate(geomFixedSources.get(idPositionFix)[0], geomFixedSources.get(idPositionFix)[1], geomFixedSources.get(idPositionFix)[2])
-                        Coordinate B = geomReceivers.get(idReceiver)
-                        Vector3D vector = new Vector3D(A, B)
-
-                        double r = A.distance3D(B)
-                        double angle = Math.atan2(vector.getY(), vector.getX())
-                        if (angle < 0) angle = angle + 2 * 3.14
-                        angle = angle * 360 / (2 * 3.14)
-                        double phi = angle - phiHelico
-                        if (phi < 0) phi = phi + 360
-                        double theta = 180 - (Math.acos(vector.getZ() / r) * 180 / 3.14)
+                       // System.println(idReceiver)
 
                         double[] soundLevel = allLevels.get(i).value
-                        double[] sourceLev = droneProcessData.getDroneLevel(sources_time_table_name, sql, t, idPositionFix, theta, phi)
+                        double[] sourceLev = carsProcessData.getCarLevel(sources_time_table_name, sql, t, pk)
                         if (soundLevels.containsKey(idReceiver)) {
                             soundLevel = ComputeRays.sumDbArray(sumLinearArray(soundLevel, sourceLev), soundLevels.get(idReceiver))
                             soundLevels.replace(idReceiver, soundLevel)
@@ -433,6 +440,7 @@ def run(input) {
 
                 }
             }
+                System.out.println("le pas de temps" +t+ "a ete traite")
 
         }
 
@@ -441,8 +449,8 @@ def run(input) {
         sql.execute("CREATE INDEX ON LDAY(IDRECEIVER);")
         sql.execute("CREATE INDEX ON RECEIVERS(PK);")
 
-        sql.execute("drop table if exists LDRONE_GEOM;")
-        sql.execute("create table LDRONE_GEOM  as select a.TIME ,a.IDRECEIVER, b.THE_GEOM, a.Hz63, a.Hz125, a.Hz250, a.Hz500, a.Hz1000, a.Hz2000, a.Hz4000, a.Hz8000  FROM LDAY a LEFT JOIN  RECEIVERS b  ON a.IDRECEIVER = b.PK;")
+        sql.execute("drop table if exists L_CARS_GEOM;")
+        sql.execute("create table L_CARS_GEOM  as select a.TIME ,a.IDRECEIVER, b.THE_GEOM, a.Hz63, a.Hz125, a.Hz250, a.Hz500, a.Hz1000, a.Hz2000, a.Hz4000, a.Hz8000  FROM LDAY a LEFT JOIN  RECEIVERS b  ON a.IDRECEIVER = b.PK;")
 
 
         System.out.println("Done !")
@@ -450,7 +458,7 @@ def run(input) {
 
         long computationTime = System.currentTimeMillis() - start
 
-        return [result: "Calculation Done ! LDRONE_GEOM has been created !"]
+        return [result: "Calculation Done ! L_CARS_GEOM has been created !"]
 
 
     }
