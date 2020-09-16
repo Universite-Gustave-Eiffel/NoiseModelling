@@ -21,8 +21,9 @@ package org.noise_planet.noisemodelling.wps.Geometric_Tools
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
-import groovy.time.TimeCategory
 import org.geotools.jdbc.JDBCDataStore
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import java.sql.Connection
 
@@ -51,14 +52,6 @@ inputs = [
                         '- <b> THE_GEOM </b> : the 2D geometry of the screens (POLYGON or MULTIPOLYGON). </br>' +
                         '- <b> HEIGHT </b> : the height of the screens (FLOAT)',
                 type       : String.class
-        ]
-]
-
-outputs = [
-        tableNameCreated: [
-                name : 'tableNameCreated',
-                title: 'tableNameCreated',
-                type : String.class
         ]
 ]
 
@@ -102,9 +95,12 @@ def exec(Connection connection, input) {
     // output string, the information given back to the user
     String resultString = null
 
+    // Create a logger to display messages in the geoserver logs and in the command prompt.
+    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
+
     // print to command window
-    System.out.println('Start : Screen to Building')
-    def start = new Date()
+    logger.info('Start : Screen to Building')
+    logger.info("inputs {}", input) // log inputs of the run
 
     // import screen_table_name
     String screen_table_name = input['tableScreens']
@@ -187,9 +183,8 @@ def exec(Connection connection, input) {
     resultString = "The table BUILDINGS_SCREENS has been created."
 
     // print to command window
-    System.out.println('Result : ' + resultString)
-    System.out.println('End :  Screen to Building')
-    System.out.println('Duration : ' + TimeCategory.minus(new Date(), start))
+    logger.info('Result : ' + resultString)
+    logger.info('End : Screen to Building')
 
     // print to WPS Builder
     return resultString

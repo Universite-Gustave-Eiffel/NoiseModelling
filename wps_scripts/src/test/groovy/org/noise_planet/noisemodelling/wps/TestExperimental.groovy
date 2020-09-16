@@ -13,6 +13,7 @@
 package org.noise_planet.noisemodelling.wps
 
 import org.h2gis.functions.io.geojson.GeoJsonRead
+import org.junit.Test
 import org.noise_planet.noisemodelling.wps.Database_Manager.Add_Primary_Key
 import org.noise_planet.noisemodelling.wps.Database_Manager.Table_Visualization_Data
 import org.noise_planet.noisemodelling.wps.Experimental.Get_Rayz
@@ -20,6 +21,7 @@ import org.noise_planet.noisemodelling.wps.Experimental.Multi_Runs
 
 class TestExperimental extends JdbcTestCase  {
 
+    @Test
     void testMultiRun() {
 
         GeoJsonRead.readGeoJson(connection, TestExperimental.class.getResource("multirun/buildings.geojson").getPath())

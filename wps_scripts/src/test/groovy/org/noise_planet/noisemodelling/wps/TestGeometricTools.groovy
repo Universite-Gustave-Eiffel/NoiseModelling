@@ -16,6 +16,7 @@ import groovy.sql.Sql
 import org.h2gis.functions.io.shp.SHPRead
 import org.junit.Test
 import org.noise_planet.noisemodelling.wps.Geometric_Tools.Change_SRID
+import org.noise_planet.noisemodelling.wps.Geometric_Tools.CleanBuildingsTable
 import org.noise_planet.noisemodelling.wps.Geometric_Tools.Screen_to_building
 import org.noise_planet.noisemodelling.wps.Geometric_Tools.Set_Height
 import org.slf4j.Logger
@@ -100,6 +101,16 @@ class TestGeometricTools extends JdbcTestCase {
         assertEquals(0.05, sql.firstRow("SELECT ST_Z(THE_GEOM) FROM ROADS")[0])
     }
 
+    @Test
+    void testCleanBuildings() {
+        SHPRead.readShape(connection, TestGeometricTools.getResource("buildings.shp").getPath())
+        def sql = new Sql(connection)
+
+        new CleanBuildingsTable().exec(connection,
+                ["tableName": "buildings"])
+
+        assertEquals('POLYGON ((223850.08378369396 6758172.390990572, 223852.979044039 6758185.902205516, 223862.97904403895 6758183.902205515, 223860.02095646886 6758170.097796855, 223850.08378369396 6758172.390990572))', sql.firstRow("SELECT THE_GEOM FROM buildings")[0] as String)
+    }
 
 
 }

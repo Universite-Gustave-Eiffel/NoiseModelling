@@ -63,8 +63,8 @@ class TestAcousticTools extends JdbcTestCase {
         assertEquals(true, fields.contains("LEQ"))
     }
 
-
-    public void testCreateIsosurface() {
+    @Test
+    void testCreateIsosurface() {
         def sql = new Sql(connection)
 
         SHPRead.readShape(connection, TestReceivers.getResource("buildings.shp").getPath())
