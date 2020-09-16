@@ -33,14 +33,14 @@ class TestImportExport extends JdbcTestCase {
     Logger LOGGER = LoggerFactory.getLogger(TestImportExport.class)
 
     @Test
-    void testTutorial() {
+    void testImportSymuvia() {
         // Check empty database
         Object res = new Display_Database().exec(connection, [])
 
         assertEquals("", res)
         // Import OSM file
         res = new Import_Symuvia().exec(connection,
-                ["pathFile": TestSymuvia.getResource("symuvia.xml").getPath(),
+                ["pathFile": TestImportExport.getResource("symuvia.xml").getPath(),
                  "defaultSRID" : 2154])
 
         res = new Display_Database().exec(connection, [])
