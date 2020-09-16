@@ -21,6 +21,8 @@
  */
 package org.noise_planet.noisemodelling.emission.jdbc;
 
+import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
+
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -30,9 +32,8 @@ public class LDENConfig {
     public enum INPUT_MODE { INPUT_MODE_TRAFFIC_FLOW, INPUT_MODE_LW_DEN, INPUT_MODE_PROBA}
     final INPUT_MODE input_mode;
 
-    public LDENConfig(INPUT_MODE input_mode) {
-        this.input_mode = input_mode;
-    }
+    // This field is initialised when {@link PointNoiseMap#initialize} is called
+    PropagationProcessPathData propagationProcessPathData = null;
 
     // Cnossos revisions have multiple coefficients for road emission formulae
     // this parameter will be removed when the final version of Cnossos will be published
@@ -59,6 +60,28 @@ public class LDENConfig {
     String lNightTable = "LNIGHT_RESULT";
     String lDenTable = "LDEN_RESULT";
     String raysTable = "RAYS";
+
+    String lwFrequencyPrepend = "LW";
+
+    public LDENConfig(INPUT_MODE input_mode) {
+        this.input_mode = input_mode;
+    }
+
+    public PropagationProcessPathData getPropagationProcessPathData() {
+        return propagationProcessPathData;
+    }
+
+    public String getLwFrequencyPrepend() {
+        return lwFrequencyPrepend;
+    }
+
+    public void setLwFrequencyPrepend(String lwFrequencyPrepend) {
+        this.lwFrequencyPrepend = lwFrequencyPrepend;
+    }
+
+    public void setPropagationProcessPathData(PropagationProcessPathData propagationProcessPathData) {
+        this.propagationProcessPathData = propagationProcessPathData;
+    }
 
     public void setComputeLDay(boolean computeLDay) {
         this.computeLDay = computeLDay;

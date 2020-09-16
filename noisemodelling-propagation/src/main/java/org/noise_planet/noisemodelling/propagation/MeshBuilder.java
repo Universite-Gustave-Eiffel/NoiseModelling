@@ -90,13 +90,6 @@ public class MeshBuilder {
             this.hasHeight = height < Double.MAX_VALUE;
         }
 
-        public PolygonWithHeight(Geometry geo, double height, double alphaUniqueValue) {
-            this.geo = geo;
-            this.height = height;
-            this.hasHeight = height < Double.MAX_VALUE;
-            setAlpha(alphaUniqueValue);
-        }
-
         public PolygonWithHeight copy() {
             PolygonWithHeight copy = new PolygonWithHeight(geo, height, alpha);
             copy.alphaUniqueValue = alphaUniqueValue;
@@ -142,17 +135,6 @@ public class MeshBuilder {
          */
         public void setAlpha(List<Double> alpha) {
             this.alpha = Collections.unmodifiableList(new ArrayList<>(alpha));
-        }
-
-        /**
-         * @param alphaUniqueValue Set absorption coefficient of walls
-         */
-        public void setAlpha(double alphaUniqueValue) {
-            List<Double> newAlpha = new ArrayList<>(PropagationProcessPathData.freq_lvl.size());
-            for(double freq : PropagationProcessPathData.freq_lvl_exact) {
-                newAlpha.add(getWallAlpha(alphaUniqueValue, freq));
-            }
-            this.alpha = newAlpha;
         }
 
         public double getHeight() {
@@ -288,13 +270,14 @@ public class MeshBuilder {
         return coordinates;
     }
 
-    public void addGeometry(Geometry obstructionPoly) {
-        addGeometry(new PolygonWithHeight(obstructionPoly));
+    public PolygonWithHeight addGeometry(Geometry obstructionPoly) {
+        return addGeometry(new PolygonWithHeight(obstructionPoly));
     }
 
-    private void addGeometry(PolygonWithHeight poly) {
+    private PolygonWithHeight addGeometry(PolygonWithHeight poly) {
         this.geometriesBoundingBox.expandToInclude(poly.getGeometry().getEnvelopeInternal());
         polygonWithHeight.add(poly);
+        return poly;
     }
 
 
@@ -305,20 +288,8 @@ public class MeshBuilder {
      * @param obstructionPoly  building's Geometry
      * @param heightofBuilding building's Height
      */
-    public void addGeometry(Geometry obstructionPoly, double heightofBuilding) {
-        addGeometry(new PolygonWithHeight(obstructionPoly, heightofBuilding));
-    }
-
-    /**
-     * Add a new building with height and merge this new building with existing buildings if they have intersections
-     * When we merge the buildings, we will use The shortest height to new building
-     *
-     * @param obstructionPoly  building's Geometry
-     * @param heightofBuilding building's Height
-     * @param alpha Wall absorption coefficient
-     */
-    public void addGeometry(Geometry obstructionPoly, double heightofBuilding, List<Double> alpha) {
-        addGeometry(new PolygonWithHeight(obstructionPoly, heightofBuilding, alpha));
+    public PolygonWithHeight addGeometry(Geometry obstructionPoly, double heightofBuilding) {
+        return addGeometry(new PolygonWithHeight(obstructionPoly, heightofBuilding));
     }
 
     /**
@@ -329,26 +300,24 @@ public class MeshBuilder {
      * @param heightofBuilding building's Height
      * @param alpha Wall absorption coefficient
      */
-    public void addGeometry(Geometry obstructionPoly, double heightofBuilding, double[] alpha) {
+    public PolygonWithHeight addGeometry(Geometry obstructionPoly, double heightofBuilding, List<Double> alpha) {
+        return addGeometry(new PolygonWithHeight(obstructionPoly, heightofBuilding, alpha));
+    }
+
+    /**
+     * Add a new building with height and merge this new building with existing buildings if they have intersections
+     * When we merge the buildings, we will use The shortest height to new building
+     *
+     * @param obstructionPoly  building's Geometry
+     * @param heightofBuilding building's Height
+     * @param alpha Wall absorption coefficient
+     */
+    public PolygonWithHeight addGeometry(Geometry obstructionPoly, double heightofBuilding, double[] alpha) {
         List<Double> alphaw = new ArrayList<>(alpha.length);
         for(double a : alpha) {
             alphaw.add(a);
         }
-        addGeometry(new PolygonWithHeight(obstructionPoly, heightofBuilding, alphaw));
-    }
-
-    /**
-     * Add a new building with height and merge this new building with existing buildings if they have intersections
-     * When we merge the buildings, we will use The shortest height to new building
-     *
-     * @param obstructionPoly  building's Geometry
-     * @param heightofBuilding building's Height
-     * @param alpha Wall absorption coefficient
-     */
-    public PolygonWithHeight addGeometry(Geometry obstructionPoly, double heightofBuilding, double alpha) {
-        PolygonWithHeight poly = new PolygonWithHeight(obstructionPoly, heightofBuilding, alpha);
-        addGeometry(poly);
-        return poly;
+        return addGeometry(new PolygonWithHeight(obstructionPoly, heightofBuilding, alphaw));
     }
 
     public void mergeBuildings(Geometry boundingBoxGeom) {

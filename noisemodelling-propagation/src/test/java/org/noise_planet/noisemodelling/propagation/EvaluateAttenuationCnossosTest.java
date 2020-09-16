@@ -11,9 +11,7 @@ import org.locationtech.jts.io.WKTReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -958,8 +956,9 @@ public class EvaluateAttenuationCnossosTest {
         DirectPropagationProcessData rayData = new DirectPropagationProcessData(manager);
         rayData.addReceiver(new Coordinate(200, 50, 11.5));
 
+        PropagationProcessPathData attData = new PropagationProcessPathData();
         // Push source with sound level
-        rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)), ComputeRays.dbaToW(aWeighting(Collections.nCopies(PropagationProcessPathData.freq_lvl.size(), 93d))));
+        rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)), ComputeRays.dbaToW(aWeighting(Collections.nCopies(attData.freq_lvl.size(), 93d))));
 
         rayData.setComputeHorizontalDiffraction(true);
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9));
@@ -969,7 +968,6 @@ public class EvaluateAttenuationCnossosTest {
         rayData.setComputeVerticalDiffraction(true);
         rayData.setGs(0.9);
 
-        PropagationProcessPathData attData = new PropagationProcessPathData();
         attData.setHumidity(70);
         attData.setTemperature(10);
         attData.setPrime2520(false);
@@ -1834,32 +1832,41 @@ public class EvaluateAttenuationCnossosTest {
      */
     @Test
     public void TestRegressionNaN() throws LayerDelaunayError, IOException {
-        String path = "AAAAAAAAAAAAAAAABkELTp9wo7AcQVnI2rXCgfo/qZmZmZmZmgAAAAAAAAAAAAAAAAAAAAB/+AAAAAAAAH/4AAAAAAAAf" +
-                "/gAAAAAAAB/+AAAAAAAAH/4AAAAAAAAf/gAAAAAAAB/+AAAAAAAAH/4AAAAAAAA" +
-                "/////wAAAABBC1AyUqFAN0FZyLag3BoSQCXYkAb18EtAFU46DH/X4gAAAAAAAAAAf/gAAAAAAAB/+AAAAAAAAH/4AAAAAAAAf" +
-                "/gAAAAAAAB/+AAAAAAAAH/4AAAAAAAAf/gAAAAAAAB/+AAAAAAAAP////8AAAADQQtSgYVM4atBWciBrnR" +
-                "/N0A2aoP8x7ilQBy3Mx4IxFoAAAAAAAAAAH/4AAAAAAAAf/gAAAAAAAB/+AAAAAAAAH/4AAAAAAAAf/gAAAAAAAB/+AAAAAAAAH" +
-                "/4AAAAAAAAf/gAAAAAAAD/////AAAAA0ELUo/NRf1KQVnIgGcH8SZANmqD/Me4pUAe4TEhnNY1AAAAAAAAAAB/+AAAAAAAAH" +
-                "/4AAAAAAAAf/gAAAAAAAB/+AAAAAAAAH/4AAAAAAAAf/gAAAAAAAB/+AAAAAAAAH/4AAAAAAAA" +
-                "/////wAAAANBC1NUa4Kow0FZyG7LKg/OQDDZILDUkCJAJUagr26FpAAAAAAAAAAAf/gAAAAAAAB/+AAAAAAAAH/4AAAAAAAAf" +
-                "/gAAAAAAAB/+AAAAAAAAH/4AAAAAAAAf/gAAAAAAAB/+AAAAAAAAP" +
-                "////8AAAADQQtTd2Mz1AZBWchrqXZ4aEAt2dfMwxGBQCXZ18zDEYEAAAAAAAAAAH/4AAAAAAAAf/gAAAAAAAB/+AAAAAAAAH" +
+        String path = "AAAAAAAAAAAAAAAABkELTp9wo7AcQVnI2rXCgfo/qZmZmZmZmgAAAAAAAAAAAAAAAAAAAAAACH/4AAAAAAAAf" +
+                "/gAAAAAAAB/+AAAAAAAAH/4AAAAAAAAf/gAAAAAAAB/+AAAAAAAAH/4AAAAAAAAf/gAAAAAAAD" +
+                "/////AAAAAEELUDJSoUA3QVnItqDcGhJAJdiQBvXwS0AVTjoMf9fiAAAAAAAAAAAACH/4AAAAAAAAf/gAAAAAAAB/+AAAAAAAAH" +
+                "/4AAAAAAAAf/gAAAAAAAB/+AAAAAAAAH/4AAAAAAAAf/gAAAAAAAD/////AAAAA0ELUoGFTOGrQVnIga50fzdANmqD" +
+                "/Me4pUActzMeCMRaAAAAAAAAAAAACH/4AAAAAAAAf/gAAAAAAAB/+AAAAAAAAH/4AAAAAAAAf/gAAAAAAAB/+AAAAAAAAH" +
+                "/4AAAAAAAAf/gAAAAAAAD/////AAAAA0ELUo/NRf1KQVnIgGcH8SZANmqD/Me4pUAe4TEhnNY1AAAAAAAAAAAACH/4AAAAAAAAf" +
+                "/gAAAAAAAB/+AAAAAAAAH/4AAAAAAAAf/gAAAAAAAB/+AAAAAAAAH/4AAAAAAAAf/gAAAAAAAD" +
+                "/////AAAAA0ELU1RrgqjDQVnIbssqD85AMNkgsNSQIkAlRqCvboWkAAAAAAAAAAAACH/4AAAAAAAAf/gAAAAAAAB/+AAAAAAAAH" +
+                "/4AAAAAAAAf/gAAAAAAAB/+AAAAAAAAH/4AAAAAAAAf/gAAAAAAAD" +
+                "/////AAAAA0ELU3djM9QGQVnIa6l2eGhALdnXzMMRgUAl2dfMwxGBAAAAAAAAAAAACH/4AAAAAAAAf/gAAAAAAAB/+AAAAAAAAH" +
                 "/4AAAAAAAAf/gAAAAAAAB/+AAAAAAAAH/4AAAAAAAAf/gAAAAAAAD/////AAAABAAAAAU/wBvxnrf6hkBJLxOOJzAAwGILIc" +
                 "/cAABAJRdmLHGkLkELTp9xTapHQVnI2rWzSOi/jTelQ3f5WD/hNUTOrUdwQFJ6WqIZaADAanpOelWAAD/odGaWtL" +
                 "+wQQtQMkhBG1pBWci2ocn7h0ASDrQig+tyAAAAAAAAAAA/+uzqKo4AAMATSo/AwAAAP/Qml6qEHQRBC1J9yb" +
                 "/w6kFZyIIECGuLQBb5xfFciCQAAAAAAAAAAEA4e506acAAwFGKjYvwAABABNd1zN" +
                 "/3IEELUo8N2d3pQVnIgHgsr3lAIC98kZ14SQAAAAAAAAAAQBFrZiGsAADAKPYLaTAAAD" +
-                "/SoWVrORNgQQtTU81vkgNBWchu2VI9a0AlRuFfAqJXAAAAAT" +
-                "/TBsY8SUi2QGNg7UkPZADAe8S0CsKAAEAVMZUczyA2QQtOn1fPWpRBWcjat/vFwUAKJWO95msG";
+                "/SoWVrORNgQQtTU81vkgNBWchu2VI9a0AlRuFfAqJXAAAAAz" +
+                "/TBsY8SUi2QGNg7UkPZADAe8S0CsKAAEAVMZUczyA2QQtOn1fPWpRBWcjat" +
+                "/vFwUAKJWO95msGP9MGxjxJSLZAY2CN2WJwAMB7xCtJq4AAQCDgvd4PLeBBC06fP717akFZyNq6I58WQBnyM91nx0E" +
+                "/0wbGPElItkBjYUy4vFgAwHvFPMvZgABAAUNc+v/JNkELTp9Xz1qUQVnI2rf7xcFACiVjveZrBg==";
         PropagationPath propPath = new PropagationPath();
         propPath.readStream(new DataInputStream(new ByteArrayInputStream(Base64.getDecoder().decode(path))));
         propPath.initPropagationPath();
+
+        //        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        //        propPath.writeStream(new DataOutputStream(bos));
+        //        String newVersion  = new String(Base64.getEncoder().encode(bos.toByteArray()));
+        //        System.out.println(newVersion);
+
         EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
         PropagationProcessPathData pathData = new PropagationProcessPathData();
         evaluateAttenuationCnossos.evaluate(propPath, pathData);
         double[] aGlobalMeteoHom = evaluateAttenuationCnossos.getaGlobal();
-        for(int i = 0; i < aGlobalMeteoHom.length; i++) {
-            assertFalse(String.format("freq %d Hz with nan value",PropagationProcessPathData.freq_lvl.get(i)), Double.isNaN(aGlobalMeteoHom[i]));
+        for (int i = 0; i < aGlobalMeteoHom.length; i++) {
+            assertFalse(String.format("freq %d Hz with nan value", pathData.freq_lvl.get(i)),
+                    Double.isNaN(aGlobalMeteoHom[i]));
         }
 
     }

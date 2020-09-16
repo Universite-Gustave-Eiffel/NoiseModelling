@@ -51,8 +51,8 @@ public class PropagationPath_Cnossos {
         Vector3D flatTopography = new Vector3D(new Coordinate(0,0,0),new Coordinate(0,0,0));
 
         points.add(new PointPath(new Coordinate(0,0,0),1,0,new double[0], -1, PointPath.POINT_TYPE.SRCE));
-        points.add(new PointPath(new Coordinate(10,0,0),1,Double.NaN,0.5, -1, PointPath.POINT_TYPE.DIFH));
-        points.add(new PointPath(new Coordinate(20,0,0),1,Double.NaN,0.5, -1, PointPath.POINT_TYPE.DIFH));
+        points.add(new PointPath(new Coordinate(10,0,0),1,Double.NaN,Collections.nCopies(8, 0.5), -1, PointPath.POINT_TYPE.DIFH));
+        points.add(new PointPath(new Coordinate(20,0,0),1,Double.NaN,Collections.nCopies(8, 0.5), -1, PointPath.POINT_TYPE.DIFH));
         points.add(new PointPath(new Coordinate(30,30,0),1,0,new double[0], -1, PointPath.POINT_TYPE.RECV));
         segments.add(new SegmentPath(1, flatTopography,new Coordinate(0,0,0)));
         segments.add(new SegmentPath(1, flatTopography,new Coordinate(0,0,0)));
@@ -80,8 +80,8 @@ public class PropagationPath_Cnossos {
         List<SegmentPath> srPath = new ArrayList<SegmentPath>();
         Vector3D flatTopography = new Vector3D(new Coordinate(0,0,0),new Coordinate(0,0,0));
 
-        points.add(new PointPath(new Coordinate(0,0,1),0,0,Double.NaN, -1, PointPath.POINT_TYPE.SRCE));
-        points.add(new PointPath(new Coordinate(200,0,4),0,0,Double.NaN, -1, PointPath.POINT_TYPE.RECV));
+        points.add(new PointPath(new Coordinate(0,0,1),0,0,new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
+        points.add(new PointPath(new Coordinate(200,0,4),0,0,new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
         segments.add(new SegmentPath(0, flatTopography,new Coordinate(0,0,0)));
         srPath.add(new SegmentPath(0,flatTopography,new Coordinate(0,0,0)));
 
@@ -108,8 +108,8 @@ public class PropagationPath_Cnossos {
         List<SegmentPath> srPath = new ArrayList<SegmentPath>();
         Vector3D flatTopography = new Vector3D(new Coordinate(0,0,0),new Coordinate(200,0,0));
 
-        points.add(new PointPath(new Coordinate(0, 0, 0.05), 0, 0, Double.NaN, -1, PointPath.POINT_TYPE.SRCE));
-        points.add(new PointPath(new Coordinate(200, 0, 4), 0, 0, Double.NaN, -1, PointPath.POINT_TYPE.RECV));
+        points.add(new PointPath(new Coordinate(0, 0, 0.05), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
+        points.add(new PointPath(new Coordinate(200, 0, 4), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
         srPath.add(new SegmentPath(1,flatTopography,new Coordinate(0,0,0)));
 
         PropagationPath propagationPath = new PropagationPath(false,points,segments, srPath);
@@ -133,8 +133,8 @@ public class PropagationPath_Cnossos {
         List<SegmentPath> srPath = new ArrayList<SegmentPath>();
         Vector3D flatTopography = new Vector3D(new Coordinate(0,0,0),new Coordinate(200,0,0));
 
-        points.add(new PointPath(new Coordinate(0, 0, 0.05), 0, 0, Double.NaN, -1, PointPath.POINT_TYPE.SRCE));
-        points.add(new PointPath(new Coordinate(200, 0, 4), 0, 0, Double.NaN, -1, PointPath.POINT_TYPE.RECV));
+        points.add(new PointPath(new Coordinate(0, 0, 0.05), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
+        points.add(new PointPath(new Coordinate(200, 0, 4), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
         srPath.add(new SegmentPath(1,flatTopography,new Coordinate(0,0,0)));
 
         PropagationPath propagationPath = new PropagationPath(true,points,segments, srPath);
@@ -158,8 +158,8 @@ public class PropagationPath_Cnossos {
         List<SegmentPath> srPath = new ArrayList<SegmentPath>();
         Vector3D flatTopography = new Vector3D(new Coordinate(0,0,0),new Coordinate(200,0,0));
 
-        points.add(new PointPath(new Coordinate(0, 0, 0.05), 0.0, 0, Double.NaN, -1, PointPath.POINT_TYPE.SRCE));
-        points.add(new PointPath(new Coordinate(200, 0, 4.), 0., 0, Double.NaN, -1, PointPath.POINT_TYPE.RECV));
+        points.add(new PointPath(new Coordinate(0, 0, 0.05), 0.0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
+        points.add(new PointPath(new Coordinate(200, 0, 4.), 0., 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
         srPath.add(new SegmentPath(0.7,flatTopography,new Coordinate(0,0,0)));
 
         PropagationPath propagationPath = new PropagationPath(true,points,segments, srPath);
@@ -184,8 +184,8 @@ public class PropagationPath_Cnossos {
         List<SegmentPath> srPath = new ArrayList<SegmentPath>();
         Vector3D flatTopography = new Vector3D(new Coordinate(0,0,0),new Coordinate(200,0,0));
 
-        points.add(new PointPath(new Coordinate(0, 0, 0.05), 0., 0, Double.NaN, -1, PointPath.POINT_TYPE.SRCE));
-        points.add(new PointPath(new Coordinate(200, 0, 4.), 0., 0, Double.NaN, -1, PointPath.POINT_TYPE.RECV));
+        points.add(new PointPath(new Coordinate(0, 0, 0.05), 0., 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
+        points.add(new PointPath(new Coordinate(200, 0, 4.), 0., 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
         srPath.add(new SegmentPath(0.7,flatTopography,new Coordinate(0,0,0)));
 
         PropagationPath propagationPath = new PropagationPath(false,points,segments, srPath);
@@ -214,10 +214,10 @@ public class PropagationPath_Cnossos {
         List<SegmentPath> srPath = new ArrayList<SegmentPath>();
         Vector3D flatTopography = new Vector3D(new Coordinate(0,0,0),new Coordinate(150,0,0));
 
-        points.add(new PointPath(new Coordinate(0, 0, 0.05), 0, 0, Double.NaN, -1, PointPath.POINT_TYPE.SRCE));
-        points.add(new PointPath(new Coordinate(50, 0, 10.0), 0, 0, Double.NaN, -1, PointPath.POINT_TYPE.DIFH));
-        points.add(new PointPath(new Coordinate(100, 0, 10.0), 0, 0, Double.NaN, -1, PointPath.POINT_TYPE.DIFH));
-        points.add(new PointPath(new Coordinate(150, 0, 2.0), 0, 0, Double.NaN, -1, PointPath.POINT_TYPE.RECV));
+        points.add(new PointPath(new Coordinate(0, 0, 0.05), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
+        points.add(new PointPath(new Coordinate(50, 0, 10.0), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.DIFH));
+        points.add(new PointPath(new Coordinate(100, 0, 10.0), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.DIFH));
+        points.add(new PointPath(new Coordinate(150, 0, 2.0), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
         // only first and last segment are necessary, even if it is possible to add more.
         segments.add(new SegmentPath(0, flatTopography,new Coordinate(0,0,0)));
         segments.add(new SegmentPath(0, flatTopography,new Coordinate(0,0,0)));
@@ -248,10 +248,10 @@ public class PropagationPath_Cnossos {
         List<SegmentPath> srPath = new ArrayList<SegmentPath>();
         Vector3D flatTopography = new Vector3D(new Coordinate(0,0,0),new Coordinate(150,0,0));
 
-        points.add(new PointPath(new Coordinate(0, 0, 0.05), 0, 0, Double.NaN, -1, PointPath.POINT_TYPE.SRCE));
-        points.add(new PointPath(new Coordinate(50, 0, 10.0), 0, 0, Double.NaN, -1, PointPath.POINT_TYPE.DIFH));
-        points.add(new PointPath(new Coordinate(100, 0, 10.0), 0, 0, Double.NaN, -1, PointPath.POINT_TYPE.DIFH));
-        points.add(new PointPath(new Coordinate(150, 0, 2.0), 0, 0, Double.NaN, -1, PointPath.POINT_TYPE.RECV));
+        points.add(new PointPath(new Coordinate(0, 0, 0.05), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
+        points.add(new PointPath(new Coordinate(50, 0, 10.0), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.DIFH));
+        points.add(new PointPath(new Coordinate(100, 0, 10.0), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.DIFH));
+        points.add(new PointPath(new Coordinate(150, 0, 2.0), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
         // only first and last segment are necessary, even if it is possible to add more.
         segments.add(new SegmentPath(0.0, flatTopography,new Coordinate(0,0,0)));
         segments.add(new SegmentPath(0.0, flatTopography,new Coordinate(0,0,0)));
@@ -283,8 +283,8 @@ public class PropagationPath_Cnossos {
         List<SegmentPath> srPath = new ArrayList<SegmentPath>();
         Vector3D smallSlope = new Vector3D(new Coordinate(0,0,0),new Coordinate(150,0,2));
 
-        points.add(new PointPath(new Coordinate(0, 0, 0.05), 0, 0, Double.NaN, -1, PointPath.POINT_TYPE.SRCE));
-        points.add(new PointPath(new Coordinate(150, 0, 10.0), 0, 0, Double.NaN, -1, PointPath.POINT_TYPE.RECV));
+        points.add(new PointPath(new Coordinate(0, 0, 0.05), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
+        points.add(new PointPath(new Coordinate(150, 0, 10.0), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
         // only first and last segment are necessary, even if it is possible to add more.
         srPath.add(new SegmentPath(0.7,smallSlope,new Coordinate(0,0,0)));
 
@@ -312,8 +312,8 @@ public class PropagationPath_Cnossos {
         List<SegmentPath> srPath = new ArrayList<SegmentPath>();
         Vector3D smallSlope = new Vector3D(new Coordinate(0,0,0),new Coordinate(150,0,2));
 
-        points.add(new PointPath(new Coordinate(0, 0, 0.05), 0, 0, Double.NaN, -1, PointPath.POINT_TYPE.SRCE));
-        points.add(new PointPath(new Coordinate(150, 0, 10.0), 0, 0, Double.NaN, -1, PointPath.POINT_TYPE.RECV));
+        points.add(new PointPath(new Coordinate(0, 0, 0.05), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
+        points.add(new PointPath(new Coordinate(150, 0, 10.0), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
         // only first and last segment are necessary, even if it is possible to add more.
         srPath.add(new SegmentPath(0.7,smallSlope,new Coordinate(0,0,0)));
 
@@ -341,9 +341,9 @@ public class PropagationPath_Cnossos {
         List<SegmentPath> srPath = new ArrayList<SegmentPath>();
         Vector3D flatTopography = new Vector3D(new Coordinate(0,0,0),new Coordinate(150,0,0));
 
-        points.add(new PointPath(new Coordinate(0, 0, 4), 0, 0, Double.NaN, -1, PointPath.POINT_TYPE.SRCE));
-        points.add(new PointPath(new Coordinate(75, 20, 4), 0, Double.NaN, 0.3, -1, PointPath.POINT_TYPE.REFL));
-        points.add(new PointPath(new Coordinate(150, 0, 4), 0, 0, Double.NaN, -1, PointPath.POINT_TYPE.RECV));
+        points.add(new PointPath(new Coordinate(0, 0, 4), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
+        points.add(new PointPath(new Coordinate(75, 20, 4), 0, Double.NaN, Collections.nCopies(8, 0.3), -1, PointPath.POINT_TYPE.REFL));
+        points.add(new PointPath(new Coordinate(150, 0, 4), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
         // only first and last segment are necessary, even if it is possible to add more.
         srPath.add(new SegmentPath(0.,flatTopography,new Coordinate(0,0,0)));
 
@@ -376,8 +376,8 @@ public class PropagationPath_Cnossos {
         List<SegmentPath> srPath = new ArrayList<SegmentPath>();
 
         Vector3D flatTopography = new Vector3D(new Coordinate(10,10,0),new Coordinate(200,50,0));
-        points.add(new PointPath(new Coordinate(10, 10, 1), 0, 0, Double.NaN, -1, PointPath.POINT_TYPE.SRCE));
-        points.add(new PointPath(new Coordinate(200, 50, 4), 0, 0, Double.NaN, -1, PointPath.POINT_TYPE.RECV));
+        points.add(new PointPath(new Coordinate(10, 10, 1), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
+        points.add(new PointPath(new Coordinate(200, 50, 4), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
         segments.add(new SegmentPath(0, flatTopography,new Coordinate(0,0,0)));
         srPath.add(new SegmentPath(0,flatTopography,new Coordinate(0,0,0)));
 
@@ -404,8 +404,8 @@ public class PropagationPath_Cnossos {
         List<SegmentPath> srPath = new ArrayList<SegmentPath>();
         Vector3D flatTopography = new Vector3D(new Coordinate(10,10,0),new Coordinate(200,50,0));
 
-        points.add(new PointPath(new Coordinate(10, 10, 1), 0, 0, Double.NaN, -1, PointPath.POINT_TYPE.SRCE));
-        points.add(new PointPath(new Coordinate(200, 50, 4), 0, 0, Double.NaN, -1, PointPath.POINT_TYPE.RECV));
+        points.add(new PointPath(new Coordinate(10, 10, 1), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
+        points.add(new PointPath(new Coordinate(200, 50, 4), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
         segments.add(new SegmentPath(0, flatTopography,new Coordinate(0,0,0)));
         srPath.add(new SegmentPath(0,flatTopography,new Coordinate(0,0,0)));
 
@@ -435,9 +435,9 @@ public class PropagationPath_Cnossos {
         List<SegmentPath> segments = new ArrayList<SegmentPath>();
         List<SegmentPath> srPath = new ArrayList<SegmentPath>();
 
-        points.add(new PointPath(new Coordinate(10, 10, 4.0), 0, 0, Double.NaN, -1, PointPath.POINT_TYPE.SRCE));
-        points.add(new PointPath(new Coordinate(175, 50, 4.0), 0, 0, Double.NaN, -1, PointPath.POINT_TYPE.DIFV));
-        points.add(new PointPath(new Coordinate(200, 10, 4.0), 0, 0, Double.NaN, -1, PointPath.POINT_TYPE.RECV));
+        points.add(new PointPath(new Coordinate(10, 10, 4.0), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
+        points.add(new PointPath(new Coordinate(175, 50, 4.0), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.DIFV));
+        points.add(new PointPath(new Coordinate(200, 10, 4.0), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
         // only first and last segment are necessary, even if it is possible to add more.
         segments.add(new SegmentPath(0.0, new Vector3D(new Coordinate(10,10,0),new Coordinate(175,50,0)),new Coordinate(0,0,0)));
         segments.add(new SegmentPath(0.0, new Vector3D(new Coordinate(175,50,0),new Coordinate(200,10,0)),new Coordinate(0,0,0)));

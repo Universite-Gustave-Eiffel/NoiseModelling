@@ -23,8 +23,10 @@
 package org.noise_planet.noisemodelling.emission.jdbc;
 
 import org.h2.jdbc.JdbcBatchUpdateException;
+import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.TableLocation;
 import org.noise_planet.noisemodelling.propagation.*;
+import org.noise_planet.noisemodelling.propagation.jdbc.JdbcNoiseMap;
 import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +35,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 /**
@@ -42,13 +48,75 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
     LDENConfig ldenConfig;
     TableWriter tableWriter;
     Thread tableWriterThread;
+    Connection connection;
     static final int BATCH_MAX_SIZE = 500;
     LDENComputeRaysOut.LdenData ldenData = new LDENComputeRaysOut.LdenData();
 
 
     public LDENPointNoiseMapFactory(Connection connection, LDENConfig ldenConfig) {
-        tableWriter = new TableWriter(connection, ldenConfig, ldenData);
         this.ldenConfig = ldenConfig;
+        this.connection = connection;
+    }
+
+    @Override
+    public void initialize(Connection connection, PointNoiseMap pointNoiseMap) throws SQLException {
+        if(ldenConfig.input_mode == LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN) {
+            // Fetch source fields
+            List<String> sourceField = JDBCUtilities.getFieldNames(connection.getMetaData(), pointNoiseMap.getSourcesTableName());
+            List<Integer> frequencyValues = new ArrayList<>();
+            List<Integer> allFrequencyValues = Arrays.asList(PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE);
+            String period = "";
+            if (ldenConfig.computeLDay || ldenConfig.computeLDEN) {
+                period = "D";
+            } else if (ldenConfig.computeLEvening) {
+                period = "E";
+            } else if (ldenConfig.computeLNight) {
+                period = "N";
+            }
+            String freqField = ldenConfig.lwFrequencyPrepend + period;
+            if (!period.isEmpty()) {
+                for (String fieldName : sourceField) {
+                    if (fieldName.startsWith(freqField)) {
+                        int freq = Integer.parseInt(fieldName.substring(freqField.length()));
+                        int index = allFrequencyValues.indexOf(freq);
+                        if (index >= 0) {
+                            frequencyValues.add(freq);
+                        }
+                    }
+                }
+            }
+            // Sort frequencies values
+            Collections.sort(frequencyValues);
+            // Get associated values for each frequency
+            List<Double> exactFrequencies = new ArrayList<>();
+            List<Double> aWeighting = new ArrayList<>();
+            for (int freq : frequencyValues) {
+                int index = allFrequencyValues.indexOf(freq);
+                exactFrequencies.add(PropagationProcessPathData.DEFAULT_FREQUENCIES_EXACT_THIRD_OCTAVE[index]);
+                aWeighting.add(PropagationProcessPathData.DEFAULT_FREQUENCIES_A_WEIGHTING_THIRD_OCTAVE[index]);
+            }
+            if(frequencyValues.isEmpty()) {
+                throw new SQLException("Source table "+pointNoiseMap.getSourcesTableName()+" does not contains any frequency bands");
+            }
+            // Instance of PropagationProcessPathData maybe already set
+            if(pointNoiseMap.getPropagationProcessPathData() == null) {
+                ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData(frequencyValues, exactFrequencies, aWeighting));
+                pointNoiseMap.setPropagationProcessPathData(ldenConfig.propagationProcessPathData);
+            } else {
+                pointNoiseMap.getPropagationProcessPathData().setFrequencies(frequencyValues);
+                pointNoiseMap.getPropagationProcessPathData().setFrequenciesExact(exactFrequencies);
+                pointNoiseMap.getPropagationProcessPathData().setFrequenciesAWeighting(aWeighting);
+                ldenConfig.setPropagationProcessPathData(pointNoiseMap.getPropagationProcessPathData());
+            }
+        } else {
+            if(pointNoiseMap.getPropagationProcessPathData() == null) {
+                // Traffic flow cnossos frequencies are octave bands from 63 to 8000 Hz
+                ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData(false));
+                pointNoiseMap.setPropagationProcessPathData(ldenConfig.propagationProcessPathData);
+            } else {
+                ldenConfig.setPropagationProcessPathData(pointNoiseMap.getPropagationProcessPathData());
+            }
+        }
     }
 
     /**
@@ -69,6 +137,10 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
      * Start creating and filling database tables
      */
     public void start() {
+        if(ldenConfig.propagationProcessPathData == null) {
+            throw new IllegalStateException("start() function must be called after PointNoiseMap initialization call");
+        }
+        tableWriter = new TableWriter(connection, ldenConfig, ldenData);
         ldenConfig.exitWhenDone = false;
         tableWriterThread = new Thread(tableWriter);
         tableWriterThread.start();
@@ -125,9 +197,9 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
             this.connection = connection;
             this.ldenConfig = ldenConfig;
             this.ldenData = ldenData;
-            a_weighting = new double[PropagationProcessPathData.freq_lvl_a_weighting.size()];
+            a_weighting = new double[ldenConfig.propagationProcessPathData.freq_lvl_a_weighting.size()];
             for(int idfreq = 0; idfreq < a_weighting.length; idfreq++) {
-                a_weighting[idfreq] = PropagationProcessPathData.freq_lvl_a_weighting.get(idfreq);
+                a_weighting[idfreq] = ldenConfig.propagationProcessPathData.freq_lvl_a_weighting.get(idfreq);
             }
         }
 
@@ -170,7 +242,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
             if(!ldenConfig.mergeSources) {
                 query.append(", ?"); // ID_SOURCE
             }
-            for(int idfreq=0; idfreq < PropagationProcessPathData.freq_lvl.size(); idfreq++) {
+            for(int idfreq=0; idfreq < ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
                 query.append(", ?"); // freq value
             }
             query.append(", ?, ?);"); // laeq, leq
@@ -184,7 +256,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
                 if(!ldenConfig.mergeSources) {
                     ps.setLong(parameterIndex++, row.sourceId);
                 }
-                for(int idfreq=0;idfreq < PropagationProcessPathData.freq_lvl.size(); idfreq++) {
+                for(int idfreq=0;idfreq < ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
                     Double value = row.value[idfreq];
                     if(!Double.isFinite(value)) {
                         value = -99.0;
@@ -220,9 +292,9 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
             } else {
                 sb.append(" (IDRECEIVER SERIAL PRIMARY KEY");
             }
-            for (int idfreq = 0; idfreq < PropagationProcessPathData.freq_lvl.size(); idfreq++) {
+            for (int idfreq = 0; idfreq < ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
                 sb.append(", HZ");
-                sb.append(PropagationProcessPathData.freq_lvl.get(idfreq));
+                sb.append(ldenConfig.propagationProcessPathData.freq_lvl.get(idfreq));
                 sb.append(" numeric(5, 2)");
             }
             sb.append(", LAEQ numeric(5, 2), LEQ numeric(5, 2)");
