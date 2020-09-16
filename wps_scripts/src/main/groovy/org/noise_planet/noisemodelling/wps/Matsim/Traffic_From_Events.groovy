@@ -182,7 +182,7 @@ def exec(Connection connection, input) {
     String resultString = null
 
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
-    logger.info('Start : Traffic_from_matsim_events')
+    logger.info('Start : Traffic_From_Events')
     logger.info("inputs {}", input)
 
     String folder = input["folder"];
@@ -296,7 +296,7 @@ def exec(Connection connection, input) {
     Map<String, String> link2geomData = new HashMap<>();
     if (!link2GeometryFile.isEmpty()) {
         logger.info("Start Reading link2geom file ...");
-        BufferedReader br = new BufferedReader(new FileReader(folder + "/" + link2GeometryFile));
+        BufferedReader br = new BufferedReader(new FileReader(link2GeometryFile));
         String line =  null;
         while ((line = br.readLine()) != null) {
             String[] str = line.split(",", 2);
@@ -314,8 +314,7 @@ def exec(Connection connection, input) {
         String linkId = entry.getKey().toString();
         LinkStatStruct linkStatStruct = entry.getValue();
         if (counter >= doprint) {
-            print (LocalDateTime.now() as String)
-            println " link counter : " + counter
+            logger.info("link # " + counter)
             doprint *= 4
         }
         counter ++
@@ -399,7 +398,6 @@ public class ProcessOutputEventHandler implements
 
     @Override
     public void handleEvent(LinkEnterEvent event) {
-        // System.out.println("Link Entered ! " + event.toString());
 
         Id<Link> linkId = event.getLinkId();
         Id<Vehicle> vehicleId = event.getVehicleId();

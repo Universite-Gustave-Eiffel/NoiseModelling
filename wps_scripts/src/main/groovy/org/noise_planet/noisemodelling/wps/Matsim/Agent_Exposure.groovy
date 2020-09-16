@@ -134,7 +134,7 @@ def exec(Connection connection, input) {
     String resultString = null
 
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
-    logger.info('Start : Calculate_Matsim_Agent_Exposure')
+    logger.info('Start : Agent_Exposure')
     logger.info("inputs {}", input)
 
     String folder = input["folder"];
@@ -421,7 +421,7 @@ def exec(Connection connection, input) {
         counter++;
     }
 
-    logger.info('End : Calculate_Matsim_Agent_Exposure')
+    logger.info('End : Agent_Exposure')
     resultString = "Process done. Table of receivers " + outTableName + " created !"
     logger.info('Result : ' + resultString)
     return resultString

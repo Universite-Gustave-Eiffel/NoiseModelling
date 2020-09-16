@@ -102,7 +102,7 @@ def exec(Connection connection, input) {
     String resultString
 
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
-    logger.info('Start : Activities_From_Matsim')
+    logger.info('Start : Import_Activities')
     logger.info("inputs {}", input)
 
     String facilitiesPath = input['facilitiesPath']
@@ -142,7 +142,7 @@ def exec(Connection connection, input) {
         sql.execute(query);
     }
 
-    logger.info('End : Activities_From_Matsim')
+    logger.info('End : Import_Activities')
     resultString = "Process done. Table of receivers " + outTableName + " created !"
     logger.info('Result : ' + resultString)
     return resultString

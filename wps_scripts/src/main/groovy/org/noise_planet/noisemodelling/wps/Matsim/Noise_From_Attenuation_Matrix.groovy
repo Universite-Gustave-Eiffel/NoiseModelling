@@ -110,7 +110,7 @@ def exec(Connection connection, input) {
     String resultString
 
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
-    logger.info('Start : Noise_Map_From_Attenuation_Matrix')
+    logger.info('Start : Noise_From_Attenuation_Matrix')
     logger.info("inputs {}", input)
 
     String matsimRoads = input['matsimRoads']
@@ -152,7 +152,7 @@ def exec(Connection connection, input) {
 
     sql.execute(query)
 
-    logger.info('End : Noise_Map_From_Attenuation_Matrix')
+    logger.info('End : Noise_From_Attenuation_Matrix')
     resultString = "Process done. Table of receivers " + outTableName + " created !"
     logger.info('Result : ' + resultString)
     return resultString

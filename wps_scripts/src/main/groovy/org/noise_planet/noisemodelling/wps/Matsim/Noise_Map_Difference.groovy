@@ -105,7 +105,7 @@ def exec(Connection connection, input) {
     String resultString
 
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
-    logger.info('Start : Calculate_Noise_Map_Difference')
+    logger.info('Start : Noise_Map_Difference')
     logger.info("inputs {}", input)
 
     String mainMapTable = input['mainMapTable']
@@ -152,7 +152,7 @@ def exec(Connection connection, input) {
 
     sql.execute(query)
 
-    logger.info('End : Calculate_Noise_Map_Difference')
+    logger.info('End : Noise_Map_Difference')
     resultString = "Process done. Table " + outTable + " created !"
     logger.info('Result : ' + resultString)
     return resultString;
