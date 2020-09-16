@@ -12,10 +12,12 @@
 
 package org.noise_planet.noisemodelling.wps
 
+import groovy.sql.Sql
 import org.h2gis.functions.io.shp.SHPRead
 import org.junit.Assert
 import org.junit.Test
 import org.noise_planet.noisemodelling.wps.Database_Manager.Display_Database
+import org.noise_planet.noisemodelling.wps.Database_Manager.Table_Visualization_Data
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_Symuvia
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_Asc_File
@@ -72,6 +74,20 @@ class TestImportExport extends JdbcTestCase {
             Assert.assertEquals( "Exception message must be correct", expectedMessage, e.getMessage() );
         }
 
+    }
+
+    @Test
+    void testImportFile3() {
+
+         new Import_File().exec(connection,
+                ["pathFile" : TestImportExport.getResource("ROADS2.shp").getPath(),
+                 "inputSRID": "2154",
+                 "tableName": "ROADS"])
+
+        String res = new Table_Visualization_Data().exec(connection,
+                ["tableName": "ROADS" ])
+
+        assertFalse(res.contains("PK2"))
     }
 
     @Test

@@ -19,12 +19,13 @@ package org.noise_planet.noisemodelling.wps.Geometric_Tools
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
-import groovy.time.TimeCategory
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.SFSUtilities
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import java.sql.Connection
 import java.sql.Statement
@@ -77,9 +78,13 @@ def exec(Connection connection, input) {
     // output string, the information given back to the user
     String resultString = null
 
-// print to command window
-    System.out.println('Start : Change SRID')
-    def start = new Date()
+
+    // Create a logger to display messages in the geoserver logs and in the command prompt.
+    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
+
+    // print to command window
+    logger.info('Start : Change SRID')
+    logger.info("inputs {}", input) // log inputs of the run
 
     // Get name of the table
     String tableName = input["tableName"] as String
@@ -143,9 +148,8 @@ def exec(Connection connection, input) {
     }
 
 
-    System.out.println(resultString)
-    System.out.println('End : Change SRID')
-    System.out.println('Duration : ' + TimeCategory.minus(new Date(), start))
+    logger.info(resultString)
+    logger.info('End : Change SRID')
 
     // print to WPS Builder
     return resultString

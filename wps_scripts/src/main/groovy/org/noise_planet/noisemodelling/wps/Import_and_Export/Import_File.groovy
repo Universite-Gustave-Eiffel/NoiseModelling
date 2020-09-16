@@ -19,6 +19,7 @@ package org.noise_planet.noisemodelling.wps.Import_and_Export
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
+import groovy.sql.Sql
 import org.apache.commons.io.FilenameUtils
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.api.EmptyProgressVisitor
@@ -32,11 +33,11 @@ import org.h2gis.functions.io.tsv.TSVDriverFunction
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.SFSUtilities
 import org.h2gis.utilities.TableLocation
-//import org.noise_planet.noisemodelling.ext.asc.AscDriverFunction
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import java.sql.Connection
+import java.sql.ResultSet
 import java.sql.Statement
 
 title = 'Import File'
@@ -44,30 +45,30 @@ description = 'Import file into the database. </br> Valid file extensions : (csv
 
 inputs = [
         pathFile : [
-                name: 'Path of the input File',
-                title: 'Path of the input File',
+                name       : 'Path of the input File',
+                title      : 'Path of the input File',
                 description: 'Path of the file you want to import, including its extension. ' +
                         '</br> For example : c:/home/receivers.geojson',
-                type: String.class
+                type       : String.class
         ],
-          inputSRID: [
-                  name: 'Projection identifier',
-                  title: 'Projection identifier',
-                  description: 'Original projection identifier (also called SRID) of your table. It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection). ' +
-                          '</br>  All coordinates will be projected from the specified EPSG to WGS84 coordinates. ' +
-                          '</br> This entry is optional because many formats already include the projection and you can also import files without geometry attributes.</br> ' +
-                          '</br> <b> Default value : 4326 </b> ',
-                  type: Integer.class,
-                  min: 0, max: 1
-          ],
-          tableName: [
-                  name: 'Output table name',
-                  title: 'Name of created table',
-                  description: 'Name of the table you want to create from the file. ' +
-                          '</br> <b> Default value : it will take the name of the file without its extension (special characters will be removed and whitespaces will be replace by an underscore. </b> ',
-                  min: 0, max: 1,
-                  type: String.class
-          ]
+        inputSRID: [
+                name       : 'Projection identifier',
+                title      : 'Projection identifier',
+                description: 'Original projection identifier (also called SRID) of your table. It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection). ' +
+                        '</br>  All coordinates will be projected from the specified EPSG to WGS84 coordinates. ' +
+                        '</br> This entry is optional because many formats already include the projection and you can also import files without geometry attributes.</br> ' +
+                        '</br> <b> Default value : 4326 </b> ',
+                type       : Integer.class,
+                min        : 0, max: 1
+        ],
+        tableName: [
+                name       : 'Output table name',
+                title      : 'Name of created table',
+                description: 'Name of the table you want to create from the file. ' +
+                        '</br> <b> Default value : it will take the name of the file without its extension (special characters will be removed and whitespaces will be replace by an underscore. </b> ',
+                min        : 0, max: 1,
+                type       : String.class
+        ]
 ]
 
 outputs = [
@@ -106,6 +107,7 @@ def exec(Connection connection, input) {
 
     // output string, the information given back to the user
     String resultString = null
+
 
     // Create a logger to display messages in the geoserver logs and in the command prompt.
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
@@ -190,15 +192,22 @@ def exec(Connection connection, input) {
         case "shp":
             SHPDriverFunction shpDriver = new SHPDriverFunction()
             shpDriver.importFile(connection, tableName, new File(pathFile), new EmptyProgressVisitor())
+            ResultSet rs = stmt.executeQuery("SELECT * FROM " + tableName)
+
+            int pk2Field = JDBCUtilities.getFieldIndex(rs.getMetaData(), "PK2")
+            int pkField = JDBCUtilities.getFieldIndex(rs.getMetaData(), "PK")
+
+            if (pk2Field > 0 && pkField > 0) {
+                stmt.execute("ALTER TABLE " + tableName + " DROP COLUMN PK2;")
+                logger.warn("The PK2 column automatically created by the SHP driver has been deleted.")
+            }
             break
+
         case "tsv":
             TSVDriverFunction tsvDriver = new TSVDriverFunction()
             tsvDriver.importFile(connection, tableName, new File(pathFile), new EmptyProgressVisitor())
             break
-       /* case "asc":
-            AscDriverFunction ascDriver = new AscDriverFunction();
-            ascDriver.importFile(connection, tableName, new File(pathFile), new EmptyProgressVisitor())
-            break*/
+
     }
 
     // Read Geometry Index and type of the table
@@ -227,6 +236,21 @@ def exec(Connection connection, input) {
     if (tableSrid == 0 && !spatialFieldNames.isEmpty()) {
         connection.createStatement().execute(String.format("UPDATE %s SET " + spatialFieldNames.get(0) + " = ST_SetSRID(" + spatialFieldNames.get(0) + ",%d)",
                 TableLocation.parse(tableName).toString(), srid))
+    }
+
+
+    // If the table has a PK column and doesn't have any Primary Key Constraint, then automatically associate a Primary Key
+    ResultSet rs = stmt.executeQuery("SELECT * FROM " + tableName)
+    int pkUserIndex = JDBCUtilities.getFieldIndex(rs.getMetaData(), "PK")
+    int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, tableName)
+
+    if (pkIndex == 0) {
+        if (pkUserIndex > 0) {
+            stmt.execute("ALTER TABLE " + tableName + " ALTER COLUMN PK INT NOT NULL;")
+            stmt.execute("ALTER TABLE " + tableName + " ADD PRIMARY KEY (PK);  ")
+            resultString = resultString + String.format(tableName + " has a new primary key constraint on PK")
+            logger.info(String.format(tableName + " has a new primary key constraint on PK"))
+        }
     }
 
     resultString = "The table " + tableName + " has been uploaded to database!"
