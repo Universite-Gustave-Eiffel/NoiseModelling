@@ -22,6 +22,7 @@ import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.SFSUtilities
 import org.h2gis.utilities.TableLocation
 import org.locationtech.jts.geom.Geometry
@@ -97,11 +98,9 @@ def exec(Connection connection, input) {
 
     logger.info('End : Display first rows of a table')
 
-    //get SRID of the table
-    int srid = SFSUtilities.getSRID(connection, TableLocation.parse(tableName))
 
     // print to WPS Builder
-    return mapToTable(output, sql, tableName, srid)
+    return mapToTable(output, sql, tableName, connection)
 }
 
 
@@ -124,13 +123,16 @@ def run(input) {
  * @param list
  * @return
  */
-static String mapToTable(List<Map> list, Sql sql, String tableName, int srid) {
+static String mapToTable(List<Map> list, Sql sql, String tableName, Connection connection) {
 
     StringBuilder output = new StringBuilder()
 
     Map first = list.first()
 
     output.append("The total number of rows is " + sql.firstRow('SELECT COUNT(*) FROM ' + tableName)[0])
+
+    //get SRID of the table
+    int srid = SFSUtilities.getSRID(connection, TableLocation.parse(tableName))
 
     if (srid > 0) {
         output.append("</br>")
@@ -139,6 +141,18 @@ static String mapToTable(List<Map> list, Sql sql, String tableName, int srid) {
         output.append("</br>")
         output.append("This table doesn't have any srid")
     }
+
+    //get SRID of the table
+    int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, tableName)
+
+    if (pkIndex > 0) {
+        output.append("</br>")
+        output.append("The table has the following primary key : " + JDBCUtilities.getFieldName(connection.getMetaData(),tableName, pkIndex))
+    } else {
+        output.append("</br>")
+        output.append("This table does not have primary key.")
+    }
+
 
     output.append("</br> </br> ")
     output.append("<table  border=' 1px solid black'><thead><tr>")
