@@ -307,8 +307,17 @@ public class LayerPoly2Tri implements LayerDelaunay {
   }
 
 
-  private static final class SetZFilter implements CoordinateSequenceFilter {
+  public static final class SetZFilter implements CoordinateSequenceFilter {
     private boolean done = false;
+    private boolean resetToZero = false;
+
+    public SetZFilter() {
+
+    }
+
+    public SetZFilter(boolean resetToZero) {
+      this.resetToZero = resetToZero;
+    }
 
     @Override
     public void filter(CoordinateSequence seq, int i) {
@@ -317,7 +326,7 @@ public class LayerPoly2Tri implements LayerDelaunay {
       double z = seq.getOrdinate(i, 2);
       seq.setOrdinate(i, 0, x);
       seq.setOrdinate(i, 1, y);
-      if (Double.isNaN(z)) {
+      if (Double.isNaN(z) || resetToZero) {
         seq.setOrdinate(i, 2, 0);
       } else {
         seq.setOrdinate(i, 2, z);

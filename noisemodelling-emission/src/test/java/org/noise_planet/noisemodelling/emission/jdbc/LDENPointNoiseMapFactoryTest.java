@@ -9,9 +9,13 @@ import org.h2gis.utilities.SFSUtilities;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.locationtech.jts.geom.Coordinate;
+import org.noise_planet.noisemodelling.propagation.IComputeRaysOut;
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 import org.noise_planet.noisemodelling.propagation.RootProgressVisitor;
 import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -26,6 +30,8 @@ import java.util.TreeSet;
 import static org.junit.Assert.*;
 
 public class LDENPointNoiseMapFactoryTest {
+
+    static Logger LOGGER = LoggerFactory.getLogger(LDENPointNoiseMapFactoryTest.class);
 
     private Connection connection;
 
@@ -305,5 +311,67 @@ public class LDENPointNoiseMapFactoryTest {
         assertEquals(1, ldenConfig.propagationProcessPathData.freq_lvl.size());
 
         assertEquals(1000, (int)ldenConfig.propagationProcessPathData.freq_lvl.get(0));
+    }
+
+    @Test
+    public void testNoDemBuildingsZ() throws SQLException, IOException {
+        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("lw_roads.shp").getFile());
+        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("buildings.shp").getFile());
+        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("receivers.shp").getFile());
+
+        LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN);
+
+        LDENPointNoiseMapFactory factory = new LDENPointNoiseMapFactory(connection, ldenConfig);
+
+        PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS", "LW_ROADS",
+                "RECEIVERS");
+
+        pointNoiseMap.setComputeRaysOutFactory(factory);
+        pointNoiseMap.setPropagationProcessDataFactory(factory);
+
+        pointNoiseMap.setMaximumPropagationDistance(100.0);
+        pointNoiseMap.setComputeHorizontalDiffraction(false);
+        pointNoiseMap.setComputeVerticalDiffraction(false);
+        pointNoiseMap.setSoundReflectionOrder(0);
+
+        try(Statement st = connection.createStatement()) {
+            // Alter buildings polygons Z
+            st.execute("UPDATE BUILDINGS SET THE_GEOM = ST_SETSRID(ST_UPDATEZ(ST_FORCE3D(THE_GEOM), 50), 2154)");
+            // Use only a subset of receivers
+            st.execute("DELETE FROM RECEIVERS WHERE ST_DISTANCE('POINT (223940.83614225042 6757305.252751735)'::geometry, THE_GEOM) > 300");
+        }
+
+
+        // Set of already processed receivers
+        Set<Long> receivers = new HashSet<>();
+
+        try {
+            RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1);
+
+            pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
+
+            factory.start();
+
+            pointNoiseMap.setGridDim(1); // force grid size
+
+            Map<PointNoiseMap.CellIndex, Integer> cells = pointNoiseMap.searchPopulatedCells(connection);
+            ProgressVisitor progressVisitor = progressLogger.subProcess(cells.size());
+            // Iterate over computation areas
+            for(PointNoiseMap.CellIndex cellIndex : new TreeSet<>(cells.keySet())) {
+                // Run ray propagation
+                IComputeRaysOut ret = pointNoiseMap.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers);
+                if(ret instanceof LDENComputeRaysOut) {
+                    LDENComputeRaysOut out = (LDENComputeRaysOut)ret;
+                    for(Coordinate v : out.ldenPropagationProcessData.freeFieldFinder.getVertices()) {
+                        assertEquals(0.0, v.z, 1e-6);
+                    }
+                }
+            }
+        }finally {
+            factory.stop();
+        }
+        connection.commit();
+
+
     }
 }
