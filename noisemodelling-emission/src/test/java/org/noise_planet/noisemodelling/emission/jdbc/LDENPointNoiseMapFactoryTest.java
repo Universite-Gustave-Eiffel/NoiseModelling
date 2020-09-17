@@ -9,6 +9,7 @@ import org.h2gis.utilities.SFSUtilities;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.locationtech.jts.geom.Coordinate;
 import org.noise_planet.noisemodelling.propagation.IComputeRaysOut;
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 import org.noise_planet.noisemodelling.propagation.RootProgressVisitor;
@@ -359,7 +360,12 @@ public class LDENPointNoiseMapFactoryTest {
             for(PointNoiseMap.CellIndex cellIndex : new TreeSet<>(cells.keySet())) {
                 // Run ray propagation
                 IComputeRaysOut ret = pointNoiseMap.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers);
-                LOGGER.info(ret.toString());
+                if(ret instanceof LDENComputeRaysOut) {
+                    LDENComputeRaysOut out = (LDENComputeRaysOut)ret;
+                    for(Coordinate v : out.ldenPropagationProcessData.freeFieldFinder.getVertices()) {
+                        assertEquals(0.0, v.z, 1e-6);
+                    }
+                }
             }
         }finally {
             factory.stop();
