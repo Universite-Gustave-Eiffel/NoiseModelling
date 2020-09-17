@@ -2,6 +2,7 @@ package org.noise_planet.nmtutorial01;
 
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.api.ProgressVisitor;
+import org.h2gis.functions.io.csv.CSVDriverFunction;
 import org.h2gis.functions.io.geojson.GeoJsonRead;
 import org.h2gis.postgis_jts_osgi.DataSourceFactoryImpl;
 import org.h2gis.utilities.SFSUtilities;
@@ -29,11 +30,10 @@ import java.util.Set;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class PostgisTest {
-    Logger LOGGER = LoggerFactory.getLogger(PostgisTest.class);
+public class Main {
+    static Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
-    @Test
-    public void testPostgisNoiseModelling1() throws Exception {
+    public static void main() throws Exception {
         DataSourceFactoryImpl dataSourceFactory = new DataSourceFactoryImpl();
         Properties p = new Properties();
         p.setProperty("serverName", "localhost");
@@ -137,31 +137,16 @@ public class PostgisTest {
                 tableWriter.stop();
             }
             long computationTime = System.currentTimeMillis() - start;
-            LOGGER.info(String.format(Locale.ROOT, "Computed in %d ms, %.2f ms per receiver", computationTime,computationTime / (double)receivers.size()));
-
-            int nbReceivers = 0;
-            try(ResultSet rs = sql.executeQuery("SELECT COUNT(*) cpt FROM RECEIVERS")) {
-                assertTrue(rs.next());
-                nbReceivers = rs.getInt(1);
-            }
-            try(ResultSet rs = sql.executeQuery("SELECT COUNT(*) cpt FROM LDAY_RESULT")) {
-                assertTrue(rs.next());
-                assertEquals(nbReceivers, rs.getInt(1));
-            }
-            try(ResultSet rs = sql.executeQuery("SELECT COUNT(*) cpt FROM LEVENING_RESULT")) {
-                assertTrue(rs.next());
-                assertEquals(nbReceivers, rs.getInt(1));
-            }
-            try(ResultSet rs = sql.executeQuery("SELECT COUNT(*) cpt FROM LNIGHT_RESULT")) {
-                assertTrue(rs.next());
-                assertEquals(nbReceivers, rs.getInt(1));
-            }
-            try(ResultSet rs = sql.executeQuery("SELECT COUNT(*) cpt FROM LDEN_RESULT")) {
-                assertTrue(rs.next());
-                assertEquals(nbReceivers, rs.getInt(1));
-            }
+            logger.info(String.format(Locale.ROOT, "Computed in %d ms, %.2f ms per receiver",
+                    computationTime,computationTime / (double)receivers.size()));
+            // Export result tables as csv files
+            CSVDriverFunction csv = new CSVDriverFunction();
+            csv.exportTable(connection, ldenConfig.getlDayTable(), new File(ldenConfig.getlDayTable()+".csv"), new EmptyProgressVisitor());
+            csv.exportTable(connection, ldenConfig.getlEveningTable(), new File(ldenConfig.getlEveningTable()+".csv"), new EmptyProgressVisitor());
+            csv.exportTable(connection, ldenConfig.getlNightTable(), new File(ldenConfig.getlNightTable()+".csv"), new EmptyProgressVisitor());
+            csv.exportTable(connection, ldenConfig.getlDenTable(), new File(ldenConfig.getlDenTable()+".csv"), new EmptyProgressVisitor());
         } catch (PSQLException ex) {
-            if (ex.getCause() == null || ex.getCause() instanceof ConnectException) {
+            if (ex.getCause() instanceof ConnectException) {
                 // Connection issue ignore
                 LOGGER.warn("Connection error to local PostGIS, ignored", ex);
             } else {

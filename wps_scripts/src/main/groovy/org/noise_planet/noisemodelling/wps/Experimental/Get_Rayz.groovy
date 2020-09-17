@@ -721,6 +721,11 @@ class TrafficRayzPropagationProcessDataFactory implements PointNoiseMap.Propagat
     PropagationProcessData create(FastObstructionTest freeFieldFinder) {
         return new TrafficRayzPropagationProcessData(freeFieldFinder);
     }
+
+    @Override
+    void initialize(Connection connection, PointNoiseMap pointNoiseMap) throws SQLException {
+
+    }
 }
 
 /**
@@ -729,6 +734,7 @@ class TrafficRayzPropagationProcessDataFactory implements PointNoiseMap.Propagat
 @CompileStatic
 class TrafficRayzPropagationProcessData extends PropagationProcessData {
     // Lden values
+    static List<Integer> freq_lvl = Arrays.asList(PropagationProcessPathData.asOctaveBands(PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE));
     public List<double[]> wjSourcesDEN = new ArrayList<>()
     //public Map<Long, Integer> SourcesPk = new HashMap<>()
 
@@ -767,9 +773,9 @@ class TrafficRayzPropagationProcessData extends PropagationProcessData {
         String pavement = rs.getString("PVMT")
 
         // Compute day average level
-        double[] ld = new double[PropagationProcessPathData.freq_lvl.size()];
-        double[] le = new double[PropagationProcessPathData.freq_lvl.size()];
-        double[] ln = new double[PropagationProcessPathData.freq_lvl.size()];
+        double[] ld = new double[freq_lvl.size()];
+        double[] le = new double[freq_lvl.size()];
+        double[] ln = new double[freq_lvl.size()];
 
         double Temperature = 20.0d
         double Ts_stud = 0
@@ -779,7 +785,7 @@ class TrafficRayzPropagationProcessData extends PropagationProcessData {
 
 
         int idFreq = 0
-        for (int freq : PropagationProcessPathData.freq_lvl) {
+        for (int freq : freq_lvl) {
             RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedD, hvSpeedD, hvSpeedD, lvSpeedD,
                     lvSpeedD, Math.max(0, tvD - hvD), hvD, 0, 0, 0, freq, Temperature,
                     pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type)
@@ -789,7 +795,7 @@ class TrafficRayzPropagationProcessData extends PropagationProcessData {
 
 
         idFreq = 0
-        for (int freq : PropagationProcessPathData.freq_lvl) {
+        for (int freq : freq_lvl) {
             RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedE, hvSpeedE, hvSpeedE, lvSpeedE,
                     lvSpeedE, Math.max(0, tvE - hvE), hvE, 0, 0, 0, freq, Temperature,
                     pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type)
@@ -797,17 +803,17 @@ class TrafficRayzPropagationProcessData extends PropagationProcessData {
         }
 
         idFreq = 0
-        for (int freq : PropagationProcessPathData.freq_lvl) {
+        for (int freq : freq_lvl) {
             RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedN, hvSpeedN, hvSpeedN, lvSpeedN,
                     lvSpeedN, Math.max(0, tvN - hvN), hvN, 0, 0, 0, freq, Temperature,
                     pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type)
             ln[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
         }
 
-        double[] lden = new double[PropagationProcessPathData.freq_lvl.size()]
+        double[] lden = new double[freq_lvl.size()]
 
         idFreq = 0
-        for (int freq : PropagationProcessPathData.freq_lvl) {
+        for (int freq : freq_lvl) {
             lden[idFreq++] = (12 * ld[idFreq] +
                     4 * ComputeRays.dbaToW(ComputeRays.wToDba(le[idFreq]) + 5) +
                     8 * ComputeRays.dbaToW(ComputeRays.wToDba(ln[idFreq]) + 10)) / 24.0
