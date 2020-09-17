@@ -30,6 +30,8 @@ class TestNoiseFromAttenuationMatrix extends JdbcTestCase {
 
         String result = runWps();
 
+        GeoJsonWrite.writeGeoJson(connection, "noise_map.geojson", "NOISE_MAP");
+
         assertEquals("Process done. Table of receivers NOISE_MAP created !", result);
     }
 
@@ -38,7 +40,7 @@ class TestNoiseFromAttenuationMatrix extends JdbcTestCase {
                 matsimRoads: "MATSIM_ROADS",
                 matsimRoadsStats: "MATSIM_ROADS_STATS",
                 attenuationTable: "ATT_MATRIX",
-                timeString: "12_13",
+                // timeString: "12_13",
                 outTableName: "NOISE_MAP"
         ])
     }

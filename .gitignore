@@ -6,4 +6,4 @@ nbactions.xml
 .attach*
 Docs/build
 Docs/venv
-
+wps_scripts/work

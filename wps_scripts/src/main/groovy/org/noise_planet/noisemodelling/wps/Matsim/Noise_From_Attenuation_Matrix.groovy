@@ -47,9 +47,11 @@ inputs = [
     ],
     timeString: [
         name: 'TIMESTRING Field value',
-        title: 'TIMESTRING Field value',
-        description: 'TIMESTRING Field value' +
+        title: 'TIMESTRING Field value.',
+        description: 'TIMESTRING Field value. If defined will only output data for the specified timeString.' +
                 '<br/>The timeString can be "D", "E", "N" for DEN analysis, "12_14" for example for hour analysis or "0h15_0h30" for example for 15minutes analysis.',
+        min: 0,
+        max : 1,
         type: String.class
     ],
     attenuationTable : [
@@ -115,7 +117,11 @@ def exec(Connection connection, input) {
 
     String matsimRoads = input['matsimRoads']
     String matsimRoadsStats = input['matsimRoadsStats']
-    String timeString = input["timeString"];
+
+    String timeString = ""
+    if (input["timeString"]) {
+        timeString = input["timeString"];
+    }
 
     String attenuationTable = input['attenuationTable']
     String outTableName = input['outTableName']
@@ -123,7 +129,8 @@ def exec(Connection connection, input) {
     sql.execute(String.format("DROP TABLE IF EXISTS %s", outTableName))
 
     String query = "CREATE TABLE " + outTableName + '''( 
-            IDRECEIVER integer PRIMARY KEY,
+            PK integer PRIMARY KEY AUTO_INCREMENT,
+            IDRECEIVER integer,
             THE_GEOM geometry,
             HZ63 double precision,
             HZ125 double precision,
@@ -133,8 +140,9 @@ def exec(Connection connection, input) {
             HZ2000 double precision,
             HZ4000 double precision,
             HZ8000 double precision,
+            TIMESTRING varchar(255)
         ) AS
-        SELECT lg.IDRECEIVER,  lg.THE_GEOM,
+        SELECT NULL, lg.IDRECEIVER,  lg.THE_GEOM,
             10 * LOG10( SUM(POWER(10,lg.HZ63 / 10) + POWER(10,mrs.LW63 / 10)) ) AS HZ63,
             10 * LOG10( SUM(POWER(10,lg.HZ125 / 10) + POWER(10,mrs.LW125 / 10)) ) AS HZ125,
             10 * LOG10( SUM(POWER(10,lg.HZ250 / 10) + POWER(10,mrs.LW250 / 10)) ) AS HZ250,
@@ -142,12 +150,13 @@ def exec(Connection connection, input) {
             10 * LOG10( SUM(POWER(10,lg.HZ1000 / 10) + POWER(10,mrs.LW1000 / 10)) ) AS HZ1000,
             10 * LOG10( SUM(POWER(10,lg.HZ2000 / 10) + POWER(10,mrs.LW2000 / 10)) ) AS HZ2000,
             10 * LOG10( SUM(POWER(10,lg.HZ4000 / 10) + POWER(10,mrs.LW4000 / 10)) ) AS HZ4000,
-            10 * LOG10( SUM(POWER(10,lg.HZ8000 / 10) + POWER(10,mrs.LW8000 / 10)) ) AS HZ8000 
+            10 * LOG10( SUM(POWER(10,lg.HZ8000 / 10) + POWER(10,mrs.LW8000 / 10)) ) AS HZ8000,
+            mrs.TIMESTRING AS TIMESTRING
         FROM ''' + attenuationTable + '''  lg 
         INNER JOIN ''' + matsimRoads + ''' mr ON lg.IDSOURCE = mr.PK
         INNER JOIN ''' + matsimRoadsStats + ''' mrs ON mr.LINK_ID = mrs.LINK_ID
-        WHERE mrs.TIMESTRING = \'''' + timeString + '''\'
-        GROUP BY lg.IDRECEIVER, lg.THE_GEOM;
+        ''' + ((timeString != "") ? "WHERE mrs.TIMESTRING = \'" + timeString + "\' " : "") + '''
+        GROUP BY lg.IDRECEIVER, lg.THE_GEOM, mrs.TIMESTRING;
     ;'''
 
     sql.execute(query)
