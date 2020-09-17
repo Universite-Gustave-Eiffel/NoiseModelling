@@ -207,7 +207,7 @@ def exec(Connection connection, input) {
             if (spatialFieldNames.isEmpty()) {
                 logger.warn("The table " + outputTableName + " does not contain a geometry field.")
             } else {
-                stmt.execute('CREATE SPATIAL INDEX IF NOT EXISTS ' + outputTableName + '_INDEX ON ' + outputTableName + '(the_geom);')
+                stmt.execute('CREATE SPATIAL INDEX IF NOT EXISTS ' + outputTableName + '_INDEX ON ' + TableLocation.parse(outputTableName) + '(the_geom);')
                 // Get the SRID of the table
                 Integer tableSrid = SFSUtilities.getSRID(connection, TableLocation.parse(outputTableName))
 
