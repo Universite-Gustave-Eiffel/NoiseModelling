@@ -44,36 +44,37 @@ description = 'Import ESRI Ascii Raster file and convert into a Digital Elevatio
 
 inputs = [
         pathFile : [
-        name: 'Path of the input File',
-        title: 'Path of the ESRI Ascii Raster file',
-        description: 'Path of the ESRI Ascii Raster file you want to import, including its extension. ' +
-                '</br> For example : c:/home/receivers.asc',
-        type: String.class],
-          inputSRID: [
-                  name: 'Projection identifier',
-                  title: 'Projection identifier',
-                  description: 'Original projection identifier (also called SRID) of your table. It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection). (INTEGER) ' +
-                          '</br>  All coordinates will be projected from the specified EPSG to WGS84 coordinates. ' +
-                          '</br> This entry is optional because many formats already include the projection and you can also import files without geometry attributes.' +
-                          '</br> </br> <b> Default value : 4326 </b> ',
-                  type: Integer.class,
-                  min: 0, max: 1
-          ],
-          fence    : [
-                  name: 'Fence geometry',
-                  title: 'Fence geometry',
-                  description: 'Create DEM table only in the provided polygon',
-                  min: 0, max: 1,
-                  type: Geometry.class
-          ],
-          downscale: [
-                  name: 'Skip pixels on each axis',
-                  title: 'Skip pixels on each axis',
-                  description: 'Divide the number of rows and columns read by the following coefficient (FLOAT) ' +
-                          '</br> </br> <b> Default value : 1.0 </b>',
-                  min: 0, max: 1,
-                  type: Integer.class
-          ]
+                name       : 'Path of the input File',
+                title      : 'Path of the ESRI Ascii Raster file',
+                description: 'Path of the ESRI Ascii Raster file you want to import, including its extension. ' +
+                        '</br> For example : c:/home/receivers.asc',
+                type       : String.class
+        ],
+        inputSRID: [
+                name       : 'Projection identifier',
+                title      : 'Projection identifier',
+                description: 'Original projection identifier (also called SRID) of your table. It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection). (INTEGER) ' +
+                        '</br>  All coordinates will be projected from the specified EPSG to WGS84 coordinates. ' +
+                        '</br> This entry is optional because many formats already include the projection and you can also import files without geometry attributes.' +
+                        '</br> </br> <b> Default value : 4326 </b> ',
+                type       : Integer.class,
+                min        : 0, max: 1
+        ],
+        fence    : [
+                name       : 'Fence geometry',
+                title      : 'Fence geometry',
+                description: 'Create DEM table only in the provided polygon',
+                min        : 0, max: 1,
+                type       : Geometry.class
+        ],
+        downscale: [
+                name       : 'Skip pixels on each axis',
+                title      : 'Skip pixels on each axis',
+                description: 'Divide the number of rows and columns read by the following coefficient (FLOAT) ' +
+                        '</br> </br> <b> Default value : 1.0 </b>',
+                min        : 0, max: 1,
+                type       : Integer.class
+        ]
 ]
 
 outputs = [
@@ -144,17 +145,13 @@ def exec(Connection connection, input) {
     if (!file.exists()) {
         resultString = pathFile + " is not found."
         // print to command window
-        System.out.println('ERROR : ' + resultString)
-        System.out.println('Duration : ' + TimeCategory.minus(new Date(), start))
-        // print to WPS Builder
-        return resultString
+        throw new Exception('ERROR : ' + resultString)
     }
 
     String outputTableName = 'ASC'
 
     // Create a connection statement to interact with the database in SQL
     Statement stmt = connection.createStatement()
-
 
 
     // Get the extension of the file
@@ -190,10 +187,10 @@ def exec(Connection connection, input) {
                 srid = defaultSRID;
             }
         } catch (IllegalArgumentException ex) {
-            System.err.println("PRJ file invalid, use default SRID " + prjFile.getAbsolutePath())
+            throw new IllegalArgumentException("PRJ file invalid, use default SRID " + prjFile.getAbsolutePath())
         }
     } else {
-        System.err.println("PRJ file not found " + prjFile.getAbsolutePath())
+        throw new IllegalArgumentException("PRJ file not found " + prjFile.getAbsolutePath())
     }
     if (fence != null) {
         // Reproject fence

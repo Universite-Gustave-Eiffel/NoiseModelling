@@ -44,29 +44,29 @@ title = 'Import all files from a folder'
 description = 'Import all files with a specified extension from a folder to the database. </br> Valid file extensions : (csv, dbf, geojson, gpx, bz2, gz, osm, shp, tsv). </br>'
 
 inputs = [
-        pathFolder : [
-                name: 'Path of the folder',
-                title: 'Path of the folder',
+        pathFolder: [
+                name       : 'Path of the folder',
+                title      : 'Path of the folder',
                 description: 'Path of the folder ' +
                         '</br> For example : c:/home/inputdata/ ',
-                type: String.class
+                type       : String.class
         ],
-        inputSRID: [
-                name: 'Projection identifier',
-                title: 'Projection identifier',
+        inputSRID : [
+                name       : 'Projection identifier',
+                title      : 'Projection identifier',
                 description: 'Original projection identifier (also called SRID) of all the table that contain a geometry attribute. It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection). ' +
                         '</br>  All coordinates will be projected from the specified EPSG to WGS84 coordinates. ' +
                         '</br> This entry is optional because many formats already include the projection and you can also import files without geometry attributes.' +
                         '</br>  <b> Default value : 4326 </b> ',
-                type: Integer.class,
-                min: 0, max: 1
+                type       : Integer.class,
+                min        : 0, max: 1
         ],
-        importExt: [
-                name: 'Extension to import',
-                title: 'Extension to import',
+        importExt : [
+                name       : 'Extension to import',
+                title      : 'Extension to import',
                 description: 'Extension to import. ' +
                         '</br> For example : shp ',
-                type: String.class
+                type       : String.class
         ]
 ]
 
@@ -205,27 +205,28 @@ def exec(Connection connection, input) {
 
             // If the table does not contain a geometry field
             if (spatialFieldNames.isEmpty()) {
-                logger.warn("The table "+ outputTableName+" does not contain a geometry field.")
-            }
+                logger.warn("The table " + outputTableName + " does not contain a geometry field.")
+            } else {
+                stmt.execute('CREATE SPATIAL INDEX IF NOT EXISTS ' + outputTableName + '_INDEX ON ' + outputTableName + '(the_geom);')
+                // Get the SRID of the table
+                Integer tableSrid = SFSUtilities.getSRID(connection, TableLocation.parse(outputTableName))
 
-            // Get the SRID of the table
-            Integer tableSrid = SFSUtilities.getSRID(connection, TableLocation.parse(outputTableName))
+                if (tableSrid != 0 && tableSrid != srid && input['inputSRID']) {
+                    resultString = "The table " + outputTableName + " already has a different SRID than the one you gave."
+                    throw new Exception('ERROR : ' + resultString)
+                }
 
-            if (tableSrid != 0 && tableSrid != srid && input['inputSRID']) {
-                resultString = "The table "+ outputTableName+" already has a different SRID than the one you gave."
-                throw new Exception('ERROR : ' + resultString)
-            }
+                // Replace default SRID by the srid of the table
+                if (tableSrid != 0) srid = tableSrid
 
-            // Replace default SRID by the srid of the table
-            if (tableSrid != 0) srid = tableSrid
+                // Display the actual SRID in the command window
+                logger.info("The SRID of the table " + outputTableName + " is " + srid)
 
-            // Display the actual SRID in the command window
-            logger.info("The SRID of the table "+ outputTableName+" is " + srid)
-
-            // If the table does not have an associated SRID, add a SRID
-            if (tableSrid == 0 && !spatialFieldNames.isEmpty()) {
-                connection.createStatement().execute(String.format("UPDATE %s SET " + spatialFieldNames.get(0) + " = ST_SetSRID(" + spatialFieldNames.get(0) + ",%d)",
-                        TableLocation.parse(outputTableName).toString(), srid))
+                // If the table does not have an associated SRID, add a SRID
+                if (tableSrid == 0) {
+                    connection.createStatement().execute(String.format("UPDATE %s SET " + spatialFieldNames.get(0) + " = ST_SetSRID(" + spatialFieldNames.get(0) + ",%d)",
+                            TableLocation.parse(outputTableName).toString(), srid))
+                }
             }
 
             // If the table has a PK column and doesn't have any Primary Key Constraint, then automatically associate a Primary Key

@@ -214,27 +214,30 @@ def exec(Connection connection, input) {
 
     // If the table does not contain a geometry field
     if (spatialFieldNames.isEmpty()) {
-        logger.warn("The table does not contain a geometry field.")
-    }
+        logger.warn("The table " + tableName + " does not contain a geometry field.")
+    } else {
+        stmt.execute('CREATE SPATIAL INDEX IF NOT EXISTS ' + tableName + '_INDEX ON ' + tableName + '(the_geom);')
 
-    // Get the SRID of the table
-    Integer tableSrid = SFSUtilities.getSRID(connection, TableLocation.parse(tableName))
+        // Get the SRID of the table
+        Integer tableSrid = SFSUtilities.getSRID(connection, TableLocation.parse(tableName))
 
-    if (tableSrid != 0 && tableSrid != srid && input['inputSRID']) {
-        resultString = "The table already has a different SRID than the one you gave."
-        throw new Exception('ERROR : ' + resultString)
-    }
+        if (tableSrid != 0 && tableSrid != srid && input['inputSRID']) {
+            resultString = "The table already has a different SRID than the one you gave."
+            throw new Exception('ERROR : ' + resultString)
+        }
 
-    // Replace default SRID by the srid of the table
-    if (tableSrid != 0) srid = tableSrid
+        // Replace default SRID by the srid of the table
+        if (tableSrid != 0) srid = tableSrid
 
-    // Display the actual SRID in the command window
-    logger.info("The SRID of the table is " + srid)
+        // Display the actual SRID in the command window
+        logger.info("The SRID of the table is " + srid)
 
-    // If the table does not have an associated SRID, add a SRID
-    if (tableSrid == 0 && !spatialFieldNames.isEmpty()) {
-        connection.createStatement().execute(String.format("UPDATE %s SET " + spatialFieldNames.get(0) + " = ST_SetSRID(" + spatialFieldNames.get(0) + ",%d)",
-                TableLocation.parse(tableName).toString(), srid))
+        // If the table does not have an associated SRID, add a SRID
+        if (tableSrid == 0 && !spatialFieldNames.isEmpty()) {
+            connection.createStatement().execute(String.format("UPDATE %s SET " + spatialFieldNames.get(0) + " = ST_SetSRID(" + spatialFieldNames.get(0) + ",%d)",
+                    TableLocation.parse(tableName).toString(), srid))
+        }
+
     }
 
 

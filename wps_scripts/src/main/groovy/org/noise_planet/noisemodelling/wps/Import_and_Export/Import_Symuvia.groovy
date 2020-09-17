@@ -106,6 +106,7 @@ def exec(connection, input) {
 
         if (file.exists())
         {
+            stmt.execute('CREATE SPATIAL INDEX IF NOT EXISTS '+outputTableName+'_INDEX ON '+outputTableName+'(the_geom);')
             returnString = "The table " + outputTableName + " has been uploaded to database!"
         }
         else

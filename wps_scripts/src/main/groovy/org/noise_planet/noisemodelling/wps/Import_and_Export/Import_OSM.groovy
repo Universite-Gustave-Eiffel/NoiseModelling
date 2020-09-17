@@ -246,6 +246,8 @@ def exec(Connection connection, input) {
                 
                 drop table if exists MAP_BUILDINGS_GEOM;'''
         sql.execute(Buildings_Import)
+
+        sql.execute('CREATE SPATIAL INDEX IF NOT EXISTS BUILDINGS_INDEX ON BUILDINGS(the_geom);')
         logger.info('The table BUILDINGS has been created.')
         resultString = resultString + ' <br> The table BUILDINGS has been created.'
     }
@@ -272,6 +274,9 @@ def exec(Connection connection, input) {
 
         sql.execute(Ground_Import)
         sql.execute("DROP TABLE IF EXISTS MAP_SURFACE;")
+
+
+        sql.execute('CREATE SPATIAL INDEX IF NOT EXISTS GROUND_INDEX ON GROUND(the_geom);')
 
         logger.info('The table GROUND has been created.')
         resultString = resultString + ' <br> The table GROUND has been created.'
@@ -365,6 +370,8 @@ def exec(Connection connection, input) {
 
         sql.execute("DROP TABLE MAP_ROADS_GEOM IF EXISTS;")
         sql.execute("DROP TABLE ROADS_AADF IF EXISTS;")
+
+        sql.execute('CREATE SPATIAL INDEX IF NOT EXISTS ROADS_INDEX ON ROADS(the_geom);')
 
         logger.info('The table ROADS has been created.')
         resultString = resultString + ' <br> The table ROADS has been created.'

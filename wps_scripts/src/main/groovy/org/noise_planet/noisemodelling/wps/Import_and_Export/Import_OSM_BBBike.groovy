@@ -139,8 +139,6 @@ def run(input) {
 
 // main function of the script
 def exec(Connection connection, input) {
-
-
     connection = new ConnectionWrapper(connection)
 
     // Create a sql connection to interact with the database in SQL
@@ -289,6 +287,7 @@ def exec(Connection connection, input) {
         sql.execute("create table BUILDINGS as select *FROM BUILDINGS2;")
         sql.execute("alter table BUILDINGS add column height double;  ")
         sql.execute("update BUILDINGS set height = round(4 + RAND() * 2,1) where height is null;")
+        sql.execute('CREATE SPATIAL INDEX IF NOT EXISTS BUILDINGS_INDEX ON BUILDINGS(the_geom);')
 
         sql.execute("DROP TABLE IF EXISTS BUILDINGS2;")
 
@@ -308,6 +307,8 @@ def exec(Connection connection, input) {
                 "select null,  l.THE_GEOM the_geom , l.TYPE, 1 from LANDUSE l where l.TYPE IN ('grass', 'village_green', 'park');"
 
         sql.execute(Ground_Import)
+
+        sql.execute('CREATE SPATIAL INDEX IF NOT EXISTS GROUND_INDEX ON GROUND(the_geom);')
 
         logger.info('The table GROUND has been created.')
         resultString = resultString + ' <br> The table GROUND has been created.'
@@ -393,6 +394,8 @@ def exec(Connection connection, input) {
         sql.execute("DROP TABLE ROADS_AADF IF EXISTS;")
         sql.execute("DROP TABLE ROADS_TEMP IF EXISTS;")
         sql.execute("DROP TABLE ROADS_TEMP2 IF EXISTS;")
+
+        sql.execute('CREATE SPATIAL INDEX IF NOT EXISTS ROADS_INDEX ON ROADS(the_geom);')
 
 
         logger.info('The table ROADS has been created.')
