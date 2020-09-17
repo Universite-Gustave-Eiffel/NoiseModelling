@@ -21,7 +21,6 @@ package org.noise_planet.noisemodelling.wps.NoiseModelling
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
-import groovy.time.TimeCategory
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.api.ProgressVisitor
@@ -50,13 +49,18 @@ description = 'Calculation of the Lden map from the road noise emission table (D
         '-  <b> Hz63, Hz125, Hz250, Hz500, Hz1000,Hz2000, Hz4000, Hz8000 </b> : 8 columns giving the day emission sound level for each octave band (FLOAT).'
 
 inputs = [
-        tableBuilding     : [name       : 'Buildings table name', title: 'Buildings table name',
+        tableBuilding     : [
+                name       : 'Buildings table name',
+                title: 'Buildings table name',
                              description: '<b>Name of the Buildings table.</b>  </br>  ' +
                                      '<br>  The table shall contain : </br>' +
                                      '- <b> THE_GEOM </b> : the 2D geometry of the building (POLYGON or MULTIPOLYGON). </br>' +
                                      '- <b> HEIGHT </b> : the height of the building (FLOAT)',
-                             type       : String.class],
-        tableSources      : [name       : 'Sources table name', title: 'Sources table name',
+                             type       : String.class
+        ],
+        tableSources      : [
+                name       : 'Sources table name',
+                title: 'Sources table name',
                              description: '<b>Name of the Sources table.</b></br>  ' +
                                      '</br>  The table shall contain : </br> ' +
                                      '- <b> PK </b> : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY). </br> ' +
@@ -65,92 +69,157 @@ inputs = [
                                      '- <b> LWE* </b> : 8 columns giving the evening emission sound level for each octave band (FLOAT).</br> ' +
                                      '- <b> LWN* </b> : 8 columns giving the night emission sound level for each octave band (FLOAT).</br> ' +
                                      '</br> </br> <b> This table can be generated from the WPS Block "Road_Emission_from_Traffic". </b>',
-                             type       : String.class],
-        tableReceivers    : [name: 'Receivers table name', title: 'Receivers table name',
+                             type       : String.class
+        ],
+        tableReceivers    : [
+                name: 'Receivers table name',
+                             title: 'Receivers table name',
                              description: '<b>Name of the Receivers table.</b></br>  ' +
                                      '</br>  The table shall contain : </br> ' +
                                      '- <b> PK </b> : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY). </br> ' +
                                      '- <b> THE_GEOM </b> : the 3D geometry of the sources (POINT, MULTIPOINT).</br> ' +
                                      '</br> </br> <b> This table can be generated from the WPS Blocks in the "Receivers" folder. </b>',
-                             type: String.class],
-        tableDEM          : [name: 'DEM table name', title: 'DEM table name',
+                             type: String.class
+        ],
+        tableDEM          : [
+                name: 'DEM table name',
+                             title: 'DEM table name',
                              description: '<b>Name of the Digital Elevation Model table.</b></br>  ' +
                                      '</br>The table shall contain : </br> ' +
                                      '- <b> THE_GEOM </b> : the 3D geometry of the sources (POINT, MULTIPOINT).</br> ' +
                                      '</br> </br> <b> This table can be generated from the WPS Block "Import_Asc_File". </b>',
-                             min: 0, max: 1, type: String.class],
-        tableGroundAbs      : [name: 'Ground absorption table name', title: 'Ground absorption table name',
+                             min: 0, max: 1, type: String.class
+        ],
+        tableGroundAbs      : [
+                name: 'Ground absorption table name',
+                title: 'Ground absorption table name',
                              description: '<b>Name of the surface/ground acoustic absorption table.</b></br>  ' +
                                      '</br>The table shall contain : </br> ' +
                                      '- <b> THE_GEOM </b> : the 2D geometry of the sources (POLYGON or MULTIPOLYGON).</br> ' +
                                      '- <b> G </b> : the acoustic absorption of a ground (FLOAT between 0 : very hard and 1 : very soft).</br> ',
-                               min: 0, max: 1, type: String.class],
-        paramWallAlpha    : [name: 'wallAlpha', title: 'Wall absorption coefficient',
+                               min: 0, max: 1, type: String.class
+        ],
+        paramWallAlpha    : [
+                name: 'wallAlpha',
+                title: 'Wall absorption coefficient',
                              description: 'Wall absorption coefficient (FLOAT between 0 : fully absorbent and strictly less than 1 : fully reflective)' +
                                      '</br> </br> <b> Default value : 0.1 </b> ',
-                             min: 0, max: 1, type: String.class],
-        confReflOrder     : [name: 'Order of reflexion', title: 'Order of reflexion',
+                             min: 0, max: 1, type: String.class
+        ],
+        confReflOrder     : [
+                name: 'Order of reflexion',
+                title: 'Order of reflexion',
                              description: 'Maximum number of reflections to be taken into account (INTEGER).' +
                                      '</br> </br> <b> Default value : 1 </b>' ,
-                                     min: 0, max: 1, type: String.class],
-        confMaxSrcDist    : [name: 'Maximum source-receiver distance', title: 'Maximum source-receiver distance',
+                                     min: 0, max: 1, type: String.class
+        ],
+        confMaxSrcDist    : [
+                name: 'Maximum source-receiver distance',
+                title: 'Maximum source-receiver distance',
                              description: 'Maximum distance between source and receiver (FLOAT, in meters).' +
                                 '</br> </br> <b> Default value : 150 </b>',
-                                min: 0, max: 1, type: String.class],
-        confMaxReflDist   : [name: 'Maximum source-reflexion distance', title: 'Maximum source-reflexion distance',
+                                min: 0, max: 1, type: String.class
+        ],
+        confMaxReflDist   : [
+                name: 'Maximum source-reflexion distance',
+                title: 'Maximum source-reflexion distance',
                              description: 'Maximum reflection distance from the source (FLOAT, in meters).' +
                                      '</br> </br> <b> Default value : 50 </b>',
-                             min: 0, max: 1, type: String.class],
-        confThreadNumber  : [name: 'Thread number', title: 'Thread number',
+                             min: 0, max: 1, type: String.class
+        ],
+        confThreadNumber  : [
+                name: 'Thread number',
+                title: 'Thread number',
                              description: 'Number of thread to use on the computer (INTEGER).' +
                                      '</br> To set this value, look at the number of cores you have.' +
                                      '</br> If it is set to 0, use the maximum number of cores available.' +
                                      '</br> </br> <b> Default value : 1 </b>',
-                             min: 0, max: 1, type: String.class],
-        confDiffVertical  : [name: 'Diffraction on vertical edges', title: 'Diffraction on vertical edges',
+                             min: 0, max: 1, type: String.class
+        ],
+        confDiffVertical  : [
+                name: 'Diffraction on vertical edges',
+                title: 'Diffraction on vertical edges',
                              description: 'Compute or not the diffraction on vertical edges.' +
                                      '</br> </br> <b> Default value : false </b>',
-                             min: 0, max: 1, type: Boolean.class],
-        confDiffHorizontal: [name: 'Diffraction on horizontal edges', title: 'Diffraction on horizontal edges',
+                             min: 0, max: 1, type: Boolean.class
+        ],
+        confDiffHorizontal: [
+                name: 'Diffraction on horizontal edges',
+                title: 'Diffraction on horizontal edges',
                              description: 'Compute or not the diffraction on horizontal edges.' +
                                      '</br> </br> <b> Default value : false </b>',
-                             min: 0, max: 1, type: Boolean.class],
-        confSkipLday: [name       : 'Skip LDAY_GEOM table', title: 'Do not compute LDAY_GEOM table',
+                             min: 0, max: 1, type: Boolean.class
+        ],
+        confSkipLday: [
+                name       : 'Skip LDAY_GEOM table',
+                title: 'Do not compute LDAY_GEOM table',
                        description: 'Skip the creation of this table.' +
                                '</br> </br> <b> Default value : false </b>',
-                       min        : 0, max: 1, type: Boolean.class],
-        confSkipLevening: [name       : 'Skip LEVENING_GEOM table', title: 'Do not compute LEVENING_GEOM table',
+                       min        : 0, max: 1, type: Boolean.class
+        ],
+        confSkipLevening: [
+                name       : 'Skip LEVENING_GEOM table',
+                title: 'Do not compute LEVENING_GEOM table',
                            description: 'Skip the creation of this table.' +
                                    '</br> </br> <b> Default value : false </b>',
-                           min        : 0, max: 1, type: Boolean.class],
-        confSkipLnight: [name       : 'Skip LNIGHT_GEOM table', title: 'Do not compute LNIGHT_GEOM table',
+                           min        : 0, max: 1, type: Boolean.class
+        ],
+        confSkipLnight: [
+                name       : 'Skip LNIGHT_GEOM table',
+                title: 'Do not compute LNIGHT_GEOM table',
                          description: 'Skip the creation of this table.' +
                                  '</br> </br> <b> Default value : false </b>',
-                         min        : 0, max: 1, type: Boolean.class],
-        confSkipLden: [name       : 'Skip LDEN_GEOM table', title: 'Do not compute LDEN_GEOM table',
+                         min        : 0, max: 1, type: Boolean.class
+        ],
+        confSkipLden: [
+                name       : 'Skip LDEN_GEOM table',
+                title: 'Do not compute LDEN_GEOM table',
                        description: 'Skip the creation of this table.' +
                                '</br> </br> <b> Default value : false </b>',
-                       min        : 0, max: 1, type: Boolean.class],
-        confExportSourceId: [name       : 'keep source id', title: 'Separate receiver level by source identifier',
+                       min        : 0, max: 1, type: Boolean.class
+        ],
+        confExportSourceId: [
+                name       : 'keep source id',
+                title: 'Separate receiver level by source identifier',
                              description: 'Keep source identifier in output in order to get noise contribution of each noise source.' +
                                      '</br> </br> <b> Default value : false </b>',
-                             min        : 0, max: 1, type: Boolean.class],
-        confHumidity: [name       : 'Relative humidity', title: 'Relative humidity',
+                             min        : 0, max: 1,
+                type: Boolean.class
+        ],
+        confHumidity: [
+                name       : 'Relative humidity',
+                title: 'Relative humidity',
                        description: 'Humidity for noise propagation, default value is <b>70</b>',
-                       min        : 0, max: 1, type: Double.class],
-        confTemperature: [name       : 'Temperature', title: 'Air temperature',
+                       min        : 0, max: 1,
+                type: Double.class
+        ],
+        confTemperature: [name       : 'Temperature',
+                          title: 'Air temperature',
                        description: 'Air temperature in degree celsius, default value is <b>15</b>',
-                       min        : 0, max: 1, type: Double.class],
-        confFavorableOccurrences  : [name: 'Probability of occurrences table', title: 'Probability of occurrences table',
+                       min        : 0, max: 1,
+                          type: Double.class
+        ],
+        confFavorableOccurrences  : [
+                name: 'Probability of occurrences table',
+                title: 'Probability of occurrences table',
                              description: 'Table of probability of occurrences of favourable propagation conditions.' +
                                      'The north slice is the last array index not the first one<br/>' +
                                      'Slice width are 22.5&#176;: (16 slices)<br/><ul>' +
                                      '<li>The first column 22.5&#176; contain occurrences between 11.25 to 33.75 &#176;</li>' +
                                      '<li>The last column 360&#176; contains occurrences between 348.75&#176; to 360&#176; and 0 to 11.25&#176;</li></ul>Default value <b>0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5</b>',
-                             min: 0, max: 1, type: String.class]]
+                             min: 0, max: 1,
+                type: String.class
+        ]
+]
 
-outputs = [result: [name: 'Result output string', title: 'Result output string', description: 'This type of result does not allow the blocks to be linked together.', type: String.class]]
-
+outputs = [
+        result: [
+                name       : 'Result output string',
+                title      : 'Result output string',
+                description: 'This type of result does not allow the blocks to be linked together.',
+                type       : String.class
+        ]
+]
 // Open Connection to Geoserver
 static Connection openGeoserverDataStoreConnection(String dbName) {
     if (dbName == null || dbName.isEmpty()) {
@@ -162,6 +231,9 @@ static Connection openGeoserverDataStoreConnection(String dbName) {
 }
 
 def forgeCreateTable(Sql sql, String tableName, LDENConfig ldenConfig, String geomField, String tableReceiver, String tableResult) {
+    // Create a logger to display messages in the geoserver logs and in the command prompt.
+    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
+
     StringBuilder sb = new StringBuilder("create table ");
     sb.append(tableName);
     if(!ldenConfig.mergeSources) {
@@ -200,7 +272,7 @@ def forgeCreateTable(Sql sql, String tableName, LDENConfig ldenConfig, String ge
     }
     sql.execute(sb.toString())
     // apply pk
-    System.out.println("Add primary key on " + tableName)
+    logger.info("Add primary key on " + tableName)
     if(!ldenConfig.mergeSources) {
         sql.execute("ALTER TABLE " + tableName + " ADD PRIMARY KEY(IDRECEIVER, IDSOURCE)")
     } else {
@@ -224,16 +296,22 @@ def run(input) {
 
 // main function of the script
 def exec(Connection connection, input) {
-    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_source");
-    //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postGIS database
+
+     //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postGIS database
     connection = new ConnectionWrapper(connection)
 
     // output string, the information given back to the user
     String resultString = null
 
+    // Create a logger to display messages in the geoserver logs and in the command prompt.
+    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
+
     // print to command window
-    System.out.println('Start : LDEN from Emission')
-    def start = new Date()
+    logger.info('Start : LDEN from Emission')
+    logger.info("inputs {}", input) // log inputs of the run
+
+
+
 
     // -------------------
     // Get every inputs
@@ -415,7 +493,7 @@ def exec(Connection connection, input) {
     // Init ProgressLogger (loading bar)
     RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1)
 
-    System.println("Start calculation... ")
+    logger.info("Start calculation... ")
     try {
         ldenProcessing.start()
         // Iterate over computation areas
@@ -427,16 +505,13 @@ def exec(Connection connection, input) {
                     cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), pointNoiseMap.getCellWidth(),
                     pointNoiseMap.getCellHeight());
             logger.info("Compute domain is " + new GeometryFactory().toGeometry(cellEnvelope))
-            System.println(String.format("Compute... %.3f %% (%d receivers in this cell)", 100 * k++ / cells.size(), cells.get(cellIndex)))
+            logger.info(String.format("Compute... %.3f %% (%d receivers in this cell)", 100 * k++ / cells.size(), cells.get(cellIndex)))
             // Run ray propagation
             pointNoiseMap.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers)
         }
     } finally {
         ldenProcessing.stop()
     }
-
-
-    System.out.println('Intermediate  time : ' + TimeCategory.minus(new Date(), start))
 
     // Create a sql connection to interact with the database in SQL
     Sql sql = new Sql(connection)
@@ -447,7 +522,7 @@ def exec(Connection connection, input) {
 
     if(ldenConfig.computeLDay) {
         sql.execute("drop table if exists LDAY_GEOM;")
-        System.out.println('create table LDAY_GEOM')
+        logger.info('create table LDAY_GEOM')
         forgeCreateTable(sql, "LDAY_GEOM", ldenConfig, geomFieldsRcv.get(0), receivers_table_name,
                 ldenConfig.lDayTable)
         createdTables.append(" LDAY_GEOM")
@@ -455,7 +530,7 @@ def exec(Connection connection, input) {
     }
     if(ldenConfig.computeLEvening) {
         sql.execute("drop table if exists LEVENING_GEOM;")
-        System.out.println('create table LEVENING_GEOM')
+        logger.info('create table LEVENING_GEOM')
         forgeCreateTable(sql, "LEVENING_GEOM", ldenConfig, geomFieldsRcv.get(0), receivers_table_name,
                 ldenConfig.lEveningTable)
         createdTables.append(" LEVENING_GEOM")
@@ -463,7 +538,7 @@ def exec(Connection connection, input) {
     }
     if(ldenConfig.computeLNight) {
         sql.execute("drop table if exists LNIGHT_GEOM;")
-        System.out.println('create table LNIGHT_GEOM')
+        logger.info('create table LNIGHT_GEOM')
         forgeCreateTable(sql, "LNIGHT_GEOM", ldenConfig, geomFieldsRcv.get(0), receivers_table_name,
                 ldenConfig.lNightTable)
         createdTables.append(" LNIGHT_GEOM")
@@ -471,7 +546,7 @@ def exec(Connection connection, input) {
     }
     if(ldenConfig.computeLDEN) {
         sql.execute("drop table if exists LDEN_GEOM;")
-        System.out.println('create table LDEN_GEOM')
+        logger.info('create table LDEN_GEOM')
         forgeCreateTable(sql, "LDEN_GEOM", ldenConfig, geomFieldsRcv.get(0), receivers_table_name,
                 ldenConfig.lDenTable)
         createdTables.append(" LDEN_GEOM")
@@ -482,9 +557,8 @@ def exec(Connection connection, input) {
 
 
     // print to command window
-    System.out.println('Result : ' + resultString)
-    System.out.println('End : LDEN from Emission')
-    System.out.println('Duration : ' + TimeCategory.minus(new Date(), start))
+    logger.info('Result : ' + resultString)
+    logger.info('End : LDEN from Emission')
 
     // print to WPS Builder
     return resultString
