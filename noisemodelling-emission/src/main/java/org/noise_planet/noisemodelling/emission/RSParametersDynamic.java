@@ -200,16 +200,18 @@ public class RSParametersDynamic {
      * @param VehId Vehicle ID used as a seed for LwStd
      */
     public RSParametersDynamic(double speed, double acceleration, int veh_type, int acc_type, int FreqParam, double Temperature, int RoadSurface, boolean Stud, double Junc_dist, int Junc_type, double LwStd, int VehId) {
+
+        if (Junc_type <0 || Junc_type>2 ) throw new IllegalArgumentException("Unlnown Junction type for a section.");
         this.speed = speed;
         this.acceleration = acceleration;
         this.veh_type = veh_type;
         this.acc_type = acc_type;
-        this.FreqParam = FreqParam;
+        this.FreqParam = Math.max(0, FreqParam);
         this.Temperature = Temperature;
         this.RoadSurface = RoadSurface;
         this.Stud = Stud;
-        this.Junc_dist = Junc_dist;
-        this.Junc_type = Junc_type;
+        this.Junc_dist = Math.max(0, Junc_dist);
+        this.Junc_type = Math.max(0, Math.min(2, Junc_type));
         this.LwStd = LwStd;
         this.VehId = VehId;
 
