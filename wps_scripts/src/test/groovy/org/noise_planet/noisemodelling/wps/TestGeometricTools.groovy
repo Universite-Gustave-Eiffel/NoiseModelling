@@ -67,9 +67,11 @@ class TestGeometricTools extends JdbcTestCase {
         sql.executeInsert("INSERT INTO SCREENS(pk, THE_GEOM, HEIGHT) VALUES (2001,?, 66), (2002,?, 99)", [screen1, screen2])
         SHPRead.readShape(connection, TestGeometricTools.getResource("buildings.shp").getPath())
 
-        new Screen_to_building().exec(connection, ["tableBuilding": "BUILDINGS", "tableScreens" : "SCREENS"])
+        String res = new Change_SRID().exec(connection,
+                ["newSRID": "2154",
+                 "tableName": "SCREENS"])
 
-        //SHPWrite.exportTable(connection, "target/BUILDINGS_SCREENS.shp", "BUILDINGS_SCREENS")
+        new Screen_to_building().exec(connection, ["tableBuilding": "BUILDINGS", "tableScreens" : "SCREENS"])
 
         // Check new walls not intersecting with buildings
         assertEquals(0, sql.firstRow("SELECT COUNT(*) CPT FROM BUILDINGS B, BUILDINGS_SCREENS S WHERE B.the_geom && S.the_geom and (S.height = 66 OR S.height = 99) and ST_INTERSECTS(B.THE_GEOM, S.THE_GEOM)")[0] as Integer)
