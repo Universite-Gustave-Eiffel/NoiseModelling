@@ -7,6 +7,7 @@ import org.h2gis.functions.io.geojson.GeoJsonWrite
 import org.noise_planet.noisemodelling.wps.Database_Manager.Add_Primary_Key
 import org.noise_planet.noisemodelling.wps.JdbcTestCase
 import org.noise_planet.noisemodelling.wps.Matsim.Noise_From_Attenuation_Matrix
+import org.noise_planet.noisemodelling.wps.Others_Tools.Add_Laeq_Leq_columns
 import org.noise_planet.noisemodelling.wps.Others_Tools.ZerodB_Source_From_Roads
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -29,7 +30,7 @@ class TestNoiseFromAttenuationMatrix extends JdbcTestCase {
 
         String result = runWps();
 
-        // GeoJsonWrite.writeGeoJson(connection, "noise_map.geojson", "NOISE_MAP");
+        GeoJsonWrite.writeGeoJson(connection, "noise_map.geojson", "NOISE_MAP");
 
         assertEquals("Process done. Table of receivers NOISE_MAP created !", result);
     }

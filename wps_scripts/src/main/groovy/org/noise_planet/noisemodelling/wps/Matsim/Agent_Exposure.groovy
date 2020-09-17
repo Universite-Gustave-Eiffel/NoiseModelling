@@ -55,30 +55,35 @@ title = 'Calculate Mastim agents exposure'
 description = 'Calculate Mastim agents noise exposure'
 
 inputs = [
-        folder: [
-                name: 'Path of the Matsim output folder',
-                title: 'Path of the Matsim output folder',
-                description: 'Path of the Matsim output folder </br> For example : /home/mastim/simulation_output' +
-                        '<br/>The folder must contain at least the following files: ' +
-                        '<br/><br/> - output_plans.xml.gz',
+        plansFile: [
+                name: 'Path of the Matsim output_plans file',
+                title: 'Path of the Matsim output_plans file',
+                description: 'Path of the Matsim output_plans file </br> For example : /home/mastim/simulation_output/output_plans.xml.gz',
                 type: String.class
         ],
-        dataTablePrefix: [
-                name: 'Table Prefix For the noise data',
-                title: 'Table Prefix For the noise data',
-                description: 'Table Prefix For the noise data' +
-                        '<br/>This will determine the prefix for the noise data tables' +
-                        '<br/>For exemple with a prefix "RES_" and a timeSlice "hour", you will get data from: ' +
-                        '<br/>RES_0_1, RES_1_2, RES_2_3, ..., RES_22_23, RES_23_24',
+        receiversTable: [
+                name: 'Table containing the receivers position',
+                title: 'Table containing the receivers position',
+                description: 'Table containing the receivers position' +
+                        '<br/>The table must contain the following fields :' +
+                        '<br/>PK, FACILITY, ORIGIN_GEOM, THE_GEOM, TYPES',
+                type: String.class
+        ],
+        dataTable: [
+                name: 'Table containing the noise data',
+                title: 'Table containing the noise data',
+                description: 'Table containing the noise data' +
+                        '<br/>The table must contain the following fields :' +
+                        '<br/>PK, IDRECEIVER, THE_GEOM, HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ000, HZ8000, TIMESTRING',
                 type: String.class
         ],
         timeSlice: [
                 name: 'How to separate Roads statistics ? hour, quarter',
                 title: 'How to separate Roads statistics ? hour, quarter',
                 description: 'How to separate Roads statistics ? hour, quarter. "DEN" timslice is not supported for now' +
-                        '<br/>This will determine the timstring suffix for the noise data tables' +
-                        '<br/>For exemple with a prefix "RES_" and a timeSlice "hour", you will get data from: ' +
-                        '<br/>RES_0_1, RES_1_2, RES_2_3, ..., RES_22_23, RES_23_24',
+                        '<br/>This will determine the timstrings used in analysing the time data' +
+                        '<br/>For exemple with a timeSlice "hour", the data will be analysed using the following timStrings: ' +
+                        '<br/>0_1, 1_2, 2_3, ..., 22_23, 23_24',
                 type: String.class
         ],
         outTableName: [
@@ -131,15 +136,16 @@ def exec(Connection connection, input) {
     connection = new ConnectionWrapper(connection)
     Sql sql = new Sql(connection)
 
-    String resultString = null
+    String resultString
 
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
     logger.info('Start : Agent_Exposure')
     logger.info("inputs {}", input)
 
-    String folder = input["folder"];
+    String plansFile = input["plansFile"];
+    String receiversTable = input["receiversTable"]
+    String dataTable = input["dataTable"];
     String outTableName = input['outTableName'];
-    String dataTablePrefix = input["dataTablePrefix"];
 
     String timeSlice = "hour";
     /*
@@ -164,7 +170,11 @@ def exec(Connection connection, input) {
     String[] hourClock = ["0_1", "1_2", "2_3", "3_4", "4_5", "5_6", "6_7", "7_8", "8_9", "9_10", "10_11", "11_12", "12_13", "13_14", "14_15", "15_16", "16_17", "17_18", "18_19", "19_20", "20_21", "21_22", "22_23", "23_24"];
     String[] quarterClock = ["0h00_0h15", "0h15_0h30", "0h30_0h45", "0h45_1h00", "1h00_1h15", "1h15_1h30", "1h30_1h45", "1h45_2h00", "2h00_2h15", "2h15_2h30", "2h30_2h45", "2h45_3h00", "3h00_3h15", "3h15_3h30", "3h30_3h45", "3h45_4h00", "4h00_4h15", "4h15_4h30", "4h30_4h45", "4h45_5h00", "5h00_5h15", "5h15_5h30", "5h30_5h45", "5h45_6h00", "6h00_6h15", "6h15_6h30", "6h30_6h45", "6h45_7h00", "7h00_7h15", "7h15_7h30", "7h30_7h45", "7h45_8h00", "8h00_8h15", "8h15_8h30", "8h30_8h45", "8h45_9h00", "9h00_9h15", "9h15_9h30", "9h30_9h45", "9h45_10h00", "10h00_10h15", "10h15_10h30", "10h30_10h45", "10h45_11h00", "11h00_11h15", "11h15_11h30", "11h30_11h45", "11h45_12h00", "12h00_12h15", "12h15_12h30", "12h30_12h45", "12h45_13h00", "13h00_13h15", "13h15_13h30", "13h30_13h45", "13h45_14h00", "14h00_14h15", "14h15_14h30", "14h30_14h45", "14h45_15h00", "15h00_15h15", "15h15_15h30", "15h30_15h45", "15h45_16h00", "16h00_16h15", "16h15_16h30", "16h30_16h45", "16h45_17h00", "17h00_17h15", "17h15_17h30", "17h30_17h45", "17h45_18h00", "18h00_18h15", "18h15_18h30", "18h30_18h45", "18h45_19h00", "19h00_19h15", "19h15_19h30", "19h30_19h45", "19h45_20h00", "20h00_20h15", "20h15_20h30", "20h30_20h45", "20h45_21h00", "21h00_21h15", "21h15_21h30", "21h30_21h45", "21h45_22h00", "22h00_22h15", "22h15_22h30", "22h30_22h45", "22h45_23h00", "23h00_23h15", "23h15_23h30", "23h30_23h45", "23h45_24h00"];
 
-    String populationFile = folder + "/output_plans.xml.gz";
+    String populationFile = plansFile;
+    File file = new File(populationFile);
+    if(!file.exists() || file.isDirectory()) {
+        throw new FileNotFoundException(populationFile, populationFile + " not found");
+    }
 
     Scenario scenario = ScenarioUtils.loadScenario(ConfigUtils.createConfig());
     PopulationReader populationReader = new PopulationReader(scenario);
@@ -284,7 +294,6 @@ def exec(Connection connection, input) {
                 if (activityStart > timeSliceStart && activityStart < timeSliceEnd) { // activity start is in the current timeslice  (ie. 01:05:07)
                     if (activityEnd > timeSliceEnd) { // activity ends after the current timeslice (ie. 02:30:00)
                         timeWeight = ((timeSliceEnd - activityStart) / secondsInSlice) / nbSlices;
-
                     }
                     if (activityEnd < timeSliceEnd) { // activity ends in current timeslice (ie. 01:38:00)
                         timeWeight = ((activityEnd - activityStart) / secondsInSlice) / nbSlices;
@@ -293,10 +302,11 @@ def exec(Connection connection, input) {
                 String timeString = clock[slice];
                 String query = '''
                                     SELECT D.LEQA
-                                    FROM ''' + dataTablePrefix + timeString + ''' D
-                                    INNER JOIN RECEIVERS R
+                                    FROM ''' + dataTable + ''' D
+                                    INNER JOIN ''' + receiversTable + ''' R
                                     ON D.IDRECEIVER = R.PK
-                                    WHERE R.FACILITY = \'''' + activityId + '''\'
+                                    WHERE D.TIMESTRING = \''''+timeString+'''\' 
+                                    AND R.FACILITY = \'''' + activityId + '''\'
                                 '''
                 ResultSet result = stmt.executeQuery(query);
                 while(result.next()) {
@@ -312,10 +322,11 @@ def exec(Connection connection, input) {
                 if (homeId != activityId) {
                     String homeQuery = '''
                                     SELECT D.LEQA
-                                    FROM ''' + dataTablePrefix + timeString + ''' D
-                                    INNER JOIN RECEIVERS R
+                                    FROM ''' + dataTable + ''' D
+                                    INNER JOIN ''' + receiversTable + ''' R
                                     ON D.IDRECEIVER = R.PK
-                                    WHERE FACILITY = \'''' + homeId + '''\'
+                                    WHERE D.TIMESTRING = \''''+timeString+'''\'
+                                    AND FACILITY = \'''' + homeId + '''\'
                                 '''
                     ResultSet homeResult = stmt.executeQuery(homeQuery);
                     while (homeResult.next()) {
@@ -422,7 +433,7 @@ def exec(Connection connection, input) {
     }
 
     logger.info('End : Agent_Exposure')
-    resultString = "Process done. Table of receivers " + outTableName + " created !"
+    resultString = "Process done. Table " + outTableName + " created !"
     logger.info('Result : ' + resultString)
     return resultString
 
