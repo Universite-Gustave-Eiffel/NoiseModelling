@@ -33,8 +33,8 @@ import org.slf4j.LoggerFactory
 import java.sql.Connection
 
 title = 'Clean and fence BBBike tables - https://extract.bbbike.org/'
-description = 'Clean and fence BBBike tables - Convert OSM/OSM.GZ file (https://www.openstreetmap.org) to input tables. ' +
-        ' <br>Be careful, this treatment can be blocking if the table is large. Some bugs have also been detected for some specific areas.' +
+description = 'Clean and fence BBBike tables - Convert shp folder from BBBike (https://extract.bbbike.org/) to BUILDINGS, GROUND AND ROADS tables. ' +
+        ' <br> This script is more robust than IMPORT_OSM but it doesn\'t allow you to retrieve all the information present in OSM (such as the number of floors or the height of buildings for example).' +
         '<br> The user can choose to create one to three output tables : <br>' +
         '-  <b> BUILDINGS  </b> : a table containing the building. </br>' +
         '-  <b> GROUND  </b> : surface/ground acoustic absorption table. </br>' +

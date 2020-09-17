@@ -30,9 +30,10 @@ import org.slf4j.LoggerFactory
 import java.sql.Connection
 import java.sql.Statement
 
-title = 'Import tables from OSM'
+title = 'Import BUILDINGS, GROUND and ROADS tables from OSM'
 description = 'Convert OSM/OSM.GZ file (https://www.openstreetmap.org) to input tables. ' +
         ' <br>Be careful, this treatment can be blocking if the table is large. Some bugs have also been detected for some specific areas.' +
+        ' <br>In this case, you can try with import_OSM_BBike. This is a script that gets less information from OSM, but is more robust.' +
         '<br> The user can choose to create one to three output tables : <br>' +
         '-  <b> BUILDINGS  </b> : a table containing the building. </br>' +
         '-  <b> GROUND  </b> : surface/ground acoustic absorption table. </br>' +
