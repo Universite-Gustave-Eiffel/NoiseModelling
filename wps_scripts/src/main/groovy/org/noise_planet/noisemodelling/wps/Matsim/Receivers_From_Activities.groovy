@@ -34,10 +34,10 @@ inputs = [
                 title: 'Name of the table containing the activities',
                 description: 'Name of the table containing the activities' +
                         '<br/>The table must contain the following fields : ' +
-                        '<br/>PK, FACILITY_ID, THE_GEOM, TYPES',
+                        '<br/>PK, FACILITY, THE_GEOM, TYPES',
                 type: String.class
         ],
-        receiversTableName : [
+        receiversTable : [
                 name: 'Name of the table containing the receivers',
                 title: 'Name of the table containing the receivers',
                 description: 'Name of the table containing the receivers' +
@@ -50,7 +50,7 @@ inputs = [
                 title: 'Name of created table',
                 description: 'Name of the table you want to create' +
                         '<br/>The table will contain the following fields : ' +
-                        '<br/>PK, FACILITY_ID, ORIGIN_GEOM, THE_GEOM, TYPES',
+                        '<br/>PK, FACILITY, ORIGIN_GEOM, THE_GEOM, TYPES',
                 type: String.class
         ]
 ]
@@ -106,20 +106,20 @@ def exec(Connection connection, input) {
 
     String query = "CREATE TABLE " + outTableName + '''( 
         PK integer PRIMARY KEY AUTO_INCREMENT,
-        FACILITY_ID varchar(255),
+        FACILITY varchar(255),
         ORIGIN_GEOM geometry,
         THE_GEOM geometry,
         TYPES varchar(255)
     ) AS
-    SELECT A.PK, A.FACILITY_ID, A.THE_GEOM AS ORIGIN_GEOM, (
+    SELECT A.PK, A.FACILITY, A.THE_GEOM AS ORIGIN_GEOM, (
         SELECT R.THE_GEOM 
-        FROM ''' + receiversTable+ ''' R
+        FROM ''' + receiversTable + ''' R
         WHERE ST_EXPAND(A.THE_GEOM, 200, 200) && R.THE_GEOM
         ORDER BY ST_Distance(A.THE_GEOM, R.THE_GEOM) ASC LIMIT 1
     ) AS THE_GEOM, A.TYPES 
     FROM ''' + activitiesTable + ''' A ''';
     sql.execute(query);
-    sql.execute("CREATE INDEX ON " + outTableName + "(FACILITY_ID)");
+    sql.execute("CREATE INDEX ON " + outTableName + "(FACILITY)");
     sql.execute("CREATE SPATIAL INDEX ON " + outTableName + "(THE_GEOM)");
 
     sql.execute("UPDATE " + outTableName + " SET THE_GEOM = CASE " + '''

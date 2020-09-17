@@ -42,7 +42,7 @@ inputs = [
         title: 'Name of the table containing the expositions',
         description: 'Name of the table containing the expositions' +
                 '<br/>The table must contain the following fields : ' +
-                '<br/>PK, PERSON_ID, HOME_FACILITY_ID, HOME_GEOM, WORK_FACILITY_ID, WORK_GEOM, LAEQ, HOME_LAEQ, DIFF_LAEQ',
+                '<br/>PK, PERSON_ID, HOME_FACILITY, HOME_GEOM, WORK_FACILITY, WORK_GEOM, LAEQ, HOME_LAEQ, DIFF_LAEQ',
         type: String.class
     ],
     expositionField: [

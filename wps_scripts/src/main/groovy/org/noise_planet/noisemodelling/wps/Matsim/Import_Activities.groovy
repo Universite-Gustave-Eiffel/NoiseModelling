@@ -57,7 +57,7 @@ inputs = [
             title: 'Name of created table',
             description: 'Name of the table you want to create' +
                     '<br/>The table will contain the following fields : ' +
-                    '<br/>PK, FACILITY_ID, THE_GEOM, TYPES',
+                    '<br/>PK, FACILITY, THE_GEOM, TYPES',
             type: String.class
     ]
 ]
@@ -119,11 +119,11 @@ def exec(Connection connection, input) {
     sql.execute(String.format("DROP TABLE IF EXISTS %s", outTableName))
     sql.execute("CREATE TABLE " + outTableName + '''( 
         PK integer PRIMARY KEY AUTO_INCREMENT,
-        FACILITY_ID varchar(255),
+        FACILITY varchar(255),
         THE_GEOM geometry,
         TYPES varchar(255)
     );''')
-    sql.execute("CREATE INDEX ON " + outTableName + "(FACILITY_ID)");
+    sql.execute("CREATE INDEX ON " + outTableName + "(FACILITY)");
     sql.execute("CREATE SPATIAL INDEX ON " + outTableName + "(THE_GEOM)");
 
     Scenario scenario = ScenarioUtils.loadScenario(ConfigUtils.createConfig())
@@ -138,7 +138,7 @@ def exec(Connection connection, input) {
         Coord c = facility.getCoord();
         String geom = String.format("POINT(%s %s %s)", Double.toString(c.getX()), Double.toString(c.getY()), Double.toString(height));
         String types = facility.getActivityOptions().keySet().join(',');
-        String query = "INSERT INTO " + outTableName + "(FACILITY_ID, THE_GEOM, TYPES) VALUES( '" + facilityId + "', ST_GeomFromText('" + geom + "', " + SRID + "), '" + types + "')";
+        String query = "INSERT INTO " + outTableName + "(FACILITY, THE_GEOM, TYPES) VALUES( '" + facilityId + "', ST_GeomFromText('" + geom + "', " + SRID + "), '" + types + "')";
         sql.execute(query);
     }
 

@@ -86,7 +86,7 @@ inputs = [
                 title: 'Name of created table',
                 description: 'Name of the table you want to create from the file.' +
                         '<br/>The table will contain the following fields :' +
-                        '<br/>PK, PERSON_ID, HOME_FACILITY_ID, HOME_GEOM, WORK_FACILITY_ID, WORK_GEOM, LAEQ, HOME_LAEQ, DIFF_LAEQ',
+                        '<br/>PK, PERSON_ID, HOME_FACILITY, HOME_GEOM, WORK_FACILITY, WORK_GEOM, LAEQ, HOME_LAEQ, DIFF_LAEQ',
                 type: String.class
         ]
 ]
@@ -178,9 +178,9 @@ def exec(Connection connection, input) {
         sql.execute("CREATE TABLE " + outTableName + ''' ( 
             PK integer PRIMARY KEY AUTO_INCREMENT, 
             PERSON_ID varchar(255),
-            HOME_FACILITY_ID varchar(255),
+            HOME_FACILITY varchar(255),
             HOME_GEOM geometry,
-            WORK_FACILITY_ID varchar(255),
+            WORK_FACILITY varchar(255),
             WORK_GEOM geometry,
             LAEQ real,
             HOME_LAEQ real,
@@ -296,7 +296,7 @@ def exec(Connection connection, input) {
                                     FROM ''' + dataTablePrefix + timeString + ''' D
                                     INNER JOIN RECEIVERS R
                                     ON D.IDRECEIVER = R.PK
-                                    WHERE R.FACILITY_ID = \'''' + activityId + '''\'
+                                    WHERE R.FACILITY = \'''' + activityId + '''\'
                                 '''
                 ResultSet result = stmt.executeQuery(query);
                 while(result.next()) {
@@ -315,7 +315,7 @@ def exec(Connection connection, input) {
                                     FROM ''' + dataTablePrefix + timeString + ''' D
                                     INNER JOIN RECEIVERS R
                                     ON D.IDRECEIVER = R.PK
-                                    WHERE FACILITY_ID = \'''' + homeId + '''\'
+                                    WHERE FACILITY = \'''' + homeId + '''\'
                                 '''
                     ResultSet homeResult = stmt.executeQuery(homeQuery);
                     while (homeResult.next()) {
@@ -408,9 +408,9 @@ def exec(Connection connection, input) {
             /*
             ID integer PRIMARY KEY AUTO_INCREMENT,
             PERSON_ID varchar(255),
-            HOME_FACILITY_ID varchar(255),
+            HOME_FACILITY varchar(255),
             HOME_GEOM geometry,
-            WORK_FACILITY_ID varchar(255),
+            WORK_FACILITY varchar(255),
             WORK_GEOM geometry,
             LAEQ real,
             HOME_LAEQ real

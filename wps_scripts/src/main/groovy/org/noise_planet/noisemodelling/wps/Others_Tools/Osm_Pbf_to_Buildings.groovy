@@ -164,8 +164,7 @@ def exec(Connection connection, input) {
         drop table if exists MAP_BUILDINGS_GEOM;
     ''');
 
-    resultString += "<br>\n"
-    resultString += "nodes : " + handler.nb_nodes
+    resultString = "nodes : " + handler.nb_nodes
     resultString += "<br>\n"
     resultString += "ways : " + handler.nb_ways
     resultString += "<br>\n"

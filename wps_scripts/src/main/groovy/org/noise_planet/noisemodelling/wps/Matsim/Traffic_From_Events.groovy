@@ -234,10 +234,17 @@ def exec(Connection connection, input) {
         throw new FileNotFoundException(eventFile, "output_events.xml.gz not found in MATSim folder");
     }
     String networkFile = folder + "/output_network.xml.gz";
-    f = new File(eventFile);
+    f = new File(networkFile);
     if(!f.exists() || f.isDirectory()) {
-        throw new FileNotFoundException(eventFile, "output_network.xml.gz not found in MATSim folder");
+        throw new FileNotFoundException(networkFile, "output_network.xml.gz not found in MATSim folder");
     }
+    if (link2GeometryFile != "") {
+        f = new File(link2GeometryFile);
+        if(!f.exists() || f.isDirectory()) {
+            throw new FileNotFoundException(link2GeometryFile, link2GeometryFile + " not found");
+        }
+    }
+
 
     Network network = ScenarioUtils.loadScenario(ConfigUtils.createConfig()).getNetwork();
     MatsimNetworkReader networkReader = new MatsimNetworkReader(network);
@@ -661,6 +668,9 @@ public class LinkStatStruct {
     }
 
     public double[] getSourceLevels(String timeString, boolean perVehicleLevel) {
+        if (!vehicleCounter.containsKey(timeString)) {
+            return calculateSourceLevels(0, 0);
+        }
         if (!perVehicleLevel) {
             double vehicleCount = getVehicleCount(timeString);
             if (timeSlice == "quarter") {
@@ -676,12 +686,11 @@ public class LinkStatStruct {
                 vehicleCount *= 4;
             }
             vehicleCount /= populationFactor;
-            int[] freqs = [63, 125, 250, 500, 1000, 2000, 4000, 8000];
             double[] result = [-99.0, -99.0, -99.0, -99.0, -99.0, -99.0, -99.0, -99.0];
             for (int i = 0; i < travelTimes.get(timeString).size(); i++) {
                 double speed = Math.round(3.6 * link.getLength() / travelTimes.get(timeString).get(i));
                 double[] levels = calculateSourceLevels(vehicleCount, speed);
-                for (freq in freqs) {
+                for (int freq = 0; freq < result.size(); freq++) {
                     result[freq] = 10 * Math.log10(Math.pow(10, result[freq] / 10) + Math.pow(10, levels[freq] / 10));
                 }
             }
@@ -800,7 +809,7 @@ public class LinkStatStruct {
 
         insert_start = "INSERT INTO " + statsTableName + ''' (LINK_ID,
             LW63, LW125, LW250, LW500, LW1000, LW2000, LW4000, LW8000,
-        IS_ALT_DIFF, TIMESTRING) VALUES (''';
+            TIMESTRING) VALUES (''';
 
         String[] timeStrings;
         if (timeSlice == "den") {
