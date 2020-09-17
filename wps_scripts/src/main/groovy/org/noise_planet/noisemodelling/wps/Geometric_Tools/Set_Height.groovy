@@ -99,8 +99,9 @@ def exec(Connection connection, input) {
 
     //get SRID of the table
     int srid = SFSUtilities.getSRID(connection, TableLocation.parse(table_name))
+    if (srid == 3785 || srid == 4326) throw new IllegalArgumentException("Error : This SRID is not metric. Please use another SRID for your table.")
+    if (srid == 0) throw new IllegalArgumentException("Error : The table does not have an associated SRID.")
 
-    if (srid==4326) throw new Exception("This SRID is not metric. Please use another SRID for your table.")
 
     sql.execute("UPDATE " + table_name + " SET THE_GEOM = ST_SETSRID(ST_UPDATEZ(THE_GEOM," +h+"),"+srid+");")
 

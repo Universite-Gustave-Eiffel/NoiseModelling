@@ -136,9 +136,9 @@ def exec(Connection connection, input) {
     //get SRID of the table
     int sridBuildings = SFSUtilities.getSRID(connection, TableLocation.parse(building_table_name))
     if (sridBuildings == 3785 || sridBuildings == 4326) throw new IllegalArgumentException("Error : Please use a metric projection for Buildings.")
+    if (sridBuildings == 0) throw new IllegalArgumentException("Error : The table buildings does not have an associated SRID.")
 
     if (sridBuildings != sridScreens) throw new IllegalArgumentException("Error : The SRID of table screens and buildings are not the same.")
-    if (sridBuildings == 0) throw new IllegalArgumentException("Error : The table buildings does not have an associated SRID.")
 
     // Check for intersections between walls
     int intersectingWalls = sql.firstRow("select count(*) interswalls from " + screen_table_name + " E1, " + screen_table_name + " E2 where E1.pk < E2.pk AND ST_Distance(E1.the_geom, E2.the_geom) < " + distance_truncate_screens + ";")[0] as Integer
