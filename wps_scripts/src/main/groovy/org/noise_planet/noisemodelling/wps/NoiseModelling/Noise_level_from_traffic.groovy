@@ -37,8 +37,10 @@ import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
 import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
 import org.noise_planet.noisemodelling.emission.RSParametersCnossos
+import org.noise_planet.noisemodelling.emission.jdbc.LDENComputeRaysOut
 import org.noise_planet.noisemodelling.emission.jdbc.LDENConfig
 import org.noise_planet.noisemodelling.emission.jdbc.LDENPointNoiseMapFactory
+import org.noise_planet.noisemodelling.emission.jdbc.LDENPropagationProcessData
 import org.noise_planet.noisemodelling.propagation.ComputeRays
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOut
 import org.noise_planet.noisemodelling.propagation.FastObstructionTest
@@ -207,9 +209,9 @@ def forgeCreateTable(Sql sql, String tableName, LDENConfig ldenConfig, String ge
         sb.append(" (IDRECEIVER bigint NOT NULL");
     }
     sb.append(", THE_GEOM geometry")
-    for (int idfreq = 0; idfreq < PropagationProcessPathData.freq_lvl.size(); idfreq++) {
+    for (int idfreq = 0; idfreq < ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
         sb.append(", HZ");
-        sb.append(PropagationProcessPathData.freq_lvl.get(idfreq));
+        sb.append(ldenConfig.propagationProcessPathData.freq_lvl.get(idfreq));
         sb.append(" numeric(5, 2)");
     }
     sb.append(", LAEQ numeric(5, 2), LEQ numeric(5, 2) ) AS SELECT PK");
@@ -218,9 +220,9 @@ def forgeCreateTable(Sql sql, String tableName, LDENConfig ldenConfig, String ge
     }
     sb.append(", ")
     sb.append(geomField)
-    for (int idfreq = 0; idfreq < PropagationProcessPathData.freq_lvl.size(); idfreq++) {
+    for (int idfreq = 0; idfreq < ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
         sb.append(", HZ");
-        sb.append(PropagationProcessPathData.freq_lvl.get(idfreq));
+        sb.append(ldenConfig.propagationProcessPathData.freq_lvl.get(idfreq));
     }
     sb.append(", LAEQ, LEQ FROM ")
     sb.append(tableReceiver)
@@ -407,7 +409,7 @@ def exec(Connection connection, input) {
 
 
     // Set environmental parameters
-    PropagationProcessPathData environmentalData = new PropagationProcessPathData()
+    PropagationProcessPathData environmentalData = new PropagationProcessPathData(false)
 
     if(input.containsKey('confHumidity')) {
         environmentalData.setHumidity(input['confHumidity'] as Double)
@@ -474,8 +476,17 @@ def exec(Connection connection, input) {
         new TreeSet<>(cells.keySet()).each { cellIndex ->
             // Run ray propagation
             System.println(String.format("Compute... %.3f %% (%d receivers in this cell)", 100 * k++ / cells.size(), cells.get(cellIndex)))
-            pointNoiseMap.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers)
+            IComputeRaysOut ro = pointNoiseMap.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers)
+            if (ro instanceof LDENComputeRaysOut) {
+                LDENPropagationProcessData ldenPropagationProcessData = (LDENPropagationProcessData) ro.inputData;
+                System.out.println(String.format("This computation area contains %d receivers %d sound sources and %d buildings",
+                        ldenPropagationProcessData.receivers.size(), ldenPropagationProcessData.sourceGeometries.size(),
+                        ldenPropagationProcessData.freeFieldFinder.getBuildingCount()));
+            }
         }
+    } catch(IllegalArgumentException | IllegalStateException ex) {
+        System.err.println(ex);
+        throw ex;
     } finally {
         ldenProcessing.stop()
     }

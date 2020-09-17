@@ -252,6 +252,7 @@ public class ComputeRaysOut implements IComputeRaysOut {
     public static class ThreadRaysOut implements IComputeRaysOut {
         protected ComputeRaysOut multiThreadParent;
         protected List<VerticeSL> receiverAttenuationLevels = new ArrayList<>();
+        public List<PropagationPath> propagationPaths = new ArrayList<PropagationPath>();
 
         public ThreadRaysOut(ComputeRaysOut multiThreadParent) {
             this.multiThreadParent = multiThreadParent;
@@ -270,10 +271,10 @@ public class ComputeRaysOut implements IComputeRaysOut {
                                 path.getSegmentList(), path.getSRList());
                         pathPk.idReceiver = multiThreadParent.inputData.receiversPk.get((int)receiverId).intValue();
                         pathPk.idSource = multiThreadParent.inputData.sourcesPk.get((int)sourceId).intValue();
-                        multiThreadParent.propagationPaths.add(pathPk);
+                        propagationPaths.add(pathPk);
                     }
                 } else {
-                    multiThreadParent.propagationPaths.addAll(propagationPath);
+                    propagationPaths.addAll(propagationPath);
                 }
             }
             if (aGlobalMeteo != null) {
@@ -290,6 +291,10 @@ public class ComputeRaysOut implements IComputeRaysOut {
 
         @Override
         public void finalizeReceiver(final long receiverId) {
+            if(multiThreadParent.keepRays && !propagationPaths.isEmpty()) {
+                multiThreadParent.propagationPaths.addAll(propagationPaths);
+                propagationPaths.clear();
+            }
             long receiverPK = receiverId;
             if(multiThreadParent.inputData != null) {
                 if(receiverId < multiThreadParent.inputData.receiversPk.size()) {

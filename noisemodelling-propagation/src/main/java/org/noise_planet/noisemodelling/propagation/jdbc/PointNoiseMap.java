@@ -33,16 +33,11 @@ public class PointNoiseMap extends JdbcNoiseMap {
     private PropagationProcessDataFactory propagationProcessDataFactory;
     private IComputeRaysOutFactory computeRaysOutFactory;
     private Logger logger = LoggerFactory.getLogger(PointNoiseMap.class);
-    private PropagationProcessPathData propagationProcessPathData = new PropagationProcessPathData();
     private int threadCount = 0;
 
     public PointNoiseMap(String buildingsTableName, String sourcesTableName, String receiverTableName) {
         super(buildingsTableName, sourcesTableName);
         this.receiverTableName = receiverTableName;
-    }
-
-    public void setPropagationProcessPathData(PropagationProcessPathData propagationProcessPathData) {
-        this.propagationProcessPathData = propagationProcessPathData;
     }
 
     public void setComputeRaysOutFactory(IComputeRaysOutFactory computeRaysOutFactory) {
@@ -217,6 +212,11 @@ public class PointNoiseMap extends JdbcNoiseMap {
                                         ProgressVisitor progression, Set<Long> skipReceivers) throws SQLException {
         PropagationProcessData threadData = prepareCell(connection, cellI, cellJ, progression, skipReceivers);
 
+        if(verbose) {
+            logger.info(String.format("This computation area contains %d receivers %d sound sources and %d buildings",
+                    threadData.receivers.size(), threadData.sourceGeometries.size(),
+                    threadData.freeFieldFinder.getBuildingCount()));
+        }
         IComputeRaysOut computeRaysOut;
         if(computeRaysOutFactory == null) {
             computeRaysOut = new ComputeRaysOut(false, propagationProcessPathData, threadData);
@@ -243,8 +243,18 @@ public class PointNoiseMap extends JdbcNoiseMap {
         return computeRaysOut;
     }
 
+    @Override
+    public void initialize(Connection connection, ProgressVisitor progression) throws SQLException {
+        super.initialize(connection, progression);
+        if(propagationProcessDataFactory != null) {
+            propagationProcessDataFactory.initialize(connection, this);
+        }
+    }
+
     public interface PropagationProcessDataFactory {
         PropagationProcessData create(FastObstructionTest freeFieldFinder);
+
+        void initialize(Connection connection, PointNoiseMap pointNoiseMap) throws SQLException;
     }
 
     public interface IComputeRaysOutFactory {

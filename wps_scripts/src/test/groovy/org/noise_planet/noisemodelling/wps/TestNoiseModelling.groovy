@@ -24,6 +24,7 @@ import groovy.sql.Sql
 import org.h2gis.functions.io.geojson.GeoJsonRead
 import org.h2gis.functions.io.shp.SHPRead
 import org.h2gis.functions.io.shp.SHPWrite
+import org.h2gis.utilities.JDBCUtilities
 import org.noise_planet.noisemodelling.ext.asc.AscRead
 import org.noise_planet.noisemodelling.ext.asc.AscReaderDriver
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File
@@ -156,4 +157,42 @@ class TestNoiseModelling extends JdbcTestCase {
         assertTrue(res.contains("LDEN_GEOM"))
     }
 
+    void testLdenFromEmission1khz() {
+
+        SHPRead.readShape(connection, TestNoiseModelling.getResource("ROADS2.shp").getPath())
+
+        String res = new Road_Emission_from_Traffic().exec(connection,
+                ["tableRoads": "ROADS2"])
+
+        // select only 1khz band
+        Sql sql = new Sql(connection)
+
+        sql.execute("CREATE TABLE LW_ROADS2(pk serial primary key, the_geom geometry, LWD1000 double) as select pk, the_geom, lwd1000 from LW_ROADS")
+
+        res = new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("buildings.shp").getPath(),
+                 "inputSRID": "2154",
+                 "tableName": "buildings"])
+
+        res = new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("receivers.shp").getPath(),
+                 "inputSRID": "2154",
+                 "tableName": "receivers"])
+
+
+        res = new Noise_level_from_source().exec(connection,
+                ["tableBuilding"   : "BUILDINGS",
+                 "tableSources"   : "LW_ROADS2",
+                 "tableReceivers": "RECEIVERS",
+                "confSkipLevening": true,
+                "confSkipLnight": true,
+                "confSkipLden": true])
+
+        assertTrue(res.contains("LDAY_GEOM"))
+
+        // fetch columns
+        def fields = JDBCUtilities.getFieldNames(connection.getMetaData(), "LDAY_GEOM")
+
+        assertArrayEquals(["IDRECEIVER","THE_GEOM", "HZ1000", "LAEQ", "LEQ"].toArray(), fields.toArray())
+    }
 }

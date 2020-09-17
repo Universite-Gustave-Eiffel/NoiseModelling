@@ -48,14 +48,7 @@ import org.locationtech.jts.triangulate.quadedge.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -322,8 +315,28 @@ public class ComputeRays {
         }
     }
 
+    public static int[] asWallArray(MirrorReceiverResult res) {
+        int depth = 0;
+        MirrorReceiverResult cursor = res;
+        while(cursor != null) {
+            depth++;
+            cursor = cursor.getParentMirror();
+        }
+        int[] walls = new int[depth];
+        cursor = res;
+        int i=0;
+        while(cursor != null) {
+            walls[(depth - 1) - (i++)] = cursor.getBuildingId();
+            cursor = cursor.getParentMirror();
+        }
+        return walls;
+    }
+
     public List<PropagationPath> computeReflexion(Coordinate receiverCoord,
                                             Coordinate srcCoord, boolean favorable, List<FastObstructionTest.Wall> nearBuildingsWalls) {
+//                for(FastObstructionTest.Wall wall : nearBuildingsWalls) {
+//                    System.out.println(String.format(Locale.ROOT, "walls.add(new FastObstructionTest.Wall(new Coordinate(%.2f,%.2f), new Coordinate(%.2f,%.2f) , %d));", wall.p0.x, wall.p0.y, wall.p1.x, wall.p1.y, wall.getBuildingId()));
+//                }
         // Compute receiver mirror
         LineSegment srcReceiver = new LineSegment(srcCoord, receiverCoord);
         LineIntersector linters = new RobustLineIntersector();
@@ -332,10 +345,11 @@ public class ComputeRays {
 
 
         MirrorReceiverIterator.It mirroredReceivers = new MirrorReceiverIterator.It(receiverCoord, nearBuildingsWalls,
-                srcReceiver, data.maxRefDist, data.reflexionOrder, data.maxSrcDist);
+                srcReceiver, Integer.MAX_VALUE, data.reflexionOrder, data.maxSrcDist);
 
         for (MirrorReceiverResult receiverReflection : mirroredReceivers) {
-
+            // Print wall reflections
+            //System.out.println(Arrays.toString(asWallArray(receiverReflection)));
             List<MirrorReceiverResult> rayPath = new ArrayList<>(data.reflexionOrder + 2);
             boolean validReflection = false;
             MirrorReceiverResult receiverReflectionCursor = receiverReflection;
@@ -387,7 +401,6 @@ public class ComputeRays {
                     rayPath.add(reflResult);
                     if (receiverReflectionCursor
                             .getParentMirror() == null) { // Direct to the receiver
-                        validReflection = true;
                         break; // That was the last reflection
                     } else {
                         // There is another reflection
@@ -565,8 +578,8 @@ public class ComputeRays {
 
         segments.add(new SegmentPath(gPath, new Vector3D(projSource, projReceiver),pInit));
 
-        points.add(new PointPath(srcCoord, altS, data.gS, Double.NaN, -1, PointPath.POINT_TYPE.SRCE));
-        points.add(new PointPath(receiverCoord, altR, data.gS, Double.NaN, -1, PointPath.POINT_TYPE.RECV));
+        points.add(new PointPath(srcCoord, altS, data.gS, new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
+        points.add(new PointPath(receiverCoord, altR, data.gS, new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
 
         return new PropagationPath(false, points, segments, segments);
 

@@ -185,9 +185,9 @@ def forgeCreateTable(Sql sql, String tableName, LDENConfig ldenConfig, String ge
         sb.append(" (IDRECEIVER bigint NOT NULL");
     }
     sb.append(", THE_GEOM geometry")
-    for (int idfreq = 0; idfreq < PropagationProcessPathData.freq_lvl.size(); idfreq++) {
+    for (int idfreq = 0; idfreq < ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
         sb.append(", HZ");
-        sb.append(PropagationProcessPathData.freq_lvl.get(idfreq));
+        sb.append(ldenConfig.propagationProcessPathData.freq_lvl.get(idfreq));
         sb.append(" numeric(5, 2)");
     }
     sb.append(", LAEQ numeric(5, 2), LEQ numeric(5, 2) ) AS SELECT PK");
@@ -196,9 +196,9 @@ def forgeCreateTable(Sql sql, String tableName, LDENConfig ldenConfig, String ge
     }
     sb.append(", ")
     sb.append(geomField)
-    for (int idfreq = 0; idfreq < PropagationProcessPathData.freq_lvl.size(); idfreq++) {
+    for (int idfreq = 0; idfreq < ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
         sb.append(", HZ");
-        sb.append(PropagationProcessPathData.freq_lvl.get(idfreq));
+        sb.append(ldenConfig.propagationProcessPathData.freq_lvl.get(idfreq));
     }
     sb.append(", LAEQ, LEQ FROM ")
     sb.append(tableReceiver)
@@ -238,7 +238,7 @@ def run(input) {
 
 // main function of the script
 def exec(Connection connection, input) {
-    Logger logger = LoggerFactory.getLogger("Noise_level_from_source");
+    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_source");
     //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postGIS database
     connection = new ConnectionWrapper(connection)
 
@@ -409,18 +409,19 @@ def exec(Connection connection, input) {
     pointNoiseMap.setWallAbsorption(wall_alpha)
     pointNoiseMap.setThreadCount(n_thread)
 
-    // Do not propagate for low emission or far away sources
-    // Maximum error in dB
-    pointNoiseMap.setMaximumError(0.1d)
-    // Init Map
-    pointNoiseMap.initialize(connection, new EmptyProgressVisitor())
-
     // --------------------------------------------
     // Initialize NoiseModelling emission part
     // --------------------------------------------
 
     pointNoiseMap.setComputeRaysOutFactory(ldenProcessing)
     pointNoiseMap.setPropagationProcessDataFactory(ldenProcessing)
+
+
+    // Do not propagate for low emission or far away sources
+    // Maximum error in dB
+    pointNoiseMap.setMaximumError(0.1d)
+    // Init Map
+    pointNoiseMap.initialize(connection, new EmptyProgressVisitor())
 
     // --------------------------------------------
     // Run Calculations

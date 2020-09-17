@@ -87,6 +87,19 @@ public class PropagationPath {
 
     }
 
+    /**
+     * @return Propagation path as a geometry object
+     */
+    public LineString asGeom() {
+        GeometryFactory geometryFactory = new GeometryFactory();
+        Coordinate[] coordinates = new Coordinate[pointList.size()];
+        int i=0;
+        for(PointPath pointPath : pointList) {
+            coordinates[i++] = new Coordinate(pointPath.coordinate);
+        }
+        return geometryFactory.createLineString(coordinates);
+    }
+
     public int getIdSource() {
         return idSource;
     }

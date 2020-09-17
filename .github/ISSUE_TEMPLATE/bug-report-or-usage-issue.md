@@ -1,11 +1,16 @@
 ---
-name: Bug report
+name: Bug report or usage issue
 about: Create a report to help us improve
 title: ''
 labels: bug
 assignees: ''
 
 ---
+
+If you ignore this issue template, we may not be able to answer your issue.
+
+**NoiseModelling version**
+Version number of NoiseModelling you are using (ex 3.2)
 
 **Describe the bug**
 A clear and concise description of what the bug is.
