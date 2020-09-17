@@ -22,6 +22,7 @@ package org.noise_planet.noisemodelling.wps
 
 import groovy.sql.Sql
 import org.h2gis.functions.io.shp.SHPRead
+import org.h2gis.functions.io.shp.SHPWrite
 import org.h2gis.functions.spatial.crs.ST_SetSRID
 import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.SFSUtilities
@@ -185,6 +186,28 @@ class TestReceivers extends JdbcTestCase {
         assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
     }
 
+    public void testRandomGridFence2() {
+
+        def sql = new Sql(connection)
+
+        SHPRead.readShape(connection, TestReceivers.getResource("buildings.shp").getPath())
+        SHPRead.readShape(connection, TestReceivers.getResource("roads.shp").getPath())
+
+        GeometryFactory f = new GeometryFactory();
+        def g = f.toGeometry(new Envelope(223783, 224196,6757278, 6757481))
+        def gFence = ST_Transform.ST_Transform(connection, ST_SetSRID.setSRID(g, 2154), 4326)
+
+        new Random_Grid().exec(connection,  ["buildingTableName" : "BUILDINGS",
+                                             "sourcesTableName" : "ROADS",
+                                             "nReceivers" : 200,
+                                             "fence" : gFence.toString()])
+
+        assertFalse(0 == sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS")[0] as Integer)
+
+        assertEquals(0, sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS WHERE NOT ST_INTERSECTS(THE_GEOM, '"+g.toString()+"'::geometry)")[0] as Integer)
+
+        assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
+    }
     public void testRegularGridFence() {
 
         def sql = new Sql(connection)
