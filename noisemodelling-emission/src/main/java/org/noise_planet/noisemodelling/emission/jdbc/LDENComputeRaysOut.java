@@ -32,7 +32,7 @@ public class LDENComputeRaysOut extends ComputeRaysOut {
         }
 
         void processAndPushResult(long receiverPK, List<double[]> wjSources, ConcurrentLinkedDeque<VerticeSL> result) {
-            double[] levels = new double[PropagationProcessPathData.freq_lvl.size()];
+            double[] levels = new double[ldenComputeRaysOut.genericMeteoData.freq_lvl.size()];
             for (VerticeSL lvl : receiverAttenuationLevels) {
                 levels = ComputeRays.sumArray(levels,
                         ComputeRays.dbaToW(ComputeRays.sumArray(ComputeRays.wToDba(wjSources.get((int) lvl.sourceId)), lvl.value)));

@@ -188,9 +188,11 @@ def exec(Connection connection, input) {
 
     // Get Class to compute LW
     LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW)
+    ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData(false));
+
+
     //TODO read DEM table for road slope impact on noise emission
     LDENPropagationProcessData ldenData =  new LDENPropagationProcessData(null, ldenConfig)
-
 
     // Get size of the table (number of road segments
     PreparedStatement st = connection.prepareStatement("SELECT COUNT(*) AS total FROM " + sources_table_name)

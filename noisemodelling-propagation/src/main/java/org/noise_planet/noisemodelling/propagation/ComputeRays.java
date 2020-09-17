@@ -578,8 +578,8 @@ public class ComputeRays {
 
         segments.add(new SegmentPath(gPath, new Vector3D(projSource, projReceiver),pInit));
 
-        points.add(new PointPath(srcCoord, altS, data.gS, Double.NaN, -1, PointPath.POINT_TYPE.SRCE));
-        points.add(new PointPath(receiverCoord, altR, data.gS, Double.NaN, -1, PointPath.POINT_TYPE.RECV));
+        points.add(new PointPath(srcCoord, altS, data.gS, new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
+        points.add(new PointPath(receiverCoord, altR, data.gS, new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
 
         return new PropagationPath(false, points, segments, segments);
 
