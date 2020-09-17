@@ -186,7 +186,7 @@ def exec(Connection connection, input) {
                 FROM MAP_WAY_TAG WT, MAP_TAG T WHERE WT.ID_TAG = T.ID_TAG AND T.TAG_KEY IN ('building');
                 
                 -- add ways reffered as building from relation table (using outer ring only)
-                insert into MAP_BUILDINGS SELECT DISTINCT ID_WAY
+                MERGE into MAP_BUILDINGS SELECT DISTINCT ID_WAY
                 FROM MAP_RELATION_TAG WT, MAP_TAG T, MAP_WAY_MEMBER WM WHERE WT.ID_TAG = T.ID_TAG AND T.TAG_KEY IN ('building') AND WM.ID_RELATION = WT.ID_RELATION AND ROLE = 'outer';
                 
                 -- create polygons from the selected ways and re-project coordinates

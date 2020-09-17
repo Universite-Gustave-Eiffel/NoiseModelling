@@ -59,6 +59,7 @@ inputs = [
                 ' provided sources geometries' +
                 '<br>  The table shall contain : </br>' +
                 '- <b> THE_GEOM </b> : any geometry type. </br>', min: 0, max: 1, type: String.class],
+        receiversTableName: [name          : 'Receivers table name', title: 'Receivers table name', description: 'Receivers Table Name', min: 0, max: 1, type: String.class],
         delta           : [name       : 'Receivers minimal distance', title: 'Distance between receivers',
                            description: 'Distance between receivers in the Cartesian plane in meters', type: Double.class],
         height          : [name                               : 'height', title: 'height', description: 'Height of receivers in meters (FLOAT)' +
@@ -102,6 +103,9 @@ def exec(Connection connection, input) {
     def start = new Date()
 
     String receivers_table_name = "RECEIVERS"
+    if (input['receiversTableName']) {
+        receivers_table_name = input['receiversTableName'] as String
+    }
 
     Double delta = 10
     if (input['delta']) {
@@ -167,20 +171,42 @@ def exec(Connection connection, input) {
     if (fenceGeom != null) {
         filter_geom_query = " WHERE the_geom && ST_GeomFromText('" + fenceGeom + "') AND ST_INTERSECTS(the_geom, ST_GeomFromText('" + fenceGeom + "'))";
     }
+
+
     // create line of receivers
-    sql.execute("create table tmp_receivers_lines as select "+buildingPk+" as pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, 2, 'join=bevel')), 0.05) the_geom from "+building_table_name+filter_geom_query)
+    System.out.println("create line of receivers")
+    sql.execute("create table tmp_receivers_lines as select "+buildingPk+" as pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(ST_MakeValid(the_geom), 2, 'join=bevel')), 0.05) the_geom from "+building_table_name+filter_geom_query)
     sql.execute("drop table if exists tmp_relation_screen_building;")
-    sql.execute("create spatial index on tmp_receivers_lines(the_geom)")
+    sql.execute("create spatial index on tmp_receivers_lines(the_geom);")
+
     // list buildings that will remove receivers (if height is superior than receiver height
+    System.out.println('list buildings that will remove receivers (if height is superior than receiver height')
     sql.execute("create table tmp_relation_screen_building as select b."+buildingPk+" as PK_building, s.pk as pk_screen from "+building_table_name+" b, tmp_receivers_lines s where b.the_geom && s.the_geom and s.pk != b.pk and ST_Intersects(b.the_geom, s.the_geom) and b.height > " + h)
     sql.execute("drop table if exists tmp_screen_truncated;")
+
+    // Create spatial index
+    System.out.println("create spatial index and primary keys")
+    sql.execute("create spatial index on " + building_table_name + "(the_geom);")
+    sql.execute("ALTER TABLE TMP_RECEIVERS_LINES ALTER COLUMN pk INT NOT NULL")
+    sql.execute("ALTER TABLE TMP_RECEIVERS_LINES ADD PRIMARY KEY (pk)")
+
     // truncate receiver lines
+    System.out.println('truncate receiver lines')
     sql.execute("create table tmp_screen_truncated as select r.pk_screen, ST_DIFFERENCE(s.the_geom, ST_BUFFER(ST_ACCUM(b.the_geom), 2)) the_geom from tmp_relation_screen_building r, "+building_table_name+" b, tmp_receivers_lines s WHERE PK_building = b."+buildingPk+" AND pk_screen = s.pk  GROUP BY pk_screen, s.the_geom;")
-    sql.execute("DROP TABLE IF EXISTS TMP_SCREENS_MERGE;")
-    sql.execute("DROP TABLE IF EXISTS TMP_SCREENS;")
+
+    sql.execute("create spatial index on tmp_screen_truncated(the_geom);")
+    sql.execute("ALTER TABLE tmp_screen_truncated ALTER COLUMN pk_screen INT NOT NULL")
+    sql.execute("ALTER TABLE tmp_screen_truncated ADD PRIMARY KEY (pk_screen)")
+
     // union of truncated receivers and non tructated, split line to points
+    System.out.println('union of truncated receivers and non tructated, split line to points')
+    sql.execute("DROP TABLE IF EXISTS TMP_SCREENS_MERGE;")
     sql.execute("create table TMP_SCREENS_MERGE (pk serial, the_geom geometry) as select s.pk, s.the_geom the_geom from tmp_receivers_lines s where not st_isempty(s.the_geom) and pk not in (select pk_screen from tmp_screen_truncated) UNION ALL select pk_screen, the_geom from tmp_screen_truncated where not st_isempty(the_geom);")
+    sql.execute("create spatial index on TMP_SCREENS_MERGE(the_geom);")
+
     // Collect all lines and convert into points using custom method
+    System.out.println('Collect all lines and convert into points using custom method')
+    sql.execute("DROP TABLE IF EXISTS TMP_SCREENS;")
     sql.execute("CREATE TABLE TMP_SCREENS(pk integer, the_geom geometry)")
     def qry = 'INSERT INTO TMP_SCREENS(pk , the_geom) VALUES (?,?);'
     GeometryFactory factory = new GeometryFactory(new PrecisionModel(), targetSrid);
@@ -246,6 +272,7 @@ def exec(Connection connection, input) {
 
         sql.execute("CREATE INDEX ON tmp_receivers(build_pk)")
         sql.execute("create table " + receivers_table_name + "(pk serial, the_geom geometry,build_pk integer, pop float) as select null, a.the_geom, a.build_pk, b.pop/COUNT(DISTINCT aa.pk)::float from tmp_receivers a, "+building_table_name+ " b,tmp_receivers aa where b."+buildingPk+" = a.build_pk and a.build_pk = aa.build_pk GROUP BY a.the_geom, a.build_pk, b.pop;")
+
         sql.execute("drop table if exists tmp_receivers")
     }
     // cleaning
@@ -254,6 +281,8 @@ def exec(Connection connection, input) {
     sql.execute("drop table tmp_relation_screen_building")
     sql.execute("drop table tmp_receivers_lines")
     sql.execute("drop table if exists tmp_buildings;")
+    System.println('Creating spatial index...')
+    sql.execute("CREATE SPATIAL INDEX ON " + receivers_table_name + "(THE_GEOM)");
     // Process Done
     resultString = "Process done. Table of receivers " + receivers_table_name + " created !"
 
@@ -266,9 +295,6 @@ def exec(Connection connection, input) {
     return resultString
 
 }
-
-
-
 
 /**
  *
