@@ -14,8 +14,8 @@ class TestTrafficFromEvents extends JdbcTestCase {
     void testDefault() {
         String result = runWps("hour", true, "", false);
 
-        GeoJsonWrite.writeGeoJson(connection, "matsim_roads.geojson", "MATSIM_ROADS");
-        DBFWrite.exportTable(connection, "matsim_roads_stats.dbf", "MATSIM_ROADS_STATS");
+        // GeoJsonWrite.writeGeoJson(connection, "matsim_roads.geojson", "MATSIM_ROADS");
+        // DBFWrite.exportTable(connection, "matsim_roads_stats.dbf", "MATSIM_ROADS_STATS");
 
         assertEquals("Roads stats imported from matsim traffic output", result);
     }

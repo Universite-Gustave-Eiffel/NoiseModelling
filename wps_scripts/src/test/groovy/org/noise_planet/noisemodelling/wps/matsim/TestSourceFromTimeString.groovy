@@ -13,6 +13,7 @@ class TestSourceFromTimeString extends JdbcTestCase {
     void testDefault() {
         GeoJsonRead.readGeoJson(connection, this.class.getResource("tables/matsim_roads.geojson").getFile(), "MATSIM_ROADS");
         DBFRead.read(connection, this.class.getResource("tables/matsim_roads_stats.dbf").getFile(), "MATSIM_ROADS_STATS")
+
         String result = runWps();
         assertEquals("SOURCE_12_13 created.", result);
     }

@@ -21,7 +21,7 @@ class TestReceversArroundBuildings extends JdbcTestCase {
 
         String result = runWps();
 
-        GeoJsonWrite.writeGeoJson(connection, "all_receivers.geojson", "ALL_RECEIVERS");
+        // GeoJsonWrite.writeGeoJson(connection, "all_receivers.geojson", "ALL_RECEIVERS");
 
         assertEquals("Process done. Table of receivers ALL_RECEIVERS created !", result);
     }

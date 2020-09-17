@@ -16,7 +16,7 @@ class Test0dBFromRoads extends JdbcTestCase {
         GeoJsonRead.readGeoJson(connection, this.class.getResource("tables/matsim_roads.geojson").getFile(), "MATSIM_ROADS")
         String result = runWps();
 
-        GeoJsonWrite.writeGeoJson(connection, "sources_0db.geojson", "SOURCES_0DB")
+        // GeoJsonWrite.writeGeoJson(connection, "sources_0db.geojson", "SOURCES_0DB")
 
         assertEquals("Process done. Table SOURCES_0DB created !", result);
     }

@@ -22,7 +22,7 @@ class TestReceiversFromActivities extends JdbcTestCase {
 
         String result = runWps();
 
-        GeoJsonWrite.writeGeoJson(connection, "receivers.geojson", "RECEIVERS");
+        // GeoJsonWrite.writeGeoJson(connection, "receivers.geojson", "RECEIVERS");
 
         assertEquals("Process done. Table of receivers RECEIVERS created !", result);
     }

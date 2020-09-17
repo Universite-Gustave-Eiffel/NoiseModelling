@@ -13,7 +13,7 @@ class TestOsmPbfToBuidings extends JdbcTestCase {
 
     void testDefault() {
         String result = runWps();
-        GeoJsonWrite.writeGeoJson(connection, "buildings.geojson", "BUILDINGS");
+        // GeoJsonWrite.writeGeoJson(connection, "buildings.geojson", "BUILDINGS");
     }
 
     private String runWps() {

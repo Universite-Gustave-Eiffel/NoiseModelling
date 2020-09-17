@@ -13,7 +13,9 @@ class TestImportActivities extends JdbcTestCase {
 
     void testDefault() {
         String result = runWps();
-        GeoJsonWrite.writeGeoJson(connection, "activities.geojson", "ACTIVITIES")
+
+        // GeoJsonWrite.writeGeoJson(connection, "activities.geojson", "ACTIVITIES")
+
         assertEquals("Process done. Table of receivers ACTIVITIES created !", result);
     }
 

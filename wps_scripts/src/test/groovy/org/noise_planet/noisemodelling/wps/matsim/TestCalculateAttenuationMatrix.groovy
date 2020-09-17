@@ -18,7 +18,9 @@ class TestCalculateAttenuationMatrix extends JdbcTestCase {
         GeoJsonRead.readGeoJson(connection, this.class.getResource("tables/sources_0db.geojson").getFile(), "SOURCES_0DB");
 
         String result = runWps();
-        GeoJsonWrite.writeGeoJson(connection, "att_matrix.geojson", "LDAY_GEOM")
+
+        // GeoJsonWrite.writeGeoJson(connection, "att_matrix.geojson", "LDAY_GEOM")
+
         assertEquals("Calculation Done !  LDAY_GEOM table(s) have been created.", result);
     }
 

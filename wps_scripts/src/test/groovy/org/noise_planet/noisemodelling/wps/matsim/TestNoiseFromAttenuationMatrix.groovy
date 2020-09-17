@@ -20,7 +20,6 @@ class TestNoiseFromAttenuationMatrix extends JdbcTestCase {
         DBFRead.read(connection, this.class.getResource("tables/matsim_roads_stats.dbf").getFile(), "MATSIM_ROADS_STATS")
 
         Sql sql = new Sql(connection);
-
         sql.execute("ALTER TABLE MATSIM_ROADS ALTER COLUMN PK INT NOT NULL;");
         sql.execute("ALTER TABLE MATSIM_ROADS ADD PRIMARY KEY (PK)");
         sql.execute("CREATE INDEX ON MATSIM_ROADS(LINK_ID)");
@@ -30,7 +29,7 @@ class TestNoiseFromAttenuationMatrix extends JdbcTestCase {
 
         String result = runWps();
 
-        GeoJsonWrite.writeGeoJson(connection, "noise_map.geojson", "NOISE_MAP");
+        // GeoJsonWrite.writeGeoJson(connection, "noise_map.geojson", "NOISE_MAP");
 
         assertEquals("Process done. Table of receivers NOISE_MAP created !", result);
     }
