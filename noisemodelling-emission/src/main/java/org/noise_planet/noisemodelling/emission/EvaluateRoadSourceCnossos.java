@@ -176,8 +176,6 @@ public class EvaluateRoadSourceCnossos {
         }
     }
 
-
-
     /** get sum dBa **/
     private static Double sumDba(Double dBA1, Double dBA2) {
         return ComputeRays.wToDba(ComputeRays.dbaToW(dBA1) + ComputeRays.dbaToW(dBA2));
@@ -260,7 +258,6 @@ public class EvaluateRoadSourceCnossos {
 
 
         // Propulsion noise acceleration correction
-
         lvMotorLvl = lvMotorLvl + getCp("1", Junc_type,coeffVer) * coefficientJunctionDistance;
         medMotorLvl = medMotorLvl + getCp("2", Junc_type,coeffVer)  * coefficientJunctionDistance;
         hgvMotorLvl = hgvMotorLvl + getCp("3", Junc_type,coeffVer)  * coefficientJunctionDistance;
