@@ -28,6 +28,8 @@ import org.h2gis.utilities.TableLocation
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.io.WKTReader
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import java.sql.*
 import groovy.sql.Sql
@@ -110,18 +112,32 @@ static Connection openGeoserverDataStoreConnection(String dbName) {
 def run(input) {
 
     // Get name of the database
-    String dbName = ""
-    if (input['databaseName']) {
-        dbName = input['databaseName'] as String
-    }
+    // by default an embedded h2gis database is created
+    // Advanced user can replace this database for a postGis or h2Gis server database.
+    String dbName = "h2gisdb"
 
     // Open connection
-    openGeoserverDataStoreConnection(dbName).withCloseable { Connection connection -> exec(connection, input)
+    openGeoserverDataStoreConnection(dbName).withCloseable {
+        Connection connection ->
+            return [result: exec(connection, input)]
     }
 }
 
 
+
 def exec(connection, input) {
+
+    // output string, the information given back to the user
+    String resultString = null
+
+
+    // Create a logger to display messages in the geoserver logs and in the command prompt.
+    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
+
+    // print to command window
+    logger.info('Start : Random grid')
+    logger.info("inputs {}", input) // log inputs of the run
+
 
     String receivers_table_name = "RECEIVERS"
     if (input['receiverstablename']) {
@@ -173,7 +189,7 @@ def exec(connection, input) {
             fence = wktReader.read(input['fence'] as String)
             fenceGeom = ST_Transform.ST_Transform(connection, ST_SetSRID.setSRID(fence, 4326), targetSrid)
         } else {
-            System.err.println("Unable to find buildings or sources SRID, ignore fence parameters")
+            throw new Exception("Unable to find buildings or sources SRID, ignore fence parameters")
         }
     } else if (input['fenceTableName']) {
         fenceGeom = (new GeometryFactory()).toGeometry(SFSUtilities.getTableEnvelope(connection, TableLocation.parse(input['fenceTableName'] as String), "THE_GEOM"))
@@ -184,12 +200,12 @@ def exec(connection, input) {
     sql.execute("CREATE TABLE " + receivers_table_name + "(PK SERIAL, THE_GEOM GEOMETRY) AS SELECT null, ST_SETSRID(ST_UPDATEZ(THE_GEOM, " + h + "), " + srid + ") THE_GEOM FROM ST_MakeGridPoints(ST_GeomFromText('" + fenceGeom + "')," + delta + "," + delta + ");")
 
     if (input['buildingTableName']) {
-        System.out.println("Delete receivers inside buildings")
+        logger.info("Delete receivers inside buildings")
         sql.execute("Create spatial index on " + building_table_name + "(the_geom);")
         sql.execute("delete from " + receivers_table_name + " g where exists (select 1 from " + building_table_name + " b where ST_Z(g.the_geom) < b.HEIGHT and g.the_geom && b.the_geom and ST_INTERSECTS(g.the_geom, b.the_geom) and ST_distance(b.the_geom, g.the_geom) < 1 limit 1);")
     }
     if (input['sourcesTableName']) {
-        System.out.println("Delete receivers near sources")
+        logger.info("Delete receivers near sources")
         sql.execute("Create spatial index on " + sources_table_name + "(the_geom);")
         sql.execute("delete from " + receivers_table_name + " g where exists (select 1 from " + sources_table_name + " r where st_expand(g.the_geom, 1) && r.the_geom and st_distance(g.the_geom, r.the_geom) < 1 limit 1);")
     }

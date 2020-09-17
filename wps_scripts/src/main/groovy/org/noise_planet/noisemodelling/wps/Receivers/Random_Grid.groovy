@@ -20,7 +20,7 @@ package org.noise_planet.noisemodelling.wps.Receivers
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
-import groovy.time.TimeCategory
+import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.functions.spatial.crs.ST_SetSRID
 import org.h2gis.functions.spatial.crs.ST_Transform
@@ -30,10 +30,10 @@ import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.io.WKTReader
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import java.sql.Connection
-
-import groovy.sql.Sql
 
 title = 'Random Grid'
 description = '[H2GIS] Calculates a random grid of receivers. Return a table named RECEIVERS'
@@ -128,9 +128,14 @@ def exec(Connection connection, input) {
     // output string, the information given back to the user
     String resultString = null
 
+
+    // Create a logger to display messages in the geoserver logs and in the command prompt.
+    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
+
     // print to command window
-    System.out.println('Start : Random grid')
-    def start = new Date()
+    logger.info('Start : Random grid')
+    logger.info("inputs {}", input) // log inputs of the run
+
 
     String receivers_table_name = "RECEIVERS"
 
@@ -170,7 +175,7 @@ def exec(Connection connection, input) {
             fence = wktReader.read(input['fence'] as String)
             fenceGeom = ST_Transform.ST_Transform(connection, ST_SetSRID.setSRID(fence, 4326), targetSrid)
         } else {
-            System.err.println("Unable to find buildings or sources SRID, ignore fence parameters")
+            throw new Exception("Unable to find buildings or sources SRID, ignore fence parameters")
         }
     } else if (input['fenceTableName']) {
         fenceGeom = (new GeometryFactory()).toGeometry(SFSUtilities.getTableEnvelope(connection, TableLocation.parse(input['fenceTableName'] as String), "THE_GEOM"))
@@ -194,30 +199,30 @@ def exec(Connection connection, input) {
     sql.execute("create table " + receivers_table_name + " as select ST_SetSRID(ST_MAKEPOINT(RAND()*(" + envelope.maxX + " - " + envelope.minX.toString() + ") + " + envelope.minX.toString() + ", RAND()*(" + envelope.maxY.toString() + " - " + envelope.minY.toString() + ") + " + envelope.minY.toString() + ", " + h + "), " + targetSrid.toInteger() + ") as the_geom from system_range(0," + nReceivers.toString() + ");")
     sql.execute("Create spatial index on " + receivers_table_name + "(the_geom);")
 
-    System.out.println('Delete receivers where buildings...')
+    logger.info('Delete receivers where buildings...')
     if (input['buildingTableName']) {
         //Delete receivers inside buildings .
         sql.execute("Create spatial index on " + building_table_name + "(the_geom);")
         sql.execute("delete from " + receivers_table_name + " g where exists (select 1 from " + building_table_name + " b where g.the_geom && b.the_geom and ST_distance(b.the_geom, g.the_geom) < 1 and b.height >= " + h + " limit 1);")
     }
 
-    System.out.println('Delete receivers where sound sources...')
+    logger.info('Delete receivers where sound sources...')
     if (input['sourcesTableName']) {
         //Delete receivers near sources
         sql.execute("Create spatial index on " + sources_table_name + "(the_geom);")
         sql.execute("delete from " + receivers_table_name + " g where exists (select 1 from " + sources_table_name + " r where st_expand(g.the_geom, 1) && r.the_geom and st_distance(g.the_geom, r.the_geom) < 1 limit 1);")
     }
 
-    System.out.println('Add Primary Key column...')
+    logger.info('Add Primary Key column...')
     sql.execute("ALTER TABLE " + receivers_table_name + " ADD pk INT AUTO_INCREMENT PRIMARY KEY;")
 
     // Process Done
     resultString = "Process done. Table of receivers " + receivers_table_name + " created !"
 
     // print to command window
-    System.out.println('Result : ' + resultString)
-    System.out.println('End : Random receivers ')
-    System.out.println('Duration : ' + TimeCategory.minus(new Date(), start))
+    logger.info('Result : ' + resultString)
+    logger.info('End : Random grid')
+
 
     // print to WPS Builder
     return resultString

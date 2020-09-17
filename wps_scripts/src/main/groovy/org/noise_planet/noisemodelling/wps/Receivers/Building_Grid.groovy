@@ -29,6 +29,8 @@ import org.h2gis.utilities.SFSUtilities
 import org.h2gis.utilities.TableLocation
 import org.locationtech.jts.geom.*
 import org.locationtech.jts.io.WKTReader
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import java.sql.Connection
 
@@ -128,9 +130,13 @@ def exec(Connection connection, input) {
     // output string, the information given back to the user
     String resultString = null
 
+   // Create a logger to display messages in the geoserver logs and in the command prompt.
+    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
+
     // print to command window
-    System.out.println('Start : Receivers grid around buildings')
-    def start = new Date()
+    logger.info('Start : Receivers grid around buildings')
+    logger.info("inputs {}", input) // log inputs of the run
+
 
     String receivers_table_name = "RECEIVERS"
 
@@ -155,8 +161,8 @@ def exec(Connection connection, input) {
     building_table_name = building_table_name.toUpperCase()
 
     Boolean hasPop = JDBCUtilities.hasField(connection, building_table_name, "POP")
-    if (hasPop) System.println("The building table has a column named POP.")
-    if (!hasPop) System.println("The building table has not a column named POP.")
+    if (hasPop) logger.info("The building table has a column named POP.")
+    if (!hasPop) logger.info("The building table has not a column named POP.")
 
     if (!JDBCUtilities.hasField(connection, building_table_name, "HEIGHT")) {
         resultString = "Buildings table must have HEIGHT field"
@@ -181,7 +187,7 @@ def exec(Connection connection, input) {
             fence = wktReader.read(input['fence'] as String)
             fenceGeom = ST_Transform.ST_Transform(connection, ST_SetSRID.setSRID(fence, 4326), targetSrid)
         } else {
-            System.err.println("Unable to find buildings or sources SRID, ignore fence parameters")
+            throw new Exception("Unable to find buildings or sources SRID, ignore fence parameters")
         }
     } else if (input['fenceTableName']) {
         fenceGeom = (new GeometryFactory()).toGeometry(SFSUtilities.getTableEnvelope(connection, TableLocation.parse(input['fenceTableName'] as String), "THE_GEOM"))
@@ -240,14 +246,14 @@ def exec(Connection connection, input) {
     sql.execute("drop table if exists " + receivers_table_name)
 
     if (!hasPop) {
-        System.println('create RECEIVERS table...')
+        logger.info('create RECEIVERS table...')
 
 
         sql.execute("create table " + receivers_table_name + "(pk serial, the_geom geometry,build_pk integer) as select null, ST_SetSRID(the_geom," + targetSrid.toInteger() + ") , pk building_pk from TMP_SCREENS;")
 
         if (input['sourcesTableName']) {
             // Delete receivers near sources
-            System.println('Delete receivers near sources...')
+            logger.info('Delete receivers near sources...')
             sql.execute("Create spatial index on " + sources_table_name + "(the_geom);")
             sql.execute("delete from " + receivers_table_name + " g where exists (select 1 from " + sources_table_name + " r where st_expand(g.the_geom, 1, 1) && r.the_geom and st_distance(g.the_geom, r.the_geom) < 1 limit 1);")
         }
@@ -257,7 +263,7 @@ def exec(Connection connection, input) {
             sql.execute("delete from " + receivers_table_name + " g where not ST_INTERSECTS(g.the_geom , ST_GeomFromText('" + fenceGeom + "'));")
         }
     } else {
-        System.println('create RECEIVERS table...')
+        logger.info('create RECEIVERS table...')
         // building have population attribute
         // set population attribute divided by number of receiver to each receiver
         sql.execute("DROP TABLE IF EXISTS tmp_receivers")
@@ -265,7 +271,7 @@ def exec(Connection connection, input) {
 
         if (input['sourcesTableName']) {
             // Delete receivers near sources
-            System.println('Delete receivers near sources...')
+            logger.info('Delete receivers near sources...')
             sql.execute("Create spatial index on " + sources_table_name + "(the_geom);")
             sql.execute("delete from tmp_receivers g where exists (select 1 from " + sources_table_name + " r where st_expand(g.the_geom, 1) && r.the_geom and st_distance(g.the_geom, r.the_geom) < 1 limit 1);")
         }
@@ -289,9 +295,8 @@ def exec(Connection connection, input) {
     resultString = "Process done. Table of receivers " + receivers_table_name + " created !"
 
     // print to command window
-    System.out.println('Result : ' + resultString)
-    System.out.println('End : Receivers grid around buildings')
-    System.out.println('Duration : ' + TimeCategory.minus(new Date(), start))
+    logger.info('Result : ' + resultString)
+    logger.info('End : Receivers grid around buildings')
 
     // print to WPS Builder
     return resultString

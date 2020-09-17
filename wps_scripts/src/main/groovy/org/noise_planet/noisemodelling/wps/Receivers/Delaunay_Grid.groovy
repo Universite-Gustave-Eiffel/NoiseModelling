@@ -20,26 +20,24 @@ package org.noise_planet.noisemodelling.wps.Receivers
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
-import groovy.time.TimeCategory
+import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.api.EmptyProgressVisitor
+import org.h2gis.api.ProgressVisitor
 import org.h2gis.functions.spatial.crs.ST_SetSRID
 import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.SFSUtilities
 import org.h2gis.utilities.TableLocation
+import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
-
-import groovy.sql.Sql
-
-import org.h2gis.api.EmptyProgressVisitor
-import org.h2gis.api.ProgressVisitor
 import org.locationtech.jts.io.WKTReader
-import org.noise_planet.noisemodelling.propagation.jdbc.TriangleNoiseMap
 import org.noise_planet.noisemodelling.propagation.RootProgressVisitor
+import org.noise_planet.noisemodelling.propagation.jdbc.TriangleNoiseMap
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import java.sql.Connection
 import java.util.concurrent.atomic.AtomicInteger
-import org.h2gis.utilities.wrapper.*
-
 
 title = 'Delaunay Grid'
 description = 'Calculates a delaunay grid of receivers based on a single Geometry geom or a table tableName of Geometries with delta as offset in the Cartesian plane in meters.'
@@ -155,9 +153,12 @@ def exec(Connection connection, input) {
     // output string, the information given back to the user
     String resultString = null
 
+    // Create a logger to display messages in the geoserver logs and in the command prompt.
+    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
+
     // print to command window
-    System.out.println('Start : Delaunay grid')
-    def start = new Date()
+    logger.info('Start : Delaunay grid')
+    logger.info("inputs {}", input) // log inputs of the run
 
 
     String receivers_table_name = "RECEIVERS"
@@ -254,14 +255,14 @@ def exec(Connection connection, input) {
     // Densification of receivers near sound sources
     noiseMap.setSourceDensification(sourceDensification)
 
-    System.out.println("Delaunay initialize")
+    logger.info("Delaunay initialize")
     noiseMap.initialize(connection, new EmptyProgressVisitor())
     AtomicInteger pk = new AtomicInteger(0)
     ProgressVisitor progressVisitorNM = progressLogger.subProcess(noiseMap.getGridDim() * noiseMap.getGridDim())
 
     for (int i = 0; i < noiseMap.getGridDim(); i++) {
         for (int j = 0; j < noiseMap.getGridDim(); j++) {
-            System.out.println("Compute cell " + (i * noiseMap.getGridDim() + j + 1) + " of " + noiseMap.getGridDim() * noiseMap.getGridDim())
+            logger.info("Compute cell " + (i * noiseMap.getGridDim() + j + 1) + " of " + noiseMap.getGridDim() * noiseMap.getGridDim())
             noiseMap.generateReceivers(connection, i, j, receivers_table_name, "TRIANGLES", pk)
             progressVisitorNM.endStep()
         }
@@ -277,9 +278,8 @@ def exec(Connection connection, input) {
     resultString = "Process done. " + receivers_table_name + " (" + nbReceivers + " receivers) and TRIANGLES tables created. "
 
     // print to command window
-    System.out.println('Result : ' + resultString)
-    System.out.println('End : Delaunay grid')
-    System.out.println('Duration : ' + TimeCategory.minus(new Date(), start))
+    logger.info('Result : ' + resultString)
+    logger.info('End : Delaunay grid')
 
     // print to WPS Builder
     return resultString
