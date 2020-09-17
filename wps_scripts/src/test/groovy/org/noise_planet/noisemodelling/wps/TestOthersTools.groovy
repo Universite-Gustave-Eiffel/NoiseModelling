@@ -36,6 +36,9 @@ import org.noise_planet.noisemodelling.wps.Receivers.Delaunay_Grid
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
+import java.sql.SQLException
+import java.sql.Statement
+
 /**
  * Test parsing of zip file using H2GIS database
  */
@@ -153,5 +156,12 @@ class TestOthersTools extends JdbcTestCase {
         assertTrue(fieldValues.contains("7"));
     }
 
+
+    @Test
+    public void testUpdateZ() throws SQLException, IOException {
+        SHPRead.readShape(connection, TestOthersTools.getResource("receivers.shp").getPath())
+        def st = new Sql(connection)
+        st.execute("select ST_FORCE3D('MULTILINESTRING ((223553.4 6757818.7, 223477.7 6758058))'::geometry) the_geom")
+    }
 
 }

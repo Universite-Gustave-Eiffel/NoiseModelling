@@ -446,7 +446,11 @@ public class MeshBuilder {
         }
 
         //add topoPoints to delaunay
+        // If digital elevation models are not provided we ignore buildings ground Z (polygons Z, but we keep building heights)
+        boolean resetBuildingsZGround = true;
         if (!topoPoints.isEmpty() || !topoLines.isEmpty()) {
+            // Do not ignore buildings ground line Z attribute
+            resetBuildingsZGround = false;
             for (Coordinate topoPoint : topoPoints) {
                 delaunayTool.addVertex(topoPoint);
             }
@@ -459,7 +463,13 @@ public class MeshBuilder {
         delaunayTool.setRetrieveNeighbors(false);
         delaunayTool.processDelaunay();
         FastObstructionTest fastObstructionTest = new FastObstructionTest(new ArrayList<>(Collections.EMPTY_LIST), delaunayTool.getTriangles(),null,delaunayTool.getVertices());
-        ComputeRays.AbsoluteCoordinateSequenceFilter absoluteCoordinateSequenceFilter = new ComputeRays.AbsoluteCoordinateSequenceFilter(fastObstructionTest, false);
+        CoordinateSequenceFilter absoluteCoordinateSequenceFilter;
+        if(resetBuildingsZGround) {
+            // set buildings Z coordinates to 0 m
+            absoluteCoordinateSequenceFilter = new LayerPoly2Tri.SetZFilter(true);
+        } else {
+            absoluteCoordinateSequenceFilter = new ComputeRays.AbsoluteCoordinateSequenceFilter(fastObstructionTest, resetBuildingsZGround);
+        }
 
         //add buildings to delaunay triangulation
         int i = 1;
