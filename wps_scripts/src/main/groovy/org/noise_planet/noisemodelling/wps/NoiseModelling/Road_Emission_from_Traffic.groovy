@@ -171,7 +171,7 @@ def exec(Connection connection, input) {
 
     // Get Class to compute LW
     LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW)
-    //TODO read DEM table for road slope impact on noise emission
+    ldenConfig.setCoefficientVersion(1)
     LDENPropagationProcessData ldenData =  new LDENPropagationProcessData(null, ldenConfig)
 
 
