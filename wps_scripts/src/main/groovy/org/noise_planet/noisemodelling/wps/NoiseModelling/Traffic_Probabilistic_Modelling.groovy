@@ -503,6 +503,8 @@ def exec(Connection connection, input) {
  * Read source database and compute the sound emission spectrum of roads sources
  * */
 class WpsPropagationProcessDataProba extends PropagationProcessData {
+    static List<Integer> freq_lvl = Arrays.asList(PropagationProcessPathData.asOctaveBands(PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE));
+
     // Lden values
     public List<double[]> wjSourcesD = new ArrayList<>()
     public List<double[]> wjSourcesE = new ArrayList<>()
@@ -534,10 +536,10 @@ class WpsPropagationProcessDataProba extends PropagationProcessData {
     double[][] computeLw(String Format, SpatialResultSet rs) throws SQLException {
 
         // Compute day average level
-        double[] ld = new double[PropagationProcessPathData.freq_lvl.size()]
-        double[] le = new double[PropagationProcessPathData.freq_lvl.size()]
-        double[] ln = new double[PropagationProcessPathData.freq_lvl.size()]
-        double[] lden = new double[PropagationProcessPathData.freq_lvl.size()]
+        double[] ld = new double[freq_lvl.size()]
+        double[] le = new double[freq_lvl.size()]
+        double[] ln = new double[freq_lvl.size()]
+        double[] lden = new double[freq_lvl.size()]
 
         if (Format == 'Proba') {
             double val = ComputeRays.dbaToW((BigDecimal) 90.0)
@@ -604,7 +606,7 @@ class WpsPropagationProcessDataProba extends PropagationProcessData {
 
             // Day
             int idFreq = 0
-            for (int freq : PropagationProcessPathData.freq_lvl) {
+            for (int freq : freq_lvl) {
                 RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedD, hvSpeedD, hvSpeedD, lvSpeedD,
                         lvSpeedD, Math.max(0, tvD - hvD), 0, hvD, 0, 0, freq, Temperature,
                         pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type)
@@ -613,7 +615,7 @@ class WpsPropagationProcessDataProba extends PropagationProcessData {
 
             // Evening
             idFreq = 0
-            for (int freq : PropagationProcessPathData.freq_lvl) {
+            for (int freq : freq_lvl) {
                 RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedE, hvSpeedE, hvSpeedE, lvSpeedE,
                         lvSpeedE, Math.max(0, tvE - hvE), 0, hvE, 0, 0, freq, Temperature,
                         pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type)
@@ -622,7 +624,7 @@ class WpsPropagationProcessDataProba extends PropagationProcessData {
 
             // Night
             idFreq = 0
-            for (int freq : PropagationProcessPathData.freq_lvl) {
+            for (int freq : freq_lvl) {
                 RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedN, hvSpeedN, hvSpeedN, lvSpeedN,
                         lvSpeedN, Math.max(0, tvN - hvN), 0, hvN, 0, 0, freq, Temperature,
                         pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type)
@@ -730,7 +732,7 @@ class WpsPropagationProcessDataProba extends PropagationProcessData {
                 lvPerHour = tmja * (1 - HV_PERCENTAGE) * (lv_hourly_distribution[h] / 100.0);
                 hgvPerHour = tmja * HV_PERCENTAGE * (hv_hourly_distribution[h] / 100.0);
                 int idFreq = 0;
-                for (int freq : PropagationProcessPathData.freq_lvl) {
+                for (int freq : freq_lvl) {
                     RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(speedLv, speedMv, speedHgv, speedWav,
                             speedWbv, lvPerHour, mvPerHour, hgvPerHour, wavPerHour, wbvPerHour, freq, Temperature,
                             roadSurface, Ts_stud, Pm_stud, Junc_dist, Junc_type);
@@ -748,7 +750,7 @@ class WpsPropagationProcessDataProba extends PropagationProcessData {
                 lvPerHour = tmja * (1 - HV_PERCENTAGE) * (lv_hourly_distribution[h] / 100.0)
                 mvPerHour = tmja * HV_PERCENTAGE * (hv_hourly_distribution[h] / 100.0)
                 int idFreq = 0
-                for (int freq : PropagationProcessPathData.freq_lvl) {
+                for (int freq : freq_lvl) {
                     RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(speedLv, speedMv, speedHgv, speedWav,
                             speedWbv, lvPerHour, mvPerHour, hgvPerHour, wavPerHour, wbvPerHour, freq, Temperature,
                             roadSurface, Ts_stud, Pm_stud, Junc_dist, Junc_type);
@@ -766,7 +768,7 @@ class WpsPropagationProcessDataProba extends PropagationProcessData {
                 lvPerHour = tmja * (1 - HV_PERCENTAGE) * (lv_hourly_distribution[h] / 100.0)
                 mvPerHour = tmja * HV_PERCENTAGE * (hv_hourly_distribution[h] / 100.0)
                 int idFreq = 0
-                for (int freq : PropagationProcessPathData.freq_lvl) {
+                for (int freq : freq_lvl) {
                     RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(speedLv, speedMv, speedHgv, speedWav,
                             speedWbv, lvPerHour, mvPerHour, hgvPerHour, wavPerHour, wbvPerHour, freq, Temperature,
                             roadSurface, Ts_stud, Pm_stud, Junc_dist, Junc_type);
@@ -781,7 +783,7 @@ class WpsPropagationProcessDataProba extends PropagationProcessData {
 
         int idFreq = 0
         // Combine day evening night sound levels
-        for (int freq : PropagationProcessPathData.freq_lvl) {
+        for (int freq : freq_lvl) {
             lden[idFreq++] = (12 * ld[idFreq] + 4 * ComputeRays.dbaToW(ComputeRays.wToDba(le[idFreq]) + 5) + 8 * ComputeRays.dbaToW(ComputeRays.wToDba(ln[idFreq]) + 10)) / 24.0
         }
 
@@ -800,6 +802,11 @@ class WpsPropagationProcessDataProbaFactory implements PointNoiseMap.Propagation
     @Override
     PropagationProcessData create(FastObstructionTest freeFieldFinder) {
         return new WpsPropagationProcessDataProba(freeFieldFinder)
+    }
+
+    @Override
+    void initialize(Connection connection, PointNoiseMap pointNoiseMap) throws SQLException {
+
     }
 }
 

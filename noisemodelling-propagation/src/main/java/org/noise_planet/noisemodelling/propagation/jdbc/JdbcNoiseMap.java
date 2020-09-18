@@ -25,6 +25,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.noise_planet.noisemodelling.propagation.MeshBuilder.getWallAlpha;
+
 /**
  * Common attributes for propagation of sound sources.
  * @author Nicolas Fortin
@@ -32,6 +34,7 @@ import java.util.List;
 public abstract class JdbcNoiseMap {
     // When computing cell size, try to keep propagation distance away from the cell
     // inferior to this ratio (in comparison with cell width)
+    PropagationProcessPathData propagationProcessPathData = new PropagationProcessPathData();
     Logger logger = LoggerFactory.getLogger(JdbcNoiseMap.class);
     private static final int DEFAULT_FETCH_SIZE = 300;
     protected int fetchSize = DEFAULT_FETCH_SIZE;
@@ -68,6 +71,14 @@ public abstract class JdbcNoiseMap {
     public JdbcNoiseMap(String buildingsTableName, String sourcesTableName) {
         this.buildingsTableName = buildingsTableName;
         this.sourcesTableName = sourcesTableName;
+    }
+
+    public PropagationProcessPathData getPropagationProcessPathData() {
+        return propagationProcessPathData;
+    }
+
+    public void setPropagationProcessPathData(PropagationProcessPathData propagationProcessPathData) {
+        this.propagationProcessPathData = propagationProcessPathData;
     }
 
     public boolean isVerbose() {
@@ -219,6 +230,11 @@ public abstract class JdbcNoiseMap {
                 if(!pkBuilding.isEmpty()) {
                     columnIndex = JDBCUtilities.getFieldIndex(rs.getMetaData(), pkBuilding);
                 }
+                double oldAlpha = wallAbsorption;
+                List<Double> alphaList = new ArrayList<>(propagationProcessPathData.freq_lvl.size());
+                for(double freq : propagationProcessPathData.freq_lvl_exact) {
+                    alphaList.add(getWallAlpha(oldAlpha, freq));
+                }
                 while (rs.next()) {
                     //if we don't have height of building
                     Geometry building = rs.getGeometry();
@@ -231,9 +247,16 @@ public abstract class JdbcNoiseMap {
                             logger.error(String.format("Error with input buildings geometry\n%s\n%s",wktWriter.write(building),wktWriter.write(envGeo)), ex);
                         }
                         if(intersectedGeometry instanceof Polygon || intersectedGeometry instanceof MultiPolygon) {
+                            if(fetchAlpha && Double.compare(rs.getDouble(alphaFieldName), oldAlpha) != 0 ) {
+                                // Compute building absorption value
+                                alphaList.clear();
+                                oldAlpha = rs.getDouble(alphaFieldName);
+                                for(double freq : propagationProcessPathData.freq_lvl_exact) {
+                                    alphaList.add(getWallAlpha(oldAlpha, freq));
+                                }
+                            }
                             MeshBuilder.PolygonWithHeight poly = mesh.addGeometry(intersectedGeometry,
-                                    heightField.isEmpty() ? Double.MAX_VALUE : rs.getDouble(heightField),
-                                    fetchAlpha ? rs.getDouble(alphaFieldName) : wallAbsorption);
+                                    heightField.isEmpty() ? Double.MAX_VALUE : rs.getDouble(heightField), alphaList);
                             if(columnIndex != 0) {
                                 poly.setPrimaryKey(rs.getInt(columnIndex));
                             }
@@ -346,7 +369,6 @@ public abstract class JdbcNoiseMap {
             // 1 Step - Evaluation of the main bounding box (sources)
             setMainEnvelope(getComputationEnvelope(connection));
         }
-
     }
 
     /**

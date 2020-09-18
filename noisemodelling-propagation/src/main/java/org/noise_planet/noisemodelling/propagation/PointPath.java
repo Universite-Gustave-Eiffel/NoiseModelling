@@ -66,24 +66,6 @@ public class PointPath {
         this.type = type;
     }
 
-    /**
-     * parameters given by user
-     * @param coordinate
-     * @param altitude
-     * @param gs
-     * @param alpha
-     * @param buildingId
-     * @param type
-     */
-    public PointPath(Coordinate coordinate, double altitude, double gs, double alpha, int buildingId, POINT_TYPE type) {
-        this.coordinate = coordinate;
-        this.altitude = altitude;
-        this.gs = gs;
-        this.alphaWall = Collections.nCopies(PropagationProcessPathData.freq_lvl.size(), alpha);
-        this.buildingId = buildingId;
-        this.type = type;
-    }
-
     public PointPath() {
 
     }
@@ -98,8 +80,9 @@ public class PointPath {
         PropagationPath.writeCoordinate(out, coordinate);
         out.writeDouble(altitude);
         out.writeDouble(gs);
-        for (int j = 0; j< PropagationProcessPathData.freq_lvl.size(); j++){
-            out.writeDouble(alphaWall.get(j));
+        out.writeShort(alphaWall.size());
+        for (Double bandAlpha : alphaWall) {
+            out.writeDouble(bandAlpha);
         }
         out.writeInt(buildingId);
         out.writeInt(type.ordinal());
@@ -116,8 +99,9 @@ public class PointPath {
         coordinate = PropagationPath.readCoordinate(in);
         altitude = in.readDouble();
         gs = in.readDouble();
-        ArrayList<Double> readAlpha = new ArrayList<>(PropagationProcessPathData.freq_lvl.size());
-        for (int j = 0; j< PropagationProcessPathData.freq_lvl.size(); j++){
+        int nbFreq = in.readShort();
+        ArrayList<Double> readAlpha = new ArrayList<>(nbFreq);
+        for (int j = 0; j< nbFreq; j++){
             readAlpha.add(in.readDouble());
         }
         this.alphaWall = readAlpha;

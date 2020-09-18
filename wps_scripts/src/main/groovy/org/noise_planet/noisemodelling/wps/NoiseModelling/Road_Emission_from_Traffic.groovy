@@ -29,6 +29,7 @@ import org.locationtech.jts.geom.Geometry
 import org.noise_planet.noisemodelling.emission.jdbc.LDENConfig
 import org.noise_planet.noisemodelling.emission.jdbc.LDENPropagationProcessData
 import org.noise_planet.noisemodelling.propagation.ComputeRays
+import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -186,8 +187,9 @@ def exec(Connection connection, input) {
     // Get Class to compute LW
     LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW)
     ldenConfig.setCoefficientVersion(2)
-    LDENPropagationProcessData ldenData = new LDENPropagationProcessData(null, ldenConfig)
+    ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData(false));
 
+    LDENPropagationProcessData ldenData = new LDENPropagationProcessData(null, ldenConfig)
 
     // Get size of the table (number of road segments
     PreparedStatement st = connection.prepareStatement("SELECT COUNT(*) AS total FROM " + sources_table_name)

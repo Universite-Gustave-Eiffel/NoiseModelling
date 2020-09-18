@@ -33,11 +33,6 @@
  */
 package org.noise_planet.noisemodelling.propagation;
 
-import org.h2gis.api.ProgressVisitor;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.Geometry;
-
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -57,17 +52,21 @@ public class PropagationProcessPathData {
     static final  double KvibN = 3352.0;// Vibrational temperature of the nitrogen (K)
     static final  double K01 = 273.16;  // Isothermal temperature at the triple point (K)
     static final double a8 = (2 * Math.PI / 35.0) * 10 * Math.log10(Math.pow(Math.exp(1),2));
+    public static final Integer[] DEFAULT_FREQUENCIES_THIRD_OCTAVE = new Integer[] {50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300, 8000, 10000};
+    public static final Double[] DEFAULT_FREQUENCIES_EXACT_THIRD_OCTAVE = new Double[] {50.1187234, 63.0957344, 79.4328235, 100.0, 125.892541, 158.489319, 199.526231, 251.188643, 316.227766, 398.107171, 501.187234, 630.957344, 794.328235, 1000.0, 11258.92541, 1584.89319, 1995.26231, 2511.88643, 3162.27766, 3981.07171, 5011.87234, 6309.57344, 7943.28235, 10000.0};
+    public static final Double[] DEFAULT_FREQUENCIES_A_WEIGHTING_THIRD_OCTAVE = new Double[] {-30.2, -26.2, -22.5, -19.1, -16.1, -13.4, -10.9, -8.6, -6.6, -4.8, -3.2, -1.9, -0.8, 0.0, 0.6, 1.0, 1.2, 1.3, 1.2, 1.0, 0.5, -0.1, -1.1, -2.5};
     /** Frequency bands values, by third octave */
-    public static final List<Integer> freq_lvl = Arrays.asList(63, 125, 250, 500, 1000, 2000, 4000, 8000);
-    public static final List<Double> freq_lvl_exact = Arrays.asList(63.0957, 125.8925, 251.1888, 501.1872, 1000.0, 1995.26231, 3981.07171, 7943.28235);
-    public static final List<Double> freq_lvl_a_weighting = Arrays.asList(-26.2, -16.1, -8.6, -3.2, 0.0, 1.2, 1.0, -1.1);
+    public List<Integer> freq_lvl;
+    public List<Double> freq_lvl_exact;
+    public List<Double> freq_lvl_a_weighting;
+    // Wind rose for each directions
     public static final double[] DEFAULT_WIND_ROSE = new double[]{0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
     /** Temperature in celsius */
     private double temperature = 15;
     private double celerity = 340;
     private double humidity = 70;
     private double pressure = Pref;
-    private double[] alpha_atmo = getAtmoCoeffArray(freq_lvl_exact,  temperature,  pressure,  humidity);
+    private double[] alpha_atmo;
     private double defaultOccurance = 0.5;
 
     private boolean gDisc = true;     // choose between accept G discontinuity or not
@@ -75,6 +74,96 @@ public class PropagationProcessPathData {
     /** probability occurrence favourable condition */
     private double[] windRose  = DEFAULT_WIND_ROSE;
 
+    public PropagationProcessPathData() {
+        this(false);
+    }
+
+
+    public PropagationProcessPathData(boolean thirdOctave) {
+        if(!thirdOctave) {
+            // Default frequencies are in octave bands
+            freq_lvl = Arrays.asList(asOctaveBands(DEFAULT_FREQUENCIES_THIRD_OCTAVE));
+            freq_lvl_exact = Arrays.asList(asOctaveBands(DEFAULT_FREQUENCIES_EXACT_THIRD_OCTAVE));
+            freq_lvl_a_weighting = Arrays.asList(asOctaveBands(DEFAULT_FREQUENCIES_A_WEIGHTING_THIRD_OCTAVE));
+        } else {
+            // third octave bands
+            freq_lvl = Arrays.asList(DEFAULT_FREQUENCIES_THIRD_OCTAVE);
+            freq_lvl_exact = Arrays.asList(DEFAULT_FREQUENCIES_EXACT_THIRD_OCTAVE);
+            freq_lvl_a_weighting = Arrays.asList(DEFAULT_FREQUENCIES_A_WEIGHTING_THIRD_OCTAVE);
+        }
+        init();
+    }
+
+    /**
+     * @param freq_lvl Frequency values for column names
+     * @param freq_lvl_exact Exact frequency values for computations
+     * @param freq_lvl_a_weighting A weighting values
+     */
+    public PropagationProcessPathData(List<Integer> freq_lvl, List<Double> freq_lvl_exact,
+                                      List<Double> freq_lvl_a_weighting) {
+        this.freq_lvl = Collections.unmodifiableList(freq_lvl);
+        this.freq_lvl_exact = Collections.unmodifiableList(freq_lvl_exact);
+        this.freq_lvl_a_weighting = Collections.unmodifiableList(freq_lvl_a_weighting);
+        init();
+    }
+
+    void init() {
+        this.alpha_atmo = getAtmoCoeffArray(freq_lvl_exact,  temperature,  pressure,  humidity);
+    }
+
+    public List<Integer> getFrequencies() {
+        return freq_lvl;
+    }
+
+    public void setFrequencies(List<Integer> freq_lvl) {
+        this.freq_lvl = freq_lvl;
+    }
+
+    public List<Double> getFrequenciesExact() {
+        return freq_lvl_exact;
+    }
+
+    public void setFrequenciesExact(List<Double> freq_lvl_exact) {
+        this.freq_lvl_exact = freq_lvl_exact;
+    }
+
+    public List<Double> getFrequenciesAWeighting() {
+        return freq_lvl_a_weighting;
+    }
+
+    public void setFrequenciesAWeighting(List<Double> freq_lvl_a_weighting) {
+        this.freq_lvl_a_weighting = freq_lvl_a_weighting;
+    }
+
+    /**
+     * Create new array by taking middle third octave bands
+     *
+     * @param thirdOctaveBands Third octave bands array
+     * @return Octave bands array
+     */
+    public static Integer[] asOctaveBands(Integer[] thirdOctaveBands) {
+        Integer[] octaveBands = new Integer[thirdOctaveBands.length / 3];
+        int j = 0;
+        for (int i = 1; i < thirdOctaveBands.length - 1; i += 3) {
+            octaveBands[j++] = thirdOctaveBands[i];
+        }
+        return octaveBands;
+    }
+
+    /**
+     * Create new array by taking middle third octave bands
+     *
+     * @param thirdOctaveBands Third octave bands array
+     * @return Octave bands array
+     */
+    public static Double[] asOctaveBands(Double[] thirdOctaveBands) {
+        Double[] octaveBands = new Double[thirdOctaveBands.length / 3];
+        int j = 0;
+        for (int i = 1; i < thirdOctaveBands.length - 1; i += 3) {
+            octaveBands[j++] = thirdOctaveBands[i];
+        }
+        return octaveBands;
+    }
     /**
      * Set relative humidity in percentage.
      * @param humidity relative humidity in percentage. 0-100

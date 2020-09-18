@@ -161,7 +161,7 @@ public class PostgisTest {
                 assertEquals(nbReceivers, rs.getInt(1));
             }
         } catch (PSQLException ex) {
-            if (ex.getCause() instanceof ConnectException) {
+            if (ex.getCause() == null || ex.getCause() instanceof ConnectException) {
                 // Connection issue ignore
                 LOGGER.warn("Connection error to local PostGIS, ignored", ex);
             } else {
