@@ -73,7 +73,7 @@ inputs = [
                 name       : 'Fence geometry',
                 title      : 'Extent filter',
                 description: 'Create receivers only in the' +
-                        ' provided polygon',
+                        ' provided polygon. Must be in the WGS84 SRID 4326 projection system',
                 min        : 0, max: 1,
                 type       : Geometry.class
         ],
