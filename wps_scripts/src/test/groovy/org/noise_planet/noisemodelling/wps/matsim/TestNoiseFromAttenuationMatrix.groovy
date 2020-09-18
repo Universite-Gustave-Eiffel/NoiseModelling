@@ -30,7 +30,7 @@ class TestNoiseFromAttenuationMatrix extends JdbcTestCase {
 
         String result = runWps();
 
-        GeoJsonWrite.writeGeoJson(connection, "noise_map.geojson", "NOISE_MAP");
+        // GeoJsonWrite.writeGeoJson(connection, "noise_map.geojson", "NOISE_MAP");
 
         assertEquals("Process done. Table of receivers NOISE_MAP created !", result);
     }
