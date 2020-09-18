@@ -106,8 +106,8 @@ class TestAcousticTools extends JdbcTestCase {
 
 
     @Test
-    public void testUpdateZ() throws SQLException, IOException {
-        SHPRead.readShape(connection, TestOthersTools.getResource("receivers.shp").getPath())
+    void testUpdateZ() throws SQLException, IOException {
+        SHPRead.readShape(connection, TestAcousticTools.getResource("receivers.shp").getPath())
         def st = new Sql(connection)
         st.execute("select ST_FORCE3D('MULTILINESTRING ((223553.4 6757818.7, 223477.7 6758058))'::geometry) the_geom")
     }
