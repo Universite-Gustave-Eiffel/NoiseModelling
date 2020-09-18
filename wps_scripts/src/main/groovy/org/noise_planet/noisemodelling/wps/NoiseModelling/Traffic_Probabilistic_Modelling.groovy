@@ -1,25 +1,20 @@
 /**
- * NoiseModelling is a free and open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
+ * NoiseModelling is an open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
  *
- * This version is developed by Université Gustave Eiffel and CNRS
+ * This version is developed by the DECIDE team from the Lab-STICC (CNRS) and by the Mixt Research Unit in Environmental Acoustics (Université Gustave Eiffel).
  * <http://noise-planet.org/noisemodelling.html>
- * as part of:
- * the Eval-PDU project (ANR-08-VILL-0005) 2008-2011, funded by the Agence Nationale de la Recherche (French)
- * the CENSE project (ANR-16-CE22-0012) 2017-2021, funded by the Agence Nationale de la Recherche (French)
- * the Nature4cities (N4C) project, funded by European Union’s Horizon 2020 research and innovation programme under grant agreement No 730468
  *
- * Noisemap is distributed under GPL 3 license.
+ * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE provided with this software.
  *
  * Contact: contact@noise-planet.org
  *
- * Copyright (C) 2011-2012 IRSTV (FR CNRS 2488) and Ifsttar
- * Copyright (C) 2013-2019 Ifsttar and CNRS
- * Copyright (C) 2020 Université Gustave Eiffel and CNRS
- *
- * @Author Pierre Aumond, Univ Gustave Eiffel
  */
 
-package org.noise_planet.noisemodelling.wps.Dynamic_Tools
+/**
+ * @Author Pierre Aumond, Université Gustave Eiffel
+ */
+
+package org.noise_planet.noisemodelling.wps.NoiseModelling
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
@@ -28,7 +23,9 @@ import groovy.time.TimeCategory
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.api.ProgressVisitor
+import org.h2gis.utilities.SFSUtilities
 import org.h2gis.utilities.SpatialResultSet
+import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
 import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
@@ -72,7 +69,7 @@ inputs = [
                 "- <b> LV_SPD_D </b> :  Hourly average light vehicle speed (DOUBLE)<br/>" +
                 "- <b> HV_SPD_D </b> :  Hourly average heavy vehicle speed  (DOUBLE)<br/>" +
                 "- <b> PVMT </b> :  CNOSSOS road pavement identifier (ex: NL05) (VARCHAR)" +
-                "</br> </br> <b> This table can be generated from the WPS Block 'OsmToInputData'. </b>.", type: String.class],
+                "</br> </br> <b> This table can be generated from the WPS Block 'Import_OSM'. </b>.", type: String.class],
         tableReceivers    : [name       : 'Receivers table name', title: 'Receivers table name',
                              description: '<b>Name of the Receivers table.</b></br>  ' +
                                      '</br>  The table shall contain : </br> ' +
@@ -127,8 +124,14 @@ inputs = [
                              min        : 0, max: 1, type: Integer.class],
 ]
 
-outputs = [result: [name: 'Result output string', title: 'Result output string', description: 'This type of result does not allow the blocks to be linked together.', type: String.class]]
-
+outputs = [
+        result: [
+                name       : 'Result output string',
+                title      : 'Result output string',
+                description: 'This type of result does not allow the blocks to be linked together.',
+                type       : String.class
+        ]
+]
 
 // Open Connection to Geoserver
 static Connection openGeoserverDataStoreConnection(String dbName) {
@@ -190,34 +193,67 @@ def exec(Connection connection, input) {
 
     int nIterations = 300
     if (input['nIterations']) {
-        nIterations = Integer.valueOf(input['nIterations'])
+        nIterations = Integer.valueOf(input['nIterations'] as String)
     }
 
     String sources_table_name = input['tableRoads']
     // do it case-insensitive
     sources_table_name = sources_table_name.toUpperCase()
+    // Check if srid are in metric projection.
+    int sridSources = SFSUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
+    if (sridSources == 3785 || sridSources == 4326) throw new IllegalArgumentException("Error : Please use a metric projection for "+sources_table_name+".")
+    if (sridSources == 0) throw new IllegalArgumentException("Error : The table "+sources_table_name+" does not have an associated SRID.")
+
 
     String receivers_table_name = input['tableReceivers']
     // do it case-insensitive
     receivers_table_name = receivers_table_name.toUpperCase()
+    //Get the geometry field of the receiver table
+    TableLocation receiverTableIdentifier = TableLocation.parse(receivers_table_name)
+    List<String> geomFieldsRcv = SFSUtilities.getGeometryFields(connection, receiverTableIdentifier)
+    if (geomFieldsRcv.isEmpty()) {
+        throw new SQLException(String.format("The table %s does not exists or does not contain a geometry field", receiverTableIdentifier))
+    }
+    // Check if srid are in metric projection and are all the same.
+    int sridReceivers = SFSUtilities.getSRID(connection, TableLocation.parse(receivers_table_name))
+    if (sridReceivers == 3785 || sridReceivers == 4326) throw new IllegalArgumentException("Error : Please use a metric projection for "+receivers_table_name+".")
+    if (sridReceivers == 0) throw new IllegalArgumentException("Error : The table "+receivers_table_name+" does not have an associated SRID.")
+    if (sridReceivers != sridSources) throw new IllegalArgumentException("Error : The SRID of table "+sources_table_name+" and "+receivers_table_name+" are not the same.")
+
 
     String building_table_name = input['tableBuilding']
     // do it case-insensitive
     building_table_name = building_table_name.toUpperCase()
+    // Check if srid are in metric projection and are all the same.
+    int sridBuildings = SFSUtilities.getSRID(connection, TableLocation.parse(building_table_name))
+    if (sridBuildings == 3785 || sridReceivers == 4326) throw new IllegalArgumentException("Error : Please use a metric projection for "+building_table_name+".")
+    if (sridBuildings == 0) throw new IllegalArgumentException("Error : The table "+building_table_name+" does not have an associated SRID.")
+    if (sridReceivers != sridBuildings) throw new IllegalArgumentException("Error : The SRID of table "+building_table_name+" and "+receivers_table_name+" are not the same.")
 
     String dem_table_name = ""
     if (input['tableDEM']) {
         dem_table_name = input['tableDEM']
+        // do it case-insensitive
+        dem_table_name = dem_table_name.toUpperCase()
+        // Check if srid are in metric projection and are all the same.
+        int sridDEM = SFSUtilities.getSRID(connection, TableLocation.parse(dem_table_name))
+        if (sridDEM == 3785 || sridReceivers == 4326) throw new IllegalArgumentException("Error : Please use a metric projection for "+dem_table_name+".")
+        if (sridDEM == 0) throw new IllegalArgumentException("Error : The table "+dem_table_name+" does not have an associated SRID.")
+        if (sridDEM != sridSources) throw new IllegalArgumentException("Error : The SRID of table "+sources_table_name+" and "+dem_table_name+" are not the same.")
     }
-    // do it case-insensitive
-    dem_table_name = dem_table_name.toUpperCase()
+
 
     String ground_table_name = ""
     if (input['tableGroundAbs']) {
         ground_table_name = input['tableGroundAbs']
+        // do it case-insensitive
+        ground_table_name = ground_table_name.toUpperCase()
+        // Check if srid are in metric projection and are all the same.
+        int sridGROUND = SFSUtilities.getSRID(connection, TableLocation.parse(ground_table_name))
+        if (sridGROUND == 3785 || sridReceivers == 4326) throw new IllegalArgumentException("Error : Please use a metric projection for "+ground_table_name+".")
+        if (sridGROUND == 0) throw new IllegalArgumentException("Error : The table "+ground_table_name+" does not have an associated SRID.")
+        if (sridGROUND != sridSources) throw new IllegalArgumentException("Error : The SRID of table "+ground_table_name+" and "+sources_table_name+" are not the same.")
     }
-    // do it case-insensitive
-    ground_table_name = ground_table_name.toUpperCase()
 
     int reflexion_order = 0
     if (input['confReflOrder']) {

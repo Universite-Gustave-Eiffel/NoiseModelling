@@ -1,94 +1,115 @@
 /**
- * NoiseModelling is a free and open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
+ * NoiseModelling is an open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
  *
- * This version is developed by Université Gustave Eiffel and CNRS
+ * This version is developed by the DECIDE team from the Lab-STICC (CNRS) and by the Mixt Research Unit in Environmental Acoustics (Université Gustave Eiffel).
  * <http://noise-planet.org/noisemodelling.html>
- * as part of:
- * the Eval-PDU project (ANR-08-VILL-0005) 2008-2011, funded by the Agence Nationale de la Recherche (French)
- * the CENSE project (ANR-16-CE22-0012) 2017-2021, funded by the Agence Nationale de la Recherche (French)
- * the Nature4cities (N4C) project, funded by European Union’s Horizon 2020 research and innovation programme under grant agreement No 730468
  *
- * Noisemap is distributed under GPL 3 license.
+ * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE provided with this software.
  *
  * Contact: contact@noise-planet.org
  *
- * Copyright (C) 2011-2012 IRSTV (FR CNRS 2488) and Ifsttar
- * Copyright (C) 2013-2019 Ifsttar and CNRS
- * Copyright (C) 2020 Université Gustave Eiffel and CNRS
- *
+ */
+
+/**
  * @Author Pierre Aumond, Université Gustave Eiffel
  * @Author Nicolas Fortin, Université Gustave Eiffel
  */
 
-package org.noise_planet.noisemodelling.wps.Others_Tools
+
+package org.noise_planet.noisemodelling.wps.Import_and_Export
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
-import groovy.time.TimeCategory
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.functions.io.osm.OSMRead
 import org.locationtech.jts.geom.Geometry
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import java.sql.Connection
 import java.sql.Statement
 
-title = 'Import tables from OSM'
+title = 'Import BUILDINGS, GROUND and ROADS tables from OSM'
 description = 'Convert OSM/OSM.GZ file (https://www.openstreetmap.org) to input tables. ' +
         ' <br>Be careful, this treatment can be blocking if the table is large. Some bugs have also been detected for some specific areas.' +
+        ' <br>In this case, you can try with import_OSM_BBike. This is a script that gets less information from OSM, but is more robust.' +
         '<br> The user can choose to create one to three output tables : <br>' +
         '-  <b> BUILDINGS  </b> : a table containing the building. </br>' +
         '-  <b> GROUND  </b> : surface/ground acoustic absorption table. </br>' +
         '-  <b> ROADS  </b> : a table containing the roads. </br>'
 
-inputs = [pathFile        : [name       : 'Path of the OSM file',
-                             title      : 'Path of the OSM file',
-                             description: 'Path of the OSM file including extension. </br> For example : c:/home/area.osm.gz',
-                             type       : String.class],
-          convert2Building: [name       : 'Do not import Buildings',
-                             title      : 'Do not import Buildings',
-                             description: 'If the box is checked, the table BUILDINGS will NOT be extracted. ' +
-                                     '<br>  The table will contain : </br>' +
-                                     '- <b> THE_GEOM </b> : the 2D geometry of the building (POLYGON or MULTIPOLYGON). </br>' +
-                                     '- <b> HEIGHT </b> : the height of the building (FLOAT). ' +
-                                     'If the height of the buildings is not available then it is deducted from the number of floors (if available) with the addition of a small random variation from one building to another. ' +
-                                     'Finally, if no information is available, a height of 5 m is set by default.',
-                             min        : 0, max: 1,
-                             type       : Boolean.class],
-          convert2Ground  : [name       : 'Do not import Surface acoustic absorption',
-                             title      : 'Do not import Surface acoustic absorption',
-                             description: 'If the box is checked, the table GROUND will NOT be extracted.' +
-                                     '</br>The table will contain : </br> ' +
-                                     '- <b> THE_GEOM </b> : the 2D geometry of the sources (POLYGON or MULTIPOLYGON).</br> ' +
-                                     '- <b> G </b> : the acoustic absorption of a ground (FLOAT between 0 : very hard and 1 : very soft).</br> ',
-                             min        : 0, max: 1,
-                             type       : Boolean.class],
-          convert2Roads   : [name       : 'Do not import Roads',
-                             title      : 'Do not import Roads',
-                             description: 'If the box is checked, the table ROADS will NOT be extracted. ' +
-                                     "<br>  The table will contain : </br>" +
-                                     "- <b> PK </b> : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY)<br/>" +
-                                     "- <b> TV_D </b> : Hourly average light and heavy vehicle count (6-18h) (DOUBLE)<br/>" +
-                                     "- <b>TV_E </b> :  Hourly average light and heavy vehicle count (18-22h) (DOUBLE)<br/>" +
-                                     "- <b> TV_N </b> :  Hourly average light and heavy vehicle count (22-6h) (DOUBLE)<br/>" +
-                                     "- <b> HV_D </b> :  Hourly average heavy vehicle count (6-18h) (DOUBLE)<br/>" +
-                                     "- <b> HV_E </b> :  Hourly average heavy vehicle count (18-22h) (DOUBLE)<br/>" +
-                                     "- <b> HV_N </b> :  Hourly average heavy vehicle count (22-6h) (DOUBLE)<br/>" +
-                                     "- <b> LV_SPD_D </b> :  Hourly average light vehicle speed (6-18h) (DOUBLE)<br/>" +
-                                     "- <b> LV_SPD_E </b> :  Hourly average light vehicle speed (18-22h) (DOUBLE)<br/>" +
-                                     "- <b> LV_SPD_N </b> :  Hourly average light vehicle speed (22-6h) (DOUBLE)<br/>" +
-                                     "- <b> HV_SPD_D </b> :  Hourly average heavy vehicle speed (6-18h) (DOUBLE)<br/>" +
-                                     "- <b> HV_SPD_E </b> :  Hourly average heavy vehicle speed (18-22h) (DOUBLE)<br/>" +
-                                     "- <b> HV_SPD_N </b> :  Hourly average heavy vehicle speed (22-6h) (DOUBLE)<br/>" +
-                                     "- <b> PVMT </b> :  CNOSSOS road pavement identifier (ex: NL05) (VARCHAR)" +
-                                     "</br> </br> <b> This information is created using the importance of the roads in OSM.</b>.",
-                             min        : 0, max: 1,
-                             type       : Boolean.class],
-          targetSRID      : [name       : 'Target projection identifier', title: 'Target projection identifier',
-                             description: 'Target projection identifier (also called SRID) of your table. It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection). </br>  The target SRID must be in metric coordinates. </br>', type: Integer.class],
+inputs = [
+        pathFile        : [
+                name       : 'Path of the OSM file',
+
+                title      : 'Path of the OSM file',
+                description: 'Path of the OSM file including extension. ' +
+                        '</br> For example : c:/home/area.osm.gz',
+                type       : String.class
+        ],
+        convert2Building: [
+                name       : 'Do not import Buildings',
+                title      : 'Do not import Buildings',
+                description: 'If the box is checked, the table BUILDINGS will NOT be extracted. ' +
+                        '<br>  The table will contain : </br>' +
+                        '- <b> THE_GEOM </b> : the 2D geometry of the building (POLYGON or MULTIPOLYGON). </br>' +
+                        '- <b> HEIGHT </b> : the height of the building (FLOAT). ' +
+                        'If the height of the buildings is not available then it is deducted from the number of floors (if available) with the addition of a small random variation from one building to another. ' +
+                        'Finally, if no information is available, a height of 5 m is set by default.',
+                min        : 0, max: 1,
+                type       : Boolean.class
+        ],
+        convert2Ground  : [
+                name       : 'Do not import Surface acoustic absorption',
+                title      : 'Do not import Surface acoustic absorption',
+                description: 'If the box is checked, the table GROUND will NOT be extracted.' +
+                        '</br>The table will contain : </br> ' +
+                        '- <b> THE_GEOM </b> : the 2D geometry of the sources (POLYGON or MULTIPOLYGON).</br> ' +
+                        '- <b> G </b> : the acoustic absorption of a ground (FLOAT between 0 : very hard and 1 : very soft).</br> ',
+                min        : 0, max: 1,
+                type       : Boolean.class
+        ],
+        convert2Roads   : [
+                name       : 'Do not import Roads',
+                title      : 'Do not import Roads',
+                description: 'If the box is checked, the table ROADS will NOT be extracted. ' +
+                        "<br>  The table will contain : </br>" +
+                        "- <b> PK </b> : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY)<br/>" +
+                        "- <b> TV_D </b> : Hourly average light and heavy vehicle count (6-18h) (DOUBLE)<br/>" +
+                        "- <b>TV_E </b> :  Hourly average light and heavy vehicle count (18-22h) (DOUBLE)<br/>" +
+                        "- <b> TV_N </b> :  Hourly average light and heavy vehicle count (22-6h) (DOUBLE)<br/>" +
+                        "- <b> HV_D </b> :  Hourly average heavy vehicle count (6-18h) (DOUBLE)<br/>" +
+                        "- <b> HV_E </b> :  Hourly average heavy vehicle count (18-22h) (DOUBLE)<br/>" +
+                        "- <b> HV_N </b> :  Hourly average heavy vehicle count (22-6h) (DOUBLE)<br/>" +
+                        "- <b> LV_SPD_D </b> :  Hourly average light vehicle speed (6-18h) (DOUBLE)<br/>" +
+                        "- <b> LV_SPD_E </b> :  Hourly average light vehicle speed (18-22h) (DOUBLE)<br/>" +
+                        "- <b> LV_SPD_N </b> :  Hourly average light vehicle speed (22-6h) (DOUBLE)<br/>" +
+                        "- <b> HV_SPD_D </b> :  Hourly average heavy vehicle speed (6-18h) (DOUBLE)<br/>" +
+                        "- <b> HV_SPD_E </b> :  Hourly average heavy vehicle speed (18-22h) (DOUBLE)<br/>" +
+                        "- <b> HV_SPD_N </b> :  Hourly average heavy vehicle speed (22-6h) (DOUBLE)<br/>" +
+                        "- <b> PVMT </b> :  CNOSSOS road pavement identifier (ex: NL05) (VARCHAR)" +
+                        "</br> </br> <b> This information is created using the importance of the roads in OSM.</b>.",
+                min        : 0, max: 1,
+                type       : Boolean.class
+        ],
+        targetSRID      : [
+                name       : 'Target projection identifier',
+                title      : 'Target projection identifier',
+                description: 'Target projection identifier (also called SRID) of your table. It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection). ' +
+                        '</br>  The target SRID must be in metric coordinates. </br>',
+                type       : Integer.class
+        ],
 ]
 
-outputs = [result: [name: 'Result output string', title: 'Result output string', description: 'This type of result does not allow the blocks to be linked together.', type: String.class]]
+outputs = [
+        result: [
+                name       : 'Result output string',
+                title      : 'Result output string',
+                description: 'This type of result does not allow the blocks to be linked together.',
+                type       : String.class
+        ]
+]
 
 // Open Connection to Geoserver
 static Connection openGeoserverDataStoreConnection(String dbName) {
@@ -121,10 +142,12 @@ def exec(Connection connection, input) {
     // output string, the information given back to the user
     String resultString = ""
 
-    // print to command window
-    System.out.println('Start : Get Input Data from OSM')
-    def start = new Date()
+    // Create a logger to display messages in the geoserver logs and in the command prompt.
+    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
 
+    // print to command window
+    logger.info('Start : Get Input Data from OSM')
+    logger.info("inputs {}", input) // log inputs of the run
     // -------------------
     // Get every inputs
     // -------------------
@@ -186,13 +209,13 @@ def exec(Connection connection, input) {
                 FROM MAP_WAY_TAG WT, MAP_TAG T WHERE WT.ID_TAG = T.ID_TAG AND T.TAG_KEY IN ('building');
                 
                 -- add ways reffered as building from relation table (using outer ring only)
-                insert into MAP_BUILDINGS SELECT DISTINCT ID_WAY
+                MERGE into MAP_BUILDINGS SELECT DISTINCT ID_WAY
                 FROM MAP_RELATION_TAG WT, MAP_TAG T, MAP_WAY_MEMBER WM WHERE WT.ID_TAG = T.ID_TAG AND T.TAG_KEY IN ('building') AND WM.ID_RELATION = WT.ID_RELATION AND ROLE = 'outer';
                 
                 -- create polygons from the selected ways and re-project coordinates
                 DROP TABLE IF EXISTS MAP_BUILDINGS_GEOM;
                 CREATE TABLE MAP_BUILDINGS_GEOM(ID_WAY INTEGER PRIMARY KEY, THE_GEOM GEOMETRY) AS SELECT ID_WAY,
-                ST_TRANSFORM(ST_SETSRID(ST_MAKEPOLYGON(ST_MAKELINE(THE_GEOM)), 4326), '''+srid+''') THE_GEOM FROM (SELECT (SELECT
+                ST_TRANSFORM(ST_SETSRID(ST_MAKEPOLYGON(ST_MAKELINE(THE_GEOM)), 4326), ''' + srid + ''') THE_GEOM FROM (SELECT (SELECT
                 ST_ACCUM(THE_GEOM) THE_GEOM FROM (SELECT N.ID_NODE, N.THE_GEOM,WN.ID_WAY IDWAY FROM
                 MAP_NODE N,MAP_WAY_NODE WN WHERE N.ID_NODE = WN.ID_NODE ORDER BY
                 WN.NODE_ORDER) WHERE  IDWAY = W.ID_WAY) THE_GEOM ,W.ID_WAY
@@ -211,7 +234,7 @@ def exec(Connection connection, input) {
                 
                 -- merge original buildings with altered buildings 
                 DROP TABLE IF EXISTS BUILDINGS;
-                create table BUILDINGS(PK INTEGER PRIMARY KEY, THE_GEOM GEOMETRY)  as select s.id_way, ST_SETSRID(s.the_geom, '''+srid+''') from  MAP_BUILDINGS_GEOM s where id_way not in (select PK_BUILDING from tmp_buildings_truncated) UNION ALL select PK_BUILDING, ST_SETSRID(the_geom, '''+srid+''') from tmp_buildings_truncated WHERE NOT st_isempty(the_geom);
+                create table BUILDINGS(PK INTEGER PRIMARY KEY, THE_GEOM GEOMETRY)  as select s.id_way, ST_SETSRID(s.the_geom, ''' + srid + ''') from  MAP_BUILDINGS_GEOM s where id_way not in (select PK_BUILDING from tmp_buildings_truncated) UNION ALL select PK_BUILDING, ST_SETSRID(the_geom, ''' + srid + ''') from tmp_buildings_truncated WHERE NOT st_isempty(the_geom);
 
                 drop table if exists tmp_buildings_truncated;
                 alter table BUILDINGS add column height double;
@@ -224,7 +247,9 @@ def exec(Connection connection, input) {
                 
                 drop table if exists MAP_BUILDINGS_GEOM;'''
         sql.execute(Buildings_Import)
-        System.println('The table BUILDINGS has been created.')
+
+        sql.execute('CREATE SPATIAL INDEX IF NOT EXISTS BUILDINGS_INDEX ON BUILDINGS(the_geom);')
+        logger.info('The table BUILDINGS has been created.')
         resultString = resultString + ' <br> The table BUILDINGS has been created.'
     }
 
@@ -251,7 +276,10 @@ def exec(Connection connection, input) {
         sql.execute(Ground_Import)
         sql.execute("DROP TABLE IF EXISTS MAP_SURFACE;")
 
-        System.println('The table GROUND has been created.')
+
+        sql.execute('CREATE SPATIAL INDEX IF NOT EXISTS GROUND_INDEX ON GROUND(the_geom);')
+
+        logger.info('The table GROUND has been created.')
         resultString = resultString + ' <br> The table GROUND has been created.'
     }
 
@@ -344,7 +372,9 @@ def exec(Connection connection, input) {
         sql.execute("DROP TABLE MAP_ROADS_GEOM IF EXISTS;")
         sql.execute("DROP TABLE ROADS_AADF IF EXISTS;")
 
-        System.println('The table ROADS has been created.')
+        sql.execute('CREATE SPATIAL INDEX IF NOT EXISTS ROADS_INDEX ON ROADS(the_geom);')
+
+        logger.info('The table ROADS has been created.')
         resultString = resultString + ' <br> The table ROADS has been created.'
     }
 
@@ -355,13 +385,11 @@ def exec(Connection connection, input) {
     }
 
 
-
     resultString = resultString + "<br> Calculation Done !"
 
     // print to command window
-    System.out.println('Result : ' + resultString)
-    System.out.println('End : Osm To Input Data')
-    System.out.println('Duration : ' + TimeCategory.minus(new Date(), start))
+    logger.info(resultString)
+    logger.info('End : Osm To Input Data')
 
     // print to WPS Builder
     return resultString
@@ -370,6 +398,8 @@ def exec(Connection connection, input) {
 }
 
 
+
+// If user want to use AADF
 /* String roadsImport = "DROP TABLE IF EXISTS ROADS;\n" +
         "CREATE TABLE ROADS(PK SERIAL,ID_WAY long , THE_GEOM LINESTRING CHECK ST_SRID(THE_GEOM)="+srid+", CLAS_ADM int, AADF int, SPEED int) as SELECT null, ID_WAY, THE_GEOM,\n" +
         "CASEWHEN(T = 'trunk', 21,\n" +

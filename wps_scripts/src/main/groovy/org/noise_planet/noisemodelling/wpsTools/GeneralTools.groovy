@@ -1,24 +1,30 @@
+/**
+ * NoiseModelling is an open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
+ *
+ * This version is developed by the DECIDE team from the Lab-STICC (CNRS) and by the Mixt Research Unit in Environmental Acoustics (Université Gustave Eiffel).
+ * <http://noise-planet.org/noisemodelling.html>
+ *
+ * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE provided with this software.
+ *
+ * Contact: contact@noise-planet.org
+ *
+ */
+
+/**
+ * @Author Pierre Aumond, Université Gustave Eiffel
+ * @Author Nicolas Fortin, Université Gustave Eiffel
+ */
+
+
 package org.noise_planet.noisemodelling.wpsTools
 
-import groovy.sql.Sql
+
 import org.cts.crs.CRSException
-import org.h2gis.utilities.SpatialResultSet
-import org.locationtech.jts.geom.Geometry
-import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
-import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceDynamic
-import org.noise_planet.noisemodelling.emission.RSParametersCnossos
-import org.noise_planet.noisemodelling.emission.RSParametersDynamic
-import org.noise_planet.noisemodelling.propagation.ComputeRays
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOut
 import org.noise_planet.noisemodelling.propagation.FastObstructionTest
 import org.noise_planet.noisemodelling.propagation.KMLDocument
-import org.noise_planet.noisemodelling.propagation.PropagationProcessData
-import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
-import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap
 
 import javax.xml.stream.XMLStreamException
-import java.sql.SQLException
-
 
 class GeneralTools {
 

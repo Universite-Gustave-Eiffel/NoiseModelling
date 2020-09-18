@@ -1,95 +1,126 @@
 /**
- * NoiseModelling is a free and open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
+ * NoiseModelling is an open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
  *
- * This version is developed by Université Gustave Eiffel and CNRS
+ * This version is developed by the DECIDE team from the Lab-STICC (CNRS) and by the Mixt Research Unit in Environmental Acoustics (Université Gustave Eiffel).
  * <http://noise-planet.org/noisemodelling.html>
- * as part of:
- * the Eval-PDU project (ANR-08-VILL-0005) 2008-2011, funded by the Agence Nationale de la Recherche (French)
- * the CENSE project (ANR-16-CE22-0012) 2017-2021, funded by the Agence Nationale de la Recherche (French)
- * the Nature4cities (N4C) project, funded by European Union’s Horizon 2020 research and innovation programme under grant agreement No 730468
  *
- * Noisemap is distributed under GPL 3 license.
+ * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE provided with this software.
  *
  * Contact: contact@noise-planet.org
  *
- * Copyright (C) 2011-2012 IRSTV (FR CNRS 2488) and Ifsttar
- * Copyright (C) 2013-2019 Ifsttar and CNRS
- * Copyright (C) 2020 Université Gustave Eiffel and CNRS
- *
+ */
+
+/**
  * @Author Pierre Aumond, Université Gustave Eiffel
  * @Author Nicolas Fortin, Université Gustave Eiffel
  */
+
 
 package org.noise_planet.noisemodelling.wps.Receivers
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
-import groovy.time.TimeCategory
+import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.api.EmptyProgressVisitor
+import org.h2gis.api.ProgressVisitor
 import org.h2gis.functions.spatial.crs.ST_SetSRID
 import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.SFSUtilities
 import org.h2gis.utilities.TableLocation
+import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
-
-import groovy.sql.Sql
-
-import org.h2gis.api.EmptyProgressVisitor
-import org.h2gis.api.ProgressVisitor
 import org.locationtech.jts.io.WKTReader
-import org.noise_planet.noisemodelling.propagation.jdbc.TriangleNoiseMap
 import org.noise_planet.noisemodelling.propagation.RootProgressVisitor
+import org.noise_planet.noisemodelling.propagation.jdbc.TriangleNoiseMap
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import java.sql.Connection
 import java.util.concurrent.atomic.AtomicInteger
-import org.h2gis.utilities.wrapper.*
-
 
 title = 'Delaunay Grid'
 description = 'Calculates a delaunay grid of receivers based on a single Geometry geom or a table tableName of Geometries with delta as offset in the Cartesian plane in meters.'
 
-inputs = [tableBuilding : [name: 'Buildings table name', title: 'Buildings table name',
-                           description: '<b>Name of the Buildings table.</b>  </br>  ' +
-                                   '<br>  The table shall contain : </br>' +
-                                   '- <b> THE_GEOM </b> : the 2D geometry of the building (POLYGON or MULTIPOLYGON). </br>',
-                           type: String.class],
-          fence           : [name         : 'Fence geometry', title: 'Extent filter', description: 'Create receivers only in the' +
-                  ' provided polygon', min: 0, max: 1, type: Geometry.class],
-          sourcesTableName  : [name: 'Sources table name',
-                               title: 'Sources table name',
-                               description: 'Road table, receivers will not be created on the specified road width',
-                               type: String.class],
-          maxPropDist  : [name: 'Maximum Propagation Distance',
-                          title: 'Maximum Propagation Distance',
-                          description: 'Set Maximum propagation distance in meters. Avoid loading to much geometries when doing Delaunay triangulation. (FLOAT)' +
-                                  '</br> </br> <b> Default value : 500 </b>',
-                          min: 0, max: 1, type: Double.class],
-          roadWidth  : [name: 'Road Width', title: 'Source Width',
-                        description: 'Set Road Width in meters. No receivers closer than road width distance.(FLOAT) ' +
-                                '</br> </br> <b> Default value : 2 </b>',
-                        min: 0, max: 1, type: Double.class],
-          maxArea  : [name: 'Maximum Area',
-                      title: 'Maximum Area',
-                      description: 'Set Maximum Area in m2. No triangles larger than provided area. Smaller area will create more receivers. (FLOAT)' +
-                              '</br> </br> <b> Default value : 2500 </b> ',
-                      min: 0, max: 1, type: Double.class],
-          sourceDensification  : [name: 'Source densification',
-                                  title: 'Source densification',
-                                  description: 'Set additional receivers near sound sources (roads). This is the maximum distance between the points that compose the polygon near the source in meter. (FLOAT)' +
-                                          '</br> </br> <b> Default value : 8 </b> ',
-                                  min: 0, max: 1, type: Double.class],
-          height    : [name: 'Height',
-                       title: 'Height',
-                       description: ' Receiver height relative to the ground in meters (FLOAT).' +
-                               '</br> </br> <b> Default value : 4 </b>',
-                       min: 0, max: 1, type: Double.class],
-          outputTableName: [name: 'outputTableName',
-                            description: 'Do not write the name of a table that contains a space. ' +
-                                    '</br> </br> <b> Default value : RECEIVERS </b>',
-                            title: 'Name of output table',
-                            min: 0, max: 1, type: String.class]]
+inputs = [
+        tableBuilding      : [
+                name       : 'Buildings table name',
+                title      : 'Buildings table name',
+                description: '<b>Name of the Buildings table.</b>  </br>  ' +
+                        '<br>  The table shall contain : </br>' +
+                        '- <b> THE_GEOM </b> : the 2D geometry of the building (POLYGON or MULTIPOLYGON). </br>',
+                type       : String.class
+        ],
+        fence              : [
+                name       : 'Fence geometry', title: 'Extent filter',
+                description: 'Create receivers only in the provided polygon',
+                min        : 0, max: 1,
+                type       : Geometry.class
+        ],
+        sourcesTableName   : [
+                name       : 'Sources table name',
+                title      : 'Sources table name',
+                description: 'Road table, receivers will not be created on the specified road width',
+                type       : String.class
+        ],
+        maxPropDist        : [
+                name       : 'Maximum Propagation Distance',
+                title      : 'Maximum Propagation Distance',
+                description: 'Set Maximum propagation distance in meters. Avoid loading to much geometries when doing Delaunay triangulation. (FLOAT)' +
+                        '</br> </br> <b> Default value : 500 </b>',
+                min        : 0, max: 1,
+                type       : Double.class
+        ],
+        roadWidth          : [
+                name       : 'Source Width',
+                title      : 'Source Width',
+                description: 'Set Road Width in meters. No receivers closer than road width distance.(FLOAT) ' +
+                        '</br> </br> <b> Default value : 2 </b>',
+                min        : 0, max: 1,
+                type       : Double.class
+        ],
+        maxArea            : [
+                name       : 'Maximum Area',
+                title      : 'Maximum Area',
+                description: 'Set Maximum Area in m2. No triangles larger than provided area. Smaller area will create more receivers. (FLOAT)' +
+                        '</br> </br> <b> Default value : 2500 </b> ',
+                min        : 0, max: 1,
+                type       : Double.class
+        ],
+        sourceDensification: [
+                name       : 'Source densification',
+                title      : 'Source densification',
+                description: 'Set additional receivers near sound sources (roads). This is the maximum distance between the points that compose the polygon near the source in meter. (FLOAT)' +
+                        '</br> </br> <b> Default value : 8 </b> ',
+                min        : 0, max: 1,
+                type       : Double.class
+        ],
+        height             : [
+                name       : 'Height',
+                title      : 'Height',
+                description: ' Receiver height relative to the ground in meters (FLOAT).' +
+                        '</br> </br> <b> Default value : 4 </b>',
+                min        : 0, max: 1,
+                type       : Double.class
+        ],
+        outputTableName    : [
+                name       : 'outputTableName',
+                description: 'Do not write the name of a table that contains a space. ' +
+                        '</br> </br> <b> Default value : RECEIVERS </b>',
+                title      : 'Name of output table',
+                min        : 0, max: 1,
+                type       : String.class
+        ]
+]
 
-outputs = [result: [name: 'Result output string', title: 'Result output string', description: 'This type of result does not allow the blocks to be linked together.', type: String.class]]
+outputs = [
+        result: [
+                name       : 'Result output string',
+                title      : 'Result output string',
+                description: 'This type of result does not allow the blocks to be linked together.',
+                type       : String.class
+        ]
+]
 
 
 static Connection openGeoserverDataStoreConnection(String dbName) {
@@ -117,15 +148,17 @@ def run(input) {
 }
 
 
-
 def exec(Connection connection, input) {
 
     // output string, the information given back to the user
     String resultString = null
 
+    // Create a logger to display messages in the geoserver logs and in the command prompt.
+    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
+
     // print to command window
-    System.out.println('Start : Delaunay grid')
-    def start = new Date()
+    logger.info('Start : Delaunay grid')
+    logger.info("inputs {}", input) // log inputs of the run
 
 
     String receivers_table_name = "RECEIVERS"
@@ -198,10 +231,10 @@ def exec(Connection connection, input) {
     if (fence != null) {
         // Reproject fence
         int targetSrid = SFSUtilities.getSRID(connection, TableLocation.parse(building_table_name))
-        if(targetSrid == 0) {
+        if (targetSrid == 0) {
             targetSrid = SFSUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
         }
-        if(targetSrid != 0) {
+        if (targetSrid != 0) {
             // Transform fence to the same coordinate system than the buildings & sources
             fence = ST_Transform.ST_Transform(connection, ST_SetSRID.setSRID(fence, 4326), targetSrid)
             noiseMap.setMainEnvelope(fence.getEnvelopeInternal())
@@ -222,32 +255,31 @@ def exec(Connection connection, input) {
     // Densification of receivers near sound sources
     noiseMap.setSourceDensification(sourceDensification)
 
-    System.out.println("Delaunay initialize")
+    logger.info("Delaunay initialize")
     noiseMap.initialize(connection, new EmptyProgressVisitor())
     AtomicInteger pk = new AtomicInteger(0)
     ProgressVisitor progressVisitorNM = progressLogger.subProcess(noiseMap.getGridDim() * noiseMap.getGridDim())
 
     for (int i = 0; i < noiseMap.getGridDim(); i++) {
         for (int j = 0; j < noiseMap.getGridDim(); j++) {
-            System.out.println("Compute cell "+(i * noiseMap.getGridDim() + j + 1)+" of "+noiseMap.getGridDim() * noiseMap.getGridDim())
+            logger.info("Compute cell " + (i * noiseMap.getGridDim() + j + 1) + " of " + noiseMap.getGridDim() * noiseMap.getGridDim())
             noiseMap.generateReceivers(connection, i, j, receivers_table_name, "TRIANGLES", pk)
             progressVisitorNM.endStep()
         }
     }
 
-    sql.execute("UPDATE "+receivers_table_name+" SET THE_GEOM = ST_SETSRID(THE_GEOM, "+srid+")")
+    sql.execute("UPDATE " + receivers_table_name + " SET THE_GEOM = ST_SETSRID(THE_GEOM, " + srid + ")")
 
-    sql.execute("Create spatial index on "+receivers_table_name+"(the_geom);")
+    sql.execute("Create spatial index on " + receivers_table_name + "(the_geom);")
 
     int nbReceivers = sql.firstRow("SELECT COUNT(*) FROM " + receivers_table_name)[0] as Integer
 
     // Process Done
-    resultString = "Process done. " + receivers_table_name + " ("+nbReceivers+" receivers) and TRIANGLES tables created. "
+    resultString = "Process done. " + receivers_table_name + " (" + nbReceivers + " receivers) and TRIANGLES tables created. "
 
     // print to command window
-    System.out.println('Result : ' + resultString)
-    System.out.println('End : Delaunay grid')
-    System.out.println('Duration : ' + TimeCategory.minus(new Date(), start))
+    logger.info('Result : ' + resultString)
+    logger.info('End : Delaunay grid')
 
     // print to WPS Builder
     return resultString
