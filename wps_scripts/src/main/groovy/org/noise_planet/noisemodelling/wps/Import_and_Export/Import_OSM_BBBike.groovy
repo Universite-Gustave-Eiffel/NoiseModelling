@@ -284,9 +284,10 @@ def exec(Connection connection, input) {
         sql.execute("drop table if exists tmp_buildings_truncated;")
 
         sql.execute("DROP TABLE IF EXISTS BUILDINGS;")
-        sql.execute("create table BUILDINGS as select *FROM BUILDINGS2;")
+        sql.execute("create table BUILDINGS as select * FROM BUILDINGS2;")
         sql.execute("alter table BUILDINGS add column height double;  ")
         sql.execute("update BUILDINGS set height = round(4 + RAND() * 2,1) where height is null;")
+        sql.execute("update BUILDINGS set THE_GEOM = ST_SetSRID(the_geom," + input_srid.toInteger() + ");")
         sql.execute('CREATE SPATIAL INDEX IF NOT EXISTS BUILDINGS_INDEX ON BUILDINGS(the_geom);')
 
         sql.execute("DROP TABLE IF EXISTS BUILDINGS2;")

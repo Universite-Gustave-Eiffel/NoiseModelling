@@ -136,22 +136,24 @@ def exec(Connection connection, input) {
     // Get every inputs
     // -------------------
 
-    String sources_table_name = input['tableRoads'] as String
+    String sources_table_name = input['tableRoads']
     // do it case-insensitive
     sources_table_name = sources_table_name.toUpperCase()
+    // Check if srid are in metric projection.
+    int sridSources = SFSUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
+    if (sridSources == 3785 || sridSources == 4326) throw new IllegalArgumentException("Error : Please use a metric projection for "+sources_table_name+".")
+    if (sridSources == 0) throw new IllegalArgumentException("Error : The table "+sources_table_name+" does not have an associated SRID.")
 
     //Get the geometry field of the source table
     TableLocation sourceTableIdentifier = TableLocation.parse(sources_table_name)
     List<String> geomFields = SFSUtilities.getGeometryFields(connection, sourceTableIdentifier)
     if (geomFields.isEmpty()) {
-        resultString = String.format("The table %s does not exists or does not contain a geometry field", sourceTableIdentifier)
         throw new SQLException(String.format("The table %s does not exists or does not contain a geometry field", sourceTableIdentifier))
     }
 
     //Get the primary key field of the source table
     int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, sources_table_name)
     if (pkIndex < 1) {
-        resultString = String.format("Source table %s does not contain a primary key", sourceTableIdentifier)
         throw new IllegalArgumentException(String.format("Source table %s does not contain a primary key", sourceTableIdentifier))
     }
 
@@ -183,7 +185,7 @@ def exec(Connection connection, input) {
 
     // Get Class to compute LW
     LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW)
-    ldenConfig.setCoefficientVersion(1)
+    ldenConfig.setCoefficientVersion(2)
     LDENPropagationProcessData ldenData = new LDENPropagationProcessData(null, ldenConfig)
 
 
