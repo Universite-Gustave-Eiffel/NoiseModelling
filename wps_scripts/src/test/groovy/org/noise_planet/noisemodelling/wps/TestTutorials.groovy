@@ -155,8 +155,8 @@ INSERT INTO buildings (PK, the_geom, height) VALUES (2, ST_GeomFromText('MULTIPO
         assertTrue(res.contains("BUILDINGS"))
 
         new Regular_Grid().exec(connection, ["sourcesTableName": "SOURCES",
-                                                   delta             : 2,
-                                                         "buildingTableName"   : "BUILDINGS"])
+                                             delta             : 0.2,
+                                               "buildingTableName"   : "BUILDINGS"])
 
         // Check database
         res = new Display_Database().exec(connection, [])
@@ -167,6 +167,9 @@ INSERT INTO buildings (PK, the_geom, height) VALUES (2, ST_GeomFromText('MULTIPO
         res = new Noise_level_from_source().exec(connection, ["tableSources"  : "SOURCES",
                                                               "tableBuilding" : "BUILDINGS",
                                                               "tableReceivers": "RECEIVERS",
+                                                              "confReflOrder" : 1,
+                                                              "confDiffVertical" : true,
+                                                              "confDiffHorizontal" : true,
                                                               "confSkipLevening" : true,
                                                               "confSkipLnight" : true,
                                                               "confSkipLden" : true])
@@ -179,8 +182,20 @@ INSERT INTO buildings (PK, the_geom, height) VALUES (2, ST_GeomFromText('MULTIPO
         assertTrue(res.contains("LDAY_GEOM"))
 
         def rowResult = sql.firstRow("SELECT MAX(LEQ), MAX(LAEQ) FROM LDAY_GEOM")
-        assertEquals(69, rowResult[0] as Double, 1.0)
-        assertEquals(65, rowResult[1] as Double, 1.0)
+        assertEquals(69, rowResult[0] as Double, 5.0)
+        assertEquals(65, rowResult[1] as Double, 5.0)
+
+        // Check export geojson
+        File testPath = new File("target/tutoPointSource.geojson")
+
+        if(testPath.exists()) {
+            testPath.delete()
+        }
+
+        new Export_Table().exec(connection,
+                ["exportPath"   : "target/tutoPointSource.geojson",
+                 "tableToExport": "LDAY_GEOM"])
+
 
     }
 
