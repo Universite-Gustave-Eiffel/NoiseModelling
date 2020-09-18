@@ -1,46 +1,66 @@
 /**
- * NoiseModelling is a free and open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
+ * NoiseModelling is an open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
  *
- * This version is developed by Université Gustave Eiffel and CNRS
+ * This version is developed by the DECIDE team from the Lab-STICC (CNRS) and by the Mixt Research Unit in Environmental Acoustics (Université Gustave Eiffel).
  * <http://noise-planet.org/noisemodelling.html>
- * as part of:
- * the Eval-PDU project (ANR-08-VILL-0005) 2008-2011, funded by the Agence Nationale de la Recherche (French)
- * the CENSE project (ANR-16-CE22-0012) 2017-2021, funded by the Agence Nationale de la Recherche (French)
- * the Nature4cities (N4C) project, funded by European Union’s Horizon 2020 research and innovation programme under grant agreement No 730468
  *
- * Noisemap is distributed under GPL 3 license.
+ * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE provided with this software.
  *
  * Contact: contact@noise-planet.org
  *
- * Copyright (C) 2011-2012 IRSTV (FR CNRS 2488) and Ifsttar
- * Copyright (C) 2013-2019 Ifsttar and CNRS
- * Copyright (C) 2020 Université Gustave Eiffel and CNRS
- *
- * @Author Pierre Aumond, Université Gustave Eiffel
  */
+
+/**
+ * @Author Pierre Aumond, Université Gustave Eiffel
+ * @Author Nicolas Fortin, Université Gustave Eiffel
+ */
+
 
 package org.noise_planet.noisemodelling.wps.Database_Manager
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
-import groovy.time.TimeCategory
 import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.utilities.JDBCUtilities
+import org.h2gis.utilities.SFSUtilities
+import org.h2gis.utilities.TableLocation
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.io.WKTWriter
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import java.sql.Connection
 
 title = 'Display first rows of a table.'
-description = 'Display first rows of a table containing. </br> Be careful, this treatment can be blocking if the table is large.'
+description = 'Display first rows of a table containing. ' +
+        '</br> Be careful, this treatment can be very long if the table is large.'
 
 inputs = [
-        linesNumber: [name: 'Number of rows', title: 'Number of rows', description: 'Number of rows you want to display. (INTEGER) </br> </br> <b> Default value : 10 </b> ',min: 0, max: 1, type: Integer.class],
-        tableName: [name: 'Name of the table', title: 'Name of the table', description: 'Name of the table you want to display.', type: String.class]
+        linesNumber: [
+                name       : 'Number of rows',
+                title      : 'Number of rows',
+                description: 'Number of rows you want to display. (INTEGER) ' +
+                        '</br> </br> <b> Default value : 10 </b> ',
+                min        : 0, max: 1,
+                type       : Integer.class
+        ],
+        tableName  : [
+                name       : 'Name of the table',
+                title      : 'Name of the table',
+                description: 'Name of the table you want to display.',
+                type       : String.class
+        ]
 ]
 
-outputs = [result: [name: 'Result output', title: 'Result output', description: 'This is a HTML table', type: String.class]]
-
+outputs = [
+        result: [
+                name       : 'Result output string',
+                title      : 'Result output string',
+                description: 'This type of result does not allow the blocks to be linked together.',
+                type       : String.class
+        ]
+]
 
 static Connection openGeoserverDataStoreConnection(String dbName) {
     if (dbName == null || dbName.isEmpty()) {
@@ -53,9 +73,12 @@ static Connection openGeoserverDataStoreConnection(String dbName) {
 
 def exec(Connection connection, input) {
 
+    // Create a logger to display messages in the geoserver logs and in the command prompt.
+    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
+
     // print to command window
-    System.out.println('Start : Display first rows of a table')
-    def start = new Date()
+    logger.info('Start : Display first rows of a table')
+    logger.info("inputs {}", input) // log inputs of the run
 
     // Get the number of rows the user want to display
     int linesNumber = 10
@@ -73,11 +96,11 @@ def exec(Connection connection, input) {
 
     List output = sql.rows(String.format("select * from %s LIMIT %s", tableName, linesNumber.toString()))
 
-    System.out.println('End : Display first rows of a table')
-    System.out.println('Duration : ' + TimeCategory.minus(new Date(), start))
+    logger.info('End : Display first rows of a table')
+
 
     // print to WPS Builder
-    return mapToTable(output, sql, tableName)
+    return mapToTable(output, sql, tableName, connection)
 }
 
 
@@ -100,13 +123,37 @@ def run(input) {
  * @param list
  * @return
  */
-static String mapToTable(List<Map> list, Sql sql, String tableName) {
+static String mapToTable(List<Map> list, Sql sql, String tableName, Connection connection) {
 
     StringBuilder output = new StringBuilder()
 
     Map first = list.first()
 
     output.append("The total number of rows is " + sql.firstRow('SELECT COUNT(*) FROM ' + tableName)[0])
+
+    //get SRID of the table
+    int srid = SFSUtilities.getSRID(connection, TableLocation.parse(tableName))
+
+    if (srid > 0) {
+        output.append("</br>")
+        output.append("The srid of the table is " + srid)
+    } else {
+        output.append("</br>")
+        output.append("This table doesn't have any srid")
+    }
+
+    //get SRID of the table
+    int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, tableName)
+
+    if (pkIndex > 0) {
+        output.append("</br>")
+        output.append("The table has the following primary key : " + JDBCUtilities.getFieldName(connection.getMetaData(),tableName, pkIndex))
+    } else {
+        output.append("</br>")
+        output.append("This table does not have primary key.")
+    }
+
+
     output.append("</br> </br> ")
     output.append("<table  border=' 1px solid black'><thead><tr>")
 
@@ -125,7 +172,7 @@ static String mapToTable(List<Map> list, Sql sql, String tableName) {
 
             values.each {
                 def val = it
-                if(it instanceof Geometry) {
+                if (it instanceof Geometry) {
                     val = wktWriter.write(it)
                 }
                 output.append "<td><div style='width: 150px;'>${val}</div></td>"
