@@ -33,16 +33,11 @@ public class PointNoiseMap extends JdbcNoiseMap {
     private PropagationProcessDataFactory propagationProcessDataFactory;
     private IComputeRaysOutFactory computeRaysOutFactory;
     private Logger logger = LoggerFactory.getLogger(PointNoiseMap.class);
-    private PropagationProcessPathData propagationProcessPathData = new PropagationProcessPathData();
     private int threadCount = 0;
 
     public PointNoiseMap(String buildingsTableName, String sourcesTableName, String receiverTableName) {
         super(buildingsTableName, sourcesTableName);
         this.receiverTableName = receiverTableName;
-    }
-
-    public void setPropagationProcessPathData(PropagationProcessPathData propagationProcessPathData) {
-        this.propagationProcessPathData = propagationProcessPathData;
     }
 
     public void setComputeRaysOutFactory(IComputeRaysOutFactory computeRaysOutFactory) {
@@ -248,8 +243,18 @@ public class PointNoiseMap extends JdbcNoiseMap {
         return computeRaysOut;
     }
 
+    @Override
+    public void initialize(Connection connection, ProgressVisitor progression) throws SQLException {
+        super.initialize(connection, progression);
+        if(propagationProcessDataFactory != null) {
+            propagationProcessDataFactory.initialize(connection, this);
+        }
+    }
+
     public interface PropagationProcessDataFactory {
         PropagationProcessData create(FastObstructionTest freeFieldFinder);
+
+        void initialize(Connection connection, PointNoiseMap pointNoiseMap) throws SQLException;
     }
 
     public interface IComputeRaysOutFactory {

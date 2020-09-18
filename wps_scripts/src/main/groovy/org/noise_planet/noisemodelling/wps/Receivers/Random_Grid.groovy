@@ -56,7 +56,7 @@ inputs = [buildingTableName: [name       : 'Buildings table name', title: 'Build
           height          : [name                               : 'height', title: 'height', description: 'Height of receivers in meters (FLOAT)' +
                   '</br> </br> <b> Default value : 4 </b> ', min: 0, max: 1, type: Double.class],
           fence           : [name         : 'Fence geometry', title: 'Extent filter', description: 'Create receivers only in the' +
-        ' provided polygon', min: 0, max: 1, type: Geometry.class],
+        ' provided polygon. Must be in the WGS84 SRID 4326 projection system', min: 0, max: 1, type: Geometry.class],
           fenceTableName  : [name                                                         : 'Fence geometry from table', title: 'Filter using table bounding box',
                              description                                                  : 'Extract the bounding box of the specified table then create only receivers' +
                                      ' on the table bounding box' +

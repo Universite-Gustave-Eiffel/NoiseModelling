@@ -164,6 +164,11 @@ public class PointNoiseMapTest {
         public PropagationProcessData create(FastObstructionTest freeFieldFinder) {
             return new DirectPropagationProcessData(freeFieldFinder);
         }
+
+        @Override
+        public void initialize(Connection connection, PointNoiseMap pointNoiseMap) {
+
+        }
     }
 
     private static class JDBCComputeRaysOut implements PointNoiseMap.IComputeRaysOutFactory {

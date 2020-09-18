@@ -30,10 +30,13 @@ This plugin is distributed under `GPL 3 license`_ and is developed by the DECIDE
 - *ANR CENSE (ANR-16-CE22-0012) 2017-2021*
 - *the Nature4cities (N4C) project, funded by European Union’s Horizon 2020 research and innovation programme under grant agreement No 730468*
 
-*Institutional fundings:*
+*Institutional (public) fundings:*
 
 - *Univ Gustave Eiffel (formerly Ifsttar, formerly LCPC), CNRS, UBS, ECN, Cerema*
 
+*Private fundings:*
+
+- *Airbus Urban Mobility*
 
 .. note::
     - The official documentation is available in English only.
