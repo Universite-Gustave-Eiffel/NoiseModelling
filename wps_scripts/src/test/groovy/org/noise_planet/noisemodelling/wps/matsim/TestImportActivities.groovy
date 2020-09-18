@@ -21,7 +21,7 @@ class TestImportActivities extends JdbcTestCase {
 
     private String runWps() {
         return new Import_Activities().exec(connection, [
-                "facilitiesPath": this.class.getResource("output_facilities.xml.gz"),
+                "facilitiesPath": this.class.getResource("output_facilities.xml.gz").getFile(),
                 "outTableName": "ACTIVITIES"
         ])
     }

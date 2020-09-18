@@ -262,12 +262,12 @@ def exec(Connection connection, input) {
                     continue;
                 }
                 double activityStart = 0;
-                if (activity.getStartTime().isDefined()) {
-                    activityStart = activity.getStartTime().seconds();
+                if (activity.getStartTime() > 0) {
+                    activityStart = activity.getStartTime();
                 }
                 double activityEnd = 86400;
-                if (activity.getEndTime().isDefined()) {
-                    activityEnd = activity.getEndTime().seconds();
+                if (activity.getEndTime() > 0) {
+                    activityEnd = activity.getEndTime();
                 }
                 double timeSliceStart = secondsInSlice * slice;
                 double timeSliceEnd = secondsInSlice * (slice+1);
