@@ -86,7 +86,7 @@ class DynamicProcessData {
 /** Read source database and compute the sound emission spectrum of roads sources **/
 @CompileStatic
 class DynamicPropagationProcessData extends PropagationProcessData {
-    static List<Integer> freq_lvl = Arrays.asList(PropagationProcessPathData.asOctaveBands(PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE));
+    static List<Integer> freq_lvl = Arrays.asList(63, 125, 250, 500, 1000, 2000, 4000, 8000);
 
     protected List<double[]> wjSourcesD = new ArrayList<>()
 
@@ -134,7 +134,6 @@ class DynamicPropagationProcessDataFactory implements PointNoiseMap.PropagationP
         return new DynamicPropagationProcessData(freeFieldFinder)
     }
 
-    @Override
     void initialize(Connection connection, PointNoiseMap pointNoiseMap) throws SQLException {
 
     }

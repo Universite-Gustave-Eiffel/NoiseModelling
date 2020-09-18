@@ -22,9 +22,6 @@ import org.noise_planet.noisemodelling.wps.Geometric_Tools.Set_Height
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-import java.sql.SQLException
-import java.sql.Statement
-
 /**
  * Test parsing of zip file using H2GIS database
  */

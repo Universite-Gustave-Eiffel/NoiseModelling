@@ -127,6 +127,8 @@ class CarsProcessData {
 @CompileStatic
 class CarsPropagationProcessData extends PropagationProcessData {
 
+    static List<Integer> freq_lvl = Arrays.asList(63, 125, 250, 500, 1000, 2000, 4000, 8000);
+
     protected List<double[]> wjSourcesD = new ArrayList<>()
 
     public CarsPropagationProcessData(FastObstructionTest freeFieldFinder) {
@@ -148,7 +150,7 @@ class CarsPropagationProcessData extends PropagationProcessData {
         double db_m4000 = 90
         double db_m8000 = 90
 
-        double[] res_d = new double[PropagationProcessPathData.freq_lvl.size()]
+        double[] res_d = new double[freq_lvl.size()]
 
         res_d = [db_m63, db_m125, db_m250, db_m500, db_m1000, db_m2000, db_m4000, db_m8000]
 
@@ -168,6 +170,9 @@ class CarsPropagationProcessDataFactory implements PointNoiseMap.PropagationProc
     @Override
     PropagationProcessData create(FastObstructionTest freeFieldFinder) {
         return new CarsPropagationProcessData(freeFieldFinder)
+    }
+    void initialize(Connection connection, PointNoiseMap pointNoiseMap) throws SQLException {
+
     }
 }
 

@@ -135,7 +135,7 @@ class DroneProcessData {
 /** Read source database and compute the sound emission spectrum of roads sources **/
 @CompileStatic
 class DronePropagationProcessData extends PropagationProcessData {
-    static List<Integer> freq_lvl = Arrays.asList(PropagationProcessPathData.asOctaveBands(PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE));
+    static List<Integer> freq_lvl = Arrays.asList(63, 125, 250, 500, 1000, 2000, 4000, 8000);
 
     protected List<double[]> wjSourcesD = new ArrayList<>()
 
@@ -179,8 +179,6 @@ class DronePropagationProcessDataFactory implements PointNoiseMap.PropagationPro
     PropagationProcessData create(FastObstructionTest freeFieldFinder) {
         return new CarsPropagationProcessData(freeFieldFinder)
     }
-
-    @Override
     void initialize(Connection connection, PointNoiseMap pointNoiseMap) throws SQLException {
 
     }

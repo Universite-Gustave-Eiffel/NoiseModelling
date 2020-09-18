@@ -55,73 +55,123 @@ description = 'Compute road traffic probabilistic modeling as describe in <b>Aum
         '-  <b> Hz63, Hz125, Hz250, Hz500, Hz1000,Hz2000, Hz4000, Hz8000 </b> : 8 columns giving the day emission sound level for each octave band (FLOAT).'
 
 inputs = [
-        tableBuilding     : [name       : 'Buildings table name', title: 'Buildings table name',
-                             description: '<b>Name of the Buildings table.</b>  </br>  ' +
-                                     '<br>  The table shall contain : </br>' +
-                                     '- <b> THE_GEOM </b> : the 2D geometry of the building (POLYGON or MULTIPOLYGON). </br>' +
-                                     '- <b> HEIGHT </b> : the height of the building (FLOAT)',
-                             type       : String.class],
-        tableRoads    : [name                                                                                 : 'Roads table name', title: 'Roads table name', description: "<b>Name of the Roads table.</b>  </br>  " +
-                "<br>  The table shall contain : </br>" +
-                "- <b> PK </b> : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY)<br/>" +
-                "- <b> TV_D </b> : Hourly average light and heavy vehicle count (DOUBLE)<br/>" +
-                "- <b> HV_D </b> :  Hourly average heavy vehicle count (DOUBLE)<br/>" +
-                "- <b> LV_SPD_D </b> :  Hourly average light vehicle speed (DOUBLE)<br/>" +
-                "- <b> HV_SPD_D </b> :  Hourly average heavy vehicle speed  (DOUBLE)<br/>" +
-                "- <b> PVMT </b> :  CNOSSOS road pavement identifier (ex: NL05) (VARCHAR)" +
-                "</br> </br> <b> This table can be generated from the WPS Block 'Import_OSM'. </b>.", type: String.class],
-        tableReceivers    : [name       : 'Receivers table name', title: 'Receivers table name',
-                             description: '<b>Name of the Receivers table.</b></br>  ' +
-                                     '</br>  The table shall contain : </br> ' +
-                                     '- <b> PK </b> : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY). </br> ' +
-                                     '- <b> THE_GEOM </b> : the 3D geometry of the sources (POINT, MULTIPOINT).</br> ' +
-                                     '</br> </br> <b> This table can be generated from the WPS Blocks in the "Receivers" folder. </b>',
-                             type       : String.class],
-        tableDEM          : [name       : 'DEM table name', title: 'DEM table name',
-                             description: '<b>Name of the Digital Elevation Model table.</b></br>  ' +
-                                     '</br>The table shall contain : </br> ' +
-                                     '- <b> THE_GEOM </b> : the 3D geometry of the sources (POINT, MULTIPOINT).</br> ' +
-                                     '</br> </br> <b> This table can be generated from the WPS Block "Import_Asc_File". </b>',
-                             min        : 0, max: 1, type: String.class],
-        tableGroundAbs    : [name       : 'Ground absorption table name', title: 'Ground absorption table name',
-                             description: '<b>Name of the surface/ground acoustic absorption table.</b></br>  ' +
-                                     '</br>The table shall contain : </br> ' +
-                                     '- <b> THE_GEOM </b> : the 2D geometry of the sources (POLYGON or MULTIPOLYGON).</br> ' +
-                                     '- <b> G </b> : the acoustic absorption of a ground (FLOAT between 0 : very hard and 1 : very soft).</br> ',
-                             min        : 0, max: 1, type: String.class],
-        paramWallAlpha    : [name       : 'wallAlpha', title: 'Wall absorption coefficient',
-                             description: 'Wall absorption coefficient (FLOAT between 0 : fully absorbent and strictly less than 1 : fully reflective)' +
-                                     '</br> </br> <b> Default value : 0.1 </b> ',
-                             min        : 0, max: 1, type: String.class],
-        confReflOrder     : [name       : 'Order of reflexion', title: 'Order of reflexion',
-                             description: 'Maximum number of reflections to be taken into account (INTEGER).' +
-                                     '</br> </br> <b> Default value : 1 </b>',
-                             min        : 0, max: 1, type: String.class],
-        confMaxSrcDist    : [name       : 'Maximum source-receiver distance', title: 'Maximum source-receiver distance',
-                             description: 'Maximum distance between source and receiver (FLOAT, in meters).' +
-                                     '</br> </br> <b> Default value : 150 </b>',
-                             min        : 0, max: 1, type: String.class],
-        confMaxReflDist   : [name       : 'Maximum source-reflexion distance', title: 'Maximum source-reflexion distance',
-                             description: 'Maximum reflection distance from the source (FLOAT, in meters).' +
-                                     '</br> </br> <b> Default value : 50 </b>',
-                             min        : 0, max: 1, type: String.class],
-        confThreadNumber  : [name       : 'Thread number', title: 'Thread number',
-                             description: 'Number of thread to use on the computer (INTEGER).' +
-                                     '</br> To set this value, look at the number of cores you have.' +
-                                     '</br> If it is set to 0, use the maximum number of cores available.' +
-                                     '</br> </br> <b> Default value : 1 </b>',
-                             min        : 0, max: 1, type: String.class],
-        confDiffVertical  : [name       : 'Diffraction on vertical edges', title: 'Diffraction on vertical edges',
-                             description: 'Compute or not the diffraction on vertical edges.' +
-                                     '</br> </br> <b> Default value : false </b>',
-                             min        : 0, max: 1, type: Boolean.class],
-        confDiffHorizontal: [name       : 'Diffraction on horizontal edges', title: 'Diffraction on horizontal edges',
-                             description: 'Compute or not the diffraction on horizontal edges.' +
-                                     '</br> </br> <b> Default value : false </b>',
-                             min        : 0, max: 1, type: Boolean.class],
-        nIterations       : [name       : 'Iteration number', title: 'Iteration number',
-                             description: 'Number of the iterations to compute (INTEGER). </br> </br> <b> Default value : 100 </b>',
-                             min        : 0, max: 1, type: Integer.class],
+        tableBuilding     : [
+                name       : 'Buildings table name',
+                title      : 'Buildings table name',
+                description: '<b>Name of the Buildings table.</b>  </br>  ' +
+                        '<br>  The table shall contain : </br>' +
+                        '- <b> THE_GEOM </b> : the 2D geometry of the building (POLYGON or MULTIPOLYGON). </br>' +
+                        '- <b> HEIGHT </b> : the height of the building (FLOAT)',
+                type       : String.class
+        ],
+        tableRoads        : [
+                name       : 'Roads table name',
+                title      : 'Roads table name',
+                description: "<b>Name of the Roads table.</b>  </br>  " +
+                        "<br>  The table shall contain : </br>" +
+                        "- <b> PK </b> : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY)<br/>" +
+                        "- <b> TV_D </b> : Hourly average light and heavy vehicle count (DOUBLE)<br/>" +
+                        "- <b> HV_D </b> :  Hourly average heavy vehicle count (DOUBLE)<br/>" +
+                        "- <b> LV_SPD_D </b> :  Hourly average light vehicle speed (DOUBLE)<br/>" +
+                        "- <b> HV_SPD_D </b> :  Hourly average heavy vehicle speed  (DOUBLE)<br/>" +
+                        "- <b> PVMT </b> :  CNOSSOS road pavement identifier (ex: NL05) (VARCHAR)" +
+                        "</br> </br> <b> This table can be generated from the WPS Block 'Import_OSM'. </b>.",
+                type       : String.class
+        ],
+        tableReceivers    : [
+                name       : 'Receivers table name',
+                title      : 'Receivers table name',
+                description: '<b>Name of the Receivers table.</b></br>  ' +
+                        '</br>  The table shall contain : </br> ' +
+                        '- <b> PK </b> : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY). </br> ' +
+                        '- <b> THE_GEOM </b> : the 3D geometry of the sources (POINT, MULTIPOINT).</br> ' +
+                        '</br> </br> <b> This table can be generated from the WPS Blocks in the "Receivers" folder. </b>',
+                type       : String.class
+        ],
+        tableDEM          : [
+                name       : 'DEM table name',
+                title      : 'DEM table name',
+                description: '<b>Name of the Digital Elevation Model table.</b></br>  ' +
+                        '</br>The table shall contain : </br> ' +
+                        '- <b> THE_GEOM </b> : the 3D geometry of the sources (POINT, MULTIPOINT).</br> ' +
+                        '</br> </br> <b> This table can be generated from the WPS Block "Import_Asc_File". </b>',
+                min        : 0, max: 1,
+                type       : String.class
+        ],
+        tableGroundAbs    : [
+                name       : 'Ground absorption table name',
+                title      : 'Ground absorption table name',
+                description: '<b>Name of the surface/ground acoustic absorption table.</b></br>  ' +
+                        '</br>The table shall contain : </br> ' +
+                        '- <b> THE_GEOM </b> : the 2D geometry of the sources (POLYGON or MULTIPOLYGON).</br> ' +
+                        '- <b> G </b> : the acoustic absorption of a ground (FLOAT between 0 : very hard and 1 : very soft).</br> ',
+                min        : 0, max: 1,
+                type       : String.class
+        ],
+        paramWallAlpha    : [
+                name       : 'wallAlpha',
+                title      : 'Wall absorption coefficient',
+                description: 'Wall absorption coefficient (FLOAT between 0 : fully absorbent and strictly less than 1 : fully reflective)' +
+                        '</br> </br> <b> Default value : 0.1 </b> ',
+                min        : 0, max: 1,
+                type       : String.class
+        ],
+        confReflOrder     : [
+                name       : 'Order of reflexion', title: 'Order of reflexion',
+                description: 'Maximum number of reflections to be taken into account (INTEGER).' +
+                        '</br> </br> <b> Default value : 1 </b>',
+                min        : 0, max: 1,
+                type       : String.class
+        ],
+        confMaxSrcDist    : [
+                name       : 'Maximum source-receiver distance',
+                title      : 'Maximum source-receiver distance',
+                description: 'Maximum distance between source and receiver (FLOAT, in meters).' +
+                        '</br> </br> <b> Default value : 150 </b>',
+                min        : 0, max: 1,
+                type       : String.class
+        ],
+        confMaxReflDist   : [
+                name       : 'Maximum source-reflexion distance',
+                title      : 'Maximum source-reflexion distance',
+                description: 'Maximum reflection distance from the source (FLOAT, in meters).' +
+                        '</br> </br> <b> Default value : 50 </b>',
+                min        : 0, max: 1,
+                type       : String.class
+        ],
+        confThreadNumber  : [
+                name       : 'Thread number',
+                title      : 'Thread number',
+                description: 'Number of thread to use on the computer (INTEGER).' +
+                        '</br> To set this value, look at the number of cores you have.' +
+                        '</br> If it is set to 0, use the maximum number of cores available.' +
+                        '</br> </br> <b> Default value : 1 </b>',
+                min        : 0, max: 1,
+                type       : String.class
+        ],
+        confDiffVertical  : [
+                name       : 'Diffraction on vertical edges',
+                title      : 'Diffraction on vertical edges',
+                description: 'Compute or not the diffraction on vertical edges.' +
+                        '</br> </br> <b> Default value : false </b>',
+                min        : 0, max: 1,
+                type       : Boolean.class
+        ],
+        confDiffHorizontal: [
+                name       : 'Diffraction on horizontal edges',
+                title      : 'Diffraction on horizontal edges',
+                description: 'Compute or not the diffraction on horizontal edges.' +
+                        '</br> </br> <b> Default value : false </b>',
+                min        : 0, max: 1,
+                type       : Boolean.class
+        ],
+        nIterations       : [
+                name       : 'Iteration number',
+                title      : 'Iteration number',
+                description: 'Number of the iterations to compute (INTEGER). </br> </br> <b> Default value : 100 </b>',
+                min        : 0, max: 1,
+                type       : Integer.class
+        ],
 ]
 
 outputs = [
@@ -163,11 +213,11 @@ def run(input) {
 def exec(Connection connection, input) {
 
     //Load GeneralTools.groovy
-    File generalTools = new File(new File("").absolutePath+"/data_dir/scripts/wpsTools/GeneralTools.groovy")
+    File generalTools = new File(new File("").absolutePath + "/data_dir/scripts/wpsTools/GeneralTools.groovy")
 
     //if we are in dev, the path is not the same as for geoserver
     if (new File("").absolutePath.substring(new File("").absolutePath.length() - 11) == 'wps_scripts') {
-        generalTools = new File(new File("").absolutePath+"/src/main/groovy/org/noise_planet/noisemodelling/wpsTools/GeneralTools.groovy")
+        generalTools = new File(new File("").absolutePath + "/src/main/groovy/org/noise_planet/noisemodelling/wpsTools/GeneralTools.groovy")
     }
 
     // Get external tools
@@ -201,8 +251,8 @@ def exec(Connection connection, input) {
     sources_table_name = sources_table_name.toUpperCase()
     // Check if srid are in metric projection.
     int sridSources = SFSUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
-    if (sridSources == 3785 || sridSources == 4326) throw new IllegalArgumentException("Error : Please use a metric projection for "+sources_table_name+".")
-    if (sridSources == 0) throw new IllegalArgumentException("Error : The table "+sources_table_name+" does not have an associated SRID.")
+    if (sridSources == 3785 || sridSources == 4326) throw new IllegalArgumentException("Error : Please use a metric projection for " + sources_table_name + ".")
+    if (sridSources == 0) throw new IllegalArgumentException("Error : The table " + sources_table_name + " does not have an associated SRID.")
 
 
     String receivers_table_name = input['tableReceivers']
@@ -216,9 +266,9 @@ def exec(Connection connection, input) {
     }
     // Check if srid are in metric projection and are all the same.
     int sridReceivers = SFSUtilities.getSRID(connection, TableLocation.parse(receivers_table_name))
-    if (sridReceivers == 3785 || sridReceivers == 4326) throw new IllegalArgumentException("Error : Please use a metric projection for "+receivers_table_name+".")
-    if (sridReceivers == 0) throw new IllegalArgumentException("Error : The table "+receivers_table_name+" does not have an associated SRID.")
-    if (sridReceivers != sridSources) throw new IllegalArgumentException("Error : The SRID of table "+sources_table_name+" and "+receivers_table_name+" are not the same.")
+    if (sridReceivers == 3785 || sridReceivers == 4326) throw new IllegalArgumentException("Error : Please use a metric projection for " + receivers_table_name + ".")
+    if (sridReceivers == 0) throw new IllegalArgumentException("Error : The table " + receivers_table_name + " does not have an associated SRID.")
+    if (sridReceivers != sridSources) throw new IllegalArgumentException("Error : The SRID of table " + sources_table_name + " and " + receivers_table_name + " are not the same.")
 
 
     String building_table_name = input['tableBuilding']
@@ -226,9 +276,9 @@ def exec(Connection connection, input) {
     building_table_name = building_table_name.toUpperCase()
     // Check if srid are in metric projection and are all the same.
     int sridBuildings = SFSUtilities.getSRID(connection, TableLocation.parse(building_table_name))
-    if (sridBuildings == 3785 || sridReceivers == 4326) throw new IllegalArgumentException("Error : Please use a metric projection for "+building_table_name+".")
-    if (sridBuildings == 0) throw new IllegalArgumentException("Error : The table "+building_table_name+" does not have an associated SRID.")
-    if (sridReceivers != sridBuildings) throw new IllegalArgumentException("Error : The SRID of table "+building_table_name+" and "+receivers_table_name+" are not the same.")
+    if (sridBuildings == 3785 || sridReceivers == 4326) throw new IllegalArgumentException("Error : Please use a metric projection for " + building_table_name + ".")
+    if (sridBuildings == 0) throw new IllegalArgumentException("Error : The table " + building_table_name + " does not have an associated SRID.")
+    if (sridReceivers != sridBuildings) throw new IllegalArgumentException("Error : The SRID of table " + building_table_name + " and " + receivers_table_name + " are not the same.")
 
     String dem_table_name = ""
     if (input['tableDEM']) {
@@ -237,9 +287,9 @@ def exec(Connection connection, input) {
         dem_table_name = dem_table_name.toUpperCase()
         // Check if srid are in metric projection and are all the same.
         int sridDEM = SFSUtilities.getSRID(connection, TableLocation.parse(dem_table_name))
-        if (sridDEM == 3785 || sridReceivers == 4326) throw new IllegalArgumentException("Error : Please use a metric projection for "+dem_table_name+".")
-        if (sridDEM == 0) throw new IllegalArgumentException("Error : The table "+dem_table_name+" does not have an associated SRID.")
-        if (sridDEM != sridSources) throw new IllegalArgumentException("Error : The SRID of table "+sources_table_name+" and "+dem_table_name+" are not the same.")
+        if (sridDEM == 3785 || sridReceivers == 4326) throw new IllegalArgumentException("Error : Please use a metric projection for " + dem_table_name + ".")
+        if (sridDEM == 0) throw new IllegalArgumentException("Error : The table " + dem_table_name + " does not have an associated SRID.")
+        if (sridDEM != sridSources) throw new IllegalArgumentException("Error : The SRID of table " + sources_table_name + " and " + dem_table_name + " are not the same.")
     }
 
 
@@ -250,9 +300,9 @@ def exec(Connection connection, input) {
         ground_table_name = ground_table_name.toUpperCase()
         // Check if srid are in metric projection and are all the same.
         int sridGROUND = SFSUtilities.getSRID(connection, TableLocation.parse(ground_table_name))
-        if (sridGROUND == 3785 || sridReceivers == 4326) throw new IllegalArgumentException("Error : Please use a metric projection for "+ground_table_name+".")
-        if (sridGROUND == 0) throw new IllegalArgumentException("Error : The table "+ground_table_name+" does not have an associated SRID.")
-        if (sridGROUND != sridSources) throw new IllegalArgumentException("Error : The SRID of table "+ground_table_name+" and "+sources_table_name+" are not the same.")
+        if (sridGROUND == 3785 || sridReceivers == 4326) throw new IllegalArgumentException("Error : Please use a metric projection for " + ground_table_name + ".")
+        if (sridGROUND == 0) throw new IllegalArgumentException("Error : The table " + ground_table_name + " does not have an associated SRID.")
+        if (sridGROUND != sridSources) throw new IllegalArgumentException("Error : The SRID of table " + ground_table_name + " and " + sources_table_name + " are not the same.")
     }
 
     int reflexion_order = 0
@@ -336,7 +386,7 @@ def exec(Connection connection, input) {
     // Initialize NoiseModelling emission part
     // --------------------------------------------
 
-    WpsPropagationProcessDataProbaFactory wpsPropagationProcessDataProbaFactory =  new WpsPropagationProcessDataProbaFactory()
+    WpsPropagationProcessDataProbaFactory wpsPropagationProcessDataProbaFactory = new WpsPropagationProcessDataProbaFactory()
     pointNoiseMap.setPropagationProcessDataFactory(wpsPropagationProcessDataProbaFactory)
 
     // --------------------------------------------
@@ -350,10 +400,10 @@ def exec(Connection connection, input) {
 
     System.println("Start calculation... ")
     // Iterate over computation areas
-    int k=0
+    int k = 0
     for (int i = 0; i < pointNoiseMap.getGridDim(); i++) {
         for (int j = 0; j < pointNoiseMap.getGridDim(); j++) {
-            System.println("Compute... " + 100*k++/fullGridSize + " % ")
+            System.println("Compute... " + 100 * k++ / fullGridSize + " % ")
 
             IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, i, j, progressVisitor, receivers)
 
@@ -424,7 +474,7 @@ def exec(Connection connection, input) {
         for (int i = 0; i < allLevels.size(); i++) {
 
             k++
-            currentVal = tools.invokeMethod("ProgressBar", [Math.round(10*i/(allLevels.size()*nIterations)).toInteger(),currentVal])
+            currentVal = tools.invokeMethod("ProgressBar", [Math.round(10 * i / (allLevels.size() * nIterations)).toInteger(), currentVal])
 
             // get attenuation matrix value
             double[] soundLevel = allLevels.get(i).value
@@ -455,7 +505,7 @@ def exec(Connection connection, input) {
                         // apply A ponderation
                         //soundLevel = DBToDBA(soundLevel)
                         // add a new Leq value on this receiver
-                        double[] sumArray =  tools.invokeMethod("sumArraySR", [soundLevel, sourceLev.get(idSource)])
+                        double[] sumArray = tools.invokeMethod("sumArraySR", [soundLevel, sourceLev.get(idSource)])
                         soundLevels.put(idReceiver, sumArray)
                     }
                 }
@@ -493,10 +543,6 @@ def exec(Connection connection, input) {
     // print to WPS Builder
     return resultString
 }
-
-
-
-
 
 
 /**
@@ -543,9 +589,9 @@ class WpsPropagationProcessDataProba extends PropagationProcessData {
 
         if (Format == 'Proba') {
             double val = ComputeRays.dbaToW((BigDecimal) 90.0)
-            ld = [val,val,val,val,val,val,val,val]
-            le = [val,val,val,val,val,val,val,val]
-            ln = [val,val,val,val,val,val,val,val]
+            ld = [val, val, val, val, val, val, val, val]
+            le = [val, val, val, val, val, val, val, val]
+            ln = [val, val, val, val, val, val, val, val]
         }
 
         if (Format == 'EmissionDEN') {
@@ -804,7 +850,6 @@ class WpsPropagationProcessDataProbaFactory implements PointNoiseMap.Propagation
         return new WpsPropagationProcessDataProba(freeFieldFinder)
     }
 
-    @Override
     void initialize(Connection connection, PointNoiseMap pointNoiseMap) throws SQLException {
 
     }

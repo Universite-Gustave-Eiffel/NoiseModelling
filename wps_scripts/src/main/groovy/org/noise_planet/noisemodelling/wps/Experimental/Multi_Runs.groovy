@@ -690,7 +690,7 @@ class MRComputeRaysOut extends ComputeRaysOut {
 
 @CompileStatic
 class MREvaluateAttenuationCnossos extends EvaluateAttenuationCnossos {
-    static List<Integer> freq_lvl = Arrays.asList(PropagationProcessPathData.asOctaveBands(PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE));
+    static List<Integer> freq_lvl = Arrays.asList(63, 125, 250, 500, 1000, 2000, 4000, 8000);
 
     private double[] freq_lambda
     private double[] aGlobal

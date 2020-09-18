@@ -722,7 +722,6 @@ class TrafficRayzPropagationProcessDataFactory implements PointNoiseMap.Propagat
         return new TrafficRayzPropagationProcessData(freeFieldFinder);
     }
 
-    @Override
     void initialize(Connection connection, PointNoiseMap pointNoiseMap) throws SQLException {
 
     }
@@ -734,7 +733,7 @@ class TrafficRayzPropagationProcessDataFactory implements PointNoiseMap.Propagat
 @CompileStatic
 class TrafficRayzPropagationProcessData extends PropagationProcessData {
     // Lden values
-    static List<Integer> freq_lvl = Arrays.asList(PropagationProcessPathData.asOctaveBands(PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE));
+    static List<Integer> freq_lvl = Arrays.asList(63, 125, 250, 500, 1000, 2000, 4000, 8000);
     public List<double[]> wjSourcesDEN = new ArrayList<>()
     //public Map<Long, Integer> SourcesPk = new HashMap<>()
 
