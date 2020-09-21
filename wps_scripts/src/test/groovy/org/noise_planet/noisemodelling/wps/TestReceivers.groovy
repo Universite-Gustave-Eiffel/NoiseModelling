@@ -14,6 +14,7 @@ package org.noise_planet.noisemodelling.wps
 
 import groovy.sql.Sql
 import org.h2gis.functions.io.shp.SHPRead
+import org.h2gis.functions.io.shp.SHPWrite
 import org.h2gis.functions.spatial.crs.ST_SetSRID
 import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.SFSUtilities
@@ -240,4 +241,37 @@ class TestReceivers extends JdbcTestCase {
 
         assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
     }
+
+
+    public void testRegularGridFenceGeom() {
+
+        def sql = new Sql(connection)
+
+        SHPRead.readShape(connection, TestReceivers.getResource("buildings.shp").getPath())
+        SHPRead.readShape(connection, TestReceivers.getResource("roads.shp").getPath())
+
+        GeometryFactory f = new GeometryFactory();
+        WKTReader r = new WKTReader();
+        def g = r.read("POLYGON ((223994.2 6757775.9, 223930.2 6757890.1, 223940.2 6757895.7, 224001.6 6757783.2, 223994.2 6757775.9))")
+        def gNoReceiver = r.read("POLYGON ((223938 6757827.1, 223957.4 6757836.6, 223947.4 6757851.4, 223940.2 6757833, 223938 6757827.1))");
+
+        def gFence = ST_Transform.ST_Transform(connection, ST_SetSRID.setSRID(g, 2154), 4326)
+
+        new Regular_Grid().exec(connection,  ["buildingTableName" : "BUILDINGS",
+                                             "sourcesTableName" : "ROADS",
+                                             "delta" : 1,
+                                             "fence" : gFence.toString()])
+
+        assertFalse(0 == sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS")[0] as Integer)
+
+        assertEquals(0, sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS WHERE NOT ST_INTERSECTS(THE_GEOM, '"+g.toString()+"'::geometry)")[0] as Integer)
+
+        assertEquals(0, sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS WHERE ST_INTERSECTS(THE_GEOM, '"+gNoReceiver.toString()+"'::geometry)")[0] as Integer)
+
+        assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
+
+        SHPWrite.exportTable(connection, "target/regular.shp", "RECEIVERS")
+
+    }
+
 }
