@@ -199,14 +199,20 @@ def exec(connection, input) {
 
     sql.execute("CREATE TABLE " + receivers_table_name + "(PK SERIAL, THE_GEOM GEOMETRY) AS SELECT null, ST_SETSRID(ST_UPDATEZ(THE_GEOM, " + h + "), " + srid + ") THE_GEOM FROM ST_MakeGridPoints(ST_GeomFromText('" + fenceGeom + "')," + delta + "," + delta + ");")
 
+    logger.info("Create spatial index on " + receivers_table_name)
+    sql.execute("Create spatial index on " + receivers_table_name + "(the_geom);")
+
+    if (input['fence']) {
+        // Delete points outside geom but inside
+        sql.execute("DELETE FROM " + receivers_table_name + " WHERE NOT ST_Intersects(THE_GEOM, :geom)", ['geom': fenceGeom])
+    }
+
     if (input['buildingTableName']) {
         logger.info("Delete receivers inside buildings")
-        sql.execute("Create spatial index on " + building_table_name + "(the_geom);")
         sql.execute("delete from " + receivers_table_name + " g where exists (select 1 from " + building_table_name + " b where ST_Z(g.the_geom) < b.HEIGHT and g.the_geom && b.the_geom and ST_INTERSECTS(g.the_geom, b.the_geom) and ST_distance(b.the_geom, g.the_geom) < 1 limit 1);")
     }
     if (input['sourcesTableName']) {
         logger.info("Delete receivers near sources")
-        sql.execute("Create spatial index on " + sources_table_name + "(the_geom);")
         sql.execute("delete from " + receivers_table_name + " g where exists (select 1 from " + sources_table_name + " r where st_expand(g.the_geom, 1) && r.the_geom and st_distance(g.the_geom, r.the_geom) < 1 limit 1);")
     }
 

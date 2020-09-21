@@ -182,7 +182,7 @@ def exec(Connection connection, input) {
     building_table_name = building_table_name.toUpperCase()
 
 
-    Double maxPropDist = 150.0
+    Double maxPropDist = 600.0
     if (input['maxPropDist']) {
         maxPropDist = input['maxPropDist'] as Double
     }
