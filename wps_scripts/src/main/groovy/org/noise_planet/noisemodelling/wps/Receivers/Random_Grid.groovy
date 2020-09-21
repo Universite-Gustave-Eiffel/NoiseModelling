@@ -197,6 +197,10 @@ def exec(Connection connection, input) {
 
 
     sql.execute("create table " + receivers_table_name + " as select ST_SetSRID(ST_MAKEPOINT(RAND()*(" + envelope.maxX + " - " + envelope.minX.toString() + ") + " + envelope.minX.toString() + ", RAND()*(" + envelope.maxY.toString() + " - " + envelope.minY.toString() + ") + " + envelope.minY.toString() + ", " + h + "), " + targetSrid.toInteger() + ") as the_geom from system_range(0," + nReceivers.toString() + ");")
+    // Delete points outside geom but inside
+    sql.execute("DELETE FROM " + receivers_table_name + " WHERE NOT ST_Intersects(THE_GEOM, :geom)", ['geom': fenceGeom.toString()])
+
+
     sql.execute("Create spatial index on " + receivers_table_name + "(the_geom);")
 
     logger.info('Delete receivers where buildings...')
