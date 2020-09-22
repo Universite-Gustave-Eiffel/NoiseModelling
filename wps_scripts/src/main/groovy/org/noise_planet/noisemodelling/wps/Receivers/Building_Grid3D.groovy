@@ -11,6 +11,7 @@
  */
 
 /**
+ * @Author Pierre Aumond, Université Gustave Eiffel
  * @Author Nicolas Fortin, Université Gustave Eiffel
  */
 
