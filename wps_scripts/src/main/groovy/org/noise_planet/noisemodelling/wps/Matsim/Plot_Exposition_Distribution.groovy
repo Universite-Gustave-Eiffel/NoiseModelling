@@ -1,44 +1,63 @@
+/**
+ * NoiseModelling is an open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
+ *
+ * This version is developed by Université Gustave Eiffel and CNRS
+ * <http://noise-planet.org/noisemodelling.html>
+ *
+ * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE provided with this software.
+ *
+ * Contact: contact@noise-planet.org
+ *
+ */
+/**
+ * @Author Valentin Le Bescond, Université Gustave Eiffel
+ */
+
 package org.noise_planet.noisemodelling.wps.Matsim
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
+import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.jfree.chart.ChartFactory
 import org.jfree.chart.ChartPanel
 import org.jfree.chart.JFreeChart
 import org.jfree.chart.plot.XYPlot
 import org.jfree.data.xy.XYSeries
 import org.jfree.data.xy.XYSeriesCollection
-import org.matsim.api.core.v01.Coord
-import org.matsim.api.core.v01.Scenario
-import org.matsim.core.config.ConfigUtils
-import org.matsim.core.scenario.ScenarioUtils
-import org.matsim.facilities.ActivityFacilities
-import org.matsim.facilities.ActivityFacility
-import org.matsim.facilities.MatsimFacilitiesReader
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import javax.swing.JFrame
 import java.awt.BorderLayout
 import java.sql.*
-import groovy.sql.Sql
 
-title = 'Regular Grid'
-description = 'Create receivers based on a Matsim "facilities" file.'
+title = 'Plot Exposition'
+description = 'Plot Exposition. Will display a Graph Window on the server'
 
 inputs = [
     expositionsTableName : [
-            name: 'Name of the table containing the expositions',
-            title: 'Name of the table containing the expositions',
-            description: 'Name of the table containing the expositions',
-            type: String.class
+        name: 'Name of the table containing the expositions',
+        title: 'Name of the table containing the expositions',
+        description: 'Name of the table containing the expositions' +
+                '<br/>The table must contain the following fields : ' +
+                '<br/>PK, PERSON_ID, HOME_FACILITY, HOME_GEOM, WORK_FACILITY, WORK_GEOM, LAEQ, HOME_LAEQ, DIFF_LAEQ',
+        type: String.class
     ],
     expositionField: [
-            name: 'Field containing noise exposition',
-            title: 'Field containing noise exposition',
-            description: 'Field containing noise exposition',
-            min: 0,
-            max: 1,
-            type: String.class
+        name: 'Field containing noise exposition',
+        title: 'Field containing noise exposition',
+        description: 'Field containing noise exposition',
+        type: String.class
+    ],
+    expositionField: [
+        name: 'Other field containing noise exposition',
+        title: 'Other field containing noise exposition',
+        description: 'Other field containing noise exposition',
+        min: 0,
+        max: 1,
+        type: String.class
     ]
 ]
 
@@ -60,6 +79,7 @@ static Connection openGeoserverDataStoreConnection(String dbName) {
     return jdbcDataStore.getDataSource().getConnection()
 }
 
+
 def run(input) {
 
     // Get name of the database
@@ -71,16 +91,22 @@ def run(input) {
     }
 }
 
-def exec(connection, input) {
+// main function of the script
+def exec(Connection connection, input) {
 
-    String expositionsTableName = "AGENTS"
-    if (input['expositionsTableName']) {
-        expositionsTableName = input['expositionsTableName']
-    }
-    String expositionField = "LAEQ"
-    if (input['expositionField']) {
-        expositionField = input['expositionField']
-    }
+    connection = new ConnectionWrapper(connection)
+
+    Sql sql = new Sql(connection)
+
+    String resultString
+
+    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
+    logger.info('Start : Plot_Exposition_Distribution')
+    logger.info("inputs {}", input)
+
+    String expositionsTableName = input['expositionsTableName']
+    String expositionField = input['expositionField']
+
     String otherExpositionField = ""
     if (input['otherExpositionField']) {
         otherExpositionField = input['otherExpositionField']
@@ -139,6 +165,9 @@ def exec(connection, input) {
     f.setLocationRelativeTo(null);
     f.setVisible(true);
 
-    // Delete previous receivers
-    return [result: "Process done."]
+
+    logger.info('End : Plot_Exposition_Distribution')
+    resultString = "Process done."
+    logger.info('Result : ' + resultString)
+    return resultString
 }
