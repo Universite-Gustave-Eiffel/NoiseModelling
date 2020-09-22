@@ -23,11 +23,44 @@ import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.io.WKTReader
 import org.noise_planet.noisemodelling.wps.Receivers.Building_Grid
+import org.noise_planet.noisemodelling.wps.Receivers.Building_Grid3D
 import org.noise_planet.noisemodelling.wps.Receivers.Delaunay_Grid
 import org.noise_planet.noisemodelling.wps.Receivers.Random_Grid
 import org.noise_planet.noisemodelling.wps.Receivers.Regular_Grid
 
 class TestReceivers extends JdbcTestCase {
+
+    void testBuildingGrid3D() {
+        def sql = new Sql(connection)
+
+        SHPRead.readShape(connection, TestReceivers.getResource("buildings.shp").getPath())
+        sql.execute("CREATE SPATIAL INDEX ON BUILDINGS(THE_GEOM)")
+        sql.execute("CREATE INDEX bheight ON BUILDINGS(height)")
+
+
+        new Building_Grid3D().exec(connection,  ["tableBuilding" : "BUILDINGS",
+                                                 "delta"         : 5,
+                                                 "heightLevels"  : 2.5,
+                                                 "fenceTableName": "BUILDINGS"])
+
+        def receivers_in_buildings = sql.firstRow("SELECT COUNT(*) from receivers r, buildings b where r.the_geom && b.the_geom and st_intersects(r.the_geom, b.the_geom) and ST_Z(r.the_geom) < b.height ")[0] as Integer
+        assertEquals(0, receivers_in_buildings)
+
+        sql.execute("CREATE INDEX ON RECEIVERS(build_pk)")
+
+        // check effective distance between receivers
+
+        def average_receiver_min_distance = sql.firstRow("SELECT AVG((select ST_3DLength(ST_MakeLine(R.THE_GEOM, RR.THE_GEOM)) dist from receivers rr where rr.build_pk = r.build_pk and r.pk != rr.pk ORDER BY ST_DISTANCE(R.THE_GEOM, RR.THE_GEOM) LIMIT 1)) avgdist from receivers r")[0] as Double
+
+        // SHPWrite.exportTable(connection, "target/receivers.shp", "RECEIVERS")
+        //SHPWrite.exportTable(connection, "target/receivers_line.shp", "TMP_SCREENS_MERGE")
+        assertEquals(4.55, average_receiver_min_distance, 0.1)
+
+
+        assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
+
+
+    }
 
     void testBuildingGrid() {
         def sql = new Sql(connection)
