@@ -177,7 +177,7 @@ class DronePropagationProcessData extends PropagationProcessData {
 class DronePropagationProcessDataFactory implements PointNoiseMap.PropagationProcessDataFactory {
     @Override
     PropagationProcessData create(FastObstructionTest freeFieldFinder) {
-        return new DronePropagationProcessData(freeFieldFinder)
+        return new CarsPropagationProcessData(freeFieldFinder)
     }
 
     @Override
@@ -328,7 +328,7 @@ def run(input) {
         pointNoiseMap.setThreadCount(n_thread)
 
         // Init custom input in order to compute more than just attenuation
-        DronePropagationProcessDataFactory dronePropagationProcessDataFactory = new DronePropagationProcessDataFactory()
+        CarsPropagationProcessDataFactory dronePropagationProcessDataFactory = new CarsPropagationProcessDataFactory()
         pointNoiseMap.setPropagationProcessDataFactory(dronePropagationProcessDataFactory)
 
         RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1);

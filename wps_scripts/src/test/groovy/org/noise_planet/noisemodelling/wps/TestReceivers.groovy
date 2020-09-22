@@ -1,22 +1,14 @@
 /**
- * NoiseModelling is a free and open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
+ * NoiseModelling is an open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
  *
- * This version is developed by Université Gustave Eiffel and CNRS
+ * This version is developed by the DECIDE team from the Lab-STICC (CNRS) and by the Mixt Research Unit in Environmental Acoustics (Université Gustave Eiffel).
  * <http://noise-planet.org/noisemodelling.html>
- * as part of:
- * the Eval-PDU project (ANR-08-VILL-0005) 2008-2011, funded by the Agence Nationale de la Recherche (French)
- * the CENSE project (ANR-16-CE22-0012) 2017-2021, funded by the Agence Nationale de la Recherche (French)
- * the Nature4cities (N4C) project, funded by European Union’s Horizon 2020 research and innovation programme under grant agreement No 730468
  *
- * Noisemap is distributed under GPL 3 license.
+ * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE provided with this software.
  *
  * Contact: contact@noise-planet.org
  *
- * Copyright (C) 2011-2012 IRSTV (FR CNRS 2488) and Ifsttar
- * Copyright (C) 2013-2019 Ifsttar and CNRS
- * Copyright (C) 2020 Université Gustave Eiffel and CNRS
  */
-
 
 package org.noise_planet.noisemodelling.wps
 
@@ -29,6 +21,7 @@ import org.h2gis.utilities.SFSUtilities
 import org.h2gis.utilities.TableLocation
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory
+import org.locationtech.jts.io.WKTReader
 import org.noise_planet.noisemodelling.wps.Receivers.Building_Grid
 import org.noise_planet.noisemodelling.wps.Receivers.Delaunay_Grid
 import org.noise_planet.noisemodelling.wps.Receivers.Random_Grid
@@ -194,7 +187,10 @@ class TestReceivers extends JdbcTestCase {
         SHPRead.readShape(connection, TestReceivers.getResource("roads.shp").getPath())
 
         GeometryFactory f = new GeometryFactory();
-        def g = f.toGeometry(new Envelope(223783, 224196,6757278, 6757481))
+        WKTReader r = new WKTReader();
+        def g = r.read("POLYGON ((223994.2 6757775.9, 223930.2 6757890.1, 223940.2 6757895.7, 224001.6 6757783.2, 223994.2 6757775.9))")
+        def gNoReceiver = r.read("POLYGON ((223938 6757827.1, 223957.4 6757836.6, 223947.4 6757851.4, 223940.2 6757833, 223938 6757827.1))");
+
         def gFence = ST_Transform.ST_Transform(connection, ST_SetSRID.setSRID(g, 2154), 4326)
 
         new Random_Grid().exec(connection,  ["buildingTableName" : "BUILDINGS",
@@ -206,8 +202,12 @@ class TestReceivers extends JdbcTestCase {
 
         assertEquals(0, sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS WHERE NOT ST_INTERSECTS(THE_GEOM, '"+g.toString()+"'::geometry)")[0] as Integer)
 
+        assertEquals(0, sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS WHERE ST_INTERSECTS(THE_GEOM, '"+gNoReceiver.toString()+"'::geometry)")[0] as Integer)
+
         assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
     }
+
+
     public void testRegularGridFence() {
 
         def sql = new Sql(connection)
@@ -241,4 +241,37 @@ class TestReceivers extends JdbcTestCase {
 
         assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
     }
+
+
+    public void testRegularGridFenceGeom() {
+
+        def sql = new Sql(connection)
+
+        SHPRead.readShape(connection, TestReceivers.getResource("buildings.shp").getPath())
+        SHPRead.readShape(connection, TestReceivers.getResource("roads.shp").getPath())
+
+        GeometryFactory f = new GeometryFactory();
+        WKTReader r = new WKTReader();
+        def g = r.read("POLYGON ((223994.2 6757775.9, 223930.2 6757890.1, 223940.2 6757895.7, 224001.6 6757783.2, 223994.2 6757775.9))")
+        def gNoReceiver = r.read("POLYGON ((223938 6757827.1, 223957.4 6757836.6, 223947.4 6757851.4, 223940.2 6757833, 223938 6757827.1))");
+
+        def gFence = ST_Transform.ST_Transform(connection, ST_SetSRID.setSRID(g, 2154), 4326)
+
+        new Regular_Grid().exec(connection,  ["buildingTableName" : "BUILDINGS",
+                                             "sourcesTableName" : "ROADS",
+                                             "delta" : 1,
+                                             "fence" : gFence.toString()])
+
+        assertFalse(0 == sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS")[0] as Integer)
+
+        assertEquals(0, sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS WHERE NOT ST_INTERSECTS(THE_GEOM, '"+g.toString()+"'::geometry)")[0] as Integer)
+
+        assertEquals(0, sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS WHERE ST_INTERSECTS(THE_GEOM, '"+gNoReceiver.toString()+"'::geometry)")[0] as Integer)
+
+        assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
+
+        SHPWrite.exportTable(connection, "target/regular.shp", "RECEIVERS")
+
+    }
+
 }
