@@ -211,25 +211,7 @@ def exec(Connection connection, input) {
             "from " + building_table_name + filter_geom_query)
     sql.execute("create spatial index on tmp_receivers_lines(the_geom)")
 
-    /*
-    // list buildings that will remove receivers (if height is superior than receiver height
-    sql.execute("drop table if exists tmp_relation_screen_building;")
-    sql.execute("create table tmp_relation_screen_building as select " +
-            "b." + buildingPk + " as PK_building, " +
-            "b.height HEIGHT, " +
-            "s.pk as pk_screen " +
-            "from " + building_table_name + " b, tmp_receivers_lines s " +
-            "where b.the_geom && s.the_geom and s.pk != b.pk and ST_Intersects(b.the_geom, s.the_geom) and b.height > " + h)
-
-    // truncate receiver lines
-    sql.execute("drop table if exists tmp_screen_truncated;")
-    sql.execute("create table tmp_screen_truncated as select r.pk_screen, ST_DIFFERENCE(s.the_geom, ST_BUFFER(ST_ACCUM(b.the_geom), 2)) the_geom from tmp_relation_screen_building r, " + building_table_name + " b, tmp_receivers_lines s WHERE PK_building = b." + buildingPk + " AND pk_screen = s.pk  GROUP BY pk_screen, s.the_geom;")
-    sql.execute("DROP TABLE IF EXISTS TMP_SCREENS_MERGE;")
-    sql.execute("DROP TABLE IF EXISTS TMP_SCREENS;")
-     */
-
     // union of truncated receivers and non tructated, split line to points
-    //sql.execute("create table TMP_SCREENS_MERGE (pk serial, the_geom geometry, hBuilding float) as select null, s.the_geom the_geom, s.height hBuilding from tmp_receivers_lines s where not st_isempty(s.the_geom) and pk not in (select pk_screen from tmp_screen_truncated) UNION ALL select null, the_geom, height from tmp_screen_truncated where not st_isempty(the_geom);")
     sql.execute("create table TMP_SCREENS_MERGE (pk serial, the_geom geometry, hBuilding float) as select null, s.the_geom the_geom, s.height hBuilding from tmp_receivers_lines s where not st_isempty(s.the_geom) ;")
 
 
@@ -273,12 +255,11 @@ def exec(Connection connection, input) {
         logger.info('create RECEIVERS table...')
 
 
-        sql.execute("create table " + receivers_table_name + "(pk serial, the_geom geometry,build_pk integer) as select null, ST_SetSRID(the_geom," + targetSrid.toInteger() + ") , pk building_pk from TMP_SCREENS;")
+        sql.execute("create table " + receivers_table_name + "(pk serial, the_geom geometry,build_pk integer, level integer) as select null, ST_SetSRID(the_geom," + targetSrid.toInteger() + ") , pk building_pk, level from TMP_SCREENS;")
 
         if (input['sourcesTableName']) {
             // Delete receivers near sources
             logger.info('Delete receivers near sources...')
-            sql.execute("Create spatial index on " + sources_table_name + "(the_geom);")
             sql.execute("delete from " + receivers_table_name + " g where exists (select 1 from " + sources_table_name + " r where st_expand(g.the_geom, 1, 1) && r.the_geom and st_distance(g.the_geom, r.the_geom) < 1 limit 1);")
         }
 
@@ -291,7 +272,7 @@ def exec(Connection connection, input) {
         // building have population attribute
         // set population attribute divided by number of receiver to each receiver
         sql.execute("DROP TABLE IF EXISTS tmp_receivers")
-        sql.execute("create table tmp_receivers(pk serial, the_geom geometry,build_pk integer) as select null, ST_SetSRID(the_geom," + targetSrid.toInteger() + "), pk building_pk from TMP_SCREENS;")
+        sql.execute("create table tmp_receivers(pk serial, the_geom geometry,build_pk integer, level integer) as select null, ST_SetSRID(the_geom," + targetSrid.toInteger() + "), pk building_pk, level from TMP_SCREENS;")
 
         if (input['sourcesTableName']) {
             // Delete receivers near sources
@@ -306,13 +287,12 @@ def exec(Connection connection, input) {
         }
 
         sql.execute("CREATE INDEX ON tmp_receivers(build_pk)")
-        sql.execute("create table " + receivers_table_name + "(pk serial, the_geom geometry,build_pk integer, pop float) as select null, a.the_geom, a.build_pk, b.pop/COUNT(DISTINCT aa.pk)::float from tmp_receivers a, " + building_table_name + " b,tmp_receivers aa where b." + buildingPk + " = a.build_pk and a.build_pk = aa.build_pk GROUP BY a.the_geom, a.build_pk, b.pop;")
+        sql.execute("create table " + receivers_table_name + "(pk serial, the_geom geometry,build_pk, level integer, pop float) as select null, a.the_geom, a.build_pk, b.pop/COUNT(DISTINCT aa.pk)::float, level from tmp_receivers a, " + building_table_name + " b,tmp_receivers aa where b." + buildingPk + " = a.build_pk and a.build_pk = aa.build_pk GROUP BY a.the_geom, a.build_pk, b.pop;")
         sql.execute("drop table if exists tmp_receivers")
     }
 
 
     logger.info("Delete receivers inside buildings")
-    sql.execute("Create spatial index on " + building_table_name + "(the_geom);")
     sql.execute("delete from " + receivers_table_name + " g where exists (select 1 from " + building_table_name + " b where ST_Z(g.the_geom) < b.HEIGHT and g.the_geom && b.the_geom and ST_INTERSECTS(g.the_geom, b.the_geom) limit 1);")
 
 

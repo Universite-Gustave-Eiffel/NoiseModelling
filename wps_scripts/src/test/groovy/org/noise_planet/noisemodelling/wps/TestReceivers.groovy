@@ -44,30 +44,18 @@ class TestReceivers extends JdbcTestCase {
                                                  "heightLevels"  : 2.5,
                                                  "fenceTableName": "BUILDINGS"])
 
-
-        File testPath = new File("target/testReceivers3D.geojson")
-
-        if(testPath.exists()) {
-            testPath.delete()
-        }
-
-        new Export_Table().exec(connection, ["exportPath"   : "target/testReceivers3D.geojson",
-                                                   "tableToExport": "RECEIVERS"])
-        assertTrue(testPath.exists())
-
         def receivers_in_buildings = sql.firstRow("SELECT COUNT(*) from receivers r, buildings b where r.the_geom && b.the_geom and st_intersects(r.the_geom, b.the_geom) and ST_Z(r.the_geom) < b.height ")[0] as Integer
         assertEquals(0, receivers_in_buildings)
 
-        sql.execute("CREATE SPATIAL INDEX ON RECEIVERS(the_geom)")
         sql.execute("CREATE INDEX ON RECEIVERS(build_pk)")
 
         // check effective distance between receivers
 
-        def average_receiver_min_distance = sql.firstRow("SELECT AVG((select ST_DISTANCE(R.THE_GEOM, RR.THE_GEOM) dist from receivers rr where rr.build_pk = r.build_pk and r.pk != rr.pk ORDER BY ST_DISTANCE(R.THE_GEOM, RR.THE_GEOM) LIMIT 1)) avgdist from receivers r")[0] as Double
+        def average_receiver_min_distance = sql.firstRow("SELECT AVG((select ST_3DLength(ST_MakeLine(R.THE_GEOM, RR.THE_GEOM)) dist from receivers rr where rr.build_pk = r.build_pk and r.pk != rr.pk ORDER BY ST_DISTANCE(R.THE_GEOM, RR.THE_GEOM) LIMIT 1)) avgdist from receivers r")[0] as Double
 
-        //SHPWrite.exportTable(connection, "target/receivers.shp", "RECEIVERS")
+        // SHPWrite.exportTable(connection, "target/receivers.shp", "RECEIVERS")
         //SHPWrite.exportTable(connection, "target/receivers_line.shp", "TMP_SCREENS_MERGE")
-        assertEquals(0.13, average_receiver_min_distance, 0.6)
+        assertEquals(4.55, average_receiver_min_distance, 0.1)
 
 
         assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
