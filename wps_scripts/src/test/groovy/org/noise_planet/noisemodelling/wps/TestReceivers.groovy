@@ -62,7 +62,6 @@ class TestReceivers extends JdbcTestCase {
 
     }
 
-    @Test
     void testBuildingGrid() {
         def sql = new Sql(connection)
 
