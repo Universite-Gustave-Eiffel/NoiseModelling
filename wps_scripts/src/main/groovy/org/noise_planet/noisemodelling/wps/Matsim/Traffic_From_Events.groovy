@@ -95,6 +95,16 @@ inputs = [
         max: 1,
         type: String.class
     ],
+    SRID : [
+            name: 'Projection identifier',
+            title: 'Projection identifier',
+            description: 'Projection identifier (also called SRID) of the geometric data.' +
+                    'It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection).' +
+                    '</br><b> Default value : 4326 </b> ',
+            min: 0,
+            max: 1,
+            type: Integer.class
+    ],
     skipUnused: [
         name: 'Skip unused links ?',
         title: 'Skip unused links ?',
@@ -207,6 +217,11 @@ def exec(Connection connection, input) {
          logger.warn('timeSlice not in ["DEN", "hour", "quarter"], setting it to "hour"')
      }
 
+    String SRID = "4326"
+    if (input['SRID']) {
+        SRID = input['SRID'];
+    }
+
     boolean skipUnused = false;
     if (input["skipUnused"]) {
         skipUnused = input["skipUnused"] as boolean;
@@ -258,6 +273,7 @@ def exec(Connection connection, input) {
     ProcessOutputEventHandler evHandler = new ProcessOutputEventHandler();
 
     evHandler.setTimeSlice(timeSlice);
+    evHandler.setSRID(SRID);
     evHandler.setIgnoreAgents(ignoreAgents);
     evHandler.setPerVehicleLevel(perVehicleLevel);
     evHandler.setPopulationFactor(populationFactor);
@@ -368,6 +384,7 @@ public class ProcessOutputEventHandler implements
     Map<Id<Link>, LinkStatStruct> links = new HashMap<Id<Link>, LinkStatStruct>();
     Map<Id<Vehicle>, Id<Person>> personsInVehicle = new HashMap<Id<Vehicle>, Id<Person>>();
     String timeSlice;
+    String SRID = 4326;
     boolean perVehicleLevel = false;
     double populationFactor = 1.0;
 
@@ -375,6 +392,10 @@ public class ProcessOutputEventHandler implements
 
     public void setIgnoreAgents(String[] ignoreAgents) {
         this.ignoreAgents = ignoreAgents;
+    }
+
+    public void setSRID(String srid) {
+        this.SRID = srid;
     }
 
     public void setTimeSlice(String slice) {
@@ -412,7 +433,7 @@ public class ProcessOutputEventHandler implements
         double time = event.getTime();
 
         if (!links.containsKey(linkId)) {
-            LinkStatStruct stats = new LinkStatStruct(timeSlice, populationFactor, perVehicleLevel);
+            LinkStatStruct stats = new LinkStatStruct(timeSlice, populationFactor, perVehicleLevel, SRID);
             links.put(linkId, stats);
         }
 
@@ -438,7 +459,7 @@ public class ProcessOutputEventHandler implements
         double time = event.getTime();
 
         if (!links.containsKey(linkId)) {
-            LinkStatStruct stats = new LinkStatStruct(timeSlice, populationFactor, perVehicleLevel);
+            LinkStatStruct stats = new LinkStatStruct(timeSlice, populationFactor, perVehicleLevel, SRID);
             links.put(linkId, stats);
         }
 
@@ -453,12 +474,13 @@ public class ProcessOutputEventHandler implements
             Link link = entry.getValue();
 
             if (!links.containsKey(linkId)) {
-                LinkStatStruct stats = new LinkStatStruct(timeSlice, populationFactor, perVehicleLevel);
+                LinkStatStruct stats = new LinkStatStruct(timeSlice, populationFactor, perVehicleLevel, SRID);
                 stats.setLink(link);
                 links.put(linkId, stats);
             }
         }
     }
+
 }
 
 public class LinkStatStruct {
@@ -471,6 +493,7 @@ public class LinkStatStruct {
     private Map<String, ArrayList<Double> > acousticLevels = new HashMap<String, ArrayList<Double> >();
     private Link link;
 
+    private String SRID = 4326;
     private boolean perVehicleLevel = false;
     private double populationFactor = 1.0;
 
@@ -487,9 +510,10 @@ public class LinkStatStruct {
         this.populationFactor = populationFactor;
     }
 
-    public LinkStatStruct(String timeSlice, double populationFactor, boolean perVehicleLevel) {
+    public LinkStatStruct(String timeSlice, double populationFactor, boolean perVehicleLevel, SRID) {
         this(timeSlice, populationFactor);
         this.perVehicleLevel = perVehicleLevel;
+        this.SRID = SRID;
     }
 
     boolean isAlternativeDifferent(String timeString) {
@@ -804,7 +828,7 @@ public class LinkStatStruct {
         sql += insert_start
         sql += "'" + link.getId().toString() + "', ";
         sql += "'" + getOsmId() + "', ";
-        sql += "'" + geom + "'";
+        sql += "ST_GeomFromText('" + geom + "', " + SRID + ")";
         sql += insert_end
 
         insert_start = "INSERT INTO " + statsTableName + ''' (LINK_ID,
