@@ -126,6 +126,25 @@ def exec(Connection connection, input) {
     String attenuationTable = input['attenuationTable']
     String outTableName = input['outTableName']
 
+    DatabaseMetaData dbMeta = connection.getMetaData();
+    ResultSet rs = dbMeta.getIndexInfo(null, null, attenuationTable, false, false);
+
+    logger.info("searching index on attenuation matrix IDSOURCE ... ")
+    boolean indexIDSOURCE = false;
+    while (rs.next()) {
+        String column = rs.getString("COLUMN_NAME");
+        if (column == "IDSOURCE") {
+            indexIDSOURCE = true;
+            logger.info("index on attenuation matrix IDSOURCE found")
+            break;
+        }
+    }
+
+    if (!indexIDSOURCE) {
+        logger.info("index on attenuation matrix IDSOURCE, NOT found, creating one...")
+        sql.execute("CREATE INDEX ON " + attenuationTable + " (IDSOURCE)");
+    }
+
     sql.execute(String.format("DROP TABLE IF EXISTS %s", outTableName))
 
     String query = "CREATE TABLE " + outTableName + '''( 
@@ -140,24 +159,26 @@ def exec(Connection connection, input) {
             HZ2000 double precision,
             HZ4000 double precision,
             HZ8000 double precision,
-            TIMESTRING varchar(255)
+            TIMESTRING varchar
         ) AS
         SELECT NULL, lg.IDRECEIVER,  lg.THE_GEOM,
-            10 * LOG10( SUM(POWER(10,lg.HZ63 / 10) + POWER(10,mrs.LW63 / 10)) ) AS HZ63,
-            10 * LOG10( SUM(POWER(10,lg.HZ125 / 10) + POWER(10,mrs.LW125 / 10)) ) AS HZ125,
-            10 * LOG10( SUM(POWER(10,lg.HZ250 / 10) + POWER(10,mrs.LW250 / 10)) ) AS HZ250,
-            10 * LOG10( SUM(POWER(10,lg.HZ500 / 10) + POWER(10,mrs.LW500 / 10)) ) AS HZ500,
-            10 * LOG10( SUM(POWER(10,lg.HZ1000 / 10) + POWER(10,mrs.LW1000 / 10)) ) AS HZ1000,
-            10 * LOG10( SUM(POWER(10,lg.HZ2000 / 10) + POWER(10,mrs.LW2000 / 10)) ) AS HZ2000,
-            10 * LOG10( SUM(POWER(10,lg.HZ4000 / 10) + POWER(10,mrs.LW4000 / 10)) ) AS HZ4000,
-            10 * LOG10( SUM(POWER(10,lg.HZ8000 / 10) + POWER(10,mrs.LW8000 / 10)) ) AS HZ8000,
+            10 * LOG10( SUM(POWER(10,(mrs.LW63 + lg.HZ63) / 10))) AS HZ63,
+            10 * LOG10( SUM(POWER(10,(mrs.LW125 + lg.HZ125) / 10))) AS HZ125,
+            10 * LOG10( SUM(POWER(10,(mrs.LW250 + lg.HZ250) / 10))) AS HZ250,
+            10 * LOG10( SUM(POWER(10,(mrs.LW500 + lg.HZ500) / 10))) AS HZ500,
+            10 * LOG10( SUM(POWER(10,(mrs.LW1000 + lg.HZ1000) / 10))) AS HZ1000,
+            10 * LOG10( SUM(POWER(10,(mrs.LW2000 + lg.HZ2000) / 10))) AS HZ2000,
+            10 * LOG10( SUM(POWER(10,(mrs.LW4000 + lg.HZ4000) / 10))) AS HZ4000,
+            10 * LOG10( SUM(POWER(10,(mrs.LW8000 + lg.HZ8000) / 10))) AS HZ8000,
             mrs.TIMESTRING AS TIMESTRING
         FROM ''' + attenuationTable + '''  lg 
         INNER JOIN ''' + matsimRoads + ''' mr ON lg.IDSOURCE = mr.PK
         INNER JOIN ''' + matsimRoadsStats + ''' mrs ON mr.LINK_ID = mrs.LINK_ID
         ''' + ((timeString != "") ? "WHERE mrs.TIMESTRING = \'" + timeString + "\' " : "") + '''
         GROUP BY lg.IDRECEIVER, lg.THE_GEOM, mrs.TIMESTRING;
-    ;'''
+    '''
+
+    logger.info(query)
 
     sql.execute(query)
 
