@@ -197,19 +197,25 @@ def exec(Connection connection, input) {
 
 
     sql.execute("create table " + receivers_table_name + " as select ST_SetSRID(ST_MAKEPOINT(RAND()*(" + envelope.maxX + " - " + envelope.minX.toString() + ") + " + envelope.minX.toString() + ", RAND()*(" + envelope.maxY.toString() + " - " + envelope.minY.toString() + ") + " + envelope.minY.toString() + ", " + h + "), " + targetSrid.toInteger() + ") as the_geom from system_range(0," + nReceivers.toString() + ");")
+
+
+    if (input['fence']) {
+        // Delete points outside geom but inside
+        sql.execute("DELETE FROM " + receivers_table_name + " WHERE NOT ST_Intersects(THE_GEOM, :geom)", ['geom': fenceGeom])
+    }
+
+    logger.info("Create spatial index on " + receivers_table_name)
     sql.execute("Create spatial index on " + receivers_table_name + "(the_geom);")
 
     logger.info('Delete receivers where buildings...')
     if (input['buildingTableName']) {
         //Delete receivers inside buildings .
-        sql.execute("Create spatial index on " + building_table_name + "(the_geom);")
         sql.execute("delete from " + receivers_table_name + " g where exists (select 1 from " + building_table_name + " b where g.the_geom && b.the_geom and ST_distance(b.the_geom, g.the_geom) < 1 and b.height >= " + h + " limit 1);")
     }
 
     logger.info('Delete receivers where sound sources...')
     if (input['sourcesTableName']) {
         //Delete receivers near sources
-        sql.execute("Create spatial index on " + sources_table_name + "(the_geom);")
         sql.execute("delete from " + receivers_table_name + " g where exists (select 1 from " + sources_table_name + " r where st_expand(g.the_geom, 1) && r.the_geom and st_distance(g.the_geom, r.the_geom) < 1 limit 1);")
     }
 

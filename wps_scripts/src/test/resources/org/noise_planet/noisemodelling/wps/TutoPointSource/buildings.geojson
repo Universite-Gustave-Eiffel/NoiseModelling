@@ -1,0 +1,1 @@
+{"type":"FeatureCollection","features":[{"type":"Feature","geometry":{"type":"MultiPolygon","coordinates":[[[[2.5,2.5],[2.5,7.5],[7.5,7.5],[7.5,2.5],[2.5,2.5]]]]},"properties":{"pk":1,"height":5.0}},{"type":"Feature","geometry":{"type":"MultiPolygon","coordinates":[[[[10.0,8.0],[13.5,8.0],[13.5,13.0],[10.0,13.0],[10.0,8.0]]]]},"properties":{"pk":2,"height":10.0}}]}

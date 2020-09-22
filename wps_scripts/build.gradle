@@ -45,7 +45,6 @@ dependencies {
     compile group: 'org.orbisgis', name: 'noisemodelling-emission', version: '3.2.2-SNAPSHOT'
     compile group: 'org.orbisgis', name: 'noisemodelling-propagation', version: '3.2.2-SNAPSHOT'
     compile group: 'org.orbisgis', name: 'h2gis-extension', version: '3.2.2-SNAPSHOT'
-    compile group: 'org.orbisgis', name: 'h2gis-extension', version: '3.2.2-SNAPSHOT'
     compile group: 'org.openstreetmap.osmosis', name: 'osmosis-core', version: '0.48.3'
     compile group: 'org.openstreetmap.osmosis', name: 'osmosis-pbf', version: '0.46'
 

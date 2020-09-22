@@ -19,10 +19,9 @@ import org.h2gis.functions.spatial.crs.ST_SetSRID
 import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.SFSUtilities
 import org.h2gis.utilities.TableLocation
-import org.junit.Test
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory
-import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
+import org.locationtech.jts.io.WKTReader
 import org.noise_planet.noisemodelling.wps.Receivers.Building_Grid
 import org.noise_planet.noisemodelling.wps.Receivers.Building_Grid3D
 import org.noise_planet.noisemodelling.wps.Receivers.Delaunay_Grid
@@ -100,7 +99,6 @@ class TestReceivers extends JdbcTestCase {
 
     }
 
-    @Test
     void testBuildingGridWithPop() {
         def sql = new Sql(connection)
 
@@ -129,8 +127,6 @@ class TestReceivers extends JdbcTestCase {
         assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
 
     }
-
-    @Test
     void testBuildingGridFence() {
         def sql = new Sql(connection)
 
@@ -157,8 +153,7 @@ class TestReceivers extends JdbcTestCase {
 
     }
 
-    @Test
-    void testDelaunayGrid() {
+    public void testDelaunayGrid() {
         def sql = new Sql(connection)
 
         SHPRead.readShape(connection, TestReceivers.getResource("buildings.shp").getPath())
@@ -186,8 +181,7 @@ class TestReceivers extends JdbcTestCase {
         assertEquals(0.0, max_dist_c, 1e-6d);
     }
 
-    @Test
-    void testRandomGrid() {
+    public void testRandomGrid() {
 
         def sql = new Sql(connection)
 
@@ -202,8 +196,7 @@ class TestReceivers extends JdbcTestCase {
         assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
     }
 
-    @Test
-    void testRandomGridFence() {
+    public void testRandomGridFence() {
 
         def sql = new Sql(connection)
 
@@ -220,8 +213,7 @@ class TestReceivers extends JdbcTestCase {
         assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
     }
 
-    @Test
-    void testRandomGridFence2() {
+    public void testRandomGridFence2() {
 
         def sql = new Sql(connection)
 
@@ -229,7 +221,10 @@ class TestReceivers extends JdbcTestCase {
         SHPRead.readShape(connection, TestReceivers.getResource("roads.shp").getPath())
 
         GeometryFactory f = new GeometryFactory();
-        def g = f.toGeometry(new Envelope(223783, 224196,6757278, 6757481))
+        WKTReader r = new WKTReader();
+        def g = r.read("POLYGON ((223994.2 6757775.9, 223930.2 6757890.1, 223940.2 6757895.7, 224001.6 6757783.2, 223994.2 6757775.9))")
+        def gNoReceiver = r.read("POLYGON ((223938 6757827.1, 223957.4 6757836.6, 223947.4 6757851.4, 223940.2 6757833, 223938 6757827.1))");
+
         def gFence = ST_Transform.ST_Transform(connection, ST_SetSRID.setSRID(g, 2154), 4326)
 
         new Random_Grid().exec(connection,  ["buildingTableName" : "BUILDINGS",
@@ -241,11 +236,13 @@ class TestReceivers extends JdbcTestCase {
 
         assertEquals(0, sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS WHERE NOT ST_INTERSECTS(THE_GEOM, '"+g.toString()+"'::geometry)")[0] as Integer)
 
+        assertEquals(0, sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS WHERE ST_INTERSECTS(THE_GEOM, '"+gNoReceiver.toString()+"'::geometry)")[0] as Integer)
+
         assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
     }
 
-    @Test
-    void testRegularGridFence() {
+
+    public void testRegularGridFence() {
 
         def sql = new Sql(connection)
 
@@ -264,8 +261,7 @@ class TestReceivers extends JdbcTestCase {
         assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
     }
 
-    @Test
-    void testRegularGridFenceTable() {
+    public void testRegularGridFenceTable() {
 
         def sql = new Sql(connection)
 
@@ -279,4 +275,37 @@ class TestReceivers extends JdbcTestCase {
 
         assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
     }
+
+
+    public void testRegularGridFenceGeom() {
+
+        def sql = new Sql(connection)
+
+        SHPRead.readShape(connection, TestReceivers.getResource("buildings.shp").getPath())
+        SHPRead.readShape(connection, TestReceivers.getResource("roads.shp").getPath())
+
+        GeometryFactory f = new GeometryFactory();
+        WKTReader r = new WKTReader();
+        def g = r.read("POLYGON ((223994.2 6757775.9, 223930.2 6757890.1, 223940.2 6757895.7, 224001.6 6757783.2, 223994.2 6757775.9))")
+        def gNoReceiver = r.read("POLYGON ((223938 6757827.1, 223957.4 6757836.6, 223947.4 6757851.4, 223940.2 6757833, 223938 6757827.1))");
+
+        def gFence = ST_Transform.ST_Transform(connection, ST_SetSRID.setSRID(g, 2154), 4326)
+
+        new Regular_Grid().exec(connection,  ["buildingTableName" : "BUILDINGS",
+                                             "sourcesTableName" : "ROADS",
+                                             "delta" : 1,
+                                             "fence" : gFence.toString()])
+
+        assertFalse(0 == sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS")[0] as Integer)
+
+        assertEquals(0, sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS WHERE NOT ST_INTERSECTS(THE_GEOM, '"+g.toString()+"'::geometry)")[0] as Integer)
+
+        assertEquals(0, sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS WHERE ST_INTERSECTS(THE_GEOM, '"+gNoReceiver.toString()+"'::geometry)")[0] as Integer)
+
+        assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
+
+        SHPWrite.exportTable(connection, "target/regular.shp", "RECEIVERS")
+
+    }
+
 }

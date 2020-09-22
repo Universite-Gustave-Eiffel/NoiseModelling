@@ -120,10 +120,17 @@ class TestImportExport extends JdbcTestCase {
     @Test
     void testExportFile() {
 
+        // Check export geojson
+        File testPath = new File("target/test.geojson")
+
+        if(testPath.exists()) {
+            testPath.delete()
+        }
+
         SHPRead.readShape(connection, TestImportExport.getResource("receivers.shp").getPath())
 
         String res = new Export_Table().exec(connection,
-                ["exportPath"   : TestImportExport.getResource("receivers.shp").getPath(),
+                ["exportPath"   : "target/test.geojson",
                  "tableToExport": "RECEIVERS"])
 
 
@@ -133,6 +140,7 @@ class TestImportExport extends JdbcTestCase {
 
     @Test
     void testImportOSMBBBike() {
+
 
         new Import_OSM_BBBike().exec(connection,
                 ["importFolder"   : TestImportExport.class.getResource("BBBike/").getPath(),

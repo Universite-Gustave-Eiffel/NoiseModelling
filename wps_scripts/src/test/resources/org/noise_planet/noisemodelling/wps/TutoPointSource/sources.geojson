@@ -1,0 +1,1 @@
+{"type":"FeatureCollection","features":[{"type":"Feature","geometry":{"type":"Point","coordinates":[5.0,5.0,7.0]},"properties":{"pk":1,"lwd63":80.0,"lwd500":80.0,"lwd1000":80.0,"lwd8000":80.0}},{"type":"Feature","geometry":{"type":"Point","coordinates":[10.0,5.0,2.0]},"properties":{"pk":2,"lwd63":80.0,"lwd500":80.0,"lwd1000":80.0,"lwd8000":80.0}}]}
