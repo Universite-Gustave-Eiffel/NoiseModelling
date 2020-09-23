@@ -94,14 +94,14 @@ class TestNoiseModelling extends JdbcTestCase {
 
         leqs = sql.firstRow("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000) FROM LNIGHT_GEOM")
 
-        assertEquals(83.0, leqs[0] as Double, 2.0)
-        assertEquals(74.0, leqs[1] as Double, 2.0)
-        assertEquals(73.0, leqs[2] as Double, 2.0)
-        assertEquals(75.0, leqs[3] as Double, 2.0)
-        assertEquals(79.0, leqs[4] as Double, 2.0)
-        assertEquals(76.0, leqs[5] as Double, 2.0)
-        assertEquals(68.0, leqs[6] as Double, 2.0)
-        assertEquals(58.0, leqs[7] as Double, 2.0)
+        assertEquals(73.9, leqs[0] as Double, 2.0)
+        assertEquals(66.72, leqs[1] as Double, 2.0)
+        assertEquals(65.89, leqs[2] as Double, 2.0)
+        assertEquals(67.36, leqs[3] as Double, 2.0)
+        assertEquals(71.13, leqs[4] as Double, 2.0)
+        assertEquals(68.53, leqs[5] as Double, 2.0)
+        assertEquals(59.88, leqs[6] as Double, 2.0)
+        assertEquals(50.87, leqs[7] as Double, 2.0)
 
         assertTrue(res.contains("LDEN_GEOM"))
 
@@ -178,14 +178,14 @@ class TestNoiseModelling extends JdbcTestCase {
 
         leqs = sql.firstRow("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000) FROM LNIGHT_GEOM")
 
-        assertEquals(83.0, leqs[0] as Double, 2.0)
-        assertEquals(74.0, leqs[1] as Double, 2.0)
-        assertEquals(73.0, leqs[2] as Double, 2.0)
-        assertEquals(75.0, leqs[3] as Double, 2.0)
-        assertEquals(79.0, leqs[4] as Double, 2.0)
-        assertEquals(76.0, leqs[5] as Double, 2.0)
-        assertEquals(68.0, leqs[6] as Double, 2.0)
-        assertEquals(58.0, leqs[7] as Double, 2.0)
+        assertEquals(73.9, leqs[0] as Double, 2.0)
+        assertEquals(66.72, leqs[1] as Double, 2.0)
+        assertEquals(65.89, leqs[2] as Double, 2.0)
+        assertEquals(67.36, leqs[3] as Double, 2.0)
+        assertEquals(71.13, leqs[4] as Double, 2.0)
+        assertEquals(68.53, leqs[5] as Double, 2.0)
+        assertEquals(59.88, leqs[6] as Double, 2.0)
+        assertEquals(50.87, leqs[7] as Double, 2.0)
 
         assertTrue(res.contains("LDEN_GEOM"))
 
