@@ -155,7 +155,7 @@ public class LDENComputeRaysOut extends ComputeRaysOut {
                             ldenComputeRaysOut.ldenData.lEveningLevels);
                 }
                 if(ldenConfig.computeLNight) {
-                    processAndPushResult(receiverPK, ldenComputeRaysOut.ldenPropagationProcessData.wjSourcesD,
+                    processAndPushResult(receiverPK, ldenComputeRaysOut.ldenPropagationProcessData.wjSourcesN,
                             ldenComputeRaysOut.ldenData.lNightLevels);
                 }
                 if(ldenConfig.computeLDEN) {
