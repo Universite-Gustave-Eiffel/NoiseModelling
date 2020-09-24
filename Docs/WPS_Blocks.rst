@@ -29,4 +29,4 @@ Create your own WPS block
 
 Please see `Advanced Users Section`_, because now you want to be one !
 
-.. _Advanced Users Section : For-Advanced-Users
+.. _Advanced Users Section : Own_Wps
