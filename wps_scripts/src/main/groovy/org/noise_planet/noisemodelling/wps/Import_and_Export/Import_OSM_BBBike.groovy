@@ -26,7 +26,7 @@ import org.h2gis.utilities.SFSUtilities
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
-import org.noise_planet.noisemodelling.wps.Geometric_Tools.CleanBuildingsTable
+import org.noise_planet.noisemodelling.wps.Geometric_Tools.Clean_Buildings_Table
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -292,7 +292,7 @@ def exec(Connection connection, input) {
 
         sql.execute("DROP TABLE IF EXISTS BUILDINGS2;")
 
-        new CleanBuildingsTable().exec(connection,
+        new Clean_Buildings_Table().exec(connection,
                 ["tableName": "BUILDINGS"])
 
 

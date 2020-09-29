@@ -58,10 +58,10 @@ inputs = [
 
 outputs = [
         result: [
-                name       : 'Result output string',
-                title      : 'Result output string',
-                description: 'This type of result does not allow the blocks to be linked together.',
-                type       : String.class
+                name: 'Result output geometry',
+                title: 'Result output geometry',
+                description: 'This is the output geometry in WKT OGC format',
+                type: Geometry.class
         ]
 ]
 
