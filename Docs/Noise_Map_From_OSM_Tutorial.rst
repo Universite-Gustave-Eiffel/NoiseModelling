@@ -23,7 +23,7 @@ Exporting data from openstreetmap.org
 
 Import to the database
 ------------------------------------------------
-* Use the WPS block *OsmToInputData*
+* Use the WPS block *Import_OSM*
 
 .. note::
    About the Coordinate System (EPSG code)
