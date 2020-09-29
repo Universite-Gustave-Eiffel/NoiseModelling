@@ -78,13 +78,13 @@ Step 4: Upload files to database
 
 To compute your first noise map, you will need 5 layers: Buildings, Roads, Ground type, Topography (DEM) and Receivers.
 
-In the Geoserver\\data_dir\\data\\wpsdata folder, you will find 5 files (4 shapefiles and 1 geojson) corresponding to these layers.
+In the noisemodelling\\data_dir\\data\\wpsdata folder, you will find 5 files (4 shapefiles and 1 geojson) corresponding to these layers.
 
 You can import these layers in your database using the *Import File* or *Import Folder* blocks.
 
 - Drag *Import File* block into Builder window 
 - Select *Path of the input File* block and type ``data_dir/data/wpsdata/buildings.shp`` in the field **pathFile**: 
-- Then click on *Run Process* after selecting the yellow block
+- Then click on *Run Process* after selecting one of the sub-blocks of your process
 
 .. figure:: images/tutorial/Tutorial1_Image1bis.gif
    :align: center
@@ -99,7 +99,7 @@ Repeat this operation for other files:
 - ``data_dir/data/wpsdata/dem.geojson``
 
 .. note::   
-    You can find all files in your own Geoserver folder, at direction geoserver/data_dir/data/wpsdata/
+    You can find all files in your own NoiseModelling folder, at direction /data_dir/data/wpsdata/
 
 .. note::
     - if you have the message :literal:`Error opening database`, please refer to the note in Step 1.
