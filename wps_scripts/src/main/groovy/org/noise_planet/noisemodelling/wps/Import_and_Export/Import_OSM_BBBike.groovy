@@ -292,8 +292,49 @@ def exec(Connection connection, input) {
 
         sql.execute("DROP TABLE IF EXISTS BUILDINGS2;")
 
-        new Clean_Buildings_Table().exec(connection,
-                ["tableName": "BUILDINGS"])
+
+        // -------------------
+        // Get every inputs
+        // -------------------
+
+        // import building_table_name
+        String building_table_name =  "BUILDINGS"
+
+        // do it case-insensitive
+        building_table_name = building_table_name.toUpperCase()
+
+        //get SRID of the table
+        int srid = SFSUtilities.getSRID(connection, TableLocation.parse(building_table_name))
+        if (srid == 3785 || srid == 4326) throw new IllegalArgumentException("Error : This SRID is not metric. Please use another SRID for your table.")
+        if (srid == 0) throw new IllegalArgumentException("Error : The table does not have an associated SRID.")
+
+        // -------------------------
+        // Initialize some variables
+        // -------------------------
+
+        sql.execute('drop table if exists buildings_temp;' +
+                'create table buildings_temp as select ST_MAKEVALID(ST_precisionreducer(ST_SIMPLIFYPRESERVETOPOLOGY(THE_GEOM,0.1),0.1)) THE_GEOM, PK, HEIGHT from '+building_table_name+'  WHERE ST_Perimeter(THE_GEOM)<1000;')
+
+        logger.info('Make valid every buildings - ok')
+
+        sql.execute("ALTER TABLE buildings_temp ALTER COLUMN PK INT NOT NULL;")
+        sql.execute("ALTER TABLE buildings_temp ADD PRIMARY KEY (PK); ")
+        sql.execute('CREATE SPATIAL INDEX IF NOT EXISTS BUILDINGS_INDEX ON buildings_temp(the_geom);' +
+                'drop table if exists tmp_relation_buildings;' +
+                'create table tmp_relation_buildings as select s1.PK as PK_BUILDING, S2.PK as PK2_BUILDING FROM buildings_temp S1, buildings_temp S2 WHERE ST_AREA(S1.THE_GEOM) < ST_AREA(S2.THE_GEOM) AND S1.THE_GEOM && S2.THE_GEOM AND ST_DISTANCE(S1.THE_GEOM, S2.THE_GEOM) <= 0.1;')
+
+        logger.info('Intersection founded')
+
+        sql.execute("CREATE INDEX ON tmp_relation_buildings(PK_BUILDING);" +
+                "drop table if exists tmp_buildings_truncated;" +
+                "create table tmp_buildings_truncated as select PK_BUILDING, ST_DIFFERENCE(s1.the_geom,  ST_BUFFER(ST_ACCUM(s2.the_geom), 0.1, 'join=mitre')) the_geom, s1.HEIGHT from tmp_relation_buildings r, buildings_temp s1, buildings_temp s2 WHERE PK_BUILDING = S1.PK  AND PK2_BUILDING = S2.PK   GROUP BY PK_BUILDING;")
+
+        logger.info('Intersection remove buildings with intersections')
+
+        sql.execute("DROP TABLE IF EXISTS "+building_table_name+";")
+        sql.execute("create table "+building_table_name+"(PK INTEGER PRIMARY KEY, THE_GEOM GEOMETRY, HEIGHT FLOAT)  as select s.PK, s.the_geom, s.HEIGHT from  BUILDINGS_TEMP s where PK not in (select PK_BUILDING from tmp_buildings_truncated) UNION ALL select PK_BUILDING, the_geom, HEIGHT from tmp_buildings_truncated WHERE NOT st_isempty(the_geom);")
+
+        sql.execute("drop table if exists tmp_buildings_truncated;")
 
 
         logger.info('The table BUILDINGS has been created.')
