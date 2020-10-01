@@ -6,6 +6,7 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.index.strtree.STRtree;
 import org.noise_planet.noisemodelling.propagation.ComputeRays;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOut;
 import org.noise_planet.noisemodelling.propagation.FastObstructionTest;
@@ -183,16 +184,27 @@ public class PointNoiseMap extends JdbcNoiseMap {
         }
         geometryField = geometryFields.get(0);
         ResultSet rs = connection.createStatement().executeQuery("SELECT " + geometryField + " FROM " + receiverTableName);
-        Envelope refEnv = getCellEnv(mainEnvelope, 0,
-                0, getCellWidth(), getCellHeight());
+        // Construct RTree with cells envelopes
+        STRtree rtree = new STRtree();
+        for(int i = 0; i < gridDim; i++) {
+            for(int j = 0; j < gridDim; j++) {
+                Envelope refEnv = getCellEnv(mainEnvelope, i,
+                        j, getCellWidth(), getCellHeight());
+                rtree.insert(refEnv, new CellIndex(j, i));
+            }
+        }
+        // Iterate over receivers and look for intersecting cells
         try (SpatialResultSet srs = rs.unwrap(SpatialResultSet.class)) {
             while (srs.next()) {
                 Geometry pt = srs.getGeometry();
                 if(pt instanceof Point && !pt.isEmpty()) {
                     Coordinate ptCoord = pt.getCoordinate();
-                    CellIndex cellIndex = new CellIndex(Math.min(gridDim - 1, (int)((ptCoord.x - mainEnvelope.getMinX()) / refEnv.getWidth())), Math.min(gridDim - 1, (int)((ptCoord.y - mainEnvelope.getMinY()) / refEnv.getHeight())));
-                    // Increment value if cell exists, set 1 otherwise
-                    cellIndices.merge(cellIndex, 1, Integer::sum);
+                    List queryResult = rtree.query(new Envelope(ptCoord));
+                    for(Object o : queryResult) {
+                        if(o instanceof CellIndex) {
+                            cellIndices.merge((CellIndex) o, 1, Integer::sum);
+                        }
+                    }
                 }
             }
         }
