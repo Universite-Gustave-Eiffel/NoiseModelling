@@ -3,7 +3,9 @@ package org.noise_planet.noisemodelling.emission.jdbc;
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.api.ProgressVisitor;
 import org.h2gis.functions.factory.H2GISDBFactory;
+import org.h2gis.functions.io.dbf.DBFWrite;
 import org.h2gis.functions.io.shp.SHPRead;
+import org.h2gis.functions.io.shp.SHPWrite;
 import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SFSUtilities;
 import org.junit.After;
@@ -18,10 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -461,6 +460,72 @@ public class LDENPointNoiseMapFactoryTest {
         }
         connection.commit();
 
+
+    }
+
+    // Check regression of finding cell i,j that contains receivers
+    @Test
+    public void testRegression1() throws SQLException, IOException {
+        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("regression1/lw_roads_fence.shp").getFile(), "LW_ROADS");
+        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("regression1/bati_fence.shp").getFile(), "BUILDINGS");
+        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("regression1/receivers.shp").getFile(), "RECEIVERS");
+
+        // Count receivers
+        int nbReceivers = 0;
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) CPT FROM RECEIVERS")) {
+            assertTrue(rs.next());
+            nbReceivers = rs.getInt(1);
+        }
+
+        LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN);
+
+        ldenConfig.setComputeLDay(true);
+        ldenConfig.setComputeLEvening(true);
+        ldenConfig.setComputeLNight(true);
+        ldenConfig.setComputeLDEN(true);
+
+        LDENPointNoiseMapFactory factory = new LDENPointNoiseMapFactory(connection, ldenConfig);
+
+        PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS", "LW_ROADS",
+                "RECEIVERS");
+
+        pointNoiseMap.setComputeRaysOutFactory(factory);
+        pointNoiseMap.setPropagationProcessDataFactory(factory);
+
+        pointNoiseMap.setMaximumPropagationDistance(750.0);
+        pointNoiseMap.setComputeHorizontalDiffraction(true);
+        pointNoiseMap.setComputeVerticalDiffraction(true);
+        pointNoiseMap.setSoundReflectionOrder(0);
+
+        // Set of already processed receivers
+        Set<Long> receivers = new HashSet<>();
+
+        try {
+            RootProgressVisitor progressLogger = new RootProgressVisitor(1, false, 1);
+
+            pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
+
+            factory.start();
+
+            Map<PointNoiseMap.CellIndex, Integer> cells = pointNoiseMap.searchPopulatedCells(connection);
+            ProgressVisitor progressVisitor = progressLogger.subProcess(cells.size());
+            // Iterate over computation areas
+            for(PointNoiseMap.CellIndex cellIndex : new TreeSet<>(cells.keySet())) {
+                // Run ray propagation
+                pointNoiseMap.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers);
+            }
+        }finally {
+            factory.stop();
+        }
+        connection.commit();
+        // retrieve receiver value
+        assertEquals(nbReceivers, receivers.size());
+
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT leq, laeq FROM "+ ldenConfig.lDayTable + " LVL, RECEIVERS R WHERE LVL.IDRECEIVER = R.PK2 AND ID = 200")) {
+            assertTrue(rs.next());
+            assertEquals(56.58, rs.getDouble(1), 2.0);
+            assertEquals(49.24,rs.getDouble(2), 2.0);
+        }
 
     }
 }

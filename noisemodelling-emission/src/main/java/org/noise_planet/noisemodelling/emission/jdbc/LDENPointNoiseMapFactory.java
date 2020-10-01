@@ -144,6 +144,14 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
         ldenConfig.exitWhenDone = false;
         tableWriterThread = new Thread(tableWriter);
         tableWriterThread.start();
+        while (!tableWriter.started && !ldenConfig.aborted) {
+            try {
+                Thread.sleep(150);
+            } catch (InterruptedException e) {
+                // ignore
+                break;
+            }
+        }
     }
 
     /**
@@ -151,7 +159,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
      */
     public void stop() {
         ldenConfig.exitWhenDone = true;
-        while (tableWriterThread.isAlive()) {
+        while (tableWriterThread != null && tableWriterThread.isAlive()) {
             try {
                 Thread.sleep(150);
             } catch (InterruptedException e) {
@@ -192,6 +200,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
         LDENConfig ldenConfig;
         LDENComputeRaysOut.LdenData ldenData;
         double[] a_weighting;
+        boolean started = false;
 
         public TableWriter(Connection connection, LDENConfig ldenConfig, LDENComputeRaysOut.LdenData ldenData) {
             this.connection = connection;
@@ -330,6 +339,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
                     sql.execute(forgeCreateTable(ldenConfig.lDenTable));
                 }
                 while (!ldenConfig.aborted) {
+                    started = true;
                     try {
                         if(!ldenData.lDayLevels.isEmpty()) {
                             processStack(ldenConfig.lDayTable, ldenData.lDayLevels);
