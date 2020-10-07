@@ -850,7 +850,7 @@ public class ComputeRays {
 
         //Process diffraction 3D
         // todo include rayleigh criterium
-        if (verticalDiffraction && buildingOnPath && !freefield) {
+        if (verticalDiffraction && !freefield) {
             PropagationPath propagationPath3 = computeFreefield(receiverCoord, srcCoord, inters);
             PropagationPath propagationPath = computeHorizontalEdgeDiffraction(topographyHideReceiver, receiverCoord, srcCoord, inters);
             propagationPath.getSRList().addAll(propagationPath3.getSRList());
