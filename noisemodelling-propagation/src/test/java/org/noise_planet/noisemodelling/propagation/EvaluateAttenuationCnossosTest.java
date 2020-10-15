@@ -1329,6 +1329,7 @@ public class EvaluateAttenuationCnossosTest {
      */
     @Test
     public void TC23() throws LayerDelaunayError, IOException {
+        PropagationProcessPathData attData = new PropagationProcessPathData();
         GeometryFactory factory = new GeometryFactory();
 
         //Scene dimension
@@ -1337,20 +1338,22 @@ public class EvaluateAttenuationCnossosTest {
         //Create obstruction test object
         MeshBuilder mesh = new MeshBuilder();
 
-        // Add building
+        // Add building 20% abs
+        List<Double> buildingsAbs = Collections.nCopies(attData.freq_lvl.size(), 0.2);
+
         mesh.addGeometry(factory.createPolygon(new Coordinate[]{
                 new Coordinate(75, 34, 0),
                 new Coordinate(110, 34, 0),
                 new Coordinate(110, 26, 0),
                 new Coordinate(75, 26, 0),
-                new Coordinate(75, 34, 0)}), 9);
+                new Coordinate(75, 34, 0)}), 9, buildingsAbs);
 
         mesh.addGeometry(factory.createPolygon(new Coordinate[]{
                 new Coordinate(83, 18, 0),
                 new Coordinate(118, 18, 0),
                 new Coordinate(118, 10, 0),
                 new Coordinate(83, 10, 0),
-                new Coordinate(83, 18, 0)}), 8);
+                new Coordinate(83, 18, 0)}), 8, buildingsAbs);
 
         // Ground Surface
 
@@ -1399,13 +1402,20 @@ public class EvaluateAttenuationCnossosTest {
         rayData.addReceiver(new Coordinate(107, 25.95, 4));
         rayData.addSource(factory.createPoint(new Coordinate(38, 14, 1)));
         rayData.setComputeHorizontalDiffraction(true);
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 250, -100, 100)), 0.));
+        // Create porus surface as defined by the test:
+        // The surface of the earth berm is porous (G = 1).
+        rayData.addSoilType(new GeoWithSoilType(factory.createPolygon(new Coordinate[]{
+                new Coordinate(59.6, -9.87, 0), // 5
+                new Coordinate(76.84, -5.28, 0), // 5-6
+                new Coordinate(63.71, 41.16, 0), // 6-7
+                new Coordinate(46.27, 36.28, 0), // 7-8
+                new Coordinate(59.6, -9.87, 0) // 8
+        }), 1.));
 
         rayData.setComputeVerticalDiffraction(true);
 
         rayData.setGs(0.);
 
-        PropagationProcessPathData attData = new PropagationProcessPathData();
         attData.setHumidity(70);
         attData.setTemperature(10);
         attData.setPrime2520(false);
@@ -1416,8 +1426,9 @@ public class EvaluateAttenuationCnossosTest {
 
         KMLDocument.exportScene("target/tc23.kml", manager, propDataOut);
         assertEquals(1, propDataOut.getVerticesSoundLevel().size());
-        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
-        assertArrayEquals(  new double[]{12.7,21.07,27.66,31.48,31.42,28.74,23.75,13.92},L, ERROR_EPSILON_very_high);//p=0.5
+        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93 - 26.2, 93 - 16.1,
+                93 - 8.6, 93 - 3.2, 93, 93 + 1.2, 93 + 1.0, 93 - 1.1});
+        assertArrayEquals(new double[]{12.7, 21.07, 27.66, 31.48, 31.42, 28.74, 23.75, 13.92}, L, ERROR_EPSILON_high);//p=0.5
 
     }
 

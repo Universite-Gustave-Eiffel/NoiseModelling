@@ -314,16 +314,16 @@ public class EvaluateAttenuationCnossos {
             // Eq 2.5.30 - Eq. 2.5.31 - Eq. 2.5.32
             for (int idf = 0; idf < nbfreq; idf++) {
                 // see 5.3 Equivalent heights from AFNOR document
-                if (segmentPath.get(0).zs <= 0.0000001 || segmentPath.get(segmentPath.size()-1).zr <= 0.0000001) {
-                    aDif[idf]=Math.min(25,DeltaDifSR[idf])+aGroundSO[idf] + aGroundOR[idf];
-                    }
-                else{
-                    aDif[idf]=Math.min(25,DeltaDifSR[idf])+getDeltaGround(aGroundSO[idf], DeltaDifSpR[idf], DeltaDifSR[idf]) + getDeltaGround(aGroundOR[idf], DeltaDifSRp[idf], DeltaDifSR[idf]);
+                if (segmentPath.get(0).zs <= 0.0000001 || segmentPath.get(segmentPath.size() - 1).zr <= 0.0000001) {
+                    aDif[idf] = Math.min(25, DeltaDifSR[idf]) + aGroundSO[idf] + aGroundOR[idf];
+                } else {
+                    aDif[idf] = Math.min(25, DeltaDifSR[idf]) + getDeltaGround(aGroundSO[idf], DeltaDifSpR[idf],
+                            DeltaDifSR[idf]) + getDeltaGround(aGroundOR[idf], DeltaDifSRp[idf], DeltaDifSR[idf]);
                 }
 
-                }
+            }
 
-            aBoundary =  aDif;
+            aBoundary = aDif;
         }
 
         return aBoundary;
