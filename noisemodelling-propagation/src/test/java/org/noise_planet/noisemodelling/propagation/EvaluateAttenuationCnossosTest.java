@@ -1433,6 +1433,118 @@ public class EvaluateAttenuationCnossosTest {
     }
 
     /**
+     * – Two buildings behind an earth-berm on flat ground with homogeneous acoustic properties – receiver position modified
+     * @throws LayerDelaunayError
+     * @throws IOException
+     */
+    @Test
+    public void TC24() throws LayerDelaunayError, IOException {
+        PropagationProcessPathData attData = new PropagationProcessPathData();
+        GeometryFactory factory = new GeometryFactory();
+
+        //Scene dimension
+        Envelope cellEnvelope = new Envelope(new Coordinate(-250., -250., 0.), new Coordinate(250, 250, 0.));
+
+        //Create obstruction test object
+        MeshBuilder mesh = new MeshBuilder();
+
+        // Add building 20% abs
+        List<Double> buildingsAbs = Collections.nCopies(attData.freq_lvl.size(), 0.2);
+
+        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+                new Coordinate(75, 34, 0),
+                new Coordinate(110, 34, 0),
+                new Coordinate(110, 26, 0),
+                new Coordinate(75, 26, 0),
+                new Coordinate(75, 34, 0)}), 9, buildingsAbs);
+
+        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+                new Coordinate(83, 18, 0),
+                new Coordinate(118, 18, 0),
+                new Coordinate(118, 10, 0),
+                new Coordinate(83, 10, 0),
+                new Coordinate(83, 18, 0)}), 8, buildingsAbs);
+
+        // Ground Surface
+
+        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
+                new Coordinate(30, -14, 0), // 1
+                new Coordinate(122, -14, 0),// 1 - 2
+                new Coordinate(122, 45, 0), // 2 - 3
+                new Coordinate(30, 45, 0),  // 3 - 4
+                new Coordinate(30, -14, 0) // 4
+        }));
+        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
+                new Coordinate(59.6, -9.87, 0), // 5
+                new Coordinate(76.84, -5.28, 0), // 5-6
+                new Coordinate(63.71, 41.16, 0), // 6-7
+                new Coordinate(46.27, 36.28, 0), // 7-8
+                new Coordinate(59.6, -9.87, 0) // 8
+        }));
+        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
+                new Coordinate(46.27, 36.28, 0), // 9
+                new Coordinate(54.68, 37.59, 5), // 9-10
+                new Coordinate(55.93, 37.93, 5), // 10-11
+                new Coordinate(63.71, 41.16, 0) // 11
+        }));
+        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
+                new Coordinate(59.6, -9.87, 0), // 12
+                new Coordinate(67.35, -6.83, 5), // 12-13
+                new Coordinate(68.68, -6.49, 5), // 13-14
+                new Coordinate(76.84, -5.28, 0) // 14
+        }));
+        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
+                new Coordinate(54.68, 37.59, 5), //15
+                new Coordinate(67.35, -6.83, 5)
+        }));
+        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
+                new Coordinate(55.93, 37.93, 5), //16
+                new Coordinate(68.68, -6.49, 5)
+        }));
+
+        mesh.finishPolygonFeeding(cellEnvelope);
+
+        //Retrieve Delaunay triangulation of scene
+        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+                mesh.getTriNeighbors(), mesh.getVertices());
+
+        PropagationProcessData rayData = new PropagationProcessData(manager);
+        rayData.addReceiver(new Coordinate(106, 18.5, 4));
+        rayData.addSource(factory.createPoint(new Coordinate(38, 14, 1)));
+        rayData.setComputeHorizontalDiffraction(true);
+        // Create porus surface as defined by the test:
+        // The surface of the earth berm is porous (G = 1).
+        rayData.addSoilType(new GeoWithSoilType(factory.createPolygon(new Coordinate[]{
+                new Coordinate(59.6, -9.87, 0), // 5
+                new Coordinate(76.84, -5.28, 0), // 5-6
+                new Coordinate(63.71, 41.16, 0), // 6-7
+                new Coordinate(46.27, 36.28, 0), // 7-8
+                new Coordinate(59.6, -9.87, 0) // 8
+        }), 1.));
+
+        rayData.setComputeVerticalDiffraction(true);
+        rayData.setComputeHorizontalDiffraction(false);
+        rayData.reflexionOrder = 1;
+
+        rayData.setGs(0.);
+
+        attData.setHumidity(70);
+        attData.setTemperature(10);
+        attData.setPrime2520(false);
+        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRays computeRays = new ComputeRays(rayData);
+        computeRays.setThreadCount(1);
+        computeRays.run(propDataOut);
+
+        KMLDocument.exportScene("target/tc24.kml", manager, propDataOut);
+        assertEquals(1, propDataOut.getVerticesSoundLevel().size());
+        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93 - 26.2, 93 - 16.1,
+                93 - 8.6, 93 - 3.2, 93, 93 + 1.2, 93 + 1.0, 93 - 1.1});
+        assertArrayEquals(new double[]{10.96, 16.85, 21.46, 25.03, 25.11, 23.86, 22.08, 14.24}, L, ERROR_EPSILON_medium);//p=0.5
+
+    }
+
+    /**
      * TC28 Propagation over a large distance with many buildings between source and
      * receiver
      */
