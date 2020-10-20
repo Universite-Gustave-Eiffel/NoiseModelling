@@ -896,13 +896,14 @@ public class FastObstructionTest {
 
         //add point receiver and point source into list head and tail.
         // Change from ground height for receiver and source to real receiver and source height
-        if(receiver.distance(allInterPoints.get(0)) < receiver.distance(allInterPoints.get(allInterPoints.size() - 1))) {
-            interPoints.add(0, new TriIdWithIntersection(allInterPoints.get(0), receiver));
-            interPoints.add(new TriIdWithIntersection(allInterPoints.get(allInterPoints.size() - 1), source));
-        } else {
-            interPoints.add(0, new TriIdWithIntersection(allInterPoints.get(0), source));
-            interPoints.add(new TriIdWithIntersection(allInterPoints.get(allInterPoints.size() - 1), receiver));
+        if(receiver.distance(allInterPoints.get(0)) > receiver.distance(allInterPoints.get(allInterPoints.size() - 1))) {
+            // the first inter point should be the receiver not the source
+            // reverse the order of the lists
+            Collections.reverse(allInterPoints);
+            Collections.reverse(interPoints);
         }
+        interPoints.add(0, new TriIdWithIntersection(allInterPoints.get(0), receiver));
+        interPoints.add(new TriIdWithIntersection(allInterPoints.get(allInterPoints.size() - 1), source));
         double angle = new LineSegment(source, receiver).angle();
         //change coordinate system from 3D to 2D
         List<Coordinate> newPoints = JTSUtility.getNewCoordinateSystem(new ArrayList<Coordinate>(interPoints));
