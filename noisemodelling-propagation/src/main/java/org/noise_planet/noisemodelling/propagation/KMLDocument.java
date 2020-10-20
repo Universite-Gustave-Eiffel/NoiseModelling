@@ -260,7 +260,7 @@ public class KMLDocument {
         //Write geometry
         xmlOut.writeCharacters(KMLWriter.writeGeometry(geometryFactory.createMultiPolygon(
                 polygons.toArray(new Polygon[polygons.size()])), Double.NaN,
-                wgs84Precision, true, KMLWriter.ALTITUDE_MODE_RELATIVETOGROUND));
+                wgs84Precision, true, KMLWriter.ALTITUDE_MODE_ABSOLUTE));
         xmlOut.writeEndElement();//Write Placemark
         xmlOut.writeEndElement();//Folder
         return this;

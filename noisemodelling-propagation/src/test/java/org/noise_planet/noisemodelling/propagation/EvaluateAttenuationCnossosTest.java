@@ -1424,11 +1424,11 @@ public class EvaluateAttenuationCnossosTest {
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
-        KMLDocument.exportScene("target/tc23.kml", manager, propDataOut);
+        //KMLDocument.exportScene("target/tc23.kml", manager, propDataOut);
         assertEquals(1, propDataOut.getVerticesSoundLevel().size());
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93 - 26.2, 93 - 16.1,
                 93 - 8.6, 93 - 3.2, 93, 93 + 1.2, 93 + 1.0, 93 - 1.1});
-        assertArrayEquals(new double[]{12.7, 21.07, 27.66, 31.48, 31.42, 28.74, 23.75, 13.92}, L, ERROR_EPSILON_high);//p=0.5
+        assertArrayEquals(new double[]{12.7, 21.07, 27.66, 31.48, 31.42, 28.74, 23.75, 13.92}, L, ERROR_EPSILON_medium);//p=0.5
 
     }
 
