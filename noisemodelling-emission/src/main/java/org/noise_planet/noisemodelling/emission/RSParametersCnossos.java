@@ -237,6 +237,14 @@ public class RSParametersCnossos {
      * @param Junc_type Type of junction ((k = 1 for a crossing with traffic lights ; k = 2 for a roundabout)
      */
     public RSParametersCnossos(double lv_speed, double mv_speed, double hgv_speed, double wav_speed, double wbv_speed, double lvPerHour, double mvPerHour, double hgvPerHour, double wavPerHour, double wbvPerHour, int FreqParam, double Temperature, String roadSurface, double Ts_stud, double Pm_stud, double Junc_dist, int Junc_type) {
+
+        if (lvPerHour <0 ) throw new IllegalArgumentException("The flow rate of light vehicles is less than zero on one section.");
+        if (mvPerHour <0 ) throw new IllegalArgumentException("The flow rate of medium vehicles is less than zero on one section.");
+        if (hgvPerHour <0 ) throw new IllegalArgumentException("The flow rate of heavy vehicles is less than zero on one section.");
+        if (wavPerHour <0 ) throw new IllegalArgumentException("The flow rate of 2W(a) vehicles is less than zero on one section.");
+        if (wbvPerHour <0 ) throw new IllegalArgumentException("The flow rate of 2W(b) vehicles is less than zero on one section.");
+        if (Ts_stud <0 || Ts_stud>12 ) throw new IllegalArgumentException("The number of months of snow tire use is impossible for a section (<0 or >12).");
+        if (Junc_type <0 || Junc_type>2 ) throw new IllegalArgumentException("Unlnown Junction type for a section.");
         this.lvPerHour = Math.max(0, lvPerHour);
         this.mvPerHour = Math.max(0, mvPerHour);
         this.hgvPerHour = Math.max(0, hgvPerHour);
