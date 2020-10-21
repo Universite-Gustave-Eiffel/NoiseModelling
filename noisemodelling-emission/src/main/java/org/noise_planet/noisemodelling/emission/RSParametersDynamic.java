@@ -41,20 +41,34 @@ package org.noise_planet.noisemodelling.emission;
 public class RSParametersDynamic {
     private final double speed;
     private final double acceleration;
-    private final int veh_type;
+    private final String veh_type;
     private final int acc_type;
     private final int FreqParam;
     private final double Temperature;
-    private final int RoadSurface;
+    private final String roadSurface;
     private final boolean Stud ;
     private final double Junc_dist;
     private final int Junc_type;
     private final double LwStd;
     private final int VehId;
 
+    private int coeffVer = 2;
+
 
     private int surfaceAge;
     private double slopePercentage;
+
+    /**
+     * @param coeffVer
+     */
+    public void setCoeffVer(int coeffVer) {
+        this.coeffVer = coeffVer;
+    }
+
+    public int getCoeffVer() {
+        return this.coeffVer;
+    }
+
 
     private static double getVPl(double sLv, double speedmax, int type, int subtype) throws IllegalArgumentException {
         switch (type) {
@@ -199,19 +213,22 @@ public class RSParametersDynamic {
      * @param LwStd Standard Deviation of Lw
      * @param VehId Vehicle ID used as a seed for LwStd
      */
-    public RSParametersDynamic(double speed, double acceleration, int veh_type, int acc_type, int FreqParam, double Temperature, int RoadSurface, boolean Stud, double Junc_dist, int Junc_type, double LwStd, int VehId) {
+    public RSParametersDynamic(double speed, double acceleration, String veh_type, int acc_type, int FreqParam, double Temperature, String roadSurface, boolean Stud, double Junc_dist, int Junc_type, double LwStd, int VehId) {
+
+        if (Junc_type <0 || Junc_type>2 ) throw new IllegalArgumentException("Unlnown Junction type for a section.");
         this.speed = speed;
         this.acceleration = acceleration;
         this.veh_type = veh_type;
         this.acc_type = acc_type;
-        this.FreqParam = FreqParam;
+        this.FreqParam = Math.max(0, FreqParam);
         this.Temperature = Temperature;
-        this.RoadSurface = RoadSurface;
+        this.roadSurface = roadSurface;
         this.Stud = Stud;
-        this.Junc_dist = Junc_dist;
-        this.Junc_type = Junc_type;
+        this.Junc_dist = Math.max(0, Junc_dist);
+        this.Junc_type = Math.max(0, Math.min(2, Junc_type));
         this.LwStd = LwStd;
         this.VehId = VehId;
+
 
     }
 
@@ -239,7 +256,7 @@ public class RSParametersDynamic {
         return acc_type;
     }
 
-    public int getVeh_type() {
+    public String getVeh_type() {
         return veh_type;
     }
 
@@ -249,7 +266,7 @@ public class RSParametersDynamic {
 
     public double getTemperature() { return Temperature;}
 
-    public int getRoadSurface() {return RoadSurface;}
+    public String getRoadSurface() {return roadSurface;}
 
     public boolean getStud() {return Stud;}
 
