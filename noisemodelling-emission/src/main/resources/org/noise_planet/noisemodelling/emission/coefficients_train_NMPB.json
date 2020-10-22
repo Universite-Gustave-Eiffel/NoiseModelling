@@ -1,4 +1,58 @@
 {"Train":{
+  "Empty":{
+    "Description":"Empty vehicle definition",
+    "P-mech":"0",
+    "V-max":0,
+    "Weight":0,
+    "Length":0,
+    "Axles":"0",
+    "WheelDiameter":0,
+    "WheelDiameterCode":null,
+    "WheelMeasure":null,
+    "BreakCode":"CastIronBlock",
+    "AxleLoad":null,
+    "RefTransfer":0,
+    "RefContact":0,
+    "RefRoughness":0,
+    "RefTraction":0,
+    "RefAerodynamic":0
+  },
+  "Example1":{
+    "Description":"Example Vehicle 1",
+    "P-mech":"830",
+    "V-max":120,
+    "Weight":68,
+    "Length":14.89,
+    "Axles":"4",
+    "WheelDiameter":360,
+    "WheelDiameterCode":null,
+    "WheelMeasure":null,
+    "BreakCode":"CastIronBlock",
+    "AxleLoad":17,
+    "RefTransfer":1,
+    "RefContact":1,
+    "RefRoughness":1,
+    "RefTraction":1,
+    "RefAerodynamic":3
+  },
+  "Example2":{
+    "Description":"Example Vehicle 2",
+    "P-mech":"640",
+    "V-max":140,
+    "Weight":93.8,
+    "Length":52.34,
+    "Axles":"4",
+    "WheelDiameter":920,
+    "WheelDiameterCode":null,
+    "WheelMeasure":null,
+    "BreakCode":"CastIronBlock",
+    "AxleLoad":23.45,
+    "RefTransfer":2,
+    "RefContact":2,
+    "RefRoughness":2,
+    "RefTraction":2,
+    "RefAerodynamic":3
+  },
   "SNCF-BB66400":{
     "Description":"Diesel loc",
     "P-mech":"830",
@@ -162,7 +216,7 @@
     "RefAerodynamic":3
   },
   "RMR-Cat-2-a":{
-    "Description":"ICM-III, ICR trailer,SNCF passenger,TEE",
+    "Description":"ICM-III, ICR trailer, SNCF passenger, TEE",
     "P-mech":null,
     "V-max":null,
     "Weight":null,
@@ -180,7 +234,7 @@
     "RefAerodynamic":3
   },
   "RMR-Cat-2-b":{
-    "Description":"ICR 1700,DDM-1 1800 loco,Belgian locos",
+    "Description":"ICR 1700, DDM-1 1800 loco, Belgian locos",
     "P-mech":null,
     "V-max":null,
     "Weight":null,
@@ -234,7 +288,7 @@
     "RefAerodynamic":3
   },
   "RMR-Cat-5-a":{
-    "Description":"DE1,DE2,DE3",
+    "Description":"DE1, DE2, DE3",
     "P-mech":null,
     "V-max":null,
     "Weight":null,
@@ -252,7 +306,7 @@
     "RefAerodynamic":3
   },
   "RMR-Cat-5-b":{
-    "Description":"2200,2300 locos",
+    "Description":"2200, 2300 locos",
     "P-mech":null,
     "V-max":null,
     "Weight":null,
@@ -270,7 +324,7 @@
     "RefAerodynamic":3
   },
   "RMR-Cat-5-c":{
-    "Description":"2400,2500 locos",
+    "Description":"2400, 2500 locos",
     "P-mech":null,
     "V-max":null,
     "Weight":null,
@@ -324,7 +378,7 @@
     "RefAerodynamic":3
   },
   "RMR-Cat-8-a":{
-    "Description":"ICM IV,IRM",
+    "Description":"ICM IV, IRM",
     "P-mech":null,
     "V-max":null,
     "Weight":null,
@@ -360,7 +414,7 @@
     "RefAerodynamic":3
   },
   "RMR-Cat-9-a":{
-    "Description":"TGV PBA type,power car",
+    "Description":"TGV PBA type, power car",
     "P-mech":null,
     "V-max":null,
     "Weight":null,
@@ -378,7 +432,7 @@
     "RefAerodynamic":3
   },
   "RMR-Cat-9-b":{
-    "Description":"TGV PBA type,trailer car adjacent to power car",
+    "Description":"TGV PBA type, trailer car adjacent to power car",
     "P-mech":null,
     "V-max":null,
     "Weight":null,
@@ -396,7 +450,7 @@
     "RefAerodynamic":3
   },
   "RMR-Cat-9-c":{
-    "Description":"TGV PBA types,other trailer cars",
+    "Description":"TGV PBA types, other trailer cars",
     "P-mech":null,
     "V-max":null,
     "Weight":null,
