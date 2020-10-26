@@ -6,10 +6,13 @@ public class TrainParametersCnossos {
 
     private double speed;
     private int numVeh;
+    private int trackTransfer;
+    private int railRoughness;
     private int height;
     private final int FreqParam;
 
     private int spectreVer = 2;
+
     /**
      * @param spectreVer
      */
@@ -27,6 +30,12 @@ public class TrainParametersCnossos {
 
     public void setSpeed(double speed) {
         this.speed = speed;
+    }
+    public void setTrackTransfer(int trackTransfer) {
+        this.trackTransfer = trackTransfer;
+    }
+    public void setRailRoughness(int railRoughness) {
+        this.railRoughness = railRoughness;
     }
     public void setVehPerHour(double vehPerHour) {
         this.vehPerHour = vehPerHour;
@@ -51,6 +60,14 @@ public class TrainParametersCnossos {
     public double getSpeed() {
         return speed;
     }
+
+    public int getTrackTransfer() {
+        return trackTransfer;
+    }
+    public int getrRilRoughness() {
+        return railRoughness;
+    }
+
     public int getHeight() {
         return height;
     }
@@ -58,14 +75,18 @@ public class TrainParametersCnossos {
         return FreqParam;
     }
 
-    public TrainParametersNMPB(String typeTrain, double speed,  double vehPerHour, int numVeh,int height,int freqParam) {
+    public TrainParametersCnossos(String typeTrain, double speed,  double vehPerHour, int numVeh, int trackTransfer, int railRoughness, int height,int freqParam) {
 
        setTypeTrain(typeTrain);
        this.FreqParam = Math.max(0, freqParam);
 
        setSpeed(speed);
-       setHeight(height);
        setVehPerHour(vehPerHour);
        setNumVeh(numVeh);
+
+       setTrackTransfer(trackTransfer);
+       setRailRoughness(railRoughness);
+
+       setHeight(height);
     }
 }

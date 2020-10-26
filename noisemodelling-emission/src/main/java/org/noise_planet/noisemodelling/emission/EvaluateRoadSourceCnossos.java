@@ -179,7 +179,7 @@ public class EvaluateRoadSourceCnossos {
 
 
     /** get sum dBa **/
-    private static Double sumDba(Double dBA1, Double dBA2) {
+    public static Double sumDba(Double dBA1, Double dBA2) {
         return ComputeRays.wToDba(ComputeRays.dbaToW(dBA1) + ComputeRays.dbaToW(dBA2));
     }
 

@@ -51,7 +51,7 @@ import static java.lang.Math.min;
 
 public class EvaluateTrainSourceCnossos {
 // Todo evaluation du niveau sonore d'un train
-    private static JsonNode nmpbTraindata = parse(EvaluateTrainSourceNMPB.class.getResourceAsStream("coefficients_train_NMPB.json"));
+    private static JsonNode nmpbTraindata = parse(EvaluateTrainSourceCnossos.class.getResourceAsStream("coefficients_train_NMPB.json"));
 
     private static JsonNode parse(InputStream inputStream) {
         try {
@@ -256,7 +256,7 @@ public class EvaluateTrainSourceCnossos {
      * @param parameters Noise emission parameters
      * @return Noise level in dB
      */
-    public static double evaluate(TrainParametersNMPB parameters) {
+    public static double evaluate(TrainParametersCnossos parameters) {
         final int freqParam = parameters.getFreqParam();
         final int spectreVer = parameters.getSpectreVer();
         double trainLWvm; // LW(v)/m (1 veh/h)
