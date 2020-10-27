@@ -51,12 +51,6 @@ public class TrainParametersCnossos {
     public String getTypeTrain() {
         return typeTrain;
     }
-    public double getVehPerHour() {
-        return vehPerHour;
-    }
-    public int getNumVeh() {
-        return numVeh;
-    }
     public double getSpeed() {
         return speed;
     }
@@ -64,7 +58,7 @@ public class TrainParametersCnossos {
     public int getTrackTransfer() {
         return trackTransfer;
     }
-    public int getrRilRoughness() {
+    public int getRailRoughness() {
         return railRoughness;
     }
 

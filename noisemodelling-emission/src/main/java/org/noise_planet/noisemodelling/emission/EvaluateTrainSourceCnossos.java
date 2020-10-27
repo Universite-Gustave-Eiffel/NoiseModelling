@@ -45,13 +45,13 @@ import static java.lang.Math.min;
 
 /**
  * Return the dB value corresponding to the parameters
- * @author Adrien Le Bellec - 13/05/2020
+ * @author Adrien Le Bellec - 27/10/2020
  */
 
 
 public class EvaluateTrainSourceCnossos {
 // Todo evaluation du niveau sonore d'un train
-    private static JsonNode nmpbTraindata = parse(EvaluateTrainSourceCnossos.class.getResourceAsStream("coefficients_train_NMPB.json"));
+    private static JsonNode CnossosTraindata = parse(EvaluateTrainSourceCnossos.class.getResourceAsStream("coefficients_train_cnossos.json"));
 
     private static JsonNode parse(InputStream inputStream) {
         try {
@@ -61,40 +61,30 @@ public class EvaluateTrainSourceCnossos {
             return NullNode.getInstance();
         }
     }
-    public static JsonNode getnmpbTraindata(int spectreVer){
+    public static JsonNode getCnossosTrainData(int spectreVer){
         if (spectreVer==1){
-            return nmpbTraindata;
+            return CnossosTraindata;
         }
         else {
-            return nmpbTraindata;
+            return CnossosTraindata;
         }
     }
 
     public static String getTypeTrain(String typeTrain, int spectreVer) { //
         String typeTrainUse;
-        if (getnmpbTraindata(spectreVer).get("Train").has(typeTrain)) {
+        if (getCnossosTrainData(spectreVer).get("Train").has(typeTrain)) {
             typeTrainUse = typeTrain;
         }else{
-            typeTrainUse="TGV00-38-100"; // TODO a modifier -> Geostandard
+            typeTrainUse="Empty";
         }
         return typeTrainUse;
     }
-    public static Double getSpeedIncrement(String typeTrain, int spectreVer) { //
-        return getnmpbTraindata(spectreVer).get("Train").get(typeTrain).get("Source").get("Speed-increment").doubleValue();
-    }
+//    public static Double getTrainVmax(String typeTrain, int spectreVer) { //
+//        return getCnossosTrainData(spectreVer).get("Train").get(typeTrain).get("Vmax").doubleValue();
+//    }
 
-    public static Double getTrainVmax(String typeTrain, int spectreVer) { //
-        return getnmpbTraindata(spectreVer).get("Train").get(typeTrain).get("Vmax").doubleValue();
-    }
-    public static Double getTrainVref(String typeTrain, int spectreVer) { //
-        return getnmpbTraindata(spectreVer).get("Train").get(typeTrain).get("Vref").doubleValue();
-    }
-    public static int getNumberSource(String typeTrain, int spectreVer) { //
-        return getnmpbTraindata(spectreVer).get("Train").get(typeTrain).get("Source").get("Source-number-0cm").intValue();
-    }
-
-    public static Double getbase(String typeTrain, int spectreVer, int freq, double height) { //
-        int Freq_ind;
+    public static Double getwheelRoughness(String typeTrain, int spectreVer, int freq) { //
+        int Freq_ind; // Todo freq[31]
         switch (freq) {
             case 100:
                 Freq_ind=0;
@@ -153,17 +143,10 @@ public class EvaluateTrainSourceCnossos {
             default:
                 Freq_ind=0;
         }
-        String heightSource;
-        if (height==1){
-            heightSource="Spectrum50cm";
-        }else if (height==2){
-            heightSource="Spectrum400cm";
-        }
-        else {
-            heightSource="Spectrum0cm";
-        }
-        return getnmpbTraindata(spectreVer).get("Train").get(typeTrain).get(heightSource).get(Freq_ind).doubleValue();
+        int RefRoughness = getCnossosTrainData(spectreVer).get("Train").get("Definition").get(typeTrain).get("RefRoughness").intValue();
+        return getCnossosTrainData(spectreVer).get("Train").get("WheelRoughness").get(RefRoughness).get("Values").get(Freq_ind).doubleValue();
     }
+
 
     /** get noise level source from speed **/
     private static Double getNoiseLvl(double base, double speed,
@@ -252,40 +235,58 @@ public class EvaluateTrainSourceCnossos {
     }
 
     /**
-     * Road noise evaluation.
+     * Rail noise evaluation.
      * @param parameters Noise emission parameters
      * @return Noise level in dB
      */
+
     public static double evaluate(TrainParametersCnossos parameters) {
         final int freqParam = parameters.getFreqParam();
         final int spectreVer = parameters.getSpectreVer();
-        double trainLWvm; // LW(v)/m (1 veh/h)
-        double trainLWv; // LW(v)
-        String typeTrain = getTypeTrain(parameters.getTypeTrain(),spectreVer);
-        double speedIncrement = getSpeedIncrement(typeTrain,spectreVer);
-        double speedRef = getTrainVref(typeTrain,spectreVer);
-        double speedMax = getTrainVmax(typeTrain,spectreVer);
-        int numSource = getNumberSource(typeTrain,spectreVer);
 
-        double speed = Math.min(parameters.getSpeed(), speedMax);
+        double trainLW ;
+        String typeTrain = parameters.getTypeTrain();
+//        double speedMax = getTrainVmax(typeTrain,spectreVer);
+
+//        double speed = Math.min(parameters.getSpeed(), speedMax);
 
 
-        double base = getbase(typeTrain,spectreVer, freqParam , parameters.getHeight());
-        trainLWv =getNoiseLvl(base,speed,speedRef,speedIncrement);
-        trainLWvm= Vperhour2NoiseLevel(trainLWv , parameters.getVehPerHour(), speed);
-        trainLWvm = getNoiseLvlFinal(trainLWvm, numSource, parameters.getNumVeh());
-        return trainLWvm;
+        // Todo Rolling noise calcul
+        double wheelRoughness = getwheelRoughness(typeTrain,spectreVer,freqParam);
+
+        // Todo Traction noise calcul
+
+
+        // Todo Aerodynamic noise calcul
+
+
+
+//        double base = getbase(typeTrain,spectreVer, freqParam , parameters.getHeight());
+//        trainLWv =getNoiseLvl(base,speed,speedRef,speedIncrement);
+//        trainLWvm= Vperhour2NoiseLevel(trainLWv , parameters.getVehPerHour(), speed);
+//        trainLWvm = getNoiseLvlFinal(trainLWvm, numSource, parameters.getNumVeh());
+
+        trainLW =0;
+        return trainLW;
     }
-    public static double evaluateSpeed(String typeEng, String typeWag, Double speed){
-
-        double speedMaxEng = getTrainVmax(typeEng,2);
-        double speedMaxWag = getTrainVmax(typeWag,2);
-
-        double speedTrain = Math.min(speedMaxEng, speedMaxWag);
-        speed = Math.min(speed, speedTrain);
-
-        return speed;
+    public static double evaluateRollingNoise(int test){
+        double L_W_roll =0;
+        return L_W_roll;
     }
+
+
+
+
+//    public static double evaluateSpeed(String typeEng, String typeWag, Double speed){
+//
+//        double speedMaxEng = getTrainVmax(typeEng,2);
+//        double speedMaxWag = getTrainVmax(typeWag,2);
+//
+//        double speedTrain = Math.min(speedMaxEng, speedMaxWag);
+//        speed = Math.min(speed, speedTrain);
+//
+//        return speed;
+//    }
 
 }
 

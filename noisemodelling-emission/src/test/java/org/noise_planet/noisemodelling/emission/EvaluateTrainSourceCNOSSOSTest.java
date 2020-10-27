@@ -12,26 +12,27 @@ import static org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
 
 public class EvaluateTrainSourceCNOSSOSTest {
     private static final double EPSILON_TEST1 = 0.01;
-    private static final int[] FREQUENCIES = new int[]{100, 125, 160, 200, 250, 315, 400, 500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000};
+    private static final int[] FREQUENCIES = new int[]{50,63,80,100, 125, 160, 200, 250, 315, 400, 500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000,8000,10000};
 
     @Test
     public void Test_TGV_Duplex() {
-        String vehCat = "X-TER_bicaisse_D";
+        String vehCat = "X-TER-bicaisse-D";
         int vehicleSpeed = 160;
         double vehiclePerHour = 1;
-        int vehPerTrain = 2;
+        int vehPerTrain = 2; // use in rolling noise
 
         int trackTransfer = 4;
         int railRoughness = 4;
 
         // double expectedValues = 75.9991;
 
-        double[] LW0m = new double[18];
-        double[] LW4m = new double[18];
+        double[] LW0m = new double[24];
+        double[] LW4m = new double[24];
 
         for (int idFreq = 0; idFreq < FREQUENCIES.length; idFreq++) {
 
             int sourceHeight = 0;
+
             TrainParametersCnossos parameters = new TrainParametersCnossos(vehCat, vehicleSpeed, vehiclePerHour,
                     vehPerTrain, trackTransfer,railRoughness, sourceHeight, FREQUENCIES[idFreq]);
             LW0m[idFreq] = EvaluateTrainSourceCnossos.evaluate(parameters);
