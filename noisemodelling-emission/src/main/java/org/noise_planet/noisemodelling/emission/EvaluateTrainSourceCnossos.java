@@ -36,6 +36,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NullNode;
 import org.apache.commons.math3.analysis.interpolation.LinearInterpolator;
+
+import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
 import org.noise_planet.noisemodelling.propagation.ComputeRays;
 
 import java.io.IOException;
@@ -295,24 +297,24 @@ public class EvaluateTrainSourceCnossos {
         int railRoughnessId = parameters.getRailRoughness();
         int trackTransferId = parameters.getTrackTransfer();
         double speed = parameters.getSpeed();
+        LinearInterpolator linearInterpolator = new LinearInterpolator();
 
 //        double speedMax = getTrainVmax(typeTrain,spectreVer);
 
 //        double speed = Math.min(parameters.getSpeed(), speedMax);
         int Freq_ind = getFreqInd(freqParam);
 
-        double[] roughnessLRtotLambda = new double[32];
-        double[] roughnessLRtotFreq = new double[32];
+        double[] roughnessLtotLambda = new double[32];
         double[] lambdaToFreq = new double[32];
 
         for(int idLambda = 0; idLambda < 32; idLambda++){
-            roughnessLRtotLambda[idLambda]= getLRoughness(typeTrain, railRoughnessId,spectreVer, idLambda);
+            roughnessLtotLambda[idLambda]= getLRoughness(typeTrain, railRoughnessId,spectreVer, idLambda);
             lambdaToFreq[idLambda] = getLambdaToFreq(speed,idLambda);
-//            roughnessLRtotFreq[idLambda];
         }
 
         // Todo roughnessLRtotlambda [32 lambda to 24 freq...]
-
+        PolynomialSplineFunction roughnessLtotFreq = linearInterpolator.interpolate(lambdaToFreq, roughnessLtotLambda);
+        // Todo lambdaToFreq to FreqNorm
 
 
         double  trackTransfer = getTrackTransfer(trackTransferId,spectreVer,Freq_ind);
@@ -330,7 +332,7 @@ public class EvaluateTrainSourceCnossos {
 //        trainLWvm= Vperhour2NoiseLevel(trainLWv , parameters.getVehPerHour(), speed);
 //        trainLWvm = getNoiseLvlFinal(trainLWvm, numSource, parameters.getNumVeh());
 
-        return roughnessLRtotLambda[Freq_ind]; // Todo lambda to freq
+        return roughnessLtotLambda[Freq_ind]; // Todo lambda to freq
     }
     public static double evaluateRollingNoise(int test){
         double L_W_roll =0;
