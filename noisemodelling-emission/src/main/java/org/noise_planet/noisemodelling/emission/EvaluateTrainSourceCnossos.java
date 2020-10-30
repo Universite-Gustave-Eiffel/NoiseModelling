@@ -35,6 +35,7 @@ package org.noise_planet.noisemodelling.emission;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NullNode;
+import org.apache.commons.math3.analysis.interpolation.LinearInterpolator;
 import org.noise_planet.noisemodelling.propagation.ComputeRays;
 
 import java.io.IOException;
@@ -83,9 +84,8 @@ public class EvaluateTrainSourceCnossos {
 //        return getCnossosTrainData(spectreVer).get("Train").get(typeTrain).get("Vmax").doubleValue();
 //    }
 
-    private static int getFreqInd(int freq){
-        int Freq_ind = 0; // Todo freq [24] / [18]
-
+    private static int getFreqInd(int freq){// Todo freq [24] / [18]
+        int Freq_ind = 0;
         switch (freq) {
             case 50:
                 Freq_ind=0;
@@ -163,23 +163,35 @@ public class EvaluateTrainSourceCnossos {
     }
 
     // Rolling Noise
-    public static Double getWheelRoughness(String typeTrain, int spectreVer, int Freq_ind) { //
+    public static Double getWheelRoughness(String typeTrain, int spectreVer, int Lambda_ind) { //
         int RefRoughness = getCnossosTrainData(spectreVer).get("Train").get("Definition").get(typeTrain).get("RefRoughness").intValue();
-        return getCnossosTrainData(spectreVer).get("Train").get("WheelRoughness").get(String.valueOf(RefRoughness)).get("Values").get(Freq_ind).doubleValue();
+        return getCnossosTrainData(spectreVer).get("Train").get("WheelRoughness").get(String.valueOf(RefRoughness)).get("Values").get(Lambda_ind).doubleValue();
     }
 
-    public static Double getContactFilter(String typeTrain, int spectreVer, int Freq_ind) { //
+    public static Double getContactFilter(String typeTrain, int spectreVer, int Lambda_ind) { //
         int RefContact = getCnossosTrainData(spectreVer).get("Train").get("Definition").get(typeTrain).get("RefContact").intValue();
-        return getCnossosTrainData(spectreVer).get("Train").get("ContactFilter").get(String.valueOf(RefContact)).get("Values").get(Freq_ind).doubleValue();
+        return getCnossosTrainData(spectreVer).get("Train").get("ContactFilter").get(String.valueOf(RefContact)).get("Values").get(Lambda_ind).doubleValue();
     }
 
-    public static Double getRailRoughness(int railRoughnessId, int spectreVer, int Freq_ind) { //
-        return getCnossosTrainData(spectreVer).get("Rail").get("RailRoughness").get(String.valueOf(railRoughnessId)).get("Values").get(Freq_ind).doubleValue();
+    public static Double getRailRoughness(int railRoughnessId, int spectreVer, int Lambda_ind) { //
+        return getCnossosTrainData(spectreVer).get("Rail").get("RailRoughness").get(String.valueOf(railRoughnessId)).get("Values").get(Lambda_ind).doubleValue();
     }
 
     public static Double getTrackTransfer(int trackTransferId, int spectreVer, int Freq_ind) { //
         return getCnossosTrainData(spectreVer).get("TrackTransfer").get(String.valueOf(trackTransferId)).get("Spectre").get(Freq_ind).doubleValue();
     }
+    public static Double getLRoughness(String typeTrain, int railRoughnessId, int spectreVer, int idLambda) { //
+        double wheelRoughness = getWheelRoughness(typeTrain, spectreVer, idLambda);
+        double contactFilter = getContactFilter(typeTrain, spectreVer, idLambda);
+        double railRoughness = getRailRoughness(railRoughnessId, spectreVer, idLambda);
+        return 10 * Math.log10(Math.pow(10,wheelRoughness/10) + Math.pow(10,railRoughness/10) ) + contactFilter;
+    }
+
+    private static double getLambdaToFreq(double speed,int idLambda) {
+        double[] Lambda = new double[]{1000, 800, 630, 500, 400, 315, 250, 200, 160, 120, 100, 80, 63, 50, 40, 31.5, 25, 20, 16, 12, 10, 8, 6.3, 5, 4, 3.2, 2.5, 2, 1.6, 1.2, 1, 0.8}; // Todo Lamda norm or calculate ?
+        return speed/Lambda[idLambda]*1000/3.6; // km/h - m/s || mm - m
+    }
+
 
     /** get noise level source from speed **/
     private static Double getNoiseLvl(double base, double speed,
@@ -289,12 +301,23 @@ public class EvaluateTrainSourceCnossos {
 //        double speed = Math.min(parameters.getSpeed(), speedMax);
         int Freq_ind = getFreqInd(freqParam);
 
+        double[] roughnessLRtotLambda = new double[32];
+        double[] roughnessLRtotFreq = new double[32];
+        double[] lambdaToFreq = new double[32];
 
-        // Todo Rolling noise calcul [32 lambda to 24 freq...]
-        double wheelRoughness = getWheelRoughness(typeTrain,spectreVer,Freq_ind);
-        double contactFilter = getContactFilter(typeTrain,spectreVer,Freq_ind);
-        double railRoughness = getRailRoughness(railRoughnessId,spectreVer,Freq_ind);
-        double trackTransfer = getTrackTransfer(trackTransferId,spectreVer,Freq_ind);
+        for(int idLambda = 0; idLambda < 32; idLambda++){
+            roughnessLRtotLambda[idLambda]= getLRoughness(typeTrain, railRoughnessId,spectreVer, idLambda);
+            lambdaToFreq[idLambda] = getLambdaToFreq(speed,idLambda);
+            roughnessLRtotFreq[idLambda]
+        }
+
+        // Todo roughnessLRtotlambda [32 lambda to 24 freq...]
+
+
+
+        double  trackTransfer = getTrackTransfer(trackTransferId,spectreVer,Freq_ind);
+
+
         // Todo Traction noise calcul
 
 
@@ -307,7 +330,7 @@ public class EvaluateTrainSourceCnossos {
 //        trainLWvm= Vperhour2NoiseLevel(trainLWv , parameters.getVehPerHour(), speed);
 //        trainLWvm = getNoiseLvlFinal(trainLWvm, numSource, parameters.getNumVeh());
 
-        return wheelRoughness+contactFilter+railRoughness+trackTransfer;
+        return roughnessLRtotlambda[Freq_ind]; // Todo lambda to freq
     }
     public static double evaluateRollingNoise(int test){
         double L_W_roll =0;
