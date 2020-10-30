@@ -308,7 +308,7 @@ public class EvaluateTrainSourceCnossos {
         for(int idLambda = 0; idLambda < 32; idLambda++){
             roughnessLRtotLambda[idLambda]= getLRoughness(typeTrain, railRoughnessId,spectreVer, idLambda);
             lambdaToFreq[idLambda] = getLambdaToFreq(speed,idLambda);
-            roughnessLRtotFreq[idLambda]
+//            roughnessLRtotFreq[idLambda];
         }
 
         // Todo roughnessLRtotlambda [32 lambda to 24 freq...]
@@ -330,7 +330,7 @@ public class EvaluateTrainSourceCnossos {
 //        trainLWvm= Vperhour2NoiseLevel(trainLWv , parameters.getVehPerHour(), speed);
 //        trainLWvm = getNoiseLvlFinal(trainLWvm, numSource, parameters.getNumVeh());
 
-        return roughnessLRtotlambda[Freq_ind]; // Todo lambda to freq
+        return roughnessLRtotLambda[Freq_ind]; // Todo lambda to freq
     }
     public static double evaluateRollingNoise(int test){
         double L_W_roll =0;
