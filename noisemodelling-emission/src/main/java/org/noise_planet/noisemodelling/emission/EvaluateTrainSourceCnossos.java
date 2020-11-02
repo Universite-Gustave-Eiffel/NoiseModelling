@@ -371,7 +371,8 @@ public class EvaluateTrainSourceCnossos {
         double[] FreqMedLog = new double[24];
 
         for(int idLambda = 0; idLambda < 32; idLambda++){
-            lambdaToFreqLog[idLambda]= Math.log10(Math.pow(10,getLRoughness(typeTrain, railRoughnessId,spectreVer, idLambda)/10)); // Lambda
+            roughnessLtotLambda[idLambda]= Math.pow(10,getLRoughness(typeTrain, railRoughnessId,spectreVer, idLambda)/10); // Lambda
+            lambdaToFreqLog[idLambda] = Math.log10(getLambdaToFreq(speed,idLambda));
         }
         for(int idFreqMed = 0; idFreqMed < 24; idFreqMed++){
             FreqMedLog[idFreqMed]= Math.log10(Math.pow(10,(17+Double.valueOf(idFreqMed))/10));
