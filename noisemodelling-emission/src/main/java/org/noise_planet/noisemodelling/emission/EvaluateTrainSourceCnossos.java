@@ -361,7 +361,7 @@ public class EvaluateTrainSourceCnossos {
 //        trainLWvm= Vperhour2NoiseLevel(trainLWv , parameters.getVehPerHour(), speed);
 //        trainLWvm = getNoiseLvlFinal(trainLWvm, numSource, parameters.getNumVeh());
 
-        return roughnessLtot[Freq_ind]; // Todo lambda to freq
+        return roughnessLtot[Freq_ind]; // Todo niveau global(hauteur)
     }
 
     private static double[] evaluateRoughnessLtotFreq(String typeTrain, int railRoughnessId, double speed, int Freq_ind, int spectreVer) {
