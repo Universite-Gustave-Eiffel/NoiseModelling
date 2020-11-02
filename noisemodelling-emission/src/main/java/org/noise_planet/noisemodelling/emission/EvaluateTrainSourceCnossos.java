@@ -353,12 +353,7 @@ public class EvaluateTrainSourceCnossos {
 
         // niveau de puissance du bruit de roulement, par véhicule
         double[] roughnessLtot = evaluateRoughnessLtotFreq(typeTrain, railRoughnessId, speed, spectreVer); // evaluate L_r_Tot_f
-        double[] LWTr = evaluateWPerTrack(typeTrain,trackTransferId,spectreVer,roughnessLtot,axlesPerVeh);
-        double[] LWVeh = evaluateWPerVehicule(typeTrain,spectreVer,roughnessLtot,axlesPerVeh);
-        double[] LWRoll = new double[24];
-        for(int idFreq = 0; idFreq < 24; idFreq++){
-            LWRoll[idFreq] = 10*Math.log10(Math.pow(10,LWTr[idFreq]/10)+Math.pow(10,LWVeh[idFreq]/10));
-        }
+        double[] LWRoll = evaluateLWRoll(typeTrain,trackTransferId,spectreVer,roughnessLtot,axlesPerVeh);
 
 
         // Todo Traction noise calcul
@@ -374,6 +369,23 @@ public class EvaluateTrainSourceCnossos {
 //        trainLWvm = getNoiseLvlFinal(trainLWvm, numSource, parameters.getNumVeh());
 
         return roughnessLtot[nFreq]; // Todo niveau global(hauteur)
+    }
+
+    private static double[] evaluateLWRoll(String typeTrain, int trackTransferId, int spectreVer, double[] roughnessLtot, int axlesPerVeh) {
+        double [] trackTransfer = new double[24];
+        double [] LWTr = new double[24];
+        double [] vehTransfer = new double[24];
+        double [] LWVeh = new double[24];
+        double [] LWRoll = new double[24];
+
+        for(int idFreq = 0; idFreq < 24; idFreq++){
+            trackTransfer[idFreq]= getTrackTransfer(trackTransferId,spectreVer,idFreq);
+            LWTr[idFreq] = roughnessLtot[idFreq]+trackTransfer[idFreq]+10*Math.log10(axlesPerVeh);
+            vehTransfer[idFreq]= getVehTransfer(typeTrain,spectreVer,idFreq);
+            LWVeh[idFreq] = roughnessLtot[idFreq]+vehTransfer[idFreq]+10*Math.log10(axlesPerVeh);
+            LWRoll[idFreq] = 10*Math.log10(Math.pow(10,LWTr[idFreq]/10)+Math.pow(10,LWVeh[idFreq]/10));
+        }
+        return LWRoll;
     }
 
     private static double[] evaluateRoughnessLtotFreq(String typeTrain, int railRoughnessId, double speed, int spectreVer) {
@@ -396,28 +408,6 @@ public class EvaluateTrainSourceCnossos {
         }
         return roughnessLtotFreq;
     }
-    private static double[] evaluateWPerTrack(String typeTrain, int trackTransferId, int spectreVer,double [] roughnessLtot,int axlesPerVeh) {
-        double [] trackTransfer = new double[24];
-        double [] LWTr = new double[24];
-        for(int idFreq = 0; idFreq < 24; idFreq++){
-            trackTransfer[idFreq]= getTrackTransfer(trackTransferId,spectreVer,idFreq); // Lambda
-            LWTr[idFreq] = roughnessLtot[idFreq]+trackTransfer[idFreq]+10*Math.log10(axlesPerVeh);
-        }
-        return LWTr;
-    }
-    private static double[] evaluateWPerVehicule(String typeTrain, int spectreVer,double [] roughnessLtot,int axlesPerVeh) {
-        double [] vehTransfer = new double[24];
-        double [] LWVeh = new double[24];
-        for(int idFreq = 0; idFreq < 24; idFreq++){
-            vehTransfer[idFreq]= getVehTransfer(typeTrain,spectreVer,idFreq); // Lambda
-            LWVeh[idFreq] = roughnessLtot[idFreq]+vehTransfer[idFreq]+10*Math.log10(axlesPerVeh);
-        }
-        return LWVeh;
-    }
-
-
-
-
 
 //    public static double evaluateSpeed(String typeEng, String typeWag, Double speed){
 //
