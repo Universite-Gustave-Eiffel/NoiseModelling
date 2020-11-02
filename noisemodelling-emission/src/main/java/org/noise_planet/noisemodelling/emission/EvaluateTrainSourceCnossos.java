@@ -351,15 +351,15 @@ public class EvaluateTrainSourceCnossos {
         double speed = parameters.getSpeed();
         int axlesPerVeh = getAxlesPerVeh(typeTrain,spectreVer);
 
+        // niveau de puissance du bruit de roulement, par véhicule
         double[] roughnessLtot = evaluateRoughnessLtotFreq(typeTrain, railRoughnessId, speed, spectreVer); // evaluate L_r_Tot_f
-        // Todo niveau de puissance de la contribution voie et de la roue, par véhicule
         double[] LWTr = evaluateWPerTrack(typeTrain,trackTransferId,spectreVer,roughnessLtot,axlesPerVeh);
         double[] LWVeh = evaluateWPerVehicule(typeTrain,spectreVer,roughnessLtot,axlesPerVeh);
-
         double[] LWRoll = new double[24];
         for(int idFreq = 0; idFreq < 24; idFreq++){
             LWRoll[idFreq] = 10*Math.log10(Math.pow(10,LWTr[idFreq]/10)+Math.pow(10,LWVeh[idFreq]/10));
         }
+
 
         // Todo Traction noise calcul
 
