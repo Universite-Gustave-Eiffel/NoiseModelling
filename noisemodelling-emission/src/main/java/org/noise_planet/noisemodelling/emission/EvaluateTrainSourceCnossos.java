@@ -35,13 +35,10 @@ package org.noise_planet.noisemodelling.emission;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NullNode;
-import org.apache.commons.math3.analysis.interpolation.LinearInterpolator;
-
-import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
-import org.noise_planet.noisemodelling.propagation.ComputeRays;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 
 import static java.lang.Math.min;
 
@@ -169,16 +166,13 @@ public class EvaluateTrainSourceCnossos {
         int RefRoughness = getCnossosTrainData(spectreVer).get("Train").get("Definition").get(typeTrain).get("RefRoughness").intValue();
         return getCnossosTrainData(spectreVer).get("Train").get("WheelRoughness").get(String.valueOf(RefRoughness)).get("Values").get(Lambda_ind).doubleValue();
     }
-
     public static Double getContactFilter(String typeTrain, int spectreVer, int Lambda_ind) { //
         int RefContact = getCnossosTrainData(spectreVer).get("Train").get("Definition").get(typeTrain).get("RefContact").intValue();
         return getCnossosTrainData(spectreVer).get("Train").get("ContactFilter").get(String.valueOf(RefContact)).get("Values").get(Lambda_ind).doubleValue();
     }
-
     public static Double getRailRoughness(int railRoughnessId, int spectreVer, int Lambda_ind) { //
         return getCnossosTrainData(spectreVer).get("Rail").get("RailRoughness").get(String.valueOf(railRoughnessId)).get("Values").get(Lambda_ind).doubleValue();
     }
-
     public static Double getTrackTransfer(int trackTransferId, int spectreVer, int Freq_ind) { //
         return getCnossosTrainData(spectreVer).get("TrackTransfer").get(String.valueOf(trackTransferId)).get("Spectre").get(Freq_ind).doubleValue();
     }
@@ -190,10 +184,14 @@ public class EvaluateTrainSourceCnossos {
     }
 
     private static double getLambdaToFreq(double speed,int idLambda) {
-        double[] Lambda = new double[]{1000, 800, 630, 500, 400, 315, 250, 200, 160, 120, 100, 80, 63, 50, 40, 31.5, 25, 20, 16, 12, 10, 8, 6.3, 5, 4, 3.2, 2.5, 2, 1.6, 1.2, 1, 0.8}; // Todo Lamda norm or calculate ?
+        int n=0;
+        double[] Lambda = new double[32];
+        for(double m = 30; m > -2 ; m--){
+            Lambda[n]= Math.pow(10,m/10);
+            n ++;
+        }
         return speed/Lambda[idLambda]*1000/3.6; // km/h - m/s || mm - m
     }
-
 
     /** get noise level source from speed **/
     private static Double getNoiseLvl(double base, double speed,
@@ -280,6 +278,53 @@ public class EvaluateTrainSourceCnossos {
     private static Double getNoiseLvlFinal(double base, double numbersource, int numVeh) {
         return base + 10 * Math.log10(numbersource*numVeh);
     }
+    public static final double[] interpLinear(double[] x, double[] y, double[] xi) throws IllegalArgumentException {
+
+        if (x.length != y.length) {
+            throw new IllegalArgumentException("X and Y must be the same length");
+        }
+        if (x.length == 1) {
+            throw new IllegalArgumentException("X must contain more than one value");
+        }
+        double[] dx = new double[x.length - 1];
+        double[] dy = new double[x.length - 1];
+        double[] slope = new double[x.length - 1];
+        double[] intercept = new double[x.length - 1];
+
+        // Calculate the line equation (i.e. slope and intercept) between each point
+        for (int i = 0; i < x.length - 1; i++) {
+            dx[i] = x[i + 1] - x[i];
+            if (dx[i] == 0) {
+                throw new IllegalArgumentException("X must be montotonic. A duplicate " + "x-value was found");
+            }
+            if (dx[i] < 0) {
+                throw new IllegalArgumentException("X must be sorted");
+            }
+            dy[i] = y[i + 1] - y[i];
+            slope[i] = dy[i] / dx[i];
+            intercept[i] = y[i] - x[i] * slope[i];
+        }
+
+        // Perform the interpolation here
+        double[] yi = new double[xi.length];
+        for (int i = 0; i < xi.length; i++) {
+            if ((xi[i] > x[x.length - 1]) || (xi[i] < x[0])) {
+                yi[i] = Double.NaN;
+            }
+            else {
+                int loc = Arrays.binarySearch(x, xi[i]);
+                if (loc < -1) {
+                    loc = -loc - 2;
+                    yi[i] = slope[loc] * xi[i] + intercept[loc];
+                }
+                else {
+                    yi[i] = y[loc];
+                }
+            }
+        }
+
+        return yi;
+    }
 
     /**
      * Rail noise evaluation.
@@ -290,34 +335,18 @@ public class EvaluateTrainSourceCnossos {
     public static double evaluate(TrainParametersCnossos parameters) {
         final int freqParam = parameters.getFreqParam();
         final int spectreVer = parameters.getSpectreVer();
-
-        //double trainLW ;
+        int Freq_ind = getFreqInd(freqParam);
 
         String typeTrain = parameters.getTypeTrain();
         int railRoughnessId = parameters.getRailRoughness();
         int trackTransferId = parameters.getTrackTransfer();
         double speed = parameters.getSpeed();
-        LinearInterpolator linearInterpolator = new LinearInterpolator();
 
-//        double speedMax = getTrainVmax(typeTrain,spectreVer);
-
-//        double speed = Math.min(parameters.getSpeed(), speedMax);
-        int Freq_ind = getFreqInd(freqParam);
-
-        double[] roughnessLtotLambda = new double[32];
-        double[] lambdaToFreq = new double[32];
-
-        for(int idLambda = 0; idLambda < 32; idLambda++){
-            roughnessLtotLambda[idLambda]= getLRoughness(typeTrain, railRoughnessId,spectreVer, idLambda);
-            lambdaToFreq[idLambda] = getLambdaToFreq(speed,idLambda);
-        }
-
-        // Todo roughnessLRtotlambda [32 lambda to 24 freq...]
-        PolynomialSplineFunction roughnessLtotFreq = linearInterpolator.interpolate(lambdaToFreq, roughnessLtotLambda);
-        // Todo lambdaToFreq to FreqNorm
+        double[] roughnessLtot = evaluateRoughnessLtotFreq(typeTrain, railRoughnessId, speed, Freq_ind, spectreVer); // evaluate L_r_Tot_f
+        // Todo niveau de puissance de la contribution voie et de la roue, par véhicule
 
 
-        double  trackTransfer = getTrackTransfer(trackTransferId,spectreVer,Freq_ind);
+        double  trackTransfer = getTrackTransfer(trackTransferId,spectreVer, Freq_ind);
 
 
         // Todo Traction noise calcul
@@ -332,8 +361,29 @@ public class EvaluateTrainSourceCnossos {
 //        trainLWvm= Vperhour2NoiseLevel(trainLWv , parameters.getVehPerHour(), speed);
 //        trainLWvm = getNoiseLvlFinal(trainLWvm, numSource, parameters.getNumVeh());
 
-        return roughnessLtotLambda[Freq_ind]; // Todo lambda to freq
+        return roughnessLtot[Freq_ind]; // Todo lambda to freq
     }
+
+    private static double[] evaluateRoughnessLtotFreq(String typeTrain, int railRoughnessId, double speed, int Freq_ind, int spectreVer) {
+
+        double[] roughnessLtotLambda = new double[32];
+        double[] lambdaToFreqLog= new double[32];
+        double[] FreqMedLog = new double[24];
+
+        for(int idLambda = 0; idLambda < 32; idLambda++){
+            lambdaToFreqLog[idLambda]= Math.log10(Math.pow(10,getLRoughness(typeTrain, railRoughnessId,spectreVer, idLambda)/10)); // Lambda
+        }
+        for(int idFreqMed = 0; idFreqMed < 24; idFreqMed++){
+            FreqMedLog[idFreqMed]= Math.log10(Math.pow(10,(17+Double.valueOf(idFreqMed))/10));
+        }
+        double[] roughnessLtotFreq = interpLinear(lambdaToFreqLog, roughnessLtotLambda, FreqMedLog);
+
+        for(int idRoughnessLtotFreq = 0; idRoughnessLtotFreq < 24; idRoughnessLtotFreq++){
+            roughnessLtotFreq[idRoughnessLtotFreq]= 10*Math.log10(roughnessLtotFreq[idRoughnessLtotFreq]);
+        }
+        return roughnessLtotFreq;
+    }
+
     public static double evaluateRollingNoise(int test){
         double L_W_roll =0;
         return L_W_roll;
