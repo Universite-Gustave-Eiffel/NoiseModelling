@@ -140,7 +140,8 @@ def exec(Connection connection, input) {
     logger.info('Create spatial index on new building table')
     sql.execute('CREATE SPATIAL INDEX ON '+building_table_name+'(the_geom);')
     sql.execute("drop table if exists tmp_buildings_truncated;")
-
+    sql.execute('drop table if exists tmp_relation_buildings;')
+    sql.execute('drop table if exists buildings_temp;')
     resultString = resultString + "Calculation Done !"
 
     // print to command window
