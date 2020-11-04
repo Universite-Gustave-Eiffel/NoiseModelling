@@ -200,6 +200,18 @@ public class EvaluateTrainSourceCnossos {
         }
         return speed/Lambda[idLambda]*1000/3.6; // km/h - m/s || mm - m
     }
+    private static double[] checkNanValue(double[] roughnessLtot) {
+        int indice_NaN= 0;
+        for(int i = 0; i < 24 ; i++) {
+            if (Double.isNaN(roughnessLtot[i])) {
+                indice_NaN++;
+            }
+        }
+        for(int i = 0; i < indice_NaN ; i++) {
+            roughnessLtot[i] = roughnessLtot[indice_NaN+1];
+        }
+        return roughnessLtot;
+    }
 
     /** get noise level source from speed **/
     private static Double getNoiseLvl(double base, double speed,
@@ -286,6 +298,7 @@ public class EvaluateTrainSourceCnossos {
     private static Double getNoiseLvlFinal(double base, double numbersource, int numVeh) {
         return base + 10 * Math.log10(numbersource*numVeh);
     }
+    // https://github.com/mobilesec/timeseries-signal-processing/blob/master/Interpolation.java
     public static final double[] interpLinear(double[] x, double[] y, double[] xi) throws IllegalArgumentException {
 
         if (x.length != y.length) {
@@ -352,14 +365,16 @@ public class EvaluateTrainSourceCnossos {
         int axlesPerVeh = getAxlesPerVeh(typeTrain,spectreVer);
 
         // niveau de puissance du bruit de roulement, par véhicule
-        double[] roughnessLtot = evaluateRoughnessLtotFreq(typeTrain, railRoughnessId, speed, spectreVer); // evaluate L_r_Tot_f
+        double[] roughnessLtot = checkNanValue(evaluateRoughnessLtotFreq(typeTrain, railRoughnessId, speed, spectreVer)); // evaluate L_r_Tot_f
+
         double[] LWRoll = evaluateLWRoll(typeTrain,trackTransferId,spectreVer,roughnessLtot,axlesPerVeh);
 
 
         // Todo Traction noise calcul
-
+        double[] LWTraction = new double [24];
 
         // Todo Aerodynamic noise calcul
+        double[] LWAerodynamic = new double [24];
 
 
 
