@@ -179,25 +179,36 @@ public class EvaluateTrainSourceCnossos {
         return getCnossosTrainData(spectreVer).get("Train").get("Definition").get(typeTrain).get("Axles").intValue();
     }
 
-    public static double getTractionSpectre(String typeTrain, String sourceHeight, int spectreVer, int freqId) { //
-        double constantSpeed;
-        double accelerationSpeed;
-        double decelerationSpeed;
-        double idlingSpeed;
-        int RefTraction= getCnossosTrainData(spectreVer).get("Train").get("Definition").get(typeTrain).get("RefTraction").intValue();
-
-        if(RefTraction!=0){
-            constantSpeed = getCnossosTrainData(spectreVer).get("Train").get("ConstantSpeed").get(String.valueOf(RefTraction)).get("Values").get(sourceHeight).get(freqId).doubleValue();
-            accelerationSpeed = getCnossosTrainData(spectreVer).get("Train").get("AccelerationSpeed").get(String.valueOf(RefTraction)).get("Values").get(sourceHeight).get(freqId).doubleValue();
-            decelerationSpeed = getCnossosTrainData(spectreVer).get("Train").get("DecelerationSpeed").get(String.valueOf(RefTraction)).get("Values").get(sourceHeight).get(freqId).doubleValue();
-            idlingSpeed = getCnossosTrainData(spectreVer).get("Train").get("IdlingSpeed").get(String.valueOf(RefTraction)).get("Values").get(sourceHeight).get(freqId).doubleValue();
+    public static double getSpectre(String typeTrain, String ref, String sourceHeight, int spectreVer, int freqId) { //
+        int refId = getCnossosTrainData(spectreVer).get("Train").get("Definition").get(typeTrain).get(ref).intValue();
+        if(ref=="RefTraction") {
+            double constantSpeed;
+            double accelerationSpeed;
+            double decelerationSpeed;
+            double idlingSpeed;
+            if (refId != 0) {
+                constantSpeed = getCnossosTrainData(spectreVer).get("Train").get("ConstantSpeed").get(String.valueOf(refId)).get("Values").get(sourceHeight).get(freqId).doubleValue();
+                accelerationSpeed = getCnossosTrainData(spectreVer).get("Train").get("AccelerationSpeed").get(String.valueOf(refId)).get("Values").get(sourceHeight).get(freqId).doubleValue();
+                decelerationSpeed = getCnossosTrainData(spectreVer).get("Train").get("DecelerationSpeed").get(String.valueOf(refId)).get("Values").get(sourceHeight).get(freqId).doubleValue();
+                idlingSpeed = getCnossosTrainData(spectreVer).get("Train").get("IdlingSpeed").get(String.valueOf(refId)).get("Values").get(sourceHeight).get(freqId).doubleValue();
+            } else {
+                constantSpeed = -100;
+                accelerationSpeed = -100;
+                decelerationSpeed = -100;
+                idlingSpeed = -100;
+            }
+            return constantSpeed;
+        }else if(ref=="RefAerodynamic"){
+            double aerodynamicNoise;
+            aerodynamicNoise = getCnossosTrainData(spectreVer).get("Train").get("AerodynamicNoise").get(String.valueOf(refId)).get("Values").get(sourceHeight).get(freqId).doubleValue();
+            return aerodynamicNoise;
         }else{
-            constantSpeed = -100;
-            accelerationSpeed = -100;
-            decelerationSpeed = -100;
-            idlingSpeed = -100;
+            return 0;
         }
-        return constantSpeed;
+    }
+    public static double getAeroV0Alpha(String typeTrain, String ref, int spectreVer, String aeroInf){
+        int refId = getCnossosTrainData(spectreVer).get("Train").get("Definition").get(typeTrain).get(ref).intValue();
+        return Double.parseDouble(getCnossosTrainData(spectreVer).get("Train").get("AerodynamicNoise").get(String.valueOf(refId)).get(aeroInf).asText());
     }
 
     public static Double getTrackTransfer(int trackTransferId, int spectreVer, int freqId) { //
@@ -214,7 +225,6 @@ public class EvaluateTrainSourceCnossos {
         double railRoughness = getRailRoughness(railRoughnessId, spectreVer, idLambda);
         return 10 * Math.log10(Math.pow(10,wheelRoughness/10) + Math.pow(10,railRoughness/10) ) + contactFilter;
     }
-
     private static double getLambdaToFreq(double speed,int idLambda) {
         int n=0;
         double[] Lambda = new double[32];
@@ -394,11 +404,11 @@ public class EvaluateTrainSourceCnossos {
 
 
         // Todo Traction noise calcul
-        double[] LWTraction = evaluateLWTraction(typeTrain,spectreVer);
+        double[] LWTraction = evaluateLWSpectre(typeTrain,"RefTraction", speed,spectreVer);
 
 
         // Todo Aerodynamic noise calcul
-        double[] LWAerodynamic = new double [24];
+        double[] LWAerodynamic = evaluateLWSpectre(typeTrain,"RefAerodynamic", speed,spectreVer);
 
 
 
@@ -410,16 +420,28 @@ public class EvaluateTrainSourceCnossos {
         return roughnessLtot[nFreq]; // Todo niveau global(hauteur)
     }
 
-    private static double[] evaluateLWTraction(String typeTrain, int spectreVer) {
-        double [] LWTractionA = new double[24];
-        double [] LWTractionB = new double[24];
-        double [] LWTractionTot = new double[24];
+    private static double[] evaluateLWSpectre(String typeTrain,String ref, double speed, int spectreVer) {
+        double [] LWSpectreA = new double[24];
+        double [] LWSpectreB = new double[24];
+        double [] LWSpectreTot = new double[24];
         for(int idFreq = 0; idFreq < 24; idFreq++) {
-            LWTractionA[idFreq] = getTractionSpectre(typeTrain,"A",spectreVer,idFreq);
-            LWTractionB[idFreq] = getTractionSpectre(typeTrain,"B",spectreVer,idFreq);
-            LWTractionTot[idFreq] = 10*Math.log10(Math.pow(10,LWTractionA[idFreq]/10)+Math.pow(10,LWTractionB[idFreq]/10));
+            LWSpectreA[idFreq] = getSpectre(typeTrain,ref,"A",spectreVer,idFreq);
+            LWSpectreB[idFreq] = getSpectre(typeTrain,ref,"B",spectreVer,idFreq);
+            if(ref=="RefAerodynamic"){
+                if(speed<200){
+                    LWSpectreA[idFreq] =0;
+                    LWSpectreB[idFreq] =0;
+                }else{
+                double v0Aero = getAeroV0Alpha(typeTrain,ref, spectreVer, "V0");
+                double alphaAero = getAeroV0Alpha(typeTrain,ref, spectreVer, "Alpha");
+
+                LWSpectreA[idFreq] = LWSpectreA[idFreq]+ alphaAero*Math.log10(speed/v0Aero);
+                LWSpectreB[idFreq] = LWSpectreB[idFreq]+ alphaAero*Math.log10(speed/v0Aero);
+                }
+            }
+            LWSpectreTot[idFreq] = 10*Math.log10(Math.pow(10,LWSpectreA[idFreq]/10)+Math.pow(10,LWSpectreB[idFreq]/10));
         }
-        return LWTractionTot;
+        return LWSpectreTot;
     }
 
     private static double[] evaluateLWRoll(String typeTrain, int trackTransferId, int spectreVer, double[] roughnessLtot, int axlesPerVeh) {

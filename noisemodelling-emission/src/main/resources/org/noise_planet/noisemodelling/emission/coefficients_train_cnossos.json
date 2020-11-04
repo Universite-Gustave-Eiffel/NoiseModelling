@@ -16,7 +16,7 @@
       "RefContact":7,
       "RefRoughness":4,
       "RefTraction":8,
-      "RefAerodynamic":0
+      "RefAerodynamic":3
     },
     "Empty":{
       "Description":"Empty vehicle definition",
