@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory
 import java.sql.Connection
 
 title = 'Clean BUILDINGS Table'
-description = 'Clean the BUILDINGS table, avoiding all overlapping areas and unclosed polygons. ' +
+description = 'Clean the BUILDINGS table, avoiding all overlapping areas and unclosed polygons. NoiseModelling propagation code does not support well intersecting polygons' +
         '</br> The input table will be erased and replaced by the cleaned table.'
 
 inputs = [
@@ -116,13 +116,13 @@ def exec(Connection connection, input) {
     // -------------------------
 
     sql.execute('drop table if exists buildings_temp;' +
-            'create table buildings_temp as select ST_MAKEVALID(ST_precisionreducer(ST_SIMPLIFYPRESERVETOPOLOGY(THE_GEOM,0.1),0.1)) THE_GEOM, PK, HEIGHT from '+building_table_name+'  WHERE ST_Perimeter(THE_GEOM)<1000;')
+            'create table buildings_temp as select ST_MAKEVALID(ST_SIMPLIFYPRESERVETOPOLOGY(ST_precisionreducer(THE_GEOM,2),0.1)) THE_GEOM, PK, HEIGHT from '+building_table_name+'  WHERE ST_Perimeter(THE_GEOM)<1000;')
 
     logger.info('Make valid every buildings - ok')
 
     sql.execute("ALTER TABLE buildings_temp ALTER COLUMN PK INT NOT NULL;")
     sql.execute("ALTER TABLE buildings_temp ADD PRIMARY KEY (PK); ")
-    sql.execute('CREATE SPATIAL INDEX IF NOT EXISTS BUILDINGS_INDEX ON buildings_temp(the_geom);' +
+    sql.execute('CREATE SPATIAL INDEX ON buildings_temp(the_geom);' +
             'drop table if exists tmp_relation_buildings;' +
             'create table tmp_relation_buildings as select s1.PK as PK_BUILDING, S2.PK as PK2_BUILDING FROM buildings_temp S1, buildings_temp S2 WHERE ST_AREA(S1.THE_GEOM) < ST_AREA(S2.THE_GEOM) AND S1.THE_GEOM && S2.THE_GEOM AND ST_DISTANCE(S1.THE_GEOM, S2.THE_GEOM) <= 0.1;')
 
@@ -135,10 +135,13 @@ def exec(Connection connection, input) {
     logger.info('Intersection remove buildings with intersections')
 
     sql.execute("DROP TABLE IF EXISTS "+building_table_name+";")
-    sql.execute("create table "+building_table_name+"(PK INTEGER PRIMARY KEY, THE_GEOM GEOMETRY, HEIGHT FLOAT)  as select s.PK, s.the_geom, s.HEIGHT from  BUILDINGS_TEMP s where PK not in (select PK_BUILDING from tmp_buildings_truncated) UNION ALL select PK_BUILDING, the_geom, HEIGHT from tmp_buildings_truncated WHERE NOT st_isempty(the_geom);")
+    sql.execute("create table "+building_table_name+"(PK INTEGER PRIMARY KEY, THE_GEOM GEOMETRY, HEIGHT FLOAT)  as select s.PK, ST_SetSRID(s.the_geom,"+srid+"), s.HEIGHT from  BUILDINGS_TEMP s where PK not in (select PK_BUILDING from tmp_buildings_truncated) UNION ALL select PK_BUILDING, ST_SetSRID(the_geom,"+srid+"), HEIGHT from tmp_buildings_truncated WHERE NOT st_isempty(the_geom);")
 
+    logger.info('Create spatial index on new building table')
+    sql.execute('CREATE SPATIAL INDEX ON '+building_table_name+'(the_geom);')
     sql.execute("drop table if exists tmp_buildings_truncated;")
-
+    sql.execute('drop table if exists tmp_relation_buildings;')
+    sql.execute('drop table if exists buildings_temp;')
     resultString = resultString + "Calculation Done !"
 
     // print to command window

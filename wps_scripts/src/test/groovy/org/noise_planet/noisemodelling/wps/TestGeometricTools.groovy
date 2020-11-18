@@ -108,7 +108,8 @@ class TestGeometricTools extends JdbcTestCase {
         new Clean_Buildings_Table().exec(connection,
                 ["tableName": "buildings"])
 
-        assertEquals('POLYGON ((223850.08378369396 6758172.390990572, 223852.979044039 6758185.902205516, 223862.97904403895 6758183.902205515, 223860.02095646886 6758170.097796855, 223850.08378369396 6758172.390990572))', sql.firstRow("SELECT THE_GEOM FROM buildings")[0] as String)
+        // Check if there is remaining intersecting buildings
+        assertEquals(0, sql.firstRow("select COUNT(*) COUNTINTERS FROM buildings S1, buildings S2 WHERE ST_AREA(S1.THE_GEOM) < ST_AREA(S2.THE_GEOM) AND S1.THE_GEOM && S2.THE_GEOM AND ST_DISTANCE(S1.THE_GEOM, S2.THE_GEOM) <= 0.05;")[0] as Integer)
     }
 
 

@@ -10,7 +10,7 @@
     <parent>
         <groupId>org.orbisgis</groupId>
         <artifactId>noisemodelling-parent</artifactId>
-        <version>3.3.1-SNAPSHOT</version>
+        <version>3.3.1</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <description>Additional drivers and functions for H2GIS database</description>
@@ -28,7 +28,7 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.10</version>
+            <version>4.13.1</version>
             <scope>test</scope>
         </dependency>
         <dependency>

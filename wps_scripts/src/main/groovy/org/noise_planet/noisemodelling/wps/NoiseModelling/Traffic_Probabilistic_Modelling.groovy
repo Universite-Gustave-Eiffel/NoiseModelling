@@ -838,11 +838,11 @@ class ProbabilisticProcessData {
                 int acc = 0
                 int FreqParam = f
                 double Temperature = 20
-                int RoadSurface = 0
+                String RoadSurface = "DEF"
                 boolean Stud = true
                 double Junc_dist = 200
                 int Junc_type = 1
-                int veh_type = 1
+                String veh_type = "1"
                 int acc_type = 1
                 double LwStd = 1
                 int VehId = 10
@@ -862,11 +862,11 @@ class ProbabilisticProcessData {
                 int acc = 0
                 int FreqParam = f
                 double Temperature = 20
-                int RoadSurface = 0
+                String RoadSurface = "DEF"
                 boolean Stud = true
                 double Junc_dist = 200
                 int Junc_type = 1
-                int veh_type = 3
+                String veh_type = "3"
                 int acc_type = 1
                 double LwStd = 1
                 int VehId = 10
