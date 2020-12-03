@@ -139,7 +139,7 @@ inputs = [
         confDiffVertical        : [
                 name       : 'Diffraction on vertical edges',
                 title      : 'Diffraction on vertical edges',
-                description: 'Compute or not the diffraction on vertical edges.' +
+                description: 'Compute or not the diffraction on vertical edges.Following Directive 2015/996, enable this option for rail and industrial sources only.' +
                         '</br> </br> <b> Default value : false </b>',
                 min        : 0, max: 1, type: Boolean.class
         ],
