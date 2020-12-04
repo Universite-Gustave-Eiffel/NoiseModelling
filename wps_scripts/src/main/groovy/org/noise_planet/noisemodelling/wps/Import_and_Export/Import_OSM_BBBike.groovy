@@ -41,6 +41,7 @@ import org.slf4j.LoggerFactory
 
 import java.sql.Connection
 import java.sql.ResultSet
+import java.sql.Statement
 
 title = 'Clean and fence BBBike tables - https://extract.bbbike.org/'
 description = 'Clean and fence BBBike tables - Convert shp folder from BBBike (https://extract.bbbike.org/) to BUILDINGS, GROUND AND ROADS tables. ' +
@@ -154,6 +155,9 @@ def exec(Connection connection, input) {
     // Create a sql connection to interact with the database in SQL
     Sql sql = new Sql(connection)
 
+    // Create a connection statement to interact with the database in SQL
+    Statement stmt = connection.createStatement()
+
     // output string, the information given back to the user
     String resultString = ""
 
@@ -190,9 +194,6 @@ def exec(Connection connection, input) {
     }
 
 
-
-
-
     // -------------------------
     // Begin Import Folder
     // -------------------------
@@ -223,7 +224,7 @@ def exec(Connection connection, input) {
 
             // Drop the table if already exists
             String dropOutputTable = "drop table if exists \"" + outputTableName + "\";"
-            sql.execute(dropOutputTable)
+            stmt.execute(dropOutputTable)
 
             switch (ext) {
                 case "csv":
@@ -274,13 +275,13 @@ def exec(Connection connection, input) {
             }
 
 
-            ResultSet rs = sql.executeQuery("SELECT * FROM \"" + outputTableName + "\"")
+            ResultSet rs = stmt.executeQuery("SELECT * FROM \"" + outputTableName + "\"")
 
             int pk2Field = JDBCUtilities.getFieldIndex(rs.getMetaData(), "PK2")
             int pkField = JDBCUtilities.getFieldIndex(rs.getMetaData(), "PK")
 
             if (pk2Field > 0 && pkField > 0) {
-                sql.execute("ALTER TABLE " + outputTableName + " DROP COLUMN PK2;")
+                stmt.execute("ALTER TABLE " + outputTableName + " DROP COLUMN PK2;")
                 logger.warn("The PK2 column automatically created by the SHP driver has been deleted.")
             }
 
@@ -295,7 +296,7 @@ def exec(Connection connection, input) {
                 // Get the SRID of the table
                 Integer tableSrid = SFSUtilities.getSRID(connection, TableLocation.parse(outputTableName))
 
-                if (tableSrid != 0 && tableSrid != srid && input['inputSRID']) {
+                if (tableSrid != 0 && tableSrid != srid ) {
                     resultString = "The table " + outputTableName + " already has a different SRID than the one you gave."
                     throw new Exception('ERROR : ' + resultString)
                 }
@@ -314,14 +315,14 @@ def exec(Connection connection, input) {
             }
 
             // If the table has a PK column and doesn't have any Primary Key Constraint, then automatically associate a Primary Key
-            ResultSet rs2 = sql.executeQuery("SELECT * FROM \"" + outputTableName + "\"")
+            ResultSet rs2 = stmt.executeQuery("SELECT * FROM \"" + outputTableName + "\"")
             int pkUserIndex = JDBCUtilities.getFieldIndex(rs2.getMetaData(), "PK")
             int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, outputTableName)
 
             if (pkIndex == 0) {
                 if (pkUserIndex > 0) {
-                    sql.execute("ALTER TABLE " + outputTableName + " ALTER COLUMN PK INT NOT NULL;")
-                    sql.execute("ALTER TABLE " + outputTableName + " ADD PRIMARY KEY (PK);  ")
+                    stmt.execute("ALTER TABLE " + outputTableName + " ALTER COLUMN PK INT NOT NULL;")
+                    stmt.execute("ALTER TABLE " + outputTableName + " ADD PRIMARY KEY (PK);  ")
                     resultString = resultString + String.format(outputTableName + " has a new primary key constraint on PK")
                     logger.info(String.format(outputTableName + " has a new primary key constraint on PK"))
                 }
