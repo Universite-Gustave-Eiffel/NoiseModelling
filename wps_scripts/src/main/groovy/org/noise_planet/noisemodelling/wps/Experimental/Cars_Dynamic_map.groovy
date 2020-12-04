@@ -1,10 +1,11 @@
 package org.noise_planet.noisemodelling.wps.Experimental
 
+import geoserver.GeoServer
+
 /*
  * @Author Pierre Aumond
  */
 
-import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
 import groovy.transform.CompileStatic
@@ -17,8 +18,10 @@ import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Geometry
 import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceDynamic
 import org.noise_planet.noisemodelling.emission.RSParametersDynamic
-import org.noise_planet.noisemodelling.propagation.*
-import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap
+import org.noise_planet.noisemodelling.jdbc.PointNoiseMap
+import org.noise_planet.noisemodelling.pathfinder.*
+import org.noise_planet.noisemodelling.propagation.ComputeRaysOut
+import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
 
 import java.sql.Connection
 import java.sql.SQLException

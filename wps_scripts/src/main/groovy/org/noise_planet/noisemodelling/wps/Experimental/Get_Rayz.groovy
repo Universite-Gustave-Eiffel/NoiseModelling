@@ -34,10 +34,11 @@ import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Geometry
-import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
-import org.noise_planet.noisemodelling.emission.RSParametersCnossos
+
+import org.noise_planet.noisemodelling.emission.*
+import org.noise_planet.noisemodelling.pathfinder.*
 import org.noise_planet.noisemodelling.propagation.*
-import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap
+import org.noise_planet.noisemodelling.jdbc.*
 
 import java.sql.Connection
 import java.sql.SQLException
