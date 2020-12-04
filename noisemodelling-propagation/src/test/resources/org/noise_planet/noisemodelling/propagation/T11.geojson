@@ -1,0 +1,43 @@
+{
+  "type" : "FeatureCollection",
+  "crs" : {
+    "type" : "name",
+    "properties" : {
+      "name" : "EPSG:4326"
+    }
+  },
+  "features" : [ {
+    "type" : "Feature",
+    "geometry" : {
+      "type" : "LineString",
+      "coordinates" : [ [ 50.0, 10.0, 1.0 ], [ 55.0, 10.0, 10.0 ], [ 70.0, 10.0, 15.0 ] ]
+    },
+    "properties" : {
+      "receiver" : 0,
+      "source" : 0,
+      "gPath" : [ 0.50, 0.50 ]
+    }
+  }, {
+    "type" : "Feature",
+    "geometry" : {
+      "type" : "LineString",
+      "coordinates" : [ [ 50.0, 10.0, 1.0 ], [ 55.0, 15.0, 4.5 ], [ 62.9, 15.0, 10.0 ], [ 70.0, 10.0, 15.0 ] ]
+    },
+    "properties" : {
+      "receiver" : 0,
+      "source" : 0,
+      "gPath" : [ 0.50, 0.50, 0.50 ]
+    }
+  }, {
+    "type" : "Feature",
+    "geometry" : {
+      "type" : "LineString",
+      "coordinates" : [ [ 70.0, 10.0, 15.0 ], [ 62.9, 5.0, 10.0 ], [ 55.0, 5.0, 4.5 ], [ 50.0, 10.0, 1.0 ] ]
+    },
+    "properties" : {
+      "receiver" : 0,
+      "source" : 0,
+      "gPath" : [ 0.50, 0.50, 0.50 ]
+    }
+  } ]
+}
