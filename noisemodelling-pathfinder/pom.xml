@@ -5,15 +5,15 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
     <packaging>bundle</packaging>
-    <name>noisemodelling-emission</name>
-    <artifactId>noisemodelling-emission</artifactId>
+    <name>noisemodelling-pathfinder</name>
+    <artifactId>noisemodelling-pathfinder</artifactId>
     <parent>
         <groupId>org.orbisgis</groupId>
         <artifactId>noisemodelling-parent</artifactId>
         <version>3.3.1</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
-    <description>Translate light vehicle, heavy vehicle, public bus, tramway traffic into linear noise source. Then compute sound propagation and iso surface.</description>
+    <description>Compute sound propagation rays.</description>
     <dependencies>
         <dependency>
             <groupId>junit</groupId>
@@ -22,9 +22,36 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>commons-collections</groupId>
+            <artifactId>commons-collections</artifactId>
+            <version>3.2.2</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>${jts-core-groupId}</groupId>
+            <artifactId>jts-core</artifactId>
+            <version>${jts-core-version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.orbisgis</groupId>
-            <artifactId>noisemodelling-pathfinder</artifactId>
-            <version>${project.version}</version>
+            <artifactId>h2gis-utilities</artifactId>
+            <version>${h2gis-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.orbisgis</groupId>
+            <artifactId>poly2tri-core</artifactId>
+            <version>0.1.2</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <scope>test</scope>
+            <version>2.9.10.5</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-math3</artifactId>
+            <version>3.6.1</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -32,9 +59,25 @@
             <version>2.9.6</version>
         </dependency>
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>2.9.10.5</version>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.6.4</version>
+        </dependency>
+        <dependency>
+            <groupId>org.orbisgis</groupId>
+            <artifactId>cts</artifactId>
+            <version>1.5.2</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>h2gis</artifactId>
+            <version>${h2gis-version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.orbisgis</groupId>
+            <artifactId>noisemodelling-propagation</artifactId>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -43,10 +86,10 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>h2gis</artifactId>
-            <version>${h2gis-version}</version>
-            <scope>test</scope>
+            <groupId>org.orbisgis</groupId>
+            <artifactId>noisemodelling-propagation</artifactId>
+            <version>3.3.1</version>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
     <build>
@@ -72,7 +115,7 @@
                 <extensions>true</extensions>
                 <configuration>
                     <instructions>
-                        <Public-Package>org.noise_planet.noisemodelling.emission.*</Public-Package>
+                        <Public-Package>org.noise_planet.noisemodelling.pathfinder.*</Public-Package>
                         <Bundle-Vendor>IFSTTAR, IRSTV - FR CNRS 2488</Bundle-Vendor>
                         <Import-Package>org.slf4j;version="[1.6.0,2)",!org.h2.*,*</Import-Package>
                     </instructions>

@@ -27,6 +27,7 @@
         <h2gis-version>1.5.1-SNAPSHOT</h2gis-version>
     </properties>
     <modules>
+        <module>noisemodelling-pathfinder</module>
         <module>noisemodelling-propagation</module>
         <module>noisemodelling-emission</module>
         <module>noisemodelling-tutorial-01</module>
