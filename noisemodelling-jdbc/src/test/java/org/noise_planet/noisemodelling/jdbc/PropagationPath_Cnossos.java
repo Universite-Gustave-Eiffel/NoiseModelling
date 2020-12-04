@@ -1,8 +1,11 @@
-package org.noise_planet.noisemodelling.jdbc.test_propa;
+package org.noise_planet.noisemodelling.jdbc;
 
 import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.math.Vector3D;
+import org.noise_planet.noisemodelling.pathfinder.*;
+import org.noise_planet.noisemodelling.propagation.*;
+import org.noise_planet.noisemodelling.propagation.Utils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -10,7 +13,6 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.*;
-import static org.noise_planet.noisemodelling.propagation.Utils.dbaToW;
 
 public class PropagationPath_Cnossos {
 

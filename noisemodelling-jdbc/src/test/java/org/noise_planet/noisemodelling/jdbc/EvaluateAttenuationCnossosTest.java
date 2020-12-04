@@ -1,4 +1,4 @@
-package org.noise_planet.noisemodelling.jdbc.test_propa;
+package org.noise_planet.noisemodelling.jdbc;
 
 import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
@@ -8,6 +8,8 @@ import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
+import org.noise_planet.noisemodelling.pathfinder.*;
+import org.noise_planet.noisemodelling.propagation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +47,7 @@ public class EvaluateAttenuationCnossosTest {
      * Test TC01 -- Reflecting ground (G = 0)
      */
     @Test
-    public void TC01()  throws LayerDelaunayError , IOException {
+    public void TC01()  throws LayerDelaunayError, IOException {
         GeometryFactory factory = new GeometryFactory();
         //Scene dimension
         Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));

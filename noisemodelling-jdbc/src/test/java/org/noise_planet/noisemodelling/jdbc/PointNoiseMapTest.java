@@ -1,4 +1,4 @@
-package org.noise_planet.noisemodelling.jdbc.test_propa;
+package org.noise_planet.noisemodelling.jdbc;
 
 import org.h2.util.StringUtils;
 import org.h2gis.api.EmptyProgressVisitor;
@@ -9,8 +9,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.locationtech.jts.geom.Geometry;
-import org.noise_planet.noisemodelling.jdbc.PointNoiseMap;
-import org.noise_planet.noisemodelling.jdbc.TriangleNoiseMap;
 import org.noise_planet.noisemodelling.pathfinder.*;
 import org.noise_planet.noisemodelling.propagation.*;
 

@@ -1,4 +1,4 @@
-package org.noise_planet.noisemodelling.emission.jdbc;
+package org.noise_planet.noisemodelling.jdbc;
 
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.api.ProgressVisitor;
@@ -10,15 +10,17 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
-import org.noise_planet.noisemodelling.propagation.IComputeRaysOut;
+import org.noise_planet.noisemodelling.pathfinder.IComputeRaysOut;
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
-import org.noise_planet.noisemodelling.propagation.RootProgressVisitor;
-import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap;
+import org.noise_planet.noisemodelling.pathfinder.RootProgressVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;

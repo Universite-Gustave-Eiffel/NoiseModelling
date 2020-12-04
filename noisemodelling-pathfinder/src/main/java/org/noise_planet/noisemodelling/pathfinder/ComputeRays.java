@@ -814,11 +814,13 @@ public class ComputeRays {
         }
     }
 
-    List<PropagationPath> directPath(Coordinate srcCoord,
-                                             Coordinate receiverCoord, boolean verticalDiffraction,boolean horizontalDiffraction) {
+
+    public List<PropagationPath> directPath(Coordinate srcCoord,
+                                            Coordinate receiverCoord, boolean verticalDiffraction, boolean horizontalDiffraction) {
 
 
         List<PropagationPath> propagationPaths = new ArrayList<>();
+
 
         // Then, check if the source is visible from the receiver (not
         // hidden by a building)

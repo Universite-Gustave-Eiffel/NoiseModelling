@@ -1,4 +1,4 @@
-package org.noise_planet.noisemodelling.emission.jdbc;
+package org.noise_planet.noisemodelling.jdbc;
 
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.functions.factory.H2GISDBFactory;
@@ -9,16 +9,16 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
-import org.noise_planet.noisemodelling.propagation.IComputeRaysOut;
-import org.noise_planet.noisemodelling.propagation.RootProgressVisitor;
-import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap;
 
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

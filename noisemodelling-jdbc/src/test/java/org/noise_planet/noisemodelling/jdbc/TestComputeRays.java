@@ -4,37 +4,25 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.cts.crs.CRSException;
 import org.cts.op.CoordinateOperationException;
+import org.junit.Assert;
 import org.junit.Test;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.Envelope;
-import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.LineSegment;
-import org.locationtech.jts.geom.LineString;
-import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.geom.*;
 import org.locationtech.jts.geom.util.AffineTransformation;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 import org.locationtech.jts.math.Vector2D;
+import org.noise_planet.noisemodelling.pathfinder.*;
 import org.noise_planet.noisemodelling.pathfinder.utils.Densifier3D;
+import org.noise_planet.noisemodelling.propagation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.xml.stream.XMLStreamException;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.noise_planet.noisemodelling.propagation.KMLDocument.exportScene;
+import static org.noise_planet.noisemodelling.jdbc.KMLDocument.exportScene;
 
 
 public class TestComputeRays {
@@ -67,8 +55,8 @@ public class TestComputeRays {
         double slope = ab[0];
         double intercept = ab[1];
 
-        Assert.assertEquals(0.05, slope, 0.01);
-        Assert.assertEquals(-2.83, intercept, 0.01);
+        assertEquals(0.05, slope, 0.01);
+        assertEquals(-2.83, intercept, 0.01);
 
         uv = new ArrayList<>();
         uv.add(new Coordinate(sGround.distance(sGround), sGround.z));
@@ -78,8 +66,8 @@ public class TestComputeRays {
         ab = JTSUtility.getMeanPlaneCoefficients(uv.toArray(new Coordinate[uv.size()]));
         slope = ab[0];
         intercept = ab[1];
-        Assert.assertEquals(0.05, slope, 0.01);
-        Assert.assertEquals(-2.33, intercept, 0.01);
+        assertEquals(0.05, slope, 0.01);
+        assertEquals(-2.33, intercept, 0.01);
     }
 
     /**
@@ -113,35 +101,35 @@ public class TestComputeRays {
 
         List<Coordinate> ray = computeRays.computeSideHull(true, p1, p2);
         int i = 0;
-        Assert.assertEquals(0, p1.distance(ray.get(i++)), 0.02);
-        Assert.assertEquals(0, new Coordinate(9, 11).distance(ray.get(i++)), 0.02);
-        Assert.assertEquals(0, new Coordinate(11, 11).distance(ray.get(i++)), 0.02);
-        Assert.assertEquals(0, new Coordinate(13, 10).distance(ray.get(i++)), 0.02);
-        Assert.assertEquals(0, p2.distance(ray.get(i++)), 0.02);
+        assertEquals(0, p1.distance(ray.get(i++)), 0.02);
+        assertEquals(0, new Coordinate(9, 11).distance(ray.get(i++)), 0.02);
+        assertEquals(0, new Coordinate(11, 11).distance(ray.get(i++)), 0.02);
+        assertEquals(0, new Coordinate(13, 10).distance(ray.get(i++)), 0.02);
+        assertEquals(0, p2.distance(ray.get(i++)), 0.02);
 
         ray = computeRays.computeSideHull(false, p1, p2);
         i = 0;
-        Assert.assertEquals(0, p1.distance(ray.get(i++)), 0.02);
-        Assert.assertEquals(0, new Coordinate(6, 5).distance(ray.get(i++)), 0.02);
-        Assert.assertEquals(0, new Coordinate(10, 4).distance(ray.get(i++)), 0.02);
-        Assert.assertEquals(0, new Coordinate(11, 4).distance(ray.get(i++)), 0.02);
-        Assert.assertEquals(0, p2.distance(ray.get(i++)), 0.02);
+        assertEquals(0, p1.distance(ray.get(i++)), 0.02);
+        assertEquals(0, new Coordinate(6, 5).distance(ray.get(i++)), 0.02);
+        assertEquals(0, new Coordinate(10, 4).distance(ray.get(i++)), 0.02);
+        assertEquals(0, new Coordinate(11, 4).distance(ray.get(i++)), 0.02);
+        assertEquals(0, p2.distance(ray.get(i++)), 0.02);
 
         ray = computeRays.computeSideHull(false, p2, p1);
         i = 0;
-        Assert.assertEquals(0, p2.distance(ray.get(i++)), 0.02);
-        Assert.assertEquals(0, new Coordinate(13, 10).distance(ray.get(i++)), 0.02);
-        Assert.assertEquals(0, new Coordinate(11, 11).distance(ray.get(i++)), 0.02);
-        Assert.assertEquals(0, new Coordinate(9, 11).distance(ray.get(i++)), 0.02);
-        Assert.assertEquals(0, p1.distance(ray.get(i++)), 0.02);
+        assertEquals(0, p2.distance(ray.get(i++)), 0.02);
+        assertEquals(0, new Coordinate(13, 10).distance(ray.get(i++)), 0.02);
+        assertEquals(0, new Coordinate(11, 11).distance(ray.get(i++)), 0.02);
+        assertEquals(0, new Coordinate(9, 11).distance(ray.get(i++)), 0.02);
+        assertEquals(0, p1.distance(ray.get(i++)), 0.02);
 
         ray = computeRays.computeSideHull(true, p2, p1);
         i = 0;
-        Assert.assertEquals(0, p2.distance(ray.get(i++)), 0.02);
-        Assert.assertEquals(0, new Coordinate(11, 4).distance(ray.get(i++)), 0.02);
-        Assert.assertEquals(0, new Coordinate(10, 4).distance(ray.get(i++)), 0.02);
-        Assert.assertEquals(0, new Coordinate(6, 5).distance(ray.get(i++)), 0.02);
-        Assert.assertEquals(0, p1.distance(ray.get(i++)), 0.02);
+        assertEquals(0, p2.distance(ray.get(i++)), 0.02);
+        assertEquals(0, new Coordinate(11, 4).distance(ray.get(i++)), 0.02);
+        assertEquals(0, new Coordinate(10, 4).distance(ray.get(i++)), 0.02);
+        assertEquals(0, new Coordinate(6, 5).distance(ray.get(i++)), 0.02);
+        assertEquals(0, p1.distance(ray.get(i++)), 0.02);
     }
 
     @Test
@@ -158,10 +146,10 @@ public class TestComputeRays {
         Coordinate receiverCoord = new Coordinate(-4, 2, 0);
         Coordinate nearestPoint = JTSUtility.getNearestPoint(receiverCoord, geom);
         double segmentSizeConstraint = Math.max(1, receiverCoord.distance3D(nearestPoint) / 2.0);
-        Assert.assertEquals(2.5, ComputeRays.splitLineStringIntoPoints(geom , segmentSizeConstraint, sourcePoints), 1e-6);
-        Assert.assertEquals(2, sourcePoints.size());
-        Assert.assertEquals(0, new Coordinate(2.25, 2, 0).distance3D(sourcePoints.get(0)), 1e-6);
-        Assert.assertEquals(0, new Coordinate(4, 1.25, 0).distance3D(sourcePoints.get(1)), 1e-6);
+        assertEquals(2.5, ComputeRays.splitLineStringIntoPoints(geom , segmentSizeConstraint, sourcePoints), 1e-6);
+        assertEquals(2, sourcePoints.size());
+        assertEquals(0, new Coordinate(2.25, 2, 0).distance3D(sourcePoints.get(0)), 1e-6);
+        assertEquals(0, new Coordinate(4, 1.25, 0).distance3D(sourcePoints.get(1)), 1e-6);
     }
 
     @Test
@@ -173,7 +161,7 @@ public class TestComputeRays {
         for(Coordinate pt : pts) {
             Assert.assertNotNull(pt);
         }
-        Assert.assertEquals(7, pts.size());
+        assertEquals(7, pts.size());
     }
 
     /**
@@ -199,7 +187,7 @@ public class TestComputeRays {
 
         DiffractionWithSoilEffetZone eff = manager.getPath(new Coordinate(316876.05185368325, 6706318.789634008, 22.089050196052437),
                 new Coordinate(316747.10402055364, 6706422.950335046, 12.808121783800553), null);
-        Assert.assertEquals(3, eff.getPath().size());
+        assertEquals(3, eff.getPath().size());
     }
 
     /**
@@ -268,13 +256,13 @@ public class TestComputeRays {
         Assert.assertFalse(manager.isFreeField(p1, p2));
 
         List<Coordinate> pts = computeRays.computeSideHull(true, p1, p2);
-        Assert.assertEquals(5, pts.size());
+        assertEquals(5, pts.size());
         for (int i = 0; i < pts.size() - 1; i++) {
             Assert.assertTrue(manager.isFreeField(pts.get(i), pts.get(i + 1)));
         }
 
         pts = computeRays.computeSideHull(false, p1, p2);
-        Assert.assertEquals(5, pts.size());
+        assertEquals(5, pts.size());
         for (int i = 0; i < pts.size() - 1; i++) {
             Assert.assertTrue(manager.isFreeField(pts.get(i), pts.get(i + 1)));
         }
@@ -282,7 +270,7 @@ public class TestComputeRays {
         List<PropagationPath> prop = computeRays.directPath(p2, p1, true, true);
         // 3 paths
         // 1 over the building
-        Assert.assertEquals(3, prop.size());
+        assertEquals(3, prop.size());
     }
 
     @Test
@@ -308,10 +296,10 @@ public class TestComputeRays {
                         new org.locationtech.jts.math.Vector3D(11,13,14),
                         new Coordinate(1.5,21.5,13.5))),
                 new ArrayList<>()));
-        expected.get(0).idReceiver = 5;
-        expected.get(0).idSource = 10;
-        expected.get(0).idReceiver = 6;
-        expected.get(0).idSource = 18;
+        expected.get(0).setIdReceiver(5) ;
+        expected.get(0).setIdSource(10);
+        expected.get(0).setIdReceiver(6) ;
+        expected.get(0).setIdSource(18);
 
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         PropagationPath.writePropagationPathListStream(new DataOutputStream(byteArrayOutputStream), expected);
@@ -320,16 +308,16 @@ public class TestComputeRays {
         ArrayList<PropagationPath> got = new ArrayList<>();
         PropagationPath.readPropagationPathListStream(new DataInputStream(byteArrayInputStream), got);
 
-        Assert.assertEquals(2, got.size());
-        Assert.assertEquals(expected.get(0).getPointList().size(), got.get(0).getPointList().size());
-        Assert.assertEquals(expected.get(0).getPointList().get(0).coordinate, got.get(0).getPointList().get(0).coordinate);
-        Assert.assertEquals(1, expected.get(1).getPointList().size());
-        Assert.assertEquals(PointPath.POINT_TYPE.DIFV, expected.get(1).getPointList().get(0).type);
-        Assert.assertEquals(0, expected.get(1).getSRList().size());
-        Assert.assertEquals(expected.get(0).idReceiver, got.get(0).idReceiver);
-        Assert.assertEquals(expected.get(0).idSource, got.get(0).idSource);
-        Assert.assertEquals(expected.get(1).idReceiver, got.get(1).idReceiver);
-        Assert.assertEquals(expected.get(1).idSource, got.get(1).idSource);
+        assertEquals(2, got.size());
+        assertEquals(expected.get(0).getPointList().size(), got.get(0).getPointList().size());
+        assertEquals(expected.get(0).getPointList().get(0).coordinate, got.get(0).getPointList().get(0).coordinate);
+        assertEquals(1, expected.get(1).getPointList().size());
+        assertEquals(PointPath.POINT_TYPE.DIFV, expected.get(1).getPointList().get(0).type);
+        assertEquals(0, expected.get(1).getSRList().size());
+        assertEquals(expected.get(0).getIdReceiver(), got.get(0).getIdReceiver());
+        assertEquals(expected.get(0).getIdSource(), got.get(0).getIdSource());
+        assertEquals(expected.get(1).getIdReceiver(), got.get(1).getIdReceiver());
+        assertEquals(expected.get(1).getIdSource(), got.get(1).getIdSource());
     }
 
     @Test
@@ -416,10 +404,10 @@ public class TestComputeRays {
         Assert.assertFalse(manager.isFreeField(p1, p2));
 
         List<Coordinate> pts = computeRays.computeSideHull(true, p1, p2);
-        Assert.assertEquals(0, pts.size());
+        assertEquals(0, pts.size());
 
         pts = computeRays.computeSideHull(false, p1, p2);
-        Assert.assertEquals(4, pts.size());
+        assertEquals(4, pts.size());
         for (int i = 0; i < pts.size() - 1; i++) {
             Assert.assertTrue(manager.isFreeField(pts.get(i), pts.get(i + 1)));
         }
@@ -427,7 +415,7 @@ public class TestComputeRays {
         List<PropagationPath> prop = computeRays.directPath(p2, p1, true, true);
         // 3 paths
         // 1 over the building / 1 left side
-        Assert.assertEquals(2, prop.size());
+        assertEquals(2, prop.size());
 
     }
 
@@ -462,39 +450,39 @@ public class TestComputeRays {
         // Check the computation of convex corners of a building
         List<Coordinate> b1OffsetRoof = manager.getWideAnglePointsByBuilding(1, Math.PI * (1 + 1 / 16.0), Math.PI * (2 - (1 / 16.)));
         int i = 0;
-        Assert.assertEquals(0, new Coordinate(5, 5).distance(b1OffsetRoof.get(i++)), 2 * FastObstructionTest.wideAngleTranslationEpsilon);
-        Assert.assertEquals(0, new Coordinate(7, 5).distance(b1OffsetRoof.get(i++)), 2 * FastObstructionTest.wideAngleTranslationEpsilon);
-        Assert.assertEquals(0, new Coordinate(8, 6).distance(b1OffsetRoof.get(i++)), 2 * FastObstructionTest.wideAngleTranslationEpsilon);
-        Assert.assertEquals(0, new Coordinate(8, 8).distance(b1OffsetRoof.get(i++)), 2 * FastObstructionTest.wideAngleTranslationEpsilon);
-        Assert.assertEquals(0, new Coordinate(5, 8).distance(b1OffsetRoof.get(i++)), 2 * FastObstructionTest.wideAngleTranslationEpsilon);
-        Assert.assertEquals(0, new Coordinate(5, 5).distance(b1OffsetRoof.get(i++)), 2 * FastObstructionTest.wideAngleTranslationEpsilon);
+        assertEquals(0, new Coordinate(5, 5).distance(b1OffsetRoof.get(i++)), 2 * FastObstructionTest.wideAngleTranslationEpsilon);
+        assertEquals(0, new Coordinate(7, 5).distance(b1OffsetRoof.get(i++)), 2 * FastObstructionTest.wideAngleTranslationEpsilon);
+        assertEquals(0, new Coordinate(8, 6).distance(b1OffsetRoof.get(i++)), 2 * FastObstructionTest.wideAngleTranslationEpsilon);
+        assertEquals(0, new Coordinate(8, 8).distance(b1OffsetRoof.get(i++)), 2 * FastObstructionTest.wideAngleTranslationEpsilon);
+        assertEquals(0, new Coordinate(5, 8).distance(b1OffsetRoof.get(i++)), 2 * FastObstructionTest.wideAngleTranslationEpsilon);
+        assertEquals(0, new Coordinate(5, 5).distance(b1OffsetRoof.get(i++)), 2 * FastObstructionTest.wideAngleTranslationEpsilon);
 
 
         List<Coordinate> ray = computeRays.computeSideHull(true, p1, p2);
         i = 0;
-        Assert.assertEquals(0, p1.distance(ray.get(i++)), 0.02);
-        Assert.assertEquals(0, new Coordinate(5, 8).distance(ray.get(i++)), 0.02);
-        Assert.assertEquals(0, p2.distance(ray.get(i++)), 0.02);
+        assertEquals(0, p1.distance(ray.get(i++)), 0.02);
+        assertEquals(0, new Coordinate(5, 8).distance(ray.get(i++)), 0.02);
+        assertEquals(0, p2.distance(ray.get(i++)), 0.02);
 
 
         ray = computeRays.computeSideHull(false, p1, p2);
         i = 0;
-        Assert.assertEquals(0, p1.distance(ray.get(i++)), 0.02);
-        Assert.assertEquals(0, new Coordinate(7, 5).distance(ray.get(i++)), 0.02);
-        Assert.assertEquals(0, p2.distance(ray.get(i++)), 0.02);
+        assertEquals(0, p1.distance(ray.get(i++)), 0.02);
+        assertEquals(0, new Coordinate(7, 5).distance(ray.get(i++)), 0.02);
+        assertEquals(0, p2.distance(ray.get(i++)), 0.02);
 
 
         ray = computeRays.computeSideHull(false, p2, p1);
         i = 0;
-        Assert.assertEquals(0, p2.distance(ray.get(i++)), 0.02);
-        Assert.assertEquals(0, new Coordinate(5, 8).distance(ray.get(i++)), 0.02);
-        Assert.assertEquals(0, p1.distance(ray.get(i++)), 0.02);
+        assertEquals(0, p2.distance(ray.get(i++)), 0.02);
+        assertEquals(0, new Coordinate(5, 8).distance(ray.get(i++)), 0.02);
+        assertEquals(0, p1.distance(ray.get(i++)), 0.02);
 
         ray = computeRays.computeSideHull(true, p2, p1);
         i = 0;
-        Assert.assertEquals(0, p2.distance(ray.get(i++)), 0.02);
-        Assert.assertEquals(0, new Coordinate(7, 5).distance(ray.get(i++)), 0.02);
-        Assert.assertEquals(0, p1.distance(ray.get(i++)), 0.02);
+        assertEquals(0, p2.distance(ray.get(i++)), 0.02);
+        assertEquals(0, new Coordinate(7, 5).distance(ray.get(i++)), 0.02);
+        assertEquals(0, p1.distance(ray.get(i++)), 0.02);
     }
 
     /**
@@ -2120,7 +2108,7 @@ public class TestComputeRays {
         jsonDocument.writeFooter();
         JsonNode resultNode = mapper.readTree(outData.toString());
         // Check equality
-        Assert.assertEquals(rootNode, resultNode);
+        assertEquals(rootNode, resultNode);
     }
 
     private static Geometry addGround(MeshBuilder mesh) throws IOException {
@@ -2185,7 +2173,7 @@ public class TestComputeRays {
     public void TC20() throws LayerDelaunayError {
         //Tables 221 – 222 are not shown in this draft.
 
-        Assert.assertEquals(false, true);
+        assertEquals(false, true);
     }
 
 
@@ -2195,7 +2183,7 @@ public class TestComputeRays {
      */
     public void TC24() throws LayerDelaunayError {
 
-        Assert.assertEquals(true, false);
+        assertEquals(true, false);
 
     }
 
@@ -2204,7 +2192,7 @@ public class TestComputeRays {
      */
     public void TC25() throws LayerDelaunayError {
 
-        Assert.assertEquals(true, false);
+        assertEquals(true, false);
 
     }
 
@@ -2214,7 +2202,7 @@ public class TestComputeRays {
 
     public void TC26() throws LayerDelaunayError {
 
-        Assert.assertEquals(true, false);
+        assertEquals(true, false);
 
     }
 
@@ -2223,7 +2211,7 @@ public class TestComputeRays {
      */
     public void TC27() throws LayerDelaunayError {
 
-        Assert.assertEquals(true, false);
+        assertEquals(true, false);
 
     }
 

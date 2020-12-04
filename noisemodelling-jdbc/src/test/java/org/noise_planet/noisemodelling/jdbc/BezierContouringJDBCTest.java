@@ -1,4 +1,4 @@
-package org.noise_planet.noisemodelling.emission.jdbc;
+package org.noise_planet.noisemodelling.jdbc;
 
 import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.functions.io.geojson.GeoJsonRead;
