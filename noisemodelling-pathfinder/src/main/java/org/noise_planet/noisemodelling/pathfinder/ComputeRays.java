@@ -40,18 +40,18 @@ import org.h2gis.utilities.jts_utils.CoordinateUtils;
 import org.locationtech.jts.algorithm.*;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.geom.impl.CoordinateArraySequence;
-import org.locationtech.jts.index.ItemVisitor;
 import org.locationtech.jts.index.strtree.STRtree;
 import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.math.Vector3D;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
-import org.noise_planet.noisemodelling.propagation.EvaluateAttenuationCnossos;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticPropagation.getADiv;
 
 
 /**
@@ -962,7 +962,7 @@ public class ComputeRays {
 
     private static double insertPtSource(Coordinate receiverPos, Coordinate ptpos, double[] wj, double li, Integer sourceId, List<SourcePointInfo> sourceList) {
         // Compute maximal power at freefield at the receiver position with reflective ground
-        double aDiv = -EvaluateAttenuationCnossos.getADiv(CGAlgorithms3D.distance(receiverPos, ptpos));
+        double aDiv = -getADiv(CGAlgorithms3D.distance(receiverPos, ptpos));
         double[] srcWJ = new double[wj.length];
         for(int idFreq = 0; idFreq < srcWJ.length; idFreq++) {
             srcWJ[idFreq] = wj[idFreq] * li * dbaToW(aDiv) * dbaToW(3);

@@ -34,7 +34,6 @@
 package org.noise_planet.noisemodelling.pathfinder;
 
 import org.locationtech.jts.algorithm.CGAlgorithms3D;
-import org.locationtech.jts.algorithm.CGAlgorithmsDD;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.math.Vector3D;
 
@@ -42,10 +41,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-
-import static org.apache.commons.math3.geometry.euclidean.threed.Vector3D.angle;
 
 /**
  * PropagationPath

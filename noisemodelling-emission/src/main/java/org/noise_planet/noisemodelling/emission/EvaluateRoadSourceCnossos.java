@@ -35,10 +35,13 @@ package org.noise_planet.noisemodelling.emission;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NullNode;
-import org.noise_planet.noisemodelling.propagation.ComputeRays;
 
 import java.io.IOException;
 import java.io.InputStream;
+
+import static org.noise_planet.noisemodelling.emission.Utils.dbaToW;
+import static org.noise_planet.noisemodelling.emission.Utils.wToDba;
+
 
 /**
  * Return the dB value corresponding to the parameters
@@ -180,11 +183,11 @@ public class EvaluateRoadSourceCnossos {
 
     /** get sum dBa **/
     private static Double sumDba(Double dBA1, Double dBA2) {
-        return ComputeRays.wToDba(ComputeRays.dbaToW(dBA1) + ComputeRays.dbaToW(dBA2));
+        return wToDba(dbaToW(dBA1) + dbaToW(dBA2));
     }
 
     private static Double sumDba_5(Double dBA1, Double dBA2, Double dBA3, Double dBA4, Double dBA5) {
-        return ComputeRays.wToDba(ComputeRays.dbaToW(dBA1) + ComputeRays.dbaToW(dBA2) + ComputeRays.dbaToW(dBA3) + ComputeRays.dbaToW(dBA4) + ComputeRays.dbaToW(dBA5));
+        return wToDba(dbaToW(dBA1) + dbaToW(dBA2) + dbaToW(dBA3) + dbaToW(dBA4) + dbaToW(dBA5));
     }
 
     /**
@@ -318,4 +321,8 @@ public class EvaluateRoadSourceCnossos {
         double wheelbLvl =Vperhour2NoiseLevel(wheelbCompound , parameters.getWbvPerHour(), parameters.getSpeedWbv());
         return sumDba_5(lvLvl, medLvl, hgvLvl, wheelaLvl, wheelbLvl);
     }
+
+
+
 }
+

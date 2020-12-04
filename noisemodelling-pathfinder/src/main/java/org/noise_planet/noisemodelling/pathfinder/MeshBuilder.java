@@ -84,6 +84,7 @@ public class MeshBuilder {
             this.hasHeight = false;
         }
 
+
         public PolygonWithHeight(Geometry geo, double height) {
             this.geo = geo;
             this.height = height;

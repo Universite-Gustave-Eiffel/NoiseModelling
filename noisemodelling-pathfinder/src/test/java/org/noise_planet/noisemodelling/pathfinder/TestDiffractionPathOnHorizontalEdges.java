@@ -1,4 +1,4 @@
-package org.noise_planet.noisemodelling.propagation;
+package org.noise_planet.noisemodelling.pathfinder;
 
 import org.locationtech.jts.algorithm.CGAlgorithms3D;
 import org.locationtech.jts.geom.Coordinate;

@@ -39,9 +39,7 @@ import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
 import org.h2gis.api.ProgressVisitor;
 import org.locationtech.jts.geom.GeometryFactory;
-import org.noise_planet.noisemodelling.pathfinder.jdbc.JdbcNoiseMap;
 
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;

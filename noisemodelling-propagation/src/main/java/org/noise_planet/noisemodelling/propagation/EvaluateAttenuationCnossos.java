@@ -33,7 +33,9 @@
  */
 package org.noise_planet.noisemodelling.propagation;
 
-import org.noise_planet.noisemodelling.pathfinder.*;
+import org.noise_planet.noisemodelling.pathfinder.PropagationPath;
+import org.noise_planet.noisemodelling.pathfinder.SegmentPath;
+
 import java.util.List;
 
 /**

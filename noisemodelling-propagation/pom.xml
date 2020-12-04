@@ -22,11 +22,6 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.orbisgis</groupId>
-            <artifactId>noisemodelling-pathfinder</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
             <groupId>commons-collections</groupId>
             <artifactId>commons-collections</artifactId>
             <version>3.2.2</version>
@@ -84,6 +79,11 @@
             <artifactId>slf4j-simple</artifactId>
             <version>1.6.4</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.orbisgis</groupId>
+            <artifactId>noisemodelling-pathfinder</artifactId>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
     <build>

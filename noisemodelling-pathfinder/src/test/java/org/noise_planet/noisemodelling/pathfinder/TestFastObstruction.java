@@ -31,7 +31,7 @@
  * or contact directly:
  * info_at_ orbisgis.org
  */
-package org.noise_planet.noisemodelling.propagation;
+package org.noise_planet.noisemodelling.pathfinder;
 
 import java.util.ArrayList;
 import java.util.List;
