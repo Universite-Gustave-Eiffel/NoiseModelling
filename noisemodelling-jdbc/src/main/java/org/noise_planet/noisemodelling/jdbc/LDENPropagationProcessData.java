@@ -29,6 +29,7 @@ import org.locationtech.jts.geom.Geometry;
 import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos;
 import org.noise_planet.noisemodelling.emission.RSParameters;
 import org.noise_planet.noisemodelling.emission.RSParametersCnossos;
+import org.noise_planet.noisemodelling.emission.Utils;
 import org.noise_planet.noisemodelling.pathfinder.ComputeRays;
 import org.noise_planet.noisemodelling.pathfinder.FastObstructionTest;
 import org.noise_planet.noisemodelling.pathfinder.PropagationProcessData;
@@ -238,7 +239,7 @@ public class LDENPropagationProcessData extends PropagationProcessData {
                         double z0 = freeFieldFinder.getHeightAtPosition(c[0]);
                         double z1 = freeFieldFinder.getHeightAtPosition(c[1]);
                         if(!Double.isNaN(z0) && !Double.isNaN(z1)) {
-                            slope = RSParameters.computeSlope(z0, z1, g.getLength());
+                            slope = Utils.computeSlope(z0, z1, g.getLength());
                         }
                     }
                 }
