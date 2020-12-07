@@ -21,13 +21,12 @@ import javax.xml.stream.XMLStreamException;
 import java.io.*;
 import java.util.*;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 
 public class TestComputeRays {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestComputeRays.class);
-    private boolean storeGeoJSONRays = true;
+    private boolean storeGeoJSONRays = false;
 
 
     @Test
