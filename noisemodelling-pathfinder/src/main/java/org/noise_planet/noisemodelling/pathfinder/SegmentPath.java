@@ -33,7 +33,16 @@ public class SegmentPath {
     public Double dc; // direct ray sensible to meteorological conditions (can be curve) between source and receiver
     public Double dp; // distance on mean plane between source and receiver
     public Double eLength = 0.0; // distance between first and last diffraction point
-    public Double delta; // distance between first and last diffraction point
+    public Double delta;
+
+
+    public void setDelta(Double delta) {
+        this.delta = delta;
+    }
+
+    public Double getDelta() {
+        return delta;
+    }
 
     /**
      * @param gPath

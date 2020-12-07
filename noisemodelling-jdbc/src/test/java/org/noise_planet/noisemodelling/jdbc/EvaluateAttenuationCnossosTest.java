@@ -1,22 +1,19 @@
 package org.noise_planet.noisemodelling.jdbc;
 
 import org.junit.Test;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.Envelope;
-import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 import org.noise_planet.noisemodelling.pathfinder.*;
-import org.noise_planet.noisemodelling.pathfinder.utils.KMLDocument;
-import org.noise_planet.noisemodelling.propagation.*;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOut;
+import org.noise_planet.noisemodelling.propagation.EvaluateAttenuationCnossos;
+import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.locationtech.jts.geom.*;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.IOException;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -202,9 +199,7 @@ public class EvaluateAttenuationCnossosTest {
         computeRays.run(propDataOut);
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});
         assertArrayEquals(  new double[]{37.91,37.85,37.73,36.37,34.23,36.06,31.57,15.24},L, ERROR_EPSILON_very_low); // p=0.5
-        //assertArrayEquals(  new double[]{37.59,37.53,37.41,34.10,29.29,35.73,31.25,14.91},L, ERROR_EPSILON_low); // HOM
-        //assertArrayEquals(  new double[]{38.21,38.15,38.03,37.86,36.48,36.36,31.87,15.54},L, ERROR_EPSILON_low);// FAV
-    }
+     }
 
 
     /**
@@ -272,7 +267,71 @@ public class EvaluateAttenuationCnossosTest {
     }
 
 
+    /**
+     * Test TC06 -- Reduced receiver height to include diffraction in some frequency bands
+     */
+    @Test
+    public void TC06()  throws LayerDelaunayError , IOException {
+        GeometryFactory factory = new GeometryFactory();
 
+        //Scene dimension
+        Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
+
+        //Create obstruction test object
+        MeshBuilder mesh = new MeshBuilder();
+
+        // Add topographic points
+        //x1
+        mesh.addTopographicPoint(new Coordinate(0, 80, 0));
+        mesh.addTopographicPoint(new Coordinate(225, 80, 0));
+        mesh.addTopographicPoint(new Coordinate(225, -20, 0));
+        mesh.addTopographicPoint(new Coordinate(0, -20, 0));
+        mesh.addTopographicPoint(new Coordinate(120, -20, 0));
+        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
+        mesh.addTopographicPoint(new Coordinate(205, -5, 10));
+        mesh.addTopographicPoint(new Coordinate(205, 75, 10));
+        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
+        //x2
+        mesh.addTopographicPoint(new Coordinate(225, 80, 0));
+        mesh.addTopographicPoint(new Coordinate(225, -20, 0));
+        mesh.addTopographicPoint(new Coordinate(0, -20, 0));
+        mesh.addTopographicPoint(new Coordinate(0, 80, 0));
+        mesh.addTopographicPoint(new Coordinate(120, 80, 0));
+        mesh.addTopographicPoint(new Coordinate(205, -5, 10));
+        mesh.addTopographicPoint(new Coordinate(205, 75, 10));
+        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
+        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
+
+        mesh.finishPolygonFeeding(cellEnvelope);
+
+        //Retrieve Delaunay triangulation of scene
+        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+                mesh.getTriNeighbors(), mesh.getVertices());
+
+        PropagationProcessData rayData = new PropagationProcessData(manager);
+        rayData.addReceiver(new Coordinate(200, 50, 11.5));
+        rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
+
+        rayData.setComputeHorizontalDiffraction(true);
+        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -20, 80)), 0.9));
+        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -20, 80)), 0.5));
+        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -20, 80)), 0.2));
+        rayData.setComputeVerticalDiffraction(true);
+        rayData.setGs(0.9);
+
+        PropagationProcessPathData attData = new PropagationProcessPathData();
+        attData.setHumidity(70);
+        attData.setTemperature(10);
+
+        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRays computeRays = new ComputeRays(rayData);
+        computeRays.setThreadCount(1);
+        computeRays.run(propDataOut);
+
+        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});
+        assertArrayEquals(  new double[]{37.53,37.47,37.33,34.99,36.60,35.67,31.18,14.82},L, ERROR_EPSILON_medium); // p=0.5
+
+    }
 
     /**
      * Test TC07h -- Flat ground with spatially varying acoustic properties and long barrier - METEO HOM
@@ -321,10 +380,7 @@ public class EvaluateAttenuationCnossosTest {
         computeRays.run(propDataOut);
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});
-        //assertArrayEquals(  new double[]{32.70,31.58,29.99,27.89,24.36,21.46,14.18,-5.05},L, ERROR_EPSILON_very_low);//p=0.5
         assertArrayEquals( new double[]{32.54,31.32,29.60,27.37,22.22,20.76,13.44,-5.81},L, ERROR_EPSILON_very_low);//HOM
-        //assertArrayEquals(  new double[]{32.85,31.83,30.35,29.36,25.78,22.06,14.81,-4.41},L, ERROR_EPSILON_low);//FAV
-
     }
 
     /**
@@ -367,16 +423,14 @@ public class EvaluateAttenuationCnossosTest {
         attData.setHumidity(70);
         attData.setTemperature(10);
         attData.setWindRose(FAV_WIND_ROSE);
-        attData.setPrime2520(true);
+        attData.setPrime2520(false);
         ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});
-        //assertArrayEquals(  new double[]{32.70,31.58,29.99,27.89,24.36,21.46,14.18,-5.05},L, ERROR_EPSILON_very_low);//p=0.5
-        //assertArrayEquals( new double[]{32.54,31.32,29.60,27.37,22.22,20.76,13.44,-5.81},L, ERROR_EPSILON_very_low);//HOM
-        assertArrayEquals(  new double[]{32.85,31.83,30.35,28.36,25.78,22.06,14.81,-4.41},L, ERROR_EPSILON_low);//FAV
+         assertArrayEquals(  new double[]{32.85,31.83,30.35,28.36,25.78,22.06,14.81,-4.41},L, ERROR_EPSILON_very_low);//FAV
 
     }
 
@@ -427,9 +481,7 @@ public class EvaluateAttenuationCnossosTest {
         computeRays.run(propDataOut);
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});
-        assertArrayEquals(  new double[]{32.70,31.58,29.99,27.89,24.36,21.46,14.18,-5.05},L, ERROR_EPSILON_low);//p=0.5
-        //assertArrayEquals( new double[]{32.54,31.32,29.60,27.37,22.22,20.76,13.44,-5.81},L, ERROR_EPSILON_very_low);//HOM
-        //assertArrayEquals(  new double[]{32.85,31.83,30.35,28.36,25.78,22.06,14.81,-4.41},L, ERROR_EPSILON_low);//FAV
+        assertArrayEquals(  new double[]{32.70,31.58,29.99,27.89,24.36,21.46,14.18,-5.05},L, ERROR_EPSILON_very_low);//p=0.5
 
     }
 
@@ -1549,7 +1601,7 @@ public class EvaluateAttenuationCnossosTest {
         assertEquals(1, propDataOut.getVerticesSoundLevel().size());
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93 - 26.2, 93 - 16.1,
                 93 - 8.6, 93 - 3.2, 93, 93 + 1.2, 93 + 1.0, 93 - 1.1});
-        assertArrayEquals(new double[]{14.31, 21.69, 27.76, 31.52, 31.49, 29.18, 25.39, 16.58}, L, ERROR_EPSILON_medium);//p=0.5
+        assertArrayEquals(new double[]{14.31, 21.69, 27.76, 31.52, 31.49, 29.18, 25.39, 16.58}, L, ERROR_EPSILON_very_high);//p=0.5
 
     }
 

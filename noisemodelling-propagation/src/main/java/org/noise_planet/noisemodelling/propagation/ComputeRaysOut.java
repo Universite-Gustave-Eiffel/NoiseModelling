@@ -144,17 +144,22 @@ public class ComputeRaysOut implements IComputeRaysOut {
             for (PropagationPath propath : propagationPath) {
                 List<PointPath> ptList = propath.getPointList();
                 int roseindex = getRoseIndex(ptList.get(0).coordinate, ptList.get(ptList.size() - 1).coordinate);
+                double[] aGlobalMeteoHom = new double[pathData.freq_lvl.size()];
+                double[] aGlobalMeteoFav = new double[pathData.freq_lvl.size()];
 
-                // Compute homogeneous conditions attenuation
-                propath.setFavorable(false);
-                evaluateAttenuationCnossos.evaluate(propath, pathData);
-                double[] aGlobalMeteoHom = evaluateAttenuationCnossos.getaGlobal();
+                if (pathData.getWindRose()[roseindex]!=1) {
+                    // Compute homogeneous conditions attenuation
+                    propath.setFavorable(false);
+                    evaluateAttenuationCnossos.evaluate(propath, pathData);
+                    aGlobalMeteoHom = evaluateAttenuationCnossos.getaGlobal();
+                }
 
                 // Compute favorable conditions attenuation
-                propath.setFavorable(true);
-                evaluateAttenuationCnossos.evaluate(propath, pathData);
-                double[] aGlobalMeteoFav = evaluateAttenuationCnossos.getaGlobal();
-
+                if (pathData.getWindRose()[roseindex]!=0) {
+                    propath.setFavorable(true);
+                    evaluateAttenuationCnossos.evaluate(propath, pathData);
+                    aGlobalMeteoFav = evaluateAttenuationCnossos.getaGlobal();
+                }
                 // Compute attenuation under the wind conditions using the ray direction
                 double[] aGlobalMeteoRay = ComputeRays.sumArrayWithPonderation(aGlobalMeteoFav, aGlobalMeteoHom, pathData.getWindRose()[roseindex]);
 

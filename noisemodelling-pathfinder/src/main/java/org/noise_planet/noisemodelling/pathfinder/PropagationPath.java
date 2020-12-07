@@ -256,7 +256,7 @@ public class PropagationPath {
         if (!this.favorable){
             SR.dc = SR.d;
         }else{
-            SR.dc = getRayCurveLength(SR.d);
+            SR.dc = getRayCurveLength(SR.d,SR.d);
         }
 
         if (difVPoints.size()>0) {
@@ -324,7 +324,7 @@ public class PropagationPath {
             else
             {
                 for (int idPoint = 2; idPoint < pointList.size()-1; idPoint++) {
-                    dPath += getRayCurveLength(CGAlgorithms3D.distance(pointList.get(idPoint - 1).coordinate, pointList.get(idPoint).coordinate));
+                    dPath += getRayCurveLength(CGAlgorithms3D.distance(pointList.get(idPoint - 1).coordinate, pointList.get(idPoint).coordinate), SR.d);
                 }
 
                 if (difHPoints.size()>1){
@@ -334,33 +334,33 @@ public class PropagationPath {
                 }
 
                 SR.dPath = dPath
-                        + getRayCurveLength(CGAlgorithms3D.distance(S, pointList.get(1).coordinate))
-                        + getRayCurveLength(CGAlgorithms3D.distance(pointList.get(pointList.size()-2).coordinate, R));
-                SR.dc = getRayCurveLength(SR.d);
+                        + getRayCurveLength(CGAlgorithms3D.distance(S, pointList.get(1).coordinate), SR.d)
+                        + getRayCurveLength(CGAlgorithms3D.distance(pointList.get(pointList.size()-2).coordinate, R), SR.d);
+                SR.dc = getRayCurveLength(SR.d, SR.d);
 
                 if (difHPoints.size()>0) {
                     SpR.dPath = dPath
-                            + getRayCurveLength(CGAlgorithms3D.distance(Sprime, pointList.get(1).coordinate))
-                            + getRayCurveLength(CGAlgorithms3D.distance(pointList.get(pointList.size() - 2).coordinate, R));
-                    SpR.dc = getRayCurveLength(SpR.d);
+                            + getRayCurveLength(CGAlgorithms3D.distance(Sprime, pointList.get(1).coordinate), SR.d)
+                            + getRayCurveLength(CGAlgorithms3D.distance(pointList.get(pointList.size() - 2).coordinate, R), SR.d);
+                    SpR.dc = getRayCurveLength(SpR.d, SR.d);
 
                     SRp.dPath = dPath
-                            + getRayCurveLength(CGAlgorithms3D.distance(S, pointList.get(1).coordinate))
-                            + getRayCurveLength(CGAlgorithms3D.distance(pointList.get(pointList.size() - 2).coordinate, Rprime));
-                    SRp.dc = getRayCurveLength(SRp.d);
+                            + getRayCurveLength(CGAlgorithms3D.distance(S, pointList.get(1).coordinate), SR.d)
+                            + getRayCurveLength(CGAlgorithms3D.distance(pointList.get(pointList.size() - 2).coordinate, Rprime), SR.d);
+                    SRp.dc = getRayCurveLength(SRp.d, SR.d);
                 }
 
 
                 if (Vector3D.dot(S,R,S,pointList.get(difHPoints.get(0)).coordinate)<0) {
                     Coordinate A = projectPointonVector(pointList.get(difHPoints.get(0)).coordinate,SR.vector3D, SR.pInit);
-                    double SA = getRayCurveLength(CGAlgorithms3D.distance(S, A));
-                    double AR = getRayCurveLength(CGAlgorithms3D.distance(A, R));
-                    double SO = getRayCurveLength(CGAlgorithms3D.distance(S, pointList.get(difHPoints.get(0)).coordinate));
-                    double OR = getRayCurveLength(CGAlgorithms3D.distance(pointList.get(difHPoints.get(0)).coordinate, R));
-                    double SpA = getRayCurveLength(CGAlgorithms3D.distance(Sprime, A));
-                    double ARp = getRayCurveLength(CGAlgorithms3D.distance(A, Rprime));
-                    double SpO = getRayCurveLength(CGAlgorithms3D.distance(Sprime, pointList.get(difHPoints.get(0)).coordinate));
-                    double ORp = getRayCurveLength(CGAlgorithms3D.distance(pointList.get(difHPoints.get(0)).coordinate, Rprime));
+                    double SA = getRayCurveLength(CGAlgorithms3D.distance(S, A), SR.d);
+                    double AR = getRayCurveLength(CGAlgorithms3D.distance(A, R), SR.d);
+                    double SO = getRayCurveLength(CGAlgorithms3D.distance(S, pointList.get(difHPoints.get(0)).coordinate), SR.d);
+                    double OR = getRayCurveLength(CGAlgorithms3D.distance(pointList.get(difHPoints.get(0)).coordinate, R), SR.d);
+                    double SpA = getRayCurveLength(CGAlgorithms3D.distance(Sprime, A), SR.d);
+                    double ARp = getRayCurveLength(CGAlgorithms3D.distance(A, Rprime), SR.d);
+                    double SpO = getRayCurveLength(CGAlgorithms3D.distance(Sprime, pointList.get(difHPoints.get(0)).coordinate), SR.d);
+                    double ORp = getRayCurveLength(CGAlgorithms3D.distance(pointList.get(difHPoints.get(0)).coordinate, Rprime), SR.d);
                     SR.delta =  2*SA+2*AR-SO-OR-SR.dc;
                     SRp.delta =  2*SA+2*ARp-SO-ORp-SRp.dc;
                     SpR.delta = 2*SpA+2*AR-SpO-OR-SpR.dc;
@@ -441,7 +441,7 @@ public class PropagationPath {
             }
             else
             {
-                segmentList.get(idSegment).dc = getRayCurveLength(d);
+                segmentList.get(idSegment).dc = getRayCurveLength(d, d);
             }
 
 
@@ -519,9 +519,9 @@ public class PropagationPath {
     }
 
 
-    private double getRayCurveLength(double d) {
+    private double getRayCurveLength(double dSeg,double d) {
         double gamma = Math.max(1000,8*d);
-        return 2*gamma*Math.asin(d/(2*gamma));
+        return 2*gamma*Math.asin(dSeg/(2*gamma));
 
     }
 

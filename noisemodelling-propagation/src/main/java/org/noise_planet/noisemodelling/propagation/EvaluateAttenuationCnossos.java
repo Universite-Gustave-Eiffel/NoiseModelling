@@ -97,7 +97,7 @@ public class EvaluateAttenuationCnossos {
 
             //(7.11) NMP2008 P.32
             double testForm = (40 / freq_lambda[idfreq])
-                    * cprime * srpath.delta;
+                    * cprime * srpath.getDelta();
 
             double deltaDif = 0.;
 
