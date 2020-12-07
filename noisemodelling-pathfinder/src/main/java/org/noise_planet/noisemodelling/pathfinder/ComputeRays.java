@@ -467,13 +467,7 @@ public class ComputeRays {
                 }
                 points.addAll(lastPts.subList(1, lastPts.size()));
                 for (int i = 1; i < points.size(); i++) {
-                    if (points.get(i).type == PointPath.POINT_TYPE.DIFH) {
-                        if (points.get(i).coordinate.z <= data.freeFieldFinder.getHeightAtPosition(points.get(i).coordinate)) {
-                            points.clear();
-                            segments.clear();
-                            break;
-                        }
-                    } else if (points.get(i).type == PointPath.POINT_TYPE.REFL) {
+                    if (points.get(i).type == PointPath.POINT_TYPE.REFL) {
                         if(i < points.size() - 1 ) {
                             // A diffraction point may have offset in height the reflection coordinate
                             points.get(i).coordinate.z = Vertex.interpolateZ(points.get(i).coordinate, points.get(i - 1).coordinate, points.get(i + 1).coordinate);
@@ -854,7 +848,7 @@ public class ComputeRays {
 
         //Process diffraction 3D
         // todo include rayleigh criterium
-        if (verticalDiffraction && buildingOnPath && !freefield) {
+        if (verticalDiffraction && !freefield) {
             PropagationPath propagationPath3 = computeFreefield(receiverCoord, srcCoord, inters);
             PropagationPath propagationPath = computeHorizontalEdgeDiffraction(topographyHideReceiver, receiverCoord, srcCoord, inters);
             propagationPath.getSRList().addAll(propagationPath3.getSRList());

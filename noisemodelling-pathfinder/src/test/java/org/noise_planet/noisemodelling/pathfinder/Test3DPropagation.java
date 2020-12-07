@@ -60,5 +60,18 @@ public class Test3DPropagation extends TestCase{
         assertEquals(factory.createLineString(coords.toArray(new Coordinate[coords.size()])).getLength(),
                 factory.createLineString(coordsInv.toArray(new Coordinate[coordsInv.size()])).getLength(), 1e-12);
     }
+
+    @Test
+    public void testChangePlan2() {
+        Coordinate[] pts = new Coordinate[] { new Coordinate(107.0, 25.95, 4.0),
+                new Coordinate(56.78816787229409, 17.25389284165093, 2.857552975310886),
+                new Coordinate(60.30669482663231, 17.8632609156269, 5.0),
+                new Coordinate(61.01835202171596, 17.986511690717474, 5.0),
+                new Coordinate(61.62431382421983, 18.09145724926706, 5.0),
+                new Coordinate(66.03640021193571, 18.85557945699466, 2.340442869150613),
+                new Coordinate(38.0, 14.0, 1.0)};
+        List<Coordinate> coords = JTSUtility.getNewCoordinateSystem(Arrays.asList(pts));
+        assertEquals(pts[0].distance3D(pts[2]), coords.get(0).distance(coords.get(2)), 1e-6);
+    }
     
 }

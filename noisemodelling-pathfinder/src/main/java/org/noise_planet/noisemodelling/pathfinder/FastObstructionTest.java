@@ -296,7 +296,7 @@ public class FastObstructionTest {
             else {
                 //Propagation line blocked by the topography
                 return new TriIdWithIntersection(triNeighbors.get(nearestIntersectionSide),
-                        new Coordinate(intersection.x, intersection.y, zPropagationRayIntersection),
+                        new Coordinate(intersection.x, intersection.y, zTopoIntersection),
                         false,true, rayBuildingId);
             }
         } else {
@@ -881,6 +881,8 @@ public class FastObstructionTest {
                 interPoints.add(updateZ(inter));
             } else if(lastInter != null && inter.getBuildingId() == 0 && lastInter.getBuildingId() > 0) {
                 interPoints.add(updateZ(lastInter));
+            } else if(inter.isIntersectionOnTopography()) {
+                interPoints.add(inter);
             }
             lastInter = inter;
         }
@@ -894,6 +896,12 @@ public class FastObstructionTest {
 
         //add point receiver and point source into list head and tail.
         // Change from ground height for receiver and source to real receiver and source height
+        if(receiver.distance(allInterPoints.get(0)) > receiver.distance(allInterPoints.get(allInterPoints.size() - 1))) {
+            // the first inter point should be the receiver not the source
+            // reverse the order of the lists
+            Collections.reverse(allInterPoints);
+            Collections.reverse(interPoints);
+        }
         interPoints.add(0, new TriIdWithIntersection(allInterPoints.get(0), receiver));
         interPoints.add(new TriIdWithIntersection(allInterPoints.get(allInterPoints.size() - 1), source));
         double angle = new LineSegment(source, receiver).angle();
@@ -921,10 +929,8 @@ public class FastObstructionTest {
         //List<Integer> pointsId = jm.getHullPointId();
 
         //if there are no useful intersection
-        if (upperHull.size() <= 2) {
-            //after jarvis march if we get the length of list of points less than 2, so we have no useful points
-            return totData;
-        } else {
+        if(upperHull.size() > 2) {
+            //after jarvis march we must have the length of list of points superior than 2, so we have useful points
             Coordinate osCorner = interPoints.get(interPoints.size() - 2).getCoorIntersection();
             LinkedList<LineSegment> path = new LinkedList<>();
             for (int i = 0; i < upperHull.size() - 1; i++) {
@@ -995,7 +1001,7 @@ public class FastObstructionTest {
             int rOIndex = 0;
             for(TriIdWithIntersection tri : allInterPoints) {
                 rOIndex++;
-                if (tri.isIntersectionOnBuilding()) {
+                if (tri.isIntersectionOnBuilding() || tri.isIntersectionOnTopography()) {
                     break;
                 }
             }
@@ -1006,7 +1012,7 @@ public class FastObstructionTest {
             for(int index = allInterPoints.size() - 1; index >= 0; index--) {
                 TriIdWithIntersection tri = allInterPoints.get(index);
                 sOIndex = index;
-                if (tri.isIntersectionOnBuilding()) {
+                if (tri.isIntersectionOnBuilding() || tri.isIntersectionOnTopography()) {
                     break;
                 }
             }
@@ -1015,8 +1021,9 @@ public class FastObstructionTest {
             totData = new DiffractionWithSoilEffetZone(rOZone, sOZone, deltaDistance,deltaDistancefav, e, pathDistance,pathDistancefav,
                     roGround, oSGround,path3D,pointHeight);
 
-            return totData;
+
         }
+        return totData;
     }
 
     /**
