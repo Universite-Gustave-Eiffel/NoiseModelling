@@ -11,6 +11,7 @@ import org.junit.Test;
 import org.locationtech.jts.geom.Geometry;
 import org.noise_planet.noisemodelling.pathfinder.*;
 import org.noise_planet.noisemodelling.propagation.*;
+import org.noise_planet.noisemodelling.propagation.ComputeRaysOut;
 
 import java.io.*;
 import java.net.URISyntaxException;

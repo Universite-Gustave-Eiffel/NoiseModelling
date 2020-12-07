@@ -25,6 +25,7 @@ package org.noise_planet.noisemodelling.jdbc;
 import org.h2gis.utilities.JDBCUtilities;
 import org.noise_planet.noisemodelling.pathfinder.*;
 import org.noise_planet.noisemodelling.propagation.*;
+import org.noise_planet.noisemodelling.propagation.ComputeRaysOut;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
