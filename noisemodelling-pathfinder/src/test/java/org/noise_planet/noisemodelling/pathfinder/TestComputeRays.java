@@ -1,4 +1,4 @@
-package org.noise_planet.noisemodelling.jdbc;
+package org.noise_planet.noisemodelling.pathfinder;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,9 +11,9 @@ import org.locationtech.jts.geom.util.AffineTransformation;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 import org.locationtech.jts.math.Vector2D;
-import org.noise_planet.noisemodelling.pathfinder.*;
 import org.noise_planet.noisemodelling.pathfinder.utils.Densifier3D;
-import org.noise_planet.noisemodelling.propagation.*;
+import org.noise_planet.noisemodelling.pathfinder.utils.GeoJSONDocument;
+import org.noise_planet.noisemodelling.pathfinder.utils.KMLDocument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,12 +22,11 @@ import java.io.*;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
-import static org.noise_planet.noisemodelling.jdbc.KMLDocument.exportScene;
 
 
 public class TestComputeRays {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestComputeRays.class);
-    private boolean storeGeoJSONRays = false;
+    private boolean storeGeoJSONRays = true;
 
 
     @Test
@@ -353,7 +352,7 @@ public class TestComputeRays {
 
         computeRays.initStructures();
 
-        ComputeRaysOut computeRaysOut = new ComputeRaysOut(true, null, processData);
+        ComputeRaysOut computeRaysOut = new ComputeRaysOut(true, processData);
 
         computeRays.run(computeRaysOut);
 
@@ -369,7 +368,7 @@ public class TestComputeRays {
         ArrayList<PropagationPath> got = new ArrayList<>();
         PropagationPath.readPropagationPathListStream(new DataInputStream(byteArrayInputStream), got);
 
-        assertEquals(computeRaysOut.propagationPaths.size(), got.size());
+        Assert.assertEquals(computeRaysOut.propagationPaths.size(), got.size());
 
     }
 
@@ -698,14 +697,13 @@ public class TestComputeRays {
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -20, 80)), 0.5));
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -20, 80)), 0.2));
         rayData.setComputeVerticalDiffraction(true);
-        PropagationProcessPathData attData = new PropagationProcessPathData();
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOut propDataOut = new ComputeRaysOut(true);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
         if(storeGeoJSONRays) {
             exportRays("target/T05.geojson", propDataOut);
-            exportScene("target/T05.kml", manager, propDataOut);
+            KMLDocument.exportScene("target/T05.kml", manager, propDataOut);
         } else {
             assertRaysEquals(TestComputeRays.class.getResourceAsStream("T05.geojson"), propDataOut);
         }
@@ -761,14 +759,13 @@ public class TestComputeRays {
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -20, 80)), 0.5));
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -20, 80)), 0.2));
         rayData.setComputeVerticalDiffraction(true);
-        PropagationProcessPathData attData = new PropagationProcessPathData();
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOut propDataOut = new ComputeRaysOut(true);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
         if(storeGeoJSONRays) {
             exportRays("target/T06.geojson", propDataOut);
-            exportScene("target/T06.kml", manager, propDataOut);
+            KMLDocument.exportScene("target/T06.kml", manager, propDataOut);
         } else {
             assertRaysEquals(TestComputeRays.class.getResourceAsStream("T06.geojson"), propDataOut);
         }
@@ -810,14 +807,13 @@ public class TestComputeRays {
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
         rayData.setComputeVerticalDiffraction(true);
-        PropagationProcessPathData attData = new PropagationProcessPathData();
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOut propDataOut = new ComputeRaysOut(true);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
         if(storeGeoJSONRays) {
             exportRays("target/T07.geojson", propDataOut);
-            exportScene("target/T07.kml", manager, propDataOut);
+            KMLDocument.exportScene("target/T07.kml", manager, propDataOut);
         } else {
             assertRaysEquals(TestComputeRays.class.getResourceAsStream("T07.geojson"), propDataOut);
         }
@@ -860,14 +856,13 @@ public class TestComputeRays {
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
         rayData.setComputeVerticalDiffraction(true);
-        PropagationProcessPathData attData = new PropagationProcessPathData();
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOut propDataOut = new ComputeRaysOut(true);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
         if(storeGeoJSONRays) {
             exportRays("target/T08.geojson", propDataOut);
-            exportScene("target/T08.kml", manager, propDataOut);
+            KMLDocument.exportScene("target/T08.kml", manager, propDataOut);
         } else {
             assertRaysEquals(TestComputeRays.class.getResourceAsStream("T08.geojson"), propDataOut);
         }
@@ -927,7 +922,7 @@ public class TestComputeRays {
         computeRays.run(propDataOut);
         if(storeGeoJSONRays) {
             exportRays("target/T10.geojson", propDataOut);
-            exportScene("target/T10.kml", manager, propDataOut);
+            KMLDocument.exportScene("target/T10.kml", manager, propDataOut);
         } else {
             assertRaysEquals(TestComputeRays.class.getResourceAsStream("T10.geojson"), propDataOut);
         }
@@ -969,14 +964,13 @@ public class TestComputeRays {
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
         rayData.setComputeVerticalDiffraction(true);
-        PropagationProcessPathData attData = new PropagationProcessPathData();
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOut propDataOut = new ComputeRaysOut(true);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
         if(storeGeoJSONRays) {
             exportRays("target/T11.geojson", propDataOut);
-            exportScene("target/T11.kml", manager, propDataOut);
+            KMLDocument.exportScene("target/T11.kml", manager, propDataOut);
         } else {
             assertRaysEquals(TestComputeRays.class.getResourceAsStream("T11.geojson"), propDataOut);
         }
@@ -1021,14 +1015,13 @@ public class TestComputeRays {
         rayData.setComputeHorizontalDiffraction(true);
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.5));
         rayData.setComputeVerticalDiffraction(true);
-        PropagationProcessPathData attData = new PropagationProcessPathData();
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOut propDataOut = new ComputeRaysOut(true);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
         if(storeGeoJSONRays) {
             exportRays("target/T12.geojson", propDataOut);
-            exportScene("target/T12.kml", manager, propDataOut);
+            KMLDocument.exportScene("target/T12.kml", manager, propDataOut);
         } else {
             assertRaysEquals(TestComputeRays.class.getResourceAsStream("T12.geojson"), propDataOut);
         }
@@ -1095,14 +1088,13 @@ public class TestComputeRays {
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
         rayData.setComputeVerticalDiffraction(true);
-        PropagationProcessPathData attData = new PropagationProcessPathData();
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOut propDataOut = new ComputeRaysOut(true);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
         if(storeGeoJSONRays) {
             exportRays("target/T13.geojson", propDataOut);
-            exportScene("target/T13.kml", manager, propDataOut);
+            KMLDocument.exportScene("target/T13.kml", manager, propDataOut);
         } else {
             assertRaysEquals(TestComputeRays.class.getResourceAsStream("T13.geojson"), propDataOut);
         }
@@ -1144,14 +1136,13 @@ public class TestComputeRays {
         rayData.setComputeHorizontalDiffraction(true);
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(-300, 300, -300, 300)), 0.2));
         rayData.setComputeVerticalDiffraction(true);
-        PropagationProcessPathData attData = new PropagationProcessPathData();
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOut propDataOut = new ComputeRaysOut(true);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
         if(storeGeoJSONRays) {
             exportRays("target/T14.geojson", propDataOut);
-            exportScene("target/T14.kml", manager, propDataOut);
+            KMLDocument.exportScene("target/T14.kml", manager, propDataOut);
         } else {
             assertRaysEquals(TestComputeRays.class.getResourceAsStream("T14.geojson"), propDataOut);
         }
@@ -1208,14 +1199,13 @@ public class TestComputeRays {
         rayData.setComputeHorizontalDiffraction(true);
         rayData.setComputeVerticalDiffraction(true);
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(-250, 250, -250, 250)), 0.5));
-        PropagationProcessPathData attData = new PropagationProcessPathData();
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+         ComputeRaysOut propDataOut = new ComputeRaysOut(true);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
         if(storeGeoJSONRays) {
             exportRays("target/T15.geojson", propDataOut);
-            exportScene("target/T15.kml", manager, propDataOut);
+            KMLDocument.exportScene("target/T15.kml", manager, propDataOut);
         } else {
             assertRaysEquals(TestComputeRays.class.getResourceAsStream("T15.geojson"), propDataOut);
         }
@@ -1279,14 +1269,13 @@ public class TestComputeRays {
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -100, 100)), 0.5));
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2));
         rayData.setComputeVerticalDiffraction(true);
-        PropagationProcessPathData attData = new PropagationProcessPathData();
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOut propDataOut = new ComputeRaysOut(true);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
         if(storeGeoJSONRays) {
             exportRays("target/T16.geojson", propDataOut);
-            exportScene("target/T16.kml", manager, propDataOut);
+            KMLDocument.exportScene("target/T16.kml", manager, propDataOut);
         } else {
             assertRaysEquals(TestComputeRays.class.getResourceAsStream("T16.geojson"), propDataOut);
         }
@@ -1358,15 +1347,14 @@ public class TestComputeRays {
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2));
         rayData.setComputeVerticalDiffraction(true);
 
-        PropagationProcessPathData attData = new PropagationProcessPathData();
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOut propDataOut = new ComputeRaysOut(true);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
         if(storeGeoJSONRays) {
             exportRays("target/T16b.geojson", propDataOut);
-            exportScene("target/T16b.kml", manager, propDataOut);
+            KMLDocument.exportScene("target/T16b.kml", manager, propDataOut);
         } else {
             assertRaysEquals(TestComputeRays.class.getResourceAsStream("T16b.geojson"), propDataOut);
         }
@@ -1433,15 +1421,14 @@ public class TestComputeRays {
 
         rayData.setComputeVerticalDiffraction(true);
 
-        PropagationProcessPathData attData = new PropagationProcessPathData();
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOut propDataOut = new ComputeRaysOut(true);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
         if(storeGeoJSONRays) {
             exportRays("target/T17.geojson", propDataOut);
-            exportScene("target/T17.kml", manager, propDataOut);
+            KMLDocument.exportScene("target/T17.kml", manager, propDataOut);
         } else {
             assertRaysEquals(TestComputeRays.class.getResourceAsStream("T17.geojson"), propDataOut);
         }
@@ -1514,15 +1501,14 @@ public class TestComputeRays {
 
         rayData.setComputeVerticalDiffraction(true);
 
-        PropagationProcessPathData attData = new PropagationProcessPathData();
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOut propDataOut = new ComputeRaysOut(true);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
         if(storeGeoJSONRays) {
             exportRays("target/T18.geojson", propDataOut);
-            exportScene("target/T18.kml", manager, propDataOut);
+            KMLDocument.exportScene("target/T18.kml", manager, propDataOut);
         } else {
             assertRaysEquals(TestComputeRays.class.getResourceAsStream("T18.geojson"), propDataOut);
         }
@@ -1595,15 +1581,14 @@ public class TestComputeRays {
 
         rayData.setComputeVerticalDiffraction(true);
 
-        PropagationProcessPathData attData = new PropagationProcessPathData();
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOut propDataOut = new ComputeRaysOut(true);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
         if(storeGeoJSONRays) {
             exportRays("target/T18b.geojson", propDataOut);
-            exportScene("target/T18b.kml", manager, propDataOut);
+            KMLDocument.exportScene("target/T18b.kml", manager, propDataOut);
         } else {
             assertRaysEquals(TestComputeRays.class.getResourceAsStream("T18b.geojson"), propDataOut);
         }
@@ -1702,15 +1687,14 @@ public class TestComputeRays {
 
         rayData.setComputeVerticalDiffraction(true);
 
-        PropagationProcessPathData attData = new PropagationProcessPathData();
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOut propDataOut = new ComputeRaysOut(true);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
         if(storeGeoJSONRays) {
             exportRays("target/T19.geojson", propDataOut);
-            exportScene("target/T19.kml", manager, propDataOut);
+            KMLDocument.exportScene("target/T19.kml", manager, propDataOut);
         } else {
             assertRaysEquals(TestComputeRays.class.getResourceAsStream("T19.geojson"), propDataOut);
         }
@@ -1779,15 +1763,14 @@ public class TestComputeRays {
 
         rayData.setComputeVerticalDiffraction(true);
 
-        PropagationProcessPathData attData = new PropagationProcessPathData();
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOut propDataOut = new ComputeRaysOut(true);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
         if(storeGeoJSONRays) {
             exportRays("target/T21.geojson", propDataOut);
-            exportScene("target/T21.kml", manager, propDataOut);
+            KMLDocument.exportScene("target/T21.kml", manager, propDataOut);
         } else {
             assertRaysEquals(TestComputeRays.class.getResourceAsStream("T21.geojson"), propDataOut);
         }
@@ -1859,15 +1842,14 @@ public class TestComputeRays {
 
         rayData.setComputeVerticalDiffraction(true);
 
-        PropagationProcessPathData attData = new PropagationProcessPathData();
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOut propDataOut = new ComputeRaysOut(true);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
         if(storeGeoJSONRays) {
             exportRays("target/T22.geojson", propDataOut);
-            exportScene("target/T22.kml", manager, propDataOut);
+            KMLDocument.exportScene("target/T22.kml", manager, propDataOut);
         } else {
             assertRaysEquals(TestComputeRays.class.getResourceAsStream("T22.geojson"), propDataOut);
         }
@@ -1953,15 +1935,14 @@ public class TestComputeRays {
 
         rayData.setComputeVerticalDiffraction(true);
 
-        PropagationProcessPathData attData = new PropagationProcessPathData();
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOut propDataOut = new ComputeRaysOut(true);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
         if(storeGeoJSONRays) {
             exportRays("target/T23.geojson", propDataOut);
-            exportScene("target/T23.kml", manager, propDataOut);
+            KMLDocument.exportScene("target/T23.kml", manager, propDataOut);
         } else {
             assertRaysEquals(TestComputeRays.class.getResourceAsStream("T23.geojson"), propDataOut);
         }
@@ -2064,15 +2045,14 @@ public class TestComputeRays {
         rayData.maxSrcDist = 1500;
         rayData.setComputeVerticalDiffraction(true);
 
-        PropagationProcessPathData attData = new PropagationProcessPathData();
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOut propDataOut = new ComputeRaysOut(true);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
         if(storeGeoJSONRays) {
             exportRays("target/T28.geojson", propDataOut);
-            exportScene("target/T28.kml", manager, propDataOut);
+            KMLDocument.exportScene("target/T28.kml", manager, propDataOut);
         } else {
             assertRaysEquals(TestComputeRays.class.getResourceAsStream("T28.geojson"), propDataOut);
         }

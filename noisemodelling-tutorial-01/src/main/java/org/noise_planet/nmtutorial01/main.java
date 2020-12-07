@@ -7,7 +7,7 @@ import org.h2gis.api.ProgressVisitor;
 import org.h2gis.functions.io.csv.CSVDriverFunction;
 import org.h2gis.functions.io.geojson.GeoJsonRead;
 import org.h2gis.utilities.SFSUtilities;
-import org.noise_planet.noisemodelling.jdbc.KMLDocument;
+import org.noise_planet.noisemodelling.pathfinder.utils.KMLDocument;
 import org.noise_planet.noisemodelling.jdbc.LDENConfig;
 import org.noise_planet.noisemodelling.jdbc.LDENPointNoiseMapFactory;
 import org.noise_planet.noisemodelling.jdbc.PointNoiseMap;

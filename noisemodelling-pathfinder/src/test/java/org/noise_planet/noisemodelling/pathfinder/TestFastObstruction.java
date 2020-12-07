@@ -33,22 +33,15 @@
  */
 package org.noise_planet.noisemodelling.pathfinder;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.locationtech.jts.algorithm.RectangleLineIntersector;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.Envelope;
-import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.LineString;
-import org.locationtech.jts.geom.Polygon;
-import org.locationtech.jts.index.quadtree.Quadtree;
-
 import junit.framework.TestCase;
 import org.junit.Test;
+import org.locationtech.jts.algorithm.RectangleLineIntersector;
+import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class TestFastObstruction extends TestCase {
 
@@ -90,6 +83,7 @@ public class TestFastObstruction extends TestCase {
 	 * Test classification/fusion of open angles (help to compute translation
 	 * epsilon of diffraction edges)
 	 */
+	@Test
 	public void testAngleOrdering() {
 		// Test case merge of angle ranges, cover all cases
 		double[] values1 = { (7. / 4.) * Math.PI, (1. / 4.) * Math.PI,
@@ -112,6 +106,8 @@ public class TestFastObstruction extends TestCase {
 		checkMerge(values5, values5[2], values5[5]);
 
 	}
+
+	@Test
 	public void testVoidScene() throws LayerDelaunayError {
 		//Create obstruction test object
 		MeshBuilder mesh = new MeshBuilder();
@@ -121,7 +117,8 @@ public class TestFastObstruction extends TestCase {
 		assertTrue("Void Intersection test #1 failed",manager.isFreeField(new Coordinate(5,20), new Coordinate(14,30)));
 		manager.getWideAnglePoints(Math.PI * (1 + 1 / 16.0), Math.PI * (2 - (1 / 16.)));
 	}
-	
+
+	@Test
 	public void testScene1() throws LayerDelaunayError {
 		//Build Scene with One Building
 		GeometryFactory factory = new GeometryFactory();
@@ -180,6 +177,7 @@ public class TestFastObstruction extends TestCase {
      * Sound propagation path over a building
      * @throws LayerDelaunayError
      */
+	@Test
     public void testOverBuilding() throws LayerDelaunayError {
         //Build Scene with One Building
         GeometryFactory factory = new GeometryFactory();
@@ -210,6 +208,7 @@ public class TestFastObstruction extends TestCase {
 	 * Sound propagation path over a building
 	 * @throws LayerDelaunayError
 	 */
+	@Test
 	public void testOverBuilding2() throws LayerDelaunayError, ParseException {
 
 		WKTReader wktReader = new WKTReader();

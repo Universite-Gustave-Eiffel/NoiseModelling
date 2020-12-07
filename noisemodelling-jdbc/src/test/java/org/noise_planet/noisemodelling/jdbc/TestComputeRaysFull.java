@@ -8,6 +8,8 @@ import org.junit.Test;
 import org.locationtech.jts.geom.*;
 import org.noise_planet.noisemodelling.pathfinder.*;
 import org.noise_planet.noisemodelling.pathfinder.utils.Densifier3D;
+import org.noise_planet.noisemodelling.pathfinder.utils.GeoJSONDocument;
+import org.noise_planet.noisemodelling.pathfinder.utils.KMLDocument;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOut;
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 import org.slf4j.Logger;

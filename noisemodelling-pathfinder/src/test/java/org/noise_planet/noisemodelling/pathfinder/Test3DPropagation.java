@@ -33,14 +33,13 @@
  */
 package org.noise_planet.noisemodelling.pathfinder;
 
+import junit.framework.TestCase;
+import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
+
 import java.util.Arrays;
 import java.util.List;
-import static org.junit.Assert.assertArrayEquals;
-
-
-import junit.framework.TestCase;
 
 /**
  *
@@ -48,6 +47,7 @@ import junit.framework.TestCase;
  */
 public class Test3DPropagation extends TestCase{
 
+    @Test
     public void testChangePlan() {
         GeometryFactory factory = new GeometryFactory();
         List<Coordinate> coords = JTSUtility.getNewCoordinateSystem(Arrays.asList(new Coordinate(5, 5, 5), new Coordinate(10, 5, 6)));

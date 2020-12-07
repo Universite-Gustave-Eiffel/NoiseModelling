@@ -27,7 +27,6 @@ import org.h2gis.utilities.SpatialResultSet;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
 import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos;
-import org.noise_planet.noisemodelling.emission.RSParameters;
 import org.noise_planet.noisemodelling.emission.RSParametersCnossos;
 import org.noise_planet.noisemodelling.emission.Utils;
 import org.noise_planet.noisemodelling.pathfinder.ComputeRays;

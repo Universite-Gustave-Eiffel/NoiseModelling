@@ -50,7 +50,7 @@
  * or contact directly: info_at_h2gis.org
  */
 
-package org.noise_planet.noisemodelling.jdbc;
+package org.noise_planet.noisemodelling.pathfinder.utils;
 
 import org.cts.CRSFactory;
 import org.cts.IllegalCoordinateException;
@@ -71,7 +71,7 @@ import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.io.kml.KMLWriter;
 import org.noise_planet.noisemodelling.pathfinder.*;
-import org.noise_planet.noisemodelling.propagation.ComputeRaysOut;
+import org.noise_planet.noisemodelling.pathfinder.ComputeRaysOut;
 
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;

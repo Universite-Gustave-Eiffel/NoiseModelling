@@ -33,6 +33,7 @@
  */
 package org.noise_planet.noisemodelling.pathfinder;
 
+import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.GeometryFactory;
@@ -45,7 +46,7 @@ import junit.framework.TestCase;
  */
 public class TestSoundPropagationIn3DWithNewFunction extends TestCase {
 
-
+    @Test
     public void testDiffraction3DNormailBuilding() throws LayerDelaunayError {
 
         GeometryFactory factory = new GeometryFactory();
@@ -77,7 +78,8 @@ public class TestSoundPropagationIn3DWithNewFunction extends TestCase {
                         && diffraData.geteLength() - diffraData2.geteLength() <= FastObstructionTest.epsilon
                         && diffraData.getFullDiffractionDistance() - diffraData2.getFullDiffractionDistance() <= FastObstructionTest.epsilon);
     }
-   
+
+    @Test
     public void testDiffraction3DSpecialBuilding() throws LayerDelaunayError{
            GeometryFactory factory = new GeometryFactory();
            Coordinate[] building1Coords = { new Coordinate(15., 5.,0.),

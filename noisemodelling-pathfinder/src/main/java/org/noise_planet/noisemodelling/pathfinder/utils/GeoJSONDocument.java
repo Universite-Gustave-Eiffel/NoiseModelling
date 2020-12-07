@@ -1,4 +1,4 @@
-package org.noise_planet.noisemodelling.jdbc;
+package org.noise_planet.noisemodelling.pathfinder.utils;
 
 import com.fasterxml.jackson.core.JsonEncoding;
 import com.fasterxml.jackson.core.JsonFactory;

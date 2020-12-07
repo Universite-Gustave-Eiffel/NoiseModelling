@@ -36,7 +36,7 @@ package org.noise_planet.noisemodelling.pathfinder;
 import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
-import org.locationtech.jts.geom.GeometryFactory;
+import org. locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineSegment;
 
 import junit.framework.TestCase;
@@ -49,6 +49,7 @@ import static org.junit.Assert.assertArrayEquals;
 
 public class TestWallReflection extends TestCase {
 
+    @Test
 	public void testWallVisibility () {
 		// 
 		// a0_____a1
@@ -133,6 +134,7 @@ public class TestWallReflection extends TestCase {
         return walls;
     }
 
+    @Test
     public void testWallReceiverImageOrder3() {
         List<FastObstructionTest.Wall> walls = new ArrayList<>();
         walls.add(new FastObstructionTest.Wall(new Coordinate(355265.87,6688353.34), new Coordinate(355267.89,6688335.39) , 2));
@@ -272,7 +274,7 @@ public class TestWallReflection extends TestCase {
         }
     }
 
-
+    @Test
     public void testWallIndexIt() {
         MirrorReceiverIterator.CrossTableIterator it = new MirrorReceiverIterator.CrossTableIterator(2, 3);
         equalsTest(new int[]{0}, it.next());
@@ -287,7 +289,7 @@ public class TestWallReflection extends TestCase {
         assertFalse(it.hasNext());
     }
 
-
+    @Test
     public void testWallIndexItSkip() {
         MirrorReceiverIterator.CrossTableIterator it = new MirrorReceiverIterator.CrossTableIterator(2, 3);
         equalsTest(new int[]{0}, it.next());

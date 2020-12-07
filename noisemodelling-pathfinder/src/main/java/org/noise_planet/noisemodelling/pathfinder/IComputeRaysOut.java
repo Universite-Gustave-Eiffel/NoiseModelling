@@ -9,7 +9,6 @@ public interface IComputeRaysOut {
      * @param sourceId Source identifier
      * @param sourceLi Source power per meter coefficient ( > 1.0 for line source segments with greater length than 1 meter)
      * @param propagationPath Propagation path result
-     * @return Optional minimal energetic contribution per frequency band or empty array
      */
     double[] addPropagationPaths(long sourceId, double sourceLi, long receiverId, List<PropagationPath> propagationPath);
 
