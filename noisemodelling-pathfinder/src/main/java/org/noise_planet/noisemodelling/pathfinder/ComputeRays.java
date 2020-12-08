@@ -606,8 +606,10 @@ public class ComputeRays {
 
         if (!coordinates.isEmpty()) {
             if (coordinates.size() > 2) {
-                propagationPath2 = computeFreefield(coordinates.get(1), coordinates.get(0), null);
-                propagationPath2.getPointList().get(1).setType(PointPath.POINT_TYPE.DIFV);
+                propagationPath = computeFreefield(coordinates.get(1), coordinates.get(0), null);
+                propagationPath.getPointList().get(1).setType(PointPath.POINT_TYPE.DIFV);
+                propagationPath2.setPointList(propagationPath.getPointList());
+                propagationPath2.setSegmentList(propagationPath.getSegmentList());
                 int j;
                 for (j = 1; j < coordinates.size() - 2; j++) {
                     propagationPath = computeFreefield(coordinates.get(j + 1), coordinates.get(j), null);
@@ -621,7 +623,6 @@ public class ComputeRays {
 
             }
         }
-
         return propagationPath2;
 }
 
@@ -674,7 +675,7 @@ public class ComputeRays {
             srPath.addAll(propagationPath.getSRList());
         }
         for (int i = 0; i < segments.size(); i++) {
-            if (segments.get(i).getSegmentLength() < 0.01) {
+            if (segments.get(i).getSegmentLength() < 0.1) {
                 segments.remove(i);
                 points.remove(i + 1);
             }
@@ -901,7 +902,6 @@ public class ComputeRays {
             PropagationPath propagationPath3 = computeFreefield(receiverCoord, srcCoord, inters);
             PropagationPath propagationPath = computeHorizontalEdgeDiffraction(topographyHideReceiver, receiverCoord, srcCoord, inters);
             propagationPath.getSRList().addAll(propagationPath3.getSRList());
-
             propagationPaths.add(propagationPath);
 
 
@@ -909,10 +909,30 @@ public class ComputeRays {
 
         if (topographyHideReceiver && data.isComputeHorizontalDiffraction() && horizontalDiffraction && !freefield) {
             // todo if one of the points > roof or < floor, get out this path
+            PropagationPath propagationPath3 = computeFreefield(receiverCoord, srcCoord, inters);
 
-            if (computeVerticalEdgeDiffraction(srcCoord, receiverCoord,inters, "left").getPointList()!=null) propagationPaths.add(computeVerticalEdgeDiffraction(srcCoord, receiverCoord,inters, "left"));
-            if (computeVerticalEdgeDiffraction(srcCoord, receiverCoord,inters, "left").getPointList()!=null) propagationPaths.add(computeVerticalEdgeDiffraction(srcCoord, receiverCoord,inters, "right"));
-
+            PropagationPath propagationPath = computeVerticalEdgeDiffraction(srcCoord, receiverCoord,inters, "left");
+            if (propagationPath.getPointList()!=null) {
+                for (int i = 0; i < propagationPath.getSegmentList().size(); i++) {
+                    if (propagationPath.getSegmentList().get(i).getSegmentLength() < 0.1) {
+                        propagationPath.getSegmentList().remove(i);
+                        propagationPath.getPointList().remove(i + 1);
+                    }
+                }
+                propagationPath.setSRList(propagationPath3.getSRList());
+                propagationPaths.add(propagationPath);
+            }
+            propagationPath = computeVerticalEdgeDiffraction(srcCoord, receiverCoord,inters, "right");
+            if (propagationPath.getPointList()!=null) {
+                for (int i = 0; i < propagationPath.getSegmentList().size(); i++) {
+                    if (propagationPath.getSegmentList().get(i).getSegmentLength() < 0.1) {
+                        propagationPath.getSegmentList().remove(i);
+                        propagationPath.getPointList().remove(i + 1);
+                    }
+                }
+                propagationPath.setSRList(propagationPath3.getSRList());
+                propagationPaths.add(propagationPath);
+            }
         }
         return propagationPaths;
     }

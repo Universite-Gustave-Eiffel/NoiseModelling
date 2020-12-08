@@ -184,6 +184,13 @@ public class PropagationPath {
 
     public List<SegmentPath> getSRList() {return srList;}
 
+    public void setPointList(List<PointPath> pointList) {this.pointList = pointList;}
+
+    public void setSegmentList(List<SegmentPath>  segmentList) {this.segmentList = segmentList;}
+
+    public void setSRList(List<SegmentPath> srList) {this.srList = srList;}
+
+
     public PropagationPath(List<SegmentPath> segmentList) {
         this.segmentList = segmentList;
     }
