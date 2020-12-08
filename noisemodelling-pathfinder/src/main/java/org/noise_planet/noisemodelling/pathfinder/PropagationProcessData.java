@@ -72,10 +72,10 @@ public class PropagationProcessData {
     public List<Geometry> sourceGeometries = new ArrayList<>();
     /** Maximum reflexion order */
     public int reflexionOrder = 1;
-    /** Compute diffraction rays over vertical edges */
+    /** Compute horizontal diffraction rays over vertical edges */
     protected boolean computeHorizontalDiffraction = true;
 
-    /** True will compute vertical diffraction */
+    /** True will compute vertical diffraction over horizontal edges */
     protected boolean computeVerticalDiffraction;
 
     /** Maximum source distance */

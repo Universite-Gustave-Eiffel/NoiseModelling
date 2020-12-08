@@ -54,6 +54,10 @@ public class SegmentPath {
         this.pInit = pInit;
     }
 
+    public double getSegmentLength() {
+        return this.vector3D.length();
+    }
+
     public SegmentPath() {
     }
 

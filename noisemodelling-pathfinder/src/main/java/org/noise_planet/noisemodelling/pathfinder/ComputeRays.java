@@ -70,7 +70,7 @@ public class ComputeRays {
     private final static Logger LOGGER = LoggerFactory.getLogger(ComputeRays.class);
 
     public static double[] sumArrayWithPonderation(double[] array1, double[] array2, double p) {
-        if(array1.length != array2.length) {
+        if (array1.length != array2.length) {
             throw new IllegalArgumentException("Not same size array");
         }
         double[] sum = new double[array1.length];
@@ -82,12 +82,13 @@ public class ComputeRays {
 
     /**
      * energetic Sum of dBA array
+     *
      * @param array1
      * @param array2
      * @return
      */
     public static double[] sumDbArray(double[] array1, double[] array2) {
-        if(array1.length != array2.length) {
+        if (array1.length != array2.length) {
             throw new IllegalArgumentException("Not same size array");
         }
         double[] sum = new double[array1.length];
@@ -99,12 +100,13 @@ public class ComputeRays {
 
     /**
      * Multiply component of two same size array
+     *
      * @param array1
      * @param array2
      * @return
      */
     public static double[] multArray(double[] array1, double[] array2) {
-        if(array1.length != array2.length) {
+        if (array1.length != array2.length) {
             throw new IllegalArgumentException("Not same size array");
         }
         double[] sum = new double[array1.length];
@@ -132,12 +134,13 @@ public class ComputeRays {
 
     /**
      * Element wise sum array without any other operations.
+     *
      * @param array1 First array
      * @param array2 Second array
      * @return Sum of the two arrays
      */
     public static double[] sumArray(double array1[], double array2[]) {
-        if(array1.length != array2.length) {
+        if (array1.length != array2.length) {
             throw new IllegalArgumentException("Arrays with different size");
         }
         double[] ret = new double[array1.length];
@@ -195,13 +198,14 @@ public class ComputeRays {
         }
         data.receivers = Arrays.asList(sequence.toCoordinateArray());
     }
+
     public static double dbaToW(double dBA) {
         return Math.pow(10., dBA / 10.);
     }
 
     public static double[] dbaToW(double[] dBA) {
         double[] ret = new double[dBA.length];
-        for(int i=0; i<dBA.length; i++) {
+        for (int i = 0; i < dBA.length; i++) {
             ret[i] = dbaToW(dBA[i]);
         }
         return ret;
@@ -213,7 +217,7 @@ public class ComputeRays {
 
     public static double[] wToDba(double[] w) {
         double[] ret = new double[w.length];
-        for(int i=0; i<w.length; i++) {
+        for (int i = 0; i < w.length; i++) {
             ret[i] = wToDba(w[i]);
         }
         return ret;
@@ -225,19 +229,18 @@ public class ComputeRays {
      * @return li coefficient to apply to equivalent source point from the sound power per metre set on linear source
      */
     /**
-     *
-     * @param geom Geometry
+     * @param geom                  Geometry
      * @param segmentSizeConstraint Maximal distance between points
-     * @param[out] pts computed points
      * @return Fixed distance between points
+     * @param[out] pts computed points
      */
     public static double splitLineStringIntoPoints(LineString geom, double segmentSizeConstraint,
-                                             List<Coordinate> pts) {
+                                                   List<Coordinate> pts) {
         // If the linear sound source length is inferior than half the distance between the nearest point of the sound
         // source and the receiver then it can be modelled as a single point source
         double geomLength = geom.getLength();
-        if(geomLength < segmentSizeConstraint) {
-           // Return mid point
+        if (geomLength < segmentSizeConstraint) {
+            // Return mid point
             Coordinate[] points = geom.getCoordinates();
             double segmentLength = 0;
             final double targetSegmentSize = geomLength / 2.0;
@@ -245,7 +248,7 @@ public class ComputeRays {
                 Coordinate a = points[i];
                 final Coordinate b = points[i + 1];
                 double length = a.distance3D(b);
-                if(length + segmentLength > targetSegmentSize) {
+                if (length + segmentLength > targetSegmentSize) {
                     double segmentLengthFraction = (targetSegmentSize - segmentLength) / length;
                     Coordinate midPoint = new Coordinate(a.x + segmentLengthFraction * (b.x - a.x),
                             a.y + segmentLengthFraction * (b.y - a.y),
@@ -267,7 +270,7 @@ public class ComputeRays {
                 Coordinate a = points[i];
                 final Coordinate b = points[i + 1];
                 double length = a.distance3D(b);
-                if(Double.isNaN(length)) {
+                if (Double.isNaN(length)) {
                     length = a.distance(b);
                 }
                 while (length + segmentLength > targetSegmentSize) {
@@ -277,7 +280,7 @@ public class ComputeRays {
                     splitPoint.x = a.x + segmentLengthFraction * (b.x - a.x);
                     splitPoint.y = a.y + segmentLengthFraction * (b.y - a.y);
                     splitPoint.z = a.z + segmentLengthFraction * (b.z - a.z);
-                    if(midPoint == null && length + segmentLength > targetSegmentSize / 2) {
+                    if (midPoint == null && length + segmentLength > targetSegmentSize / 2) {
                         segmentLengthFraction = (targetSegmentSize / 2.0 - segmentLength) / length;
                         midPoint = new Coordinate(a.x + segmentLengthFraction * (b.x - a.x),
                                 a.y + segmentLengthFraction * (b.y - a.y),
@@ -286,13 +289,13 @@ public class ComputeRays {
                     pts.add(midPoint);
                     a = splitPoint;
                     length = a.distance3D(b);
-                    if(Double.isNaN(length)) {
+                    if (Double.isNaN(length)) {
                         length = a.distance(b);
                     }
                     segmentLength = 0;
                     midPoint = null;
                 }
-                if(midPoint == null && length + segmentLength > targetSegmentSize / 2) {
+                if (midPoint == null && length + segmentLength > targetSegmentSize / 2) {
                     double segmentLengthFraction = (targetSegmentSize / 2.0 - segmentLength) / length;
                     midPoint = new Coordinate(a.x + segmentLengthFraction * (b.x - a.x),
                             a.y + segmentLengthFraction * (b.y - a.y),
@@ -300,7 +303,7 @@ public class ComputeRays {
                 }
                 segmentLength += length;
             }
-            if(midPoint != null) {
+            if (midPoint != null) {
                 pts.add(midPoint);
             }
             return targetSegmentSize;
@@ -308,8 +311,8 @@ public class ComputeRays {
     }
 
     public void computeReflexionOverBuildings(Coordinate p0, Coordinate p1, List<PointPath> points, List<SegmentPath> segments, List<SegmentPath> srPath) {
-        List<PropagationPath> propagationPaths = directPath(p0, p1, data.isComputeVerticalDiffraction(),false);
-        if (!propagationPaths.isEmpty() ) {
+        List<PropagationPath> propagationPaths = directPath(p0, p1, data.isComputeVerticalDiffraction(), false);
+        if (!propagationPaths.isEmpty()) {
             PropagationPath propagationPath = propagationPaths.get(0);
             points.addAll(propagationPath.getPointList());
             segments.addAll(propagationPath.getSegmentList());
@@ -320,14 +323,14 @@ public class ComputeRays {
     public static int[] asWallArray(MirrorReceiverResult res) {
         int depth = 0;
         MirrorReceiverResult cursor = res;
-        while(cursor != null) {
+        while (cursor != null) {
             depth++;
             cursor = cursor.getParentMirror();
         }
         int[] walls = new int[depth];
         cursor = res;
-        int i=0;
-        while(cursor != null) {
+        int i = 0;
+        while (cursor != null) {
             walls[(depth - 1) - (i++)] = cursor.getBuildingId();
             cursor = cursor.getParentMirror();
         }
@@ -335,7 +338,7 @@ public class ComputeRays {
     }
 
     public List<PropagationPath> computeReflexion(Coordinate receiverCoord,
-                                            Coordinate srcCoord, boolean favorable, List<FastObstructionTest.Wall> nearBuildingsWalls) {
+                                                  Coordinate srcCoord, boolean favorable, List<FastObstructionTest.Wall> nearBuildingsWalls) {
 //                for(FastObstructionTest.Wall wall : nearBuildingsWalls) {
 //                    System.out.println(String.format(Locale.ROOT, "walls.add(new FastObstructionTest.Wall(new Coordinate(%.2f,%.2f), new Coordinate(%.2f,%.2f) , %d));", wall.p0.x, wall.p0.y, wall.p1.x, wall.p1.y, wall.getBuildingId()));
 //                }
@@ -427,15 +430,15 @@ public class ComputeRays {
             }
             if (validReflection && !rayPath.isEmpty()) {
                 // Check intermediate reflections
-                for(int idPt = 0; idPt < rayPath.size() - 1; idPt++) {
+                for (int idPt = 0; idPt < rayPath.size() - 1; idPt++) {
                     Coordinate firstPt = rayPath.get(idPt).getReceiverPos();
                     MirrorReceiverResult refl = rayPath.get(idPt + 1);
-                    if(!data.freeFieldFinder.isFreeField(firstPt, refl.getReceiverPos())) {
+                    if (!data.freeFieldFinder.isFreeField(firstPt, refl.getReceiverPos())) {
                         validReflection = false;
                         break;
                     }
                 }
-                if(!validReflection) {
+                if (!validReflection) {
                     continue;
                 }
                 // A valid propagation path as been found
@@ -444,7 +447,7 @@ public class ComputeRays {
                 List<SegmentPath> srPath = new ArrayList<SegmentPath>();
                 // Compute direct path between source and first reflection point, add profile to the data
                 computeReflexionOverBuildings(srcCoord, rayPath.get(0).getReceiverPos(), points, segments, srPath);
-                if(points.isEmpty()) {
+                if (points.isEmpty()) {
                     continue;
                 }
                 PointPath reflPoint = points.get(points.size() - 1);
@@ -452,7 +455,7 @@ public class ComputeRays {
                 reflPoint.setBuildingId(rayPath.get(0).getBuildingId());
                 reflPoint.setAlphaWall(data.freeFieldFinder.getBuildingAlpha(reflPoint.getBuildingId()));
                 // Add intermediate reflections
-                for(int idPt = 0; idPt < rayPath.size() - 1; idPt++) {
+                for (int idPt = 0; idPt < rayPath.size() - 1; idPt++) {
                     Coordinate firstPt = rayPath.get(idPt).getReceiverPos();
                     MirrorReceiverResult refl = rayPath.get(idPt + 1);
                     reflPoint = new PointPath(refl.getReceiverPos(), 0, 1, data.freeFieldFinder.getBuildingAlpha(refl.getBuildingId()), refl.getBuildingId(), PointPath.POINT_TYPE.REFL);
@@ -462,13 +465,13 @@ public class ComputeRays {
                 // Compute direct path between receiver and last reflection point, add profile to the data
                 List<PointPath> lastPts = new ArrayList<>();
                 computeReflexionOverBuildings(rayPath.get(rayPath.size() - 1).getReceiverPos(), receiverCoord, lastPts, segments, srPath);
-                if(lastPts.isEmpty()) {
+                if (lastPts.isEmpty()) {
                     continue;
                 }
                 points.addAll(lastPts.subList(1, lastPts.size()));
                 for (int i = 1; i < points.size(); i++) {
                     if (points.get(i).type == PointPath.POINT_TYPE.REFL) {
-                        if(i < points.size() - 1 ) {
+                        if (i < points.size() - 1) {
                             // A diffraction point may have offset in height the reflection coordinate
                             points.get(i).coordinate.z = Vertex.interpolateZ(points.get(i).coordinate, points.get(i - 1).coordinate, points.get(i + 1).coordinate);
                             //check if in building && if under floor
@@ -504,10 +507,10 @@ public class ComputeRays {
     /**
      * @param receiverCoord
      * @param srcCoord
-     * @param inters PropagationPath between srcCoord and receiverCoord (or null if must be computed here)
+     * @param inters        PropagationPath between srcCoord and receiverCoord (or null if must be computed here)
      */
     public PropagationPath computeFreefield(Coordinate receiverCoord,
-                                            Coordinate srcCoord,List<TriIdWithIntersection> inters) {
+                                            Coordinate srcCoord, List<TriIdWithIntersection> inters) {
 
         GeometryFactory factory = new GeometryFactory();
         List<PointPath> points = new ArrayList<PointPath>();
@@ -527,7 +530,7 @@ public class ComputeRays {
         List<EnvelopeWithIndex<Integer>> resultZ0 = rTreeOfGeoSoil.query(RSZone.getEnvelopeInternal());
         for (EnvelopeWithIndex<Integer> envel : resultZ0) {
             RectangleLineIntersector rectangleLineIntersector = new RectangleLineIntersector(envel);
-            if(rectangleLineIntersector.intersects(receiverCoord, srcCoord)) {
+            if (rectangleLineIntersector.intersects(receiverCoord, srcCoord)) {
                 try {
                     //get the geo intersected
                     Geometry geoInter = RSZone.intersection(soilTypeList.get(envel.getId()).getGeo());
@@ -541,7 +544,7 @@ public class ComputeRays {
         // Compute GPath using 2D Length
         gPath = totRSDistance / RSZone.getLength();
 
-        if(inters == null) {
+        if (inters == null) {
             inters = new ArrayList<>();
             data.freeFieldFinder.computePropagationPath(srcCoord, receiverCoord, false, inters, true);
         }
@@ -560,7 +563,7 @@ public class ComputeRays {
         rotatedSource.setOrdinate(1, srcCoord.z);
         projReceiver = JTSUtility.makeProjectedPoint(ab[0], ab[1], rotatedReceiver);
         projSource = JTSUtility.makeProjectedPoint(ab[0], ab[1], rotatedSource);
-        pInit = JTSUtility.makeProjectedPoint(ab[0], ab[1], new Coordinate(0,0,0));
+        pInit = JTSUtility.makeProjectedPoint(ab[0], ab[1], new Coordinate(0, 0, 0));
         projReceiver = JTSUtility.getOldCoordinateSystem(projReceiver, angle);
         projSource = JTSUtility.getOldCoordinateSystem(projSource, angle);
         pInit = JTSUtility.getOldCoordinateSystem(pInit, angle);
@@ -572,7 +575,7 @@ public class ComputeRays {
         pInit.x = srcCoord.x + pInit.x;
         pInit.y = srcCoord.y + pInit.y;
 
-        segments.add(new SegmentPath(gPath, new Vector3D(projSource, projReceiver),pInit));
+        segments.add(new SegmentPath(gPath, new Vector3D(projSource, projReceiver), pInit));
 
         points.add(new PointPath(srcCoord, altS, data.gS, new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
         points.add(new PointPath(receiverCoord, altR, data.gS, new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
@@ -581,6 +584,46 @@ public class ComputeRays {
 
     }
 
+
+    public PropagationPath computeVerticalEdgeDiffraction(Coordinate receiverCoord,
+                                                          Coordinate srcCoord, List<TriIdWithIntersection> allInterPoints, String side) {
+
+        PropagationPath propagationPath = new PropagationPath();
+        PropagationPath propagationPath2 = new PropagationPath();
+        List<Coordinate> coordinates = new ArrayList<>();
+        boolean validDiffraction;
+
+        PropagationPath propagationPath3 = computeFreefield(receiverCoord, srcCoord, allInterPoints);
+
+        if (side == "right") {
+            // Right hand
+            coordinates = computeSideHull(false, srcCoord, receiverCoord);
+            Collections.reverse(coordinates);
+        }
+        if (side == "left") {
+            coordinates = computeSideHull(true, srcCoord, receiverCoord);
+        }
+
+        if (!coordinates.isEmpty()) {
+            if (coordinates.size() > 2) {
+                propagationPath2 = computeFreefield(coordinates.get(1), coordinates.get(0), null);
+                propagationPath2.getPointList().get(1).setType(PointPath.POINT_TYPE.DIFV);
+                int j;
+                for (j = 1; j < coordinates.size() - 2; j++) {
+                    propagationPath = computeFreefield(coordinates.get(j + 1), coordinates.get(j), null);
+                    propagationPath.getPointList().get(1).setType(PointPath.POINT_TYPE.DIFV);
+                    propagationPath2.getPointList().add(propagationPath.getPointList().get(1));
+                    propagationPath2.getSegmentList().addAll(propagationPath.getSegmentList());
+                }
+                propagationPath = computeFreefield(coordinates.get(j + 1), coordinates.get(j), null);
+                propagationPath2.getPointList().add(propagationPath.getPointList().get(1));
+                propagationPath2.getSegmentList().addAll(propagationPath.getSegmentList());
+
+            }
+        }
+
+        return propagationPath2;
+}
 
     public PropagationPath computeHorizontalEdgeDiffraction(boolean obstructedSourceReceiver, Coordinate receiverCoord,
                                                             Coordinate srcCoord, List<TriIdWithIntersection> allInterPoints) {
@@ -603,34 +646,39 @@ public class ComputeRays {
         }
         // todo not sure about this part...
         if (validDiffraction) {
-                List<Coordinate> offsetPath = new ArrayList<>(diffDataWithSoilEffet.getPath());
-                for(int i = 1; i < offsetPath.size() - 1; i++) {
-                    Coordinate dest = offsetPath.get(i);
-                    Vector2D v = new Vector2D(offsetPath.get(0), dest).normalize().multiply(FastObstructionTest.epsilon);
-                    offsetPath.set(i, new Coordinate(dest.x - v.getX(), dest.y - v.getY(), dest.z));
+            List<Coordinate> offsetPath = new ArrayList<>(diffDataWithSoilEffet.getPath());
+            for (int i = 1; i < offsetPath.size() - 1; i++) {
+                Coordinate dest = offsetPath.get(i);
+                Vector2D v = new Vector2D(offsetPath.get(0), dest).normalize().multiply(FastObstructionTest.epsilon);
+                offsetPath.set(i, new Coordinate(dest.x - v.getX(), dest.y - v.getY(), dest.z));
+            }
+            for (int j = offsetPath.size() - 1; j > 1; j--) {
+                PropagationPath propagationPath1 = computeFreefield(offsetPath.get(j - 1), offsetPath.get(j), null);
+                propagationPath1.getPointList().get(1).setType(PointPath.POINT_TYPE.DIFH);
+                if (j == offsetPath.size() - 1) {
+                    propagationPath1.getPointList().get(0).setCoordinate(offsetPath.get(j));
+                    points.add(propagationPath1.getPointList().get(0));
                 }
-                for (int j = offsetPath.size() - 1; j > 1; j--) {
-                    PropagationPath propagationPath1 = computeFreefield(offsetPath.get(j - 1), offsetPath.get(j), null);
-                    propagationPath1.getPointList().get(1).setType(PointPath.POINT_TYPE.DIFH);
-                    if (j == offsetPath.size() - 1) {
-                        propagationPath1.getPointList().get(0).setCoordinate(offsetPath.get(j));
-                        points.add(propagationPath1.getPointList().get(0));
-                    }
-                    points.add(propagationPath1.getPointList().get(1));
-                    segments.addAll(propagationPath1.getSegmentList());
-                }
+                points.add(propagationPath1.getPointList().get(1));
+                segments.addAll(propagationPath1.getSegmentList());
+            }
 
-                PropagationPath propagationPath2 = computeFreefield(offsetPath.get(0), offsetPath.get(1),null);
-                points.add(propagationPath2.getPointList().get(1));
-                segments.add(propagationPath2.getSegmentList().get(0));
+            PropagationPath propagationPath2 = computeFreefield(offsetPath.get(0), offsetPath.get(1), null);
+            points.add(propagationPath2.getPointList().get(1));
+            segments.add(propagationPath2.getSegmentList().get(0));
 
         } else {
-            PropagationPath propagationPath = computeFreefield(receiverCoord, srcCoord,null);
+            PropagationPath propagationPath = computeFreefield(receiverCoord, srcCoord, null);
             points.addAll(propagationPath.getPointList());
             segments.addAll(propagationPath.getSegmentList());
             srPath.addAll(propagationPath.getSRList());
         }
-
+        for (int i = 0; i < segments.size(); i++) {
+            if (segments.get(i).getSegmentLength() < 0.01) {
+                segments.remove(i);
+                points.remove(i + 1);
+            }
+        }
         return new PropagationPath(true, points, segments, srPath);
     }
 
@@ -639,10 +687,10 @@ public class ComputeRays {
         org.apache.commons.math3.geometry.euclidean.threed.Vector3D r = new org.apache.commons.math3.geometry.euclidean.threed.Vector3D(p1.x, p1.y, p1.z);
         double angle = Math.atan2(p1.y - p0.y, p1.x - p0.x);
         // Compute rPrime, the third point of the plane that is at -PI/2 with SR vector
-        org.apache.commons.math3.geometry.euclidean.threed.Vector3D rPrime = s.add(new org.apache.commons.math3.geometry.euclidean.threed.Vector3D(Math.cos(angle - Math.PI / 2),Math.sin(angle - Math.PI / 2),0));
+        org.apache.commons.math3.geometry.euclidean.threed.Vector3D rPrime = s.add(new org.apache.commons.math3.geometry.euclidean.threed.Vector3D(Math.cos(angle - Math.PI / 2), Math.sin(angle - Math.PI / 2), 0));
         Plane p = new Plane(r, s, rPrime, 1e-6);
         // Normal of the cut plane should be upward
-        if(p.getNormal().getZ() < 0) {
+        if (p.getNormal().getZ() < 0) {
             p.revertSelf();
         }
         return p;
@@ -661,15 +709,15 @@ public class ComputeRays {
     public static List<Coordinate> cutRoofPointsWithPlane(Plane plane, List<Coordinate> roofPts) {
         List<Coordinate> polyCut = new ArrayList<>(roofPts.size());
         Double lastOffset = null;
-        for(int idp = 0; idp < roofPts.size(); idp++) {
+        for (int idp = 0; idp < roofPts.size(); idp++) {
             double offset = plane.getOffset(CoordinateToVector(roofPts.get(idp)));
-            if(lastOffset != null && ((offset >= 0 && lastOffset < 0) || (offset < 0 && lastOffset >= 0))) {
+            if (lastOffset != null && ((offset >= 0 && lastOffset < 0) || (offset < 0 && lastOffset >= 0))) {
                 // Interpolate vector
-                org.apache.commons.math3.geometry.euclidean.threed.Vector3D i = plane.intersection(new Line(CoordinateToVector(roofPts.get(idp - 1)),CoordinateToVector(roofPts.get(idp)),FastObstructionTest.epsilon));
+                org.apache.commons.math3.geometry.euclidean.threed.Vector3D i = plane.intersection(new Line(CoordinateToVector(roofPts.get(idp - 1)), CoordinateToVector(roofPts.get(idp)), FastObstructionTest.epsilon));
                 polyCut.add(new Coordinate(i.getX(), i.getY(), i.getZ()));
             }
-            if(offset >= 0) {
-                org.apache.commons.math3.geometry.euclidean.threed.Vector3D i = plane.intersection(new Line(new org.apache.commons.math3.geometry.euclidean.threed.Vector3D(roofPts.get(idp).x,roofPts.get(idp).y,Double.MIN_VALUE),CoordinateToVector(roofPts.get(idp)),FastObstructionTest.epsilon));
+            if (offset >= 0) {
+                org.apache.commons.math3.geometry.euclidean.threed.Vector3D i = plane.intersection(new Line(new org.apache.commons.math3.geometry.euclidean.threed.Vector3D(roofPts.get(idp).x, roofPts.get(idp).y, Double.MIN_VALUE), CoordinateToVector(roofPts.get(idp)), FastObstructionTest.epsilon));
                 polyCut.add(new Coordinate(i.getX(), i.getY(), i.getZ()));
             }
             lastOffset = offset;
@@ -682,13 +730,14 @@ public class ComputeRays {
      * Create a line between p1 and p2. Find the first intersection of this line with a building then create a ConvexHull
      * with the points of buildings in intersection. While there is an intersection add more points to the convex hull.
      * The side diffraction path is found when there is no more intersection.
+     *
      * @param left If true return path between p1 and p2; else p2 to p1
-     * @param p1 First point
-     * @param p2 Second point
+     * @param p1   First point
+     * @param p2   Second point
      * @return
      */
     public List<Coordinate> computeSideHull(boolean left, Coordinate p1, Coordinate p2) {
-        if(p1.equals(p2)) {
+        if (p1.equals(p2)) {
             return new ArrayList<>();
         }
 
@@ -771,15 +820,15 @@ public class ComputeRays {
                 if (left && k < indexp2 || !left && k >= indexp2) {
                     if (!freeFieldSegments.contains(freeFieldTestSegment)) {
                         // Check if we still are in the propagation domain
-                        if(!data.freeFieldFinder.getMeshEnvelope().contains(coordinates[k]) ||
-                                !data.freeFieldFinder.getMeshEnvelope().contains(coordinates[k+1])) {
+                        if (!data.freeFieldFinder.getMeshEnvelope().contains(coordinates[k]) ||
+                                !data.freeFieldFinder.getMeshEnvelope().contains(coordinates[k + 1])) {
                             // This side goes over propagation path
                             return new ArrayList<>();
                         }
                         intersectionRayVisitor = new IntersectionRayVisitor(data.freeFieldFinder.getPolygonWithHeight(),
                                 coordinates[k], coordinates[k + 1], data.freeFieldFinder, input, buildingInHull, cutPlane);
                         data.freeFieldFinder.getBuildingsOnPath(coordinates[k], coordinates[k + 1], intersectionRayVisitor);
-                        if(!intersectionRayVisitor.doContinue()) {
+                        if (!intersectionRayVisitor.doContinue()) {
                             convexHullIntersects = true;
                         }
                         if (!convexHullIntersects) {
@@ -792,17 +841,17 @@ public class ComputeRays {
             }
         }
         // Check for invalid coordinates
-        for(Coordinate p : coordinates) {
-            if(p.z < 0) {
+        for (Coordinate p : coordinates) {
+            if (p.z < 0) {
                 return new ArrayList<>();
             }
         }
 
-        if(left) {
-            return Arrays.asList(Arrays.copyOfRange(coordinates,indexp1, indexp2 + 1));
+        if (left) {
+            return Arrays.asList(Arrays.copyOfRange(coordinates, indexp1, indexp2 + 1));
         } else {
             ArrayList<Coordinate> inversePath = new ArrayList<>();
-            inversePath.addAll(Arrays.asList(Arrays.copyOfRange(coordinates,indexp2, coordinates.length)));
+            inversePath.addAll(Arrays.asList(Arrays.copyOfRange(coordinates, indexp2, coordinates.length)));
             Collections.reverse(inversePath);
             return inversePath;
         }
@@ -826,14 +875,14 @@ public class ComputeRays {
 
         List<TriIdWithIntersection> inters = new ArrayList<>();
         data.freeFieldFinder.computePropagationPath(srcCoord, receiverCoord, false, inters, true);
-        for(TriIdWithIntersection intersection : inters) {
-            if(intersection.getBuildingId() > 0) {
+        for (TriIdWithIntersection intersection : inters) {
+            if (intersection.getBuildingId() > 0) {
                 topographyHideReceiver = true;
                 buildingOnPath = true;
             }
-            if(intersection.isIntersectionOnBuilding() || intersection.isIntersectionOnTopography()) {
+            if (intersection.isIntersectionOnBuilding() || intersection.isIntersectionOnTopography()) {
                 freefield = false;
-                if(intersection.isIntersectionOnTopography()) {
+                if (intersection.isIntersectionOnTopography()) {
                     topographyHideReceiver = true;
                 }
             }
@@ -842,7 +891,7 @@ public class ComputeRays {
         // double fav_probability = favrose[(int) (Math.round(calcRotationAngleInDegrees(srcCoord, receiverCoord) / 30))];
 
         if (freefield) {
-            PropagationPath propagationPath = computeFreefield(receiverCoord, srcCoord,inters);
+            PropagationPath propagationPath = computeFreefield(receiverCoord, srcCoord, inters);
             propagationPaths.add(propagationPath);
         }
 
@@ -852,82 +901,38 @@ public class ComputeRays {
             PropagationPath propagationPath3 = computeFreefield(receiverCoord, srcCoord, inters);
             PropagationPath propagationPath = computeHorizontalEdgeDiffraction(topographyHideReceiver, receiverCoord, srcCoord, inters);
             propagationPath.getSRList().addAll(propagationPath3.getSRList());
+
             propagationPaths.add(propagationPath);
 
 
         }
 
-        if (topographyHideReceiver && data.isComputeHorizontalDiffraction() && horizontalDiffraction  && !freefield) {
+        if (topographyHideReceiver && data.isComputeHorizontalDiffraction() && horizontalDiffraction && !freefield) {
             // todo if one of the points > roof or < floor, get out this path
-            PropagationPath propagationPath = new PropagationPath();
-            PropagationPath propagationPath2 = new PropagationPath();
 
-            // Left hand
+            if (computeVerticalEdgeDiffraction(srcCoord, receiverCoord,inters, "left").getPointList()!=null) propagationPaths.add(computeVerticalEdgeDiffraction(srcCoord, receiverCoord,inters, "left"));
+            if (computeVerticalEdgeDiffraction(srcCoord, receiverCoord,inters, "left").getPointList()!=null) propagationPaths.add(computeVerticalEdgeDiffraction(srcCoord, receiverCoord,inters, "right"));
 
-            //List<List<Coordinate>> diffractedPaths = computeVerticalEdgeDiffraction(srcCoord, receiverCoord, debugInfo);
-            List<Coordinate> coordinates = computeSideHull(true, srcCoord, receiverCoord);
-            if(!coordinates.isEmpty()) {
-                if (coordinates.size() > 2) {
-
-                    propagationPath = computeFreefield(coordinates.get(1), coordinates.get(0),null);
-                    propagationPath.getPointList().get(1).setType(PointPath.POINT_TYPE.DIFV);
-
-                    propagationPath2 = propagationPath;
-                    int j;
-                    for (j = 1; j < coordinates.size() - 2; j++) {
-                        propagationPath = computeFreefield(coordinates.get(j + 1), coordinates.get(j),null);
-                        propagationPath.getPointList().get(1).setType(PointPath.POINT_TYPE.DIFV);
-                        propagationPath2.getPointList().add(propagationPath.getPointList().get(1));
-                        propagationPath2.getSegmentList().addAll(propagationPath.getSegmentList());
-                    }
-                    propagationPath = computeFreefield(coordinates.get(j + 1), coordinates.get(j),null);
-                    propagationPath2.getPointList().add(propagationPath.getPointList().get(1));
-                    propagationPath2.getSegmentList().addAll(propagationPath.getSegmentList());
-                    propagationPaths.add(propagationPath2);
-                }
-            }
-
-            // Right hand
-            coordinates = computeSideHull(false, srcCoord, receiverCoord);
-            if(!coordinates.isEmpty()) {
-                if (coordinates.size() > 2) {
-                    Collections.reverse(coordinates);
-                    propagationPath = computeFreefield(coordinates.get(1), coordinates.get(0),null);
-                    propagationPath.getPointList().get(1).setType(PointPath.POINT_TYPE.DIFV);
-                    propagationPath2 = propagationPath;
-                    int j;
-                    for (j = 1; j < coordinates.size() - 2; j++) {
-                        propagationPath = computeFreefield(coordinates.get(j + 1), coordinates.get(j),null);
-                        propagationPath.getPointList().get(1).setType(PointPath.POINT_TYPE.DIFV);
-                        propagationPath2.getPointList().add(propagationPath.getPointList().get(1));
-                        propagationPath2.getSegmentList().addAll(propagationPath.getSegmentList());
-                    }
-                    propagationPath = computeFreefield(coordinates.get(j + 1), coordinates.get(j),null);
-                    propagationPath2.getPointList().add(propagationPath.getPointList().get(1));
-                    propagationPath2.getSegmentList().addAll(propagationPath.getSegmentList());
-                    propagationPaths.add(propagationPath2);
-
-                }
-            }
         }
         return propagationPaths;
     }
 
     /**
      * Source-Receiver Direct+Reflection+Diffraction computation
-     * @param srcCoord coordinate of source
-     * @param srcId Source identifier
-     * @param sourceLi Coefficient of power per meter for this point source
-     * @param receiverCoord coordinate of receiver
-     * @param rcvId receiver identifier
+     *
+     * @param srcCoord           coordinate of source
+     * @param srcId              Source identifier
+     * @param sourceLi           Coefficient of power per meter for this point source
+     * @param receiverCoord      coordinate of receiver
+     * @param rcvId              receiver identifier
      * @param nearBuildingsWalls Walls to use in reflection
      * @param debugInfo
      * @param dataOut
      * @return Minimal power level (dB) or maximum attenuation (dB)
      */
     private double[] receiverSourcePropa(Coordinate srcCoord, int srcId, double sourceLi,
-                                     Coordinate receiverCoord, int rcvId,
-                                     List<FastObstructionTest.Wall> nearBuildingsWalls, List<PropagationDebugInfo> debugInfo, IComputeRaysOut dataOut) {
+                                         Coordinate receiverCoord, int rcvId,
+                                         List<FastObstructionTest.Wall> nearBuildingsWalls, List<PropagationDebugInfo> debugInfo, IComputeRaysOut dataOut) {
 
         List<PropagationPath> propagationPaths;
         // Build mirrored receiver list from wall list
@@ -960,7 +965,7 @@ public class ComputeRays {
         // Compute maximal power at freefield at the receiver position with reflective ground
         double aDiv = -getADiv(CGAlgorithms3D.distance(receiverPos, ptpos));
         double[] srcWJ = new double[wj.length];
-        for(int idFreq = 0; idFreq < srcWJ.length; idFreq++) {
+        for (int idFreq = 0; idFreq < srcWJ.length; idFreq++) {
             srcWJ[idFreq] = wj[idFreq] * li * dbaToW(aDiv) * dbaToW(3);
         }
         sourceList.add(new SourcePointInfo(srcWJ, sourceId, ptpos, li));
@@ -973,12 +978,12 @@ public class ComputeRays {
         // Compute li to equation 4.1 NMPB 2008 (June 2009)
         Coordinate nearestPoint = JTSUtility.getNearestPoint(receiverCoord, source);
         double segmentSizeConstraint = Math.max(1, receiverCoord.distance3D(nearestPoint) / 2.0);
-        if(Double.isNaN(segmentSizeConstraint)) {
+        if (Double.isNaN(segmentSizeConstraint)) {
             segmentSizeConstraint = Math.max(1, receiverCoord.distance(nearestPoint) / 2.0);
         }
         double li = splitLineStringIntoPoints(source, segmentSizeConstraint, pts);
         for (Coordinate pt : pts) {
-            if(pt.distance(receiverCoord) < data.maxSrcDist) {
+            if (pt.distance(receiverCoord) < data.maxSrcDist) {
                 totalPowerRemaining += insertPtSource(receiverCoord, pt, wj, li, srcIndex, sourceList);
             }
         }
@@ -1017,18 +1022,18 @@ public class ComputeRays {
                 double[] wj = data.getMaximalSourcePower(srcIndex);
                 if (source instanceof Point) {
                     Coordinate ptpos = source.getCoordinate();
-                    if(ptpos.distance(receiverCoord) < data.maxSrcDist) {
+                    if (ptpos.distance(receiverCoord) < data.maxSrcDist) {
                         totalPowerRemaining += insertPtSource(receiverCoord, ptpos, wj, 1., srcIndex, sourceList);
                     }
-                } else if (source instanceof LineString){
+                } else if (source instanceof LineString) {
                     // Discretization of line into multiple point
                     // First point is the closest point of the LineString from
                     // the receiver
-                    totalPowerRemaining += addLineSource((LineString)source, receiverCoord,srcIndex, sourceList, wj);
-                } else if(source instanceof MultiLineString) {
-                    for(int id = 0; id < source.getNumGeometries(); id++) {
+                    totalPowerRemaining += addLineSource((LineString) source, receiverCoord, srcIndex, sourceList, wj);
+                } else if (source instanceof MultiLineString) {
+                    for (int id = 0; id < source.getNumGeometries(); id++) {
                         Geometry subGeom = source.getGeometryN(id);
-                        if(subGeom instanceof LineString) {
+                        if (subGeom instanceof LineString) {
                             totalPowerRemaining += addLineSource((LineString) subGeom, receiverCoord, srcIndex, sourceList, wj);
                         }
                     }
@@ -1054,7 +1059,7 @@ public class ComputeRays {
                     new ArrayList<>(wallsSource), debugInfo, dataOut);
             double global = ComputeRays.sumArray(power.length, ComputeRays.dbaToW(power));
             totalPowerRemaining -= src.globalWj;
-            if(power.length > 0) {
+            if (power.length > 0) {
                 powerAtSource += global;
             } else {
                 powerAtSource += src.globalWj;
@@ -1104,14 +1109,14 @@ public class ComputeRays {
         int maximumReceiverBatch = (int) Math.ceil(data.receivers.size() / (double) splitCount);
         int endReceiverRange = 0;
         while (endReceiverRange < data.receivers.size()) {
-            if(propaProcessProgression != null && propaProcessProgression.isCanceled()) {
+            if (propaProcessProgression != null && propaProcessProgression.isCanceled()) {
                 break;
             }
             int newEndReceiver = Math.min(endReceiverRange + maximumReceiverBatch, data.receivers.size());
             RangeReceiversComputation batchThread = new RangeReceiversComputation(endReceiverRange,
                     newEndReceiver, this, debugInfo, propaProcessProgression,
-                    computeRaysOut.subProcess(endReceiverRange ,newEndReceiver));
-            if(threadCount != 1) {
+                    computeRaysOut.subProcess(endReceiverRange, newEndReceiver));
+            if (threadCount != 1) {
                 threadManager.executeBlocking(batchThread);
             } else {
                 batchThread.run();
@@ -1144,181 +1149,181 @@ public class ComputeRays {
 
     }
 
-    private static final class RangeReceiversComputation implements Runnable {
-        private final int startReceiver; // Included
-        private final int endReceiver; // Excluded
-        private ComputeRays propagationProcess;
-        private List<PropagationDebugInfo> debugInfo;
-        private ProgressVisitor progressVisitor;
-        private IComputeRaysOut dataOut;
+private static final class RangeReceiversComputation implements Runnable {
+    private final int startReceiver; // Included
+    private final int endReceiver; // Excluded
+    private ComputeRays propagationProcess;
+    private List<PropagationDebugInfo> debugInfo;
+    private ProgressVisitor progressVisitor;
+    private IComputeRaysOut dataOut;
 
-        public RangeReceiversComputation(int startReceiver, int endReceiver, ComputeRays propagationProcess,
-                                         List<PropagationDebugInfo> debugInfo, ProgressVisitor progressVisitor,
-                                         IComputeRaysOut dataOut) {
-            this.startReceiver = startReceiver;
-            this.endReceiver = endReceiver;
-            this.propagationProcess = propagationProcess;
-            this.debugInfo = debugInfo;
-            this.progressVisitor = progressVisitor;
-            this.dataOut = dataOut;
-        }
+    public RangeReceiversComputation(int startReceiver, int endReceiver, ComputeRays propagationProcess,
+                                     List<PropagationDebugInfo> debugInfo, ProgressVisitor progressVisitor,
+                                     IComputeRaysOut dataOut) {
+        this.startReceiver = startReceiver;
+        this.endReceiver = endReceiver;
+        this.propagationProcess = propagationProcess;
+        this.debugInfo = debugInfo;
+        this.progressVisitor = progressVisitor;
+        this.dataOut = dataOut;
+    }
 
-        @Override
-        public void run() {
-            try {
-                for (int idReceiver = startReceiver; idReceiver < endReceiver; idReceiver++) {
-                    if (progressVisitor != null) {
-                        if(progressVisitor.isCanceled()) {
-                            break;
-                        }
-                    }
-                    Coordinate receiverCoord = propagationProcess.data.receivers.get(idReceiver);
-
-                    propagationProcess.computeRaysAtPosition(receiverCoord, idReceiver, debugInfo, dataOut, progressVisitor);
-
-                    if (progressVisitor != null) {
-                        progressVisitor.endStep();
+    @Override
+    public void run() {
+        try {
+            for (int idReceiver = startReceiver; idReceiver < endReceiver; idReceiver++) {
+                if (progressVisitor != null) {
+                    if (progressVisitor.isCanceled()) {
+                        break;
                     }
                 }
-            } catch (Exception ex) {
-                LOGGER.error(ex.getLocalizedMessage(), ex);
-                if(progressVisitor != null) {
-                    progressVisitor.cancel();
+                Coordinate receiverCoord = propagationProcess.data.receivers.get(idReceiver);
+
+                propagationProcess.computeRaysAtPosition(receiverCoord, idReceiver, debugInfo, dataOut, progressVisitor);
+
+                if (progressVisitor != null) {
+                    progressVisitor.endStep();
                 }
-                throw ex;
             }
+        } catch (Exception ex) {
+            LOGGER.error(ex.getLocalizedMessage(), ex);
+            if (progressVisitor != null) {
+                progressVisitor.cancel();
+            }
+            throw ex;
         }
+    }
+}
+
+/**
+ * Offset de Z coordinates by the height of the ground
+ */
+public static final class AbsoluteCoordinateSequenceFilter implements CoordinateSequenceFilter {
+    AtomicBoolean geometryChanged = new AtomicBoolean(false);
+    FastObstructionTest fastObstructionTest;
+    boolean resetZ;
+
+    /**
+     * Constructor
+     *
+     * @param fastObstructionTest Initialised instance of fastObstructionTest
+     * @param resetZ              If filtered geometry contain Z and resetZ is false, do not update Z.
+     */
+    public AbsoluteCoordinateSequenceFilter(FastObstructionTest fastObstructionTest, boolean resetZ) {
+        this.fastObstructionTest = fastObstructionTest;
+        this.resetZ = resetZ;
+    }
+
+    public void reset() {
+        geometryChanged.set(false);
+    }
+
+    @Override
+    public void filter(CoordinateSequence coordinateSequence, int i) {
+        Coordinate pt = coordinateSequence.getCoordinate(i);
+        Double zGround = fastObstructionTest.getHeightAtPosition(pt);
+        if (!zGround.isNaN() && (resetZ || Double.isNaN(pt.getOrdinate(2)) || Double.compare(0, pt.getOrdinate(2)) == 0)) {
+            pt.setOrdinate(2, zGround + (Double.isNaN(pt.getOrdinate(2)) ? 0 : pt.getOrdinate(2)));
+            geometryChanged.set(true);
+        }
+    }
+
+    @Override
+    public boolean isDone() {
+        return false;
+    }
+
+    @Override
+    public boolean isGeometryChanged() {
+        return geometryChanged.get();
+    }
+}
+
+private static final class SourcePointInfo implements Comparable<SourcePointInfo> {
+    private double[] wj;
+    private double li; //
+    private int sourcePrimaryKey;
+    private Coordinate position;
+    private double globalWj;
+
+    /**
+     * @param wj               Maximum received power from this source
+     * @param sourcePrimaryKey
+     * @param position
+     */
+    public SourcePointInfo(double[] wj, int sourcePrimaryKey, Coordinate position, double li) {
+        this.wj = wj;
+        this.sourcePrimaryKey = sourcePrimaryKey;
+        this.position = position;
+        if (Double.isNaN(position.z)) {
+            this.position = new Coordinate(position.x, position.y, 0);
+        }
+        this.globalWj = ComputeRays.sumArray(wj.length, wj);
+        this.li = li;
     }
 
     /**
-     * Offset de Z coordinates by the height of the ground
+     * @return coefficient to apply to linear source as sound power per meter length
      */
-    public static final class AbsoluteCoordinateSequenceFilter implements CoordinateSequenceFilter {
-        AtomicBoolean geometryChanged = new AtomicBoolean(false);
-        FastObstructionTest fastObstructionTest;
-        boolean resetZ;
+    public double getLi() {
+        return li;
+    }
 
-        /**
-         * Constructor
-         *
-         * @param fastObstructionTest Initialised instance of fastObstructionTest
-         * @param resetZ              If filtered geometry contain Z and resetZ is false, do not update Z.
-         */
-        public AbsoluteCoordinateSequenceFilter(FastObstructionTest fastObstructionTest, boolean resetZ) {
-            this.fastObstructionTest = fastObstructionTest;
-            this.resetZ = resetZ;
+    public double[] getWj() {
+        return wj;
+    }
+
+    public void setWj(double[] wj) {
+        this.wj = wj;
+        this.globalWj = ComputeRays.sumArray(wj.length, wj);
+    }
+
+    @Override
+    public int compareTo(SourcePointInfo sourcePointInfo) {
+        int cmp = -Double.compare(globalWj, sourcePointInfo.globalWj);
+        if (cmp == 0) {
+            return Integer.compare(sourcePrimaryKey, sourcePointInfo.sourcePrimaryKey);
+        } else {
+            return cmp;
         }
+    }
+}
 
-        public void reset() {
-            geometryChanged.set(false);
+private static final class IntersectionRayVisitor extends FastObstructionTest.IntersectionRayVisitor {
+    Set<Integer> buildingsInIntersection;
+    FastObstructionTest freeFieldFinder;
+    Plane cutPlane;
+    List<Coordinate> input;
+    boolean foundIntersection = false;
+
+    public IntersectionRayVisitor(List<MeshBuilder.PolygonWithHeight> polygonWithHeight, Coordinate p1,
+                                  Coordinate p2, FastObstructionTest freeFieldFinde, List<Coordinate> input, Set<Integer> buildingsInIntersection, Plane cutPlane) {
+        super(polygonWithHeight, p1, p2);
+        this.freeFieldFinder = freeFieldFinde;
+        this.input = input;
+        this.buildingsInIntersection = buildingsInIntersection;
+        this.cutPlane = cutPlane;
+    }
+
+    @Override
+    public void addBuilding(int buildingId) {
+        if (buildingsInIntersection.contains(buildingId)) {
+            return;
         }
-
-        @Override
-        public void filter(CoordinateSequence coordinateSequence, int i) {
-            Coordinate pt = coordinateSequence.getCoordinate(i);
-            Double zGround = fastObstructionTest.getHeightAtPosition(pt);
-            if (!zGround.isNaN() && (resetZ || Double.isNaN(pt.getOrdinate(2)) || Double.compare(0, pt.getOrdinate(2)) == 0)) {
-                pt.setOrdinate(2, zGround + (Double.isNaN(pt.getOrdinate(2)) ? 0 : pt.getOrdinate(2)));
-                geometryChanged.set(true);
-            }
-        }
-
-        @Override
-        public boolean isDone() {
-            return false;
-        }
-
-        @Override
-        public boolean isGeometryChanged() {
-            return geometryChanged.get();
+        List<Coordinate> roofPoints = freeFieldFinder.getWideAnglePointsByBuilding(buildingId, 0, 2 * Math.PI);
+        // Create a cut of the building volume
+        roofPoints = cutRoofPointsWithPlane(cutPlane, roofPoints);
+        if (!roofPoints.isEmpty()) {
+            input.addAll(roofPoints.subList(0, roofPoints.size() - 1));
+            buildingsInIntersection.add(buildingId);
+            foundIntersection = true;
+            // Stop iterating bounding boxes
+            throw new IllegalStateException();
         }
     }
 
-    private static final class SourcePointInfo implements Comparable<SourcePointInfo> {
-        private double[] wj;
-        private double li; //
-        private int sourcePrimaryKey;
-        private Coordinate position;
-        private double globalWj;
-
-        /**
-         * @param wj Maximum received power from this source
-         * @param sourcePrimaryKey
-         * @param position
-         */
-        public SourcePointInfo(double[] wj, int sourcePrimaryKey, Coordinate position, double li) {
-            this.wj = wj;
-            this.sourcePrimaryKey = sourcePrimaryKey;
-            this.position = position;
-            if(Double.isNaN(position.z)) {
-                this.position = new Coordinate(position.x, position.y, 0);
-            }
-            this.globalWj = ComputeRays.sumArray(wj.length, wj);
-            this.li = li;
-        }
-
-        /**
-         * @return coefficient to apply to linear source as sound power per meter length
-         */
-        public double getLi() {
-            return li;
-        }
-
-        public double[] getWj() {
-            return wj;
-        }
-
-        public void setWj(double[] wj) {
-            this.wj = wj;
-            this.globalWj = ComputeRays.sumArray(wj.length, wj);
-        }
-
-        @Override
-        public int compareTo(SourcePointInfo sourcePointInfo) {
-            int cmp = -Double.compare(globalWj, sourcePointInfo.globalWj);
-            if(cmp == 0) {
-                return Integer.compare(sourcePrimaryKey, sourcePointInfo.sourcePrimaryKey);
-            } else {
-                return cmp;
-            }
-        }
+    public boolean doContinue() {
+        return !foundIntersection;
     }
-
-    private static final class IntersectionRayVisitor extends FastObstructionTest.IntersectionRayVisitor {
-        Set<Integer> buildingsInIntersection;
-        FastObstructionTest freeFieldFinder;
-        Plane cutPlane;
-        List<Coordinate> input;
-        boolean foundIntersection = false;
-
-        public IntersectionRayVisitor(List<MeshBuilder.PolygonWithHeight> polygonWithHeight, Coordinate p1,
-                                      Coordinate p2, FastObstructionTest freeFieldFinde, List<Coordinate> input, Set<Integer> buildingsInIntersection, Plane cutPlane) {
-            super(polygonWithHeight, p1, p2);
-            this.freeFieldFinder = freeFieldFinde;
-            this.input = input;
-            this.buildingsInIntersection = buildingsInIntersection;
-            this.cutPlane = cutPlane;
-        }
-
-        @Override
-        public void addBuilding(int buildingId) {
-            if(buildingsInIntersection.contains(buildingId)) {
-                return;
-            }
-            List<Coordinate> roofPoints = freeFieldFinder.getWideAnglePointsByBuilding(buildingId, 0, 2 * Math.PI);
-            // Create a cut of the building volume
-            roofPoints = cutRoofPointsWithPlane(cutPlane, roofPoints);
-            if (!roofPoints.isEmpty()) {
-                    input.addAll(roofPoints.subList(0, roofPoints.size() - 1));
-                    buildingsInIntersection.add(buildingId);
-                    foundIntersection = true;
-                    // Stop iterating bounding boxes
-                    throw new IllegalStateException();
-            }
-        }
-
-        public boolean doContinue() {
-            return !foundIntersection;
-        }
-    }
+}
 }
