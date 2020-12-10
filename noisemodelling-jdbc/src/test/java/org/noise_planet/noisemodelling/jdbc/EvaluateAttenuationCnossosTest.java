@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.util.*;
 
 import static org.junit.Assert.*;
+import static org.noise_planet.noisemodelling.jdbc.Utils.addArray;
 
 public class EvaluateAttenuationCnossosTest {
 
@@ -32,16 +33,7 @@ public class EvaluateAttenuationCnossosTest {
     private static final double[] FAV_WIND_ROSE = new double[]{1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
 
 
-    private static double[] addArray(double[] first, double[] second) {
-        int length = Math.min(first.length, second.length);
-        double[] result = new double[length];
 
-        for (int i = 0; i < length; i++) {
-            result[i] = first[i] + second[i];
-        }
-
-        return result;
-    }
     /**
      * Test TC01 -- Reflecting ground (G = 0)
      */
@@ -1946,6 +1938,7 @@ public class EvaluateAttenuationCnossosTest {
 
 
     }
+
 
     /**
      * Test optimisation feature {@link PropagationProcessData#maximumError}

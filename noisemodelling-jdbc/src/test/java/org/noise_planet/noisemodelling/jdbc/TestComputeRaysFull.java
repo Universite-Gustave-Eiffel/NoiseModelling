@@ -25,25 +25,14 @@ import java.util.List;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-
-
+import static org.noise_planet.noisemodelling.jdbc.Utils.addArray;
 
 
 public class TestComputeRaysFull {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestComputeRaysFull.class);
     private boolean storeGeoJSONRays = false;
 
-    private static double[] addArray(double[] first, double[] second) {
-        int length = first.length < second.length ? first.length
-                : second.length;
-        double[] result = new double[length];
 
-        for (int i = 0; i < length; i++) {
-            result[i] = first[i] + second[i];
-        }
-
-        return result;
-    }
      /**
      * Test TC01 -- Reflecting ground (G = 0)
      */
