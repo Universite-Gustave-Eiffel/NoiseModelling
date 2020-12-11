@@ -269,12 +269,12 @@ public class EvaluateAttenuationCnossos {
             List<SegmentPath> segmentPath = path.getSegmentList();
             double[] DeltaDifSR;
             DeltaDifSR = getDeltaDif(srPath.get(0), data);
-
+            aDif = DeltaDifSR;
             // Eq 2.5.30 - Eq. 2.5.31 - Eq. 2.5.32
             for (int idf = 0; idf < nbfreq; idf++) {
-                aDif[idf] = DeltaDifSR[idf];
                 aBoundary[idf] = aDif[idf] + aGround[idf];
             }
+
         }
         if (path.difHPoints.size() > 0) {
             List<SegmentPath> segmentPath = path.getSegmentList();

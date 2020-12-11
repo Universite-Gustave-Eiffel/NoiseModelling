@@ -267,7 +267,14 @@ public class PropagationPath {
         }
 
         if (difVPoints.size()>0) {
-            double gpath = SR.gPath;
+            double gPath = 0;
+            double dpSegments = 0;
+            for (int idSegment = 0; idSegment < segmentList.size(); idSegment++) {
+                gPath += segmentList.get(idSegment).gPath*segmentList.get(idSegment).dp;
+                dpSegments += segmentList.get(idSegment).dp;
+            }
+
+
             for (int idPoint = 2; idPoint < pointList.size()-1; idPoint++) {
                 dPath += CGAlgorithms3D.distance(pointList.get(idPoint - 1).coordinate, pointList.get(idPoint).coordinate);
             }
@@ -280,6 +287,11 @@ public class PropagationPath {
                     + CGAlgorithms3D.distance(pointList.get(pointList.size()-2).coordinate,R);
             SR.dc = SR.d;
             double convex = 1; // if path is convex, delta is positive, otherwise negative
+
+            SR.gPath = gPath/SR.dPath;
+
+            SR.dp = SR.dPath;
+
             // todo handle with unconvex path
             //if (Vector3D.dot(S,R,S,pointList.get(difVPoints.get(0)).coordinate)<0){convex = -1;}
             SR.delta = convex * (SR.dPath - SR.dc);
