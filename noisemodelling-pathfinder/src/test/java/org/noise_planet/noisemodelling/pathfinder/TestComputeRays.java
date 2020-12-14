@@ -1118,7 +1118,7 @@ public class TestComputeRays {
                 new Coordinate(187.5, 48.5, 0),
                 new Coordinate(180.0, 51.6, 0),
                 new Coordinate(172.5, 48.5, 0),
-                new Coordinate(169.4, 41.0, 0)}), 30);
+                new Coordinate(169.4, 41.0, 0)}), 20);
 
         //x1
         mesh.addTopographicPoint(new Coordinate(0, 80, 0));

@@ -25,8 +25,8 @@ public class EvaluateAttenuationCnossosTest {
     // TODO reduce error epsilon
     private static final double ERROR_EPSILON_high = 3;
     private static final double ERROR_EPSILON_very_high = 15;
-    private static final double ERROR_EPSILON_medium = 2;
-    private static final double ERROR_EPSILON_low = 1;
+    private static final double ERROR_EPSILON_medium = 1;
+    private static final double ERROR_EPSILON_low = 0.5;
     private static final double ERROR_EPSILON_very_low = 0.2;
 
     private static final double[] HOM_WIND_ROSE = new double[]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
@@ -753,7 +753,7 @@ public class EvaluateAttenuationCnossosTest {
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
         // impossible geometry in NoiseModelling
-        assertArrayEquals(  new double[]{6.41,14.50,19.52,22.09,22.16,19.28,11.62,-9.31},L, ERROR_EPSILON_high);//p=0.5
+        assertArrayEquals(  new double[]{6.41,14.50,19.52,22.09,22.16,19.28,11.62,-9.31},L, ERROR_EPSILON_medium);//p=0.5
     }
 
 
@@ -802,7 +802,7 @@ public class EvaluateAttenuationCnossosTest {
         computeRays.run(propDataOut);
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});
-        assertArrayEquals(  new double[]{46.09,42.49,38.44,35.97,34.67,33.90,33.09,31.20},L, ERROR_EPSILON_low);//p=0.5
+        assertArrayEquals(  new double[]{46.09,42.49,38.44,35.97,34.67,33.90,33.09,31.20},L, ERROR_EPSILON_very_low);//p=0.5
     }
 
     /**
@@ -931,7 +931,7 @@ public class EvaluateAttenuationCnossosTest {
                 new Coordinate(187.5, 48.5, 0),
                 new Coordinate(180.0, 51.6, 0),
                 new Coordinate(172.5, 48.5, 0),
-                new Coordinate(169.4, 41.0, 0)}), 30);
+                new Coordinate(169.4, 41.0, 0)}), 20);
 
         //x1
         mesh.addTopographicPoint(new Coordinate(0, 80, 0));
@@ -968,19 +968,19 @@ public class EvaluateAttenuationCnossosTest {
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
         rayData.setComputeVerticalDiffraction(true);
-        rayData.setGs(0.9);
+        rayData.setGs(0.5);
 
         PropagationProcessPathData attData = new PropagationProcessPathData();
         attData.setHumidity(70);
         attData.setTemperature(10);
-        attData.setPrime2520(false);
+       // attData.setPrime2520(false);
         ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
-        assertArrayEquals(  new double[]{5.14,12.29,16.39,18.47,18.31,15.97,9.72,-9.92},L, ERROR_EPSILON_very_high);//p=0.5
+        assertArrayEquals(  new double[]{5.14,12.29,16.39,18.47,18.31,15.97,9.72,-9.92},L, ERROR_EPSILON_high);//p=0.5
 
     }
 
