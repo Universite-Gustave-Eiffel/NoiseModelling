@@ -2287,19 +2287,163 @@ public class TestComputeRays {
 
     /**
      * TC26 – Road source with influence of retrodiffraction
-     */
+     * @throws LayerDelaunayError
+     * @throws IOException
+     * */
+    @Test
+    public void TC26() throws LayerDelaunayError, IOException {
 
-    public void TC26() throws LayerDelaunayError {
 
+        GeometryFactory factory = new GeometryFactory();
+        //Scene dimension
+        Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
+
+        //Create obstruction test object
+        MeshBuilder mesh = new MeshBuilder();
+
+        // Add building
+        // screen
+        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+                new Coordinate(74.0, 52.0, 0),
+                new Coordinate(130.0, 60.0, 0),
+                new Coordinate(130.01, 60.01, 0),
+                new Coordinate(74.01, 52.01, 0),
+                new Coordinate(74.0, 52.0, 0)}), 7); // not exacly the same
+
+
+        mesh.finishPolygonFeeding(cellEnvelope);
+
+        //Retrieve Delaunay triangulation of scene
+        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+                mesh.getTriNeighbors(), mesh.getVertices());
+
+        PropagationProcessData rayData = new PropagationProcessData(manager);
+        rayData.addReceiver(new Coordinate(120, 50, 8));
+        rayData.addSource(factory.createPoint(new Coordinate(10, 10, 0.05)));
+        rayData.setComputeHorizontalDiffraction(true);
+        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -10, 100)), 0.0));
+        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -10, 100)), 0.5));
+        rayData.setComputeVerticalDiffraction(true);
+        ComputeRaysOut propDataOut = new ComputeRaysOut(true);
+        ComputeRays computeRays = new ComputeRays(rayData);
+        computeRays.setThreadCount(1);
+        computeRays.run(propDataOut);
+        if(storeGeoJSONRays) {
+            exportRays("target/T26.geojson", propDataOut);
+            KMLDocument.exportScene("target/T26.kml", manager, propDataOut);
+        } else {
+            assertRaysEquals(TestComputeRays.class.getResourceAsStream("T26.geojson"), propDataOut);
+        }
         assertEquals(true, false);
-
     }
 
     /**
-     * TC27 Source located in flat cut with retro-diffraction
-     */
-    public void TC27() throws LayerDelaunayError {
+     * TC27 – Road source with influence of retrodiffraction
+     * @throws LayerDelaunayError
+     * @throws IOException
+     * */
+    @Test
+    public void TC27() throws LayerDelaunayError, IOException {
+        GeometryFactory factory = new GeometryFactory();
+        //Scene dimension
+        Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 
+        //Create obstruction test object
+        MeshBuilder mesh = new MeshBuilder();
+
+        // Add building
+        // screen
+        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+                new Coordinate(114.0, 52.0, 0),
+                new Coordinate(170.0, 60.0, 0),
+                new Coordinate(170.01, 60.01, 0),
+                new Coordinate(114.01, 52.01, 0),
+                new Coordinate(114.0, 52.0, 0)}), 4); // not exacly the same
+
+
+        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
+                new Coordinate(-200, -200, -0.5), // 5
+                new Coordinate(110, -200, -0.5), // 5-6
+                new Coordinate(110, 200, -0.5), // 6-7
+                new Coordinate(-200, 200, -0.5), // 7-8
+                new Coordinate(-200, -200, -0.5) // 8
+        }));
+
+        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
+                new Coordinate(111, -200, 0), // 5
+                new Coordinate(200, -200, 0), // 5-6
+                new Coordinate(200, 200, 0), // 6-7
+                new Coordinate(111, 200, 0), // 7-8
+                new Coordinate(111, -200, 0) // 8
+        }));
+
+      /*  mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
+                new Coordinate(80, 20, -1), //1
+                new Coordinate(110, 20, 0)
+        }));
+        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
+                new Coordinate(110, 20, -1), //2
+                new Coordinate(111, 20, 0)
+        }));
+        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
+                new Coordinate(111, 20, 0), //3
+                new Coordinate(215, 20, 0)
+        }));
+        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
+                new Coordinate(215, 20, 0), //4
+                new Coordinate(215, 80, 0)
+        }));
+        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
+                new Coordinate(215, 80, 0), //5
+                new Coordinate(111, 80, 0)
+        }));
+        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
+                new Coordinate(111, 80, 0), //6
+                new Coordinate(110, 80, -0.5)
+        }));
+        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
+                new Coordinate(110, 80, -0.5), //7
+                new Coordinate(80, 80, -0.5)
+        }));
+        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
+                new Coordinate(80, 80, -0.5), //8
+                new Coordinate(80, 20, -0.5)
+        }));
+        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
+                new Coordinate(110, 20, -0.5), //9
+                new Coordinate(110, 80, -0.5)
+        }));
+        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
+                new Coordinate(111, 20, 0), //10
+                new Coordinate(111, 80, 0)
+        }));
+*/
+        mesh.finishPolygonFeeding(cellEnvelope);
+
+        //Retrieve Delaunay triangulation of scene
+        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+                mesh.getTriNeighbors(), mesh.getVertices());
+
+        PropagationProcessData rayData = new PropagationProcessData(manager);
+
+        rayData.setComputeHorizontalDiffraction(true);
+
+        rayData.addReceiver(new Coordinate(200, 50, 4));
+        rayData.addSource(factory.createPoint(new Coordinate(105, 35, -0.45)));
+
+        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(80, 110, 20, 80)), 0.0));
+        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(110, 215, 20, 80)), 1.0));
+        rayData.setComputeVerticalDiffraction(true);
+        ComputeRaysOut propDataOut = new ComputeRaysOut(true);
+        ComputeRays computeRays = new ComputeRays(rayData);
+        computeRays.setThreadCount(1);
+        computeRays.run(propDataOut);
+        if(storeGeoJSONRays) {
+            exportRays("target/T27.geojson", propDataOut);
+            KMLDocument.exportScene("target/T27.kml", manager, propDataOut);
+        } else {
+            assertRaysEquals(TestComputeRays.class.getResourceAsStream("T27.geojson"), propDataOut);
+        }
         assertEquals(true, false);
 
     }
