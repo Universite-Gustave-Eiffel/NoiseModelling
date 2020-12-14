@@ -70,6 +70,9 @@ public class PropagationProcessData {
     public QueryGeometryStructure sourcesIndex = new QueryRTree();
     /** Sources geometries. Can be LINESTRING or POINT */
     public List<Geometry> sourceGeometries = new ArrayList<>();
+
+
+
     /** Maximum reflexion order */
     public int reflexionOrder = 1;
     /** Compute horizontal diffraction rays over vertical edges */
@@ -168,6 +171,14 @@ public class PropagationProcessData {
 
     public void addReceiver(long pk, Coordinate position, SpatialResultSet rs) {
         addReceiver(pk, position);
+    }
+
+    public int getReflexionOrder() {
+        return reflexionOrder;
+    }
+
+    public void setReflexionOrder(int reflexionOrder) {
+        this.reflexionOrder = reflexionOrder;
     }
 
     public void setComputeHorizontalDiffraction(boolean computeHorizontalDiffraction) {

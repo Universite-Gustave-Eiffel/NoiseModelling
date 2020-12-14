@@ -97,4 +97,9 @@ public class Utils {
         }
     }
 
+
+    public static double[] aWeighting(List<Double> lvls) {
+        return new double[] {lvls.get(0) - 26.2, lvls.get(1) - 16.1, lvls.get(2) - 8.6, lvls.get(3) - 3.2, lvls.get(4) ,
+                lvls.get(5) + 1.2, lvls.get(6) + 1, lvls.get(7)  - 1.1};
+    }
 }

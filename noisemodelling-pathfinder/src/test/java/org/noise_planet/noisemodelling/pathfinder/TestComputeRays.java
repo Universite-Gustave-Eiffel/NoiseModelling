@@ -1769,6 +1769,84 @@ public class TestComputeRays {
 
 
     /**
+     * TC20 -Ground with spatially varying heights and acoustic properties
+     */
+    @Test
+    public void TC20() throws LayerDelaunayError, IOException {
+        GeometryFactory factory = new GeometryFactory();
+
+        //Scene dimension
+        Envelope cellEnvelope = new Envelope(new Coordinate(-250., -250., 0.), new Coordinate(250, 250, 0.));
+
+        //Create obstruction test object
+        MeshBuilder mesh = new MeshBuilder();
+
+        // Add building
+        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+                new Coordinate(167.2, 39.5),
+                new Coordinate(151.6, 48.5),
+                new Coordinate(141.1, 30.3),
+                new Coordinate(156.7, 21.3),
+                new Coordinate(159.7, 26.5),
+                new Coordinate(151.0, 31.5),
+                new Coordinate(155.5, 39.3),
+                new Coordinate(164.2, 34.3),
+                new Coordinate(167.2, 39.5)}), 0);
+
+        //x1
+        mesh.addTopographicPoint(new Coordinate(0, 80, 0));
+        mesh.addTopographicPoint(new Coordinate(225, 80, 0));
+        mesh.addTopographicPoint(new Coordinate(225, -20, 0));
+        mesh.addTopographicPoint(new Coordinate(0, -20, 0));
+        mesh.addTopographicPoint(new Coordinate(120, -20, 0));
+        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
+        mesh.addTopographicPoint(new Coordinate(205, -5, 10));
+        mesh.addTopographicPoint(new Coordinate(205, 75, 10));
+        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
+        //x2
+        mesh.addTopographicPoint(new Coordinate(225, 80, 0));
+        mesh.addTopographicPoint(new Coordinate(225, -20, 0));
+        mesh.addTopographicPoint(new Coordinate(0, -20, 0));
+        mesh.addTopographicPoint(new Coordinate(0, 80, 0));
+        mesh.addTopographicPoint(new Coordinate(120, 80, 0));
+        mesh.addTopographicPoint(new Coordinate(205, -5, 10));
+        mesh.addTopographicPoint(new Coordinate(205, 75, 10));
+        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
+        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
+
+        mesh.finishPolygonFeeding(cellEnvelope);
+
+        //Retrieve Delaunay triangulation of scene
+        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+                mesh.getTriNeighbors(), mesh.getVertices());
+
+        PropagationProcessData rayData = new PropagationProcessData(manager);
+        rayData.addReceiver(new Coordinate(200, 25, 14));
+        rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
+
+        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9));
+        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -100, 100)), 0.5));
+        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2));
+
+        rayData.setComputeHorizontalDiffraction(false);
+        rayData.setComputeVerticalDiffraction(false);
+
+        ComputeRaysOut propDataOut = new ComputeRaysOut(true);
+        ComputeRays computeRays = new ComputeRays(rayData);
+        computeRays.setThreadCount(1);
+        computeRays.run(propDataOut);
+
+        if(storeGeoJSONRays) {
+            exportRays("target/T20.geojson", propDataOut);
+            KMLDocument.exportScene("target/T20.kml", manager, propDataOut);
+        } else {
+            assertRaysEquals(TestComputeRays.class.getResourceAsStream("T20.geojson"), propDataOut);
+        }
+
+    }
+
+
+    /**
      * TC21 - Building on ground with spatially varying heights and acoustic properties
      */
     @Test
@@ -1821,7 +1899,7 @@ public class TestComputeRays {
                 mesh.getTriNeighbors(), mesh.getVertices());
 
         PropagationProcessData rayData = new PropagationProcessData(manager);
-        rayData.addReceiver(new Coordinate(187.05, 25, 14));
+        rayData.addReceiver(new Coordinate(200, 25, 14));
         rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
         rayData.setComputeHorizontalDiffraction(true);
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9));
@@ -2117,8 +2195,8 @@ public class TestComputeRays {
         }), 1.));
 
         rayData.setComputeVerticalDiffraction(true);
-        rayData.setComputeHorizontalDiffraction(false);
-        rayData.reflexionOrder = 1;
+        rayData.setComputeHorizontalDiffraction(true);
+        rayData.setReflexionOrder(1);
 
         rayData.setGs(0.);
 
@@ -2131,9 +2209,9 @@ public class TestComputeRays {
             exportRays("target/T24.geojson", propDataOut);
             KMLDocument.exportScene("target/T24.kml", manager, propDataOut);
         } else {
-            assertRaysEquals(TestComputeRays.class.getResourceAsStream("T24.geojson"), propDataOut);
+           // assertRaysEquals(TestComputeRays.class.getResourceAsStream("T24.geojson"), propDataOut);
         }
-
+        assertEquals(true,false);
     }
 
     /**
@@ -2333,15 +2411,6 @@ public class TestComputeRays {
 
 
 
-    /**
-     * TC20 - Ground with spatially varying heights and acoustic properties
-     */
-
-    public void TC20() throws LayerDelaunayError {
-        //Tables 221 – 222 are not shown in this draft.
-
-        assertEquals(false, true);
-    }
 
 
     /**

@@ -17,7 +17,9 @@ import java.io.IOException;
 import java.util.*;
 
 import static org.junit.Assert.*;
+import static org.noise_planet.noisemodelling.jdbc.Utils.aWeighting;
 import static org.noise_planet.noisemodelling.jdbc.Utils.addArray;
+import static org.noise_planet.noisemodelling.pathfinder.ComputeRays.dbaToW;
 
 public class EvaluateAttenuationCnossosTest {
 
@@ -1100,8 +1102,8 @@ public class EvaluateAttenuationCnossosTest {
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
-        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});
-        assertArrayEquals(  new double[]{10.75+26.2,16.57+16.1,20.81+8.6,24.51+3.2,26.55,26.78-1.2,25.04-1,18.50+1.1},L, ERROR_EPSILON_medium);
+        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
+        assertArrayEquals(  new double[]{10.75,16.57,20.81,24.51,26.55,26.78,25.04,18.50},L, ERROR_EPSILON_medium);
     }
 
     /**
@@ -1172,17 +1174,9 @@ public class EvaluateAttenuationCnossosTest {
         computeRays.run(propDataOut);
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
-        assertArrayEquals(  new double[]{13.62,23.58,30.71,35.68,38.27,38.01,32.98,15.00},L, ERROR_EPSILON_very_high);//p=0.5
+        assertArrayEquals(  new double[]{13.62,23.58,30.71,35.68,38.27,38.01,32.98,15.00},L, ERROR_EPSILON_high);//p=0.5
     }
 
-    private double[] aWeighting(double... lvls) {
-        return new double[] {lvls[0] - 26.2, lvls[1] - 16.1, lvls[2] - 8.6, lvls[3] - 3.2, lvls[4] , lvls[5] + 1.2, lvls[6] + 1, lvls[7]  - 1.1};
-    }
-
-    private double[] aWeighting(List<Double> lvls) {
-        return new double[] {lvls.get(0) - 26.2, lvls.get(1) - 16.1, lvls.get(2) - 8.6, lvls.get(3) - 3.2, lvls.get(4) ,
-                lvls.get(5) + 1.2, lvls.get(6) + 1, lvls.get(7)  - 1.1};
-    }
     /**
      * TC17 - Reflecting barrier on ground with spatially varying heights and acoustic properties
      * reduced receiver height
@@ -1237,7 +1231,7 @@ public class EvaluateAttenuationCnossosTest {
 
         PropagationProcessPathData attData = new PropagationProcessPathData();
         // Push source with sound level
-        rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)), ComputeRays.dbaToW(aWeighting(Collections.nCopies(attData.freq_lvl.size(), 93d))));
+        rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)), dbaToW(aWeighting(Collections.nCopies(attData.freq_lvl.size(), 93d))));
 
         rayData.setComputeHorizontalDiffraction(true);
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9));
@@ -1357,8 +1351,6 @@ public class EvaluateAttenuationCnossosTest {
         //Create obstruction test object
         MeshBuilder mesh = new MeshBuilder();
 
-
-
         // Add building
         mesh.addGeometry(factory.createPolygon(new Coordinate[]{
                 new Coordinate(156, 28),
@@ -1448,6 +1440,82 @@ public class EvaluateAttenuationCnossosTest {
         assertArrayEquals(  new double[]{6.72,14.66,19.34,21.58,21.84,19.00,11.42,-9.38},L, ERROR_EPSILON_very_high);//p=0.5
     }
 
+    /**
+     * TC20 - Ground with spatially varying heights and acoustic properties
+     */
+    @Test
+    public void TC20() throws LayerDelaunayError, IOException {
+        GeometryFactory factory = new GeometryFactory();
+
+        //Scene dimension
+        Envelope cellEnvelope = new Envelope(new Coordinate(-250., -250., 0.), new Coordinate(250, 250, 0.));
+
+        //Create obstruction test object
+        MeshBuilder mesh = new MeshBuilder();
+
+        // Add building
+        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+                new Coordinate(167.2, 39.5),
+                new Coordinate(151.6, 48.5),
+                new Coordinate(141.1, 30.3),
+                new Coordinate(156.7, 21.3),
+                new Coordinate(159.7, 26.5),
+                new Coordinate(151.0, 31.5),
+                new Coordinate(155.5, 39.3),
+                new Coordinate(164.2, 34.3),
+                new Coordinate(167.2, 39.5)}), 0);
+
+        //x1
+        mesh.addTopographicPoint(new Coordinate(0, 80, 0));
+        mesh.addTopographicPoint(new Coordinate(225, 80, 0));
+        mesh.addTopographicPoint(new Coordinate(225, -20, 0));
+        mesh.addTopographicPoint(new Coordinate(0, -20, 0));
+        mesh.addTopographicPoint(new Coordinate(120, -20, 0));
+        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
+        mesh.addTopographicPoint(new Coordinate(205, -5, 10));
+        mesh.addTopographicPoint(new Coordinate(205, 75, 10));
+        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
+        //x2
+        mesh.addTopographicPoint(new Coordinate(225, 80, 0));
+        mesh.addTopographicPoint(new Coordinate(225, -20, 0));
+        mesh.addTopographicPoint(new Coordinate(0, -20, 0));
+        mesh.addTopographicPoint(new Coordinate(0, 80, 0));
+        mesh.addTopographicPoint(new Coordinate(120, 80, 0));
+        mesh.addTopographicPoint(new Coordinate(205, -5, 10));
+        mesh.addTopographicPoint(new Coordinate(205, 75, 10));
+        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
+        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
+
+        mesh.finishPolygonFeeding(cellEnvelope);
+
+        //Retrieve Delaunay triangulation of scene
+        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+                mesh.getTriNeighbors(), mesh.getVertices());
+
+        PropagationProcessData rayData = new PropagationProcessData(manager);
+        rayData.addReceiver(new Coordinate(200, 25, 14));
+        rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
+        rayData.setComputeHorizontalDiffraction(false);
+        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9));
+        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -100, 100)), 0.5));
+        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2));
+
+        rayData.setComputeVerticalDiffraction(false);
+        rayData.setGs(0.9);
+
+        PropagationProcessPathData attData = new PropagationProcessPathData();
+        attData.setHumidity(70);
+        attData.setTemperature(10);
+        attData.setPrime2520(false);
+        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRays computeRays = new ComputeRays(rayData);
+        computeRays.setThreadCount(1);
+        computeRays.run(propDataOut);
+
+        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
+
+        assertArrayEquals(  new double[]{11.21,21.25,28.63,33.86,36.73,36.79,32.17,14},L, ERROR_EPSILON_very_low);//p=0.5
+    }
 
     /**
      * TC21 - Building on ground with spatially varying heights and acoustic properties
@@ -1502,14 +1570,15 @@ public class EvaluateAttenuationCnossosTest {
                 mesh.getTriNeighbors(), mesh.getVertices());
 
         PropagationProcessData rayData = new PropagationProcessData(manager);
-        rayData.addReceiver(new Coordinate(187.05, 25, 14));
+        rayData.addReceiver(new Coordinate(200, 25, 14));
         rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
-        rayData.setComputeHorizontalDiffraction(true);
+
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9));
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -100, 100)), 0.5));
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2));
-
+        rayData.setComputeHorizontalDiffraction(true);
         rayData.setComputeVerticalDiffraction(true);
+        rayData.setReflexionOrder(0);
         rayData.setGs(0.9);
 
         PropagationProcessPathData attData = new PropagationProcessPathData();
@@ -1522,7 +1591,7 @@ public class EvaluateAttenuationCnossosTest {
         computeRays.run(propDataOut);
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
-        assertArrayEquals(  new double[]{10.44,20.58,27.78,33.09,35.84,35.73,30.91,12.48},L, ERROR_EPSILON_very_high);//p=0.5
+        assertArrayEquals(  new double[]{10.44,20.58,27.78,33.09,35.84,35.73,30.91,12.48},L, ERROR_EPSILON_very_high);// Because building height definition is not in accordance with ISO
 
     }
 
@@ -1602,7 +1671,7 @@ public class EvaluateAttenuationCnossosTest {
         computeRays.run(propDataOut);
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
-        assertArrayEquals(  new double[]{-2.96,3.56,6.73,11.17,13.85,13.86,9.48,-7.64},L, ERROR_EPSILON_very_high);//p=0.5
+        assertArrayEquals(  new double[]{-2.96,3.56,6.73,11.17,13.85,13.86,9.48,-7.64},L, ERROR_EPSILON_high); //because we don't take into account this rays
 
     }
 
@@ -1686,7 +1755,7 @@ public class EvaluateAttenuationCnossosTest {
         rayData.addReceiver(new Coordinate(107, 25.95, 4));
         rayData.addSource(factory.createPoint(new Coordinate(38, 14, 1)));
         rayData.setComputeHorizontalDiffraction(true);
-        // Create porus surface as defined by the test:
+        // Create porous surface as defined by the test:
         // The surface of the earth berm is porous (G = 1).
         rayData.addSoilType(new GeoWithSoilType(factory.createPolygon(new Coordinate[]{
                 new Coordinate(59.6, -9.87, 0), // 5
@@ -1807,8 +1876,8 @@ public class EvaluateAttenuationCnossosTest {
         }), 1.));
 
         rayData.setComputeVerticalDiffraction(true);
-        rayData.setComputeHorizontalDiffraction(false);
-        rayData.reflexionOrder = 1;
+        rayData.setComputeHorizontalDiffraction(true);
+        rayData.setReflexionOrder(1);
 
         rayData.setGs(0.);
 
@@ -1963,7 +2032,7 @@ public class EvaluateAttenuationCnossosTest {
 
         double[] roadLvl = new double[]{25.65, 38.15, 54.35, 60.35, 74.65, 66.75, 59.25, 53.95};
         for(int i = 0; i < roadLvl.length; i++) {
-            roadLvl[i] = ComputeRays.dbaToW(roadLvl[i]);
+            roadLvl[i] = dbaToW(roadLvl[i]);
         }
 
         DirectPropagationProcessData rayData = new DirectPropagationProcessData(manager);
@@ -1990,7 +2059,7 @@ public class EvaluateAttenuationCnossosTest {
         // Second source has not been computed because at best it would only increase the received level of only 0.0004 dB
         assertEquals(1, propDataOut.receiversAttenuationLevels.size());
 
-        assertEquals(44.07, ComputeRays.wToDba(ComputeRays.sumArray(roadLvl.length, ComputeRays.dbaToW(propDataOut.getVerticesSoundLevel().get(0).value))), 0.1);
+        assertEquals(44.07, ComputeRays.wToDba(ComputeRays.sumArray(roadLvl.length, dbaToW(propDataOut.getVerticesSoundLevel().get(0).value))), 0.1);
     }
 
     @Test
@@ -2031,7 +2100,7 @@ public class EvaluateAttenuationCnossosTest {
 
         double[] roadLvl = new double[]{25.65, 38.15, 54.35, 60.35, 74.65, 66.75, 59.25, 53.95};
         for(int i = 0; i < roadLvl.length; i++) {
-            roadLvl[i] = ComputeRays.dbaToW(roadLvl[i]);
+            roadLvl[i] = dbaToW(roadLvl[i]);
         }
 
         DirectPropagationProcessData rayData = new DirectPropagationProcessData(manager);
@@ -2140,7 +2209,7 @@ public class EvaluateAttenuationCnossosTest {
 
         double[] roadLvl = new double[]{25.65, 38.15, 54.35, 60.35, 74.65, 66.75, 59.25, 53.95};
         for(int i = 0; i < roadLvl.length; i++) {
-            roadLvl[i] = ComputeRays.dbaToW(roadLvl[i]);
+            roadLvl[i] = dbaToW(roadLvl[i]);
         }
 
         DirectPropagationProcessData rayData = new DirectPropagationProcessData(manager);
@@ -2164,7 +2233,7 @@ public class EvaluateAttenuationCnossosTest {
 
         assertEquals(1, propDataOut.receiversAttenuationLevels.size());
 
-        assertEquals(14.6, ComputeRays.wToDba(ComputeRays.sumArray(roadLvl.length, ComputeRays.dbaToW(propDataOut.getVerticesSoundLevel().get(0).value))), 0.1);
+        assertEquals(14.6, ComputeRays.wToDba(ComputeRays.sumArray(roadLvl.length, dbaToW(propDataOut.getVerticesSoundLevel().get(0).value))), 0.1);
     }
 
 
@@ -2192,7 +2261,7 @@ public class EvaluateAttenuationCnossosTest {
         @Override
         public double[] computeAttenuation(PropagationProcessPathData pathData, long sourceId, double sourceLi, long receiverId, List<PropagationPath> propagationPath) {
             double[] attenuation = super.computeAttenuation(pathData, sourceId, sourceLi, receiverId, propagationPath);
-            double[] soundLevel = ComputeRays.wToDba(ComputeRays.multArray(processData.wjSources.get((int)sourceId), ComputeRays.dbaToW(attenuation)));
+            double[] soundLevel = ComputeRays.wToDba(ComputeRays.multArray(processData.wjSources.get((int)sourceId), dbaToW(attenuation)));
             return soundLevel;
         }
     }
