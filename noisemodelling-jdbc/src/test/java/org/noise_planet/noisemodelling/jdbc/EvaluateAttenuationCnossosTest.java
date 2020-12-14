@@ -1876,7 +1876,7 @@ public class EvaluateAttenuationCnossosTest {
         }), 1.));
 
         rayData.setComputeVerticalDiffraction(true);
-        rayData.setComputeHorizontalDiffraction(true);
+        rayData.setComputeHorizontalDiffraction(false);
         rayData.setReflexionOrder(1);
 
         rayData.setGs(0.);
@@ -1893,7 +1893,8 @@ public class EvaluateAttenuationCnossosTest {
         assertEquals(1, propDataOut.getVerticesSoundLevel().size());
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93 - 26.2, 93 - 16.1,
                 93 - 8.6, 93 - 3.2, 93, 93 + 1.2, 93 + 1.0, 93 - 1.1});
-        assertArrayEquals(new double[]{14.31, 21.69, 27.76, 31.52, 31.49, 29.18, 25.39, 16.58}, L, ERROR_EPSILON_high);//p=0.5
+        //IL Y A UNE ERREUR DANS LA NORME AVEC LE BATIMENT 2, SI ON LE SUPPRIME LES RESULTATS SONT EQUIVALENTS
+        assertArrayEquals(new double[]{14.31, 21.69, 27.76, 31.52, 31.49, 29.18, 25.39, 16.58}, L, ERROR_EPSILON_high);
 
     }
 
