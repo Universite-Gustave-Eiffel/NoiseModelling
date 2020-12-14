@@ -5,6 +5,7 @@ import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 import org.noise_planet.noisemodelling.pathfinder.*;
+import org.noise_planet.noisemodelling.pathfinder.utils.KMLDocument;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOut;
 import org.noise_planet.noisemodelling.propagation.EvaluateAttenuationCnossos;
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
@@ -1897,6 +1898,77 @@ public class EvaluateAttenuationCnossosTest {
         assertArrayEquals(new double[]{14.31, 21.69, 27.76, 31.52, 31.49, 29.18, 25.39, 16.58}, L, ERROR_EPSILON_high);
 
     }
+
+    /**
+     * – Replacement of the earth-berm by a barrier
+     * @throws LayerDelaunayError
+     * @throws IOException
+     */
+    @Test
+    public void TC25() throws LayerDelaunayError, IOException {
+        GeometryFactory factory = new GeometryFactory();
+
+        //Scene dimension
+        Envelope cellEnvelope = new Envelope(new Coordinate(-250., -250., 0.), new Coordinate(250, 250, 0.));
+
+        //Create obstruction test object
+        MeshBuilder mesh = new MeshBuilder();
+
+
+        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+                new Coordinate(75, 34, 0),
+                new Coordinate(110, 34, 0),
+                new Coordinate(110, 26, 0),
+                new Coordinate(75, 26, 0),
+                new Coordinate(75, 34, 0)}), 9);
+
+        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+                new Coordinate(83, 18, 0),
+                new Coordinate(118, 18, 0),
+                new Coordinate(118, 10, 0),
+                new Coordinate(83, 10, 0),
+                new Coordinate(83, 18, 0)}), 8);
+
+        // screen
+        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+                new Coordinate(59.19, 24.47, 0),
+                new Coordinate(64.17, 6.95, 0),
+                new Coordinate(64.171, 6.951, 0),
+                new Coordinate(59.191, 24.471, 0),
+                new Coordinate(59.19, 24.47, 0)}), 5);
+
+        mesh.finishPolygonFeeding(cellEnvelope);
+
+        //Retrieve Delaunay triangulation of scene
+        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+                mesh.getTriNeighbors(), mesh.getVertices());
+
+        PropagationProcessData rayData = new PropagationProcessData(manager);
+        rayData.addReceiver(new Coordinate(106, 18.5, 4));
+        rayData.addSource(factory.createPoint(new Coordinate(38, 14, 1)));
+        rayData.setComputeHorizontalDiffraction(true);
+
+        rayData.setComputeVerticalDiffraction(true);
+
+        rayData.setReflexionOrder(1);
+
+        rayData.setGs(0.);
+
+        PropagationProcessPathData attData = new PropagationProcessPathData();
+        attData.setHumidity(70);
+        attData.setTemperature(10);
+        attData.setPrime2520(false);
+        //attData.setWindRose(HOM_WIND_ROSE);
+        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRays computeRays = new ComputeRays(rayData);
+        computeRays.setThreadCount(1);
+        computeRays.run(propDataOut);
+
+        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
+        //MANQUE DIFFRACTIONS HORIZONTALES
+        assertArrayEquals(  new double[]{17.96,25.65,30.56,33.22,33.48,31.52,27.51,17.80},L, ERROR_EPSILON_very_high);//p=0.5
+    }
+
 
     /**
      * TC28 Propagation over a large distance with many buildings between source and

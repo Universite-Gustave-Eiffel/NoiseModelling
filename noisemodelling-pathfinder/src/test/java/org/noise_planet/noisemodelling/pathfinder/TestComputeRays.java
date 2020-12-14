@@ -2215,6 +2215,96 @@ public class TestComputeRays {
     }
 
     /**
+     * – Replacement of the earth-berm by a barrier
+     * @throws LayerDelaunayError
+     * @throws IOException
+     */
+    @Test
+    public void TC25() throws LayerDelaunayError, IOException {
+        GeometryFactory factory = new GeometryFactory();
+
+        //Scene dimension
+        Envelope cellEnvelope = new Envelope(new Coordinate(-250., -250., 0.), new Coordinate(250, 250, 0.));
+
+        //Create obstruction test object
+        MeshBuilder mesh = new MeshBuilder();
+
+
+        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+                new Coordinate(75, 34, 0),
+                new Coordinate(110, 34, 0),
+                new Coordinate(110, 26, 0),
+                new Coordinate(75, 26, 0),
+                new Coordinate(75, 34, 0)}), 9);
+
+        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+                new Coordinate(83, 18, 0),
+                new Coordinate(118, 18, 0),
+                new Coordinate(118, 10, 0),
+                new Coordinate(83, 10, 0),
+                new Coordinate(83, 18, 0)}), 8);
+
+        // screen
+        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+                new Coordinate(59.19, 24.47, 0),
+                new Coordinate(64.17, 6.95, 0),
+                new Coordinate(64.171, 6.951, 0),
+                new Coordinate(59.191, 24.471, 0),
+                new Coordinate(59.19, 24.47, 0)}), 5);
+
+        mesh.finishPolygonFeeding(cellEnvelope);
+
+        //Retrieve Delaunay triangulation of scene
+        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+                mesh.getTriNeighbors(), mesh.getVertices());
+
+        PropagationProcessData rayData = new PropagationProcessData(manager);
+        rayData.addReceiver(new Coordinate(106, 18.5, 4));
+        rayData.addSource(factory.createPoint(new Coordinate(38, 14, 1)));
+        rayData.setComputeHorizontalDiffraction(true);
+
+        rayData.setComputeVerticalDiffraction(true);
+        rayData.maxSrcDist = 1500;
+        rayData.setReflexionOrder(1);
+
+        rayData.setGs(0.);
+
+        ComputeRaysOut propDataOut = new ComputeRaysOut(true);
+        ComputeRays computeRays = new ComputeRays(rayData);
+        computeRays.setThreadCount(1);
+        computeRays.run(propDataOut);
+
+        if(storeGeoJSONRays) {
+            exportRays("target/T25.geojson", propDataOut);
+            KMLDocument.exportScene("target/T25.kml", manager, propDataOut);
+        } else {
+           // assertRaysEquals(TestComputeRays.class.getResourceAsStream("T25.geojson"), propDataOut);
+        }
+        assertEquals(true,false); // miss some horizontal diffraction
+    }
+
+
+
+    /**
+     * TC26 – Road source with influence of retrodiffraction
+     */
+
+    public void TC26() throws LayerDelaunayError {
+
+        assertEquals(true, false);
+
+    }
+
+    /**
+     * TC27 Source located in flat cut with retro-diffraction
+     */
+    public void TC27() throws LayerDelaunayError {
+
+        assertEquals(true, false);
+
+    }
+
+    /**
      * TC28 Propagation over a large distance with many buildings between source and
      * receiver
      */
@@ -2413,33 +2503,6 @@ public class TestComputeRays {
 
 
 
-    /**
-     * TC25 – Replacement of the earth-berm by a barrier
-     */
-    public void TC25() throws LayerDelaunayError {
-
-        assertEquals(true, false);
-
-    }
-
-    /**
-     * TC26 – Road source with influence of retrodiffraction
-     */
-
-    public void TC26() throws LayerDelaunayError {
-
-        assertEquals(true, false);
-
-    }
-
-    /**
-     * TC27 Source located in flat cut with retro-diffraction
-     */
-    public void TC27() throws LayerDelaunayError {
-
-        assertEquals(true, false);
-
-    }
 
     /**
      * Test vertical edge diffraction ray computation.
