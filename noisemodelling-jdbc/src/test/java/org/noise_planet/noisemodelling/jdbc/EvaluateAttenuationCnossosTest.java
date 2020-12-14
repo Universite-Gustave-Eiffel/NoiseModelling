@@ -1966,9 +1966,150 @@ public class EvaluateAttenuationCnossosTest {
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
         //MANQUE DIFFRACTIONS HORIZONTALES
-        assertArrayEquals(  new double[]{17.96,25.65,30.56,33.22,33.48,31.52,27.51,17.80},L, ERROR_EPSILON_very_high);//p=0.5
+        assertArrayEquals(  new double[]{17.50,25.65,30.56,33.22,33.48,31.52,27.51,17.80},L, ERROR_EPSILON_very_high);//p=0.5
     }
 
+
+    /**
+     * TC26 – Road source with influence of retrodiffraction
+     * @throws LayerDelaunayError
+     * @throws IOException
+     * */
+    @Test
+    public void TC26() throws LayerDelaunayError, IOException {
+
+
+        GeometryFactory factory = new GeometryFactory();
+        //Scene dimension
+        Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
+
+        //Create obstruction test object
+        MeshBuilder mesh = new MeshBuilder();
+
+        // Add building
+        // screen
+        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+                new Coordinate(74.0, 52.0, 0),
+                new Coordinate(130.0, 60.0, 0),
+                new Coordinate(130.01, 60.01, 0),
+                new Coordinate(74.01, 52.01, 0),
+                new Coordinate(74.0, 52.0, 0)}), 7); // not exacly the same
+
+
+        mesh.finishPolygonFeeding(cellEnvelope);
+
+        //Retrieve Delaunay triangulation of scene
+        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+                mesh.getTriNeighbors(), mesh.getVertices());
+
+        PropagationProcessData rayData = new PropagationProcessData(manager);
+        rayData.addReceiver(new Coordinate(120, 50, 8));
+        rayData.addSource(factory.createPoint(new Coordinate(10, 10, 0.05)));
+        rayData.setComputeHorizontalDiffraction(true);
+        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -10, 100)), 0.0));
+        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -10, 100)), 0.5));
+        rayData.setComputeVerticalDiffraction(true);
+        rayData.setComputeHorizontalDiffraction(true);
+
+        rayData.setComputeVerticalDiffraction(true);
+
+        rayData.setReflexionOrder(1);
+
+        rayData.setGs(0.);
+
+        PropagationProcessPathData attData = new PropagationProcessPathData();
+        attData.setHumidity(70);
+        attData.setTemperature(10);
+        attData.setPrime2520(false);
+        //attData.setWindRose(HOM_WIND_ROSE);
+        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRays computeRays = new ComputeRays(rayData);
+        computeRays.setThreadCount(1);
+        computeRays.run(propDataOut);
+
+        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
+
+
+        assertArrayEquals(  new double[]{17.50,27.52,34.89,40.14,43.10,43.59,40.55,29.15},L, ERROR_EPSILON_high);//p=0.5
+    }
+
+
+    /**
+     * TC27 – Road source with influence of retrodiffraction
+     * @throws LayerDelaunayError
+     * @throws IOException
+     * */
+    @Test
+    public void TC27() throws LayerDelaunayError, IOException {
+        GeometryFactory factory = new GeometryFactory();
+        //Scene dimension
+        Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
+
+        //Create obstruction test object
+        MeshBuilder mesh = new MeshBuilder();
+
+        // Add building
+        // screen
+        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+                new Coordinate(114.0, 52.0, 0),
+                new Coordinate(170.0, 60.0, 0),
+                new Coordinate(170.01, 60.01, 0),
+                new Coordinate(114.01, 52.01, 0),
+                new Coordinate(114.0, 52.0, 0)}), 4); // not exacly the same
+
+
+        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
+                new Coordinate(-200, -200, -0.5), // 5
+                new Coordinate(110, -200, -0.5), // 5-6
+                new Coordinate(110, 200, -0.5), // 6-7
+                new Coordinate(-200, 200, -0.5), // 7-8
+                new Coordinate(-200, -200, -0.5) // 8
+        }));
+
+        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
+                new Coordinate(111, -200, 0), // 5
+                new Coordinate(200, -200, 0), // 5-6
+                new Coordinate(200, 200, 0), // 6-7
+                new Coordinate(111, 200, 0), // 7-8
+                new Coordinate(111, -200, 0) // 8
+        }));
+
+
+        mesh.finishPolygonFeeding(cellEnvelope);
+
+        //Retrieve Delaunay triangulation of scene
+        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+                mesh.getTriNeighbors(), mesh.getVertices());
+
+        PropagationProcessData rayData = new PropagationProcessData(manager);
+        rayData.addReceiver(new Coordinate(200, 50, 4));
+        rayData.addSource(factory.createPoint(new Coordinate(105, 35, -0.45)));
+
+        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(80, 110, 20, 80)), 0.0));
+        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(110, 215, 20, 80)), 1.0));
+        rayData.setComputeHorizontalDiffraction(true);
+
+        rayData.setComputeVerticalDiffraction(true);
+
+        rayData.setReflexionOrder(1);
+
+        rayData.setGs(0.);
+
+        PropagationProcessPathData attData = new PropagationProcessPathData();
+        attData.setHumidity(70);
+        attData.setTemperature(10);
+        attData.setPrime2520(false);
+        //attData.setWindRose(HOM_WIND_ROSE);
+        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRays computeRays = new ComputeRays(rayData);
+        computeRays.setThreadCount(1);
+        computeRays.run(propDataOut);
+
+        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
+
+        assertArrayEquals(  new double[]{16.84,26.97,34.79,40.23,38.57,38.58,39.36,29.60},L, ERROR_EPSILON_very_high);//p=0.5
+
+    }
 
     /**
      * TC28 Propagation over a large distance with many buildings between source and

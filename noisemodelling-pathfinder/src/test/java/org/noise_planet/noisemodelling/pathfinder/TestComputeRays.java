@@ -2377,47 +2377,7 @@ public class TestComputeRays {
                 new Coordinate(111, -200, 0) // 8
         }));
 
-      /*  mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
-                new Coordinate(80, 20, -1), //1
-                new Coordinate(110, 20, 0)
-        }));
-        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
-                new Coordinate(110, 20, -1), //2
-                new Coordinate(111, 20, 0)
-        }));
-        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
-                new Coordinate(111, 20, 0), //3
-                new Coordinate(215, 20, 0)
-        }));
-        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
-                new Coordinate(215, 20, 0), //4
-                new Coordinate(215, 80, 0)
-        }));
-        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
-                new Coordinate(215, 80, 0), //5
-                new Coordinate(111, 80, 0)
-        }));
-        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
-                new Coordinate(111, 80, 0), //6
-                new Coordinate(110, 80, -0.5)
-        }));
-        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
-                new Coordinate(110, 80, -0.5), //7
-                new Coordinate(80, 80, -0.5)
-        }));
-        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
-                new Coordinate(80, 80, -0.5), //8
-                new Coordinate(80, 20, -0.5)
-        }));
-        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
-                new Coordinate(110, 20, -0.5), //9
-                new Coordinate(110, 80, -0.5)
-        }));
-        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
-                new Coordinate(111, 20, 0), //10
-                new Coordinate(111, 80, 0)
-        }));
-*/
+
         mesh.finishPolygonFeeding(cellEnvelope);
 
         //Retrieve Delaunay triangulation of scene
