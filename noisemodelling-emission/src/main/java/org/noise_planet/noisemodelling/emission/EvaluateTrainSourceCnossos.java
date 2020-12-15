@@ -247,7 +247,7 @@ public class EvaluateTrainSourceCnossos {
         return base + speedIncrement * Math.log10(speed / speedRef);
     }
 
-
+    /*Todo 18 freq to 24*/
     private static Double getNoiseLvldBa(double NoiseLvl,  int freq){
         double LvlCorrectionA;
         switch (freq) {
@@ -311,21 +311,11 @@ public class EvaluateTrainSourceCnossos {
         return NoiseLvl+LvlCorrectionA;
     }
 
-
-    /** compute Noise Level from flow_rate and speed **/
-    private static Double Vperhour2NoiseLevel(double NoiseLevel, double vperhour, double speed) {
-        if (speed > 0 && vperhour !=0) {
-            return NoiseLevel + 10 * Math.log10(vperhour / (1000 * speed));
-        }else{
-            return 0.;
-        }
-    }
-
-
     /** get noise level source from number of vehicule **/
     private static Double getNoiseLvlFinal(double base, double numbersource, int numVeh) {
         return base + 10 * Math.log10(numbersource*numVeh);
     }
+
     // https://github.com/mobilesec/timeseries-signal-processing/blob/master/Interpolation.java
     public static final double[] interpLinear(double[] x, double[] y, double[] xi) throws IllegalArgumentException {
 
@@ -377,19 +367,24 @@ public class EvaluateTrainSourceCnossos {
 
     /**
      * Rail noise evaluation.
-     * @param parameters Noise emission parameters
+     * @param trainParameters Noise emission parameters
      * @return Noise level in dB
      */
 
-    public static double[] evaluate(TrainParametersCnossos parameters) {
-        final int freqParam = parameters.getFreqParam();
-        final int spectreVer = parameters.getSpectreVer();
+     static double[] evaluate(TrainParametersCnossos trainParameters, RailParametersCnossos railParameters) {
+        final int freqParam = trainParameters.getFreqParam();
+        final int spectreVer = trainParameters.getSpectreVer();
+
         int nFreq = getFreqInd(freqParam);
 
-        String typeTrain = parameters.getTypeTrain();
-        int railRoughnessId = parameters.getRailRoughness();
-        int trackTransferId = parameters.getTrackTransfer();
-        double speed = parameters.getSpeed();
+        String typeTrain = trainParameters.getTypeEng();
+        String typeWag = trainParameters.getTypeWag();
+        double speedTrain = trainParameters.getSpeed();
+        double speedTrack = railParameters.getSpeed();
+        double speed = min(speedTrain,speedTrack);
+
+        int railRoughnessId = railParameters.getRailRoughness();
+        int trackTransferId = railParameters.getTrackTransfer();
         int axlesPerVeh = getAxlesPerVeh(typeTrain,spectreVer);
 
         //  Rolling noise calcul
@@ -424,10 +419,9 @@ public class EvaluateTrainSourceCnossos {
                 }
             }
             LWSpectreTot[idFreq] = 10*Math.log10(Math.pow(10,LWSpectreA[idFreq]/10)+Math.pow(10,LWSpectreB[idFreq]/10));
-        }
+        } //TODO ne pas sommer les spectre A et B
         return LWSpectreTot;
     }
-
     private static double[] evaluateLWRoll(String typeTrain, int railRoughnessId, double speed,int trackTransferId, int spectreVer, int axlesPerVeh) {
         double [] trackTransfer = new double[24];
         double [] LWTr = new double[24];
@@ -444,7 +438,6 @@ public class EvaluateTrainSourceCnossos {
         }
         return LWRoll;
     }
-
     private static double[] evaluateRoughnessLtotFreq(String typeTrain, int railRoughnessId, double speed, int spectreVer) {
 
         double[] roughnessLtotLambda = new double[32];
@@ -465,6 +458,11 @@ public class EvaluateTrainSourceCnossos {
         }
         return roughnessLtotFreq;
     }
+
+//    /** compute Noise Level from flow_rate and speed @return**/
+//    public static double evaluateLm(double Lw, double Q, double speed, int idFreq) {
+//        return Lw+ 10*Math.log10(Q/(1000*speed));
+//    }
 
 
 }

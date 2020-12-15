@@ -17,28 +17,109 @@ public class EvaluateTrainSourceCNOSSOSTest {
     @Test
     public void Test_X_TER_bicaisse_D() {
         String vehCat = "X-TER-bicaisse-D";
-        int vehicleSpeed = 160;
+        double vehicleSpeed = 160;
         double vehiclePerHour = 1;
-        int vehPerTrain = 2; // use in rolling noise
-
+        int vehPerTrain = 2;
         int trackTransfer = 4;
         int railRoughness = 4;
+        double vMaxInfra = 160;
 
-        // double expectedValues = 75.9991;
-
-        double[][] LW0m = new double[24][];
-        double[][] LW4m = new double[24][];
-
+        double[][] LW = new double[24][];
         for (int idFreq = 0; idFreq < FREQUENCIES.length; idFreq++) {
             int sourceHeight = 0;
-            TrainParametersCnossos parameters = new TrainParametersCnossos(vehCat, vehicleSpeed, vehiclePerHour,
-                    vehPerTrain, trackTransfer,railRoughness, sourceHeight, FREQUENCIES[idFreq]);
-            LW0m[idFreq] = EvaluateTrainSourceCnossos.evaluate(parameters);
+            TrainParametersCnossos trainParameters = new TrainParametersCnossos(vehCat, "", vehPerTrain,
+                    vehicleSpeed, vehiclePerHour, 0, 0, sourceHeight, FREQUENCIES[idFreq]);
 
-            sourceHeight = 1;
-            parameters = new TrainParametersCnossos(vehCat, vehicleSpeed, vehiclePerHour,
-                    vehPerTrain, trackTransfer,railRoughness, sourceHeight, FREQUENCIES[idFreq]);
-            LW4m[idFreq] = EvaluateTrainSourceCnossos.evaluate(parameters);
+            RailParametersCnossos railParameters = new RailParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
+                    0, 0, 0, 0,FREQUENCIES[idFreq]);
+
+            LW[idFreq] = EvaluateTrainSourceCnossos.evaluate(trainParameters, railParameters);
+        }
+    }
+
+    @Test
+    public void Test_Plamade_TGV_DUPLEX(){
+        // N_FERROVIAIRE_TRAFIC
+        String ENGMOTEUR = "TGV-DUPLEX-motrice";
+        String TYPVOITWAG = "TGV-DUPLEX-voiture-1";
+        double VMAX = 320;
+        int NBVOIWAG = 2;
+        double TDIURNE = 1;
+        double TSOIR = 1;
+        double TNUIT = 1;
+
+        // N_FERROVIAIRE_TRONCON_L
+        double VMAXINFRA = 320;
+        String BASEVOIE = "B"; // CHAR or STRING plamade convert to int
+        String RUGOSITE = "M"; // CHAR or STRING plamade
+        String SEMELLE = "M"; // CHAR or STRING plamade
+        String PROTCTSUP = "N"; // CHAR or STRING plamade
+        String JOINTRAIL = "N"; // CHAR or STRING plamade
+        String COURBURE = "N"; // CHAR or STRING plamade
+        // convert plamade format to NoiseModelling format
+
+        int trackBase;
+        switch (BASEVOIE) {
+            case "B":trackBase = 0;break;
+            case "S":trackBase = 0;break;
+            case "L":trackBase = 0;break;
+            case "N":trackBase = 0;break;
+            case "T":trackBase = 0;break;
+            case "O":trackBase = 0;break;
+            default:trackBase = 0;
+        }
+        int railRoughness;
+        switch (RUGOSITE) {
+            case "E":railRoughness = 0;break;
+            case "M":railRoughness = 0;break;
+            case "N":railRoughness = 0;break;
+            case "B":railRoughness = 0;break;
+            default:railRoughness = 0;
+        }
+        int railPad;
+        switch (SEMELLE) {
+            case "S":railPad = 0;break;
+            case "M":railPad = 0;break;
+            case "N":railPad = 0;break;
+            default:railPad = 0;
+        }
+        int additionalMeasures;
+        switch (PROTCTSUP) {
+            case "N":additionalMeasures = 0;break;
+            case "D":additionalMeasures = 0;break;
+            case "B":additionalMeasures = 0;break;
+            case "A":additionalMeasures = 0;break;
+            case "E":additionalMeasures = 0;break;
+            case "O":additionalMeasures = 0;break;
+            default:additionalMeasures = 0;
+        }
+        int railJoints;
+        switch (JOINTRAIL) {
+            case "N":railJoints = 0;break;
+            case "S":railJoints = 0;break;
+            case "D":railJoints = 0;break;
+            case "M":railJoints = 0;break;
+            default:railJoints = 0;
+        }
+        int curvate;
+        switch (COURBURE) {
+            case "N":curvate = 0;break;
+            case "L":curvate = 0;break;
+            case "M":curvate = 0;break;
+            case "H":curvate = 0;break;
+            default:curvate = 0;
+        }
+
+        double[][] LW = new double[24][];
+        for (int idFreq = 0; idFreq < FREQUENCIES.length; idFreq++) {
+            int sourceHeight = 0;
+            TrainParametersCnossos trainParameters = new TrainParametersCnossos(ENGMOTEUR, TYPVOITWAG, NBVOIWAG,
+                    VMAX, TDIURNE, TSOIR, TNUIT, sourceHeight, FREQUENCIES[idFreq]);
+
+            RailParametersCnossos railParameters = new RailParametersCnossos(VMAXINFRA, trackBase, railRoughness,
+                    railPad, additionalMeasures, railJoints, curvate,FREQUENCIES[idFreq]);
+
+            LW[idFreq] = EvaluateTrainSourceCnossos.evaluate(trainParameters, railParameters);
         }
     }
 }

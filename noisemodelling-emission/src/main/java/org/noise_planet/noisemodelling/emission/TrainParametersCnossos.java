@@ -1,13 +1,16 @@
 package org.noise_planet.noisemodelling.emission;
 
 public class TrainParametersCnossos {
-    private String typeTrain;
-    private double vehPerHour;
+    private String typeEng;
+    private String typeWag;
+    private int nbWag;
 
     private double speed;
-    private int numVeh;
-    private int trackTransfer;
-    private int railRoughness;
+
+    private double tDay;
+    private double tEvenig;
+    private double tNight;
+
     private int height;
     private final int FreqParam;
 
@@ -24,63 +27,81 @@ public class TrainParametersCnossos {
         return this.spectreVer;
     }
 
-    public void setTypeTrain(String typeTrain) {
-        this.typeTrain = typeTrain;
+    public void setTypeEng(String typeEng) {
+        this.typeEng = typeEng;
+    }
+    public void setTypeWag(String typeWag) {
+        this.typeWag = typeWag;
+    }
+    public void setNbWg(int nbWag) {
+        this.nbWag = nbWag;
     }
 
     public void setSpeed(double speed) {
         this.speed = speed;
     }
-    public void setTrackTransfer(int trackTransfer) {
-        this.trackTransfer = trackTransfer;
+
+    public void setTDay(double tDay) {
+        this.tDay = tDay;
     }
-    public void setRailRoughness(int railRoughness) {
-        this.railRoughness = railRoughness;
+    public void setTEvening(double tEvenig) {
+        this.tEvenig = tEvenig;
     }
-    public void setVehPerHour(double vehPerHour) {
-        this.vehPerHour = vehPerHour;
+    public void setTNight(double tNight) {
+        this.tNight = tNight;
     }
-    public void setNumVeh(int numVeh) {
-        this.numVeh = numVeh;
-    }
+
+
     public void setHeight(int height) {
         this.height = height;
     }
 
-
-    public String getTypeTrain() {
-        return typeTrain;
+    public String getTypeEng() {
+        return typeEng;
     }
+    public String getTypeWag() {
+        return typeWag;
+    }
+    public int getNbWg() {
+        return nbWag;
+    }
+
     public double getSpeed() {
         return speed;
     }
 
-    public int getTrackTransfer() {
-        return trackTransfer;
+    public double getTDay() {
+        return tDay;
     }
-    public int getRailRoughness() {
-        return railRoughness;
+    public double getTEvening() {
+        return tEvenig;
+    }
+    public double getTNight() {
+        return tNight;
     }
 
     public int getHeight() {
         return height;
     }
+
     public int getFreqParam() {
         return FreqParam;
     }
 
-    public TrainParametersCnossos(String typeTrain, double speed,  double vehPerHour, int numVeh, int trackTransfer, int railRoughness, int height,int freqParam) {
+    public TrainParametersCnossos(String tpeEngine, String typeWag, int nbWag, double speed,
+                                  double tDay, double tEvenig, double tNight, int height,int freqParam) {
 
-       setTypeTrain(typeTrain);
-       this.FreqParam = Math.max(0, freqParam);
+        setTypeEng(tpeEngine);
+        setTypeWag(typeWag);
+        setNbWg(nbWag);
 
-       setSpeed(speed);
-       setVehPerHour(vehPerHour);
-       setNumVeh(numVeh);
+        setSpeed(speed);
 
-       setTrackTransfer(trackTransfer);
-       setRailRoughness(railRoughness);
+        setTDay(tDay);
+        setTEvening(tEvenig);
+        setTNight(tNight);
 
-       setHeight(height);
+        setHeight(height);
+        this.FreqParam = Math.max(0, freqParam);
     }
 }
