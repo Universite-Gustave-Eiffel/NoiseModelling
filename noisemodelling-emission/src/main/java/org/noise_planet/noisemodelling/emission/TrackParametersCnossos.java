@@ -1,6 +1,6 @@
 package org.noise_planet.noisemodelling.emission;
 
-public class RailParametersCnossos {
+public class TrackParametersCnossos{
 
     private double speed;
     private int trackTransfer;
@@ -100,10 +100,10 @@ public class RailParametersCnossos {
         return FreqParam;
     }
 
-    public RailParametersCnossos( double speed, int trackTransfer, int railRoughness,int railPad,
+    public TrackParametersCnossos( double speed, int trackTransfer, int railRoughness,int railPad,
                                   int additionalMeasures, int railJoints, int curvate, int freqParam) {
 
-
+        // Todo Impact noise / Bridge Constant
        setSpeed(speed);
        setTrackTransfer(trackTransfer);
        setRailRoughness(railRoughness);

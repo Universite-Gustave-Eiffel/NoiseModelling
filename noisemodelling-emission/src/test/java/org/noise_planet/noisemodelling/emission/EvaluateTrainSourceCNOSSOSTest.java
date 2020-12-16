@@ -15,7 +15,7 @@ public class EvaluateTrainSourceCNOSSOSTest {
     private static final int[] FREQUENCIES = new int[]{50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300, 8000, 10000};
 
     @Test
-    public void Test_X_TER_bicaisse_D() {
+    public void Test_X_TER_bicaisse_D() { // Todo train = vehicule / Rail = Track
         String vehCat = "X-TER-bicaisse-D";
         double vehicleSpeed = 160;
         double vehiclePerHour = 1;
@@ -27,21 +27,21 @@ public class EvaluateTrainSourceCNOSSOSTest {
         double[][] LW = new double[24][];
         for (int idFreq = 0; idFreq < FREQUENCIES.length; idFreq++) {
             int sourceHeight = 0;
-            TrainParametersCnossos trainParameters = new TrainParametersCnossos(vehCat, "", vehPerTrain,
+            VehiculeParametersCnossos vehiculeParameters = new VehiculeParametersCnossos(vehCat, "", vehPerTrain,
                     vehicleSpeed, vehiclePerHour, 0, 0, sourceHeight, FREQUENCIES[idFreq]);
 
-            RailParametersCnossos railParameters = new RailParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
+            TrackParametersCnossos trackParameters = new TrackParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
                     0, 0, 0, 0,FREQUENCIES[idFreq]);
 
-            LW[idFreq] = EvaluateTrainSourceCnossos.evaluate(trainParameters, railParameters);
+            LW[idFreq] = EvaluateTrainSourceCnossos.evaluate(vehiculeParameters, trackParameters);
         }
     }
-
+/*
     @Test
     public void Test_Plamade_TGV_DUPLEX(){
         // N_FERROVIAIRE_TRAFIC
-        String ENGMOTEUR = "TGV-DUPLEX-motrice";
-        String TYPVOITWAG = "TGV-DUPLEX-voiture-1";
+        String veh1 = "TGV-DUPLEX-motrice";
+        String veh2 = "TGV-DUPLEX-voiture-1";
         double VMAX = 320;
         int NBVOIWAG = 2;
         double TDIURNE = 1;
@@ -113,6 +113,8 @@ public class EvaluateTrainSourceCNOSSOSTest {
         double[][] LW = new double[24][];
         for (int idFreq = 0; idFreq < FREQUENCIES.length; idFreq++) {
             int sourceHeight = 0;
+
+            //todo for(i=1:2;) veh1 / 2
             TrainParametersCnossos trainParameters = new TrainParametersCnossos(ENGMOTEUR, TYPVOITWAG, NBVOIWAG,
                     VMAX, TDIURNE, TSOIR, TNUIT, sourceHeight, FREQUENCIES[idFreq]);
 
@@ -120,6 +122,8 @@ public class EvaluateTrainSourceCNOSSOSTest {
                     railPad, additionalMeasures, railJoints, curvate,FREQUENCIES[idFreq]);
 
             LW[idFreq] = EvaluateTrainSourceCnossos.evaluate(trainParameters, railParameters);
+
         }
     }
+*/
 }

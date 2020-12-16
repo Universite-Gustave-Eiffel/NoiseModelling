@@ -1,6 +1,6 @@
 package org.noise_planet.noisemodelling.emission;
 
-public class TrainParametersCnossos {
+public class VehiculeParametersCnossos {
     private String typeEng;
     private String typeWag;
     private int nbWag;
@@ -88,17 +88,17 @@ public class TrainParametersCnossos {
         return FreqParam;
     }
 
-    public TrainParametersCnossos(String tpeEngine, String typeWag, int nbWag, double speed,
-                                  double tDay, double tEvenig, double tNight, int height,int freqParam) {
+    public VehiculeParametersCnossos(String tpeEngine, String typeWag, int nbWag, double speed,
+                                  double tDay, double tEvening, double tNight, int height,int freqParam) {
 
         setTypeEng(tpeEngine);
         setTypeWag(typeWag);
         setNbWg(nbWag);
-
+        // Todo  / condition de circulation  + si stationnement temps de stationnement (defaut = 0)
         setSpeed(speed);
 
         setTDay(tDay);
-        setTEvening(tEvenig);
+        setTEvening(tEvening);
         setTNight(tNight);
 
         setHeight(height);
