@@ -24,15 +24,18 @@ public class EvaluateTrainSourceCNOSSOSTest {
         int railRoughness = 4;
         double vMaxInfra = 160;
         double[][] LW = new double[24][];
-        for (int idFreq = 0; idFreq < FREQUENCIES.length; idFreq++) {
-            int sourceHeight = 0;
+        for(int i=0;i<2;i++){
+            int sourceHeight = i;
+
+            for (int idFreq = 0; idFreq < FREQUENCIES.length; idFreq++) {
+
             VehiculeParametersCnossos vehiculeParameters = new VehiculeParametersCnossos(vehCat, "", vehPerTrain,
                     vehicleSpeed, vehiclePerHour, 0, 0, sourceHeight, FREQUENCIES[idFreq]);
 
             TrackParametersCnossos trackParameters = new TrackParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
                     0, 0, 0, 0, FREQUENCIES[idFreq]);
-
             LW[idFreq] = EvaluateTrainSourceCnossos.evaluate(vehiculeParameters, trackParameters);
+            }
         }
     }
 }

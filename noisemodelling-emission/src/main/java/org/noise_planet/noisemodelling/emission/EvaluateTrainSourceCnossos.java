@@ -392,31 +392,40 @@ public class EvaluateTrainSourceCnossos {
         int axlesPerVeh = getAxlesPerVeh(typeVehicule,spectreVer);
 
         //  Rolling noise calcul
-        double[] LWRoll = evaluateLWRoll(typeVehicule, railRoughnessId, speed,trackTransferId,spectreVer,axlesPerVeh);
+        double[] LWRolling = evaluateLWRoll(typeVehicule, railRoughnessId, speed,trackTransferId,spectreVer,axlesPerVeh);
         // sommer les bruits de joint et de pont dans LWroll
         // Traction noise calcul
         double[] LWTraction = evaluateLWSpectre(typeVehicule,"RefTraction", speed, height,spectreVer);
 
         // Aerodynamic noise calcul
         double[] LWAerodynamic = evaluateLWSpectre(typeVehicule,"RefAerodynamic", speed, height,spectreVer);
-        LW lW = new LW();
-         lW.LWRoll=LWRoll[nFreq];
-         lW.LWTraction=LWTraction[nFreq];
-         lW.LWAerodynamic=LWAerodynamic[nFreq];
+         LW lW = new LW();
+         lW.Rolling=LWRolling;
+         lW.Traction=LWTraction;
+         lW.Aerodynamic=LWAerodynamic;
         //return new LW(LWRoll[nFreq], LWTraction[nFreq], LWAerodynamic[nFreq]);
 
-        return new double[]{LWRoll[nFreq], LWTraction[nFreq], LWAerodynamic[nFreq]};
+        return new double[]{LWRolling[nFreq], LWTraction[nFreq], LWAerodynamic[nFreq]};
     }
     public static class LW{
-        public double LWRoll;
-        public double LWTraction;
-        public double LWAerodynamic;
-        public LW(){
-            this.LWRoll=0;
-            this.LWTraction=0;
-            this.LWAerodynamic=0;
-        }
+        public double[] Rolling;
+        public double[] Traction;
+        public double[] Aerodynamic;
     }
+    /*public LW(double LWRoll,double LWTraction,double LWAerodynamic, int freqParam){
+        setLWRoll(LWRoll,freqParam);
+        setLWTraction(LWTraction,freqParam);
+        setLWAerodynamic(LWAerodynamic,freqParam);
+    }
+
+
+    private void setLWRoll(double lwRoll,int freqParam) {
+    }
+    private void setLWTraction(double lwTraction, int freqParam) {
+    }
+    private void setLWAerodynamic(double lwAerodynamic, int freqParam) {
+    }*/
+
     private static double[] evaluateLWSpectre(String typeVehicule,String ref, double speed, int height,int spectreVer) {
         double [] LWSpectre = new double[24];
         for(int idFreq = 0; idFreq < 24; idFreq++) {
