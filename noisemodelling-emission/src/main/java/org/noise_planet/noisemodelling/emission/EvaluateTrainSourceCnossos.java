@@ -50,7 +50,8 @@ import static java.lang.Math.min;
 
 
 public class EvaluateTrainSourceCnossos {
-// Todo evaluation du niveau sonore d'un train
+
+    // Todo evaluation du niveau sonore d'un train
     private static JsonNode CnossosTraindata = parse(EvaluateTrainSourceCnossos.class.getResourceAsStream("coefficients_train_cnossos.json"));
 
     private static JsonNode parse(InputStream inputStream) {
@@ -367,11 +368,13 @@ public class EvaluateTrainSourceCnossos {
 
     /**
      * Rail noise evaluation.
-     * @param trainParameters Noise emission parameters
+     * @param vehiculeParameters Vehicule Noise emission parameters
+     * @param trackParameters Track Noise emission parameters
      * @return Noise level in dB
      */
 
      static double[] evaluate(VehiculeParametersCnossos vehiculeParameters, TrackParametersCnossos trackParameters) {
+
         final int freqParam = vehiculeParameters.getFreqParam();
         final int spectreVer = vehiculeParameters.getSpectreVer();
 
@@ -380,6 +383,7 @@ public class EvaluateTrainSourceCnossos {
         String typeVehicule = vehiculeParameters.getTypeEng();
         double speedVehicule = vehiculeParameters.getSpeed();
         double speedTrack = trackParameters.getSpeed();
+        int height = vehiculeParameters.getHeight();
         double speed = min(speedVehicule,speedTrack);
 
         int railRoughnessId = trackParameters.getRailRoughness();
@@ -391,37 +395,47 @@ public class EvaluateTrainSourceCnossos {
         double[] LWRoll = evaluateLWRoll(typeVehicule, railRoughnessId, speed,trackTransferId,spectreVer,axlesPerVeh);
         // sommer les bruits de joint et de pont dans LWroll
         // Traction noise calcul
-        double[] LWTraction = evaluateLWSpectre(typeVehicule,"RefTraction", speed,spectreVer);
+        double[] LWTraction = evaluateLWSpectre(typeVehicule,"RefTraction", speed, height,spectreVer);
 
         // Aerodynamic noise calcul
-        double[] LWAerodynamic = evaluateLWSpectre(typeVehicule,"RefAerodynamic", speed,spectreVer);
+        double[] LWAerodynamic = evaluateLWSpectre(typeVehicule,"RefAerodynamic", speed, height,spectreVer);
+        LW lW = new LW();
+         lW.LWRoll=LWRoll[nFreq];
+         lW.LWTraction=LWTraction[nFreq];
+         lW.LWAerodynamic=LWAerodynamic[nFreq];
+        //return new LW(LWRoll[nFreq], LWTraction[nFreq], LWAerodynamic[nFreq]);
 
         return new double[]{LWRoll[nFreq], LWTraction[nFreq], LWAerodynamic[nFreq]};
     }
-
-    private static double[] evaluateLWSpectre(String typeVehicule,String ref, double speed, int spectreVer) {//todo add heigth
-        double [] LWSpectreA = new double[24];
-        double [] LWSpectreB = new double[24];
-        double [] LWSpectreTot = new double[24];
+    public static class LW{
+        public double LWRoll;
+        public double LWTraction;
+        public double LWAerodynamic;
+        public LW(){
+            this.LWRoll=0;
+            this.LWTraction=0;
+            this.LWAerodynamic=0;
+        }
+    }
+    private static double[] evaluateLWSpectre(String typeVehicule,String ref, double speed, int height,int spectreVer) {
+        double [] LWSpectre = new double[24];
         for(int idFreq = 0; idFreq < 24; idFreq++) {
-            LWSpectreA[idFreq] = getSpectre(typeVehicule,ref,"A",spectreVer,idFreq);
-            LWSpectreB[idFreq] = getSpectre(typeVehicule,ref,"B",spectreVer,idFreq);
+            if(height==0){
+                LWSpectre[idFreq] = getSpectre(typeVehicule,ref,"A",spectreVer,idFreq);}
+            else if(height==1) {
+                LWSpectre[idFreq] = getSpectre(typeVehicule, ref, "B", spectreVer, idFreq);
+            }
             if(ref=="RefAerodynamic"){
                 if(speed<200){
-                    LWSpectreA[idFreq] =0;
-                    LWSpectreB[idFreq] =0;
+                    LWSpectre[idFreq] =0;
                 }else{
                 double v0Aero = getAeroV0Alpha(typeVehicule,ref, spectreVer, "V0");
                 double alphaAero = getAeroV0Alpha(typeVehicule,ref, spectreVer, "Alpha");
-
-                LWSpectreA[idFreq] = LWSpectreA[idFreq]+ alphaAero*Math.log10(speed/v0Aero);
-                LWSpectreB[idFreq] = LWSpectreB[idFreq]+ alphaAero*Math.log10(speed/v0Aero);
+                LWSpectre[idFreq] = LWSpectre[idFreq]+ alphaAero*Math.log10(speed/v0Aero);
                 }
             }
-            //TODO ne pas sommer les spectre A et B
-            LWSpectreTot[idFreq] = 10*Math.log10(Math.pow(10,LWSpectreA[idFreq]/10)+Math.pow(10,LWSpectreB[idFreq]/10));
         }
-        return LWSpectreTot;
+        return LWSpectre;
     }
     private static double[] evaluateLWRoll(String typeVehicule, int railRoughnessId, double speed,int trackTransferId, int spectreVer, int axlesPerVeh) {
         double [] trackTransfer = new double[24];
@@ -459,6 +473,7 @@ public class EvaluateTrainSourceCnossos {
         }
         return roughnessLtotFreq;
     }
+
 
 //    /** compute Noise Level from flow_rate and speed @return**/
 //    public static double evaluateLm(double Lw, double Q, double speed, int idFreq) {

@@ -23,7 +23,6 @@ public class EvaluateTrainSourceCNOSSOSTest {
         int trackTransfer = 4;
         int railRoughness = 4;
         double vMaxInfra = 160;
-
         double[][] LW = new double[24][];
         for (int idFreq = 0; idFreq < FREQUENCIES.length; idFreq++) {
             int sourceHeight = 0;
