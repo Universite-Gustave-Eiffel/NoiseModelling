@@ -31,11 +31,12 @@ public class EvaluateTrainSourceCNOSSOSTest {
                     vehicleSpeed, vehiclePerHour, 0, 0, sourceHeight, FREQUENCIES[idFreq]);
 
             TrackParametersCnossos trackParameters = new TrackParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
-                    0, 0, 0, 0,FREQUENCIES[idFreq]);
+                    0, 0, 0, 0, FREQUENCIES[idFreq]);
 
             LW[idFreq] = EvaluateTrainSourceCnossos.evaluate(vehiculeParameters, trackParameters);
         }
     }
+}
 /*
     @Test
     public void Test_Plamade_TGV_DUPLEX(){
@@ -125,5 +126,5 @@ public class EvaluateTrainSourceCNOSSOSTest {
 
         }
     }
-*/
-}
+
+}*/
