@@ -20,10 +20,15 @@ public class EvaluateTrainSourceCNOSSOSTest {
         double vehicleSpeed = 160;
         double vehiclePerHour = 1;
         int vehPerTrain = 2;
+
         int trackTransfer = 4;
+        int impactNoise = 0;
+        int bridgeConstant = 0;
+        int curvate = 0;
         int railRoughness = 4;
+
         double vMaxInfra = 160;
-        double[][] LW = new double[24][];
+        double[][] lWRailWay = new double[24][];
         for(int i=0;i<2;i++){
             int sourceHeight = i;
 
@@ -33,9 +38,16 @@ public class EvaluateTrainSourceCNOSSOSTest {
                     vehicleSpeed, vehiclePerHour, 0, 0, sourceHeight, FREQUENCIES[idFreq]);
 
             TrackParametersCnossos trackParameters = new TrackParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
-                    0, 0, 0, 0, FREQUENCIES[idFreq]);
-            LW[idFreq] = EvaluateTrainSourceCnossos.evaluate(vehiculeParameters, trackParameters);
+                    impactNoise, bridgeConstant, curvate, FREQUENCIES[idFreq]);
+
+            lWRailWay[idFreq] = EvaluateTrainSourceCnossos.evaluate(vehiculeParameters, trackParameters);
             }
+            // TODO extract lWRailWay class getLWRoll()
+            // LW lW = new LW();
+            // lW.Rolling=LWRolling;
+            // TODO optimize for(freq)
+            // TODO add ref calcul exemple LWRoll = CNOSSOS p.19 (2.3.7)
+            // TODO add Bridge Calcul
         }
     }
 }

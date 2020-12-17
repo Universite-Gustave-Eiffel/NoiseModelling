@@ -11,8 +11,8 @@ public class TrackParametersCnossos{
     private int curvate;
 
     //private int superstructureTransfer;
-    //private int impactNoise;
-    //private int bridgeConstant;
+    private int impactNoise;
+    private int bridgeConstant;
     private final int FreqParam;
 
     private int spectreVer = 2;
@@ -38,6 +38,17 @@ public class TrackParametersCnossos{
     public void setRailRoughness(int railRoughness) {
         this.railRoughness = railRoughness;
     }
+    public void setCurvate(int curvate) {
+        this.curvate = curvate;
+    }
+    public void setImpactNoise(int impactNoise) {
+        this.impactNoise = impactNoise;
+    }
+    public void setBridgeConstant(int bridgeConstant) {
+        this.bridgeConstant = bridgeConstant;
+    }
+
+/*
     public void setRailPad(int railPad) {
         this.railPad = railPad;
     }
@@ -46,19 +57,7 @@ public class TrackParametersCnossos{
     }
     public void setRailJoints(int railJoints) {
         this.railJoints = railJoints;
-    }
-    public void setCurvate(int curvate) {
-        this.curvate = curvate;
-    }
-
-    /*
-    public void setImpactNoise(int impactNoise) {
-        this.impactNoise = impactNoise;
-    }
-    public void setBridgeConstant(int bridgeConstant) {
-        this.bridgeConstant = bridgeConstant;
     }*/
-
 
     public int getSpectreVer() {
         return this.spectreVer;
@@ -73,14 +72,11 @@ public class TrackParametersCnossos{
     public int getRailRoughness() {
         return railRoughness;
     }
-    public int getRailPad() {
-        return railPad;
+    public int getImpactNoise() {
+        return impactNoise;
     }
-    public int getAdditionalMeasures() {
-        return additionalMeasures;
-    }
-    public int getRailJoints() {
-        return railJoints;
+    public int getBridgeConstant() {
+        return bridgeConstant;
     }
     public int getCurvate() {
         return curvate;
@@ -88,34 +84,39 @@ public class TrackParametersCnossos{
 
     /*public int getSuperstructureTransfer() {
         return superstructureTransfer;
-    }
-    public int getImpactNoise() {
-        return impactNoise;
-    }
-    public int getBridgeConstant() {
-        return bridgeConstant;
+        public int getRailPad() {
+            return railPad;
+        }
+        public int getAdditionalMeasures() {
+            return additionalMeasures;
+        }
+        public int getRailJoints() {
+            return railJoints;
     }*/
 
     public int getFreqParam() {
         return FreqParam;
     }
 
-    public TrackParametersCnossos( double speed, int trackTransfer, int railRoughness,int railPad,
-                                  int additionalMeasures, int railJoints, int curvate, int freqParam) {
+    public TrackParametersCnossos( double speed, int trackTransfer, int railRoughness,int impactNoise,
+                                   int bridgeConstant, int curvate, int freqParam) {
 
         // Todo Impact noise / Bridge Constant
        setSpeed(speed);
        setTrackTransfer(trackTransfer);
        setRailRoughness(railRoughness);
-       setRailPad(railPad);
-       setAdditionalMeasures(additionalMeasures);
-       setRailJoints(railJoints);
        setCurvate(curvate);
-
+       setImpactNoise(impactNoise);
+       setBridgeConstant(bridgeConstant);
        this.FreqParam = Math.max(0, freqParam);
+
+        /*
+        setRailPad(railPad);
+        setAdditionalMeasures(additionalMeasures);
+        setRailJoints(railJoints);
+       */
        //setSuperstructureTransfer(superstructureTransfer);
-       //setImpactNoise(impactNoise);
-       // setBridgeConstant(bridgeConstant);
+       //
 
     }
 }
