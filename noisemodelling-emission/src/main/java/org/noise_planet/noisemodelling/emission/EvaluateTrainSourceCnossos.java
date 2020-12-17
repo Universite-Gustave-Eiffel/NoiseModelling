@@ -355,14 +355,15 @@ public class EvaluateTrainSourceCnossos {
 
         //  Rolling noise calcul
         double[] LWRolling = evaluateLWRoll(typeVehicule, railRoughnessId, impactId, speed,trackTransferId,spectreVer,axlesPerVeh);
-        //Impact noise calcul / Bridge noise/ add to rolling noise
-        // sommer les bruits de joint et de pont dans LWroll
 
         // Traction noise calcul
         double[] LWTraction = evaluateLWSpectre(typeVehicule,"RefTraction", speed, height,spectreVer);
 
         // Aerodynamic noise calcul
         double[] LWAerodynamic = evaluateLWSpectre(typeVehicule,"RefAerodynamic", speed, height,spectreVer);
+
+         //TODO Bridge
+
         //return new LW(LWRoll[nFreq], LWTraction[nFreq], LWAerodynamic[nFreq]);
         //TODO static LW evaluate() {return lW};
 
