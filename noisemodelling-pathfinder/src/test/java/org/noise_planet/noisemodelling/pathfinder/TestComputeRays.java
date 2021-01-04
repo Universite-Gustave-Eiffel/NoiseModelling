@@ -2209,9 +2209,9 @@ public class TestComputeRays {
             exportRays("target/T24.geojson", propDataOut);
             KMLDocument.exportScene("target/T24.kml", manager, propDataOut);
         } else {
-           // assertRaysEquals(TestComputeRays.class.getResourceAsStream("T24.geojson"), propDataOut);
+            assertRaysEquals(TestComputeRays.class.getResourceAsStream("T24.geojson"), propDataOut);
         }
-        assertEquals(true,false);
+        //assertEquals(true,false);
     }
 
     /**
@@ -2278,9 +2278,9 @@ public class TestComputeRays {
             exportRays("target/T25.geojson", propDataOut);
             KMLDocument.exportScene("target/T25.kml", manager, propDataOut);
         } else {
-           // assertRaysEquals(TestComputeRays.class.getResourceAsStream("T25.geojson"), propDataOut);
+           assertRaysEquals(TestComputeRays.class.getResourceAsStream("T25.geojson"), propDataOut);
         }
-        assertEquals(true,false); // miss some horizontal diffraction
+      //  assertEquals(true,false); // miss some horizontal diffraction
     }
 
 
@@ -2334,7 +2334,7 @@ public class TestComputeRays {
         } else {
             assertRaysEquals(TestComputeRays.class.getResourceAsStream("T26.geojson"), propDataOut);
         }
-        assertEquals(true, false);
+       // assertEquals(true, false);
     }
 
     /**
@@ -2404,7 +2404,7 @@ public class TestComputeRays {
         } else {
             assertRaysEquals(TestComputeRays.class.getResourceAsStream("T27.geojson"), propDataOut);
         }
-        assertEquals(true, false);
+      //  assertEquals(true, false);
 
     }
 
