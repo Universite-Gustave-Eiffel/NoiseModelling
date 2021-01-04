@@ -23,6 +23,7 @@ import org.cts.crs.CRSException
 
 import org.noise_planet.noisemodelling.emission.*
 import org.noise_planet.noisemodelling.pathfinder.*
+import org.noise_planet.noisemodelling.pathfinder.utils.KMLDocument
 import org.noise_planet.noisemodelling.propagation.*
 import org.noise_planet.noisemodelling.jdbc.*
 
