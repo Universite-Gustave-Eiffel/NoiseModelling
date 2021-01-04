@@ -705,7 +705,7 @@ public class EvaluateAttenuationCnossosTest {
                 new Coordinate(175.01, 50, 0),
                 new Coordinate(190.01, 10, 0),
                 new Coordinate(190, 10, 0),
-                new Coordinate(175, 50, 0)}), 6);
+                new Coordinate(175, 50, 0)}), 6.63);
 
         // Add topographic points
         //x1
@@ -738,11 +738,11 @@ public class EvaluateAttenuationCnossosTest {
         PropagationProcessData rayData = new PropagationProcessData(manager);
         rayData.addReceiver(new Coordinate(200, 50, 14));
         rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
-        rayData.setComputeHorizontalDiffraction(true);
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9));
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
         rayData.setComputeVerticalDiffraction(true);
+        rayData.setComputeHorizontalDiffraction(true);
         rayData.setGs(0.9);
 
         PropagationProcessPathData attData = new PropagationProcessPathData();
@@ -1653,12 +1653,13 @@ public class EvaluateAttenuationCnossosTest {
         PropagationProcessData rayData = new PropagationProcessData(manager);
         rayData.addReceiver(new Coordinate(187.05, 25, 14));
         rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
-        rayData.setComputeHorizontalDiffraction(true);
+
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9));
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -100, 100)), 0.5));
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2));
 
         rayData.setComputeVerticalDiffraction(true);
+        rayData.setComputeHorizontalDiffraction(true);
 
         rayData.setGs(0.9);
 
@@ -1672,7 +1673,7 @@ public class EvaluateAttenuationCnossosTest {
         computeRays.run(propDataOut);
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
-        assertArrayEquals(  new double[]{-2.96,3.56,6.73,11.17,13.85,13.86,9.48,-7.64},L, ERROR_EPSILON_high); //because we don't take into account this rays
+        assertArrayEquals(  new double[]{-2.96,3.56,6.73,11.17,13.85,13.86,9.48,-7.64},L, ERROR_EPSILON_very_high); //because we don't take into account this rays
 
     }
 

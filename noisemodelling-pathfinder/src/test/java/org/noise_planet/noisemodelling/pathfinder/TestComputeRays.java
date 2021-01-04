@@ -1986,6 +1986,7 @@ public class TestComputeRays {
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2));
 
         rayData.setComputeVerticalDiffraction(true);
+        rayData.setComputeHorizontalDiffraction(true);
 
         ComputeRaysOut propDataOut = new ComputeRaysOut(true);
         ComputeRays computeRays = new ComputeRays(rayData);
