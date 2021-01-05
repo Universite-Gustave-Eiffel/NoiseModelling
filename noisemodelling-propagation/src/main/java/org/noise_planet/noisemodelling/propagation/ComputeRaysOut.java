@@ -33,8 +33,10 @@
  */
 package org.noise_planet.noisemodelling.propagation;
 
+
 import org.locationtech.jts.algorithm.Angle;
 import org.locationtech.jts.geom.Coordinate;
+import org.noise_planet.noisemodelling.pathfinder.*;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -142,17 +144,22 @@ public class ComputeRaysOut implements IComputeRaysOut {
             for (PropagationPath propath : propagationPath) {
                 List<PointPath> ptList = propath.getPointList();
                 int roseindex = getRoseIndex(ptList.get(0).coordinate, ptList.get(ptList.size() - 1).coordinate);
+                double[] aGlobalMeteoHom = new double[pathData.freq_lvl.size()];
+                double[] aGlobalMeteoFav = new double[pathData.freq_lvl.size()];
 
-                // Compute homogeneous conditions attenuation
-                propath.setFavorable(false);
-                evaluateAttenuationCnossos.evaluate(propath, pathData);
-                double[] aGlobalMeteoHom = evaluateAttenuationCnossos.getaGlobal();
+                if (pathData.getWindRose()[roseindex]!=1) {
+                    // Compute homogeneous conditions attenuation
+                    propath.setFavorable(false);
+                    evaluateAttenuationCnossos.evaluate(propath, pathData);
+                    aGlobalMeteoHom = evaluateAttenuationCnossos.getaGlobal();
+                }
 
                 // Compute favorable conditions attenuation
-                propath.setFavorable(true);
-                evaluateAttenuationCnossos.evaluate(propath, pathData);
-                double[] aGlobalMeteoFav = evaluateAttenuationCnossos.getaGlobal();
-
+                if (pathData.getWindRose()[roseindex]!=0) {
+                    propath.setFavorable(true);
+                    evaluateAttenuationCnossos.evaluate(propath, pathData);
+                    aGlobalMeteoFav = evaluateAttenuationCnossos.getaGlobal();
+                }
                 // Compute attenuation under the wind conditions using the ray direction
                 double[] aGlobalMeteoRay = ComputeRays.sumArrayWithPonderation(aGlobalMeteoFav, aGlobalMeteoHom, pathData.getWindRose()[roseindex]);
 
@@ -269,8 +276,8 @@ public class ComputeRaysOut implements IComputeRaysOut {
                         // Copy path content in order to keep original ids for other method calls
                         PropagationPath pathPk = new PropagationPath(path.isFavorable(), path.getPointList(),
                                 path.getSegmentList(), path.getSRList());
-                        pathPk.idReceiver = multiThreadParent.inputData.receiversPk.get((int)receiverId).intValue();
-                        pathPk.idSource = multiThreadParent.inputData.sourcesPk.get((int)sourceId).intValue();
+                        pathPk.setIdReceiver(multiThreadParent.inputData.receiversPk.get((int)receiverId).intValue());
+                        pathPk.setIdSource(multiThreadParent.inputData.sourcesPk.get((int)sourceId).intValue());
                         propagationPaths.add(pathPk);
                     }
                 } else {

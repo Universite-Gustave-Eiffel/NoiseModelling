@@ -2,18 +2,19 @@ package org.noise_planet.nmtutorial01;
 
 import org.cts.crs.CRSException;
 import org.cts.op.CoordinateOperationException;
-import org.h2.tools.Csv;
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.api.ProgressVisitor;
 import org.h2gis.functions.io.csv.CSVDriverFunction;
-import org.h2gis.functions.io.dbf.DBFWrite;
 import org.h2gis.functions.io.geojson.GeoJsonRead;
-import org.h2gis.functions.io.shp.SHPWrite;
 import org.h2gis.utilities.SFSUtilities;
-import org.noise_planet.noisemodelling.emission.jdbc.LDENConfig;
-import org.noise_planet.noisemodelling.emission.jdbc.LDENPointNoiseMapFactory;
-import org.noise_planet.noisemodelling.propagation.*;
-import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap;
+import org.noise_planet.noisemodelling.pathfinder.utils.KMLDocument;
+import org.noise_planet.noisemodelling.jdbc.LDENConfig;
+import org.noise_planet.noisemodelling.jdbc.LDENPointNoiseMapFactory;
+import org.noise_planet.noisemodelling.jdbc.PointNoiseMap;
+import org.noise_planet.noisemodelling.pathfinder.FastObstructionTest;
+import org.noise_planet.noisemodelling.pathfinder.IComputeRaysOut;
+import org.noise_planet.noisemodelling.pathfinder.RootProgressVisitor;
+import org.noise_planet.noisemodelling.propagation.ComputeRaysOut;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

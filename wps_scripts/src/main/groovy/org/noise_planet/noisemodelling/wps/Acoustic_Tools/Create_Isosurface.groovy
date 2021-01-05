@@ -24,7 +24,7 @@ import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.utilities.SFSUtilities
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
-import org.noise_planet.noisemodelling.emission.jdbc.BezierContouring
+import org.noise_planet.noisemodelling.jdbc.BezierContouring
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
