@@ -1,18 +1,17 @@
 package org.noise_planet.noisemodelling.emission;
 
 public class VehiculeParametersCnossos {
-    private String typeEng;
+    private String typeVehicule;
     private String typeWag;
     private int nbWag;
 
-    private double speed;
+    private double speedVehicule;
 
     private double tDay;
     private double tEvenig;
     private double tNight;
 
     private int height;
-    private final int FreqParam;
 
     private int spectreVer = 2;
 
@@ -27,18 +26,18 @@ public class VehiculeParametersCnossos {
         return this.spectreVer;
     }
 
-    public void setTypeEng(String typeEng) {
-        this.typeEng = typeEng;
+    public void setTypeVehicule(String typeEng) {
+        this.typeVehicule = typeEng;
     }
-    public void setTypeWag(String typeWag) {
+    /*public void setTypeWag(String typeWag) {
         this.typeWag = typeWag;
     }
     public void setNbWg(int nbWag) {
         this.nbWag = nbWag;
-    }
+    }*/
 
-    public void setSpeed(double speed) {
-        this.speed = speed;
+    public void setSpeed(double speedVehicule) {
+        this.speedVehicule = speedVehicule;
     }
 
     public void setTDay(double tDay) {
@@ -56,18 +55,19 @@ public class VehiculeParametersCnossos {
         this.height = height;
     }
 
-    public String getTypeEng() {
-        return typeEng;
+    public String getTypeVehicule() {
+        return typeVehicule;
     }
-    public String getTypeWag() {
+
+    /*public String getTypeWag() {
         return typeWag;
     }
     public int getNbWg() {
         return nbWag;
-    }
+    }*/
 
     public double getSpeed() {
-        return speed;
+        return speedVehicule;
     }
 
     public double getTDay() {
@@ -84,24 +84,20 @@ public class VehiculeParametersCnossos {
         return height;
     }
 
-    public int getFreqParam() {
-        return FreqParam;
-    }
 
-    public VehiculeParametersCnossos(String tpeEngine, String typeWag, int nbWag, double speed,
-                                  double tDay, double tEvening, double tNight, int height,int freqParam) {
+    public VehiculeParametersCnossos(String typeVehicule, String typeWag, int nbWag, double speedVehicule,
+                                  double tDay, double tEvening, double tNight, int height) {
 
-        setTypeEng(tpeEngine);
-        setTypeWag(typeWag);
-        setNbWg(nbWag);
+        setTypeVehicule(typeVehicule);
+        //setTypeWag(typeWag);
+        //setNbWg(nbWag);
         // Todo  / condition de circulation  + si stationnement temps de stationnement (defaut = 0)
-        setSpeed(speed);
+        setSpeed(speedVehicule);
 
         setTDay(tDay);
         setTEvening(tEvening);
         setTNight(tNight);
 
         setHeight(height);
-        this.FreqParam = Math.max(0, freqParam);
     }
 }

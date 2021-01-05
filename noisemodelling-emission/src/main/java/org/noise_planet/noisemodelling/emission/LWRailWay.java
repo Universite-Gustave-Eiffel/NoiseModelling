@@ -5,8 +5,8 @@ public class LWRailWay {
     private double[] LWRolling;
     private double[] LWTraction;
     private double[] LWAerodynamic;
-    private double[] LWBridge;
-    private double[] LWSqueal;
+    private double LWBridge;
+    private double LWSqueal;
 
 
 
@@ -19,8 +19,11 @@ public class LWRailWay {
     public void setLWAerodynamic(double[] LWAerodynamic) {
         this.LWAerodynamic = LWAerodynamic;
     }
-    public void setLWBridge(double[] LWBridge) {
+    public void setLWBridge(double LWBridge) {
         this.LWBridge = LWBridge;
+    }
+    public void setLWSqueal(double LWSqueal) {
+        this.LWSqueal = LWSqueal;
     }
 
     public double[] getLWRolling() {
@@ -32,16 +35,20 @@ public class LWRailWay {
     public double[] getLWAerodynamic() {
         return LWAerodynamic;
     }
-    public double[] getLWBridge() {
+    public double getLWBridge() {
         return LWBridge;
     }
+    public double getLWSqueal() {
+        return LWSqueal;
+    }
 
-    public LWRailWay(double[] LWRolling,double[] LWTraction,double[] LWAerodynamic,double[] LWBridge,double[] LWSqueal){
+    public LWRailWay(double[] LWRolling,double[] LWTraction,double[] LWAerodynamic,double LWBridge,double LWSqueal){
 
         setLWRolling(LWRolling);
         setLWTraction(LWTraction);
         setLWAerodynamic(LWAerodynamic);
-        //setLWBridge(LWBridge);
+        setLWBridge(LWBridge);
+        setLWSqueal(LWSqueal);
 
     }
 }
