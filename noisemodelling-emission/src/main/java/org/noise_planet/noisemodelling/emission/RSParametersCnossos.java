@@ -212,7 +212,7 @@ public class RSParametersCnossos {
 
     /**
      * Simplest road noise evaluation
-     * Vehicles category Table 3 P.31 CNOSSOS_EU_JRC_REFERENCE_REPORT
+     * Vehicles category Table 2.2.a Directive 2015/Amendments 2019
      * lv : Passenger cars, delivery vans ≤ 3.5 tons, SUVs , MPVs including trailers and caravans
      * mv: Medium heavy vehicles, delivery vans > 3.5 tons,  buses, touring cars, etc. with two axles and twin tyre mounting on rear axle
      * hgv: Heavy duty vehicles, touring cars, buses, with three or more axles
