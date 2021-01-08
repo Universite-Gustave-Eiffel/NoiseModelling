@@ -80,13 +80,13 @@ public class VehiculeParametersCnossos {
         return tNight;
     }
 
-    public int getHeight() {
+    /*public int getHeight() {
         return height;
-    }
+    }*/
 
 
     public VehiculeParametersCnossos(String typeVehicule, String typeWag, int nbWag, double speedVehicule,
-                                  double tDay, double tEvening, double tNight, int height) {
+                                  double tDay, double tEvening, double tNight) {
 
         setTypeVehicule(typeVehicule);
         //setTypeWag(typeWag);
@@ -98,6 +98,6 @@ public class VehiculeParametersCnossos {
         setTEvening(tEvening);
         setTNight(tNight);
 
-        setHeight(height);
+        //setHeight(height);
     }
 }

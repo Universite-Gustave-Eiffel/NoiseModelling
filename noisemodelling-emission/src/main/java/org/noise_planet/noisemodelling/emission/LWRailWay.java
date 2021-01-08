@@ -2,53 +2,61 @@ package org.noise_planet.noisemodelling.emission;
 
 public class LWRailWay {
 
-    private double[] LWRolling;
-    private double[] LWTraction;
-    private double[] LWAerodynamic;
-    private double LWBridge;
-    private double LWSqueal;
+    private double[] lWRolling;
+    private double[] lWTractionA;
+    private double[] lWTractionB;
+    private double[] lWAerodynamicA;
+    private double[] lWAerodynamicB;
+    private double[] lWBridge;
 
 
 
     public void setLWRolling(double[] LWRolling) {
-        this.LWRolling = LWRolling;
+        this.lWRolling = LWRolling;
     }
-    public void setLWTraction(double[] LWTraction) {
-        this.LWTraction = LWTraction;
+    public void setLWTractionA(double[] LWTractionA) {
+        this.lWTractionA = LWTractionA;
     }
-    public void setLWAerodynamic(double[] LWAerodynamic) {
-        this.LWAerodynamic = LWAerodynamic;
+    public void setLWTractionB(double[] LWTractionB) {
+        this.lWTractionB = LWTractionB;
     }
-    public void setLWBridge(double LWBridge) {
-        this.LWBridge = LWBridge;
+    public void setLWAerodynamicA(double[] LWAerodynamicA) {
+        this.lWAerodynamicA = LWAerodynamicA;
     }
-    public void setLWSqueal(double LWSqueal) {
-        this.LWSqueal = LWSqueal;
+    public void setLWAerodynamicB(double[] LWAerodynamicB) {
+        this.lWAerodynamicB = LWAerodynamicB;
+    }
+    public void setLWBridge(double[] LWBridge) {
+        this.lWBridge = LWBridge;
     }
 
     public double[] getLWRolling() {
-        return LWRolling;
+        return lWRolling;
     }
-    public double[] getLWTraction() {
-        return LWTraction;
+    public double[] getLWTractionA() {
+        return lWTractionA;
     }
-    public double[] getLWAerodynamic() {
-        return LWAerodynamic;
+    public double[] getLWTractionB() {
+        return lWTractionB;
     }
-    public double getLWBridge() {
-        return LWBridge;
+    public double[] getLWAerodynamicA() {
+        return lWAerodynamicA;
     }
-    public double getLWSqueal() {
-        return LWSqueal;
+    public double[] getLWAerodynamicB() {
+        return lWAerodynamicB;
+    }
+    public double[] getLWBridge() {
+        return lWBridge;
     }
 
-    public LWRailWay(double[] LWRolling,double[] LWTraction,double[] LWAerodynamic,double LWBridge,double LWSqueal){
+    public LWRailWay(double[] lWRolling,double[] lWTractionA,double[] lWTractionB,double[] lWAerodynamicA,double[] lWAerodynamicB,double[] lWBridge){
 
-        setLWRolling(LWRolling);
-        setLWTraction(LWTraction);
-        setLWAerodynamic(LWAerodynamic);
-        setLWBridge(LWBridge);
-        setLWSqueal(LWSqueal);
+        setLWRolling(lWRolling);
+        setLWTractionA(lWTractionA);
+        setLWTractionB(lWTractionB);
+        setLWAerodynamicA(lWAerodynamicA);
+        setLWAerodynamicB(lWAerodynamicB);
+        setLWBridge(lWBridge);
 
     }
 }

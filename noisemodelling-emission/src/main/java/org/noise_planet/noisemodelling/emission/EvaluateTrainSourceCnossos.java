@@ -72,14 +72,14 @@ public class EvaluateTrainSourceCnossos {
             return CnossosTraindata;
         }
     }
-    public static String getTypeTrain(String typeTrain, int spectreVer) { //
-        String typeTrainUse;
-        if (getCnossosTrainData(spectreVer).get("Train").has(typeTrain)) {
-            typeTrainUse = typeTrain;
+    public static String getTypeVehicule(String typeVehicule, int spectreVer) { //
+        String typeVehiculeUse;
+        if (getCnossosTrainData(spectreVer).get("Vehicule").has(typeVehicule)) {
+            typeVehiculeUse = typeVehicule;
         }else{
-            typeTrainUse="Empty";
+            typeVehiculeUse="Empty";
         }
-        return typeTrainUse;
+        return typeVehiculeUse;
     }
 
     private static int getFreqInd(int freq){// Todo freq [24] / [18]
@@ -161,32 +161,31 @@ public class EvaluateTrainSourceCnossos {
     }
 
     // Rolling Noise TODO rename getLambdaValue ?
-    public static Double getLambdaValue(String typeTrain, String RefType, int spectreVer, int lambdaId) { //
-        int refId = getCnossosTrainData(spectreVer).get("Train").get("Definition").get(typeTrain).get(RefType).intValue();
+    public static Double getLambdaValue(String typeVehicule, String refType, int spectreVer, int lambdaId) { //
+        int refId = getCnossosTrainData(spectreVer).get("Vehicule").get("Definition").get(typeVehicule).get(refType).intValue();
         String ref = "";
-        if(RefType=="RefRoughness"){ref = "WheelRoughness";}
-        else if(RefType=="RefContact"){ref = "ContactFilter";}
-        return getCnossosTrainData(spectreVer).get("Train").get(ref).get(String.valueOf(refId)).get("Values").get(lambdaId).doubleValue();
+        if(refType=="RefRoughness"){ref = "WheelRoughness";}
+        else if(refType=="RefContact"){ref = "ContactFilter";}
+        return getCnossosTrainData(spectreVer).get("Vehicule").get(ref).get(String.valueOf(refId)).get("Values").get(lambdaId).doubleValue();
     }
-    public static Double getRailRoughness(int railRoughnessId, int spectreVer, int lambdaId) { //
-        return getCnossosTrainData(spectreVer).get("Rail").get("RailRoughness").get(String.valueOf(railRoughnessId)).get("Values").get(lambdaId).doubleValue();
+    public static Double getTrackRoughness(int trackRoughnessId, int spectreVer, int lambdaId) { //
+        return getCnossosTrainData(spectreVer).get("Track").get("RailRoughness").get(String.valueOf(trackRoughnessId)).get("Values").get(lambdaId).doubleValue();
     }
-    public static int getAxlesPerVeh(String typeTrain, int spectreVer) { //
-        return getCnossosTrainData(spectreVer).get("Train").get("Definition").get(typeTrain).get("Axles").intValue();
+    public static int getAxlesPerVeh(String typeVehicule, int spectreVer) { //
+        return getCnossosTrainData(spectreVer).get("Vehicule").get("Definition").get(typeVehicule).get("Axles").intValue();
     }
-
-    public static double getSpectre(String typeTrain, String ref, String sourceHeight, int spectreVer, int freqId) { //
-        int refId = getCnossosTrainData(spectreVer).get("Train").get("Definition").get(typeTrain).get(ref).intValue();
+    public static double getSpectre(String typeVehicule, String ref, String sourceHeight, int spectreVer, int freqId) { //
+        int refId = getCnossosTrainData(spectreVer).get("Vehicule").get("Definition").get(typeVehicule).get(ref).intValue();
         if(ref=="RefTraction") {
             double constantSpeed;
             double accelerationSpeed;
             double decelerationSpeed;
             double idlingSpeed;
             if (refId != 0) {
-                constantSpeed = getCnossosTrainData(spectreVer).get("Train").get("ConstantSpeed").get(String.valueOf(refId)).get("Values").get(sourceHeight).get(freqId).doubleValue();
-                accelerationSpeed = getCnossosTrainData(spectreVer).get("Train").get("AccelerationSpeed").get(String.valueOf(refId)).get("Values").get(sourceHeight).get(freqId).doubleValue();
-                decelerationSpeed = getCnossosTrainData(spectreVer).get("Train").get("DecelerationSpeed").get(String.valueOf(refId)).get("Values").get(sourceHeight).get(freqId).doubleValue();
-                idlingSpeed = getCnossosTrainData(spectreVer).get("Train").get("IdlingSpeed").get(String.valueOf(refId)).get("Values").get(sourceHeight).get(freqId).doubleValue();
+                constantSpeed = getCnossosTrainData(spectreVer).get("Vehicule").get("ConstantSpeed").get(String.valueOf(refId)).get("Values").get(sourceHeight).get(freqId).doubleValue();
+                accelerationSpeed = getCnossosTrainData(spectreVer).get("Vehicule").get("AccelerationSpeed").get(String.valueOf(refId)).get("Values").get(sourceHeight).get(freqId).doubleValue();
+                decelerationSpeed = getCnossosTrainData(spectreVer).get("Vehicule").get("DecelerationSpeed").get(String.valueOf(refId)).get("Values").get(sourceHeight).get(freqId).doubleValue();
+                idlingSpeed = getCnossosTrainData(spectreVer).get("Vehicule").get("IdlingSpeed").get(String.valueOf(refId)).get("Values").get(sourceHeight).get(freqId).doubleValue();
             } else {
                 constantSpeed = -100;
                 accelerationSpeed = -100;
@@ -196,34 +195,37 @@ public class EvaluateTrainSourceCnossos {
             return constantSpeed;
         }else if(ref=="RefAerodynamic"){
             double aerodynamicNoise;
-            aerodynamicNoise = getCnossosTrainData(spectreVer).get("Train").get("AerodynamicNoise").get(String.valueOf(refId)).get("Values").get(sourceHeight).get(freqId).doubleValue();
+            aerodynamicNoise = getCnossosTrainData(spectreVer).get("Vehicule").get("AerodynamicNoise").get(String.valueOf(refId)).get("Values").get(sourceHeight).get(freqId).doubleValue();
             return aerodynamicNoise;
         }else{
             return 0;
         }
     }
-    public static double getAeroV0Alpha(String typeTrain, String ref, int spectreVer, String aeroInf){
-        int refId = getCnossosTrainData(spectreVer).get("Train").get("Definition").get(typeTrain).get(ref).intValue();
-        return Double.parseDouble(getCnossosTrainData(spectreVer).get("Train").get("AerodynamicNoise").get(String.valueOf(refId)).get(aeroInf).asText());
+    public static double getAeroV0Alpha(String typeVehicule, String ref, int spectreVer, String aeroInf){
+        int refId = getCnossosTrainData(spectreVer).get("Vehicule").get("Definition").get(typeVehicule).get(ref).intValue();
+        return Double.parseDouble(getCnossosTrainData(spectreVer).get("Vehicule").get("AerodynamicNoise").get(String.valueOf(refId)).get(aeroInf).asText());
+    }
+    public static Double getBridgeStructural(int bridgeId, int spectreVer, int freqId){
+        return getCnossosTrainData(spectreVer).get("Track").get("BridgeConstant").get(String.valueOf(bridgeId)).get("Values").get(freqId).doubleValue();
     }
 
     public static Double getTrackTransfer(int trackTransferId, int spectreVer, int freqId) { //
-        return getCnossosTrainData(spectreVer).get("Rail").get("TrackTransfer").get(String.valueOf(trackTransferId)).get("Spectre").get(freqId).doubleValue();
+        return getCnossosTrainData(spectreVer).get("Track").get("TrackTransfer").get(String.valueOf(trackTransferId)).get("Spectre").get(freqId).doubleValue();
     }
     public static Double getImpactNoise(int impactNoiseId, int spectreVer, int freqId) { //
-        return getCnossosTrainData(spectreVer).get("Rail").get("ImpactNoise").get(String.valueOf(impactNoiseId)).get("Values").get(freqId).doubleValue();
+        return getCnossosTrainData(spectreVer).get("Track").get("ImpactNoise").get(String.valueOf(impactNoiseId)).get("Values").get(freqId).doubleValue();
     }
 
-    public static Double getVehTransfer(String typeTrain, int spectreVer, int freqId) {
-        int RefTransfer = getCnossosTrainData(spectreVer).get("Train").get("Definition").get(typeTrain).get("RefTransfer").intValue();
-        return getCnossosTrainData(spectreVer).get("Train").get("Transfer").get(String.valueOf(RefTransfer)).get("Spectre").get(freqId).doubleValue();
+    public static Double getVehTransfer(String typeVehicule, int spectreVer, int freqId) {
+        int RefTransfer = getCnossosTrainData(spectreVer).get("Vehicule").get("Definition").get(typeVehicule).get("RefTransfer").intValue();
+        return getCnossosTrainData(spectreVer).get("Vehicule").get("Transfer").get(String.valueOf(RefTransfer)).get("Spectre").get(freqId).doubleValue();
 
     }
-    public static Double getLRoughness(String typeTrain, int railRoughnessId, int spectreVer, int idLambda) { //
-        double wheelRoughness = getLambdaValue(typeTrain, "RefRoughness",spectreVer, idLambda);
-        double contactFilter = getLambdaValue(typeTrain, "RefContact",spectreVer, idLambda);
-        double railRoughness = getRailRoughness(railRoughnessId, spectreVer, idLambda);
-        return 10 * Math.log10(Math.pow(10,wheelRoughness/10) + Math.pow(10,railRoughness/10) ) + contactFilter;
+    public static Double getLRoughness(String typeVehicule, int trackRoughnessId, int spectreVer, int idLambda) { //
+        double wheelRoughness = getLambdaValue(typeVehicule, "RefRoughness",spectreVer, idLambda);
+        double contactFilter = getLambdaValue(typeVehicule, "RefContact",spectreVer, idLambda);
+        double trackRoughness = getTrackRoughness(trackRoughnessId, spectreVer, idLambda);
+        return 10 * Math.log10(Math.pow(10,wheelRoughness/10) + Math.pow(10,trackRoughness/10) ) + contactFilter;
     }
     private static double getLambdaToFreq(double speed,int idLambda) {
         int n=0;
@@ -326,10 +328,10 @@ public class EvaluateTrainSourceCnossos {
     // https://github.com/mobilesec/timeseries-signal-processing/blob/master/Interpolation.java
 
     /**
-     * Rail noise evaluation.
+     * Track noise evaluation.
      * @param vehiculeParameters Vehicule Noise emission parameters
      * @param trackParameters Track Noise emission parameters
-     * @return Noise level in dB
+     * @return LWRoll / LWTraction / LWAerodynamic level in dB
      */
 
      static LWRailWay evaluate(VehiculeParametersCnossos vehiculeParameters, TrackParametersCnossos trackParameters) {
@@ -341,10 +343,9 @@ public class EvaluateTrainSourceCnossos {
 
         String typeVehicule = vehiculeParameters.getTypeVehicule();
         double speedVehicule = vehiculeParameters.getSpeed();
-        int height = vehiculeParameters.getHeight();
 
         double speedTrack = trackParameters.getSpeed();
-        int railRoughnessId = trackParameters.getRailRoughness();
+        int trackRoughnessId = trackParameters.getRailRoughness();
         int trackTransferId = trackParameters.getTrackTransfer();
         int impactId = trackParameters.getImpactNoise();
         int bridgeId = trackParameters.getBridgeConstant();
@@ -354,30 +355,32 @@ public class EvaluateTrainSourceCnossos {
         double speed = min(speedVehicule,speedTrack);
 
         //  Rolling noise calcul
-        double[] lWRolling = evaluateLWRoll(typeVehicule, railRoughnessId, impactId, speed,trackTransferId,spectreVer,axlesPerVeh);
-         double lWBridge = 0;
-         if(bridgeId==3){
-             lWBridge = 1;
-         }else if(bridgeId==4){
-             lWBridge = 4;
-         }
-         double lWSqueal = 0;
-         if(curvate==3){
-             lWBridge = 5;
-         }else if(curvate==4){
-             lWBridge = 8;
-         }
+        double[] lWRolling = evaluateLWRoll(typeVehicule, trackRoughnessId, impactId, speed,trackTransferId,spectreVer,axlesPerVeh);
+
+         double lWSqueal = 0; // correction rolling
 
         // Traction noise calcul
-        double[] lWTraction = evaluateLWSpectre(typeVehicule,"RefTraction", speed, height,spectreVer);
+        double[] lWTractionA = evaluateLWSpectre(typeVehicule,"RefTraction", speed, 0,spectreVer);
+         double[] lWTractionB = evaluateLWSpectre(typeVehicule,"RefTraction", speed, 1,spectreVer);
 
         // Aerodynamic noise calcul
-        double[] lWAerodynamic = evaluateLWSpectre(typeVehicule,"RefAerodynamic", speed, height,spectreVer);
+        double[] lWAerodynamicA = evaluateLWSpectre(typeVehicule,"RefAerodynamic", speed, 0,spectreVer);
+        double[] lWAerodynamicB = evaluateLWSpectre(typeVehicule,"RefAerodynamic", speed, 1,spectreVer);
 
+        double[] lWBridge = evaluateLWBridge(bridgeId,spectreVer);
 
-        //return new LW(LWRoll[nFreq], LWTraction[nFreq], LWAerodynamic[nFreq]);
-         LWRailWay lWRailWay= new LWRailWay(lWRolling, lWTraction, lWAerodynamic,lWBridge,lWSqueal);
+        LWRailWay lWRailWay= new LWRailWay(lWRolling, lWTractionA,lWTractionB, lWAerodynamicA,lWAerodynamicB,lWBridge);
         return lWRailWay;
+    }
+
+    private static double[] evaluateLWBridge(int bridgeId, int spectreVer) {
+        double [] lWBridge= new double[24];
+        if(bridgeId==3 || bridgeId==4){
+            for(int idFreq = 0; idFreq < 24; idFreq++) {
+                lWBridge[idFreq] = getBridgeStructural(bridgeId,spectreVer,idFreq);
+            }
+        }
+        return lWBridge;
     }
 
     private static double[] evaluateLWSpectre(String typeVehicule,String ref, double speed, int height,int spectreVer) {
@@ -400,7 +403,7 @@ public class EvaluateTrainSourceCnossos {
         }
         return lWSpectre;
     }
-    private static double[] evaluateLWRoll(String typeVehicule, int railRoughnessId, int impactId, double speed,int trackTransferId, int spectreVer, int axlesPerVeh) {
+    private static double[] evaluateLWRoll(String typeVehicule, int trackRoughnessId, int impactId, double speed,int trackTransferId, int spectreVer, int axlesPerVeh) {
         double [] trackTransfer = new double[24];
         double [] lWTr = new double[24];
         double [] vehTransfer = new double[24];
@@ -408,7 +411,7 @@ public class EvaluateTrainSourceCnossos {
         double [] lWRoll = new double[24];
 
         // roughnessLtot = CNOSSOS p.19 (2.3.7)
-        double[] roughnessLtot = checkNanValue(evaluateRoughnessLtotFreq(typeVehicule, railRoughnessId, impactId,speed, spectreVer));
+        double[] roughnessLtot = checkNanValue(evaluateRoughnessLtotFreq(typeVehicule, trackRoughnessId, impactId,speed, spectreVer));
 
         for(int idFreq = 0; idFreq < 24; idFreq++){
             // lWTr = CNOSSOS p.20 (2.3.8)
@@ -424,14 +427,14 @@ public class EvaluateTrainSourceCnossos {
         }
         return lWRoll;
     }
-    private static double[] evaluateRoughnessLtotFreq(String typeVehicule, int railRoughnessId,int impactId, double speed, int spectreVer) {
+    private static double[] evaluateRoughnessLtotFreq(String typeVehicule, int trackRoughnessId,int impactId, double speed, int spectreVer) {
 
         double[] roughnessLtotLambda = new double[32];
         double[] lambdaToFreqLog= new double[32];
         double[] freqMedLog = new double[24];
 
         for(int idLambda = 0; idLambda < 32; idLambda++){
-            roughnessLtotLambda[idLambda]= Math.pow(10,getLRoughness(typeVehicule, railRoughnessId,spectreVer, idLambda)/10); // Lambda
+            roughnessLtotLambda[idLambda]= Math.pow(10,getLRoughness(typeVehicule, trackRoughnessId,spectreVer, idLambda)/10); // Lambda
             roughnessLtotLambda[idLambda]= roughnessLtotLambda[idLambda]+Math.pow(10,getLRoughness(typeVehicule, impactId,spectreVer, idLambda)/10); // add impact
             lambdaToFreqLog[idLambda] = Math.log10(getLambdaToFreq(speed,idLambda));
         }

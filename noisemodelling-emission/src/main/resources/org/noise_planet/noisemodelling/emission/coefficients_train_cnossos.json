@@ -1,4 +1,4 @@
-{"Train": {
+{"Vehicule": {
   "Definition":{
     "TGV-DUPLEX-motrice":{
       "Description":"Example Cas test Cnossos Train",
@@ -4052,7 +4052,7 @@
     }
   }
 },
-  "Rail": {
+  "Track": {
     "TrackTransfer":{
       "0" :{"Default":"true",
         "Reference":null,
@@ -4875,12 +4875,60 @@
       "3" :{"Default":"true",
         "Reference":"CNOSSOS",
         "Description":"Predominantly concrete or masonry bridges with any trackform",
-        "Value":1
+        "Values":[
+          85.2,
+          87.1,
+          91.0,
+          94.0,
+          94.4,
+          96.0,
+          92.5,
+          96.7,
+          97.4,
+          99.4,
+          100.7,
+          102.5,
+          107.1,
+          109.8,
+          112.0,
+          107.2,
+          106.8,
+          107.3,
+          99.3,
+          91.4,
+          86.9,
+          79.7,
+          75.1,
+          70.8]
       },
       "4" :{"Default":"true",
         "Reference":"CNOSSOS",
         "Description":"Predominantly steel bridges with ballasted track  ",
-        "Value":4
+        "Values":[
+          90.1,
+          92.1,
+          96.0,
+          99.5,
+          99.9,
+          101.5,
+          99.6,
+          103.8,
+          104.5,
+          106.5,
+          107.8,
+          109.6,
+          116.1,
+          118.8,
+          120.9,
+          109.5,
+          109.1,
+          109.6,
+          102.0,
+          94.1,
+          89.6,
+          83.6,
+          79.0,
+          74.7]
       }
     }
   }

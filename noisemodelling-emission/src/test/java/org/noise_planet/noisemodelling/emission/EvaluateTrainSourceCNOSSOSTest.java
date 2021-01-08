@@ -17,6 +17,46 @@ public class EvaluateTrainSourceCNOSSOSTest {
     @Test
     public void Test_X_TER_bicaisse_D() {
         String vehCat = "X-TER-bicaisse-D";
+        double vehicleSpeed = 320;
+        double vehiclePerHour = 1;
+        int vehPerTrain = 2;
+
+        int trackTransfer = 4;
+        int impactNoise = 0;
+        int bridgeConstant = 4;
+        int curvate = 0;
+        int railRoughness = 4;
+
+        double vMaxInfra = 320;
+        LWRailWay lWRailWay = null;
+
+            VehiculeParametersCnossos vehiculeParameters = new VehiculeParametersCnossos(vehCat, "", vehPerTrain,
+                    vehicleSpeed, vehiclePerHour, 0, 0);
+            TrackParametersCnossos trackParameters = new TrackParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
+                    impactNoise, bridgeConstant, curvate);
+            lWRailWay = EvaluateTrainSourceCnossos.evaluate(vehiculeParameters, trackParameters);
+        double[] LWRolling = lWRailWay.getLWRolling();
+        double[] LWTractionA = lWRailWay.getLWTractionA();
+        double[] LWTractionB = lWRailWay.getLWTractionB();
+        double[] LWAerodynamicA = lWRailWay.getLWAerodynamicA();
+        double[] LWAerodynamicB = lWRailWay.getLWAerodynamicB();
+        double[] LWBridge = lWRailWay.getLWBridge();
+            // TODO add ref calcul exemple LWRoll = CNOSSOS p.19 (2.3.7)
+    }
+        /*
+            double[] LWRolling = lWRailWay.getLWRolling();
+            double[] LWTractionA = lWRailWay.getLWTraction();
+            double[] LWTractionB = lWRailWay.getLWRolling();
+            double[] LWAerodynamicA = lWRailWay.getLWAerodynamic();
+            double[] LWAerodynamicB = lWRailWay.getLWAerodynamic();
+        */
+
+    /*
+    @Test
+    public void Test_TGV_DUPLEX() {
+        String vehCat1 = "TGV-DUPLEX-motrice";
+        String vehCat2 = "TGV-DUPLEX-voiture-1";
+        String vehCat3 = "TGV-DUPLEX-voiture-2";
         double vehicleSpeed = 160;
         double vehiclePerHour = 1;
         int vehPerTrain = 2;
@@ -31,24 +71,26 @@ public class EvaluateTrainSourceCNOSSOSTest {
         LWRailWay lWRailWayA = null;
         LWRailWay lWRailWayB = null;
 
-        for (int sourceHeight = 0; sourceHeight < 2; sourceHeight++) {
-            VehiculeParametersCnossos vehiculeParameters = new VehiculeParametersCnossos(vehCat, "", vehPerTrain,
-                    vehicleSpeed, vehiclePerHour, 0, 0, sourceHeight);
-            TrackParametersCnossos trackParameters = new TrackParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
-                    impactNoise, bridgeConstant, curvate);
-            if (sourceHeight == 0) {
-                lWRailWayA = EvaluateTrainSourceCnossos.evaluate(vehiculeParameters, trackParameters);
-            } else if (sourceHeight == 1) {
-                lWRailWayB = EvaluateTrainSourceCnossos.evaluate(vehiculeParameters, trackParameters);
+        for (){
+            for (int sourceHeight = 0; sourceHeight < 2; sourceHeight++) {
+                VehiculeParametersCnossos vehiculeParameters = new VehiculeParametersCnossos(vehCat, "", vehPerTrain,
+                        vehicleSpeed, vehiclePerHour, 0, 0);
+                TrackParametersCnossos trackParameters = new TrackParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
+                        impactNoise, bridgeConstant, curvate);
+                if (sourceHeight == 0) {
+                    lWRailWayA = EvaluateTrainSourceCnossos.evaluate(vehiculeParameters, trackParameters);
+                } else if (sourceHeight == 1) {
+                    lWRailWayB = EvaluateTrainSourceCnossos.evaluate(vehiculeParameters, trackParameters);
+                }
+                // TODO add ref calcul exemple LWRoll = CNOSSOS p.19 (2.3.7)
             }
-            // TODO add ref calcul exemple LWRoll = CNOSSOS p.19 (2.3.7)
-        }
+         }
         /*
             double[] LWRolling = lWRailWayA.getLWRolling();
             double[] LWTractionA = lWRailWayA.getLWTraction();
             double[] LWTractionB = lWRailWayB.getLWRolling();
             double[] LWAerodynamicA = lWRailWayA.getLWAerodynamic();
             double[] LWAerodynamicB = lWRailWayB.getLWAerodynamic();
-        */
-    }
+
+    }*/
 }
