@@ -170,12 +170,20 @@ public class EvaluateRoadSourceCnossos {
         return base + adj * Math.log10(speed / speedBase);
     }
 
-    /** compute Noise Level from flow_rate and speed **/
-    private static Double Vperhour2NoiseLevel(double NoiseLevel, double vperhour, double speed) {
-        if (speed > 0) {
-            return NoiseLevel + 10 * Math.log10(vperhour / (1000 * speed));
-        }else{
-            return 0.;
+
+    /**
+     * Compute Noise Level from flow_rate and speed Eq 2.2.1 from Directive 2015/2019
+     * @param LWim LW,i,m is the directional sound power of a single vehicle and is expressed in dB (re. 10–12 W/m).
+     * @param Qm Traffic flow data Qm shall be expressed as yearly average per hour, per time period (day-evening-night), per vehicle class and per source line.
+     * @param vm The speed vm is a representative speed per vehicle category: in most cases the lower of the maximum legal speed for the section of road and the maximum legal speed for the vehicle category. If local measurement data is unavailable the maximum legal speed for the vehicle category shall be used.
+     * @return
+     * @throws IOException if speed < 0 km/h
+     */
+    private static Double Vperhour2NoiseLevel(double LWim, double Qm, double vm) throws IOException {
+        if (vm > 0) {
+            return LWim + 10 * Math.log10(Qm / (1000 * vm));
+        } else {
+            throw new IOException("Speed of this road section is inferior to 0 km/h");
         }
     }
 
@@ -195,7 +203,7 @@ public class EvaluateRoadSourceCnossos {
      * @param parameters Noise emission parameters
      * @return Noise level in dB
      */
-    public static double evaluate(RSParametersCnossos parameters) {
+    public static double evaluate(RSParametersCnossos parameters) throws IOException {
         final int freqParam = parameters.getFreqParam();
         final double Temperature = parameters.getTemperature();
         final double Ts_stud = parameters.getTs_stud();

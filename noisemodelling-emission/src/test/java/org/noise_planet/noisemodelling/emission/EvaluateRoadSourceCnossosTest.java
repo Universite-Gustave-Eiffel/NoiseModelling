@@ -35,6 +35,8 @@ package org.noise_planet.noisemodelling.emission;
 
 import org.junit.Test;
 
+import java.io.IOException;
+
 import static org.junit.Assert.*;
 
 /**
@@ -47,7 +49,7 @@ public class EvaluateRoadSourceCnossosTest {
 
     /** based on CNOSSOS_Road_Output.csv and the CNOSSOS_DLL_CONSOLE.exe**/
     @Test
-    public void T02() {
+    public void T02() throws IOException {
         double lv_speed = 70;
         int lv_per_hour = 1000;
         double mv_speed = 70;
@@ -74,7 +76,7 @@ public class EvaluateRoadSourceCnossosTest {
 
     /** based on CNOSSOS_Road_Output.csv and the CNOSSOS_DLL_CONSOLE.exe**/
     @Test
-    public void T03() {
+    public void T03() throws IOException {
         double lv_speed = 40;
         int lv_per_hour = 582;
         double mv_speed = 43;
@@ -101,7 +103,7 @@ public class EvaluateRoadSourceCnossosTest {
 
     /** based on CNOSSOS_Road_Output.csv and the CNOSSOS_DLL_CONSOLE.exe**/
     @Test
-    public void T04() {
+    public void T04() throws IOException {
         double lv_speed = 40;
         int lv_per_hour = 58;
         double mv_speed = 43;
@@ -129,7 +131,7 @@ public class EvaluateRoadSourceCnossosTest {
 
     /** based on CNOSSOS_Road_Output.csv and the CNOSSOS_DLL_CONSOLE.exe**/
     @Test
-    public void T05() {
+    public void T05() throws IOException {
         double lv_speed = 40;
         int lv_per_hour = 58;
         double mv_speed = 43;
@@ -156,7 +158,7 @@ public class EvaluateRoadSourceCnossosTest {
 
     /** based on CNOSSOS_Road_Output.csv and the CNOSSOS_DLL_CONSOLE.exe**/
     @Test
-    public void T06() {
+    public void T06() throws IOException {
         double lv_speed = 70;
         int lv_per_hour = 1000;
         double mv_speed = 70;
@@ -191,7 +193,7 @@ public class EvaluateRoadSourceCnossosTest {
 
 
     @Test
-    public void CnossosEmissionTest() {
+    public void CnossosEmissionTest() throws IOException {
         String vehCat="1";
         double vehiclePerHour = 1000;
         double vehicleSpeed = 20;
