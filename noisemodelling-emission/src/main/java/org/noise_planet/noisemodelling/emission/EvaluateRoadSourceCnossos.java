@@ -164,7 +164,14 @@ public class EvaluateRoadSourceCnossos {
         return getCnossosData(coeffVer).get("vehicles").get(vehicleCategory).get(coeff).get(Freq_ind).doubleValue();
     }
 
-    /** get noise level from speed **/
+    /**
+     * Get rolling or motor sound level
+     * @param base coeff A
+     * @param adj coeff B
+     * @param speed vm in km/h
+     * @param speedBase vref in km/h
+     * @return
+     */
     private static Double getNoiseLvl(double base, double adj, double speed,
                                       double speedBase) {
         return base + adj * Math.log10(speed / speedBase);
@@ -219,8 +226,8 @@ public class EvaluateRoadSourceCnossos {
     public static double evaluate(RSParametersCnossos parameters) throws IOException {
         final int freqParam = parameters.getFreqParam();
         final double Temperature = parameters.getTemperature();
-        final double Ts_stud = parameters.getTs_stud();
-        final double Pm_stud = parameters.getPm_stud();
+        final double Ts_stud = parameters.getTsStud();
+        final double Pm_stud = parameters.getqStudRatio();
         final double Junc_dist = parameters.getJunc_dist();
         final int Junc_type = parameters.getJunc_type();
         final String roadSurface = parameters.getRoadSurface();
@@ -234,12 +241,25 @@ public class EvaluateRoadSourceCnossos {
         double wheelaRoadLvl;// Lw/m (1 veh/h)
         double wheelbRoadLvl;// Lw/m (1 veh/h)
 
-        // Noise level
-        lvRoadLvl = getNoiseLvl(getCoeff("ar", freqParam , "1"  ,coeffVer), getCoeff("br", freqParam , "1"  ,coeffVer), parameters.getSpeedLv(), 70.);
-        medRoadLvl = getNoiseLvl(getCoeff("ar", freqParam , "2" ,coeffVer ), getCoeff("br", freqParam , "2" ,coeffVer ), parameters.getSpeedMv(), 70.);
-        hgvRoadLvl = getNoiseLvl(getCoeff("ar", freqParam , "3"  ,coeffVer), getCoeff("br", freqParam , "3" ,coeffVer ), parameters.getSpeedHgv(), 70.);
-        wheelaRoadLvl = getNoiseLvl(getCoeff("ar", freqParam , "4a" ,coeffVer ), getCoeff("br", freqParam , "4a" ,coeffVer ), parameters.getSpeedWav(), 70.);
-        wheelbRoadLvl = getNoiseLvl(getCoeff("ar", freqParam , "4b"  ,coeffVer), getCoeff("br", freqParam , "4b" ,coeffVer ), parameters.getSpeedWbv(), 70.);
+        // Rolling noise level Eq. 2.2.4
+        double vRef = 70.;
+        lvRoadLvl = getNoiseLvl(getCoeff("ar", freqParam , "1"  ,coeffVer), getCoeff("br", freqParam , "1"  ,coeffVer), parameters.getSpeedLv(), vRef);
+        medRoadLvl = getNoiseLvl(getCoeff("ar", freqParam , "2" ,coeffVer ), getCoeff("br", freqParam , "2" ,coeffVer ), parameters.getSpeedMv(), vRef);
+        hgvRoadLvl = getNoiseLvl(getCoeff("ar", freqParam , "3"  ,coeffVer), getCoeff("br", freqParam , "3" ,coeffVer ), parameters.getSpeedHgv(), vRef);
+        wheelaRoadLvl = getNoiseLvl(getCoeff("ar", freqParam , "4a" ,coeffVer ), getCoeff("br", freqParam , "4a" ,coeffVer ), parameters.getSpeedWav(), vRef);
+        wheelbRoadLvl = getNoiseLvl(getCoeff("ar", freqParam , "4b"  ,coeffVer), getCoeff("br", freqParam , "4b" ,coeffVer ), parameters.getSpeedWbv(), vRef);
+
+        // Correction for studded tyres - Eq. 2.2.6
+        if (Pm_stud >0 && Ts_stud > 0) {
+            double deltastud;
+            double speed = parameters.getSpeedLv();
+            double ps = Pm_stud * Ts_stud / 12; // Eq. 2.2.7 yearly average proportion of vehicles equipped with studded tyres
+            speed = (speed >= 90) ? 90 : speed;
+            speed = (speed <= 50) ? 50 : speed;
+            deltastud = getNoiseLvl(getCoeff("a", freqParam, "1",coeffVer), getCoeff("b", freqParam, "1",coeffVer), speed, vRef);
+            lvRoadLvl = lvRoadLvl + 10 * Math.log10((1 - ps) + ps * Math.pow(10, deltastud / 10)); // Eq. 2.2.8
+            // Only for light vehicles (Eq.2.2.9)
+        }
 
         // Correction by temperature p. 36
         lvRoadLvl = lvRoadLvl+ 0.08*(20-Temperature); // K = 0.08  p. 36
@@ -253,16 +273,7 @@ public class EvaluateRoadSourceCnossos {
         medRoadLvl = medRoadLvl + getCr("2", Junc_type,coeffVer)  * coefficientJunctionDistance;
         hgvRoadLvl = hgvRoadLvl + getCr("3", Junc_type,coeffVer)  * coefficientJunctionDistance;
 
-        //Studied tyres
-        if (Pm_stud >0 && Ts_stud > 0) {
-            double deltastud = 0;
-            double speed = parameters.getSpeedLv();
-            double ps = Pm_stud * Ts_stud / 12; //yearly average proportion of vehicles equipped with studded tyres
-            speed = (speed >= 90) ? 90 : speed;
-            speed = (speed <= 50) ? 50 : speed;
-            deltastud = getNoiseLvl(getCoeff("a", freqParam, "1",coeffVer), getCoeff("b", freqParam, "1",coeffVer), speed, 70.);
-            lvRoadLvl = lvRoadLvl + 10 * Math.log10((1 - ps) + ps * Math.pow(10, deltastud / 10));
-        }
+
 
         //Road surface correction on rolling noise
         lvRoadLvl = lvRoadLvl+ getNoiseLvl(getA_Roadcoeff(freqParam,"1", parameters.getRoadSurface(),coeffVer), getB_Roadcoeff("1",roadSurface,coeffVer), parameters.getSpeedLv(), 70.);

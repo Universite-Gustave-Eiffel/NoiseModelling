@@ -49,8 +49,8 @@ public class RSParametersCnossos {
     private final int FreqParam;
     private final double Temperature;
     private final String roadSurface;
-    private final double Ts_stud;
-    private final double Pm_stud;
+    private final double tsStud; // Period (in months) where the average ratio of the total volume of light vehicles per hour equipped with studded tyres
+    private final double qStudRatio; // Average ratio of the total volume of light vehicles per hour equipped with studded tyres during the period Ts_stud (in months)
     private final double Junc_dist;
     private final int Junc_type;
 
@@ -255,8 +255,8 @@ public class RSParametersCnossos {
         this.FreqParam = Math.max(0, FreqParam);
         this.Temperature = Temperature;
         this.roadSurface = roadSurface;
-        this.Ts_stud = Math.max(0, Math.min(12, Ts_stud));
-        this.Pm_stud = Math.max(0, Math.min(1, Pm_stud));
+        this.tsStud = Math.max(0, Math.min(12, Ts_stud));
+        this.qStudRatio = Math.max(0, Math.min(1, Pm_stud));
         this.Junc_dist = Math.max(0, Junc_dist);
         this.Junc_type = Math.max(0, Math.min(2, Junc_type));
         setSpeedLv(lv_speed);
@@ -370,9 +370,9 @@ public class RSParametersCnossos {
 
     public String getRoadSurface() {return roadSurface;}
 
-    public double getTs_stud() {return Ts_stud;}
+    public double getTsStud() {return tsStud;}
 
-    public double getPm_stud() {return Pm_stud;}
+    public double getqStudRatio() {return qStudRatio;}
 
     public double getJunc_dist() {return Junc_dist;}
 
