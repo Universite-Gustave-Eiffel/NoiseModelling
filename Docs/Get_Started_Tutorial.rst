@@ -22,7 +22,7 @@ Please install JAVA version v8.x. Currently only version 8 of Java is compatible
 Step 1: Download the latest release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- Download the latest realease on `Github`_. 
+- Download the latest realease of NoiseModelling on `Github`_. 
 - Unzip the downloaded file into a chosen directory.
 
 .. note::
