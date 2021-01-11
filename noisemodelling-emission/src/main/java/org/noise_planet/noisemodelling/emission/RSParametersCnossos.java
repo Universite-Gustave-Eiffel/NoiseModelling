@@ -33,6 +33,8 @@
  */
 package org.noise_planet.noisemodelling.emission;
 
+import java.io.IOException;
+
 /**
  * RoadSource parameters for CNOSSOS method
  * @author Nicolas Fortin
@@ -300,19 +302,63 @@ public class RSParametersCnossos {
         return slopePercentage;
     }
 
-    public double getSpeedLv() {
+    /**
+     * For speeds less than 20 km/h it shall have the same sound power level as defined by the formula for vm = 20 km/h.
+     * @return
+     */
+    public double getSpeedLv() throws IOException {
+        if (speedLv<0) throw new IOException("Speed of this road section is inferior to 0 km/h");
+        if (speedLv<20) {
+            speedLv =20;
+        }
         return speedLv;
     }
-    public double getSpeedMv() {
+
+    /**
+     * For speeds less than 20 km/h it shall have the same sound power level as defined by the formula for vm = 20 km/h.
+     * @return
+     */
+    public double getSpeedMv() throws IOException {
+        if (speedMv<0) throw new IOException("Speed of this road section is inferior to 0 km/h");
+        if (speedMv<20) {
+            speedMv =20;
+        }
         return speedMv;
     }
-    public double getSpeedHgv() {
+
+    /**
+     * For speeds less than 20 km/h it shall have the same sound power level as defined by the formula for vm = 20 km/h.
+     * @return
+     */
+    public double getSpeedHgv() throws IOException {
+        if (speedHgv<0) throw new IOException("Speed of this road section is inferior to 0 km/h");
+        if (speedHgv<20) {
+            speedHgv =20;
+        }
         return speedHgv;
     }
-    public double getSpeedWav() {
+
+    /**
+     * For speeds less than 20 km/h it shall have the same sound power level as defined by the formula for vm = 20 km/h.
+     * @return
+     */
+    public double getSpeedWav() throws IOException {
+        if (speedWav<0) throw new IOException("Speed of this road section is inferior to 0 km/h");
+        if (speedWav<20) {
+            speedWav =20;
+        }
         return speedWav;
     }
-    public double getSpeedWbv() {
+
+    /**
+     * For speeds less than 20 km/h it shall have the same sound power level as defined by the formula for vm = 20 km/h.
+     * @return
+     */
+    public double getSpeedWbv() throws IOException {
+        if (speedWbv<0) throw new IOException("Speed of this road section is inferior to 0 km/h");
+        if (speedWbv<20) {
+            speedWbv =20;
+        }
         return speedWbv;
     }
 

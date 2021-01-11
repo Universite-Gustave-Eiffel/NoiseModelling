@@ -40,8 +40,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Random;
 
-import static org.noise_planet.noisemodelling.emission.Utils.dbaToW;
-import static org.noise_planet.noisemodelling.emission.Utils.wToDba;
+import static org.noise_planet.noisemodelling.emission.Utils.dbToW;
+import static org.noise_planet.noisemodelling.emission.Utils.wToDb;
 
 /**
  * Return the dB value corresponding to the parameters
@@ -174,11 +174,11 @@ public class EvaluateRoadSourceDynamic {
 
     /** get sum dBa **/
     private static Double sumDba(Double dBA1, Double dBA2) {
-        return wToDba(dbaToW(dBA1) + dbaToW(dBA2));
+        return wToDb(dbToW(dBA1) + dbToW(dBA2));
     }
 
     private static Double sumDba_5(Double dBA1, Double dBA2, Double dBA3, Double dBA4, Double dBA5) {
-        return wToDba(dbaToW(dBA1) + dbaToW(dBA2) + dbaToW(dBA3) + dbaToW(dBA4) + dbaToW(dBA5));
+        return wToDb(dbToW(dBA1) + dbToW(dBA2) + dbToW(dBA3) + dbToW(dBA4) + dbToW(dBA5));
     }
 
     /**

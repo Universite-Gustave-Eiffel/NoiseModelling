@@ -39,8 +39,8 @@ import com.fasterxml.jackson.databind.node.NullNode;
 import java.io.IOException;
 import java.io.InputStream;
 
-import static org.noise_planet.noisemodelling.emission.Utils.dbaToW;
-import static org.noise_planet.noisemodelling.emission.Utils.wToDba;
+import static org.noise_planet.noisemodelling.emission.Utils.dbToW;
+import static org.noise_planet.noisemodelling.emission.Utils.wToDb;
 
 
 /**
@@ -175,7 +175,7 @@ public class EvaluateRoadSourceCnossos {
      * Compute Noise Level from flow_rate and speed Eq 2.2.1 from Directive 2015/2019
      * @param LWim LW,i,m is the directional sound power of a single vehicle and is expressed in dB (re. 10–12 W/m).
      * @param Qm Traffic flow data Qm shall be expressed as yearly average per hour, per time period (day-evening-night), per vehicle class and per source line.
-     * @param vm The speed vm is a representative speed per vehicle category: in most cases the lower of the maximum legal speed for the section of road and the maximum legal speed for the vehicle category. If local measurement data is unavailable the maximum legal speed for the vehicle category shall be used.
+     * @param vm The speed vm is a representative speed per vehicle category: in most cases the lower of the maximum legal speed for the section of road and the maximum legal speed for the vehicle category. If measurement data is unavailable, the maximum legal speed for the vehicle category shall be used.
      * @return
      * @throws IOException if speed < 0 km/h
      */
@@ -188,14 +188,27 @@ public class EvaluateRoadSourceCnossos {
     }
 
 
-
-    /** get sum dBa **/
-    private static Double sumDba(Double dBA1, Double dBA2) {
-        return wToDba(dbaToW(dBA1) + dbaToW(dBA2));
+    /**
+     * Energetic sum of 2 dB values
+     * @param dB1 First value in dB
+     * @param dB2 Second value in dB
+     * @return
+     */
+    private static Double sumDbValues(Double dB1, Double dB2) {
+        return wToDb(dbToW(dB1) + dbToW(dB2));
     }
 
-    private static Double sumDba_5(Double dBA1, Double dBA2, Double dBA3, Double dBA4, Double dBA5) {
-        return wToDba(dbaToW(dBA1) + dbaToW(dBA2) + dbaToW(dBA3) + dbaToW(dBA4) + dbaToW(dBA5));
+    /**
+     * Energetic sum of 5 dB values
+     * @param dB1 value in dB
+     * @param dB2 value in dB
+     * @param dB3 value in dB
+     * @param dB4 value in dB
+     * @param dB5 value in dB
+     * @return
+     */
+    private static Double sumDb5(Double dB1, Double dB2, Double dB3, Double dB4, Double dB5) {
+        return wToDb(dbToW(dB1) + dbToW(dB2) + dbToW(dB3) + dbToW(dB4) + dbToW(dB5));
     }
 
     /**
@@ -312,11 +325,14 @@ public class EvaluateRoadSourceCnossos {
         wheelbMotorLvl = wheelbMotorLvl + Math.min(getA_Roadcoeff(freqParam ,"4b",roadSurface,coeffVer), 0.);
 
 
-        final double lvCompound = sumDba(lvRoadLvl, lvMotorLvl);
-        final double medCompound = sumDba(medRoadLvl, medMotorLvl);
-        final double hgvCompound = sumDba(hgvRoadLvl, hgvMotorLvl);
-        final double wheelaCompound = sumDba(wheelaRoadLvl, wheelaMotorLvl);
-        final double wheelbCompound = sumDba(wheelbRoadLvl, wheelbMotorLvl);
+        /**
+         * Equation 2.2.2
+         */
+        final double lvCompound = sumDbValues(lvRoadLvl, lvMotorLvl);
+        final double medCompound = sumDbValues(medRoadLvl, medMotorLvl);
+        final double hgvCompound = sumDbValues(hgvRoadLvl, hgvMotorLvl);
+        final double wheelaCompound = wheelaMotorLvl; // Eq. 2.2.3
+        final double wheelbCompound = wheelbMotorLvl; // Eq. 2.2.3
 
 
         // ////////////////////////
@@ -327,7 +343,7 @@ public class EvaluateRoadSourceCnossos {
         double hgvLvl =Vperhour2NoiseLevel(hgvCompound , parameters.getHgvPerHour(), parameters.getSpeedHgv());
         double wheelaLvl =Vperhour2NoiseLevel(wheelaCompound , parameters.getWavPerHour(), parameters.getSpeedWav());
         double wheelbLvl =Vperhour2NoiseLevel(wheelbCompound , parameters.getWbvPerHour(), parameters.getSpeedWbv());
-        return sumDba_5(lvLvl, medLvl, hgvLvl, wheelaLvl, wheelbLvl);
+        return sumDb5(lvLvl, medLvl, hgvLvl, wheelaLvl, wheelbLvl);
     }
 
 
