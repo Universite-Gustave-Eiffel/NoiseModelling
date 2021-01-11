@@ -153,6 +153,7 @@ public class EvaluateAttenuationCnossosTest {
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});
         assertArrayEquals(  new double[]{36.21,36.16,35.31,29.71,33.70,34.36,29.87,13.54},L, ERROR_EPSILON_very_low);
     }
+    
     /**
      * Test TC04 -- Flat ground with spatially varying acoustic properties
      */
