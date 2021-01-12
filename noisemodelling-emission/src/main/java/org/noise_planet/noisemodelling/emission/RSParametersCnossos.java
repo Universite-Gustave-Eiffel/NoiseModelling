@@ -1,69 +1,51 @@
 /**
- * NoiseMap is a scientific computation plugin for OrbisGIS developed in order to
- * evaluate the noise impact on urban mobility plans. This model is
- * based on the French standard method NMPB2008. It includes traffic-to-noise
- * sources evaluation and sound propagation processing.
- *
- * This version is developed at French IRSTV Institute and at IFSTTAR
- * (http://www.ifsttar.fr/) as part of the Eval-PDU project, funded by the
- * French Agence Nationale de la Recherche (ANR) under contract ANR-08-VILL-0005-01.
- *
- * Noisemap is distributed under GPL 3 license. Its reference contact is Judicaël
- * Picaut <judicael.picaut@ifsttar.fr>. It is maintained by Nicolas Fortin
- * as part of the "Atelier SIG" team of the IRSTV Institute <http://www.irstv.fr/>.
- *
- * Copyright (C) 2011 IFSTTAR
- * Copyright (C) 2011-2012 IRSTV (FR CNRS 2488)
- *
- * Noisemap is free software: you can redistribute it and/or modify it under the
- * terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- *
- * Noisemap is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE. See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with
- * Noisemap. If not, see <http://www.gnu.org/licenses/>.
- *
- * For more information, please consult: <http://www.orbisgis.org/>
- * or contact directly:
- * info_at_ orbisgis.org
+ * NoiseModelling is an open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
+ * <p>
+ * This version is developed by the DECIDE team from the Lab-STICC (CNRS) and by the Mixt Research Unit in Environmental Acoustics (Université Gustave Eiffel).
+ * <http://noise-planet.org/noisemodelling.html>
+ * <p>
+ * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE provided with this software.
+ * <p>
+ * Contact: contact@noise-planet.org
  */
+
 package org.noise_planet.noisemodelling.emission;
 
 import java.io.IOException;
 
 /**
  * RoadSource parameters for CNOSSOS method
- * @author Nicolas Fortin
- * @author Pierre Aumond - 03/05/2017
+ *
+ * @Author Nicolas Fortin, Université Gustave Eiffel
+ * @Author Pierre Aumond, Université Gustave Eiffel - 03/05/2017 - Update 12/01/2021
  */
+
 public class RSParametersCnossos {
-    private final double lvPerHour;
-    private final double mvPerHour;
-    private final double hgvPerHour;
-    private final double wavPerHour;
-    private final double wbvPerHour;
-    private final int FreqParam;
-    private final double Temperature;
-    private final String roadSurface;
+    private final double lvPerHour; // Qm in 2015 directive - It shall be expressed as yearly average per hour, per time period (day-evening-night), per vehicle class and per source line. For all categories, input traffic flow data derived from traffic counting or from traffic models shall be used.
+    private final double mvPerHour; // Qm in 2015 directive
+    private final double hgvPerHour; // Qm in 2015 directive
+    private final double wavPerHour; // Qm in 2015 directive
+    private final double wbvPerHour; // Qm in 2015 directive
+    private final int FreqParam; // Frequency in Hz
+    private final double Temperature; // Temperature in °C
+    private final String roadSurface; // Road surface identifier, see coefficients_cnossos2019.json for name list
     private final double tsStud; // Period (in months) where the average ratio of the total volume of light vehicles per hour equipped with studded tyres
     private final double qStudRatio; // Average ratio of the total volume of light vehicles per hour equipped with studded tyres during the period Ts_stud (in months)
-    private final double Junc_dist;
-    private final int Junc_type;
+    private final double Junc_dist; // Distance to junction
+    private final int Junc_type; // Junction type (k=1 traffic lights, k=2 roundabout)
 
-    private double slopePercentage;
-    private double speedLv;
-    private double speedMv;
-    private double speedHgv;
-    private double speedWav;
-    private double speedWbv;
+    private double slopePercentage; // slope s (in %), In the case of a bi-directional traffic flow, it is necessary to split the flow into two components and correct half for uphill and half for downhill.
+    private double speedLv; // cat 1 vehicle speed vm (in km/h)
+    private double speedMv; // cat 2 vehicle speed  (in km/h)
+    private double speedHgv; // cat 3 vehicle speed  (in km/h)
+    private double speedWav; // cat 4a vehicle speed  (in km/h)
+    private double speedWbv; // cat 4b vehicle speed  (in km/h)
 
-    private int coeffVer = 2;
+    private int coeffVer = 2; // default coefficient version (1 = 2015, 2 = 2019)
 
     /**
+     * set Coefficient version  (1 = 2015, 2 = 2019)
+     *
      * @param coeffVer
      */
     public void setCoeffVer(int coeffVer) {
@@ -73,7 +55,6 @@ public class RSParametersCnossos {
     public int getCoeffVer() {
         return this.coeffVer;
     }
-
 
     private static double getVPl(double sLv, double speedmax, int type, int subtype) throws IllegalArgumentException {
         switch (type) {
@@ -165,12 +146,13 @@ public class RSParametersCnossos {
     /**
      * Compute {@link RSParametersCnossos#speedHgv}
      * and {@link RSParametersCnossos#speedLv} from theses parameters
-     * @param speed_junction Speed in the junction section
-     * @param speed_max Maximum speed authorized
+     *
+     * @param speed_junction   Speed in the junction section
+     * @param speed_max        Maximum speed authorized
      * @param copound_roadtype Road surface type.
-     * @param is_queue If true use speed_junction in speedLoad
+     * @param is_queue         If true use speed_junction in speedLoad
      */
-    public void setSpeedFromRoadCaracteristics(double speedLoad, double speed_junction, boolean is_queue, double speed_max,int copound_roadtype) {
+    public void setSpeedFromRoadCaracteristics(double speedLoad, double speed_junction, boolean is_queue, double speed_max, int copound_roadtype) {
         // Separation of main index and sub index
         final int roadtype = copound_roadtype / 10;
         final int roadSubType = copound_roadtype - (roadtype * 10);
@@ -188,6 +170,8 @@ public class RSParametersCnossos {
     }
 
     /**
+     * Eq. 2.2.13
+     *
      * @param slopePercentage Gradient percentage of road from -12 % to 12 %
      */
     public void setSlopePercentage(double slopePercentage) {
@@ -195,22 +179,14 @@ public class RSParametersCnossos {
     }
 
     /**
+     * Eq. 2.2.13
+     *
      * @param slopePercentage Gradient percentage of road from -12 % to 12 %
      */
     public void setSlopePercentage_without_limit(double slopePercentage) {
         this.slopePercentage = slopePercentage;
     }
 
-    /**
-     * Compute the slope
-     * @param beginZ Z start
-     * @param endZ Z end
-     * @param road_length_2d Road length (projected to Z axis)
-     * @return Slope percentage
-     */
-    public static double computeSlope(double beginZ, double endZ, double road_length_2d) {
-        return (endZ - beginZ) / road_length_2d * 100.;
-    }
 
     /**
      * Simplest road noise evaluation
@@ -220,33 +196,50 @@ public class RSParametersCnossos {
      * hgv: Heavy duty vehicles, touring cars, buses, with three or more axles
      * wav:  mopeds, tricycles or quads ≤ 50 cc
      * wbv:  motorcycles, tricycles or quads > 50 cc
-     * @param lv_speed Average light vehicle speed
-     * @param mv_speed Average medium vehicle speed
-     * @param hgv_speed Average heavy goods vehicle speed
-     * @param wav_speed Average light 2 wheels vehicle speed
-     * @param wbv_speed Average heavy 2 wheels vehicle speed
-     * @param lvPerHour Average light vehicle per hour
-     * @param mvPerHour Average heavy vehicle per hour
-     * @param hgvPerHour Average heavy vehicle per hour
-     * @param wavPerHour Average heavy vehicle per hour
-     * @param wbvPerHour Average heavy vehicle per hour
-     * @param FreqParam Studied Frequency
+     *
+     * @param lv_speed    Average light vehicle speed
+     * @param mv_speed    Average medium vehicle speed
+     * @param hgv_speed   Average heavy goods vehicle speed
+     * @param wav_speed   Average light 2 wheels vehicle speed
+     * @param wbv_speed   Average heavy 2 wheels vehicle speed
+     * @param lvPerHour   Average light vehicle per hour
+     * @param mvPerHour   Average heavy vehicle per hour
+     * @param hgvPerHour  Average heavy vehicle per hour
+     * @param wavPerHour  Average heavy vehicle per hour
+     * @param wbvPerHour  Average heavy vehicle per hour
+     * @param FreqParam   Studied Frequency
      * @param Temperature Temperature (Celsius)
      * @param roadSurface roadSurface empty default, NL01 FR01 ..
-     * @param Ts_stud A limited period Ts (in months) over the year where a average proportion pm of light vehicles are equipped with studded tyres and during .
-     * @param Pm_stud Average proportion of vehicles equipped with studded tyres
-     * @param Junc_dist Distance to junction
-     * @param Junc_type Type of junction ((k = 1 for a crossing with traffic lights ; k = 2 for a roundabout)
+     * @param Ts_stud     A limited period Ts (in months) over the year where a average proportion pm of light vehicles are equipped with studded tyres and during .
+     * @param Pm_stud     Average proportion of vehicles equipped with studded tyres
+     * @param Junc_dist   Distance to junction
+     * @param Junc_type   Type of junction ((k = 1 for a crossing with traffic lights ; k = 2 for a roundabout)
      */
     public RSParametersCnossos(double lv_speed, double mv_speed, double hgv_speed, double wav_speed, double wbv_speed, double lvPerHour, double mvPerHour, double hgvPerHour, double wavPerHour, double wbvPerHour, int FreqParam, double Temperature, String roadSurface, double Ts_stud, double Pm_stud, double Junc_dist, int Junc_type) {
 
-        if (lvPerHour <0 ) throw new IllegalArgumentException("The flow rate of light vehicles is less than zero on one section.");
-        if (mvPerHour <0 ) throw new IllegalArgumentException("The flow rate of medium vehicles is less than zero on one section.");
-        if (hgvPerHour <0 ) throw new IllegalArgumentException("The flow rate of heavy vehicles is less than zero on one section.");
-        if (wavPerHour <0 ) throw new IllegalArgumentException("The flow rate of 2W(a) vehicles is less than zero on one section.");
-        if (wbvPerHour <0 ) throw new IllegalArgumentException("The flow rate of 2W(b) vehicles is less than zero on one section.");
-        if (Ts_stud <0 || Ts_stud>12 ) throw new IllegalArgumentException("The number of months of snow tire use is impossible for a section (<0 or >12).");
-        if (Junc_type <0 || Junc_type>2 ) throw new IllegalArgumentException("Unlnown Junction type for a section.");
+        if (lvPerHour < 0)
+            throw new IllegalArgumentException("The flow rate of light vehicles is less than zero on one section.");
+        if (mvPerHour < 0)
+            throw new IllegalArgumentException("The flow rate of medium vehicles is less than zero on one section.");
+        if (hgvPerHour < 0)
+            throw new IllegalArgumentException("The flow rate of heavy vehicles is less than zero on one section.");
+        if (wavPerHour < 0)
+            throw new IllegalArgumentException("The flow rate of 2W(a) vehicles is less than zero on one section.");
+        if (wbvPerHour < 0)
+            throw new IllegalArgumentException("The flow rate of 2W(b) vehicles is less than zero on one section.");
+        if (lv_speed < 0)
+            throw new IllegalArgumentException("The speed light vehicles is less than zero on one section.");
+        if (mv_speed < 0)
+            throw new IllegalArgumentException("The speed of medium vehicles is less than zero on one section.");
+        if (hgv_speed < 0)
+            throw new IllegalArgumentException("The speed of heavy vehicles is less than zero on one section.");
+        if (wav_speed < 0)
+            throw new IllegalArgumentException("The speed of 2W(a) vehicles is less than zero on one section.");
+        if (wbv_speed < 0)
+            throw new IllegalArgumentException("The speed of 2W(b) vehicles is less than zero on one section.");
+        if (Ts_stud < 0 || Ts_stud > 12)
+            throw new IllegalArgumentException("The number of months of snow tire use is impossible for a section (<0 or >12).");
+        if (Junc_type < 0 || Junc_type > 2) throw new IllegalArgumentException("Unlnown Junction type for a section.");
         this.lvPerHour = Math.max(0, lvPerHour);
         this.mvPerHour = Math.max(0, mvPerHour);
         this.hgvPerHour = Math.max(0, hgvPerHour);
@@ -259,41 +252,30 @@ public class RSParametersCnossos {
         this.qStudRatio = Math.max(0, Math.min(1, Pm_stud));
         this.Junc_dist = Math.max(0, Junc_dist);
         this.Junc_type = Math.max(0, Math.min(2, Junc_type));
-        setSpeedLv(lv_speed);
-        setSpeedMv(mv_speed);
-        setSpeedHgv(hgv_speed);
-        setSpeedWav(wav_speed);
-        setSpeedWbv(wbv_speed);
+        this.speedLv = lv_speed;
+        this.speedMv = mv_speed;
+        this.speedHgv = hgv_speed;
+        this.speedWav = wav_speed;
+        this.speedWbv = wbv_speed;
     }
 
-    public void setSpeedLv(double speedLv) {
-        this.speedLv = speedLv;
-    }
-    public void setSpeedMv(double speedMv) {
-        this.speedMv = speedMv;
-    }
-    public void setSpeedHgv(double speedHgv) {
-        this.speedHgv = speedHgv;
-    }
-    public void setSpeedWav(double speedWav) {
-        this.speedWav = speedWav;
-    }
-    public void setSpeedWbv(double speedWbv) {
-        this.speedWbv = speedWbv;
-    }
 
     public double getLvPerHour() {
         return lvPerHour;
     }
+
     public double getMvPerHour() {
         return mvPerHour;
     }
+
     public double getHgvPerHour() {
         return hgvPerHour;
     }
+
     public double getWavPerHour() {
         return wavPerHour;
     }
+
     public double getWbvPerHour() {
         return wbvPerHour;
     }
@@ -304,60 +286,60 @@ public class RSParametersCnossos {
 
     /**
      * For speeds less than 20 km/h it shall have the same sound power level as defined by the formula for vm = 20 km/h.
+     *
      * @return
      */
     public double getSpeedLv() throws IOException {
-        if (speedLv<0) throw new IOException("Speed of this road section is inferior to 0 km/h");
-        if (speedLv<20) {
-            speedLv =20;
+        if (speedLv < 20) {
+            speedLv = 20;
         }
         return speedLv;
     }
 
     /**
      * For speeds less than 20 km/h it shall have the same sound power level as defined by the formula for vm = 20 km/h.
+     *
      * @return
      */
     public double getSpeedMv() throws IOException {
-        if (speedMv<0) throw new IOException("Speed of this road section is inferior to 0 km/h");
-        if (speedMv<20) {
-            speedMv =20;
+        if (speedMv < 20) {
+            speedMv = 20;
         }
         return speedMv;
     }
 
     /**
      * For speeds less than 20 km/h it shall have the same sound power level as defined by the formula for vm = 20 km/h.
+     *
      * @return
      */
     public double getSpeedHgv() throws IOException {
-        if (speedHgv<0) throw new IOException("Speed of this road section is inferior to 0 km/h");
-        if (speedHgv<20) {
-            speedHgv =20;
+        if (speedHgv < 20) {
+            speedHgv = 20;
         }
         return speedHgv;
     }
 
     /**
      * For speeds less than 20 km/h it shall have the same sound power level as defined by the formula for vm = 20 km/h.
+     *
      * @return
      */
     public double getSpeedWav() throws IOException {
-        if (speedWav<0) throw new IOException("Speed of this road section is inferior to 0 km/h");
-        if (speedWav<20) {
-            speedWav =20;
+        if (speedWav < 20) {
+            speedWav = 20;
         }
         return speedWav;
     }
 
     /**
      * For speeds less than 20 km/h it shall have the same sound power level as defined by the formula for vm = 20 km/h.
+     *
      * @return
      */
     public double getSpeedWbv() throws IOException {
-        if (speedWbv<0) throw new IOException("Speed of this road section is inferior to 0 km/h");
-        if (speedWbv<20) {
-            speedWbv =20;
+        if (speedWbv < 20) {
+            speedWbv = 20;
         }
         return speedWbv;
     }
@@ -366,17 +348,29 @@ public class RSParametersCnossos {
         return FreqParam;
     }
 
-    public double getTemperature() { return Temperature;}
+    public double getTemperature() {
+        return Temperature;
+    }
 
-    public String getRoadSurface() {return roadSurface;}
+    public String getRoadSurface() {
+        return roadSurface;
+    }
 
-    public double getTsStud() {return tsStud;}
+    public double getTsStud() {
+        return tsStud;
+    }
 
-    public double getqStudRatio() {return qStudRatio;}
+    public double getqStudRatio() {
+        return qStudRatio;
+    }
 
-    public double getJunc_dist() {return Junc_dist;}
+    public double getJunc_dist() {
+        return Junc_dist;
+    }
 
-    public int getJunc_type() {return Junc_type;}
+    public int getJunc_type() {
+        return Junc_type;
+    }
 
 }
 
