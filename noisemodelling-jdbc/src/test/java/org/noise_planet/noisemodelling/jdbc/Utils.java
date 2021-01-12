@@ -8,6 +8,7 @@ import org.noise_planet.noisemodelling.propagation.ComputeRaysOut;
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -81,7 +82,7 @@ public class Utils {
 
 
         @Override
-        public void addSource(Long pk, Geometry geom, SpatialResultSet rs)  throws SQLException {
+        public void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException, IOException {
             super.addSource(pk, geom, rs);
             double sl[] = new double[powerColumns.length];
             int i = 0;

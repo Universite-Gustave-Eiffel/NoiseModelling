@@ -19,6 +19,7 @@ import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
 import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
 import org.noise_planet.noisemodelling.emission.RSParametersCnossos
+import org.noise_planet.noisemodelling.emission.Utils
 import org.noise_planet.noisemodelling.pathfinder.*
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOut
 import org.noise_planet.noisemodelling.propagation.EvaluateAttenuationCnossos
@@ -1136,9 +1137,9 @@ class MultiRunsProcessData {
                             vl_n_per_hour * FlowMean[r], ml_n_per_hour * FlowMean[r], pl_n_per_hour * FlowMean[r], wa_n_per_hour * FlowMean[r], wb_n_per_hour * FlowMean[r],
                             f, TempMean[r], RS, 0, 0, 250, 1)
 
-                    srcParameters_d.setSlopePercentage(RSParametersCnossos.computeSlope(0, 0, the_geom.get(id).getLength()))
-                    srcParameters_e.setSlopePercentage(RSParametersCnossos.computeSlope(0, 0, the_geom.get(id).getLength()))
-                    srcParameters_n.setSlopePercentage(RSParametersCnossos.computeSlope(0, 0, the_geom.get(id).getLength()))
+                    srcParameters_d.setSlopePercentage(Utils.computeSlope(0, 0, the_geom.get(id).getLength()))
+                    srcParameters_e.setSlopePercentage(Utils.computeSlope(0, 0, the_geom.get(id).getLength()))
+                    srcParameters_n.setSlopePercentage(Utils.computeSlope(0, 0, the_geom.get(id).getLength()))
                     //res_d[kk] = EvaluateRoadSourceCnossos.evaluate(srcParameters_d)
                     //res_e[kk] = EvaluateRoadSourceCnossos.evaluate(srcParameters_e)
                     //res_n[kk] = EvaluateRoadSourceCnossos.evaluate(srcParameters_n)

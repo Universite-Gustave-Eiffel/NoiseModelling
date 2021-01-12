@@ -1,36 +1,15 @@
 /**
- * NoiseMap is a scientific computation plugin for OrbisGIS developed in order to
- * evaluate the noise impact on urban mobility plans. This model is
- * based on the French standard method NMPB2008. It includes traffic-to-noise
- * sources evaluation and sound propagation processing.
- * <p>
- * This version is developed at French IRSTV Institute and at IFSTTAR
- * (http://www.ifsttar.fr/) as part of the Eval-PDU project, funded by the
- * French Agence Nationale de la Recherche (ANR) under contract ANR-08-VILL-0005-01.
- * <p>
- * Noisemap is distributed under GPL 3 license. Its reference contact is Judicaël
- * Picaut <judicael.picaut@ifsttar.fr>. It is maintained by Nicolas Fortin
- * as part of the "Atelier SIG" team of the IRSTV Institute <http://www.irstv.fr/>.
- * <p>
- * Copyright (C) 2011 IFSTTAR
- * Copyright (C) 2011-2012 IRSTV (FR CNRS 2488)
- * <p>
- * Noisemap is free software: you can redistribute it and/or modify it under the
- * terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * <p>
- * Noisemap is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE. See the GNU General Public License for more details.
- * <p>
- * You should have received a copy of the GNU General Public License along with
- * Noisemap. If not, see <http://www.gnu.org/licenses/>.
- * <p>
- * For more information, please consult: <http://www.orbisgis.org/>
- * or contact directly:
- * info_at_ orbisgis.org
+ * NoiseModelling is an open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
+ *
+ * This version is developed by the DECIDE team from the Lab-STICC (CNRS) and by the Mixt Research Unit in Environmental Acoustics (Université Gustave Eiffel).
+ * <http://noise-planet.org/noisemodelling.html>
+ *
+ * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE provided with this software.
+ *
+ * Contact: contact@noise-planet.org
+ *
  */
+
 package org.noise_planet.noisemodelling.emission;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -40,8 +19,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Random;
 
-import static org.noise_planet.noisemodelling.emission.Utils.dbaToW;
-import static org.noise_planet.noisemodelling.emission.Utils.wToDba;
+import static org.noise_planet.noisemodelling.emission.Utils.dbToW;
+import static org.noise_planet.noisemodelling.emission.Utils.wToDb;
 
 /**
  * Return the dB value corresponding to the parameters
@@ -174,11 +153,11 @@ public class EvaluateRoadSourceDynamic {
 
     /** get sum dBa **/
     private static Double sumDba(Double dBA1, Double dBA2) {
-        return wToDba(dbaToW(dBA1) + dbaToW(dBA2));
+        return wToDb(dbToW(dBA1) + dbToW(dBA2));
     }
 
     private static Double sumDba_5(Double dBA1, Double dBA2, Double dBA3, Double dBA4, Double dBA5) {
-        return wToDba(dbaToW(dBA1) + dbaToW(dBA2) + dbaToW(dBA3) + dbaToW(dBA4) + dbaToW(dBA5));
+        return wToDb(dbToW(dBA1) + dbToW(dBA2) + dbToW(dBA3) + dbToW(dBA4) + dbToW(dBA5));
     }
 
     /**

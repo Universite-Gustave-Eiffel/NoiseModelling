@@ -14,6 +14,7 @@ import org.noise_planet.noisemodelling.pathfinder.Triangle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -242,7 +243,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         return SFSUtilities.getTableEnvelope(connection, TableLocation.parse(sourcesTableName), "");
     }
 
-    public void generateReceivers(Connection connection, int cellI, int cellJ, String receiverTableName, String trianglesTableName, AtomicInteger receiverPK) throws SQLException, LayerDelaunayError {
+    public void generateReceivers(Connection connection, int cellI, int cellJ, String receiverTableName, String trianglesTableName, AtomicInteger receiverPK) throws SQLException, LayerDelaunayError, IOException {
         // Compute the first pass delaunay mesh
         // The first pass doesn't take account of additional
         // vertices of neighbor cells at the borders

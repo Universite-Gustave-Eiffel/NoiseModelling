@@ -18,6 +18,7 @@ import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -66,7 +67,7 @@ public class PointNoiseMap extends JdbcNoiseMap {
      * @throws SQLException
      */
     public PropagationProcessData prepareCell(Connection connection,int cellI, int cellJ,
-                                              ProgressVisitor progression, Set<Long> skipReceivers) throws SQLException {
+                                              ProgressVisitor progression, Set<Long> skipReceivers) throws SQLException, IOException {
         boolean isH2 = JDBCUtilities.isH2DataBase(connection.getMetaData());
         MeshBuilder mesh = new MeshBuilder();
         int ij = cellI * gridDim + cellJ + 1;
@@ -220,7 +221,7 @@ public class PointNoiseMap extends JdbcNoiseMap {
      * @throws SQLException
      */
     public IComputeRaysOut evaluateCell(Connection connection, int cellI, int cellJ,
-                                        ProgressVisitor progression, Set<Long> skipReceivers) throws SQLException {
+                                        ProgressVisitor progression, Set<Long> skipReceivers) throws SQLException, IOException {
         PropagationProcessData threadData = prepareCell(connection, cellI, cellJ, progression, skipReceivers);
 
         if(verbose) {
