@@ -18,8 +18,9 @@
 
 package org.noise_planet.noisemodelling.wpsTools
 
-import org.cts.crs.CRSException
+import org.noise_planet.noisemodelling.pathfinder.FastObstructionTest
 import org.noise_planet.noisemodelling.pathfinder.utils.KMLDocument
+import org.noise_planet.noisemodelling.propagation.ComputeRaysOut
 
 import javax.xml.stream.XMLStreamException
 

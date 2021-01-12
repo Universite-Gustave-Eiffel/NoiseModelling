@@ -91,9 +91,9 @@ class TestTutorials extends JdbcTestCase {
         assertTrue(res.contains("LW_ROADS"))
 
         def rowResult = sql.firstRow("SELECT MAX(LWD500), MAX(LWE500), MAX(LWN500) FROM LW_ROADS")
-        assertEquals(90, rowResult[0] as Double, 1.0)
-        assertEquals(81, rowResult[1] as Double, 1.0)
-        assertEquals(78, rowResult[2] as Double, 1.0)
+        assertEquals(94, rowResult[0] as Double, 1.0)
+        assertEquals(84, rowResult[1] as Double, 1.0)
+        assertEquals(80, rowResult[2] as Double, 1.0)
 
         res = new Noise_level_from_source().exec(connection, ["tableSources"  : "LW_ROADS",
                                                               "tableBuilding" : "BUILDINGS",
@@ -110,8 +110,8 @@ class TestTutorials extends JdbcTestCase {
 
 
         rowResult = sql.firstRow("SELECT MAX(LEQ), MAX(LAEQ) FROM LDEN_GEOM")
-        assertEquals(88, rowResult[0] as Double, 5.0)
-        assertEquals(87, rowResult[1] as Double, 5.0)
+        assertEquals(92, rowResult[0] as Double, 5.0)
+        assertEquals(90, rowResult[1] as Double, 5.0)
 
         res = new Create_Isosurface().exec(connection, [resultTable: "LDEN_GEOM"]);
 
@@ -182,8 +182,8 @@ INSERT INTO buildings (PK, the_geom, height) VALUES (2, ST_GeomFromText('MULTIPO
         assertTrue(res.contains("LDAY_GEOM"))
 
         def rowResult = sql.firstRow("SELECT MAX(LEQ), MAX(LAEQ) FROM LDAY_GEOM")
-        assertEquals(69, rowResult[0] as Double, 5.0)
-        assertEquals(65, rowResult[1] as Double, 5.0)
+        assertEquals(72, rowResult[0] as Double, 5.0)
+        assertEquals(69, rowResult[1] as Double, 5.0)
 
         // Check export geojson
         File testPath = new File("target/tutoPointSource.geojson")
