@@ -34,6 +34,7 @@ import org.noise_planet.noisemodelling.pathfinder.FastObstructionTest;
 import org.noise_planet.noisemodelling.pathfinder.PropagationProcessData;
 
 
+import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
@@ -62,7 +63,7 @@ public class LDENPropagationProcessData extends PropagationProcessData {
     }
 
     @Override
-    public void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException {
+    public void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException, IOException {
         super.addSource(pk, geom, rs);
         SourcesPk.put(pk, idSource++);
         double[][] res = computeLw(rs);
@@ -86,7 +87,7 @@ public class LDENPropagationProcessData extends PropagationProcessData {
      * @param slope Gradient percentage of road from -12 % to 12 %
      * @return Emission spectrum in dB
      */
-    public double[] getEmissionFromResultSet(ResultSet rs, String period, double slope) throws SQLException {
+    public double[] getEmissionFromResultSet(ResultSet rs, String period, double slope) throws SQLException, IOException {
         if (sourceFields == null) {
             sourceFields = new HashMap<>();
             int fieldId = 1;
@@ -195,7 +196,7 @@ public class LDENPropagationProcessData extends PropagationProcessData {
         return lvl;
     }
 
-    public double[][] computeLw(SpatialResultSet rs) throws SQLException {
+    public double[][] computeLw(SpatialResultSet rs) throws SQLException, IOException {
 
         // Compute day average level
         double[] ld = new double[ldenConfig.propagationProcessPathData.freq_lvl.size()];

@@ -14,6 +14,7 @@ import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -270,7 +271,7 @@ public abstract class JdbcNoiseMap {
      * @throws SQLException
      */
     public void fetchCellSource(Connection connection,Envelope fetchEnvelope, PropagationProcessData propagationProcessData)
-            throws SQLException {
+            throws SQLException, IOException {
         TableLocation sourceTableIdentifier = TableLocation.parse(sourcesTableName);
         List<String> geomFields = SFSUtilities.getGeometryFields(connection, sourceTableIdentifier);
         if(geomFields.isEmpty()) {

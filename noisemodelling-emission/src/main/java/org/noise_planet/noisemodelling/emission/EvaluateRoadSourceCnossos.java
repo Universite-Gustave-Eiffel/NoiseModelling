@@ -189,12 +189,8 @@ public class EvaluateRoadSourceCnossos {
      * @return
      * @throws IOException if speed < 0 km/h
      */
-    private static Double Vperhour2NoiseLevel(double LWim, double Qm, double vm) throws IOException {
-        if (vm > 0) {
-            return LWim + 10 * Math.log10(Qm / (1000 * vm));
-        } else {
-            throw new IOException("Speed of this road section is inferior to 0 km/h");
-        }
+    private static Double Vperhour2NoiseLevel(double LWim, double Qm, double vm){
+       return LWim + 10 * Math.log10(Qm / (1000 * vm));
     }
 
 
