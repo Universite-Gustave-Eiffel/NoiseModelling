@@ -256,7 +256,6 @@ public class EvaluateTrainSourceCnossos {
         return base + speedIncrement * Math.log10(speed / speedRef);
     }
 
-    /*Todo 18 freq to 24*/
     private static Double getNoiseLvldBa(double NoiseLvl,  int freq){
         double LvlCorrectionA;
         switch (freq) {
@@ -325,21 +324,16 @@ public class EvaluateTrainSourceCnossos {
         return base + 10 * Math.log10(numbersource*numVeh);
     }
 
-    // https://github.com/mobilesec/timeseries-signal-processing/blob/master/Interpolation.java
-
     /**
      * Track noise evaluation.
      * @param vehiculeParameters Vehicule Noise emission parameters
      * @param trackParameters Track Noise emission parameters
-     * @return LWRoll / LWTraction / LWAerodynamic level in dB
+     * @return LWRoll / LWTraction A & B / LWAerodynamic A & B / LWBridge level in dB
      */
 
      static LWRailWay evaluate(VehiculeParametersCnossos vehiculeParameters, TrackParametersCnossos trackParameters) {
 
-        //final int freqParam = vehiculeParameters.getFreqParam();
         final int spectreVer = vehiculeParameters.getSpectreVer();
-
-        //int nFreq = getFreqInd(freqParam);
 
         String typeVehicule = vehiculeParameters.getTypeVehicule();
         double speedVehicule = vehiculeParameters.getSpeed();
@@ -403,6 +397,7 @@ public class EvaluateTrainSourceCnossos {
         }
         return lWSpectre;
     }
+
     private static double[] evaluateLWRoll(String typeVehicule, int trackRoughnessId, int impactId, double speed,int trackTransferId, int spectreVer, int axlesPerVeh) {
         double [] trackTransfer = new double[24];
         double [] lWTr = new double[24];
@@ -416,10 +411,13 @@ public class EvaluateTrainSourceCnossos {
         for(int idFreq = 0; idFreq < 24; idFreq++){
             // lWTr = CNOSSOS p.20 (2.3.8)
             trackTransfer[idFreq]= getTrackTransfer(trackTransferId,spectreVer,idFreq);
+            // TODO PB LWTR
             lWTr[idFreq] = roughnessLtot[idFreq]+trackTransfer[idFreq]+10*Math.log10(axlesPerVeh);
 
             // lWVeh = CNOSSOS p.20 (2.3.9)
             vehTransfer[idFreq]= getVehTransfer(typeVehicule,spectreVer,idFreq);
+
+            // TODO PB LWVEH
             lWVeh[idFreq] = roughnessLtot[idFreq]+vehTransfer[idFreq]+10*Math.log10(axlesPerVeh);
 
 
@@ -435,7 +433,7 @@ public class EvaluateTrainSourceCnossos {
 
         for(int idLambda = 0; idLambda < 32; idLambda++){
             roughnessLtotLambda[idLambda]= Math.pow(10,getLRoughness(typeVehicule, trackRoughnessId,spectreVer, idLambda)/10); // Lambda
-            roughnessLtotLambda[idLambda]= roughnessLtotLambda[idLambda]+Math.pow(10,getLRoughness(typeVehicule, impactId,spectreVer, idLambda)/10); // add impact
+            roughnessLtotLambda[idLambda]= roughnessLtotLambda[idLambda]+Math.pow(10,getImpactNoise(impactId,spectreVer, idLambda)/10); // add impact
             lambdaToFreqLog[idLambda] = Math.log10(getLambdaToFreq(speed,idLambda));
         }
         for(int idFreqMed = 0; idFreqMed < 24; idFreqMed++){
