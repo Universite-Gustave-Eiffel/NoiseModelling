@@ -18,7 +18,6 @@ import com.fasterxml.jackson.databind.node.NullNode;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.security.UnrecoverableEntryException;
 
 import static org.noise_planet.noisemodelling.emission.Utils.dbToW;
 import static org.noise_planet.noisemodelling.emission.Utils.wToDb;
