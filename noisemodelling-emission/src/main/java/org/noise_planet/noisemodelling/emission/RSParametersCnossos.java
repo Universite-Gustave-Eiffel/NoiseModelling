@@ -34,7 +34,9 @@ public class RSParametersCnossos {
     private final double Junc_dist; // Distance to junction
     private final int Junc_type; // Junction type (k=1 traffic lights, k=2 roundabout)
 
-    private double slopePercentage; // slope s (in %), In the case of a bi-directional traffic flow, it is necessary to split the flow into two components and correct half for uphill and half for downhill.
+    private double slopePercentage = 0; // slope s (in %), In the case of a bi-directional traffic flow, it is necessary to split the flow into two components and correct half for uphill and half for downhill.
+    private int way = 1; // 1 = direct, 2 = inverse, 3 = double
+
     private double speedLv; // cat 1 vehicle speed vm (in km/h)
     private double speedMv; // cat 2 vehicle speed  (in km/h)
     private double speedHgv; // cat 3 vehicle speed  (in km/h)
@@ -179,6 +181,15 @@ public class RSParametersCnossos {
     }
 
     /**
+     * Set way of the road section
+     *
+     * @param way
+     */
+    public void setWay(int way) {
+        this.way = way;
+    }
+
+    /**
      * Eq. 2.2.13
      *
      * @param slopePercentage Gradient percentage of road from -12 % to 12 %
@@ -283,6 +294,11 @@ public class RSParametersCnossos {
     public double getSlopePercentage() {
         return slopePercentage;
     }
+
+    public double getWay() {
+        return way;
+    }
+
 
     /**
      * For speeds less than 20 km/h it shall have the same sound power level as defined by the formula for vm = 20 km/h.

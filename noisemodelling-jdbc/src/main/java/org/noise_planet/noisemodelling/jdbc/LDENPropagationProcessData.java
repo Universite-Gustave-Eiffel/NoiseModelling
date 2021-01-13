@@ -115,6 +115,7 @@ public class LDENPropagationProcessData extends PropagationProcessData {
         double pmStud = 0;
         double junctionDistance = 100; // no acceleration of deceleration changes with dist >= 100
         int junctionType = 2;
+        int way = 1;
 
         // Read fields
         if(sourceFields.containsKey("LV_SPD_"+period)) {
@@ -166,6 +167,17 @@ public class LDENPropagationProcessData extends PropagationProcessData {
             junctionType = rs.getInt(sourceFields.get("JUNC_TYPE"));
         }
 
+        if(sourceFields.containsKey("WAY")) {
+            way = rs.getInt(sourceFields.get("WAY"));
+        }
+
+        if(sourceFields.containsKey("SLOPE")) {
+            slope = rs.getDouble(sourceFields.get("SLOPE"));
+        }else{
+            way = 3;
+        }
+
+
         // old fields
         if(sourceFields.containsKey("TV_"+period)) {
             tv = rs.getDouble(sourceFields.get("TV_"+period));
@@ -190,6 +202,7 @@ public class LDENPropagationProcessData extends PropagationProcessData {
                     wbv_speed,lvPerHour, mvPerHour, hgvPerHour, wavPerHour, wbvPerHour, freq, temperature,
                     roadSurface, tsStud, pmStud, junctionDistance, junctionType);
             rsParametersCnossos.setSlopePercentage(slope);
+            rsParametersCnossos.setWay(way);
             rsParametersCnossos.setCoeffVer(ldenConfig.coefficientVersion);
             lvl[idFreq++] = EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos);
         }

@@ -180,6 +180,87 @@ public class EvaluateRoadSourceCnossos {
         return base + adj * Math.log10(speed / speedBase);
     }
 
+    /**
+     * Correction for studded tyres - Eq. 2.2.6
+     * @param parameters
+     * @param Pm_stud
+     * @param Ts_stud
+     * @param freqParam
+     * @param coeffVer
+     * @return
+     */
+    private static Double getDeltaStuddedTyres(RSParametersCnossos parameters, double Pm_stud, double Ts_stud,
+                                      int freqParam, int coeffVer, double vRef) throws IOException {
+            double speed = parameters.getSpeedLv();
+            double ps = Pm_stud * Ts_stud / 12; // Eq. 2.2.7 yearly average proportion of vehicles equipped with studded tyres
+            speed = (speed >= 90) ? 90 : speed;
+            speed = (speed <= 50) ? 50 : speed;
+            double deltastud = getNoiseLvl(getCoeff("a", freqParam, "1", coeffVer), getCoeff("b", freqParam, "1", coeffVer), speed, vRef);
+            return  10 * Math.log10((1 - ps) + ps * Math.pow(10, deltastud / 10)); // Eq. 2.2.8
+            // Only for light vehicles (Eq.2.2.9)
+    }
+
+
+    private static Double getDeltaTemperature(double Temperature, String category) throws IOException {
+        double K = 0.08;
+        double tempRef = 20;
+        switch (category){
+            case "1":
+                K = 0.08;
+                break;
+            case "2":
+                K = 0.04;
+                break;
+            case "3":
+                K = 0.04;
+                break;
+        }
+
+        return K*(tempRef - Temperature);
+    }
+
+
+    private static Double getDeltaSlope(RSParametersCnossos parameters, String category, double sign) throws IOException {
+
+        double deltaSlope = 0;
+        double slope = sign * parameters.getSlopePercentage();
+        switch (category){
+            case "1":
+                if (slope < -6) {
+                    deltaSlope =  (Math.min(12, -slope) - 6) / 1;
+                } else if (slope <= 2) {
+                    deltaSlope = 0.;
+                } else {
+                    deltaSlope = ((parameters.getSpeedLv() / 100) * ((Math.min(12, slope) - 2) / 1.5));
+                }
+                break;
+            case "2":
+                // Medium and Heavy vehicles (cat 2 and 3) - Eq 2.2.14 and 2.2.15
+                if (slope < -4) {
+                    deltaSlope =  ((parameters.getSpeedMv() - 20) / 100) * (Math.min(12, -slope) - 4) / 0.7;
+                   } else if (slope <= 0) {
+                    deltaSlope = 0.;
+                } else {
+                    deltaSlope =  (parameters.getSpeedMv() / 100) * (Math.min(12, slope)) / 1;
+                 }
+                break;
+            case "3":
+                // Medium and Heavy vehicles (cat 2 and 3) - Eq 2.2.14 and 2.2.15
+                if (slope < -4) {
+                    deltaSlope =  ((parameters.getSpeedHgv() - 10) / 100) * (Math.min(12, -slope) - 4) / 0.5;
+                } else if (slope <= 0) {
+                    deltaSlope = deltaSlope + 0.;
+                } else {
+                    deltaSlope = deltaSlope + (parameters.getSpeedHgv() / 100) * (Math.min(12, slope)) / 0.8;
+                }
+                break;
+        }
+
+        // no effects on cat 4 vehicles Eq. 2.2.16
+        return deltaSlope;
+    }
+
+
 
     /**
      * Compute Noise Level from flow_rate and speed Eq 2.2.1 from Directive 2015/2019
@@ -244,20 +325,13 @@ public class EvaluateRoadSourceCnossos {
 
         // Correction for studded tyres - Eq. 2.2.6
         if (Pm_stud > 0 && Ts_stud > 0) {
-            double deltastud;
-            double speed = parameters.getSpeedLv();
-            double ps = Pm_stud * Ts_stud / 12; // Eq. 2.2.7 yearly average proportion of vehicles equipped with studded tyres
-            speed = (speed >= 90) ? 90 : speed;
-            speed = (speed <= 50) ? 50 : speed;
-            deltastud = getNoiseLvl(getCoeff("a", freqParam, "1", coeffVer), getCoeff("b", freqParam, "1", coeffVer), speed, vRef);
-            lvRoadLvl = lvRoadLvl + 10 * Math.log10((1 - ps) + ps * Math.pow(10, deltastud / 10)); // Eq. 2.2.8
-            // Only for light vehicles (Eq.2.2.9)
+            lvRoadLvl = lvRoadLvl + getDeltaStuddedTyres(parameters, Pm_stud, Ts_stud, freqParam, coeffVer, vRef);
         }
 
         // Effect of air temperature on rolling noise correction Eq 2.2.10
-        lvRoadLvl = lvRoadLvl + 0.08 * (20 - Temperature); // K = 0.08
-        medRoadLvl = medRoadLvl + 0.04 * (20 - Temperature); // K = 0.04
-        hgvRoadLvl = hgvRoadLvl + 0.04 * (20 - Temperature); // K = 0.04
+        lvRoadLvl = lvRoadLvl + getDeltaTemperature(Temperature, "1"); // K = 0.08
+        medRoadLvl = medRoadLvl + getDeltaTemperature(Temperature, "2"); // K = 0.04
+        hgvRoadLvl = hgvRoadLvl + getDeltaTemperature(Temperature, "3"); // K = 0.04
 
         /**
          * Propulsion Noise
@@ -272,26 +346,22 @@ public class EvaluateRoadSourceCnossos {
         // Effect of road gradients
         // This correction implicitly includes the effect of slope on speed.
         // Light vehicles (cat 1) - Eq 2.2.13
-        if (parameters.getSlopePercentage() < -6) {
-            lvMotorLvl = lvMotorLvl + (Math.min(12, -parameters.getSlopePercentage()) - 6) / 1;
-        } else if (parameters.getSlopePercentage() <= 2) {
-            lvMotorLvl = lvMotorLvl + 0.;
-        } else {
-            lvMotorLvl = lvMotorLvl + ((parameters.getSpeedLv() / 100) * ((Math.min(12, parameters.getSlopePercentage()) - 2) / 1.5));
+        double sign = 1;
+        boolean twoWay = false;
+        switch ((int) parameters.getWay()){
+            case 1:
+                sign = 1;
+                break;
+            case 2:
+                sign = -1;
+                break;
+            case 3:
+                twoWay = true;
         }
 
-        // Medium and Heavy vehicles (cat 2 and 3) - Eq 2.2.14 and 2.2.15
-        if (parameters.getSlopePercentage() < -4) {
-            medMotorLvl = medMotorLvl + ((parameters.getSpeedMv() - 20) / 100) * (Math.min(12, -parameters.getSlopePercentage()) - 4) / 0.7;
-            hgvMotorLvl = hgvMotorLvl + ((parameters.getSpeedHgv() - 10) / 100) * (Math.min(12, -parameters.getSlopePercentage()) - 4) / 0.5;
-        } else if (parameters.getSlopePercentage() <= 0) {
-            medMotorLvl = medMotorLvl + 0.;
-            hgvMotorLvl = hgvMotorLvl + 0.;
-        } else {
-            medMotorLvl = medMotorLvl + (parameters.getSpeedMv() / 100) * (Math.min(12, parameters.getSlopePercentage())) / 1;
-            hgvMotorLvl = hgvMotorLvl + (parameters.getSpeedHgv() / 100) * (Math.min(12, parameters.getSlopePercentage())) / 0.8;
-        }
-        // no effects on cat 4 vehicles Eq. 2.2.16
+        lvMotorLvl = lvMotorLvl + getDeltaSlope(parameters, "1", sign);
+        medMotorLvl = medMotorLvl + getDeltaSlope(parameters, "2", sign);
+        hgvMotorLvl = hgvMotorLvl + getDeltaSlope(parameters, "3", sign);
 
         /**
          * Mixed effects (Rolling & Propulsion)
@@ -299,12 +369,11 @@ public class EvaluateRoadSourceCnossos {
         // Effect of the acceleration and deceleration of vehicles
         // Todo Here, we should get the Junc_dist by another way that we are doing now to be more precise issue #261
         double coefficientJunctionDistance = Math.max(1 - Math.abs(Junc_dist) / 100, 0);
-        // Rolling Noise Eq 2.2.17
+        // Effect of the acceleration and deceleration of vehicles - Rolling Noise Eq 2.2.17
         lvRoadLvl = lvRoadLvl + getCr("1", Junc_type, coeffVer) * coefficientJunctionDistance;
         medRoadLvl = medRoadLvl + getCr("2", Junc_type, coeffVer) * coefficientJunctionDistance;
         hgvRoadLvl = hgvRoadLvl + getCr("3", Junc_type, coeffVer) * coefficientJunctionDistance;
-
-        // Propulsion Noise Eq 2.2.18
+        // Effect of the acceleration and deceleration of vehicles - Propulsion Noise Eq 2.2.18
         lvMotorLvl = lvMotorLvl + getCp("1", Junc_type, coeffVer) * coefficientJunctionDistance;
         medMotorLvl = medMotorLvl + getCp("2", Junc_type, coeffVer) * coefficientJunctionDistance;
         hgvMotorLvl = hgvMotorLvl + getCp("3", Junc_type, coeffVer) * coefficientJunctionDistance;
@@ -336,10 +405,27 @@ public class EvaluateRoadSourceCnossos {
          * Compute Noise Level from flow_rate and speed - Eq 2.2.1
          */
         double lvLvl = Vperhour2NoiseLevel(lvCompound, parameters.getLvPerHour(), parameters.getSpeedLv());
-        double medLvl = Vperhour2NoiseLevel(medCompound, parameters.getMvPerHour(), parameters.getSpeedMv());
+        double medLvl = Vperhour2NoiseLevel(medCompound, parameters.getMvPerHour(), parameters.getSpeedMv()) ;
         double hgvLvl = Vperhour2NoiseLevel(hgvCompound, parameters.getHgvPerHour(), parameters.getSpeedHgv());
         double wheelaLvl = Vperhour2NoiseLevel(wheelaCompound, parameters.getWavPerHour(), parameters.getSpeedWav());
         double wheelbLvl = Vperhour2NoiseLevel(wheelbCompound, parameters.getWbvPerHour(), parameters.getSpeedWbv());
+
+        // In the case of a bi-directional traffic flow, it is necessary to split the flow into two components and correct half for uphill and half for downhill.
+        if (twoWay && parameters.getSlopePercentage() != 0)
+        {
+            lvRoadLvl = lvRoadLvl - getDeltaSlope(parameters,"1",sign)+ getDeltaSlope(parameters,"1",-sign);
+            medRoadLvl = medRoadLvl - getDeltaSlope(parameters,"2",sign)+ getDeltaSlope(parameters,"2",-sign);
+            hgvRoadLvl = hgvRoadLvl - getDeltaSlope(parameters,"3",sign)+ getDeltaSlope(parameters,"3",-sign);
+            double lvCompound_InverseSlope = sumDbValues(lvRoadLvl, lvMotorLvl);
+            double medCompound_InverseSlope = sumDbValues(medRoadLvl, medMotorLvl);
+            double hgvCompound_InverseSlope = sumDbValues(hgvRoadLvl, hgvMotorLvl);
+
+            lvLvl = sumDbValues(Vperhour2NoiseLevel(lvCompound, parameters.getLvPerHour()/2, parameters.getSpeedLv()),Vperhour2NoiseLevel(lvCompound_InverseSlope, parameters.getLvPerHour()/2, parameters.getSpeedLv()));
+            medLvl = sumDbValues(Vperhour2NoiseLevel(medCompound, parameters.getMvPerHour()/2, parameters.getSpeedMv()),Vperhour2NoiseLevel(medCompound_InverseSlope, parameters.getMvPerHour()/2, parameters.getSpeedMv()));
+            hgvLvl = sumDbValues(Vperhour2NoiseLevel(hgvCompound, parameters.getHgvPerHour()/2, parameters.getSpeedHgv()),Vperhour2NoiseLevel(hgvCompound_InverseSlope, parameters.getHgvPerHour()/2, parameters.getSpeedHgv()));
+        }
+
+
         return sumDb5(lvLvl, medLvl, hgvLvl, wheelaLvl, wheelbLvl);
     }
 }
