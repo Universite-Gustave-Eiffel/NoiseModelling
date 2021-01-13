@@ -216,4 +216,30 @@ public class EvaluateRoadSourceCnossosTest {
             assertEquals(String.format("%d Hz", FREQUENCIES[idFreq]), expectedValues[idFreq], EvaluateRoadSourceCnossos.evaluate(rsParameters), EPSILON_TEST1);
         }
     }
+    @Test
+    public void CnossosEmissionTestwithSlope() throws IOException {
+        String vehCat="1";
+        double vehiclePerHour = 1000;
+        double vehicleSpeed = 20;
+        double tsStud = 0.5;
+        String surfRef = "NL01";
+        double temperature = -5;
+        double pmStud = 1;
+        double slope = -15;
+        double juncDist = 200;
+        int juncType = 1;
+        double[] expectedValues = new double[]{88.421,77.09,75.54,75.01,72.79,71.13,68.07,63.44};
+        for(int idFreq = 1; idFreq < FREQUENCIES.length; idFreq++) {
+            RSParametersCnossos rsParameters = new RSParametersCnossos(vehicleSpeed, vehicleSpeed, vehicleSpeed,
+                    vehicleSpeed, vehicleSpeed, "1".equals(vehCat) ? vehiclePerHour : 0,
+                    "2".equals(vehCat) ? vehiclePerHour : 0, "3".equals(vehCat) ? vehiclePerHour : 0,
+                    "4a".equals(vehCat) ? vehiclePerHour : 0, "4b".equals(vehCat) ? vehiclePerHour : 0,
+                    FREQUENCIES[idFreq], temperature, surfRef, tsStud, pmStud, juncDist, juncType);
+            rsParameters.setSlopePercentage(slope);
+            rsParameters.setWay(3);
+            rsParameters.setCoeffVer(1);
+            double result = EvaluateRoadSourceCnossos.evaluate(rsParameters);
+            assertEquals(String.format("%d Hz", FREQUENCIES[idFreq]), expectedValues[idFreq], result, EPSILON_TEST1);
+        }
+    }
 }
