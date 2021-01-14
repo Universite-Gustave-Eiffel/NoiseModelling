@@ -115,7 +115,7 @@ public class LDENPropagationProcessData extends PropagationProcessData {
         double pmStud = 0;
         double junctionDistance = 100; // no acceleration of deceleration changes with dist >= 100
         int junctionType = 2;
-        int way = 1;
+        int way = 3; // default value 2-way road
 
         // Read fields
         if(sourceFields.containsKey("LV_SPD_"+period)) {
