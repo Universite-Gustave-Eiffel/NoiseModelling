@@ -1,14 +1,6 @@
 package org.noise_planet.noisemodelling.emission;
 
 import org.junit.Test;
-import org.noise_planet.noisemodelling.propagation.ComputeRays;
-
-import java.util.stream.DoubleStream;
-import java.util.stream.IntStream;
-
-import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
-import static org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos.sumDba;
 
 public class EvaluateTrainSourceCNOSSOSTest {
     private static final double EPSILON_TEST1 = 0.01;

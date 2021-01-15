@@ -1,59 +1,44 @@
 /**
- * NoiseMap is a scientific computation plugin for OrbisGIS developed in order to
- * evaluate the noise impact on urban mobility plans. This model is
- * based on the French standard method NMPB2008. It includes traffic-to-noise
- * sources evaluation and sound propagation processing.
+ * NoiseModelling is an open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
  *
- * This version is developed at French IRSTV Institute and at IFSTTAR
- * (http://www.ifsttar.fr/) as part of the Eval-PDU project, funded by the
- * French Agence Nationale de la Recherche (ANR) under contract ANR-08-VILL-0005-01.
+ * This version is developed by the DECIDE team from the Lab-STICC (CNRS) and by the Mixt Research Unit in Environmental Acoustics (Université Gustave Eiffel).
+ * <http://noise-planet.org/noisemodelling.html>
  *
- * Noisemap is distributed under GPL 3 license. Its reference contact is Judicaël
- * Picaut <judicael.picaut@ifsttar.fr>. It is maintained by Nicolas Fortin
- * as part of the "Atelier SIG" team of the IRSTV Institute <http://www.irstv.fr/>.
+ * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE provided with this software.
  *
- * Copyright (C) 2011 IFSTTAR
- * Copyright (C) 2011-2012 IRSTV (FR CNRS 2488)
+ * Contact: contact@noise-planet.org
  *
- * Noisemap is free software: you can redistribute it and/or modify it under the
- * terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- *
- * Noisemap is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE. See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with
- * Noisemap. If not, see <http://www.gnu.org/licenses/>.
- *
- * For more information, please consult: <http://www.orbisgis.org/>
- * or contact directly:
- * info_at_ orbisgis.org
  */
 package org.noise_planet.noisemodelling.emission;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NullNode;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
 
-import static java.lang.Math.log10;
 import static java.lang.Math.min;
 import static org.noise_planet.noisemodelling.emission.utils.interpLinear.interpLinear;
 
 
 /**
+ * Railway noise evaluation from Cnossos reference : COMMISSION DIRECTIVE (EU) 2015/996
+ * of 19 May 2015 establishing common noise assessment methods according to Directive 2002/49/EC
+ * of the European Parliament and of the Council
+ *
+ * amending, for the purposes of adapting to scientific and technical progress, Annex II to
+ * Directive 2002/49/EC of the European Parliament and of the Council as regards
+ * common noise assessment methods
+ *
+ * part 2.3. Railway noise
+ *
  * Return the dB value corresponding to the parameters
- * @author Adrien Le Bellec - 27/10/2020
+ * @author Adrien Le Bellec - univ Gustave eiffel
  */
 
 
 public class EvaluateTrainSourceCnossos {
-
-    // Todo evaluation du niveau sonore d'un train
     private static JsonNode CnossosTraindata = parse(EvaluateTrainSourceCnossos.class.getResourceAsStream("coefficients_train_cnossos.json"));
 
     private static JsonNode parse(InputStream inputStream) {
@@ -160,7 +145,6 @@ public class EvaluateTrainSourceCnossos {
         return Freq_ind;
     }
 
-    // Rolling Noise TODO rename getLambdaValue ?
     public static Double getLambdaValue(String typeVehicule, String refType, int spectreVer, int lambdaId) { //
         int refId = getCnossosTrainData(spectreVer).get("Vehicule").get("Definition").get(typeVehicule).get(refType).intValue();
         String ref = "";
@@ -325,13 +309,14 @@ public class EvaluateTrainSourceCnossos {
     }
 
     /**
-     * Track noise evaluation.
-     * @param vehiculeParameters Vehicule Noise emission parameters
-     * @param trackParameters Track Noise emission parameters
-     * @return LWRoll / LWTraction A & B / LWAerodynamic A & B / LWBridge level in dB
-     */
-
-     static LWRailWay evaluate(VehiculeParametersCnossos vehiculeParameters, TrackParametersCnossos trackParameters) {
+    * Track noise evaluation.
+    * @param vehiculeParameters Vehicule Noise emission parameters
+    * @param trackParameters Track Noise emission parameters
+    * constant speed
+    * todo add acceleration / deceleration / idling speed ?
+    * @return LWRoll / LWTraction A & B / LWAerodynamic A & B / LWBridge level in dB
+    **/
+    static LWRailWay evaluate(VehiculeParametersCnossos vehiculeParameters, TrackParametersCnossos trackParameters) {
 
         final int spectreVer = vehiculeParameters.getSpectreVer();
 
@@ -351,6 +336,9 @@ public class EvaluateTrainSourceCnossos {
         //  Rolling noise calcul
         double[] lWRolling = evaluateLWRoll(typeVehicule, trackRoughnessId, impactId, speed,trackTransferId,spectreVer,axlesPerVeh);
 
+
+
+        // Todo Squeal Noise = Rolling correction
          double lWSqueal = 0; // correction rolling
 
         // Traction noise calcul
@@ -367,6 +355,11 @@ public class EvaluateTrainSourceCnossos {
         return lWRailWay;
     }
 
+    /**
+     * Bridge impact Level.
+     * @param bridgeId bridge data base (wood or metallic)
+     * @return lWBridge(freq)
+     **/
     private static double[] evaluateLWBridge(int bridgeId, int spectreVer) {
         double [] lWBridge= new double[24];
         if(bridgeId==3 || bridgeId==4){
@@ -377,6 +370,14 @@ public class EvaluateTrainSourceCnossos {
         return lWBridge;
     }
 
+    /**
+     * traction or Aerodynamic Level.
+     * @param typeVehicule vehicule data base
+     * @param ref "Traction" "Aerodynamic"
+     * @param speed min speed between vehicule and track
+     * @param height height source
+     * @return lWSpectre(freq) (Traction or Aerodynamic)
+     **/
     private static double[] evaluateLWSpectre(String typeVehicule,String ref, double speed, int height,int spectreVer) {
         double [] lWSpectre = new double[24];
         for(int idFreq = 0; idFreq < 24; idFreq++) {
@@ -398,6 +399,22 @@ public class EvaluateTrainSourceCnossos {
         return lWSpectre;
     }
 
+    /**
+     * Rolling Level.
+     * @param typeVehicule vehicule data base
+     * @param trackRoughnessId track Roughness reference
+     * @param impactId  impact reference
+     * @param speed  min speed between vehicule and track
+     *
+     *               Step 1
+     * wavelength to frequecy (evaluateRoughnessLtotFreq)
+     *               Step 2
+     * calcul sound power of wheel and bogie emission
+     * calcul sound power of rail sleeper and ballast/slab emission
+     * todo add sound power of superstructure emission ?
+     *
+     * @return lWRoll(freq)
+     **/
     private static double[] evaluateLWRoll(String typeVehicule, int trackRoughnessId, int impactId, double speed,int trackTransferId, int spectreVer, int axlesPerVeh) {
         double [] trackTransfer = new double[24];
         double [] lWTr = new double[24];
@@ -411,20 +428,26 @@ public class EvaluateTrainSourceCnossos {
         for(int idFreq = 0; idFreq < 24; idFreq++){
             // lWTr = CNOSSOS p.20 (2.3.8)
             trackTransfer[idFreq]= getTrackTransfer(trackTransferId,spectreVer,idFreq);
-            // TODO PB LWTR
             lWTr[idFreq] = roughnessLtot[idFreq]+trackTransfer[idFreq]+10*Math.log10(axlesPerVeh);
 
             // lWVeh = CNOSSOS p.20 (2.3.9)
             vehTransfer[idFreq]= getVehTransfer(typeVehicule,spectreVer,idFreq);
-
-            // TODO PB LWVEH
             lWVeh[idFreq] = roughnessLtot[idFreq]+vehTransfer[idFreq]+10*Math.log10(axlesPerVeh);
-
-
+            // lWRoll = CNOSSOS p.19 (2.3.7)
             lWRoll[idFreq] = 10*Math.log10(Math.pow(10,lWTr[idFreq]/10)+Math.pow(10,lWVeh[idFreq]/10));
         }
         return lWRoll;
     }
+
+    /**
+     * Roughness Level.
+     * linear interpolation wavelength to frequency
+     * @param typeVehicule vehicule data base
+     * @param trackRoughnessId track Roughness reference
+     * @param impactId  impact reference
+     * @param speed  impact reference
+     * @return Lroughness(freq)
+     **/
     private static double[] evaluateRoughnessLtotFreq(String typeVehicule, int trackRoughnessId,int impactId, double speed, int spectreVer) {
 
         double[] roughnessLtotLambda = new double[32];
