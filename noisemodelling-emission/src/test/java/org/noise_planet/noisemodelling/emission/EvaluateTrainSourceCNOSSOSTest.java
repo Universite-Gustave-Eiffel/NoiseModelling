@@ -28,12 +28,7 @@ public class EvaluateTrainSourceCNOSSOSTest {
                 impactNoise, bridgeConstant, curvate);
         lWRailWay = EvaluateTrainSourceCnossos.evaluate(vehiculeParameters, trackParameters);
         double[] LWRolling = lWRailWay.getLWRolling();
-        double[] LWTractionA = lWRailWay.getLWTractionA();
-        double[] LWTractionB = lWRailWay.getLWTractionB();
-        double[] LWAerodynamicA = lWRailWay.getLWAerodynamicA();
-        double[] LWAerodynamicB = lWRailWay.getLWAerodynamicB();
-        double[] LWBridge = lWRailWay.getLWBridge();
-            // TODO add ref calcul exemple LWRoll = CNOSSOS p.19 (2.3.7)
+          // TODO add ref calcul exemple LWRoll = CNOSSOS p.19 (2.3.7)
 
     }
 
