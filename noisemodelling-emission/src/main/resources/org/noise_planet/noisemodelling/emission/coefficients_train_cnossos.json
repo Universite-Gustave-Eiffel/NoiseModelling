@@ -4373,8 +4373,8 @@
           109.1,
           109.1,
           109.5,
-          110.2],
-        "10" :{"Default":"true",
+          110.2]},
+      "10":{"Default":"true",
           "Reference":"IMAGINE",
           "Description":"Direct fastening on bridges",
           "Sleeper":null,
@@ -4405,7 +4405,7 @@
             117.9,
             118.6
           ]
-      }
+        }
       }
     },
     "SuperstructureTransfer":{
