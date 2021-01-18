@@ -334,7 +334,7 @@ public class EvaluateTrainSourceCnossos {
         double speed = min(speedVehicule,speedTrack);
 
         //  Rolling noise calcul
-        double[] lWRolling = evaluateLW("Rolling", typeVehicule, trackRoughnessId, impactId, bridgeId, curvate, speed,trackTransferId,spectreVer,axlesPerVeh);
+        double[] lWRolling = evaluateLWroughness("Rolling", typeVehicule, trackRoughnessId, impactId, bridgeId, curvate, speed,trackTransferId,spectreVer,axlesPerVeh);
 
         // Traction noise calcul
         double[] lWTractionA = evaluateLWSpectre(typeVehicule,"RefTraction", speed, 0,spectreVer);
@@ -345,7 +345,7 @@ public class EvaluateTrainSourceCnossos {
         double[] lWAerodynamicB = evaluateLWSpectre(typeVehicule,"RefAerodynamic", speed, 1,spectreVer);
 
         // Bridge noise calcul
-        double[] lWBridge = evaluateLW("Bridge", typeVehicule, trackRoughnessId, impactId, bridgeId, curvate, speed,trackTransferId,spectreVer,axlesPerVeh);
+        double[] lWBridge = evaluateLWroughness("Bridge", typeVehicule, trackRoughnessId, impactId, bridgeId, curvate, speed,trackTransferId,spectreVer,axlesPerVeh);
 
 
         LWRailWay lWRailWay= new LWRailWay(lWRolling, lWTractionA,lWTractionB, lWAerodynamicA,lWAerodynamicB,lWBridge);
@@ -397,7 +397,7 @@ public class EvaluateTrainSourceCnossos {
      *
      * @return lWRoll(freq)
      **/
-    private static double[] evaluateLW(String ref, String typeVehicule, int trackRoughnessId, int impactId, int bridgeId, int curvate, double speed,int trackTransferId, int spectreVer, int axlesPerVeh) {
+    private static double[] evaluateLWroughness(String ref, String typeVehicule, int trackRoughnessId, int impactId, int bridgeId, int curvate, double speed,int trackTransferId, int spectreVer, int axlesPerVeh) {
         double [] trackTransfer = new double[24];
         double [] lWTr = new double[24];
         double [] vehTransfer = new double[24];
