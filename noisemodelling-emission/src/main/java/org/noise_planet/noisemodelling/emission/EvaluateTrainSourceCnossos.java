@@ -218,7 +218,7 @@ public class EvaluateTrainSourceCnossos {
             Lambda[n]= Math.pow(10,m/10);
             n ++;
         }
-        return speed/Lambda[idLambda]*1000/3.6; // km/h - m/s || mm - m
+        return Math.log10(speed/Lambda[idLambda]*1000/3.6); // km/h - m/s || mm - m
     }
 
     private static double[] checkNanValue(double[] roughnessLtot) {
@@ -451,17 +451,25 @@ public class EvaluateTrainSourceCnossos {
         double[] roughnessLtotLambda = new double[32];
         double[] lambdaToFreqLog= new double[32];
         double[] freqMedLog = new double[24];
+        double[] Lambda = new double[32];
 
+        double m = 30;
         for(int idLambda = 0; idLambda < 32; idLambda++){
-            roughnessLtotLambda[idLambda]= Math.pow(10,getLRoughness(typeVehicule, trackRoughnessId,spectreVer, idLambda)/10); // Lambda
+            Lambda[idLambda]= Math.pow(10,m/10);
+            lambdaToFreqLog[idLambda] = Math.log10(speed/Lambda[idLambda]*1000/3.6);
+
+            roughnessLtotLambda[idLambda]= Math.pow(10,getLRoughness(typeVehicule, trackRoughnessId,spectreVer, idLambda)/10);
+
             if(impactId!=0) {
-                roughnessLtotLambda[idLambda] = roughnessLtotLambda[idLambda] + Math.pow(10, getImpactNoise(impactId, spectreVer, idLambda) / 10); // add impact
+                roughnessLtotLambda[idLambda] = roughnessLtotLambda[idLambda] + Math.pow(10, getImpactNoise(impactId, spectreVer, idLambda) / 10);
             }
-            lambdaToFreqLog[idLambda] = Math.log10(getLambdaToFreq(speed,idLambda)); // Todo optimize for
+
+            m --;
         }
         for(int idFreqMed = 0; idFreqMed < 24; idFreqMed++){
             freqMedLog[idFreqMed]= Math.log10(Math.pow(10,(17+Double.valueOf(idFreqMed))/10));
         }
+
         double[] roughnessLtotFreq = interpLinear(lambdaToFreqLog, roughnessLtotLambda, freqMedLog);
 
         for(int idRoughnessLtotFreq = 0; idRoughnessLtotFreq < 24; idRoughnessLtotFreq++){
