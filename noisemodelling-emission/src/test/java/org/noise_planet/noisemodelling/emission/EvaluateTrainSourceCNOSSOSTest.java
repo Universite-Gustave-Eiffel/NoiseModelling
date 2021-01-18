@@ -28,10 +28,35 @@ public class EvaluateTrainSourceCNOSSOSTest {
                 impactNoise, bridgeConstant, curvate);
         lWRailWay = EvaluateTrainSourceCnossos.evaluate(vehiculeParameters, trackParameters);
         double[] LWRolling = lWRailWay.getLWRolling();
-          // TODO add ref calcul exemple LWRoll = CNOSSOS p.19 (2.3.7)
-
     }
+    @Test
+    public void Test_TGV_DUPLEX() {
+        String[] vehCat = new String[3];
+        vehCat[0] = "TGV-DUPLEX-motrice";
+        vehCat[1] = "TGV-DUPLEX-voiture-1";
+        vehCat[2] = "TGV-DUPLEX-voiture-2";
 
+        double vehicleSpeed = 320;
+        double vehiclePerHour = 1;
+        int vehPerTrain = 3;
+
+        int trackTransfer = 3;
+        int impactNoise = 3;
+        int bridgeConstant = 3;
+        int curvate = 2;
+        int railRoughness = 4;
+
+        double vMaxInfra = 320;
+        LWRailWay lWRailWay = null;
+        for(int i=0;i<vehPerTrain;i++){
+            VehiculeParametersCnossos vehiculeParameters = new VehiculeParametersCnossos(vehCat[i], "", vehPerTrain,
+                    vehicleSpeed, vehiclePerHour, 0, 0);
+            TrackParametersCnossos trackParameters = new TrackParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
+                    impactNoise, bridgeConstant, curvate);
+            lWRailWay = EvaluateTrainSourceCnossos.evaluate(vehiculeParameters, trackParameters);
+            double[] LWRolling = lWRailWay.getLWRolling();
+        }
+    }
     /*
     @Test
     public void Test_TGV_DUPLEX() {

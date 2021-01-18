@@ -84,7 +84,7 @@ public class VehiculeParametersCnossos {
         return height;
     }*/
 
-
+// Todo update stratégie -> 1 vehciule (eng + wagon ? ) CNOSSOS / plamade EngVeh + WagonVah
     public VehiculeParametersCnossos(String typeVehicule, String typeWag, int nbWag, double speedVehicule,
                                   double tDay, double tEvening, double tNight) {
 

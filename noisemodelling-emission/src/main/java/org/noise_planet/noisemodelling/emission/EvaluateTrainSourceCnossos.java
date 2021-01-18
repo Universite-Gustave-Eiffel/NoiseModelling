@@ -459,11 +459,9 @@ public class EvaluateTrainSourceCnossos {
             lambdaToFreqLog[idLambda] = Math.log10(speed/Lambda[idLambda]*1000/3.6);
 
             roughnessLtotLambda[idLambda]= Math.pow(10,getLRoughness(typeVehicule, trackRoughnessId,spectreVer, idLambda)/10);
-
             if(impactId!=0) {
                 roughnessLtotLambda[idLambda] = roughnessLtotLambda[idLambda] + Math.pow(10, getImpactNoise(impactId, spectreVer, idLambda) / 10);
             }
-
             m --;
         }
         for(int idFreqMed = 0; idFreqMed < 24; idFreqMed++){
@@ -474,7 +472,6 @@ public class EvaluateTrainSourceCnossos {
 
         for(int idRoughnessLtotFreq = 0; idRoughnessLtotFreq < 24; idRoughnessLtotFreq++){
             roughnessLtotFreq[idRoughnessLtotFreq]= 10*Math.log10(roughnessLtotFreq[idRoughnessLtotFreq]);
-
         }
         return roughnessLtotFreq;
     }
