@@ -514,7 +514,6 @@ public class PropagationPath {
 
     }
 
-
     double computeZs(SegmentPath segmentPath) {
         double zs = pointList.get(segmentPath.idPtStart).coordinate.z - projectPointonSegment(pointList.get(segmentPath.idPtStart).coordinate,segmentPath.vector3D,segmentPath.pInit).z;
         return ((zs > 0) ? zs : 0); // Section 2.5.3 - If the equivalent height of a point becomes negative, i.e. if the point is located below the mean ground plane, a null height is retained, and the equivalent point is then identical with its possible image.

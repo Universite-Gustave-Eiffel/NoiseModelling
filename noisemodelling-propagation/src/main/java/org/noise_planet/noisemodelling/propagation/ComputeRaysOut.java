@@ -140,26 +140,45 @@ public class ComputeRaysOut implements IComputeRaysOut {
         if(pathData != null) {
             // Compute receiver/source attenuation
             EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
+
+
             double[] aGlobalMeteo = null;
             for (PropagationPath propath : propagationPath) {
                 List<PointPath> ptList = propath.getPointList();
+
+                propath.initPropagationPath();
+                evaluateAttenuationCnossos.initEvaluateAttenutation(pathData);
+
+                double[] Adiv = evaluateAttenuationCnossos.evaluateAdiv(propath, pathData);
+                double[] Aatm = evaluateAttenuationCnossos.evaluateAatm(propath, pathData);
+                double[] Aref = evaluateAttenuationCnossos.evaluateAref(propath, pathData);
+
+                // Meteo
                 int roseindex = getRoseIndex(ptList.get(0).coordinate, ptList.get(ptList.size() - 1).coordinate);
                 double[] aGlobalMeteoHom = new double[pathData.freq_lvl.size()];
                 double[] aGlobalMeteoFav = new double[pathData.freq_lvl.size()];
+                double[] Aboundary;
 
                 if (pathData.getWindRose()[roseindex]!=1) {
                     // Compute homogeneous conditions attenuation
                     propath.setFavorable(false);
-                    evaluateAttenuationCnossos.evaluate(propath, pathData);
-                    aGlobalMeteoHom = evaluateAttenuationCnossos.getaGlobal();
+                    propath.initPropagationPath();
+                    Aboundary = evaluateAttenuationCnossos.evaluateAboundary(propath, pathData, false);
+                    for (int idfreq = 0; idfreq < pathData.freq_lvl.size(); idfreq++) {
+                        aGlobalMeteoHom[idfreq] = -(Adiv[idfreq] + Aatm[idfreq] + Aboundary[idfreq] + Aref[idfreq]);
+                    }
                 }
 
                 // Compute favorable conditions attenuation
                 if (pathData.getWindRose()[roseindex]!=0) {
                     propath.setFavorable(true);
-                    evaluateAttenuationCnossos.evaluate(propath, pathData);
-                    aGlobalMeteoFav = evaluateAttenuationCnossos.getaGlobal();
+                    propath.initPropagationPath();
+                    Aboundary = evaluateAttenuationCnossos.evaluateAboundary(propath, pathData, true);
+                    for (int idfreq = 0; idfreq < pathData.freq_lvl.size(); idfreq++) {
+                        aGlobalMeteoFav[idfreq] = -(Adiv[idfreq] + Aatm[idfreq] + Aboundary[idfreq]+ Aref[idfreq]);
+                    }
                 }
+
                 // Compute attenuation under the wind conditions using the ray direction
                 double[] aGlobalMeteoRay = ComputeRays.sumArrayWithPonderation(aGlobalMeteoFav, aGlobalMeteoHom, pathData.getWindRose()[roseindex]);
 

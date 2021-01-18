@@ -36,6 +36,7 @@ package org.noise_planet.noisemodelling.propagation;
 import org.noise_planet.noisemodelling.pathfinder.PropagationPath;
 import org.noise_planet.noisemodelling.pathfinder.SegmentPath;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -205,6 +206,7 @@ public class EvaluateAttenuationCnossos {
 
     public double[] getARef(PropagationPath path, PropagationProcessPathData data) {
         double[] aRef = new double[data.freq_lvl.size()];
+        Arrays.fill(aRef, 0.0);
         for (int idf = 0; idf < nbfreq; idf++) {
             for (int idRef = 0; idRef < path.refPoints.size(); idRef++) {
                 List<Double> alpha = path.getPointList().get(path.refPoints.get(idRef)).alphaWall;
@@ -330,6 +332,102 @@ public class EvaluateAttenuationCnossos {
         return aBoundary;
     }
 
+    /**
+     *
+     * @param data
+     */
+    public void initEvaluateAttenutation(PropagationProcessPathData data) {
+        // init
+        aGlobal = new double[data.freq_lvl.size()];
+        nbfreq = data.freq_lvl.size();
+
+        // Init wave length for each frequency
+        freq_lambda = new double[nbfreq];
+        for (int idf = 0; idf < nbfreq; idf++) {
+            if (data.freq_lvl.get(idf) > 0) {
+                freq_lambda[idf] = data.getCelerity() / data.freq_lvl.get(idf);
+            } else {
+                freq_lambda[idf] = 1;
+            }
+        }
+
+    }
+
+    /**
+     *
+     * @param path
+     * @param data
+     * @return
+     */
+    public double[] evaluateAdiv(PropagationPath path, PropagationProcessPathData data) {
+        double[] aDiv = new double[data.freq_lvl.size()];
+        double att ;
+        if (path.refPoints.size() > 0) {
+            att = getADiv(path.getSRList().get(0).dPath);
+        } else {
+            att = getADiv(path.getSRList().get(0).d);
+        }
+
+        for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
+            aDiv[idfreq] = att;
+        }
+        return aDiv;
+    }
+
+    /**
+     *
+     * @param path
+     * @param data
+     * @return
+     */
+    public double[] evaluateAatm(PropagationPath path, PropagationProcessPathData data) {
+        // init
+        double[] aAtm = new double[data.freq_lvl.size()];
+        // init atmosphere
+        double[] alpha_atmo = data.getAlpha_atmo();
+
+        for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
+            if (path.difVPoints.size() > 0 || path.refPoints.size() > 0) {
+                aAtm[idfreq] = getAAtm(path.getSRList().get(0).dPath, alpha_atmo[idfreq]);
+            } else {
+                aAtm[idfreq] = getAAtm(path.getSRList().get(0).d, alpha_atmo[idfreq]);
+            }
+        }
+        return aAtm;
+    }
+
+    /**
+     *
+     * @param path
+     * @param data
+     * @return
+     */
+    public double[] evaluateAref(PropagationPath path, PropagationProcessPathData data) {
+        return getARef(path, data);
+    }
+
+    /**
+     *
+     * @param path
+     * @param data
+     * @param Favorable
+     * @return
+     */
+    public double[] evaluateAboundary(PropagationPath path, PropagationProcessPathData data, boolean Favorable) {
+        double[] aBoundary;
+        // boundary (ground + diffration)
+        aBoundary = getABoundary(path, data);
+        return aBoundary;
+    }
+
+    // todo erase evaluate
+
+    /**
+     * Only for propagation Path Cnossos
+     * @param path
+     * @param data
+     * @return
+     */
     public double[] evaluate(PropagationPath path, PropagationProcessPathData data) {
         // init
         aGlobal = new double[data.freq_lvl.size()];
