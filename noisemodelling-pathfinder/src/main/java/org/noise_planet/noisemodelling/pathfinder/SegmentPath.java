@@ -21,8 +21,8 @@ public class SegmentPath {
     public Double gPathPrime = null;    //Gpath prime , calculated from Gpath and geometry
     public Double gw = null;
     public Double gm = null;
-    public Double zs = null;
-    public Double zr = null;
+    public Double zs = null; // The equivalent source height
+    public Double zr = null; //the equivalent receiver height
     public Double zsPrime = null;
     public Double zrPrime = null;
     public Double testForm = null;
@@ -31,7 +31,7 @@ public class SegmentPath {
     public Double dPath; // pass by points
     public Double d ; // direct ray between source and receiver
     public Double dc; // direct ray sensible to meteorological conditions (can be curve) between source and receiver
-    public Double dp; // distance on mean plane between source and receiver
+    public Double dp; // The distance between the source and receiver in projection over the mean ground plane
     public Double eLength = 0.0; // distance between first and last diffraction point
     public Double delta;
 
