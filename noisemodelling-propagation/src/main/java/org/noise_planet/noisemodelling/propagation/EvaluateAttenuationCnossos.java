@@ -61,13 +61,7 @@ public class EvaluateAttenuationCnossos {
         this.freq_lambda = freq_lambda;
     }
 
-    public static double dbaToW(double dBA) {
-        return Math.pow(10., dBA / 10.);
-    }
 
-    public static double wToDba(double w) {
-        return 10 * Math.log10(w);
-    }
 
     public double[] getaGlobal() {
         return aGlobal;
@@ -118,12 +112,13 @@ public class EvaluateAttenuationCnossos {
     /**
      * Compute attenuation of sound energy by distance. Minimum distance is one
      * meter.
+     * Eq. 2.5.12
      * @param distance Distance in meter
      * @return Attenuated sound level. Take only account of geometric dispersion
      * of sound wave.
      */
     public static double getADiv(double distance) {
-        return wToDba(4 * Math.PI * Math.max(1, distance * distance));
+        return Utils.wToDb(4 * Math.PI * Math.max(1, distance * distance));
     }
 
     /**
@@ -137,7 +132,8 @@ public class EvaluateAttenuationCnossos {
     }
 
     /**
-     *
+     * Eq. 2.5.15
+     * Compute Aground
      * @return
      */
     public static double[] getAGroundCore(PropagationPath path, SegmentPath segmentPath, PropagationProcessPathData data) {
@@ -170,7 +166,7 @@ public class EvaluateAttenuationCnossos {
                         aGroundmin = -3 * (1 - segmentPath.gm) * (1 + 2 * (1 - (1 / segmentPath.testForm)));
                     }
                 }
-                /** eq. 2.5.19**/
+                /** eq. 2.5.20**/
                 AGround = -10 * Math.log10(4 * Math.pow(k, 2) / Math.pow(segmentPath.dp, 2) *
                         (Math.pow(segmentPath.zsPrime, 2) - Math.sqrt(2 * cf / k) * segmentPath.zsPrime + cf / k) *
                         (Math.pow(segmentPath.zrPrime, 2) - Math.sqrt(2 * cf / k) * segmentPath.zrPrime + cf / k));
@@ -224,9 +220,11 @@ public class EvaluateAttenuationCnossos {
         double[] aGround = new double[data.freq_lvl.size()];
         double aGroundmin;
 
-        // Here there is a debate if use this condition or not
+        // Here there is a debate if use the condition isgDisc or not
+        // In Directive 2015-2019, isgDisc == true because the term – 3(1 – Gm) takes into account the fact that when the source and the receiver are far apart, the first reflection source side is no longer on the platform but on natural land.
         if (segmentPath.gPath == 0 && data.isgDisc()) {
             if (path.isFavorable()) {
+                // The lower bound of Aground,F (calculated with unmodified heights) depends on the geometry of the path
                 if (segmentPath.testForm <= 1) {
                     aGroundmin = -3 * (1 - segmentPath.gm);
                 } else {
@@ -253,8 +251,10 @@ public class EvaluateAttenuationCnossos {
         List<SegmentPath> srPath = path.getSRList();
 
         double[] aGround;
-        double[] aBoundary;
         double[] aDif = new double[data.freq_lvl.size()];
+
+        double[] aBoundary;
+
 
         // Set Gm and Gw for AGround SR - Table 2.5.b
         if (path.isFavorable()) {
@@ -265,20 +265,8 @@ public class EvaluateAttenuationCnossos {
             srPath.get(0).setGm(srPath.get(0).gPathPrime);
         }
 
-        aGround = getAGround(srPath.get(0), path, data);
-        aBoundary = aGround;
-        if (path.difVPoints.size() > 0) {
-            List<SegmentPath> segmentPath = path.getSegmentList();
-            double[] DeltaDifSR;
-            DeltaDifSR = getDeltaDif(srPath.get(0), data);
-            aDif = DeltaDifSR;
-            // Eq 2.5.30 - Eq. 2.5.31 - Eq. 2.5.32
-            for (int idf = 0; idf < nbfreq; idf++) {
-                aBoundary[idf] = aDif[idf] + aGround[idf];
-            }
-
-        }
         if (path.difHPoints.size() > 0) {
+            // Adif,F is calculated with diffraction. The ground effect is taken into account in the Adif equation itself (Aground = 0 dB). This therefore gives Aboundary = Adif
             List<SegmentPath> segmentPath = path.getSegmentList();
 
             double[] DeltaDifSR;
@@ -327,7 +315,26 @@ public class EvaluateAttenuationCnossos {
             }
 
             aBoundary = aDif;
+        } else {
+            // Aground is calculated with no diffraction (Adif = 0 dB) and Aboundary = Aground;
+            aGround = getAGround(srPath.get(0), path, data);
+            aBoundary = aGround;
+
+            if (path.difVPoints.size() > 0) {
+                List<SegmentPath> segmentPath = path.getSegmentList();
+                double[] DeltaDifSR;
+                DeltaDifSR = getDeltaDif(srPath.get(0), data);
+                aDif = DeltaDifSR;
+                // Eq 2.5.30 - Eq. 2.5.31 - Eq. 2.5.32
+                // todo mmm see page 29 of french
+                for (int idf = 0; idf < nbfreq; idf++) {
+                    aBoundary[idf] = aDif[idf] + aGround[idf];
+                }
+
+            }
         }
+
+
 
         return aBoundary;
     }
@@ -353,21 +360,11 @@ public class EvaluateAttenuationCnossos {
 
     }
 
-    /**
-     *
-     * @param path
-     * @param data
-     * @return
-     */
+
     public double[] evaluateAdiv(PropagationPath path, PropagationProcessPathData data) {
         double[] aDiv = new double[data.freq_lvl.size()];
         double att ;
-        if (path.refPoints.size() > 0) {
-            att = getADiv(path.getSRList().get(0).dPath);
-        } else {
-            att = getADiv(path.getSRList().get(0).d);
-        }
-
+        att = getADiv(path.getSRList().get(0).d);
         for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
             aDiv[idfreq] = att;
         }
@@ -387,11 +384,7 @@ public class EvaluateAttenuationCnossos {
         double[] alpha_atmo = data.getAlpha_atmo();
 
         for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
-            if (path.difVPoints.size() > 0 || path.refPoints.size() > 0) {
-                aAtm[idfreq] = getAAtm(path.getSRList().get(0).dPath, alpha_atmo[idfreq]);
-            } else {
-                aAtm[idfreq] = getAAtm(path.getSRList().get(0).d, alpha_atmo[idfreq]);
-            }
+            aAtm[idfreq] = getAAtm(path.getSRList().get(0).d, alpha_atmo[idfreq]);
         }
         return aAtm;
     }
@@ -420,10 +413,11 @@ public class EvaluateAttenuationCnossos {
         return aBoundary;
     }
 
-    // todo erase evaluate
+
 
     /**
      * Only for propagation Path Cnossos
+     * // todo erase evaluate
      * @param path
      * @param data
      * @return

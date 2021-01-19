@@ -5,7 +5,6 @@ import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 import org.noise_planet.noisemodelling.pathfinder.*;
-import org.noise_planet.noisemodelling.pathfinder.utils.KMLDocument;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOut;
 import org.noise_planet.noisemodelling.propagation.EvaluateAttenuationCnossos;
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
@@ -1757,7 +1756,7 @@ public class EvaluateAttenuationCnossosTest {
         PropagationProcessData rayData = new PropagationProcessData(manager);
         rayData.addReceiver(new Coordinate(107, 25.95, 4));
         rayData.addSource(factory.createPoint(new Coordinate(38, 14, 1)));
-        rayData.setComputeHorizontalDiffraction(true);
+        rayData.setComputeHorizontalDiffraction(false);
         // Create porous surface as defined by the test:
         // The surface of the earth berm is porous (G = 1).
         rayData.addSoilType(new GeoWithSoilType(factory.createPolygon(new Coordinate[]{
@@ -1769,6 +1768,7 @@ public class EvaluateAttenuationCnossosTest {
         }), 1.));
 
         rayData.setComputeVerticalDiffraction(true);
+        rayData.setReflexionOrder(0);
 
         rayData.setGs(0.);
 

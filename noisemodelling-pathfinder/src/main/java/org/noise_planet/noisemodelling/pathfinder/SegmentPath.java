@@ -95,13 +95,6 @@ public class SegmentPath {
         this.gm = g;
     }
 
-    public Double getgPathPrime(PropagationPath path) {
-        if(gPathPrime == null) {
-            path.computeAugmentedSegments();
-        }
-        return gPathPrime;
-    }
-
     public Double getGw() {
         return gw;
     }
@@ -109,6 +102,15 @@ public class SegmentPath {
     public Double getGm() {
         return gm;
     }
+
+    public Double getgPathPrime(PropagationPath path) {
+        if(gPathPrime == null) {
+            path.computeAugmentedSegments();
+        }
+        return gPathPrime;
+    }
+
+
 
     public Double getZs(PropagationPath path, SegmentPath segmentPath) {
         if(zs == null) {

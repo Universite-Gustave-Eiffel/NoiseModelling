@@ -5,11 +5,11 @@ package org.noise_planet.noisemodelling.propagation;
  * @author Pierre Aumond
  */
 public class Utils {
-    public static double dbaToW(double dBA) {
-        return Math.pow(10., dBA / 10.);
+    public static double dbToW(double dB) {
+        return Math.pow(10., dB / 10.);
     }
 
-    public static double wToDba(double w) {
+    public static double wToDb(double w) {
         return 10 * Math.log10(w);
     }
 }

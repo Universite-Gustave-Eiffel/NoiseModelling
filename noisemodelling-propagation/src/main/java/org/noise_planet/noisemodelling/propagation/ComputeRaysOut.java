@@ -82,7 +82,12 @@ public class ComputeRaysOut implements IComputeRaysOut {
     public AtomicInteger cellComputed = new AtomicInteger();
     private static final double angle_section = (2 * Math.PI) / PropagationProcessPathData.DEFAULT_WIND_ROSE.length;
 
-
+    /**
+     * get the rose index to search the mean occurrence p of favourable conditions in the direction of the path (S,R):
+     * @param receiver
+     * @param source
+     * @return rose index
+     */
     public static int getRoseIndex(Coordinate receiver, Coordinate source) {
         // Angle from cos -1 sin 0
         double angleRad = -(Angle.angle(receiver, source) - Math.PI);
@@ -153,7 +158,7 @@ public class ComputeRaysOut implements IComputeRaysOut {
                 double[] Aatm = evaluateAttenuationCnossos.evaluateAatm(propath, pathData);
                 double[] Aref = evaluateAttenuationCnossos.evaluateAref(propath, pathData);
 
-                // Meteo
+                //
                 int roseindex = getRoseIndex(ptList.get(0).coordinate, ptList.get(ptList.size() - 1).coordinate);
                 double[] aGlobalMeteoHom = new double[pathData.freq_lvl.size()];
                 double[] aGlobalMeteoFav = new double[pathData.freq_lvl.size()];
@@ -165,7 +170,7 @@ public class ComputeRaysOut implements IComputeRaysOut {
                     propath.initPropagationPath();
                     Aboundary = evaluateAttenuationCnossos.evaluateAboundary(propath, pathData, false);
                     for (int idfreq = 0; idfreq < pathData.freq_lvl.size(); idfreq++) {
-                        aGlobalMeteoHom[idfreq] = -(Adiv[idfreq] + Aatm[idfreq] + Aboundary[idfreq] + Aref[idfreq]);
+                        aGlobalMeteoHom[idfreq] = -(Adiv[idfreq] + Aatm[idfreq] + Aboundary[idfreq] + Aref[idfreq]); // Eq. 2.5.6
                     }
                 }
 
@@ -175,7 +180,7 @@ public class ComputeRaysOut implements IComputeRaysOut {
                     propath.initPropagationPath();
                     Aboundary = evaluateAttenuationCnossos.evaluateAboundary(propath, pathData, true);
                     for (int idfreq = 0; idfreq < pathData.freq_lvl.size(); idfreq++) {
-                        aGlobalMeteoFav[idfreq] = -(Adiv[idfreq] + Aatm[idfreq] + Aboundary[idfreq]+ Aref[idfreq]);
+                        aGlobalMeteoFav[idfreq] = -(Adiv[idfreq] + Aatm[idfreq] + Aboundary[idfreq]+ Aref[idfreq]); // Eq. 2.5.8
                     }
                 }
 
