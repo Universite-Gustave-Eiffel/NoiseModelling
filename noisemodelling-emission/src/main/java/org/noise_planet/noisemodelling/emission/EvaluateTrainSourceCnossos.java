@@ -67,7 +67,7 @@ public class EvaluateTrainSourceCnossos {
         return typeVehiculeUse;
     }
 
-    private static int getFreqInd(int freq){// Todo freq [24] / [18]
+    private static int getFreqInd(int freq){
         int Freq_ind = 0;
         switch (freq) {
             case 50:
@@ -210,15 +210,6 @@ public class EvaluateTrainSourceCnossos {
         double contactFilter = getLambdaValue(typeVehicule, "RefContact",spectreVer, idLambda);
         double trackRoughness = getTrackRoughness(trackRoughnessId, spectreVer, idLambda);
         return 10 * Math.log10(Math.pow(10,wheelRoughness/10) + Math.pow(10,trackRoughness/10) ) + contactFilter;
-    }
-    private static double getLambdaToFreq(double speed,int idLambda) {
-        int n=0;
-        double[] Lambda = new double[32];
-        for(double m = 30; m > -2 ; m--){
-            Lambda[n]= Math.pow(10,m/10);
-            n ++;
-        }
-        return Math.log10(speed/Lambda[idLambda]*1000/3.6); // km/h - m/s || mm - m
     }
 
     private static double[] checkNanValue(double[] roughnessLtot) {
