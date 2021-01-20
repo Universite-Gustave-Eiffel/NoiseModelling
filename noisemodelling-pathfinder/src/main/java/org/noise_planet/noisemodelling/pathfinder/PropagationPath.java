@@ -280,7 +280,7 @@ public class PropagationPath {
         }
 
         SR.dc = (favorable) ? getRayCurveLength(SR.d,SR.d): SR.d;
-
+        SR.dPath = SR.d;
         if (difVPoints.size()>0) {
             double gPath = 0;
             double dpSegments = 0;
