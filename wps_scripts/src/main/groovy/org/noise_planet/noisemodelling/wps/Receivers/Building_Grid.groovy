@@ -204,22 +204,22 @@ def exec(Connection connection, input) {
     if (fenceGeom != null) {
         filter_geom_query = " WHERE the_geom && ST_GeomFromText('" + fenceGeom + "') AND ST_INTERSECTS(the_geom, ST_GeomFromText('" + fenceGeom + "'))";
     }
-    // create line of receivers
+    logger.info('create line of receivers')
     sql.execute("create table tmp_receivers_lines(pk int not null primary key, the_geom geometry) as select " + buildingPk + " as pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, 2, 'join=bevel')), 0.05) the_geom from " + building_table_name + filter_geom_query)
     sql.execute("drop table if exists tmp_relation_screen_building;")
     sql.execute("create spatial index on tmp_receivers_lines(the_geom)")
-    // list buildings that will remove receivers (if height is superior than receiver height
+    logger.info('list buildings that will remove receivers (if height is superior than receiver height)')
     sql.execute("create table tmp_relation_screen_building as select b." + buildingPk + " as PK_building, s.pk as pk_screen from " + building_table_name + " b, tmp_receivers_lines s where b.the_geom && s.the_geom and s.pk != b.pk and ST_Intersects(b.the_geom, s.the_geom) and b.height > " + h)
     sql.execute("CREATE INDEX ON tmp_relation_screen_building(PK_building);")
     sql.execute("CREATE INDEX ON tmp_relation_screen_building(pk_screen);")
     sql.execute("drop table if exists tmp_screen_truncated;")
-    // truncate receiver lines
+    logger.info('truncate receiver lines')
     sql.execute("create table tmp_screen_truncated as select r.pk_screen, ST_DIFFERENCE(s.the_geom, ST_BUFFER(ST_ACCUM(b.the_geom), 2)) the_geom from tmp_relation_screen_building r, " + building_table_name + " b, tmp_receivers_lines s WHERE PK_building = b." + buildingPk + " AND pk_screen = s.pk  GROUP BY pk_screen, s.the_geom;")
     sql.execute("DROP TABLE IF EXISTS TMP_SCREENS_MERGE;")
     sql.execute("DROP TABLE IF EXISTS TMP_SCREENS;")
-    // union of truncated receivers and non tructated, split line to points
+    logger.info('union of truncated receivers and non tructated, split line to points')
     sql.execute("create table TMP_SCREENS_MERGE (pk serial, the_geom geometry) as select s.pk, s.the_geom the_geom from tmp_receivers_lines s where not st_isempty(s.the_geom) and pk not in (select pk_screen from tmp_screen_truncated) UNION ALL select pk_screen, the_geom from tmp_screen_truncated where not st_isempty(the_geom);")
-    // Collect all lines and convert into points using custom method
+    logger.info('Collect all lines and convert into points using custom method')    
     sql.execute("CREATE TABLE TMP_SCREENS(pk integer, the_geom geometry)")
     def qry = 'INSERT INTO TMP_SCREENS(pk , the_geom) VALUES (?,?);'
     GeometryFactory factory = new GeometryFactory(new PrecisionModel(), targetSrid);
