@@ -209,9 +209,9 @@ def exec(Connection connection, input) {
     sql.execute("drop table if exists tmp_relation_screen_building;")
     sql.execute("create spatial index on tmp_receivers_lines(the_geom)")
     // list buildings that will remove receivers (if height is superior than receiver height
-    sql.execute("create table tmp_relation_screen_building(PK_building int not null,pk_screen int not null, PRIMARY KEY(PK_building, pk_screen)) as select b." + buildingPk + " as PK_building, s.pk as pk_screen from " + building_table_name + " b, tmp_receivers_lines s where b.the_geom && s.the_geom and s.pk != b.pk and ST_Intersects(b.the_geom, s.the_geom) and b.height > " + h)
-	sql.execute("CREATE INDEX ON tmp_relation_screen_building(PK_building);")
-	sql.execute("CREATE INDEX ON tmp_relation_screen_building(pk_screen);")
+    sql.execute("create table tmp_relation_screen_building as select b." + buildingPk + " as PK_building, s.pk as pk_screen from " + building_table_name + " b, tmp_receivers_lines s where b.the_geom && s.the_geom and s.pk != b.pk and ST_Intersects(b.the_geom, s.the_geom) and b.height > " + h)
+    sql.execute("CREATE INDEX ON tmp_relation_screen_building(PK_building);")
+    sql.execute("CREATE INDEX ON tmp_relation_screen_building(pk_screen);")
     sql.execute("drop table if exists tmp_screen_truncated;")
     // truncate receiver lines
     sql.execute("create table tmp_screen_truncated as select r.pk_screen, ST_DIFFERENCE(s.the_geom, ST_BUFFER(ST_ACCUM(b.the_geom), 2)) the_geom from tmp_relation_screen_building r, " + building_table_name + " b, tmp_receivers_lines s WHERE PK_building = b." + buildingPk + " AND pk_screen = s.pk  GROUP BY pk_screen, s.the_geom;")
