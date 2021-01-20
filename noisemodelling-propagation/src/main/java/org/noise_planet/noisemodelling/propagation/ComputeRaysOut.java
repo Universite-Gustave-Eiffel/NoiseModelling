@@ -155,7 +155,15 @@ public class ComputeRaysOut implements IComputeRaysOut {
                 evaluateAttenuationCnossos.initEvaluateAttenutation(pathData);
 
                 double[] Adiv = evaluateAttenuationCnossos.evaluateAdiv(propath, pathData);
-                double[] Aatm = evaluateAttenuationCnossos.evaluateAatm(propath, pathData);
+
+                double[] Aatm;
+                // In addition, Aatm and Aground shall be calculated from the total length of the propagation path.
+                if (propath.difVPoints.size() > 0) {
+                    Aatm = evaluateAttenuationCnossos.evaluateAatm(pathData, propath.getSRList().get(0).dPath);
+                }else{
+                    Aatm = evaluateAttenuationCnossos.evaluateAatm(pathData, propath.getSRList().get(0).d);
+                }
+
                 double[] Aref = evaluateAttenuationCnossos.evaluateAref(propath, pathData);
 
                 //

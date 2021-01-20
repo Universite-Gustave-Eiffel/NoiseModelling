@@ -311,13 +311,20 @@ public class PropagationPath {
 
             // todo handle with unconvex path
             //if (Vector3D.dot(S,R,S,pointList.get(difVPoints.get(0)).coordinate)<0){convex = -1;}
-            SR.delta = convex * (SR.dPath - SR.dc);
+            SR.delta = convex * (SR.dPath - SR.d);
         }
+
+        // diffraction on horizontal edges
         if (difHPoints.size()>0) {
-            //dPath =0;
-            // Symmetric coordinates
-            Coordinate Sprime = new Coordinate(2 * SGround.x - S.x, 2 * SGround.y - S.y, 2 * SGround.z - S.z);
-            Coordinate Rprime = new Coordinate(2 * RGround.x - R.x, 2 * RGround.y - R.y, 2 * RGround.z - R.z);
+
+            dPath = 0;
+
+            // Symmetric coordinates to the gound mean plane see Figure 2.5.c
+            Coordinate SGroundSeg = this.segmentList.get(0).sGround;
+            Coordinate RGroundSeg = this.segmentList.get(segmentList.size()-1).rGround;
+            Coordinate Sprime = new Coordinate(2 * SGroundSeg.x - S.x, 2 * SGroundSeg.y - S.y, 2 * SGroundSeg.z - S.z);
+            Coordinate Rprime = new Coordinate(2 * RGroundSeg.x - R.x, 2 * RGroundSeg.y - R.y, 2 * RGroundSeg.z - R.z);
+
             double gpath = SR.gPath;
             SegmentPath SRp = new SegmentPath(gpath, new Vector3D(S, Rprime),SR.pInit);
             SegmentPath SpR = new SegmentPath(gpath, new Vector3D(Sprime, R),Sprime);
@@ -351,21 +358,25 @@ public class PropagationPath {
                 SpR.dc = SpR.d;
                 SRp.dc = SRp.d;
                 SR.dc = SR.d;
-                double convex = 1; // if path is convex, delta is positive, otherwise negative
-                if (Vector3D.dot(S,R,S,pointList.get(difHPoints.get(0)).coordinate)<0){convex = -1;}
 
-                SR.delta = convex * (SR.dPath - SR.dc);
-                SRp.delta = convex * (SRp.dPath - SRp.dc);
-                SpR.delta = convex * (SpR.dPath - SpR.dc);
+                // if path is convex, delta is positive, otherwise negative
+                double convex = Vector3D.dot(S,R,S,pointList.get(difHPoints.get(0)).coordinate)<0 ? -1 : 1;
+
+                SR.delta = convex * (SR.dPath - SR.d);
+                SRp.delta = convex * (SRp.dPath - SRp.d);
+                SpR.delta = convex * (SpR.dPath - SpR.d);
             }
             else
             {
+
+                // if the straight sound ray SR is masked by the obstacle (1st and 2nd case in Figure 2.5.e)
                 for (int idPoint = 2; idPoint < pointList.size()-1; idPoint++) {
                     dPath += getRayCurveLength(CGAlgorithms3D.distance(pointList.get(idPoint - 1).coordinate, pointList.get(idPoint).coordinate), SR.d);
                 }
 
                 if (difHPoints.size()>1){
-                    SR.eLength = CGAlgorithms3D.distance(pointList.get(difHPoints.get(0)).coordinate,pointList.get(difHPoints.get(difHPoints.size()-1)).coordinate);
+                    double dDif = CGAlgorithms3D.distance(pointList.get(difHPoints.get(0)).coordinate,pointList.get(difHPoints.get(difHPoints.size()-1)).coordinate);
+                    SR.eLength = getRayCurveLength(dDif,SR.d);
                     SpR.eLength = SR.eLength;
                     SRp.eLength = SR.eLength;
                 }
@@ -387,7 +398,9 @@ public class PropagationPath {
                     SRp.dc = getRayCurveLength(SRp.d, SR.d);
                 }
 
+                // todo for the multiple diffractions in favourable conditions: Eq. 2.5.28
 
+                // Iif the straight sound ray SR is not masked by the obstacle (3rd case in Figure 2.5.e)
                 if (Vector3D.dot(S,R,S,pointList.get(difHPoints.get(0)).coordinate)<0) {
                     Coordinate A = projectPointonVector(pointList.get(difHPoints.get(0)).coordinate,SR.vector3D, SR.pInit);
                     double SA = getRayCurveLength(CGAlgorithms3D.distance(S, A), SR.d);
@@ -398,11 +411,11 @@ public class PropagationPath {
                     double ARp = getRayCurveLength(CGAlgorithms3D.distance(A, Rprime), SR.d);
                     double SpO = getRayCurveLength(CGAlgorithms3D.distance(Sprime, pointList.get(difHPoints.get(0)).coordinate), SR.d);
                     double ORp = getRayCurveLength(CGAlgorithms3D.distance(pointList.get(difHPoints.get(0)).coordinate, Rprime), SR.d);
-                    SR.delta =  2*SA+2*AR-SO-OR-SR.dc;
+                    SR.delta =  2*SA+2*AR-SO-OR-SR.dc; // Eq. 2.5.27
                     SRp.delta =  2*SA+2*ARp-SO-ORp-SRp.dc;
                     SpR.delta = 2*SpA+2*AR-SpO-OR-SpR.dc;
                 }else {
-                    SR.delta =  SR.dPath - SR.dc;
+                    SR.delta =  SR.dPath - SR.dc; // Eq. 2.5.26
                     SRp.delta = SRp.dPath - SRp.dc;
                     SpR.delta = SpR.dPath - SpR.dc;
                 }
@@ -467,6 +480,8 @@ public class PropagationPath {
             Coordinate SGround = projectPointonVector(S,segmentList.get(idSegment).vector3D,segmentList.get(idSegment).pInit);
             Coordinate RGround = projectPointonVector(R,segmentList.get(idSegment).vector3D,segmentList.get(idSegment).pInit);
 
+            this.segmentList.get(idSegment).sGround = SGround;
+            this.segmentList.get(idSegment).rGround = RGround;
 
             double dp = CGAlgorithms3D.distance(SGround, RGround);
             segmentList.get(idSegment).dp = dp;
@@ -568,17 +583,17 @@ public class PropagationPath {
         return segmentPath.zr + deltazr + deltazt;
     }
 
-
+    /**
+     * Eq.2.5.24 and Eq. 2.5.25
+     * @param dSeg
+     * @param d
+     * @return
+     */
     private double getRayCurveLength(double dSeg,double d) {
-        double gamma = Math.max(1000,8*d);
-        return 2*gamma*Math.asin(dSeg/(2*gamma));
+        double gamma = Math.max(1000,8*d); // Eq. 2.5.24
+        return 2*gamma*Math.asin(dSeg/(2*gamma)); // Eq. 2.5.25
 
     }
-
-
-
-
-
 
     public static void writeCoordinate(DataOutputStream out, Coordinate p) throws IOException {
         out.writeDouble(p.x);
@@ -599,8 +614,6 @@ public class PropagationPath {
     public static Vector3D readVector(DataInputStream in) throws IOException {
         return new Vector3D(in.readDouble(), in.readDouble(), in.readDouble());
     }
-
-
 
     /**
      * Writes the content of this object into <code>out</code>.

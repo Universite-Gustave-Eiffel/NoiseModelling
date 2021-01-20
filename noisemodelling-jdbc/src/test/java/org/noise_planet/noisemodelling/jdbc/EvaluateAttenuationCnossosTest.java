@@ -324,7 +324,7 @@ public class EvaluateAttenuationCnossosTest {
         computeRays.run(propDataOut);
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});
-        assertArrayEquals(  new double[]{37.53,37.47,37.33,34.99,36.60,35.67,31.18,14.82},L, ERROR_EPSILON_medium); // p=0.5
+        assertArrayEquals(  new double[]{37.53,37.47,37.33,34.99,36.60,35.67,31.18,14.82},L, ERROR_EPSILON_low); // p=0.5
 
     }
 

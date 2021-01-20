@@ -23,6 +23,9 @@ public class SegmentPath {
     public Double gm = null;
     public Double zs = null; // The equivalent source height
     public Double zr = null; //the equivalent receiver height
+    public Coordinate sGround = null; // projection of source  points on ground for each segment
+    public Coordinate rGround = null; // projection of receiver points on ground for each segment
+
     public Double zsPrime = null;
     public Double zrPrime = null;
     public Double testForm = null;
