@@ -292,7 +292,7 @@ def exec(Connection connection, input) {
             if (spatialFieldNames.isEmpty()) {
                 logger.warn("The table " + outputTableName + " does not contain a geometry field.")
             } else {
-                sql.execute('CREATE SPATIAL INDEX IF NOT EXISTS ' + outputTableName + '_INDEX ON ' + TableLocation.parse(outputTableName) + '(the_geom);')
+                stmt.execute('CREATE SPATIAL INDEX IF NOT EXISTS ' + outputTableName + '_INDEX ON ' + TableLocation.parse(outputTableName) + '(the_geom);')
                 // Get the SRID of the table
                 Integer tableSrid = SFSUtilities.getSRID(connection, TableLocation.parse(outputTableName))
 
@@ -315,7 +315,7 @@ def exec(Connection connection, input) {
             }
 
             // If the table has a PK column and doesn't have any Primary Key Constraint, then automatically associate a Primary Key
-            ResultSet rs2 = sql.executeQuery("SELECT * FROM \"" + outputTableName + "\"")
+            ResultSet rs2 = stmt.executeQuery("SELECT * FROM \"" + outputTableName + "\"")
             int pkUserIndex = JDBCUtilities.getFieldIndex(rs2.getMetaData(), "PK")
             int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, outputTableName)
 
