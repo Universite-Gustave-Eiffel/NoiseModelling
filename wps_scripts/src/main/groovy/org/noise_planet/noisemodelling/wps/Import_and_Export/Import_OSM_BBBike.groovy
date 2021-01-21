@@ -19,18 +19,29 @@ package org.noise_planet.noisemodelling.wps.Import_and_Export
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
+import groovy.io.FileType
 import groovy.sql.Sql
+import org.apache.commons.io.FilenameUtils
 import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.api.EmptyProgressVisitor
+import org.h2gis.functions.io.csv.CSVDriverFunction
+import org.h2gis.functions.io.dbf.DBFDriverFunction
+import org.h2gis.functions.io.geojson.GeoJsonDriverFunction
+import org.h2gis.functions.io.gpx.GPXDriverFunction
+import org.h2gis.functions.io.osm.OSMDriverFunction
+import org.h2gis.functions.io.shp.SHPDriverFunction
+import org.h2gis.functions.io.tsv.TSVDriverFunction
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.SFSUtilities
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
-import org.noise_planet.noisemodelling.wps.Geometric_Tools.Clean_Buildings_Table
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import java.sql.Connection
+import java.sql.ResultSet
+import java.sql.Statement
 
 title = 'Clean and fence BBBike tables - https://extract.bbbike.org/'
 description = 'Clean and fence BBBike tables - Convert shp folder from BBBike (https://extract.bbbike.org/) to BUILDINGS, GROUND AND ROADS tables. ' +
@@ -144,6 +155,9 @@ def exec(Connection connection, input) {
     // Create a sql connection to interact with the database in SQL
     Sql sql = new Sql(connection)
 
+    // Create a connection statement to interact with the database in SQL
+    Statement stmt = connection.createStatement()
+
     // output string, the information given back to the user
     String resultString = ""
 
@@ -180,10 +194,145 @@ def exec(Connection connection, input) {
     }
 
 
-    new Import_Folder().exec(connection,
-            ["pathFolder": pathFolder,
-             "inputSRID" : input_srid,
-             "importExt" : "shp"])
+// -------------------------
+    // Begin Import Folder
+    // -------------------------
+
+    // Inputs
+    int srid = input_srid
+    String importExt = "shp"
+    String folder = pathFolder
+    def dir = new File(folder)
+    // name of the imported tables
+    String outputTableName_full = ""
+
+    dir.eachFileRecurse(FileType.FILES) { file ->
+
+        String pathFile = file as String
+        String ext = pathFile.substring(pathFile.lastIndexOf('.') + 1, pathFile.length())
+
+        if (ext == importExt) {
+
+            // get the name of the fileName
+            String fileName = FilenameUtils.removeExtension(new File(pathFile).getName())
+            // replace whitespaces by _ in the file name
+            fileName.replaceAll("\\s", "_")
+            // remove special characters in the file name
+            fileName.replaceAll("[^a-zA-Z0-9 ]+", "_")
+            // the tableName will be called as the fileName
+            String outputTableName = fileName.toUpperCase()
+
+            // Drop the table if already exists
+            String dropOutputTable = "drop table if exists \"" + outputTableName + "\";"
+            stmt.execute(dropOutputTable)
+
+            switch (ext) {
+                case "csv":
+                    CSVDriverFunction csvDriver = new CSVDriverFunction()
+                    csvDriver.importFile(connection, outputTableName, new File(pathFile), new EmptyProgressVisitor())
+                    outputTableName_full = outputTableName + " & " + outputTableName_full
+                    break
+                case "dbf":
+                    DBFDriverFunction dbfDriver = new DBFDriverFunction()
+                    dbfDriver.importFile(connection, outputTableName, new File(pathFile), new EmptyProgressVisitor())
+                    outputTableName_full = outputTableName + " & " + outputTableName_full
+                    break
+                case "geojson":
+                    GeoJsonDriverFunction geoJsonDriver = new GeoJsonDriverFunction()
+                    geoJsonDriver.importFile(connection, outputTableName, new File(pathFile), new EmptyProgressVisitor())
+                    outputTableName_full = outputTableName + " & " + outputTableName_full
+                    break
+                case "gpx":
+                    GPXDriverFunction gpxDriver = new GPXDriverFunction()
+                    gpxDriver.importFile(connection, outputTableName, new File(pathFile), new EmptyProgressVisitor())
+                    outputTableName_full = outputTableName + " & " + outputTableName_full
+                    break
+                case "bz2":
+                    OSMDriverFunction osmDriver = new OSMDriverFunction()
+                    osmDriver.importFile(connection, outputTableName, new File(pathFile), new EmptyProgressVisitor())
+                    outputTableName_full = outputTableName + " & " + outputTableName_full
+                    break
+                case "gz":
+                    OSMDriverFunction osmDriver = new OSMDriverFunction()
+                    osmDriver.importFile(connection, outputTableName, new File(pathFile), new EmptyProgressVisitor())
+                    outputTableName_full = outputTableName + " & " + outputTableName_full
+                    break
+                case "osm":
+                    OSMDriverFunction osmDriver = new OSMDriverFunction()
+                    osmDriver.importFile(connection, outputTableName, new File(pathFile), new EmptyProgressVisitor())
+                    outputTableName_full = outputTableName + " & " + outputTableName_full
+                    break
+                case "shp":
+                    SHPDriverFunction shpDriver = new SHPDriverFunction()
+                    shpDriver.importFile(connection, outputTableName, new File(pathFile), new EmptyProgressVisitor())
+                    outputTableName_full = outputTableName + " & " + outputTableName_full
+                    break
+                case "tsv":
+                    TSVDriverFunction tsvDriver = new TSVDriverFunction()
+                    tsvDriver.importFile(connection, outputTableName, new File(pathFile), new EmptyProgressVisitor())
+                    outputTableName_full = outputTableName + " & " + outputTableName_full
+                    break
+            }
+
+
+            ResultSet rs = stmt.executeQuery("SELECT * FROM \"" + outputTableName + "\"")
+
+            int pk2Field = JDBCUtilities.getFieldIndex(rs.getMetaData(), "PK2")
+            int pkField = JDBCUtilities.getFieldIndex(rs.getMetaData(), "PK")
+
+            if (pk2Field > 0 && pkField > 0) {
+                stmt.execute("ALTER TABLE " + outputTableName + " DROP COLUMN PK2;")
+                logger.warn("The PK2 column automatically created by the SHP driver has been deleted.")
+            }
+
+            // Read Geometry Index and type of the table
+            List<String> spatialFieldNames = SFSUtilities.getGeometryFields(connection, TableLocation.parse(outputTableName, JDBCUtilities.isH2DataBase(connection.getMetaData())))
+
+            // If the table does not contain a geometry field
+            if (spatialFieldNames.isEmpty()) {
+                logger.warn("The table " + outputTableName + " does not contain a geometry field.")
+            } else {
+                sql.execute('CREATE SPATIAL INDEX IF NOT EXISTS ' + outputTableName + '_INDEX ON ' + TableLocation.parse(outputTableName) + '(the_geom);')
+                // Get the SRID of the table
+                Integer tableSrid = SFSUtilities.getSRID(connection, TableLocation.parse(outputTableName))
+
+                if (tableSrid != 0 && tableSrid != srid ) {
+                    resultString = "The table " + outputTableName + " already has a different SRID than the one you gave."
+                    throw new Exception('ERROR : ' + resultString)
+                }
+
+                // Replace default SRID by the srid of the table
+                if (tableSrid != 0) srid = tableSrid
+
+                // Display the actual SRID in the command window
+                logger.info("The SRID of the table " + outputTableName + " is " + srid)
+
+                // If the table does not have an associated SRID, add a SRID
+                if (tableSrid == 0) {
+                    connection.createStatement().execute(String.format("UPDATE %s SET " + spatialFieldNames.get(0) + " = ST_SetSRID(" + spatialFieldNames.get(0) + ",%d)",
+                            TableLocation.parse(outputTableName).toString(), srid))
+                }
+            }
+
+            // If the table has a PK column and doesn't have any Primary Key Constraint, then automatically associate a Primary Key
+            ResultSet rs2 = sql.executeQuery("SELECT * FROM \"" + outputTableName + "\"")
+            int pkUserIndex = JDBCUtilities.getFieldIndex(rs2.getMetaData(), "PK")
+            int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, outputTableName)
+
+            if (pkIndex == 0) {
+                if (pkUserIndex > 0) {
+                    stmt.execute("ALTER TABLE " + outputTableName + " ALTER COLUMN PK INT NOT NULL;")
+                    stmt.execute("ALTER TABLE " + outputTableName + " ADD PRIMARY KEY (PK);  ")
+                    resultString = resultString + String.format(outputTableName + " has a new primary key constraint on PK")
+                    logger.info(String.format(outputTableName + " has a new primary key constraint on PK"))
+                }
+            }
+
+        }
+    }
+    // -------------------------
+    // End Import Folder
+    // -------------------------
 
     // -------------------------
     // Initialize some variables
@@ -221,7 +370,7 @@ def exec(Connection connection, input) {
 
 
         //get SRID of the table
-        int srid = SFSUtilities.getSRID(connection, TableLocation.parse(tableName))
+        srid = SFSUtilities.getSRID(connection, TableLocation.parse(tableName))
 
         // if a SRID exists
         if (srid > 0) {
@@ -304,7 +453,7 @@ def exec(Connection connection, input) {
         building_table_name = building_table_name.toUpperCase()
 
         //get SRID of the table
-        int srid = SFSUtilities.getSRID(connection, TableLocation.parse(building_table_name))
+        srid = SFSUtilities.getSRID(connection, TableLocation.parse(building_table_name))
         if (srid == 3785 || srid == 4326) throw new IllegalArgumentException("Error : This SRID is not metric. Please use another SRID for your table.")
         if (srid == 0) throw new IllegalArgumentException("Error : The table does not have an associated SRID.")
 
