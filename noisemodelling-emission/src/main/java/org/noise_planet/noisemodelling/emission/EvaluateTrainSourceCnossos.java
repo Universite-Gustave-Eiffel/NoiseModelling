@@ -35,6 +35,7 @@ import static org.noise_planet.noisemodelling.emission.utils.interpLinear.interp
  *
  * Return the dB value corresponding to the parameters
  * @author Adrien Le Bellec - univ Gustave eiffel
+ * @author Olivier Chiello, Univ Gustave Eiffel
  */
 
 
