@@ -5,7 +5,6 @@ import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 import org.noise_planet.noisemodelling.pathfinder.*;
-import org.noise_planet.noisemodelling.pathfinder.utils.KMLDocument;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOut;
 import org.noise_planet.noisemodelling.propagation.EvaluateAttenuationCnossos;
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
@@ -325,7 +324,7 @@ public class EvaluateAttenuationCnossosTest {
         computeRays.run(propDataOut);
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});
-        assertArrayEquals(  new double[]{37.53,37.47,37.33,34.99,36.60,35.67,31.18,14.82},L, ERROR_EPSILON_medium); // p=0.5
+        assertArrayEquals(  new double[]{37.53,37.47,37.33,34.99,36.60,35.67,31.18,14.82},L, ERROR_EPSILON_low); // p=0.5
 
     }
 
@@ -757,7 +756,7 @@ public class EvaluateAttenuationCnossosTest {
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
         // impossible geometry in NoiseModelling
-        assertArrayEquals(  new double[]{6.41,14.50,19.52,22.09,22.16,19.28,11.62,-9.31},L, ERROR_EPSILON_medium);//p=0.5
+        assertArrayEquals(  new double[]{6.41,14.50,19.52,22.09,22.16,19.28,11.62,-9.31},L, ERROR_EPSILON_high);//p=0.5
     }
 
 
@@ -1251,7 +1250,7 @@ public class EvaluateAttenuationCnossosTest {
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
-        assertArrayEquals(  new double[]{14.02,23.84,30.95,33.86,38.37,38.27,33.25,15.28}, propDataOut.getVerticesSoundLevel().get(0).value, ERROR_EPSILON_high);//p=0.5
+        assertArrayEquals(  new double[]{14.02,23.84,30.95,33.86,38.37,38.27,33.25,15.28}, propDataOut.getVerticesSoundLevel().get(0).value, ERROR_EPSILON_medium);//p=0.5
     }
 
 
@@ -1757,7 +1756,7 @@ public class EvaluateAttenuationCnossosTest {
         PropagationProcessData rayData = new PropagationProcessData(manager);
         rayData.addReceiver(new Coordinate(107, 25.95, 4));
         rayData.addSource(factory.createPoint(new Coordinate(38, 14, 1)));
-        rayData.setComputeHorizontalDiffraction(true);
+        rayData.setComputeHorizontalDiffraction(false);
         // Create porous surface as defined by the test:
         // The surface of the earth berm is porous (G = 1).
         rayData.addSoilType(new GeoWithSoilType(factory.createPolygon(new Coordinate[]{
@@ -1769,6 +1768,7 @@ public class EvaluateAttenuationCnossosTest {
         }), 1.));
 
         rayData.setComputeVerticalDiffraction(true);
+        rayData.setReflexionOrder(0);
 
         rayData.setGs(0.);
 
@@ -2109,7 +2109,7 @@ public class EvaluateAttenuationCnossosTest {
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
 
-        assertArrayEquals(  new double[]{16.84,26.97,34.79,40.23,38.57,38.58,39.36,29.60},L, ERROR_EPSILON_very_high);//p=0.5
+        assertArrayEquals(  new double[]{16.84,26.97,34.79,40.23,38.57,38.58,39.36,29.60},L, ERROR_EPSILON_very_high);// we don't take into account retrodiffraction
 
     }
 

@@ -389,7 +389,10 @@ public class PropagationProcessPathData {
         return alpha_atmo;
     }
 
-
+    /**
+     * get the atmospheric attenuation coefficient in dB/km at the nominal centre frequency for each frequency band, in accordance with ISO 9613-1.
+     * @return alpha_atmo
+     */
     public double[] getAlpha_atmo() {
         return alpha_atmo;
     }

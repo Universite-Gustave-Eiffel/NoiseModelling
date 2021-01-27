@@ -69,6 +69,16 @@ public class ComputeRays {
     private STRtree rTreeOfGeoSoil;
     private final static Logger LOGGER = LoggerFactory.getLogger(ComputeRays.class);
 
+    /**
+     * Eq 2.5.9
+     * The ‘long-term’ sound level along a path starting from a given point source is
+     * obtained from the logarithmic sum of the weighted sound energy
+     * in homogeneous conditions and the sound energy in favourable conditions.
+     * @param array1
+     * @param array2
+     * @param p the mean occurrence p of favourable conditions in the direction of the path (S,R)
+     * @return
+     */
     public static double[] sumArrayWithPonderation(double[] array1, double[] array2, double p) {
         if (array1.length != array2.length) {
             throw new IllegalArgumentException("Not same size array");

@@ -11,27 +11,30 @@ public class SegmentPath {
 
     //  given by user
     public double gPath;          // G coefficient for the considered path segment
-    public Vector3D vector3D;     // mean Plane for the considered path segment
-    public Coordinate pInit;     // init point to compute the mean Plane
+    public Vector3D vector3D;     // mean ground plane for the considered path segment
+    public Coordinate pInit;     // Init point of the mean ground plane
 
     // computed in AugmentedSegments
-    public int idPtStart;               //start point indice for the considered path segment
-    public int idPtFinal;               //final point indice for the considered path segment
+    public int idPtStart;               // start point indice for the considered path segment
+    public int idPtFinal;               // final point indice for the considered path segment
 
     public Double gPathPrime = null;    //Gpath prime , calculated from Gpath and geometry
     public Double gw = null;
     public Double gm = null;
-    public Double zs = null;
-    public Double zr = null;
+    public Double zs = null; // The equivalent source height
+    public Double zr = null; //the equivalent receiver height
+    public Coordinate sGround = null; // projection of source  points on ground for each segment
+    public Coordinate rGround = null; // projection of receiver points on ground for each segment
+
     public Double zsPrime = null;
     public Double zrPrime = null;
     public Double testForm = null;
     public Double testFormPrime = null;
 
-    public Double dPath; // pass by points
+    public Double dPath; // direct ray between source and receiver passing by diffraction and reflection points
     public Double d ; // direct ray between source and receiver
     public Double dc; // direct ray sensible to meteorological conditions (can be curve) between source and receiver
-    public Double dp; // distance on mean plane between source and receiver
+    public Double dp; // The distance between the source and receiver in projection over the mean ground plane
     public Double eLength = 0.0; // distance between first and last diffraction point
     public Double delta;
 
@@ -95,13 +98,6 @@ public class SegmentPath {
         this.gm = g;
     }
 
-    public Double getgPathPrime(PropagationPath path) {
-        if(gPathPrime == null) {
-            path.computeAugmentedSegments();
-        }
-        return gPathPrime;
-    }
-
     public Double getGw() {
         return gw;
     }
@@ -109,6 +105,15 @@ public class SegmentPath {
     public Double getGm() {
         return gm;
     }
+
+    public Double getgPathPrime(PropagationPath path) {
+        if(gPathPrime == null) {
+            path.computeAugmentedSegments();
+        }
+        return gPathPrime;
+    }
+
+
 
     public Double getZs(PropagationPath path, SegmentPath segmentPath) {
         if(zs == null) {
