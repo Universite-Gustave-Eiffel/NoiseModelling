@@ -32,15 +32,17 @@ package org.noise_planet.noisemodelling.emission;
  */
 
 public class VehiculeParametersCnossos {
-    private String typeVehicule;
+
+    // TODO set default value
+    private String typeVehicule="X-TER-bicaisse-D";
     private String typeWag;
-    private int nbWag;
+    private int nbWag=1;
 
     private double speedVehicule;
 
-    private double tDay;
-    private double tEvenig;
-    private double tNight;
+    private double tDay=1;
+    private double tEvenig=1;
+    private double tNight=1;
 
     private int height;
 

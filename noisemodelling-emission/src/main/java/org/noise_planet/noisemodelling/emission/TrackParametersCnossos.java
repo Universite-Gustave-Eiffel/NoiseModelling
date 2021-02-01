@@ -32,7 +32,7 @@ package org.noise_planet.noisemodelling.emission;
  */
 
 public class TrackParametersCnossos{
-
+// TODO set default value
     private double speedTrack;
     private int trackTransfer;
     private int railRoughness;

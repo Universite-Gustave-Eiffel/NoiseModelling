@@ -305,7 +305,7 @@ public class EvaluateTrainSourceCnossos {
     * @param vehiculeParameters Vehicule Noise emission parameters
     * @param trackParameters Track Noise emission parameters
     * constant speed
-    * todo add acceleration / deceleration / idling speed ?
+    
     * @return LWRoll / LWTraction A & B / LWAerodynamic A & B / LWBridge level in dB
     **/
     static LWRailWay evaluate(VehiculeParametersCnossos vehiculeParameters, TrackParametersCnossos trackParameters) {
@@ -389,6 +389,7 @@ public class EvaluateTrainSourceCnossos {
      *
      * @return lWRoll(freq)
      **/
+
     private static double[] evaluateLWroughness(String ref, String typeVehicule, int trackRoughnessId, int impactId, int bridgeId, int curvate, double speed,int trackTransferId, int spectreVer, int axlesPerVeh) {
         double [] trackTransfer = new double[24];
         double [] lWTr = new double[24];
