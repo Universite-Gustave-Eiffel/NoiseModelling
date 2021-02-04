@@ -114,7 +114,7 @@ def exec(Connection connection, input) {
     String resultString = null
 
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
-    logger.info('Start : Receivers_From_Activities')
+    logger.info('Start : Receivers_From_Activities_Closest')
     logger.info("inputs {}", input)
 
     String activitiesTable = input['activitiesTable']

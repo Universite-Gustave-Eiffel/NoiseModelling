@@ -95,7 +95,7 @@ def exec(Connection connection, input) {
     String resultString = null
 
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
-    logger.info('Start : Receivers_From_Activities')
+    logger.info('Start : Receivers_From_Activities_Closest')
     logger.info("inputs {}", input)
 
     String outTableName = input['outTableName']
@@ -129,7 +129,7 @@ def exec(Connection connection, input) {
         END
     ''')
 
-    logger.info('End : Receivers_From_Activities')
+    logger.info('End : Receivers_From_Activities_Closest')
     resultString = "Process done. Table of receivers " + outTableName + " created !"
     logger.info('Result : ' + resultString)
     return resultString;
