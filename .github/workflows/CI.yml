@@ -28,6 +28,7 @@ jobs:
       - name: Cache
         uses: actions/cache@v2
         with:
-          - $HOME/.m2/
-          - $HOME/.gradle/caches/
-          - $HOME/.gradle/wrapper/
+          path: |
+            $HOME/.m2/
+            $HOME/.gradle/caches/
+            $HOME/.gradle/wrapper/
