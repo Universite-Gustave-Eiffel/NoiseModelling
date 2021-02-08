@@ -8,7 +8,7 @@ jobs:
     steps:
       - uses: SPalominos/PostGIS-Installer-Action@v1.0.1
         with:
-          psql_version: '10'
+          psql_version: '10.0'
           pgis_version: '2.4'
           docker_image: 'kartoza/postgis'
           db_password: 'orbisgis'
