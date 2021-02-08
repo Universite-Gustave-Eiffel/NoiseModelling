@@ -4,7 +4,7 @@ on: [ push, pull_request, workflow_dispatch ]
 
 jobs:
   build:
-    runs-on: trusty
+    runs-on: ubuntu-latest
     steps:
       - uses: SPalominos/PostGIS-Installer-Action@v1.0.0
         with:
