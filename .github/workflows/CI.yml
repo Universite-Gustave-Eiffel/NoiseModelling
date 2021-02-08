@@ -6,14 +6,14 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: SPalominos/PostGIS-Installer-Action@v1.0.0
+      - uses: SPalominos/PostGIS-Installer-Action@v1.0.1
         with:
           psql_version: '10'
-          pgis_version: '2.5'
+          pgis_version: '2.4'
           docker_image: 'kartoza/postgis'
           db_password: 'orbisgis'
           db_user: 'orbisgis'
-          db_db: 'orbisgis_db'
+          db_name: 'orbisgis_db'
       - uses: actions/checkout@v2
       - name: Set up JDK 1.8
         uses: actions/setup-java@v1
@@ -32,3 +32,4 @@ jobs:
             $HOME/.m2/
             $HOME/.gradle/caches/
             $HOME/.gradle/wrapper/
+          key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
