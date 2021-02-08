@@ -1,0 +1,33 @@
+name: CI
+
+on: [ push, pull_request, workflow_dispatch ]
+
+jobs:
+  build:
+    runs-on: trusty
+    steps:
+      - uses: SPalominos/PostGIS-Installer-Action@v1.0.0
+        with:
+          psql_version: '10'
+          pgis_version: '2.5'
+          docker_image: 'kartoza/postgis'
+          db_password: 'orbisgis'
+          db_user: 'orbisgis'
+          db_db: 'orbisgis_db'
+      - uses: actions/checkout@v2
+      - name: Set up JDK 1.8
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      - name: Building
+        run: |
+          mvn test -B
+          cd wps_scripts && travis_retry ./gradlew test --info --stacktrace
+      - name: Clean
+        run: rm -f $HOME/.gradle/caches/modules-2/modules-2.lock
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          - $HOME/.m2/
+          - $HOME/.gradle/caches/
+          - $HOME/.gradle/wrapper/
