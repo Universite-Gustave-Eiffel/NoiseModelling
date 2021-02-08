@@ -21,7 +21,7 @@ jobs:
           java-version: 1.8
       - name: Building
         run: |
-          mvn test -B
+          mvn test install -B
           cd wps_scripts && ./gradlew test --info --stacktrace
       - name: Clean
         run: rm -f $HOME/.gradle/caches/modules-2/modules-2.lock
