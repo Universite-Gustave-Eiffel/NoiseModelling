@@ -22,7 +22,7 @@ jobs:
       - name: Building
         run: |
           mvn test -B
-          cd wps_scripts && travis_retry ./gradlew test --info --stacktrace
+          cd wps_scripts && ./gradlew test --info --stacktrace
       - name: Clean
         run: rm -f $HOME/.gradle/caches/modules-2/modules-2.lock
       - name: Cache
