@@ -2,7 +2,7 @@ package org.noise_planet.noisemodelling.work
 
 import org.h2gis.functions.factory.H2GISDBFactory
 import org.h2gis.utilities.SFSUtilities
-import org.noise_planet.noisemodelling.wps.Matsim.Receivers_From_Activities_Closest
+import org.noise_planet.noisemodelling.wps.Experimental_Matsim.Receivers_From_Activities_Closest
 
 import java.sql.Connection
 
@@ -22,7 +22,7 @@ class AssignClosestReceviersToActivities {
     public static void activitiesRandomReceiver(Connection connection) {
         activitiesRandomReceiver(connection, [
                 "activitiesTable": "ACTIVITIES",
-                "receiversTable": "ALL_RECEIVERS",
+                "receiversTable": "RECEIVERS",
                 "outTableName": "ACTIVITIES_RECEIVERS"
         ])
     }

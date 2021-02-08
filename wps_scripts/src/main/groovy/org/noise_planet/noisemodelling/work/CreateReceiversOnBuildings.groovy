@@ -24,7 +24,7 @@ class CreateReceiversOnBuildings {
         createReceiversOnBuildings(connection, [
                 "delta"            : 5.0,
                 "tableBuilding": "BUILDINGS",
-                "receiversTableName": "ALL_RECEIVERS_TEST",
+                "receiversTableName": "RECEIVERS",
                 "height": 4.0
         ])
     }

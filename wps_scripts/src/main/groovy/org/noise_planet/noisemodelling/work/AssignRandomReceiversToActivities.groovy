@@ -2,7 +2,7 @@ package org.noise_planet.noisemodelling.work
 
 import org.h2gis.functions.factory.H2GISDBFactory
 import org.h2gis.utilities.SFSUtilities
-import org.noise_planet.noisemodelling.wps.Matsim.Receivers_From_Activities_Random
+import org.noise_planet.noisemodelling.wps.Experimental_Matsim.Receivers_From_Activities_Random
 
 import java.sql.Connection
 
@@ -24,7 +24,7 @@ class AssignRandomReceiversToActivities {
         activitiesRandomReceiver(connection, [
                 "activitiesTable": "ACTIVITIES",
                 "buildingsTable": "BUILDINGS",
-                "receiversTable": "ALL_RECEIVERS",
+                "receiversTable": "RECEIVERS",
                 "outTableName": "ACTIVITIES_RECEIVERS"
         ])
     }

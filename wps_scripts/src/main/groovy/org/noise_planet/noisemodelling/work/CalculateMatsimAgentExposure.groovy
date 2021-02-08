@@ -2,7 +2,7 @@ package org.noise_planet.noisemodelling.work
 
 import org.h2gis.functions.factory.H2GISDBFactory
 import org.h2gis.utilities.SFSUtilities
-import org.noise_planet.noisemodelling.wps.Matsim.Agent_Exposure
+import org.noise_planet.noisemodelling.wps.Experimental_Matsim.Agent_Exposure
 
 import java.sql.Connection
 
