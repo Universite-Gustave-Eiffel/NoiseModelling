@@ -50,7 +50,7 @@ inputs = [
     pathFile: [
         name: 'Path of the OSM file',
         title: 'Path of the OSM file',
-        description: 'Path of the OSM file including extension. </br> For example : c:/home/area.osm.gz',
+        description: 'Path of the OSM file including extension. </br> For example : c:/home/area.osm.pbf',
         type: String.class
     ],
     targetSRID: [

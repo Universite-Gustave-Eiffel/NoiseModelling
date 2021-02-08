@@ -27,6 +27,9 @@ import org.slf4j.LoggerFactory
 import java.sql.*
 import groovy.sql.Sql
 
+title = 'Chose a Random Receivers For Matsim Activities'
+description = 'Chose the closest building for every Mastim Activity in an ACTIVITIES table, and then chose a random receiver previously generated around this building.'
+
 title = 'Get the closest building id for every activity'
 description = 'Get the closest building id for every activity, setting the BUILDING_ID field'
 

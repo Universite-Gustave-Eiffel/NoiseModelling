@@ -58,7 +58,7 @@ import java.sql.ResultSet
 import java.sql.Statement
 
 title = 'Calculate Mastim agents exposure'
-description = 'Calculate Mastim agents noise exposure'
+description = "Loads a Matsim plans.xml file and calculate agents noise exposure, based on previously claculated timesliced noisemap at receiver positions, linked with matsim activities (facilities)"
 
 inputs = [
         plansFile: [

@@ -48,8 +48,7 @@ import org.slf4j.LoggerFactory
 
 import java.sql.Connection
 
-title = 'Import data from Mastim output'
-
+title = 'Import traffic data from Mastim simultaion output folder'
 description = 'Read Mastim events output file in order to get traffic NoiseModelling input'
 
 inputs = [

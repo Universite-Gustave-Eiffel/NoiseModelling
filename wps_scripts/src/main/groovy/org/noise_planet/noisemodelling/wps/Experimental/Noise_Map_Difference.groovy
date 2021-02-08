@@ -13,7 +13,7 @@
  * @Author Valentin Le Bescond, Université Gustave Eiffel
  */
 
-package org.noise_planet.noisemodelling.wps.Experimental_Matsim
+package org.noise_planet.noisemodelling.wps.Experimental
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory
 import java.sql.Connection
 
 title = 'Map Difference'
-description = 'Map Difference. Cal'
+description = 'Map Difference.'
 
 inputs = [
         mainMapTable : [

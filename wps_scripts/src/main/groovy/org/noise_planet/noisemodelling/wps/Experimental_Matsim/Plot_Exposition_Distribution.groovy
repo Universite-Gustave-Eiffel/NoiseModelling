@@ -33,8 +33,8 @@ import javax.swing.JFrame
 import java.awt.BorderLayout
 import java.sql.*
 
-title = 'Plot Exposition'
-description = 'Plot Exposition. Will display a Graph Window on the server'
+title = 'Plot Exposition Distribution'
+description = 'Plot a graph displaying the distribution of a chosen field in a previously calculated Matsim agents noise exposition table. Will display a Graph Window on the server'
 
 inputs = [
     expositionsTableName : [
@@ -51,7 +51,7 @@ inputs = [
         description: 'Field containing noise exposition',
         type: String.class
     ],
-    expositionField: [
+    otherExpositionField: [
         name: 'Other field containing noise exposition',
         title: 'Other field containing noise exposition',
         description: 'Other field containing noise exposition',
