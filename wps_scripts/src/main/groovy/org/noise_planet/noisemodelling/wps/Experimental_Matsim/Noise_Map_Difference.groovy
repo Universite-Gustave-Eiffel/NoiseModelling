@@ -13,7 +13,7 @@
  * @Author Valentin Le Bescond, Université Gustave Eiffel
  */
 
-package org.noise_planet.noisemodelling.wps.Matsim
+package org.noise_planet.noisemodelling.wps.Experimental_Matsim
 
 import geoserver.GeoServer
 import geoserver.catalog.Store

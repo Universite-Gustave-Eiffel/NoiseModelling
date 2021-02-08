@@ -13,7 +13,7 @@
  * @Author Valentin Le Bescond, Université Gustave Eiffel
  */
 
-package org.noise_planet.noisemodelling.wps.Matsim
+package org.noise_planet.noisemodelling.wps.Experimental_Matsim
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
@@ -30,12 +30,9 @@ import org.jfree.chart.axis.DateAxis
 import org.jfree.chart.axis.NumberAxis
 import org.jfree.chart.plot.XYPlot
 import org.jfree.chart.renderer.AbstractRenderer
-import org.jfree.chart.util.DefaultShadowGenerator
 import org.jfree.data.time.FixedMillisecond
 import org.jfree.data.time.TimeSeries
 import org.jfree.data.time.TimeSeriesCollection
-import org.jfree.data.xy.XYSeries
-import org.jfree.data.xy.XYSeriesCollection
 import org.matsim.api.core.v01.Id
 import org.matsim.api.core.v01.Scenario
 import org.matsim.api.core.v01.population.Activity
@@ -54,8 +51,6 @@ import java.awt.BasicStroke
 import java.awt.Color
 import java.awt.Font
 import java.sql.DatabaseMetaData
-import java.time.*
-
 import javax.swing.JFrame
 import java.awt.BorderLayout
 import java.sql.Connection

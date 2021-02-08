@@ -139,9 +139,6 @@ def exec(Connection connection, input) {
 
 
     String receivers_table_name = "RECEIVERS"
-    if (input["receiversTableName"]) {
-        receivers_table_name = input["receiversTableName"] as String
-    }
 
     Double delta = 10
     if (input['delta']) {

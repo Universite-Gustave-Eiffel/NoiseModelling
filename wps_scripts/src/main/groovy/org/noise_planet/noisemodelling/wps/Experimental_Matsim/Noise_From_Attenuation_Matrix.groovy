@@ -13,7 +13,7 @@
  * @Author Valentin Le Bescond, Université Gustave Eiffel
  */
 
-package org.noise_planet.noisemodelling.wps.Matsim
+package org.noise_planet.noisemodelling.wps.Experimental_Matsim
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
@@ -21,7 +21,6 @@ import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.slf4j.impl.SimpleLogger
 
 import java.sql.*
 import groovy.sql.Sql

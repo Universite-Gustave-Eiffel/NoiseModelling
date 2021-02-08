@@ -27,7 +27,7 @@ import java.sql.Connection
 
 title = 'Create 0db Source From Roads'
 description = 'Creates a SOURCE table from a ROAD table.' +
-        '<br/>The SOURCE table can then be used in the <b>Noise_level_from_source</b> WPS block'
+        '<br/>The SOURCE table can then be used in the <b>Noise_level_from_source</b> WPS block with the "confExportSourceId" set to true. The Noise_level_from_source output will contain a list of source-receiver attenuation matrix independent of the source absolute noise power levels.'
 
 inputs = [
         roadsTableName: [
