@@ -675,6 +675,7 @@ public class LinkStatStruct {
         return min;
     }
     private String getTimeString(double time) {
+        time = time % 86400
         if (timeSlice == "DEN") {
             String timeString = "D";
             if (time >= 6 * 3600 && time < 18 * 3600) {
