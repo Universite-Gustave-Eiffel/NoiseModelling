@@ -147,7 +147,7 @@ inputs = [
         title: 'Output table name',
         description: 'Name of the table you want to create.' +
                 '<br/>A table with this name will be created plus another with a "_STATS" suffix' +
-                '<br/>For exemple if set to "MATSIM_ROADS":' +
+                '<br/>For exemple if set to "MATSIM_ROADS (default value)":' +
                 '<br/><br/> - the table MATSIM_ROADS, with the link ID and the geometry field' +
                 '<br/><br/> - the table MATSIM_ROADS_STATS, with the link ID and the traffic data',
         min: 0,
@@ -203,8 +203,11 @@ def exec(Connection connection, input) {
     logger.info("inputs {}", input)
 
     String folder = input["folder"];
-    
-    String outTableName = input['outTableName'];
+
+    String outTableName = "MATSIM_ROADS";
+    if (input["outTableName"]) {
+        outTableName = input["outTableName"];
+    }
     String statsTableName = outTableName + "_STATS"
     String trafficTableName = outTableName + "_TRAFFIC"
     String altStatsTableName = statsTableName + "_ALT"

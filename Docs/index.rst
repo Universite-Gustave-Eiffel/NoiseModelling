@@ -68,6 +68,7 @@ This plugin is distributed under `GPL 3 license`_ and is developed by the DECIDE
     Get_Started_Tutorial
     Noise_Map_From_OSM_Tutorial
     Tutorials_FAQ
+    Matsim_Tutorial
 
 .. toctree::
     :maxdepth: 2

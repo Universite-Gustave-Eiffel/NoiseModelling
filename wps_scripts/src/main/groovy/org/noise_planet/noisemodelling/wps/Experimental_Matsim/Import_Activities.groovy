@@ -84,11 +84,12 @@ static Connection openGeoserverDataStoreConnection(String dbName) {
 def run(input) {
 
     // Get name of the database
-    String dbName = "h2gis"
+    String dbName = "h2gisdb"
 
     // Open connection
     openGeoserverDataStoreConnection(dbName).withCloseable {
-        Connection connection -> exec(connection, input)
+        Connection connection ->
+            return [result: exec(connection, input)]
     }
 }
 
@@ -99,7 +100,7 @@ def exec(Connection connection, input) {
 
     Sql sql = new Sql(connection)
 
-    String resultString
+    String resultString = null
 
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
     logger.info('Start : Import_Activities')
@@ -122,7 +123,6 @@ def exec(Connection connection, input) {
         FACILITY varchar(255),
         THE_GEOM geometry,
         TYPES varchar(255),
-        BUILDING_ID integer default null
     );''')
     sql.execute("CREATE INDEX ON " + outTableName + "(FACILITY)");
     sql.execute("CREATE SPATIAL INDEX ON " + outTableName + "(THE_GEOM)");

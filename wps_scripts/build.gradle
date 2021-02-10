@@ -63,4 +63,10 @@ dependencies {
     testCompile 'junit:junit:4.12'
 }
 
+task copyDependencies(type: Copy) {
+    from configurations.default
+    into 'dependencies'
+}
+
+
 // compile group: 'org.orbisgis', name: 'osm', version: '1.0.0-SNAPSHOT'

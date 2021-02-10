@@ -94,11 +94,12 @@ static Connection openGeoserverDataStoreConnection(String dbName) {
 def run(input) {
 
     // Get name of the database
-    String dbName = "h2gis"
+    String dbName = "h2gisdb"
 
     // Open connection
     openGeoserverDataStoreConnection(dbName).withCloseable {
-        Connection connection -> exec(connection, input)
+        Connection connection ->
+            return [result: exec(connection, input)]
     }
 }
 
