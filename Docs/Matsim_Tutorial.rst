@@ -95,9 +95,9 @@ The next step consists in importing the activities locations from the Matsim sim
 
 let's use the Import_Activities WPS bloc. The inputs descriptions are quite straightforward :
 
-- outTabelName : ACTIVITIES
-- facilitiesPath : /path/to/your/scenario_mastim/output_facilities.xml.gz
-- SRID : 2154
+- Name of created table : ACTIVITIES
+- Projection identifier : 2154
+- Path of MatSim facilities file : /path/to/your/scenario_mastim/output_facilities.xml.gz
 
 .. figure:: images/matsim/import_activities_wps.png
    :align: center
@@ -126,18 +126,18 @@ Here we are going to use the latter way, the random one.
 
 Let's calculate all the receivers around our buildings using the Building_Grid WPS bloc with the following inputs :
 
-- tableBuilding : BUILDINGS
-- delta : 5.0
+- Buildings table table : BUILDINGS
+- Distance between receivers : 5.0
 - height : 4.0
 
 That will place receviers around all the buildings, at 4 meter high and 5 meters apart.
 
 Now, we must use the Receivers_From_Activity_Random WPS bloc. The inputs are simple, you just have to specify the names of the previously created tables
 
-- outTableName : ACTIVITY_RECEIVERS
-- activitiesTable : ACTIVITIES
-- buildingsTable : BUILDINGS
-- receiversTable: RECEIVERS
+- Name of created table : ACTIVITY_RECEIVERS
+- Name of the table containing the activities : ACTIVITIES
+- Name of the table containing the buildings : BUILDINGS
+- Name of the table containing the receivers: RECEIVERS
 
 .. figure:: images/matsim/receiver_activities_wps.png
    :align: center
@@ -170,8 +170,8 @@ Create the 0dB Source table
 
 Here we'll use the ZerodB_Source_From_Roads PWS bloc. It's 2 inputs parameters are quite simple and should be set as follows :
 
-- roadsTableName : MATSIM_ROADS
-- sourcesTableName : SOURCES_0DB
+- Input table name : MATSIM_ROADS
+- Output table name : SOURCES_0DB
 
 Calculate the attenuation matrix
 ----------------------------------
@@ -183,18 +183,19 @@ For more details about the different parameters, browse the NoiseModelling gener
 
 The parameters we will use are the following :
 
-- tableBuilding: BUILDINGS
-- tableReceivers : ACTIVITY_RECEIVERS
-- tableSources : SOURCES_0DB
-- confMaxSrcDist : 250
-- confMaxReflDist : 50
-- confReflOrder : 1
-- confSkipLevening : true
-- confSkipLnight : true
-- confSkipLden : true
-- confExportSourceId : true
-- confDiffVertical : false
-- confDiffHorizontal : true
+- Buildings table name: BUILDINGS
+- Receivers table name : ACTIVITY_RECEIVERS
+- Sources table name : SOURCES_0DB
+- Maximum source-receiver distance : 250
+- Maximum source reflexion distance : 50
+- Order of reflexion : 1
+- Do not compute LEVENING_GEOM table : true
+- Do not compute LNIGHT_GEOM table : true
+- Do not compute LDAY_GEOM table : true
+- Separate receiver level by source identifier : true
+- Diffraction on vertical edges : false
+- Diffraction on horizontal edges : true
+- Thread number : 4 (your number of available cpu core)
 
 .. figure:: images/matsim/noise_from_source_wps.png
    :align: center
