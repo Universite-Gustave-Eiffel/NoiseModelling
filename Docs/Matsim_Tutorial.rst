@@ -216,10 +216,10 @@ We just need to combine the two to get receivers noise levels, noise maps, every
 This is the purpose of the Noise_From_Attenuation_Matrix WPS bloc.
 We just have set the right tables as input as follows :
 
-- outTableName : RESULT_GEOM
-- attenuationTable : LDAY_GEOM
-- matsimRoads : MATSIM_ROADS
-- matsimRoadsStats : MATSIM_ROADS_STATS
+- Attenuation matrix table name : LDAY_GEOM
+- Output table name : RESULT_GEOM
+- Table name of the MATSIM table containing the roads LW stats per timeString : MATSIM_ROADS_STATS
+- Table name of the MATSIM table containing the roads geometries : MATSIM_ROADS
 
 .. figure:: images/matsim/noise_map_wps.png
    :align: center
@@ -239,8 +239,8 @@ Here we'll look at a nice way to look at the results with QGis.
 First we need to export the RESULT_GEOM table data into a Shapefile.
 We'll simply use the Export_Table WPS bloc with the following parameters :
 
-- tableToExport : RESULT_GEOM
-- exportPath : /path/to/wherever/results.shp
+- Name of the table : RESULT_GEOM
+- Path of the file you want to export : /path/to/wherever/results.shp
 
 .. figure:: images/matsim/results_export_wps.png
    :align: center
