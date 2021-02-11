@@ -260,7 +260,8 @@ If you right click on the receivers layer and click on Filter... you should see 
 
 To filter results for the 10h00_10h15 time period you can enter the following filter query :
 
-    "TIMESTRING" = '10h00_10h15'
+.. code:: ini
+  "TIMESTRING" = '10h00_10h15'
 
 The last step is to color the dots based on the LEQA field.
 Here is my configuration :
