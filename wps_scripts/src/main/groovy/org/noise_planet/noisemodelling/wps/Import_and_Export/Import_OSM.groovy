@@ -303,7 +303,7 @@ def exec(Connection connection, input) {
         if (removeTunnels) {
         	// Extract roads which contains OSM tag tunnel=yes and delete them from table MAP_ROADS_HGW 
                 Remove_Tunnels_SQL = "CREATE TABLE MAP_ROADS_TUNNEL(ID_WAY BIGINT PRIMARY KEY, TUNNEL_VALUE varchar(30) ) AS SELECT DISTINCT ID_WAY, VALUE TUNNEL_VALUE FROM MAP_WAY_TAG WT, MAP_TAG T WHERE WT.ID_TAG = T.ID_TAG AND T.TAG_KEY IN ('tunnel') AND VALUE='yes';\n" +
-                		     "DELETE FROM MAP_ROADS_HGW WHERE ID_WAY in (SELECT ID_WAY FROM MAP_ROADS_TUNNEL);\n" +
+                		             "DELETE FROM MAP_ROADS_HGW WHERE ID_WAY in (SELECT ID_WAY FROM MAP_ROADS_TUNNEL);\n" +
                                      "DROP TABLE MAP_ROADS_TUNNEL IF EXISTS;\n"
         }
 
