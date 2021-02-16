@@ -1,8 +1,16 @@
 Get Started - Tutorial
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Requirements: Install Java and set JAVA_HOME environnement variable
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Requirements: 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Windows
+-------------------
+
+Since version 3.3.2, an executable file has been made for you ! You can go directly to step 1.
+
+Other platforms
+---------------------------------
 
 Please install JAVA version v8.x. Currently only version 8 of Java is compatible
 
@@ -19,15 +27,25 @@ Please install JAVA version v8.x. Currently only version 8 of Java is compatible
     
 .. _this document : https://confluence.atlassian.com/doc/setting-the-java_home-variable-in-windows-8895.html   
 
+Docker Setup
+---------------------------------
+
+When a developer uses Docker (https://www.docker.com/), he creates an application or service, which he then bundles together with the associated dependencies in a container image. An image is a static representation of the application or service, its configuration and dependencies.
+
+A docker image for the NoiseModelling library has already been built. Please visit: https://github.com/tomasanda/docker-noisemodelling
+
 Step 1: Download the latest release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - Download the latest realease of NoiseModelling on `Github`_. 
-- Unzip the downloaded file into a chosen directory.
+- *Windows* : you can directly download the executable install file and launch it. 
+- *Other plaforms* : Unzip the downloaded zip file into a chosen directory.
+
+.. warning::
+    The chosen directory can be anywhere but be sure that you have write access. If you are using the computer of your company, the Program Files folder is probably not a good idea.
 
 .. note::
     - Only from version 3.3, NoiseModelling releases include the user interface described in this tutorial. 
-    - The chosen directory can be anywhere but be sure that you have write access. If you are using the computer of your company, the Program Files folder is probably not a good idea.
 
 .. _Github : https://github.com/Ifsttar/NoiseModelling/releases
 
