@@ -38,7 +38,6 @@ import static org.noise_planet.noisemodelling.emission.utils.interpLinear.interp
  * @author Olivier Chiello, Univ Gustave Eiffel
  */
 
-
 public class EvaluateTrainSourceCnossos {
     private static JsonNode CnossosTraindata = parse(EvaluateTrainSourceCnossos.class.getResourceAsStream("coefficients_train_cnossos.json"));
 
@@ -69,7 +68,7 @@ public class EvaluateTrainSourceCnossos {
     }
 
     private static int getFreqInd(int freq){
-        int Freq_ind = 0;
+        int Freq_ind;
         switch (freq) {
             case 50:
                 Freq_ind=0;
@@ -81,64 +80,64 @@ public class EvaluateTrainSourceCnossos {
                 Freq_ind=2;
                 break;
             case 100:
-                Freq_ind=0;
-                break;
-            case 125:
-                Freq_ind=1;
-                break;
-            case 160:
-                Freq_ind=2;
-                break;
-            case 200:
                 Freq_ind=3;
                 break;
-            case 250:
+            case 125:
                 Freq_ind=4;
                 break;
-            case 315:
+            case 160:
                 Freq_ind=5;
                 break;
-            case 400:
+            case 200:
                 Freq_ind=6;
                 break;
-            case 500:
+            case 250:
                 Freq_ind=7;
                 break;
-            case 630:
+            case 315:
                 Freq_ind=8;
                 break;
-            case 800:
+            case 400:
                 Freq_ind=9;
                 break;
-            case 1000:
+            case 500:
                 Freq_ind=10;
                 break;
-            case 1250:
+            case 630:
                 Freq_ind=11;
                 break;
-            case 1600:
+            case 800:
                 Freq_ind=12;
                 break;
-            case 2000:
+            case 1000:
                 Freq_ind=13;
                 break;
-            case 2500:
+            case 1250:
                 Freq_ind=14;
                 break;
-            case 3150:
+            case 1600:
                 Freq_ind=15;
                 break;
-            case 4000:
+            case 2000:
                 Freq_ind=16;
                 break;
-            case 5000:
+            case 2500:
                 Freq_ind=17;
+                break;
+            case 3150:
+                Freq_ind=18;
+                break;
+            case 4000:
+                Freq_ind=19;
+                break;
+            case 5000:
+                Freq_ind=20;
                 break;
             case 8000:
-                Freq_ind=17;
+                Freq_ind=21;
                 break;
             case 10000:
-                Freq_ind=17;
+                Freq_ind=22;
                 break;
             default:
                 Freq_ind=0;
@@ -149,8 +148,8 @@ public class EvaluateTrainSourceCnossos {
     public static Double getLambdaValue(String typeVehicule, String refType, int spectreVer, int lambdaId) { //
         int refId = getCnossosTrainData(spectreVer).get("Vehicule").get("Definition").get(typeVehicule).get(refType).intValue();
         String ref = "";
-        if(refType=="RefRoughness"){ref = "WheelRoughness";}
-        else if(refType=="RefContact"){ref = "ContactFilter";}
+        if(refType.equals("RefRoughness")){ref = "WheelRoughness";}
+        else if(refType.equals("RefContact")){ref = "ContactFilter";}
         return getCnossosTrainData(spectreVer).get("Vehicule").get(ref).get(String.valueOf(refId)).get("Values").get(lambdaId).doubleValue();
     }
     public static Double getTrackRoughness(int trackRoughnessId, int spectreVer, int lambdaId) { //
@@ -159,26 +158,30 @@ public class EvaluateTrainSourceCnossos {
     public static int getAxlesPerVeh(String typeVehicule, int spectreVer) { //
         return getCnossosTrainData(spectreVer).get("Vehicule").get("Definition").get(typeVehicule).get("Axles").intValue();
     }
-    public static double getSpectre(String typeVehicule, String ref, String sourceHeight, int spectreVer, int freqId) { //
+    public static double getSpectre(String typeVehicule, String ref, int conditionSpeed,String sourceHeight, int spectreVer, int freqId) { //
         int refId = getCnossosTrainData(spectreVer).get("Vehicule").get("Definition").get(typeVehicule).get(ref).intValue();
-        if(ref=="RefTraction") {
-            double constantSpeed;
-            double accelerationSpeed;
-            double decelerationSpeed;
-            double idlingSpeed;
+        if(ref.equals("RefTraction")) {
+            double tractionSpectre=0;
+            String condition= "ConstantSpeed";
             if (refId != 0) {
-                constantSpeed = getCnossosTrainData(spectreVer).get("Vehicule").get("ConstantSpeed").get(String.valueOf(refId)).get("Values").get(sourceHeight).get(freqId).doubleValue();
-                accelerationSpeed = getCnossosTrainData(spectreVer).get("Vehicule").get("AccelerationSpeed").get(String.valueOf(refId)).get("Values").get(sourceHeight).get(freqId).doubleValue();
-                decelerationSpeed = getCnossosTrainData(spectreVer).get("Vehicule").get("DecelerationSpeed").get(String.valueOf(refId)).get("Values").get(sourceHeight).get(freqId).doubleValue();
-                idlingSpeed = getCnossosTrainData(spectreVer).get("Vehicule").get("IdlingSpeed").get(String.valueOf(refId)).get("Values").get(sourceHeight).get(freqId).doubleValue();
-            } else {
-                constantSpeed = -100;
-                accelerationSpeed = -100;
-                decelerationSpeed = -100;
-                idlingSpeed = -100;
+                switch(conditionSpeed){
+                    case 0 :
+                        condition = "ConstantSpeed";
+                        break;
+                    case 1 :
+                        condition = "AccelerationSpeed";
+                        break;
+                    case 3 :
+                        condition = "DecelerationSpeed";
+                        break;
+                    case 4 :
+                        condition = "IdlingSpeed";
+                        break;
+                }
+                tractionSpectre = getCnossosTrainData(spectreVer).get("Vehicule").get(condition).get(String.valueOf(refId)).get("Values").get(sourceHeight).get(freqId).doubleValue();
             }
-            return constantSpeed;
-        }else if(ref=="RefAerodynamic"){
+            return tractionSpectre;
+        }else if(ref.equals("RefAerodynamic")){
             double aerodynamicNoise;
             aerodynamicNoise = getCnossosTrainData(spectreVer).get("Vehicule").get("AerodynamicNoise").get(String.valueOf(refId)).get("Values").get(sourceHeight).get(freqId).doubleValue();
             return aerodynamicNoise;
@@ -356,11 +359,11 @@ public class EvaluateTrainSourceCnossos {
         double [] lWSpectre = new double[24];
         for(int idFreq = 0; idFreq < 24; idFreq++) {
             if(height==0){
-                lWSpectre[idFreq] = getSpectre(typeVehicule,ref,"A",spectreVer,idFreq);}
+                lWSpectre[idFreq] = getSpectre(typeVehicule,ref, 0,"A",spectreVer,idFreq);}
             else if(height==1) {
-                lWSpectre[idFreq] = getSpectre(typeVehicule, ref, "B", spectreVer, idFreq);
+                lWSpectre[idFreq] = getSpectre(typeVehicule, ref, 0,"B", spectreVer, idFreq);
             }
-            if(ref=="RefAerodynamic"){
+            if(ref.equals("RefAerodynamic")){
                 if(speed<200){
                     lWSpectre[idFreq] =0;
                 }else{
@@ -399,7 +402,7 @@ public class EvaluateTrainSourceCnossos {
 
         // roughnessLtot = CNOSSOS p.19 (2.3.7)
         double[] roughnessLtot = checkNanValue(evaluateRoughnessLtotFreq(typeVehicule, trackRoughnessId, impactId,speed, spectreVer));
-        if(ref=="Rolling") {
+        if(ref.equals("Rolling")) {
             for (int idFreq = 0; idFreq < 24; idFreq++) {
                 // lWTr = CNOSSOS p.20 (2.3.8)
                 trackTransfer[idFreq] = getTrackTransfer(trackTransferId, spectreVer, idFreq);
@@ -418,7 +421,7 @@ public class EvaluateTrainSourceCnossos {
                     lW[idFreq] = lW[idFreq] + 8;
                 }
             }
-        }else if(ref=="Bridge"){
+        }else if(ref.equals("Bridge")){
             double [] lWBridge= new double[24];
             if(bridgeId==3 || bridgeId==4){
                 for(int idFreq = 0; idFreq < 24; idFreq++) {
