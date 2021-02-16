@@ -4,6 +4,7 @@ Matsim - Tutorial
 Introduction
 ~~~~~~~~~~~~~~~
 
+MATSim (https://matsim.org/) is an open-source framework for implementing large-scale agent-based transport simulations.
 In this tutorial we will learn how to import the output of a successful Matsim simulation into NoiseModelling.
 The idea is to use the traffic data from Matsim for NoiseModelling road noise emission.
 Then we will leverage the fact that Matsim is a multi-agent simulator. We will import Matsim agent's positions to calculate their noise exposition throughout the simulated day.
