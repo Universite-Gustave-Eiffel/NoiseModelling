@@ -14,11 +14,13 @@ This is the **official NoiseModelling User Guide**.
 NoiseModelling is a library capable of producing noise maps of cities. This tool is `almost compliant`_ with the CNOSSOS-EU standard method for the noise emission (only road traffic) and noise propagation.
 It can be freely used either for research and education, as well as by experts in a professional use.
 
+A general overview of the model (September 2020) can be found at : https://www.youtube.com/watch?v=V1-niMT9cYE&t=1s
+
 This plugin is distributed under `GPL 3 license`_ and is developed by the DECIDE team of the Lab-STICC (CNRS) and by the Mixt Research Unit in Environmental Acoustics UMRAE (Ifsttar).
 
 -  for **more information** on NoiseModelling, `visit the offical NoiseModelling website`_
 -  to **contribute to NoiseModelling** from the source code, follow the instructions
--  to **contact the development team**, use the email contact@noise-planet.org or let an issue : https://github.com/Ifsttar/NoiseModelling/issues
+-  to **contact the development team**, use the email contact@noise-planet.org or let an issue : https://github.com/Ifsttar/NoiseModelling/issues or a message : https://github.com/Ifsttar/NoiseModelling/discussions
 
 **Cite as**: *Erwan Bocher, Gwenaël Guillaume, Judicaël Picaut, Gwendall Petit, Nicolas Fortin. NoiseModelling: An Open Source GIS Based Tool to Produce Environmental Noise Maps. ISPRS International Journal of Geo-Information, MDPI, 2019, 8 (3), pp.130. ⟨10.3390/ijgi8030130⟩. ⟨hal-02057736⟩*
 
