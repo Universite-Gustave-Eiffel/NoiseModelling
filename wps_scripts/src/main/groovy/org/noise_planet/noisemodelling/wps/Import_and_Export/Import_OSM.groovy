@@ -38,7 +38,7 @@ description = 'Convert OSM/OSM.GZ file (https://www.openstreetmap.org) to input 
         '<br> The user can choose to create one to three output tables : <br>' +
         '-  <b> BUILDINGS  </b> : a table containing the building. </br>' +
         '-  <b> GROUND  </b> : surface/ground acoustic absorption table. </br>' +
-        '-  <b> ROADS  </b> : a table containing the roads. </br>'
+        '-  <b> ROADS  </b> : a table containing the roads. As OSM does not include data on road traffic flows, default values are assigned according to the -Good Practice Guide for Strategic Noise Mapping and the Production of Associated Data on Noise Exposure - Version 2-. </br>'
 
 inputs = [
         pathFile        : [
