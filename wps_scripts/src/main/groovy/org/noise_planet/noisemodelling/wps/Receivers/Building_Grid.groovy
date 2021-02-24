@@ -301,7 +301,7 @@ def exec(Connection connection, input) {
 
         sql.execute("CREATE INDEX ON tmp_receivers(build_pk)")
         logger.info('Distribute population over receivers')
-        sql.execute("create table " + receivers_table_name + "(pk integer not null AUTO_INCREMENT, the_geom geometry,build_pk integer, pop numeric(6,3))");
+        sql.execute("create table " + receivers_table_name + "(pk integer not null AUTO_INCREMENT, the_geom geometry,build_pk integer, pop real)");
         sql.execute("insert into "+receivers_table_name+"(the_geom, build_pk, pop) select a.the_geom, a.build_pk, b.pop/COUNT(DISTINCT aa.pk)::float from tmp_receivers a, " + building_table_name + " b,tmp_receivers aa where b." + buildingPk + " = a.build_pk and a.build_pk = aa.build_pk GROUP BY a.the_geom, a.build_pk, b.pop;")
         logger.info('Add primary key')
         sql.execute("ALTER TABLE "+receivers_table_name+" add primary key(pk)")
