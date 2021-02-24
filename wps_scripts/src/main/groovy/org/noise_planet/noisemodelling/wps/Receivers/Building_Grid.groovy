@@ -261,7 +261,7 @@ def exec(Connection connection, input) {
 
 
         sql.execute("create table " + receivers_table_name + "(pk integer not null AUTO_INCREMENT, the_geom geometry,build_pk integer)")
-        sql.execute("insert into " + receivers_table_name + " select ST_SetSRID(the_geom," + targetSrid.toInteger() + ") , pk building_pk from TMP_SCREENS;")
+        sql.execute("insert into " + receivers_table_name + "(the_geom, build_pk) select ST_SetSRID(the_geom," + targetSrid.toInteger() + ") , pk building_pk from TMP_SCREENS;")
         logger.info('Add primary key')
         sql.execute("ALTER TABLE "+receivers_table_name+" add primary key(pk)")
 
