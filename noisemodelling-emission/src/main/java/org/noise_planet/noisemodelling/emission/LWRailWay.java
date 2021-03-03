@@ -32,6 +32,14 @@ package org.noise_planet.noisemodelling.emission;
  */
 public class LWRailWay {
 
+    public enum TrainNoiseSource {
+        ROLLING,
+        TRACTIONA,
+        TRACTIONB,
+        AERODYNAMICA,
+        AERODYNAMICB,
+        BRIDGE
+    }
     private double[] lWRolling;
     private double[] lWTractionA;
     private double[] lWTractionB;
