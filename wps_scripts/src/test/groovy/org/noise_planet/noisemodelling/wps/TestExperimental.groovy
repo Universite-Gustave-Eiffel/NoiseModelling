@@ -66,7 +66,7 @@ class TestExperimental extends JdbcTestCase  {
 
 
 
-        //assertEquals(res, res3)
+        assertEquals(res, res3)
     }
 
 
