@@ -29,6 +29,7 @@ import org.h2gis.utilities.SFSUtilities
 import org.h2gis.utilities.TableLocation
 import org.locationtech.jts.geom.*
 import org.locationtech.jts.io.WKTReader
+import org.noise_planet.noisemodelling.pathfinder.RootProgressVisitor
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -193,7 +194,6 @@ def exec(Connection connection, input) {
         fenceGeom = (new GeometryFactory()).toGeometry(SFSUtilities.getTableEnvelope(connection, TableLocation.parse(input['fenceTableName'] as String), "THE_GEOM"))
     }
 
-
     def buildingPk = JDBCUtilities.getFieldName(connection.getMetaData(), building_table_name, JDBCUtilities.getIntegerPrimaryKey(connection, building_table_name));
     if (buildingPk == "") {
         return "Buildings table must have a primary key"
@@ -204,23 +204,33 @@ def exec(Connection connection, input) {
     if (fenceGeom != null) {
         filter_geom_query = " WHERE the_geom && ST_GeomFromText('" + fenceGeom + "') AND ST_INTERSECTS(the_geom, ST_GeomFromText('" + fenceGeom + "'))";
     }
-    // create line of receivers
-    sql.execute("create table tmp_receivers_lines as select " + buildingPk + " as pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, 2, 'join=bevel')), 0.05) the_geom from " + building_table_name + filter_geom_query)
+
+    logger.info('create line of receivers')
+    sql.execute("create table tmp_receivers_lines(pk int not null primary key, the_geom geometry) as select " + buildingPk + " as pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, 2, 'join=bevel')), 0.05) the_geom from " + building_table_name + filter_geom_query)
     sql.execute("drop table if exists tmp_relation_screen_building;")
     sql.execute("create spatial index on tmp_receivers_lines(the_geom)")
-    // list buildings that will remove receivers (if height is superior than receiver height
+    logger.info('list buildings that will remove receivers (if height is superior than receiver height)')
     sql.execute("create table tmp_relation_screen_building as select b." + buildingPk + " as PK_building, s.pk as pk_screen from " + building_table_name + " b, tmp_receivers_lines s where b.the_geom && s.the_geom and s.pk != b.pk and ST_Intersects(b.the_geom, s.the_geom) and b.height > " + h)
+    sql.execute("CREATE INDEX ON tmp_relation_screen_building(PK_building);")
+    sql.execute("CREATE INDEX ON tmp_relation_screen_building(pk_screen);")
     sql.execute("drop table if exists tmp_screen_truncated;")
-    // truncate receiver lines
-    sql.execute("create table tmp_screen_truncated as select r.pk_screen, ST_DIFFERENCE(s.the_geom, ST_BUFFER(ST_ACCUM(b.the_geom), 2)) the_geom from tmp_relation_screen_building r, " + building_table_name + " b, tmp_receivers_lines s WHERE PK_building = b." + buildingPk + " AND pk_screen = s.pk  GROUP BY pk_screen, s.the_geom;")
+    logger.info('truncate receiver lines')
+    sql.execute("create table tmp_screen_truncated(pk_screen integer not null, the_geom geometry) as select r.pk_screen, ST_DIFFERENCE(s.the_geom, ST_BUFFER(ST_ACCUM(b.the_geom), 2)) the_geom from tmp_relation_screen_building r, " + building_table_name + " b, tmp_receivers_lines s WHERE PK_building = b." + buildingPk + " AND pk_screen = s.pk  GROUP BY pk_screen, s.the_geom;")
+    logger.info('Add primary key')
+    sql.execute("ALTER TABLE tmp_screen_truncated add primary key(pk_screen)")
     sql.execute("DROP TABLE IF EXISTS TMP_SCREENS_MERGE;")
     sql.execute("DROP TABLE IF EXISTS TMP_SCREENS;")
-    // union of truncated receivers and non tructated, split line to points
-    sql.execute("create table TMP_SCREENS_MERGE (pk serial, the_geom geometry) as select s.pk, s.the_geom the_geom from tmp_receivers_lines s where not st_isempty(s.the_geom) and pk not in (select pk_screen from tmp_screen_truncated) UNION ALL select pk_screen, the_geom from tmp_screen_truncated where not st_isempty(the_geom);")
-    // Collect all lines and convert into points using custom method
+    logger.info('union of truncated receivers and non tructated')
+    sql.execute("create table TMP_SCREENS_MERGE (pk integer not null, the_geom geometry) as select s.pk, s.the_geom the_geom from tmp_receivers_lines s where not st_isempty(s.the_geom) and pk not in (select pk_screen from tmp_screen_truncated) UNION ALL select pk_screen, the_geom from tmp_screen_truncated where not st_isempty(the_geom);")
+    logger.info('Add primary key')
+    sql.execute("ALTER TABLE TMP_SCREENS_MERGE add primary key(pk)")
+    logger.info('Collect all lines and convert into points using custom method')    
     sql.execute("CREATE TABLE TMP_SCREENS(pk integer, the_geom geometry)")
     def qry = 'INSERT INTO TMP_SCREENS(pk , the_geom) VALUES (?,?);'
     GeometryFactory factory = new GeometryFactory(new PrecisionModel(), targetSrid);
+    logger.info('Split line to points')
+    int nrows = sql.firstRow('SELECT COUNT(*) FROM TMP_SCREENS_MERGE')[0] as Integer
+    RootProgressVisitor progressLogger = new RootProgressVisitor(nrows, true, 1)
     sql.withBatch(100, qry) { ps ->
         sql.eachRow("SELECT pk, the_geom from TMP_SCREENS_MERGE") { row ->
             List<Coordinate> pts = new ArrayList<Coordinate>()
@@ -240,6 +250,7 @@ def exec(Connection connection, input) {
                     ps.addBatch(row[0] as Integer, factory.createPoint(newCoord))
                 }
             }
+            progressLogger.endStep()
         }
     }
     sql.execute("drop table if exists TMP_SCREENS_MERGE")
@@ -249,7 +260,10 @@ def exec(Connection connection, input) {
         logger.info('create RECEIVERS table...')
 
 
-        sql.execute("create table " + receivers_table_name + "(pk serial, the_geom geometry,build_pk integer) as select null, ST_SetSRID(the_geom," + targetSrid.toInteger() + ") , pk building_pk from TMP_SCREENS;")
+        sql.execute("create table " + receivers_table_name + "(pk integer not null AUTO_INCREMENT, the_geom geometry,build_pk integer)")
+        sql.execute("insert into " + receivers_table_name + "(the_geom, build_pk) select ST_SetSRID(the_geom," + targetSrid.toInteger() + ") , pk building_pk from TMP_SCREENS;")
+        logger.info('Add primary key')
+        sql.execute("ALTER TABLE "+receivers_table_name+" add primary key(pk)")
 
         if (input['sourcesTableName']) {
             // Delete receivers near sources
@@ -267,7 +281,11 @@ def exec(Connection connection, input) {
         // building have population attribute
         // set population attribute divided by number of receiver to each receiver
         sql.execute("DROP TABLE IF EXISTS tmp_receivers")
-        sql.execute("create table tmp_receivers(pk serial, the_geom geometry,build_pk integer) as select null, ST_SetSRID(the_geom," + targetSrid.toInteger() + "), pk building_pk from TMP_SCREENS;")
+        sql.execute("create table tmp_receivers(pk integer not null AUTO_INCREMENT, the_geom geometry,build_pk integer not null)")
+
+        sql.execute("insert into tmp_receivers(the_geom, build_pk) select ST_SetSRID(the_geom," + targetSrid.toInteger() + "), pk building_pk from TMP_SCREENS;")
+        logger.info('Add primary key')
+        sql.execute("ALTER TABLE tmp_receivers add primary key(pk)")
 
         if (input['sourcesTableName']) {
             // Delete receivers near sources
@@ -282,7 +300,12 @@ def exec(Connection connection, input) {
         }
 
         sql.execute("CREATE INDEX ON tmp_receivers(build_pk)")
-        sql.execute("create table " + receivers_table_name + "(pk serial, the_geom geometry,build_pk integer, pop float) as select null, a.the_geom, a.build_pk, b.pop/COUNT(DISTINCT aa.pk)::float from tmp_receivers a, " + building_table_name + " b,tmp_receivers aa where b." + buildingPk + " = a.build_pk and a.build_pk = aa.build_pk GROUP BY a.the_geom, a.build_pk, b.pop;")
+        logger.info('Distribute population over receivers')
+        sql.execute("create table " + receivers_table_name + "(pk integer not null AUTO_INCREMENT, the_geom geometry,build_pk integer, pop real)");
+        sql.execute("insert into "+receivers_table_name+"(the_geom, build_pk, pop) select a.the_geom, a.build_pk, b.pop/COUNT(DISTINCT aa.pk)::float from tmp_receivers a, " + building_table_name + " b,tmp_receivers aa where b." + buildingPk + " = a.build_pk and a.build_pk = aa.build_pk GROUP BY a.the_geom, a.build_pk, b.pop;")
+        logger.info('Add primary key')
+        sql.execute("ALTER TABLE "+receivers_table_name+" add primary key(pk)")
+
         sql.execute("drop table if exists tmp_receivers")
     }
     // cleaning

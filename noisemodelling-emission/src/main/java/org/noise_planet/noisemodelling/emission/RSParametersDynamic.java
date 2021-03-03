@@ -1,36 +1,15 @@
 /**
- * NoiseMap is a scientific computation plugin for OrbisGIS developed in order to
- * evaluate the noise impact on urban mobility plans. This model is
- * based on the French standard method NMPB2008. It includes traffic-to-noise
- * sources evaluation and sound propagation processing.
+ * NoiseModelling is an open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
  *
- * This version is developed at French IRSTV Institute and at IFSTTAR
- * (http://www.ifsttar.fr/) as part of the Eval-PDU project, funded by the
- * French Agence Nationale de la Recherche (ANR) under contract ANR-08-VILL-0005-01.
+ * This version is developed by the DECIDE team from the Lab-STICC (CNRS) and by the Mixt Research Unit in Environmental Acoustics (Université Gustave Eiffel).
+ * <http://noise-planet.org/noisemodelling.html>
  *
- * Noisemap is distributed under GPL 3 license. Its reference contact is Judicaël
- * Picaut <judicael.picaut@ifsttar.fr>. It is maintained by Nicolas Fortin
- * as part of the "Atelier SIG" team of the IRSTV Institute <http://www.irstv.fr/>.
+ * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE provided with this software.
  *
- * Copyright (C) 2011 IFSTTAR
- * Copyright (C) 2011-2012 IRSTV (FR CNRS 2488)
+ * Contact: contact@noise-planet.org
  *
- * Noisemap is free software: you can redistribute it and/or modify it under the
- * terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- *
- * Noisemap is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE. See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with
- * Noisemap. If not, see <http://www.gnu.org/licenses/>.
- *
- * For more information, please consult: <http://www.orbisgis.org/>
- * or contact directly:
- * info_at_ orbisgis.org
  */
+
 package org.noise_planet.noisemodelling.emission;
 
 /**
@@ -38,23 +17,38 @@ package org.noise_planet.noisemodelling.emission;
  * @author Pierre Aumond - 03/05/2017 - 21/08/2018
  * @author Arnaud Can - 27/02/2018 - 21/08/2018
  */
+
 public class RSParametersDynamic {
     private final double speed;
     private final double acceleration;
-    private final int veh_type;
+    private final String veh_type;
     private final int acc_type;
     private final int FreqParam;
     private final double Temperature;
-    private final int RoadSurface;
+    private final String roadSurface;
     private final boolean Stud ;
     private final double Junc_dist;
     private final int Junc_type;
     private final double LwStd;
     private final int VehId;
 
+    private int coeffVer = 2;
+
 
     private int surfaceAge;
     private double slopePercentage;
+
+    /**
+     * @param coeffVer
+     */
+    public void setCoeffVer(int coeffVer) {
+        this.coeffVer = coeffVer;
+    }
+
+    public int getCoeffVer() {
+        return this.coeffVer;
+    }
+
 
     private static double getVPl(double sLv, double speedmax, int type, int subtype) throws IllegalArgumentException {
         switch (type) {
@@ -199,19 +193,22 @@ public class RSParametersDynamic {
      * @param LwStd Standard Deviation of Lw
      * @param VehId Vehicle ID used as a seed for LwStd
      */
-    public RSParametersDynamic(double speed, double acceleration, int veh_type, int acc_type, int FreqParam, double Temperature, int RoadSurface, boolean Stud, double Junc_dist, int Junc_type, double LwStd, int VehId) {
+    public RSParametersDynamic(double speed, double acceleration, String veh_type, int acc_type, int FreqParam, double Temperature, String roadSurface, boolean Stud, double Junc_dist, int Junc_type, double LwStd, int VehId) {
+
+        if (Junc_type <0 || Junc_type>2 ) throw new IllegalArgumentException("Unlnown Junction type for a section.");
         this.speed = speed;
         this.acceleration = acceleration;
         this.veh_type = veh_type;
         this.acc_type = acc_type;
-        this.FreqParam = FreqParam;
+        this.FreqParam = Math.max(0, FreqParam);
         this.Temperature = Temperature;
-        this.RoadSurface = RoadSurface;
+        this.roadSurface = roadSurface;
         this.Stud = Stud;
-        this.Junc_dist = Junc_dist;
-        this.Junc_type = Junc_type;
+        this.Junc_dist = Math.max(0, Junc_dist);
+        this.Junc_type = Math.max(0, Math.min(2, Junc_type));
         this.LwStd = LwStd;
         this.VehId = VehId;
+
 
     }
 
@@ -239,7 +236,7 @@ public class RSParametersDynamic {
         return acc_type;
     }
 
-    public int getVeh_type() {
+    public String getVeh_type() {
         return veh_type;
     }
 
@@ -249,7 +246,7 @@ public class RSParametersDynamic {
 
     public double getTemperature() { return Temperature;}
 
-    public int getRoadSurface() {return RoadSurface;}
+    public String getRoadSurface() {return roadSurface;}
 
     public boolean getStud() {return Stud;}
 

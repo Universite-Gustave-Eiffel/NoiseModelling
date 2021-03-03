@@ -18,11 +18,9 @@
 
 package org.noise_planet.noisemodelling.wpsTools
 
-
-import org.cts.crs.CRSException
+import org.noise_planet.noisemodelling.pathfinder.FastObstructionTest
+import org.noise_planet.noisemodelling.pathfinder.utils.KMLDocument
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOut
-import org.noise_planet.noisemodelling.propagation.FastObstructionTest
-import org.noise_planet.noisemodelling.propagation.KMLDocument
 
 import javax.xml.stream.XMLStreamException
 
@@ -88,15 +86,15 @@ class GeneralTools {
                 kmlDocument.writeBuildings(manager)
             }
             kmlDocument.writeFooter()
-        } catch (XMLStreamException | CRSException ex) {
+        } catch (XMLStreamException ex) {
             throw new IOException(ex)
         }
     }
 
 
     /**
-     *
-     * @param db
+     * Convert dB to dBA, following specifications in Directive 2015/amendments 2019
+     * @param db array of sound level in dB (octave band from 63 Hz to 8kHz)
      * @return
      */
     static double[] DBToDBA(double[] db) {

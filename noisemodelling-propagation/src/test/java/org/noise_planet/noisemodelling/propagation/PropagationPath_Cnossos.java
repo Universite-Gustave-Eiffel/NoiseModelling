@@ -3,13 +3,17 @@ package org.noise_planet.noisemodelling.propagation;
 import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.math.Vector3D;
+import org.noise_planet.noisemodelling.pathfinder.LayerDelaunayError;
+import org.noise_planet.noisemodelling.pathfinder.PointPath;
+import org.noise_planet.noisemodelling.pathfinder.PropagationPath;
+import org.noise_planet.noisemodelling.pathfinder.SegmentPath;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class PropagationPath_Cnossos {
 
@@ -34,7 +38,7 @@ public class PropagationPath_Cnossos {
     private static ArrayList<Double> asW(double... dbValues) {
         ArrayList<Double> ret = new ArrayList<>(dbValues.length);
         for (double db_m : dbValues) {
-            ret.add(ComputeRays.dbaToW(db_m));
+            ret.add(Utils.dbToW(db_m));
         }
         return ret;
     }

@@ -1,10 +1,12 @@
-Some contributions using NoiseModelling
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Some contributions using NoiseModelling 
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Standard Noise maps
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
+-  NOURMOHAMMADI, Zahra, LILASATHAPORNKIT, Tanapon, ASHFAQ, Mudabber, et al. Mapping Urban Environmental Performance with Emerging Data Sources: A Case of Urban Greenery and Traffic Noise in Sydney, Australia. Sustainability, 2021, vol. 13, no 2, p. 605.
 - WANG Z., NOVACK T., YAN Y., ZIPF A. Quiet Route Planning for Pedestrians in Traffic Noise Polluted Environments. IEEE Transactions on Intelligent Transportation Systems 2020. https://ieeexplore.ieee.org/document/9139350/keywords#keywords
+
 
 Dynamic Noise maps
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -22,6 +24,7 @@ Dynamic Noise maps
 
 Probabilistic & Multi-sources Noise maps
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- ALIONTE, Cristian-Gabriel et COMEAGA, Daniel-Constantin. Noise assessment of the small-scale wind farm. In : E3S Web of Conferences. EDP Sciences, 2019.
 - AUMOND P., CAN A. Probabilistic modeling framework to predict traffic sound distribution, Proceedings of Euronoise, Hersonissos, Crete, 27-31 May 2018
 - AUMOND, P., JACQUESSON, L., CAN, A. (2018). Probabilistic modeling framework for multisource sound mapping. Applied Acoustics, 139, 34-43.
 
@@ -31,9 +34,12 @@ Probabilistic & Multi-sources Noise maps
 
 Sensitivity Analysis & data assimilation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- LESIEUR, Antoine, AUMOND, Pierre, MALLET, Vivien, et al. Meta-modeling for urban noise mapping. The Journal of the Acoustical Society of America, 2020, vol. 148, no 6, p. 3671-3681
+
 - AUMOND P., CAN A., MALLET V., GAUVREAU B., GUILLAUME G. Global sensitivity analysis for urban noise modelling Proceedings of the 23rd International Congress on Acoustics, Aachen, Allemagne, 09-13 September, 2019.
 - AUMOND P., CAN A., MALLET V., GAUVREAU B., GUILLAUME G. Global sensitivity analysis of a noise mapping model based on open-source software, Proceedings of Internoise 2019, Madrid, Espagne, 16-19 Juin 2019.
-- LESIEUR A., AUMOND P., CAN A., MALLET V. Metamodeling for urban noise mapping, Proceedings of the 23rd International Congress on Acoustics, Aachen, Allemagne, 09-13 September, 2019.
+
 
 .. figure:: images/examples/Metamodeling.PNG
     :align: center

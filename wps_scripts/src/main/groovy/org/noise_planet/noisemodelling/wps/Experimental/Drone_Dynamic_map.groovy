@@ -1,36 +1,29 @@
 package org.noise_planet.noisemodelling.wps.Experimental
 
+import geoserver.GeoServer
+
 /**
  * @Author Pierre Aumond, Université Gustave Eiffel
  */
-import geoserver.GeoServer
+
 import geoserver.catalog.Store
-
 import groovy.sql.Sql
-import org.locationtech.jts.math.Vector3D
-import org.noise_planet.noisemodelling.propagation.ComputeRays
-import org.noise_planet.noisemodelling.propagation.ComputeRaysOut
-import org.noise_planet.noisemodelling.propagation.FastObstructionTest
-import org.noise_planet.noisemodelling.propagation.IComputeRaysOut
-import org.noise_planet.noisemodelling.propagation.PropagationPath
-import org.noise_planet.noisemodelling.propagation.PropagationProcessData
-import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
-import org.noise_planet.noisemodelling.propagation.RootProgressVisitor
-
-import java.sql.Connection
-import java.sql.SQLException
-
-import org.geotools.jdbc.JDBCDataStore
-
 import groovy.transform.CompileStatic
-import org.h2gis.utilities.wrapper.*
+import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.api.ProgressVisitor
 import org.h2gis.utilities.SpatialResultSet
-
-import org.locationtech.jts.geom.Geometry
+import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Coordinate
-import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap
+import org.locationtech.jts.geom.Geometry
+import org.locationtech.jts.math.Vector3D
+import org.noise_planet.noisemodelling.jdbc.PointNoiseMap
+import org.noise_planet.noisemodelling.pathfinder.*
+import org.noise_planet.noisemodelling.propagation.ComputeRaysOut
+import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
+
+import java.sql.Connection
+import java.sql.SQLException
 
 title = 'Compute Dynamic NoiseMap'
 description = 'Compute Dynamic NoiseMap from individual moving point sources'

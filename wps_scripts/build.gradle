@@ -3,7 +3,6 @@ apply plugin: 'java'
 
 repositories {
     mavenLocal()
-    mavenCentral()
     flatDir {
         dirs 'libs'
     }
@@ -19,6 +18,10 @@ repositories {
     maven {
         url "http://nexus.orbisgis.org/repository/orbisgis-snapshot/"
     }
+    maven {
+        url "https://dl.bintray.com/matsim/matsim"
+    }
+    mavenCentral()
 }
 
 test {
@@ -40,17 +43,30 @@ dependencies {
     compile group: 'org.ejml', name: 'all', version: '0.29'
     compile group: 'org.eclipse.emf', name: 'org.eclipse.emf.ecore', version: '2.10.1'
     compile group: 'org.orbisgis', name: 'h2gis', version: '1.5.1-SNAPSHOT'
-    compile group: 'org.locationtech.jts', name: 'jts-core', version: '1.15.1'
-    compile group: 'org.locationtech.jts', name: 'jts-io', version: '1.15.1'
-    compile group: 'org.orbisgis', name: 'noisemodelling-emission', version: '3.3.1-SNAPSHOT'
-    compile group: 'org.orbisgis', name: 'noisemodelling-propagation', version: '3.3.1-SNAPSHOT'
-    compile group: 'org.orbisgis', name: 'h2gis-extension', version: '3.3.1-SNAPSHOT'
+    compile('org.locationtech.jts:jts-core:1.15.1') {
+        force=true
+    }
+    compile('org.locationtech.jts:jts-io:1.15.1') {
+        force=true
+    }
+    compile group: 'org.orbisgis', name: 'noisemodelling-emission', version: '3.3.1'
+    compile group: 'org.orbisgis', name: 'noisemodelling-propagation', version: '3.3.1'
+    compile group: 'org.orbisgis', name: 'noisemodelling-pathfinder', version: '3.3.1'
+    compile group: 'org.orbisgis', name: 'noisemodelling-jdbc', version: '3.3.1'
+    compile group: 'org.orbisgis', name: 'h2gis-extension', version: '3.3.1'
     compile group: 'org.openstreetmap.osmosis', name: 'osmosis-core', version: '0.48.3'
     compile group: 'org.openstreetmap.osmosis', name: 'osmosis-pbf', version: '0.46'
+    compile group: 'org.matsim', name: 'matsim', version: '11.0'
 
     compile 'com.opencsv:opencsv:4.0'
-    testCompile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.25'
+    compile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.25'
     testCompile 'junit:junit:4.12'
 }
+
+task copyDependencies(type: Copy) {
+    from configurations.default
+    into 'dependencies'
+}
+
 
 // compile group: 'org.orbisgis', name: 'osm', version: '1.0.0-SNAPSHOT'

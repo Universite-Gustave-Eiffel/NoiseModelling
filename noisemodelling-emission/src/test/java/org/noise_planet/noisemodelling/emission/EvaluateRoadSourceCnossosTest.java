@@ -1,44 +1,25 @@
 /**
- * NoiseMap is a scientific computation plugin for OrbisGIS developed in order to
- * evaluate the noise impact on urban mobility plans. This model is
- * based on the French standard method NMPB2008. It includes traffic-to-noise
- * sources evaluation and sound propagation processing.
+ * NoiseModelling is an open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
  *
- * This version is developed at French IRSTV Institute and at IFSTTAR
- * (http://www.ifsttar.fr/) as part of the Eval-PDU project, funded by the
- * French Agence Nationale de la Recherche (ANR) under contract ANR-08-VILL-0005-01.
+ * This version is developed by the DECIDE team from the Lab-STICC (CNRS) and by the Mixt Research Unit in Environmental Acoustics (Université Gustave Eiffel).
+ * <http://noise-planet.org/noisemodelling.html>
  *
- * Noisemap is distributed under GPL 3 license. Its reference contact is Judicaël
- * Picaut <judicael.picaut@ifsttar.fr>. It is maintained by Nicolas Fortin
- * as part of the "Atelier SIG" team of the IRSTV Institute <http://www.irstv.fr/>.
+ * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE provided with this software.
  *
- * Copyright (C) 2011 IFSTTAR
- * Copyright (C) 2011-2012 IRSTV (FR CNRS 2488)
+ * Contact: contact@noise-planet.org
  *
- * Noisemap is free software: you can redistribute it and/or modify it under the
- * terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- *
- * Noisemap is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE. See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with
- * Noisemap. If not, see <http://www.gnu.org/licenses/>.
- *
- * For more information, please consult: <http://www.orbisgis.org/>
- * or contact directly:
- * info_at_ orbisgis.org
  */
+
 package org.noise_planet.noisemodelling.emission;
 
 import org.junit.Test;
 
+import java.io.IOException;
+
 import static org.junit.Assert.*;
 
 /**
- * @author Pierre Aumond - 27/04/2017.
+ * @author Pierre Aumond, Univ. Gustave Eiffel
  */
 
 public class EvaluateRoadSourceCnossosTest {
@@ -47,7 +28,7 @@ public class EvaluateRoadSourceCnossosTest {
 
     /** based on CNOSSOS_Road_Output.csv and the CNOSSOS_DLL_CONSOLE.exe**/
     @Test
-    public void T02() {
+    public void T02() throws IOException {
         double lv_speed = 70;
         int lv_per_hour = 1000;
         double mv_speed = 70;
@@ -74,7 +55,7 @@ public class EvaluateRoadSourceCnossosTest {
 
     /** based on CNOSSOS_Road_Output.csv and the CNOSSOS_DLL_CONSOLE.exe**/
     @Test
-    public void T03() {
+    public void T03() throws IOException {
         double lv_speed = 40;
         int lv_per_hour = 582;
         double mv_speed = 43;
@@ -101,7 +82,7 @@ public class EvaluateRoadSourceCnossosTest {
 
     /** based on CNOSSOS_Road_Output.csv and the CNOSSOS_DLL_CONSOLE.exe**/
     @Test
-    public void T04() {
+    public void T04() throws IOException {
         double lv_speed = 40;
         int lv_per_hour = 58;
         double mv_speed = 43;
@@ -129,7 +110,7 @@ public class EvaluateRoadSourceCnossosTest {
 
     /** based on CNOSSOS_Road_Output.csv and the CNOSSOS_DLL_CONSOLE.exe**/
     @Test
-    public void T05() {
+    public void T05() throws IOException {
         double lv_speed = 40;
         int lv_per_hour = 58;
         double mv_speed = 43;
@@ -156,7 +137,7 @@ public class EvaluateRoadSourceCnossosTest {
 
     /** based on CNOSSOS_Road_Output.csv and the CNOSSOS_DLL_CONSOLE.exe**/
     @Test
-    public void T06() {
+    public void T06() throws IOException {
         double lv_speed = 70;
         int lv_per_hour = 1000;
         double mv_speed = 70;
@@ -191,7 +172,7 @@ public class EvaluateRoadSourceCnossosTest {
 
 
     @Test
-    public void CnossosEmissionTest() {
+    public void CnossosEmissionTest() throws IOException {
         String vehCat="1";
         double vehiclePerHour = 1000;
         double vehicleSpeed = 20;
@@ -212,6 +193,32 @@ public class EvaluateRoadSourceCnossosTest {
             rsParameters.setSlopePercentage(slope);
             rsParameters.setCoeffVer(1);
             assertEquals(String.format("%d Hz", FREQUENCIES[idFreq]), expectedValues[idFreq], EvaluateRoadSourceCnossos.evaluate(rsParameters), EPSILON_TEST1);
+        }
+    }
+    @Test
+    public void CnossosEmissionTestwithSlope() throws IOException {
+        String vehCat="1";
+        double vehiclePerHour = 1000;
+        double vehicleSpeed = 20;
+        double tsStud = 0.5;
+        String surfRef = "NL01";
+        double temperature = -5;
+        double pmStud = 1;
+        double slope = -15;
+        double juncDist = 200;
+        int juncType = 1;
+        double[] expectedValues = new double[]{88.421,77.09,75.54,75.01,72.79,71.13,68.07,63.44};
+        for(int idFreq = 1; idFreq < FREQUENCIES.length; idFreq++) {
+            RSParametersCnossos rsParameters = new RSParametersCnossos(vehicleSpeed, vehicleSpeed, vehicleSpeed,
+                    vehicleSpeed, vehicleSpeed, "1".equals(vehCat) ? vehiclePerHour : 0,
+                    "2".equals(vehCat) ? vehiclePerHour : 0, "3".equals(vehCat) ? vehiclePerHour : 0,
+                    "4a".equals(vehCat) ? vehiclePerHour : 0, "4b".equals(vehCat) ? vehiclePerHour : 0,
+                    FREQUENCIES[idFreq], temperature, surfRef, tsStud, pmStud, juncDist, juncType);
+            rsParameters.setSlopePercentage(slope);
+            rsParameters.setWay(3);
+            rsParameters.setCoeffVer(1);
+            double result = EvaluateRoadSourceCnossos.evaluate(rsParameters);
+            assertEquals(String.format("%d Hz", FREQUENCIES[idFreq]), expectedValues[idFreq], result, EPSILON_TEST1);
         }
     }
 }

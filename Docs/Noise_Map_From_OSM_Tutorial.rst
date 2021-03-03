@@ -37,10 +37,9 @@ Import to the database
   - Enter the path to the file map.osm
   - Select OsmToInputData box then click on the green button
 
-
-
 .. warning::
-   The current import script from open street map can produce geometries incompatible with NoiseModelling. If an area is a problem try to reduce the area. A much more robust version of this script will be available soon. 
+   - The current import script from open street map can produce geometries incompatible with NoiseModelling. If an area is a problem try to reduce the area. A much more robust version of this script will be available soon. 
+   - As OSM does not include data on road traffic flows, default values are assigned according to the "Good Practice Guide for Strategic Noise Mapping and the Production of Associated Data on Noise Exposure - Version 2" (https://tinyurl.com/1vukv7rj).
   
 Three tables must be created: GROUND, BUILDINGS, ROADS
 

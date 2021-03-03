@@ -28,18 +28,12 @@ import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
-import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
-import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceDynamic
-import org.noise_planet.noisemodelling.emission.RSParametersCnossos
-import org.noise_planet.noisemodelling.emission.RSParametersDynamic
-import org.noise_planet.noisemodelling.propagation.ComputeRays
-import org.noise_planet.noisemodelling.propagation.ComputeRaysOut
-import org.noise_planet.noisemodelling.propagation.FastObstructionTest
-import org.noise_planet.noisemodelling.propagation.IComputeRaysOut
-import org.noise_planet.noisemodelling.propagation.PropagationProcessData
-import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
-import org.noise_planet.noisemodelling.propagation.RootProgressVisitor
-import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap
+
+import org.noise_planet.noisemodelling.emission.*
+import org.noise_planet.noisemodelling.pathfinder.*
+import org.noise_planet.noisemodelling.propagation.*
+import org.noise_planet.noisemodelling.jdbc.*
+
 
 import java.sql.Connection
 import java.sql.SQLException
@@ -838,11 +832,11 @@ class ProbabilisticProcessData {
                 int acc = 0
                 int FreqParam = f
                 double Temperature = 20
-                int RoadSurface = 0
+                String RoadSurface = "DEF"
                 boolean Stud = true
                 double Junc_dist = 200
                 int Junc_type = 1
-                int veh_type = 1
+                String veh_type = "1"
                 int acc_type = 1
                 double LwStd = 1
                 int VehId = 10
@@ -862,11 +856,11 @@ class ProbabilisticProcessData {
                 int acc = 0
                 int FreqParam = f
                 double Temperature = 20
-                int RoadSurface = 0
+                String RoadSurface = "DEF"
                 boolean Stud = true
                 double Junc_dist = 200
                 int Junc_type = 1
-                int veh_type = 3
+                String veh_type = "3"
                 int acc_type = 1
                 double LwStd = 1
                 int VehId = 10

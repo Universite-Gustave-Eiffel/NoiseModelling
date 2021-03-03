@@ -31,8 +31,12 @@ import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.io.WKTReader
-import org.noise_planet.noisemodelling.propagation.RootProgressVisitor
-import org.noise_planet.noisemodelling.propagation.jdbc.TriangleNoiseMap
+
+import org.noise_planet.noisemodelling.emission.*
+import org.noise_planet.noisemodelling.pathfinder.*
+import org.noise_planet.noisemodelling.propagation.*
+import org.noise_planet.noisemodelling.jdbc.*
+
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 

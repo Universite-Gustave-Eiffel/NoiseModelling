@@ -29,11 +29,12 @@ import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory
-import org.noise_planet.noisemodelling.emission.jdbc.LDENConfig
-import org.noise_planet.noisemodelling.emission.jdbc.LDENPointNoiseMapFactory
-import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
-import org.noise_planet.noisemodelling.propagation.RootProgressVisitor
-import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap
+
+import org.noise_planet.noisemodelling.emission.*
+import org.noise_planet.noisemodelling.pathfinder.*
+import org.noise_planet.noisemodelling.propagation.*
+import org.noise_planet.noisemodelling.jdbc.*
+
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -139,7 +140,7 @@ inputs = [
         confDiffVertical        : [
                 name       : 'Diffraction on vertical edges',
                 title      : 'Diffraction on vertical edges',
-                description: 'Compute or not the diffraction on vertical edges.' +
+                description: 'Compute or not the diffraction on vertical edges.Following Directive 2015/996, enable this option for rail and industrial sources only.' +
                         '</br> </br> <b> Default value : false </b>',
                 min        : 0, max: 1, type: Boolean.class
         ],

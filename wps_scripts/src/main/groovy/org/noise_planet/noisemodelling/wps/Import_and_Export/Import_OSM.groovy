@@ -13,6 +13,7 @@
 /**
  * @Author Pierre Aumond, Université Gustave Eiffel
  * @Author Nicolas Fortin, Université Gustave Eiffel
+ * @Author Tomáš Anda
  */
 
 
@@ -37,7 +38,7 @@ description = 'Convert OSM/OSM.GZ file (https://www.openstreetmap.org) to input 
         '<br> The user can choose to create one to three output tables : <br>' +
         '-  <b> BUILDINGS  </b> : a table containing the building. </br>' +
         '-  <b> GROUND  </b> : surface/ground acoustic absorption table. </br>' +
-        '-  <b> ROADS  </b> : a table containing the roads. </br>'
+        '-  <b> ROADS  </b> : a table containing the roads. As OSM does not include data on road traffic flows, default values are assigned according to the -Good Practice Guide for Strategic Noise Mapping and the Production of Associated Data on Noise Exposure - Version 2-. </br>'
 
 inputs = [
         pathFile        : [
@@ -99,6 +100,13 @@ inputs = [
                 description: 'Target projection identifier (also called SRID) of your table. It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection). ' +
                         '</br>  The target SRID must be in metric coordinates. </br>',
                 type       : Integer.class
+        ],
+        removeTunnels  : [
+                name       : 'Remove tunnels from OSM data',
+                title      : 'Remove tunnels from OSM data',
+                description: 'Remove roads from OSM data which contains OSM tag <b>tunnel=yes</b>.',
+                min        : 0, max: 1,
+                type       : Boolean.class
         ],
 ]
 
@@ -172,6 +180,11 @@ def exec(Connection connection, input) {
     Integer srid = 3857
     if ('targetSRID' in input) {
         srid = input['targetSRID'] as Integer
+    }
+
+    Boolean removeTunnels = false
+    if ('removeTunnels' in input) {
+        removeTunnels = input['removeTunnels'] as Boolean
     }
 
     // -------------------------
@@ -285,10 +298,20 @@ def exec(Connection connection, input) {
 
     // IMPORT GROUND
     if (!ignoreRoads) {
+
+        String Remove_Tunnels_SQL = ""
+        if (removeTunnels) {
+        	// Extract roads which contains OSM tag tunnel=yes and delete them from table MAP_ROADS_HGW 
+                Remove_Tunnels_SQL = "CREATE TABLE MAP_ROADS_TUNNEL(ID_WAY BIGINT PRIMARY KEY, TUNNEL_VALUE varchar(30) ) AS SELECT DISTINCT ID_WAY, VALUE TUNNEL_VALUE FROM MAP_WAY_TAG WT, MAP_TAG T WHERE WT.ID_TAG = T.ID_TAG AND T.TAG_KEY IN ('tunnel') AND VALUE='yes';\n" +
+                                     "DELETE FROM MAP_ROADS_HGW WHERE ID_WAY in (SELECT ID_WAY FROM MAP_ROADS_TUNNEL);\n" +
+                                     "DROP TABLE MAP_ROADS_TUNNEL IF EXISTS;\n"
+        }
+
         String Roads_Import = "DROP TABLE MAP_ROADS_speed IF EXISTS;\n" +
                 "CREATE TABLE MAP_ROADS_speed(ID_WAY BIGINT PRIMARY KEY,MAX_SPEED BIGINT ) AS SELECT DISTINCT ID_WAY, CASEWHEN(LOCATE('mph', VALUE) = 0, VALUE, LEFT(VALUE, LOCATE('mph', VALUE) - 1)::float * 1.60934) MAX_SPEED FROM MAP_WAY_TAG WT, MAP_TAG T WHERE WT.ID_TAG = T.ID_TAG AND T.TAG_KEY IN ('maxspeed');\n" +
                 "DROP TABLE MAP_ROADS_HGW IF EXISTS;\n" +
                 "CREATE TABLE MAP_ROADS_HGW(ID_WAY BIGINT PRIMARY KEY,HIGHWAY_TYPE varchar(30) ) AS SELECT DISTINCT ID_WAY, VALUE HIGHWAY_TYPE FROM MAP_WAY_TAG WT, MAP_TAG T WHERE WT.ID_TAG = T.ID_TAG AND T.TAG_KEY IN ('highway');\n" +
+                Remove_Tunnels_SQL +
                 "DROP TABLE MAP_ROADS IF EXISTS;\n" +
                 "CREATE TABLE MAP_ROADS AS SELECT a.ID_WAY, a.HIGHWAY_TYPE, b.MAX_SPEED  FROM MAP_ROADS_HGW a LEFT JOIN MAP_ROADS_speed b ON a.ID_WAY = b.ID_WAY;\n" +
                 "DROP TABLE MAP_ROADS_speed IF EXISTS;\n" +

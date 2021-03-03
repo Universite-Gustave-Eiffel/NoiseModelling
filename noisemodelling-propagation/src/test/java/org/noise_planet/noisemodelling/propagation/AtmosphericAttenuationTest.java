@@ -38,7 +38,8 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.List;
 
-import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
+
 
 /**
  * Test atmospheric attenuation with ISO 9313-1:1993 P.5-12 as reference values

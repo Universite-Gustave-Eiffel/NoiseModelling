@@ -29,7 +29,7 @@ import org.locationtech.jts.io.WKTReader
 import org.locationtech.jts.io.WKTWriter
 import org.noise_planet.noisemodelling.ext.asc.AscDriverFunction
 import org.noise_planet.noisemodelling.ext.asc.AscReaderDriver
-import org.noise_planet.noisemodelling.propagation.RootProgressVisitor
+import org.noise_planet.noisemodelling.pathfinder.RootProgressVisitor
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
