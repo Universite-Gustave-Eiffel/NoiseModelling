@@ -22,35 +22,19 @@ import geoserver.catalog.Store
 import groovy.sql.Sql
 import groovy.time.TimeCategory
 import org.geotools.jdbc.JDBCDataStore
-import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.SFSUtilities
 import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
-import org.noise_planet.noisemodelling.emission.jdbc.LDENConfig
-import org.noise_planet.noisemodelling.emission.jdbc.LDENPropagationProcessData
-import org.noise_planet.noisemodelling.propagation.ComputeRays
-import org.noise_planet.noisemodelling.propagation.FastObstructionTest
-import org.noise_planet.noisemodelling.propagation.PropagationProcessData
-import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
-import org.noise_planet.noisemodelling.propagation.jdbc.PointNoiseMap
 
 import java.sql.Connection
 import java.sql.PreparedStatement
-import java.sql.ResultSet
 import java.sql.SQLException
-
 /**
  * @Author Adrien Le Bellec,  Univ Gustave Eiffel
  * @Author Olivier Chiello, Univ Gustave Eiffel
  */
-
-import org.noise_planet.noisemodelling.emission.EvaluateTrainSourceCnossos
-import org.noise_planet.noisemodelling.emission.LWRailWay
-import org.noise_planet.noisemodelling.emission.TrackParametersCnossos
-import org.noise_planet.noisemodelling.emission.VehiculeParametersCnossos
-
 
 title = 'Compute rail emission noise map from rail_traffic table AND rail_geom table.'
 description = 'Compute Rail Emission Noise Map from Day Evening Night traffic flow rate and speed estimates (specific format, see input details). ' +
