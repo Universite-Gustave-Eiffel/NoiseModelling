@@ -112,5 +112,20 @@ class TestGeometricTools extends JdbcTestCase {
         assertEquals(0, sql.firstRow("select COUNT(*) COUNTINTERS FROM buildings S1, buildings S2 WHERE ST_AREA(S1.THE_GEOM) < ST_AREA(S2.THE_GEOM) AND S1.THE_GEOM && S2.THE_GEOM AND ST_DISTANCE(S1.THE_GEOM, S2.THE_GEOM) <= 0.05;")[0] as Integer)
     }
 
+    @Test
+    void testCleanBuildingsPop() {
+        SHPRead.readShape(connection, TestGeometricTools.getResource("buildings.shp").getPath())
+        def sql = new Sql(connection)
+
+        sql.execute("ALTER TABLE BUILDINGS ADD COLUMN POP REAL")
+        sql.execute("UPDATE BUILDINGS SET POP = 30")
+
+        new Clean_Buildings_Table().exec(connection,
+                ["tableName": "buildings"])
+
+        // Check if there is remaining intersecting buildings
+        assertEquals(0, sql.firstRow("select COUNT(*) COUNTINTERS FROM buildings S1, buildings S2 WHERE ST_AREA(S1.THE_GEOM) < ST_AREA(S2.THE_GEOM) AND S1.THE_GEOM && S2.THE_GEOM AND ST_DISTANCE(S1.THE_GEOM, S2.THE_GEOM) <= 0.05;")[0] as Integer)
+        assertEquals(30, sql.firstRow("select AVG(POP) FROM buildings")[0] as Integer, 1e-3)
+    }
 
 }
