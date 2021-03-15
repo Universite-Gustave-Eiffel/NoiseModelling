@@ -99,9 +99,10 @@ public class TrackParametersCnossos{
        setSpeed(speedTrack);
        setTrackTransfer(trackTransfer);
        setRailRoughness(railRoughness);
+        setImpactNoise(impactNoise);
        setCurvate(curvate);
-       setImpactNoise(impactNoise);
        setBridgeConstant(bridgeConstant);
+        // todo setcomercialSpeed ?(bridgeConstant);
 
     }
 }

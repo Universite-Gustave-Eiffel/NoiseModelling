@@ -31,20 +31,17 @@ package org.noise_planet.noisemodelling.emission;
  * DataBase Vehicule
  */
 
-public class VehiculeParametersCnossos {
+public class VehicleParametersCnossos {
 
     // TODO set default value
-    private String typeVehicule="X-TER-bicaisse-D";
-    private String typeWag;
-    private int nbWag=1;
-
-    private double speedVehicule;
-
+    private String typeVehicle="X-TER-bicaisse-D";
+    private double speedVehicle;
+    private int runningCondition=0;
+    private double idlingTime=0;
     private double tDay=1;
     private double tEvenig=1;
     private double tNight=1;
 
-    private int height;
 
     private int spectreVer = 2;
 
@@ -54,25 +51,22 @@ public class VehiculeParametersCnossos {
     public void setSpectreVer(int spectreVer) {
         this.spectreVer = spectreVer;
     }
-
     public int getSpectreVer() {
         return this.spectreVer;
     }
 
-    public void setTypeVehicule(String typeEng) {
-        this.typeVehicule = typeEng;
+    public void setTypeVehicle(String typeVehicle) {
+        this.typeVehicle = typeVehicle;
     }
-    /*public void setTypeWag(String typeWag) {
-        this.typeWag = typeWag;
+    public void setSpeedVehicle(double speedVehicle) {
+        this.speedVehicle = speedVehicle;
     }
-    public void setNbWg(int nbWag) {
-        this.nbWag = nbWag;
-    }*/
-
-    public void setSpeed(double speedVehicule) {
-        this.speedVehicule = speedVehicule;
+    public void setRunningCondition(int runningCondition) {
+        this.runningCondition = runningCondition;
     }
-
+    public void setIdlingTime(double idlingTime) {
+        this.idlingTime = idlingTime;
+    }
     public void setTDay(double tDay) {
         this.tDay = tDay;
     }
@@ -83,26 +77,18 @@ public class VehiculeParametersCnossos {
         this.tNight = tNight;
     }
 
-
-    public void setHeight(int height) {
-        this.height = height;
+    public String getTypeVehicle() {
+        return typeVehicle;
     }
-
-    public String getTypeVehicule() {
-        return typeVehicule;
+    public double getSpeedVehicle() {
+        return speedVehicle;
     }
-
-    /*public String getTypeWag() {
-        return typeWag;
+    public int getRunningCondition() {
+        return runningCondition;
     }
-    public int getNbWg() {
-        return nbWag;
-    }*/
-
-    public double getSpeed() {
-        return speedVehicule;
+    public double getIdlingTime() {
+        return idlingTime;
     }
-
     public double getTDay() {
         return tDay;
     }
@@ -113,24 +99,15 @@ public class VehiculeParametersCnossos {
         return tNight;
     }
 
-    /*public int getHeight() {
-        return height;
-    }*/
-
-// Todo update stratégie -> 1 vehciule (eng + wagon ? ) CNOSSOS / plamade EngVeh + WagonVah
-    public VehiculeParametersCnossos(String typeVehicule, String typeWag, int nbWag, double speedVehicule,
+    public VehicleParametersCnossos(String typeVehicle, double speedVehicle, int runningCondition,double idlingTime,
                                   double tDay, double tEvening, double tNight) {
 
-        setTypeVehicule(typeVehicule);
-        //setTypeWag(typeWag);
-        //setNbWg(nbWag);
-        // Todo  / condition de circulation  + si stationnement temps de stationnement (defaut = 0)
-        setSpeed(speedVehicule);
-
+        setTypeVehicle(typeVehicle);
+        setSpeedVehicle(speedVehicle);
+        setRunningCondition(runningCondition);
+        setIdlingTime(idlingTime);
         setTDay(tDay);
         setTEvening(tEvening);
         setTNight(tNight);
-
-        //setHeight(height);
     }
 }
