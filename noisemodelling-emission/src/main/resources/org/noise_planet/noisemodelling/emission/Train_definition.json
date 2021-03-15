@@ -1,0 +1,20 @@
+{"Train": {
+  "Corail" : {
+    "BB15000" : 1,
+    "VU-VTU" : 8
+  },
+  "VB2N" : {
+    "BB67400 " : 1,
+    "VB2N" : 7
+  },
+  "V2N" : {
+    "BB17000  " : 1,
+    "V2N" : 4
+  },
+  "Fret" : {
+    "BB27000   " : 1,
+    "fret_fonte" : 7,
+    "fret_composite" :11
+  }
+  }
+}
