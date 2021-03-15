@@ -32,13 +32,16 @@ package org.noise_planet.noisemodelling.emission;
  */
 
 public class TrackParametersCnossos{
-// TODO set default value
+//set default value
     private double speedTrack;
     private int trackTransfer;
     private int railRoughness;
     private int curvate;
     private int impactNoise;
     private int bridgeConstant;
+    private double speedCommercial;
+    private boolean isTunnel=false;
+    private int nLigne=1;
 
     private int spectreVer = 2;
 
@@ -50,13 +53,12 @@ public class TrackParametersCnossos{
     }
 
 
-    public void setSpeed(double speedTrack) {
+    public void setSpeedTrack(double speedTrack) {
         this.speedTrack = speedTrack;
     }
     public void setTrackTransfer(int trackTransfer) {
         this.trackTransfer = trackTransfer;
     }
-
     public void setRailRoughness(int railRoughness) {
         this.railRoughness = railRoughness;
     }
@@ -69,12 +71,22 @@ public class TrackParametersCnossos{
     public void setBridgeConstant(int bridgeConstant) {
         this.bridgeConstant = bridgeConstant;
     }
+    public void setSpeedCommercial(double speedCommercial) {
+        this.speedCommercial = speedCommercial;
+    }
+    public void setIsTunnel(boolean isTunnel) {
+        this.isTunnel = isTunnel;
+    }
+    public void setNLigne(int nLigne) {
+        this.nLigne = nLigne;
+    }
+
 
     public int getSpectreVer() {
         return this.spectreVer;
     }
 
-    public double getSpeed() {
+    public double getSpeedTrack() {
         return speedTrack;
     }
     public int getTrackTransfer() {
@@ -92,16 +104,30 @@ public class TrackParametersCnossos{
     public int getCurvate() {
         return curvate;
     }
+    public double getSpeedCommercial() {
+        return speedCommercial;
+    }
+    public boolean getIsTunnel() {
+        return isTunnel;
+    }
+    public int getNLigne( ) {
+        return nLigne;
+    }
 
     public TrackParametersCnossos( double speedTrack, int trackTransfer, int railRoughness,int impactNoise,
-                                   int bridgeConstant, int curvate) {
+                                   int bridgeConstant, int curvate, double speedCommercial, boolean isTunnel, int nLigne ) {
 
-       setSpeed(speedTrack);
-       setTrackTransfer(trackTransfer);
-       setRailRoughness(railRoughness);
+        setSpeedTrack(speedTrack);
+        setTrackTransfer(trackTransfer);
+        setRailRoughness(railRoughness);
         setImpactNoise(impactNoise);
-       setCurvate(curvate);
-       setBridgeConstant(bridgeConstant);
+        setCurvate(curvate);
+        setBridgeConstant(bridgeConstant);
+        setSpeedCommercial(speedCommercial);
+        setIsTunnel(isTunnel);
+        setNLigne(nLigne);
+
+
         // todo setcomercialSpeed ?(bridgeConstant);
 
     }

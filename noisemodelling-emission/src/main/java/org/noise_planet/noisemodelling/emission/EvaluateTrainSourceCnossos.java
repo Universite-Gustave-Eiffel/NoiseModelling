@@ -318,7 +318,7 @@ public class EvaluateTrainSourceCnossos {
         String typeVehicle = vehicleParameters.getTypeVehicle();
         double speedVehicle = vehicleParameters.getSpeedVehicle();
 
-        double speedTrack = trackParameters.getSpeed();
+        double speedTrack = trackParameters.getSpeedTrack();
         int trackRoughnessId = trackParameters.getRailRoughness();
         int trackTransferId = trackParameters.getTrackTransfer();
         int impactId = trackParameters.getImpactNoise();
