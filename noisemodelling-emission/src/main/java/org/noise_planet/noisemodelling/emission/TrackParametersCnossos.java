@@ -127,8 +127,5 @@ public class TrackParametersCnossos{
         setIsTunnel(isTunnel);
         setNLigne(nLigne);
 
-
-        // todo setcomercialSpeed ?(bridgeConstant);
-
     }
 }
