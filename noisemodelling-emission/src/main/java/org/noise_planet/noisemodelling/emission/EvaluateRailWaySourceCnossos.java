@@ -38,8 +38,8 @@ import static org.noise_planet.noisemodelling.emission.utils.interpLinear.interp
  * @author Olivier Chiello, Univ Gustave Eiffel
  */
 
-public class EvaluateTrainSourceCnossos {
-    private static JsonNode CnossosRailWayData = parse(EvaluateTrainSourceCnossos.class.getResourceAsStream("coefficients_RailWay_cnossos.json"));
+public class EvaluateRailWaySourceCnossos {
+    private static JsonNode CnossosRailWayData = parse(EvaluateRailWaySourceCnossos.class.getResourceAsStream("coefficients_RailWay_cnossos.json"));
 
     private static JsonNode parse(InputStream inputStream) {
         try {
