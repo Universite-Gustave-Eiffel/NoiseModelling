@@ -40,6 +40,8 @@ public class VehicleParametersCnossos {
     private double tEvenig=1;
     private double tNight=1;
 
+    private int runningCondition=0;
+    private double idlingTime=0;
 
     private int spectreVer = 2;
 
@@ -69,6 +71,13 @@ public class VehicleParametersCnossos {
         this.tNight = tNight;
     }
 
+    public void setRunningCondition(int runningCondition) {
+        this.runningCondition = runningCondition;
+    }
+    public void setIdlingTime(double idlingTime) {
+        this.idlingTime = idlingTime;
+    }
+
     public String getTypeVehicle() {
         return typeVehicle;
     }
@@ -84,14 +93,22 @@ public class VehicleParametersCnossos {
     public double getTNight() {
         return tNight;
     }
+    public int getRunningCondition( ) {
+        return runningCondition;
+    }
+    public double getIdlingTime() {
+        return idlingTime;
+    }
 
     public VehicleParametersCnossos(String typeVehicle, double speedVehicle,
-                                  double tDay, double tEvening, double tNight) {
+                                  double tDay, double tEvening, double tNight,int runningCondition,double idlingTime) {
 
         setTypeVehicle(typeVehicle);
         setSpeedVehicle(speedVehicle);
         setTDay(tDay);
         setTEvening(tEvening);
         setTNight(tNight);
+        setRunningCondition(runningCondition);
+        setIdlingTime(idlingTime);
     }
 }

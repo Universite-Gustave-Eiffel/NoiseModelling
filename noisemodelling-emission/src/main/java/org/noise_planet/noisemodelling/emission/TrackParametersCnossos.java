@@ -36,14 +36,12 @@ public class TrackParametersCnossos{
     private double speedTrack;
     private int trackTransfer;
     private int railRoughness;
-    private int curvate;
+    private int curvature;
     private int impactNoise;
-    private int bridgeConstant;
+    private int bridgeTransfert;
     private double speedCommercial;
     private boolean isTunnel=false;
-    private int nLigne=1;
-    private int runningCondition=0;
-    private double idlingTime=0;
+    private int nTrack=1;
 
     private int spectreVer = 2;
 
@@ -64,14 +62,14 @@ public class TrackParametersCnossos{
     public void setRailRoughness(int railRoughness) {
         this.railRoughness = railRoughness;
     }
-    public void setCurvate(int curvate) {
-        this.curvate = curvate;
+    public void setCurvature(int curvature) {
+        this.curvature = curvature;
     }
     public void setImpactNoise(int impactNoise) {
         this.impactNoise = impactNoise;
     }
-    public void setBridgeConstant(int bridgeConstant) {
-        this.bridgeConstant = bridgeConstant;
+    public void setBridgeTransfert(int bridgeTransfert) {
+        this.bridgeTransfert = bridgeTransfert;
     }
     public void setSpeedCommercial(double speedCommercial) {
         this.speedCommercial = speedCommercial;
@@ -79,16 +77,10 @@ public class TrackParametersCnossos{
     public void setIsTunnel(boolean isTunnel) {
         this.isTunnel = isTunnel;
     }
-    public void setNLigne(int nLigne) {
-        this.nLigne = nLigne;
+    public void setNTrack(int nTrack) {
+        this.nTrack = nTrack;
     }
 
-    public void setRunningCondition(int runningCondition) {
-        this.runningCondition = runningCondition;
-    }
-    public void setIdlingTime(double idlingTime) {
-        this.idlingTime = idlingTime;
-    }
 
     public int getSpectreVer() {
         return this.spectreVer;
@@ -106,11 +98,11 @@ public class TrackParametersCnossos{
     public int getImpactNoise() {
         return impactNoise;
     }
-    public int getBridgeConstant() {
-        return bridgeConstant;
+    public int getBridgeTransfert() {
+        return bridgeTransfert;
     }
-    public int getCurvate() {
-        return curvate;
+    public int getCurvature() {
+        return curvature;
     }
     public double getSpeedCommercial() {
         return speedCommercial;
@@ -118,30 +110,22 @@ public class TrackParametersCnossos{
     public boolean getIsTunnel() {
         return isTunnel;
     }
-    public int getNLigne( ) {
-        return nLigne;
-    }
-    public int getRunningCondition( ) {
-        return runningCondition;
-    }
-    public double getIdlingTime() {
-        return idlingTime;
+    public int getNTrack( ) {
+        return nTrack;
     }
 
     public TrackParametersCnossos( double speedTrack, int trackTransfer, int railRoughness,int impactNoise,
-                                   int bridgeConstant, int curvate, double speedCommercial, boolean isTunnel, int nLigne,int runningCondition,double idlingTime) {
+                                   int bridgeTransfert, int curvature, double speedCommercial, boolean isTunnel, int nTrack) {
 
         setSpeedTrack(speedTrack);
         setTrackTransfer(trackTransfer);
         setRailRoughness(railRoughness);
         setImpactNoise(impactNoise);
-        setCurvate(curvate);
-        setBridgeConstant(bridgeConstant);
+        setCurvature(curvature);
+        setBridgeTransfert(bridgeTransfert);
         setSpeedCommercial(speedCommercial);
         setIsTunnel(isTunnel);
-        setNLigne(nLigne);
-        setRunningCondition(runningCondition);
-        setIdlingTime(idlingTime);
+        setNTrack(nTrack);
 
     }
 }

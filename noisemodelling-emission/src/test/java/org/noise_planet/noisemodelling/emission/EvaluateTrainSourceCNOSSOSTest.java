@@ -44,8 +44,8 @@ public class EvaluateTrainSourceCNOSSOSTest {
 
         int trackTransfer = 4;
         int impactNoise = 0;
-        int bridgeConstant = 0;
-        int curvate = 0;
+        int bridgeTrasnfert = 0;
+        int curvature = 0;
         int railRoughness = 4;
 
         double vMaxInfra = 160;
@@ -54,9 +54,9 @@ public class EvaluateTrainSourceCNOSSOSTest {
         LWRailWay lWRailWay = null;
 
         VehicleParametersCnossos vehicleParameters = new VehicleParametersCnossos(vehCat, vehicleSpeed,
-                vehiclePerHour, 0, 0);
+                vehiclePerHour, 0, 0, rollingCondition,idlingTime);
         TrackParametersCnossos trackParameters = new TrackParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
-                impactNoise, bridgeConstant, curvate, vehicleCommercial,false,1,rollingCondition,idlingTime);
+                impactNoise, bridgeTrasnfert, curvature, vehicleCommercial,false,1);
         lWRailWay = EvaluateTrainSourceCnossos.evaluate(vehicleParameters, trackParameters);
         double[] LWRolling = lWRailWay.getLWRolling();
     }
