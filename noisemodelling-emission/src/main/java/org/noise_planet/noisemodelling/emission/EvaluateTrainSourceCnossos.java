@@ -158,13 +158,13 @@ public class EvaluateTrainSourceCnossos {
     public static int getAxlesPerVeh(String typeVehicle, int spectreVer) { //
         return getCnossosTrainData(spectreVer).get("Vehicle").get("Definition").get(typeVehicle).get("Axles").intValue();
     }
-    public static double getSpectre(String typeVehicle, String ref, int conditionSpeed,String sourceHeight, int spectreVer, int freqId) { //
+    public static double getSpectre(String typeVehicle, String ref, int runningCondition,String sourceHeight, int spectreVer, int freqId) { //
         int refId = getCnossosTrainData(spectreVer).get("Vehicle").get("Definition").get(typeVehicle).get(ref).intValue();
         if(ref.equals("RefTraction")) {
             double tractionSpectre=0;
             String condition= "ConstantSpeed";
             if (refId != 0) {
-                switch(conditionSpeed){
+                switch(runningCondition){
                     case 0 :
                         condition = "ConstantSpeed";
                         break;
@@ -317,6 +317,8 @@ public class EvaluateTrainSourceCnossos {
 
         String typeVehicle = vehicleParameters.getTypeVehicle();
         double speedVehicle = vehicleParameters.getSpeedVehicle();
+        int axlesPerVeh = getAxlesPerVeh(typeVehicle,spectreVer);
+        int runningCondition = trackParameters.getRunningCondition();
 
         double speedTrack = trackParameters.getSpeedTrack();
         int trackRoughnessId = trackParameters.getRailRoughness();
@@ -325,19 +327,18 @@ public class EvaluateTrainSourceCnossos {
         int bridgeId = trackParameters.getBridgeConstant();
         int curvate = trackParameters.getCurvate();
 
-        int axlesPerVeh = getAxlesPerVeh(typeVehicle,spectreVer);
         double speed = min(speedVehicle,speedTrack);
 
         //  Rolling noise calcul
         double[] lWRolling = evaluateLWroughness("Rolling", typeVehicle, trackRoughnessId, impactId, bridgeId, curvate, speed,trackTransferId,spectreVer,axlesPerVeh);
 
         // Traction noise calcul
-        double[] lWTractionA = evaluateLWSpectre(typeVehicle,"RefTraction", speed, 0,spectreVer);
-         double[] lWTractionB = evaluateLWSpectre(typeVehicle,"RefTraction", speed, 1,spectreVer);
+        double[] lWTractionA = evaluateLWSpectre(typeVehicle,"RefTraction",runningCondition, speed, 0,spectreVer);
+         double[] lWTractionB = evaluateLWSpectre(typeVehicle,"RefTraction",runningCondition, speed, 1,spectreVer);
 
         // Aerodynamic noise calcul
-        double[] lWAerodynamicA = evaluateLWSpectre(typeVehicle,"RefAerodynamic", speed, 0,spectreVer);
-        double[] lWAerodynamicB = evaluateLWSpectre(typeVehicle,"RefAerodynamic", speed, 1,spectreVer);
+        double[] lWAerodynamicA = evaluateLWSpectre(typeVehicle,"RefAerodynamic",runningCondition, speed, 0,spectreVer);
+        double[] lWAerodynamicB = evaluateLWSpectre(typeVehicle,"RefAerodynamic",runningCondition, speed, 1,spectreVer);
 
         // Bridge noise calcul
         double[] lWBridge = evaluateLWroughness("Bridge", typeVehicle, trackRoughnessId, impactId, bridgeId, curvate, speed,trackTransferId,spectreVer,axlesPerVeh);
@@ -355,13 +356,13 @@ public class EvaluateTrainSourceCnossos {
      * @param height height source
      * @return lWSpectre(freq) (Traction or Aerodynamic)
      **/
-    private static double[] evaluateLWSpectre(String typeVehicle,String ref, double speed, int height,int spectreVer) {
+    private static double[] evaluateLWSpectre(String typeVehicle,String ref,int runningCondition, double speed, int height,int spectreVer) {
         double [] lWSpectre = new double[24];
         for(int idFreq = 0; idFreq < 24; idFreq++) {
             if(height==0){
-                lWSpectre[idFreq] = getSpectre(typeVehicle,ref, 0,"A",spectreVer,idFreq);}
+                lWSpectre[idFreq] = getSpectre(typeVehicle,ref, runningCondition,"A",spectreVer,idFreq);}
             else if(height==1) {
-                lWSpectre[idFreq] = getSpectre(typeVehicle, ref, 0,"B", spectreVer, idFreq);
+                lWSpectre[idFreq] = getSpectre(typeVehicle, ref, runningCondition,"B", spectreVer, idFreq);
             }
             if(ref.equals("RefAerodynamic")){
                 if(speed<200){
@@ -472,12 +473,10 @@ public class EvaluateTrainSourceCnossos {
         return roughnessLtotFreq;
     }
 
-
 //    /** compute Noise Level from flow_rate and speed @return**/
 //    public static double evaluateLm(double Lw, double Q, double speed, int idFreq) {
 //        return Lw+ 10*Math.log10(Q/(1000*speed));
 //    }
-
 
 }
 

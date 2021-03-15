@@ -36,8 +36,6 @@ public class VehicleParametersCnossos {
     // set default value
     private String typeVehicle="X-TER-bicaisse-D";
     private double speedVehicle;
-    private int runningCondition=0;
-    private double idlingTime=0;
     private double tDay=1;
     private double tEvenig=1;
     private double tNight=1;
@@ -61,12 +59,6 @@ public class VehicleParametersCnossos {
     public void setSpeedVehicle(double speedVehicle) {
         this.speedVehicle = speedVehicle;
     }
-    public void setRunningCondition(int runningCondition) {
-        this.runningCondition = runningCondition;
-    }
-    public void setIdlingTime(double idlingTime) {
-        this.idlingTime = idlingTime;
-    }
     public void setTDay(double tDay) {
         this.tDay = tDay;
     }
@@ -83,12 +75,6 @@ public class VehicleParametersCnossos {
     public double getSpeedVehicle() {
         return speedVehicle;
     }
-    public int getRunningCondition() {
-        return runningCondition;
-    }
-    public double getIdlingTime() {
-        return idlingTime;
-    }
     public double getTDay() {
         return tDay;
     }
@@ -99,13 +85,11 @@ public class VehicleParametersCnossos {
         return tNight;
     }
 
-    public VehicleParametersCnossos(String typeVehicle, double speedVehicle, int runningCondition,double idlingTime,
+    public VehicleParametersCnossos(String typeVehicle, double speedVehicle,
                                   double tDay, double tEvening, double tNight) {
 
         setTypeVehicle(typeVehicle);
         setSpeedVehicle(speedVehicle);
-        setRunningCondition(runningCondition);
-        setIdlingTime(idlingTime);
         setTDay(tDay);
         setTEvening(tEvening);
         setTNight(tNight);
