@@ -12,6 +12,7 @@
 /**
  * @Author Pierre Aumond, Université Gustave Eiffel
  * @Author Nicolas Fortin, Université Gustave Eiffel
+ * @Author Adrien Le Bellec, Université Gustave Eiffel
  */
 
 
@@ -50,37 +51,22 @@ title = 'Compute railway emission noise map from vehicule, traffic table AND sec
 description = 'Compute Rail Emission Noise Map from Day Evening Night traffic flow rate and speed estimates (specific format, see input details). ' +
         '</br> </br> <b> The output table is called : LW_RAILWAY </b> '
 
-/*
-inputs = [tableRailTraffic: [name: 'Rail traffic table name', title: 'Rail table name', description: "<b>Name of the Rail traffic table.</b>  </br>  " +
-        "<br>  This function recognize the following columns (* mandatory) : </br><ul>" +
-        "<li><b> IDTRAFIC </b>* : an identifier. It shall be a primary key (STRING, PRIMARY KEY)</li>" +
-        "<li><b> IDTRONCON </b>* : an identifier. It shall be a primary key (STRING, PR)</li>" +
-        "<li><b> ENGMOTEUR </b>* : Motor vehicle (STRING)/li>" +
-        "<li><b> TYPVOITWAG </b>* : Wagon type (STRING)</li>" +
-        "<li><b> NUMVOITWAG </b>* : Number of Wagon (DOUBLE)</li>" +
-        "<li><b> VMAX </b>* : Maximum Train speed (DOUBLE) </li>" +
-        "<li><b> TDIURNE </b><b> TSOIR </b><b> TNUIT </b> : Hourly average train count (6-18h)(18-22h)(22-6h) (DOUBLE)</li>", type: String.class],
-          tableRailGeom: [name: 'Rail Geom table name', title: 'Rail table name', description: "<b>Name of the Rail Geom table.</b>  </br>  " +
+inputs = [
+        tableRailwayTraffic: [
+                name: 'Railway traffic table name',
+                title: 'Rail table name',
+                description: "<b>Name of the Rail traffic table.</b>  </br>  " +
+                "<br>  This function recognize the following columns (* mandatory) : </br><ul>" +
+                "<li><b> IDTRAFIC </b>* : an identifier. It shall be a primary key (STRING, PRIMARY KEY)</li>" +
+                "<li><b> IDTRACKS </b>* : an identifier. It shall be a primary key (STRING, PR)</li>" +
+                "<li><b> TYPETRAIN </b>* : Type vehicle (STRING)/li>" +
+                "<li><b> VMAX </b>* : Maximum Train speed (DOUBLE) </li>" +
+                "<li><b> TDAY </b><b> TEVENING </b><b> TNIGHT </b> : Hourly average train count (6-18h)(18-22h)(22-6h) (DOUBLE)</li>", type: String.class],
+          tableRailwayTrack: [
+                  name: 'Rail Geom table name', title: 'Rail table name', description: "<b>Name of the Rail Geom table.</b>  </br>  " +
                   "<br>  This function recognize the following columns (* mandatory) : </br><ul>" +
-                  "<li><b> PK </b>* : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY)</li>" , type: String.class]]
-*/
-
-// TODO classic CNOSSOS RAILWAY
-// Cas test sera développer par Claire sous mytra
-
-inputs = [// TODO add new traffic composition groovy (exemple clean_engmoteur / train_to_vehicule)
-        tableRailwayTrainSet: [name: 'Railway Trainset table name', title: 'Rail table name', description: "<b>Name of the Rail Vehicule table.</b>  </br> " ],
-        // TODO clean_train table tableRailwayVehicle: [name: 'Railway Vehicle table name', title: 'Rail table name', description: "<b>Name of the Rail Vehicule table.</b>  </br> " ],
-        tableRailwayTraffic: [name: 'Railway traffic table name', title: 'Rail table name', description: "<b>Name of the Rail traffic table.</b>  </br>  " +
-        "<br>  This function recognize the following columns (* mandatory) : </br><ul>" +
-        "<li><b> IDTRAFIC </b>* : an identifier. It shall be a primary key (STRING, PRIMARY KEY)</li>" +
-        "<li><b> IDTRACKS </b>* : an identifier. It shall be a primary key (STRING, PR)</li>" +
-        "<li><b> TYPETRAIN </b>* : Type vehicle (STRING)/li>" +
-        "<li><b> VMAX </b>* : Maximum Train speed (DOUBLE) </li>" +
-        "<li><b> TDAY </b><b> TEVENING </b><b> TNIGHT </b> : Hourly average train count (6-18h)(18-22h)(22-6h) (DOUBLE)</li>", type: String.class],
-          tableRailwayTrack: [name: 'Rail Geom table name', title: 'Rail table name', description: "<b>Name of the Rail Geom table.</b>  </br>  " +
-                  "<br>  This function recognize the following columns (* mandatory) : </br><ul>" +
-                  "<li><b> PK </b>* : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY)</li>" , type: String.class]]
+                  "<li><b> PK </b>* : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY)</li>" , type: String.class]
+]
 
 outputs = [result: [name: 'Result output string', title: 'Result output string', description: 'This type of result does not allow the blocks to be linked together.', type: String.class]]
 
