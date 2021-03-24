@@ -41,8 +41,13 @@ import static org.noise_planet.noisemodelling.emission.utils.interpLinear.interp
  */
 
 public class EvaluateRailwaySourceCnossos {
-    private static JsonNode CnossosRailWayData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("coefficients_RailWay_cnossos.json"));
-    private static JsonNode CnossosVehicleData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Vehicle_definition.json"));
+    private final JsonNode CnossosRailWayData ;
+    private final JsonNode CnossosVehicleData ;
+
+    public EvaluateRailwaySourceCnossos(InputStream cnossosRailWayData, InputStream cnossosVehicleData ) {
+        this.CnossosRailWayData = parse(cnossosRailWayData);
+        this.CnossosVehicleData = parse(cnossosVehicleData);
+    }
 
     private static JsonNode parse(InputStream inputStream) {
         try {
@@ -52,7 +57,8 @@ public class EvaluateRailwaySourceCnossos {
             return NullNode.getInstance();
         }
     }
-    public static JsonNode getCnossosRailWayData(int spectreVer){
+
+    public JsonNode getCnossosRailWayData(int spectreVer){
         if (spectreVer==1){
             return CnossosRailWayData;
         }
@@ -61,7 +67,7 @@ public class EvaluateRailwaySourceCnossos {
         }
     }
 
-    public static JsonNode getCnossosVehicleData(int spectreVer){
+    public JsonNode getCnossosVehicleData(int spectreVer){
         if (spectreVer==1){
             return CnossosVehicleData;
         }
@@ -70,20 +76,20 @@ public class EvaluateRailwaySourceCnossos {
         }
     }
 
-    public static Double getLambdaValue(String typeVehicle, String refType, int spectreVer, int lambdaId) { //
+    public Double getLambdaValue(String typeVehicle, String refType, int spectreVer, int lambdaId) { //
         int refId = getCnossosVehicleData(spectreVer).get(typeVehicle).get(refType).intValue();
         String ref = "";
         if(refType.equals("RefRoughness")){ref = "WheelRoughness";}
         else if(refType.equals("RefContact")){ref = "ContactFilter";}
         return getCnossosRailWayData(spectreVer).get("Vehicle").get(ref).get(String.valueOf(refId)).get("Values").get(lambdaId).doubleValue();
     }
-    public static Double getTrackRoughness(int trackRoughnessId, int spectreVer, int lambdaId) { //
+    public Double getTrackRoughness(int trackRoughnessId, int spectreVer, int lambdaId) { //
         return getCnossosRailWayData(spectreVer).get("Track").get("RailRoughness").get(String.valueOf(trackRoughnessId)).get("Values").get(lambdaId).doubleValue();
     }
-    public static int getAxlesPerVeh(String typeVehicle, int spectreVer) { //
+    public int getAxlesPerVeh(String typeVehicle, int spectreVer) { //
         return getCnossosVehicleData(spectreVer).get(typeVehicle).get("Axles").intValue();
     }
-    public static double getSpectre(String typeVehicle, String ref, int runningCondition,String sourceHeight, int spectreVer, int freqId) { //
+    public double getSpectre(String typeVehicle, String ref, int runningCondition,String sourceHeight, int spectreVer, int freqId) { //
         int refId = getCnossosVehicleData(spectreVer).get(typeVehicle).get(ref).intValue();
         if(ref.equals("RefTraction")) {
             double tractionSpectre=0;
@@ -114,34 +120,34 @@ public class EvaluateRailwaySourceCnossos {
             return 0;
         }
     }
-    public static double getAeroV0Alpha(String typeVehicle, String ref, int spectreVer, String aeroInf){
+    public double getAeroV0Alpha(String typeVehicle, String ref, int spectreVer, String aeroInf){
         int refId = getCnossosVehicleData(spectreVer).get(typeVehicle).get(ref).intValue();
         return Double.parseDouble(getCnossosRailWayData(spectreVer).get("Vehicle").get("AerodynamicNoise").get(String.valueOf(refId)).get(aeroInf).asText());
     }
-    public static Double getBridgeStructural(int bridgeId, int spectreVer, int freqId){
+    public Double getBridgeStructural(int bridgeId, int spectreVer, int freqId){
         return getCnossosRailWayData(spectreVer).get("Track").get("BridgeConstant").get(String.valueOf(bridgeId)).get("Values").get(freqId).doubleValue();
     }
 
-    public static Double getTrackTransfer(int trackTransferId, int spectreVer, int freqId) { //
+    public Double getTrackTransfer(int trackTransferId, int spectreVer, int freqId) { //
         return getCnossosRailWayData(spectreVer).get("Track").get("TrackTransfer").get(String.valueOf(trackTransferId)).get("Spectre").get(freqId).doubleValue();
     }
-    public static Double getImpactNoise(int impactNoiseId, int spectreVer, int freqId) { //
+    public Double getImpactNoise(int impactNoiseId, int spectreVer, int freqId) { //
         return getCnossosRailWayData(spectreVer).get("Track").get("ImpactNoise").get(String.valueOf(impactNoiseId)).get("Values").get(freqId).doubleValue();
     }
 
-    public static Double getVehTransfer(String typeVehicle, int spectreVer, int freqId) {
+    public Double getVehTransfer(String typeVehicle, int spectreVer, int freqId) {
         int RefTransfer = getCnossosVehicleData(spectreVer).get(typeVehicle).get("RefTransfer").intValue();
         return getCnossosRailWayData(spectreVer).get("Vehicle").get("Transfer").get(String.valueOf(RefTransfer)).get("Spectre").get(freqId).doubleValue();
 
     }
-    public static Double getLRoughness(String typeVehicle, int trackRoughnessId, int spectreVer, int idLambda) { //
+    public Double getLRoughness(String typeVehicle, int trackRoughnessId, int spectreVer, int idLambda) { //
         double wheelRoughness = getLambdaValue(typeVehicle, "RefRoughness",spectreVer, idLambda);
         double contactFilter = getLambdaValue(typeVehicle, "RefContact",spectreVer, idLambda);
         double trackRoughness = getTrackRoughness(trackRoughnessId, spectreVer, idLambda);
         return 10 * Math.log10(Math.pow(10,wheelRoughness/10) + Math.pow(10,trackRoughness/10) ) + contactFilter;
     }
 
-    private static double[] checkNanValue(double[] roughnessLtot) {
+    private double[] checkNanValue(double[] roughnessLtot) {
         int indice_NaN= 0;
         for(int i = 0; i < 24 ; i++) {
             if (Double.isNaN(roughnessLtot[i])) {
@@ -162,7 +168,7 @@ public class EvaluateRailwaySourceCnossos {
     
     * @return LWRoll / LWTraction A & B / LWAerodynamic A & B / LWBridge level in dB
     **/
-    static RailWayLW evaluate(RailwayVehicleParametersCnossos vehicleParameters, RailwayTrackParametersCnossos trackParameters) {
+    RailWayLW evaluate(RailwayVehicleParametersCnossos vehicleParameters, RailwayTrackParametersCnossos trackParameters) {
 
         final int spectreVer = vehicleParameters.getSpectreVer();
 
@@ -220,7 +226,7 @@ public class EvaluateRailwaySourceCnossos {
      * @param height height source
      * @return lWSpectre(freq) (Traction or Aerodynamic)
      **/
-    private static double[] evaluateLWSpectre(String typeVehicle,String ref,int runningCondition, double speed, int height,int spectreVer) {
+    private double[] evaluateLWSpectre(String typeVehicle,String ref,int runningCondition, double speed, int height,int spectreVer) {
         double [] lWSpectre = new double[24];
         for(int idFreq = 0; idFreq < 24; idFreq++) {
             if(height==0){
@@ -258,7 +264,7 @@ public class EvaluateRailwaySourceCnossos {
      * @return lWRoll(freq)
      **/
 
-    private static double[] evaluateLWroughness(String ref, String typeVehicle, int trackRoughnessId, int impactId, int bridgeId, int curvature, double speed,int trackTransferId, int spectreVer, int axlesPerVeh) {
+    private double[] evaluateLWroughness(String ref, String typeVehicle, int trackRoughnessId, int impactId, int bridgeId, int curvature, double speed,int trackTransferId, int spectreVer, int axlesPerVeh) {
         double [] trackTransfer = new double[24];
         double [] lWTr = new double[24];
         double [] vehTransfer = new double[24];
@@ -307,7 +313,7 @@ public class EvaluateRailwaySourceCnossos {
      * @param speed  impact reference
      * @return Lroughness(freq)
      **/
-    private static double[] evaluateRoughnessLtotFreq(String typeVehicle, int trackRoughnessId,int impactId, double speed, int spectreVer) {
+    private double[] evaluateRoughnessLtotFreq(String typeVehicle, int trackRoughnessId,int impactId, double speed, int spectreVer) {
 
         double[] roughnessLtotLambda = new double[32];
         double[] lambdaToFreqLog= new double[32];

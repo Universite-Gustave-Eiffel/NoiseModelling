@@ -34,6 +34,8 @@ public class EvaluateRailWaySourceCNOSSOSTest {
     private static final double EPSILON_TEST1 = 0.01;
     private static final int[] FREQUENCIES = new int[]{50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300, 8000, 10000};
 
+    EvaluateRailwaySourceCnossos evaluateRailwaySourceCnossos = new EvaluateRailwaySourceCnossos(EvaluateRailwaySourceCnossos.class.getResourceAsStream("coefficients_RailWay_cnossos.json"),EvaluateRailwaySourceCnossos.class.getResourceAsStream("Vehicle_definition.json"));
+
     @Test
     public void Test_X_TER_bicaisse_D() {
         String vehCat = "X-TER-bicaisse-D";
@@ -43,20 +45,20 @@ public class EvaluateRailWaySourceCNOSSOSTest {
         double idlingTime = 0;
         int trackTransfer = 4;
         int impactNoise = 0;
-        int bridgeTrasnfert = 0;
+        int bridgeTransfert = 0;
         int curvature = 0;
         int railRoughness = 4;
 
         double vMaxInfra = 160;
         double vehicleCommercial= 160;
 
-        RailWayLW lWRailWay = null;
+        RailWayLW lWRailWay;
 
         RailwayVehicleParametersCnossos vehicleParameters = new RailwayVehicleParametersCnossos(vehCat, vehicleSpeed,
                 vehiclePerHour,  rollingCondition,idlingTime);
         RailwayTrackParametersCnossos trackParameters = new RailwayTrackParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
-                impactNoise, bridgeTrasnfert, curvature, vehicleCommercial);
-        lWRailWay = EvaluateRailwaySourceCnossos.evaluate(vehicleParameters, trackParameters);
+                impactNoise, bridgeTransfert, curvature, vehicleCommercial);
+        lWRailWay = evaluateRailwaySourceCnossos.evaluate(vehicleParameters, trackParameters);
         double[] LWRolling = lWRailWay.getLWRolling();
     }
 }
