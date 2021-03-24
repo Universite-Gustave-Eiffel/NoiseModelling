@@ -1,12 +1,9 @@
 package org.noise_planet.noisemodelling.emission.utils;
 
-/*
- * https://github.com/mobilesec/timeseries-signal-processing/blob/master/Interpolation.java
- */
-
 import java.util.Arrays;
 
 /**
+ * Copy from https://github.com/mobilesec/timeseries-signal-processing/blob/master/Interpolation.java
  * @author Muhammad Muaaz
  */
 

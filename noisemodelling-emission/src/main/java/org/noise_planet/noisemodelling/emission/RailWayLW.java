@@ -30,7 +30,7 @@ package org.noise_planet.noisemodelling.emission;
 /**
  * Data result stockage
  */
-public class LWRailWay {
+public class RailWayLW {
 
     public enum TrainNoiseSource {
         ROLLING,
@@ -40,6 +40,7 @@ public class LWRailWay {
         AERODYNAMICB,
         BRIDGE
     }
+
     private double[] lWRolling;
     private double[] lWTractionA;
     private double[] lWTractionB;
@@ -87,7 +88,7 @@ public class LWRailWay {
         return lWBridge;
     }
 
-    public LWRailWay(double[] lWRolling,double[] lWTractionA,double[] lWTractionB,double[] lWAerodynamicA,double[] lWAerodynamicB,double[] lWBridge){
+    public RailWayLW(double[] lWRolling, double[] lWTractionA, double[] lWTractionB, double[] lWAerodynamicA, double[] lWAerodynamicB, double[] lWBridge){
 
         setLWRolling(lWRolling);
         setLWTractionA(lWTractionA);

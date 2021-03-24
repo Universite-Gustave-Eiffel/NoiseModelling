@@ -38,10 +38,9 @@ public class EvaluateRailWaySourceCNOSSOSTest {
     public void Test_X_TER_bicaisse_D() {
         String vehCat = "X-TER-bicaisse-D";
         double vehicleSpeed = 160;
-        double vehiclePerHour = 1;
+        int vehiclePerHour = 1;
         int rollingCondition = 0;
         double idlingTime = 0;
-
         int trackTransfer = 4;
         int impactNoise = 0;
         int bridgeTrasnfert = 0;
@@ -51,13 +50,13 @@ public class EvaluateRailWaySourceCNOSSOSTest {
         double vMaxInfra = 160;
         double vehicleCommercial= 160;
 
-        LWRailWay lWRailWay = null;
+        RailWayLW lWRailWay = null;
 
-        VehicleParametersCnossos vehicleParameters = new VehicleParametersCnossos(vehCat, vehicleSpeed,
-                vehiclePerHour, 0, 0, rollingCondition,idlingTime);
-        TrackParametersCnossos trackParameters = new TrackParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
-                impactNoise, bridgeTrasnfert, curvature, vehicleCommercial,false,1);
-        lWRailWay = EvaluateRailWaySourceCnossos.evaluate(vehicleParameters, trackParameters);
+        RailwayVehicleParametersCnossos vehicleParameters = new RailwayVehicleParametersCnossos(vehCat, vehicleSpeed,
+                vehiclePerHour,  rollingCondition,idlingTime);
+        RailwayTrackParametersCnossos trackParameters = new RailwayTrackParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
+                impactNoise, bridgeTrasnfert, curvature, vehicleCommercial);
+        lWRailWay = EvaluateRailwaySourceCnossos.evaluate(vehicleParameters, trackParameters);
         double[] LWRolling = lWRailWay.getLWRolling();
     }
 }

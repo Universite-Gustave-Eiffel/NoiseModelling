@@ -27,7 +27,7 @@ import org.h2gis.utilities.SpatialResultSet;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
 import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos;
-import org.noise_planet.noisemodelling.emission.RSParametersCnossos;
+import org.noise_planet.noisemodelling.emission.RoadSourceParametersCnossos;
 import org.noise_planet.noisemodelling.emission.Utils;
 import org.noise_planet.noisemodelling.pathfinder.ComputeRays;
 import org.noise_planet.noisemodelling.pathfinder.FastObstructionTest;
@@ -198,7 +198,7 @@ public class LDENPropagationProcessData extends PropagationProcessData {
         // Compute emission
         int idFreq = 0;
         for (int freq : ldenConfig.propagationProcessPathData.freq_lvl) {
-            RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lv_speed, mv_speed, hgv_speed, wav_speed,
+            RoadSourceParametersCnossos rsParametersCnossos = new RoadSourceParametersCnossos(lv_speed, mv_speed, hgv_speed, wav_speed,
                     wbv_speed,lvPerHour, mvPerHour, hgvPerHour, wavPerHour, wbvPerHour, freq, temperature,
                     roadSurface, tsStud, pmStud, junctionDistance, junctionType);
             rsParametersCnossos.setSlopePercentage(slope);

@@ -1,5 +1,4 @@
-{"Train": {
-  "Corail" : {
+{ "Corail" : {
     "BB15000" : 1,
     "VU-VTU" : 8
   },
@@ -15,6 +14,5 @@
     "BB27000   " : 1,
     "fret_fonte" : 7,
     "fret_composite" :11
-  }
   }
 }

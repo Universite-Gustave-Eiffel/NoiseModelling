@@ -31,23 +31,18 @@ package org.noise_planet.noisemodelling.emission;
  * DataBase Vehicule
  */
 
-public class VehicleParametersCnossos {
+public class RailwayVehicleParametersCnossos {
 
     // set default value
-    private String typeVehicle="X-TER-bicaisse-D";
-    private double speedVehicle;
-    private double tDay=1;
-    private double tEvenig=1;
-    private double tNight=1;
+    private String typeVehicle=""; // name of the vehicles
+    private double speedVehicle; // speed of the vehicles (km/h)
+    private int vehiclePerHour = 1; // Average light vehicle per hour
+    private int runningCondition=0; // 0 = constand speed, 1 = acceleration , 2 =decceleration, 3 = idling
+    private double idlingTime=0; // if idling, idling time (seconds)
 
-    private int runningCondition=0;
-    private double idlingTime=0;
+    private int spectreVer = 2; // version of cnossos coefficient, if 2 == amendments 2019
 
-    private int spectreVer = 2;
 
-    /**
-     * @param spectreVer
-     */
     public void setSpectreVer(int spectreVer) {
         this.spectreVer = spectreVer;
     }
@@ -55,20 +50,15 @@ public class VehicleParametersCnossos {
         return this.spectreVer;
     }
 
+
     public void setTypeVehicle(String typeVehicle) {
         this.typeVehicle = typeVehicle;
     }
     public void setSpeedVehicle(double speedVehicle) {
         this.speedVehicle = speedVehicle;
     }
-    public void setTDay(double tDay) {
-        this.tDay = tDay;
-    }
-    public void setTEvening(double tEvenig) {
-        this.tEvenig = tEvenig;
-    }
-    public void setTNight(double tNight) {
-        this.tNight = tNight;
+    public void setVehiclePerHour(int vehiclePerHour) {
+        this.vehiclePerHour = vehiclePerHour;
     }
 
     public void setRunningCondition(int runningCondition) {
@@ -84,15 +74,10 @@ public class VehicleParametersCnossos {
     public double getSpeedVehicle() {
         return speedVehicle;
     }
-    public double getTDay() {
-        return tDay;
+    public int getNumberVehicle() {
+        return vehiclePerHour ;
     }
-    public double getTEvening() {
-        return tEvenig;
-    }
-    public double getTNight() {
-        return tNight;
-    }
+
     public int getRunningCondition( ) {
         return runningCondition;
     }
@@ -100,14 +85,13 @@ public class VehicleParametersCnossos {
         return idlingTime;
     }
 
-    public VehicleParametersCnossos(String typeVehicle, double speedVehicle,
-                                  double tDay, double tEvening, double tNight,int runningCondition,double idlingTime) {
+    public RailwayVehicleParametersCnossos(String typeVehicle, double speedVehicle, int vehiclePerHour, int runningCondition, double idlingTime) {
+
 
         setTypeVehicle(typeVehicle);
         setSpeedVehicle(speedVehicle);
-        setTDay(tDay);
-        setTEvening(tEvening);
-        setTNight(tNight);
+        setVehiclePerHour(vehiclePerHour);
+
         setRunningCondition(runningCondition);
         setIdlingTime(idlingTime);
     }

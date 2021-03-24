@@ -31,27 +31,21 @@ package org.noise_planet.noisemodelling.emission;
  * DataBase Track
  */
 
-public class TrackParametersCnossos{
-//set default value
-    private double speedTrack;
+public class RailwayTrackParametersCnossos {
+    //set default value
+    private double speedTrack; // maximum speed on the track (km/h)
     private int trackTransfer;
     private int railRoughness;
     private int curvature;
     private int impactNoise;
     private int bridgeTransfert;
-    private double speedCommercial;
-    private boolean isTunnel=false;
-    private int nTrack=1;
+    private double speedCommercial; // commercial speed on the track (km/h)
 
-    private int spectreVer = 2;
+    private int spectreVer = 2; // version of cnossos coefficient, if 2 == amendments 2019
 
-    /**
-     * @param spectreVer
-     */
     public void setSpectreVer(int spectreVer) {
         this.spectreVer = spectreVer;
     }
-
 
     public void setSpeedTrack(double speedTrack) {
         this.speedTrack = speedTrack;
@@ -74,13 +68,6 @@ public class TrackParametersCnossos{
     public void setSpeedCommercial(double speedCommercial) {
         this.speedCommercial = speedCommercial;
     }
-    public void setIsTunnel(boolean isTunnel) {
-        this.isTunnel = isTunnel;
-    }
-    public void setNTrack(int nTrack) {
-        this.nTrack = nTrack;
-    }
-
 
     public int getSpectreVer() {
         return this.spectreVer;
@@ -107,15 +94,9 @@ public class TrackParametersCnossos{
     public double getSpeedCommercial() {
         return speedCommercial;
     }
-    public boolean getIsTunnel() {
-        return isTunnel;
-    }
-    public int getNTrack( ) {
-        return nTrack;
-    }
 
-    public TrackParametersCnossos( double speedTrack, int trackTransfer, int railRoughness,int impactNoise,
-                                   int bridgeTransfert, int curvature, double speedCommercial, boolean isTunnel, int nTrack) {
+    public RailwayTrackParametersCnossos(double speedTrack, int trackTransfer, int railRoughness, int impactNoise,
+                                         int bridgeTransfert, int curvature, double speedCommercial) {
 
         setSpeedTrack(speedTrack);
         setTrackTransfer(trackTransfer);
@@ -124,8 +105,6 @@ public class TrackParametersCnossos{
         setCurvature(curvature);
         setBridgeTransfert(bridgeTransfert);
         setSpeedCommercial(speedCommercial);
-        setIsTunnel(isTunnel);
-        setNTrack(nTrack);
 
     }
 }

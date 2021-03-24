@@ -16,6 +16,7 @@ package org.noise_planet.noisemodelling.emission;
  * Evaluation of Tramway sound source
  * @Author Nicolas Fortin
  */
+
 public class EvalTramwaySource {
     /** Utility class */
     private EvalTramwaySource() {}

@@ -18,7 +18,7 @@ package org.noise_planet.noisemodelling.emission;
  * @author Arnaud Can - 27/02/2018 - 21/08/2018
  */
 
-public class RSParametersDynamic {
+public class RoadSourceParametersDynamic {
     private final double speed;
     private final double acceleration;
     private final String veh_type;
@@ -38,9 +38,6 @@ public class RSParametersDynamic {
     private int surfaceAge;
     private double slopePercentage;
 
-    /**
-     * @param coeffVer
-     */
     public void setCoeffVer(int coeffVer) {
         this.coeffVer = coeffVer;
     }
@@ -186,14 +183,14 @@ public class RSParametersDynamic {
      * @param acc_type Acceleration mode (1 = Distance to Junction (CNOSSOS), 2= Correction from IMAGINE with bounds , 3 = Correction from IMAGINE without bounds)
      * @param FreqParam Studied Frequency
      * @param Temperature Temperature(Celsius)
-     * @param RoadSurface Road surface between 0 and 14
+     * @param roadSurface Road surface between 0 and 14
      * @param Stud True = equipped with studded tyres
      * @param Junc_dist Distance to junction
      * @param Junc_type Type of junction ((k = 1 for a crossing with traffic lights ; k = 2 for a roundabout)
      * @param LwStd Standard Deviation of Lw
      * @param VehId Vehicle ID used as a seed for LwStd
      */
-    public RSParametersDynamic(double speed, double acceleration, String veh_type, int acc_type, int FreqParam, double Temperature, String roadSurface, boolean Stud, double Junc_dist, int Junc_type, double LwStd, int VehId) {
+    public RoadSourceParametersDynamic(double speed, double acceleration, String veh_type, int acc_type, int FreqParam, double Temperature, String roadSurface, boolean Stud, double Junc_dist, int Junc_type, double LwStd, int VehId) {
 
         if (Junc_type <0 || Junc_type>2 ) throw new IllegalArgumentException("Unlnown Junction type for a section.");
         this.speed = speed;
