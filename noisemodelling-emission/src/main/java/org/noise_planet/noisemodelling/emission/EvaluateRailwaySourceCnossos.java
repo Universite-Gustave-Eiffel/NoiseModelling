@@ -168,7 +168,7 @@ public class EvaluateRailwaySourceCnossos {
     
     * @return LWRoll / LWTraction A & B / LWAerodynamic A & B / LWBridge level in dB
     **/
-    RailWayLW evaluate(RailwayVehicleParametersCnossos vehicleParameters, RailwayTrackParametersCnossos trackParameters) {
+    public RailWayLW evaluate(RailwayVehicleParametersCnossos vehicleParameters, RailwayTrackParametersCnossos trackParameters) {
 
         final int spectreVer = vehicleParameters.getSpectreVer();
 

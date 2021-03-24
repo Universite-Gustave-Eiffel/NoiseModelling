@@ -3,6 +3,7 @@ package org.noise_planet.noisemodelling.jdbc;
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.api.ProgressVisitor;
 import org.h2gis.functions.factory.H2GISDBFactory;
+import org.h2gis.functions.io.dbf.DBFRead;
 import org.h2gis.functions.io.shp.SHPRead;
 import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SFSUtilities;
@@ -10,9 +11,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
+import org.noise_planet.noisemodelling.emission.RailWayLW;
 import org.noise_planet.noisemodelling.pathfinder.IComputeRaysOut;
-import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 import org.noise_planet.noisemodelling.pathfinder.RootProgressVisitor;
+import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,6 +93,24 @@ public class LDENPointNoiseMapFactoryTest {
                 assertTrue(rs.next());
                 double[] leq = process.getEmissionFromResultSet(rs, "D", 10);
                 assertEquals(77.67 , leq[leq.length - 1] , 0.1);
+            }
+        }
+    }
+
+    @Test
+    public void testNoiseEmissionRailWay() throws SQLException, IOException {
+        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("RailTrack.shp").getFile());
+        DBFRead.read(connection, LDENPointNoiseMapFactoryTest.class.getResource("RailTrain.dbf").getFile());
+        LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_RAILWAY_FLOW);
+        ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData());
+        ldenConfig.setCoefficientVersion(2);
+        LDENPropagationProcessData process = new LDENPropagationProcessData(null, ldenConfig);
+
+        try(Statement st = connection.createStatement()) {
+            try(ResultSet rs = connection.createStatement().executeQuery("SELECT r1.*, r2.* FROM RailTrain r1, RailTrack r2 WHERE r1.IDSECTION= R2.IDSECTION; ")) {
+                assertTrue(rs.next());
+                RailWayLW railway = process.getRailwayEmissionFromResultSet(rs, "Day");
+                assertEquals(77.67 , 1 , 0.1); // todo a real unit test
             }
         }
     }

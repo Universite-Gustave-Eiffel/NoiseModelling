@@ -23,13 +23,11 @@ package org.noise_planet.noisemodelling.jdbc;
 
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 
-import java.util.concurrent.atomic.AtomicLong;
-
 /**
  * Configuration of NoiseModelling computation based on database data using standard Lden outputs
  */
 public class LDENConfig {
-    public enum INPUT_MODE { INPUT_MODE_TRAFFIC_FLOW, INPUT_MODE_LW_DEN, INPUT_MODE_PROBA}
+    public enum INPUT_MODE { INPUT_MODE_TRAFFIC_FLOW,INPUT_MODE_RAILWAY_FLOW, INPUT_MODE_LW_DEN, INPUT_MODE_PROBA}
     final INPUT_MODE input_mode;
 
     // This field is initialised when {@link PointNoiseMap#initialize} is called

@@ -57,15 +57,24 @@ inputs = [
                 title: 'Rail table name',
                 description: "<b>Name of the Rail traffic table.</b>  </br>  " +
                 "<br>  This function recognize the following columns (* mandatory) : </br><ul>" +
-                "<li><b> IDTRAFIC </b>* : an identifier. It shall be a primary key (STRING, PRIMARY KEY)</li>" +
-                "<li><b> IDTRACKS </b>* : an identifier. It shall be a primary key (STRING, PR)</li>" +
+                "<li><b> idTraffic </b>* : an identifier. It shall be a primary key (INT, PRIMARY KEY)</li>" +
+                "<li><b> idSection </b>* : an identifier. (INT)</li>" +
                 "<li><b> TYPETRAIN </b>* : Type vehicle (STRING)/li>" +
-                "<li><b> VMAX </b>* : Maximum Train speed (DOUBLE) </li>" +
-                "<li><b> TDAY </b><b> TEVENING </b><b> TNIGHT </b> : Hourly average train count (6-18h)(18-22h)(22-6h) (DOUBLE)</li>", type: String.class],
+                "<li><b> speedVehic </b>* : Maximum Train speed (DOUBLE) </li>" +
+                "<li><b> TDAY </b><b> TEVENING </b><b> TNIGHT </b> : Hourly average train count (6-18h)(18-22h)(22-6h) (INT)</li>", type: String.class],
           tableRailwayTrack: [
                   name: 'Rail Geom table name', title: 'Rail table name', description: "<b>Name of the Rail Geom table.</b>  </br>  " +
                   "<br>  This function recognize the following columns (* mandatory) : </br><ul>" +
-                  "<li><b> PK </b>* : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY)</li>" , type: String.class]
+                  "<li><b> idSection </b>* : an identifier. It shall be a primary key(INTEGER, PRIMARY KEY)</li>" +
+                  "<li><b> nTrack </b>* : Number of tracks (INTEGER) /li>" +
+                  "<li><b> speedTrack </b>* : Maximum speed on the section in km/h (DOUBLE) </li>" +
+                  "<li><b> trackTrans </b> : Track transfer function identifier (INTEGER) </li>" +
+                  "<li><b> railRoughn </b> : Rail roughness identifier (INTEGER)  </li>" +
+                  "<li><b> impactNois </b> : Impact noise identifier (INTEGER) </li>" +
+                  "<li><b> curvature </b> : Listed code describing the curvature of the section (INTEGER) </li>" +
+                  "<li><b> bridgeTran </b> : Bridge transfer function identifier (INTEGER) </li>" +
+                  "<li><b> speedComme </b> : Commercial speed on the section in km/h (DOUBLE) </li>" +
+                  "<li><b> isTunnel </b> : (BOOLEAN) </li>"  , type: String.class]
 ]
 
 outputs = [result: [name: 'Result output string', title: 'Result output string', description: 'This type of result does not allow the blocks to be linked together.', type: String.class]]
@@ -156,11 +165,7 @@ def exec(Connection connection, input) {
 
     // drop table LW_RAILWAY if exists and the create and prepare the table
     sql.execute("drop table if exists LW_RAILWAY;")
-    //TODO sépration de l'émisson totale sur le nombre de voies. moyenne... /!\
-    //
 
-    //
-    // the_geom multyLigneString (jusqua 4 ligne)  donc LW_RailWay séparé
     sql.execute("create table LW_RAILWAY (pr varchar, the_geom geometry, DIRECTIVITYID int," +
             "LWD50 double precision,LWD63 double precision,LWD80 double precision, LWD125 double precision," +
             "LWD160 double precision,LWD200 double precision, LWD250 double precision,LWD315 double precision," +
@@ -234,12 +239,12 @@ def exec(Connection connection, input) {
             def results = ldenData.computeLw(rs2) //TODO update for train
 
             for (int idfreq = 0; idfreq < PropagationProcessPathData.third_freq_lvl.size(); idfreq++) {
-                results[0][idfreq]=ComputeRays.wToDba(ComputeRays.dbaToW(results[0][idfreq])+ComputeRays.dbaToW(results[0][idfreq]));
-                results[1][idfreq]=ComputeRays.wToDba(ComputeRays.dbaToW(results[1][idfreq])+ComputeRays.dbaToW(results[1][idfreq]));
-                results[2][idfreq]=ComputeRays.wToDba(ComputeRays.dbaToW(results[2][idfreq])+ComputeRays.dbaToW(results[2][idfreq]));
-                results[3][idfreq]=ComputeRays.wToDba(ComputeRays.dbaToW(results[3][idfreq])+ComputeRays.dbaToW(results[3][idfreq]));
-                results[4][idfreq]=ComputeRays.wToDba(ComputeRays.dbaToW(results[4][idfreq])+ComputeRays.dbaToW(results[4][idfreq]));
-                results[5][idfreq]=ComputeRays.wToDba(ComputeRays.dbaToW(results[5][idfreq])+ComputeRays.dbaToW(results[5][idfreq]));
+                results[0][idfreq]=ComputeRays.wToDba(ComputeRays.dbaToW(results[0][idfreq])+ComputeRays.dbaToW(results[0][idfreq]))
+                results[1][idfreq]=ComputeRays.wToDba(ComputeRays.dbaToW(results[1][idfreq])+ComputeRays.dbaToW(results[1][idfreq]))
+                results[2][idfreq]=ComputeRays.wToDba(ComputeRays.dbaToW(results[2][idfreq])+ComputeRays.dbaToW(results[2][idfreq]))
+                results[3][idfreq]=ComputeRays.wToDba(ComputeRays.dbaToW(results[3][idfreq])+ComputeRays.dbaToW(results[3][idfreq]))
+                results[4][idfreq]=ComputeRays.wToDba(ComputeRays.dbaToW(results[4][idfreq])+ComputeRays.dbaToW(results[4][idfreq]))
+                results[5][idfreq]=ComputeRays.wToDba(ComputeRays.dbaToW(results[5][idfreq])+ComputeRays.dbaToW(results[5][idfreq]))
             }
 
         }
@@ -249,7 +254,7 @@ def exec(Connection connection, input) {
             ps.addBatch(PR as String, geo as Geometry, directivity as int,
                     results[directivity][10] as Double, results[directivity][11] as Double, results[directivity][12] as Double,
                     results[directivity][13] as Double, results[directivity][14] as Double, results[directivity[15] as Double,
-                    results[directivity][16] as Double, results0cm[directivity][17] as Double);
+                    results[directivity][16] as Double, results0cm[directivity][17] as Double)
 
         }
 

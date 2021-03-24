@@ -26,9 +26,7 @@ import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SpatialResultSet;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
-import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos;
-import org.noise_planet.noisemodelling.emission.RoadSourceParametersCnossos;
-import org.noise_planet.noisemodelling.emission.Utils;
+import org.noise_planet.noisemodelling.emission.*;
 import org.noise_planet.noisemodelling.pathfinder.ComputeRays;
 import org.noise_planet.noisemodelling.pathfinder.FastObstructionTest;
 import org.noise_planet.noisemodelling.pathfinder.PropagationProcessData;
@@ -209,6 +207,89 @@ public class LDENPropagationProcessData extends PropagationProcessData {
         return lvl;
     }
 
+
+    /**
+     * @param rs result set of source
+     * @param period D or E or N
+     * @return Emission spectrum in dB
+     */
+    public RailWayLW getRailwayEmissionFromResultSet(ResultSet rs, String period) throws SQLException, IOException {
+        if (sourceFields == null) {
+            sourceFields = new HashMap<>();
+            int fieldId = 1;
+            for (String fieldName : JDBCUtilities.getFieldNames(rs.getMetaData())) {
+                sourceFields.put(fieldName.toUpperCase(), fieldId++);
+            }
+        }
+        double[] lvl = new double[ldenConfig.propagationProcessPathData.freq_lvl.size()];
+
+        String typeTrain = "FRET";
+        double vehicleSpeed = 160;
+        int vehiclePerHour = 1;
+        int rollingCondition = 0;
+        double idlingTime = 0;
+        int trackTransfer = 4;
+        int impactNoise = 0;
+        int bridgeTransfert = 0;
+        int curvature = 0;
+        int railRoughness = 4;
+        double vMaxInfra = 160;
+        double vehicleCommercial= 160;
+
+        // Read fields
+        if(sourceFields.containsKey("speedVehic")) {
+            vehicleSpeed = rs.getDouble(sourceFields.get("speedVehic"));
+        }
+        if(sourceFields.containsKey("t"+period)) {
+            vehiclePerHour = rs.getInt(sourceFields.get("t"+period));
+        }
+        if(sourceFields.containsKey("rollingCondition")) {
+            rollingCondition = rs.getInt(sourceFields.get("rollingCondition"));
+        }
+        if(sourceFields.containsKey("idlingTime")) {
+            idlingTime = rs.getDouble(sourceFields.get("idlingTime"));
+        }
+        if(sourceFields.containsKey("tracktrans")) {
+            trackTransfer = rs.getInt(sourceFields.get("tracktrans"));
+        }
+        if(sourceFields.containsKey("railroughn")) {
+            railRoughness = rs.getInt(sourceFields.get("railroughn"));
+        }
+
+        if(sourceFields.containsKey("impactnois")) {
+            impactNoise = rs.getInt(sourceFields.get("impactnois"));
+        }
+        if(sourceFields.containsKey("bridgeTran")) {
+            bridgeTransfert = rs.getInt(sourceFields.get("bridgeTran"));
+        }
+        if(sourceFields.containsKey("curvature")) {
+            curvature = rs.getInt(sourceFields.get("curvature"));
+        }
+
+        if(sourceFields.containsKey("WBV_"+period)) {
+            vMaxInfra = rs.getDouble(sourceFields.get("WBV_"+period));
+        }
+        if(sourceFields.containsKey("speedComme")) {
+            vehicleCommercial= rs.getDouble(sourceFields.get("speedComme"));
+        }
+        if(sourceFields.containsKey("typeTrain")) {
+            typeTrain = rs.getString(sourceFields.get("typeTrain"));
+        }
+
+        RailWayLW lWRailWay;
+
+        String typeVeh = typeTrain; // todo loop over veh
+
+        RailwayVehicleParametersCnossos vehicleParameters = new RailwayVehicleParametersCnossos(typeTrain, vehicleSpeed,
+                vehiclePerHour,  rollingCondition,idlingTime);
+        RailwayTrackParametersCnossos trackParameters = new RailwayTrackParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
+                impactNoise, bridgeTransfert, curvature, vehicleCommercial);
+        EvaluateRailwaySourceCnossos evaluateRailwaySourceCnossos = new EvaluateRailwaySourceCnossos(EvaluateRailwaySourceCnossos.class.getResourceAsStream("coefficients_RailWay_cnossos.json"),EvaluateRailwaySourceCnossos.class.getResourceAsStream("Vehicle_definition.json"));
+
+        lWRailWay = evaluateRailwaySourceCnossos.evaluate(vehicleParameters, trackParameters);
+        return lWRailWay;
+    }
+
     public double[][] computeLw(SpatialResultSet rs) throws SQLException, IOException {
 
         // Compute day average level
@@ -242,6 +323,33 @@ public class LDENPropagationProcessData extends PropagationProcessData {
                 }
             }
         } else if(ldenConfig.input_mode == LDENConfig.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW) {
+            // Extract road slope
+            double slope = 0;
+            try {
+                Geometry g = rs.getGeometry();
+                if(freeFieldFinder!=null && g != null && !g.isEmpty()) {
+                    Coordinate[] c = g.getCoordinates();
+                    if(c.length >= 2) {
+                        double z0 = freeFieldFinder.getHeightAtPosition(c[0]);
+                        double z1 = freeFieldFinder.getHeightAtPosition(c[1]);
+                        if(!Double.isNaN(z0) && !Double.isNaN(z1)) {
+                            slope = Utils.computeSlope(z0, z1, g.getLength());
+                        }
+                    }
+                }
+            } catch (SQLException ex) {
+                // ignore
+            }
+            // Day
+            ld = ComputeRays.dbaToW(getEmissionFromResultSet(rs, "D", slope));
+
+            // Evening
+            le = ComputeRays.dbaToW(getEmissionFromResultSet(rs, "E", slope));
+
+            // Night
+            ln = ComputeRays.dbaToW(getEmissionFromResultSet(rs, "N", slope));
+
+        }else if(ldenConfig.input_mode == LDENConfig.INPUT_MODE.INPUT_MODE_RAILWAY_FLOW) {
             // Extract road slope
             double slope = 0;
             try {
