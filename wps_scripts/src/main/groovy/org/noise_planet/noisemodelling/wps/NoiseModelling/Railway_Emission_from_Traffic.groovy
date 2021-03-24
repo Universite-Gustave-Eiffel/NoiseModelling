@@ -22,6 +22,8 @@ import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.functions.io.dbf.DBFRead
+import org.h2gis.functions.io.shp.SHPRead
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.SFSUtilities
 import org.h2gis.utilities.SpatialResultSet
@@ -41,6 +43,10 @@ import java.sql.Connection
 import java.sql.PreparedStatement
 import java.sql.ResultSet
 import java.sql.SQLException
+import java.sql.Statement
+
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertTrue
 
 /**
  * @Author Adrien Le Bellec,  Univ Gustave Eiffel
@@ -207,8 +213,11 @@ def exec(Connection connection, input) {
     // --------------------------------------
 
     // Get Class to compute LW
-    LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_RAIL_FLOW)
-    LDENPropagationProcessData ldenData =  new LDENPropagationProcessData(null, ldenConfig)
+
+    LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_RAILWAY_FLOW);
+    ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData());
+    ldenConfig.setCoefficientVersion(2);
+    LDENPropagationProcessData process = new LDENPropagationProcessData(null, ldenConfig);
 
     // Get size of the table (number of rail segments
     PreparedStatement st = connection.prepareStatement("SELECT COUNT(*) AS total FROM " + sources_geom_table_name)
@@ -229,32 +238,36 @@ def exec(Connection connection, input) {
         currentVal = tools.invokeMethod("ProgressBar", [Math.round(10*k/nSection).toInteger(),currentVal])
         //System.println(rs)
         Geometry geo = rs.getGeometry()
-        String PR = rs.getString("IDTRONCON")
-        st = connection.prepareStatement("SELECT a.*, b.* FROM " + sources_table_traffic_name + " a, " + sources_geom_table_name + " b WHERE a.IDTRONCON = '" + PR.toString() + "' AND b.IDTRONCON = '" + PR.toString() + "'")
+        String PR = rs.getString("IDSECTION")
+        st = connection.prepareStatement("SELECT a.*, b.* FROM " + sources_table_traffic_name + " a, " + sources_geom_table_name + " b WHERE a.IDSECTION = '" + PR.toString() + "' AND b.IDSECTION = '" + PR.toString() + "'")
         SpatialResultSet rs2 = st.executeQuery().unwrap(SpatialResultSet.class)
+
+
+
 
         while (rs2.next()) {
             // Compute emission sound level for each rail segment
             ldenConfig.setTrainHeight(0)
-            def results = ldenData.computeLw(rs2) //TODO update for train
+            //def results = ldenData.computeLw(rs2) //TODO update for train
+            RailWayLW railway = process.getRailwayEmissionFromResultSet(rs2, "Day");
 
-            for (int idfreq = 0; idfreq < PropagationProcessPathData.third_freq_lvl.size(); idfreq++) {
+          /*  for (int idfreq = 0; idfreq < PropagationProcessPathData.third_freq_lvl.size(); idfreq++) {
                 results[0][idfreq]=ComputeRays.wToDba(ComputeRays.dbaToW(results[0][idfreq])+ComputeRays.dbaToW(results[0][idfreq]))
                 results[1][idfreq]=ComputeRays.wToDba(ComputeRays.dbaToW(results[1][idfreq])+ComputeRays.dbaToW(results[1][idfreq]))
                 results[2][idfreq]=ComputeRays.wToDba(ComputeRays.dbaToW(results[2][idfreq])+ComputeRays.dbaToW(results[2][idfreq]))
                 results[3][idfreq]=ComputeRays.wToDba(ComputeRays.dbaToW(results[3][idfreq])+ComputeRays.dbaToW(results[3][idfreq]))
                 results[4][idfreq]=ComputeRays.wToDba(ComputeRays.dbaToW(results[4][idfreq])+ComputeRays.dbaToW(results[4][idfreq]))
                 results[5][idfreq]=ComputeRays.wToDba(ComputeRays.dbaToW(results[5][idfreq])+ComputeRays.dbaToW(results[5][idfreq]))
-            }
+            }*/
 
         }
 
         // fill the LW_RAIL table
         sql.withBatch(100, qry00) { ps ->
-            ps.addBatch(PR as String, geo as Geometry, directivity as int,
+          /*  ps.addBatch(PR as String, geo as Geometry, directivity as int,
                     results[directivity][10] as Double, results[directivity][11] as Double, results[directivity][12] as Double,
                     results[directivity][13] as Double, results[directivity][14] as Double, results[directivity[15] as Double,
-                    results[directivity][16] as Double, results0cm[directivity][17] as Double)
+                    results[directivity][16] as Double, results0cm[directivity][17] as Double);*/
 
         }
 
