@@ -4,7 +4,7 @@ Some contributions using NoiseModelling
 Standard Noise maps
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
--  NOURMOHAMMADI, Zahra, LILASATHAPORNKIT, Tanapon, ASHFAQ, Mudabber, et al. Mapping Urban Environmental Performance with Emerging Data Sources: A Case of Urban Greenery and Traffic Noise in Sydney, Australia. Sustainability, 2021, vol. 13, no 2, p. 605.
+-  NOURMOHAMMADI, Zahra, LILASATHAPORNKIT, Tanapon, ASHFAQ, Mudabber, et al. Mapping Urban Environmental Performance with Emerging Data Sources: A Case of Urban Greenery and Traffic Noise in Sydney, Australia. Sustainability, 2021, vol. 13, no 2, p. 605. https://www.mdpi.com/2071-1050/13/2/605
 - WANG Z., NOVACK T., YAN Y., ZIPF A. Quiet Route Planning for Pedestrians in Traffic Noise Polluted Environments. IEEE Transactions on Intelligent Transportation Systems 2020. https://ieeexplore.ieee.org/document/9139350/keywords#keywords
 
 
