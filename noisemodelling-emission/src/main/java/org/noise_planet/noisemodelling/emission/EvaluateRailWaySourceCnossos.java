@@ -450,13 +450,13 @@ public class EvaluateRailWaySourceCnossos {
      **/
     private static double[] evaluateRoughnessLtotFreq(String typeVehicle, int trackRoughnessId,int impactId, double speed, int spectreVer) {
 
-        double[] roughnessLtotLambda = new double[32];
-        double[] lambdaToFreqLog= new double[32];
+        double[] roughnessLtotLambda = new double[35];
+        double[] lambdaToFreqLog= new double[35];
         double[] freqMedLog = new double[24];
-        double[] Lambda = new double[32];
+        double[] Lambda = new double[35];
 
-        double m = 30;
-        for(int idLambda = 0; idLambda < 32; idLambda++){
+        double m = 33;
+        for(int idLambda = 0; idLambda < 35; idLambda++){
             Lambda[idLambda]= Math.pow(10,m/10);
             lambdaToFreqLog[idLambda] = Math.log10(speed/Lambda[idLambda]*1000/3.6);
 

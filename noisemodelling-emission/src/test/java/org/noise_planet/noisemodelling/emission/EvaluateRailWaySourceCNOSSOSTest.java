@@ -104,4 +104,39 @@ public class EvaluateRailWaySourceCNOSSOSTest {
 
         }
     }
+    @Test
+    public void Test_Cnossos_Rail_emission_secion_2() {
+        String vehCat = "SNCF-BB66400";
+
+        double vehicleSpeed = 80;
+        double tDay = 1;
+        double tEvening = 1;
+        double tNight = 1;
+        int rollingCondition = 0;
+        double idlingTime = 0;
+
+        int nTracks=2;
+        int trackTransfer = 7;
+        int railRoughness = 3;
+        int impactNoise = 3;
+        int bridgeTrasnfert = 0;
+        int curvature = 0;
+
+        double vMaxInfra = 160;
+        double vehicleCommercial= 120;
+
+        LWRailWay lWRailWay = null;
+
+        double[] expectedValuesLWRolling = new double[]{100.8970,101.8434,104.6603,107.0239,104.6611,104.0827,105.2341,109.9994,110.1740,110.1183,110.2914,110.7347,112.4299,111.8073,108.7535,104.3038,106.6040,105.3350,103.1827,100.7862,101.1828,100.6431,100.6290,102.1868};
+        VehicleParametersCnossos vehicleParameters = new VehicleParametersCnossos(vehCat, vehicleSpeed,
+                tDay, 0, 0, rollingCondition,idlingTime);
+        TrackParametersCnossos trackParameters = new TrackParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
+                impactNoise, bridgeTrasnfert, curvature, vehicleCommercial,false,1);
+        lWRailWay = EvaluateRailWaySourceCnossos.evaluate(vehicleParameters, trackParameters);
+
+        for (int idFreq = 0; idFreq < 24; idFreq++) {
+            assertEquals(expectedValuesLWRolling[idFreq], lWRailWay.getLWRolling()[idFreq], EPSILON_TEST1);
+
+        }
+    }
 }
