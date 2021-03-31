@@ -26,7 +26,7 @@ import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Geometry
 import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
-import org.noise_planet.noisemodelling.emission.RSParametersCnossos
+import org.noise_planet.noisemodelling.emission.RoadSourceParametersCnossos
 import org.noise_planet.noisemodelling.jdbc.PointNoiseMap
 import org.noise_planet.noisemodelling.pathfinder.*
 import org.noise_planet.noisemodelling.pathfinder.utils.KMLDocument
@@ -780,7 +780,7 @@ class TrafficRayzPropagationProcessData extends PropagationProcessData {
 
         int idFreq = 0
         for (int freq : freq_lvl) {
-            RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedD, hvSpeedD, hvSpeedD, lvSpeedD,
+            RoadSourceParametersCnossos rsParametersCnossos = new RoadSourceParametersCnossos(lvSpeedD, hvSpeedD, hvSpeedD, lvSpeedD,
                     lvSpeedD, Math.max(0, tvD - hvD), hvD, 0, 0, 0, freq, Temperature,
                     pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type)
             ld[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
@@ -790,7 +790,7 @@ class TrafficRayzPropagationProcessData extends PropagationProcessData {
 
         idFreq = 0
         for (int freq : freq_lvl) {
-            RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedE, hvSpeedE, hvSpeedE, lvSpeedE,
+            RoadSourceParametersCnossos rsParametersCnossos = new RoadSourceParametersCnossos(lvSpeedE, hvSpeedE, hvSpeedE, lvSpeedE,
                     lvSpeedE, Math.max(0, tvE - hvE), hvE, 0, 0, 0, freq, Temperature,
                     pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type)
             le[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
@@ -798,7 +798,7 @@ class TrafficRayzPropagationProcessData extends PropagationProcessData {
 
         idFreq = 0
         for (int freq : freq_lvl) {
-            RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedN, hvSpeedN, hvSpeedN, lvSpeedN,
+            RoadSourceParametersCnossos rsParametersCnossos = new RoadSourceParametersCnossos(lvSpeedN, hvSpeedN, hvSpeedN, lvSpeedN,
                     lvSpeedN, Math.max(0, tvN - hvN), hvN, 0, 0, 0, freq, Temperature,
                     pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type)
             ln[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)

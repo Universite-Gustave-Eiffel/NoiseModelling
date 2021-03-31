@@ -34,7 +34,7 @@ public class EvaluateRailWaySourceCNOSSOSTest {
     private static final double EPSILON_TEST1 = 0.01;
     private static final int[] FREQUENCIES = new int[]{50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300, 8000, 10000};
 
-    EvaluateRailwaySourceCnossos evaluateRailwaySourceCnossos = new EvaluateRailwaySourceCnossos(EvaluateRailwaySourceCnossos.class.getResourceAsStream("coefficients_RailWay_cnossos.json"),EvaluateRailwaySourceCnossos.class.getResourceAsStream("Vehicle_definition.json"));
+    EvaluateRailwaySourceCnossos evaluateRailwaySourceCnossos = new EvaluateRailwaySourceCnossos();
 
     @Test
     public void Test_X_TER_bicaisse_D() {

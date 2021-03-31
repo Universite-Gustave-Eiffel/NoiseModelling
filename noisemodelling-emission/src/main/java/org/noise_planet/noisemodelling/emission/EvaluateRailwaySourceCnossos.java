@@ -12,16 +12,20 @@
 
 package org.noise_planet.noisemodelling.emission;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NullNode;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Iterator;
+import java.util.Map;
 
 import static java.lang.Math.min;
 import static org.noise_planet.noisemodelling.emission.Utils.Vperhour2NoiseLevelAllFreq;
 import static org.noise_planet.noisemodelling.emission.utils.interpLinear.interpLinear;
+
 
 
 /**
@@ -41,12 +45,14 @@ import static org.noise_planet.noisemodelling.emission.utils.interpLinear.interp
  */
 
 public class EvaluateRailwaySourceCnossos {
-    private final JsonNode CnossosRailWayData ;
-    private final JsonNode CnossosVehicleData ;
+    private JsonNode CnossosRailWayData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("coefficients_RailWay_cnossos.json"));
+    private JsonNode CnossosVehicleData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Vehicle_definition.json"));
+    private JsonNode CnossosTrainData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Train_definition.json"));
 
-    public EvaluateRailwaySourceCnossos(InputStream cnossosRailWayData, InputStream cnossosVehicleData ) {
-        this.CnossosRailWayData = parse(cnossosRailWayData);
+
+    public void setEvaluateRailwaySourceCnossos(InputStream cnossosVehicleData,InputStream cnossosTrainData ) {
         this.CnossosVehicleData = parse(cnossosVehicleData);
+        this.CnossosTrainData = parse(cnossosTrainData);
     }
 
     private static JsonNode parse(InputStream inputStream) {
@@ -67,17 +73,48 @@ public class EvaluateRailwaySourceCnossos {
         }
     }
 
-    public JsonNode getCnossosVehicleData(int spectreVer){
-        if (spectreVer==1){
+    public JsonNode getCnossosVehicleData(){
             return CnossosVehicleData;
-        }
-        else {
-            return CnossosVehicleData;
-        }
     }
 
+    public JsonNode getCnossosTrainData(){
+        return CnossosTrainData;
+    }
+
+    public Map<String, Integer> getVehicleFromTrain(String trainName){
+        Map<String, Integer> vehicles = null;
+        for (Iterator<Map.Entry<String, JsonNode>> it = CnossosTrainData.fields(); it.hasNext(); ) {
+            Map.Entry<String, JsonNode> elt = it.next();
+            if (trainName.equals(elt.getKey()))
+            {
+
+                ObjectMapper mapper = new ObjectMapper();
+                vehicles = mapper.convertValue(elt.getValue(),new TypeReference<Map<String, Integer>>(){});
+                break;
+            }
+        }
+        return vehicles;
+    }
+
+
+
+    public boolean isInVehicleList(String trainName){
+        boolean inlist = false;
+        for (Iterator<Map.Entry<String, JsonNode>> it = CnossosVehicleData.fields(); it.hasNext(); ) {
+            Map.Entry<String, JsonNode> elt = it.next();
+            if (trainName.equals(elt.getKey()))
+            {
+                inlist = true;
+                break;
+            }
+        }
+        return inlist;
+    }
+
+
+
     public Double getLambdaValue(String typeVehicle, String refType, int spectreVer, int lambdaId) { //
-        int refId = getCnossosVehicleData(spectreVer).get(typeVehicle).get(refType).intValue();
+        int refId = getCnossosVehicleData().get(typeVehicle).get(refType).intValue();
         String ref = "";
         if(refType.equals("RefRoughness")){ref = "WheelRoughness";}
         else if(refType.equals("RefContact")){ref = "ContactFilter";}
@@ -86,11 +123,11 @@ public class EvaluateRailwaySourceCnossos {
     public Double getTrackRoughness(int trackRoughnessId, int spectreVer, int lambdaId) { //
         return getCnossosRailWayData(spectreVer).get("Track").get("RailRoughness").get(String.valueOf(trackRoughnessId)).get("Values").get(lambdaId).doubleValue();
     }
-    public int getAxlesPerVeh(String typeVehicle, int spectreVer) { //
-        return getCnossosVehicleData(spectreVer).get(typeVehicle).get("Axles").intValue();
+    public int getAxlesPerVeh(String typeVehicle) { //
+        return getCnossosVehicleData().get(typeVehicle).get("Axles").intValue();
     }
     public double getSpectre(String typeVehicle, String ref, int runningCondition,String sourceHeight, int spectreVer, int freqId) { //
-        int refId = getCnossosVehicleData(spectreVer).get(typeVehicle).get(ref).intValue();
+        int refId = getCnossosVehicleData().get(typeVehicle).get(ref).intValue();
         if(ref.equals("RefTraction")) {
             double tractionSpectre=0;
             String condition= "ConstantSpeed";
@@ -121,7 +158,7 @@ public class EvaluateRailwaySourceCnossos {
         }
     }
     public double getAeroV0Alpha(String typeVehicle, String ref, int spectreVer, String aeroInf){
-        int refId = getCnossosVehicleData(spectreVer).get(typeVehicle).get(ref).intValue();
+        int refId = getCnossosVehicleData().get(typeVehicle).get(ref).intValue();
         return Double.parseDouble(getCnossosRailWayData(spectreVer).get("Vehicle").get("AerodynamicNoise").get(String.valueOf(refId)).get(aeroInf).asText());
     }
     public Double getBridgeStructural(int bridgeId, int spectreVer, int freqId){
@@ -136,7 +173,7 @@ public class EvaluateRailwaySourceCnossos {
     }
 
     public Double getVehTransfer(String typeVehicle, int spectreVer, int freqId) {
-        int RefTransfer = getCnossosVehicleData(spectreVer).get(typeVehicle).get("RefTransfer").intValue();
+        int RefTransfer = getCnossosVehicleData().get(typeVehicle).get("RefTransfer").intValue();
         return getCnossosRailWayData(spectreVer).get("Vehicle").get("Transfer").get(String.valueOf(RefTransfer)).get("Spectre").get(freqId).doubleValue();
 
     }
@@ -175,7 +212,7 @@ public class EvaluateRailwaySourceCnossos {
         String typeVehicle = vehicleParameters.getTypeVehicle();
         double speedVehicle = vehicleParameters.getSpeedVehicle();
         double vehPerHour = vehicleParameters.getNumberVehicle();
-        int axlesPerVeh = getAxlesPerVeh(typeVehicle,spectreVer);
+        int axlesPerVeh = getAxlesPerVeh(typeVehicle);
         int runningCondition = vehicleParameters.getRunningCondition();
 
         double speedTrack = trackParameters.getSpeedTrack();

@@ -76,4 +76,48 @@ public class Utils {
         }
         return LWimf_return;
     }
+
+
+    /**
+     * energetic Sum of dBA array
+     *
+     * @param array1
+     * @param array2
+     * @return
+     */
+    public static double[] sumDbArray(double[] array1, double[] array2) {
+        if (array1.length != array2.length) {
+            throw new IllegalArgumentException("Not same size array");
+        }
+        double[] sum = new double[array1.length];
+        for (int i = 0; i < array1.length; i++) {
+            sum[i] = wToDba(dbaToW(array1[i]) + dbaToW(array2[i]));
+        }
+        return sum;
+    }
+
+    public static double dbaToW(double dBA) {
+        return Math.pow(10., dBA / 10.);
+    }
+
+    public static double[] dbaToW(double[] dBA) {
+        double[] ret = new double[dBA.length];
+        for (int i = 0; i < dBA.length; i++) {
+            ret[i] = dbaToW(dBA[i]);
+        }
+        return ret;
+    }
+
+    public static double wToDba(double w) {
+        return 10 * Math.log10(w);
+    }
+
+    public static double[] wToDba(double[] w) {
+        double[] ret = new double[w.length];
+        for (int i = 0; i < w.length; i++) {
+            ret[i] = wToDba(w[i]);
+        }
+        return ret;
+    }
+
 }

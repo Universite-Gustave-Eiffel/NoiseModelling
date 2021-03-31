@@ -22,32 +22,17 @@ import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
-import org.h2gis.functions.io.dbf.DBFRead
-import org.h2gis.functions.io.shp.SHPRead
-import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.SFSUtilities
 import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
-
-import org.noise_planet.noisemodelling.emission.*
-import org.noise_planet.noisemodelling.pathfinder.*
-import org.noise_planet.noisemodelling.propagation.*
-import org.noise_planet.noisemodelling.jdbc.*
-
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
+import org.noise_planet.noisemodelling.emission.RailWayLW
 
 import java.sql.Connection
 import java.sql.PreparedStatement
 import java.sql.ResultSet
 import java.sql.SQLException
-import java.sql.Statement
-
-import static org.junit.Assert.assertEquals
-import static org.junit.Assert.assertTrue
-
 /**
  * @Author Adrien Le Bellec,  Univ Gustave Eiffel
  * @Author Olivier Chiello, Univ Gustave Eiffel
@@ -139,11 +124,11 @@ def exec(Connection connection, input) {
     // Get every inputs
     // -------------------
 
-    String sources_geom_table_name = input['tableRailGeom'] as String
+    String sources_geom_table_name = input['tableRailwayTrack'] as String
     // do it case-insensitive
     sources_geom_table_name = sources_geom_table_name.toUpperCase()
 
-    String sources_table_traffic_name = input['tableRailTraffic'] as String
+    String sources_table_traffic_name = input['tableRailwayTraffic'] as String
     // do it case-insensitive
     sources_table_traffic_name = sources_table_traffic_name.toUpperCase()
 
@@ -155,12 +140,6 @@ def exec(Connection connection, input) {
         throw new SQLException(String.format("The table %s does not exists or does not contain a geometry field", sourceTableIdentifier))
     }
 
-    //Get the primary key field of the source table
-    /*int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, sources_table_name)
-    if (pkIndex < 1) {
-        resultString = String.format("Source table %s does not contain a primary key", sourceTableIdentifier)
-        throw new IllegalArgumentException(String.format("Source table %s does not contain a primary key", sourceTableIdentifier))
-    }*/
 
     // -------------------
     // Init table LW_RAIL
@@ -232,23 +211,27 @@ def exec(Connection connection, input) {
 
     st = connection.prepareStatement("SELECT * FROM " + sources_geom_table_name)
     SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)
+
     while (rs.next()) {
-        double[][] result = new double[4][PropagationProcessPathData.third_freq_lvl.size()];
+
+
+
+        double[][] result = new double[4][PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE.size()]
         k++
         currentVal = tools.invokeMethod("ProgressBar", [Math.round(10*k/nSection).toInteger(),currentVal])
         //System.println(rs)
+
+        int currentIdSection = -1
         Geometry geo = rs.getGeometry()
         String PR = rs.getString("IDSECTION")
-        st = connection.prepareStatement("SELECT a.*, b.* FROM " + sources_table_traffic_name + " a, " + sources_geom_table_name + " b WHERE a.IDSECTION = '" + PR.toString() + "' AND b.IDSECTION = '" + PR.toString() + "'")
+        st = connection.prepareStatement("SELECT a.*, b.* FROM " + sources_table_traffic_name + " a, " + sources_geom_table_name + " b WHERE a.IDSECTION = '" + PR.toString() + "' AND b.IDSECTION = '" + PR.toString() + "' ORDER BY IDSECTION ")
         SpatialResultSet rs2 = st.executeQuery().unwrap(SpatialResultSet.class)
 
-
-
-
         while (rs2.next()) {
-            // Compute emission sound level for each rail segment
-            ldenConfig.setTrainHeight(0)
+            currentIdSection = rs.getInt("")
             //def results = ldenData.computeLw(rs2) //TODO update for train
+
+            ResultSet rsSingleSection = rs2
             RailWayLW railway = process.getRailwayEmissionFromResultSet(rs2, "Day");
 
           /*  for (int idfreq = 0; idfreq < PropagationProcessPathData.third_freq_lvl.size(); idfreq++) {

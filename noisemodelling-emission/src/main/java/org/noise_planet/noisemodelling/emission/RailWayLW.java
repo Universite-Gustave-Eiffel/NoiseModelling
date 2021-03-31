@@ -27,6 +27,8 @@ package org.noise_planet.noisemodelling.emission;
  * @author Olivier Chiello, Univ Gustave Eiffel
  */
 
+import static org.noise_planet.noisemodelling.emission.Utils.sumDbArray;
+
 /**
  * Data result stockage
  */
@@ -47,7 +49,6 @@ public class RailWayLW {
     private double[] lWAerodynamicA;
     private double[] lWAerodynamicB;
     private double[] lWBridge;
-
 
 
     public void setLWRolling(double[] LWRolling) {
@@ -88,6 +89,9 @@ public class RailWayLW {
         return lWBridge;
     }
 
+    public RailWayLW(){
+    }
+
     public RailWayLW(double[] lWRolling, double[] lWTractionA, double[] lWTractionB, double[] lWAerodynamicA, double[] lWAerodynamicB, double[] lWBridge){
 
         setLWRolling(lWRolling);
@@ -98,4 +102,21 @@ public class RailWayLW {
         setLWBridge(lWBridge);
 
     }
+
+    public static RailWayLW sumRailWayLW(RailWayLW railWayLW1, RailWayLW railWayLW2){
+        RailWayLW railWayLW = new RailWayLW();
+
+        railWayLW.setLWRolling(sumDbArray(railWayLW1.getLWRolling() ,railWayLW2.getLWRolling()) );
+        railWayLW.setLWAerodynamicA(sumDbArray(railWayLW1.getLWAerodynamicA() ,railWayLW2.getLWAerodynamicA()) );
+        railWayLW.setLWAerodynamicB(sumDbArray(railWayLW1.getLWAerodynamicB() ,railWayLW2.getLWAerodynamicB()) );
+        railWayLW.setLWBridge(sumDbArray(railWayLW1.getLWBridge() ,railWayLW2.getLWBridge()) );
+        railWayLW.setLWTractionA(sumDbArray(railWayLW1.getLWTractionA() ,railWayLW2.getLWTractionA()) );
+        railWayLW.setLWTractionB(sumDbArray(railWayLW1.getLWTractionB() ,railWayLW2.getLWTractionB()) );
+
+        return railWayLW;
+    }
+
+
+
+
 }
