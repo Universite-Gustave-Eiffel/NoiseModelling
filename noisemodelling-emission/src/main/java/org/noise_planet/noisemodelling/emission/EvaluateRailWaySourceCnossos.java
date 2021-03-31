@@ -366,7 +366,7 @@ public class EvaluateRailWaySourceCnossos {
             }
             if(ref.equals("RefAerodynamic")){
                 if(speed<200){
-                    lWSpectre[idFreq] =0;
+                    lWSpectre[idFreq] =-99;
                 }else{
                 double v0Aero = getAeroV0Alpha(typeVehicle,ref, spectreVer, "V0");
                 double alphaAero = getAeroV0Alpha(typeVehicle,ref, spectreVer, "Alpha");
@@ -428,6 +428,11 @@ public class EvaluateRailWaySourceCnossos {
                 for(int idFreq = 0; idFreq < 24; idFreq++) {
                     lWBridge[idFreq] = getBridgeStructural(bridgeId,spectreVer,idFreq);
                     lW[idFreq] = roughnessLtot[idFreq] + lWBridge[idFreq] + 10 * Math.log10(axlesPerVeh);
+                }
+            }
+            else{
+                for(int idFreq = 0; idFreq < 24; idFreq++) {
+                    lW[idFreq] = -99;
                 }
             }
         }
