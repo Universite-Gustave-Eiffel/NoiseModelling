@@ -28,10 +28,13 @@ import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
 import org.noise_planet.noisemodelling.emission.RailWayLW
+import org.noise_planet.noisemodelling.jdbc.LDENConfig
+import org.noise_planet.noisemodelling.jdbc.LDENPropagationProcessData
+import org.noise_planet.noisemodelling.jdbc.RailWayLWIterator
+import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
 
 import java.sql.Connection
 import java.sql.PreparedStatement
-import java.sql.ResultSet
 import java.sql.SQLException
 /**
  * @Author Adrien Le Bellec,  Univ Gustave Eiffel
@@ -151,7 +154,7 @@ def exec(Connection connection, input) {
     // drop table LW_RAILWAY if exists and the create and prepare the table
     sql.execute("drop table if exists LW_RAILWAY;")
 
-    sql.execute("create table LW_RAILWAY (pr varchar, the_geom geometry, DIRECTIVITYID int," +
+    sql.execute("create table LW_RAILWAY (ID_SECTION int, the_geom geometry, DIRECTIVITYID int," +
             "LWD50 double precision,LWD63 double precision,LWD80 double precision, LWD125 double precision," +
             "LWD160 double precision,LWD200 double precision, LWD250 double precision,LWD315 double precision," +
             "LWD400 double precision, LWD500 double precision, LWD630 double precision,LWD800 double precision," +
@@ -173,14 +176,14 @@ def exec(Connection connection, input) {
             "LWN2500 double precision,LWN3150 double precision, LWN4000 double precision,LWN5000 double precision," +
             "LWN6300 double precision,LWN8000 double precision,LWN10000 double precision);")
 
-    def qry00 = 'INSERT INTO LW_RAILWAY(pr, the_geom, DIRECTIVITYID,' +
-            'LWD50,LWD63,LWD80, LWD125, LWD1600, LWD200, LWD250, LWD315, LWD400, LWD500, LWD630, LWD800,LWD1000,' +
+    def qry00 = 'INSERT INTO LW_RAILWAY(ID_SECTION, the_geom, DIRECTIVITYID,' +
+            'LWD50,LWD63,LWD80, LWD125, LWD160, LWD200, LWD250, LWD315, LWD400, LWD500, LWD630, LWD800,LWD1000,' +
             'LWD1250, LWD1600, LWD2000, LWD2500, LWD3150, LWD4000, LWD5000, LWD6300,LWD8000, LWD10000,' +
 
-            'LWE50,LWE63,LWE80, LWE125, LWE1600, LWE200, LWE250, LWE315, LWE400, LWE500, LWE630, LWE800,LWE1000,' +
+            'LWE50,LWE63,LWE80, LWE125, LWE160, LWE200, LWE250, LWE315, LWE400, LWE500, LWE630, LWE800,LWE1000,' +
             'LWE1250, LWE1600, LWE2000, LWE2500, LWE3150, LWE4000, LWE5000, LWE6300,LWE8000, LWE10000,' +
 
-            'LWN50,LWN63,LWN80, LWN125, LWN1600, LWN200, LWN250, LWN315, LWN400, LWN500, LWN630, LWN800,LWN1000,' +
+            'LWN50,LWN63,LWN80, LWN125, LWN160, LWN200, LWN250, LWN315, LWN400, LWN500, LWN630, LWN800,LWN1000,' +
             'LWN1250, LWN1600, LWN2000, LWN2500, LWN3150, LWN4000, LWN5000, LWN6300,LWN8000, LWN10000) ' +
             'VALUES (?,?,?,' +
             '?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,' +
@@ -193,9 +196,10 @@ def exec(Connection connection, input) {
 
     // Get Class to compute LW
 
-    LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_RAILWAY_FLOW);
-    ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData());
-    ldenConfig.setCoefficientVersion(2);
+    LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_RAILWAY_FLOW)
+    ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData())
+    ldenConfig.setCoefficientVersion(2)
+
     LDENPropagationProcessData process = new LDENPropagationProcessData(null, ldenConfig);
 
     // Get size of the table (number of rail segments
@@ -209,60 +213,50 @@ def exec(Connection connection, input) {
     int k = 0
     int currentVal = 0
 
-    st = connection.prepareStatement("SELECT * FROM " + sources_geom_table_name)
-    SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)
+    RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,sources_geom_table_name, sources_table_traffic_name, ldenConfig, 5)
+    while(railWayLWIterator.next()!=null){
+        RailWayLW railWayLW = railWayLWIterator.getRailWayLW()
+        List<Geometry> geometries = railWayLWIterator.getRailWayLWGeometry(10)
+       // int pk = railWayLWIterator.getPK()
 
-    while (rs.next()) {
-
-
-
-        double[][] result = new double[4][PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE.size()]
-        k++
-        currentVal = tools.invokeMethod("ProgressBar", [Math.round(10*k/nSection).toInteger(),currentVal])
-        //System.println(rs)
-
-        int currentIdSection = -1
-        Geometry geo = rs.getGeometry()
-        String PR = rs.getString("IDSECTION")
-        st = connection.prepareStatement("SELECT a.*, b.* FROM " + sources_table_traffic_name + " a, " + sources_geom_table_name + " b WHERE a.IDSECTION = '" + PR.toString() + "' AND b.IDSECTION = '" + PR.toString() + "' ORDER BY IDSECTION ")
-        SpatialResultSet rs2 = st.executeQuery().unwrap(SpatialResultSet.class)
-
-        while (rs2.next()) {
-            currentIdSection = rs.getInt("")
-            //def results = ldenData.computeLw(rs2) //TODO update for train
-
-            ResultSet rsSingleSection = rs2
-            RailWayLW railway = process.getRailwayEmissionFromResultSet(rs2, "Day");
-
-          /*  for (int idfreq = 0; idfreq < PropagationProcessPathData.third_freq_lvl.size(); idfreq++) {
-                results[0][idfreq]=ComputeRays.wToDba(ComputeRays.dbaToW(results[0][idfreq])+ComputeRays.dbaToW(results[0][idfreq]))
-                results[1][idfreq]=ComputeRays.wToDba(ComputeRays.dbaToW(results[1][idfreq])+ComputeRays.dbaToW(results[1][idfreq]))
-                results[2][idfreq]=ComputeRays.wToDba(ComputeRays.dbaToW(results[2][idfreq])+ComputeRays.dbaToW(results[2][idfreq]))
-                results[3][idfreq]=ComputeRays.wToDba(ComputeRays.dbaToW(results[3][idfreq])+ComputeRays.dbaToW(results[3][idfreq]))
-                results[4][idfreq]=ComputeRays.wToDba(ComputeRays.dbaToW(results[4][idfreq])+ComputeRays.dbaToW(results[4][idfreq]))
-                results[5][idfreq]=ComputeRays.wToDba(ComputeRays.dbaToW(results[5][idfreq])+ComputeRays.dbaToW(results[5][idfreq]))
-            }*/
-
-        }
-
-        // fill the LW_RAIL table
         sql.withBatch(100, qry00) { ps ->
-          /*  ps.addBatch(PR as String, geo as Geometry, directivity as int,
-                    results[directivity][10] as Double, results[directivity][11] as Double, results[directivity][12] as Double,
-                    results[directivity][13] as Double, results[directivity][14] as Double, results[directivity[15] as Double,
-                    results[directivity][16] as Double, results0cm[directivity][17] as Double);*/
+            ps.addBatch(
+                    1 as int, geometries.get(1) as Geometry, 1 as int,
+                    railWayLW.getLWRolling()[0] ,railWayLW.getLWRolling()[1],railWayLW.getLWRolling()[2],railWayLW.getLWRolling()[3],
+                    railWayLW.getLWRolling()[4],railWayLW.getLWRolling()[5],railWayLW.getLWRolling()[6],railWayLW.getLWRolling()[7],
+                    railWayLW.getLWRolling()[8],railWayLW.getLWRolling()[9],railWayLW.getLWRolling()[10],railWayLW.getLWRolling()[11],
+                    railWayLW.getLWRolling()[12],railWayLW.getLWRolling()[13],railWayLW.getLWRolling()[14],railWayLW.getLWRolling()[15],
+                    railWayLW.getLWRolling()[16],railWayLW.getLWRolling()[17],railWayLW.getLWRolling()[18],railWayLW.getLWRolling()[19],
+                    railWayLW.getLWRolling()[20],railWayLW.getLWRolling()[21],railWayLW.getLWRolling()[22],
+
+                    railWayLW.getLWRolling()[0],railWayLW.getLWRolling()[1],railWayLW.getLWRolling()[2],railWayLW.getLWRolling()[3],
+                    railWayLW.getLWRolling()[4],railWayLW.getLWRolling()[5],railWayLW.getLWRolling()[6],railWayLW.getLWRolling()[7],
+                    railWayLW.getLWRolling()[8],railWayLW.getLWRolling()[9],railWayLW.getLWRolling()[10],railWayLW.getLWRolling()[11],
+                    railWayLW.getLWRolling()[12],railWayLW.getLWRolling()[13],railWayLW.getLWRolling()[14],railWayLW.getLWRolling()[15],
+                    railWayLW.getLWRolling()[16],railWayLW.getLWRolling()[17],railWayLW.getLWRolling()[18],railWayLW.getLWRolling()[19],
+                    railWayLW.getLWRolling()[20],railWayLW.getLWRolling()[21],railWayLW.getLWRolling()[22],
+
+                    railWayLW.getLWRolling()[0],railWayLW.getLWRolling()[1],railWayLW.getLWRolling()[2],railWayLW.getLWRolling()[3],
+                    railWayLW.getLWRolling()[4],railWayLW.getLWRolling()[5],railWayLW.getLWRolling()[6],railWayLW.getLWRolling()[7],
+                    railWayLW.getLWRolling()[8],railWayLW.getLWRolling()[9],railWayLW.getLWRolling()[10],railWayLW.getLWRolling()[11],
+                    railWayLW.getLWRolling()[12],railWayLW.getLWRolling()[13],railWayLW.getLWRolling()[14],railWayLW.getLWRolling()[15],
+                    railWayLW.getLWRolling()[16],railWayLW.getLWRolling()[17],railWayLW.getLWRolling()[18],railWayLW.getLWRolling()[19],
+                    railWayLW.getLWRolling()[20],railWayLW.getLWRolling()[21],railWayLW.getLWRolling()[22]
+            );
 
         }
 
     }
 
+
+
     // Fusion geometry and traffic table
 
     // Add Z dimension to the rail segments
-    sql.execute("UPDATE LW_RAIL_0 SET THE_GEOM = ST_UPDATEZ(The_geom,0.01);")
+    sql.execute("UPDATE LW_RAILWAY SET THE_GEOM = ST_UPDATEZ(The_geom,0.01);")
 
     // Add primary key to the LW table
-    sql.execute("ALTER TABLE  LW_RAIL_0  ADD PK INT AUTO_INCREMENT PRIMARY KEY;")
+    sql.execute("ALTER TABLE  LW_RAILWAY  ADD PK INT AUTO_INCREMENT PRIMARY KEY;")
 
 
     resultString = "Calculation Done ! The table LW_RAILWAY has been created."
@@ -270,7 +264,7 @@ def exec(Connection connection, input) {
     // print to command window
     System.out.println('\nResult : ' + resultString)
     System.out.println('End : LW_RAILWAY from Emission')
-    System.out.println('Duration : ' + TimeCategory.minus(new Date(), start))
+   // System.out.println('Duration : ' + TimeCategory.minus(new Date(), start))
 
     // print to WPS Builder
     return resultString

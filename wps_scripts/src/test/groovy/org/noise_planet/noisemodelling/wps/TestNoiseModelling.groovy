@@ -56,7 +56,7 @@ class TestNoiseModelling extends JdbcTestCase {
                 ])
 
 
-        assertEquals("Calculation Done ! The table LW_ROADS has been created.", res)
+        assertEquals("Calculation Done ! The table LW_RAILWAY has been created.", res)
     }
 
     @Test

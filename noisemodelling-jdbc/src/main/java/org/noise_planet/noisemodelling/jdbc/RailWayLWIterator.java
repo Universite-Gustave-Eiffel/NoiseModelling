@@ -28,6 +28,7 @@ public class RailWayLWIterator implements Iterator<RailWayLW> {
     private RailWayLWGeom railWayLWfinal = new RailWayLWGeom();
     private String tableTrain;
     private String tableTrack;
+    private int nbTrack = 1;
     private LDENConfig ldenConfig;
     private SpatialResultSet spatialResultSet;
     private int currentIdSection = -1;
@@ -62,7 +63,7 @@ public class RailWayLWIterator implements Iterator<RailWayLW> {
         return geometries;
     }
 
-    public List<Geometry> getRailWayLWGeometry(int nbTrack, double distance) {
+    public List<Geometry> getRailWayLWGeometry( double distance) {
         List<Geometry> geometries = new ArrayList<>();
 
         boolean even = false;
@@ -98,11 +99,17 @@ public class RailWayLWIterator implements Iterator<RailWayLW> {
         return railWayLWfinal.getRailWayLW();
     }
 
-    public RailWayLWIterator(Connection connection, String tableTrain, String tableTrack, LDENConfig ldenConfig) {
+    public int getRailWayLWPK() {
+        return railWayLWfinal.getPK();
+    }
+
+
+    public RailWayLWIterator(Connection connection, String tableTrain, String tableTrack, LDENConfig ldenConfig, int nbTrack) {
         this.connection = connection;
         this.tableTrain = tableTrain;
         this.tableTrack = tableTrack;
         this.ldenConfig = ldenConfig;
+        this.nbTrack = nbTrack;
     }
 
     @Override
@@ -126,6 +133,7 @@ public class RailWayLWIterator implements Iterator<RailWayLW> {
                 } else {
                     railWayLWfinal.setRailWayLW(railWayLWsum);
                     railWayLWfinal.setGeometry(spatialResultSet.getGeometry());
+                    railWayLWfinal.setPK(spatialResultSet.getInt("PK"));
                     railWayLW = getRailwayEmissionFromResultSet(spatialResultSet, "DAY");
                     railWayLWsum = railWayLW;
                     currentIdSection = spatialResultSet.getInt(1);
@@ -220,7 +228,7 @@ public class RailWayLWIterator implements Iterator<RailWayLW> {
                 typeTrain = entry.getKey();
                 vehiclePerHour = vehiclePerHour * entry.getValue();
                 RailwayVehicleParametersCnossos vehicleParameters = new RailwayVehicleParametersCnossos(typeTrain, vehicleSpeed,
-                        vehiclePerHour, rollingCondition, idlingTime);
+                        vehiclePerHour/nbTrack, rollingCondition, idlingTime);
 
                 if (i==0){
                     lWRailWay = evaluateRailwaySourceCnossos.evaluate(vehicleParameters, trackParameters);
@@ -233,7 +241,7 @@ public class RailWayLWIterator implements Iterator<RailWayLW> {
 
         }else if (evaluateRailwaySourceCnossos.isInVehicleList(typeTrain)){
             RailwayVehicleParametersCnossos vehicleParameters = new RailwayVehicleParametersCnossos(typeTrain, vehicleSpeed,
-                    vehiclePerHour, rollingCondition, idlingTime);
+                    vehiclePerHour/nbTrack, rollingCondition, idlingTime);
              lWRailWay = evaluateRailwaySourceCnossos.evaluate(vehicleParameters, trackParameters);
         }
 
@@ -245,6 +253,7 @@ public class RailWayLWIterator implements Iterator<RailWayLW> {
 class RailWayLWGeom extends RailWayLW {
     private RailWayLW railWayLW;
     private Geometry geometry;
+    private int pk;
 
     public RailWayLW getRailWayLW() {
         return railWayLW;
@@ -256,6 +265,14 @@ class RailWayLWGeom extends RailWayLW {
 
     public Geometry getGeometry() {
         return geometry;
+    }
+
+    public int getPK() {
+        return pk;
+    }
+
+    public int setPK(int pk) {
+        return this.pk;
     }
 
     public void setGeometry(Geometry geometry) {

@@ -103,11 +103,12 @@ public class LDENPointNoiseMapFactoryTest {
         LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_RAILWAY_FLOW);
         ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData());
         ldenConfig.setCoefficientVersion(2);
-        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RailTrack", "RailTrain", ldenConfig);
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN", ldenConfig,3);
         railWayLWIterator.next();
-        RailWayLW railWayLW = railWayLWIterator.getRailWayLW();
-        List<Geometry> geometries = railWayLWIterator.getRailWayLWGeometry(5,10);
-
+        if (railWayLWIterator.hasNext()) {
+            RailWayLW railWayLW = railWayLWIterator.getRailWayLW();
+            List<Geometry> geometries = railWayLWIterator.getRailWayLWGeometry( 10);
+        }
         assertTrue(railWayLWIterator.hasNext());
 
     }
