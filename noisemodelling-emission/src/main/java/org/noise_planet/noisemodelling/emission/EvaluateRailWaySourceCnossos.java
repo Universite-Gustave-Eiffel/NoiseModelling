@@ -345,10 +345,7 @@ public class EvaluateRailWaySourceCnossos {
             double[] lWAerodynamicB = evaluateLWSpectre(typeVehicle, "RefAerodynamic", runningCondition, speed, 1, spectreVer);
             // Bridge noise calcul
             double[] lWBridge = evaluateLWroughness("Bridge", typeVehicle, trackRoughnessId, impactId, bridgeId, curvature, speed, trackTransferId, spectreVer, axlesPerVeh);
-
-
             LWRailWay lWRailWay = new LWRailWay(lWRolling, lWTractionA, lWTractionB, lWAerodynamicA, lWAerodynamicB, lWBridge);
-
             return lWRailWay;
         }
     }
