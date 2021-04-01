@@ -34,7 +34,6 @@ import static org.junit.Assert.*;
 
 public class EvaluateRailWaySourceCNOSSOSTest {
     private static final double EPSILON_TEST1 = 0.0001;
-
     @Test
     public void Test_Cnossos_Rail_emission_section_1() {
         String vehCat = "SNCF-BB66400";
@@ -305,7 +304,13 @@ public class EvaluateRailWaySourceCNOSSOSTest {
         double vehicleCommercial= 120;
 
         LWRailWay lWRailWay = null;
-        double[] expectedValuesLWRolling = new double[]{98.6611,99.6116,101.4768,102.7945,100.2227,99.0975,98.5652,103.9451,105.7615,110.0754,113.8617,113.7918,113.8773,112.1487,108.7419,103.7803,106.3539,105.1058,102.996,100.5999,101.0251,100.5285,100.5494,102.1402};
+
+        double[] expectedValuesLWRolling = new double[]{-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99};
+        double[] expectedValuesLWTractionA = new double[]{-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99};
+        double[] expectedValuesLWTractionB = new double[]{-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99};
+        double[] expectedValuesLWAerodynamicA = new double[]{-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99};
+        double[] expectedValuesLWAerodynamicB = new double[]{-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99};
+        double[] expectedValuesLWBridge = new double[]{-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99};
         VehicleParametersCnossos vehicleParameters = new VehicleParametersCnossos(vehCat, vehicleSpeed,
                 tDay, tEvening, tNight, rollingCondition,idlingTime);
         TrackParametersCnossos trackParameters = new TrackParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
@@ -314,6 +319,11 @@ public class EvaluateRailWaySourceCNOSSOSTest {
 
         for (int idFreq = 0; idFreq < 24; idFreq++) {
             assertEquals(expectedValuesLWRolling[idFreq], lWRailWay.getLWRolling()[idFreq], EPSILON_TEST1);
+            assertEquals(expectedValuesLWTractionA[idFreq], lWRailWay.getLWTractionA()[idFreq], EPSILON_TEST1);
+            assertEquals(expectedValuesLWTractionB[idFreq], lWRailWay.getLWTractionB()[idFreq], EPSILON_TEST1);
+            assertEquals(expectedValuesLWAerodynamicA[idFreq], lWRailWay.getLWAerodynamicA()[idFreq], EPSILON_TEST1);
+            assertEquals(expectedValuesLWAerodynamicB[idFreq], lWRailWay.getLWAerodynamicB()[idFreq], EPSILON_TEST1);
+            assertEquals(expectedValuesLWBridge[idFreq], lWRailWay.getLWBridge()[idFreq], EPSILON_TEST1);
         }
     }
 }
