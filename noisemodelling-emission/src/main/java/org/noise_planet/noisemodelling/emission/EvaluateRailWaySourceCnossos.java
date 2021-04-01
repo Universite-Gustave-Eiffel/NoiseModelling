@@ -311,40 +311,46 @@ public class EvaluateRailWaySourceCnossos {
     * @return LWRoll / LWTraction A & B / LWAerodynamic A & B / LWBridge level in dB
     **/
     static LWRailWay evaluate(VehicleParametersCnossos vehicleParameters, TrackParametersCnossos trackParameters) {
-
         final int spectreVer = vehicleParameters.getSpectreVer();
 
         String typeVehicle = vehicleParameters.getTypeVehicle();
         double speedVehicle = vehicleParameters.getSpeedVehicle();
         int axlesPerVeh = getAxlesPerVeh(typeVehicle,spectreVer);
         int runningCondition = vehicleParameters.getRunningCondition();
-
         double speedTrack = trackParameters.getSpeedTrack();
         int trackRoughnessId = trackParameters.getRailRoughness();
         int trackTransferId = trackParameters.getTrackTransfer();
         int impactId = trackParameters.getImpactNoise();
         int bridgeId = trackParameters.getBridgeTransfert();
         int curvature = trackParameters.getCurvature();
-
         double speed = min(speedVehicle,speedTrack);
 
-        //  Rolling noise calcul
-        double[] lWRolling = evaluateLWroughness("Rolling", typeVehicle, trackRoughnessId, impactId, bridgeId, curvature, speed,trackTransferId,spectreVer,axlesPerVeh);
+        boolean isTunnel = trackParameters.getIsTunnel();
 
-        // Traction noise calcul
-        double[] lWTractionA = evaluateLWSpectre(typeVehicle,"RefTraction",runningCondition, speed, 0,spectreVer);
-         double[] lWTractionB = evaluateLWSpectre(typeVehicle,"RefTraction",runningCondition, speed, 1,spectreVer);
+        if(isTunnel==true){
+            double [] lWSpectre = new double[24];
+            for(int idFreq = 0; idFreq < 24; idFreq++) {
+                lWSpectre[idFreq] =-99;
+            }
+            LWRailWay lWRailWay = new LWRailWay(lWSpectre, lWSpectre, lWSpectre, lWSpectre, lWSpectre, lWSpectre);
+            return lWRailWay;
+        }else {
+            //  Rolling noise calcul
+            double[] lWRolling = evaluateLWroughness("Rolling", typeVehicle, trackRoughnessId, impactId, bridgeId, curvature, speed, trackTransferId, spectreVer, axlesPerVeh);
+            // Traction noise calcul
+            double[] lWTractionA = evaluateLWSpectre(typeVehicle, "RefTraction", runningCondition, speed, 0, spectreVer);
+            double[] lWTractionB = evaluateLWSpectre(typeVehicle, "RefTraction", runningCondition, speed, 1, spectreVer);
+            // Aerodynamic noise calcul
+            double[] lWAerodynamicA = evaluateLWSpectre(typeVehicle, "RefAerodynamic", runningCondition, speed, 0, spectreVer);
+            double[] lWAerodynamicB = evaluateLWSpectre(typeVehicle, "RefAerodynamic", runningCondition, speed, 1, spectreVer);
+            // Bridge noise calcul
+            double[] lWBridge = evaluateLWroughness("Bridge", typeVehicle, trackRoughnessId, impactId, bridgeId, curvature, speed, trackTransferId, spectreVer, axlesPerVeh);
 
-        // Aerodynamic noise calcul
-        double[] lWAerodynamicA = evaluateLWSpectre(typeVehicle,"RefAerodynamic",runningCondition, speed, 0,spectreVer);
-        double[] lWAerodynamicB = evaluateLWSpectre(typeVehicle,"RefAerodynamic",runningCondition, speed, 1,spectreVer);
 
-        // Bridge noise calcul
-        double[] lWBridge = evaluateLWroughness("Bridge", typeVehicle, trackRoughnessId, impactId, bridgeId, curvature, speed,trackTransferId,spectreVer,axlesPerVeh);
+            LWRailWay lWRailWay = new LWRailWay(lWRolling, lWTractionA, lWTractionB, lWAerodynamicA, lWAerodynamicB, lWBridge);
 
-
-        LWRailWay lWRailWay= new LWRailWay(lWRolling, lWTractionA,lWTractionB, lWAerodynamicA,lWAerodynamicB,lWBridge);
-        return lWRailWay;
+            return lWRailWay;
+        }
     }
 
     /**
