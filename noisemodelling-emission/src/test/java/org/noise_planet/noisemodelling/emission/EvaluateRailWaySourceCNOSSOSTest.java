@@ -131,7 +131,7 @@ public class EvaluateRailWaySourceCNOSSOSTest {
         int trackTransfer = 7;
         int railRoughness = 3;
         int impactNoise = 1;
-        int bridgeTrasnfert = 0;
+        int bridgeTrasnfert = 3;
         int curvature = 0;
         boolean isTunnel = false;
 
@@ -141,6 +141,8 @@ public class EvaluateRailWaySourceCNOSSOSTest {
         LWRailWay lWRailWay = null;
 
         double[] expectedValuesLWRolling = new double[]{98.6704,99.6343,101.5298,102.8865,100.3316,99.6011,100.4072,105.7262,107.2207,108.4848,109.4223,110.1035,111.8706,111.4956,108.5828,104.2152,106.5525,105.2982,103.1594,100.7729,101.1764,100.6417,100.6287,102.1869};
+        double[] expectedValuesLWBridge = new double[]{108.4579,109.4015,111.344,112.4959,111.1415,110.9017,105.8236,109.7833,111.592,115.0733,116.7548,116.8658,117.8667,116.2709,113.2686,102.3774,96.9285,95.8390,85.6001,75.2583,70.6990,62.9177,57.9386,54.5294};
+
         VehicleParametersCnossos vehicleParameters = new VehicleParametersCnossos(vehCat, vehicleSpeed,
                 tDay, tEvening, tNight, rollingCondition,idlingTime);
         TrackParametersCnossos trackParameters = new TrackParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
@@ -149,13 +151,14 @@ public class EvaluateRailWaySourceCNOSSOSTest {
 
         for (int idFreq = 0; idFreq < 24; idFreq++) {
             assertEquals(expectedValuesLWRolling[idFreq], lWRailWay.getLWRolling()[idFreq], EPSILON_TEST1);
+            assertEquals(expectedValuesLWBridge[idFreq], lWRailWay.getLWBridge()[idFreq], EPSILON_TEST1);
         }
     }
     @Test
     public void Test_Cnossos_Rail_emission_section_4() {
         String vehCat = "SNCF-BB66400";
 
-        double vehicleSpeed = 80;
+        double vehicleSpeed = 220;
         double tDay = 0.4;
         double tEvening = 0.3;
         double tNight = 0.25;
@@ -170,11 +173,19 @@ public class EvaluateRailWaySourceCNOSSOSTest {
         int curvature = 0;
         boolean isTunnel = false;
 
-        double vMaxInfra = 160;
-        double vehicleCommercial= 120;
+        double vMaxInfra = 200;
+        double vehicleCommercial= 200;
 
         LWRailWay lWRailWay = null;
-        double[] expectedValuesLWRolling = new double[]{98.6611,99.6116,101.4768,102.7945,100.2227,99.0975,98.5652,103.9451,105.7615,110.0754,113.8617,113.7918,113.8773,112.1487,108.7419,103.7803,106.3539,105.1058,102.996,100.5999,101.0251,100.5285,100.5494,102.1402};
+        double[] expectedValuesLWRolling = new double[]{98.66110,100.5681,104.3908,107.5565,106.7391,106.4557,105.5468,109.3204,108.2763,109.2614,111.1101,112.5186,117.3340,121.3800,123.5189,122.9000,126.9115,122.9414,117.8516,111.8003,107.3142,105.8263,103.9313,102.2640};
+        double[] expectedValuesLWTractionA = new double[]{98.8613,94.7613,92.5613,94.5613,92.7613,92.7613,92.9613,94.7613,94.5613,95.6613,95.5613,98.5613,95.1613,95.0613,95.0613,94.0613,94.0613,99.3613,92.4613,89.4613,86.9613,84.0613,81.4613,79.1613};
+        double[] expectedValuesLWTractionB = new double[]{103.1613,99.96130,95.46130,93.96130,93.26130,93.56130,92.86130,92.66130,92.36130,92.76130,92.76130,96.76130,92.66130,92.96130,92.86130,93.06130,93.16130,98.26130,91.46130,88.66130,85.96130,83.36130,80.86130,78.6613};
+        double[] expectedValuesLWAerodynamicA = new double[]{103.7732,104.3619,106.8712,108.5805,106.4589,106.1681,106.0774,107.5763,107.0650,107.4712,107.3712,106.3712,106.9712,106.8712,106.8712,105.8712,105.8712,106.1712,105.7403,104.2867,103.2811,101.8249,100.7712,100.0176};
+        double[] expectedValuesLWAerodynamicB = new double[]{27.9057,29.7057,30.2057,28.7057,28.0057,28.30570,27.60570,27.40570,27.10570,27.5057,27.5057,27.5057,27.4057,27.7057,27.6057,96.4057,101.5057,101.6057,96.80570,28.40570,28.70570,29.10570,29.60570,30.4057};
+        double[] expectedValuesLWBridge = new double[]{-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99};
+
+
+
         VehicleParametersCnossos vehicleParameters = new VehicleParametersCnossos(vehCat, vehicleSpeed,
                 tDay, tEvening, tNight, rollingCondition,idlingTime);
         TrackParametersCnossos trackParameters = new TrackParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
@@ -183,6 +194,11 @@ public class EvaluateRailWaySourceCNOSSOSTest {
 
         for (int idFreq = 0; idFreq < 24; idFreq++) {
             assertEquals(expectedValuesLWRolling[idFreq], lWRailWay.getLWRolling()[idFreq], EPSILON_TEST1);
+            assertEquals(expectedValuesLWTractionA[idFreq], lWRailWay.getLWTractionA()[idFreq], EPSILON_TEST1);
+            assertEquals(expectedValuesLWTractionB[idFreq], lWRailWay.getLWTractionB()[idFreq], EPSILON_TEST1);
+            assertEquals(expectedValuesLWAerodynamicA[idFreq], lWRailWay.getLWAerodynamicA()[idFreq], EPSILON_TEST1);
+            assertEquals(expectedValuesLWAerodynamicB[idFreq], lWRailWay.getLWAerodynamicB()[idFreq], EPSILON_TEST1);
+            assertEquals(expectedValuesLWBridge[idFreq], lWRailWay.getLWBridge()[idFreq], EPSILON_TEST1);
         }
     }
     @Test
