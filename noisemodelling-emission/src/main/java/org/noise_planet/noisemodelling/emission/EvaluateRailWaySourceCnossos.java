@@ -211,9 +211,8 @@ public class EvaluateRailWaySourceCnossos {
     }
     public static Double getLRoughness(String typeVehicle, int trackRoughnessId, int spectreVer, int idLambda) { //
         double wheelRoughness = getLambdaValue(typeVehicle, "RefRoughness",spectreVer, idLambda);
-        double contactFilter = getLambdaValue(typeVehicle, "RefContact",spectreVer, idLambda);
         double trackRoughness = getTrackRoughness(trackRoughnessId, spectreVer, idLambda);
-        return 10 * Math.log10(Math.pow(10,wheelRoughness/10) + Math.pow(10,trackRoughness/10) ) + contactFilter;
+        return 10 * Math.log10(Math.pow(10,wheelRoughness/10) + Math.pow(10,trackRoughness/10));
     }
 
     private static double[] checkNanValue(double[] roughnessLtot) {
@@ -450,7 +449,9 @@ public class EvaluateRailWaySourceCnossos {
      **/
     private static double[] evaluateRoughnessLtotFreq(String typeVehicle, int trackRoughnessId,int impactId, double speed, int spectreVer) {
 
-        double[] roughnessLtotLambda = new double[35];
+        double[] roughnessTotLambda = new double[35];
+        double[] roughnessLTot = new double[35];
+        double[] contactFilter = new double[35];
         double[] lambdaToFreqLog= new double[35];
         double[] freqMedLog = new double[24];
         double[] Lambda = new double[35];
@@ -460,17 +461,21 @@ public class EvaluateRailWaySourceCnossos {
             Lambda[idLambda]= Math.pow(10,m/10);
             lambdaToFreqLog[idLambda] = Math.log10(speed/Lambda[idLambda]*1000/3.6);
 
-            roughnessLtotLambda[idLambda]= Math.pow(10,getLRoughness(typeVehicle, trackRoughnessId,spectreVer, idLambda)/10);
+            roughnessTotLambda[idLambda]= Math.pow(10,getLRoughness(typeVehicle, trackRoughnessId,spectreVer, idLambda)/10);
             if(impactId!=0) {
-                roughnessLtotLambda[idLambda] = roughnessLtotLambda[idLambda] + Math.pow(10, getImpactNoise(impactId, spectreVer, idLambda) / 10);
+                roughnessTotLambda[idLambda] = roughnessTotLambda[idLambda] + Math.pow(10, getImpactNoise(impactId, spectreVer, idLambda) / 10);
             }
+
+            contactFilter[idLambda] = getLambdaValue(typeVehicle, "RefContact",spectreVer, idLambda);
+            roughnessLTot[idLambda] = 10*Math.log10(roughnessLTot[idLambda])+contactFilter[idLambda];
+            roughnessLTot[idLambda] = Math.pow(10,roughnessLTot[idLambda]/10);
             m --;
         }
         for(int idFreqMed = 0; idFreqMed < 24; idFreqMed++){
             freqMedLog[idFreqMed]= Math.log10(Math.pow(10,(17+Double.valueOf(idFreqMed))/10));
         }
 
-        double[] roughnessLtotFreq = interpLinear(lambdaToFreqLog, roughnessLtotLambda, freqMedLog);
+        double[] roughnessLtotFreq = interpLinear(lambdaToFreqLog, roughnessLTot, freqMedLog);
 
         for(int idRoughnessLtotFreq = 0; idRoughnessLtotFreq < 24; idRoughnessLtotFreq++){
             roughnessLtotFreq[idRoughnessLtotFreq]= 10*Math.log10(roughnessLtotFreq[idRoughnessLtotFreq]);
