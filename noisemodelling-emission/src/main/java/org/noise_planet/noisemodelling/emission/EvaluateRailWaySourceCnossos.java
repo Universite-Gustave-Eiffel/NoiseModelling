@@ -450,7 +450,7 @@ public class EvaluateRailWaySourceCnossos {
     private static double[] evaluateRoughnessLtotFreq(String typeVehicle, int trackRoughnessId,int impactId, double speed, int spectreVer) {
 
         double[] roughnessTotLambda = new double[35];
-        double[] roughnessLTot = new double[35];
+        double[] roughnessLtot = new double[35];
         double[] contactFilter = new double[35];
         double[] lambdaToFreqLog= new double[35];
         double[] freqMedLog = new double[24];
@@ -467,15 +467,15 @@ public class EvaluateRailWaySourceCnossos {
             }
 
             contactFilter[idLambda] = getLambdaValue(typeVehicle, "RefContact",spectreVer, idLambda);
-            roughnessLTot[idLambda] = 10*Math.log10(roughnessLTot[idLambda])+contactFilter[idLambda];
-            roughnessLTot[idLambda] = Math.pow(10,roughnessLTot[idLambda]/10);
+            roughnessLtot[idLambda] = 10*Math.log10(roughnessTotLambda[idLambda])+contactFilter[idLambda];
+            roughnessLtot[idLambda] = Math.pow(10,roughnessLtot[idLambda]/10);
             m --;
         }
         for(int idFreqMed = 0; idFreqMed < 24; idFreqMed++){
             freqMedLog[idFreqMed]= Math.log10(Math.pow(10,(17+Double.valueOf(idFreqMed))/10));
         }
 
-        double[] roughnessLtotFreq = interpLinear(lambdaToFreqLog, roughnessLTot, freqMedLog);
+        double[] roughnessLtotFreq = interpLinear(lambdaToFreqLog, roughnessLtot, freqMedLog);
 
         for(int idRoughnessLtotFreq = 0; idRoughnessLtotFreq < 24; idRoughnessLtotFreq++){
             roughnessLtotFreq[idRoughnessLtotFreq]= 10*Math.log10(roughnessLtotFreq[idRoughnessLtotFreq]);

@@ -52,6 +52,7 @@ public class EvaluateRailWaySourceCNOSSOSTest {
         int impactNoise = 1;
         int bridgeTrasnfert = 0;
         int curvature = 0;
+        boolean isTunnel = false;
 
         double vMaxInfra = 160;
         double vehicleCommercial= 120;
@@ -68,7 +69,7 @@ public class EvaluateRailWaySourceCNOSSOSTest {
         VehicleParametersCnossos vehicleParameters = new VehicleParametersCnossos(vehCat, vehicleSpeed,
                 tDay, tEvening, tNight, rollingCondition,idlingTime);
         TrackParametersCnossos trackParameters = new TrackParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
-                impactNoise, bridgeTrasnfert, curvature, vehicleCommercial,false,1);
+                impactNoise, bridgeTrasnfert, curvature, vehicleCommercial,isTunnel, nTracks);
         lWRailWay = EvaluateRailWaySourceCnossos.evaluate(vehicleParameters, trackParameters);
 
         for (int idFreq = 0; idFreq < 24; idFreq++) {
@@ -98,6 +99,7 @@ public class EvaluateRailWaySourceCNOSSOSTest {
         int impactNoise = 3;
         int bridgeTrasnfert = 0;
         int curvature = 0;
+        boolean isTunnel = false;
 
         double vMaxInfra = 160;
         double vehicleCommercial= 120;
@@ -108,7 +110,7 @@ public class EvaluateRailWaySourceCNOSSOSTest {
         VehicleParametersCnossos vehicleParameters = new VehicleParametersCnossos(vehCat, vehicleSpeed,
                 tDay, tEvening, tNight, rollingCondition,idlingTime);
         TrackParametersCnossos trackParameters = new TrackParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
-                impactNoise, bridgeTrasnfert, curvature, vehicleCommercial,false,1);
+                impactNoise, bridgeTrasnfert, curvature, vehicleCommercial,isTunnel, nTracks);
         lWRailWay = EvaluateRailWaySourceCnossos.evaluate(vehicleParameters, trackParameters);
 
         for (int idFreq = 0; idFreq < 24; idFreq++) {
@@ -132,6 +134,7 @@ public class EvaluateRailWaySourceCNOSSOSTest {
         int impactNoise = 1;
         int bridgeTrasnfert = 0;
         int curvature = 0;
+        boolean isTunnel = false;
 
         double vMaxInfra = 160;
         double vehicleCommercial= 120;
@@ -142,7 +145,7 @@ public class EvaluateRailWaySourceCNOSSOSTest {
         VehicleParametersCnossos vehicleParameters = new VehicleParametersCnossos(vehCat, vehicleSpeed,
                 tDay, tEvening, tNight, rollingCondition,idlingTime);
         TrackParametersCnossos trackParameters = new TrackParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
-                impactNoise, bridgeTrasnfert, curvature, vehicleCommercial,false,1);
+                impactNoise, bridgeTrasnfert, curvature, vehicleCommercial,isTunnel, nTracks);
         lWRailWay = EvaluateRailWaySourceCnossos.evaluate(vehicleParameters, trackParameters);
 
         for (int idFreq = 0; idFreq < 24; idFreq++) {
@@ -166,6 +169,7 @@ public class EvaluateRailWaySourceCNOSSOSTest {
         int impactNoise = 1;
         int bridgeTrasnfert = 0;
         int curvature = 0;
+        boolean isTunnel = false;
 
         double vMaxInfra = 160;
         double vehicleCommercial= 120;
@@ -175,7 +179,7 @@ public class EvaluateRailWaySourceCNOSSOSTest {
         VehicleParametersCnossos vehicleParameters = new VehicleParametersCnossos(vehCat, vehicleSpeed,
                 tDay, tEvening, tNight, rollingCondition,idlingTime);
         TrackParametersCnossos trackParameters = new TrackParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
-                impactNoise, bridgeTrasnfert, curvature, vehicleCommercial,false,1);
+                impactNoise, bridgeTrasnfert, curvature, vehicleCommercial,isTunnel, nTracks);
         lWRailWay = EvaluateRailWaySourceCnossos.evaluate(vehicleParameters, trackParameters);
 
         for (int idFreq = 0; idFreq < 24; idFreq++) {
@@ -218,12 +222,13 @@ public class EvaluateRailWaySourceCNOSSOSTest {
         int impactNoise = 1;
         int bridgeTrasnfert = 0;
         int curvature = 0;
+        boolean isTunnel = false;
 
         double vMaxInfra = 160;
         double vehicleCommercial = 120;
 
         TrackParametersCnossos trackParameters = new TrackParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
-                impactNoise, bridgeTrasnfert, curvature, vehicleCommercial, false, 1);
+                impactNoise, bridgeTrasnfert, curvature, vehicleCommercial, isTunnel, nTracks);
 
         double[] expectedValuesLWRolling;
         double[] expectedValuesLWRolling1 = new double[]{97.1163,95.9284,97.6691,99.2991,97.1440,97.4508,99.2167,105.2093,107.0484,108.4798,109.5263,110.2781,112.0743,111.6404,108.6516,104.1867,106.4632,105.1549,102.952,100.4917,100.9441,100.4491,100.4702,102.0818};
@@ -276,5 +281,39 @@ public class EvaluateRailWaySourceCNOSSOSTest {
             }
         }
 
+    }
+    @Test
+    public void Test_Cnossos_Rail_emission_section_6() {
+        String vehCat = "SNCF-BB66400";
+
+        double vehicleSpeed = 80;
+        double tDay = 0.4;
+        double tEvening = 0.3;
+        double tNight = 0.25;
+        int rollingCondition = 0;
+        double idlingTime = 0;
+
+        int nTracks=2;
+        int trackTransfer = 7;
+        int railRoughness = 3;
+        int impactNoise = 1;
+        int bridgeTrasnfert = 0;
+        int curvature = 0;
+        boolean isTunnel = true;
+
+        double vMaxInfra = 160;
+        double vehicleCommercial= 120;
+
+        LWRailWay lWRailWay = null;
+        double[] expectedValuesLWRolling = new double[]{98.6611,99.6116,101.4768,102.7945,100.2227,99.0975,98.5652,103.9451,105.7615,110.0754,113.8617,113.7918,113.8773,112.1487,108.7419,103.7803,106.3539,105.1058,102.996,100.5999,101.0251,100.5285,100.5494,102.1402};
+        VehicleParametersCnossos vehicleParameters = new VehicleParametersCnossos(vehCat, vehicleSpeed,
+                tDay, tEvening, tNight, rollingCondition,idlingTime);
+        TrackParametersCnossos trackParameters = new TrackParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
+                impactNoise, bridgeTrasnfert, curvature, vehicleCommercial,isTunnel,nTracks);
+        lWRailWay = EvaluateRailWaySourceCnossos.evaluate(vehicleParameters, trackParameters);
+
+        for (int idFreq = 0; idFreq < 24; idFreq++) {
+            assertEquals(expectedValuesLWRolling[idFreq], lWRailWay.getLWRolling()[idFreq], EPSILON_TEST1);
+        }
     }
 }
