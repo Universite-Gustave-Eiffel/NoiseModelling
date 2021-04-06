@@ -1,5 +1,6 @@
 package org.noise_planet.noisemodelling.pathfinder.utils;
 
+import org.locationtech.jts.algorithm.Angle;
 import org.locationtech.jts.algorithm.Orientation;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.math.Vector2D;
@@ -28,16 +29,19 @@ public class MakeParallelLines {
             Coordinate b = points[i];
             Coordinate c = points[i+1];
 
-            Coordinate p = Triangle.angleBisector(a, b, c);
-            Vector2D bi = Vector2D.create(b, p).normalize().multiply(distance);
-
-            // Test if the interior point is on exterior of triangle
-            if(!Orientation.isCCW(new Coordinate[]{a, b, c, a})) {
-                bi = bi.multiply(-1);
+            if(Math.abs(Angle.angleBetween(a, b, c) - Math.PI) < 1e-12) {
+                // Collinear
+                newPoints.add(new LineSegment(b, c).pointAlongOffset(0, distance));
+            } else {
+                Coordinate p = Triangle.angleBisector(a, b, c);
+                Vector2D bi = Vector2D.create(b, p).normalize().multiply(distance);
+                // Test if the interior point is on exterior of triangle
+                if (!Orientation.isCCW(new Coordinate[]{a, b, c, a})) {
+                    bi = bi.multiply(-1);
+                }
+                Coordinate splitPt = Vector2D.create(b).add(bi).toCoordinate();
+                newPoints.add(splitPt);
             }
-
-            Coordinate splitPt = Vector2D.create(b).add(bi).toCoordinate();
-            newPoints.add(splitPt);
         }
 
         // Last point is perpendicular to last segment

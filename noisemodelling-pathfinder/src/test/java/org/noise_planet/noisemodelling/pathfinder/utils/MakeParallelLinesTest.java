@@ -11,7 +11,7 @@ public class MakeParallelLinesTest {
     @Test
     public void makeParallelLine() throws ParseException {
         WKTReader wktReader  = new WKTReader();
-        LineString line = (LineString)wktReader.read("LINESTRING(-1 0,3 4,-2 8,4 12,12 5)");
+        LineString line = (LineString)wktReader.read("LINESTRING(0 0,5 0,10 0)");
 
         LineString line2 = MakeParallelLines.MakeParallelLine(line, 0.1);
 
