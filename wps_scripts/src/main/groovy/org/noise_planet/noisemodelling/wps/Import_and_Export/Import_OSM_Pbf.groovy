@@ -246,7 +246,7 @@ def exec(Connection connection, input) {
 
     if (!ignoreRoads) {
         sql.execute("DROP TABLE IF EXISTS ROADS")
-        sql.execute("create table ROADS (PK serial, ID_WAY integer, THE_GEOM geometry, TV_D integer, TV_E integer,TV_N integer,HV_D integer,HV_E integer,HV_N integer,LV_SPD_D integer,LV_SPD_E integer,LV_SPD_N integer,HV_SPD_D integer, HV_SPD_E integer,HV_SPD_N integer, PVMT varchar(10));")
+        sql.execute("create table ROADS (PK serial, ID_WAY integer, THE_GEOM geometry, LV_D integer, LV_E integer,LV_N integer,HV_D integer,HV_E integer,HV_N integer,LV_SPD_D integer,LV_SPD_E integer,LV_SPD_N integer,HV_SPD_D integer, HV_SPD_E integer,HV_SPD_N integer, PVMT varchar(10));")
 
         for (Road road: handler.roads) {
             if (road.geom.isEmpty()) {
