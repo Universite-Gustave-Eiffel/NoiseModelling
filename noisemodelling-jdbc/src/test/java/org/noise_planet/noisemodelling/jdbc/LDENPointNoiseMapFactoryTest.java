@@ -11,7 +11,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.GeometryCollection;
 import org.noise_planet.noisemodelling.emission.RailWayLW;
 import org.noise_planet.noisemodelling.pathfinder.IComputeRaysOut;
 import org.noise_planet.noisemodelling.pathfinder.RootProgressVisitor;
@@ -100,15 +100,17 @@ public class LDENPointNoiseMapFactoryTest {
         SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("RailTrack.shp").getFile());
         DBFRead.read(connection, LDENPointNoiseMapFactoryTest.class.getResource("RailTrain.dbf").getFile());
 
+
         LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_RAILWAY_FLOW);
         ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData());
         ldenConfig.setCoefficientVersion(2);
-        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN", ldenConfig,3);
-        railWayLWIterator.next();
-        if (railWayLWIterator.hasNext()) {
-            RailWayLW railWayLW = railWayLWIterator.getRailWayLW();
-            List<Geometry> geometries = railWayLWIterator.getRailWayLWGeometry( 10);
-        }
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN", ldenConfig,5);
+
+        assertNotNull(railWayLWIterator.next());
+
+        RailWayLW railWayLW = railWayLWIterator.getRailWayLW();
+        List<GeometryCollection> geometries = railWayLWIterator.getRailWayLWGeometry( 10);
+
         assertTrue(railWayLWIterator.hasNext());
 
     }

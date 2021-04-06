@@ -100,6 +100,7 @@ def run(input) {
 
 // main function of the script
 def exec(Connection connection, input) {
+    System.out.println('sdvsdvsdvsdvsdv sd vdsv  sdvsd v sdvs dvsd  sd sdsd v')
 
     //Load GeneralTools.groovy
     File generalTools = new File(new File("").absolutePath+"/data_dir/scripts/wpsTools/GeneralTools.groovy")
@@ -213,15 +214,22 @@ def exec(Connection connection, input) {
     int k = 0
     int currentVal = 0
 
+    System.println('sdfbsdbfdsfICI.')
     RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,sources_geom_table_name, sources_table_traffic_name, ldenConfig, 5)
+    System.println('LA.')
+
+
     while(railWayLWIterator.next()!=null){
+
+        System.println('LA.')
+
         RailWayLW railWayLW = railWayLWIterator.getRailWayLW()
         List<Geometry> geometries = railWayLWIterator.getRailWayLWGeometry(10)
-       // int pk = railWayLWIterator.getPK()
+        int pk = railWayLWIterator.getPK()
 
-        sql.withBatch(100, qry00) { ps ->
+       /* sql.withBatch(100, qry00) { ps ->
             ps.addBatch(
-                    1 as int, geometries.get(1) as Geometry, 1 as int,
+                    1 as int, (Geometry) geometries.get(1) as Geometry, 1 as int,
                     railWayLW.getLWRolling()[0] ,railWayLW.getLWRolling()[1],railWayLW.getLWRolling()[2],railWayLW.getLWRolling()[3],
                     railWayLW.getLWRolling()[4],railWayLW.getLWRolling()[5],railWayLW.getLWRolling()[6],railWayLW.getLWRolling()[7],
                     railWayLW.getLWRolling()[8],railWayLW.getLWRolling()[9],railWayLW.getLWRolling()[10],railWayLW.getLWRolling()[11],
@@ -242,9 +250,9 @@ def exec(Connection connection, input) {
                     railWayLW.getLWRolling()[12],railWayLW.getLWRolling()[13],railWayLW.getLWRolling()[14],railWayLW.getLWRolling()[15],
                     railWayLW.getLWRolling()[16],railWayLW.getLWRolling()[17],railWayLW.getLWRolling()[18],railWayLW.getLWRolling()[19],
                     railWayLW.getLWRolling()[20],railWayLW.getLWRolling()[21],railWayLW.getLWRolling()[22]
-            );
+            )
 
-        }
+        }*/
 
     }
 
