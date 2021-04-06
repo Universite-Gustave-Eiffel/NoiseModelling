@@ -22,6 +22,7 @@ import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.SFSUtilities
 import org.h2gis.utilities.TableLocation
 import org.slf4j.Logger
@@ -111,12 +112,25 @@ def exec(Connection connection, input) {
     if (srid == 3785 || srid == 4326) throw new IllegalArgumentException("Error : This SRID is not metric. Please use another SRID for your table.")
     if (srid == 0) throw new IllegalArgumentException("Error : The table does not have an associated SRID.")
 
+
+    Boolean hasPop = JDBCUtilities.hasField(connection, building_table_name, "POP")
+    String popField = ""
+    String popFieldDef = ""
+    if (hasPop) {
+        logger.info("The building table has a column named POP.")
+        popField = ", POP"
+        popFieldDef = ", POP REAL"
+    }
+    if (!hasPop) {
+        logger.info("The building table has not a column named POP.")
+    }
+
     // -------------------------
     // Initialize some variables
     // -------------------------
 
     sql.execute('drop table if exists buildings_temp;' +
-            'create table buildings_temp as select ST_MAKEVALID(ST_SIMPLIFYPRESERVETOPOLOGY(ST_precisionreducer(THE_GEOM,2),0.1)) THE_GEOM, PK, HEIGHT from '+building_table_name+'  WHERE ST_Perimeter(THE_GEOM)<1000;')
+            'create table buildings_temp as select ST_MAKEVALID(ST_SIMPLIFYPRESERVETOPOLOGY(ST_precisionreducer(THE_GEOM,2),0.1)) THE_GEOM, PK, HEIGHT '+popField+' from '+building_table_name+'  WHERE ST_Perimeter(THE_GEOM)<1000;')
 
     logger.info('Make valid every buildings - ok')
 
@@ -128,14 +142,18 @@ def exec(Connection connection, input) {
 
     logger.info('Intersection founded')
 
+    String fieldPopS1 = "";
+    if(hasPop) {
+        fieldPopS1 = ", s1.POP"
+    }
     sql.execute("CREATE INDEX ON tmp_relation_buildings(PK_BUILDING);" +
             "drop table if exists tmp_buildings_truncated;" +
-            "create table tmp_buildings_truncated as select PK_BUILDING, ST_DIFFERENCE(s1.the_geom,  ST_BUFFER(ST_ACCUM(s2.the_geom), 0.1, 'join=mitre')) the_geom, s1.HEIGHT from tmp_relation_buildings r, buildings_temp s1, buildings_temp s2 WHERE PK_BUILDING = S1.PK  AND PK2_BUILDING = S2.PK   GROUP BY PK_BUILDING;")
+            "create table tmp_buildings_truncated as select PK_BUILDING, ST_DIFFERENCE(s1.the_geom,  ST_BUFFER(ST_ACCUM(s2.the_geom), 0.1, 'join=mitre')) the_geom, s1.HEIGHT "+fieldPopS1+" from tmp_relation_buildings r, buildings_temp s1, buildings_temp s2 WHERE PK_BUILDING = S1.PK  AND PK2_BUILDING = S2.PK   GROUP BY PK_BUILDING;")
 
     logger.info('Intersection remove buildings with intersections')
 
     sql.execute("DROP TABLE IF EXISTS "+building_table_name+";")
-    sql.execute("create table "+building_table_name+"(PK INTEGER PRIMARY KEY, THE_GEOM GEOMETRY, HEIGHT FLOAT)  as select s.PK, ST_SetSRID(s.the_geom,"+srid+"), s.HEIGHT from  BUILDINGS_TEMP s where PK not in (select PK_BUILDING from tmp_buildings_truncated) UNION ALL select PK_BUILDING, ST_SetSRID(the_geom,"+srid+"), HEIGHT from tmp_buildings_truncated WHERE NOT st_isempty(the_geom);")
+    sql.execute("create table "+building_table_name+"(PK INTEGER PRIMARY KEY, THE_GEOM GEOMETRY, HEIGHT FLOAT "+popFieldDef+")  as select s.PK, ST_SetSRID(s.the_geom,"+srid+"), s.HEIGHT "+popField+" from  BUILDINGS_TEMP s where PK not in (select PK_BUILDING from tmp_buildings_truncated) UNION ALL select PK_BUILDING, ST_SetSRID(the_geom,"+srid+"), HEIGHT "+popField+" from tmp_buildings_truncated WHERE NOT st_isempty(the_geom);")
 
     logger.info('Create spatial index on new building table')
     sql.execute('CREATE SPATIAL INDEX ON '+building_table_name+'(the_geom);')
