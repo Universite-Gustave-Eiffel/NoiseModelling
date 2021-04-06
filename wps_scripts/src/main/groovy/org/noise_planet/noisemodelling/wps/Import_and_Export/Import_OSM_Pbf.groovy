@@ -88,9 +88,9 @@ inputs = [
                 description: 'If the box is checked, the table ROADS will NOT be extracted. ' +
                         "<br>  The table will contain : </br>" +
                         "- <b> PK </b> : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY)<br/>" +
-                        "- <b> TV_D </b> : Hourly average light and heavy vehicle count (6-18h) (DOUBLE)<br/>" +
-                        "- <b>TV_E </b> :  Hourly average light and heavy vehicle count (18-22h) (DOUBLE)<br/>" +
-                        "- <b> TV_N </b> :  Hourly average light and heavy vehicle count (22-6h) (DOUBLE)<br/>" +
+                        "- <b> LV_D </b> : Hourly average light and heavy vehicle count (6-18h) (DOUBLE)<br/>" +
+                        "- <b> LV_E </b> :  Hourly average light and heavy vehicle count (18-22h) (DOUBLE)<br/>" +
+                        "- <b> LV_N </b> :  Hourly average light and heavy vehicle count (22-6h) (DOUBLE)<br/>" +
                         "- <b> HV_D </b> :  Hourly average heavy vehicle count (6-18h) (DOUBLE)<br/>" +
                         "- <b> HV_E </b> :  Hourly average heavy vehicle count (18-22h) (DOUBLE)<br/>" +
                         "- <b> HV_N </b> :  Hourly average heavy vehicle count (22-6h) (DOUBLE)<br/>" +
@@ -254,7 +254,7 @@ def exec(Connection connection, input) {
             }
             String query = 'INSERT INTO ROADS(ID_WAY, ' +
                     'THE_GEOM, ' +
-                    'TV_D, TV_E, TV_N, ' +
+                    'LV_D, LV_E, LV_N, ' +
                     'HV_D, HV_E, HV_N, ' +
                     'LV_SPD_D, LV_SPD_E, LV_SPD_N, ' +
                     'HV_SPD_D, HV_SPD_E, HV_SPD_N, ' +
