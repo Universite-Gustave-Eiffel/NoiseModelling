@@ -1,4 +1,4 @@
-package org.noise_planet.noisemodelling.pathfinder.utils;
+package org.noise_planet.noisemodelling.jdbc;
 
 import org.junit.Test;
 import org.locationtech.jts.geom.GeometryFactory;

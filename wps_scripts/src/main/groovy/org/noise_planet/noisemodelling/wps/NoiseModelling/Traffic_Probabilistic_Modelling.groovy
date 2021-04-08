@@ -29,13 +29,6 @@ import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
 
-import org.noise_planet.noisemodelling.emission.*
-import org.noise_planet.noisemodelling.pathfinder.*
-import org.noise_planet.noisemodelling.propagation.*
-import org.noise_planet.noisemodelling.jdbc.*
-import org.noise_planet.noisemodelling.propagation.ComputeRaysOut
-
-
 import java.sql.Connection
 import java.sql.SQLException
 

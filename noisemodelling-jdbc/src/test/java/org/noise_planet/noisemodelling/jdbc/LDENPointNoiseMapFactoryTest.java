@@ -11,7 +11,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.GeometryCollection;
+import org.locationtech.jts.geom.LineString;
 import org.noise_planet.noisemodelling.emission.RailWayLW;
 import org.noise_planet.noisemodelling.pathfinder.IComputeRaysOut;
 import org.noise_planet.noisemodelling.pathfinder.RootProgressVisitor;
@@ -109,7 +109,7 @@ public class LDENPointNoiseMapFactoryTest {
         assertNotNull(railWayLWIterator.next());
 
         RailWayLW railWayLW = railWayLWIterator.getRailWayLW();
-        List<GeometryCollection> geometries = railWayLWIterator.getRailWayLWGeometry( 10);
+        List<LineString> geometries = railWayLWIterator.getRailWayLWGeometry( 10);
 
         assertTrue(railWayLWIterator.hasNext());
 

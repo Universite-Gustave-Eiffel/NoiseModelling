@@ -1,14 +1,10 @@
 package org.noise_planet.noisemodelling.jdbc;
 
-import org.h2gis.functions.spatial.convert.GeometryCoordinateDimension;
 import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SpatialResultSet;
-import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryCollection;
 import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.operation.buffer.BufferOp;
-import org.locationtech.jts.operation.buffer.BufferParameters;
+import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.operation.linemerge.LineMerger;
 import org.noise_planet.noisemodelling.emission.EvaluateRailwaySourceCnossos;
 import org.noise_planet.noisemodelling.emission.RailWayLW;
@@ -20,6 +16,9 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
+
+import static org.noise_planet.noisemodelling.jdbc.MakeParallelLines.MakeParallelLine;
+
 
 
 public class RailWayLWIterator implements Iterator<RailWayLW> {
@@ -36,58 +35,33 @@ public class RailWayLWIterator implements Iterator<RailWayLW> {
     private int currentIdSection = -1;
 
     public Map<String, Integer> sourceFields = null;
+    GeometryFactory geometryFactory = new GeometryFactory();
 
-    public List<GeometryCollection> getParrallelLines(Coordinate[] coordinates){
-        GeometryFactory geometryFactory = new GeometryFactory();
 
-        LineMerger plLinesLeft = new LineMerger();
-        LineMerger plLinesRight = new LineMerger();
-        List<GeometryCollection> geometries = new ArrayList<>();
-
-        boolean left = true;
-        for (int i =0;i<coordinates.length-2;i++){
-
-            Coordinate[] coordinates1 = new Coordinate[]{coordinates[i], coordinates[i+1]};
-            Geometry linestring = geometryFactory.createLineString(coordinates1);
-            if (!linestring.intersects(railWayLWfinal.getGeometry())){
-                if (left) {
-                    plLinesLeft.add(linestring);
-                }else{
-                    plLinesRight.add(linestring);
-                }
-            }else{
-                left = !left;
-            }
-
-        }
-        geometries.addAll(plLinesLeft.getMergedLineStrings());
-        geometries.addAll(plLinesRight.getMergedLineStrings());
-        return geometries;
-    }
-
-    public List<GeometryCollection> getRailWayLWGeometry( double distance) {
-        List<GeometryCollection> geometries = new ArrayList<>();
+    public List<LineString> getRailWayLWGeometry( double distance) {
+        List<LineString> geometries = new ArrayList<>();
 
         boolean even = false;
         if (nbTrack % 2 == 0) even = true;
 
         if (nbTrack == 1) {
-            geometries.add(railWayLWfinal.getGeometry());
+            geometries.addAll(railWayLWfinal.getGeometry());
             return geometries;
         }else {
-            BufferParameters bufferParameters = new BufferParameters();
-            bufferParameters.setEndCapStyle(BufferParameters.CAP_FLAT);
-            BufferOp bufOp = new BufferOp(railWayLWfinal.getGeometry(), bufferParameters);
 
             if (even) {
                 for (int j=1; j <= nbTrack/2 ; j++){
-                    Coordinate[] coordinates = bufOp.getResultGeometry( (distance/2) +distance* j).getCoordinates();
-                    geometries.addAll(getParrallelLines(coordinates));
+                    for (LineString subGeom : railWayLWfinal.getGeometry()) {
+                        geometries.add( MakeParallelLine(subGeom, (distance / 2) + distance * j));
+                        geometries.add(MakeParallelLine(subGeom, -((distance / 2) + distance * j)));
+                    }
                 }
             } else {
                 for (int j=1; j <= ((nbTrack-1)/2) ; j++) {
-                    Coordinate[] coordinates = bufOp.getResultGeometry(distance*j).getCoordinates();
-                    geometries.addAll(getParrallelLines(coordinates));
+                    for (LineString subGeom : railWayLWfinal.getGeometry()) {
+                        geometries.add( MakeParallelLine(subGeom,  distance * j));
+                        geometries.add(MakeParallelLine(subGeom, -( distance * j)));
+                    }
                 }
                 LineMerger centerLine = new LineMerger();
                 centerLine.add(railWayLWfinal.getGeometry());
@@ -135,7 +109,15 @@ public class RailWayLWIterator implements Iterator<RailWayLW> {
                     railWayLWsum = RailWayLW.sumRailWayLW(railWayLWsum,railWayLW);
                 } else {
                     railWayLWfinal.setRailWayLW(railWayLWsum);
-                    railWayLWfinal.setGeometry((GeometryCollection) spatialResultSet.getGeometry());
+                    Geometry inputgeometry = spatialResultSet.getGeometry();
+                    List<LineString> inputLineStrings = new ArrayList<>();
+                    for (int id = 0; id < inputgeometry.getNumGeometries(); id++) {
+                        Geometry subGeom = inputgeometry.getGeometryN(id);
+                        if (subGeom instanceof LineString) {
+                            inputLineStrings.add((LineString) subGeom);
+                        }
+                    }
+                    railWayLWfinal.setGeometry(inputLineStrings);
                     railWayLWfinal.setPK(spatialResultSet.getInt("PK"));
                     railWayLW = getRailwayEmissionFromResultSet(spatialResultSet, "DAY");
                     railWayLWsum = railWayLW;
@@ -255,7 +237,7 @@ public class RailWayLWIterator implements Iterator<RailWayLW> {
 
 class RailWayLWGeom extends RailWayLW {
     private RailWayLW railWayLW;
-    private GeometryCollection geometry;
+    private List<LineString> geometry;
     private int pk;
 
     public RailWayLW getRailWayLW() {
@@ -266,9 +248,10 @@ class RailWayLWGeom extends RailWayLW {
         this.railWayLW = railWayLW;
     }
 
-    public GeometryCollection getGeometry() {
-        return (GeometryCollection) GeometryCoordinateDimension.force(geometry,3);
+    public List<LineString> getGeometry() {
+        return  geometry;
     }
+
 
     public int getPK() {
         return pk;
@@ -278,7 +261,7 @@ class RailWayLWGeom extends RailWayLW {
         return this.pk;
     }
 
-    public void setGeometry(GeometryCollection geometry) {
+    public void setGeometry(List<LineString> geometry) {
         this.geometry = geometry;
     }
 }

@@ -27,6 +27,7 @@ import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
+import org.locationtech.jts.geom.LineString
 import org.noise_planet.noisemodelling.emission.RailWayLW
 import org.noise_planet.noisemodelling.jdbc.LDENConfig
 import org.noise_planet.noisemodelling.jdbc.LDENPropagationProcessData
@@ -224,12 +225,12 @@ def exec(Connection connection, input) {
         System.println('LA.')
 
         RailWayLW railWayLW = railWayLWIterator.getRailWayLW()
-        List<Geometry> geometries = railWayLWIterator.getRailWayLWGeometry(10)
-        int pk = railWayLWIterator.getPK()
+        List<LineString> geometries = railWayLWIterator.getRailWayLWGeometry(10)
+        int pk = railWayLWIterator.getRailWayLWPK()
 
-       /* sql.withBatch(100, qry00) { ps ->
+        sql.withBatch(100, qry00) { ps ->
             ps.addBatch(
-                    1 as int, (Geometry) geometries.get(1) as Geometry, 1 as int,
+                    1 as int, (Geometry) geometries.get(4) as Geometry, 1 as int,
                     railWayLW.getLWRolling()[0] ,railWayLW.getLWRolling()[1],railWayLW.getLWRolling()[2],railWayLW.getLWRolling()[3],
                     railWayLW.getLWRolling()[4],railWayLW.getLWRolling()[5],railWayLW.getLWRolling()[6],railWayLW.getLWRolling()[7],
                     railWayLW.getLWRolling()[8],railWayLW.getLWRolling()[9],railWayLW.getLWRolling()[10],railWayLW.getLWRolling()[11],
@@ -252,7 +253,7 @@ def exec(Connection connection, input) {
                     railWayLW.getLWRolling()[20],railWayLW.getLWRolling()[21],railWayLW.getLWRolling()[22]
             )
 
-        }*/
+        }
 
     }
 

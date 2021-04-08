@@ -1,4 +1,4 @@
-package org.noise_planet.noisemodelling.pathfinder.utils;
+package org.noise_planet.noisemodelling.jdbc;
 
 import org.locationtech.jts.algorithm.Angle;
 import org.locationtech.jts.algorithm.Orientation;
