@@ -782,7 +782,7 @@ public class LinkStatStruct {
     public static double[] calculateSourceLevels(double LVCount, double LVAvgSpeed, double MVCount, double MVAvgSpeed, double HVCount, double HVAvgSpeed) {
         int[] freqs = [63, 125, 250, 500, 1000, 2000, 4000, 8000];
         double[] result = new double[freqs.length];
-        if (LVCount == 0 && HVCount == 0 && HVCount == 0) {
+        if (LVCount == 0 && MVCount == 0 && HVCount == 0) {
             for (int i = 0; i < freqs.length; i++) {
                 result[i] = -99.0;
             }
