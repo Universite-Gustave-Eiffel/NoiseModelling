@@ -5,9 +5,7 @@ import org.locationtech.jts.geom.*;
 import org.locationtech.jts.index.strtree.STRtree;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tinfour.common.PolygonConstraint;
-import org.tinfour.common.SimpleTriangle;
-import org.tinfour.common.Vertex;
+import org.tinfour.common.*;
 import org.tinfour.standard.IncrementalTin;
 import org.tinfour.utils.TriangleCollector;
 
@@ -56,57 +54,10 @@ public class LayerTinfour implements LayerDelaunay {
     private static final class BuildingWithID {
         private Polygon building;
 
-
         public BuildingWithID(Polygon building) {
             this.building = building;
 
         }
-
-
-        public boolean isTriangleInBuilding(Vertex point) {
-            return this.building.intersects(new GeometryFactory().createPoint(TPointToCoordinate(point)));
-        }
-
-
-    }
-
-    private int getOrAppendVertices(Coordinate newCoord, List<Coordinate> vertices, HashMap<Integer, LinkedList<Integer>> hashOfArrayIndex) {
-        // We can obtain the same hash with two different coordinate (4 Bytes or
-        // 8 Bytes against 12 or 24 Bytes) , then we use a list as the value of
-        // the hashmap
-        // First step - Search the vertice parameter within the hashMap
-        int newCoordIndex = -1;
-        Integer coordinateHash = newCoord.hashCode();
-        LinkedList<Integer> listOfIndex = hashOfArrayIndex.get(coordinateHash);
-        if (listOfIndex != null) // There are the same hash value
-        {
-            for (int vind : listOfIndex) // Loop inside the coordinate index
-            {
-                if (newCoord.equals3D(vertices.get(vind))) // the coordinate is
-                // equal to the
-                // existing
-                // coordinate
-                {
-                    newCoordIndex = vind;
-                    break; // Exit for loop
-                }
-            }
-            if (newCoordIndex == -1) {
-                // No vertices has been found, we push the new coordinate into
-                // the existing linked list
-                newCoordIndex = vertices.size();
-                listOfIndex.add(newCoordIndex);
-                vertices.add(newCoord);
-            }
-        } else {
-            // Push a new hash element
-            listOfIndex = new LinkedList<Integer>();
-            newCoordIndex = vertices.size();
-            listOfIndex.add(newCoordIndex);
-            vertices.add(newCoord);
-            hashOfArrayIndex.put(coordinateHash, listOfIndex);
-        }
-        return newCoordIndex;
     }
 
     private List<SimpleTriangle> computeTriangles(IncrementalTin incrementalTin) {
@@ -173,7 +124,14 @@ public class LayerTinfour implements LayerDelaunay {
         do {
             // Triangulate
             tin = new IncrementalTin();
+            // Add points
             tin.add(meshPoints, null);
+            // Add constraints
+            List<IConstraint> constraints = new ArrayList<>(segments.size());
+            for(int i=0; i < segments.size(); i+=2) {
+                constraints.add(new LinearConstraint(meshPoints.get(segments.get(i)), meshPoints.get(segments.get(i+1))));
+            }
+            tin.addConstraints(constraints, maxArea > 0);
             refine = false;
 
             simpleTriangles = computeTriangles(tin);
@@ -207,8 +165,9 @@ public class LayerTinfour implements LayerDelaunay {
         } while (refine);
         List<Vertex> verts = tin.getVertices();
         vertices = new ArrayList<>(verts.size());
+        pts.clear();
         for(Vertex v : verts) {
-            addVertex(toCoordinate(v));
+            pointHandler.addVertex(v);
         }
         Map<Integer, Integer> edgeIndexToTriangleIndex = new HashMap<>();
         for(SimpleTriangle t : simpleTriangles) {
@@ -393,6 +352,14 @@ public class LayerTinfour implements LayerDelaunay {
             return ret;
         }
 
+        protected int addVertex(Vertex pt) {
+            Integer index = pts.get(pt);
+            if (index == null) {
+                index = maxIndex.getAndAdd(1);
+                pts.put(pt, index);
+            }
+            return index;
+        }
         protected int addPt(Coordinate coordinate, int attribute) {
             Vertex pt = new Vertex(delaunayData.r(coordinate.x), delaunayData.r(coordinate.y), Double.isNaN(coordinate.z) ? 0 : delaunayData.r(coordinate.z), attribute);
             Integer index = pts.get(pt);

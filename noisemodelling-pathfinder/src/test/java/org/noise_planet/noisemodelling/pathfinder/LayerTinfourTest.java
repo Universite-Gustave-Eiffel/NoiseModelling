@@ -2,6 +2,7 @@ package org.noise_planet.noisemodelling.pathfinder;
 
 import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
 
 import java.util.List;
 
@@ -29,5 +30,34 @@ public class LayerTinfourTest {
         List<Triangle> triangleList = layerTinfour.getTriangles();
         List<Triangle> neighbors = layerTinfour.getNeighbors();
         assertEquals(8, triangleList.size());
+    }
+
+    @Test
+    public void testPolygonDelaunay1() throws LayerDelaunayError {
+        LayerTinfour layerTinfour = new LayerTinfour();
+        layerTinfour.setRetrieveNeighbors(true);
+
+        GeometryFactory geometryFactory = new GeometryFactory();
+
+        layerTinfour.addVertex(new Coordinate(0,0,0));
+        layerTinfour.addVertex(new Coordinate(100,0,0));
+        layerTinfour.addVertex(new Coordinate(100,100,0));
+        layerTinfour.addVertex(new Coordinate(0,100,0));
+
+        Coordinate[] building1 = new Coordinate[] {
+          new Coordinate(40,20),
+                new Coordinate(55,20),
+                new Coordinate(55,45),
+                new Coordinate(40,45),
+                new Coordinate(40,20),
+        };
+
+        layerTinfour.addPolygon(geometryFactory.createPolygon(building1), 55);
+
+        layerTinfour.processDelaunay();
+
+        List<Triangle> triangleList = layerTinfour.getTriangles();
+        List<Triangle> neighbors = layerTinfour.getNeighbors();
+        assertEquals(10, triangleList.size());
     }
 }
