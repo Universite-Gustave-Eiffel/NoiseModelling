@@ -40,6 +40,26 @@ public class RailwayTrackParametersCnossos {
     private int impactNoise;
     private int bridgeTransfert;
     private double speedCommercial; // commercial speed on the track (km/h)
+     private int nTrack;
+      private boolean isTunnel;
+
+    public void setIsTunnel(boolean tunnel) {
+        isTunnel = tunnel;
+    }
+
+    public boolean getIsTunnel() {
+        return isTunnel;
+    }
+
+    public int getNTrack() {
+        return nTrack;
+    }
+
+    public void setNTrack(int nTrack) {
+        this.nTrack = nTrack;
+    }
+
+
 
     private int spectreVer = 2; // version of cnossos coefficient, if 2 == amendments 2019
 
@@ -96,7 +116,7 @@ public class RailwayTrackParametersCnossos {
     }
 
     public RailwayTrackParametersCnossos(double speedTrack, int trackTransfer, int railRoughness, int impactNoise,
-                                         int bridgeTransfert, int curvature, double speedCommercial) {
+                                         int bridgeTransfert, int curvature, double speedCommercial, boolean isTunnel, int nTrack ) {
 
         setSpeedTrack(speedTrack);
         setTrackTransfer(trackTransfer);
@@ -105,6 +125,8 @@ public class RailwayTrackParametersCnossos {
         setCurvature(curvature);
         setBridgeTransfert(bridgeTransfert);
         setSpeedCommercial(speedCommercial);
+        setIsTunnel(isTunnel);
+        setNTrack(nTrack);
 
     }
 }

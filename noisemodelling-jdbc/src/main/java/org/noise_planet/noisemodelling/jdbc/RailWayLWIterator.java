@@ -160,6 +160,7 @@ public class RailWayLWIterator implements Iterator<RailWayLW> {
         int railRoughness = 4;
         double vMaxInfra = 160;
         double vehicleCommercial = 160;
+        boolean isTunnel = false;
 
         // Read fields
         if (sourceFields.containsKey("SPEEDVEHIC")) {
@@ -201,12 +202,25 @@ public class RailWayLWIterator implements Iterator<RailWayLW> {
             typeTrain = rs.getString(sourceFields.get("TYPETRAIN"));
         }
 
+        if (sourceFields.containsKey("ISTUNNEL")) {
+            isTunnel = rs.getBoolean(sourceFields.get("ISTUNNEL"));
+        }
+
+        if (sourceFields.containsKey("NTRACK")) {
+            nbTrack = rs.getInt(sourceFields.get("NTRACK"));
+            this.nbTrack = nbTrack;
+        }
+
+
         EvaluateRailwaySourceCnossos evaluateRailwaySourceCnossos = new EvaluateRailwaySourceCnossos();
+
         RailWayLW  lWRailWay = new RailWayLW();
+
         RailwayTrackParametersCnossos trackParameters = new RailwayTrackParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
-                impactNoise, bridgeTransfert, curvature, vehicleCommercial);
+                impactNoise, bridgeTransfert, curvature, vehicleCommercial, isTunnel, nbTrack);
 
         Map<String, Integer> vehicles = evaluateRailwaySourceCnossos.getVehicleFromTrain(typeTrain);
+
         if (vehicles!=null){
             int i = 0;
             for (Map.Entry<String,Integer> entry : vehicles.entrySet()){

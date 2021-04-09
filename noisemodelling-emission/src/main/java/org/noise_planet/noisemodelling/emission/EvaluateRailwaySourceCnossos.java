@@ -23,7 +23,6 @@ import java.util.Iterator;
 import java.util.Map;
 
 import static java.lang.Math.min;
-import static org.noise_planet.noisemodelling.emission.Utils.Vperhour2NoiseLevelAllFreq;
 import static org.noise_planet.noisemodelling.emission.utils.interpLinear.interpLinear;
 
 
@@ -98,41 +97,16 @@ public class EvaluateRailwaySourceCnossos {
 
 
 
-    public boolean isInVehicleList(String trainName){
+    public boolean isInVehicleList(String trainName) {
         boolean inlist = false;
         for (Iterator<Map.Entry<String, JsonNode>> it = CnossosVehicleData.fields(); it.hasNext(); ) {
             Map.Entry<String, JsonNode> elt = it.next();
-            if (trainName.equals(elt.getKey()))
-            {
+            if (trainName.equals(elt.getKey())) {
                 inlist = true;
                 break;
             }
         }
         return inlist;
-        
-    public static String getTypeVehicle(String typeVehicle, int spectreVer) { //
-        String typeVehicleUse;
-        if (getCnossosRailWayData(spectreVer).get("Vehicle").has(typeVehicle)) {
-            typeVehicleUse = typeVehicle;
-        }else{
-            typeVehicleUse="Empty";
-        }
-        return typeVehicleUse;
-    }
-
-    public Map<String, Integer> getVehicleFromTrain(String trainName){
-        Map<String, Integer> vehicles = null;
-        for (Iterator<Map.Entry<String, JsonNode>> it = CnossosTrainData.fields(); it.hasNext(); ) {
-            Map.Entry<String, JsonNode> elt = it.next();
-            if (trainName.equals(elt.getKey()))
-            {
-
-                ObjectMapper mapper = new ObjectMapper();
-                vehicles = mapper.convertValue(elt.getValue(),new TypeReference<Map<String, Integer>>(){});
-                break;
-            }
-        }
-        return vehicles;
     }
 
     private static int getFreqInd(int freq){
@@ -402,14 +376,14 @@ public class EvaluateRailwaySourceCnossos {
         // get speed of the vehicle
         double speed = min(speedVehicle,min(speedTrack, speedCommercial));
 
-        boolean isTunnel = trackParameters.getIsTunnel();
+        boolean isTunnel = false ;//trackParameters.getIsTunnel();
 
-        if(isTunnel==true){
+        if(isTunnel){
             double [] lWSpectre = new double[24];
             for(int idFreq = 0; idFreq < 24; idFreq++) {
                 lWSpectre[idFreq] =-99;
             }
-            LWRailWay lWRailWay = new LWRailWay(lWSpectre, lWSpectre, lWSpectre, lWSpectre, lWSpectre, lWSpectre);
+            RailWayLW lWRailWay = new RailWayLW(lWSpectre, lWSpectre, lWSpectre, lWSpectre, lWSpectre, lWSpectre);
             return lWRailWay;
         }else {
             //  Rolling noise calcul
@@ -422,7 +396,7 @@ public class EvaluateRailwaySourceCnossos {
             double[] lWAerodynamicB = evaluateLWSpectre(typeVehicle, "RefAerodynamic", runningCondition, speed, 1, spectreVer);
             // Bridge noise calcul
             double[] lWBridge = evaluateLWroughness("Bridge", typeVehicle, trackRoughnessId, impactId, bridgeId, curvature, speed, trackTransferId, spectreVer, axlesPerVeh);
-            LWRailWay lWRailWay = new LWRailWay(lWRolling, lWTractionA, lWTractionB, lWAerodynamicA, lWAerodynamicB, lWBridge);
+            RailWayLW lWRailWay = new RailWayLW(lWRolling, lWTractionA, lWTractionB, lWAerodynamicA, lWAerodynamicB, lWBridge);
             return lWRailWay;
         }
     }
