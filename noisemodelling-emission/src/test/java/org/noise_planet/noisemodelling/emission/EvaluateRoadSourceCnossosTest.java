@@ -106,6 +106,7 @@ public class EvaluateRoadSourceCnossosTest {
         rsParameters.setCoeffVer(1);
         //System.out.println(EvaluateRoadSourceCnossos.evaluate(rsParameters));
         assertEquals(58.8222 , EvaluateRoadSourceCnossos.evaluate(rsParameters), EPSILON_TEST1);
+
     }
 
     /** based on CNOSSOS_Road_Output.csv and the CNOSSOS_DLL_CONSOLE.exe**/

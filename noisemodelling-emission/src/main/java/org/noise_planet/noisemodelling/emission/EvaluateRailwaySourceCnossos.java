@@ -74,7 +74,7 @@ public class EvaluateRailwaySourceCnossos {
     }
 
     public JsonNode getCnossosVehicleData(){
-            return CnossosVehicleData;
+        return CnossosVehicleData;
     }
 
     public JsonNode getCnossosTrainData(){
@@ -109,6 +109,108 @@ public class EvaluateRailwaySourceCnossos {
             }
         }
         return inlist;
+        
+    public static String getTypeVehicle(String typeVehicle, int spectreVer) { //
+        String typeVehicleUse;
+        if (getCnossosRailWayData(spectreVer).get("Vehicle").has(typeVehicle)) {
+            typeVehicleUse = typeVehicle;
+        }else{
+            typeVehicleUse="Empty";
+        }
+        return typeVehicleUse;
+    }
+
+    public Map<String, Integer> getVehicleFromTrain(String trainName){
+        Map<String, Integer> vehicles = null;
+        for (Iterator<Map.Entry<String, JsonNode>> it = CnossosTrainData.fields(); it.hasNext(); ) {
+            Map.Entry<String, JsonNode> elt = it.next();
+            if (trainName.equals(elt.getKey()))
+            {
+
+                ObjectMapper mapper = new ObjectMapper();
+                vehicles = mapper.convertValue(elt.getValue(),new TypeReference<Map<String, Integer>>(){});
+                break;
+            }
+        }
+        return vehicles;
+    }
+
+    private static int getFreqInd(int freq){
+        int Freq_ind;
+        switch (freq) {
+            case 50:
+                Freq_ind=0;
+                break;
+            case 63:
+                Freq_ind=1;
+                break;
+            case 80:
+                Freq_ind=2;
+                break;
+            case 100:
+                Freq_ind=3;
+                break;
+            case 125:
+                Freq_ind=4;
+                break;
+            case 160:
+                Freq_ind=5;
+                break;
+            case 200:
+                Freq_ind=6;
+                break;
+            case 250:
+                Freq_ind=7;
+                break;
+            case 315:
+                Freq_ind=8;
+                break;
+            case 400:
+                Freq_ind=9;
+                break;
+            case 500:
+                Freq_ind=10;
+                break;
+            case 630:
+                Freq_ind=11;
+                break;
+            case 800:
+                Freq_ind=12;
+                break;
+            case 1000:
+                Freq_ind=13;
+                break;
+            case 1250:
+                Freq_ind=14;
+                break;
+            case 1600:
+                Freq_ind=15;
+                break;
+            case 2000:
+                Freq_ind=16;
+                break;
+            case 2500:
+                Freq_ind=17;
+                break;
+            case 3150:
+                Freq_ind=18;
+                break;
+            case 4000:
+                Freq_ind=19;
+                break;
+            case 5000:
+                Freq_ind=20;
+                break;
+            case 8000:
+                Freq_ind=21;
+                break;
+            case 10000:
+                Freq_ind=22;
+                break;
+            default:
+                Freq_ind=0;
+        }
+        return Freq_ind;
     }
 
 
@@ -197,6 +299,80 @@ public class EvaluateRailwaySourceCnossos {
         return roughnessLtot;
     }
 
+    /** get noise level source from speed **/
+    private static Double getNoiseLvl(double base, double speed,
+                                      double speedRef, double speedIncrement) {
+        return base + speedIncrement * Math.log10(speed / speedRef);
+    }
+
+    private static Double getNoiseLvldBa(double NoiseLvl,  int freq){
+        double LvlCorrectionA;
+        switch (freq) {
+            case 100:
+                LvlCorrectionA=-19.1;
+                break;
+            case 125:
+                LvlCorrectionA=-16.1;
+                break;
+            case 160:
+                LvlCorrectionA=-13.4;
+                break;
+            case 200:
+                LvlCorrectionA=-10.9;
+                break;
+            case 250:
+                LvlCorrectionA=-8.6;
+                break;
+            case 315:
+                LvlCorrectionA=-6.6;
+                break;
+            case 400:
+                LvlCorrectionA=-4.8;
+                break;
+            case 500:
+                LvlCorrectionA=-3.2;
+                break;
+            case 630:
+                LvlCorrectionA=-1.9;
+                break;
+            case 800:
+                LvlCorrectionA=-0.8;
+                break;
+            case 1000:
+                LvlCorrectionA=0;
+                break;
+            case 1250:
+                LvlCorrectionA=0.6;
+                break;
+            case 1600:
+                LvlCorrectionA=1;
+                break;
+            case 2000:
+                LvlCorrectionA=1.2;
+                break;
+            case 2500:
+                LvlCorrectionA=1.3;
+                break;
+            case 3150:
+                LvlCorrectionA=1.2;
+                break;
+            case 4000:
+                LvlCorrectionA=1;
+                break;
+            case 5000:
+                LvlCorrectionA=0.5;
+                break;
+            default:
+                LvlCorrectionA=0;
+        }
+        return NoiseLvl+LvlCorrectionA;
+    }
+
+    /** get noise level source from number of vehicle **/
+    private static Double getNoiseLvlFinal(double base, double numbersource, int numVeh) {
+        return base + 10 * Math.log10(numbersource*numVeh);
+    }
+
     /**
     * Track noise evaluation.
     * @param vehicleParameters Vehicle Noise emission parameters
@@ -226,33 +402,29 @@ public class EvaluateRailwaySourceCnossos {
         // get speed of the vehicle
         double speed = min(speedVehicle,min(speedTrack, speedCommercial));
 
-        //  Rolling noise calcul
-        double[] lWRolling = evaluateLWroughness("Rolling", typeVehicle, trackRoughnessId, impactId, bridgeId, curvature, speed,trackTransferId,spectreVer,axlesPerVeh);
+        boolean isTunnel = trackParameters.getIsTunnel();
 
-        // Traction noise calcul
-        double[] lWTractionA = evaluateLWSpectre(typeVehicle,"RefTraction",runningCondition, speed, 0,spectreVer);
-         double[] lWTractionB = evaluateLWSpectre(typeVehicle,"RefTraction",runningCondition, speed, 1,spectreVer);
-
-        // Aerodynamic noise calcul
-        double[] lWAerodynamicA = evaluateLWSpectre(typeVehicle,"RefAerodynamic",runningCondition, speed, 0,spectreVer);
-        double[] lWAerodynamicB = evaluateLWSpectre(typeVehicle,"RefAerodynamic",runningCondition, speed, 1,spectreVer);
-
-        // Bridge noise calcul
-        double[] lWBridge = evaluateLWroughness("Bridge", typeVehicle, trackRoughnessId, impactId, bridgeId, curvature, speed,trackTransferId,spectreVer,axlesPerVeh);
-
-        /**
-         * Compute Noise Level from flow_rate and speed - Eq 2.2.1
-         */
-        lWRolling = Vperhour2NoiseLevelAllFreq(lWRolling, vehPerHour, speedVehicle);
-        lWTractionA = Vperhour2NoiseLevelAllFreq(lWTractionA, vehPerHour, speedVehicle);
-        lWTractionB = Vperhour2NoiseLevelAllFreq(lWTractionB, vehPerHour, speedVehicle);
-        lWAerodynamicA = Vperhour2NoiseLevelAllFreq(lWAerodynamicA, vehPerHour, speedVehicle);
-        lWAerodynamicB = Vperhour2NoiseLevelAllFreq(lWAerodynamicB, vehPerHour, speedVehicle);
-        lWBridge = Vperhour2NoiseLevelAllFreq(lWBridge, vehPerHour, speedVehicle);
-
-        RailWayLW lWRailWay= new RailWayLW(lWRolling, lWTractionA,lWTractionB, lWAerodynamicA,lWAerodynamicB,lWBridge);
-
-        return lWRailWay;
+        if(isTunnel==true){
+            double [] lWSpectre = new double[24];
+            for(int idFreq = 0; idFreq < 24; idFreq++) {
+                lWSpectre[idFreq] =-99;
+            }
+            LWRailWay lWRailWay = new LWRailWay(lWSpectre, lWSpectre, lWSpectre, lWSpectre, lWSpectre, lWSpectre);
+            return lWRailWay;
+        }else {
+            //  Rolling noise calcul
+            double[] lWRolling = evaluateLWroughness("Rolling", typeVehicle, trackRoughnessId, impactId, bridgeId, curvature, speed, trackTransferId, spectreVer, axlesPerVeh);
+            // Traction noise calcul
+            double[] lWTractionA = evaluateLWSpectre(typeVehicle, "RefTraction", runningCondition, speed, 0, spectreVer);
+            double[] lWTractionB = evaluateLWSpectre(typeVehicle, "RefTraction", runningCondition, speed, 1, spectreVer);
+            // Aerodynamic noise calcul
+            double[] lWAerodynamicA = evaluateLWSpectre(typeVehicle, "RefAerodynamic", runningCondition, speed, 0, spectreVer);
+            double[] lWAerodynamicB = evaluateLWSpectre(typeVehicle, "RefAerodynamic", runningCondition, speed, 1, spectreVer);
+            // Bridge noise calcul
+            double[] lWBridge = evaluateLWroughness("Bridge", typeVehicle, trackRoughnessId, impactId, bridgeId, curvature, speed, trackTransferId, spectreVer, axlesPerVeh);
+            LWRailWay lWRailWay = new LWRailWay(lWRolling, lWTractionA, lWTractionB, lWAerodynamicA, lWAerodynamicB, lWBridge);
+            return lWRailWay;
+        }
     }
 
     /**
@@ -273,7 +445,7 @@ public class EvaluateRailwaySourceCnossos {
             }
             if(ref.equals("RefAerodynamic")){
                 if(speed<200){
-                    lWSpectre[idFreq] =0;
+                    lWSpectre[idFreq] =-99;
                 }else{
                 double v0Aero = getAeroV0Alpha(typeVehicle,ref, spectreVer, "V0");
                 double alphaAero = getAeroV0Alpha(typeVehicle,ref, spectreVer, "Alpha");
@@ -337,6 +509,11 @@ public class EvaluateRailwaySourceCnossos {
                     lW[idFreq] = roughnessLtot[idFreq] + lWBridge[idFreq] + 10 * Math.log10(axlesPerVeh);
                 }
             }
+            else{
+                for(int idFreq = 0; idFreq < 24; idFreq++) {
+                    lW[idFreq] = -99;
+                }
+            }
         }
         return lW;
     }
@@ -352,33 +529,44 @@ public class EvaluateRailwaySourceCnossos {
      **/
     private double[] evaluateRoughnessLtotFreq(String typeVehicle, int trackRoughnessId,int impactId, double speed, int spectreVer) {
 
-        double[] roughnessLtotLambda = new double[32];
-        double[] lambdaToFreqLog= new double[32];
+        double[] roughnessTotLambda = new double[35];
+        double[] roughnessLtot = new double[35];
+        double[] contactFilter = new double[35];
+        double[] lambdaToFreqLog= new double[35];
         double[] freqMedLog = new double[24];
-        double[] Lambda = new double[32];
+        double[] Lambda = new double[35];
 
-        double m = 30;
-        for(int idLambda = 0; idLambda < 32; idLambda++){
+        double m = 33;
+        for(int idLambda = 0; idLambda < 35; idLambda++){
             Lambda[idLambda]= Math.pow(10,m/10);
             lambdaToFreqLog[idLambda] = Math.log10(speed/Lambda[idLambda]*1000/3.6);
 
-            roughnessLtotLambda[idLambda]= Math.pow(10,getLRoughness(typeVehicle, trackRoughnessId,spectreVer, idLambda)/10);
+            roughnessTotLambda[idLambda]= Math.pow(10,getLRoughness(typeVehicle, trackRoughnessId,spectreVer, idLambda)/10);
             if(impactId!=0) {
-                roughnessLtotLambda[idLambda] = roughnessLtotLambda[idLambda] + Math.pow(10, getImpactNoise(impactId, spectreVer, idLambda) / 10);
+                roughnessTotLambda[idLambda] = roughnessTotLambda[idLambda] + Math.pow(10, getImpactNoise(impactId, spectreVer, idLambda) / 10);
             }
+
+            contactFilter[idLambda] = getLambdaValue(typeVehicle, "RefContact",spectreVer, idLambda);
+            roughnessLtot[idLambda] = 10*Math.log10(roughnessTotLambda[idLambda])+contactFilter[idLambda];
+            roughnessLtot[idLambda] = Math.pow(10,roughnessLtot[idLambda]/10);
             m --;
         }
         for(int idFreqMed = 0; idFreqMed < 24; idFreqMed++){
             freqMedLog[idFreqMed]= Math.log10(Math.pow(10,(17+Double.valueOf(idFreqMed))/10));
         }
 
-        double[] roughnessLtotFreq = interpLinear(lambdaToFreqLog, roughnessLtotLambda, freqMedLog);
+        double[] roughnessLtotFreq = interpLinear(lambdaToFreqLog, roughnessLtot, freqMedLog);
 
         for(int idRoughnessLtotFreq = 0; idRoughnessLtotFreq < 24; idRoughnessLtotFreq++){
             roughnessLtotFreq[idRoughnessLtotFreq]= 10*Math.log10(roughnessLtotFreq[idRoughnessLtotFreq]);
         }
         return roughnessLtotFreq;
     }
+
+//    /** compute Noise Level from flow_rate and speed @return**/
+//    public static double evaluateLm(double Lw, double Q, double speed, int idFreq) {
+//        return Lw+ 10*Math.log10(Q/(1000*speed));
+//    }
 
 }
 
