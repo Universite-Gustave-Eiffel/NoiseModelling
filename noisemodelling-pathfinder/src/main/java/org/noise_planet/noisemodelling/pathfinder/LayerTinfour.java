@@ -6,13 +6,16 @@ import org.locationtech.jts.index.strtree.STRtree;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tinfour.common.PolygonConstraint;
+import org.tinfour.common.SimpleTriangle;
 import org.tinfour.common.Vertex;
 import org.tinfour.standard.IncrementalTin;
+import org.tinfour.utils.TriangleCollector;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 public class LayerTinfour implements LayerDelaunay {
     // Precision
@@ -34,7 +37,6 @@ public class LayerTinfour implements LayerDelaunay {
     private boolean computeNeighbors = false;
     private List<Triangle> triangles = new ArrayList<Triangle>();
     private List<Triangle> neighbors = new ArrayList<Triangle>(); // The first neighbor triangle is opposite the first corner of triangle  i
-    private HashMap<Integer, LinkedList<Integer>> hashOfArrayIndex = new HashMap<Integer, LinkedList<Integer>>();
     private double maxArea = 0;
 
     private GeometryFactory factory = new GeometryFactory();
@@ -107,12 +109,40 @@ public class LayerTinfour implements LayerDelaunay {
         return newCoordIndex;
     }
 
+    private List<SimpleTriangle> computeTriangles(IncrementalTin incrementalTin) {
+        ArrayList<SimpleTriangle> triangles = new ArrayList<>(incrementalTin.countTriangles().getCount());
+        TriangleBuilder triangleBuilder = new TriangleBuilder(triangles);
+        TriangleCollector.visitSimpleTriangles(incrementalTin, triangleBuilder);
+        return triangles;
+    }
+
+    private static class TriangleBuilder implements Consumer<SimpleTriangle> {
+        ArrayList<SimpleTriangle> triangles;
+
+        public TriangleBuilder(ArrayList<SimpleTriangle> triangles) {
+            this.triangles = triangles;
+        }
+
+        @Override
+        public void accept(SimpleTriangle triangle) {
+            triangles.add(triangle);
+        }
+    }
+
+    private static Coordinate getCentroid(SimpleTriangle triangle) {
+        Vertex va = triangle.getVertexA();
+        Vertex vb = triangle.getVertexB();
+        Vertex vc = triangle.getVertexC();
+        double cx = ( va.getX() + vb.getX() + vc.getX() ) / 3d;
+        double cy = ( va.getY() + vb.getY() + vc.getY() ) / 3d;
+        double cz = ( va.getZ() + vb.getZ() + vc.getZ() ) / 3d;
+        return new Coordinate( cx, cy, cz);
+    }
+
     @Override
     public void processDelaunay() throws LayerDelaunayError {
         triangles.clear();
-        neighbors.clear();
         vertices.clear();
-        hashOfArrayIndex.clear();
 
         // Create input data for Poly2Tri
         int[] index = new int[segments.size()];
@@ -136,99 +166,67 @@ public class LayerTinfour implements LayerDelaunay {
             }
         }
 
-        IncrementalTin tin = new IncrementalTin();
 
+        IncrementalTin tin;
         boolean refine;
+        List<SimpleTriangle> simpleTriangles = new ArrayList<>();
         do {
             // Triangulate
-            Poly2Tri.triangulate(TriangulationAlgorithm.DTSweep, convertedInput);
+            tin = new IncrementalTin();
+            tin.add(meshPoints, null);
             refine = false;
 
+            simpleTriangles = computeTriangles(tin);
             // Will triangulate multiple time if refinement is necessary
             if(buildingsRtree != null && maxArea > 0) {
-                List<DelaunayTriangle> trianglesDelaunay = convertedInput.getTriangles();
-                for (DelaunayTriangle triangle : trianglesDelaunay) {
-                    if(triangle.area() > maxArea) {
+                for (SimpleTriangle triangle : simpleTriangles) {
+                    if(triangle.getArea() > maxArea) {
                         // Insert steiner point in centroid
-                        TPoint centroid = triangle.centroid();
+                        Coordinate centroid = getCentroid(triangle);
                         // Do not add steiner points into buildings
-                        Envelope searchEnvelope = new Envelope(TPointToCoordinate(centroid));
+                        Envelope searchEnvelope = new Envelope(centroid);
                         searchEnvelope.expandBy(1.);
                         List polyInters = buildingsRtree.query(searchEnvelope);
                         boolean inBuilding = false;
                         for (Object id : polyInters) {
                             if (id instanceof Integer) {
                                 LayerTinfour.BuildingWithID inPoly = buildingWithID.get(id);
-                                if (inPoly.building.contains(factory.createPoint(TPointToCoordinate(centroid)))) {
+                                if (inPoly.building.contains(factory.createPoint(centroid))) {
                                     inBuilding = true;
                                     break;
                                 }
                             }
                         }
                         if(!inBuilding) {
-                            meshPoints.add(centroid);
+                            meshPoints.add(new Vertex(centroid.x, centroid.y, centroid.z));
                             refine = true;
                         }
                     }
                 }
-                if(refine) {
-                    convertedInput = new ConstrainedPointSet(meshPoints, index);
-                }
             }
         } while (refine);
-
-
-        List<DelaunayTriangle> trianglesDelaunay = convertedInput.getTriangles();
-        List<Integer> triangleAttribute = Arrays.asList(new Integer[trianglesDelaunay.size()]);
-        // Create an index of triangles instance for fast neighbors search
-        Map<DelaunayTriangle, Integer> triangleSearch = new HashMap<>(trianglesDelaunay.size());
-        int triangleIndex = 0;
-        if (computeNeighbors) {
-            for (DelaunayTriangle triangle : trianglesDelaunay) {
-                triangleSearch.put(triangle, triangleIndex);
-                triangleIndex++;
-            }
+        List<Vertex> verts = tin.getVertices();
+        vertices = new ArrayList<>(verts.size());
+        for(Vertex v : verts) {
+            addVertex(toCoordinate(v));
         }
-
-        //Build ArrayList for binary search
-        //test add height
-        int triangleId = 0;
-        for (DelaunayTriangle triangle : trianglesDelaunay) {
-            Coordinate[] ring = new Coordinate[]{TPointToCoordinate(triangle.points[0]), TPointToCoordinate(triangle.points[1]), TPointToCoordinate(triangle.points[2]), TPointToCoordinate(triangle.points[0])};
-            //if one of three vertices have buildingID and buildingID>=1
-            if (getPointAttribute(triangle.points[0]) >= 1 || getPointAttribute(triangle.points[1]) >= 1 || getPointAttribute(triangle.points[2]) >= 1) {
-                int propertyBulidingID = 0;
-                for (int i = 0; i <= 2; i++) {
-                    int potentialBuildingID = getPointAttribute(triangle.points[i]);
-                    if (potentialBuildingID >= 1) {
-                        //get the Barycenter of the triangle so we can sure this point is in this triangle and we will check if the building contain this point
-                        if (this.buildingWithID.get(potentialBuildingID).isTriangleInBuilding(triangle.centroid())) {
-                            propertyBulidingID = potentialBuildingID;
-                            break;
-                        }
-                    }
-                }
-                triangleAttribute.set(triangleId, propertyBulidingID);
-            } else {
-                //if there are less than 3 points have buildingID this triangle is out of building
-                triangleAttribute.set(triangleId, 0);
+        Map<Integer, Integer> edgeIndexToTriangleIndex = new HashMap<>();
+        for(SimpleTriangle t : simpleTriangles) {
+            int triangleAttribute = -1;
+            triangles.add(new Triangle(pts.get(t.getVertexA()), pts.get(t.getVertexB()),pts.get(t.getVertexC()), triangleAttribute));
+            edgeIndexToTriangleIndex.put(t.getEdgeA().getIndex(), triangles.size() - 1);
+            edgeIndexToTriangleIndex.put(t.getEdgeB().getIndex(), triangles.size() - 1);
+            edgeIndexToTriangleIndex.put(t.getEdgeC().getIndex(), triangles.size() - 1);
+        }
+        if(computeNeighbors) {
+            for(SimpleTriangle t : simpleTriangles) {
+                Integer neighA = edgeIndexToTriangleIndex.get(t.getEdgeA().getDual().getIndex());
+                Integer neighB = edgeIndexToTriangleIndex.get(t.getEdgeB().getDual().getIndex());
+                Integer neighC = edgeIndexToTriangleIndex.get(t.getEdgeC().getDual().getIndex());
+                neighbors.add(new Triangle(neighA != null ? neighA : -1,
+                        neighB != null ? neighB : -1,
+                        neighC != null ? neighC : -1));
             }
-
-            if (!Orientation.isCCW(ring)) {
-                Coordinate tmp = new Coordinate(ring[0]);
-                ring[0] = ring[2];
-                ring[2] = tmp;
-            }
-
-            int a = getOrAppendVertices(ring[0], vertices, hashOfArrayIndex);
-            int b = getOrAppendVertices(ring[1], vertices, hashOfArrayIndex);
-            int c = getOrAppendVertices(ring[2], vertices, hashOfArrayIndex);
-            triangles.add(new Triangle(a, b, c, triangleAttribute.get(triangleId)));
-            if (computeNeighbors) {
-                // Compute neighbors index
-                neighbors.add(new Triangle(getTriangleIndex(triangleSearch, triangle.neighborAcross(triangle.points[0])), getTriangleIndex(triangleSearch, triangle.neighborAcross(triangle.points[1])), getTriangleIndex(triangleSearch, triangle.neighborAcross(triangle.points[2]))));
-            }
-            triangleId++;
         }
     }
 
@@ -327,7 +325,11 @@ public class LayerTinfour implements LayerDelaunay {
 
     @Override
     public List<Triangle> getTriangles() throws LayerDelaunayError {
-        return this.triangles;
+        return triangles;
+    }
+
+    private static Coordinate toCoordinate(Vertex v) {
+        return new Coordinate(v.getX(), v.getY(), v.getZ());
     }
 
     @Override
