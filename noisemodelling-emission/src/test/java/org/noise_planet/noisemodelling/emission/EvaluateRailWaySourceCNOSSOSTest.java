@@ -14,8 +14,7 @@ package org.noise_planet.noisemodelling.emission;
 
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-import static org.noise_planet.noisemodelling.emission.RailWayLW.computeDayEveningNight;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Railway noise evaluation from Cnossos reference : COMMISSION DIRECTIVE (EU) 2015/996
@@ -49,7 +48,6 @@ public class EvaluateRailWaySourceCNOSSOSTest {
         int rollingCondition = 0;
         double idlingTime = 0;
 
-
         int nTracks=2;
         int trackTransfer = 7;
         int railRoughness = 3;
@@ -68,22 +66,11 @@ public class EvaluateRailWaySourceCNOSSOSTest {
         double[] expectedValuesLWAerodynamicB = new double[]{-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99};
         double[] expectedValuesLWBridge = new double[]{-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99};
 
-        int  vehiclePerHour = (int) tDay;
+        int  vehiclePerHour = (int) (tDay + tEvening + tNight);
         RailwayVehicleParametersCnossos vehicleParameters = new RailwayVehicleParametersCnossos(vehCat, vehicleSpeed,vehiclePerHour, rollingCondition,idlingTime);
         RailwayTrackParametersCnossos trackParameters = new RailwayTrackParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
                 impactNoise, bridgeTransfert, curvature, vehicleCommercial,isTunnel, nTracks);
-        RailWayLW lWRailWayDay = evaluateRailwaySourceCnossos.evaluate(vehicleParameters, trackParameters);
-
-        vehiclePerHour = (int) tEvening;
-        vehicleParameters = new RailwayVehicleParametersCnossos(vehCat, vehicleSpeed,vehiclePerHour, rollingCondition,idlingTime);
-        RailWayLW lWRailWayEvening = evaluateRailwaySourceCnossos.evaluate(vehicleParameters, trackParameters);
-
-        vehiclePerHour = (int) tEvening;
-        vehicleParameters = new RailwayVehicleParametersCnossos(vehCat, vehicleSpeed,vehiclePerHour, rollingCondition,idlingTime);
-        RailWayLW lWRailWayNight = evaluateRailwaySourceCnossos.evaluate(vehicleParameters, trackParameters);
-
-        // Compute DayEveningNight
-        RailWayLW lWRailWay = computeDayEveningNight(lWRailWayDay,lWRailWayEvening, lWRailWayNight);
+        RailWayLW lWRailWay = evaluateRailwaySourceCnossos.evaluate(vehicleParameters, trackParameters);
 
         for (int idFreq = 0; idFreq < 24; idFreq++) {
             assertEquals(expectedValuesLWRolling[idFreq], lWRailWay.getLWRolling()[idFreq], EPSILON_TEST1);
