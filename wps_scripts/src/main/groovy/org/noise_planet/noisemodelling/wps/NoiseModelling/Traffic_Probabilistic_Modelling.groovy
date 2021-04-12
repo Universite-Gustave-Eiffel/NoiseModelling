@@ -29,6 +29,12 @@ import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
 
+import org.noise_planet.noisemodelling.emission.*
+import org.noise_planet.noisemodelling.pathfinder.*
+import org.noise_planet.noisemodelling.propagation.*
+import org.noise_planet.noisemodelling.jdbc.*
+
+
 import java.sql.Connection
 import java.sql.SQLException
 
@@ -491,7 +497,7 @@ def exec(Connection connection, input) {
  * Read source database and compute the sound emission spectrum of roads sources
  * */
 class WpsPropagationProcessDataProba extends PropagationProcessData {
-    static List<Integer> freq_lvl = Arrays.asList(PropagationProcessPathData.asOctaveBands(PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE));
+    static List<Integer> freq_lvl = Arrays.asList(PropagationProcessPathData.asOctaveBands(PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE))
 
     // Lden values
     public List<double[]> wjSourcesD = new ArrayList<>()
@@ -885,7 +891,6 @@ class ProbabilisticProcessData {
         //////////////////////
         // Import file text
         //////////////////////
-        int i_read = 0;
 
         // Remplissage des variables avec le contenu du fichier plan d'exp
         sql.eachRow('SELECT PK,  SPEED, HV,LV FROM ' + tablename + ';') { row ->

@@ -116,6 +116,28 @@ public class RailWayLW {
         return railWayLW;
     }
 
+    public static RailWayLW computeDayEveningNight(RailWayLW railWayLWDay, RailWayLW railWayLWEvening, RailWayLW railWayLWNight){
+        RailWayLW railWayLW = new RailWayLW();
+
+        railWayLW.setLWRolling(sumDbArray(railWayLWDay.getLWRolling() ,railWayLWEvening.getLWRolling()) );
+        railWayLW.setLWAerodynamicA(sumDbArray(railWayLWDay.getLWAerodynamicA() ,railWayLWEvening.getLWAerodynamicA()) );
+        railWayLW.setLWAerodynamicB(sumDbArray(railWayLWDay.getLWAerodynamicB() ,railWayLWEvening.getLWAerodynamicB()) );
+        railWayLW.setLWBridge(sumDbArray(railWayLWDay.getLWBridge() ,railWayLWEvening.getLWBridge()) );
+        railWayLW.setLWTractionA(sumDbArray(railWayLWDay.getLWTractionA() ,railWayLWEvening.getLWTractionA()) );
+        railWayLW.setLWTractionB(sumDbArray(railWayLWDay.getLWTractionB() ,railWayLWEvening.getLWTractionB()) );
+
+        railWayLW.setLWRolling(sumDbArray(railWayLW.getLWRolling() ,railWayLWNight.getLWRolling()) );
+        railWayLW.setLWAerodynamicA(sumDbArray(railWayLW.getLWAerodynamicA() ,railWayLWNight.getLWAerodynamicA()) );
+        railWayLW.setLWAerodynamicB(sumDbArray(railWayLW.getLWAerodynamicB() ,railWayLWNight.getLWAerodynamicB()) );
+        railWayLW.setLWBridge(sumDbArray(railWayLW.getLWBridge() ,railWayLWNight.getLWBridge()) );
+        railWayLW.setLWTractionA(sumDbArray(railWayLW.getLWTractionA() ,railWayLWNight.getLWTractionA()) );
+        railWayLW.setLWTractionB(sumDbArray(railWayLW.getLWTractionB() ,railWayLWNight.getLWTractionB()) );
+
+        return railWayLW;
+    }
+
+
+
 
 
 
