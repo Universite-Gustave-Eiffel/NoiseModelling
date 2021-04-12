@@ -435,7 +435,7 @@ public class MeshBuilder {
             this.geometriesBoundingBox = boundingBoxGeom.getEnvelopeInternal();
         }
 
-        LayerDelaunay delaunayTool = new LayerPoly2Tri();
+        LayerDelaunay delaunayTool = new LayerTinfour();
 
 
         //merge buildings

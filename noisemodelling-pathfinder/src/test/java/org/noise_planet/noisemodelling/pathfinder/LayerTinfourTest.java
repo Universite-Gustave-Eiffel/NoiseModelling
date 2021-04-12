@@ -1,5 +1,6 @@
 package org.noise_planet.noisemodelling.pathfinder;
 
+import org.h2gis.functions.io.osm.OSMDriverFunction;
 import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
@@ -57,7 +58,16 @@ public class LayerTinfourTest {
         layerTinfour.processDelaunay();
 
         List<Triangle> triangleList = layerTinfour.getTriangles();
+        int numbertri55 = 0;
+        for(Triangle tri : triangleList) {
+            if(tri.getAttribute() == 55) {
+                numbertri55++;
+            }
+        }
+        // 2 triangle inside a rectangular building
+        assertEquals(2, numbertri55);
         List<Triangle> neighbors = layerTinfour.getNeighbors();
         assertEquals(10, triangleList.size());
     }
+
 }

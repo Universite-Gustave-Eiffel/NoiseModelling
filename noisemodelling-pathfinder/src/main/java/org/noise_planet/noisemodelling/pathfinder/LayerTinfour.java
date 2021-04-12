@@ -29,15 +29,17 @@ public class LayerTinfour implements LayerDelaunay {
     private AtomicInteger pointsCount = new AtomicInteger(0);
     private LayerTinfour.PointHandler pointHandler = new LayerTinfour.PointHandler(this, pts, pointsCount);
     private LayerTinfour.LineStringHandler lineStringHandler = new LayerTinfour.LineStringHandler(this, pts, pointsCount, segments);
-    private List<Coordinate> vertices = new ArrayList<Coordinate>();
     private HashMap<Integer, LayerTinfour.BuildingWithID> buildingWithID = new HashMap<Integer, LayerTinfour.BuildingWithID>();
-
     private boolean computeNeighbors = false;
-    private List<Triangle> triangles = new ArrayList<Triangle>();
-    private List<Triangle> neighbors = new ArrayList<Triangle>(); // The first neighbor triangle is opposite the first corner of triangle  i
     private double maxArea = 0;
 
     private GeometryFactory factory = new GeometryFactory();
+
+
+    // Output data
+    private List<Coordinate> vertices = new ArrayList<Coordinate>();
+    private List<Triangle> triangles = new ArrayList<Triangle>();
+    private List<Triangle> neighbors = new ArrayList<Triangle>(); // The first neighbor triangle is opposite the first corner of triangle  i
 
     private static Coordinate TPointToCoordinate(Vertex tPoint) {
         return new Coordinate(tPoint.getX(), tPoint.getY(), tPoint.getZ());
@@ -108,15 +110,10 @@ public class LayerTinfour implements LayerDelaunay {
 
         List<Vertex> meshPoints = new ArrayList<>(Arrays.asList(ptsArray));
 
-        STRtree buildingsRtree = null;
-        if(maxArea > 0) {
-            // STRtree minimal size is 2
-            buildingsRtree = new STRtree(Math.max(10, buildingWithID.size()));
-            for (Map.Entry<Integer, LayerTinfour.BuildingWithID> buildingWithIDEntry : buildingWithID.entrySet()) {
-                buildingsRtree.insert(buildingWithIDEntry.getValue().building.getEnvelopeInternal(), buildingWithIDEntry.getKey());
-            }
+        STRtree buildingsRtree = new STRtree(Math.max(10, buildingWithID.size()));
+        for (Map.Entry<Integer, LayerTinfour.BuildingWithID> buildingWithIDEntry : buildingWithID.entrySet()) {
+            buildingsRtree.insert(buildingWithIDEntry.getValue().building.getEnvelopeInternal(), buildingWithIDEntry.getKey());
         }
-
 
         IncrementalTin tin;
         boolean refine;
@@ -136,27 +133,29 @@ public class LayerTinfour implements LayerDelaunay {
 
             simpleTriangles = computeTriangles(tin);
             // Will triangulate multiple time if refinement is necessary
-            if(buildingsRtree != null && maxArea > 0) {
+            if(maxArea > 0) {
                 for (SimpleTriangle triangle : simpleTriangles) {
                     if(triangle.getArea() > maxArea) {
-                        // Insert steiner point in centroid
-                        Coordinate centroid = getCentroid(triangle);
+                        // Insert steiner point in circumcircle
+                        Coordinate circumcentre = org.locationtech.jts.geom.Triangle.circumcentre(toCoordinate(triangle.getVertexA()),
+                                toCoordinate(triangle.getVertexB()),
+                                toCoordinate(triangle.getVertexC()));
                         // Do not add steiner points into buildings
-                        Envelope searchEnvelope = new Envelope(centroid);
+                        Envelope searchEnvelope = new Envelope(circumcentre);
                         searchEnvelope.expandBy(1.);
                         List polyInters = buildingsRtree.query(searchEnvelope);
                         boolean inBuilding = false;
                         for (Object id : polyInters) {
                             if (id instanceof Integer) {
                                 LayerTinfour.BuildingWithID inPoly = buildingWithID.get(id);
-                                if (inPoly.building.contains(factory.createPoint(centroid))) {
+                                if (inPoly.building.contains(factory.createPoint(circumcentre))) {
                                     inBuilding = true;
                                     break;
                                 }
                             }
                         }
                         if(!inBuilding) {
-                            meshPoints.add(new Vertex(centroid.x, centroid.y, centroid.z));
+                            meshPoints.add(new Vertex(circumcentre.x, circumcentre.y, circumcentre.z));
                             refine = true;
                         }
                     }
@@ -165,14 +164,30 @@ public class LayerTinfour implements LayerDelaunay {
         } while (refine);
         List<Vertex> verts = tin.getVertices();
         vertices = new ArrayList<>(verts.size());
-        pts.clear();
+        Map<Vertex, Integer> vertIndex = new HashMap<>();
         for(Vertex v : verts) {
-            pointHandler.addVertex(v);
+            vertIndex.put(v, vertices.size());
+            vertices.add(toCoordinate(v));
         }
         Map<Integer, Integer> edgeIndexToTriangleIndex = new HashMap<>();
         for(SimpleTriangle t : simpleTriangles) {
-            int triangleAttribute = -1;
-            triangles.add(new Triangle(pts.get(t.getVertexA()), pts.get(t.getVertexB()),pts.get(t.getVertexC()), triangleAttribute));
+            int triangleAttribute = 0;
+            // Insert steiner point in centroid
+            Coordinate centroid = getCentroid(t);
+            // Do not add steiner points into buildings
+            Envelope searchEnvelope = new Envelope(centroid);
+            searchEnvelope.expandBy(1.);
+            List polyInters = buildingsRtree.query(searchEnvelope);
+            for (Object id : polyInters) {
+                if (id instanceof Integer) {
+                    LayerTinfour.BuildingWithID inPoly = buildingWithID.get(id);
+                    if (inPoly.building.contains(factory.createPoint(centroid))) {
+                        triangleAttribute = (int) id;
+                        break;
+                    }
+                }
+            }
+            triangles.add(new Triangle(vertIndex.get(t.getVertexA()), vertIndex.get(t.getVertexB()),vertIndex.get(t.getVertexC()), triangleAttribute));
             edgeIndexToTriangleIndex.put(t.getEdgeA().getIndex(), triangles.size() - 1);
             edgeIndexToTriangleIndex.put(t.getEdgeB().getIndex(), triangles.size() - 1);
             edgeIndexToTriangleIndex.put(t.getEdgeC().getIndex(), triangles.size() - 1);
