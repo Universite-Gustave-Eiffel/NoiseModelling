@@ -338,7 +338,7 @@ public class TestWallReflection extends TestCase {
 	    Coordinate source = new Coordinate(316900.8845049501,6703903.754851485, 0.05);
         List<FastObstructionTest.Wall> walls = data.freeFieldFinder.getLimitsInRange(
                 data.maxRefDist, source, false);
-        assertEquals(12, walls.size());
+        assertEquals(13, walls.size());
         List<PropagationPath> paths;
         paths = computeRays.computeReflexion(receiver, source, false, walls);
         assertEquals(1, paths.size());

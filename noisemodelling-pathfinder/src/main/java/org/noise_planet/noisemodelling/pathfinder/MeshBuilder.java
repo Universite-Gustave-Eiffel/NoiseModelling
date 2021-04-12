@@ -467,7 +467,7 @@ public class MeshBuilder {
         CoordinateSequenceFilter absoluteCoordinateSequenceFilter;
         if(resetBuildingsZGround) {
             // set buildings Z coordinates to 0 m
-            absoluteCoordinateSequenceFilter = new LayerPoly2Tri.SetZFilter(true);
+            absoluteCoordinateSequenceFilter = new LayerTinfour.SetZFilter(true);
         } else {
             absoluteCoordinateSequenceFilter = new ComputeRays.AbsoluteCoordinateSequenceFilter(fastObstructionTest, resetBuildingsZGround);
         }
