@@ -37,7 +37,9 @@ import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
 import java.sql.Connection
 import java.sql.PreparedStatement
 import java.sql.SQLException
+
 /**
+ * @Author Pierre Aumond,  Univ Gustave Eiffel
  * @Author Adrien Le Bellec,  Univ Gustave Eiffel
  * @Author Olivier Chiello, Univ Gustave Eiffel
  */
@@ -48,28 +50,28 @@ description = 'Compute Rail Emission Noise Map from Day Evening Night traffic fl
 
 inputs = [
         tableRailwayTraffic: [
-                name: 'Railway traffic table name',
-                title: 'Rail table name',
-                description: "<b>Name of the Rail traffic table.</b>  </br>  " +
+                name                                                                                                                            : 'Railway traffic table name',
+                title                                                                                                                           : 'Rail table name',
+                description                                                                                                                     : "<b>Name of the Rail traffic table.</b>  </br>  " +
+                        "<br>  This function recognize the following columns (* mandatory) : </br><ul>" +
+                        "<li><b> idTraffic </b>* : an identifier. It shall be a primary key (INT, PRIMARY KEY)</li>" +
+                        "<li><b> idSection </b>* : an identifier. (INT)</li>" +
+                        "<li><b> TYPETRAIN </b>* : Type vehicle (STRING)/li>" +
+                        "<li><b> speedVehic </b>* : Maximum Train speed (DOUBLE) </li>" +
+                        "<li><b> TDAY </b><b> TEVENING </b><b> TNIGHT </b> : Hourly average train count (6-18h)(18-22h)(22-6h) (INT)</li>", type: String.class],
+        tableRailwayTrack  : [
+                name                                           : 'Rail Geom table name', title: 'Rail table name', description: "<b>Name of the Rail Geom table.</b>  </br>  " +
                 "<br>  This function recognize the following columns (* mandatory) : </br><ul>" +
-                "<li><b> idTraffic </b>* : an identifier. It shall be a primary key (INT, PRIMARY KEY)</li>" +
-                "<li><b> idSection </b>* : an identifier. (INT)</li>" +
-                "<li><b> TYPETRAIN </b>* : Type vehicle (STRING)/li>" +
-                "<li><b> speedVehic </b>* : Maximum Train speed (DOUBLE) </li>" +
-                "<li><b> TDAY </b><b> TEVENING </b><b> TNIGHT </b> : Hourly average train count (6-18h)(18-22h)(22-6h) (INT)</li>", type: String.class],
-          tableRailwayTrack: [
-                  name: 'Rail Geom table name', title: 'Rail table name', description: "<b>Name of the Rail Geom table.</b>  </br>  " +
-                  "<br>  This function recognize the following columns (* mandatory) : </br><ul>" +
-                  "<li><b> idSection </b>* : an identifier. It shall be a primary key(INTEGER, PRIMARY KEY)</li>" +
-                  "<li><b> nTrack </b>* : Number of tracks (INTEGER) /li>" +
-                  "<li><b> speedTrack </b>* : Maximum speed on the section in km/h (DOUBLE) </li>" +
-                  "<li><b> trackTrans </b> : Track transfer function identifier (INTEGER) </li>" +
-                  "<li><b> railRoughn </b> : Rail roughness identifier (INTEGER)  </li>" +
-                  "<li><b> impactNois </b> : Impact noise identifier (INTEGER) </li>" +
-                  "<li><b> curvature </b> : Listed code describing the curvature of the section (INTEGER) </li>" +
-                  "<li><b> bridgeTran </b> : Bridge transfer function identifier (INTEGER) </li>" +
-                  "<li><b> speedComme </b> : Commercial speed on the section in km/h (DOUBLE) </li>" +
-                  "<li><b> isTunnel </b> : (BOOLEAN) </li>"  , type: String.class]
+                "<li><b> idSection </b>* : an identifier. It shall be a primary key(INTEGER, PRIMARY KEY)</li>" +
+                "<li><b> nTrack </b>* : Number of tracks (INTEGER) /li>" +
+                "<li><b> speedTrack </b>* : Maximum speed on the section in km/h (DOUBLE) </li>" +
+                "<li><b> trackTrans </b> : Track transfer function identifier (INTEGER) </li>" +
+                "<li><b> railRoughn </b> : Rail roughness identifier (INTEGER)  </li>" +
+                "<li><b> impactNois </b> : Impact noise identifier (INTEGER) </li>" +
+                "<li><b> curvature </b> : Listed code describing the curvature of the section (INTEGER) </li>" +
+                "<li><b> bridgeTran </b> : Bridge transfer function identifier (INTEGER) </li>" +
+                "<li><b> speedComme </b> : Commercial speed on the section in km/h (DOUBLE) </li>" +
+                "<li><b> isTunnel </b> : (BOOLEAN) </li>", type: String.class]
 ]
 
 outputs = [result: [name: 'Result output string', title: 'Result output string', description: 'This type of result does not allow the blocks to be linked together.', type: String.class]]
@@ -104,11 +106,11 @@ def exec(Connection connection, input) {
     System.out.println('sdvsdvsdvsdvsdv sd vdsv  sdvsd v sdvs dvsd  sd sdsd v')
 
     //Load GeneralTools.groovy
-    File generalTools = new File(new File("").absolutePath+"/data_dir/scripts/wpsTools/GeneralTools.groovy")
+    File generalTools = new File(new File("").absolutePath + "/data_dir/scripts/wpsTools/GeneralTools.groovy")
 
     //if we are in dev, the path is not the same as for geoserver
     if (new File("").absolutePath.substring(new File("").absolutePath.length() - 11) == 'wps_scripts') {
-        generalTools = new File(new File("").absolutePath+"/src/main/groovy/org/noise_planet/noisemodelling/wpsTools/GeneralTools.groovy")
+        generalTools = new File(new File("").absolutePath + "/src/main/groovy/org/noise_planet/noisemodelling/wpsTools/GeneralTools.groovy")
     }
 
     // Get external tools
@@ -156,7 +158,7 @@ def exec(Connection connection, input) {
     // drop table LW_RAILWAY if exists and the create and prepare the table
     sql.execute("drop table if exists LW_RAILWAY;")
 
-    sql.execute("create table LW_RAILWAY (ID_SECTION int, the_geom geometry, DIRECTIVITYID int," +
+    sql.execute("create table LW_RAILWAY (ID_SECTION int, the_geom geometry, DIRECTIVITYID int,HEIGHT double," +
             "LWD50 double precision,LWD63 double precision,LWD80 double precision, LWD125 double precision," +
             "LWD160 double precision,LWD200 double precision, LWD250 double precision,LWD315 double precision," +
             "LWD400 double precision, LWD500 double precision, LWD630 double precision,LWD800 double precision," +
@@ -178,7 +180,7 @@ def exec(Connection connection, input) {
             "LWN2500 double precision,LWN3150 double precision, LWN4000 double precision,LWN5000 double precision," +
             "LWN6300 double precision,LWN8000 double precision,LWN10000 double precision);")
 
-    def qry00 = 'INSERT INTO LW_RAILWAY(ID_SECTION, the_geom, DIRECTIVITYID,' +
+    def qry00 = 'INSERT INTO LW_RAILWAY(ID_SECTION, the_geom, DIRECTIVITYID, HEIGHT,' +
             'LWD50,LWD63,LWD80, LWD125, LWD160, LWD200, LWD250, LWD315, LWD400, LWD500, LWD630, LWD800,LWD1000,' +
             'LWD1250, LWD1600, LWD2000, LWD2500, LWD3150, LWD4000, LWD5000, LWD6300,LWD8000, LWD10000,' +
 
@@ -187,7 +189,7 @@ def exec(Connection connection, input) {
 
             'LWN50,LWN63,LWN80, LWN125, LWN160, LWN200, LWN250, LWN315, LWN400, LWN500, LWN630, LWN800,LWN1000,' +
             'LWN1250, LWN1600, LWN2000, LWN2500, LWN3150, LWN4000, LWN5000, LWN6300,LWN8000, LWN10000) ' +
-            'VALUES (?,?,?,' +
+            'VALUES (?,?,?,?,' +
             '?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,' +
             '?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,' +
             '?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);'
@@ -215,48 +217,83 @@ def exec(Connection connection, input) {
     int k = 0
     int currentVal = 0
 
-    System.println('sdfbsdbfdsfICI.')
-    RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,sources_geom_table_name, sources_table_traffic_name, ldenConfig, 5)
-    System.println('LA.')
+    RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection, sources_geom_table_name, sources_table_traffic_name, ldenConfig)
 
-
-    while(railWayLWIterator.next()!=null){
-
-        System.println('LA.')
+    while (railWayLWIterator.next() != null) {
 
         RailWayLW railWayLW = railWayLWIterator.getRailWayLW()
         List<LineString> geometries = railWayLWIterator.getRailWayLWGeometry(10)
         int pk = railWayLWIterator.getRailWayLWPK()
 
-        sql.withBatch(100, qry00) { ps ->
-            ps.addBatch(
-                    1 as int, (Geometry) geometries.get(4) as Geometry, 1 as int,
-                    railWayLW.getLWRolling()[0] ,railWayLW.getLWRolling()[1],railWayLW.getLWRolling()[2],railWayLW.getLWRolling()[3],
-                    railWayLW.getLWRolling()[4],railWayLW.getLWRolling()[5],railWayLW.getLWRolling()[6],railWayLW.getLWRolling()[7],
-                    railWayLW.getLWRolling()[8],railWayLW.getLWRolling()[9],railWayLW.getLWRolling()[10],railWayLW.getLWRolling()[11],
-                    railWayLW.getLWRolling()[12],railWayLW.getLWRolling()[13],railWayLW.getLWRolling()[14],railWayLW.getLWRolling()[15],
-                    railWayLW.getLWRolling()[16],railWayLW.getLWRolling()[17],railWayLW.getLWRolling()[18],railWayLW.getLWRolling()[19],
-                    railWayLW.getLWRolling()[20],railWayLW.getLWRolling()[21],railWayLW.getLWRolling()[22],
+        double[] LW
+        double heightSource
+        int directivityId
 
-                    railWayLW.getLWRolling()[0],railWayLW.getLWRolling()[1],railWayLW.getLWRolling()[2],railWayLW.getLWRolling()[3],
-                    railWayLW.getLWRolling()[4],railWayLW.getLWRolling()[5],railWayLW.getLWRolling()[6],railWayLW.getLWRolling()[7],
-                    railWayLW.getLWRolling()[8],railWayLW.getLWRolling()[9],railWayLW.getLWRolling()[10],railWayLW.getLWRolling()[11],
-                    railWayLW.getLWRolling()[12],railWayLW.getLWRolling()[13],railWayLW.getLWRolling()[14],railWayLW.getLWRolling()[15],
-                    railWayLW.getLWRolling()[16],railWayLW.getLWRolling()[17],railWayLW.getLWRolling()[18],railWayLW.getLWRolling()[19],
-                    railWayLW.getLWRolling()[20],railWayLW.getLWRolling()[21],railWayLW.getLWRolling()[22],
+        for (int iSource = 0; iSource < 6; iSource++) {
+            switch (iSource) {
+                case 0:
+                    LW = railWayLW.getLWRolling()
+                    heightSource = 0.05
+                    directivityId = 1
+                    break
+                case 1:
+                    LW = railWayLW.getLWTractionA()
+                    heightSource = 2
+                    directivityId = 2
+                    break
+                case 2:
+                    LW = railWayLW.getLWTractionB()
+                    heightSource = 2
+                    directivityId = 3
+                    break
+                case 3:
+                    LW = railWayLW.getLWAerodynamicA()
+                    heightSource = 4
+                    directivityId = 4
+                    break
+                case 4:
+                    LW = railWayLW.getLWAerodynamicB()
+                    heightSource = 4
+                    directivityId = 5
+                    break
+                case 5:
+                    LW = railWayLW.getLWBridge()
+                    heightSource = 1
+                    directivityId = 6
+                    break
+            }
+            for (int nTrack = 0; nTrack < geometries.size(); nTrack++) {
 
-                    railWayLW.getLWRolling()[0],railWayLW.getLWRolling()[1],railWayLW.getLWRolling()[2],railWayLW.getLWRolling()[3],
-                    railWayLW.getLWRolling()[4],railWayLW.getLWRolling()[5],railWayLW.getLWRolling()[6],railWayLW.getLWRolling()[7],
-                    railWayLW.getLWRolling()[8],railWayLW.getLWRolling()[9],railWayLW.getLWRolling()[10],railWayLW.getLWRolling()[11],
-                    railWayLW.getLWRolling()[12],railWayLW.getLWRolling()[13],railWayLW.getLWRolling()[14],railWayLW.getLWRolling()[15],
-                    railWayLW.getLWRolling()[16],railWayLW.getLWRolling()[17],railWayLW.getLWRolling()[18],railWayLW.getLWRolling()[19],
-                    railWayLW.getLWRolling()[20],railWayLW.getLWRolling()[21],railWayLW.getLWRolling()[22]
-            )
+                sql.withBatch(100, qry00) { ps ->
+                    ps.addBatch(
+                            pk as int, (Geometry) geometries.get(nTrack) as Geometry, directivityId as int, heightSource as double,
+                            LW[0], LW[1], LW[2], LW[3],
+                            LW[4], LW[5], LW[6], LW[7],
+                            LW[8], LW[9], LW[10], LW[11],
+                            LW[12], LW[13], LW[14], LW[15],
+                            LW[16], LW[17], LW[18], LW[19],
+                            LW[20], LW[21], LW[22],
 
+                            LW[0], LW[1], LW[2], LW[3],
+                            LW[4], LW[5], LW[6], LW[7],
+                            LW[8], LW[9], LW[10], LW[11],
+                            LW[12], LW[13], LW[14], LW[15],
+                            LW[16], LW[17], LW[18], LW[19],
+                            LW[20], LW[21], LW[22],
+
+                            LW[0], LW[1], LW[2], LW[3],
+                            LW[4], LW[5], LW[6], LW[7],
+                            LW[8], LW[9], LW[10], LW[11],
+                            LW[12], LW[13], LW[14], LW[15],
+                            LW[16], LW[17], LW[18], LW[19],
+                            LW[20], LW[21], LW[22]
+                    )
+
+                }
+            }
         }
 
     }
-
 
 
     // Fusion geometry and traffic table
@@ -273,7 +310,7 @@ def exec(Connection connection, input) {
     // print to command window
     System.out.println('\nResult : ' + resultString)
     System.out.println('End : LW_RAILWAY from Emission')
-   // System.out.println('Duration : ' + TimeCategory.minus(new Date(), start))
+    // System.out.println('Duration : ' + TimeCategory.minus(new Date(), start))
 
     // print to WPS Builder
     return resultString

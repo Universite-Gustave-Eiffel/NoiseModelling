@@ -29,6 +29,15 @@ public class RailWayLWIterator implements Iterator<RailWayLW> {
     private RailWayLWGeom railWayLWfinal = new RailWayLWGeom();
     private String tableTrain;
     private String tableTrack;
+
+    public int getNbTrack() {
+        return nbTrack;
+    }
+
+    public void setNbTrack(int nbTrack) {
+        this.nbTrack = nbTrack;
+    }
+
     private int nbTrack = 1;
     private LDENConfig ldenConfig;
     private SpatialResultSet spatialResultSet;
@@ -38,8 +47,10 @@ public class RailWayLWIterator implements Iterator<RailWayLW> {
     GeometryFactory geometryFactory = new GeometryFactory();
 
 
+
     public List<LineString> getRailWayLWGeometry( double distance) {
         List<LineString> geometries = new ArrayList<>();
+
 
         boolean even = false;
         if (nbTrack % 2 == 0) even = true;
@@ -80,12 +91,11 @@ public class RailWayLWIterator implements Iterator<RailWayLW> {
     }
 
 
-    public RailWayLWIterator(Connection connection, String tableTrain, String tableTrack, LDENConfig ldenConfig, int nbTrack) {
+    public RailWayLWIterator(Connection connection, String tableTrain, String tableTrack, LDENConfig ldenConfig) {
         this.connection = connection;
         this.tableTrain = tableTrain;
         this.tableTrack = tableTrack;
         this.ldenConfig = ldenConfig;
-        this.nbTrack = nbTrack;
     }
 
     @Override

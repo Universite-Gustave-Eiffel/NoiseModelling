@@ -18,6 +18,7 @@ import org.h2gis.functions.io.shp.SHPRead
 import org.junit.Test
 import org.h2gis.utilities.JDBCUtilities
 import org.noise_planet.noisemodelling.wps.Geometric_Tools.Set_Height
+import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_source
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_traffic
@@ -55,6 +56,10 @@ class TestNoiseModelling extends JdbcTestCase {
                 ["tableRailwayTraffic": "RailTrain",
                  "tableRailwayTrack": "RailTrack"
                 ])
+
+        res = new Export_Table().exec(connection,
+                ["exportPath"   : "target/testLWRailWay.geojson",
+                 "tableToExport": "LW_RAILWAY"])
 
 
         assertEquals("Calculation Done ! The table LW_RAILWAY has been created.", res)

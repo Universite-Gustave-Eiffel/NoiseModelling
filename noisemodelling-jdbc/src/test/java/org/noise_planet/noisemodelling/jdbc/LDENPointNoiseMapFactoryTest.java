@@ -104,7 +104,7 @@ public class LDENPointNoiseMapFactoryTest {
         LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_RAILWAY_FLOW);
         ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData());
         ldenConfig.setCoefficientVersion(2);
-        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN", ldenConfig,5);
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN", ldenConfig);
 
         assertNotNull(railWayLWIterator.next());
 
