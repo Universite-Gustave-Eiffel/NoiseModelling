@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 import static java.lang.Math.min;
+import static org.noise_planet.noisemodelling.emission.Utils.Vperhour2NoiseLevel;
 import static org.noise_planet.noisemodelling.emission.utils.interpLinear.interpLinear;
 
 
@@ -255,9 +256,9 @@ public class EvaluateRailwaySourceCnossos {
     }
     public Double getLRoughness(String typeVehicle, int trackRoughnessId, int spectreVer, int idLambda) { //
         double wheelRoughness = getLambdaValue(typeVehicle, "RefRoughness",spectreVer, idLambda);
-        double contactFilter = getLambdaValue(typeVehicle, "RefContact",spectreVer, idLambda);
+        //double contactFilter = getLambdaValue(typeVehicle, "RefContact",spectreVer, idLambda);
         double trackRoughness = getTrackRoughness(trackRoughnessId, spectreVer, idLambda);
-        return 10 * Math.log10(Math.pow(10,wheelRoughness/10) + Math.pow(10,trackRoughness/10) ) + contactFilter;
+        return 10 * Math.log10(Math.pow(10,wheelRoughness/10) + Math.pow(10,trackRoughness/10) ) ;//+ contactFilter;
     }
 
     private double[] checkNanValue(double[] roughnessLtot) {
@@ -273,74 +274,6 @@ public class EvaluateRailwaySourceCnossos {
         return roughnessLtot;
     }
 
-    /** get noise level source from speed **/
-    private static Double getNoiseLvl(double base, double speed,
-                                      double speedRef, double speedIncrement) {
-        return base + speedIncrement * Math.log10(speed / speedRef);
-    }
-
-    private static Double getNoiseLvldBa(double NoiseLvl,  int freq){
-        double LvlCorrectionA;
-        switch (freq) {
-            case 100:
-                LvlCorrectionA=-19.1;
-                break;
-            case 125:
-                LvlCorrectionA=-16.1;
-                break;
-            case 160:
-                LvlCorrectionA=-13.4;
-                break;
-            case 200:
-                LvlCorrectionA=-10.9;
-                break;
-            case 250:
-                LvlCorrectionA=-8.6;
-                break;
-            case 315:
-                LvlCorrectionA=-6.6;
-                break;
-            case 400:
-                LvlCorrectionA=-4.8;
-                break;
-            case 500:
-                LvlCorrectionA=-3.2;
-                break;
-            case 630:
-                LvlCorrectionA=-1.9;
-                break;
-            case 800:
-                LvlCorrectionA=-0.8;
-                break;
-            case 1000:
-                LvlCorrectionA=0;
-                break;
-            case 1250:
-                LvlCorrectionA=0.6;
-                break;
-            case 1600:
-                LvlCorrectionA=1;
-                break;
-            case 2000:
-                LvlCorrectionA=1.2;
-                break;
-            case 2500:
-                LvlCorrectionA=1.3;
-                break;
-            case 3150:
-                LvlCorrectionA=1.2;
-                break;
-            case 4000:
-                LvlCorrectionA=1;
-                break;
-            case 5000:
-                LvlCorrectionA=0.5;
-                break;
-            default:
-                LvlCorrectionA=0;
-        }
-        return NoiseLvl+LvlCorrectionA;
-    }
 
     /** get noise level source from number of vehicle **/
     private static Double getNoiseLvlFinal(double base, double numbersource, int numVeh) {
@@ -396,6 +329,16 @@ public class EvaluateRailwaySourceCnossos {
             double[] lWAerodynamicB = evaluateLWSpectre(typeVehicle, "RefAerodynamic", runningCondition, speed, 1, spectreVer);
             // Bridge noise calcul
             double[] lWBridge = evaluateLWroughness("Bridge", typeVehicle, trackRoughnessId, impactId, bridgeId, curvature, speed, trackTransferId, spectreVer, axlesPerVeh);
+
+            for (int i=0;i<lWRolling.length;i++) {
+                lWRolling[i] = Vperhour2NoiseLevel(lWRolling[i], vehPerHour, speed);
+                lWTractionA[i] = Vperhour2NoiseLevel(lWTractionA[i], vehPerHour, speed);
+                lWTractionB[i] = Vperhour2NoiseLevel(lWTractionB[i], vehPerHour, speed);
+                lWAerodynamicA[i] = Vperhour2NoiseLevel(lWAerodynamicA[i], vehPerHour, speed);
+                lWAerodynamicB[i] = Vperhour2NoiseLevel(lWAerodynamicB[i], vehPerHour, speed);
+                lWBridge[i] = Vperhour2NoiseLevel(lWBridge[i], vehPerHour, speed);
+            }
+
             RailWayLW lWRailWay = new RailWayLW(lWRolling, lWTractionA, lWTractionB, lWAerodynamicA, lWAerodynamicB, lWBridge);
             return lWRailWay;
         }
