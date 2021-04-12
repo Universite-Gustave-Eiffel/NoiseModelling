@@ -585,7 +585,12 @@ public class Road {
         this.id = way.getId();
         for (Tag tag : way.getTags()) {
             if ("maxspeed".equalsIgnoreCase(tag.getKey())) {
-                this.maxspeed = Double.parseDouble(tag.getValue().replaceAll("[^0-9]+", ""));
+                try {
+                    this.maxspeed = Double.parseDouble(tag.getValue().replaceAll("[^0-9]+", ""));
+                }
+                catch (NumberFormatException e) {
+                    // in case maxspeed does not contain a numerical value
+                }
                 if (tag.getValue().contains("mph")) {
                     maxspeed = maxspeed * 1.60934
                 }
