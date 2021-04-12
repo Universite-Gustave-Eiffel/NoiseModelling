@@ -9,11 +9,6 @@
  * Contact: contact@noise-planet.org
  *
  */
-/**
- * @Author Pierre Aumond, Université Gustave Eiffel
- * @Author Nicolas Fortin, Université Gustave Eiffel
- * @Author Adrien Le Bellec, Université Gustave Eiffel
- */
 
 
 package org.noise_planet.noisemodelling.wps.NoiseModelling
