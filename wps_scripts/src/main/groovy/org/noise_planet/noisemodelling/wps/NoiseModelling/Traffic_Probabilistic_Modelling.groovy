@@ -284,7 +284,7 @@ def exec(Connection connection, input) {
     // -------------------------
 
     // Attenuation matrix table
-    List<ComputeRaysOut.VerticeSL> allLevels = new ArrayList<>()
+    List<org.noise_planet.noisemodelling.propagation.ComputeRaysOut.VerticeSL> allLevels = new ArrayList<>()
     // Set of already processed receivers
     Set<Long> receivers = new HashSet<>()
 
@@ -345,8 +345,8 @@ def exec(Connection connection, input) {
 
             IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, i, j, progressVisitor, receivers)
 
-            if (out instanceof ComputeRaysOut) {
-                allLevels.addAll(((ComputeRaysOut) out).getVerticesSoundLevel())
+            if (out instanceof org.noise_planet.noisemodelling.propagation.ComputeRaysOut) {
+                allLevels.addAll(((org.noise_planet.noisemodelling.propagation.ComputeRaysOut) out).getVerticesSoundLevel())
             }
         }
     }
