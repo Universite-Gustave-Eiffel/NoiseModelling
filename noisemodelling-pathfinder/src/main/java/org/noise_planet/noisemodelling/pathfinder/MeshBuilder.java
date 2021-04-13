@@ -275,7 +275,7 @@ public class MeshBuilder {
         return addGeometry(new PolygonWithHeight(obstructionPoly));
     }
 
-    private PolygonWithHeight addGeometry(PolygonWithHeight poly) {
+    public PolygonWithHeight addGeometry(PolygonWithHeight poly) {
         this.geometriesBoundingBox.expandToInclude(poly.getGeometry().getEnvelopeInternal());
         polygonWithHeight.add(poly);
         return poly;

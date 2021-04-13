@@ -171,20 +171,20 @@ public class LayerTinfour implements LayerDelaunay {
         for(SimpleTriangle t : simpleTriangles) {
             int triangleAttribute = 0;
             // Insert steiner point in centroid
-            Coordinate centroid = getCentroid(t);
-            // Do not add steiner points into buildings
-            Envelope searchEnvelope = new Envelope(centroid);
-            searchEnvelope.expandBy(1.);
-            List polyInters = buildingsRtree.query(searchEnvelope);
-            for (Object id : polyInters) {
-                if (id instanceof Integer) {
-                    LayerTinfour.BuildingWithID inPoly = buildingWithID.get(id);
-                    if (inPoly.building.contains(factory.createPoint(centroid))) {
-                        triangleAttribute = (int) id;
-                        break;
-                    }
-                }
-            }
+//            Coordinate centroid = getCentroid(t);
+//            // Do not add steiner points into buildings
+//            Envelope searchEnvelope = new Envelope(centroid);
+//            searchEnvelope.expandBy(1.);
+//            List polyInters = buildingsRtree.query(searchEnvelope);
+//            for (Object id : polyInters) {
+//                if (id instanceof Integer) {
+//                    LayerTinfour.BuildingWithID inPoly = buildingWithID.get(id);
+//                    if (inPoly.building.contains(factory.createPoint(centroid))) {
+//                        triangleAttribute = (int) id;
+//                        break;
+//                    }
+//                }
+//            }
             triangles.add(new Triangle(vertIndex.get(t.getVertexA()), vertIndex.get(t.getVertexB()),vertIndex.get(t.getVertexC()), triangleAttribute));
             edgeIndexToTriangleIndex.put(t.getEdgeA().getIndex(), triangles.size() - 1);
             edgeIndexToTriangleIndex.put(t.getEdgeB().getIndex(), triangles.size() - 1);
