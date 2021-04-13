@@ -137,25 +137,23 @@ public class LayerTinfour implements LayerDelaunay {
                 for (SimpleTriangle triangle : simpleTriangles) {
                     if(triangle.getArea() > maxArea) {
                         // Insert steiner point in circumcircle
-                        Coordinate circumcentre = org.locationtech.jts.geom.Triangle.circumcentre(toCoordinate(triangle.getVertexA()),
-                                toCoordinate(triangle.getVertexB()),
-                                toCoordinate(triangle.getVertexC()));
+                        Coordinate centroid = getCentroid(triangle);
                         // Do not add steiner points into buildings
-                        Envelope searchEnvelope = new Envelope(circumcentre);
+                        Envelope searchEnvelope = new Envelope(centroid);
                         searchEnvelope.expandBy(1.);
                         List polyInters = buildingsRtree.query(searchEnvelope);
                         boolean inBuilding = false;
                         for (Object id : polyInters) {
                             if (id instanceof Integer) {
                                 LayerTinfour.BuildingWithID inPoly = buildingWithID.get(id);
-                                if (inPoly.building.contains(factory.createPoint(circumcentre))) {
+                                if (inPoly.building.contains(factory.createPoint(centroid))) {
                                     inBuilding = true;
                                     break;
                                 }
                             }
                         }
                         if(!inBuilding) {
-                            meshPoints.add(new Vertex(circumcentre.x, circumcentre.y, circumcentre.z));
+                            meshPoints.add(new Vertex(centroid.x, centroid.y, centroid.z));
                             refine = true;
                         }
                     }
