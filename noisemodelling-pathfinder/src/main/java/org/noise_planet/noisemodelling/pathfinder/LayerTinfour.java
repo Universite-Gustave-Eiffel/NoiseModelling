@@ -1,5 +1,6 @@
 package org.noise_planet.noisemodelling.pathfinder;
 
+import org.locationtech.jts.algorithm.Orientation;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.index.quadtree.Quadtree;
 import org.slf4j.Logger;
@@ -8,21 +9,12 @@ import org.tinfour.common.*;
 import org.tinfour.standard.IncrementalTin;
 import org.tinfour.utils.TriangleCollector;
 
-import java.math.BigDecimal;
-import java.math.MathContext;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 public class LayerTinfour implements LayerDelaunay {
-    // Precision
-    private MathContext mathContext = MathContext.DECIMAL64;
     private double epsilon = 0.001; // merge of Vertex instances below this distance
     private static final Logger LOGGER = LoggerFactory.getLogger(LayerTinfour.class);
-
-    private double r(double v) {
-        return new BigDecimal(v).round(mathContext).doubleValue();
-    }
 
     //private Map<Vertex, Integer> pts = new HashMap<Vertex, Integer>();
     //private List<Integer> segments = new ArrayList<Integer>();
@@ -30,9 +22,6 @@ public class LayerTinfour implements LayerDelaunay {
     List<Integer> constraintIndex = new ArrayList<>();
 
     Quadtree ptsIndex = new Quadtree();
-    //private LayerTinfour.PointHandler pointHandler = new LayerTinfour.PointHandler(this, pts, pointsCount);
-    //private LayerTinfour.LineStringHandler lineStringHandler = new LayerTinfour.LineStringHandler(this, pts, pointsCount, segments);
-
     private boolean computeNeighbors = false;
     private double maxArea = 0;
 
@@ -40,10 +29,6 @@ public class LayerTinfour implements LayerDelaunay {
     private List<Coordinate> vertices = new ArrayList<Coordinate>();
     private List<Triangle> triangles = new ArrayList<Triangle>();
     private List<Triangle> neighbors = new ArrayList<Triangle>(); // The first neighbor triangle is opposite the first corner of triangle  i
-
-    private static Coordinate TPointToCoordinate(Vertex tPoint) {
-        return new Coordinate(tPoint.getX(), tPoint.getY(), tPoint.getZ());
-    }
 
     private Vertex addCoordinate(Coordinate coordinate, int index) {
         List result = ptsIndex.query(new Envelope(coordinate));
@@ -63,20 +48,25 @@ public class LayerTinfour implements LayerDelaunay {
         return found;
     }
 
-    private static final class BuildingWithID {
-        private Polygon building;
-
-        public BuildingWithID(Polygon building) {
-            this.building = building;
-
-        }
-    }
-
     private List<SimpleTriangle> computeTriangles(IncrementalTin incrementalTin) {
         ArrayList<SimpleTriangle> triangles = new ArrayList<>(incrementalTin.countTriangles().getCount());
         TriangleBuilder triangleBuilder = new TriangleBuilder(triangles);
         TriangleCollector.visitSimpleTriangles(incrementalTin, triangleBuilder);
         return triangles;
+    }
+
+    /**
+     * @return Merge vertices closer than specified epsilon
+     */
+    public double getEpsilon() {
+        return epsilon;
+    }
+
+    /**
+     * @param epsilon Merge vertices closer than specified epsilon
+     */
+    public void setEpsilon(double epsilon) {
+        this.epsilon = epsilon;
     }
 
     private static class TriangleBuilder implements Consumer<SimpleTriangle> {
@@ -219,10 +209,14 @@ public class LayerTinfour implements LayerDelaunay {
         newPoly.apply(zFilter);
         GeometryFactory factory = new GeometryFactory();
         final Coordinate[] coordinates = newPoly.getExteriorRing().getCoordinates();
-        if (coordinates.length > 1) {
+        // Exterior ring must be CCW
+        if(!Orientation.isCCW(coordinates)) {
+            CoordinateArrays.reverse(coordinates);
+        }
+        if (coordinates.length >= 4) {
             List<Vertex> vertexList = new ArrayList<>();
-            for(Coordinate coordinate : coordinates) {
-                vertexList.add(addCoordinate(coordinate, buildingId));
+            for(int vId = 0; vId < coordinates.length - 1 ; vId++) {
+                vertexList.add(addCoordinate(coordinates[vId], buildingId));
             }
             PolygonConstraint polygonConstraint = new PolygonConstraint(vertexList);
             constraints.add(polygonConstraint);
@@ -233,10 +227,14 @@ public class LayerTinfour implements LayerDelaunay {
         for (int holeIndex = 0; holeIndex < holeCount; holeIndex++) {
             LineString holeLine = newPoly.getInteriorRingN(holeIndex);
             final Coordinate[] hCoordinates = holeLine.getCoordinates();
+            // Exterior ring must be CW
+            if(Orientation.isCCW(hCoordinates)) {
+                CoordinateArrays.reverse(hCoordinates);
+            }
             // Should be counter clock wise
             List<Vertex> vertexList = new ArrayList<>();
-            for(Coordinate coordinate : hCoordinates) {
-                vertexList.add(addCoordinate(coordinate, buildingId));
+            for(int vId = 0; vId < hCoordinates.length - 1 ; vId++) {
+                vertexList.add(addCoordinate(hCoordinates[vId], buildingId));
             }
             PolygonConstraint polygonConstraint = new PolygonConstraint(vertexList);
             constraints.add(polygonConstraint);
@@ -311,101 +309,4 @@ public class LayerTinfour implements LayerDelaunay {
         this.computeNeighbors = retrieve;
 
     }
-
-
-    private static class PointHandler implements CoordinateFilter {
-        private LayerTinfour delaunayData;
-        private Map<Vertex, Integer> pts;
-        private AtomicInteger maxIndex;
-
-        public PointHandler(LayerTinfour delaunayData, Map<Vertex, Integer> pts, AtomicInteger maxIndex) {
-            this.delaunayData = delaunayData;
-            this.pts = pts;
-            this.maxIndex = maxIndex;
-        }
-
-        public Coordinate[] getPoints() {
-            Coordinate[] ret = new Coordinate[pts.size()];
-            int i = 0;
-            for (Vertex pt : pts.keySet()) {
-                ret[i] = TPointToCoordinate(pt);
-                i++;
-            }
-            return ret;
-        }
-
-        protected int addVertex(Vertex pt) {
-            Integer index = pts.get(pt);
-            if (index == null) {
-                index = maxIndex.getAndAdd(1);
-                pts.put(pt, index);
-            }
-            return index;
-        }
-        protected int addPt(Coordinate coordinate, int attribute) {
-            Vertex pt = new Vertex(delaunayData.r(coordinate.x), delaunayData.r(coordinate.y), Double.isNaN(coordinate.z) ? 0 : delaunayData.r(coordinate.z), attribute);
-            Integer index = pts.get(pt);
-            if (index == null) {
-                index = maxIndex.getAndAdd(1);
-                pts.put(pt, index);
-            }
-            return index;
-        }
-
-        @Override
-        public void filter(Coordinate pt) {
-            addPt(pt, -1);
-        }
-    }
-
-    /**
-     * When defining a polygon with identifier,
-     * the zone marker is a coordinate in this polygon with an associated ID
-     */
-    private static final class ZoneMarker {
-       public final Coordinate coordinate;
-       public final Integer index;
-
-        public ZoneMarker(Coordinate coordinate, Integer index) {
-            this.coordinate = coordinate;
-            this.index = index;
-        }
-    }
-    private static final class LineStringHandler extends LayerTinfour.PointHandler {
-        private List<Integer> segments;
-        private int firstPtIndex = -1;
-        private int attribute = -1;
-
-        public LineStringHandler(LayerTinfour delaunayData, Map<Vertex, Integer> pts, AtomicInteger maxIndex, List<Integer> segments) {
-            super(delaunayData, pts, maxIndex);
-            this.segments = segments;
-        }
-
-        /**
-         * New line string
-         */
-        public void reset() {
-            firstPtIndex = -1;
-            attribute = -1;
-        }
-
-        public void setAttribute(int attribute) {
-            this.attribute = attribute;
-        }
-
-        @Override
-        public void filter(Coordinate pt) {
-            if (firstPtIndex == -1) {
-                firstPtIndex = addPt(pt, attribute);
-            } else {
-                int secondPt = addPt(pt, attribute);
-                if (secondPt != firstPtIndex) {
-                    segments.add(firstPtIndex);
-                    segments.add(secondPt);
-                    firstPtIndex = secondPt;
-                }
-            }
-        }
-    }
-
 }
