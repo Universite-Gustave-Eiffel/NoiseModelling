@@ -42,7 +42,7 @@ public class LayerTinfour implements LayerDelaunay {
             }
         }
         if(found == null) {
-            found = new Vertex(coordinate.x, coordinate.y, coordinate.z, index);
+            found = new Vertex(coordinate.x, coordinate.y, Double.isNaN(coordinate.z) ? 0 : coordinate.z, index);
             ptsIndex.insert(new Envelope(coordinate),  found);
         }
         return found;
@@ -156,47 +156,6 @@ public class LayerTinfour implements LayerDelaunay {
         }
     }
 
-
-    public static final class SetZFilter implements CoordinateSequenceFilter {
-        private boolean done = false;
-        private boolean resetToZero = false;
-
-        public SetZFilter() {
-
-        }
-
-        public SetZFilter(boolean resetToZero) {
-            this.resetToZero = resetToZero;
-        }
-
-        @Override
-        public void filter(CoordinateSequence seq, int i) {
-            double x = seq.getX(i);
-            double y = seq.getY(i);
-            double z = seq.getOrdinate(i, 2);
-            seq.setOrdinate(i, 0, x);
-            seq.setOrdinate(i, 1, y);
-            if (Double.isNaN(z) || resetToZero) {
-                seq.setOrdinate(i, 2, 0);
-            } else {
-                seq.setOrdinate(i, 2, z);
-            }
-            if (i == seq.size()) {
-                done = true;
-            }
-        }
-
-        @Override
-        public boolean isDone() {
-            return done;
-        }
-
-        @Override
-        public boolean isGeometryChanged() {
-            return true;
-        }
-    }
-
     /**
      * Add height of building
      *
@@ -204,10 +163,6 @@ public class LayerTinfour implements LayerDelaunay {
      */
     @Override
     public void addPolygon(Polygon newPoly, int buildingId) throws LayerDelaunayError {
-        // To avoid errors we set NaN Z coordinates to 0.
-        LayerTinfour.SetZFilter zFilter = new LayerTinfour.SetZFilter();
-        newPoly.apply(zFilter);
-        GeometryFactory factory = new GeometryFactory();
         final Coordinate[] coordinates = newPoly.getExteriorRing().getCoordinates();
         // Exterior ring must be CCW
         if(!Orientation.isCCW(coordinates)) {

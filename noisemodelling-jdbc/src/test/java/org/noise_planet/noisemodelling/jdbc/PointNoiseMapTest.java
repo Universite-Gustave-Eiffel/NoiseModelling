@@ -165,33 +165,32 @@ public class PointNoiseMapTest {
         }
     }
 
-
-    @Test
-    public void testNoiseMapBuilding2() throws Exception {
-        try(Statement st = connection.createStatement()) {
-            SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("roads_traff.shp").getFile(), "ROADS_GEOM");
-            SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("buildings.shp").getFile(), " BUILDINGS");
-            TriangleNoiseMap noisemap = new TriangleNoiseMap("BUILDINGS", "ROADS_GEOM");
-            noisemap.setReceiverHasAbsoluteZCoordinates(false);
-            noisemap.setSourceHasAbsoluteZCoordinates(false);
-            noisemap.setHeightField("HEIGHT");
-            noisemap.setMaximumArea(300);
-            noisemap.setBuildingBuffer(0);
-            noisemap.setMaximumPropagationDistance(800);
-
-
-
-            noisemap.initialize(connection, new EmptyProgressVisitor());
-            AtomicInteger pk = new AtomicInteger(0);
-            for(int i=0; i < noisemap.getGridDim(); i++) {
-                for(int j=0; j < noisemap.getGridDim(); j++) {
-                    noisemap.generateReceivers(connection, i, j, "NM_RECEIVERS", "TRIANGLES", pk);
-                }
-            }
-            assertNotSame(0, pk.get());
-            SHPWrite.exportTable(connection, "target/triangle.shp", "TRIANGLES");
-        }
-    }
+    //    @Test
+    //    public void testNoiseMapBuilding2() throws Exception {
+    //        try(Statement st = connection.createStatement()) {
+    //            SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("roads_traff.shp").getFile(), "ROADS_GEOM");
+    //            SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("buildings.shp").getFile(), " BUILDINGS");
+    //            TriangleNoiseMap noisemap = new TriangleNoiseMap("BUILDINGS", "ROADS_GEOM");
+    //            noisemap.setReceiverHasAbsoluteZCoordinates(false);
+    //            noisemap.setSourceHasAbsoluteZCoordinates(false);
+    //            noisemap.setHeightField("HEIGHT");
+    //            noisemap.setMaximumArea(300);
+    //            noisemap.setBuildingBuffer(0);
+    //            noisemap.setMaximumPropagationDistance(800);
+    //
+    //
+    //
+    //            noisemap.initialize(connection, new EmptyProgressVisitor());
+    //            AtomicInteger pk = new AtomicInteger(0);
+    //            for(int i=0; i < noisemap.getGridDim(); i++) {
+    //                for(int j=0; j < noisemap.getGridDim(); j++) {
+    //                    noisemap.generateReceivers(connection, i, j, "NM_RECEIVERS", "TRIANGLES", pk);
+    //                }
+    //            }
+    //            assertNotSame(0, pk.get());
+    //            SHPWrite.exportTable(connection, "target/triangle.shp", "TRIANGLES");
+    //        }
+    //    }
 
 
 }
