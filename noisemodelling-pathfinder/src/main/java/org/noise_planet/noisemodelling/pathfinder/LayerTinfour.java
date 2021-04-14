@@ -31,7 +31,9 @@ public class LayerTinfour implements LayerDelaunay {
     private List<Triangle> neighbors = new ArrayList<Triangle>(); // The first neighbor triangle is opposite the first corner of triangle  i
 
     private Vertex addCoordinate(Coordinate coordinate, int index) {
-        List result = ptsIndex.query(new Envelope(coordinate));
+        final Envelope env = new Envelope(coordinate);
+        env.expandBy(epsilon);
+        List result = ptsIndex.query(env);
         Vertex found = null;
         for(Object vertex : result) {
             if(vertex instanceof Vertex) {
