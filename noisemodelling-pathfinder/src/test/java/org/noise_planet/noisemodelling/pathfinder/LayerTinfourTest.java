@@ -88,7 +88,7 @@ public class LayerTinfourTest {
         LayerTinfour layerTinfour = new LayerTinfour();
         layerTinfour.setRetrieveNeighbors(true);
 
-        layerTinfour.addPolygon(merged, 1);
+        layerTinfour.addPolygon(merged, 55);
 
         layerTinfour.processDelaunay();
 

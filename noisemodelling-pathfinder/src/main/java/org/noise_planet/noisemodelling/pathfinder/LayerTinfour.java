@@ -1,8 +1,7 @@
 package org.noise_planet.noisemodelling.pathfinder;
 
-import org.locationtech.jts.algorithm.Orientation;
 import org.locationtech.jts.geom.*;
-import org.locationtech.jts.index.strtree.STRtree;
+import org.locationtech.jts.index.quadtree.Quadtree;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tinfour.common.*;
@@ -18,23 +17,24 @@ import java.util.function.Consumer;
 public class LayerTinfour implements LayerDelaunay {
     // Precision
     private MathContext mathContext = MathContext.DECIMAL64;
+    private double epsilon = 0.001; // merge of Vertex instances below this distance
     private static final Logger LOGGER = LoggerFactory.getLogger(LayerTinfour.class);
 
     private double r(double v) {
         return new BigDecimal(v).round(mathContext).doubleValue();
     }
 
-    private Map<Vertex, Integer> pts = new HashMap<Vertex, Integer>();
-    private List<Integer> segments = new ArrayList<Integer>();
-    private AtomicInteger pointsCount = new AtomicInteger(0);
-    private LayerTinfour.PointHandler pointHandler = new LayerTinfour.PointHandler(this, pts, pointsCount);
-    private LayerTinfour.LineStringHandler lineStringHandler = new LayerTinfour.LineStringHandler(this, pts, pointsCount, segments);
-    private HashMap<Integer, LayerTinfour.BuildingWithID> buildingWithID = new HashMap<Integer, LayerTinfour.BuildingWithID>();
+    //private Map<Vertex, Integer> pts = new HashMap<Vertex, Integer>();
+    //private List<Integer> segments = new ArrayList<Integer>();
+    List<IConstraint> constraints = new ArrayList<>();
+    List<Integer> constraintIndex = new ArrayList<>();
+
+    Quadtree ptsIndex = new Quadtree();
+    //private LayerTinfour.PointHandler pointHandler = new LayerTinfour.PointHandler(this, pts, pointsCount);
+    //private LayerTinfour.LineStringHandler lineStringHandler = new LayerTinfour.LineStringHandler(this, pts, pointsCount, segments);
+
     private boolean computeNeighbors = false;
     private double maxArea = 0;
-
-    private GeometryFactory factory = new GeometryFactory();
-
 
     // Output data
     private List<Coordinate> vertices = new ArrayList<Coordinate>();
@@ -45,12 +45,22 @@ public class LayerTinfour implements LayerDelaunay {
         return new Coordinate(tPoint.getX(), tPoint.getY(), tPoint.getZ());
     }
 
-    private static Vertex CoordinateToTPoint(Coordinate coordinate) {
-        return new Vertex(coordinate.x, coordinate.y, coordinate.z, -1);
-    }
-
-    private static Vertex CoordinateToTPoint(Coordinate coordinate, int attribute) {
-        return new Vertex(coordinate.x, coordinate.y, coordinate.z, attribute);
+    private Vertex addCoordinate(Coordinate coordinate, int index) {
+        List result = ptsIndex.query(new Envelope(coordinate));
+        Vertex found = null;
+        for(Object vertex : result) {
+            if(vertex instanceof Vertex) {
+                if(((Vertex) vertex).getDistance(coordinate.x, coordinate.y) < epsilon) {
+                    found = (Vertex) vertex;
+                    break;
+                }
+            }
+        }
+        if(found == null) {
+            found = new Vertex(coordinate.x, coordinate.y, coordinate.z, index);
+            ptsIndex.insert(new Envelope(coordinate),  found);
+        }
+        return found;
     }
 
     private static final class BuildingWithID {
@@ -97,23 +107,7 @@ public class LayerTinfour implements LayerDelaunay {
         triangles.clear();
         vertices.clear();
 
-        // Create input data for Poly2Tri
-        int[] index = new int[segments.size()];
-        for (int i = 0; i < index.length; i++) {
-            index[i] = segments.get(i);
-        }
-        // Construct final points array by reversing key,value of hash map
-        Vertex[] ptsArray = new Vertex[pointsCount.get()];
-        for(Map.Entry<Vertex, Integer> entry : pts.entrySet()) {
-            ptsArray[entry.getValue()] = entry.getKey();
-        }
-
-        List<Vertex> meshPoints = new ArrayList<>(Arrays.asList(ptsArray));
-
-        STRtree buildingsRtree = new STRtree(Math.max(10, buildingWithID.size()));
-        for (Map.Entry<Integer, LayerTinfour.BuildingWithID> buildingWithIDEntry : buildingWithID.entrySet()) {
-            buildingsRtree.insert(buildingWithIDEntry.getValue().building.getEnvelopeInternal(), buildingWithIDEntry.getKey());
-        }
+        List<Vertex> meshPoints = ptsIndex.queryAll();
 
         IncrementalTin tin;
         boolean refine;
@@ -124,10 +118,6 @@ public class LayerTinfour implements LayerDelaunay {
             // Add points
             tin.add(meshPoints, null);
             // Add constraints
-            List<IConstraint> constraints = new ArrayList<>(segments.size());
-            for(int i=0; i < segments.size(); i+=2) {
-                constraints.add(new LinearConstraint(meshPoints.get(segments.get(i)), meshPoints.get(segments.get(i+1))));
-            }
             tin.addConstraints(constraints, maxArea > 0);
             refine = false;
 
@@ -138,24 +128,8 @@ public class LayerTinfour implements LayerDelaunay {
                     if(triangle.getArea() > maxArea) {
                         // Insert steiner point in circumcircle
                         Coordinate centroid = getCentroid(triangle);
-                        // Do not add steiner points into buildings
-                        Envelope searchEnvelope = new Envelope(centroid);
-                        searchEnvelope.expandBy(1.);
-                        List polyInters = buildingsRtree.query(searchEnvelope);
-                        boolean inBuilding = false;
-                        for (Object id : polyInters) {
-                            if (id instanceof Integer) {
-                                LayerTinfour.BuildingWithID inPoly = buildingWithID.get(id);
-                                if (inPoly.building.contains(factory.createPoint(centroid))) {
-                                    inBuilding = true;
-                                    break;
-                                }
-                            }
-                        }
-                        if(!inBuilding) {
-                            meshPoints.add(new Vertex(centroid.x, centroid.y, centroid.z));
-                            refine = true;
-                        }
+                        meshPoints.add(new Vertex(centroid.x, centroid.y, centroid.z));
+                        refine = true;
                     }
                 }
             }
@@ -170,21 +144,11 @@ public class LayerTinfour implements LayerDelaunay {
         Map<Integer, Integer> edgeIndexToTriangleIndex = new HashMap<>();
         for(SimpleTriangle t : simpleTriangles) {
             int triangleAttribute = 0;
-            // Insert steiner point in centroid
-//            Coordinate centroid = getCentroid(t);
-//            // Do not add steiner points into buildings
-//            Envelope searchEnvelope = new Envelope(centroid);
-//            searchEnvelope.expandBy(1.);
-//            List polyInters = buildingsRtree.query(searchEnvelope);
-//            for (Object id : polyInters) {
-//                if (id instanceof Integer) {
-//                    LayerTinfour.BuildingWithID inPoly = buildingWithID.get(id);
-//                    if (inPoly.building.contains(factory.createPoint(centroid))) {
-//                        triangleAttribute = (int) id;
-//                        break;
-//                    }
-//                }
-//            }
+            if(t.getContainingRegion() != null) {
+                if(t.getContainingRegion().getConstraintIndex() < constraintIndex.size()) {
+                    triangleAttribute = constraintIndex.get(t.getContainingRegion().getConstraintIndex());
+                }
+            }
             triangles.add(new Triangle(vertIndex.get(t.getVertexA()), vertIndex.get(t.getVertexB()),vertIndex.get(t.getVertexC()), triangleAttribute));
             edgeIndexToTriangleIndex.put(t.getEdgeA().getIndex(), triangles.size() - 1);
             edgeIndexToTriangleIndex.put(t.getEdgeB().getIndex(), triangles.size() - 1);
@@ -250,33 +214,33 @@ public class LayerTinfour implements LayerDelaunay {
      */
     @Override
     public void addPolygon(Polygon newPoly, int buildingId) throws LayerDelaunayError {
-
-        //// To avoid errors we set the Z coordinate to 0.
+        // To avoid errors we set NaN Z coordinates to 0.
         LayerTinfour.SetZFilter zFilter = new LayerTinfour.SetZFilter();
         newPoly.apply(zFilter);
         GeometryFactory factory = new GeometryFactory();
         final Coordinate[] coordinates = newPoly.getExteriorRing().getCoordinates();
         if (coordinates.length > 1) {
-            LineString newLineString = factory.createLineString(coordinates);
-            this.addLineString(newLineString, buildingId);
-            this.buildingWithID.put(buildingId, new LayerTinfour.BuildingWithID(newPoly));
+            List<Vertex> vertexList = new ArrayList<>();
+            for(Coordinate coordinate : coordinates) {
+                vertexList.add(addCoordinate(coordinate, buildingId));
+            }
+            PolygonConstraint polygonConstraint = new PolygonConstraint(vertexList);
+            constraints.add(polygonConstraint);
+            constraintIndex.add(buildingId);
         }
         // Append holes
         final int holeCount = newPoly.getNumInteriorRing();
         for (int holeIndex = 0; holeIndex < holeCount; holeIndex++) {
             LineString holeLine = newPoly.getInteriorRingN(holeIndex);
-            // Convert hole into a polygon, then compute an interior point
-            Polygon polyBuffnew = factory.createPolygon(factory.createLinearRing(holeLine.getCoordinates()), null);
-            if (polyBuffnew.getArea() > 0.) {
-                Coordinate interiorPoint = polyBuffnew.getInteriorPoint().getCoordinate();
-                if (!factory.createPoint(interiorPoint).intersects(holeLine)) {
-                    this.addLineString(holeLine, buildingId);
-                } else {
-                    LOGGER.info("Warning : hole rejected, can't find interior point.");
-                }
-            } else {
-                LOGGER.info("Warning : hole rejected, area=0");
+            final Coordinate[] hCoordinates = holeLine.getCoordinates();
+            // Should be counter clock wise
+            List<Vertex> vertexList = new ArrayList<>();
+            for(Coordinate coordinate : hCoordinates) {
+                vertexList.add(addCoordinate(coordinate, buildingId));
             }
+            PolygonConstraint polygonConstraint = new PolygonConstraint(vertexList);
+            constraints.add(polygonConstraint);
+            constraintIndex.add(buildingId);
         }
     }
 
@@ -306,7 +270,7 @@ public class LayerTinfour implements LayerDelaunay {
 
     @Override
     public void addVertex(Coordinate vertexCoordinate) throws LayerDelaunayError {
-        pointHandler.addPt(vertexCoordinate, -1);
+        addCoordinate(vertexCoordinate, 0);
     }
 
     @Override
@@ -316,9 +280,14 @@ public class LayerTinfour implements LayerDelaunay {
 
     //add buildingID to edge property and to points property
     public void addLineString(LineString lineToProcess, int buildingID) throws LayerDelaunayError {
-        lineStringHandler.reset();
-        lineStringHandler.setAttribute(buildingID);
-        lineToProcess.apply(lineStringHandler);
+        Coordinate[] coordinates = lineToProcess.getCoordinates();
+        List<Vertex> vertexList = new ArrayList<>();
+        for(Coordinate coordinate : coordinates) {
+            vertexList.add(addCoordinate(coordinate, buildingID));
+        }
+        LinearConstraint linearConstraint = new LinearConstraint(vertexList);
+        constraints.add(linearConstraint);
+        constraintIndex.add(buildingID);
     }
     //add buildingID to edge property and to points property
 
@@ -389,6 +358,19 @@ public class LayerTinfour implements LayerDelaunay {
         }
     }
 
+    /**
+     * When defining a polygon with identifier,
+     * the zone marker is a coordinate in this polygon with an associated ID
+     */
+    private static final class ZoneMarker {
+       public final Coordinate coordinate;
+       public final Integer index;
+
+        public ZoneMarker(Coordinate coordinate, Integer index) {
+            this.coordinate = coordinate;
+            this.index = index;
+        }
+    }
     private static final class LineStringHandler extends LayerTinfour.PointHandler {
         private List<Integer> segments;
         private int firstPtIndex = -1;
