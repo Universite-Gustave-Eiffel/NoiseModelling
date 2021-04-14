@@ -91,14 +91,6 @@ inputs = [
                 min        : 0, max: 1,
                 type       : Double.class
         ],
-        sourceDensification: [
-                name       : 'Source densification',
-                title      : 'Source densification',
-                description: 'Set additional receivers near sound sources (roads). This is the maximum distance between the points that compose the polygon near the source in meter. (FLOAT)' +
-                        '</br> </br> <b> Default value : 8 </b> ',
-                min        : 0, max: 1,
-                type       : Double.class
-        ],
         height             : [
                 name       : 'Height',
                 title      : 'Height',
@@ -206,12 +198,6 @@ def exec(Connection connection, input) {
         maxArea = input['maxArea'] as Double
     }
 
-    Double sourceDensification = 8.0
-    if (input.containsKey('sourceDensification')) {
-        sourceDensification = input['sourceDensification'] as Double
-    }
-
-
     int srid = SFSUtilities.getSRID(connection, TableLocation.parse(building_table_name))
 
     Geometry fence = null
@@ -256,8 +242,6 @@ def exec(Connection connection, input) {
     noiseMap.setRoadWidth(roadWidth)
     // No triangles larger than provided area
     noiseMap.setMaximumArea(maxArea)
-    // Densification of receivers near sound sources
-    noiseMap.setSourceDensification(sourceDensification)
 
     logger.info("Delaunay initialize")
     noiseMap.initialize(connection, new EmptyProgressVisitor())
