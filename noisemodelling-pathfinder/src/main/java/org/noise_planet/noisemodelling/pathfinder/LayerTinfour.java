@@ -227,11 +227,11 @@ public class LayerTinfour implements LayerDelaunay {
         for (int holeIndex = 0; holeIndex < holeCount; holeIndex++) {
             LineString holeLine = newPoly.getInteriorRingN(holeIndex);
             final Coordinate[] hCoordinates = holeLine.getCoordinates();
-            // Exterior ring must be CW
+            // Holes must be CW
             if(Orientation.isCCW(hCoordinates)) {
                 CoordinateArrays.reverse(hCoordinates);
             }
-            // Should be counter clock wise
+            // Should be clock wise
             List<Vertex> vertexList = new ArrayList<>();
             for(int vId = 0; vId < hCoordinates.length - 1 ; vId++) {
                 vertexList.add(addCoordinate(hCoordinates[vId], buildingId));

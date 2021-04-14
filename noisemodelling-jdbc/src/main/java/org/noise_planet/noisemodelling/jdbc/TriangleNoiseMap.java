@@ -3,6 +3,7 @@ package org.noise_planet.noisemodelling.jdbc;
 import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SFSUtilities;
 import org.h2gis.utilities.TableLocation;
+import org.locationtech.jts.densify.Densifier;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
@@ -19,6 +20,7 @@ import org.locationtech.jts.operation.buffer.BufferParameters;
 import org.locationtech.jts.simplify.TopologyPreservingSimplifier;
 import org.noise_planet.noisemodelling.pathfinder.*;
 import org.noise_planet.noisemodelling.pathfinder.Triangle;
+import org.noise_planet.noisemodelling.pathfinder.utils.Densifier3D;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -213,9 +215,14 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         logger.info("Begin delaunay");
         cellMesh.setRetrieveNeighbors(false);
         // Add cell envelope
-        cellMesh.addPolygon((Polygon)(new GeometryFactory().toGeometry(cellEnvelope)), 0);
         if (maximumArea > 1) {
             cellMesh.setMaxArea(maximumArea);
+            double triangleSide = (2*Math.pow(maximumArea, 0.5)) / Math.pow(3, 0.25);
+            Polygon polygon = (Polygon)Densifier.densify(new GeometryFactory().toGeometry(cellEnvelope), triangleSide);
+            cellMesh.addLineString(polygon.getExteriorRing(), 0);
+        } else {
+            Polygon polygon = (Polygon) new GeometryFactory().toGeometry(cellEnvelope);
+            cellMesh.addLineString(polygon.getExteriorRing(), 0);
         }
         cellMesh.processDelaunay();
         logger.info("End delaunay");

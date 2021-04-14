@@ -175,7 +175,7 @@ public class PointNoiseMapTest {
             noisemap.setReceiverHasAbsoluteZCoordinates(false);
             noisemap.setSourceHasAbsoluteZCoordinates(false);
             noisemap.setHeightField("HEIGHT");
-            noisemap.setMaximumArea(0);
+            noisemap.setMaximumArea(300);
             noisemap.setBuildingBuffer(0);
             noisemap.setMaximumPropagationDistance(800);
 
