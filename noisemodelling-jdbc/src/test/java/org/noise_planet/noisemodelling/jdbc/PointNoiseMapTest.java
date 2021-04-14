@@ -175,9 +175,13 @@ public class PointNoiseMapTest {
             noisemap.setReceiverHasAbsoluteZCoordinates(false);
             noisemap.setSourceHasAbsoluteZCoordinates(false);
             noisemap.setHeightField("HEIGHT");
-            noisemap.initialize(connection, new EmptyProgressVisitor());
-            noisemap.setMaximumArea(300);
+            noisemap.setMaximumArea(0);
+            noisemap.setBuildingBuffer(0);
+            noisemap.setMaximumPropagationDistance(800);
 
+
+
+            noisemap.initialize(connection, new EmptyProgressVisitor());
             AtomicInteger pk = new AtomicInteger(0);
             for(int i=0; i < noisemap.getGridDim(); i++) {
                 for(int j=0; j < noisemap.getGridDim(); j++) {

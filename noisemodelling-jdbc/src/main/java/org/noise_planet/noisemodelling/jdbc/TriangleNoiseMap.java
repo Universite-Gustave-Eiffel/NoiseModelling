@@ -120,8 +120,8 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         LinkedList<Geometry> toUniteFinal = new LinkedList<>();
         if (!toUnite.isEmpty()) {
             Geometry bufferBuildings = merge(toUnite, buildingBuffer);
-            bufferBuildings = TopologyPreservingSimplifier.simplify(bufferBuildings,
-                    minRecDist / 2);
+            //bufferBuildings = TopologyPreservingSimplifier.simplify(bufferBuildings,
+            //        minRecDist / 2);
             toUniteFinal.add(bufferBuildings); // Add buildingsTableName to triangulation
         }
         Geometry geom1 = geometryFactory.createPolygon();
@@ -216,10 +216,8 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         cellMesh.addPolygon((Polygon)(new GeometryFactory().toGeometry(cellEnvelope)), 0);
         if (maximumArea > 1) {
             cellMesh.setMaxArea(maximumArea);
-            cellMesh.processDelaunay();
-        } else {
-            cellMesh.processDelaunay();
         }
+        cellMesh.processDelaunay();
         logger.info("End delaunay");
     }
 
@@ -229,6 +227,11 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
     }
 
     public void generateReceivers(Connection connection, int cellI, int cellJ, String receiverTableName, String trianglesTableName, AtomicInteger receiverPK) throws SQLException, LayerDelaunayError, IOException {
+
+        int ij = cellI * gridDim + cellJ + 1;
+        if(verbose) {
+            logger.info("Begin processing of cell " + ij + " / " + gridDim * gridDim);
+        }
         // Compute the first pass delaunay mesh
         // The first pass doesn't take account of additional
         // vertices of neighbor cells at the borders
@@ -244,8 +247,6 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
 
         ArrayList<MeshBuilder.PolygonWithHeight> buildings = new ArrayList<>();
         fetchCellBuildings(connection, cellEnvelope, buildings);
-
-        FastObstructionTest freeFieldFinder = null;
 
         LayerDelaunay cellMesh = new LayerTinfour();
         try {
@@ -267,9 +268,6 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         for(Coordinate vertex : cellMesh.getVertices()) {
             Coordinate translatedVertex = new Coordinate(vertex);
             double z = receiverHeight;
-            if(freeFieldFinder != null) {
-                z = freeFieldFinder.getHeightAtPosition(translatedVertex) + receiverHeight;
-            }
             translatedVertex.setOrdinate(2, z);
             vertices.add(translatedVertex);
         }
