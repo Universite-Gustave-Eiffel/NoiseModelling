@@ -349,8 +349,12 @@ public abstract class JdbcNoiseMap {
         if(sourcesTableName.isEmpty()) {
             throw new SQLException("A sound source table must be provided");
         }
-        geometryFactory = new GeometryFactory(new PrecisionModel(),
-                SFSUtilities.getSRID(connection, TableLocation.parse(sourcesTableName)));
+        int srid = 0;
+        srid = SFSUtilities.getSRID(connection, TableLocation.parse(sourcesTableName));
+        if(srid == 0) {
+            srid = SFSUtilities.getSRID(connection, TableLocation.parse(buildingsTableName));
+        }
+        geometryFactory = new GeometryFactory(new PrecisionModel(), srid);
 
         // Steps of execution
         // Evaluation of the main bounding box (sourcesTableName+buildingsTableName)

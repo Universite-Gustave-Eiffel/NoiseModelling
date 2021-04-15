@@ -4,16 +4,7 @@ import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SFSUtilities;
 import org.h2gis.utilities.TableLocation;
 import org.locationtech.jts.densify.Densifier;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.Envelope;
-import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryCollection;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.LineString;
-import org.locationtech.jts.geom.MultiLineString;
-import org.locationtech.jts.geom.Point;
-import org.locationtech.jts.geom.Polygon;
-import org.locationtech.jts.geom.TopologyException;
+import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.WKTWriter;
 import org.locationtech.jts.operation.buffer.BufferOp;
 import org.locationtech.jts.operation.buffer.BufferParameters;
@@ -50,7 +41,6 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
     private double receiverHeight = 1.6;
     private double buildingBuffer = 2;
     private String exceptionDumpFolder = "";
-
 
     /**
      * @param buildingsTableName Buildings table
@@ -313,13 +303,11 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         }
         int receiverPkOffset = receiverPK.get();
         // Add vertices to receivers
-        PreparedStatement ps = connection.prepareStatement("INSERT INTO "+TableLocation.parse(receiverTableName)+" VALUES (?, ST_MAKEPOINT(?,?,?));");
+        PreparedStatement ps = connection.prepareStatement("INSERT INTO "+TableLocation.parse(receiverTableName)+" VALUES (?, ?);");
         int batchSize = 0;
         for(Coordinate v : vertices) {
             ps.setInt(1, receiverPK.getAndAdd(1));
-            ps.setDouble(2, v.x);
-            ps.setDouble(3, v.y);
-            ps.setDouble(4, v.z);
+            ps.setObject(2, geometryFactory.createPoint(v));
             ps.addBatch();
             batchSize++;
             if (batchSize >= BATCH_MAX_SIZE) {
