@@ -49,6 +49,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
     private long nbreceivers = 0;
     private double receiverHeight = 1.6;
     private double buildingBuffer = 2;
+    private String exceptionDumpFolder = "";
 
 
     /**
@@ -57,6 +58,20 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
      */
     public TriangleNoiseMap(String buildingsTableName, String sourcesTableName) {
         super(buildingsTableName, sourcesTableName);
+    }
+
+    /**
+     * @return When an exception occur, this folder with receiver the input data
+     */
+    public String getExceptionDumpFolder() {
+        return exceptionDumpFolder;
+    }
+
+    /**
+     * @param exceptionDumpFolder When an exception occur, this folder with receiver the input data
+     */
+    public void setExceptionDumpFolder(String exceptionDumpFolder) {
+        this.exceptionDumpFolder = exceptionDumpFolder;
     }
 
     /**
@@ -255,7 +270,8 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         ArrayList<MeshBuilder.PolygonWithHeight> buildings = new ArrayList<>();
         fetchCellBuildings(connection, cellEnvelope, buildings);
 
-        LayerDelaunay cellMesh = new LayerTinfour();
+        LayerTinfour cellMesh = new LayerTinfour();
+        cellMesh.setDumpFolder(exceptionDumpFolder);
         try {
             computeDelaunay(cellMesh, mainEnvelope, cellI,
                     cellJ,

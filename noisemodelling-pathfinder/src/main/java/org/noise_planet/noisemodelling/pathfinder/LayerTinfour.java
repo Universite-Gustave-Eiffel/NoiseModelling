@@ -3,18 +3,25 @@ package org.noise_planet.noisemodelling.pathfinder;
 import org.locationtech.jts.algorithm.Orientation;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.index.quadtree.Quadtree;
+import org.locationtech.jts.io.WKBWriter;
+import org.locationtech.jts.io.WKTWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tinfour.common.*;
 import org.tinfour.standard.IncrementalTin;
 import org.tinfour.utils.TriangleCollector;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.*;
 import java.util.function.Consumer;
 
 public class LayerTinfour implements LayerDelaunay {
     private double epsilon = 0.001; // merge of Vertex instances below this distance
     private static final Logger LOGGER = LoggerFactory.getLogger(LayerTinfour.class);
+    public String dumpFolder = "";
 
     //private Map<Vertex, Integer> pts = new HashMap<Vertex, Integer>();
     //private List<Integer> segments = new ArrayList<Integer>();
@@ -58,6 +65,20 @@ public class LayerTinfour implements LayerDelaunay {
     }
 
     /**
+     * @return When an exception occur, this folder with receiver the input data
+     */
+    public String getDumpFolder() {
+        return dumpFolder;
+    }
+
+    /**
+     * @param dumpFolder When an exception occur, this folder with receiver the input data
+     */
+    public void setDumpFolder(String dumpFolder) {
+        this.dumpFolder = dumpFolder;
+    }
+
+    /**
      * @return Merge vertices closer than specified epsilon
      */
     public double getEpsilon() {
@@ -94,6 +115,53 @@ public class LayerTinfour implements LayerDelaunay {
         return new Coordinate( cx, cy, cz);
     }
 
+    public void dumpData() {
+        GeometryFactory factory = new GeometryFactory();
+        WKTWriter wktWriter = new WKTWriter(3);
+        try {
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(new File(dumpFolder, "tinfour_dump.csv")))) {
+                for(Object vObj : ptsIndex.queryAll()) {
+                    if(vObj instanceof Vertex) {
+                        final Vertex v = (Vertex)vObj;
+                        Point p = factory.createPoint(toCoordinate(v));
+                        writer.write(wktWriter.write(p));
+                        writer.write("\n");
+                    }
+                }
+                for (IConstraint constraint : constraints) {
+                    if (constraint instanceof LinearConstraint) {
+                        List<Vertex> vertices = constraint.getVertices();
+                        Coordinate[] coordinates = new Coordinate[vertices.size()];
+                        for (int i = 0; i < vertices.size(); i++) {
+                            final Vertex v = vertices.get(i);
+                            coordinates[i] = new Coordinate(v.getX(), v.getY(), v.getZ());
+                        }
+                        LineString l = factory.createLineString(coordinates);
+                        writer.write(wktWriter.write(l));
+                        writer.write("\n");
+                    } else if (constraint instanceof PolygonConstraint) {
+                        List<Vertex> vertices = constraint.getVertices();
+                        if(vertices != null && vertices.size() >= 3) {
+                            Coordinate[] coordinates = new Coordinate[vertices.size() + 1];
+                            for (int i = 0; i < vertices.size() ; i++) {
+                                final Vertex v = vertices.get(i);
+                                coordinates[i] = new Coordinate(v.getX(), v.getY(), v.getZ());
+                            }
+                            coordinates[coordinates.length - 1] = coordinates[0];
+                            Polygon l = factory.createPolygon(coordinates);
+                            writer.write(wktWriter.write(l));
+                            writer.write("\n");
+                        } else {
+                            LOGGER.info("Weird null polygon " + constraint);
+                        }
+                    }
+                }
+            }
+        }  catch (IOException ioEx) {
+            // ignore
+        }
+    }
+
     @Override
     public void processDelaunay() throws LayerDelaunayError {
         triangles.clear();
@@ -110,7 +178,16 @@ public class LayerTinfour implements LayerDelaunay {
             // Add points
             tin.add(meshPoints, null);
             // Add constraints
-            tin.addConstraints(constraints, maxArea > 0);
+            try {
+                tin.addConstraints(constraints, maxArea > 0);
+            }catch (IllegalStateException ex) {
+                // Got error
+                // Dump input data
+                if(!dumpFolder.isEmpty()) {
+                    dumpData();
+                }
+                throw new LayerDelaunayError(ex);
+            }
             refine = false;
 
             simpleTriangles = computeTriangles(tin);
@@ -176,8 +253,11 @@ public class LayerTinfour implements LayerDelaunay {
                 vertexList.add(addCoordinate(coordinates[vId], buildingId));
             }
             PolygonConstraint polygonConstraint = new PolygonConstraint(vertexList);
-            constraints.add(polygonConstraint);
-            constraintIndex.add(buildingId);
+            polygonConstraint.complete();
+            if(polygonConstraint.isValid()) {
+                constraints.add(polygonConstraint);
+                constraintIndex.add(buildingId);
+            }
         }
         // Append holes
         final int holeCount = newPoly.getNumInteriorRing();
@@ -194,8 +274,11 @@ public class LayerTinfour implements LayerDelaunay {
                 vertexList.add(addCoordinate(hCoordinates[vId], buildingId));
             }
             PolygonConstraint polygonConstraint = new PolygonConstraint(vertexList);
-            constraints.add(polygonConstraint);
-            constraintIndex.add(buildingId);
+            polygonConstraint.complete();
+            if(polygonConstraint.isValid()) {
+                constraints.add(polygonConstraint);
+                constraintIndex.add(buildingId);
+            }
         }
     }
 
@@ -241,8 +324,11 @@ public class LayerTinfour implements LayerDelaunay {
             vertexList.add(addCoordinate(coordinate, buildingID));
         }
         LinearConstraint linearConstraint = new LinearConstraint(vertexList);
-        constraints.add(linearConstraint);
-        constraintIndex.add(buildingID);
+        linearConstraint.complete();
+        if(linearConstraint.isValid()) {
+            constraints.add(linearConstraint);
+            constraintIndex.add(buildingID);
+        }
     }
     //add buildingID to edge property and to points property
 

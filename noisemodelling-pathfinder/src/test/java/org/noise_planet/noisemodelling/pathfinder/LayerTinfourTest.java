@@ -2,13 +2,14 @@ package org.noise_planet.noisemodelling.pathfinder;
 
 import org.h2gis.functions.io.osm.OSMDriverFunction;
 import org.junit.Test;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.Polygon;
-import org.locationtech.jts.geom.PrecisionModel;
+import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -84,14 +85,39 @@ public class LayerTinfourTest {
                 (Polygon) wktReader.read("POLYGON((222705.696340536 6758557.74687277 0,222724.075919557 6758557.07325136 0,222740.531595117 6758528.34377304 0,222741.230128632 6758528.86480505 0,222743.686623899 6758524.74224218 0,222742.888076702 6758524.26098912 0,222744.171861162 6758521.90499592 0,222732.249628577 6758511.59826499 0,222726.944985841 6758520.82200926 0,222718.050422367 6758536.28473477 0,222708.564257407 6758552.76566163 0,222705.696340536 6758557.74687277 0))")
         };
         Polygon merged = (Polygon)factory.createMultiPolygon(polygons).buffer(0);
-        System.out.println(merged.toString());
         LayerTinfour layerTinfour = new LayerTinfour();
+        layerTinfour.setDumpFolder("target");
         layerTinfour.setRetrieveNeighbors(true);
-
         layerTinfour.addPolygon(merged, 55);
-
         layerTinfour.processDelaunay();
-
         List<Triangle> triangleList = layerTinfour.getTriangles();
+        layerTinfour.dumpData();
     }
+
+//    @Test
+//    public void debugDump() throws ParseException, LayerDelaunayError, IOException {
+//        File dumpPath = new File("C:\\Users\\kento\\softs\\NoiseModelling_3.3.2\\data_dir\\tinfour_dump.csv");
+//        WKTReader wktReader = new WKTReader();
+//        LayerTinfour layerTinfour = new LayerTinfour();
+//        try(BufferedReader reader = new BufferedReader(new FileReader(dumpPath))) {
+//            String line;
+//            int index = 0;
+//            while ((line = reader.readLine()) != null) {
+//                Geometry obj = wktReader.read(line);
+//                if(obj instanceof Point) {
+//                    layerTinfour.addVertex(obj.getCoordinate());
+//                } else if(obj instanceof Polygon) {
+//                    layerTinfour.addPolygon((Polygon)obj, index++);
+//                } else if (obj instanceof LineString) {
+//                    layerTinfour.addLineString((LineString)obj, index++);
+//                }
+//            }
+//        }
+//        layerTinfour.processDelaunay();
+//
+//        List<Triangle> triangles = layerTinfour.getTriangles();
+//
+//        System.out.println(triangles.size());
+//    }
+
 }

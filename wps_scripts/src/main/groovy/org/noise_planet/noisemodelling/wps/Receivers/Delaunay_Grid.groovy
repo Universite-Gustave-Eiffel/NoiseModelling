@@ -245,6 +245,7 @@ def exec(Connection connection, input) {
 
     logger.info("Delaunay initialize")
     noiseMap.initialize(connection, new EmptyProgressVisitor())
+    noiseMap.setExceptionDumpFolder("data_dir/")
     AtomicInteger pk = new AtomicInteger(0)
     ProgressVisitor progressVisitorNM = progressLogger.subProcess(noiseMap.getGridDim() * noiseMap.getGridDim())
 
