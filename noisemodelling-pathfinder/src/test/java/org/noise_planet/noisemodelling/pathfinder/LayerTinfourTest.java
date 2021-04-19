@@ -91,12 +91,38 @@ public class LayerTinfourTest {
         layerTinfour.addPolygon(merged, 55);
         layerTinfour.processDelaunay();
         List<Triangle> triangleList = layerTinfour.getTriangles();
+        List<Coordinate> vertices = layerTinfour.getVertices();
+        // Test dump
         layerTinfour.dumpData();
+        Point hole1 =  factory.createPoint(new Coordinate(222690.860,6758520.184));
+        Point hole2 = factory.createPoint(new Coordinate(222711.177,6758532.233));
+        Point inGeom = merged.getInteriorPoint();
+        boolean foundHole1 = false;
+        boolean foundHole2 = false;
+        boolean foundInGeom = false;
+        for(Triangle triangle : triangleList) {
+            Coordinate[] tri = new Coordinate[] {vertices.get(triangle.getA()), vertices.get(triangle.getB()),
+                    vertices.get(triangle.getC()), vertices.get(triangle.getA())};
+            Polygon triGeom = factory.createPolygon(tri);
+            if(triGeom.contains(hole1)) {
+                assertEquals(0, triangle.getAttribute());
+                foundHole1 = true;
+            } else if(triGeom.contains(hole2)) {
+                assertEquals(0, triangle.getAttribute());
+                foundHole2 = true;
+            } else if(triGeom.contains(inGeom)) {
+                assertEquals(55, triangle.getAttribute());
+                foundInGeom = true;
+            }
+        }
+        assertTrue(foundHole1);
+        assertTrue(foundHole2);
+        assertTrue(foundInGeom);
     }
 
 //    @Test
 //    public void debugDump() throws ParseException, LayerDelaunayError, IOException {
-//        File dumpPath = new File("C:\\Users\\kento\\softs\\NoiseModelling_3.3.2\\data_dir\\tinfour_dump.csv");
+//        File dumpPath = new File("target/tinfour_dump.csv");
 //        WKTReader wktReader = new WKTReader();
 //        LayerTinfour layerTinfour = new LayerTinfour();
 //        try(BufferedReader reader = new BufferedReader(new FileReader(dumpPath))) {
