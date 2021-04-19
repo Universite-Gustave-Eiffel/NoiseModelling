@@ -197,7 +197,16 @@ public abstract class JdbcNoiseMap {
         }
     }
 
+
     void fetchCellBuildings(Connection connection, Envelope fetchEnvelope, MeshBuilder mesh) throws SQLException {
+        ArrayList<MeshBuilder.PolygonWithHeight> buildings = new ArrayList<>();
+        fetchCellBuildings(connection, fetchEnvelope, buildings);
+        for(MeshBuilder.PolygonWithHeight building : buildings) {
+            mesh.addGeometry(building);
+        }
+    }
+
+    void fetchCellBuildings(Connection connection, Envelope fetchEnvelope, List<MeshBuilder.PolygonWithHeight> buildings) throws SQLException {
         Geometry envGeo = geometryFactory.toGeometry(fetchEnvelope);
         boolean fetchAlpha = JDBCUtilities.hasField(connection, buildingsTableName, alphaFieldName);
         String additionalQuery = "";
@@ -250,11 +259,14 @@ public abstract class JdbcNoiseMap {
                                     alphaList.add(MeshBuilder.getWallAlpha(oldAlpha, freq));
                                 }
                             }
-                            MeshBuilder.PolygonWithHeight poly = mesh.addGeometry(intersectedGeometry,
-                                    heightField.isEmpty() ? Double.MAX_VALUE : rs.getDouble(heightField), alphaList);
+
+                            MeshBuilder.PolygonWithHeight poly = new MeshBuilder.PolygonWithHeight(intersectedGeometry,
+                                    heightField.isEmpty() ? Double.MAX_VALUE : rs.getDouble(heightField),
+                                    alphaList);
                             if(columnIndex != 0) {
                                 poly.setPrimaryKey(rs.getInt(columnIndex));
                             }
+                            buildings.add(poly);
                         }
                     }
                 }
@@ -337,8 +349,12 @@ public abstract class JdbcNoiseMap {
         if(sourcesTableName.isEmpty()) {
             throw new SQLException("A sound source table must be provided");
         }
-        geometryFactory = new GeometryFactory(new PrecisionModel(),
-                SFSUtilities.getSRID(connection, TableLocation.parse(sourcesTableName)));
+        int srid = 0;
+        srid = SFSUtilities.getSRID(connection, TableLocation.parse(sourcesTableName));
+        if(srid == 0) {
+            srid = SFSUtilities.getSRID(connection, TableLocation.parse(buildingsTableName));
+        }
+        geometryFactory = new GeometryFactory(new PrecisionModel(), srid);
 
         // Steps of execution
         // Evaluation of the main bounding box (sourcesTableName+buildingsTableName)

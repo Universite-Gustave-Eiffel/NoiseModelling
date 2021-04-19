@@ -275,7 +275,7 @@ public class MeshBuilder {
         return addGeometry(new PolygonWithHeight(obstructionPoly));
     }
 
-    private PolygonWithHeight addGeometry(PolygonWithHeight poly) {
+    public PolygonWithHeight addGeometry(PolygonWithHeight poly) {
         this.geometriesBoundingBox.expandToInclude(poly.getGeometry().getEnvelopeInternal());
         polygonWithHeight.add(poly);
         return poly;
@@ -435,7 +435,7 @@ public class MeshBuilder {
             this.geometriesBoundingBox = boundingBoxGeom.getEnvelopeInternal();
         }
 
-        LayerDelaunay delaunayTool = new LayerPoly2Tri();
+        LayerDelaunay delaunayTool = new LayerTinfour();
 
 
         //merge buildings
@@ -467,7 +467,7 @@ public class MeshBuilder {
         CoordinateSequenceFilter absoluteCoordinateSequenceFilter;
         if(resetBuildingsZGround) {
             // set buildings Z coordinates to 0 m
-            absoluteCoordinateSequenceFilter = new LayerPoly2Tri.SetZFilter(true);
+            absoluteCoordinateSequenceFilter = new SetZFilter(true);
         } else {
             absoluteCoordinateSequenceFilter = new ComputeRays.AbsoluteCoordinateSequenceFilter(fastObstructionTest, resetBuildingsZGround);
         }
@@ -526,4 +526,43 @@ public class MeshBuilder {
         }
     }
 
+    public static final class SetZFilter implements CoordinateSequenceFilter {
+        private boolean done = false;
+        private boolean resetToZero = false;
+
+        public SetZFilter() {
+
+        }
+
+        public SetZFilter(boolean resetToZero) {
+            this.resetToZero = resetToZero;
+        }
+
+        @Override
+        public void filter(CoordinateSequence seq, int i) {
+            double x = seq.getX(i);
+            double y = seq.getY(i);
+            double z = seq.getOrdinate(i, 2);
+            seq.setOrdinate(i, 0, x);
+            seq.setOrdinate(i, 1, y);
+            if (Double.isNaN(z) || resetToZero) {
+                seq.setOrdinate(i, 2, 0);
+            } else {
+                seq.setOrdinate(i, 2, z);
+            }
+            if (i == seq.size()) {
+                done = true;
+            }
+        }
+
+        @Override
+        public boolean isDone() {
+            return done;
+        }
+
+        @Override
+        public boolean isGeometryChanged() {
+            return true;
+        }
+    }
 }

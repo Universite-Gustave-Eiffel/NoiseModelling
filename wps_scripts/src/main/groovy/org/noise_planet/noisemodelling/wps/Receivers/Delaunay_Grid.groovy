@@ -91,14 +91,6 @@ inputs = [
                 min        : 0, max: 1,
                 type       : Double.class
         ],
-        sourceDensification: [
-                name       : 'Source densification',
-                title      : 'Source densification',
-                description: 'Set additional receivers near sound sources (roads). This is the maximum distance between the points that compose the polygon near the source in meter. (FLOAT)' +
-                        '</br> </br> <b> Default value : 8 </b> ',
-                min        : 0, max: 1,
-                type       : Double.class
-        ],
         height             : [
                 name       : 'Height',
                 title      : 'Height',
@@ -206,12 +198,6 @@ def exec(Connection connection, input) {
         maxArea = input['maxArea'] as Double
     }
 
-    Double sourceDensification = 8.0
-    if (input.containsKey('sourceDensification')) {
-        sourceDensification = input['sourceDensification'] as Double
-    }
-
-
     int srid = SFSUtilities.getSRID(connection, TableLocation.parse(building_table_name))
 
     Geometry fence = null
@@ -223,7 +209,7 @@ def exec(Connection connection, input) {
     //Statement sql = connection.createStatement()
     Sql sql = new Sql(connection)
     connection = new ConnectionWrapper(connection)
-    RootProgressVisitor progressLogger = new RootProgressVisitor(2, true, 1)
+    RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1)
 
     // Delete previous receivers grid
     sql.execute(String.format("DROP TABLE IF EXISTS %s", receivers_table_name))
@@ -256,11 +242,10 @@ def exec(Connection connection, input) {
     noiseMap.setRoadWidth(roadWidth)
     // No triangles larger than provided area
     noiseMap.setMaximumArea(maxArea)
-    // Densification of receivers near sound sources
-    noiseMap.setSourceDensification(sourceDensification)
 
     logger.info("Delaunay initialize")
     noiseMap.initialize(connection, new EmptyProgressVisitor())
+    noiseMap.setExceptionDumpFolder("data_dir/")
     AtomicInteger pk = new AtomicInteger(0)
     ProgressVisitor progressVisitorNM = progressLogger.subProcess(noiseMap.getGridDim() * noiseMap.getGridDim())
 
@@ -271,9 +256,7 @@ def exec(Connection connection, input) {
             progressVisitorNM.endStep()
         }
     }
-
-    sql.execute("UPDATE " + receivers_table_name + " SET THE_GEOM = ST_SETSRID(THE_GEOM, " + srid + ")")
-
+    logger.info("Create spatial index on "+receivers_table_name+" table")
     sql.execute("Create spatial index on " + receivers_table_name + "(the_geom);")
 
     int nbReceivers = sql.firstRow("SELECT COUNT(*) FROM " + receivers_table_name)[0] as Integer
