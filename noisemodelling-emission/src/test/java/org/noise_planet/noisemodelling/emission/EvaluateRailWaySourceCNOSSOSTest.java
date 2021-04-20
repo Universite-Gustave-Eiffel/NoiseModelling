@@ -55,7 +55,7 @@ public class EvaluateRailWaySourceCNOSSOSTest {
         double vMaxInfra = 160;
         double vehicleCommercial= 120;
 
-        int vehiclePerHour = (int) (1000*vehicleSpeed); //for one vehicle
+        double vehiclePerHour = (1000*vehicleSpeed); //for one vehicle
 
         double[] expectedValuesLWRolling = new double[]{98.6704,99.6343,101.5298,102.8865,100.3316,99.6011,100.4072,105.7262,107.2207,108.4848,109.4223,110.1035,111.8706,111.4956,108.5828,104.2152,106.5525,105.2982,103.1594,100.7729,101.1764,100.6417,100.6287,102.1869};
         double[] expectedValuesLWTractionA = new double[]{98.8613,94.7613,92.5613,94.5613,92.7613,92.7613,92.9613,94.7613,94.5613,95.6613,95.5613,98.5613,95.1613,95.0613,95.0613,94.0613,94.0613,99.3613,92.4613,89.4613,86.9613,84.0613,81.4613,79.1613};
@@ -101,7 +101,7 @@ public class EvaluateRailWaySourceCNOSSOSTest {
         double vMaxInfra = 160;
         double vehicleCommercial= 120;
 
-        int vehiclePerHour = (int) (1000*vehicleSpeed); //for one vehicle
+        double vehiclePerHour = (1000*vehicleSpeed); //for one vehicle
 
         RailWayLW lWRailWay = null;
 
@@ -137,7 +137,7 @@ public class EvaluateRailWaySourceCNOSSOSTest {
 
         RailWayLW lWRailWay = null;
 
-        int vehiclePerHour = (int) (1000*vehicleSpeed); //for one vehicle
+        double vehiclePerHour = (1000*vehicleSpeed); //for one vehicle
 
         double[] expectedValuesLWRolling = new double[]{98.6704,99.6343,101.5298,102.8865,100.3316,99.6011,100.4072,105.7262,107.2207,108.4848,109.4223,110.1035,111.8706,111.4956,108.5828,104.2152,106.5525,105.2982,103.1594,100.7729,101.1764,100.6417,100.6287,102.1869};
         double[] expectedValuesLWBridge = new double[]{108.4579,109.4015,111.344,112.4959,111.1415,110.9017,105.8236,109.7833,111.592,115.0733,116.7548,116.8658,117.8667,116.2709,113.2686,102.3774,96.9285,95.8390,85.6001,75.2583,70.6990,62.9177,57.9386,54.5294};
@@ -173,7 +173,7 @@ public class EvaluateRailWaySourceCNOSSOSTest {
         double vMaxInfra = 200;
         double vehicleCommercial = 200;
 
-        int vehiclePerHour = (int) (1000*vehicleCommercial); //for one vehicle
+        double vehiclePerHour = (1000*vehicleSpeed); //for one vehicle
 
         RailWayLW lWRailWay = null;
         double[] expectedValuesLWRolling = new double[]{98.66110, 100.5681, 104.3908, 107.5565, 106.7391, 106.4557, 105.5468, 109.3204, 108.2763, 109.2614, 111.1101, 112.5186, 117.3340, 121.3800, 123.5189, 122.9000, 126.9115, 122.9414, 117.8516, 111.8003, 107.3142, 105.8263, 103.9313, 102.2640};
@@ -212,7 +212,7 @@ public class EvaluateRailWaySourceCNOSSOSTest {
         double tDay1 = 0.4;
         double tEvening1 = 0.3;
         double tNight1 = 0.25;
-        int  vehiclePerHour = (int) tDay1;
+        double  vehiclePerHour = tDay1;
 
         String vehCat2 = "RMR-Cat-1";
         double vehicleSpeed2 = 120;
@@ -256,7 +256,7 @@ public class EvaluateRailWaySourceCNOSSOSTest {
                     tDay = tDay1;
                     tEvening = tEvening1;
                     tNight = tNight1;
-                    vehiclePerHour = (int) (1000*vehicleSpeed);
+                    vehiclePerHour = (1000*vehicleSpeed);
                     expectedValuesLWRolling = expectedValuesLWRolling1;
                     break;
                 case 2:
@@ -265,7 +265,7 @@ public class EvaluateRailWaySourceCNOSSOSTest {
                     tDay = tDay2;
                     tEvening = tEvening2;
                     tNight = tNight2;
-                    vehiclePerHour = (int) (1000*vehicleSpeed);
+                    vehiclePerHour = (1000*vehicleSpeed);
                     expectedValuesLWRolling = expectedValuesLWRolling2;
                     break;
                 case 3:
@@ -283,7 +283,7 @@ public class EvaluateRailWaySourceCNOSSOSTest {
                     tDay = 0;
                     tEvening = 0;
                     tNight = 0;
-                    vehiclePerHour = (int) (1000*vehicleSpeed);
+                    vehiclePerHour = (1000*vehicleSpeed);
                     expectedValuesLWRolling = new double[]{-99, -99, -99, -99, -99, -99, -99, -99, -99, -99, -99, -99, -99, -99, -99, -99, -99, -99, -99, -99, -99, -99, -99, -99};
             }
 

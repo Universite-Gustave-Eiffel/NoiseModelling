@@ -36,7 +36,7 @@ public class RailwayVehicleParametersCnossos {
     // set default value
     private String typeVehicle=""; // name of the vehicles
     private double speedVehicle; // speed of the vehicles (km/h)
-    private int vehiclePerHour = 1; // Average light vehicle per hour
+    private double vehiclePerHour = 1; // Average light vehicle per hour
     private int runningCondition=0; // 0 = constand speed, 1 = acceleration , 2 =decceleration, 3 = idling
     private double idlingTime=0; // if idling, idling time (seconds)
 
@@ -57,7 +57,7 @@ public class RailwayVehicleParametersCnossos {
     public void setSpeedVehicle(double speedVehicle) {
         this.speedVehicle = speedVehicle;
     }
-    public void setVehiclePerHour(int vehiclePerHour) {
+    public void setVehiclePerHour(double vehiclePerHour) {
         this.vehiclePerHour = vehiclePerHour;
     }
 
@@ -74,7 +74,7 @@ public class RailwayVehicleParametersCnossos {
     public double getSpeedVehicle() {
         return speedVehicle;
     }
-    public int getNumberVehicle() {
+    public double getNumberVehicle() {
         return vehiclePerHour ;
     }
 
@@ -85,7 +85,7 @@ public class RailwayVehicleParametersCnossos {
         return idlingTime;
     }
 
-    public RailwayVehicleParametersCnossos(String typeVehicle, double speedVehicle, int vehiclePerHour, int runningCondition, double idlingTime) {
+    public RailwayVehicleParametersCnossos(String typeVehicle, double speedVehicle, double vehiclePerHour, int runningCondition, double idlingTime) {
 
 
         setTypeVehicle(typeVehicle);
