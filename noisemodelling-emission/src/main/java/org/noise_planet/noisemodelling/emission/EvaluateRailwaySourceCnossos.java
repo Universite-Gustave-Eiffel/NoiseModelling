@@ -274,12 +274,6 @@ public class EvaluateRailwaySourceCnossos {
         return roughnessLtot;
     }
 
-
-    /** get noise level source from number of vehicle **/
-    private static Double getNoiseLvlFinal(double base, double numbersource, int numVeh) {
-        return base + 10 * Math.log10(numbersource*numVeh);
-    }
-
     /**
     * Track noise evaluation.
     * @param vehicleParameters Vehicle Noise emission parameters
@@ -479,11 +473,6 @@ public class EvaluateRailwaySourceCnossos {
         }
         return roughnessLtotFreq;
     }
-
-//    /** compute Noise Level from flow_rate and speed @return**/
-//    public static double evaluateLm(double Lw, double Q, double speed, int idFreq) {
-//        return Lw+ 10*Math.log10(Q/(1000*speed));
-//    }
 
 }
 

@@ -11,8 +11,6 @@
     "Example1" : 4
   },
   "FRET" : {
-    "SNCF-BB66400" : 1,
-    "Example1" : 7,
-    "Example2" :11
+    "SNCF-BB66400" : 1
   }
 }

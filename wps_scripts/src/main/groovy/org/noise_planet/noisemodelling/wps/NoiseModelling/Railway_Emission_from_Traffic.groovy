@@ -217,7 +217,7 @@ def exec(Connection connection, input) {
     while (railWayLWIterator.next() != null) {
 
         RailWayLW railWayLW = railWayLWIterator.getRailWayLW()
-        List<LineString> geometries = railWayLWIterator.getRailWayLWGeometry(10)
+        List<LineString> geometries = railWayLWIterator.getRailWayLWGeometry(4) //TODO update distance between Rail
         int pk = railWayLWIterator.getRailWayLWPK()
 
         double[] LW
@@ -233,17 +233,17 @@ def exec(Connection connection, input) {
                     break
                 case 1:
                     LW = railWayLW.getLWTractionA()
-                    heightSource = 2
+                    heightSource = 0.5
                     directivityId = 2
                     break
                 case 2:
                     LW = railWayLW.getLWTractionB()
-                    heightSource = 2
+                    heightSource = 4
                     directivityId = 3
                     break
                 case 3:
                     LW = railWayLW.getLWAerodynamicA()
-                    heightSource = 4
+                    heightSource = 0.5
                     directivityId = 4
                     break
                 case 4:
@@ -253,7 +253,7 @@ def exec(Connection connection, input) {
                     break
                 case 5:
                     LW = railWayLW.getLWBridge()
-                    heightSource = 1
+                    heightSource = 0.5
                     directivityId = 6
                     break
             }
