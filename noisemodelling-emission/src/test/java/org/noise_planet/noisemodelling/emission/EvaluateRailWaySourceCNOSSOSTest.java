@@ -44,7 +44,7 @@ public class EvaluateRailWaySourceCNOSSOSTest {
         int rollingCondition = 0;
         double idlingTime = 0;
 
-        int nTracks=2;
+        int  nTracks=2;
         int trackTransfer = 7;
         int railRoughness = 3;
         int impactNoise = 1;
@@ -90,7 +90,7 @@ public class EvaluateRailWaySourceCNOSSOSTest {
         int rollingCondition = 0;
         double idlingTime = 0;
 
-        int nTracks=2;
+        int  nTracks=2;
         int trackTransfer = 7;
         int railRoughness = 3;
         int impactNoise = 3;
@@ -124,7 +124,7 @@ public class EvaluateRailWaySourceCNOSSOSTest {
         int rollingCondition = 0;
         double idlingTime = 0;
 
-        int nTracks=4;
+        int  nTracks=4;
         int trackTransfer = 7;
         int railRoughness = 3;
         int impactNoise = 1;
@@ -158,11 +158,11 @@ public class EvaluateRailWaySourceCNOSSOSTest {
     public void Test_Cnossos_Rail_emission_section_4 () {
         String vehCat = "SNCF-BB66400";
 
-        double vehicleSpeed = 220;
+        double vehicleSpeed = 200;
         int rollingCondition = 0;
         double idlingTime = 0;
 
-        int nTracks = 2;
+        int  nTracks = 2;
         int trackTransfer = 9;
         int railRoughness = 3;
         int impactNoise = 1;
@@ -229,7 +229,7 @@ public class EvaluateRailWaySourceCNOSSOSTest {
         int rollingCondition = 0;
         double idlingTime = 0;
 
-        int nTracks = 2;
+        int  nTracks = 2;
         int trackTransfer = 7;
         int railRoughness = 4;
         int impactNoise = 1;
@@ -313,7 +313,7 @@ public class EvaluateRailWaySourceCNOSSOSTest {
         int rollingCondition = 0;
         double idlingTime = 0;
 
-        int nTracks=2;
+        int  nTracks=2;
         int trackTransfer = 7;
         int railRoughness = 3;
         int impactNoise = 1;

@@ -51,7 +51,7 @@ public class RailwayTrackParametersCnossos {
         return isTunnel;
     }
 
-    public int getNTrack() {
+    public double getNTrack() {
         return nTrack;
     }
 

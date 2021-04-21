@@ -57,7 +57,7 @@ class TestNoiseModelling extends JdbcTestCase {
                  "tableRailwayTrack": "RailTrack"
                 ])
 
-        res = new Export_Table().exec(connection,
+        String export = new Export_Table().exec(connection,
                 ["exportPath"   : "target/testLWRailWay.geojson",
                  "tableToExport": "LW_RAILWAY"])
 

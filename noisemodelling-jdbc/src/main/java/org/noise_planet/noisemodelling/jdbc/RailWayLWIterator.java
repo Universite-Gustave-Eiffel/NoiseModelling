@@ -30,7 +30,7 @@ public class RailWayLWIterator implements Iterator<RailWayLW> {
     private String tableTrain;
     private String tableTrack;
 
-    public int getNbTrack() {
+    public double getNbTrack() {
         return nbTrack;
     }
 
@@ -237,7 +237,7 @@ public class RailWayLWIterator implements Iterator<RailWayLW> {
                 typeTrain = entry.getKey();
                 vehiclePerHour = vehiclePerHour * entry.getValue();
                 RailwayVehicleParametersCnossos vehicleParameters = new RailwayVehicleParametersCnossos(typeTrain, vehicleSpeed,
-                        vehiclePerHour/nbTrack, rollingCondition, idlingTime);
+                        vehiclePerHour/(double) nbTrack, rollingCondition, idlingTime);
 
                 if (i==0){
                     lWRailWay = evaluateRailwaySourceCnossos.evaluate(vehicleParameters, trackParameters);
@@ -282,7 +282,7 @@ class RailWayLWGeom extends RailWayLW {
     }
 
     public int setPK(int pk) {
-        return this.pk;
+        return this.pk=pk;
     }
 
     public void setGeometry(List<LineString> geometry) {
