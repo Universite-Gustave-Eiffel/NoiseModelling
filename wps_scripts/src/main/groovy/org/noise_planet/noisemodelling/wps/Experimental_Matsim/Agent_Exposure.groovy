@@ -92,6 +92,16 @@ inputs = [
                         '<br/>0_1, 1_2, 2_3, ..., 22_23, 23_24',
                 type: String.class
         ],
+        SRID : [
+                name: 'Projection identifier',
+                title: 'Projection identifier',
+                description: 'Original projection identifier (also called SRID) of your tables.' +
+                        'It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection).' +
+                        '</br><b> Default value : 4326 </b> ',
+                min: 0,
+                max: 1,
+                type: Integer.class
+        ],
         outTableName: [
                 name: 'Output table name',
                 title: 'Name of created table',
@@ -164,6 +174,11 @@ def exec(Connection connection, input) {
     }
     if (!["hour", "quarter"].contains(timeSlice)) {
         logger.warn('timeSlice not in ["hour", "quarter"], setting it to "hour"')
+    }
+
+    String SRID = "4326"
+    if (input['SRID']) {
+        SRID = input['SRID'];
     }
 
     // Undocumented on purpose for now
@@ -549,7 +564,7 @@ def exec(Connection connection, input) {
              */
             sql.execute("INSERT INTO " + outTableName + " VALUES(" +
                     "NULL, '" + personId + "', " + age + ", '" + sex + "', " + income + ", " + employed + ", " +
-                    "'" + homeId + "', ST_GeomFromText('" + homeGeom + "', 2154), '" + workId + "', ST_GeomFromText('" + workGeom + "', 2154), " + LAeq + ", " + homeLAeq + ", " + (LAeq - homeLAeq)+ ")")
+                    "'" + homeId + "', ST_GeomFromText('" + homeGeom + "', "+SRID+"), '" + workId + "', ST_GeomFromText('" + workGeom + "', "+SRID+"), " + LAeq + ", " + homeLAeq + ", " + (LAeq - homeLAeq)+ ")")
 
             String laeqQuery = "INSERT INTO " + outTableName + "_SEQUENCE VALUES(NULL, '" + personId + "'"
             for (int i = 0; i < clock.length; i++) {
@@ -561,7 +576,7 @@ def exec(Connection connection, input) {
                 if (activityGeomSequence[i] == "NULL") {
                     query += "NULL"
                 } else {
-                    query += "ST_GeomFromText('" + activityGeomSequence[i] + "', 2154)"
+                    query += "ST_GeomFromText('" + activityGeomSequence[i] + "', "+SRID+")"
                 }
                 query += ")"
                 sql.execute(query)
