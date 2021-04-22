@@ -124,6 +124,7 @@ def exec(Connection connection, input) {
     String query = "CREATE TABLE " + outTable + '''( 
             PK integer PRIMARY KEY,
             THE_GEOM geometry,
+            IDRECEIVER integer,
             HZ63 double precision,
             HZ125 double precision,
             HZ250 double precision,
@@ -132,10 +133,11 @@ def exec(Connection connection, input) {
             HZ2000 double precision,
             HZ4000 double precision,
             HZ8000 double precision,
-            LAEQ double precision,
+            LEQA double precision,
             LEQ double precision
+            TIMESTRING varchar
         ) AS
-        SELECT mmt.IDRECEIVER, mmt.THE_GEOM,
+        SELECT mmt.IDRECEIVER, mmt.THE_GEOM
         ''' + (invert ? "- " : "") + '''(mmt.HZ63 - smt.HZ63) as HZ63,
         ''' + (invert ? "- " : "") + '''(mmt.HZ125 - smt.HZ125) as HZ125,
         ''' + (invert ? "- " : "") + '''(mmt.HZ250 - smt.HZ250) as HZ250,
@@ -145,12 +147,14 @@ def exec(Connection connection, input) {
         ''' + (invert ? "- " : "") + '''(mmt.HZ4000 - smt.HZ4000) as HZ4000,
         ''' + (invert ? "- " : "") + '''(mmt.HZ8000 - smt.HZ8000) as HZ8000,
         ''' + (invert ? "- " : "") + '''(mmt.LEQA - smt.LEQA) as LAEQ,
-        ''' + (invert ? "- " : "") + '''(mmt.LEQ - smt.LEQ) as LEQ
+        ''' + (invert ? "- " : "") + '''(mmt.LEQ - smt.LEQ) as LEQ,
+        mmt.TIMESTRING
         FROM ''' + mainMapTable + ''' mmt
         LEFT JOIN ''' + secondMapTable + ''' smt
-        ON mmt.IDRECEIVER = smt.IDRECEIVER
+        ON mmt.IDRECEIVER = smt.IDRECEIVER AND mmt.TIMESTRING = smt.TIMESTRING
     ;'''
 
+    logger.info(query)
     sql.execute(query)
 
     logger.info('End : Noise_Map_Difference')
