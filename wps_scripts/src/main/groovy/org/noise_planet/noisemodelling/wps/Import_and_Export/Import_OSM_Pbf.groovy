@@ -266,7 +266,7 @@ def exec(Connection connection, input) {
                     road.getNbLV("d"), road.getNbLV("e"), road.getNbLV("n"),
                     road.getNbHV("d"), road.getNbHV("e"), road.getNbHV("n"),
                     Road.speed[road.category], Road.speed[road.category], Road.speed[road.category],
-                    Road.speed[road.category], Road.speed[road.category], Road.speed[road.category],
+                    Math.max(90, Road.speed[road.category]), Math.max(90, Road.speed[road.category]), Math.max(90, Road.speed[road.category]),
                     'NL08'])
         }
         sql.execute("CREATE SPATIAL INDEX IF NOT EXISTS ROADS_GEOM_INDEX ON " + "ROADS" + "(THE_GEOM)")
@@ -560,13 +560,13 @@ public class Building {
 
 public class Road {
 
-    def static aadf_d = [17936, 7124, 1400, 700, 350, 175]
-    def static aadf_e = [3826, 1069, 400, 200, 100, 50]
-    def static aadf_n = [2152, 712, 200, 100, 50, 25]
-    def static hv_d = [0.2, 0.2, 0.15, 0.10, 0.05, 0.02]
-    def static hv_e = [0.2, 0.15, 0.10, 0.06, 0.02, 0.01]
-    def static hv_n = [0.2, 0.05, 0.05, 0.03, 0.01, 0.0]
-    def static speed = [110, 80, 50, 50, 30, 30]
+    def static aadf_d = [26103, 17936, 7124, 1400, 700, 350, 175]
+    def static aadf_e = [7458, 3826, 1069, 400, 200, 100, 50]
+    def static aadf_n = [3729, 2152, 712, 200, 100, 50, 25]
+    def static hv_d = [0.25, 0.2, 0.2, 0.15, 0.10, 0.05, 0.02]
+    def static hv_e = [0.35, 0.2, 0.15, 0.10, 0.06, 0.02, 0.01]
+    def static hv_n = [0.45, 0.2, 0.1, 0.05, 0.03, 0.01, 0.0]
+    def static speed = [130, 110, 80, 80, 50, 30, 30]
 
     def static hours_in_d = 12
     def static hours_in_e = 4
@@ -640,50 +640,26 @@ public class Road {
     }
 
     void updateCategory() {
-        if (type.equalsIgnoreCase("trunk")) {
-            category = 0;
+        if (["motorway", "motorway_link"].contains(type)) {
+            category = 0
         }
-        else if (type.equalsIgnoreCase("trunk_link")) {
-            category = 0;
+        if (["trunk", "trunk_link"].contains(type)) {
+            category = 1
         }
-        else if (type.equalsIgnoreCase("primary")) {
-            category = 1;
+        if (["primary", "primary_link"].contains(type)) {
+            category = 2
         }
-        else if (type.equalsIgnoreCase("primary_link")) {
-            category = 1;
+        if (["secondary", "secondary_link"].contains(type)) {
+            category = 3
         }
-        else if (type.equalsIgnoreCase("secondary")) {
-            category = 2;
+        if (["tertiary", "tertiary_link", "unclassified"].contains(type)) {
+            category = 4
         }
-        else if (type.equalsIgnoreCase("secondary_link")) {
-            category = 2;
+        if (["residential"].contains(type)) {
+            category = 5
         }
-        else if (type.equalsIgnoreCase("tertiary")) {
-            category = 2;
-        }
-        else if (type.equalsIgnoreCase("tertiary_link") && maxspeed > 40) {
-            category = 3;
-        }
-        else if (type.equalsIgnoreCase("residential") && maxspeed > 40) {
-            category = 3;
-        }
-        else if (type.equalsIgnoreCase("unclassified") && maxspeed > 40) {
-            category = 3;
-        }
-        else if (type.equalsIgnoreCase("tertiary_link") && maxspeed <= 40) {
-            category = 4;
-        }
-        else if (type.equalsIgnoreCase("residential") && maxspeed <= 40) {
-            category = 4;
-        }
-        else if (type.equalsIgnoreCase("unclassified") && maxspeed <= 40) {
-            category = 4;
-        }
-        else if (type.equalsIgnoreCase("service")) {
-            category = 5;
-        }
-        else if (type.equalsIgnoreCase("living_street")) {
-            category = 5;
+        if (["service", "living_street"].contains(type)) {
+            category = 6
         }
     }
 
