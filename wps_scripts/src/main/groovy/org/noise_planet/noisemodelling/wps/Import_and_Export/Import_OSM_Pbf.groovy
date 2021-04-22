@@ -263,12 +263,8 @@ def exec(Connection connection, input) {
                     'st_setsrid(st_updatez(ST_precisionreducer(ST_SIMPLIFYPRESERVETOPOLOGY(ST_TRANSFORM(ST_GeomFromText(?, 4326), '+srid+'),0.1),1), 0.05), ' + srid + '),' +
                     '?,?,?,?,?,?,?,?,?,?,?,?,?);'
             sql.execute(query, [road.id, road.geom,
-                    Road.aadf_d[road.category],
-                    Road.aadf_e[road.category],
-                    Road.aadf_n[road.category],
-                    Road.aadf_d[road.category] * Road.hv_d[road.category],
-                    Road.aadf_e[road.category] * Road.hv_e[road.category],
-                    Road.aadf_n[road.category] * Road.hv_n[road.category],
+                    road.getNbLV("d"), road.getNbLV("e"), road.getNbLV("n"),
+                    road.getNbHV("d"), road.getNbHV("e"), road.getNbHV("n"),
                     Road.speed[road.category], Road.speed[road.category], Road.speed[road.category],
                     Road.speed[road.category], Road.speed[road.category], Road.speed[road.category],
                     'NL08'])
@@ -564,7 +560,6 @@ public class Building {
 
 public class Road {
 
-
     def static aadf_d = [17936, 7124, 1400, 700, 350, 175]
     def static aadf_e = [3826, 1069, 400, 200, 100, 50]
     def static aadf_n = [2152, 712, 200, 100, 50, 25]
@@ -573,10 +568,15 @@ public class Road {
     def static hv_n = [0.2, 0.05, 0.05, 0.03, 0.01, 0.0]
     def static speed = [110, 80, 50, 50, 30, 30]
 
+    def static hours_in_d = 12
+    def static hours_in_e = 4
+    def static hours_in_n = 8
+
     long id;
     Way way;
     Geometry geom;
     double maxspeed = 0.0;
+    boolean oneway = false;
     String type = null;
     int category = 5;
 
@@ -598,8 +598,45 @@ public class Road {
             if ("highway".equalsIgnoreCase(tag.getKey())) {
                 this.type = tag.getValue();
             }
+            if ("highway".equalsIgnoreCase(tag.getKey()) && "yes".equalsIgnoreCase(tag.getValue())) {
+                oneway = true
+            }
         }
         updateCategory();
+    }
+
+    double getNbLV(String period) {
+        double lv
+        if (period == "d") {
+            lv = (1 - hv_d[category]) * aadf_d[category] / hours_in_d
+        }
+        else if (period == "e") {
+            lv = (1 - hv_e[category]) * aadf_e[category] / hours_in_e
+        }
+        else { // n
+            lv = (1 - hv_n[category]) * aadf_n[category] / hours_in_n
+        }
+        if (oneway) {
+            lv /= 2
+        }
+        return lv
+    }
+
+    double getNbHV(String period) {
+        double hv
+        if (period == "d") {
+            hv = hv_d[category] * aadf_d[category] / hours_in_d
+        }
+        else if (period == "e") {
+            hv = hv_e[category] * aadf_e[category] / hours_in_e
+        }
+        else { // n
+            hv = hv_n[category] * aadf_n[category] / hours_in_n
+        }
+        if (oneway) {
+            hv /= 2
+        }
+        return hv
     }
 
     void updateCategory() {
