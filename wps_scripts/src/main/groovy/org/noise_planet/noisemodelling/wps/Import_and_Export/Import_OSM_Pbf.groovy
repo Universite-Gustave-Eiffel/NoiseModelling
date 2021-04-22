@@ -266,7 +266,7 @@ def exec(Connection connection, input) {
                     road.getNbLV("d"), road.getNbLV("e"), road.getNbLV("n"),
                     road.getNbHV("d"), road.getNbHV("e"), road.getNbHV("n"),
                     Road.speed[road.category], Road.speed[road.category], Road.speed[road.category],
-                    Math.max(90, Road.speed[road.category]), Math.max(90, Road.speed[road.category]), Math.max(90, Road.speed[road.category]),
+                    Math.min(90, Road.speed[road.category]), Math.min(90, Road.speed[road.category]), Math.min(90, Road.speed[road.category]),
                     'NL08'])
         }
         sql.execute("CREATE SPATIAL INDEX IF NOT EXISTS ROADS_GEOM_INDEX ON " + "ROADS" + "(THE_GEOM)")
