@@ -33,7 +33,6 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
     private LDENConfig ldenConfig;
     private SpatialResultSet spatialResultSet;
     private int currentIdSection = -1;
-    private Geometry currentGeometry;
 
     public Map<String, Integer> sourceFields = null;
     GeometryFactory geometryFactory = new GeometryFactory();
@@ -50,6 +49,17 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
     public boolean hasNext() {
         return railWayLWfinal != null;
     }
+    private List<LineString> splitGeometry(Geometry geometry){
+        List<LineString> inputLineStrings = new ArrayList<>();
+        for (int id = 0; id < geometry.getNumGeometries(); id++) {
+            Geometry subGeom = geometry.getGeometryN(id);
+            if (subGeom instanceof LineString) {
+                inputLineStrings.add((LineString) subGeom);
+            }
+        }
+        return inputLineStrings;
+    }
+
 
     @Override
     public RailWayLWGeom next() {
@@ -60,7 +70,7 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
                 railWayLWsum = getRailwayEmissionFromResultSet(spatialResultSet, "DAY");
                 railWayLWfinal.setNbTrack(spatialResultSet.getInt("NTRACK"));
                 currentIdSection = spatialResultSet.getInt("PK");
-                currentGeometry = spatialResultSet.getGeometry();
+                railWayLWfinal.setGeometry(splitGeometry(spatialResultSet.getGeometry()));
             }
             boolean hasConsumeResultSet = false;
             while (spatialResultSet.next()) {
@@ -69,17 +79,10 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
                     railWayLWsum = RailWayLW.sumRailWayLW(railWayLWsum, getRailwayEmissionFromResultSet(spatialResultSet, "DAY"));
                 } else {
                     railWayLWfinal.setRailWayLW(railWayLWsum);
-                    Geometry inputgeometry = currentGeometry;
-                    List<LineString> inputLineStrings = new ArrayList<>();
-                    for (int id = 0; id < inputgeometry.getNumGeometries(); id++) {
-                        Geometry subGeom = inputgeometry.getGeometryN(id);
-                        if (subGeom instanceof LineString) {
-                            inputLineStrings.add((LineString) subGeom);
-                        }
-                    }
+
                     RailWayLWGeom previousRailWayLW = railWayLWfinal;
                     railWayLWfinal = new RailWayLWGeom();
-                    railWayLWfinal.setGeometry(inputLineStrings);
+                    railWayLWfinal.setGeometry(splitGeometry(spatialResultSet.getGeometry()));
                     railWayLWfinal.setPK(spatialResultSet.getInt("PK"));
                     railWayLWfinal.setNbTrack(spatialResultSet.getInt("NTRACK"));
                     railWayLWsum = getRailwayEmissionFromResultSet(spatialResultSet, "DAY");
