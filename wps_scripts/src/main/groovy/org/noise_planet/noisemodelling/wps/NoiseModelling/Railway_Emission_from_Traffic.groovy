@@ -213,7 +213,7 @@ def exec(Connection connection, input) {
     int currentVal = 0
     int i=0
     RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection, sources_geom_table_name, sources_table_traffic_name, ldenConfig)
-
+    RailWayLWGeom = railWayLWIterator.next();
     while (railWayLWIterator.next() != null) {
 
         RailWayLW railWayLW = railWayLWIterator.getRailWayLW()

@@ -106,10 +106,10 @@ public class LDENPointNoiseMapFactoryTest {
         ldenConfig.setCoefficientVersion(2);
         RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN", ldenConfig);
 
-        assertNotNull(railWayLWIterator.next());
-
-        RailWayLW railWayLW = railWayLWIterator.getRailWayLW();
-        List<LineString> geometries = railWayLWIterator.getRailWayLWGeometry( 2);
+        RailWayLWGeom v = railWayLWIterator.next();
+        assertNotNull(v);
+        RailWayLW railWayLW = v.getRailWayLW();
+        List<LineString> geometries = v.getRailWayLWGeometry( 2);
 
         assertTrue(railWayLWIterator.hasNext());
 
