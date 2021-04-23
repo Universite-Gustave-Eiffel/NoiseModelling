@@ -211,15 +211,15 @@ def exec(Connection connection, input) {
     }
     int k = 0
     int currentVal = 0
-
+    int i=0
     RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection, sources_geom_table_name, sources_table_traffic_name, ldenConfig)
 
     while (railWayLWIterator.next() != null) {
 
         RailWayLW railWayLW = railWayLWIterator.getRailWayLW()
-        List<LineString> geometries = railWayLWIterator.getRailWayLWGeometry(4) //TODO update distance between Rail
+        List<LineString> geometries = railWayLWIterator.getRailWayLWGeometry(2) //TODO update distance between Rail
         int pk = railWayLWIterator.getRailWayLWPK()
-
+        i = i+1
         double[] LW
         double heightSource
         int directivityId

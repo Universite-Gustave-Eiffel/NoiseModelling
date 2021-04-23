@@ -109,7 +109,7 @@ public class LDENPointNoiseMapFactoryTest {
         assertNotNull(railWayLWIterator.next());
 
         RailWayLW railWayLW = railWayLWIterator.getRailWayLW();
-        List<LineString> geometries = railWayLWIterator.getRailWayLWGeometry( 10);
+        List<LineString> geometries = railWayLWIterator.getRailWayLWGeometry( 2);
 
         assertTrue(railWayLWIterator.hasNext());
 

@@ -107,7 +107,6 @@ public class RailWayLWIterator implements Iterator<RailWayLW> {
     public RailWayLWGeom next() {
         try {
             if (spatialResultSet == null) {
-
                 spatialResultSet = connection.createStatement().executeQuery("SELECT r1.*, r2.* FROM "+tableTrain+" r1, "+tableTrack+" r2 WHERE r1.IDSECTION= R2.IDSECTION; ").unwrap(SpatialResultSet.class);
                 spatialResultSet.next();
                 railWayLW = getRailwayEmissionFromResultSet(spatialResultSet, "DAY");
