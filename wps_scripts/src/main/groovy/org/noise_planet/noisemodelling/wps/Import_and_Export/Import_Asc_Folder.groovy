@@ -140,86 +140,84 @@ def exec(Connection connection, input) {
     stmt.execute(dropOutputTable)
 
     dir.eachFileRecurse(FileType.FILES) { file ->
-
-        // Drop the table if already exists
-        dropOutputTable = "drop table if exists " + outputTableName
-        stmt.execute(dropOutputTable)
-
         String pathFile = file as String
-
-        int srid
-        final int dotIndex = pathFile.lastIndexOf('.')
-        final String fileNamePrefix = pathFile.substring(0, dotIndex)
-        File prjFile = new File(fileNamePrefix + ".prj")
-        if (prjFile.exists()) {
-            logger.info("Found prj file :" + prjFile.getAbsolutePath())
-            try {
-                srid = PRJUtil.getSRID(prjFile)
-                if (srid == 0) {
-                    srid = defaultSRID
-                }
-            } catch (IllegalArgumentException ex) {
-                throw new IllegalArgumentException("PRJ file invalid, use default SRID " + prjFile.getAbsolutePath())
-            }
-        } else {
-            srid = 4326
-            logger.warn("PRJ file not found, use default SRID : 4326" + prjFile.getAbsolutePath())
-        }
-
         // Get the extension of the file
         String ext = pathFile.substring(pathFile.lastIndexOf('.') + 1, pathFile.length())
-        if (ext != "asc") {
-            resultString = "The extension is not valid"
-            // print to command window
-            throw new Exception('ERROR : ' + resultString)
-        }
+        if (ext == "asc") {
 
-        // get the name of the fileName
-        String fileName = FilenameUtils.removeExtension(new File(pathFile).getName())
-        // replace whitespaces by _ in the file name
-        fileName.replaceAll("\\s", "_")
-        // remove special characters in the file name
-        fileName.replaceAll("[^a-zA-Z0-9 ]+", "_")
 
-        AscReaderDriver ascDriver = new AscReaderDriver()
-        ascDriver.setAs3DPoint(true)
-        ascDriver.setExtractEnvelope()
-        if (downscale > 1) {
-            ascDriver.setDownScale(downscale)
-        }
+            // Drop the table if already exists
+            dropOutputTable = "drop table if exists " + outputTableName
+            stmt.execute(dropOutputTable)
 
-        // Import ASC file
-        RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1)
-        new FileInputStream(new File(pathFile)).withStream { inputStream ->
-            ascDriver.read(connection, inputStream, progressLogger, TableLocation.parse('ASC').toString(), srid)
-        }
 
-        ResultSet rs = stmt.executeQuery("SELECT * FROM \"" + outputTableName + "\"")
-
-        // If the table has a PK column and doesn't have any Primary Key Constraint, then automatically associate a Primary Key
-        int pkUserIndex = JDBCUtilities.getFieldIndex(rs.getMetaData(), "PK")
-        int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, outputTableName)
-
-        if (pkIndex == 0) {
-            if (pkUserIndex > 0) {
-                stmt.execute("ALTER TABLE " + outputTableName + " ALTER COLUMN PK INT NOT NULL;")
-                stmt.execute("ALTER TABLE " + outputTableName + " ADD PRIMARY KEY (PK);  ")
-                resultString = resultString + String.format(outputTableName + " has a new primary key constraint on PK")
-                logger.info(String.format(outputTableName + " has a new primary key constraint on PK"))
+            int srid
+            final int dotIndex = pathFile.lastIndexOf('.')
+            final String fileNamePrefix = pathFile.substring(0, dotIndex)
+            File prjFile = new File(fileNamePrefix + ".prj")
+            if (prjFile.exists()) {
+                logger.info("Found prj file :" + prjFile.getAbsolutePath())
+                try {
+                    srid = PRJUtil.getSRID(prjFile)
+                    if (srid == 0) {
+                        srid = defaultSRID
+                    }
+                } catch (IllegalArgumentException ex) {
+                    throw new IllegalArgumentException("PRJ file invalid, use default SRID " + prjFile.getAbsolutePath())
+                }
+            } else {
+                srid = 4326
+                logger.warn("PRJ file not found, use default SRID : 4326" + prjFile.getAbsolutePath())
             }
+
+
+            // get the name of the fileName
+            String fileName = FilenameUtils.removeExtension(new File(pathFile).getName())
+            // replace whitespaces by _ in the file name
+            fileName.replaceAll("\\s", "_")
+            // remove special characters in the file name
+            fileName.replaceAll("[^a-zA-Z0-9 ]+", "_")
+
+            AscReaderDriver ascDriver = new AscReaderDriver()
+            ascDriver.setAs3DPoint(true)
+            ascDriver.setExtractEnvelope()
+            if (downscale > 1) {
+                ascDriver.setDownScale(downscale)
+            }
+
+            // Import ASC file
+            RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1)
+            new FileInputStream(new File(pathFile)).withStream { inputStream ->
+                ascDriver.read(connection, inputStream, progressLogger, TableLocation.parse('ASC').toString(), srid)
+            }
+
+            ResultSet rs = stmt.executeQuery("SELECT * FROM \"" + outputTableName + "\"")
+
+            // If the table has a PK column and doesn't have any Primary Key Constraint, then automatically associate a Primary Key
+            int pkUserIndex = JDBCUtilities.getFieldIndex(rs.getMetaData(), "PK")
+            int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, outputTableName)
+
+            if (pkIndex == 0) {
+                if (pkUserIndex > 0) {
+                    stmt.execute("ALTER TABLE " + outputTableName + " ALTER COLUMN PK INT NOT NULL;")
+                    stmt.execute("ALTER TABLE " + outputTableName + " ADD PRIMARY KEY (PK);  ")
+                    resultString = resultString + String.format(outputTableName + " has a new primary key constraint on PK")
+                    logger.info(String.format(outputTableName + " has a new primary key constraint on PK"))
+                }
+            }
+
+            if (MoreThanOne) {
+                stmt.execute("DROP TABLE IF EXISTS ASC2;")
+                stmt.execute("CREATE TABLE ASC2 AS SELECT * FROM ASC UNION SELECT * FROM DEM;")
+                stmt.execute("DROP TABLE IF EXISTS DEM;")
+                stmt.execute("CREATE TABLE DEM AS SELECT * FROM ASC2;")
+            } else {
+                stmt.execute("CREATE TABLE DEM AS SELECT * FROM ASC;")
+            }
+
+            MoreThanOne = true
+
         }
-
-        if (MoreThanOne){
-            stmt.execute("DROP TABLE IF EXISTS ASC2;")
-            stmt.execute("CREATE TABLE ASC2 AS SELECT * FROM ASC UNION SELECT * FROM DEM;")
-            stmt.execute("DROP TABLE IF EXISTS DEM;")
-            stmt.execute("CREATE TABLE DEM AS SELECT * FROM ASC2;")
-        }else{
-            stmt.execute("CREATE TABLE DEM AS SELECT * FROM ASC;")
-        }
-
-        MoreThanOne = true
-
     }
 
     resultString = "The table(s) DEM has/have been uploaded to database !"
