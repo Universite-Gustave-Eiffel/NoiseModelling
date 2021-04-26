@@ -107,13 +107,7 @@ class TestImportExport extends JdbcTestCase {
     @Test
     void testImportAscFolder() {
 
-        String res2 = new Import_Asc_File().exec(connection,
-                ["pathFile" : TestImportExport.getResource("precip30min.asc").getPath(),
-                 "inputSRID": "2154"])
-        res2 = new Table_Visualization_Map().exec(connection,
-                ["tableName": "DEM" ])
-
-        File file = new File(TestImportExport.getResource("precip30min.asc").getPath()).getParentFile()
+          File file = new File(TestImportExport.getResource("precip30min.asc").getPath()).getParentFile()
         String res = new Import_Asc_Folder().exec(connection,
                 ["pathFolder" : file.getPath(),
                  "inputSRID": "2154"])
@@ -123,7 +117,7 @@ class TestImportExport extends JdbcTestCase {
 
 
 
-        assertTrue(res.length() == res2.length()*2)
+        assertTrue(res.length() == 13223)
         }
 
     @Test
