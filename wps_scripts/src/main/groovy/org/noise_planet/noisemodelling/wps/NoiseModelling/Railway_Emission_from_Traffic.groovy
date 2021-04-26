@@ -204,31 +204,29 @@ def exec(Connection connection, input) {
     // Get size of the table (number of rail segments
     PreparedStatement st = connection.prepareStatement("SELECT COUNT(*) AS total FROM " + sources_geom_table_name)
     SpatialResultSet rs1 = st.executeQuery().unwrap(SpatialResultSet.class)
-    int nSection = 0
+
     while (rs1.next()) {
         nSection = rs1.getInt("total")
         System.println('The table Rail Geom has ' + nSection + ' rail segments.')
     }
-    int k = 0
-    int currentVal = 0
-    int i=0
-    RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection, sources_geom_table_name, sources_table_traffic_name, ldenConfig)
-    RailWayLWGeom = railWayLWIterator.next();
-    while (railWayLWIterator.next() != null) {
 
-        RailWayLW railWayLW = railWayLWIterator.getRailWayLW()
-        List<LineString> geometries = railWayLWIterator.getRailWayLWGeometry(2) //TODO update distance between Rail
-        int pk = railWayLWIterator.getRailWayLWPK()
-        i = i+1
+    RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection, sources_geom_table_name, sources_table_traffic_name, ldenConfig)
+    RailWayLWIterator.RailWayLWGeom railWayLWGeom;
+
+    int i = 0
+    while ((railWayLWGeom = railWayLWIterator.next()) != null) {
+        i = i +1
+        RailWayLW railWayLW = railWayLWGeom.getRailWayLW()
+        List<LineString> geometries = railWayLWGeom.getRailWayLWGeometry(2) //set distance between Rail
+        int pk = railWayLWGeom.getPK()
         double[] LW
         double heightSource
         int directivityId
-
         for (int iSource = 0; iSource < 6; iSource++) {
             switch (iSource) {
                 case 0:
                     LW = railWayLW.getLWRolling()
-                    heightSource = 0.05
+                    heightSource = 0.5
                     directivityId = 1
                     break
                 case 1:

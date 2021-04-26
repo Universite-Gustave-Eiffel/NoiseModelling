@@ -21,7 +21,7 @@ import static org.noise_planet.noisemodelling.jdbc.MakeParallelLines.MakeParalle
 
 
 
-public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
+public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGeom> {
 
     private Connection connection;
     private RailWayLW railWayLWsum;
@@ -65,41 +65,38 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
     public RailWayLWGeom next() {
         try {
             if (spatialResultSet == null) {
-                spatialResultSet = connection.createStatement().executeQuery("SELECT r1.*, r2.* FROM " + tableTrain + " r1, " + tableTrack + " r2 WHERE r1.IDSECTION= R2.IDSECTION; ").unwrap(SpatialResultSet.class);
+                spatialResultSet = connection.createStatement().executeQuery("SELECT r1.*, r2.* FROM " + tableTrain + " r1, " + tableTrack + " r2 WHERE r1.IDSECTION= R2.IDSECTION ORDER BY PK ").unwrap(SpatialResultSet.class);
                 spatialResultSet.next();
                 railWayLWsum = getRailwayEmissionFromResultSet(spatialResultSet, "DAY");
                 railWayLWfinal.setNbTrack(spatialResultSet.getInt("NTRACK"));
                 currentIdSection = spatialResultSet.getInt("PK");
+                railWayLWfinal.setPK(currentIdSection);
                 railWayLWfinal.setGeometry(splitGeometry(spatialResultSet.getGeometry()));
             }
-            boolean hasConsumeResultSet = false;
             while (spatialResultSet.next()) {
-                hasConsumeResultSet = true;
                 if (currentIdSection == spatialResultSet.getInt("PK")) {
                     railWayLWsum = RailWayLW.sumRailWayLW(railWayLWsum, getRailwayEmissionFromResultSet(spatialResultSet, "DAY"));
                 } else {
                     railWayLWfinal.setRailWayLW(railWayLWsum);
-
                     RailWayLWGeom previousRailWayLW = railWayLWfinal;
                     railWayLWfinal = new RailWayLWGeom();
                     railWayLWfinal.setGeometry(splitGeometry(spatialResultSet.getGeometry()));
                     railWayLWfinal.setPK(spatialResultSet.getInt("PK"));
                     railWayLWfinal.setNbTrack(spatialResultSet.getInt("NTRACK"));
                     railWayLWsum = getRailwayEmissionFromResultSet(spatialResultSet, "DAY");
+                    railWayLWfinal.setRailWayLW(railWayLWsum);
                     currentIdSection = spatialResultSet.getInt("PK");
                     return previousRailWayLW;
                 }
             }
-            if(!hasConsumeResultSet){
+
                 RailWayLWGeom previousRailWayLW = railWayLWfinal;
                 railWayLWfinal=null;
                 return previousRailWayLW;
 
-            }
         } catch (SQLException | IOException throwables) {
             throw new NoSuchElementException(throwables.getMessage());
         }
-        return null;
     }
 
     /**
@@ -216,82 +213,84 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
 
         return lWRailWay;
     }
-}
 
 
-class RailWayLWGeom {
-    private RailWayLW railWayLW;
-    private List<LineString> geometry;
-    private int pk;
-    private int nbTrack;
+    public static class RailWayLWGeom {
+        private RailWayLW railWayLW;
+        private List<LineString> geometry;
+        private int pk;
+        private int nbTrack;
 
-    public RailWayLW getRailWayLW() {
-        return railWayLW;
-    }
-
-    public void setRailWayLW(RailWayLW railWayLW) {
-        this.railWayLW = railWayLW;
-    }
-
-    public int getNbTrack() {
-        return nbTrack;
-    }
-
-    public void setNbTrack(int nbTrack) {
-        this.nbTrack = nbTrack;
-    }
-
-    public List<LineString> getGeometry() {
-        return  geometry;
-    }
-
-
-    public int getPK() {
-        return pk;
-    }
-
-    public int setPK(int pk) {
-        return this.pk=pk;
-    }
-
-    public void setGeometry(List<LineString> geometry) {
-        this.geometry = geometry;
-    }
-
-
-
-    public List<LineString> getRailWayLWGeometry( double distance) {
-        List<LineString> geometries = new ArrayList<>();
-
-
-        boolean even = false;
-        if (nbTrack % 2 == 0) even = true;
-
-        if (nbTrack == 1) {
-            geometries.addAll(getGeometry());
-            return geometries;
-        }else {
-
-            if (even) {
-                for (int j=1; j <= nbTrack/2 ; j++){
-                    for (LineString subGeom : getGeometry()) {
-                        geometries.add( MakeParallelLine(subGeom, (distance / 2) + distance * j));
-                        geometries.add(MakeParallelLine(subGeom, -((distance / 2) + distance * j)));
-                    }
-                }
-            } else {
-                for (int j=1; j <= ((nbTrack-1)/2) ; j++) {
-                    for (LineString subGeom : getGeometry()) {
-                        geometries.add( MakeParallelLine(subGeom,  distance * j));
-                        geometries.add(MakeParallelLine(subGeom, -( distance * j)));
-                    }
-                }
-                LineMerger centerLine = new LineMerger();
-                centerLine.add(getGeometry());
-                geometries.addAll(centerLine.getMergedLineStrings());
-            }
-            return geometries;
+        public RailWayLW getRailWayLW() {
+            return railWayLW;
         }
-    }
 
+        public void setRailWayLW(RailWayLW railWayLW) {
+            this.railWayLW = railWayLW;
+        }
+
+        public int getNbTrack() {
+            return nbTrack;
+        }
+
+        public void setNbTrack(int nbTrack) {
+            this.nbTrack = nbTrack;
+        }
+
+        public List<LineString> getGeometry() {
+            return  geometry;
+        }
+
+
+        public int getPK() {
+            return pk;
+        }
+
+        public int setPK(int pk) {
+            return this.pk=pk;
+        }
+
+        public void setGeometry(List<LineString> geometry) {
+            this.geometry = geometry;
+        }
+
+
+
+        public List<LineString> getRailWayLWGeometry( double distance) {
+            List<LineString> geometries = new ArrayList<>();
+
+
+            boolean even = false;
+            if (nbTrack % 2 == 0) even = true;
+
+            if (nbTrack == 1) {
+                geometries.addAll(getGeometry());
+                return geometries;
+            }else {
+
+                if (even) {
+                    for (int j=1; j <= nbTrack/2 ; j++){
+                        for (LineString subGeom : getGeometry()) {
+                            geometries.add( MakeParallelLine(subGeom, (distance / 2) + distance * j));
+                            geometries.add(MakeParallelLine(subGeom, -((distance / 2) + distance * j)));
+                        }
+                    }
+                } else {
+                    for (int j=1; j <= ((nbTrack-1)/2) ; j++) {
+                        for (LineString subGeom : getGeometry()) {
+                            geometries.add( MakeParallelLine(subGeom,  distance * j));
+                            geometries.add(MakeParallelLine(subGeom, -( distance * j)));
+                        }
+                    }
+                    LineMerger centerLine = new LineMerger();
+                    centerLine.add(getGeometry());
+                    geometries.addAll(centerLine.getMergedLineStrings());
+                }
+                return geometries;
+            }
+        }
+
+    }
 }
+
+
