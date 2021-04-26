@@ -153,6 +153,9 @@ def exec(Connection connection, input) {
     // Create a connection statement to interact with the database in SQL
     Statement stmt = connection.createStatement()
 
+    // Drop the table if already exists
+    String dropOutputTable = "drop table if exists " + outputTableName
+    stmt.execute(dropOutputTable)
 
     // Get the extension of the file
     String ext = pathFile.substring(pathFile.lastIndexOf('.') + 1, pathFile.length())
@@ -160,13 +163,6 @@ def exec(Connection connection, input) {
         resultString = "The extension is not valid"
         // print to command window
         throw new Exception('ERROR : ' + resultString)
-    }
-    switch (ext) {
-        case "asc":
-            AscDriverFunction ascDriver = new AscDriverFunction()
-            ascDriver.importFile(connection, outputTableName, new File(pathFile), new EmptyProgressVisitor())
-            break
-
     }
 
     AscReaderDriver ascDriver = new AscReaderDriver()
@@ -190,7 +186,8 @@ def exec(Connection connection, input) {
             throw new IllegalArgumentException("PRJ file invalid, use default SRID " + prjFile.getAbsolutePath())
         }
     } else {
-        throw new IllegalArgumentException("PRJ file not found " + prjFile.getAbsolutePath())
+        srid = 4326
+        logger.warn("PRJ file not found, use default SRID : 4326" + prjFile.getAbsolutePath())
     }
     if (fence != null) {
         // Reproject fence
@@ -221,7 +218,7 @@ def exec(Connection connection, input) {
     }
 
     // Drop the table if already exists
-    String dropOutputTable = "drop table if exists " + outputTableName
+    dropOutputTable = "drop table if exists " + outputTableName
     stmt.execute(dropOutputTable)
 
 

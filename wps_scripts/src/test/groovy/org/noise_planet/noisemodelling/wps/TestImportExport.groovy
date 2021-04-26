@@ -18,6 +18,8 @@ import org.junit.Assert
 import org.junit.Test
 import org.noise_planet.noisemodelling.wps.Database_Manager.Display_Database
 import org.noise_planet.noisemodelling.wps.Database_Manager.Table_Visualization_Data
+import org.noise_planet.noisemodelling.wps.Database_Manager.Table_Visualization_Map
+import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_Asc_Folder
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_OSM_BBBike
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_OSM_Pbf
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_Symuvia
@@ -101,6 +103,17 @@ class TestImportExport extends JdbcTestCase {
 
         assertEquals("The table DEM has been uploaded to database ! </br>  Its SRID is : 4326. </br> Remember that to calculate a noise map, your SRID must be in metric coordinates. Please use the Wps block 'Change SRID' if needed.", res)
     }
+
+    @Test
+    void testImportAscFolder() {
+        String res = new Import_Asc_Folder().exec(connection,
+                ["pathFile" : TestImportExport.getResource("precip30min.asc").getPath(),
+                 "inputSRID": "2154"])
+
+        res = new Table_Visualization_Map().exec(connection,
+                ["tableName": "DEM" ])
+        assertTrue(res instanceof org.locationtech.jts.geom.MultiPoint)
+        }
 
     @Test
     void testImportFolder() {

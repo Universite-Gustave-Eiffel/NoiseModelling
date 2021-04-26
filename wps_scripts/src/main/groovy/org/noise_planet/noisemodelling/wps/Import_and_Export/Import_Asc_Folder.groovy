@@ -1,0 +1,234 @@
+/**
+ * NoiseModelling is an open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
+ *
+ * This version is developed by the DECIDE team from the Lab-STICC (CNRS) and by the Mixt Research Unit in Environmental Acoustics (Université Gustave Eiffel).
+ * <http://noise-planet.org/noisemodelling.html>
+ *
+ * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE provided with this software.
+ *
+ * Contact: contact@noise-planet.org
+ *
+ */
+
+/**
+ * @Author Pierre Aumond, Université Gustave Eiffel
+ */
+
+package org.noise_planet.noisemodelling.wps.Import_and_Export
+
+import geoserver.GeoServer
+import geoserver.catalog.Store
+import groovy.io.FileType
+import org.apache.commons.io.FilenameUtils
+import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.api.EmptyProgressVisitor
+import org.h2gis.functions.io.utility.PRJUtil
+import org.h2gis.utilities.JDBCUtilities
+import org.h2gis.utilities.SFSUtilities
+import org.h2gis.utilities.TableLocation
+import org.noise_planet.noisemodelling.ext.asc.AscDriverFunction
+import org.noise_planet.noisemodelling.ext.asc.AscReaderDriver
+import org.noise_planet.noisemodelling.pathfinder.RootProgressVisitor
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+
+import java.sql.Connection
+import java.sql.ResultSet
+import java.sql.Statement
+
+title = 'Import all Asc files from a folder'
+description = 'Import all files with a Asc extension from a folder to the database. </br>'
+
+inputs = [
+        pathFolder: [
+                name       : 'Path of the folder',
+                title      : 'Path of the folder',
+                description: 'Path of the folder ' +
+                        '</br> For example : c:/home/inputdata/ ',
+                type       : String.class
+        ],
+        inputSRID : [
+                name       : 'Projection identifier',
+                title      : 'Projection identifier',
+                description: 'Original projection identifier (also called SRID) of all the table that contain a geometry attribute. It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection). ' +
+                        '</br>  All coordinates will be projected from the specified EPSG to WGS84 coordinates. ' +
+                        '</br> This entry is optional because many formats already include the projection and you can also import files without geometry attributes.' +
+                        '</br>  <b> Default value : 4326 </b> ',
+                type       : Integer.class,
+                min        : 0, max: 1
+        ],
+        downscale : [
+                name       : 'Skip pixels on each axis',
+                title      : 'Skip pixels on each axis',
+                description: 'Divide the number of rows and columns read by the following coefficient (FLOAT) ' +
+                        '</br> </br> <b> Default value : 1.0 </b>',
+                min        : 0, max: 1,
+                type       : Integer.class
+        ]
+]
+
+outputs = [
+        result: [
+                name       : 'Result output string',
+                title      : 'Result output string',
+                description: 'This type of result does not allow the blocks to be linked together.',
+                type       : String.class
+        ]
+]
+
+static Connection openGeoserverDataStoreConnection(String dbName) {
+    if (dbName == null || dbName.isEmpty()) {
+        dbName = new GeoServer().catalog.getStoreNames().get(0)
+    }
+    Store store = new GeoServer().catalog.getStore(dbName)
+    JDBCDataStore jdbcDataStore = (JDBCDataStore) store.getDataStoreInfo().getDataStore(null)
+    return jdbcDataStore.getDataSource().getConnection()
+}
+
+def run(input) {
+
+    // Get name of the database
+    // by default an embedded h2gis database is created
+    // Advanced user can replace this database for a postGis or h2Gis server database.
+    String dbName = "h2gisdb"
+
+    // Open connection
+    openGeoserverDataStoreConnection(dbName).withCloseable {
+        Connection connection ->
+            return [result: exec(connection, input)]
+    }
+}
+
+def exec(Connection connection, input) {
+
+    // output string, the information given back to the user
+    String resultString = null
+
+    // Create a logger to display messages in the geoserver logs and in the command prompt.
+    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
+
+    // print to command window
+    logger.info('Start : Import all asc files of a folder')
+    logger.info("inputs {}", input) // log inputs of the run
+
+
+    // Default SRID (WGS84)
+    Integer defaultSRID = 4326
+    // Get user SRID
+    if (input['inputSRID']) {
+        defaultSRID = input['inputSRID'] as Integer
+    }
+
+    Integer downscale = 1
+    if (input['downscale']) {
+        downscale = Math.max(1, input['downscale'] as Integer)
+    }
+
+    boolean MoreThanOne = false // true when you have various files and you need to append an existing table.
+
+    // Get path of the folder
+    String folder = input["pathFolder"] as String
+    def dir = new File(folder)
+
+    String outputTableName = 'ASC'
+
+    // Create a connection statement to interact with the database in SQL
+    Statement stmt = connection.createStatement()
+
+    // Drop the table if already exists
+    String dropOutputTable = "drop table if exists DEM"
+    stmt.execute(dropOutputTable)
+
+    dir.eachFileRecurse(FileType.FILES) { file ->
+
+        // Drop the table if already exists
+        dropOutputTable = "drop table if exists " + outputTableName
+        stmt.execute(dropOutputTable)
+
+        String pathFile = file as String
+
+        int srid
+        final int dotIndex = pathFile.lastIndexOf('.')
+        final String fileNamePrefix = pathFile.substring(0, dotIndex)
+        File prjFile = new File(fileNamePrefix + ".prj")
+        if (prjFile.exists()) {
+            logger.info("Found prj file :" + prjFile.getAbsolutePath())
+            try {
+                srid = PRJUtil.getSRID(prjFile)
+                if (srid == 0) {
+                    srid = defaultSRID
+                }
+            } catch (IllegalArgumentException ex) {
+                throw new IllegalArgumentException("PRJ file invalid, use default SRID " + prjFile.getAbsolutePath())
+            }
+        } else {
+            srid = 4326
+            logger.warn("PRJ file not found, use default SRID : 4326" + prjFile.getAbsolutePath())
+        }
+
+        // Get the extension of the file
+        String ext = pathFile.substring(pathFile.lastIndexOf('.') + 1, pathFile.length())
+        if (ext != "asc") {
+            resultString = "The extension is not valid"
+            // print to command window
+            throw new Exception('ERROR : ' + resultString)
+        }
+
+        // get the name of the fileName
+        String fileName = FilenameUtils.removeExtension(new File(pathFile).getName())
+        // replace whitespaces by _ in the file name
+        fileName.replaceAll("\\s", "_")
+        // remove special characters in the file name
+        fileName.replaceAll("[^a-zA-Z0-9 ]+", "_")
+
+        AscReaderDriver ascDriver = new AscReaderDriver()
+        ascDriver.setAs3DPoint(true)
+        ascDriver.setExtractEnvelope()
+        if (downscale > 1) {
+            ascDriver.setDownScale(downscale)
+        }
+
+        // Import ASC file
+        RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1)
+        new FileInputStream(new File(pathFile)).withStream { inputStream ->
+            ascDriver.read(connection, inputStream, progressLogger, TableLocation.parse('ASC').toString(), srid)
+        }
+
+        ResultSet rs = stmt.executeQuery("SELECT * FROM \"" + outputTableName + "\"")
+
+        // If the table has a PK column and doesn't have any Primary Key Constraint, then automatically associate a Primary Key
+        int pkUserIndex = JDBCUtilities.getFieldIndex(rs.getMetaData(), "PK")
+        int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, outputTableName)
+
+        if (pkIndex == 0) {
+            if (pkUserIndex > 0) {
+                stmt.execute("ALTER TABLE " + outputTableName + " ALTER COLUMN PK INT NOT NULL;")
+                stmt.execute("ALTER TABLE " + outputTableName + " ADD PRIMARY KEY (PK);  ")
+                resultString = resultString + String.format(outputTableName + " has a new primary key constraint on PK")
+                logger.info(String.format(outputTableName + " has a new primary key constraint on PK"))
+            }
+        }
+
+        if (MoreThanOne){
+            stmt.execute("DROP TABLE IF EXISTS ASC2;")
+            stmt.execute("CREATE TABLE ASC2 AS SELECT * FROM ASC UNION SELECT * FROM DEM;")
+            stmt.execute("DROP TABLE IF EXISTS DEM;")
+            stmt.execute("CREATE TABLE DEM AS SELECT * FROM ASC2;")
+        }else{
+            stmt.execute("CREATE TABLE DEM AS SELECT * FROM ASC;")
+        }
+
+        MoreThanOne = true
+
+    }
+
+    resultString = "The table(s) DEM has/have been uploaded to database !"
+
+    // print to command window
+    logger.info(resultString)
+    logger.info('End : Import all files of a folder')
+
+    // print to WPS Builder
+    return resultString
+
+}
