@@ -191,7 +191,7 @@ def exec(Connection connection, input) {
         }
     } else {
         srid = defaultSRID
-        logger.warn("PRJ file not found, use default SRID : 4326" + prjFile.getAbsolutePath())
+        logger.warn("PRJ file not found, use default SRID" + prjFile.getAbsolutePath())
     }
     if (fence != null) {
         // Reproject fence
