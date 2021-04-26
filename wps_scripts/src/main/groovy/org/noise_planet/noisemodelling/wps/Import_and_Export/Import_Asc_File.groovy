@@ -157,6 +157,10 @@ def exec(Connection connection, input) {
     String dropOutputTable = "drop table if exists " + outputTableName
     stmt.execute(dropOutputTable)
 
+    // Drop the table if already exists
+    dropOutputTable = "drop table if exists DEM"
+    stmt.execute(dropOutputTable)
+
     // Get the extension of the file
     String ext = pathFile.substring(pathFile.lastIndexOf('.') + 1, pathFile.length())
     if (ext != "asc") {
