@@ -21,19 +21,14 @@ import geoserver.catalog.Store
 import groovy.io.FileType
 import org.apache.commons.io.FilenameUtils
 import org.geotools.jdbc.JDBCDataStore
-import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.functions.io.utility.PRJUtil
-import org.h2gis.utilities.JDBCUtilities
-import org.h2gis.utilities.SFSUtilities
 import org.h2gis.utilities.TableLocation
-import org.noise_planet.noisemodelling.ext.asc.AscDriverFunction
 import org.noise_planet.noisemodelling.ext.asc.AscReaderDriver
 import org.noise_planet.noisemodelling.pathfinder.RootProgressVisitor
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import java.sql.Connection
-import java.sql.ResultSet
 import java.sql.Statement
 
 title = 'Import all Asc files from a folder'
@@ -124,19 +119,17 @@ def exec(Connection connection, input) {
         downscale = Math.max(1, input['downscale'] as Integer)
     }
 
-    boolean MoreThanOne = false // true when you have various files and you need to append an existing table.
-
     // Get path of the folder
     String folder = input["pathFolder"] as String
     def dir = new File(folder)
 
-    String outputTableName = 'ASC'
+    String outputTableName = 'DEM'
 
     // Create a connection statement to interact with the database in SQL
     Statement stmt = connection.createStatement()
 
     // Drop the table if already exists
-    String dropOutputTable = "drop table if exists DEM"
+    String dropOutputTable = "drop table if exists " + outputTableName
     stmt.execute(dropOutputTable)
 
     dir.eachFileRecurse(FileType.FILES) { file ->
@@ -144,12 +137,6 @@ def exec(Connection connection, input) {
         // Get the extension of the file
         String ext = pathFile.substring(pathFile.lastIndexOf('.') + 1, pathFile.length())
         if (ext == "asc") {
-
-
-            // Drop the table if already exists
-            dropOutputTable = "drop table if exists " + outputTableName
-            stmt.execute(dropOutputTable)
-
 
             int srid
             final int dotIndex = pathFile.lastIndexOf('.')
@@ -188,41 +175,14 @@ def exec(Connection connection, input) {
             // Import ASC file
             RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1)
             new FileInputStream(new File(pathFile)).withStream { inputStream ->
-                ascDriver.read(connection, inputStream, progressLogger, TableLocation.parse('ASC').toString(), srid)
+                ascDriver.read(connection, inputStream, progressLogger, TableLocation.parse(outputTableName).toString(), srid)
             }
-
-            ResultSet rs = stmt.executeQuery("SELECT * FROM \"" + outputTableName + "\"")
-
-            // If the table has a PK column and doesn't have any Primary Key Constraint, then automatically associate a Primary Key
-            int pkUserIndex = JDBCUtilities.getFieldIndex(rs.getMetaData(), "PK")
-            int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, outputTableName)
-
-            if (pkIndex == 0) {
-                if (pkUserIndex > 0) {
-                    stmt.execute("ALTER TABLE " + outputTableName + " ALTER COLUMN PK INT NOT NULL;")
-                    stmt.execute("ALTER TABLE " + outputTableName + " ADD PRIMARY KEY (PK);  ")
-                    resultString = resultString + String.format(outputTableName + " has a new primary key constraint on PK")
-                    logger.info(String.format(outputTableName + " has a new primary key constraint on PK"))
-                }
-            }
-
-            if (MoreThanOne) {
-                stmt.execute("DROP TABLE IF EXISTS ASC2;")
-                stmt.execute("CREATE TABLE ASC2 AS SELECT * FROM ASC UNION SELECT * FROM DEM;")
-                stmt.execute("DROP TABLE IF EXISTS DEM;")
-                stmt.execute("CREATE TABLE DEM AS SELECT * FROM ASC2;")
-            } else {
-                stmt.execute("CREATE TABLE DEM AS SELECT * FROM ASC;")
-            }
-
-            MoreThanOne = true
 
         }
     }
 
-    stmt.execute("UPDATE DEM SET the_geom  = ST_SetSRID(the_geom, "+defaultSRID +");")
-    logger.info("Create spatial index on DEM" )
-    stmt.execute("Create spatial index on DEM(the_geom);")
+    logger.info("Create spatial index on "+ outputTableName )
+    stmt.execute("Create spatial index on "+outputTableName+"(the_geom);")
 
     resultString = "The table(s) DEM has/have been uploaded to database !"
 

@@ -19,7 +19,6 @@ package org.noise_planet.noisemodelling.wps.Import_and_Export
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import org.geotools.jdbc.JDBCDataStore
-import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.functions.io.utility.PRJUtil
 import org.h2gis.functions.spatial.crs.ST_SetSRID
 import org.h2gis.functions.spatial.crs.ST_Transform
@@ -27,7 +26,6 @@ import org.h2gis.utilities.TableLocation
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.io.WKTReader
 import org.locationtech.jts.io.WKTWriter
-import org.noise_planet.noisemodelling.ext.asc.AscDriverFunction
 import org.noise_planet.noisemodelling.ext.asc.AscReaderDriver
 import org.noise_planet.noisemodelling.pathfinder.RootProgressVisitor
 import org.slf4j.Logger
@@ -148,7 +146,7 @@ def exec(Connection connection, input) {
         throw new Exception('ERROR : ' + resultString)
     }
 
-    String outputTableName = 'ASC'
+    String outputTableName = 'DEM'
 
     // Create a connection statement to interact with the database in SQL
     Statement stmt = connection.createStatement()
@@ -157,9 +155,6 @@ def exec(Connection connection, input) {
     String dropOutputTable = "drop table if exists " + outputTableName
     stmt.execute(dropOutputTable)
 
-    // Drop the table if already exists
-    dropOutputTable = "drop table if exists DEM"
-    stmt.execute(dropOutputTable)
 
     // Get the extension of the file
     String ext = pathFile.substring(pathFile.lastIndexOf('.') + 1, pathFile.length())
@@ -218,16 +213,11 @@ def exec(Connection connection, input) {
     // Import ASC file
     RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1)
     new FileInputStream(new File(pathFile)).withStream { inputStream ->
-        ascDriver.read(connection, inputStream, progressLogger, TableLocation.parse('DEM').toString(), srid)
+        ascDriver.read(connection, inputStream, progressLogger, TableLocation.parse(outputTableName).toString(), srid)
     }
 
-    // Drop the table if already exists
-    dropOutputTable = "drop table if exists " + outputTableName
-    stmt.execute(dropOutputTable)
-
-    stmt.execute("UPDATE DEM SET the_geom  = ST_SetSRID(the_geom, "+srid +");")
-    logger.info("Create spatial index on DEM" )
-    stmt.execute("Create spatial index on DEM(the_geom);")
+    logger.info("Create spatial index on " + outputTableName )
+    stmt.execute("Create spatial index on "+outputTableName+"(the_geom);")
 
     // Display the actual SRID in the command window
     logger.info("The SRID of your table is " + srid)

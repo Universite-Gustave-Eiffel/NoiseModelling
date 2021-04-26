@@ -44,14 +44,13 @@ class TestImportExport extends JdbcTestCase {
         assertEquals("", res)
         // Import OSM file
         res = new Import_Symuvia().exec(connection,
-                ["pathFile": TestImportExport.getResource("symuvia.xml").getPath(),
-                 "defaultSRID" : 2154])
+                ["pathFile"   : TestImportExport.getResource("symuvia.xml").getPath(),
+                 "defaultSRID": 2154])
 
         res = new Display_Database().exec(connection, [])
 
         assertTrue(res.contains("SYMUVIA_TRAJ"))
     }
-
 
 
     @Test
@@ -75,7 +74,7 @@ class TestImportExport extends JdbcTestCase {
         }
         catch (Exception e) {
             String expectedMessage = "ERROR : The table already has a different SRID than the one you gave.";
-            Assert.assertEquals( "Exception message must be correct", expectedMessage, e.getMessage() );
+            Assert.assertEquals("Exception message must be correct", expectedMessage, e.getMessage());
         }
 
     }
@@ -83,13 +82,13 @@ class TestImportExport extends JdbcTestCase {
     @Test
     void testImportFile3() {
 
-         new Import_File().exec(connection,
+        new Import_File().exec(connection,
                 ["pathFile" : TestImportExport.getResource("ROADS2.shp").getPath(),
                  "inputSRID": "2154",
                  "tableName": "ROADS"])
 
         String res = new Table_Visualization_Data().exec(connection,
-                ["tableName": "ROADS" ])
+                ["tableName": "ROADS"])
 
         assertFalse(res.contains("PK2"))
     }
@@ -99,7 +98,7 @@ class TestImportExport extends JdbcTestCase {
 
         String res = new Import_Asc_File().exec(connection,
                 ["pathFile" : TestImportExport.getResource("precip30min.asc").getPath(),
-                 "inputSRID": "2154"])
+                 "inputSRID": 2154])
 
         assertEquals("The table DEM has been uploaded to database ! </br>  Its SRID is : 4326. </br> Remember that to calculate a noise map, your SRID must be in metric coordinates. Please use the Wps block 'Change SRID' if needed.", res)
     }
@@ -107,18 +106,15 @@ class TestImportExport extends JdbcTestCase {
     @Test
     void testImportAscFolder() {
 
-          File file = new File(TestImportExport.getResource("precip30min.asc").getPath()).getParentFile()
+        File file = new File(TestImportExport.getResource("precip30min.asc").getPath()).getParentFile()
         String res = new Import_Asc_Folder().exec(connection,
-                ["pathFolder" : file.getPath(),
-                 "inputSRID": "2154"])
+                ["pathFolder": file.getPath(),
+                 "inputSRID" : 2154])
 
-        res = new Table_Visualization_Map().exec(connection,
-                ["tableName": "DEM" ])
+        res = new Table_Visualization_Map().exec(connection, ["tableName": "DEM"]).getNumPoints()
 
-
-
-        assertTrue(res.length() == 13223)
-        }
+        assertTrue(res == "598")
+    }
 
     @Test
     void testImportFolder() {
@@ -126,7 +122,7 @@ class TestImportExport extends JdbcTestCase {
         File file = new File(TestImportExport.getResource("receivers.shp").getPath()).getParentFile()
         String res = new Import_Folder().exec(connection,
                 ["pathFolder": file.getPath(),
-                 "inputSRID" : "2154",
+                 "inputSRID" : 2154,
                  "importExt" : "shp"])
 
         assertTrue(res.contains("ROADS2"))
@@ -142,7 +138,7 @@ class TestImportExport extends JdbcTestCase {
         // Check export geojson
         File testPath = new File("target/test.geojson")
 
-        if(testPath.exists()) {
+        if (testPath.exists()) {
             testPath.delete()
         }
 
@@ -162,8 +158,8 @@ class TestImportExport extends JdbcTestCase {
 
 
         new Import_OSM_BBBike().exec(connection,
-                ["importFolder"   : TestImportExport.class.getResource("BBBike/").getPath(),
-                 "inputSRID": 2154])
+                ["importFolder": TestImportExport.class.getResource("BBBike/").getPath(),
+                 "inputSRID"   : 2154])
 
         String res = new Display_Database().exec(connection, [])
 
@@ -174,22 +170,19 @@ class TestImportExport extends JdbcTestCase {
     @Test
     void testImportOSMPBF() {
 
-        new Import_OSM_Pbf().exec(connection,[
-                "pathFile"        : TestImportExport.getResource("map.osm.pbf").getPath(),
-                "targetSRID"      : 2154,
-                "ignoreGround": false,
+        new Import_OSM_Pbf().exec(connection, [
+                "pathFile"      : TestImportExport.getResource("map.osm.pbf").getPath(),
+                "targetSRID"    : 2154,
+                "ignoreGround"  : false,
                 "ignoreBuilding": false,
-                "ignoreRoads": false,
-                "removeTunnels": true
+                "ignoreRoads"   : false,
+                "removeTunnels" : true
         ]);
         String res = new Display_Database().exec(connection, [])
 
         assertEquals("BUILDINGS</br></br>GROUND</br></br>ROADS</br></br>", res)
 
     }
-
-
-
 
 
 }
