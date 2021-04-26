@@ -22,6 +22,7 @@ package org.noise_planet.noisemodelling.ext.asc;
 
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.api.ProgressVisitor;
+import org.h2gis.utilities.JDBCUtilities;
 import org.locationtech.jts.geom.*;
 
 import java.io.BufferedInputStream;
@@ -224,19 +225,23 @@ public class AscReaderDriver {
             // Read values
             Statement st = connection.createStatement();
             PreparedStatement preparedStatement;
-            if (as3DPoint) {
-                if (zType == 1) {
-                    st.execute("CREATE TABLE " + outputTable + "(PK SERIAL PRIMARY KEY, THE_GEOM POINT, Z integer)");
+
+            if (!JDBCUtilities.tableExists(connection,outputTable)){
+                if (as3DPoint) {
+                    if (zType == 1) {
+                        st.execute("CREATE TABLE " + outputTable + "(PK SERIAL PRIMARY KEY, THE_GEOM POINT, Z integer)");
+                    } else {
+                        st.execute("CREATE TABLE " + outputTable + "(PK SERIAL PRIMARY KEY, THE_GEOM POINT, Z double precision)");
+                    }
                 } else {
-                    st.execute("CREATE TABLE " + outputTable + "(PK SERIAL PRIMARY KEY, THE_GEOM POINT, Z double precision)");
-                }
-            } else {
-                if (zType == 1) {
-                    st.execute("CREATE TABLE " + outputTable + "(PK SERIAL PRIMARY KEY, THE_GEOM POLYGON, Z integer)");
-                } else {
-                    st.execute("CREATE TABLE " + outputTable + "(PK SERIAL PRIMARY KEY, THE_GEOM POLYGON, Z double precision)");
+                    if (zType == 1) {
+                        st.execute("CREATE TABLE " + outputTable + "(PK SERIAL PRIMARY KEY, THE_GEOM POLYGON, Z integer)");
+                    } else {
+                        st.execute("CREATE TABLE " + outputTable + "(PK SERIAL PRIMARY KEY, THE_GEOM POLYGON, Z double precision)");
+                    }
                 }
             }
+
             preparedStatement = connection.prepareStatement("INSERT INTO " + outputTable
                     + "(the_geom, Z) VALUES (?, ?)");
             // Read data
