@@ -186,7 +186,7 @@ def exec(Connection connection, input) {
             throw new IllegalArgumentException("PRJ file invalid, use default SRID " + prjFile.getAbsolutePath())
         }
     } else {
-        srid = 4326
+        srid = defaultSRID
         logger.warn("PRJ file not found, use default SRID : 4326" + prjFile.getAbsolutePath())
     }
     if (fence != null) {
