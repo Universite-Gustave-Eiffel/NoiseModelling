@@ -20,7 +20,7 @@ package org.noise_planet.noisemodelling.wpsTools
 
 import org.noise_planet.noisemodelling.pathfinder.FastObstructionTest
 import org.noise_planet.noisemodelling.pathfinder.utils.KMLDocument
-import org.noise_planet.noisemodelling.propagation.ComputeRaysOut
+import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation
 
 import javax.xml.stream.XMLStreamException
 
@@ -70,7 +70,7 @@ class GeneralTools {
      * @return
      * @throws IOException
      */
-    def static exportScene(String name, FastObstructionTest manager, ComputeRaysOut result) throws IOException {
+    def static exportScene(String name, FastObstructionTest manager, ComputeRaysOutAttenuation result) throws IOException {
         try {
             FileOutputStream outData = new FileOutputStream(name)
             KMLDocument kmlDocument = new KMLDocument(outData)

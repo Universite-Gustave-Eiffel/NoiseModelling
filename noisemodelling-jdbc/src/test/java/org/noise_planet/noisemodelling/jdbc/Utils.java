@@ -4,7 +4,7 @@ import org.h2.util.StringUtils;
 import org.h2gis.utilities.SpatialResultSet;
 import org.locationtech.jts.geom.Geometry;
 import org.noise_planet.noisemodelling.pathfinder.*;
-import org.noise_planet.noisemodelling.propagation.ComputeRaysOut;
+import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 
 import java.io.File;
@@ -56,7 +56,7 @@ public class Utils {
         }
     }
 
-    private static final class RayOut extends ComputeRaysOut {
+    private static final class RayOut extends ComputeRaysOutAttenuation {
         private DirectPropagationProcessData processData;
 
         public RayOut(boolean keepRays, PropagationProcessPathData pathData, DirectPropagationProcessData processData) {

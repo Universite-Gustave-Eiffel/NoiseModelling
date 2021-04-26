@@ -14,7 +14,7 @@ import org.noise_planet.noisemodelling.jdbc.PointNoiseMap;
 import org.noise_planet.noisemodelling.pathfinder.FastObstructionTest;
 import org.noise_planet.noisemodelling.pathfinder.IComputeRaysOut;
 import org.noise_planet.noisemodelling.pathfinder.RootProgressVisitor;
-import org.noise_planet.noisemodelling.propagation.ComputeRaysOut;
+import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -143,8 +143,8 @@ class Main {
                 // Run ray propagation
                 IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers);
                 // Export as a Google Earth 3d scene
-                if (out instanceof ComputeRaysOut) {
-                    ComputeRaysOut cellStorage = (ComputeRaysOut) out;
+                if (out instanceof ComputeRaysOutAttenuation) {
+                    ComputeRaysOutAttenuation cellStorage = (ComputeRaysOutAttenuation) out;
                     exportScene(String.format(Locale.ROOT,"target/scene_%d_%d.kml", cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex()), cellStorage.inputData.freeFieldFinder, cellStorage);
                 }
             }
@@ -163,7 +163,7 @@ class Main {
     }
 
 
-    public static void exportScene(String name, FastObstructionTest manager, ComputeRaysOut result) throws IOException {
+    public static void exportScene(String name, FastObstructionTest manager, ComputeRaysOutAttenuation result) throws IOException {
         try {
             FileOutputStream outData = new FileOutputStream(name);
             KMLDocument kmlDocument = new KMLDocument(outData);

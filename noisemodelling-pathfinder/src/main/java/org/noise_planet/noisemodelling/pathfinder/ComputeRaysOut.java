@@ -44,14 +44,12 @@ import java.util.concurrent.atomic.AtomicLong;
  * Way to store data computed by threads.
  * Multiple threads use one instance.
  * This class must be thread safe
- *
+ * Store only propagation rays
  * @author Nicolas Fortin
  * @author Pierre Aumond
  */
 public class ComputeRaysOut implements IComputeRaysOut {
     public List<PropagationPath> propagationPaths = Collections.synchronizedList(new ArrayList<PropagationPath>());
-
-    //public PropagationProcessPathData genericMeteoData;
     public PropagationProcessData inputData;
 
     public ComputeRaysOut(boolean keepRays, PropagationProcessData inputData) {
@@ -71,29 +69,6 @@ public class ComputeRaysOut implements IComputeRaysOut {
     public AtomicLong nb_reflexion_path = new AtomicLong();
     public AtomicLong nb_diffraction_path = new AtomicLong();
     public AtomicInteger cellComputed = new AtomicInteger();
-    // private static final double angle_section = (2 * Math.PI) / PropagationProcessPathData.DEFAULT_WIND_ROSE.length;
-
-
-   /* public static int getRoseIndex(Coordinate receiver, Coordinate source) {
-        // Angle from cos -1 sin 0
-        double angleRad = -(Angle.angle(receiver, source) - Math.PI);
-        // Offset angle by PI / 2 (North),
-        // the north slice ranges is [PI / 2 + angle_section / 2; PI / 2 - angle_section / 2]
-        angleRad -= (Math.PI / 2 - angle_section / 2);
-        // Fix out of bounds angle 0-2Pi
-        if(angleRad < 0) {
-            angleRad += Math.PI * 2;
-        }
-        // The north slice is the last array index not the first one
-        // Ex for slice width of 20°:
-        //      - The first column 20° contain winds between 10 to 30 °
-        //      - The last column 360° contains winds between 350° to 360° and 0 to 10°
-        int index = (int)(angleRad / angle_section) - 1;
-        if(index < 0) {
-            index = PropagationProcessPathData.DEFAULT_WIND_ROSE.length - 1;
-        }
-        return index;
-    }*/
 
     @Override
     public void finalizeReceiver(long receiverId) {
