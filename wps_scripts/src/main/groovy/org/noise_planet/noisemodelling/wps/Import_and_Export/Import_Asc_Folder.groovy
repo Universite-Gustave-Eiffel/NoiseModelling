@@ -220,6 +220,10 @@ def exec(Connection connection, input) {
         }
     }
 
+    stmt.execute("UPDATE DEM SET the_geom  = ST_SetSRID(the_geom, "+defaultSRID +");")
+    logger.info("Create spatial index on DEM" )
+    stmt.execute("Create spatial index on DEM(the_geom);")
+
     resultString = "The table(s) DEM has/have been uploaded to database !"
 
     // print to command window

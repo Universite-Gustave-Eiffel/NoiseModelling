@@ -225,6 +225,9 @@ def exec(Connection connection, input) {
     dropOutputTable = "drop table if exists " + outputTableName
     stmt.execute(dropOutputTable)
 
+    stmt.execute("UPDATE DEM SET the_geom  = ST_SetSRID(the_geom, "+srid +");")
+    logger.info("Create spatial index on DEM" )
+    stmt.execute("Create spatial index on DEM(the_geom);")
 
     // Display the actual SRID in the command window
     logger.info("The SRID of your table is " + srid)
