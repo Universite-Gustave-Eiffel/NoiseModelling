@@ -3,7 +3,7 @@ package org.noise_planet.noisemodelling.jdbc;
 import org.noise_planet.noisemodelling.pathfinder.ComputeRays;
 import org.noise_planet.noisemodelling.pathfinder.IComputeRaysOut;
 import org.noise_planet.noisemodelling.pathfinder.PropagationPath;
-import org.noise_planet.noisemodelling.propagation.ComputeRaysOut;
+import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 
 import java.util.Collection;
@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class LDENComputeRaysOut extends ComputeRaysOut {
+public class LDENComputeRaysOut extends ComputeRaysOutAttenuation {
     LdenData ldenData;
     LDENPropagationProcessData ldenPropagationProcessData;
 
@@ -29,7 +29,7 @@ public class LDENComputeRaysOut extends ComputeRaysOut {
         return new ThreadComputeRaysOut(this);
     }
 
-    static class ThreadComputeRaysOut extends ComputeRaysOut.ThreadRaysOut {
+    static class ThreadComputeRaysOut extends ComputeRaysOutAttenuation.ThreadRaysOut {
         LDENComputeRaysOut ldenComputeRaysOut;
         LDENConfig ldenConfig;
         public ThreadComputeRaysOut(LDENComputeRaysOut multiThreadParent) {

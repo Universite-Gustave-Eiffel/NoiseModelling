@@ -2,9 +2,6 @@ package org.noise_planet.noisemodelling.jdbc;
 
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.functions.factory.H2GISDBFactory;
-import org.h2gis.functions.io.shp.SHPRead;
-import org.h2gis.functions.io.shp.SHPWrite;
-import org.h2gis.functions.io.shp.internal.SHPDriver;
 import org.h2gis.utilities.SFSUtilities;
 import org.junit.After;
 import org.junit.Before;
@@ -15,7 +12,7 @@ import org.noise_planet.noisemodelling.pathfinder.GeoWithSoilType;
 import org.noise_planet.noisemodelling.pathfinder.IComputeRaysOut;
 import org.noise_planet.noisemodelling.pathfinder.PropagationPath;
 import org.noise_planet.noisemodelling.pathfinder.RootProgressVisitor;
-import org.noise_planet.noisemodelling.propagation.ComputeRaysOut;
+import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -79,7 +76,7 @@ public class PointNoiseMapTest {
             pointNoiseMap.setComputeRaysOutFactory(new JDBCComputeRaysOut(true));
             pointNoiseMap.setPropagationProcessDataFactory(new JDBCPropagationData());
 
-            List<ComputeRaysOut.VerticeSL> allLevels = new ArrayList<>();
+            List<ComputeRaysOutAttenuation.VerticeSL> allLevels = new ArrayList<>();
             ArrayList<PropagationPath> propaMap = new ArrayList<>();
             Set<Long> receivers = new HashSet<>();
             pointNoiseMap.setThreadCount(1);
@@ -87,9 +84,9 @@ public class PointNoiseMapTest {
             for(int i=0; i < pointNoiseMap.getGridDim(); i++) {
                 for(int j=0; j < pointNoiseMap.getGridDim(); j++) {
                     IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, i, j, progressVisitor, receivers);
-                    if(out instanceof ComputeRaysOut) {
-                        allLevels.addAll(((ComputeRaysOut) out).getVerticesSoundLevel());
-                        propaMap.addAll(((ComputeRaysOut) out).getPropagationPaths());
+                    if(out instanceof ComputeRaysOutAttenuation) {
+                        allLevels.addAll(((ComputeRaysOutAttenuation) out).getVerticesSoundLevel());
+                        propaMap.addAll(((ComputeRaysOutAttenuation) out).getPropagationPaths());
                     }
                 }
             }
@@ -132,8 +129,8 @@ public class PointNoiseMapTest {
             for(int i=0; i < pointNoiseMap.getGridDim(); i++) {
                 for(int j=0; j < pointNoiseMap.getGridDim(); j++) {
                     IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, i, j, progressVisitor, receivers);
-                    if(out instanceof ComputeRaysOut) {
-                        ComputeRaysOut rout = (ComputeRaysOut) out;
+                    if(out instanceof ComputeRaysOutAttenuation) {
+                        ComputeRaysOutAttenuation rout = (ComputeRaysOutAttenuation) out;
                         for(GeoWithSoilType soil : rout.inputData.getSoilList()) {
                             assertTrue(soil.getGeo().getArea() < expectedMaxArea);
                         }

@@ -8,7 +8,7 @@ import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.index.strtree.STRtree;
 import org.noise_planet.noisemodelling.pathfinder.ComputeRays;
-import org.noise_planet.noisemodelling.propagation.ComputeRaysOut;
+import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
 import org.noise_planet.noisemodelling.pathfinder.FastObstructionTest;
 import org.noise_planet.noisemodelling.pathfinder.IComputeRaysOut;
 import org.noise_planet.noisemodelling.pathfinder.LayerDelaunayError;
@@ -231,7 +231,7 @@ public class PointNoiseMap extends JdbcNoiseMap {
         }
         IComputeRaysOut computeRaysOut;
         if(computeRaysOutFactory == null) {
-            computeRaysOut = new ComputeRaysOut(false, propagationProcessPathData, threadData);
+            computeRaysOut = new ComputeRaysOutAttenuation(false, propagationProcessPathData, threadData);
         } else {
             computeRaysOut = computeRaysOutFactory.create(threadData, propagationProcessPathData);
         }

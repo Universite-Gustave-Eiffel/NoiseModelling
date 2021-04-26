@@ -5,7 +5,7 @@ import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 import org.noise_planet.noisemodelling.pathfinder.*;
-import org.noise_planet.noisemodelling.propagation.ComputeRaysOut;
+import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
 import org.noise_planet.noisemodelling.propagation.EvaluateAttenuationCnossos;
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 import org.slf4j.Logger;
@@ -66,7 +66,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setHumidity(70);
         attData.setTemperature(10);
 
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -106,7 +106,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setHumidity(70);
         attData.setTemperature(10);
 
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -145,7 +145,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setHumidity(70);
         attData.setTemperature(10);
 
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -188,7 +188,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setTemperature(10);
         //attData.setWindRose(FAV_WIND_ROSE);
 
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -251,7 +251,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setHumidity(70);
         attData.setTemperature(10);
 
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -318,7 +318,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setHumidity(70);
         attData.setTemperature(10);
 
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -369,7 +369,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setTemperature(10);
         attData.setWindRose(HOM_WIND_ROSE);
         attData.setPrime2520(true);
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -419,7 +419,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setTemperature(10);
         attData.setWindRose(FAV_WIND_ROSE);
         attData.setPrime2520(true);
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -470,7 +470,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setTemperature(10);
         //attData.setWindRose(FAV_WIND_ROSE);
         attData.setPrime2520(true);
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -520,7 +520,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setHumidity(70);
         attData.setTemperature(10);
         attData.setPrime2520(true);
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -676,7 +676,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setHumidity(70);
         attData.setTemperature(10);
         attData.setPrime2520(true);
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -749,7 +749,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setHumidity(70);
         attData.setTemperature(10);
         attData.setPrime2520(true);
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -799,7 +799,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setHumidity(70);
         attData.setTemperature(10);
         attData.setPrime2520(true);
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -847,7 +847,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setHumidity(70);
         attData.setTemperature(10);
         attData.setPrime2520(false);
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -901,7 +901,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setHumidity(70);
         attData.setTemperature(10);
         attData.setPrime2520(false);
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -977,7 +977,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setHumidity(70);
         attData.setTemperature(10);
        // attData.setPrime2520(false);
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -1030,7 +1030,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setHumidity(70);
         attData.setTemperature(10);
         attData.setPrime2520(false);
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -1098,7 +1098,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setHumidity(70);
         attData.setTemperature(10);
         attData.setPrime2520(false);
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -1169,7 +1169,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setHumidity(70);
         attData.setTemperature(10);
         attData.setPrime2520(false);
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -1245,7 +1245,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setHumidity(70);
         attData.setTemperature(10);
         attData.setPrime2520(false);
-        ComputeRaysOut propDataOut = new RayOut(true, attData, rayData);
+        ComputeRaysOutAttenuation propDataOut = new RayOut(true, attData, rayData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -1326,7 +1326,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setHumidity(70);
         attData.setTemperature(10);
         attData.setPrime2520(false);
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -1432,7 +1432,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setHumidity(70);
         attData.setTemperature(10);
         attData.setPrime2520(false);
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -1508,7 +1508,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setHumidity(70);
         attData.setTemperature(10);
         attData.setPrime2520(false);
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -1586,7 +1586,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setHumidity(70);
         attData.setTemperature(10);
         attData.setPrime2520(false);
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -1667,7 +1667,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setHumidity(70);
         attData.setTemperature(10);
         attData.setPrime2520(false);
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -1775,7 +1775,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setHumidity(70);
         attData.setTemperature(10);
         attData.setPrime2520(false);
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -1887,7 +1887,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setHumidity(70);
         attData.setTemperature(10);
         attData.setPrime2520(false);
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -1961,7 +1961,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setTemperature(10);
         attData.setPrime2520(false);
         //attData.setWindRose(HOM_WIND_ROSE);
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -2024,7 +2024,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setTemperature(10);
         attData.setPrime2520(false);
         //attData.setWindRose(HOM_WIND_ROSE);
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -2102,7 +2102,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setTemperature(10);
         attData.setPrime2520(false);
         //attData.setWindRose(HOM_WIND_ROSE);
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -2215,7 +2215,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setTemperature(10);
         attData.setPrime2520(false);
         //attData.setWindRose(HOM_WIND_ROSE);
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -2284,9 +2284,9 @@ public class EvaluateAttenuationCnossosTest {
         double angleStart = Math.PI / 2 - angle_section / 2;
         for(int i = 0; i < PropagationProcessPathData.DEFAULT_WIND_ROSE.length; i++) {
             double angle = angleStart - angle_section * i - angle_section / 3;
-            int index = ComputeRaysOut.getRoseIndex(new Coordinate(0, 0), new Coordinate(Math.cos(angle), Math.sin(angle)));
+            int index = ComputeRaysOutAttenuation.getRoseIndex(new Coordinate(0, 0), new Coordinate(Math.cos(angle), Math.sin(angle)));
             assertEquals(i, index);angle = angleStart - angle_section * i - angle_section * 2.0/3.0;
-            index = ComputeRaysOut.getRoseIndex(new Coordinate(0, 0), new Coordinate(Math.cos(angle), Math.sin(angle)));
+            index = ComputeRaysOutAttenuation.getRoseIndex(new Coordinate(0, 0), new Coordinate(Math.cos(angle), Math.sin(angle)));
             assertEquals(i, index);
         }
     }
@@ -2359,7 +2359,7 @@ public class EvaluateAttenuationCnossosTest {
 
         // Merge levels for each receiver for point sources
         Map<Long, double[]> levelsPerReceiver = new HashMap<>();
-        for(ComputeRaysOut.VerticeSL lvl : propDataOut.receiversAttenuationLevels) {
+        for(ComputeRaysOutAttenuation.VerticeSL lvl : propDataOut.receiversAttenuationLevels) {
             if(!levelsPerReceiver.containsKey(lvl.receiverId)) {
                 levelsPerReceiver.put(lvl.receiverId, lvl.value);
             } else {
@@ -2372,7 +2372,7 @@ public class EvaluateAttenuationCnossosTest {
 
         // Merge levels for each receiver for lines sources
         Map<Long, double[]> levelsPerReceiverLines = new HashMap<>();
-        for(ComputeRaysOut.VerticeSL lvl : propDataOutTest.receiversAttenuationLevels) {
+        for(ComputeRaysOutAttenuation.VerticeSL lvl : propDataOutTest.receiversAttenuationLevels) {
             if(!levelsPerReceiverLines.containsKey(lvl.receiverId)) {
                 levelsPerReceiverLines.put(lvl.receiverId, lvl.value);
             } else {
@@ -2466,7 +2466,7 @@ public class EvaluateAttenuationCnossosTest {
         return max;
     }
 
-    private static final class RayOut extends ComputeRaysOut {
+    private static final class RayOut extends ComputeRaysOutAttenuation {
         private DirectPropagationProcessData processData;
 
         public RayOut(boolean keepRays, PropagationProcessPathData pathData, DirectPropagationProcessData processData) {
