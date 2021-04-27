@@ -58,8 +58,8 @@ Those tools are included in the archive.
 
 To run the server, please execute "startup" from your own Geoserver folder :
 
-- NoiseModelling\\bin\\startup.bat for Windows Users 
-- NoiseModelling\\bin\\startup.sh for Linux Users (check authorize file execution in property of this file before)
+- NoiseModelling.exe for Windows Users 
+- NoiseModelling\\bin\\startup.sh for Linux and Mac Users (check authorize file execution in property of this file before)
 
 and wait until :literal:`INFO:oejs.Server:main:Started` is written in your command prompt.
 
