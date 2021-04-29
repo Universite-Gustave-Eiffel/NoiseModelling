@@ -11,6 +11,7 @@ import org.noise_planet.noisemodelling.emission.RailWayLW;
 import org.noise_planet.noisemodelling.emission.RailwayTrackParametersCnossos;
 import org.noise_planet.noisemodelling.emission.RailwayVehicleParametersCnossos;
 
+
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -25,6 +26,9 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
 
     private Connection connection;
     private RailWayLW railWayLWsum;
+    private RailWayLW railWayLWsumDay;
+    private RailWayLW railWayLWsumEvening;
+    private RailWayLW railWayLWsumNight;
     private RailWayLWGeom railWayLWfinal = new RailWayLWGeom();
     private String tableTrain;
     private String tableTrack;
@@ -60,14 +64,18 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
         return inputLineStrings;
     }
 
-
     @Override
     public RailWayLWGeom next() {
         try {
             if (spatialResultSet == null) {
                 spatialResultSet = connection.createStatement().executeQuery("SELECT r1.*, r2.* FROM " + tableTrain + " r1, " + tableTrack + " r2 WHERE r1.IDSECTION= R2.IDSECTION ORDER BY PK ").unwrap(SpatialResultSet.class);
                 spatialResultSet.next();
+
                 railWayLWsum = getRailwayEmissionFromResultSet(spatialResultSet, "DAY");
+                railWayLWsumDay = getRailwayEmissionFromResultSet(spatialResultSet, "DAY");
+                railWayLWsumEvening = getRailwayEmissionFromResultSet(spatialResultSet, "EVENING");
+                railWayLWsumNight = getRailwayEmissionFromResultSet(spatialResultSet, "NIGHT");
+
                 railWayLWfinal.setNbTrack(spatialResultSet.getInt("NTRACK"));
                 currentIdSection = spatialResultSet.getInt("PK");
                 railWayLWfinal.setPK(currentIdSection);
@@ -76,15 +84,27 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
             while (spatialResultSet.next()) {
                 if (currentIdSection == spatialResultSet.getInt("PK")) {
                     railWayLWsum = RailWayLW.sumRailWayLW(railWayLWsum, getRailwayEmissionFromResultSet(spatialResultSet, "DAY"));
+                    railWayLWsumDay = RailWayLW.sumRailWayLW(railWayLWsumDay, getRailwayEmissionFromResultSet(spatialResultSet, "DAY"));
+                    railWayLWsumEvening = RailWayLW.sumRailWayLW(railWayLWsumEvening, getRailwayEmissionFromResultSet(spatialResultSet, "EVENING"));
+                    railWayLWsumNight = RailWayLW.sumRailWayLW(railWayLWsumNight, getRailwayEmissionFromResultSet(spatialResultSet, "NIGHT"));
                 } else {
                     railWayLWfinal.setRailWayLW(railWayLWsum);
+                    railWayLWfinal.setRailWayLWDay(railWayLWsumDay);
+                    railWayLWfinal.setRailWayLWEvening(railWayLWsumEvening);
+                    railWayLWfinal.setRailWayLWNight(railWayLWsumNight);
                     RailWayLWGeom previousRailWayLW = railWayLWfinal;
                     railWayLWfinal = new RailWayLWGeom();
                     railWayLWfinal.setGeometry(splitGeometry(spatialResultSet.getGeometry()));
                     railWayLWfinal.setPK(spatialResultSet.getInt("PK"));
                     railWayLWfinal.setNbTrack(spatialResultSet.getInt("NTRACK"));
                     railWayLWsum = getRailwayEmissionFromResultSet(spatialResultSet, "DAY");
+                    railWayLWsumDay = getRailwayEmissionFromResultSet(spatialResultSet, "DAY");
+                    railWayLWsumEvening = getRailwayEmissionFromResultSet(spatialResultSet, "EVENING");
+                    railWayLWsumNight = getRailwayEmissionFromResultSet(spatialResultSet, "NIGHT");
                     railWayLWfinal.setRailWayLW(railWayLWsum);
+                    railWayLWfinal.setRailWayLWDay(railWayLWsumDay);
+                    railWayLWfinal.setRailWayLWEvening(railWayLWsumEvening);
+                    railWayLWfinal.setRailWayLWNight(railWayLWsumNight);
                     currentIdSection = spatialResultSet.getInt("PK");
                     return previousRailWayLW;
                 }
@@ -217,6 +237,9 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
 
     public static class RailWayLWGeom {
         private RailWayLW railWayLW;
+        private RailWayLW railWayLWDay;
+        private RailWayLW railWayLWEvening;
+        private RailWayLW railWayLWNight;
         private List<LineString> geometry;
         private int pk;
         private int nbTrack;
@@ -227,6 +250,27 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
 
         public void setRailWayLW(RailWayLW railWayLW) {
             this.railWayLW = railWayLW;
+        }
+        public RailWayLW getRailWayLWDay() {
+            return railWayLWDay;
+        }
+
+        public void setRailWayLWDay(RailWayLW railWayLWDay) {
+            this.railWayLWDay = railWayLWDay;
+        }
+        public RailWayLW getRailWayLWEvening() {
+            return railWayLWEvening;
+        }
+
+        public void setRailWayLWEvening(RailWayLW railWayLWEvening) {
+            this.railWayLWEvening = railWayLWEvening;
+        }
+        public RailWayLW getRailWayLWNight() {
+            return railWayLWNight;
+        }
+
+        public void setRailWayLWNight(RailWayLW railWayLWNight) {
+            this.railWayLWNight = railWayLWNight;
         }
 
         public int getNbTrack() {

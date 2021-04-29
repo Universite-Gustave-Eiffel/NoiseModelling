@@ -109,7 +109,7 @@ public class LDENPointNoiseMapFactoryTest {
         RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
         assertNotNull(v);
         RailWayLW railWayLW = v.getRailWayLW();
-        List<LineString> geometries = v.getRailWayLWGeometry( 2);
+        List<LineString> geometries = v.getRailWayLWGeometry( 2); // TODO edit with specific distance set (plamade or other)
 
         assertTrue(railWayLWIterator.hasNext());
 

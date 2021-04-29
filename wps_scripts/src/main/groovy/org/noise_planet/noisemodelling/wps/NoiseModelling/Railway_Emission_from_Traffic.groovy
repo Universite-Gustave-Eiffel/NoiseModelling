@@ -98,8 +98,6 @@ def run(input) {
 
 // main function of the script
 def exec(Connection connection, input) {
-    System.out.println('sdvsdvsdvsdvsdv sd vdsv  sdvsd v sdvs dvsd  sd sdsd v')
-
     //Load GeneralTools.groovy
     File generalTools = new File(new File("").absolutePath + "/data_dir/scripts/wpsTools/GeneralTools.groovy")
 
@@ -213,44 +211,58 @@ def exec(Connection connection, input) {
     RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection, sources_geom_table_name, sources_table_traffic_name, ldenConfig)
     RailWayLWIterator.RailWayLWGeom railWayLWGeom;
 
-    int i = 0
     while ((railWayLWGeom = railWayLWIterator.next()) != null) {
-        i = i +1
-        RailWayLW railWayLW = railWayLWGeom.getRailWayLW()
+        RailWayLW railWayLWDay = railWayLWGeom.getRailWayLWDay()
+        RailWayLW railWayLWEvening = railWayLWGeom.getRailWayLWEvening()
+        RailWayLW railWayLWNight = railWayLWGeom.getRailWayLWNight()
         List<LineString> geometries = railWayLWGeom.getRailWayLWGeometry(2) //set distance between Rail
         int pk = railWayLWGeom.getPK()
-        double[] LW
+        double[] LWDay
+        double[] LWEvening
+        double[] LWNight
         double heightSource
         int directivityId
         for (int iSource = 0; iSource < 6; iSource++) {
             switch (iSource) {
                 case 0:
-                    LW = railWayLW.getLWRolling()
+                    LWDay = railWayLWDay.getLWRolling()
+                    LWEvening = railWayLWEvening.getLWRolling()
+                    LWNight = railWayLWNight.getLWRolling()
                     heightSource = 0.5
                     directivityId = 1
                     break
                 case 1:
-                    LW = railWayLW.getLWTractionA()
+                    LWDay = railWayLWDay.getLWTractionA()
+                    LWEvening = railWayLWEvening.getLWTractionA()
+                    LWNight = railWayLWNight.getLWTractionA()
                     heightSource = 0.5
                     directivityId = 2
                     break
                 case 2:
-                    LW = railWayLW.getLWTractionB()
+                    LWDay = railWayLWDay.getLWTractionB()
+                    LWEvening = railWayLWEvening.getLWTractionB()
+                    LWNight = railWayLWNight.getLWTractionB()
                     heightSource = 4
                     directivityId = 3
                     break
                 case 3:
-                    LW = railWayLW.getLWAerodynamicA()
+                    LWDay = railWayLWDay.getLWAerodynamicA()
+                    LWEvening = railWayLWEvening.getLWAerodynamicA()
+                    LWNight = railWayLWNight.getLWAerodynamicA()
                     heightSource = 0.5
                     directivityId = 4
                     break
                 case 4:
-                    LW = railWayLW.getLWAerodynamicB()
+                    LWDay = railWayLWDay.getLWAerodynamicB()
+                    LWEvening = railWayLWEvening.getLWAerodynamicB()
+                    LWNight = railWayLWNight.getLWAerodynamicB()
                     heightSource = 4
                     directivityId = 5
                     break
                 case 5:
-                    LW = railWayLW.getLWBridge()
+                    LWDay = railWayLWDay.getLWBridge()
+                    LWEvening = railWayLWEvening.getLWBridge()
+                    LWNight = railWayLWNight.getLWBridge()
                     heightSource = 0.5
                     directivityId = 6
                     break
@@ -260,26 +272,26 @@ def exec(Connection connection, input) {
                 sql.withBatch(100, qry00) { ps ->
                     ps.addBatch(
                             pk as int, (Geometry) geometries.get(nTrack) as Geometry, directivityId as int, heightSource as double,
-                            LW[0], LW[1], LW[2], LW[3],
-                            LW[4], LW[5], LW[6], LW[7],
-                            LW[8], LW[9], LW[10], LW[11],
-                            LW[12], LW[13], LW[14], LW[15],
-                            LW[16], LW[17], LW[18], LW[19],
-                            LW[20], LW[21], LW[22],
+                            LWDay[0], LWDay[1], LWDay[2], LWDay[3],
+                            LWDay[4], LWDay[5], LWDay[6], LWDay[7],
+                            LWDay[8], LWDay[9], LWDay[10], LWDay[11],
+                            LWDay[12], LWDay[13], LWDay[14], LWDay[15],
+                            LWDay[16], LWDay[17], LWDay[18], LWDay[19],
+                            LWDay[20], LWDay[21], LWDay[22],
 
-                            LW[0], LW[1], LW[2], LW[3],
-                            LW[4], LW[5], LW[6], LW[7],
-                            LW[8], LW[9], LW[10], LW[11],
-                            LW[12], LW[13], LW[14], LW[15],
-                            LW[16], LW[17], LW[18], LW[19],
-                            LW[20], LW[21], LW[22],
+                            LWEvening[0], LWEvening[1], LWEvening[2], LWEvening[3],
+                            LWEvening[4], LWEvening[5], LWEvening[6], LWEvening[7],
+                            LWEvening[8], LWEvening[9], LWEvening[10], LWEvening[11],
+                            LWEvening[12], LWEvening[13], LWEvening[14], LWEvening[15],
+                            LWEvening[16], LWEvening[17], LWEvening[18], LWEvening[19],
+                            LWEvening[20], LWEvening[21], LWEvening[22],
 
-                            LW[0], LW[1], LW[2], LW[3],
-                            LW[4], LW[5], LW[6], LW[7],
-                            LW[8], LW[9], LW[10], LW[11],
-                            LW[12], LW[13], LW[14], LW[15],
-                            LW[16], LW[17], LW[18], LW[19],
-                            LW[20], LW[21], LW[22]
+                            LWNight[0], LWNight[1], LWNight[2], LWNight[3],
+                            LWNight[4], LWNight[5], LWNight[6], LWNight[7],
+                            LWNight[8], LWNight[9], LWNight[10], LWNight[11],
+                            LWNight[12], LWNight[13], LWNight[14], LWNight[15],
+                            LWNight[16], LWNight[17], LWNight[18], LWNight[19],
+                            LWNight[20], LWNight[21], LWNight[22]
                     )
 
                 }
