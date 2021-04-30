@@ -46,7 +46,7 @@ description = 'Compute Rail Emission Noise Map from Day Evening Night traffic fl
 inputs = [
         tableRailwayTraffic: [
                 name                                                                                                                            : 'Railway traffic table name',
-                title                                                                                                                           : 'Rail table name',
+                title                                                                                                                           : 'Railway traffic table name',
                 description                                                                                                                     : "<b>Name of the Rail traffic table.</b>  </br>  " +
                         "<br>  This function recognize the following columns (* mandatory) : </br><ul>" +
                         "<li><b> idTraffic </b>* : an identifier. It shall be a primary key (INT, PRIMARY KEY)</li>" +
@@ -55,7 +55,7 @@ inputs = [
                         "<li><b> speedVehic </b>* : Maximum Train speed (DOUBLE) </li>" +
                         "<li><b> TDAY </b><b> TEVENING </b><b> TNIGHT </b> : Hourly average train count (6-18h)(18-22h)(22-6h) (INT)</li>", type: String.class],
         tableRailwayTrack  : [
-                name                                           : 'Rail Geom table name', title: 'Rail table name', description: "<b>Name of the Rail Geom table.</b>  </br>  " +
+                name                                           : 'RailWay Geom table name', title: 'RailWay Track table name', description: "<b>Name of the Railway Track table.</b>  </br>  " +
                 "<br>  This function recognize the following columns (* mandatory) : </br><ul>" +
                 "<li><b> idSection </b>* : an identifier. It shall be a primary key(INTEGER, PRIMARY KEY)</li>" +
                 "<li><b> nTrack </b>* : Number of tracks (INTEGER) /li>" +
