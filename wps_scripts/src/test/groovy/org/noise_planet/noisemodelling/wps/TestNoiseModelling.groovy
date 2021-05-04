@@ -57,12 +57,12 @@ class TestNoiseModelling extends JdbcTestCase {
                  "tableRailwayTrack": "RailTrack"
                 ])
 
-        String export = new Export_Table().exec(connection,
-                ["exportPath"   : "target/testLWRailWay.geojson",
-                 "tableToExport": "LW_RAILWAY"])
+        def fieldNames = JDBCUtilities.getFieldNames(connection.getMetaData(), "LW_RAILWAY")
 
+        def expected = ["ID_SECTION","THE_GEOM","DIRECTIVITYID","HEIGHT","LWD50","LWD63","LWD80","LWD100","LWD125","LWD160","LWD200","LWD250","LWD315","LWD400","LWD500","LWD630","LWD800","LWD1000","LWD1250","LWD1600","LWD2000","LWD2500","LWD3150","LWD4000","LWD5000","LWD6300","LWD8000","LWD10000","LWE50","LWE63","LWE80","LWE100","LWE125","LWE160","LWE200","LWE250","LWE315","LWE400","LWE500","LWE630","LWE800","LWE1000","LWE1250","LWE1600","LWE2000","LWE2500","LWE3150","LWE4000","LWE5000","LWE6300","LWE8000","LWE10000","LWN50","LWN63","LWN80","LWN100","LWN125","LWN160","LWN200","LWN250","LWN315","LWN400","LWN500","LWN630","LWN800","LWN1000","LWN1250","LWN1600","LWN2000","LWN2500","LWN3150","LWN4000","LWN5000","LWN6300","LWN8000","LWN10000","PK"]
 
-        assertEquals("Calculation Done ! The table LW_RAILWAY has been created.", res)
+        assertArrayEquals(expected.toArray(new String[expected.size()]), fieldNames.toArray(new String[fieldNames.size()]))
+
     }
 
     @Test
