@@ -31,7 +31,7 @@ import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
 import org.noise_planet.noisemodelling.emission.RoadSourceParametersCnossos
 import org.noise_planet.noisemodelling.emission.Utils
 import org.noise_planet.noisemodelling.pathfinder.*
-import org.noise_planet.noisemodelling.propagation.ComputeRaysOut
+import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation
 import org.noise_planet.noisemodelling.propagation.EvaluateAttenuationCnossos
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
 
@@ -121,7 +121,7 @@ def exec(Connection connection, input) {
 
     System.out.println("Run ...")
 
-    List<ComputeRaysOut.VerticeSL> allLevels = new ArrayList<>()
+    List<ComputeRaysOutAttenuation.VerticeSL> allLevels = new ArrayList<>()
 
     // Open connection
     //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postgis database
@@ -650,7 +650,7 @@ class MRPropagationPath extends PropagationPath {
 }
 
 @CompileStatic
-class MRComputeRaysOut extends ComputeRaysOut {
+class MRComputeRaysOut extends ComputeRaysOutAttenuation {
 
     MRComputeRaysOut(boolean keepRays, PropagationProcessPathData pathData) {
         super(keepRays, pathData)

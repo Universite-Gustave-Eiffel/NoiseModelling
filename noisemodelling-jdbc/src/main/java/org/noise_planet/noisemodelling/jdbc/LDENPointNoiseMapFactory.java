@@ -25,7 +25,7 @@ package org.noise_planet.noisemodelling.jdbc;
 import org.h2gis.utilities.JDBCUtilities;
 import org.noise_planet.noisemodelling.pathfinder.*;
 import org.noise_planet.noisemodelling.propagation.*;
-import org.noise_planet.noisemodelling.propagation.ComputeRaysOut;
+import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -242,7 +242,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
          * @param stack Stack to pop from
          * @throws SQLException Got an error
          */
-        void processStack(String tableName, ConcurrentLinkedDeque<ComputeRaysOut.VerticeSL> stack) throws SQLException {
+        void processStack(String tableName, ConcurrentLinkedDeque<ComputeRaysOutAttenuation.VerticeSL> stack) throws SQLException {
             StringBuilder query = new StringBuilder("INSERT INTO ");
             query.append(tableName);
             query.append(" VALUES (? "); // ID_RECEIVER
@@ -256,7 +256,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
             PreparedStatement ps = connection.prepareStatement(query.toString());
             int batchSize = 0;
             while(!stack.isEmpty()) {
-                ComputeRaysOut.VerticeSL row = stack.pop();
+                ComputeRaysOutAttenuation.VerticeSL row = stack.pop();
                 ldenData.queueSize.decrementAndGet();
                 int parameterIndex = 1;
                 ps.setLong(parameterIndex++, row.receiverId);

@@ -19,7 +19,7 @@ import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.math.Vector3D
 import org.noise_planet.noisemodelling.jdbc.PointNoiseMap
 import org.noise_planet.noisemodelling.pathfinder.*
-import org.noise_planet.noisemodelling.propagation.ComputeRaysOut
+import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
 
 import java.sql.Connection
@@ -280,7 +280,7 @@ def run(input) {
 
     System.out.println("Run ...")
 
-    List<ComputeRaysOut.VerticeSL> allLevels = new ArrayList<>()
+    List<ComputeRaysOutAttenuation.VerticeSL> allLevels = new ArrayList<>()
 
     // Attenuation matrix table
     ArrayList<PropagationPath> propaMap2 = new ArrayList<>()
@@ -339,8 +339,8 @@ def run(input) {
         for (int i = 0; i < pointNoiseMap.getGridDim(); i++) {
             for (int j = 0; j < pointNoiseMap.getGridDim(); j++) {
                 IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, i, j, progressVisitor, receivers)
-                if (out instanceof ComputeRaysOut) {
-                    allLevels.addAll(((ComputeRaysOut) out).getVerticesSoundLevel())
+                if (out instanceof ComputeRaysOutAttenuation) {
+                    allLevels.addAll(((ComputeRaysOutAttenuation) out).getVerticesSoundLevel())
                 }
             }
         }

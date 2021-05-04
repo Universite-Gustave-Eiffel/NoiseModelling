@@ -12,7 +12,7 @@ import org.noise_planet.noisemodelling.pathfinder.GeoWithSoilType;
 import org.noise_planet.noisemodelling.pathfinder.IComputeRaysOut;
 import org.noise_planet.noisemodelling.pathfinder.PropagationPath;
 import org.noise_planet.noisemodelling.pathfinder.RootProgressVisitor;
-import org.noise_planet.noisemodelling.propagation.ComputeRaysOut;
+import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -76,7 +76,7 @@ public class PointNoiseMapTest {
             pointNoiseMap.setComputeRaysOutFactory(new JDBCComputeRaysOut(true));
             pointNoiseMap.setPropagationProcessDataFactory(new JDBCPropagationData());
 
-            List<ComputeRaysOut.VerticeSL> allLevels = new ArrayList<>();
+            List<ComputeRaysOutAttenuation.VerticeSL> allLevels = new ArrayList<>();
             ArrayList<PropagationPath> propaMap = new ArrayList<>();
             Set<Long> receivers = new HashSet<>();
             pointNoiseMap.setThreadCount(1);
@@ -84,9 +84,9 @@ public class PointNoiseMapTest {
             for(int i=0; i < pointNoiseMap.getGridDim(); i++) {
                 for(int j=0; j < pointNoiseMap.getGridDim(); j++) {
                     IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, i, j, progressVisitor, receivers);
-                    if(out instanceof ComputeRaysOut) {
-                        allLevels.addAll(((ComputeRaysOut) out).getVerticesSoundLevel());
-                        propaMap.addAll(((ComputeRaysOut) out).getPropagationPaths());
+                    if(out instanceof ComputeRaysOutAttenuation) {
+                        allLevels.addAll(((ComputeRaysOutAttenuation) out).getVerticesSoundLevel());
+                        propaMap.addAll(((ComputeRaysOutAttenuation) out).getPropagationPaths());
                     }
                 }
             }
@@ -129,8 +129,8 @@ public class PointNoiseMapTest {
             for(int i=0; i < pointNoiseMap.getGridDim(); i++) {
                 for(int j=0; j < pointNoiseMap.getGridDim(); j++) {
                     IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, i, j, progressVisitor, receivers);
-                    if(out instanceof ComputeRaysOut) {
-                        ComputeRaysOut rout = (ComputeRaysOut) out;
+                    if(out instanceof ComputeRaysOutAttenuation) {
+                        ComputeRaysOutAttenuation rout = (ComputeRaysOutAttenuation) out;
                         for(GeoWithSoilType soil : rout.inputData.getSoilList()) {
                             assertTrue(soil.getGeo().getArea() < expectedMaxArea);
                         }
@@ -162,6 +162,32 @@ public class PointNoiseMapTest {
         }
     }
 
+    //    @Test
+    //    public void testNoiseMapBuilding2() throws Exception {
+    //        try(Statement st = connection.createStatement()) {
+    //            SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("roads_traff.shp").getFile(), "ROADS_GEOM");
+    //            SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("buildings.shp").getFile(), " BUILDINGS");
+    //            TriangleNoiseMap noisemap = new TriangleNoiseMap("BUILDINGS", "ROADS_GEOM");
+    //            noisemap.setReceiverHasAbsoluteZCoordinates(false);
+    //            noisemap.setSourceHasAbsoluteZCoordinates(false);
+    //            noisemap.setHeightField("HEIGHT");
+    //            noisemap.setMaximumArea(300);
+    //            noisemap.setBuildingBuffer(0);
+    //            noisemap.setMaximumPropagationDistance(800);
+    //
+    //
+    //
+    //            noisemap.initialize(connection, new EmptyProgressVisitor());
+    //            AtomicInteger pk = new AtomicInteger(0);
+    //            for(int i=0; i < noisemap.getGridDim(); i++) {
+    //                for(int j=0; j < noisemap.getGridDim(); j++) {
+    //                    noisemap.generateReceivers(connection, i, j, "NM_RECEIVERS", "TRIANGLES", pk);
+    //                }
+    //            }
+    //            assertNotSame(0, pk.get());
+    //            SHPWrite.exportTable(connection, "target/triangle.shp", "TRIANGLES");
+    //        }
+    //    }
 
 
 }

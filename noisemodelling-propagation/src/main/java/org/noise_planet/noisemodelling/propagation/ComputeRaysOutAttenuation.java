@@ -54,20 +54,20 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Nicolas Fortin
  * @author Pierre Aumond
  */
-public class ComputeRaysOut implements IComputeRaysOut {
+public class ComputeRaysOutAttenuation implements IComputeRaysOut {
     public ConcurrentLinkedDeque<VerticeSL> receiversAttenuationLevels = new ConcurrentLinkedDeque<>();
     public List<PropagationPath> propagationPaths = Collections.synchronizedList(new ArrayList<PropagationPath>());
 
     public PropagationProcessPathData genericMeteoData;
     public PropagationProcessData inputData;
 
-    public ComputeRaysOut(boolean keepRays, PropagationProcessPathData pathData, PropagationProcessData inputData) {
+    public ComputeRaysOutAttenuation(boolean keepRays, PropagationProcessPathData pathData, PropagationProcessData inputData) {
         this.keepRays = keepRays;
         this.genericMeteoData = pathData;
         this.inputData = inputData;
     }
 
-    public ComputeRaysOut(boolean keepRays, PropagationProcessPathData pathData) {
+    public ComputeRaysOutAttenuation(boolean keepRays, PropagationProcessPathData pathData) {
         this.keepRays = keepRays;
         this.genericMeteoData = pathData;
     }
@@ -289,11 +289,11 @@ public class ComputeRaysOut implements IComputeRaysOut {
     }
 
     public static class ThreadRaysOut implements IComputeRaysOut {
-        protected ComputeRaysOut multiThreadParent;
+        protected ComputeRaysOutAttenuation multiThreadParent;
         protected List<VerticeSL> receiverAttenuationLevels = new ArrayList<>();
         public List<PropagationPath> propagationPaths = new ArrayList<PropagationPath>();
 
-        public ThreadRaysOut(ComputeRaysOut multiThreadParent) {
+        public ThreadRaysOut(ComputeRaysOutAttenuation multiThreadParent) {
             this.multiThreadParent = multiThreadParent;
         }
 

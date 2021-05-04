@@ -10,7 +10,7 @@ import org.noise_planet.noisemodelling.pathfinder.*;
 import org.noise_planet.noisemodelling.pathfinder.utils.Densifier3D;
 import org.noise_planet.noisemodelling.pathfinder.utils.GeoJSONDocument;
 import org.noise_planet.noisemodelling.pathfinder.utils.KMLDocument;
-import org.noise_planet.noisemodelling.propagation.ComputeRaysOut;
+import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,7 +63,7 @@ public class TestComputeRaysFull {
         attData.setHumidity(70);
         attData.setTemperature(10);
 
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -101,7 +101,7 @@ public class TestComputeRaysFull {
         attData.setHumidity(70);
         attData.setTemperature(10);
 
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -139,7 +139,7 @@ public class TestComputeRaysFull {
         attData.setHumidity(70);
         attData.setTemperature(10);
 
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -186,7 +186,7 @@ public class TestComputeRaysFull {
         attData.setHumidity(70);
         attData.setTemperature(10);
         attData.setWindRose(new double[]{0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5});
-        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -1563,7 +1563,7 @@ public class TestComputeRaysFull {
 //    }
 
 
-    private void exportRays(String name, ComputeRaysOut result) throws IOException {
+    private void exportRays(String name, ComputeRaysOutAttenuation result) throws IOException {
         FileOutputStream outData = new FileOutputStream(name);
         GeoJSONDocument jsonDocument = new GeoJSONDocument(outData);
         jsonDocument.setRounding(1);
@@ -1574,7 +1574,7 @@ public class TestComputeRaysFull {
         jsonDocument.writeFooter();
     }
 
-    private void exportScene(String name, FastObstructionTest manager, ComputeRaysOut result) throws IOException {
+    private void exportScene(String name, FastObstructionTest manager, ComputeRaysOutAttenuation result) throws IOException {
         try {
             Coordinate proj = new Coordinate( 351714.794877, 6685824.856402, 0);
             FileOutputStream outData = new FileOutputStream(name);
@@ -1597,7 +1597,7 @@ public class TestComputeRaysFull {
         }
     }
 
-    private void assertRaysEquals(InputStream expected, ComputeRaysOut result) throws IOException {
+    private void assertRaysEquals(InputStream expected, ComputeRaysOutAttenuation result) throws IOException {
         // Parse expected
         ObjectMapper mapper = new ObjectMapper();
         JsonNode rootNode = mapper.readTree(expected);

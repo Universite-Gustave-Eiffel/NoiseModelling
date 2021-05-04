@@ -39,6 +39,7 @@ public class AscReaderDriverTest {
     @Test
     public void testReadPrecip() throws IOException, SQLException {
         AscReaderDriver reader = new AscReaderDriver();
+        reader.setImportNodata(true);
         try(InputStream inputStream = AscReaderDriverTest.class.getResourceAsStream("precip30min.asc")) {
             reader.read(connection, inputStream, new EmptyProgressVisitor(), "PRECIP30MIN", 4326);
         }
@@ -63,7 +64,7 @@ public class AscReaderDriverTest {
         st = connection.createStatement();
         try(ResultSet rs = st.executeQuery("SELECT * FROM PRECIP30MIN WHERE ST_INTERSECTS(THE_GEOM, ST_MAKEPOINT(-177.438, -84.077))")) {
             assertTrue(rs.next());
-            assertNull(rs.getObject("Z"));
+            assertEquals(-9999.0, rs.getDouble("Z"), 1e-12);
         }
     }
 
@@ -72,6 +73,7 @@ public class AscReaderDriverTest {
     @Test
     public void testReadPrecipCenter() throws IOException, SQLException {
         AscReaderDriver reader = new AscReaderDriver();
+        reader.setImportNodata(true);
         try(InputStream inputStream = AscReaderDriverTest.class.getResourceAsStream("precip30min_center.asc")) {
             reader.read(connection, inputStream, new EmptyProgressVisitor(), "PRECIP30MIN", 4326);
         }
@@ -96,7 +98,7 @@ public class AscReaderDriverTest {
         st = connection.createStatement();
         try(ResultSet rs = st.executeQuery("SELECT * FROM PRECIP30MIN WHERE ST_INTERSECTS(THE_GEOM, ST_MAKEPOINT(-177.3831, -84.5793))")) {
             assertTrue(rs.next());
-            assertNull(rs.getObject("Z"));
+            assertEquals(-9999.0, rs.getDouble("Z"), 1e-12);
         }
     }
     @Test

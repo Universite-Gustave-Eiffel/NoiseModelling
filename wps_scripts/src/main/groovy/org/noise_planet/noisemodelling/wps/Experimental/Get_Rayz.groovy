@@ -30,7 +30,7 @@ import org.noise_planet.noisemodelling.emission.RoadSourceParametersCnossos
 import org.noise_planet.noisemodelling.jdbc.PointNoiseMap
 import org.noise_planet.noisemodelling.pathfinder.*
 import org.noise_planet.noisemodelling.pathfinder.utils.KMLDocument
-import org.noise_planet.noisemodelling.propagation.ComputeRaysOut
+import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
 
 import java.sql.Connection
@@ -181,7 +181,7 @@ def exec(Connection connection, input) {
     GeoJsonDriverFunction geoJsonDriver = new GeoJsonDriverFunction()
     // create properties file
     Properties properties = new Properties()
-    List<ComputeRaysOut.VerticeSL> allLevels = new ArrayList<>()
+    List<ComputeRaysOutAttenuation.VerticeSL> allLevels = new ArrayList<>()
     // Set of already processed receivers
     Set<Long> receivers = new HashSet<>()
     // All rays storage
@@ -379,9 +379,9 @@ def exec(Connection connection, input) {
             IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, i, j, progressVisitor, receivers)
 
             // Return results with level spectrum for each source/receiver tuple
-            if (out instanceof ComputeRaysOut) {
+            if (out instanceof ComputeRaysOutAttenuation) {
                 // Set attenuation matrix values
-                allLevels.addAll(((ComputeRaysOut) out).getVerticesSoundLevel())
+                allLevels.addAll(((ComputeRaysOutAttenuation) out).getVerticesSoundLevel())
             }
         }
     }
@@ -440,7 +440,7 @@ def exec(Connection connection, input) {
  * remove receiverpath or put to keep rays or not
  */
 @CompileStatic
-class PropagationPathStorage extends ComputeRaysOut {
+class PropagationPathStorage extends ComputeRaysOutAttenuation {
     // Thread safe queue object
     protected TrafficRayzPropagationProcessData inputData
     ConcurrentLinkedDeque<PointToPointPaths> pathQueue
@@ -503,7 +503,7 @@ class PropagationPathStorage extends ComputeRaysOut {
             double[] aGlobalMeteo = propagationPathStorage.computeAttenuation(propagationPathStorage.genericMeteoData, sourceId, sourceLi, receiverId, propagationPath);
             if (aGlobalMeteo != null && aGlobalMeteo.length > 0) {
 
-                propagationPathStorage.receiversAttenuationLevels.add(new ComputeRaysOut.VerticeSL(paths.receiverId, paths.sourceId, aGlobalMeteo))
+                propagationPathStorage.receiversAttenuationLevels.add(new ComputeRaysOutAttenuation.VerticeSL(paths.receiverId, paths.sourceId, aGlobalMeteo))
                 return aGlobalMeteo
             } else {
                 return new double[0]

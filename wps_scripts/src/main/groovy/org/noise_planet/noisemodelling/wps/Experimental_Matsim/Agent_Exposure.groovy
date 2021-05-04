@@ -92,6 +92,16 @@ inputs = [
                         '<br/>0_1, 1_2, 2_3, ..., 22_23, 23_24',
                 type: String.class
         ],
+        SRID : [
+                name: 'Projection identifier',
+                title: 'Projection identifier',
+                description: 'Original projection identifier (also called SRID) of your tables.' +
+                        'It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection).' +
+                        '</br><b> Default value : 4326 </b> ',
+                min: 0,
+                max: 1,
+                type: Integer.class
+        ],
         outTableName: [
                 name: 'Output table name',
                 title: 'Name of created table',
@@ -149,7 +159,7 @@ def exec(Connection connection, input) {
     logger.info("inputs {}", input)
 
     String plansFile = input["plansFile"];
-    String receiversTable = input["receiversTable"]
+    String receiversTable = input["receiversTable"];
     String dataTable = input["dataTable"];
     String outTableName = input['outTableName'];
 
@@ -166,7 +176,12 @@ def exec(Connection connection, input) {
         logger.warn('timeSlice not in ["hour", "quarter"], setting it to "hour"')
     }
 
-    // Undocumented on purpouse for now
+    String SRID = "4326"
+    if (input['SRID']) {
+        SRID = input['SRID'];
+    }
+
+    // Undocumented on purpose for now
     int agentId = 0;
     if (input["plotOneAgentId"] && input["plotOneAgentId"] as int != 0) {
         agentId = input["plotOneAgentId"];
@@ -181,7 +196,6 @@ def exec(Connection connection, input) {
     if(!file.exists() || file.isDirectory()) {
         throw new FileNotFoundException(populationFile, populationFile + " not found");
     }
-
     DatabaseMetaData dbMeta = connection.getMetaData();
 
     logger.info("searching index on data table... ")
@@ -234,16 +248,30 @@ def exec(Connection connection, input) {
 
     if (agentId == 0) {
         sql.execute("DROP TABLE IF EXISTS " + outTableName)
-        sql.execute("CREATE TABLE " + outTableName + ''' ( 
-            PK integer PRIMARY KEY AUTO_INCREMENT, 
+        sql.execute("DROP TABLE IF EXISTS " + outTableName + "_SEQUENCE")
+        sql.execute("CREATE TABLE " + outTableName + ''' (
+            PK integer PRIMARY KEY AUTO_INCREMENT,
             PERSON_ID varchar(255),
+            AGE int,
+            SEX varchar,
+            INCOME double,
+            EMPLOYED double,
             HOME_FACILITY varchar(255),
             HOME_GEOM geometry,
             WORK_FACILITY varchar(255),
             WORK_GEOM geometry,
-            LAEQ real,
-            HOME_LAEQ real,
-            DIFF_LAEQ real
+            LDEN real,
+            HOME_LDEN real,
+            DIFF_LDEN real
+        );''')
+        sql.execute("CREATE TABLE " + outTableName + '''_SEQUENCE (
+            PK integer PRIMARY KEY AUTO_INCREMENT,
+            PERSON_ID varchar(255),
+            TIMESTRING varchar,
+            TIMEINDEX int,
+            LEVEL double,
+            ACTIVITY varchar,
+            THE_GEOM geometry
         );''')
     }
     Statement stmt = connection.createStatement();
@@ -253,6 +281,11 @@ def exec(Connection connection, input) {
     for (Map.Entry<Id<Person>, Person> entry : persons.entrySet()) {
         String personId = entry.getKey().toString();
         Person person = entry.getValue();
+        def attributes = person.getAttributes();
+        Integer age = attributes.getAttribute("age")
+        String sex = attributes.getAttribute("sex")
+        Double income = attributes.getAttribute("householdIncome")
+        Boolean employed = attributes.getAttribute("employed")
         Plan plan = person.getSelectedPlan();
 
         if (agentId > 0 && personId != agentId.toString()) {
@@ -261,6 +294,7 @@ def exec(Connection connection, input) {
         if (agentId > 0) {
             logger.info(plan.dump());
         }
+
         TimeSeries laeqSeries = new TimeSeries("Agent_LAeq");
         TimeSeries homeLaeqSeries = new TimeSeries("Home_LAeq");
         TimeSeries doseSeries = new TimeSeries("Agent_Dose");
@@ -300,6 +334,10 @@ def exec(Connection connection, input) {
         int secondsInSlice = (int) 86400 / nbSlices;
         double correctionLDEN = 0.0;
 
+        String[] activityGeomSequence = new String[clock.length];
+        Double[] laeqSequence = new Double[clock.length];
+        String[] activitySequence = new String[clock.length];
+
         for (int slice = 0; slice < nbSlices; slice++) {
 
             double timeSliceStart = secondsInSlice * slice;
@@ -313,6 +351,7 @@ def exec(Connection connection, input) {
             }
 
             boolean hasActivity = false;
+            boolean isOutside = false;
             boolean hasLevel = false; // in cas there is no propagation path arriving to this facility's receiver.
             boolean hasHomeLevel = false; // idem for home
             for (PlanElement element : plan.getPlanElements()) {
@@ -322,6 +361,10 @@ def exec(Connection connection, input) {
                 Activity activity = (Activity) element;
                 String activityId = activity.getFacilityId().toString();
                 if (activityId == "null") { // pt interaction ?
+                    continue;
+                }
+                if (activity.type == "outside") {
+                    isOutside = true
                     continue;
                 }
                 double activityStart = 0;
@@ -342,6 +385,8 @@ def exec(Connection connection, input) {
                 }
 
                 hasActivity = true;
+                activitySequence[slice] = activity.type
+                activityGeomSequence[slice] = String.format("POINT(%s %s)", Double.toString(activity.getCoord().getX()), Double.toString(activity.getCoord().getY()))
 
                 // exemples with timeslice : 1_2
                 if (activityStart <= timeSliceStart) { // activity starts before the current timeslice  (ie. 00:05:07)
@@ -373,6 +418,7 @@ def exec(Connection connection, input) {
                 while(result.next()) {
                     LAeq = 10 * Math.log10(Math.pow(10, LAeq / 10) + timeWeight * Math.pow(10, (result.getDouble("LEQA") + correctionLDEN) / 10));
                     laeqSeries.addOrUpdate(new FixedMillisecond(slice * secondsInSlice * 1000), result.getDouble("LEQA") + correctionLDEN);
+                    laeqSequence[slice] = result.getDouble("LEQA")
                     if (homeId == activityId) {
                         homeLAeq = 10 * Math.log10(Math.pow(10, homeLAeq / 10) + timeWeight * Math.pow(10,  (result.getDouble("LEQA") + correctionLDEN) / 10));
                         homeLaeqSeries.addOrUpdate(new FixedMillisecond(slice * secondsInSlice * 1000), result.getDouble("LEQA") + correctionLDEN);
@@ -403,9 +449,19 @@ def exec(Connection connection, input) {
 
             if (!hasLevel) {
                 laeqSeries.addOrUpdate(new FixedMillisecond(slice * secondsInSlice * 1000), null);
+                laeqSequence[slice] = -99.0
             }
             if (!hasHomeLevel) {
                 homeLaeqSeries.addOrUpdate(new FixedMillisecond(slice * secondsInSlice * 1000), null);
+            }
+            if (!hasActivity) {
+                if (isOutside) {
+                    activitySequence[slice] = "outside"
+                }
+                else {
+                    activitySequence[slice] = "travelling"
+                }
+                activityGeomSequence[slice] = "NULL"
             }
         }
 
@@ -506,7 +562,25 @@ def exec(Connection connection, input) {
             HOME_LAEQ real
             DIFF_LAEQ real,
              */
-            sql.execute("INSERT INTO " + outTableName + " VALUES(NULL, '" + personId + "', '" + homeId + "', ST_GeomFromText('" + homeGeom + "', 2154), '" + workId + "', ST_GeomFromText('" + workGeom + "', 2154), " + LAeq + ", " + homeLAeq + ", " + (LAeq - homeLAeq)+ ")")
+            sql.execute("INSERT INTO " + outTableName + " VALUES(" +
+                    "NULL, '" + personId + "', " + age + ", '" + sex + "', " + income + ", " + employed + ", " +
+                    "'" + homeId + "', ST_GeomFromText('" + homeGeom + "', "+SRID+"), '" + workId + "', ST_GeomFromText('" + workGeom + "', "+SRID+"), " + LAeq + ", " + homeLAeq + ", " + (LAeq - homeLAeq)+ ")")
+
+            String laeqQuery = "INSERT INTO " + outTableName + "_SEQUENCE VALUES(NULL, '" + personId + "'"
+            for (int i = 0; i < clock.length; i++) {
+                String query = laeqQuery + ", "
+                query += "'" + clock[i] + "', "
+                query += i + ", "
+                query += laeqSequence[i] + ", "
+                query += "'" + activitySequence[i] + "', "
+                if (activityGeomSequence[i] == "NULL") {
+                    query += "NULL"
+                } else {
+                    query += "ST_GeomFromText('" + activityGeomSequence[i] + "', "+SRID+")"
+                }
+                query += ")"
+                sql.execute(query)
+            }
         }
         counter++;
     }
