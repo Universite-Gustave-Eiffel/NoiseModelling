@@ -28,6 +28,8 @@ import org.noise_planet.noisemodelling.jdbc.LDENConfig
 import org.noise_planet.noisemodelling.jdbc.LDENPropagationProcessData
 import org.noise_planet.noisemodelling.jdbc.RailWayLWIterator
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import java.sql.Connection
 import java.sql.PreparedStatement
@@ -98,16 +100,13 @@ def run(input) {
 
 // main function of the script
 def exec(Connection connection, input) {
+    Logger LOGGER = LoggerFactory.getLogger("Railway_Emission_from_Traffic")
 
     //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postGIS database
     connection = new ConnectionWrapper(connection)
 
-    // output string, the information given back to the user
-    String resultString = null
-
     // print to command window
-    System.out.println('Start : Railway Emission from DEN')
-    def start = new Date()
+    LOGGER.info('Start : Railway Emission from DEN')
 
     // -------------------
     // Get every inputs
@@ -116,6 +115,10 @@ def exec(Connection connection, input) {
     String sources_geom_table_name = input['tableRailwayTrack'] as String
     // do it case-insensitive
     sources_geom_table_name = sources_geom_table_name.toUpperCase()
+
+    int sridSources = SFSUtilities.getSRID(connection, TableLocation.parse(sources_geom_table_name))
+    if (sridSources == 3785 || sridSources == 4326) throw new IllegalArgumentException("Error : Please use a metric projection for "+sources_geom_table_name+".")
+    if (sridSources == 0) throw new IllegalArgumentException("Error : The table "+sources_geom_table_name+" does not have an associated spatial reference system. (missing prj file on import ?)")
 
     String sources_table_traffic_name = input['tableRailwayTraffic'] as String
     // do it case-insensitive
@@ -184,8 +187,6 @@ def exec(Connection connection, input) {
     LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_RAILWAY_FLOW)
     ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData())
     ldenConfig.setCoefficientVersion(2)
-
-    LDENPropagationProcessData process = new LDENPropagationProcessData(null, ldenConfig);
 
     // Get size of the table (number of rail segments
     PreparedStatement st = connection.prepareStatement("SELECT COUNT(*) AS total FROM " + sources_geom_table_name)
@@ -273,7 +274,7 @@ def exec(Connection connection, input) {
     // Fusion geometry and traffic table
 
     // Add Z dimension to the rail segments
-    sql.execute("UPDATE LW_RAILWAY SET THE_GEOM = ST_UPDATEZ(The_geom,0.01);")
+    sql.execute("UPDATE LW_RAILWAY SET THE_GEOM = ST_SETSRID(ST_UPDATEZ(The_geom,0.01), :srid);", ["srid" : sridSources])
 
     // Add primary key to the LW table
     sql.execute("ALTER TABLE  LW_RAILWAY  ADD PK INT AUTO_INCREMENT PRIMARY KEY;")

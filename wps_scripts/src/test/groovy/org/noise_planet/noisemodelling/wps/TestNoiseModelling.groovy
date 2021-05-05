@@ -49,6 +49,10 @@ class TestNoiseModelling extends JdbcTestCase {
     @Test
     void testRailWayEmissionFromDEN() {
 
+        def sql = new Sql(connection)
+
+        sql.execute("DROP TABLE IF EXISTS LW_RAILWAY")
+
         SHPRead.readShape(connection, TestDatabaseManager.getResource("Train/RailTrack.shp").getPath())
         DBFRead.read(connection, TestDatabaseManager.getResource("Train/RailTrain.dbf").getPath())
 
@@ -59,10 +63,44 @@ class TestNoiseModelling extends JdbcTestCase {
 
         def fieldNames = JDBCUtilities.getFieldNames(connection.getMetaData(), "LW_RAILWAY")
 
-        def expected = ["ID_SECTION","THE_GEOM","DIRECTIVITYID","HEIGHT","LWD50","LWD63","LWD80","LWD100","LWD125","LWD160","LWD200","LWD250","LWD315","LWD400","LWD500","LWD630","LWD800","LWD1000","LWD1250","LWD1600","LWD2000","LWD2500","LWD3150","LWD4000","LWD5000","LWD6300","LWD8000","LWD10000","LWE50","LWE63","LWE80","LWE100","LWE125","LWE160","LWE200","LWE250","LWE315","LWE400","LWE500","LWE630","LWE800","LWE1000","LWE1250","LWE1600","LWE2000","LWE2500","LWE3150","LWE4000","LWE5000","LWE6300","LWE8000","LWE10000","LWN50","LWN63","LWN80","LWN100","LWN125","LWN160","LWN200","LWN250","LWN315","LWN400","LWN500","LWN630","LWN800","LWN1000","LWN1250","LWN1600","LWN2000","LWN2500","LWN3150","LWN4000","LWN5000","LWN6300","LWN8000","LWN10000","PK"]
+        def expected = ["ID_SECTION","THE_GEOM","DIRECTIVITYID","HEIGHT","LWD50","LWD63","LWD80","LWD100","LWD125",
+                        "LWD160","LWD200","LWD250","LWD315","LWD400","LWD500","LWD630","LWD800","LWD1000","LWD1250",
+                        "LWD1600","LWD2000","LWD2500","LWD3150","LWD4000","LWD5000","LWD6300","LWD8000","LWD10000",
+                        "LWE50","LWE63","LWE80","LWE100","LWE125","LWE160","LWE200","LWE250","LWE315","LWE400",
+                        "LWE500","LWE630","LWE800","LWE1000","LWE1250","LWE1600","LWE2000","LWE2500","LWE3150",
+                        "LWE4000","LWE5000","LWE6300","LWE8000","LWE10000","LWN50","LWN63","LWN80","LWN100","LWN125",
+                        "LWN160","LWN200","LWN250","LWN315","LWN400","LWN500","LWN630","LWN800","LWN1000","LWN1250",
+                        "LWN1600","LWN2000","LWN2500","LWN3150","LWN4000","LWN5000","LWN6300","LWN8000","LWN10000","PK"]
 
         assertArrayEquals(expected.toArray(new String[expected.size()]), fieldNames.toArray(new String[fieldNames.size()]))
 
+
+        sql.execute("DROP TABLE IF EXISTS RECEIVERS")
+        sql.execute("CREATE TABLE RECEIVERS(PK SERIAL, THE_GEOM GEOMETRY)")
+        sql.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT(421506.21 6703298.90)')")
+        sql.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT(421507.35 6703319.66)')")
+        sql.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT(421501.83 6703349.68)')")
+        sql.execute("UPDATE RECEIVERS SET THE_GEOM = ST_SETSRID(THE_GEOM, 2154)")
+
+        SHPRead.readShape(connection, TestDatabaseManager.getResource("Train/buildings2.shp").getPath(), "BUILDINGS")
+
+        sql.execute("DROP TABLE IF EXISTS LDAY_GEOM")
+
+        res = new Noise_level_from_source().exec(connection,
+                ["tableBuilding"   : "BUILDINGS",
+                 "tableSources"   : "LW_RAILWAY",
+                 "tableReceivers": "RECEIVERS",
+                 "confSkipLevening": true,
+                 "confSkipLnight": true,
+                 "confSkipLden": true])
+
+        assertTrue(JDBCUtilities.tableExists(connection, "LDAY_GEOM"))
+
+        def receiversLvl = sql.rows("SELECT * FROM LDAY_GEOM ORDER BY IDRECEIVER")
+
+        assertEquals(77,receiversLvl[0]["LEQ"] as Double,1)
+        assertEquals(47.5,receiversLvl[2]["LEQ"] as Double,1)
+        assertEquals(54.5,receiversLvl[3]["LEQ"] as Double,1)
     }
 
     @Test

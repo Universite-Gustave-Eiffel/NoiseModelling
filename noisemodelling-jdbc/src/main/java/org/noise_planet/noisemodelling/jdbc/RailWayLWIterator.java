@@ -39,8 +39,6 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
     private int currentIdSection = -1;
 
     public Map<String, Integer> sourceFields = null;
-    GeometryFactory geometryFactory = new GeometryFactory();
-
 
     public RailWayLWIterator(Connection connection, String tableTrain, String tableTrack, LDENConfig ldenConfig) {
         this.connection = connection;

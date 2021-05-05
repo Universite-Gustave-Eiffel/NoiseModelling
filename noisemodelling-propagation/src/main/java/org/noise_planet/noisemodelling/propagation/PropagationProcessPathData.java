@@ -125,6 +125,7 @@ public class PropagationProcessPathData {
 
     public void setFrequenciesExact(List<Double> freq_lvl_exact) {
         this.freq_lvl_exact = freq_lvl_exact;
+        this.alpha_atmo = getAtmoCoeffArray(freq_lvl_exact,  temperature,  pressure,  humidity);
     }
 
     public List<Double> getFrequenciesAWeighting() {
