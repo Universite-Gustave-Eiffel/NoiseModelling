@@ -103,6 +103,12 @@ public class RailWayLW {
 
     }
 
+    /**
+     * Sum two train emission instances
+     * @param railWayLW1 Emission 1
+     * @param railWayLW2 Emission 2
+     * @return Merged level
+     */
     public static RailWayLW sumRailWayLW(RailWayLW railWayLW1, RailWayLW railWayLW2){
         RailWayLW railWayLW = new RailWayLW();
 
@@ -116,5 +122,34 @@ public class RailWayLW {
         return railWayLW;
     }
 
+
+    /**
+     * Compute the attenuation for the specified noise source and parameters
+     * @param noiseSource
+     * @param height_index
+     * @param phi
+     * @param theta
+     * @param frequency
+     * @return
+     */
+    public static Double GetDirectionAttenuation(TrainNoiseSource noiseSource, int height_index, double phi, double theta, double frequency) {
+        if(noiseSource == TrainNoiseSource.BRIDGE) {
+            return 0.0;
+        }
+        double attHorizontal = 10 * Math.log10(0.01 + 0.99 * Math.pow(Math.sin(phi), 2));
+        double attVertical = 0;
+        if(height_index == 1) {
+            if(theta > 0 && theta < Math.PI / 2.0) {
+                attVertical = (40.0 / 3.0)
+                        * (2.0 / 3.0 * Math.sin(2 * theta) - Math.sin(theta))
+                        * Math.log10((frequency + 600.0) / 200.0);
+            }
+        } else if(height_index == 2){
+            if(theta < 0) { // for aerodynamic effect only
+                attVertical = 10 * Math.log10(Math.pow(Math.sin(theta), 2));
+            }
+        }
+        return attHorizontal + attVertical;
+    }
 
 }
