@@ -363,6 +363,8 @@ public class EvaluateRailWaySourceCNOSSOSTest {
             generateText(sb, textX, textY, 25, String.format(Locale.ROOT, "%d", adjustedAngle), "middle");
         }
         // Attenuation levels legend
+        generateText(sb, centerx, centery,10,String.format(Locale.ROOT,
+                "%.0f dB", minimumAttenuation), "Hanging");
         generateText(sb, centerx + radius * 0.25, centery,10,String.format(Locale.ROOT,
                 "%.0f dB", minimumAttenuation + (maximumAttenuation - minimumAttenuation) * 0.25), "Hanging");
         generateText(sb, centerx + radius * 0.5, centery, 10,String.format(Locale.ROOT,
@@ -372,6 +374,7 @@ public class EvaluateRailWaySourceCNOSSOSTest {
         generateText(sb, centerx + radius, centery, 10,String.format(Locale.ROOT,
                 "%.0f dB", minimumAttenuation + (maximumAttenuation - minimumAttenuation)), "Hanging");
         // Generate attenuation curve
+        StringBuilder path = new StringBuilder();
         for(int angle=0; angle < 360; angle += 1) {
             int adjustedAngle = (630 - angle) % 360;
             double phi = (adjustedAngle / 180.0) * Math.PI;
@@ -382,10 +385,21 @@ public class EvaluateRailWaySourceCNOSSOSTest {
             double attenuationPercentage = (attenuation - minimumAttenuation) / (maximumAttenuation - minimumAttenuation);
             Vector2D interpolatedVector = Vector2D.create(new Coordinate(centerx, centery), new Coordinate(maxLevelX, maxLevelY));
             interpolatedVector = interpolatedVector.multiply(attenuationPercentage);
-            sb.append(String.format(Locale.ROOT, "<circle cx=\"%f\" cy=\"%f\" r=\"%f\" stroke=\"red\" " +
-                    "stroke-width=\"1\"  fill=\"transparent\"/>\n",centerx + interpolatedVector.getX(), centery + interpolatedVector.getY(), 1.0));
+            double stopX = centerx + interpolatedVector.getX();
+            double stopY = centery + interpolatedVector.getY();
+            if(angle == 0) {
+                path.append(String.format(Locale.ROOT, "M %.1f %.1f", stopX, stopY));
+            } else {
+                path.append(String.format(Locale.ROOT, " L %.1f %.1f", stopX, stopY));
+            }
+            if(angle % 30 == 0) {
+                path.append("\n");
+            }
         }
-
+        path.append(" Z");
+        sb.append("<path d=\"");
+        sb.append(path.toString());
+        sb.append("\"  fill=\"transparent\" stroke=\"red\" stroke-width=\"2\"/>\n");
         //  <line x1="250" y1="250" x2="450" y2="250" stroke="black" stroke-width="1" />
         sb.append("</svg> \n" +
                 "</body>\n" +
