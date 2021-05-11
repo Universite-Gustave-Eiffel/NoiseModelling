@@ -384,8 +384,6 @@ public class EvaluateRailWaySourceCNOSSOSTest {
             interpolatedVector = interpolatedVector.multiply(attenuationPercentage);
             sb.append(String.format(Locale.ROOT, "<circle cx=\"%f\" cy=\"%f\" r=\"%f\" stroke=\"red\" " +
                     "stroke-width=\"1\"  fill=\"transparent\"/>\n",centerx + interpolatedVector.getX(), centery + interpolatedVector.getY(), 1.0));
-
-            System.out.println(String.format(Locale.ROOT, "%d° attenuation %.1f dB",adjustedAngle, attenuation));
         }
 
         //  <line x1="250" y1="250" x2="450" y2="250" stroke="black" stroke-width="1" />
