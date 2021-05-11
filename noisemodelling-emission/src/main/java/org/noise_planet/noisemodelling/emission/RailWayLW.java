@@ -43,6 +43,13 @@ public class RailWayLW {
         BRIDGE
     }
 
+    /**
+     * H_INDEX of noise source type (TrainNoiseSource)
+     * 0 - Low height (0.5 m) A
+     * 1 - High height (4 m) B
+     */
+    public static final int[] TRAIN_NOISE_SOURCE_H_INDEX = new int[] {0, 0, 1, 0, 1, 0};
+
     private double[] lWRolling;
     private double[] lWTractionA;
     private double[] lWTractionB;
@@ -126,16 +133,16 @@ public class RailWayLW {
     /**
      * Compute the attenuation for the specified noise source and parameters
      * @param noiseSource
-     * @param height_index
      * @param phi
      * @param theta
      * @param frequency
      * @return
      */
-    public static Double getDirectionAttenuation(TrainNoiseSource noiseSource, int height_index, double phi, double theta, double frequency) {
+    public static Double getDirectionAttenuation(TrainNoiseSource noiseSource, double phi, double theta, double frequency) {
         if(noiseSource == TrainNoiseSource.BRIDGE) {
             return 0.0;
         }
+        int height_index = TRAIN_NOISE_SOURCE_H_INDEX[noiseSource.ordinal()];
         double attHorizontal = 10 * Math.log10(0.01 + 0.99 * Math.pow(Math.sin(phi), 2));
         double attVertical = 0;
         if(height_index == 1) {
