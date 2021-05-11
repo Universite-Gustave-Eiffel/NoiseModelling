@@ -13,6 +13,8 @@
 package org.noise_planet.noisemodelling.emission;
 
 import org.junit.Test;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.math.Vector2D;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -315,12 +317,11 @@ public class EvaluateRailWaySourceCNOSSOSTest {
                 " stroke=\"black\" stroke-width=\"1\"   stroke-dasharray=\"5,5\" />\n",startX, startY, stopX, stopY));
     }
 
-    private void generateText(StringBuilder sb, double startX, double startY, int fontSize, String text) {
-        sb.append(String.format(Locale.ROOT, "<text x=\"%f\" y=\"%f\" font-family=\"Verdana\" font-size=\"%d\"  text-anchor=\"middle\" dominant-baseline=\"middle\">%s</text>\n",startX, startY, fontSize, text));
+    private void generateText(StringBuilder sb, double startX, double startY, int fontSize, String text, String verticalAlignement) {
+        sb.append(String.format(Locale.ROOT, "<text x=\"%f\" y=\"%f\" font-family=\"Verdana\" font-size=\"%d\"  text-anchor=\"middle\" dominant-baseline=\"%s\">%s</text>\n",startX, startY, fontSize, verticalAlignement,text));
     }
 
-    @Test
-    public void exportDirectivity() throws IOException {
+    private String generatePolarGraph(RailWayLW.TrainNoiseSource noiseSource, int heightIndex, double frequency, double minimumAttenuation, double maximumAttenuation) {
         double dwidth = 500;
         double dheight = 500;
         double radius = dwidth/2 - 80;
@@ -336,13 +337,13 @@ public class EvaluateRailWaySourceCNOSSOSTest {
         sb.append(String.format(Locale.ROOT, "<circle cx=\"%f\" cy=\"%f\" r=\"%f\" stroke=\"black\" " +
                 "stroke-width=\"1\"  fill=\"transparent\"/>\n",centerx, centery, radius));
         sb.append(String.format(Locale.ROOT, "<circle cx=\"%f\" cy=\"%f\" r=\"%f\" stroke=\"black\" " +
-                "stroke-width=\"1\"  fill=\"transparent\"  stroke-dasharray=\"5,5\"/>\n",
+                        "stroke-width=\"1\"  fill=\"transparent\"  stroke-dasharray=\"5,5\"/>\n",
                 centerx, centery, radius*0.75));
         sb.append(String.format(Locale.ROOT, "<circle cx=\"%f\" cy=\"%f\" r=\"%f\" stroke=\"black\" " +
-                "stroke-width=\"1\"  fill=\"transparent\"  stroke-dasharray=\"5,5\"/>\n",
+                        "stroke-width=\"1\"  fill=\"transparent\"  stroke-dasharray=\"5,5\"/>\n",
                 centerx, centery, radius*0.5));
         sb.append(String.format(Locale.ROOT, "<circle cx=\"%f\" cy=\"%f\" r=\"%f\" stroke=\"black\" " +
-                "stroke-width=\"1\"  fill=\"transparent\"  stroke-dasharray=\"5,5\"/>\n",
+                        "stroke-width=\"1\"  fill=\"transparent\"  stroke-dasharray=\"5,5\"/>\n",
                 centerx, centery, radius*0.25));
 
         for(int angle=0; angle < 360; angle += 30) {
@@ -359,15 +360,45 @@ public class EvaluateRailWaySourceCNOSSOSTest {
             }
             double textX = centerx + Math.cos((angle / 180.0) * Math.PI) * textRadius;
             double textY = centery + Math.sin((angle / 180.0) * Math.PI) * textRadius;
-            generateText(sb, textX, textY, 25, String.format(Locale.ROOT, "%d", adjustedAngle));
+            generateText(sb, textX, textY, 25, String.format(Locale.ROOT, "%d", adjustedAngle), "middle");
+        }
+        // Attenuation levels legend
+        generateText(sb, centerx + radius * 0.25, centery,10,String.format(Locale.ROOT,
+                "%.0f dB", minimumAttenuation + (maximumAttenuation - minimumAttenuation) * 0.25), "Hanging");
+        generateText(sb, centerx + radius * 0.5, centery, 10,String.format(Locale.ROOT,
+                "%.0f dB", minimumAttenuation + (maximumAttenuation - minimumAttenuation) * 0.5), "Hanging");
+        generateText(sb, centerx + radius * 0.75, centery, 10,String.format(Locale.ROOT,
+                "%.0f dB", minimumAttenuation + (maximumAttenuation - minimumAttenuation) * 0.75), "Hanging");
+        generateText(sb, centerx + radius, centery, 10,String.format(Locale.ROOT,
+                "%.0f dB", minimumAttenuation + (maximumAttenuation - minimumAttenuation)), "Hanging");
+        // Generate attenuation curve
+        for(int angle=0; angle < 360; angle += 1) {
+            int adjustedAngle = (630 - angle) % 360;
+            double phi = (adjustedAngle / 180.0) * Math.PI;
+            double theta = Math.PI / 2.0;
+            double attenuation = RailWayLW.getDirectionAttenuation(noiseSource, heightIndex, phi, theta, frequency);
+            double maxLevelX = centerx + Math.cos((angle / 180.0) * Math.PI) * radius;
+            double maxLevelY = centery + Math.sin((angle / 180.0) * Math.PI) * radius;
+            double attenuationPercentage = (attenuation - minimumAttenuation) / (maximumAttenuation - minimumAttenuation);
+            Vector2D interpolatedVector = Vector2D.create(new Coordinate(centerx, centery), new Coordinate(maxLevelX, maxLevelY));
+            interpolatedVector = interpolatedVector.multiply(attenuationPercentage);
+            sb.append(String.format(Locale.ROOT, "<circle cx=\"%f\" cy=\"%f\" r=\"%f\" stroke=\"red\" " +
+                    "stroke-width=\"1\"  fill=\"transparent\"/>\n",centerx + interpolatedVector.getX(), centery + interpolatedVector.getY(), 1.0));
+
+            System.out.println(String.format(Locale.ROOT, "%d° attenuation %.1f dB",adjustedAngle, attenuation));
         }
 
         //  <line x1="250" y1="250" x2="450" y2="250" stroke="black" stroke-width="1" />
         sb.append("</svg> \n" +
                 "</body>\n" +
                 "</html>\n ");
+        return sb.toString();
+    }
+
+    @Test
+    public void exportDirectivity() throws IOException {
         try(BufferedWriter bw = new BufferedWriter(new FileWriter("target/test.html"))) {
-            bw.write(sb.toString());
+            bw.write(generatePolarGraph(RailWayLW.TrainNoiseSource.ROLLING, 1, 500, -25, 0));
         }
     }
 
