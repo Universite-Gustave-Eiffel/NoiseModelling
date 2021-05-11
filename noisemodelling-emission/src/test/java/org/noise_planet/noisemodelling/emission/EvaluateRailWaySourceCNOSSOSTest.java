@@ -14,6 +14,11 @@ package org.noise_planet.noisemodelling.emission;
 
 import org.junit.Test;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Locale;
+
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -298,6 +303,72 @@ public class EvaluateRailWaySourceCNOSSOSTest {
             }
         }
 
+    }
+
+    private void generateLine(StringBuilder sb, double startX, double startY, double stopX, double stopY) {
+        sb.append(String.format(Locale.ROOT, "<line x1=\"%f\" y1=\"%f\" x2=\"%f\" y2=\"%f\"" +
+                " stroke=\"black\" stroke-width=\"1\" />\n",startX, startY, stopX, stopY));
+    }
+
+    private void generateDashedLine(StringBuilder sb, double startX, double startY, double stopX, double stopY) {
+        sb.append(String.format(Locale.ROOT, "<line x1=\"%f\" y1=\"%f\" x2=\"%f\" y2=\"%f\"" +
+                " stroke=\"black\" stroke-width=\"1\"   stroke-dasharray=\"5,5\" />\n",startX, startY, stopX, stopY));
+    }
+
+    private void generateText(StringBuilder sb, double startX, double startY, int fontSize, String text) {
+        sb.append(String.format(Locale.ROOT, "<text x=\"%f\" y=\"%f\" font-family=\"Verdana\" font-size=\"%d\"  text-anchor=\"middle\" dominant-baseline=\"middle\">%s</text>\n",startX, startY, fontSize, text));
+    }
+
+    @Test
+    public void exportDirectivity() throws IOException {
+        double dwidth = 500;
+        double dheight = 500;
+        double radius = dwidth/2 - 80;
+        double textRadius = radius + 25;
+        double centerx = dwidth/2;
+        double centery = dheight/2;
+        // HEADER
+        StringBuilder sb = new StringBuilder("<!DOCTYPE html>\n" +
+                "<html>\n" +
+                "<body>\n" +
+                "<svg height=\"500\" width=\"500\">\n");
+        // CIRCLES
+        sb.append(String.format(Locale.ROOT, "<circle cx=\"%f\" cy=\"%f\" r=\"%f\" stroke=\"black\" " +
+                "stroke-width=\"1\"  fill=\"transparent\"/>\n",centerx, centery, radius));
+        sb.append(String.format(Locale.ROOT, "<circle cx=\"%f\" cy=\"%f\" r=\"%f\" stroke=\"black\" " +
+                "stroke-width=\"1\"  fill=\"transparent\"  stroke-dasharray=\"5,5\"/>\n",
+                centerx, centery, radius*0.75));
+        sb.append(String.format(Locale.ROOT, "<circle cx=\"%f\" cy=\"%f\" r=\"%f\" stroke=\"black\" " +
+                "stroke-width=\"1\"  fill=\"transparent\"  stroke-dasharray=\"5,5\"/>\n",
+                centerx, centery, radius*0.5));
+        sb.append(String.format(Locale.ROOT, "<circle cx=\"%f\" cy=\"%f\" r=\"%f\" stroke=\"black\" " +
+                "stroke-width=\"1\"  fill=\"transparent\"  stroke-dasharray=\"5,5\"/>\n",
+                centerx, centery, radius*0.25));
+
+        for(int angle=0; angle < 360; angle += 30) {
+            double destX = centerx + Math.cos((angle / 180.0) * Math.PI) * radius;
+            double destY = centery + Math.sin((angle / 180.0) * Math.PI) * radius;
+            // Reverse order and rotate by 90°
+            int adjustedAngle = (630 - angle) % 360;
+            if(angle % 90 != 0) {
+                // Dashed segment lines
+                generateDashedLine(sb, centerx, centery, destX, destY);
+            } else {
+                // Plain segment lines
+                generateLine(sb, centerx, centery, destX, destY);
+            }
+            double textX = centerx + Math.cos((angle / 180.0) * Math.PI) * textRadius;
+            double textY = centery + Math.sin((angle / 180.0) * Math.PI) * textRadius;
+            generateText(sb, textX, textY, 25, String.format(Locale.ROOT, "%d", adjustedAngle));
+        }
+
+        //  <line x1="250" y1="250" x2="450" y2="250" stroke="black" stroke-width="1" />
+        sb.append("</svg> \n" +
+                "</body>\n" +
+                "</html>\n ");
+        try(BufferedWriter bw = new BufferedWriter(new FileWriter("target/test.html"))) {
+            bw.write(sb.toString());
+        }
     }
 
    /* @Test

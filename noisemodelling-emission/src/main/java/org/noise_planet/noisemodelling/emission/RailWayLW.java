@@ -132,7 +132,7 @@ public class RailWayLW {
      * @param frequency
      * @return
      */
-    public static Double GetDirectionAttenuation(TrainNoiseSource noiseSource, int height_index, double phi, double theta, double frequency) {
+    public static Double getDirectionAttenuation(TrainNoiseSource noiseSource, int height_index, double phi, double theta, double frequency) {
         if(noiseSource == TrainNoiseSource.BRIDGE) {
             return 0.0;
         }
