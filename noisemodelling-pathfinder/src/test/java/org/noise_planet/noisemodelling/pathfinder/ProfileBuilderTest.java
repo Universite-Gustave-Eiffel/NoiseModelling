@@ -238,18 +238,26 @@ public class ProfileBuilderTest {
         profileBuilder.addTopographicPoint(new Coordinate(1, 9, 2.0));
         profileBuilder.addTopographicPoint(new Coordinate(8, 2, 2.0));
 
+        profileBuilder.addGroundEffect(READER.read("POLYGON((-1 -1, -1 2, 2 2, 2 -1, -1 -1))"), 0.6);
         profileBuilder.addGroundEffect(READER.read("POLYGON((-1 7, -0.5 8, 0 8.5, 1 9, 1.5 7, 2 6, 2.5 7, 3 9, 5.5 8.5, 7 7, 7 6, 5 5, 5 4, 4 2, 2 3, 1 5, 0 6, -1 7))"), 0.5);
         profileBuilder.addGroundEffect(READER.read("POLYGON((8 1, 7 2, 7 4.5, 8 5, 9 4.5, 10 3.5, 9.5 2, 8 1))"), 0.25);
         profileBuilder.finishFeeding();
 
         ProfileBuilder.CutProfile profile = profileBuilder.getProfile(new Coordinate(0, 1, 0.1), new Coordinate(8, 10, 0.3));
         List<ProfileBuilder.CutPoint> pts = profile.getCutPoints();
-        assertEquals(15, pts.size());
+        assertEquals(16, pts.size());
         assertEquals(0.0, pts.get(0).getCoordinate().x, DELTA);
         assertEquals(1.0, pts.get(0).getCoordinate().y, DELTA);
         assertEquals(0.1, pts.get(0).getCoordinate().z, DELTA);
-        assertEquals(8.0, pts.get(14).getCoordinate().x, DELTA);
-        assertEquals(10.0, pts.get(14).getCoordinate().y, DELTA);
-        assertEquals(0.3, pts.get(14).getCoordinate().z, DELTA);
+        assertEquals(8.0, pts.get(15).getCoordinate().x, DELTA);
+        assertEquals(10.0, pts.get(15).getCoordinate().y, DELTA);
+        assertEquals(0.3, pts.get(15).getCoordinate().z, DELTA);
+
+        for(ProfileBuilder.CutPoint cut : pts) {
+            System.out.println(cut);
+            assert !Double.isNaN(cut.getCoordinate().z);
+        }
     }
+
+    //TODO source on ground effect
 }
