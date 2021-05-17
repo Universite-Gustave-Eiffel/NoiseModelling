@@ -177,7 +177,7 @@ def exec(Connection connection, input) {
 
         // Convert linestring screens to polygons with buffer function
         sql.execute("DROP TABLE IF EXISTS TMP_BUFFERED_SCREENS")
-        sql.execute("CREATE TABLE TMP_BUFFERED_SCREENS as select ST_BUFFER(sc.the_geom," + screens_width + ", 'join=mitre endcap=flat') the_geom,  HEIGHT HEIGHT from TMP_SCREENS sc")
+        sql.execute("CREATE TABLE TMP_BUFFERED_SCREENS as select ST_SETSRID(ST_BUFFER(sc.the_geom," + screens_width + ", 'join=mitre endcap=flat'), ST_SRID(sc.the_geom)) the_geom, HEIGHT from TMP_SCREENS sc")
         sql.execute("DROP TABLE IF EXISTS TMP_SCREENS")
 
         // Merge buildings and buffered screens
@@ -188,7 +188,7 @@ def exec(Connection connection, input) {
 
     } else {
         sql.execute("DROP TABLE IF EXISTS BUILDINGS_SCREENS")
-        sql.execute("CREATE TABLE BUILDINGS_SCREENS as select ST_BUFFER(sc.the_geom," + screens_width + ", 'join=mitre endcap=flat') the_geom, HEIGHT HEIGHT from " + screen_table_name + " sc")
+        sql.execute("CREATE TABLE BUILDINGS_SCREENS as select ST_BUFFER(sc.the_geom," + screens_width + ", 'join=mitre endcap=flat') the_geom, HEIGHT from " + screen_table_name + " sc")
 
     }
 
