@@ -14,6 +14,8 @@ public class PolarGraphDirectivity {
     double centerx = dwidth/2;
     double centery = dheight/2;
 
+    public enum ORIENTATION {TOP, FRONT, SIDE}
+
     private void generateLine(StringBuilder sb, double startX, double startY, double stopX, double stopY) {
         sb.append(String.format(Locale.ROOT, "<line x1=\"%f\" y1=\"%f\" x2=\"%f\" y2=\"%f\"" +
                 " stroke=\"black\" stroke-width=\"1\" />\n",startX, startY, stopX, stopY));
@@ -21,14 +23,26 @@ public class PolarGraphDirectivity {
 
     private void generateDashedLine(StringBuilder sb, double startX, double startY, double stopX, double stopY) {
         sb.append(String.format(Locale.ROOT, "<line x1=\"%f\" y1=\"%f\" x2=\"%f\" y2=\"%f\"" +
-                " stroke=\"black\" stroke-width=\"1\"   stroke-dasharray=\"5,5\" />\n",startX, startY, stopX, stopY));
+                " stroke=\"black\" stroke-width=\"1\" stroke-dashoffset=\"5\"  stroke-dasharray=\"5,5\" />\n",startX, startY, stopX, stopY));
     }
 
     private void generateText(StringBuilder sb, double startX, double startY, int fontSize, String text, String verticalAlignement) {
         sb.append(String.format(Locale.ROOT, "<text x=\"%f\" y=\"%f\" font-family=\"Verdana\" font-size=\"%d\"  text-anchor=\"middle\" dominant-baseline=\"%s\">%s</text>\n",startX, startY, fontSize, verticalAlignement,text));
     }
 
-    public String generatePolarGraph(RailWayLW.TrainNoiseSource noiseSource, double frequency, double minimumAttenuation, double maximumAttenuation) {
+    private double toRadian(double angle) {
+        return (angle / 180.0) * Math.PI;
+    }
+
+    private int getAdjustedAngle(int angle, ORIENTATION orientation) {
+        if(orientation == ORIENTATION.TOP) {
+            return (angle + 90 ) % 360;
+        } else {
+            return (720 - angle) % 360;
+        }
+    }
+
+    public String generatePolarGraph(RailWayLW.TrainNoiseSource noiseSource, double frequency, double minimumAttenuation, double maximumAttenuation, ORIENTATION orientation) {
 
         // HEADER
         StringBuilder sb = new StringBuilder(String.format("<svg height=\"%d\" width=\"%d\">\n", (int)dheight, (int)dwidth));
@@ -46,10 +60,10 @@ public class PolarGraphDirectivity {
                 centerx, centery, radius*0.25));
 
         for(int angle=0; angle < 360; angle += 30) {
-            double destX = centerx + Math.cos((angle / 180.0) * Math.PI) * radius;
-            double destY = centery + Math.sin((angle / 180.0) * Math.PI) * radius;
+            double destX = centerx + Math.cos(toRadian(angle)) * radius;
+            double destY = centery + Math.sin(toRadian(angle)) * radius;
             // Reverse order and rotate by 90°
-            int adjustedAngle = (630 - angle) % 360;
+            int adjustedAngle = getAdjustedAngle(angle, orientation);
             if(angle % 90 != 0) {
                 // Dashed segment lines
                 generateDashedLine(sb, centerx, centery, destX, destY);
@@ -57,8 +71,8 @@ public class PolarGraphDirectivity {
                 // Plain segment lines
                 generateLine(sb, centerx, centery, destX, destY);
             }
-            double textX = centerx + Math.cos((angle / 180.0) * Math.PI) * textRadius;
-            double textY = centery + Math.sin((angle / 180.0) * Math.PI) * textRadius;
+            double textX = centerx + Math.cos(toRadian(angle)) * textRadius;
+            double textY = centery + Math.sin(toRadian(angle)) * textRadius;
             generateText(sb, textX, textY, 25, String.format(Locale.ROOT, "%d", adjustedAngle), "middle");
         }
         // Attenuation levels legend
@@ -75,9 +89,27 @@ public class PolarGraphDirectivity {
         // Generate attenuation curve
         StringBuilder path = new StringBuilder();
         for(int angle=0; angle < 360; angle += 1) {
-            int adjustedAngle = (630 - angle) % 360;
-            double phi = (adjustedAngle / 180.0) * Math.PI;
-            double theta = Math.PI / 2.0;
+            int adjustedAngle = getAdjustedAngle(angle, orientation);
+            double phi=0;
+            double theta=0;
+            if(orientation == ORIENTATION.TOP) {
+                phi = toRadian(adjustedAngle);
+                theta = 0;
+            } else if(orientation == ORIENTATION.FRONT) {
+                if(angle <= 180) {
+                    phi = toRadian(90);
+                } else {
+                    phi = toRadian(270);
+                }
+                theta = Math.sin(toRadian(adjustedAngle + 90)) * Math.PI / 2 ;
+            } else if(orientation == ORIENTATION.SIDE) {
+                if(angle <= 180) {
+                    phi = toRadian(0);
+                } else {
+                    phi = toRadian(180);
+                }
+                theta = Math.sin(toRadian(adjustedAngle + 90)) * Math.PI / 2 ;
+            }
             double attenuation = RailWayLW.getDirectionAttenuation(noiseSource, phi, theta, frequency);
             double maxLevelX = centerx + Math.cos((angle / 180.0) * Math.PI) * radius;
             double maxLevelY = centery + Math.sin((angle / 180.0) * Math.PI) * radius;

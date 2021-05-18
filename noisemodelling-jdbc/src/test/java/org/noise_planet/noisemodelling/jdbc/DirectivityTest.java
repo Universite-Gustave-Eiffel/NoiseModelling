@@ -6,6 +6,7 @@ import org.noise_planet.noisemodelling.emission.RailWayLW;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Locale;
 
 public class DirectivityTest {
 
@@ -14,10 +15,38 @@ public class DirectivityTest {
         PolarGraphDirectivity polarGraphDirectivity = new PolarGraphDirectivity();
         try(BufferedWriter bw = new BufferedWriter(new FileWriter("target/test.html"))) {
             bw.write("<!DOCTYPE html>\n" +
-                    "<html>\n" +
-                    "<body>\n");
-            bw.write(polarGraphDirectivity.generatePolarGraph(RailWayLW.TrainNoiseSource.ROLLING, 500,
-                    -25, 0));
+                    "<html><head><meta charset=\"utf-8\">\n" +
+                    "<style>" +
+                    ".wrapper {\n" +
+                    "  display: grid;\n" +
+                    "  grid-template-columns: repeat(3, 1fr);\n" +
+                    "  grid-gap: 10px;\n" +
+                    "  grid-auto-rows: minmax(100px, auto);\n" +
+                    "}" +
+                    "P { text-align: center; font-size: xx-large; }" +
+                    ".one {\n" +
+                    "  grid-column: 1 / 2;\n" +
+                    "  grid-row: 1;\n" +
+                    "}\n" +
+                    ".two {\n" +
+                    "  grid-column: 2 / 2;\n" +
+                    "  grid-row: 1;\n" +
+                    "}" +
+                    "</style>" +
+                    "<head><body>\n");
+            for(RailWayLW.TrainNoiseSource noiseSource : RailWayLW.TrainNoiseSource.values()) {
+                bw.write("<div class=\"wrapper\">");
+                bw.write("<div class=\"one\">");
+                bw.write(polarGraphDirectivity.generatePolarGraph(noiseSource, 500,
+                        -35, 0, PolarGraphDirectivity.ORIENTATION.TOP));
+                bw.write(String.format(Locale.ROOT, "<p>%s Horizontal</p>",noiseSource.toString()));
+                bw.write("</div><div class=\"two\">");
+                bw.write(polarGraphDirectivity.generatePolarGraph(noiseSource, 500,
+                        -35, 0, PolarGraphDirectivity.ORIENTATION.SIDE));
+                bw.write(String.format(Locale.ROOT, "<p>%s Vertical</p>",noiseSource.toString()));
+                bw.write("</div></div>");
+            }
+
 
             bw.write("</body>\n" +
                     "</html>\n ");

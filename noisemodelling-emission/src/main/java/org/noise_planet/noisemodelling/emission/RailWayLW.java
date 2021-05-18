@@ -132,11 +132,11 @@ public class RailWayLW {
 
     /**
      * Compute the attenuation for the specified noise source and parameters
-     * @param noiseSource
-     * @param phi
-     * @param theta
-     * @param frequency
-     * @return
+     * @param noiseSource Noise source category
+     * @param phi (0 2π) 0 is front
+     * @param theta (-π/2 π/2) 0 is horizontal π is top
+     * @param frequency Emission frequency
+     * @return Directional sound power
      */
     public static Double getDirectionAttenuation(TrainNoiseSource noiseSource, double phi, double theta, double frequency) {
         if(noiseSource == TrainNoiseSource.BRIDGE) {
