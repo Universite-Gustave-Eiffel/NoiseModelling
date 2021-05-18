@@ -6,6 +6,8 @@ import org.noise_planet.noisemodelling.emission.RailWayLW;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Locale;
 
 public class DirectivityTest {
@@ -33,7 +35,7 @@ public class DirectivityTest {
                     "  grid-row: 1;\n" +
                     "}" +
                     "</style>" +
-                    "<head><body>\n");
+                    "<head><body><h1>500 Hz</h1>\n");
             for(RailWayLW.TrainNoiseSource noiseSource : RailWayLW.TrainNoiseSource.values()) {
                 bw.write("<div class=\"wrapper\">");
                 bw.write("<div class=\"one\">");

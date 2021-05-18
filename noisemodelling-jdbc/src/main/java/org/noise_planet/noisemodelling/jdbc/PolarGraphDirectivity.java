@@ -96,19 +96,19 @@ public class PolarGraphDirectivity {
                 phi = toRadian(adjustedAngle);
                 theta = 0;
             } else if(orientation == ORIENTATION.FRONT) {
-                if(angle <= 180) {
+                if(angle <= 270) {
                     phi = toRadian(90);
                 } else {
                     phi = toRadian(270);
                 }
                 theta = Math.sin(toRadian(adjustedAngle + 90)) * Math.PI / 2 ;
             } else if(orientation == ORIENTATION.SIDE) {
-                if(angle <= 180) {
+                if(angle <= 270) {
                     phi = toRadian(0);
                 } else {
                     phi = toRadian(180);
                 }
-                theta = Math.sin(toRadian(adjustedAngle + 90)) * Math.PI / 2 ;
+                theta = Math.sin(toRadian(adjustedAngle)) * Math.PI / 2 ;
             }
             double attenuation = RailWayLW.getDirectionAttenuation(noiseSource, phi, theta, frequency);
             double maxLevelX = centerx + Math.cos((angle / 180.0) * Math.PI) * radius;
