@@ -16,14 +16,14 @@ public class PolarGraphDirectivity {
 
     public enum ORIENTATION {TOP, FRONT, SIDE}
 
-    private void generateLine(StringBuilder sb, double startX, double startY, double stopX, double stopY) {
+    private void generateLine(StringBuilder sb, double startX, double startY, double stopX, double stopY, String color) {
         sb.append(String.format(Locale.ROOT, "<line x1=\"%f\" y1=\"%f\" x2=\"%f\" y2=\"%f\"" +
-                " stroke=\"black\" stroke-width=\"1\" />\n",startX, startY, stopX, stopY));
+                " stroke=\"%s\" stroke-width=\"1\" />\n",startX, startY, stopX, stopY, color));
     }
 
-    private void generateDashedLine(StringBuilder sb, double startX, double startY, double stopX, double stopY) {
+    private void generateDashedLine(StringBuilder sb, double startX, double startY, double stopX, double stopY, String color) {
         sb.append(String.format(Locale.ROOT, "<line x1=\"%f\" y1=\"%f\" x2=\"%f\" y2=\"%f\"" +
-                " stroke=\"black\" stroke-width=\"1\" stroke-dashoffset=\"5\"  stroke-dasharray=\"5,5\" />\n",startX, startY, stopX, stopY));
+                " stroke=\"%s\" stroke-width=\"1\" stroke-dashoffset=\"5\"  stroke-dasharray=\"5,5\" />\n",startX, startY, stopX, stopY, color));
     }
 
     private void generateText(StringBuilder sb, double startX, double startY, int fontSize, String text, String verticalAlignement) {
@@ -42,20 +42,27 @@ public class PolarGraphDirectivity {
         }
     }
 
+    private void generateLegend(StringBuilder sb, double value, double position, double angle) {
+        double destX = centerx + Math.cos(toRadian(angle)) * radius * position;
+        double destY = centery + Math.sin(toRadian(angle)) * radius * position;
+        generateText(sb, destX, destY,10,String.format(Locale.ROOT,
+                "%.0f dB", value), "middle");
+    }
+
     public String generatePolarGraph(RailWayLW.TrainNoiseSource noiseSource, double frequency, double minimumAttenuation, double maximumAttenuation, ORIENTATION orientation) {
 
         // HEADER
         StringBuilder sb = new StringBuilder(String.format("<svg height=\"%d\" width=\"%d\">\n", (int)dheight, (int)dwidth));
         // CIRCLES
-        sb.append(String.format(Locale.ROOT, "<circle cx=\"%f\" cy=\"%f\" r=\"%f\" stroke=\"black\" " +
+        sb.append(String.format(Locale.ROOT, "<circle cx=\"%f\" cy=\"%f\" r=\"%f\" stroke=\"grey\" " +
                 "stroke-width=\"1\"  fill=\"transparent\"/>\n",centerx, centery, radius));
-        sb.append(String.format(Locale.ROOT, "<circle cx=\"%f\" cy=\"%f\" r=\"%f\" stroke=\"black\" " +
+        sb.append(String.format(Locale.ROOT, "<circle cx=\"%f\" cy=\"%f\" r=\"%f\" stroke=\"grey\" " +
                         "stroke-width=\"1\"  fill=\"transparent\"  stroke-dasharray=\"5,5\"/>\n",
                 centerx, centery, radius*0.75));
-        sb.append(String.format(Locale.ROOT, "<circle cx=\"%f\" cy=\"%f\" r=\"%f\" stroke=\"black\" " +
+        sb.append(String.format(Locale.ROOT, "<circle cx=\"%f\" cy=\"%f\" r=\"%f\" stroke=\"grey\" " +
                         "stroke-width=\"1\"  fill=\"transparent\"  stroke-dasharray=\"5,5\"/>\n",
                 centerx, centery, radius*0.5));
-        sb.append(String.format(Locale.ROOT, "<circle cx=\"%f\" cy=\"%f\" r=\"%f\" stroke=\"black\" " +
+        sb.append(String.format(Locale.ROOT, "<circle cx=\"%f\" cy=\"%f\" r=\"%f\" stroke=\"grey\" " +
                         "stroke-width=\"1\"  fill=\"transparent\"  stroke-dasharray=\"5,5\"/>\n",
                 centerx, centery, radius*0.25));
 
@@ -66,26 +73,25 @@ public class PolarGraphDirectivity {
             int adjustedAngle = getAdjustedAngle(angle, orientation);
             if(angle % 90 != 0) {
                 // Dashed segment lines
-                generateDashedLine(sb, centerx, centery, destX, destY);
+                generateDashedLine(sb, centerx, centery, destX, destY, "grey");
             } else {
                 // Plain segment lines
-                generateLine(sb, centerx, centery, destX, destY);
+                generateLine(sb, centerx, centery, destX, destY, "grey");
             }
             double textX = centerx + Math.cos(toRadian(angle)) * textRadius;
             double textY = centery + Math.sin(toRadian(angle)) * textRadius;
             generateText(sb, textX, textY, 25, String.format(Locale.ROOT, "%d", adjustedAngle), "middle");
         }
         // Attenuation levels legend
-        generateText(sb, centerx, centery,10,String.format(Locale.ROOT,
-                "%.0f dB", minimumAttenuation), "Hanging");
-        generateText(sb, centerx + radius * 0.25, centery,10,String.format(Locale.ROOT,
-                "%.0f dB", minimumAttenuation + (maximumAttenuation - minimumAttenuation) * 0.25), "Hanging");
-        generateText(sb, centerx + radius * 0.5, centery, 10,String.format(Locale.ROOT,
-                "%.0f dB", minimumAttenuation + (maximumAttenuation - minimumAttenuation) * 0.5), "Hanging");
-        generateText(sb, centerx + radius * 0.75, centery, 10,String.format(Locale.ROOT,
-                "%.0f dB", minimumAttenuation + (maximumAttenuation - minimumAttenuation) * 0.75), "Hanging");
-        generateText(sb, centerx + radius, centery, 10,String.format(Locale.ROOT,
-                "%.0f dB", minimumAttenuation + (maximumAttenuation - minimumAttenuation)), "Hanging");
+        double legendAngle = 285;
+        generateLegend(sb, minimumAttenuation, 0, legendAngle);
+        generateLegend(sb, minimumAttenuation + (maximumAttenuation - minimumAttenuation) * 0.25,
+                0.25, legendAngle);
+        generateLegend(sb, minimumAttenuation + (maximumAttenuation - minimumAttenuation) * 0.5,
+                0.5, legendAngle);
+        generateLegend(sb, minimumAttenuation + (maximumAttenuation - minimumAttenuation) * 0.75,
+    0.75, legendAngle);
+        generateLegend(sb, maximumAttenuation, 1, legendAngle);
         // Generate attenuation curve
         StringBuilder path = new StringBuilder();
         for(int angle=0; angle < 360; angle += 1) {

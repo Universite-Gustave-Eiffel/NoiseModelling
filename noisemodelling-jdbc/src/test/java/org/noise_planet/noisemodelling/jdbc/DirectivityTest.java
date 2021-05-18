@@ -45,7 +45,7 @@ public class DirectivityTest {
                 bw.write("</div><div class=\"two\">");
                 bw.write(polarGraphDirectivity.generatePolarGraph(noiseSource, 500,
                         -35, 0, PolarGraphDirectivity.ORIENTATION.SIDE));
-                bw.write(String.format(Locale.ROOT, "<p>%s Vertical</p>",noiseSource.toString()));
+                bw.write(String.format(Locale.ROOT, "<p>%s Side</p>",noiseSource.toString()));
                 bw.write("</div></div>");
             }
 
