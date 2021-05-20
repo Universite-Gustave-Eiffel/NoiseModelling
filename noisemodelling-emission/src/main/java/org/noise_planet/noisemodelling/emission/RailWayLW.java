@@ -159,4 +159,16 @@ public class RailWayLW {
         return attHorizontal + attVertical;
     }
 
+    public static final class TrainAttenuation implements DirectionAttributes {
+        TrainNoiseSource noiseSource;
+
+        public TrainAttenuation(TrainNoiseSource noiseSource) {
+            this.noiseSource = noiseSource;
+        }
+
+        @Override
+        public double getAttenuation(double frequency, double phi, double theta) {
+            return RailWayLW.getDirectionAttenuation(noiseSource, phi, theta, frequency);
+        }
+    }
 }

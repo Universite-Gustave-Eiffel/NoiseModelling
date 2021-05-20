@@ -950,9 +950,7 @@ public class ComputeRays {
     /**
      * Source-Receiver Direct+Reflection+Diffraction computation
      *
-     * @param srcCoord           coordinate of source
-     * @param srcId              Source identifier
-     * @param sourceLi           Coefficient of power per meter for this point source
+     * @param src           Sound source informations
      * @param receiverCoord      coordinate of receiver
      * @param rcvId              receiver identifier
      * @param nearBuildingsWalls Walls to use in reflection
@@ -960,10 +958,12 @@ public class ComputeRays {
      * @param dataOut
      * @return Minimal power level (dB) or maximum attenuation (dB)
      */
-    private double[] receiverSourcePropa(Coordinate srcCoord, int srcId, double sourceLi,
+    private double[] receiverSourcePropa(SourcePointInfo src,
                                          Coordinate receiverCoord, int rcvId,
                                          List<FastObstructionTest.Wall> nearBuildingsWalls, List<PropagationDebugInfo> debugInfo, IComputeRaysOut dataOut) {
-
+        Coordinate srcCoord = src.position;
+        int srcId = src.sourcePrimaryKey;
+        double sourceLi = src.li;
         List<PropagationPath> propagationPaths;
         // Build mirrored receiver list from wall list
 
@@ -983,7 +983,8 @@ public class ComputeRays {
                 for (PropagationPath propagationPath : propagationPaths) {
                     propagationPath.idSource = srcId;
                     propagationPath.idReceiver = rcvId;
-
+                    // Compute the propagation source phi and theta
+                    propagationPath.setSourceOrientation(src.getOrientation());
                 }
                 return dataOut.addPropagationPaths(srcId, sourceLi, rcvId, propagationPaths);
             }
@@ -991,14 +992,14 @@ public class ComputeRays {
         return new double[0];
     }
 
-    private static double insertPtSource(Coordinate receiverPos, Coordinate ptpos, double[] wj, double li, Integer sourceId, List<SourcePointInfo> sourceList) {
+    private static double insertPtSource(Coordinate receiverPos, Coordinate ptpos, double[] wj, double li, Integer sourceId, List<SourcePointInfo> sourceList, PropagationProcessData.Orientation orientation) {
         // Compute maximal power at freefield at the receiver position with reflective ground
         double aDiv = -getADiv(CGAlgorithms3D.distance(receiverPos, ptpos));
         double[] srcWJ = new double[wj.length];
         for (int idFreq = 0; idFreq < srcWJ.length; idFreq++) {
             srcWJ[idFreq] = wj[idFreq] * li * dbaToW(aDiv) * dbaToW(3);
         }
-        sourceList.add(new SourcePointInfo(srcWJ, sourceId, ptpos, li));
+        sourceList.add(new SourcePointInfo(srcWJ, sourceId, ptpos, li, orientation));
         return ComputeRays.sumArray(srcWJ.length, srcWJ);
     }
 
@@ -1012,9 +1013,42 @@ public class ComputeRays {
             segmentSizeConstraint = Math.max(1, receiverCoord.distance(nearestPoint) / 2.0);
         }
         double li = splitLineStringIntoPoints(source, segmentSizeConstraint, pts);
-        for (Coordinate pt : pts) {
+        for (int ptIndex = 0; ptIndex < pts.size(); ptIndex++) {
+            Coordinate pt = pts.get(ptIndex);
+            // use the orientation computed from the line source coordinates
+            Vector2D v;
+            float z0, z1;
+            float roll = 0;
+            if(ptIndex == 0) {
+                v = Vector2D.create(pts.get(0), pts.get(1));
+                z0 = Double.isNaN(pts.get(0).z) ? 0.f : (float)pts.get(0).z;
+                z1 = Double.isNaN(pts.get(1).z) ? 0.f : (float)pts.get(1).z;
+            } else {
+                v = Vector2D.create(pts.get(ptIndex - 1), pts.get(ptIndex));
+                z0 = Double.isNaN(pts.get(ptIndex - 1).z) ? 0.f : (float)pts.get(ptIndex - 1).z;
+                z1 = Double.isNaN(pts.get(ptIndex).z) ? 0.f : (float)pts.get(ptIndex).z;
+            }
+            float inclination = (float) Math.toDegrees(Math.atan((z1 - z0) / v.length()));
+            float bearing = (float)Math.toDegrees(Math.atan2(v.getY(), v.getX()));
+            if(data.sourcesPk.size() > srcIndex && data.sourceOrientation.containsKey(data.sourcesPk.get(srcIndex))) {
+                // If the line source already provide an orientation then alter the line orientation
+                PropagationProcessData.Orientation inputOrientation = data.sourceOrientation.get(data.sourcesPk.get(srcIndex));
+                bearing = (float)((720 + bearing + inputOrientation.bearing) % (360.0));
+                inclination += inputOrientation.inclination;
+                if(inclination > 90 || inclination < -90) {
+                    // on the back
+                    bearing = (float)((bearing + 180) % (360.0));
+                    roll =  (float)((inputOrientation.roll + 180) % (360.0));
+                    inclination = (float)Math.toDegrees(Math.atan2(Math.sin(Math.toRadians(inclination)),
+                            Math.abs(Math.cos(Math.toRadians(inclination)))));
+                } else {
+                    roll = inputOrientation.roll;
+                }
+            }
+            PropagationProcessData.Orientation orientation = new PropagationProcessData.Orientation(bearing,
+                    inclination, roll);
             if (pt.distance(receiverCoord) < data.maxSrcDist) {
-                totalPowerRemaining += insertPtSource(receiverCoord, pt, wj, li, srcIndex, sourceList);
+                totalPowerRemaining += insertPtSource(receiverCoord, pt, wj, li, srcIndex, sourceList, orientation);
             }
         }
         return totalPowerRemaining;
@@ -1053,7 +1087,14 @@ public class ComputeRays {
                 if (source instanceof Point) {
                     Coordinate ptpos = source.getCoordinate();
                     if (ptpos.distance(receiverCoord) < data.maxSrcDist) {
-                        totalPowerRemaining += insertPtSource(receiverCoord, ptpos, wj, 1., srcIndex, sourceList);
+                        PropagationProcessData.Orientation orientation = null;
+                        if(data.sourcesPk.size() > srcIndex) {
+                            orientation = data.sourceOrientation.get(data.sourcesPk.get(srcIndex));
+                        }
+                        if(orientation == null) {
+                            orientation = new PropagationProcessData.Orientation(0,0, 0);
+                        }
+                        totalPowerRemaining += insertPtSource(receiverCoord, ptpos, wj, 1., srcIndex, sourceList, orientation);
                     }
                 } else if (source instanceof LineString) {
                     // Discretization of line into multiple point
@@ -1085,7 +1126,7 @@ public class ComputeRays {
                 wallsSource.addAll(data.freeFieldFinder.getLimitsInRange(
                         data.maxRefDist, srcCoord, false));
             }
-            double[] power = receiverSourcePropa(srcCoord, src.sourcePrimaryKey, src.li, receiverCoord, idReceiver,
+            double[] power = receiverSourcePropa(src, receiverCoord, idReceiver,
                     new ArrayList<>(wallsSource), debugInfo, dataOut);
             double global = ComputeRays.sumArray(power.length, ComputeRays.dbaToW(power));
             totalPowerRemaining -= src.globalWj;
@@ -1275,13 +1316,17 @@ private static final class SourcePointInfo implements Comparable<SourcePointInfo
     private int sourcePrimaryKey;
     private Coordinate position;
     private double globalWj;
+    private PropagationProcessData.Orientation orientation;
 
     /**
-     * @param wj               Maximum received power from this source
+     *
+     * @param wj Source power for each frequency bands
      * @param sourcePrimaryKey
      * @param position
+     * @param li Coefficient of power per meter for this point source
+     * @param orientation
      */
-    public SourcePointInfo(double[] wj, int sourcePrimaryKey, Coordinate position, double li) {
+    public SourcePointInfo(double[] wj, int sourcePrimaryKey, Coordinate position, double li, PropagationProcessData.Orientation orientation) {
         this.wj = wj;
         this.sourcePrimaryKey = sourcePrimaryKey;
         this.position = position;
@@ -1290,6 +1335,7 @@ private static final class SourcePointInfo implements Comparable<SourcePointInfo
         }
         this.globalWj = ComputeRays.sumArray(wj.length, wj);
         this.li = li;
+        this.orientation = orientation;
     }
 
     /**
@@ -1301,6 +1347,10 @@ private static final class SourcePointInfo implements Comparable<SourcePointInfo
 
     public double[] getWj() {
         return wj;
+    }
+
+    public PropagationProcessData.Orientation getOrientation() {
+        return orientation;
     }
 
     public void setWj(double[] wj) {

@@ -42,10 +42,7 @@ import org.locationtech.jts.geom.GeometryFactory;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
+import java.util.*;
 
 
 /**
@@ -71,7 +68,8 @@ public class PropagationProcessData {
     public QueryGeometryStructure sourcesIndex = new QueryRTree();
     /** Sources geometries. Can be LINESTRING or POINT */
     public List<Geometry> sourceGeometries = new ArrayList<>();
-
+    /** Source orientation for emission computation */
+    public Map<Long, Orientation> sourceOrientation = new HashMap<>();
 
 
     /** Maximum reflexion order */
@@ -112,6 +110,11 @@ public class PropagationProcessData {
     public void addSource(Long pk, Geometry geom) {
         addSource(geom);
         sourcesPk.add(pk);
+    }
+
+    public void addSource(Long pk, Geometry geom, Orientation orientation) {
+        addSource(pk, geom);
+        sourceOrientation.put(pk, orientation);
     }
     /**
      * Add geometry with additional attributes
@@ -204,6 +207,30 @@ public class PropagationProcessData {
     }
 
 
+    /**
+     * When providing Orientation to a sound source there is 2 cases
+     * - Sound source is a point. The final orientation is the same, relative to the north and clock-wise to east.
+     * - Sound source is a line. The final orientation is rotated by the line direction.
+     * So 0 degrees point the end of the line segment.
+     */
+    public static class Orientation {
+        public final float bearing;
+        public final float inclination;
+        public final float roll;
+
+        /**
+         *
+         * @param bearing Orientation using degrees east of true north (0 is north, 90 is east)
+         * @param inclination Vertical orientation in degrees. (0 flat, 90 vertical top, -90 vertical bottom)
+         * @param roll Longitudinal axis in degrees. A positive value lifts the left wing and lowers the right wing.
+         */
+        public Orientation(float bearing, float inclination, float roll) {
+            this.bearing = (360 + bearing) % 360;
+            this.inclination = Math.min(90, Math.max(-90, inclination));
+            this.roll = (360 + roll) % 360;
+        }
+
+    }
 }
 
 
