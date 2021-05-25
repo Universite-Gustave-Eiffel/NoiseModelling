@@ -39,6 +39,8 @@ import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
 import org.h2gis.api.ProgressVisitor;
 import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.math.Matrix;
+import org.locationtech.jts.math.Vector3D;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -206,31 +208,26 @@ public class PropagationProcessData {
         return computeVerticalDiffraction;
     }
 
+    /**
+     * Return directivity attenuation. Default implementation define only omnidirectional sources.
+     * @param srcIndex Source index in the list sourceGeometries
+     * @param frequency Frequency in Hertz
+     * @param phi (0 2π) 0 is front
+     * @param theta (-π/2 π/2) 0 is horizontal π is top
+     * @return
+     */
+    public float getSourceAttenuation(int srcIndex, double frequency, float phi, float theta) {
+        return 0;
+    }
 
     /**
-     * When providing Orientation to a sound source there is 2 cases
-     * - Sound source is a point. The final orientation is the same, relative to the north and clock-wise to east.
-     * - Sound source is a line. The final orientation is rotated by the line direction.
-     * So 0 degrees point the end of the line segment.
+     * @param srcIndex Source index in the list sourceGeometries
+     * @return True if the source is omnidirectional and so does not have orientation dependant attenuation.
      */
-    public static class Orientation {
-        public final float bearing;
-        public final float inclination;
-        public final float roll;
-
-        /**
-         *
-         * @param bearing Orientation using degrees east of true north (0 is north, 90 is east)
-         * @param inclination Vertical orientation in degrees. (0 flat, 90 vertical top, -90 vertical bottom)
-         * @param roll Longitudinal axis in degrees. A positive value lifts the left wing and lowers the right wing.
-         */
-        public Orientation(float bearing, float inclination, float roll) {
-            this.bearing = (360 + bearing) % 360;
-            this.inclination = Math.min(90, Math.max(-90, inclination));
-            this.roll = (360 + roll) % 360;
-        }
-
+    public boolean isOmnidirectional(int srcIndex) {
+        return true;
     }
+
 }
 
 

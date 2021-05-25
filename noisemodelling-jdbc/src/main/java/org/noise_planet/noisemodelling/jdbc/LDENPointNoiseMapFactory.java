@@ -23,6 +23,8 @@
 package org.noise_planet.noisemodelling.jdbc;
 
 import org.h2gis.utilities.JDBCUtilities;
+import org.noise_planet.noisemodelling.emission.DirectionAttributes;
+import org.noise_planet.noisemodelling.emission.RailWayLW;
 import org.noise_planet.noisemodelling.pathfinder.*;
 import org.noise_planet.noisemodelling.propagation.*;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
@@ -33,10 +35,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 /**
@@ -49,11 +48,23 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
     Connection connection;
     static final int BATCH_MAX_SIZE = 500;
     LDENComputeRaysOut.LdenData ldenData = new LDENComputeRaysOut.LdenData();
+    /**
+     * Attenuation and other attributes relative to direction on sphere
+     */
+    public Map<Integer, DirectionAttributes> directionAttributes = new HashMap<>();
 
 
     public LDENPointNoiseMapFactory(Connection connection, LDENConfig ldenConfig) {
         this.ldenConfig = ldenConfig;
         this.connection = connection;
+    }
+
+    public void insertTrainDirectivity() {
+        directionAttributes.clear();
+        directionAttributes.put(0, new LDENPropagationProcessData.OmnidirectionalDirection());
+        for(RailWayLW.TrainNoiseSource noiseSource : RailWayLW.TrainNoiseSource.values()) {
+            directionAttributes.put(noiseSource.ordinal() + 1, new RailWayLW.TrainAttenuation(noiseSource));
+        }
     }
 
     @Override
@@ -184,7 +195,9 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
 
     @Override
     public LDENPropagationProcessData create(FastObstructionTest freeFieldFinder) {
-        return new LDENPropagationProcessData(freeFieldFinder, ldenConfig);
+        LDENPropagationProcessData ldenPropagationProcessData = new LDENPropagationProcessData(freeFieldFinder, ldenConfig);
+        ldenPropagationProcessData.setDirectionAttributes(directionAttributes);
+        return ldenPropagationProcessData;
     }
 
     @Override

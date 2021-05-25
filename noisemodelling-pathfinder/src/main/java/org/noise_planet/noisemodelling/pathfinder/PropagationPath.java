@@ -62,7 +62,8 @@ public class PropagationPath {
     private boolean favorable; // if true, favorable meteorological condition path
     int idSource;
     int idReceiver;
-    PropagationProcessData.Orientation sourceOrientation;
+    Orientation sourceOrientation =
+            new Orientation(0,0,0);
     private boolean initialized = false;
     // computed in Augmented Path
     public List<Integer> difHPoints = new ArrayList<Integer>(); // diffraction points indices on horizontal edges
@@ -86,11 +87,11 @@ public class PropagationPath {
 
     }
 
-    public PropagationProcessData.Orientation getSourceOrientation() {
+    public Orientation getSourceOrientation() {
         return sourceOrientation;
     }
 
-    public void setSourceOrientation(PropagationProcessData.Orientation sourceOrientation) {
+    public void setSourceOrientation(Orientation sourceOrientation) {
         this.sourceOrientation = sourceOrientation;
     }
 
@@ -162,7 +163,7 @@ public class PropagationPath {
         float bearing = in.readFloat();
         float inclination = in.readFloat();
         float roll = in.readFloat();
-        setSourceOrientation(new PropagationProcessData.Orientation(bearing, inclination, roll));
+        setSourceOrientation(new Orientation(bearing, inclination, roll));
         idReceiver = in.readInt();
         int pointListSize = in.readInt();
         pointList = new ArrayList<>(pointListSize);

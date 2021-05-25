@@ -992,7 +992,7 @@ public class ComputeRays {
         return new double[0];
     }
 
-    private static double insertPtSource(Coordinate receiverPos, Coordinate ptpos, double[] wj, double li, Integer sourceId, List<SourcePointInfo> sourceList, PropagationProcessData.Orientation orientation) {
+    private static double insertPtSource(Coordinate receiverPos, Coordinate ptpos, double[] wj, double li, Integer sourceId, List<SourcePointInfo> sourceList, Orientation orientation) {
         // Compute maximal power at freefield at the receiver position with reflective ground
         double aDiv = -getADiv(CGAlgorithms3D.distance(receiverPos, ptpos));
         double[] srcWJ = new double[wj.length];
@@ -1032,7 +1032,7 @@ public class ComputeRays {
             float bearing = (float)Math.toDegrees(Math.atan2(v.getY(), v.getX()));
             if(data.sourcesPk.size() > srcIndex && data.sourceOrientation.containsKey(data.sourcesPk.get(srcIndex))) {
                 // If the line source already provide an orientation then alter the line orientation
-                PropagationProcessData.Orientation inputOrientation = data.sourceOrientation.get(data.sourcesPk.get(srcIndex));
+                Orientation inputOrientation = data.sourceOrientation.get(data.sourcesPk.get(srcIndex));
                 bearing = (float)((720 + bearing + inputOrientation.bearing) % (360.0));
                 inclination += inputOrientation.inclination;
                 if(inclination > 90 || inclination < -90) {
@@ -1045,7 +1045,7 @@ public class ComputeRays {
                     roll = inputOrientation.roll;
                 }
             }
-            PropagationProcessData.Orientation orientation = new PropagationProcessData.Orientation(bearing,
+            Orientation orientation = new Orientation(bearing,
                     inclination, roll);
             if (pt.distance(receiverCoord) < data.maxSrcDist) {
                 totalPowerRemaining += insertPtSource(receiverCoord, pt, wj, li, srcIndex, sourceList, orientation);
@@ -1087,12 +1087,12 @@ public class ComputeRays {
                 if (source instanceof Point) {
                     Coordinate ptpos = source.getCoordinate();
                     if (ptpos.distance(receiverCoord) < data.maxSrcDist) {
-                        PropagationProcessData.Orientation orientation = null;
+                        Orientation orientation = null;
                         if(data.sourcesPk.size() > srcIndex) {
                             orientation = data.sourceOrientation.get(data.sourcesPk.get(srcIndex));
                         }
                         if(orientation == null) {
-                            orientation = new PropagationProcessData.Orientation(0,0, 0);
+                            orientation = new Orientation(0,0, 0);
                         }
                         totalPowerRemaining += insertPtSource(receiverCoord, ptpos, wj, 1., srcIndex, sourceList, orientation);
                     }
@@ -1316,7 +1316,7 @@ private static final class SourcePointInfo implements Comparable<SourcePointInfo
     private int sourcePrimaryKey;
     private Coordinate position;
     private double globalWj;
-    private PropagationProcessData.Orientation orientation;
+    private Orientation orientation;
 
     /**
      *
@@ -1326,7 +1326,7 @@ private static final class SourcePointInfo implements Comparable<SourcePointInfo
      * @param li Coefficient of power per meter for this point source
      * @param orientation
      */
-    public SourcePointInfo(double[] wj, int sourcePrimaryKey, Coordinate position, double li, PropagationProcessData.Orientation orientation) {
+    public SourcePointInfo(double[] wj, int sourcePrimaryKey, Coordinate position, double li, Orientation orientation) {
         this.wj = wj;
         this.sourcePrimaryKey = sourcePrimaryKey;
         this.position = position;
@@ -1349,7 +1349,7 @@ private static final class SourcePointInfo implements Comparable<SourcePointInfo
         return wj;
     }
 
-    public PropagationProcessData.Orientation getOrientation() {
+    public Orientation getOrientation() {
         return orientation;
     }
 

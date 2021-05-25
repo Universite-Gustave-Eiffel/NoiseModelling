@@ -26,6 +26,7 @@ import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SpatialResultSet;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
+import org.noise_planet.noisemodelling.emission.DirectionAttributes;
 import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos;
 import org.noise_planet.noisemodelling.emission.RoadSourceParametersCnossos;
 import org.noise_planet.noisemodelling.emission.Utils;
@@ -55,6 +56,16 @@ public class LDENPropagationProcessData extends PropagationProcessData {
 
     public Map<Long, Integer> SourcesPk = new HashMap<>();
 
+    /**
+     * Attenuation and other attributes relative to direction on sphere
+     */
+    public Map<Integer, DirectionAttributes> directionAttributes = new HashMap<>();
+
+    /**
+     * Link between sources PK and direction attenuation index
+     */
+    public Map<Long, Integer> sourceDirection = new HashMap<>();
+
     int idSource = 0;
 
     LDENConfig ldenConfig;
@@ -64,9 +75,17 @@ public class LDENPropagationProcessData extends PropagationProcessData {
         this.ldenConfig = ldenConfig;
     }
 
+    public void setDirectionAttributes(Map<Integer, DirectionAttributes> directionAttributes) {
+        this.directionAttributes = directionAttributes;
+    }
+
     @Override
     public void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException, IOException {
         super.addSource(pk, geom, rs);
+        int directivityField = JDBCUtilities.getFieldIndex(rs.getMetaData(), "DIRECTIVITYID");
+        if(directivityField > 0) {
+            sourceDirection.put(pk, rs.getInt(directivityField));
+        }
         SourcesPk.put(pk, idSource++);
         double[][] res = computeLw(rs);
         if(ldenConfig.computeLDay) {
@@ -211,7 +230,6 @@ public class LDENPropagationProcessData extends PropagationProcessData {
         return lvl;
     }
 
-
     public double[][] computeLw(SpatialResultSet rs) throws SQLException, IOException {
 
         // Compute day average level
@@ -319,6 +337,14 @@ public class LDENPropagationProcessData extends PropagationProcessData {
             return wjSourcesN.get(sourceId);
         } else {
             return new double[0];
+        }
+    }
+
+    public static class OmnidirectionalDirection implements DirectionAttributes {
+
+        @Override
+        public double getAttenuation(double frequency, double phi, double theta) {
+            return 0;
         }
     }
 }
