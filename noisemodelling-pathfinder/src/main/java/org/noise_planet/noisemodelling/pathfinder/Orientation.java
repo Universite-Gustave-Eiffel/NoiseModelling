@@ -36,7 +36,8 @@ package org.noise_planet.noisemodelling.pathfinder;
 
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
-import org.locationtech.jts.math.Matrix;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.math.Vector3D;
 
 /**
  * When providing Orientation to a sound source there is 2 cases
@@ -69,11 +70,17 @@ public class Orientation {
                 '}';
     }
 
-    public Orientation rotate(Orientation inputAngle) {
-        double[][] b = new double[][]{{Math.toRadians(bearing),0,0}, {0 , Math.toRadians(inclination), 0}, {0, 0 , Math.toRadians(roll)}};
-        final double yaw = Math.toRadians(inputAngle.bearing);
-        final double pitch = Math.toRadians(inputAngle.inclination);
-        final double roll = Math.toRadians(inputAngle.roll);
+    /**
+     * Rotate the vector by the provided orientation and return the result vector orientation
+     * @param orientation Rotation to apply
+     * @param vector Vector to rotate
+     * @return New vector orientation
+     */
+    public static Orientation rotate(Orientation orientation, Vector3D vector) {
+        double[] b = new double[]{vector.getX(), vector.getY(), vector.getZ()};
+        final double yaw = Math.toRadians(orientation.bearing);
+        final double pitch = Math.toRadians(orientation.inclination);
+        final double roll = Math.toRadians(orientation.roll);
         double[][] a = new double[][]{
                 {Math.cos(yaw) * Math.cos(pitch), Math.cos(yaw) * Math.sin(pitch) * Math.sin(roll)
                         - Math.sin(yaw) * Math.cos(roll), Math.cos(yaw) * Math.sin(pitch) * Math.cos(roll)
@@ -85,6 +92,11 @@ public class Orientation {
         RealMatrix matrixA = new Array2DRowRealMatrix(a);
         RealMatrix matrixB = new Array2DRowRealMatrix(b);
         RealMatrix res = matrixA.multiply(matrixB);
-        return new Orientation((float) Math.toDegrees(res.getEntry(0,0)), (float) Math.toDegrees(res.getEntry(1,0)), (float) Math.toDegrees(res.getEntry(2,0)));
+        double x = res.getEntry(0,0);
+        double y = res.getEntry(1,0);
+        double z = res.getEntry(2,0);
+        double newYaw = Math.atan2(y, x);
+        double newPitch = Math.asin(z);
+        return new Orientation((float) Math.toDegrees(newYaw), (float) Math.toDegrees(newPitch), 0);
     }
 }
