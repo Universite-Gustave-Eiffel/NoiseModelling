@@ -44,6 +44,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+//TODO fix wall references id in order to use also real wall database key
+//TODO check how the wall alpha are set to the cut point
+//TODO check how the topo and building height are set to cut point
+//Todo check how the building pk is set to cut point
+//TODO create class ComputeCnossosRays which is a copy of computeRays using ProfileBuilder
+
 /**
  * Builder constructing profiles from buildings, topography and ground effects.
  */
@@ -70,7 +76,7 @@ public class ProfileBuilder {
     private double maxLineLength = 15;
     /** List of buildings. */
     private final List<Building> buildings = new ArrayList<>();
-    /** List of building facets. */
+    /** List of walls. */
     private final List<Wall> walls = new ArrayList<>();
     /** Building RTree. */
     private STRtree rtree;
@@ -95,6 +101,9 @@ public class ProfileBuilder {
     private STRtree sourceTree;
     /** Receivers .*/
     private final List<Coordinate> receivers = new ArrayList<>();
+
+    /** List of processed walls. */
+    private final List<Wall> processedWalls = new ArrayList<>();
 
     /** Global envelope of the builder. */
     private Envelope envelope;
@@ -160,6 +169,25 @@ public class ProfileBuilder {
     }
 
     /**
+     * Add the given {@link Geometry} footprint.
+     * @param geom   Building footprint.
+     * @param id     Database primary key.
+     */
+    public Building addBuilding(Geometry geom, int id) {
+        return addBuilding(geom, id);
+    }
+
+    /**
+     * Add the given {@link Geometry} footprint, height, alphas (absorption coefficients) and a database id as building.
+     * @param geom   Building footprint.
+     * @param height Building height.
+     * @param id     Database id.
+     */
+    public Building addBuilding(Geometry geom, double height, int id) {
+        return addBuilding(geom, height, new ArrayList<>(), id);
+    }
+
+    /**
      * Add the given {@link Geometry} footprint, height and alphas (absorption coefficients) as building.
      * @param geom   Building footprint.
      * @param height Building height.
@@ -167,6 +195,25 @@ public class ProfileBuilder {
      */
     public Building addBuilding(Geometry geom, double height, List<Double> alphas) {
         return addBuilding(geom, height, alphas, -1);
+    }
+
+    /**
+     * Add the given {@link Geometry} footprint, height and alphas (absorption coefficients) as building.
+     * @param geom   Building footprint.
+     * @param alphas Absorption coefficients.
+     */
+    public Building addBuilding(Geometry geom, List<Double> alphas) {
+        return addBuilding(geom, -1, alphas, -1);
+    }
+
+    /**
+     * Add the given {@link Geometry} footprint, height and alphas (absorption coefficients) as building.
+     * @param geom   Building footprint.
+     * @param alphas Absorption coefficients.
+     * @param id     Database primary key.
+     */
+    public Building addBuilding(Geometry geom, List<Double> alphas, int id) {
+        return addBuilding(geom, -1, alphas, id);
     }
 
     /**
@@ -201,13 +248,53 @@ public class ProfileBuilder {
     }
 
     /**
-     * Add the given {@link Geometry} footprint, height, alphas (absorption coefficients) and a database id as building.
-     * @param geom   Building footprint.
-     * @param height Building height.
-     * @param id     Database id.
+     * Add the given {@link Geometry} footprint, height, alphas (absorption coefficients) and a database id as wall.
+     * @param geom   Wall footprint.
+     * @param height Wall height.
+     * @param id     Database key.
      */
-    public Building addBuilding(Geometry geom, double height, int id) {
-        return addBuilding(geom, height, new ArrayList<>(), id);
+    public List<Wall> addWalls(LineString geom, double height, int id) {
+        return addWalls(geom, height, 0.0, id);
+    }
+
+    /**
+     * Add the given {@link Geometry} footprint, height, alphas (absorption coefficients) and a database id as wall.
+     * @param geom   Wall footprint.
+     * @param id     Database key.
+     */
+    public List<Wall> addWalls(LineString geom, int id) {
+        return addWalls(geom, 0.0, -1, id);
+    }
+
+    /**
+     * Add the given {@link Geometry} footprint, height, alphas (absorption coefficients) and a database id as wall.
+     * @param geom   Wall footprint.
+     * @param height Wall height.
+     * @param alphas Absorption coefficient.
+     * @param id     Database key.
+     */
+    public List<Wall> addWalls(LineString geom, double height, double alphas, int id) {
+        if(!isFeedingFinished) {
+            if(envelope == null) {
+                envelope = geom.getEnvelopeInternal();
+            }
+            else {
+                envelope.expandToInclude(geom.getEnvelopeInternal());
+            }
+            List<Wall> wallList = new ArrayList<>();
+            for(int i=0; i<geom.getNumPoints()-1; i++) {
+                Wall wall = new Wall(geom.getCoordinateN(i), geom.getCoordinateN(i+1), id, IntersectionType.BUILDING);
+                wall.setHeight(height);
+                wall.setAlpha(alphas);
+                wallList.add(wall);
+            }
+            walls.addAll(wallList);
+            return wallList;
+        }
+        else{
+            LOGGER.warn("Cannot add building, feeding is finished.");
+            return null;
+        }
     }
 
     /**
@@ -393,18 +480,21 @@ public class ProfileBuilder {
             }
         }
         //Process buildings
-        if(buildings.size() >= 1 && buildings.get(0).poly.getNumPoints()>=3) {
-            rtree = new STRtree(buildingNodeCapacity);
-            for (int j = 0; j < buildings.size(); j++) {
-                Building building = buildings.get(j);
-                Coordinate[] coords = building.poly.getCoordinates();
-                for (int i = 0; i < coords.length - 1; i++) {
-                    LineSegment lineSegment = new LineSegment(new Coordinate(coords[i].x, coords[i].y, !Double.isNaN(coords[i].z) ? coords[i].z : building.height),
-                            new Coordinate(coords[i + 1].x, coords[i + 1].y, building.height));
-                    walls.add(new Wall(lineSegment, j, IntersectionType.BUILDING));
-                    rtree.insert(lineSegment.toGeometry(FACTORY).getEnvelopeInternal(), walls.size()-1);
-                }
+        rtree = new STRtree(buildingNodeCapacity);
+        for (int j = 0; j < buildings.size(); j++) {
+            Building building = buildings.get(j);
+            Coordinate[] coords = building.poly.getCoordinates();
+            for (int i = 0; i < coords.length - 1; i++) {
+                LineSegment lineSegment = new LineSegment(new Coordinate(coords[i].x, coords[i].y, !Double.isNaN(coords[i].z) ? coords[i].z : building.height),
+                        new Coordinate(coords[i + 1].x, coords[i + 1].y, building.height));
+                processedWalls.add(new Wall(lineSegment, j, IntersectionType.BUILDING));
+                rtree.insert(lineSegment.toGeometry(FACTORY).getEnvelopeInternal(), processedWalls.size()-1);
             }
+        }
+        for (int j = 0; j < processedWalls.size(); j++) {
+            Wall wall = processedWalls.get(j);
+            processedWalls.add(wall);
+            rtree.insert(wall.line.toGeometry(FACTORY).getEnvelopeInternal(), processedWalls.size()-1);
         }
         //Process topographic points and lines
         if(topoPoints.size()+topoLines.size() > 1) {
@@ -479,8 +569,8 @@ public class ProfileBuilder {
             }
             topoWalls.removeAll(toRemove);
             for(Wall wall : topoWalls) {
-                walls.add(wall);
-                rtree.insert(wall.getLine().toGeometry(FACTORY).getEnvelopeInternal(), walls.size() - 1);
+                processedWalls.add(wall);
+                rtree.insert(wall.getLine().toGeometry(FACTORY).getEnvelopeInternal(), processedWalls.size() - 1);
             }
         }
         //Process the ground effects
@@ -500,8 +590,8 @@ public class ProfileBuilder {
                 Coordinate[] coords = poly.getCoordinates();
                 for (int k = 0; k < coords.length - 1; k++) {
                     LineSegment line = new LineSegment(coords[k], coords[k + 1]);
-                    walls.add(new Wall(line, j, IntersectionType.GROUND_EFFECT));
-                    rtree.insert(line.toGeometry(FACTORY).getEnvelopeInternal(), walls.size() - 1);
+                    processedWalls.add(new Wall(line, j, IntersectionType.GROUND_EFFECT));
+                    rtree.insert(line.toGeometry(FACTORY).getEnvelopeInternal(), processedWalls.size() - 1);
                 }
             }
         }
@@ -541,7 +631,7 @@ public class ProfileBuilder {
             }
             indexes = indexes.stream().distinct().collect(Collectors.toList());
             for (int i : indexes) {
-                Wall facetLine = walls.get(i);
+                Wall facetLine = processedWalls.get(i);
                 Coordinate intersection = fullLine.intersection(facetLine.line);
                 if (intersection != null) {
                     if(!Double.isNaN(facetLine.line.p0.z) && !Double.isNaN(facetLine.line.p1.z)) {
@@ -742,30 +832,6 @@ public class ProfileBuilder {
         }
 
         /**
-         * Returns true if the profile has building cut point, false otherwise.
-         * @return True if the profile has building cut point, false otherwise.
-         */
-        public boolean hasBuilding() {
-            return hasBuilding;
-        }
-
-        /**
-         * Returns true if the profile has topography cut point, false otherwise.
-         * @return True if the profile has topography cut point, false otherwise.
-         */
-        public boolean hasTopography() {
-            return hasTopography;
-        }
-
-        /**
-         * Returns true if the profile has ground effect cut point, false otherwise.
-         * @return True if the profile has ground effect cut point, false otherwise.
-         */
-        public boolean hasGroundEffect() {
-            return hasGroundEffect;
-        }
-
-        /**
          * Retrieve the profile source.
          * @return The profile source.
          */
@@ -815,9 +881,15 @@ public class ProfileBuilder {
         /** Identifier of the cut element. */
         private final int id;
         /** Identifier of the building containing the point. -1 if no building. */
-        private final int buildingId;
-        /** Ground effect coefficient. NaN if there is no coefficient. */
+        private int buildingId;
+        /** Height of the building containing the point. NaN of no building. */
+        private double buildingHeight;
+        /** Topographic height of the point. */
+        private double topoHeight;
+        /** Ground effect coefficient. 0 if there is no coefficient. */
         private double groundCoef;
+        /** Wall alpha. NaN if there is no coefficient. */
+        private double wallAlpha;
 
         /**
          * Constructor using a {@link Coordinate}.
@@ -830,53 +902,50 @@ public class ProfileBuilder {
             this.type = type;
             this.id = id;
             this.buildingId = -1;
-            this.groundCoef = Double.NaN;
+            this.groundCoef = 0;
+            this.wallAlpha = 0;
+            this.buildingHeight = 0;
+            this.topoHeight = 0;
         }
 
         /**
-         * Constructor using a {@link Coordinate}.
-         * @param coord      Coordinate to copy.
-         * @param type       Intersection type.
-         * @param id         Identifier of the cut element.
-         * @param buildingId Identifier of the building containing the point.
+         * Sets the id of the building containing the point.
+         * @param buildingId Id of the building containing the point.
          */
-        public CutPoint(Coordinate coord, IntersectionType type, int id, int buildingId) {
-            this.coordinate = new Coordinate(coord.x, coord.y, coord.z);
-            this.type = type;
-            this.id = id;
+        public void setBuildingId(int buildingId) {
             this.buildingId = buildingId;
-            this.groundCoef = Double.NaN;
         }
 
         /**
-         * Constructor using a {@link Coordinate}.
-         * @param coord      Coordinate to copy.
-         * @param type       Intersection type.
-         * @param id         Identifier of the cut element.
-         * @param groundCoef Ground effect coefficient.
+         * Sets the ground coefficient of this point.
+         * @param groundCoef The ground coefficient of this point.
          */
-        public CutPoint(Coordinate coord, IntersectionType type, int id, double groundCoef) {
-            this.coordinate = new Coordinate(coord.x, coord.y, coord.z);
-            this.type = type;
-            this.id = id;
-            this.buildingId = -1;
+        public void setGroundCoef(double groundCoef) {
             this.groundCoef = groundCoef;
         }
 
         /**
-         * Constructor using a {@link Coordinate}.
-         * @param coord      Coordinate to copy.
-         * @param type       Intersection type.
-         * @param id         Identifier of the cut element.
-         * @param buildingId Identifier of the building containing the point.
-         * @param groundCoef Ground effect coefficient.
+         * Sets the building height.
+         * @param buildingHeight The building height.
          */
-        public CutPoint(Coordinate coord, IntersectionType type, int id, int buildingId, double groundCoef) {
-            this.coordinate = new Coordinate(coord.x, coord.y, coord.z);
-            this.type = type;
-            this.id = id;
-            this.buildingId = buildingId;
-            this.groundCoef = groundCoef;
+        public void setBuildingHeight(double buildingHeight) {
+            this.buildingHeight = buildingHeight;
+        }
+
+        /**
+         * Sets the topographic height.
+         * @param topoHeight The topographic height.
+         */
+        public void setTopoHeight(double topoHeight) {
+            this.topoHeight = topoHeight;
+        }
+
+        /**
+         * Sets the wall alpha.
+         * @param wallAlpha The wall alpha.
+         */
+        public void setWallAlpha(double wallAlpha) {
+            this.wallAlpha = wallAlpha;
         }
 
         /**
@@ -904,11 +973,39 @@ public class ProfileBuilder {
         }
 
         /**
-         * Retrieve the ground effect coefficient of the point. If there is no coefficient, returns NaN.
+         * Retrieve the ground effect coefficient of the point. If there is no coefficient, returns 0.
          * @return Ground effect coefficient or NaN.
          */
         public double getGroundCoef() {
             return groundCoef;
+        }
+
+        /**
+         * Retrieve the height of the building containing the point. If there is no building, returns NaN.
+         * @return The building height, or NaN if no building.
+         */
+        public double getBuildingHeight() {
+            return buildingHeight;
+        }
+
+        /**
+         * Retrieve the topographic height of the point.
+         * @return The topographic height of the point.
+         */
+        public double getTopoHeight() {
+            return topoHeight;
+        }
+
+        /**
+         * Return the wall alpha value.
+         * @return The wall alpha value.
+         */
+        public double getWallAlpha() {
+            return wallAlpha;
+        }
+
+        public IntersectionType getType() {
+            return type;
         }
 
         @Override
@@ -917,7 +1014,11 @@ public class ProfileBuilder {
             str += type.name();
             str += " ";
             str += "(" + coordinate.x +"," + coordinate.y +"," + coordinate.z + ") ; ";
-            str += groundCoef;
+            str += "grd : " + groundCoef + " ; ";
+            str += "topoH : " + topoHeight + " ; ";
+            str += "buildH : " + buildingHeight + " ; ";
+            str += "buildId : " + buildingId + " ; ";
+            str += "alpha : " + wallAlpha + " ; ";
             return str;
         }
 
@@ -946,7 +1047,7 @@ public class ProfileBuilder {
         /** Absorption coefficients. */
         private final List<Double> alphas;
         /** Primary key of the building in the database. */
-        private final int pk = -1;
+        private int pk = -1;
 
         /**
          * Main constructor.
@@ -960,6 +1061,7 @@ public class ProfileBuilder {
             this.height = height;
             this.alphas = new ArrayList<>();
             this.alphas.addAll(alphas);
+            this.pk = key;
         }
 
         /**
@@ -1005,6 +1107,10 @@ public class ProfileBuilder {
         private final IntersectionType type;
         /** Id or index of the source building or topographic triangle. */
         private final int originId;
+        /** Wall alpha value. */
+        private double alpha;
+        /** Wall height, if -1, use z coordinate. */
+        private double height;
 
         /**
          * Constructor using segment and id.
@@ -1015,6 +1121,7 @@ public class ProfileBuilder {
             this.line = line;
             this.originId = originId;
             this.type = type;
+            this.alpha = 0;
         }
 
         /**
@@ -1027,6 +1134,23 @@ public class ProfileBuilder {
             this.line = new LineSegment(p0, p1);
             this.originId = originId;
             this.type = type;
+            this.alpha = 0;
+        }
+
+        /**
+         * Sets the wall alpha.
+         * @param alpha Wall alpha.
+         */
+        public void setAlpha(double alpha) {
+            this.alpha = alpha;
+        }
+
+        /**
+         * Sets the wall height.
+         * @param height Wall height.
+         */
+        public void setHeight(double height) {
+            this.height = height;
         }
 
         /**
@@ -1046,11 +1170,19 @@ public class ProfileBuilder {
         }
 
         /**
-         * Retrieve the type of the wall.
-         * @return Type of the wall.
+         * Retrieve the alpha of the wall.
+         * @return Alpha of the wall.
          */
-        public IntersectionType getType() {
-            return type;
+        public double getAlpha() {
+            return alpha;
+        }
+
+        /**
+         * Retrieve the height of the wall.
+         * @return Height of the wall.
+         */
+        public double getHeight() {
+            return height;
         }
     }
 

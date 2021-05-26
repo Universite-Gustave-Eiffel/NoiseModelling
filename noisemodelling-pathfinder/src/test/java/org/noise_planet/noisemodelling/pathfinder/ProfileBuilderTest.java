@@ -8,8 +8,7 @@ import org.locationtech.jts.io.WKTReader;
 
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Test class dedicated to {@link ProfileBuilder}.
@@ -255,7 +254,6 @@ public class ProfileBuilderTest {
 
         for(ProfileBuilder.CutPoint cut : pts) {
             System.out.println(cut);
-            assert !Double.isNaN(cut.getCoordinate().z);
         }
     }
 
