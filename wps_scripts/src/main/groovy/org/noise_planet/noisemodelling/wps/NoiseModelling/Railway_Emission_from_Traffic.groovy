@@ -144,9 +144,9 @@ def exec(Connection connection, input) {
 
     // Build and execute queries
     StringBuilder createTableQuery = new StringBuilder("create table LW_RAILWAY (ID_SECTION int," +
-            " the_geom geometry, DIRECTIVITYID int,HEIGHT double")
+            " the_geom geometry, DIR_ID int,HEIGHT double")
     StringBuilder insertIntoQuery = new StringBuilder("INSERT INTO LW_RAILWAY(ID_SECTION, the_geom," +
-            " DIRECTIVITYID, HEIGHT")
+            " DIR_ID, HEIGHT")
     StringBuilder insertIntoValuesQuery = new StringBuilder("?,?,?,?")
     for(int thirdOctave : PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
         createTableQuery.append(", LWD")

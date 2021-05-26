@@ -202,10 +202,17 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
                     // fetch orientation of the first ray
                     Coordinate nextPointFromSource = propath.getPointList().get(1).coordinate;
                     Coordinate sourceCoordinate = propath.getPointList().get(0).coordinate;
-                    Vector3D vector3D = new Vector3D(new Coordinate(nextPointFromSource.x - sourceCoordinate.x,
+                    Vector3D outgoingRay = new Vector3D(new Coordinate(nextPointFromSource.x - sourceCoordinate.x,
                             nextPointFromSource.y - sourceCoordinate.y,
-                            nextPointFromSource.z - sourceCoordinate.z));
-
+                            nextPointFromSource.z - sourceCoordinate.z)).normalize();
+                    Orientation directivityToPick = Orientation.rotate(sourceOrientation, outgoingRay, true);
+                    double[] attSource = new double[pathData.freq_lvl.size()];
+                    for (int idfreq = 0; idfreq < pathData.freq_lvl.size(); idfreq++) {
+                        attSource[idfreq] = inputData.getSourceAttenuation((int) sourceId,
+                                pathData.freq_lvl.get(idfreq), (float)Math.toRadians(directivityToPick.yaw),
+                                (float)Math.toRadians(directivityToPick.pitch));
+                    }
+                    aGlobalMeteoRay = ComputeRays.sumArray(aGlobalMeteoRay, attSource);
                 }
 
 

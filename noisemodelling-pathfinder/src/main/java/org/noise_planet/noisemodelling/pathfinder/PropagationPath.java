@@ -132,8 +132,8 @@ public class PropagationPath {
     public void writeStream( DataOutputStream out ) throws IOException {
         out.writeBoolean(favorable);
         out.writeInt(idSource);
-        out.writeFloat(sourceOrientation.bearing);
-        out.writeFloat(sourceOrientation.inclination);
+        out.writeFloat(sourceOrientation.yaw);
+        out.writeFloat(sourceOrientation.pitch);
         out.writeFloat(sourceOrientation.roll);
         out.writeInt(idReceiver);
         out.writeInt(pointList.size());

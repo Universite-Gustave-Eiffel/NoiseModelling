@@ -54,19 +54,10 @@ public class LDENPropagationProcessData extends PropagationProcessData {
     public List<double[]> wjSourcesN = new ArrayList<>();
     public List<double[]> wjSourcesDEN = new ArrayList<>();
 
-    public Map<Long, Integer> SourcesPk = new HashMap<>();
-
     /**
      * Attenuation and other attributes relative to direction on sphere
      */
     public Map<Integer, DirectionAttributes> directionAttributes = new HashMap<>();
-
-    /**
-     * Link between sources PK and direction attenuation index
-     */
-    public Map<Long, Integer> sourceDirection = new HashMap<>();
-
-    int idSource = 0;
 
     LDENConfig ldenConfig;
 
@@ -82,11 +73,6 @@ public class LDENPropagationProcessData extends PropagationProcessData {
     @Override
     public void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException, IOException {
         super.addSource(pk, geom, rs);
-        int directivityField = JDBCUtilities.getFieldIndex(rs.getMetaData(), "DIRECTIVITYID");
-        if(directivityField > 0) {
-            sourceDirection.put(pk, rs.getInt(directivityField));
-        }
-        SourcesPk.put(pk, idSource++);
         double[][] res = computeLw(rs);
         if(ldenConfig.computeLDay) {
             wjSourcesD.add(res[0]);
@@ -99,6 +85,21 @@ public class LDENPropagationProcessData extends PropagationProcessData {
         }
         if(ldenConfig.computeLDEN) {
             wjSourcesDEN.add(res[3]);
+        }
+    }
+
+    @Override
+    public boolean isOmnidirectional(int srcIndex) {
+        return sourcesPk.size() > srcIndex && !sourceDirection.containsKey(sourcesPk.get(srcIndex));
+    }
+
+    @Override
+    public double getSourceAttenuation(int srcIndex, double frequency, float phi, float theta) {
+        int directivityIdentifier = sourceDirection.get(sourcesPk.get(srcIndex));
+        if(directionAttributes.containsKey(directivityIdentifier)) {
+            return directionAttributes.get(directivityIdentifier).getAttenuation(frequency, phi, theta);
+        } else {
+            return 0;
         }
     }
 

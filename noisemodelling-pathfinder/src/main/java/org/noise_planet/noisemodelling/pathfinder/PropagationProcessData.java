@@ -33,6 +33,7 @@
  */
 package org.noise_planet.noisemodelling.pathfinder;
 
+import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SpatialResultSet;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
@@ -59,6 +60,10 @@ public class PropagationProcessData {
     public static final double DEFAULT_MAXIMUM_REF_DIST = 50;
     public static final double DEFAULT_RECEIVER_DIST = 1.0;
     public static final double DEFAULT_GS = 0.0;
+    public static final String YAW_DATABASE_FIELD = "YAW";
+    public static final String PITCH_DATABASE_FIELD = "PITCH";
+    public static final String ROLL_DATABASE_FIELD = "ROLL";
+    public static final String DIRECTIVITY_DATABASE_FIELD = "DIR_ID";
 
     public List<Long> receiversPk = new ArrayList<>();
     public List<Long> sourcesPk = new ArrayList<>();
@@ -72,6 +77,10 @@ public class PropagationProcessData {
     public List<Geometry> sourceGeometries = new ArrayList<>();
     /** Source orientation for emission computation */
     public Map<Long, Orientation> sourceOrientation = new HashMap<>();
+    /**
+     * Link between sources PK and direction attenuation index
+     */
+    public Map<Long, Integer> sourceDirection = new HashMap<>();
 
 
     /** Maximum reflexion order */
@@ -98,6 +107,7 @@ public class PropagationProcessData {
     /** list Geometry of soil and the type of this soil */
     protected List<GeoWithSoilType> soilList = new ArrayList<>();
 
+    Map<String, Integer> sourceFieldNames = new HashMap<>();
 
 
     public PropagationProcessData(FastObstructionTest freeFieldFinder) {
@@ -126,6 +136,35 @@ public class PropagationProcessData {
      */
     public void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException, IOException {
         addSource(pk, geom);
+        if(sourceFieldNames.isEmpty()) {
+            List<String> fieldNames = JDBCUtilities.getFieldNames(rs.getMetaData());
+            for(int idField = 0; idField < fieldNames.size(); idField++) {
+                sourceFieldNames.put(fieldNames.get(idField).toUpperCase(Locale.ROOT), idField + 1);
+            }
+        }
+        float yaw = 0;
+        float pitch = 0;
+        float roll = 0;
+        boolean hasOrientation = false;
+        if(sourceFieldNames.containsKey(YAW_DATABASE_FIELD)) {
+            yaw = rs.getFloat(sourceFieldNames.get(YAW_DATABASE_FIELD));
+            hasOrientation = true;
+        }
+        if(sourceFieldNames.containsKey(PITCH_DATABASE_FIELD)) {
+            pitch = rs.getFloat(sourceFieldNames.get(PITCH_DATABASE_FIELD));
+            hasOrientation = true;
+        }
+        if(sourceFieldNames.containsKey(ROLL_DATABASE_FIELD)) {
+            roll = rs.getFloat(sourceFieldNames.get(ROLL_DATABASE_FIELD));
+            hasOrientation = true;
+        }
+        int directivityField = JDBCUtilities.getFieldIndex(rs.getMetaData(), DIRECTIVITY_DATABASE_FIELD);
+        if(sourceFieldNames.containsKey(DIRECTIVITY_DATABASE_FIELD)) {
+            sourceDirection.put(pk, rs.getInt(directivityField));
+        }
+        if(hasOrientation) {
+            sourceOrientation.put(pk, new Orientation(yaw, pitch, roll));
+        }
     }
 
     public void setSources(List<Geometry> sourceGeometries) {
@@ -214,9 +253,9 @@ public class PropagationProcessData {
      * @param frequency Frequency in Hertz
      * @param phi (0 2π) 0 is front
      * @param theta (-π/2 π/2) 0 is horizontal π is top
-     * @return
+     * @return Attenuation in dB
      */
-    public float getSourceAttenuation(int srcIndex, double frequency, float phi, float theta) {
+    public double getSourceAttenuation(int srcIndex, double frequency, float phi, float theta) {
         return 0;
     }
 

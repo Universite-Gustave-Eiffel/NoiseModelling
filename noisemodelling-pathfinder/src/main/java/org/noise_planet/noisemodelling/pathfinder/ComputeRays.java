@@ -1033,8 +1033,8 @@ public class ComputeRays {
             if(data.sourcesPk.size() > srcIndex && data.sourceOrientation.containsKey(data.sourcesPk.get(srcIndex))) {
                 // If the line source already provide an orientation then alter the line orientation
                 Orientation inputOrientation = data.sourceOrientation.get(data.sourcesPk.get(srcIndex));
-                bearing = (float)((720 + bearing + inputOrientation.bearing) % (360.0));
-                inclination += inputOrientation.inclination;
+                bearing = (float)((720 + bearing + inputOrientation.yaw) % (360.0));
+                inclination += inputOrientation.pitch;
                 if(inclination > 90 || inclination < -90) {
                     // on the back
                     bearing = (float)((bearing + 180) % (360.0));

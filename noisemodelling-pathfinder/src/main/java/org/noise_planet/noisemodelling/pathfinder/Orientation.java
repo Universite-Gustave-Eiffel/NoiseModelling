@@ -36,7 +36,6 @@ package org.noise_planet.noisemodelling.pathfinder;
 
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
-import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.math.Vector3D;
 
 /**
@@ -46,26 +45,26 @@ import org.locationtech.jts.math.Vector3D;
  * So 0 degrees point the end of the line segment.
  */
 public class Orientation {
-    public final float bearing;
-    public final float inclination;
+    public final float yaw;
+    public final float pitch;
     public final float roll;
 
     /**
-     * @param bearing     Orientation using degrees east of true north (0 is north, 90 is east)
-     * @param inclination Vertical orientation in degrees. (0 flat, 90 vertical top, -90 vertical bottom)
+     * @param yaw     Orientation using degrees east of true north (0 is north, 90 is east)
+     * @param pitch Vertical orientation in degrees. (0 flat, 90 vertical top, -90 vertical bottom)
      * @param roll        Longitudinal axis in degrees. A positive value lifts the left wing and lowers the right wing.
      */
-    public Orientation(float bearing, float inclination, float roll) {
-        this.bearing = (360 + bearing) % 360;
-        this.inclination = Math.min(90, Math.max(-90, inclination));
+    public Orientation(float yaw, float pitch, float roll) {
+        this.yaw = (360 + yaw) % 360;
+        this.pitch = Math.min(90, Math.max(-90, pitch));
         this.roll = (360 + roll) % 360;
     }
 
     @Override
     public String toString() {
         return "Orientation{" +
-                "bearing=" + bearing +
-                ", inclination=" + inclination +
+                "bearing=" + yaw +
+                ", inclination=" + pitch +
                 ", roll=" + roll +
                 '}';
     }
@@ -88,17 +87,25 @@ public class Orientation {
      * @return New vector orientation
      */
     public static Orientation rotate(Orientation orientation, Vector3D vector, boolean inverse) {
-        double[] b = new double[]{vector.getX(), vector.getY(), vector.getZ()};
-        final double yaw = Math.toRadians(orientation.bearing);
-        final double pitch = Math.toRadians(orientation.inclination);
+        // Coordinate system of the orientation is Y+ North X+ East
+        // Y+ must be yaw = 0
+        // X+ must be yaw = 90
+        double[] b = new double[]{vector.getY(), vector.getX(), vector.getZ()};
+        final double yaw = Math.toRadians(orientation.yaw);
+        final double pitch = Math.toRadians(orientation.pitch);
         final double roll = Math.toRadians(orientation.roll);
+        final double cosYaw = Math.cos(yaw);
+        final double sinYaw = Math.sin(yaw);
+        final double cosPitch = Math.cos(pitch);
+        final double sinPitch = Math.sin(pitch);
+        final double cosRoll = Math.cos(roll);
+        final double sinRoll = Math.sin(roll);
         double[][] a = new double[][]{
-                {Math.cos(yaw) * Math.cos(pitch), Math.cos(yaw) * Math.sin(pitch) * Math.sin(roll)
-                        - Math.sin(yaw) * Math.cos(roll), Math.cos(yaw) * Math.sin(pitch) * Math.cos(roll)
-                        + Math.sin(yaw) * Math.sin(roll)},
-                {Math.sin(yaw) * Math.cos(pitch), Math.sin(yaw) * Math.sin(pitch) * Math.sin(roll)
-                        + Math.cos(yaw) * Math.cos(roll), Math.sin(yaw) * Math.sin(pitch) * Math.cos(roll) - Math.cos(yaw) * Math.sin(roll)},
-                {-Math.sin(pitch), Math.cos(pitch) * Math.sin(roll), Math.cos(pitch) * Math.cos(roll)}
+                {cosYaw * cosPitch, cosYaw * sinPitch * sinRoll - sinYaw * cosRoll,
+                        cosYaw * sinPitch * cosRoll + sinYaw * sinRoll},
+                {sinYaw * cosPitch, sinYaw * sinPitch * sinRoll + cosYaw * cosRoll,
+                        sinYaw * sinPitch * cosRoll - cosYaw * sinRoll},
+                {-sinPitch, cosPitch * sinRoll, cosPitch * cosRoll}
         };
         RealMatrix matrixA = new Array2DRowRealMatrix(a);
         if(inverse) {
