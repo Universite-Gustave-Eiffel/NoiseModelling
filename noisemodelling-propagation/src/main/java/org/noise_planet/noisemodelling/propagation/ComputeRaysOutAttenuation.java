@@ -198,7 +198,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
 
                 // Apply attenuation due to sound direction
                 if(!inputData.isOmnidirectional((int)sourceId)) {
-                    PropagationProcessData.Orientation sourceOrientation = propath.getSourceOrientation();
+                    Orientation sourceOrientation = propath.getSourceOrientation();
                     // fetch orientation of the first ray
                     Coordinate nextPointFromSource = propath.getPointList().get(1).coordinate;
                     Coordinate sourceCoordinate = propath.getPointList().get(0).coordinate;

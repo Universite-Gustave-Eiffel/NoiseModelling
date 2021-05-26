@@ -77,6 +77,17 @@ public class Orientation {
      * @return New vector orientation
      */
     public static Orientation rotate(Orientation orientation, Vector3D vector) {
+        return rotate(orientation, vector, false);
+    }
+
+    /**
+     * Rotate the vector by the provided orientation and return the result vector orientation
+     * @param orientation Rotation to apply
+     * @param vector Vector to rotate
+     * @param inverse True to inverse rotation
+     * @return New vector orientation
+     */
+    public static Orientation rotate(Orientation orientation, Vector3D vector, boolean inverse) {
         double[] b = new double[]{vector.getX(), vector.getY(), vector.getZ()};
         final double yaw = Math.toRadians(orientation.bearing);
         final double pitch = Math.toRadians(orientation.inclination);
@@ -90,13 +101,20 @@ public class Orientation {
                 {-Math.sin(pitch), Math.cos(pitch) * Math.sin(roll), Math.cos(pitch) * Math.cos(roll)}
         };
         RealMatrix matrixA = new Array2DRowRealMatrix(a);
+        if(inverse) {
+            matrixA = matrixA.transpose();
+        }
         RealMatrix matrixB = new Array2DRowRealMatrix(b);
         RealMatrix res = matrixA.multiply(matrixB);
-        double x = res.getEntry(0,0);
-        double y = res.getEntry(1,0);
-        double z = res.getEntry(2,0);
-        double newYaw = Math.atan2(y, x);
-        double newPitch = Math.asin(z);
+        double x = res.getEntry(0, 0);
+        double y = res.getEntry(1, 0);
+        double z = res.getEntry(2, 0);
+        return Orientation.fromVector(new Vector3D(x, y, z));
+    }
+
+    public static Orientation fromVector(Vector3D vector) {
+        double newYaw = Math.atan2(vector.getY(), vector.getX());
+        double newPitch = - Math.asin(vector.getZ());
         return new Orientation((float) Math.toDegrees(newYaw), (float) Math.toDegrees(newPitch), 0);
     }
 }

@@ -36,7 +36,7 @@ public class PolarGraphDirectivity {
 
     private int getAdjustedAngle(int angle, ORIENTATION orientation) {
         if(orientation == ORIENTATION.TOP) {
-            return (angle + 90 ) % 360;
+            return (angle + 90 ) % 360; // return (630 - angle) % 360;
         } else {
             return (720 - angle) % 360;
         }
