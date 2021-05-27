@@ -6,8 +6,7 @@ import org.noise_planet.noisemodelling.emission.RailWayLW;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
+import java.sql.Statement;
 import java.util.Locale;
 
 public class DirectivityTest {

@@ -63,8 +63,8 @@ public class Orientation {
     @Override
     public String toString() {
         return "Orientation{" +
-                "bearing=" + yaw +
-                ", inclination=" + pitch +
+                "yaw=" + yaw +
+                ", pitch=" + pitch +
                 ", roll=" + roll +
                 '}';
     }
