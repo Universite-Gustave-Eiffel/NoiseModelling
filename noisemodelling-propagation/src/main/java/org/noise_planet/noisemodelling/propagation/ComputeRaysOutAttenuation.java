@@ -205,7 +205,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
                     Vector3D outgoingRay = new Vector3D(new Coordinate(nextPointFromSource.x - sourceCoordinate.x,
                             nextPointFromSource.y - sourceCoordinate.y,
                             nextPointFromSource.z - sourceCoordinate.z)).normalize();
-                    Orientation directivityToPick = Orientation.rotate(sourceOrientation, outgoingRay, true);
+                    Orientation directivityToPick = Orientation.fromVector(Orientation.rotate(sourceOrientation, outgoingRay, true), 0);
                     double[] attSource = new double[pathData.freq_lvl.size()];
                     for (int idfreq = 0; idfreq < pathData.freq_lvl.size(); idfreq++) {
                         attSource[idfreq] = inputData.getSourceAttenuation((int) sourceId,

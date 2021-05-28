@@ -38,6 +38,8 @@ import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.locationtech.jts.math.Vector3D;
 
+import java.util.Objects;
+
 /**
  * When providing Orientation to a sound source there is 2 cases
  * - Sound source is a point. The final orientation is the same, relative to the north and clock-wise to east.
@@ -75,7 +77,7 @@ public class Orientation {
      * @param vector Vector to rotate
      * @return New vector orientation
      */
-    public static Orientation rotate(Orientation orientation, Vector3D vector) {
+    public static Vector3D rotate(Orientation orientation, Vector3D vector) {
         return rotate(orientation, vector, false);
     }
 
@@ -86,7 +88,7 @@ public class Orientation {
      * @param inverse True to inverse rotation
      * @return New vector orientation
      */
-    public static Orientation rotate(Orientation orientation, Vector3D vector, boolean inverse) {
+    public static Vector3D rotate(Orientation orientation, Vector3D vector, boolean inverse) {
         // Coordinate system of the orientation is Y+ North X+ East
         // Y+ must be yaw = 0
         // X+ must be yaw = 90
@@ -100,6 +102,7 @@ public class Orientation {
         final double s2 = Math.sin(- pitch);
         final double c3 = Math.cos(roll);
         final double s3 = Math.sin(roll);
+        // https://en.wikipedia.org/wiki/Euler_angles#Rotation_matrix
         double[][] a = new double[][]{
                 {c1 * c2, c1 * s2 * s3 - s1 * c3, c1 * s2 * c3 + s1 * s3},
                 {s1 * c2, s1 * s2 * s3 + c1 * c3, s1 * s2 * c3 - c1 * s3},
@@ -111,15 +114,29 @@ public class Orientation {
         }
         RealMatrix matrixB = new Array2DRowRealMatrix(b);
         RealMatrix res = matrixA.multiply(matrixB);
-        double x = res.getEntry(0, 0);
-        double y = res.getEntry(1, 0);
-        double z = res.getEntry(2, 0);
-        return Orientation.fromVector(new Vector3D(x, y, z), orientation.roll);
+        return new Vector3D(res.getEntry(0, 0),
+                res.getEntry(1, 0),
+                res.getEntry(2, 0));
     }
 
     public static Orientation fromVector(Vector3D vector, float roll) {
         double newYaw = Math.atan2(vector.getY(), vector.getX());
         double newPitch = Math.asin(vector.getZ());
         return new Orientation((float) Math.toDegrees(newYaw), (float) Math.toDegrees(newPitch), roll);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Orientation that = (Orientation) o;
+        return Float.compare(that.yaw, yaw) == 0 &&
+                Float.compare(that.pitch, pitch) == 0 &&
+                Float.compare(that.roll, roll) == 0;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(yaw, pitch, roll);
     }
 }

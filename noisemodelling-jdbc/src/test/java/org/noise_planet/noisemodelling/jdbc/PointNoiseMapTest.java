@@ -8,6 +8,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.io.WKTWriter;
@@ -227,7 +228,7 @@ public class PointNoiseMapTest {
         try (Statement st = connection.createStatement()) {
             st.execute("CREATE TABLE BUILDINGS(pk serial, the_geom geometry, height real)");
             st.execute(createSource(new GeometryFactory().createPoint(new Coordinate(223915.72,6757480.22 )),
-                    91, new Orientation(0,0,0),
+                    91, new Orientation(90,15,0),
                     RailWayLW.TrainNoiseSource.TRACTIONB.ordinal() + 1));
             st.execute("create table receivers(id serial, the_geom point);\n" +
                     "insert into receivers(the_geom) values ('POINT (223915.72 6757490.22)');" +
@@ -262,19 +263,19 @@ public class PointNoiseMapTest {
                         LDENComputeRaysOut rout = (LDENComputeRaysOut) out;
                         ComputeRaysOutAttenuation.VerticeSL sl = rout.ldenData.lDenLevels.pop();
                         assertEquals(1, sl.receiverId);
-                        assertEquals(53, sl.value[0], 0.5);
+                        assertEquals(73.3, sl.value[0], 0.5);
                         sl = rout.ldenData.lDenLevels.pop();
                         assertEquals(2, sl.receiverId);
-                        assertEquals(73, sl.value[0], 0.5);
+                        assertEquals(53.3, sl.value[0], 0.5);
                         assertTrue(rout.ldenData.lDenLevels.isEmpty());
 
                         assertEquals(2 , rout.ldenData.rays.size());
                         PropagationPath path = rout.ldenData.rays.pop();
                         assertEquals(1, path.getIdReceiver());
-                        assertEquals(new Orientation(0, 0, 0), path.getSourceOrientation());
+                        assertEquals(new Orientation(90, 15, 0), path.getSourceOrientation());
                         path = rout.ldenData.rays.pop();
                         assertEquals(2, path.getIdReceiver());
-                        assertEquals(new Orientation(0, 0, 0), path.getSourceOrientation());
+                        assertEquals(new Orientation(90, 15, 0), path.getSourceOrientation());
 
                     } else {
                         throw new IllegalStateException();
@@ -295,8 +296,8 @@ public class PointNoiseMapTest {
                     new Orientation(0,0,0),
                     RailWayLW.TrainNoiseSource.TRACTIONB.ordinal() + 1));
             st.execute("create table receivers(id serial, the_geom point);\n" +
-                    "insert into receivers(the_geom) values ('POINT (223915.72 6757490.22)');" +
-                    "insert into receivers(the_geom) values ('POINT (223925.72 6757480.22)');");
+                    "insert into receivers(the_geom) values ('POINT (223922.55 6757495.27)');" +
+                    "insert into receivers(the_geom) values ('POINT (223936.42 6757471.91)');");
             PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS", "ROADS_GEOM", "RECEIVERS");
             pointNoiseMap.setComputeHorizontalDiffraction(false);
             pointNoiseMap.setComputeVerticalDiffraction(false);
@@ -320,17 +321,40 @@ public class PointNoiseMapTest {
             Set<Long> receivers = new HashSet<>();
             pointNoiseMap.setThreadCount(1);
             RootProgressVisitor progressVisitor = new RootProgressVisitor(pointNoiseMap.getGridDim() * pointNoiseMap.getGridDim(), true, 5);
+
+            pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
+
+            Envelope compEnv = new Envelope(new Coordinate(223915.72,6757480.22 ,5));
+            compEnv.expandBy(500);
+            pointNoiseMap.setMainEnvelope(compEnv);
+
+            pointNoiseMap.setGridDim(1);
+
             for(int i=0; i < pointNoiseMap.getGridDim(); i++) {
                 for(int j=0; j < pointNoiseMap.getGridDim(); j++) {
                     IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, i, j, progressVisitor, receivers);
                     if(out instanceof LDENComputeRaysOut) {
                         LDENComputeRaysOut rout = (LDENComputeRaysOut) out;
+
+                        assertEquals(2, rout.ldenData.lDenLevels.size());
+
                         ComputeRaysOutAttenuation.VerticeSL sl = rout.ldenData.lDenLevels.pop();
                         assertEquals(1, sl.receiverId);
-                        assertEquals(53, sl.value[0], 0.5);
+                        assertEquals(68.3, sl.value[0], 0.5);
                         sl = rout.ldenData.lDenLevels.pop();
                         assertEquals(2, sl.receiverId);
-                        assertEquals(73, sl.value[0], 0.5);
+                        assertEquals(70.8, sl.value[0], 0.5);
+
+                        assertEquals(3 , rout.ldenData.rays.size());
+                        PropagationPath path = rout.ldenData.rays.pop();
+                        assertEquals(1, path.getIdReceiver());
+                        assertEquals(new Orientation(45, 0.8102307f, 0), path.getSourceOrientation());
+                        path = rout.ldenData.rays.pop();
+                        assertEquals(1, path.getIdReceiver());
+                        assertEquals(new Orientation(45, 0.8102307f, 0), path.getSourceOrientation());
+                        path = rout.ldenData.rays.pop();
+                        assertEquals(2, path.getIdReceiver());
+                        assertEquals(new Orientation(45, 0.8102307f, 0), path.getSourceOrientation());
                     } else {
                         throw new IllegalStateException();
                     }

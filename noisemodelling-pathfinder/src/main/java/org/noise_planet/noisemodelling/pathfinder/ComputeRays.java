@@ -1020,7 +1020,7 @@ public class ComputeRays {
                 // use the orientation computed from the line source coordinates
                 Vector3D v;
                 if(ptIndex == 0) {
-                    v = new Vector3D(pts.get(0), pts.get(1));
+                    v = new Vector3D(source.getCoordinates()[0], pts.get(ptIndex));
                 } else {
                     v = new Vector3D(pts.get(ptIndex - 1), pts.get(ptIndex));
                 }
@@ -1028,10 +1028,12 @@ public class ComputeRays {
                 if(data.sourcesPk.size() > srcIndex && data.sourceOrientation.containsKey(data.sourcesPk.get(srcIndex))) {
                     // If the line source already provide an orientation then alter the line orientation
                     inputOrientation = data.sourceOrientation.get(data.sourcesPk.get(srcIndex));
+                    inputOrientation = Orientation.fromVector(
+                            Orientation.rotate(new Orientation(inputOrientation.yaw, inputOrientation.roll, 0),
+                                    v.normalize()), inputOrientation.roll);
                 } else {
-                    inputOrientation = new Orientation(0, 0, 0);
+                    inputOrientation = Orientation.fromVector(v.normalize(), 0);
                 }
-                inputOrientation = Orientation.rotate(inputOrientation, v.normalize());
                 totalPowerRemaining += insertPtSource(receiverCoord, pt, wj, li, srcIndex, sourceList, inputOrientation);
             }
         }
