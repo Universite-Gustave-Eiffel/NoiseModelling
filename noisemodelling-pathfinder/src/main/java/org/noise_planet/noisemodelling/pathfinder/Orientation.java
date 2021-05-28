@@ -96,8 +96,8 @@ public class Orientation {
         final double roll = Math.toRadians(orientation.roll);
         final double c1 = Math.cos(yaw);
         final double s1 = Math.sin(yaw);
-        final double c2 = Math.cos(pitch);
-        final double s2 = Math.sin(pitch);
+        final double c2 = Math.cos(- pitch);
+        final double s2 = Math.sin(- pitch);
         final double c3 = Math.cos(roll);
         final double s3 = Math.sin(roll);
         double[][] a = new double[][]{
