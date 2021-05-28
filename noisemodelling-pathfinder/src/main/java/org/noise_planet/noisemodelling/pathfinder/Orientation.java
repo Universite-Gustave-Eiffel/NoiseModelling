@@ -94,18 +94,16 @@ public class Orientation {
         final double yaw = Math.toRadians(orientation.yaw);
         final double pitch = Math.toRadians(orientation.pitch);
         final double roll = Math.toRadians(orientation.roll);
-        final double cosYaw = Math.cos(yaw);
-        final double sinYaw = Math.sin(yaw);
-        final double cosPitch = Math.cos(pitch);
-        final double sinPitch = Math.sin(pitch);
-        final double cosRoll = Math.cos(roll);
-        final double sinRoll = Math.sin(roll);
+        final double c1 = Math.cos(yaw);
+        final double s1 = Math.sin(yaw);
+        final double c2 = Math.cos(pitch);
+        final double s2 = Math.sin(pitch);
+        final double c3 = Math.cos(roll);
+        final double s3 = Math.sin(roll);
         double[][] a = new double[][]{
-                {cosYaw * cosPitch, cosYaw * sinPitch * sinRoll - sinYaw * cosRoll,
-                        cosYaw * sinPitch * cosRoll + sinYaw * sinRoll},
-                {sinYaw * cosPitch, sinYaw * sinPitch * sinRoll + cosYaw * cosRoll,
-                        sinYaw * sinPitch * cosRoll - cosYaw * sinRoll},
-                {-sinPitch, cosPitch * sinRoll, cosPitch * cosRoll}
+                {c1 * c2, c1 * s2 * s3 - s1 * c3, c1 * s2 * c3 + s1 * s3},
+                {s1 * c2, s1 * s2 * s3 + c1 * c3, s1 * s2 * c3 - c1 * s3},
+                {-s2, c2 * s3, c2 * c3}
         };
         RealMatrix matrixA = new Array2DRowRealMatrix(a);
         if(inverse) {
@@ -116,12 +114,12 @@ public class Orientation {
         double x = res.getEntry(0, 0);
         double y = res.getEntry(1, 0);
         double z = res.getEntry(2, 0);
-        return Orientation.fromVector(new Vector3D(x, y, z));
+        return Orientation.fromVector(new Vector3D(x, y, z), orientation.roll);
     }
 
-    public static Orientation fromVector(Vector3D vector) {
+    public static Orientation fromVector(Vector3D vector, float roll) {
         double newYaw = Math.atan2(vector.getY(), vector.getX());
-        double newPitch = - Math.asin(vector.getZ());
-        return new Orientation((float) Math.toDegrees(newYaw), (float) Math.toDegrees(newPitch), 0);
+        double newPitch = Math.asin(vector.getZ());
+        return new Orientation((float) Math.toDegrees(newYaw), (float) Math.toDegrees(newPitch), roll);
     }
 }

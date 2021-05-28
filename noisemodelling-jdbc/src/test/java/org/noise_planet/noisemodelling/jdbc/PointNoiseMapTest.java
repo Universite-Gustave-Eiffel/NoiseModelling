@@ -8,6 +8,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.io.WKTWriter;
 import org.noise_planet.noisemodelling.emission.RailWayLW;
@@ -189,10 +190,10 @@ public class PointNoiseMapTest {
     //        }
     //    }
 
-    private static String createSource(Coordinate localisation, double lvl, Orientation sourceOrientation, int directivityId) {
+    private static String createSource(Geometry source, double lvl, Orientation sourceOrientation, int directivityId) {
         StringBuilder sb = new StringBuilder("CREATE TABLE ROADS_GEOM(PK SERIAL PRIMARY KEY, THE_GEOM GEOMETRY, YAW REAL, PITCH REAL, ROLL REAL, DIR_ID INT");
         StringBuilder values = new StringBuilder("null, ST_SETSRID('");
-        values.append(new WKTWriter(3).write(new GeometryFactory().createPoint(localisation)));
+        values.append(new WKTWriter(3).write(source));
         values.append("', 2154) THE_GEOM, ");
         values.append(sourceOrientation.yaw);
         values.append(" YAW, ");
@@ -220,11 +221,14 @@ public class PointNoiseMapTest {
         return sb.toString();
     }
 
+
     @Test
     public void testPointDirectivity() throws Exception {
         try (Statement st = connection.createStatement()) {
-            SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("buildings.shp").getFile(), " BUILDINGS");
-            st.execute(createSource(new Coordinate(223915.72,6757480.22 ), 91, new Orientation(0,0,0), RailWayLW.TrainNoiseSource.TRACTIONB.ordinal() + 1));
+            st.execute("CREATE TABLE BUILDINGS(pk serial, the_geom geometry, height real)");
+            st.execute(createSource(new GeometryFactory().createPoint(new Coordinate(223915.72,6757480.22 )),
+                    91, new Orientation(0,0,0),
+                    RailWayLW.TrainNoiseSource.TRACTIONB.ordinal() + 1));
             st.execute("create table receivers(id serial, the_geom point);\n" +
                     "insert into receivers(the_geom) values ('POINT (223915.72 6757490.22)');" +
                     "insert into receivers(the_geom) values ('POINT (223925.72 6757480.22)');");
@@ -244,6 +248,7 @@ public class PointNoiseMapTest {
             LDENPointNoiseMapFactory ldenPointNoiseMapFactory = new LDENPointNoiseMapFactory(connection, ldenConfig);
             // Use train directivity functions instead of discrete directivity
             ldenPointNoiseMapFactory.insertTrainDirectivity();
+            ldenPointNoiseMapFactory.setKeepRays(true);
             pointNoiseMap.setPropagationProcessDataFactory(ldenPointNoiseMapFactory);
             pointNoiseMap.setComputeRaysOutFactory(ldenPointNoiseMapFactory);
 
@@ -253,13 +258,84 @@ public class PointNoiseMapTest {
             for(int i=0; i < pointNoiseMap.getGridDim(); i++) {
                 for(int j=0; j < pointNoiseMap.getGridDim(); j++) {
                     IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, i, j, progressVisitor, receivers);
-                    if(out instanceof ComputeRaysOutAttenuation) {
-                        ComputeRaysOutAttenuation rout = (ComputeRaysOutAttenuation) out;
+                    if(out instanceof LDENComputeRaysOut) {
+                        LDENComputeRaysOut rout = (LDENComputeRaysOut) out;
+                        ComputeRaysOutAttenuation.VerticeSL sl = rout.ldenData.lDenLevels.pop();
+                        assertEquals(1, sl.receiverId);
+                        assertEquals(53, sl.value[0], 0.5);
+                        sl = rout.ldenData.lDenLevels.pop();
+                        assertEquals(2, sl.receiverId);
+                        assertEquals(73, sl.value[0], 0.5);
+                        assertTrue(rout.ldenData.lDenLevels.isEmpty());
 
+                        assertEquals(2 , rout.ldenData.rays.size());
+                        PropagationPath path = rout.ldenData.rays.pop();
+                        assertEquals(1, path.getIdReceiver());
+                        assertEquals(new Orientation(0, 0, 0), path.getSourceOrientation());
+                        path = rout.ldenData.rays.pop();
+                        assertEquals(2, path.getIdReceiver());
+                        assertEquals(new Orientation(0, 0, 0), path.getSourceOrientation());
+
+                    } else {
+                        throw new IllegalStateException();
                     }
                 }
             }
         }
     }
 
+
+    @Test
+    public void testLineDirectivity() throws Exception {
+        try (Statement st = connection.createStatement()) {
+            st.execute("CREATE TABLE BUILDINGS(pk serial, the_geom geometry, height real)");
+            st.execute(createSource(new GeometryFactory().createLineString(
+                    new Coordinate[]{new Coordinate(223915.72,6757480.22 ,5),
+                            new Coordinate(223920.72,6757485.22, 5.1 )}), 91,
+                    new Orientation(0,0,0),
+                    RailWayLW.TrainNoiseSource.TRACTIONB.ordinal() + 1));
+            st.execute("create table receivers(id serial, the_geom point);\n" +
+                    "insert into receivers(the_geom) values ('POINT (223915.72 6757490.22)');" +
+                    "insert into receivers(the_geom) values ('POINT (223925.72 6757480.22)');");
+            PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS", "ROADS_GEOM", "RECEIVERS");
+            pointNoiseMap.setComputeHorizontalDiffraction(false);
+            pointNoiseMap.setComputeVerticalDiffraction(false);
+            pointNoiseMap.setSoundReflectionOrder(0);
+            pointNoiseMap.setReceiverHasAbsoluteZCoordinates(false);
+            pointNoiseMap.setMaximumPropagationDistance(1000);
+            pointNoiseMap.setSourceHasAbsoluteZCoordinates(false);
+            pointNoiseMap.setHeightField("HEIGHT");
+            pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
+
+            LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN);
+            ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData());
+            ldenConfig.setCoefficientVersion(1);
+            LDENPointNoiseMapFactory ldenPointNoiseMapFactory = new LDENPointNoiseMapFactory(connection, ldenConfig);
+            // Use train directivity functions instead of discrete directivity
+            ldenPointNoiseMapFactory.insertTrainDirectivity();
+            ldenPointNoiseMapFactory.setKeepRays(true);
+            pointNoiseMap.setPropagationProcessDataFactory(ldenPointNoiseMapFactory);
+            pointNoiseMap.setComputeRaysOutFactory(ldenPointNoiseMapFactory);
+
+            Set<Long> receivers = new HashSet<>();
+            pointNoiseMap.setThreadCount(1);
+            RootProgressVisitor progressVisitor = new RootProgressVisitor(pointNoiseMap.getGridDim() * pointNoiseMap.getGridDim(), true, 5);
+            for(int i=0; i < pointNoiseMap.getGridDim(); i++) {
+                for(int j=0; j < pointNoiseMap.getGridDim(); j++) {
+                    IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, i, j, progressVisitor, receivers);
+                    if(out instanceof LDENComputeRaysOut) {
+                        LDENComputeRaysOut rout = (LDENComputeRaysOut) out;
+                        ComputeRaysOutAttenuation.VerticeSL sl = rout.ldenData.lDenLevels.pop();
+                        assertEquals(1, sl.receiverId);
+                        assertEquals(53, sl.value[0], 0.5);
+                        sl = rout.ldenData.lDenLevels.pop();
+                        assertEquals(2, sl.receiverId);
+                        assertEquals(73, sl.value[0], 0.5);
+                    } else {
+                        throw new IllegalStateException();
+                    }
+                }
+            }
+        }
+    }
 }

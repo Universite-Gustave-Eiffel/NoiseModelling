@@ -33,6 +33,7 @@
  */
 package org.noise_planet.noisemodelling.pathfinder;
 
+import com.sun.org.apache.xpath.internal.operations.Or;
 import org.apache.commons.math3.geometry.euclidean.threed.Line;
 import org.apache.commons.math3.geometry.euclidean.threed.Plane;
 import org.h2gis.api.ProgressVisitor;
@@ -1015,40 +1016,23 @@ public class ComputeRays {
         double li = splitLineStringIntoPoints(source, segmentSizeConstraint, pts);
         for (int ptIndex = 0; ptIndex < pts.size(); ptIndex++) {
             Coordinate pt = pts.get(ptIndex);
-            // use the orientation computed from the line source coordinates
-            Vector2D v;
-            float z0, z1;
-            float roll = 0;
-            if(ptIndex == 0) {
-                v = Vector2D.create(pts.get(0), pts.get(1));
-                z0 = Double.isNaN(pts.get(0).z) ? 0.f : (float)pts.get(0).z;
-                z1 = Double.isNaN(pts.get(1).z) ? 0.f : (float)pts.get(1).z;
-            } else {
-                v = Vector2D.create(pts.get(ptIndex - 1), pts.get(ptIndex));
-                z0 = Double.isNaN(pts.get(ptIndex - 1).z) ? 0.f : (float)pts.get(ptIndex - 1).z;
-                z1 = Double.isNaN(pts.get(ptIndex).z) ? 0.f : (float)pts.get(ptIndex).z;
-            }
-            float inclination = (float) Math.toDegrees(Math.atan((z1 - z0) / v.length()));
-            float bearing = (float)Math.toDegrees(Math.atan2(v.getY(), v.getX()));
-            if(data.sourcesPk.size() > srcIndex && data.sourceOrientation.containsKey(data.sourcesPk.get(srcIndex))) {
-                // If the line source already provide an orientation then alter the line orientation
-                Orientation inputOrientation = data.sourceOrientation.get(data.sourcesPk.get(srcIndex));
-                bearing = (float)((720 + bearing + inputOrientation.yaw) % (360.0));
-                inclination += inputOrientation.pitch;
-                if(inclination > 90 || inclination < -90) {
-                    // on the back
-                    bearing = (float)((bearing + 180) % (360.0));
-                    roll =  (float)((inputOrientation.roll + 180) % (360.0));
-                    inclination = (float)Math.toDegrees(Math.atan2(Math.sin(Math.toRadians(inclination)),
-                            Math.abs(Math.cos(Math.toRadians(inclination)))));
-                } else {
-                    roll = inputOrientation.roll;
-                }
-            }
-            Orientation orientation = new Orientation(bearing,
-                    inclination, roll);
             if (pt.distance(receiverCoord) < data.maxSrcDist) {
-                totalPowerRemaining += insertPtSource(receiverCoord, pt, wj, li, srcIndex, sourceList, orientation);
+                // use the orientation computed from the line source coordinates
+                Vector3D v;
+                if(ptIndex == 0) {
+                    v = new Vector3D(pts.get(0), pts.get(1));
+                } else {
+                    v = new Vector3D(pts.get(ptIndex - 1), pts.get(ptIndex));
+                }
+                Orientation inputOrientation;
+                if(data.sourcesPk.size() > srcIndex && data.sourceOrientation.containsKey(data.sourcesPk.get(srcIndex))) {
+                    // If the line source already provide an orientation then alter the line orientation
+                    inputOrientation = data.sourceOrientation.get(data.sourcesPk.get(srcIndex));
+                } else {
+                    inputOrientation = new Orientation(0, 0, 0);
+                }
+                inputOrientation = Orientation.rotate(inputOrientation, v.normalize());
+                totalPowerRemaining += insertPtSource(receiverCoord, pt, wj, li, srcIndex, sourceList, inputOrientation);
             }
         }
         return totalPowerRemaining;
