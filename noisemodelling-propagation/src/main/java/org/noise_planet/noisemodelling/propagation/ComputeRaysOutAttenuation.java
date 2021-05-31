@@ -197,7 +197,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
                 double[] aGlobalMeteoRay = ComputeRays.sumArrayWithPonderation(aGlobalMeteoFav, aGlobalMeteoHom, pathData.getWindRose()[roseindex]);
 
                 // Apply attenuation due to sound direction
-                if(!inputData.isOmnidirectional((int)sourceId)) {
+                if(inputData != null && !inputData.isOmnidirectional((int)sourceId)) {
                     Orientation sourceOrientation = propath.getSourceOrientation();
                     // fetch orientation of the first ray
                     Coordinate nextPointFromSource = propath.getPointList().get(1).coordinate;

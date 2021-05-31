@@ -457,6 +457,9 @@ def exec(Connection connection, input) {
     ldenConfig.setMergeSources(!confExportSourceId)
 
     LDENPointNoiseMapFactory ldenProcessing = new LDENPointNoiseMapFactory(connection, ldenConfig)
+    // Add train directivity
+    // TODO add optional discrete directivity table name
+    ldenProcessing.insertTrainDirectivity()
     pointNoiseMap.setComputeHorizontalDiffraction(compute_horizontal_diffraction)
     pointNoiseMap.setComputeVerticalDiffraction(compute_vertical_diffraction)
     pointNoiseMap.setSoundReflectionOrder(reflexion_order)

@@ -17,6 +17,7 @@ import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.functions.spatial.edit.ST_AddZ
 import org.h2gis.utilities.SFSUtilities
 import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.TableLocation
@@ -144,10 +145,10 @@ def exec(Connection connection, input) {
 
     // Build and execute queries
     StringBuilder createTableQuery = new StringBuilder("create table LW_RAILWAY (ID_SECTION int," +
-            " the_geom geometry, DIR_ID int,HEIGHT double")
+            " the_geom geometry, DIR_ID int")
     StringBuilder insertIntoQuery = new StringBuilder("INSERT INTO LW_RAILWAY(ID_SECTION, the_geom," +
-            " DIR_ID, HEIGHT")
-    StringBuilder insertIntoValuesQuery = new StringBuilder("?,?,?,?")
+            " DIR_ID")
+    StringBuilder insertIntoValuesQuery = new StringBuilder("?,?,?")
     for(int thirdOctave : PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
         createTableQuery.append(", LWD")
         createTableQuery.append(thirdOctave)
@@ -259,7 +260,11 @@ def exec(Connection connection, input) {
             for (int nTrack = 0; nTrack < geometries.size(); nTrack++) {
 
                 sql.withBatch(100, insertIntoQuery.toString()) { ps ->
-                    def batchData = [pk as int, (Geometry) geometries.get(nTrack) as Geometry, directivityId as int, heightSource as double]
+                    Geometry trackGeometry = (Geometry) geometries.get(nTrack)
+                    Geometry sourceGeometry = trackGeometry.copy()
+                    // offset geometry z
+                    sourceGeometry.apply(new ST_AddZ.AddZCoordinateSequenceFilter(heightSource))
+                    def batchData = [pk as int, sourceGeometry as Geometry, directivityId as int]
                     batchData.addAll(LWDay)
                     batchData.addAll(LWEvening)
                     batchData.addAll(LWNight)
