@@ -44,11 +44,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+//TODO use NaN for building height
 //TODO fix wall references id in order to use also real wall database key
 //TODO check how the wall alpha are set to the cut point
 //TODO check how the topo and building height are set to cut point
-//Todo check how the building pk is set to cut point
-//TODO create class ComputeCnossosRays which is a copy of computeRays using ProfileBuilder
+//TODO check how the building pk is set to cut point
+//TODO difference between Z and height (z = height+topo)
+//TODO create class org.noise_planet.noisemodelling.pathfinder.ComputeCnossosRays which is a copy of computeRays using ProfileBuilder
 
 /**
  * Builder constructing profiles from buildings, topography and ground effects.
@@ -174,7 +176,7 @@ public class ProfileBuilder {
      * @param id     Database primary key.
      */
     public Building addBuilding(Geometry geom, int id) {
-        return addBuilding(geom, id);
+        return addBuilding(geom, Double.NaN, id);
     }
 
     /**
@@ -203,7 +205,7 @@ public class ProfileBuilder {
      * @param alphas Absorption coefficients.
      */
     public Building addBuilding(Geometry geom, List<Double> alphas) {
-        return addBuilding(geom, -1, alphas, -1);
+        return addBuilding(geom, Double.NaN, alphas, -1);
     }
 
     /**
@@ -213,7 +215,7 @@ public class ProfileBuilder {
      * @param id     Database primary key.
      */
     public Building addBuilding(Geometry geom, List<Double> alphas, int id) {
-        return addBuilding(geom, -1, alphas, id);
+        return addBuilding(geom, Double.NaN, alphas, id);
     }
 
     /**
@@ -485,16 +487,11 @@ public class ProfileBuilder {
             Building building = buildings.get(j);
             Coordinate[] coords = building.poly.getCoordinates();
             for (int i = 0; i < coords.length - 1; i++) {
-                LineSegment lineSegment = new LineSegment(new Coordinate(coords[i].x, coords[i].y, !Double.isNaN(coords[i].z) ? coords[i].z : building.height),
-                        new Coordinate(coords[i + 1].x, coords[i + 1].y, building.height));
+                LineSegment lineSegment = new LineSegment(new Coordinate(coords[i].x, coords[i].y, Double.isNaN(building.height) ? coords[i].z : building.height),
+                        new Coordinate(coords[i + 1].x, coords[i + 1].y, Double.isNaN(building.height) ? coords[i+1].z : building.height));
                 processedWalls.add(new Wall(lineSegment, j, IntersectionType.BUILDING));
                 rtree.insert(lineSegment.toGeometry(FACTORY).getEnvelopeInternal(), processedWalls.size()-1);
             }
-        }
-        for (int j = 0; j < processedWalls.size(); j++) {
-            Wall wall = processedWalls.get(j);
-            processedWalls.add(wall);
-            rtree.insert(wall.line.toGeometry(FACTORY).getEnvelopeInternal(), processedWalls.size()-1);
         }
         //Process topographic points and lines
         if(topoPoints.size()+topoLines.size() > 1) {
@@ -637,6 +634,9 @@ public class ProfileBuilder {
                     if(!Double.isNaN(facetLine.line.p0.z) && !Double.isNaN(facetLine.line.p1.z)) {
                         intersection.z = Vertex.interpolateZ(intersection, facetLine.line.p0, facetLine.line.p1);
                     }
+                    else if(topoTree == null) {
+                        intersection.z = Double.NaN;
+                    }
                     else {
                         intersection.z = getTopoZ(intersection);
                     }
@@ -728,7 +728,7 @@ public class ProfileBuilder {
                     currentGround = groundEffects.get(cut.id);
                 }
             }
-            cut.groundCoef = currentGround != null ? currentGround.coef : Double.NaN;
+            cut.groundCoef = currentGround != null ? currentGround.coef : 1;
         }
 
         return profile;
@@ -768,12 +768,13 @@ public class ProfileBuilder {
         private CutPoint source;
         /** Receiver cut point. */
         private CutPoint receiver;
+        //TODO cache has intersection properties
         /** True if contains a building cutting point. */
-        private boolean hasBuilding = false;
+        private Boolean hasBuildingInter = false;
         /** True if contains a topography cutting point. */
-        private boolean hasTopography = false;
+        private Boolean hasTopographyInter = false;
         /** True if contains a ground effect cutting point. */
-        private boolean hasGroundEffect = false;
+        private Boolean hasGroundEffectInter = false;
 
         /**
          * Add the source point.
@@ -800,7 +801,7 @@ public class ProfileBuilder {
          */
         public void addBuildingCutPt(Coordinate coord, int id) {
             pts.add(new CutPoint(coord, IntersectionType.BUILDING, id));
-            hasBuilding = true;
+            hasBuildingInter = true;
         }
 
         /**
@@ -810,7 +811,7 @@ public class ProfileBuilder {
          */
         public void addTopoCutPt(Coordinate coord, int id) {
             pts.add(new CutPoint(coord, IntersectionType.TOPOGRAPHY, id));
-            hasTopography = true;
+            hasTopographyInter = true;
         }
 
         /**
@@ -820,7 +821,7 @@ public class ProfileBuilder {
          */
         public void addGroundCutPt(Coordinate coord, int id) {
             pts.add(new CutPoint(coord, IntersectionType.GROUND_EFFECT, id));
-            hasGroundEffect = true;
+            hasGroundEffectInter = true;
         }
 
         /**
@@ -867,6 +868,18 @@ public class ProfileBuilder {
          */
         public void reverse() {
             Collections.reverse(pts);
+        }
+
+        public boolean intersectBuilding(){
+            return hasBuildingInter;
+        }
+
+        public boolean intersectTopography(){
+            return hasTopographyInter;
+        }
+
+        public boolean intersectGroundEffect(){
+            return hasGroundEffectInter;
         }
     }
 
