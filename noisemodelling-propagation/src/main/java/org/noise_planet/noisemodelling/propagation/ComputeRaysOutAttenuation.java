@@ -36,6 +36,7 @@ package org.noise_planet.noisemodelling.propagation;
 
 import org.locationtech.jts.algorithm.Angle;
 import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.math.Vector3D;
 import org.noise_planet.noisemodelling.pathfinder.*;
 
 import java.util.ArrayList;
@@ -147,7 +148,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
             EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
 
 
-            double[] aGlobalMeteo = null;
+            double[] propagationAttenuationSpectrum = null;
             for (PropagationPath propath : propagationPath) {
                 List<PointPath> ptList = propath.getPointList();
 
@@ -195,20 +196,41 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
                 // Compute attenuation under the wind conditions using the ray direction
                 double[] aGlobalMeteoRay = ComputeRays.sumArrayWithPonderation(aGlobalMeteoFav, aGlobalMeteoHom, pathData.getWindRose()[roseindex]);
 
-                if (aGlobalMeteo != null) {
-                    aGlobalMeteo = ComputeRays.sumDbArray(aGlobalMeteoRay, aGlobalMeteo);
+                // Apply attenuation due to sound direction
+                if(inputData != null && !inputData.isOmnidirectional((int)sourceId)) {
+                    Orientation sourceOrientation = propath.getSourceOrientation();
+                    // fetch orientation of the first ray
+                    Coordinate nextPointFromSource = propath.getPointList().get(1).coordinate;
+                    Coordinate sourceCoordinate = propath.getPointList().get(0).coordinate;
+                    Vector3D outgoingRay = new Vector3D(new Coordinate(nextPointFromSource.x - sourceCoordinate.x,
+                            nextPointFromSource.y - sourceCoordinate.y,
+                            nextPointFromSource.z - sourceCoordinate.z)).normalize();
+                    Orientation directivityToPick = Orientation.fromVector(Orientation.rotate(sourceOrientation, outgoingRay, true), 0);
+                    double[] attSource = new double[pathData.freq_lvl.size()];
+                    for (int idfreq = 0; idfreq < pathData.freq_lvl.size(); idfreq++) {
+                        attSource[idfreq] = inputData.getSourceAttenuation((int) sourceId,
+                                pathData.freq_lvl.get(idfreq), (float)Math.toRadians(directivityToPick.yaw),
+                                (float)Math.toRadians(directivityToPick.pitch));
+                    }
+                    aGlobalMeteoRay = ComputeRays.sumArray(aGlobalMeteoRay, attSource);
+                }
+
+
+
+                if (propagationAttenuationSpectrum != null) {
+                    propagationAttenuationSpectrum = ComputeRays.sumDbArray(aGlobalMeteoRay, propagationAttenuationSpectrum);
                 } else {
-                    aGlobalMeteo = aGlobalMeteoRay;
+                    propagationAttenuationSpectrum = aGlobalMeteoRay;
                 }
             }
-            if (aGlobalMeteo != null) {
+            if (propagationAttenuationSpectrum != null) {
                 // For line source, take account of li coefficient
                 if(sourceLi > 1.0) {
-                    for (int i = 0; i < aGlobalMeteo.length; i++) {
-                        aGlobalMeteo[i] = ComputeRays.wToDba(ComputeRays.dbaToW(aGlobalMeteo[i]) * sourceLi);
+                    for (int i = 0; i < propagationAttenuationSpectrum.length; i++) {
+                        propagationAttenuationSpectrum[i] = ComputeRays.wToDba(ComputeRays.dbaToW(propagationAttenuationSpectrum[i]) * sourceLi);
                     }
                 }
-                return aGlobalMeteo;
+                return propagationAttenuationSpectrum;
             } else {
                 return new double[0];
             }
@@ -310,6 +332,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
                                 path.getSegmentList(), path.getSRList());
                         pathPk.setIdReceiver(multiThreadParent.inputData.receiversPk.get((int)receiverId).intValue());
                         pathPk.setIdSource(multiThreadParent.inputData.sourcesPk.get((int)sourceId).intValue());
+                        pathPk.setSourceOrientation(path.getSourceOrientation());
                         propagationPaths.add(pathPk);
                     }
                 } else {

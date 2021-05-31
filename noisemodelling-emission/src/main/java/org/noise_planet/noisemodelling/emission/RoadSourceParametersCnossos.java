@@ -20,7 +20,7 @@ import java.io.IOException;
  * @Author Pierre Aumond, Université Gustave Eiffel - 03/05/2017 - Update 12/01/2021
  */
 
-public class RSParametersCnossos {
+public class RoadSourceParametersCnossos {
     private final double lvPerHour; // Qm in 2015 directive - It shall be expressed as yearly average per hour, per time period (day-evening-night), per vehicle class and per source line. For all categories, input traffic flow data derived from traffic counting or from traffic models shall be used.
     private final double mvPerHour; // Qm in 2015 directive
     private final double hgvPerHour; // Qm in 2015 directive
@@ -146,8 +146,8 @@ public class RSParametersCnossos {
     }
 
     /**
-     * Compute {@link RSParametersCnossos#speedHgv}
-     * and {@link RSParametersCnossos#speedLv} from theses parameters
+     * Compute {@link RoadSourceParametersCnossos#speedHgv}
+     * and {@link RoadSourceParametersCnossos#speedLv} from theses parameters
      *
      * @param speed_junction   Speed in the junction section
      * @param speed_max        Maximum speed authorized
@@ -226,7 +226,7 @@ public class RSParametersCnossos {
      * @param Junc_dist   Distance to junction
      * @param Junc_type   Type of junction ((k = 1 for a crossing with traffic lights ; k = 2 for a roundabout)
      */
-    public RSParametersCnossos(double lv_speed, double mv_speed, double hgv_speed, double wav_speed, double wbv_speed, double lvPerHour, double mvPerHour, double hgvPerHour, double wavPerHour, double wbvPerHour, int FreqParam, double Temperature, String roadSurface, double Ts_stud, double Pm_stud, double Junc_dist, int Junc_type) {
+    public RoadSourceParametersCnossos(double lv_speed, double mv_speed, double hgv_speed, double wav_speed, double wbv_speed, double lvPerHour, double mvPerHour, double hgvPerHour, double wavPerHour, double wbvPerHour, int FreqParam, double Temperature, String roadSurface, double Ts_stud, double Pm_stud, double Junc_dist, int Junc_type) {
 
         if (lvPerHour < 0)
             throw new IllegalArgumentException("The flow rate of light vehicles is less than zero on one section.");
