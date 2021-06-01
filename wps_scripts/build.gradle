@@ -49,11 +49,11 @@ dependencies {
     compile('org.locationtech.jts:jts-io:1.15.1') {
         force=true
     }
-    compile group: 'org.orbisgis', name: 'noisemodelling-emission', version: '3.4.1'
-    compile group: 'org.orbisgis', name: 'noisemodelling-propagation', version: '3.4.1'
-    compile group: 'org.orbisgis', name: 'noisemodelling-pathfinder', version: '3.4.1'
-    compile group: 'org.orbisgis', name: 'noisemodelling-jdbc', version: '3.4.1'
-    compile group: 'org.orbisgis', name: 'h2gis-extension', version: '3.4.1'
+    compile group: 'org.orbisgis', name: 'noisemodelling-emission', version: '3.4.2-SNAPSHOT'
+    compile group: 'org.orbisgis', name: 'noisemodelling-propagation', version: '3.4.2-SNAPSHOT'
+    compile group: 'org.orbisgis', name: 'noisemodelling-pathfinder', version: '3.4.2-SNAPSHOT'
+    compile group: 'org.orbisgis', name: 'noisemodelling-jdbc', version: '3.4.2-SNAPSHOT'
+    compile group: 'org.orbisgis', name: 'h2gis-extension', version: '3.4.2-SNAPSHOT'
     compile group: 'org.openstreetmap.osmosis', name: 'osmosis-core', version: '0.48.3'
     compile group: 'org.openstreetmap.osmosis', name: 'osmosis-pbf', version: '0.46'
     compile group: 'org.matsim', name: 'matsim', version: '11.0'
