@@ -11,29 +11,20 @@ public class DiscreteDirectionAttributesTest {
     public void testInsert() {
         DiscreteDirectionAttributes d = new DiscreteDirectionAttributes(1, freqTest);
 
-        d.addDirectivityRecord((float) Math.toRadians(15), (float) Math.toRadians(15),
-                new double[] {-8, -8, -8, -8, -8, -8, -8, -8});
-        d.addDirectivityRecord((float) Math.toRadians(15), (float) Math.toRadians(30),
-                new double[] {-8, -8, -8, -8, -8, -8, -8, -8});
-        d.addDirectivityRecord((float) Math.toRadians(15), (float) Math.toRadians(45),
-                new double[] {-8, -8, -8, -8, -8, -8, -8, -8});
+        RailWayLW.TrainAttenuation att = new RailWayLW.TrainAttenuation(RailWayLW.TrainNoiseSource.TRACTIONB);
 
-        d.addDirectivityRecord((float) Math.toRadians(0), (float) Math.toRadians(15),
-                new double[] {-20, -20, -20, -20, -20, -20, -20, -20});
-        d.addDirectivityRecord((float) Math.toRadians(0), (float) Math.toRadians(45),
-                new double[] {-20, -20, -20, -20, -20, -20, -20, -20});
-        d.addDirectivityRecord((float) Math.toRadians(0), (float) Math.toRadians(30),
-                new double[] {-20, -20, -20, -20, -20, -20, -20, -20});
+        for(float theta = 0; theta < 2 * Math.PI; theta += Math.toRadians(15)) {
+            for(float phi = 0; phi < Math.PI / 2; phi += Math.toRadians(15)) {
+                double[] attSpectrum = new double[freqTest.length];
+                for (int idFreq = 0; idFreq < freqTest.length; idFreq++) {
+                    attSpectrum[idFreq] = att.getAttenuation(freqTest[idFreq], phi, theta);
+                }
+                d.addDirectivityRecord(theta, phi,
+                        attSpectrum);
+            }
+        }
 
-        d.addDirectivityRecord((float) Math.toRadians(45), (float) Math.toRadians(15),
-                new double[] {-8, -8, -8, -8, -8, -8, -8, -8});
-        d.addDirectivityRecord((float) Math.toRadians(45), (float) Math.toRadians(30),
-                new double[] {-8, -8, -8, -8, -8, -8, -8, -8});
-        d.addDirectivityRecord((float) Math.toRadians(45), (float) Math.toRadians(45),
-                new double[] {-8, -8, -8, -8, -8, -8, -8, -8});
-
-
-        System.out.println(d.getRecord((float)Math.toRadians(22), (float)Math.toRadians(31), 0));
+        System.out.println(d.getRecord((float)Math.toRadians(26), (float)Math.toRadians(31), 0));
 
     }
 

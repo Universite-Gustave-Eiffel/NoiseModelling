@@ -56,10 +56,13 @@ public class DiscreteDirectionAttributes {
                 previousIndex = records.size() - 1;
                 // TODO, construct new angle with -2PI ?
             }
-            return new DirectivityRecord[] {records.get(index), records.get(previousIndex)};
+            return new DirectivityRecord[] {records.get(previousIndex), records.get(index)};
         }
     }
 
+    private static double getDistance(float theta, float phi, DirectivityRecord b) {
+        return Math.acos(Math.sin(phi) * Math.sin(b.phi) + Math.cos(phi) * Math.cos(b.phi) * Math.cos(theta - b.theta));
+    }
     /**
      * Retrieve DirectivityRecord for the specified angles
      * @param theta in radians
@@ -69,21 +72,48 @@ public class DiscreteDirectionAttributes {
      */
     public DirectivityRecord getRecord(float theta, float phi, int interpolate) {
         DirectivityRecord record = new DirectivityRecord(theta, phi, null);
+        int index = Collections.binarySearch(recordsTheta, record, thetaComparator);
+        if(index >= 0) {
+            return recordsTheta.get(index);
+        }
+        index = - index - 1;
+        float theta2 = recordsTheta.get(index).getTheta();
+        // Take previous record
+        index -= 1;
+        if(index < 0) {
+            index = recordsTheta.size() - 1;
+        }
+        float theta1 = recordsTheta.get(index).getTheta();
+        index = Collections.binarySearch(recordsPhi, record, phiComparator);
+        index = - index - 1;
+        float phi2 = recordsPhi.get(index).getPhi();
+        // Take previous record
+        index -= 1;
+        if(index < 0) {
+            index = recordsPhi.size() - 1;
+        }
+        float phi1 = recordsPhi.get(index).getPhi();
+        // Find closest records
+        DirectivityRecord[] allRecords = new DirectivityRecord[] {
+                recordsTheta.get(Collections.binarySearch(recordsTheta, new DirectivityRecord(theta1, phi1, null), thetaComparator)),
+                recordsTheta.get(Collections.binarySearch(recordsTheta, new DirectivityRecord(theta2, phi1, null), thetaComparator)),
+                recordsTheta.get(Collections.binarySearch(recordsTheta, new DirectivityRecord(theta2, phi2, null), thetaComparator)),
+                recordsTheta.get(Collections.binarySearch(recordsTheta, new DirectivityRecord(theta1, phi2, null), thetaComparator))
+        };
         if(interpolate == 0) {
-            int index = Collections.binarySearch(recordsTheta, record, thetaComparator);
-            if (index < 0) {
-                index = -index - 1;
+            double minDist = Double.MAX_VALUE;
+            DirectivityRecord closest = allRecords[0];
+            for(DirectivityRecord r : allRecords) {
+                double testDist = getDistance(theta, phi, r);
+                if(testDist < minDist) {
+                    minDist = testDist;
+                    closest = r;
+                }
             }
-            if (index < recordsTheta.size()) {
-                return recordsTheta.get(index);
-            } else {
-                return null;
-            }
+            return closest;
         } else {
-            DirectivityRecord[] previousAndNextTheta = getIndexes(recordsTheta, thetaComparator, record);
-            DirectivityRecord[] previousAndNextPhi = getIndexes(recordsPhi, phiComparator, record);
             // TODO bilinear interpolation
-            return previousAndNextTheta[0];
+            return allRecords[0];
         }
     }
 
@@ -141,6 +171,23 @@ public class DiscreteDirectionAttributes {
 
         public float getPhi() {
             return phi;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            DirectivityRecord record = (DirectivityRecord) o;
+            return Float.compare(record.theta, theta) == 0 &&
+                    Float.compare(record.phi, phi) == 0 &&
+                    Arrays.equals(attenuation, record.attenuation);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = Objects.hash(theta, phi);
+            result = 31 * result + Arrays.hashCode(attenuation);
+            return result;
         }
 
         @Override
