@@ -69,8 +69,8 @@ inputs = [
                         '- <b> LWD63, LWD125, LWD250, LWD500, LWD1000, LWD2000, LWD4000, LWD8000 </b> : 8 columns giving the day emission sound level for each octave band (FLOAT). </br> ' +
                         '- <b> LWE* </b> : 8 columns giving the evening emission sound level for each octave band (FLOAT).</br> ' +
                         '- <b> LWN* </b> : 8 columns giving the night emission sound level for each octave band (FLOAT).</br> ' +
-                        '- <b> YAW </b> : Source horizontal orientation in degrees. For points 0° North, 90° East. For lines 0° line direction, 90° right of the line direction.  (FLOAT).</br> ' +
-                        '- <b> PITCH </b> : Source vertical orientation in degrees. 0° front, 90° top, -90° bottom. (FLOAT).</br> ' +
+                        '- <b> YAW </b> : Source horizontal orientation in degrees. For points 0&#176; North, 90&#176; East. For lines 0&#176; line direction, 90&#176; right of the line direction.  (FLOAT).</br> ' +
+                        '- <b> PITCH </b> : Source vertical orientation in degrees. 0&#176; front, 90&#176; top, -90&#176; bottom. (FLOAT).</br> ' +
                         '- <b> ROLL </b> : Source roll in degrees (FLOAT).</br> ' +
                         '- <b> DIR_ID </b> : identifier of the directivity sphere from tableSourceDirectivity parameter or train directivity if not provided -> OMNIDIRECTIONAL(0), ROLLING(1), TRACTIONA(2), TRACTIONB(3), AERODYNAMICA(4), AERODYNAMICB(5), BRIDGE(6) (INTEGER).</br> ' +
                         '</br> </br> <b> This table can be generated from the WPS Block "Road_Emission_from_Traffic". </b>',
@@ -110,8 +110,8 @@ inputs = [
                 description: '<b>Name of the emission directivity table. If not specified the default is train directivity of cnossos</b></br>  ' +
                         '</br>The table shall contain the following fields : </br> ' +
                         '- <b> DIR_ID </b> : identifier of the directivity sphere (INTEGER)</br> ' +
-                        '- <b> THETA </b> : Horizontal angle in degree. 0° front and 90° right (0-360) (FLOAT)</br> ' +
-                        '- <b> PHI </b> : Vertical angle in degree. 0° front and 90° top -90° bottom (-90 - 90) (FLOAT)</br> ' +
+                        '- <b> THETA </b> : Horizontal angle in degree. 0&#176; front and 90&#176; right (0-360) (FLOAT)</br> ' +
+                        '- <b> PHI </b> : Vertical angle in degree. 0&#176; front and 90&#176; top -90&#176; bottom (-90 - 90) (FLOAT)</br> ' +
                         '- <b> LW63, LW125, LW250, LW500, LW1000, LW2000, LW4000, LW8000 </b> : attenuation levels in dB for each octave or third octave (FLOAT). </br> ' ,
                 min        : 0, max: 1, type: String.class
         ],
