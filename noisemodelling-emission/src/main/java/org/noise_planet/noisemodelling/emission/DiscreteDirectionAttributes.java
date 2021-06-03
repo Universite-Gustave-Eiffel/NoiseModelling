@@ -14,9 +14,13 @@ package org.noise_planet.noisemodelling.emission;
 import java.io.Serializable;
 import java.util.*;
 
-public class DiscreteDirectionAttributes {
+public class DiscreteDirectionAttributes implements DirectionAttributes {
+    int interpolationMethod = 1;
     int directionIdentifier;
     double[] frequencies;
+    Map<Long, Integer> frequencyMapping = new HashMap<>();
+    DirectivityRecord lastQuery = null;
+    DirectivityRecord lastQueryRecord = null;
     // List of records, maintain the two lists sorted
     List<DirectivityRecord> recordsTheta = new ArrayList<>();
     List<DirectivityRecord> recordsPhi = new ArrayList<>();
@@ -27,6 +31,51 @@ public class DiscreteDirectionAttributes {
     public DiscreteDirectionAttributes(int directionIdentifier, double[] frequencies) {
         this.directionIdentifier = directionIdentifier;
         this.frequencies = frequencies;
+        for(int idFrequency = 0; idFrequency < frequencies.length; idFrequency++) {
+            frequencyMapping.put(Double.doubleToLongBits(frequencies[idFrequency]), idFrequency);
+        }
+    }
+
+    public void setInterpolationMethod(int interpolationMethod) {
+        this.interpolationMethod = interpolationMethod;
+    }
+
+    public List<DirectivityRecord> getRecordsTheta() {
+        return recordsTheta;
+    }
+
+    public List<DirectivityRecord> getRecordsPhi() {
+        return recordsPhi;
+    }
+
+    public int getDirectionIdentifier() {
+        return directionIdentifier;
+    }
+
+    @Override
+    public double getAttenuation(double frequency, double phi, double theta) {
+        DirectivityRecord query = new DirectivityRecord((float)theta, (float)phi, null);
+
+        // look for frequency index
+        Integer idFreq = frequencyMapping.get(Double.doubleToLongBits(frequency));
+        if(idFreq == null) {
+            // get closest index
+            idFreq = Arrays.binarySearch(frequencies, frequency);
+            if(idFreq < 0) {
+                int last = Math.min(-idFreq - 1, frequencies.length - 1);
+                int first = Math.max(last - 1, 0);
+                idFreq = Math.abs(frequencies[first] - frequency) < Math.abs(frequencies[last] - frequency) ?
+                        first : last;
+            }
+        }
+
+        // for speed up, check if it is the same theta and phi queried last time
+        if(!query.equals(lastQuery)) {
+            // if not go looking for it
+            lastQueryRecord = getRecord(query.theta, query.phi, interpolationMethod);
+            lastQuery = query;
+        }
+        return lastQueryRecord.getAttenuation()[idFreq];
     }
 
     public void addDirectivityRecord(float theta, float phi, double[] attenuation) {
@@ -44,20 +93,11 @@ public class DiscreteDirectionAttributes {
         recordsPhi.add(index, record);
     }
 
-    private static DirectivityRecord[] getIndexes(List<DirectivityRecord> records, Comparator<DirectivityRecord> comp, DirectivityRecord record) {
-        int index = Collections.binarySearch(records, record, comp);
-        if(index >= 0) {
-            // This record already exists
-            return new DirectivityRecord[] {records.get(index), records.get(index)};
-        } else {
-            index = - index - 1;
-            int previousIndex = index - 1;
-            if(previousIndex < 0) {
-                previousIndex = records.size() - 1;
-                // TODO, construct new angle with -2PI ?
-            }
-            return new DirectivityRecord[] {records.get(previousIndex), records.get(index)};
-        }
+    /**
+     * @return Frequencies of columns
+     */
+    public double[] getFrequencies() {
+        return frequencies;
     }
 
     private static double getDistance(double theta, double phi, DirectivityRecord b) {
