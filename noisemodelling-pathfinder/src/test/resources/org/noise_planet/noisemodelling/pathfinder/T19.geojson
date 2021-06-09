@@ -1,11 +1,5 @@
 {
   "type" : "FeatureCollection",
-  "crs" : {
-    "type" : "name",
-    "properties" : {
-      "name" : "EPSG:4326"
-    }
-  },
   "features" : [ {
     "type" : "Feature",
     "geometry" : {
@@ -39,5 +33,11 @@
       "source" : 0,
       "gPath" : [ 0.20, 0.23, 0.62 ]
     }
-  } ]
+  } ],
+       "crs" : {
+         "type" : "name",
+         "properties" : {
+           "name" : "EPSG:4326"
+         }
+       }
 }

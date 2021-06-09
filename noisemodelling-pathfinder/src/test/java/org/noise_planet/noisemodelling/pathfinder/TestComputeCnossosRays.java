@@ -868,7 +868,7 @@ public class TestComputeCnossosRays {
                 new Coordinate(175.01, 50, 0),
                 new Coordinate(190.01, 10, 0),
                 new Coordinate(190, 10, 0),
-                new Coordinate(175, 50, 0)}), -1, 6);
+                new Coordinate(175, 50, 0)}), 6, -1);
 
         // Add topographic points
         //x1
@@ -942,7 +942,7 @@ public class TestComputeCnossosRays {
                 new Coordinate(65, 5, 0),
                 new Coordinate(65, 15, 0),
                 new Coordinate(55, 15, 0),
-                new Coordinate(55, 5, 0)}), 10);
+                new Coordinate(55, 5, 0)}), 10, -1);
 
         profileBuilder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9);
         profileBuilder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5);
