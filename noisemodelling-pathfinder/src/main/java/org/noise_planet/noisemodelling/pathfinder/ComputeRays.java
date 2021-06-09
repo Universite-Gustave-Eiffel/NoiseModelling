@@ -682,14 +682,15 @@ public class ComputeRays {
             PropagationPath propagationPath = computeFreefield(receiverCoord, srcCoord, null);
             points.addAll(propagationPath.getPointList());
             segments.addAll(propagationPath.getSegmentList());
-            srPath.addAll(propagationPath.getSRList());
+            srPath.addAll(propagationPath.getSRSegmentList());
         }
-        for (int i = 0; i < segments.size(); i++) {
+        //Remove segment smaller than 10 cm
+        /*for (int i = 0; i < segments.size(); i++) {
             if (segments.get(i).getSegmentLength() < 0.1) {
                 segments.remove(i);
                 points.remove(i + 1);
             }
-        }
+        }*/
         return new PropagationPath(true, points, segments, srPath);
     }
 
@@ -911,7 +912,7 @@ public class ComputeRays {
         if (verticalDiffraction && !freefield) {
             PropagationPath propagationPath3 = computeFreefield(receiverCoord, srcCoord, inters);
             PropagationPath propagationPath = computeHorizontalEdgeDiffraction(topographyHideReceiver, receiverCoord, srcCoord, inters);
-            propagationPath.getSRList().addAll(propagationPath3.getSRList());
+            propagationPath.getSRSegmentList().addAll(propagationPath3.getSRSegmentList());
             propagationPaths.add(propagationPath);
 
 
@@ -929,7 +930,7 @@ public class ComputeRays {
                         propagationPath.getPointList().remove(i + 1);
                     }
                 }
-                propagationPath.setSRList(propagationPath3.getSRList());
+                propagationPath.setSRList(propagationPath3.getSRSegmentList());
                 propagationPaths.add(propagationPath);
             }
             propagationPath = computeVerticalEdgeDiffraction(srcCoord, receiverCoord,inters, "right");
@@ -940,7 +941,7 @@ public class ComputeRays {
                         propagationPath.getPointList().remove(i + 1);
                     }
                 }
-                propagationPath.setSRList(propagationPath3.getSRList());
+                propagationPath.setSRList(propagationPath3.getSRSegmentList());
                 propagationPaths.add(propagationPath);
             }
         }

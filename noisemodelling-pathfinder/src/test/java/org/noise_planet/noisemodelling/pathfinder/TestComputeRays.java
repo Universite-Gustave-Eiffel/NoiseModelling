@@ -27,7 +27,7 @@ import static org.junit.Assert.assertEquals;
 
 public class TestComputeRays {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestComputeRays.class);
-    private boolean storeGeoJSONRays = true;
+    private boolean storeGeoJSONRays = false;
 
 
     @Test
@@ -313,7 +313,7 @@ public class TestComputeRays {
         assertEquals(expected.get(0).getPointList().get(0).coordinate, got.get(0).getPointList().get(0).coordinate);
         assertEquals(1, expected.get(1).getPointList().size());
         assertEquals(PointPath.POINT_TYPE.DIFV, expected.get(1).getPointList().get(0).type);
-        assertEquals(0, expected.get(1).getSRList().size());
+        assertEquals(0, expected.get(1).getSRSegmentList().size());
         assertEquals(expected.get(0).getIdReceiver(), got.get(0).getIdReceiver());
         assertEquals(expected.get(0).getIdSource(), got.get(0).getIdSource());
         assertEquals(expected.get(1).getIdReceiver(), got.get(1).getIdReceiver());

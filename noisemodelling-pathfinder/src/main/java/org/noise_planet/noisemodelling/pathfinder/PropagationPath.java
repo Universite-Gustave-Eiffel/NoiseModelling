@@ -184,7 +184,7 @@ public class PropagationPath {
 
     public List<SegmentPath> getSegmentList() {return segmentList;}
 
-    public List<SegmentPath> getSRList() {return srList;}
+    public List<SegmentPath> getSRSegmentList() {return srList;}
 
     public void setPointList(List<PointPath> pointList) {this.pointList = pointList;}
 

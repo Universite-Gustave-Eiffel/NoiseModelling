@@ -313,7 +313,7 @@ public class TestComputeCnossosRays {
         assertEquals(expected.get(0).getPointList().get(0).coordinate, got.get(0).getPointList().get(0).coordinate);
         assertEquals(1, expected.get(1).getPointList().size());
         assertEquals(PointPath.POINT_TYPE.DIFV, expected.get(1).getPointList().get(0).type);
-        assertEquals(0, expected.get(1).getSRList().size());
+        assertEquals(0, expected.get(1).getSRSegmentList().size());
         assertEquals(expected.get(0).getIdReceiver(), got.get(0).getIdReceiver());
         assertEquals(expected.get(0).getIdSource(), got.get(0).getIdSource());
         assertEquals(expected.get(1).getIdReceiver(), got.get(1).getIdReceiver());
@@ -771,8 +771,6 @@ public class TestComputeCnossosRays {
     @Test
     public void TC07()  throws LayerDelaunayError , IOException {
         GeometryFactory factory = new GeometryFactory();
-        //Scene dimension
-        Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 
         //Create profile builder
         ProfileBuilder profileBuilder = new ProfileBuilder();
@@ -827,7 +825,7 @@ public class TestComputeCnossosRays {
                 new Coordinate(175.01, 50, 0),
                 new Coordinate(190.01, 10, 0),
                 new Coordinate(190, 10, 0),
-                new Coordinate(175, 50, 0)}), -1, 6);
+                new Coordinate(175, 50, 0)}), 6, -1);
         profileBuilder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9);
         profileBuilder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5);
         profileBuilder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2);
@@ -860,66 +858,62 @@ public class TestComputeCnossosRays {
     @Test
     public void TC09()  throws LayerDelaunayError , IOException {
         GeometryFactory factory = new GeometryFactory();
-        //Scene dimension
-        Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 
-        //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        //Create profile builder
+        ProfileBuilder profileBuilder = new ProfileBuilder();
 
         // Add building
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        profileBuilder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(175, 50, 0),
                 new Coordinate(175.01, 50, 0),
                 new Coordinate(190.01, 10, 0),
                 new Coordinate(190, 10, 0),
-                new Coordinate(175, 50, 0)}), 6);
+                new Coordinate(175, 50, 0)}), -1, 6);
 
         // Add topographic points
         //x1
-        mesh.addTopographicPoint(new Coordinate(0, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(225, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(225, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(0, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(120, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
-        mesh.addTopographicPoint(new Coordinate(205, -5, 10));
-        mesh.addTopographicPoint(new Coordinate(205, 75, 10));
-        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
+        profileBuilder.addTopographicPoint(new Coordinate(0, 80, 0));
+        profileBuilder.addTopographicPoint(new Coordinate(225, 80, 0));
+        profileBuilder.addTopographicPoint(new Coordinate(225, -20, 0));
+        profileBuilder.addTopographicPoint(new Coordinate(0, -20, 0));
+        profileBuilder.addTopographicPoint(new Coordinate(120, -20, 0));
+        profileBuilder.addTopographicPoint(new Coordinate(185, -5, 10));
+        profileBuilder.addTopographicPoint(new Coordinate(205, -5, 10));
+        profileBuilder.addTopographicPoint(new Coordinate(205, 75, 10));
+        profileBuilder.addTopographicPoint(new Coordinate(185, 75, 10));
         //x2
-        mesh.addTopographicPoint(new Coordinate(225, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(225, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(0, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(0, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(120, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(205, -5, 10));
-        mesh.addTopographicPoint(new Coordinate(205, 75, 10));
-        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
-        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
+        profileBuilder.addTopographicPoint(new Coordinate(225, 80, 0));
+        profileBuilder.addTopographicPoint(new Coordinate(225, -20, 0));
+        profileBuilder.addTopographicPoint(new Coordinate(0, -20, 0));
+        profileBuilder.addTopographicPoint(new Coordinate(0, 80, 0));
+        profileBuilder.addTopographicPoint(new Coordinate(120, 80, 0));
+        profileBuilder.addTopographicPoint(new Coordinate(205, -5, 10));
+        profileBuilder.addTopographicPoint(new Coordinate(205, 75, 10));
+        profileBuilder.addTopographicPoint(new Coordinate(185, 75, 10));
+        profileBuilder.addTopographicPoint(new Coordinate(185, -5, 10));
 
-        mesh.finishPolygonFeeding(cellEnvelope);
+        profileBuilder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9);
+        profileBuilder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5);
+        profileBuilder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2);
 
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-                mesh.getTriNeighbors(), mesh.getVertices());
+        profileBuilder.finishFeeding();
 
-        PropagationProcessData rayData = new PropagationProcessData(manager);
+
+        CnossosPropagationData rayData = new CnossosPropagationData(profileBuilder);
         rayData.addReceiver(new Coordinate(200, 50, 14));
         rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
         rayData.setComputeHorizontalDiffraction(true);
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
         rayData.setComputeVerticalDiffraction(true);
         rayData.setGs(0.9);
 
         ComputeRaysOut propDataOut = new ComputeRaysOut(true);
-        ComputeRays computeRays = new ComputeRays(rayData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays();
         computeRays.setThreadCount(1);
-        computeRays.run(propDataOut);
+        computeRays.run(rayData, propDataOut);
 
         if(storeGeoJSONRays) {
             exportRays("target/T09.geojson", propDataOut);
-            KMLDocument.exportScene("target/T09.kml", manager, propDataOut);
+            //KMLDocument.exportScene("target/T09.kml", manager, propDataOut);
         } else {
             assertRaysEquals(TestComputeCnossosRays.class.getResourceAsStream("T09.geojson"), propDataOut);
         }
@@ -938,41 +932,36 @@ public class TestComputeCnossosRays {
     @Test
     public void TC10()  throws LayerDelaunayError , IOException {
         GeometryFactory factory = new GeometryFactory();
-        //Scene dimension
-        Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 
-        //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        //Create profile builder
+        ProfileBuilder profileBuilder = new ProfileBuilder();
 
         // Add building
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        profileBuilder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(55, 5, 0),
                 new Coordinate(65, 5, 0),
                 new Coordinate(65, 15, 0),
                 new Coordinate(55, 15, 0),
                 new Coordinate(55, 5, 0)}), 10);
 
-        mesh.finishPolygonFeeding(cellEnvelope);
+        profileBuilder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9);
+        profileBuilder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5);
+        profileBuilder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2);
 
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-                mesh.getTriNeighbors(), mesh.getVertices());
+        profileBuilder.finishFeeding();
 
-        PropagationProcessData rayData = new PropagationProcessData(manager);
+        CnossosPropagationData rayData = new CnossosPropagationData(profileBuilder);
         rayData.addReceiver(new Coordinate(70, 10, 4));
         rayData.addSource(factory.createPoint(new Coordinate(50, 10, 1)));
         rayData.setComputeHorizontalDiffraction(true);
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
         rayData.setComputeVerticalDiffraction(true);
         ComputeRaysOut propDataOut = new ComputeRaysOut(true, null);
-        ComputeRays computeRays = new ComputeRays(rayData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays();
         computeRays.setThreadCount(1);
-        computeRays.run(propDataOut);
+        computeRays.run(rayData, propDataOut);
         if(storeGeoJSONRays) {
             exportRays("target/T10.geojson", propDataOut);
-            KMLDocument.exportScene("target/T10.kml", manager, propDataOut);
+            //KMLDocument.exportScene("target/T10.kml", manager, propDataOut);
         } else {
             assertRaysEquals(TestComputeCnossosRays.class.getResourceAsStream("T10.geojson"), propDataOut);
         }

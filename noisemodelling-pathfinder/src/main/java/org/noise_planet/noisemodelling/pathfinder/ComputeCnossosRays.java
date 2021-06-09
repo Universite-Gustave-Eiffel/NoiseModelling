@@ -33,10 +33,14 @@
  */
 package org.noise_planet.noisemodelling.pathfinder;
 
+import org.apache.commons.math3.geometry.euclidean.threed.Line;
+import org.apache.commons.math3.geometry.euclidean.threed.Plane;
 import org.h2gis.api.ProgressVisitor;
 import org.locationtech.jts.algorithm.CGAlgorithms3D;
+import org.locationtech.jts.algorithm.ConvexHull;
 import org.locationtech.jts.algorithm.RectangleLineIntersector;
 import org.locationtech.jts.geom.*;
+import org.locationtech.jts.index.ItemVisitor;
 import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.math.Vector3D;
 import org.slf4j.Logger;
@@ -45,7 +49,6 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static org.noise_planet.noisemodelling.pathfinder.ComputeRays.splitLineStringIntoPoints;
 import static org.noise_planet.noisemodelling.pathfinder.ComputeRays.sumArray;
@@ -57,12 +60,12 @@ import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticPropagati
  * @author Pierre Aumond
  */
 public class ComputeCnossosRays {
+    private final static double MAX_RATIO_HULL_DIRECT_PATH = 4;
     private final static Logger LOGGER = LoggerFactory.getLogger(ComputeCnossosRays.class);
 
     private int threadCount;
 
     public ComputeCnossosRays() {
-        Runtime runtime = Runtime.getRuntime();
         this.threadCount = Runtime.getRuntime().availableProcessors();
     }
 
@@ -104,62 +107,16 @@ public class ComputeCnossosRays {
         }
     }
 
-    public PropagationPath computeFreefield(Coordinate rcvCoord, Coordinate srcCoord, ProfileBuilder.CutProfile cutProfile, CnossosPropagationData data) {
+    public PropagationPath computeFreefield(ProfileBuilder.CutProfile cutProfile, double gs) {
         List<PointPath> points = new ArrayList<>();
         List<SegmentPath> segments = new ArrayList<>();
 
-        Coordinate projReceiver;
-        Coordinate projSource;
+        segments.add(new SegmentPath(cutProfile.getGS(),
+                new Vector3D(cutProfile.getSource().getCoordinate(), cutProfile.getReceiver().getCoordinate()),
+                cutProfile.getSource().getCoordinate()));
 
-        List<ProfileBuilder.CutPoint> cutPoints;
-        if(cutProfile == null) {
-            ProfileBuilder.CutPoint src = new ProfileBuilder.CutPoint(srcCoord, ProfileBuilder.IntersectionType.SOURCE, -1);
-            ProfileBuilder.CutPoint rcv = new ProfileBuilder.CutPoint(rcvCoord, ProfileBuilder.IntersectionType.RECEIVER, -1);
-            cutPoints = Arrays.asList(src, rcv);
-        }
-        else {
-            cutPoints = cutProfile.getCutPoints();
-        }
-        double totRSDistance = 0;
-        double length = 0;
-        for (int i = 0; i < cutPoints.size()-1; i++) {
-            ProfileBuilder.CutPoint pt0 = cutPoints.get(i);
-            ProfileBuilder.CutPoint pt1 = cutPoints.get(i+1);
-            LineSegment segment = new LineSegment(pt0.getCoordinate(), pt1.getCoordinate());
-            length += segment.getLength();
-            totRSDistance += segment.getLength() * pt0.getGroundCoef();
-        }
-        // Compute GPath using 2D Length
-        double gPath = totRSDistance / length;
-        List<Coordinate> rSground = cutPoints.stream().map(ProfileBuilder.CutPoint::getCoordinate).collect(Collectors.toList());
-        double angle = new LineSegment(rSground.get(0), rSground.get(rSground.size() - 1)).angle();
-        rSground = JTSUtility.getNewCoordinateSystem(rSground);
-
-        // Compute mean ground plan
-        double[] ab = JTSUtility.getMeanPlaneCoefficients(rSground.toArray(new Coordinate[rSground.size()]));
-        Coordinate pInit;
-        Coordinate rotatedReceiver = new Coordinate(rSground.get(rSground.size() - 1));
-        rotatedReceiver.setOrdinate(1, rcvCoord.z);
-        Coordinate rotatedSource = new Coordinate(rSground.get(0));
-        rotatedSource.setOrdinate(1, srcCoord.z);
-        projReceiver = JTSUtility.makeProjectedPoint(ab[0], ab[1], rotatedReceiver);
-        projSource = JTSUtility.makeProjectedPoint(ab[0], ab[1], rotatedSource);
-        pInit = JTSUtility.makeProjectedPoint(ab[0], ab[1], new Coordinate(0, 0, 0));
-        projReceiver = JTSUtility.getOldCoordinateSystem(projReceiver, angle);
-        projSource = JTSUtility.getOldCoordinateSystem(projSource, angle);
-        pInit = JTSUtility.getOldCoordinateSystem(pInit, angle);
-
-        projReceiver.x = srcCoord.x + projReceiver.x;
-        projSource.x = srcCoord.x + projSource.x;
-        projReceiver.y = srcCoord.y + projReceiver.y;
-        projSource.y = srcCoord.y + projSource.y;
-        pInit.x = srcCoord.x + pInit.x;
-        pInit.y = srcCoord.y + pInit.y;
-
-        segments.add(new SegmentPath(gPath, new Vector3D(projSource, projReceiver), pInit));
-
-        points.add(new PointPath(srcCoord, srcCoord.z, data.gS, new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
-        points.add(new PointPath(rcvCoord, rcvCoord.z, data.gS, new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
+        points.add(new PointPath(cutProfile.getSource(), PointPath.POINT_TYPE.SRCE, gs));
+        points.add(new PointPath(cutProfile.getReceiver(), PointPath.POINT_TYPE.RECV, gs));
 
         return new PropagationPath(false, points, segments, segments);
     }
@@ -170,17 +127,48 @@ public class ComputeCnossosRays {
         List<PropagationPath> propagationPaths = new ArrayList<>();
         ProfileBuilder.CutProfile cutProfile = data.profileBuilder.getProfile(srcCoord, rcvCoord);
         boolean freeField = !cutProfile.intersectBuilding() && !cutProfile.intersectTopography();
-        boolean topographyHideReceiver = !freeField && cutProfile.intersectTopography() || cutProfile.intersectBuilding();
 
         if(freeField) {
-            propagationPaths.add(computeFreefield(rcvCoord, srcCoord, cutProfile, data));
+            propagationPaths.add(computeFreefield(cutProfile, data.gS));
         }
+        else {
+            if (data.isComputeVerticalDiffraction()) {
+                PropagationPath freePath = computeFreefield(cutProfile, data.gS);
+                PropagationPath propagationPath = computeHorizontalEdgeDiffraction(cutProfile, data.gS);
+                propagationPath.getSRSegmentList().addAll(freePath.getSRSegmentList());
+                propagationPaths.add(propagationPath);
+            }
+            if (data.isComputeHorizontalDiffraction()) {
+                // todo if one of the points > roof or < floor, get out this path
+                PropagationPath freePath = computeFreefield(cutProfile, data.gS);
 
-        if(!freeField && data.isComputeVerticalDiffraction()) {
-            PropagationPath propagationPath3 = computeFreefield(rcvCoord, srcCoord, cutProfile, data);
-            PropagationPath propagationPath = computeHorizontalEdgeDiffraction(topographyHideReceiver, rcvCoord, srcCoord, cutProfile, data);
-            propagationPath.getSRList().addAll(propagationPath3.getSRList());
-            propagationPaths.add(propagationPath);
+                PropagationPath propagationPath = computeVerticalEdgeDiffraction(srcCoord, rcvCoord, data, "right");
+                if (propagationPath.getPointList() != null) {
+                    //TODO reenable the removal of small segments
+                    /*for (int i = 0; i < propagationPath.getSegmentList().size(); i++) {
+                        if (propagationPath.getSegmentList().get(i).getSegmentLength() < 0.1) {
+                            propagationPath.getSegmentList().remove(i);
+                            propagationPath.getPointList().remove(i + 1);
+                        }
+                    }*/
+                    propagationPath.setSRList(freePath.getSRSegmentList());
+                    propagationPaths.add(propagationPath);
+                }
+                propagationPath = computeVerticalEdgeDiffraction(srcCoord, rcvCoord, data, "left");
+                if (propagationPath.getPointList() != null) {
+                    //TODO reenable the removal of small segments
+                    /*for (int i = 0; i < propagationPath.getSegmentList().size(); i++) {
+                        if (propagationPath.getSegmentList().get(i).getSegmentLength() < 0.1) {
+                            propagationPath.getSegmentList().remove(i);
+                            propagationPath.getPointList().remove(i + 1);
+                        }
+                    }*/
+                    propagationPath.setSRList(freePath.getSRSegmentList());
+                    Collections.reverse(propagationPath.getPointList());
+                    Collections.reverse(propagationPath.getSegmentList());
+                    propagationPaths.add(propagationPath);
+                }
+            }
         }
 
         for(PropagationPath propagationPath : propagationPaths) {
@@ -191,63 +179,275 @@ public class ComputeCnossosRays {
         return propagationPaths;
     }
 
-    public PropagationPath computeHorizontalEdgeDiffraction(boolean obstructedSourceReceiver, Coordinate rcvCoord,
-                                                            Coordinate srcCoord, ProfileBuilder.CutProfile cutProfile,
-                                                            CnossosPropagationData data) {
-        List<PointPath> points = new ArrayList<>();
+    public PropagationPath computeVerticalEdgeDiffraction(Coordinate receiverCoord,
+                                                          Coordinate srcCoord, CnossosPropagationData data, String side) {
+
+        PropagationPath propagationPath;
+        PropagationPath propagationPath2 = new PropagationPath();
+        List<Coordinate> coordinates = new ArrayList<>();
+
+        if (side.equals("right")) {
+            // Right hand
+            coordinates = computeSideHull(false, srcCoord, receiverCoord, data.profileBuilder);
+            Collections.reverse(coordinates);
+        }
+        if (side.equals("left")) {
+            coordinates = computeSideHull(true, srcCoord, receiverCoord, data.profileBuilder);
+            Collections.reverse(coordinates);
+        }
+
+        if (!coordinates.isEmpty()) {
+            if (coordinates.size() > 2) {
+                propagationPath = computeFreefield(data.profileBuilder.getProfile(coordinates.get(0), coordinates.get(1)), data.gS);
+                propagationPath.getPointList().get(1).setType(PointPath.POINT_TYPE.DIFV);
+                propagationPath2.setPointList(propagationPath.getPointList());
+                propagationPath2.setSegmentList(propagationPath.getSegmentList());
+                int j;
+                for (j = 1; j < coordinates.size() - 2; j++) {
+                    propagationPath = computeFreefield(data.profileBuilder.getProfile(coordinates.get(j), coordinates.get(j+1)), data.gS);
+                    propagationPath.getPointList().get(1).setType(PointPath.POINT_TYPE.DIFV);
+                    propagationPath2.getPointList().add(propagationPath.getPointList().get(1));
+                    propagationPath2.getSegmentList().addAll(propagationPath.getSegmentList());
+                }
+                propagationPath = computeFreefield(data.profileBuilder.getProfile(coordinates.get(j), coordinates.get(j+1)), data.gS);
+                propagationPath2.getPointList().add(propagationPath.getPointList().get(1));
+                propagationPath2.getSegmentList().addAll(propagationPath.getSegmentList());
+
+            }
+        }
+        return propagationPath2;
+    }
+
+    public List<Coordinate> computeSideHull(boolean left, Coordinate p1, Coordinate p2, ProfileBuilder profileBuilder) {
+        if (p1.equals(p2)) {
+            return new ArrayList<>();
+        }
+
+        // Intersection test cache
+        Set<LineSegment> freeFieldSegments = new HashSet<>();
+        GeometryFactory geometryFactory = new GeometryFactory();
+
+        List<Coordinate> input = new ArrayList<>();
+
+        Coordinate[] coordinates = new Coordinate[0];
+        int indexp1 = 0;
+        int indexp2 = 0;
+
+        boolean convexHullIntersects = true;
+
+        input.add(p1);
+        input.add(p2);
+
+        Set<Integer> buildingInHull = new HashSet<>();
+
+        Plane cutPlane = computeZeroRadPlane(p1, p2);
+
+        IntersectionRayVisitor intersectionRayVisitor = new IntersectionRayVisitor(
+                profileBuilder.getBuildings(), p1, p2, profileBuilder, input, buildingInHull, cutPlane);
+
+        profileBuilder.getBuildingsOnPath(p1, p2, intersectionRayVisitor);
+
+        int k;
+        while (convexHullIntersects) {
+            ConvexHull convexHull = new ConvexHull(input.toArray(new Coordinate[0]), geometryFactory);
+            Geometry convexhull = convexHull.getConvexHull();
+
+            if (convexhull.getLength() / p1.distance(p2) > MAX_RATIO_HULL_DIRECT_PATH) {
+                return new ArrayList<>();
+            }
+
+            convexHullIntersects = false;
+            coordinates = convexhull.getCoordinates();
+
+            input.clear();
+            input.addAll(Arrays.asList(coordinates));
+
+            indexp1 = -1;
+            for (int i = 0; i < coordinates.length - 1; i++) {
+                if (coordinates[i].equals(p1)) {
+                    indexp1 = i;
+                    break;
+                }
+            }
+            if (indexp1 == -1) {
+                // P1 does not belong to convex vertices, cannot compute diffraction
+                // TODO handle concave path
+                return new ArrayList<>();
+            }
+            // Transform array to set p1 at index=0
+            Coordinate[] coordinatesShifted = new Coordinate[coordinates.length];
+            // Copy from P1 to end in beginning of new array
+            int len = (coordinates.length - 1) - indexp1;
+            System.arraycopy(coordinates, indexp1, coordinatesShifted, 0, len);
+            // Copy from 0 to P1 in the end of array
+            System.arraycopy(coordinates, 0, coordinatesShifted, len, coordinates.length - len - 1);
+            coordinatesShifted[coordinatesShifted.length - 1] = coordinatesShifted[0];
+            coordinates = coordinatesShifted;
+            indexp1 = 0;
+            indexp2 = -1;
+            for (int i = 1; i < coordinates.length - 1; i++) {
+                if (coordinates[i].equals(p2)) {
+                    indexp2 = i;
+                    break;
+                }
+            }
+            if (indexp2 == -1) {
+                // P2 does not belong to convex vertices, cannot compute diffraction
+                // TODO handle concave path
+                return new ArrayList<>();
+            }
+            for (k = 0; k < coordinates.length - 1; k++) {
+                LineSegment freeFieldTestSegment = new LineSegment(coordinates[k], coordinates[k + 1]);
+                // Ignore intersection if iterating over other side (not parts of what is returned)
+                if (left && k < indexp2 || !left && k >= indexp2) {
+                    if (!freeFieldSegments.contains(freeFieldTestSegment)) {
+                        // Check if we still are in the propagation domain
+                        if (!profileBuilder.getMeshEnvelope().contains(coordinates[k]) ||
+                                !profileBuilder.getMeshEnvelope().contains(coordinates[k + 1])) {
+                            // This side goes over propagation path
+                            return new ArrayList<>();
+                        }
+                        intersectionRayVisitor = new IntersectionRayVisitor(profileBuilder.getBuildings(),
+                                coordinates[k], coordinates[k + 1], profileBuilder, input, buildingInHull, cutPlane);
+                        profileBuilder.getBuildingsOnPath(coordinates[k], coordinates[k + 1], intersectionRayVisitor);
+                        if (!intersectionRayVisitor.doContinue()) {
+                            convexHullIntersects = true;
+                        }
+                        if (!convexHullIntersects) {
+                            freeFieldSegments.add(freeFieldTestSegment);
+                        } else {
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        // Check for invalid coordinates
+        for (Coordinate p : coordinates) {
+            if (p.z < 0) {
+                return new ArrayList<>();
+            }
+        }
+
+        if (left) {
+            return Arrays.asList(Arrays.copyOfRange(coordinates, indexp1, indexp2 + 1));
+        } else {
+            ArrayList<Coordinate> inversePath = new ArrayList<>();
+            inversePath.addAll(Arrays.asList(Arrays.copyOfRange(coordinates, indexp2, coordinates.length)));
+            Collections.reverse(inversePath);
+            return inversePath;
+        }
+    }
+
+    public static Plane computeZeroRadPlane(Coordinate p0, Coordinate p1) {
+        org.apache.commons.math3.geometry.euclidean.threed.Vector3D s = new org.apache.commons.math3.geometry.euclidean.threed.Vector3D(p0.x, p0.y, p0.z);
+        org.apache.commons.math3.geometry.euclidean.threed.Vector3D r = new org.apache.commons.math3.geometry.euclidean.threed.Vector3D(p1.x, p1.y, p1.z);
+        double angle = Math.atan2(p1.y - p0.y, p1.x - p0.x);
+        // Compute rPrime, the third point of the plane that is at -PI/2 with SR vector
+        org.apache.commons.math3.geometry.euclidean.threed.Vector3D rPrime = s.add(new org.apache.commons.math3.geometry.euclidean.threed.Vector3D(Math.cos(angle - Math.PI / 2), Math.sin(angle - Math.PI / 2), 0));
+        Plane p = new Plane(r, s, rPrime, 1e-6);
+        // Normal of the cut plane should be upward
+        if (p.getNormal().getZ() < 0) {
+            p.revertSelf();
+        }
+        return p;
+    }
+
+
+    private static final class IntersectionRayVisitor implements ItemVisitor {
+        Set<Integer> buildingsprocessed = new HashSet<>();
+        List<ProfileBuilder.Building> buildings;
+        Coordinate p1;
+        Coordinate p2;
+        LineString seg;
+        Set<Integer> buildingsInIntersection;
+        ProfileBuilder profileBuilder;
+        Plane cutPlane;
+        List<Coordinate> input;
+        boolean foundIntersection = false;
+
+        public IntersectionRayVisitor(List<ProfileBuilder.Building> buildings, Coordinate p1,
+                                      Coordinate p2, ProfileBuilder profileBuilder, List<Coordinate> input, Set<Integer> buildingsInIntersection, Plane cutPlane) {
+            this.profileBuilder = profileBuilder;
+            this.input = input;
+            this.buildingsInIntersection = buildingsInIntersection;
+            this.cutPlane = cutPlane;
+            this.buildings = buildings;
+            this.p1 = p1;
+            this.p2 = p2;
+            seg = new LineSegment(p1, p2).toGeometry(new GeometryFactory());
+        }
+
+        @Override
+        public void visitItem(Object item) {
+            int buildingId = (Integer) item;
+            if(!buildingsprocessed.contains(buildingId)) {
+                buildingsprocessed.add(buildingId);
+                final ProfileBuilder.Building b = buildings.get(buildingId - 1);
+                RectangleLineIntersector rect = new RectangleLineIntersector(b.getGeometry().getEnvelopeInternal());
+                if (rect.intersects(p1, p2) && b.getGeometry().intersects(seg)) {
+                    addBuilding(buildingId);
+                }
+            }
+        }
+
+        public void addBuilding(int buildingId) {
+            if (buildingsInIntersection.contains(buildingId)) {
+                return;
+            }
+            List<Coordinate> roofPoints = profileBuilder.getWideAnglePointsByBuilding(buildingId, 0, 2 * Math.PI);
+            // Create a cut of the building volume
+            roofPoints = cutRoofPointsWithPlane(cutPlane, roofPoints);
+            if (!roofPoints.isEmpty()) {
+                input.addAll(roofPoints.subList(0, roofPoints.size() - 1));
+                buildingsInIntersection.add(buildingId);
+                foundIntersection = true;
+                // Stop iterating bounding boxes
+                throw new IllegalStateException();
+            }
+        }
+
+        public boolean doContinue() {
+            return !foundIntersection;
+        }
+    }
+
+    public static List<Coordinate> cutRoofPointsWithPlane(Plane plane, List<Coordinate> roofPts) {
+        List<Coordinate> polyCut = new ArrayList<>(roofPts.size());
+        Double lastOffset = null;
+        for (int idp = 0; idp < roofPts.size(); idp++) {
+            double offset = plane.getOffset(coordinateToVector(roofPts.get(idp)));
+            if (lastOffset != null && ((offset >= 0 && lastOffset < 0) || (offset < 0 && lastOffset >= 0))) {
+                // Interpolate vector
+                org.apache.commons.math3.geometry.euclidean.threed.Vector3D i = plane.intersection(new Line(coordinateToVector(roofPts.get(idp - 1)), coordinateToVector(roofPts.get(idp)), FastObstructionTest.epsilon));
+                polyCut.add(new Coordinate(i.getX(), i.getY(), i.getZ()));
+            }
+            if (offset >= 0) {
+                org.apache.commons.math3.geometry.euclidean.threed.Vector3D i = plane.intersection(new Line(new org.apache.commons.math3.geometry.euclidean.threed.Vector3D(roofPts.get(idp).x, roofPts.get(idp).y, Double.MIN_VALUE), coordinateToVector(roofPts.get(idp)), FastObstructionTest.epsilon));
+                polyCut.add(new Coordinate(i.getX(), i.getY(), i.getZ()));
+            }
+            lastOffset = offset;
+        }
+        return polyCut;
+    }
+    public static org.apache.commons.math3.geometry.euclidean.threed.Vector3D coordinateToVector(Coordinate p) {
+        return new org.apache.commons.math3.geometry.euclidean.threed.Vector3D(p.x, p.y, p.z);
+    }
+
+    public PropagationPath computeHorizontalEdgeDiffraction(ProfileBuilder.CutProfile cutProfile, double gs) {
         List<SegmentPath> segments = new ArrayList<>();
         List<SegmentPath> srPath = new ArrayList<>();
-
-        if (!obstructedSourceReceiver) {
-            PropagationPath propagationPath = computeFreefield(rcvCoord, srcCoord, data.profileBuilder.getProfile(srcCoord, rcvCoord), data);
-            points.addAll(propagationPath.getPointList());
-            segments.addAll(propagationPath.getSegmentList());
-            srPath.addAll(propagationPath.getSRList());
-        } else {
-            List<Coordinate> oldPoints = cutProfile.getCutPoints().stream()
+        List<PointPath> points = new ArrayList<>();
+        List<ProfileBuilder.CutPoint> cutPts = cutProfile.getCutPoints().stream()
                     .filter(cutPoint -> cutPoint.getType() != ProfileBuilder.IntersectionType.GROUND_EFFECT)
-                    .map(ProfileBuilder.CutPoint::getCoordinate)
                     .collect(Collectors.toList());
-            Collections.reverse(oldPoints);
-            List<Coordinate> newPoints = JTSUtility.getNewCoordinateSystem(oldPoints);
-            List<Coordinate> upperHull = JTSUtility.getXAscendingHullPoints(newPoints.toArray(new Coordinate[0]));
-            LinkedList<LineSegment> path = new LinkedList<>();
-            for (int i = 0; i < upperHull.size() - 1; i++) {
-                path.add(new LineSegment(upperHull.get(i), upperHull.get(i+1)));
-            }
-            List<Coordinate> offsetPath = new ArrayList<>();
-            Coordinate coordinate;
-            double angle = new LineSegment(srcCoord, rcvCoord).angle();
-            for (int i =0; i<path.size();i++) {
-                coordinate = JTSUtility.getOldCoordinateSystem(path.get(i).p0, angle);
-                coordinate.x = rcvCoord.x-coordinate.x;
-                coordinate.y = rcvCoord.y-coordinate.y;
-                offsetPath.add(coordinate);
-            }
-            coordinate = JTSUtility.getOldCoordinateSystem(path.get(path.size()-1).p1, angle);
-            coordinate.x = rcvCoord.x-coordinate.x;
-            coordinate.y = rcvCoord.y-coordinate.y;
-            offsetPath.add(coordinate);
-            // Offset Coordinates by epsilon
-            for (int i = 1; i < offsetPath.size() - 1; i++) {
-                Coordinate dest = offsetPath.get(i);
-                Vector2D v = new Vector2D(offsetPath.get(0), dest).normalize().multiply(FastObstructionTest.epsilon);
-                offsetPath.set(i, new Coordinate(dest.x - v.getX(), dest.y - v.getY(), dest.z));
-            }
-            for (int j = offsetPath.size() - 1; j > 1; j--) {
-                PropagationPath propagationPath1 = computeFreefield(offsetPath.get(j - 1), offsetPath.get(j), data.profileBuilder.getProfile(offsetPath.get(j - 1), offsetPath.get(j)), data);
-                propagationPath1.getPointList().get(1).setType(PointPath.POINT_TYPE.DIFH);
-                if (j == offsetPath.size() - 1) {
-                    propagationPath1.getPointList().get(0).setCoordinate(offsetPath.get(j));
-                    points.add(propagationPath1.getPointList().get(0));
-                }
-                points.add(propagationPath1.getPointList().get(1));
-                segments.addAll(propagationPath1.getSegmentList());
-            }
-
-            PropagationPath propagationPath2 = computeFreefield(offsetPath.get(0), offsetPath.get(1), data.profileBuilder.getProfile(offsetPath.get(0), offsetPath.get(1)), data);
-            points.add(propagationPath2.getPointList().get(1));
-            segments.add(propagationPath2.getSegmentList().get(0));
+        for (int i = 0; i < cutPts.size() - 1; i++) {
+            segments.add(new SegmentPath(cutProfile.getGS(cutPts.get(i), cutPts.get(i+1)),
+                    new Vector3D(cutPts.get(i).getCoordinate(), cutPts.get(i+1).getCoordinate()),
+                    cutPts.get(i).getCoordinate()));
+        }
+        for(ProfileBuilder.CutPoint cut : cutPts) {
+            points.add(new PointPath(cut, PointPath.POINT_TYPE.DIFH, gs));
         }
         return new PropagationPath(true, points, segments, srPath);
     }
@@ -256,13 +456,19 @@ public class ComputeCnossosRays {
                                          Coordinate receiverCoord, int rcvId,
                                          IComputeRaysOut dataOut, CnossosPropagationData data) {
 
-        List<PropagationPath> propagationPaths;
-        double PropaDistance = srcCoord.distance(receiverCoord);
-        if (PropaDistance < data.maxSrcDist) {
+        List<PropagationPath> propagationPaths = null;
+        double propaDistance = srcCoord.distance(receiverCoord);
+        if (propaDistance < data.maxSrcDist) {
             propagationPaths = directPath(srcCoord, srcId, receiverCoord, rcvId, data);
-            if (propagationPaths.size() > 0) {
-                return dataOut.addPropagationPaths(srcId, sourceLi, rcvId, propagationPaths);
-            }
+
+            // Process specular reflection
+            /*if (data.reflexionOrder > 0) {
+                List<PropagationPath> propagationPaths_all = computeReflexion(receiverCoord, srcCoord, false, nearBuildingsWalls);
+                propagationPaths.addAll(propagationPaths_all);
+            }*/
+        }
+        if (propagationPaths != null && propagationPaths.size() > 0) {
+            return dataOut.addPropagationPaths(srcId, sourceLi, rcvId, propagationPaths);
         }
         return new double[0];
     }

@@ -159,9 +159,9 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
                 double[] Aatm;
                 // In addition, Aatm and Aground shall be calculated from the total length of the propagation path.
                 if (propath.difVPoints.size() > 0) {
-                    Aatm = evaluateAttenuationCnossos.evaluateAatm(pathData, propath.getSRList().get(0).dPath);
+                    Aatm = evaluateAttenuationCnossos.evaluateAatm(pathData, propath.getSRSegmentList().get(0).dPath);
                 }else{
-                    Aatm = evaluateAttenuationCnossos.evaluateAatm(pathData, propath.getSRList().get(0).d);
+                    Aatm = evaluateAttenuationCnossos.evaluateAatm(pathData, propath.getSRSegmentList().get(0).d);
                 }
 
                 double[] Aref = evaluateAttenuationCnossos.evaluateAref(propath, pathData);
@@ -307,7 +307,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
                     for(PropagationPath path : propagationPath) {
                         // Copy path content in order to keep original ids for other method calls
                         PropagationPath pathPk = new PropagationPath(path.isFavorable(), path.getPointList(),
-                                path.getSegmentList(), path.getSRList());
+                                path.getSegmentList(), path.getSRSegmentList());
                         pathPk.setIdReceiver(multiThreadParent.inputData.receiversPk.get((int)receiverId).intValue());
                         pathPk.setIdSource(multiThreadParent.inputData.sourcesPk.get((int)sourceId).intValue());
                         propagationPaths.add(pathPk);

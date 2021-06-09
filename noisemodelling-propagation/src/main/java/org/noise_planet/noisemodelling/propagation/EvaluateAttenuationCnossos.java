@@ -265,7 +265,7 @@ public class EvaluateAttenuationCnossos {
      */
     public double[] getABoundary(PropagationPath path, PropagationProcessPathData data) {
 
-        List<SegmentPath> srPath = path.getSRList();
+        List<SegmentPath> srPath = path.getSRSegmentList();
 
         double[] aGround;
         double[] aDif = new double[data.freq_lvl.size()];
@@ -380,7 +380,7 @@ public class EvaluateAttenuationCnossos {
     public double[] evaluateAdiv(PropagationPath path, PropagationProcessPathData data) {
         double[] aDiv = new double[data.freq_lvl.size()];
         double att ;
-        att = getADiv(path.getSRList().get(0).d);
+        att = getADiv(path.getSRSegmentList().get(0).d);
         for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
             aDiv[idfreq] = att;
         }
@@ -464,9 +464,9 @@ public class EvaluateAttenuationCnossos {
         double aDiv;
         // divergence
         if (path.refPoints.size() > 0) {
-            aDiv = getADiv(path.getSRList().get(0).dPath);
+            aDiv = getADiv(path.getSRSegmentList().get(0).dPath);
         } else {
-            aDiv = getADiv(path.getSRList().get(0).d);
+            aDiv = getADiv(path.getSRSegmentList().get(0).d);
         }
 
 
@@ -480,9 +480,9 @@ public class EvaluateAttenuationCnossos {
             // atm
             double aAtm;
             if (path.difVPoints.size() > 0 || path.refPoints.size() > 0) {
-                aAtm = getAAtm(path.getSRList().get(0).dPath, alpha_atmo[idfreq]);
+                aAtm = getAAtm(path.getSRSegmentList().get(0).dPath, alpha_atmo[idfreq]);
             } else {
-                aAtm = getAAtm(path.getSRList().get(0).d, alpha_atmo[idfreq]);
+                aAtm = getAAtm(path.getSRSegmentList().get(0).d, alpha_atmo[idfreq]);
             }
 
             aGlobal[idfreq] = -(aDiv + aAtm + aBoundary[idfreq] + aRef[idfreq]);
