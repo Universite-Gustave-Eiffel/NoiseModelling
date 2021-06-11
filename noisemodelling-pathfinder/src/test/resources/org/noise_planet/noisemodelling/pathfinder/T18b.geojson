@@ -23,10 +23,10 @@
       "gPath" : [ 0.70, 0.50, 0.28 ]
     }
   } ],
-       "crs" : {
-         "type" : "name",
-         "properties" : {
-           "name" : "EPSG:4326"
-         }
-       }
+  "crs" : {
+    "type" : "name",
+    "properties" : {
+      "name" : "EPSG:4326"
+    }
+  }
 }

@@ -15,29 +15,29 @@
     "type" : "Feature",
     "geometry" : {
       "type" : "LineString",
-      "coordinates" : [ [ 10.0, 10.0, 1.0 ], [ 175.0, 50.0, 3.6 ], [ 175.0, 50.0, 3.6 ], [ 200.0, 50.0, 4.0 ] ]
+      "coordinates" : [ [ 200.0, 50.0, 4.0 ], [ 190.0, 10.0, 3.7 ], [ 10.0, 10.0, 1.0 ] ]
     },
     "properties" : {
       "receiver" : 0,
       "source" : 0,
-      "gPath" : [ 0.55, 0.20, 0.20 ]
+      "gPath" : [ 0.20, 0.52 ]
     }
   }, {
     "type" : "Feature",
     "geometry" : {
       "type" : "LineString",
-      "coordinates" : [ [ 200.0, 50.0, 4.0 ], [ 190.0, 10.0, 3.7 ], [ 190.0, 10.0, 3.7 ], [ 10.0, 10.0, 1.0 ] ]
+      "coordinates" : [ [ 10.0, 10.0, 1.0 ], [ 175.0, 50.0, 3.6 ], [ 200.0, 50.0, 4.0 ] ]
     },
     "properties" : {
       "receiver" : 0,
       "source" : 0,
-      "gPath" : [ 0.20, 0.20, 0.52 ]
+      "gPath" : [ 0.55, 0.20 ]
     }
   } ],
-       "crs" : {
-         "type" : "name",
-         "properties" : {
-           "name" : "EPSG:4326"
-         }
-       }
+  "crs" : {
+    "type" : "name",
+    "properties" : {
+      "name" : "EPSG:4326"
+    }
+  }
 }

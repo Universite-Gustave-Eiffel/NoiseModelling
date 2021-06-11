@@ -142,30 +142,28 @@ public class ComputeCnossosRays {
                 // todo if one of the points > roof or < floor, get out this path
                 PropagationPath freePath = computeFreefield(cutProfile, data.gS);
 
-                PropagationPath propagationPath = computeVerticalEdgeDiffraction(srcCoord, rcvCoord, data, "right");
+                PropagationPath propagationPath = computeVerticalEdgeDiffraction(srcCoord, rcvCoord, data, "left");
                 if (propagationPath.getPointList() != null) {
-                    //TODO reenable the removal of small segments
-                    /*for (int i = 0; i < propagationPath.getSegmentList().size(); i++) {
+                    for (int i = 0; i < propagationPath.getSegmentList().size(); i++) {
                         if (propagationPath.getSegmentList().get(i).getSegmentLength() < 0.1) {
                             propagationPath.getSegmentList().remove(i);
                             propagationPath.getPointList().remove(i + 1);
                         }
-                    }*/
-                    propagationPath.setSRList(freePath.getSRSegmentList());
-                    propagationPaths.add(propagationPath);
-                }
-                propagationPath = computeVerticalEdgeDiffraction(srcCoord, rcvCoord, data, "left");
-                if (propagationPath.getPointList() != null) {
-                    //TODO reenable the removal of small segments
-                    /*for (int i = 0; i < propagationPath.getSegmentList().size(); i++) {
-                        if (propagationPath.getSegmentList().get(i).getSegmentLength() < 0.1) {
-                            propagationPath.getSegmentList().remove(i);
-                            propagationPath.getPointList().remove(i + 1);
-                        }
-                    }*/
+                    }
                     propagationPath.setSRList(freePath.getSRSegmentList());
                     Collections.reverse(propagationPath.getPointList());
                     Collections.reverse(propagationPath.getSegmentList());
+                    propagationPaths.add(propagationPath);
+                }
+                propagationPath = computeVerticalEdgeDiffraction(srcCoord, rcvCoord, data, "right");
+                if (propagationPath.getPointList() != null) {
+                    for (int i = 0; i < propagationPath.getSegmentList().size(); i++) {
+                        if (propagationPath.getSegmentList().get(i).getSegmentLength() < 0.1) {
+                            propagationPath.getSegmentList().remove(i);
+                            propagationPath.getPointList().remove(i + 1);
+                        }
+                    }
+                    propagationPath.setSRList(freePath.getSRSegmentList());
                     propagationPaths.add(propagationPath);
                 }
             }
@@ -223,6 +221,10 @@ public class ComputeCnossosRays {
             return new ArrayList<>();
         }
 
+        Envelope env = profileBuilder.getMeshEnvelope();
+        env.expandToInclude(p1);
+        env.expandToInclude(p2);
+        env.expandBy(1);
         // Intersection test cache
         Set<LineSegment> freeFieldSegments = new HashSet<>();
         GeometryFactory geometryFactory = new GeometryFactory();
@@ -302,8 +304,8 @@ public class ComputeCnossosRays {
                 if (left && k < indexp2 || !left && k >= indexp2) {
                     if (!freeFieldSegments.contains(freeFieldTestSegment)) {
                         // Check if we still are in the propagation domain
-                        if (!profileBuilder.getMeshEnvelope().contains(coordinates[k]) ||
-                                !profileBuilder.getMeshEnvelope().contains(coordinates[k + 1])) {
+                        if (!env.contains(coordinates[k]) ||
+                                !env.contains(coordinates[k + 1])) {
                             // This side goes over propagation path
                             return new ArrayList<>();
                         }

@@ -15,17 +15,6 @@
     "type" : "Feature",
     "geometry" : {
       "type" : "LineString",
-      "coordinates" : [ [ 10.0, 10.0, 1.0 ], [ 100.0, 30.0, 7.2 ], [ 175.0, 36.0, 12.4 ], [ 200.0, 30.0, 14.0 ] ]
-    },
-    "properties" : {
-      "receiver" : 0,
-      "source" : 0,
-      "gPath" : [ 0.68, 0.40, 0.20 ]
-    }
-  }, {
-    "type" : "Feature",
-    "geometry" : {
-      "type" : "LineString",
       "coordinates" : [ [ 200.0, 30.0, 14.0 ], [ 188.0, 19.0, 13.1 ], [ 145.0, 7.0, 10.1 ], [ 10.0, 10.0, 1.0 ] ]
     },
     "properties" : {
@@ -33,11 +22,22 @@
       "source" : 0,
       "gPath" : [ 0.20, 0.23, 0.62 ]
     }
+  }, {
+    "type" : "Feature",
+    "geometry" : {
+      "type" : "LineString",
+      "coordinates" : [ [ 10.0, 10.0, 1.0 ], [ 100.0, 30.0, 7.2 ], [ 175.0, 36.0, 12.4 ], [ 200.0, 30.0, 14.0 ] ]
+    },
+    "properties" : {
+      "receiver" : 0,
+      "source" : 0,
+      "gPath" : [ 0.68, 0.40, 0.20 ]
+    }
   } ],
-       "crs" : {
-         "type" : "name",
-         "properties" : {
-           "name" : "EPSG:4326"
-         }
-       }
+  "crs" : {
+    "type" : "name",
+    "properties" : {
+      "name" : "EPSG:4326"
+    }
+  }
 }

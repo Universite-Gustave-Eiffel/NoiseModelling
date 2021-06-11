@@ -121,7 +121,7 @@ public class ProfileBuilder {
      * Main empty constructor.
      */
     public ProfileBuilder() {
-        buildingTree = new STRtree(TREE_NODE_CAPACITY);
+        buildingTree = new STRtree(buildingNodeCapacity);
     }
 
     //TODO : when a source/receiver are underground, should an offset be applied ?
@@ -137,6 +137,7 @@ public class ProfileBuilder {
         this.topoNodeCapacity = topoNodeCapacity;
         this.groundNodeCapacity = groundNodeCapacity;
         this.maxLineLength = maxLineLength;
+        buildingTree = new STRtree(buildingNodeCapacity);
     }
 
     /**
@@ -570,12 +571,16 @@ public class ProfileBuilder {
         //Update building z
         if(topoTree != null) {
             for (Building b : buildings) {
-                b.z = b.height + getTopoZ(b.poly.getCentroid().getCoordinate());
+                if(Double.isNaN(b.poly.getCoordinate().z) || b.poly.getCoordinate().z == 0.0) {
+                    b.poly.apply(new UpdateZ(b.height + b.updateZTopo(this)));
+                }
             }
         }
         else {
             for (Building b : buildings) {
-                b.z = b.height;
+                if(Double.isNaN(b.poly.getCoordinate().z) || b.poly.getCoordinate().z == 0.0) {
+                    b.poly.apply(new UpdateZ(b.height));
+                }
             }
         }
         //Process buildings
@@ -584,8 +589,7 @@ public class ProfileBuilder {
             Building building = buildings.get(j);
             Coordinate[] coords = building.poly.getCoordinates();
             for (int i = 0; i < coords.length - 1; i++) {
-                LineSegment lineSegment = new LineSegment(new Coordinate(coords[i].x, coords[i].y, Double.isNaN(building.z) ? Math.max(coords[i].z, building.height) : building.z),
-                        new Coordinate(coords[i + 1].x, coords[i + 1].y, Double.isNaN(building.z) ? Math.max(coords[i+1].z, building.height) : building.z));
+                LineSegment lineSegment = new LineSegment(coords[i], coords[i + 1]);
                 processedWalls.add(new Wall(lineSegment, j, IntersectionType.BUILDING));
                 rtree.insert(lineSegment.toGeometry(FACTORY).getEnvelopeInternal(), processedWalls.size()-1);
             }
@@ -613,6 +617,34 @@ public class ProfileBuilder {
             }
         }
         return true;
+    }
+
+    private static class UpdateZ implements CoordinateSequenceFilter {
+
+        private boolean done = false;
+        private final double z;
+
+        public UpdateZ(double z) {
+            this.z = z;
+        }
+
+        @Override
+        public boolean isGeometryChanged() {
+            return true;
+        }
+
+        @Override
+        public boolean isDone() {
+            return done;
+        }
+
+        @Override
+        public void filter(CoordinateSequence seq, int i) {
+            seq.setOrdinate(i, 2, z);
+            if (i == seq.size()) {
+                done = true;
+            }
+        }
     }
 
     /**
@@ -751,7 +783,7 @@ public class ProfileBuilder {
         GroundEffect currentGround = null;
         Point p0 = FACTORY.createPoint(c0);
         for(GroundEffect ground : groundEffects) {
-            if(ground.geom.contains(p0)) {
+            if(ground.geom.intersects(p0)) {
                 currentGround = ground;
             }
         }
@@ -760,7 +792,7 @@ public class ProfileBuilder {
                 if(currentGround == groundEffects.get(cut.id)) {
                     currentGround = null;
                 }
-                else if(currentGround == null) {
+                else {
                     currentGround = groundEffects.get(cut.id);
                 }
             }
@@ -1128,8 +1160,7 @@ public class ProfileBuilder {
         private final Polygon poly;
         /** Height of the building. */
         private final double height;
-        /** Z of the building. */
-        private double z = Double.NaN;
+        private double zTopo = Double.NaN;
         /** Absorption coefficients. */
         private final List<Double> alphas;
         /** Primary key of the building in the database. */
@@ -1159,14 +1190,6 @@ public class ProfileBuilder {
         }
 
         /**
-         * Retrieve the building height.
-         * @return The building height.
-         */
-        public double getZ() {
-            return z;
-        }
-
-        /**
          * Retrieve the absorption coefficients.
          * @return The absorption coefficients.
          */
@@ -1180,6 +1203,22 @@ public class ProfileBuilder {
          */
         public int getPrimaryKey() {
             return pk;
+        }
+
+        //TODO use instead the min Ztopo
+        public double updateZTopo(ProfileBuilder profileBuilder) {
+            Coordinate[] coordinates = poly.getCoordinates();
+            double minZ = profileBuilder.getTopoZ(coordinates[0]);
+            for (int i = 1; i < coordinates.length-1; i++) {
+                Coordinate coordinate = coordinates[i];
+                double z = profileBuilder.getTopoZ(coordinate);
+                minZ = Math.min(z, minZ);
+            }
+            zTopo = minZ;
+            return zTopo;
+        }
+        public double getZTopo() {
+            return zTopo;
         }
     }
 
@@ -1341,7 +1380,7 @@ public class ProfileBuilder {
                 Coordinate offsetPt = new Coordinate(
                         ring[i].x + Math.cos(midAngleFromZero) * wideAngleTranslationEpsilon,
                         ring[i].y + Math.sin(midAngleFromZero) * wideAngleTranslationEpsilon,
-                        buildings.get(build - 1).getZ() + wideAngleTranslationEpsilon);
+                        buildings.get(build - 1).getGeometry().getCoordinate().z + wideAngleTranslationEpsilon);
                 verticesBuilding.add(offsetPt);
             }
         }

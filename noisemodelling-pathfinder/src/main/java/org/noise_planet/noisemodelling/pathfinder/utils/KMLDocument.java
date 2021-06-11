@@ -265,6 +265,50 @@ public class KMLDocument {
         return this;
     }
 
+    public KMLDocument writeBuildings(ProfileBuilder builder) throws XMLStreamException {
+        xmlOut.writeStartElement("Schema");
+        xmlOut.writeAttribute("name", "buildings");
+        xmlOut.writeAttribute("id", "buildings");
+        xmlOut.writeEndElement();//Write schema
+        xmlOut.writeStartElement("Folder");
+        xmlOut.writeStartElement("name");
+        xmlOut.writeCharacters("buildings");
+        xmlOut.writeEndElement();//Name
+        xmlOut.writeStartElement("Placemark");
+        xmlOut.writeStartElement("name");
+        xmlOut.writeCharacters("building");
+        xmlOut.writeEndElement();//Name
+        List<ProfileBuilder.Building> buildings = builder.getBuildings();
+        List<Polygon> polygons = new ArrayList<>(buildings.size());
+        int idPoly = 0;
+
+        for(ProfileBuilder.Building triangle : buildings) {
+            Coordinate[] original = triangle.getGeometry().getCoordinates();
+            Coordinate[] coordinates = new Coordinate[original.length];
+            double z = builder.getBuilding(idPoly).getGeometry().getCoordinate().z;
+            for(int i = 0; i < coordinates.length; i++) {
+                coordinates[i] = copyCoord(new Coordinate(original[i].x, original[i].y, z));
+            }
+            if(coordinates.length > 3 && coordinates[0].equals2D(coordinates[coordinates.length - 1])) {
+                Polygon poly = geometryFactory.createPolygon(coordinates);
+                if(!Orientation.isCCW(poly.getCoordinates())) {
+                    poly = (Polygon) poly.reverse();
+                }
+                // Apply CRS transform
+                doTransform(poly);
+                polygons.add(poly);
+            }
+            idPoly++;
+        }
+        //Write geometry
+        xmlOut.writeCharacters(KMLWriter.writeGeometry(geometryFactory.createMultiPolygon(
+                polygons.toArray(new Polygon[polygons.size()])), Double.NaN,
+                wgs84Precision, true, KMLWriter.ALTITUDE_MODE_RELATIVETOGROUND));
+        xmlOut.writeEndElement();//Write Placemark
+        xmlOut.writeEndElement();//Folder
+        return this;
+    }
+
     public KMLDocument writeRays(Collection<PropagationPath> rays) throws XMLStreamException {
         xmlOut.writeStartElement("Schema");
         xmlOut.writeAttribute("name", "rays");

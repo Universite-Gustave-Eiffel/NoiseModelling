@@ -27,18 +27,20 @@ public class ProfileBuilderTest {
     @Test
     public void buildingAddingTest() throws ParseException {
         ProfileBuilder profileBuilder = new ProfileBuilder(3, 3, 3, 2);
-        profileBuilder.addBuilding(READER.read("POLYGON((1 1,5 1,5 5,1 5,1 1))"), 10);
-        profileBuilder.addBuilding(READER.read("POLYGON((10 10,15 10,15 15,10 15,10 10))"), 23);
-        profileBuilder.addBuilding(READER.read("POLYGON((6 8,8 10,8 4,6 8))"), 56);
+        profileBuilder.addBuilding(READER.read("POLYGON((1 1,5 1,5 5,1 5,1 1))"), 10, -1);
+        profileBuilder.addBuilding(READER.read("POLYGON((10 10,15 10,15 15,10 15,10 10))"), 23, -1);
+        profileBuilder.addBuilding(READER.read("POLYGON((6 8,8 10,8 4,6 8))"), 56, -1);
+
+        profileBuilder.finishFeeding();
 
         List<ProfileBuilder.Building> list = profileBuilder.getBuildings();
         assertEquals(3, list.size());
         assertEquals("POLYGON ((1 1, 5 1, 5 5, 1 5, 1 1))", list.get(0).getGeometry().toText());
-        assertEquals(10, list.get(0).getZ(), 0);
+        assertEquals(10, list.get(0).getGeometry().getCoordinate().z, 0);
         assertEquals("POLYGON ((10 10, 15 10, 15 15, 10 15, 10 10))", list.get(1).getGeometry().toText());
-        assertEquals(23, list.get(1).getZ(), 0);
+        assertEquals(23, list.get(1).getGeometry().getCoordinate().z, 0);
         assertEquals("POLYGON ((6 8, 8 10, 8 4, 6 8))", list.get(2).getGeometry().toText());
-        assertEquals(56, list.get(2).getZ(), 0);
+        assertEquals(56, list.get(2).getGeometry().getCoordinate().z, 0);
     }
 
     /**
@@ -75,12 +77,6 @@ public class ProfileBuilderTest {
         assertEquals(0.0, pts.get(0).getCoordinate().x, DELTA);
         assertEquals(1.0, pts.get(0).getCoordinate().y, DELTA);
         assertEquals(0.1, pts.get(0).getCoordinate().z, DELTA);
-        assertEquals(1.411764705882353, pts.get(1).getCoordinate().x, DELTA);
-        assertEquals(2.588235294117647, pts.get(1).getCoordinate().y, DELTA);
-        assertEquals(3.5294117647058822, pts.get(1).getCoordinate().z, DELTA);
-        assertEquals(2.3529411764705883, pts.get(2).getCoordinate().x, DELTA);
-        assertEquals(3.6470588235294117, pts.get(2).getCoordinate().y, DELTA);
-        assertEquals(6.117647058823529, pts.get(2).getCoordinate().z, DELTA);
         assertEquals(8.0, pts.get(3).getCoordinate().x, DELTA);
         assertEquals(10.0, pts.get(3).getCoordinate().y, DELTA);
         assertEquals(0.3, pts.get(3).getCoordinate().z, DELTA);
@@ -146,16 +142,16 @@ public class ProfileBuilderTest {
 
         ProfileBuilder.CutProfile profile = profileBuilder.getProfile(new Coordinate(0, 1, 0.1), new Coordinate(8, 10, 0.3));
         List<ProfileBuilder.CutPoint> pts = profile.getCutPoints();
-        assertEquals(10, pts.size());
+        assertEquals(11, pts.size());
         assertEquals(0.0, pts.get(0).getCoordinate().x, DELTA);
         assertEquals(1.0, pts.get(0).getCoordinate().y, DELTA);
         assertEquals(0.1, pts.get(0).getCoordinate().z, DELTA);
         assertEquals(2.2857142857142856, pts.get(1).getCoordinate().x, DELTA);
         assertEquals(3.5714285714285716, pts.get(1).getCoordinate().y, DELTA);
         assertEquals(2.357142857142857, pts.get(1).getCoordinate().z, DELTA);
-        assertEquals(8.0, pts.get(11).getCoordinate().x, DELTA);
-        assertEquals(10.0, pts.get(11).getCoordinate().y, DELTA);
-        assertEquals(0.3, pts.get(11).getCoordinate().z, DELTA);
+        assertEquals(8.0, pts.get(10).getCoordinate().x, DELTA);
+        assertEquals(10.0, pts.get(10).getCoordinate().y, DELTA);
+        assertEquals(0.3, pts.get(10).getCoordinate().z, DELTA);
     }
 
     /**
@@ -224,7 +220,7 @@ public class ProfileBuilderTest {
     public void allCutProfileTest() throws ParseException {
         ProfileBuilder profileBuilder = new ProfileBuilder(3, 3, 3, 2);
 
-        profileBuilder.addBuilding(READER.read("POLYGON((2 2 10, 1 3 15, 2 4 10, 3 3 12, 2 2 10))"));
+        profileBuilder.addBuilding(READER.read("POLYGON((2 2 10, 1 3 15, 2 4 10, 3 3 12, 2 2 10))"), 10);
         profileBuilder.addBuilding(READER.read("POLYGON((4.5 7, 4.5 8.5, 6.5 8.5, 4.5 7))"), 3.3);
         profileBuilder.addBuilding(READER.read("POLYGON((7 6, 10 6, 10 2, 7 2, 7 6))"), 5.6);
 

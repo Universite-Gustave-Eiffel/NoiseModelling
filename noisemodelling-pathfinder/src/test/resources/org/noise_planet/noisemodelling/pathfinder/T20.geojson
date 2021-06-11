@@ -4,12 +4,12 @@
     "type" : "Feature",
     "geometry" : {
       "type" : "LineString",
-      "coordinates" : [ [ 10.0, 10.0, 1.0 ], [ 179.0, 24.3, 29.8 ], [ 187.0, 25.0, 29.8 ], [ 187.1, 25.0, 14.0 ] ]
+      "coordinates" : [ [ 10.0, 10.0, 1.0 ], [ 200.0, 25.0, 14.0 ] ]
     },
     "properties" : {
       "receiver" : 0,
       "source" : 0,
-      "gPath" : [ 0.54, 0.20, 0.20 ]
+      "gPath" : [ 0.51 ]
     }
   } ],
   "crs" : {
