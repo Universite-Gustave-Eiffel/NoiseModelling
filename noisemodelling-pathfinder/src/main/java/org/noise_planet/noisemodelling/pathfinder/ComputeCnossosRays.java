@@ -36,13 +36,11 @@ package org.noise_planet.noisemodelling.pathfinder;
 import org.apache.commons.math3.geometry.euclidean.threed.Line;
 import org.apache.commons.math3.geometry.euclidean.threed.Plane;
 import org.h2gis.api.ProgressVisitor;
-import org.locationtech.jts.algorithm.CGAlgorithms3D;
-import org.locationtech.jts.algorithm.ConvexHull;
-import org.locationtech.jts.algorithm.RectangleLineIntersector;
+import org.locationtech.jts.algorithm.*;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.index.ItemVisitor;
-import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.math.Vector3D;
+import org.locationtech.jts.triangulate.quadedge.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -126,7 +124,7 @@ public class ComputeCnossosRays {
                                             CnossosPropagationData data) {
         List<PropagationPath> propagationPaths = new ArrayList<>();
         ProfileBuilder.CutProfile cutProfile = data.profileBuilder.getProfile(srcCoord, rcvCoord);
-        boolean freeField = !cutProfile.intersectBuilding() && !cutProfile.intersectTopography();
+        boolean freeField = cutProfile.isFreeField();
 
         if(freeField) {
             propagationPaths.add(computeFreefield(cutProfile, data.gS));
@@ -443,12 +441,29 @@ public class ComputeCnossosRays {
         List<ProfileBuilder.CutPoint> cutPts = cutProfile.getCutPoints().stream()
                     .filter(cutPoint -> cutPoint.getType() != ProfileBuilder.IntersectionType.GROUND_EFFECT)
                     .collect(Collectors.toList());
-        for (int i = 0; i < cutPts.size() - 1; i++) {
-            segments.add(new SegmentPath(cutProfile.getGS(cutPts.get(i), cutPts.get(i+1)),
-                    new Vector3D(cutPts.get(i).getCoordinate(), cutPts.get(i+1).getCoordinate()),
-                    cutPts.get(i).getCoordinate()));
+        Coordinate src = cutProfile.getSource().getCoordinate();
+        Coordinate rcv = cutProfile.getReceiver().getCoordinate();
+        LineSegment limit = new LineSegment(src, rcv);
+        List<ProfileBuilder.CutPoint> pts = new ArrayList<>();
+        pts.add(cutProfile.getSource());
+        for(int i=1; i<cutPts.size(); i++) {
+            ProfileBuilder.CutPoint pt = cutPts.get(i);
+            double frac = limit.segmentFraction(pt.getCoordinate());
+            double z = 0.0;
+            for(int j=i+1; j<cutPts.size(); j++) {
+                z = Math.max(z, limit.p0.z + frac*(cutPts.get(j).getCoordinate().z-limit.p0.z));
+            }
+            if(z <= pt.getCoordinate().z){
+                pts.add(pt);
+                limit = new LineSegment(pt.getCoordinate(), cutProfile.getReceiver().getCoordinate());
+            }
         }
-        for(ProfileBuilder.CutPoint cut : cutPts) {
+        for (int i = 0; i < pts.size() - 1; i++) {
+            segments.add(new SegmentPath(cutProfile.getGS(pts.get(i), pts.get(i+1)),
+                    new Vector3D(pts.get(i).getCoordinate(), pts.get(i+1).getCoordinate()),
+                    pts.get(i).getCoordinate()));
+        }
+        for(ProfileBuilder.CutPoint cut : pts) {
             points.add(new PointPath(cut, PointPath.POINT_TYPE.DIFH, gs));
         }
         return new PropagationPath(true, points, segments, srPath);
@@ -464,15 +479,225 @@ public class ComputeCnossosRays {
             propagationPaths = directPath(srcCoord, srcId, receiverCoord, rcvId, data);
 
             // Process specular reflection
-            /*if (data.reflexionOrder > 0) {
-                List<PropagationPath> propagationPaths_all = computeReflexion(receiverCoord, srcCoord, false, nearBuildingsWalls);
+            if (data.reflexionOrder > 0) {
+                List<PropagationPath> propagationPaths_all = computeReflexion(receiverCoord, srcCoord, false, data);
                 propagationPaths.addAll(propagationPaths_all);
-            }*/
+            }
         }
         if (propagationPaths != null && propagationPaths.size() > 0) {
             return dataOut.addPropagationPaths(srcId, sourceLi, rcvId, propagationPaths);
         }
         return new double[0];
+    }
+
+    public List<PropagationPath> computeReflexion(Coordinate rcvCoord,
+                                                  Coordinate srcCoord, boolean favorable,
+                                                  CnossosPropagationData data) {
+
+        // Compute receiver mirror
+        LineSegment srcRcvLine = new LineSegment(srcCoord, rcvCoord);
+        LineIntersector linters = new RobustLineIntersector();
+        List<MirrorReceiverResult> mirrorResults = new ArrayList<>();
+        //Keep only building walls which are not too far.
+        List<ProfileBuilder.Wall> buildWalls = data.profileBuilder.getProcessedWalls().stream()
+                .filter(wall -> wall.getType().equals(ProfileBuilder.IntersectionType.BUILDING))
+                .filter(wall -> wall.getLine().distance(srcRcvLine) < data.maxRefDist)
+                .collect(Collectors.toList());
+
+        for(ProfileBuilder.Wall wall : buildWalls) {
+            //Calculate the coordinate of the mirror rcv
+            Coordinate proj = wall.getLine().project(rcvCoord);
+            Coordinate rcvMirror = new Coordinate(2*proj.x-rcvCoord.x, 2*proj.y-rcvCoord.y, rcvCoord.z);
+            //If the mirror rcv is too far, skip it
+            if(srcRcvLine.p0.distance(rcvMirror) > data.maxSrcDist) {
+                continue;
+            }
+            //Check if a other wall is masking the current
+            LineSegment srcMirrRcvLine = new LineSegment(srcCoord, rcvMirror);
+            Coordinate inter = srcMirrRcvLine.intersection(wall.getLine());
+            if(inter == null) {
+                continue;
+            }
+            double frac = wall.getLine().segmentFraction(inter);
+            double interZ = wall.getLine().p0.z + frac * (wall.getLine().p1.z-wall.getLine().p0.z);
+            double dist = new LineSegment(srcCoord, inter).getLength();
+            boolean skipWall = false;
+            for(ProfileBuilder.Wall otherWall : buildWalls) {
+                Coordinate otherInter = srcMirrRcvLine.intersection(otherWall.getLine());
+                if(otherInter != null) {
+                    double otherFrac = otherWall.getLine().segmentFraction(otherInter);
+                    double otherInterZ = otherWall.getLine().p0.z + otherFrac * (otherWall.getLine().p1.z-otherWall.getLine().p0.z);
+                    double d1 = srcMirrRcvLine.segmentFraction(inter);
+                    double d2 = srcMirrRcvLine.segmentFraction(otherInter);
+                    if(otherInterZ > d2*interZ/d1) {
+                        double otherDist = new LineSegment(srcCoord, otherInter).getLength();
+                        if (otherDist < dist) {
+                            skipWall = true;
+                        }
+                    }
+                }
+            }
+            if(!skipWall) {
+                mirrorResults.add(new MirrorReceiverResult(rcvMirror, null,
+                        data.profileBuilder.getProcessedWalls().indexOf(wall), wall.getOriginId()));
+            }
+        }
+
+        List<PropagationPath> reflexionPropagationPaths = new ArrayList<>();
+
+        for (MirrorReceiverResult receiverReflection : mirrorResults) {
+            ProfileBuilder.Wall seg = buildWalls.get(receiverReflection.getWallId());
+            List<MirrorReceiverResult> rayPath = new ArrayList<>(data.reflexionOrder + 2);
+            boolean validReflection = false;
+            MirrorReceiverResult receiverReflectionCursor = receiverReflection;
+            // Test whether intersection point is on the wall
+            // segment or not
+            Coordinate destinationPt = new Coordinate(srcCoord);
+
+            linters.computeIntersection(seg.getLine().p0, seg.getLine().p1,
+                    receiverReflection.getReceiverPos(),
+                    destinationPt);
+            while (linters.hasIntersection() /*&& MirrorReceiverIterator.wallPointTest(seg.getLine(), destinationPt)*/) {
+                // There are a probable reflection point on the segment
+                Coordinate reflectionPt = new Coordinate(
+                        linters.getIntersection(0));
+                if (reflectionPt.equals(destinationPt)) {
+                    break;
+                }
+                Coordinate vec_epsilon = new Coordinate(
+                        reflectionPt.x - destinationPt.x,
+                        reflectionPt.y - destinationPt.y);
+                double length = vec_epsilon
+                        .distance(new Coordinate(0., 0., 0.));
+                // Normalize vector
+                vec_epsilon.x /= length;
+                vec_epsilon.y /= length;
+                // Multiply by epsilon in meter
+                vec_epsilon.x *= FastObstructionTest.wideAngleTranslationEpsilon;
+                vec_epsilon.y *= FastObstructionTest.wideAngleTranslationEpsilon;
+                // Translate reflection pt by epsilon to get outside
+                // the wall
+                reflectionPt.x -= vec_epsilon.x;
+                reflectionPt.y -= vec_epsilon.y;
+                // Compute Z interpolation
+                reflectionPt.setOrdinate(Coordinate.Z, Vertex.interpolateZ(linters.getIntersection(0),
+                        receiverReflectionCursor.getReceiverPos(), destinationPt));
+
+                // Test if there is no obstacles between the
+                // reflection point and old reflection pt (or source position)
+                validReflection = Double.isNaN(receiverReflectionCursor.getReceiverPos().z) ||
+                        Double.isNaN(reflectionPt.z) || Double.isNaN(destinationPt.z) /*|| seg.getOriginId() == 0*/
+                        || (reflectionPt.z < data.profileBuilder.getBuilding(seg.getOriginId()).getGeometry().getCoordinate().z
+                        && reflectionPt.z > data.profileBuilder.getTopoZ(reflectionPt)
+                        && destinationPt.z > data.profileBuilder.getTopoZ(destinationPt));
+                if (validReflection) // Source point can see receiver image
+                {
+                    MirrorReceiverResult reflResult = new MirrorReceiverResult(receiverReflectionCursor);
+                    reflResult.setReceiverPos(reflectionPt);
+                    rayPath.add(reflResult);
+                    if (receiverReflectionCursor
+                            .getParentMirror() == null) { // Direct to the receiver
+                        break; // That was the last reflection
+                    } else {
+                        // There is another reflection
+                        destinationPt.setCoordinate(reflectionPt);
+                        // Move reflection information cursor to a
+                        // reflection closer
+                        receiverReflectionCursor = receiverReflectionCursor.getParentMirror();
+                        // Update intersection data
+                        seg = buildWalls
+                                .get(receiverReflectionCursor
+                                        .getWallId());
+                        linters.computeIntersection(seg.getLine().p0, seg.getLine().p1,
+                                receiverReflectionCursor
+                                        .getReceiverPos(),
+                                destinationPt
+                        );
+                        validReflection = false;
+                    }
+                } else {
+                    break;
+                }
+            }
+            if (validReflection && !rayPath.isEmpty()) {
+                // Check intermediate reflections
+                for (int idPt = 0; idPt < rayPath.size() - 1; idPt++) {
+                    Coordinate firstPt = rayPath.get(idPt).getReceiverPos();
+                    MirrorReceiverResult refl = rayPath.get(idPt + 1);
+                    ProfileBuilder.CutProfile profile = data.profileBuilder.getProfile(firstPt, refl.getReceiverPos());
+                    if (!profile.intersectTopography() && !profile.intersectBuilding() ) {
+                        validReflection = false;
+                        break;
+                    }
+                }
+                if (!validReflection) {
+                    continue;
+                }
+                // A valid propagation path as been found
+                List<PointPath> points = new ArrayList<PointPath>();
+                List<SegmentPath> segments = new ArrayList<SegmentPath>();
+                List<SegmentPath> srPath = new ArrayList<SegmentPath>();
+                // Compute direct path between source and first reflection point, add profile to the data
+                computeReflexionOverBuildings(srcCoord, rayPath.get(0).getReceiverPos(), points, segments, srPath, data);
+                if (points.isEmpty()) {
+                    continue;
+                }
+                PointPath reflPoint = points.get(points.size() - 1);
+                reflPoint.setType(PointPath.POINT_TYPE.REFL);
+                reflPoint.setBuildingId(rayPath.get(0).getBuildingId());
+                reflPoint.setAlphaWall(data.profileBuilder.getBuilding(reflPoint.getBuildingId()).getAlphas());
+                // Add intermediate reflections
+                for (int idPt = 0; idPt < rayPath.size() - 1; idPt++) {
+                    Coordinate firstPt = rayPath.get(idPt).getReceiverPos();
+                    MirrorReceiverResult refl = rayPath.get(idPt + 1);
+                    reflPoint = new PointPath(refl.getReceiverPos(), 0, 1, data.profileBuilder.getBuilding(refl.getBuildingId()).getAlphas(), refl.getBuildingId(), PointPath.POINT_TYPE.REFL);
+                    points.add(reflPoint);
+                    segments.add(new SegmentPath(1, new Vector3D(firstPt), refl.getReceiverPos()));
+                }
+                // Compute direct path between receiver and last reflection point, add profile to the data
+                List<PointPath> lastPts = new ArrayList<>();
+                computeReflexionOverBuildings(rayPath.get(rayPath.size() - 1).getReceiverPos(), rcvCoord, lastPts, segments, srPath, data);
+                if (lastPts.isEmpty()) {
+                    continue;
+                }
+                points.addAll(lastPts.subList(1, lastPts.size()));
+                for (int i = 1; i < points.size(); i++) {
+                    if (points.get(i).type == PointPath.POINT_TYPE.REFL) {
+                        if (i < points.size() - 1) {
+                            // A diffraction point may have offset in height the reflection coordinate
+                            points.get(i).coordinate.z = Vertex.interpolateZ(points.get(i).coordinate, points.get(i - 1).coordinate, points.get(i + 1).coordinate);
+                            //check if in building && if under floor
+                            if (points.get(i).coordinate.z > data.profileBuilder.getBuilding(points.get(i).getBuildingId()).getGeometry().getCoordinate().z
+                                    || points.get(i).coordinate.z <= data.profileBuilder.getTopoZ(points.get(i).coordinate)) {
+                                points.clear();
+                                segments.clear();
+                                break;
+                            }
+                        } else {
+                            LOGGER.warn("Invalid state, reflexion point on last point");
+                            points.clear();
+                            segments.clear();
+                            break;
+                        }
+                    }
+                }
+                if (points.size() > 2) {
+                    reflexionPropagationPaths.add(new PropagationPath(favorable, points, segments, srPath));
+                }
+            }
+        }
+        return reflexionPropagationPaths;
+    }
+
+
+    public void computeReflexionOverBuildings(Coordinate p0, Coordinate p1, List<PointPath> points, List<SegmentPath> segments, List<SegmentPath> srPath, CnossosPropagationData data) {
+        List<PropagationPath> propagationPaths = directPath(p0, -1, p1, -1, data);
+        if (!propagationPaths.isEmpty()) {
+            PropagationPath propagationPath = propagationPaths.get(0);
+            points.addAll(propagationPath.getPointList());
+            segments.addAll(propagationPath.getSegmentList());
+            srPath.add(new SegmentPath(1.0, new Vector3D(p0, p1), p0));
+        }
     }
 
     private static double insertPtSource(Coordinate receiverPos, Coordinate ptpos, double[] wj, double li, Integer sourceId, List<SourcePointInfo> sourceList) {

@@ -42,9 +42,7 @@ import org.locationtech.jts.triangulate.quadedge.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 //TODO use NaN for building height
@@ -386,6 +384,10 @@ public class ProfileBuilder {
         receivers.add(new Coordinate(coordinate.x, coordinate.y, coordinate.z));
     }
 
+    public List<Wall> getProcessedWalls() {
+        return processedWalls;
+    }
+
     /**
      * Retrieve the building list.
      * @return The building list.
@@ -619,6 +621,16 @@ public class ProfileBuilder {
         return true;
     }
 
+    public double getZ(Coordinate reflectionPt) {
+        List<Integer> ids = buildingTree.query(new Envelope(reflectionPt));
+        if(ids.isEmpty()) {
+            return getTopoZ(reflectionPt);
+        }
+        else {
+            return buildings.get(ids.get(0)-1).getGeometry().getCoordinate().z;
+        }
+    }
+
     private static class UpdateZ implements CoordinateSequenceFilter {
 
         private boolean done = false;
@@ -689,30 +701,30 @@ public class ProfileBuilder {
                     if (intersection != null) {
                         double z1 = triLine.p0.z + (triLine.p1.z - triLine.p0.z) * triLine.segmentFraction(intersection);
                         double z2 = line.p0.z + (line.p1.z - line.p0.z) * line.segmentFraction(intersection);
-                        if(z1 > z2) {
+                        //if(z1 > z2) {
                             intersection.z = z1;
                             topoCutPts.add(new CutPoint(intersection, IntersectionType.TOPOGRAPHY, i));
-                        }
+                        //}
                     }
                     triLine = new LineSegment(vertices.get(triangle.getB()), vertices.get(triangle.getC()));
                     intersection = line.intersection(triLine);
                     if (intersection != null) {
                         double z1 = triLine.p0.z + (triLine.p1.z - triLine.p0.z) * triLine.segmentFraction(intersection);
                         double z2 = line.p0.z + (line.p1.z - line.p0.z) * line.segmentFraction(intersection);
-                        if(z1 > z2) {
+                        //if(z1 > z2) {
                             intersection.z = z1;
                             topoCutPts.add(new CutPoint(intersection, IntersectionType.TOPOGRAPHY, i));
-                        }
+                        //}
                     }
                     triLine = new LineSegment(vertices.get(triangle.getC()), vertices.get(triangle.getA()));
                     intersection = line.intersection(triLine);
                     if (intersection != null) {
                         double z1 = triLine.p0.z + (triLine.p1.z - triLine.p0.z) * triLine.segmentFraction(intersection);
                         double z2 = line.p0.z + (line.p1.z - line.p0.z) * line.segmentFraction(intersection);
-                        if(z1 > z2) {
+                        //if(z1 > z2) {
                             intersection.z = z1;
                             topoCutPts.add(new CutPoint(intersection, IntersectionType.TOPOGRAPHY, i));
-                        }
+                        //}
                     }
                 }
             }
@@ -783,7 +795,7 @@ public class ProfileBuilder {
         GroundEffect currentGround = null;
         Point p0 = FACTORY.createPoint(c0);
         for(GroundEffect ground : groundEffects) {
-            if(ground.geom.intersects(p0)) {
+            if(ground.geom.contains(p0)) {
                 currentGround = ground;
             }
         }
@@ -798,7 +810,6 @@ public class ProfileBuilder {
             }
             cut.groundCoef = currentGround != null ? currentGround.coef : 1;
         }
-
         return profile;
     }
 
@@ -807,7 +818,10 @@ public class ProfileBuilder {
      * @param c Coordinate of the point.
      * @return Topographic height of the point.
      */
-    private double getTopoZ(Coordinate c) {
+    public double getTopoZ(Coordinate c) {
+        if(topoTree == null) {
+            return 0.0;
+        }
         List list = new ArrayList<>();
         Envelope env = new Envelope(c);
         while(list.isEmpty()) {
@@ -856,6 +870,7 @@ public class ProfileBuilder {
         private Boolean hasTopographyInter = false;
         /** True if contains a ground effect cutting point. */
         private Boolean hasGroundEffectInter = false;
+        private Boolean isFreeField;
 
         /**
          * Add the source point.
@@ -982,6 +997,31 @@ public class ProfileBuilder {
 
         public double getGS() {
             return getGS(getSource(), getReceiver());
+        }
+
+        public boolean isFreeField() {
+            if(isFreeField == null) {
+                if(!intersectBuilding() && !intersectTopography()) {
+                    isFreeField = false;
+                }
+                else {
+                    isFreeField = true;
+                    List<CutPoint> pts = getCutPoints().stream()
+                            .filter(cutPoint -> cutPoint.getType() == IntersectionType.BUILDING ||
+                                                cutPoint.getType() == IntersectionType.TOPOGRAPHY)
+                            .collect(Collectors.toList());
+                    LineSegment srcRcvLine = new LineSegment(source.getCoordinate(), receiver.getCoordinate());
+                    for(CutPoint pt : pts) {
+                        double frac = srcRcvLine.segmentFraction(pt.getCoordinate());
+                        double z = source.getCoordinate().z + frac * (receiver.getCoordinate().z-source.getCoordinate().z);
+                        if(z < pt.getCoordinate().z) {
+                            isFreeField = false;
+                            break;
+                        }
+                    }
+                }
+            }
+            return isFreeField;
         }
     }
 
@@ -1208,16 +1248,11 @@ public class ProfileBuilder {
         //TODO use instead the min Ztopo
         public double updateZTopo(ProfileBuilder profileBuilder) {
             Coordinate[] coordinates = poly.getCoordinates();
-            double minZ = profileBuilder.getTopoZ(coordinates[0]);
-            for (int i = 1; i < coordinates.length-1; i++) {
-                Coordinate coordinate = coordinates[i];
-                double z = profileBuilder.getTopoZ(coordinate);
-                minZ = Math.min(z, minZ);
+            double minZ = 0.0;
+            for (int i = 0; i < coordinates.length-1; i++) {
+                minZ += profileBuilder.getTopoZ(coordinates[i]);
             }
-            zTopo = minZ;
-            return zTopo;
-        }
-        public double getZTopo() {
+            zTopo = minZ/(coordinates.length-1);
             return zTopo;
         }
     }
@@ -1308,6 +1343,10 @@ public class ProfileBuilder {
          */
         public double getHeight() {
             return height;
+        }
+
+        public IntersectionType getType() {
+            return type;
         }
     }
 
