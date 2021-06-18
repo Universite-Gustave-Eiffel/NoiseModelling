@@ -46,7 +46,7 @@ import static org.noise_planet.noisemodelling.emission.utils.interpLinear.interp
 
 public class EvaluateRailwaySourceCnossos {
     private JsonNode CnossosRailWayData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("coefficients_Railway_cnossos.json"));
-    private JsonNode CnossosVehicleData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Vehicle_definition.json"));
+    private JsonNode CnossosVehicleData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Vehicle.json"));
     private JsonNode CnossosTrainData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Train_definition.json"));
 
 

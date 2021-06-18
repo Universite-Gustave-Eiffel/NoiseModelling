@@ -142,16 +142,17 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
 
         String typeTrain = "FRET";
         double vehicleSpeed = 160;
-        int vehiclePerHour = 1;
+        double vehiclePerHour = 1;
         int rollingCondition = 0;
         double idlingTime = 0;
         int trackTransfer = 4;
+        double trackSpacing = 1;
         int impactNoise = 0;
         int bridgeTransfert = 0;
         int curvature = 0;
         int railRoughness = 4;
         double vMaxInfra = 160;
-        double vehicleCommercial = 160;
+        double commercialSpeed = 160;
         boolean isTunnel = false;
 
         // Read fields
@@ -188,7 +189,12 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
             vMaxInfra = rs.getDouble(sourceFields.get("TRACKSPD"));
         }
         if (sourceFields.containsKey("TRACKSPC")) {
-            vehicleCommercial = rs.getDouble(sourceFields.get("TRACKSPC"));
+            trackSpacing = rs.getDouble(sourceFields.get("TRACKSPC"));
+            setDistance(trackSpacing);
+        }
+
+        if (sourceFields.containsKey("COMSPD")) {
+            commercialSpeed = rs.getDouble(sourceFields.get("COMSPD"));
         }
         if (sourceFields.containsKey("TRAINTYPE")) {
             typeTrain = rs.getString(sourceFields.get("TRAINTYPE"));
@@ -200,7 +206,6 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
 
         if (sourceFields.containsKey("NTRACK")) {
             nbTrack = rs.getInt(sourceFields.get("NTRACK"));
-            this.nbTrack = nbTrack;
         }
 
 
@@ -209,7 +214,7 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
         RailWayLW  lWRailWay = new RailWayLW();
 
         RailwayTrackParametersCnossos trackParameters = new RailwayTrackParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
-                impactNoise, bridgeTransfert, curvature, vehicleCommercial, isTunnel, nbTrack);
+                impactNoise, bridgeTransfert, curvature, commercialSpeed, isTunnel, nbTrack);
 
         Map<String, Integer> vehicles = evaluateRailwaySourceCnossos.getVehicleFromTrain(typeTrain);
 
