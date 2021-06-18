@@ -180,7 +180,7 @@ public class TestComputeCnossosRays {
                 new Coordinate(316876.05185368325, 6706318.789634008, 22.089050196052437),
                 new Coordinate(316747.10402055364, 6706422.950335046, 12.808121783800553));
         PropagationPath propa = new ComputeCnossosRays().computeHorizontalEdgeDiffraction(profile, 0.0);
-        assertEquals(3, propa.getSegmentList().size());
+        assertEquals(3, propa.getPointList().size());
     }
 
     /**
@@ -346,50 +346,6 @@ public class TestComputeCnossosRays {
         PropagationPath.readPropagationPathListStream(new DataInputStream(byteArrayInputStream), got);
 
         Assert.assertEquals(computeRaysOut.propagationPaths.size(), got.size());
-    }
-
-    @Test
-    public void testVerticalSideDiffractionRaysOutOfDomain() throws LayerDelaunayError, ParseException  {
-
-        GeometryFactory factory = new GeometryFactory();
-        WKTReader wktReader = new WKTReader(factory);
-        //Scene dimension
-        Envelope cellEnvelope = wktReader.read("POLYGON ((316849.05 6703855.11, 316849.05 6703924.04, " +
-                "316925.36 6703924.04, 316925.36 6703855.11, 316849.05 6703855.11))").getEnvelopeInternal();
-        Coordinate p1 = new Coordinate(316914.1, 6703907.5, 4);
-        Coordinate p2 = new Coordinate(316913.4, 6703879, 4);
-        //Create obstruction test object
-        ProfileBuilder profileBuilder = new ProfileBuilder();
-
-        profileBuilder.addBuilding(wktReader.read("POLYGON ((316925.36 6703889.64, 316914.1 6703892.61, 316914.09 6703892.61, 316914.09 6703892.6, 316913.49 6703890.41, 316906.71 6703892.11, 316907.21 6703894.4, 316907.21 6703894.41, 316907.2 6703894.41, 316901.11 6703895.91, 316903.31 6703904.49, 316916.3 6703901.19, 316925.36 6703898.87, 316925.36 6703889.64)) "), 11.915885805791621);
-        profileBuilder.addBuilding(wktReader.read("POLYGON ((316886.41 6703903.61, 316888.31 6703910.59, 316899.79 6703907.69, 316897.99 6703900.71, 316886.41 6703903.61))"), 13.143551238469575);
-
-        profileBuilder.finishFeeding();
-        
-
-        CnossosPropagationData processData = new CnossosPropagationData(profileBuilder);
-        processData.setComputeVerticalDiffraction(true);
-        processData.setComputeHorizontalDiffraction(true);
-        //new ArrayList<>(), manager, sourcesIndex, srclst, new ArrayList<>(), new ArrayList<>(), 0, 99, 1000,1000,0,0,new double[0],0,0,new EmptyProgressVisitor(), new ArrayList<>(), true
-        ComputeCnossosRays computeRays = new ComputeCnossosRays();
-        
-
-        Assert.assertFalse(computeRays.computeFreefield(profileBuilder.getProfile(p1, p2), 0.0).getSegmentList().isEmpty());
-
-        List<Coordinate> pts = computeRays.computeSideHull(true, p1, p2, profileBuilder);
-        assertEquals(0, pts.size());
-
-        pts = computeRays.computeSideHull(false, p1, p2, profileBuilder);
-        assertEquals(4, pts.size());
-        for (int i = 0; i < pts.size() - 1; i++) {
-            Assert.assertTrue(computeRays.computeFreefield(profileBuilder.getProfile(pts.get(i), pts.get(i + 1)), 0.0).getSegmentList().isEmpty());
-        }
-
-        List<PropagationPath> prop = computeRays.directPath(p2, -1, p1, -1, processData);
-        // 3 paths
-        // 1 over the building / 1 left side
-        assertEquals(2, prop.size());
-
     }
 
     /**
@@ -709,7 +665,7 @@ public class TestComputeCnossosRays {
                 new Coordinate(175.01, 50, 0),
                 new Coordinate(190.01, 10, 0),
                 new Coordinate(190, 10, 0),
-                new Coordinate(175, 50, 0)}), 1, -1);//TODO original height 6
+                new Coordinate(175, 50, 0)}), 6, -1);
 
         // Add topographic points
         //x1
@@ -907,7 +863,7 @@ public class TestComputeCnossosRays {
                 new Coordinate(187.5, 48.5, 0),
                 new Coordinate(180.0, 51.6, 0),
                 new Coordinate(172.5, 48.5, 0),
-                new Coordinate(169.4, 41.0, 0)}), 19.8, -1);//TODO original height 20
+                new Coordinate(169.4, 41.0, 0)}), 20, -1);
 
         //x1
         profileBuilder.addTopographicPoint(new Coordinate(0, 80, 0));
@@ -1398,14 +1354,14 @@ public class TestComputeCnossosRays {
                 new Coordinate(145, 7),
                 new Coordinate(145, 8),
                 new Coordinate(156, 29),
-                new Coordinate(156, 28)}), 5, -1); //TODO original height 14
+                new Coordinate(156, 28)}), 14, -1);
 
         profileBuilder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(175, 35),
                 new Coordinate(188, 19),
                 new Coordinate(188, 20),
                 new Coordinate(175, 36),
-                new Coordinate(175, 35)}), 14.2, -1);//TODO original height 14.5
+                new Coordinate(175, 35)}), 14.5, -1);
 
         profileBuilder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(100, 24),
@@ -1626,7 +1582,7 @@ public class TestComputeCnossosRays {
                 new Coordinate(187, 21, 0),
                 new Coordinate(187, 30, 0),
                 new Coordinate(197, 30, 0),
-                new Coordinate(197, 36, 0)}), 19, -1); //TODO original height 20
+                new Coordinate(197, 36, 0)}), 20, -1);
 
 
         //x1
@@ -2036,64 +1992,64 @@ public class TestComputeCnossosRays {
 
         // Add building
         profileBuilder.addBuilding(factory.createPolygon(new Coordinate[]{
-                new Coordinate(113, 10, 0+upKml),
-                new Coordinate(127, 16, 0+upKml),
-                new Coordinate(102, 70, 0+upKml),
-                new Coordinate(88, 64, 0+upKml),
-                new Coordinate(113, 10, 0+upKml)}), 6, -1);
+                new Coordinate(113, 10, 0),
+                new Coordinate(127, 16, 0),
+                new Coordinate(102, 70, 0),
+                new Coordinate(88, 64, 0),
+                new Coordinate(113, 10, 0)}), 6, -1);
 
         profileBuilder.addBuilding(factory.createPolygon(new Coordinate[]{
-                new Coordinate(176, 19, 0+upKml),
-                new Coordinate(164, 88, 0+upKml),
-                new Coordinate(184, 91, 0+upKml),
-                new Coordinate(196, 22, 0+upKml),
-                new Coordinate(176, 19, 0+upKml)}), 10, -1);
+                new Coordinate(176, 19, 0),
+                new Coordinate(164, 88, 0),
+                new Coordinate(184, 91, 0),
+                new Coordinate(196, 22, 0),
+                new Coordinate(176, 19, 0)}), 10, -1);
 
         profileBuilder.addBuilding(factory.createPolygon(new Coordinate[]{
-                new Coordinate(250, 70, 0+upKml),
-                new Coordinate(250, 180, 0+upKml),
-                new Coordinate(270, 180, 0+upKml),
-                new Coordinate(270, 70, 0+upKml),
-                new Coordinate(250, 70, 0+upKml)}), 14, -1);
+                new Coordinate(250, 70, 0),
+                new Coordinate(250, 180, 0),
+                new Coordinate(270, 180, 0),
+                new Coordinate(270, 70, 0),
+                new Coordinate(250, 70, 0)}), 14, -1);
 
         profileBuilder.addBuilding(factory.createPolygon(new Coordinate[]{
-                new Coordinate(332, 32, 0+upKml),
-                new Coordinate(348, 126, 0+upKml),
-                new Coordinate(361, 108, 0+upKml),
-                new Coordinate(349, 44, 0+upKml),
-                new Coordinate(332, 32, 0+upKml)}), 10, -1);
+                new Coordinate(332, 32, 0),
+                new Coordinate(348, 126, 0),
+                new Coordinate(361, 108, 0),
+                new Coordinate(349, 44, 0),
+                new Coordinate(332, 32, 0)}), 10, -1);
 
         profileBuilder.addBuilding(factory.createPolygon(new Coordinate[]{
-                new Coordinate(400, 5, 0+upKml),
-                new Coordinate(400, 85, 0+upKml),
-                new Coordinate(415, 85, 0+upKml),
-                new Coordinate(415, 5, 0+upKml),
-                new Coordinate(400, 5, 0+upKml)}), 9, -1);
+                new Coordinate(400, 5, 0),
+                new Coordinate(400, 85, 0),
+                new Coordinate(415, 85, 0),
+                new Coordinate(415, 5, 0),
+                new Coordinate(400, 5, 0)}), 9, -1);
 
         profileBuilder.addBuilding(factory.createPolygon(new Coordinate[]{
-                new Coordinate(444, 47, 0+upKml),
-                new Coordinate(436, 136, 0+upKml),
-                new Coordinate(516, 143, 0+upKml),
-                new Coordinate(521, 89, 0+upKml),
-                new Coordinate(506, 87, 0+upKml),
-                new Coordinate(502, 127, 0+upKml),
-                new Coordinate(452, 123, 0+upKml),
-                new Coordinate(459, 48, 0+upKml),
-                new Coordinate(444, 47, 0+upKml)}), 12, -1);
+                new Coordinate(444, 47, 0),
+                new Coordinate(436, 136, 0),
+                new Coordinate(516, 143, 0),
+                new Coordinate(521, 89, 0),
+                new Coordinate(506, 87, 0),
+                new Coordinate(502, 127, 0),
+                new Coordinate(452, 123, 0),
+                new Coordinate(459, 48, 0),
+                new Coordinate(444, 47, 0)}), 12, -1);
 
         profileBuilder.addBuilding(factory.createPolygon(new Coordinate[]{
-                new Coordinate(773, 12, 0+upKml),
-                new Coordinate(728, 90, 0+upKml),
-                new Coordinate(741, 98, 0+upKml),
-                new Coordinate(786, 20, 0+upKml),
-                new Coordinate(773, 12, 0+upKml)}), 14, -1);
+                new Coordinate(773, 12, 0),
+                new Coordinate(728, 90, 0),
+                new Coordinate(741, 98, 0),
+                new Coordinate(786, 20, 0),
+                new Coordinate(773, 12, 0)}), 14, -1);
 
         profileBuilder.addBuilding(factory.createPolygon(new Coordinate[]{
-                new Coordinate(972, 82, 0+upKml),
-                new Coordinate(979, 121, 0+upKml),
-                new Coordinate(993, 118, 0+upKml),
-                new Coordinate(986, 79, 0+upKml),
-                new Coordinate(972, 82, 0+upKml)}), 8, -1);
+                new Coordinate(972, 82, 0),
+                new Coordinate(979, 121, 0),
+                new Coordinate(993, 118, 0),
+                new Coordinate(986, 79, 0),
+                new Coordinate(972, 82, 0)}), 8, -1);
 
         //x2
         profileBuilder.addTopographicPoint(new Coordinate(-1300, -1300, 0+upKml));

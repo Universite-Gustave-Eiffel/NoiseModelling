@@ -666,6 +666,16 @@ public class ProfileBuilder {
      * @return Cutting profile.
      */
     public CutProfile getProfile(Coordinate c0, Coordinate c1) {
+        return getProfile(c0, c1, 1.0);
+    }
+
+    /**
+     * Retrieve the cutting profile following the line build from the given coordinates.
+     * @param c0 Starting point.
+     * @param c1 Ending point.
+     * @return Cutting profile.
+     */
+    public CutProfile getProfile(Coordinate c0, Coordinate c1, double gS) {
         CutProfile profile = new CutProfile();
 
         profile.addSource(c0);
@@ -699,32 +709,20 @@ public class ProfileBuilder {
                     LineSegment triLine = new LineSegment(vertices.get(triangle.getA()), vertices.get(triangle.getB()));
                     Coordinate intersection = line.intersection(triLine);
                     if (intersection != null) {
-                        double z1 = triLine.p0.z + (triLine.p1.z - triLine.p0.z) * triLine.segmentFraction(intersection);
-                        double z2 = line.p0.z + (line.p1.z - line.p0.z) * line.segmentFraction(intersection);
-                        //if(z1 > z2) {
-                            intersection.z = z1;
-                            topoCutPts.add(new CutPoint(intersection, IntersectionType.TOPOGRAPHY, i));
-                        //}
+                        intersection.z = triLine.p0.z + (triLine.p1.z - triLine.p0.z) * triLine.segmentFraction(intersection);
+                        topoCutPts.add(new CutPoint(intersection, IntersectionType.TOPOGRAPHY, i));
                     }
                     triLine = new LineSegment(vertices.get(triangle.getB()), vertices.get(triangle.getC()));
                     intersection = line.intersection(triLine);
                     if (intersection != null) {
-                        double z1 = triLine.p0.z + (triLine.p1.z - triLine.p0.z) * triLine.segmentFraction(intersection);
-                        double z2 = line.p0.z + (line.p1.z - line.p0.z) * line.segmentFraction(intersection);
-                        //if(z1 > z2) {
-                            intersection.z = z1;
-                            topoCutPts.add(new CutPoint(intersection, IntersectionType.TOPOGRAPHY, i));
-                        //}
+                        intersection.z = triLine.p0.z + (triLine.p1.z - triLine.p0.z) * triLine.segmentFraction(intersection);
+                        topoCutPts.add(new CutPoint(intersection, IntersectionType.TOPOGRAPHY, i));
                     }
                     triLine = new LineSegment(vertices.get(triangle.getC()), vertices.get(triangle.getA()));
                     intersection = line.intersection(triLine);
                     if (intersection != null) {
-                        double z1 = triLine.p0.z + (triLine.p1.z - triLine.p0.z) * triLine.segmentFraction(intersection);
-                        double z2 = line.p0.z + (line.p1.z - line.p0.z) * line.segmentFraction(intersection);
-                        //if(z1 > z2) {
-                            intersection.z = z1;
-                            topoCutPts.add(new CutPoint(intersection, IntersectionType.TOPOGRAPHY, i));
-                        //}
+                        intersection.z = triLine.p0.z + (triLine.p1.z - triLine.p0.z) * triLine.segmentFraction(intersection);
+                        topoCutPts.add(new CutPoint(intersection, IntersectionType.TOPOGRAPHY, i));
                     }
                 }
             }
@@ -808,7 +806,7 @@ public class ProfileBuilder {
                     currentGround = groundEffects.get(cut.id);
                 }
             }
-            cut.groundCoef = currentGround != null ? currentGround.coef : 1;
+            cut.groundCoef = currentGround != null ? currentGround.coef : gS;
         }
         return profile;
     }
@@ -822,17 +820,23 @@ public class ProfileBuilder {
         if(topoTree == null) {
             return 0.0;
         }
-        List list = new ArrayList<>();
+        List<Integer> list = new ArrayList<>();
         Envelope env = new Envelope(c);
         while(list.isEmpty()) {
             env.expandBy(maxLineLength);
-            list = topoTree.query(env);
+            list = (List<Integer>)topoTree.query(env);
         }
-        Triangle tri = topoTriangles.get((int)list.get(0));
-        Coordinate p1 = vertices.get(tri.getA());
-        Coordinate p2 = vertices.get(tri.getB());
-        Coordinate p3 = vertices.get(tri.getC());
-        return Vertex.interpolateZ(c, p1, p2, p3);
+        for (int i : list) {
+            Triangle tri = topoTriangles.get(i);
+            Coordinate p1 = vertices.get(tri.getA());
+            Coordinate p2 = vertices.get(tri.getB());
+            Coordinate p3 = vertices.get(tri.getC());
+            Polygon poly = FACTORY.createPolygon(new Coordinate[]{p1, p2, p3, p1});
+            if (poly.contains(FACTORY.createPoint(c))) {
+                return Vertex.interpolateZ(c, p1, p2, p3);
+            }
+        }
+        return 0.0;
     }
 
     /**
@@ -925,7 +929,7 @@ public class ProfileBuilder {
          * @return The cutting points.
          */
         public List<CutPoint> getCutPoints() {
-            return pts;
+            return Collections.unmodifiableList(pts);
         }
 
         /**
