@@ -3,14 +3,12 @@ package org.noise_planet.noisemodelling.jdbc;
 import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SpatialResultSet;
 import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.operation.linemerge.LineMerger;
 import org.noise_planet.noisemodelling.emission.EvaluateRailwaySourceCnossos;
 import org.noise_planet.noisemodelling.emission.RailWayLW;
 import org.noise_planet.noisemodelling.emission.RailwayTrackParametersCnossos;
 import org.noise_planet.noisemodelling.emission.RailwayVehicleParametersCnossos;
-
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -311,7 +309,7 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
             }else {
 
                 if (even) {
-                    for (int j=1; j <= nbTrack/2 ; j++){
+                    for (int j=0; j < nbTrack/2 ; j++){
                         for (LineString subGeom : getGeometry()) {
                             geometries.add( MakeParallelLine(subGeom, (distance / 2) + distance * j));
                             geometries.add(MakeParallelLine(subGeom, -((distance / 2) + distance * j)));
