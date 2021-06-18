@@ -48,28 +48,28 @@ description = 'Compute Rail Emission Noise Map from Day Evening Night traffic fl
 
 inputs = [
         tableRailwayTraffic: [
-                name                                                                                                                            : 'Railway traffic table name',
-                title                                                                                                                           : 'Railway traffic table name',
-                description                                                                                                                     : "<b>Name of the Rail traffic table.</b>  </br>  " +
+                name   : 'Railway traffic table name',
+                title  : 'Railway traffic table name',
+                description    : "<b>Name of the Rail traffic table.</b>  </br>  " +
                         "<br>  This function recognize the following columns (* mandatory) : </br><ul>" +
-                        "<li><b> idTraffic </b>* : an identifier. It shall be a primary key (INT, PRIMARY KEY)</li>" +
+                        "<li><b> idTraffic </b>* : an identifier.</li>" +
                         "<li><b> idSection </b>* : an identifier. (INT)</li>" +
-                        "<li><b> TYPETRAIN </b>* : Type vehicle (STRING)/li>" +
-                        "<li><b> speedVehic </b>* : Maximum Train speed (DOUBLE) </li>" +
+                        "<li><b> TRAINTYPE </b>* : Type vehicle (STRING)/li>" +
+                        "<li><b> TRAINSPD </b>* : Maximum Train speed (DOUBLE) </li>" +
                         "<li><b> TDAY </b><b> TEVENING </b><b> TNIGHT </b> : Hourly average train count (6-18h)(18-22h)(22-6h) (INT)</li>", type: String.class],
         tableRailwayTrack  : [
-                name                                           : 'RailWay Geom table name', title: 'RailWay Track table name', description: "<b>Name of the Railway Track table.</b>  </br>  " +
+                name    : 'RailWay Geom table name', title: 'RailWay Track table name', description: "<b>Name of the Railway Track table.</b>  </br>  " +
                 "<br>  This function recognize the following columns (* mandatory) : </br><ul>" +
-                "<li><b> idSection </b>* : an identifier. It shall be a primary key(INTEGER, PRIMARY KEY)</li>" +
+                "<li><b> idSection </b>* : an identifier. </li>" +
                 "<li><b> nTrack </b>* : Number of tracks (INTEGER) /li>" +
-                "<li><b> speedTrack </b>* : Maximum speed on the section in km/h (DOUBLE) </li>" +
-                "<li><b> trackTrans </b> : Track transfer function identifier (INTEGER) </li>" +
-                "<li><b> railRoughn </b> : Rail roughness identifier (INTEGER)  </li>" +
-                "<li><b> impactNois </b> : Impact noise identifier (INTEGER) </li>" +
-                "<li><b> curvature </b> : Listed code describing the curvature of the section (INTEGER) </li>" +
-                "<li><b> bridgeTran </b> : Bridge transfer function identifier (INTEGER) </li>" +
-                "<li><b> speedComme </b> : Commercial speed on the section in km/h (DOUBLE) </li>" +
-                "<li><b> isTunnel </b> : (BOOLEAN) </li>", type: String.class]
+                "<li><b> TrackSpd </b>* : Maximum speed on the section in km/h (DOUBLE) </li>" +
+                "<li><b> Transfer </b> : Track transfer function identifier (INTEGER) </li>" +
+                "<li><b> Roughness </b> : Rail roughness identifier (INTEGER)  </li>" +
+                "<li><b> Impact </b> : Impact noise identifier (INTEGER) </li>" +
+                "<li><b> Curvature </b> : Listed code describing the curvature of the section (INTEGER) </li>" +
+                "<li><b> Bridge </b> : Bridge transfer function identifier (INTEGER) </li>" +
+                "<li><b> TRACKSPC </b> : Commercial speed on the section in km/h (DOUBLE) </li>" +
+                "<li><b> isTUNNEL </b> : (BOOLEAN) </li>", type: String.class]
 ]
 
 outputs = [result: [name: 'Result output string', title: 'Result output string', description: 'This type of result does not allow the blocks to be linked together.', type: String.class]]
@@ -278,8 +278,6 @@ def exec(Connection connection, input) {
 
     // Fusion geometry and traffic table
 
-    // Add Z dimension to the rail segments
-    sql.execute("UPDATE LW_RAILWAY SET THE_GEOM = ST_SETSRID(ST_UPDATEZ(The_geom,0.01), :srid);", ["srid" : sridSources])
 
     // Add primary key to the LW table
     sql.execute("ALTER TABLE  LW_RAILWAY  ADD PK INT AUTO_INCREMENT PRIMARY KEY;")

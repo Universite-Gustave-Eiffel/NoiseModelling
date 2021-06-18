@@ -3,14 +3,12 @@ package org.noise_planet.noisemodelling.jdbc;
 import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SpatialResultSet;
 import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.operation.linemerge.LineMerger;
 import org.noise_planet.noisemodelling.emission.EvaluateRailwaySourceCnossos;
 import org.noise_planet.noisemodelling.emission.RailWayLW;
 import org.noise_planet.noisemodelling.emission.RailwayTrackParametersCnossos;
 import org.noise_planet.noisemodelling.emission.RailwayVehicleParametersCnossos;
-
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -37,8 +35,17 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
     private LDENConfig ldenConfig;
     private SpatialResultSet spatialResultSet;
     private int currentIdSection = -1;
-
+    public static double distance = 2;
     public Map<String, Integer> sourceFields = null;
+
+    public double getDistance() {
+        return distance;
+    }
+
+    public void setDistance(double distance) {
+        this.distance = distance;
+    }
+
 
     public RailWayLWIterator(Connection connection, String tableTrain, String tableTrack, LDENConfig ldenConfig) {
         this.connection = connection;
@@ -66,7 +73,7 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
     public RailWayLWGeom next() {
         try {
             if (spatialResultSet == null) {
-                spatialResultSet = connection.createStatement().executeQuery("SELECT r1.*, r2.* FROM " + tableTrain + " r1, " + tableTrack + " r2 WHERE r1.IDSECTION= R2.IDSECTION ORDER BY PK ").unwrap(SpatialResultSet.class);
+                spatialResultSet = connection.createStatement().executeQuery("SELECT r1.*, r2.* FROM " + tableTrain + " r1, " + tableTrack + " r2 WHERE r1.IDSECTION= R2.IDSECTION ; ").unwrap(SpatialResultSet.class);
                 spatialResultSet.next();
 
                 railWayLWsum = getRailwayEmissionFromResultSet(spatialResultSet, "DAY");
@@ -108,9 +115,9 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
                 }
             }
 
-                RailWayLWGeom previousRailWayLW = railWayLWfinal;
-                railWayLWfinal=null;
-                return previousRailWayLW;
+            RailWayLWGeom previousRailWayLW = railWayLWfinal;
+            railWayLWfinal=null;
+            return previousRailWayLW;
 
         } catch (SQLException | IOException throwables) {
             throw new NoSuchElementException(throwables.getMessage());
@@ -148,8 +155,8 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
         boolean isTunnel = false;
 
         // Read fields
-        if (sourceFields.containsKey("SPEEDVEHIC")) {
-            vehicleSpeed = rs.getDouble(sourceFields.get("SPEEDVEHIC"));
+        if (sourceFields.containsKey("TRAINSPD")) {
+            vehicleSpeed = rs.getDouble(sourceFields.get("TRAINSPD"));
         }
         if (sourceFields.containsKey("T" + period)) {
             vehiclePerHour = rs.getInt(sourceFields.get("T" + period));
@@ -160,31 +167,31 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
         if (sourceFields.containsKey("IDLINGTIME")) {
             idlingTime = rs.getDouble(sourceFields.get("IDLINGTIME"));
         }
-        if (sourceFields.containsKey("TRACKTRANS")) {
-            trackTransfer = rs.getInt(sourceFields.get("TRACKTRANS"));
+        if (sourceFields.containsKey("TRANSFER")) {
+            trackTransfer = rs.getInt(sourceFields.get("TRANSFER"));
         }
-        if (sourceFields.containsKey("RAILROUGHN")) {
-            railRoughness = rs.getInt(sourceFields.get("RAILROUGHN"));
+        if (sourceFields.containsKey("ROUGHNESS")) {
+            railRoughness = rs.getInt(sourceFields.get("ROUGHNESS"));
         }
 
-        if (sourceFields.containsKey("IMPACTNOIS")) {
-            impactNoise = rs.getInt(sourceFields.get("IMPACTNOIS"));
+        if (sourceFields.containsKey("IMPACT")) {
+            impactNoise = rs.getInt(sourceFields.get("IMPACT"));
         }
-        if (sourceFields.containsKey("BRIDGETRAN")) {
-            bridgeTransfert = rs.getInt(sourceFields.get("BRIDGETRAN"));
+        if (sourceFields.containsKey("BRIDGE")) {
+            bridgeTransfert = rs.getInt(sourceFields.get("BRIDGE"));
         }
         if (sourceFields.containsKey("CURVATURE")) {
             curvature = rs.getInt(sourceFields.get("CURVATURE"));
         }
 
-        if (sourceFields.containsKey("SPEEDTRACK")) {
-            vMaxInfra = rs.getDouble(sourceFields.get("SPEEDTRACK"));
+        if (sourceFields.containsKey("TRACKSPD")) {
+            vMaxInfra = rs.getDouble(sourceFields.get("TRACKSPD"));
         }
-        if (sourceFields.containsKey("SPEEDCOMME")) {
-            vehicleCommercial = rs.getDouble(sourceFields.get("SPEEDCOMME"));
+        if (sourceFields.containsKey("TRACKSPC")) {
+            vehicleCommercial = rs.getDouble(sourceFields.get("TRACKSPC"));
         }
-        if (sourceFields.containsKey("TYPETRAIN")) {
-            typeTrain = rs.getString(sourceFields.get("TYPETRAIN"));
+        if (sourceFields.containsKey("TRAINTYPE")) {
+            typeTrain = rs.getString(sourceFields.get("TRAINTYPE"));
         }
 
         if (sourceFields.containsKey("ISTUNNEL")) {
@@ -226,7 +233,7 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
         }else if (evaluateRailwaySourceCnossos.isInVehicleList(typeTrain)){
             RailwayVehicleParametersCnossos vehicleParameters = new RailwayVehicleParametersCnossos(typeTrain, vehicleSpeed,
                     vehiclePerHour/(double)nbTrack, rollingCondition, idlingTime);
-             lWRailWay = evaluateRailwaySourceCnossos.evaluate(vehicleParameters, trackParameters);
+            lWRailWay = evaluateRailwaySourceCnossos.evaluate(vehicleParameters, trackParameters);
         }
 
         return lWRailWay;
@@ -298,7 +305,7 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
 
 
 
-        public List<LineString> getRailWayLWGeometry( double distance) {
+        public List<LineString> getRailWayLWGeometry() {
             List<LineString> geometries = new ArrayList<>();
 
 
@@ -313,7 +320,7 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
                 if (even) {
                     for (int j=1; j <= nbTrack/2 ; j++){
                         for (LineString subGeom : getGeometry()) {
-                            geometries.add( MakeParallelLine(subGeom, (distance / 2) + distance * j));
+                            geometries.add( MakeParallelLine(subGeom, ( distance / 2) + distance * j));
                             geometries.add(MakeParallelLine(subGeom, -((distance / 2) + distance * j)));
                         }
                     }

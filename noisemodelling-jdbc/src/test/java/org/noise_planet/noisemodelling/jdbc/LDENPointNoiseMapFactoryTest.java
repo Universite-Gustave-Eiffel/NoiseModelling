@@ -105,12 +105,13 @@ public class LDENPointNoiseMapFactoryTest {
         ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData());
         ldenConfig.setCoefficientVersion(2);
         RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN", ldenConfig);
+        railWayLWIterator.setDistance(2);
 
         RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
         assertNotNull(v);
+        v.setNbTrack(3);
         RailWayLW railWayLW = v.getRailWayLW();
-        List<LineString> geometries = v.getRailWayLWGeometry( 2); // TODO edit with specific distance set (plamade or other)
-
+        List<LineString> geometries = v.getRailWayLWGeometry();
         assertTrue(railWayLWIterator.hasNext());
 
     }

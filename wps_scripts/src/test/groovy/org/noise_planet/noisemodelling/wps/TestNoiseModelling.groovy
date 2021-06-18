@@ -53,12 +53,20 @@ class TestNoiseModelling extends JdbcTestCase {
 
         sql.execute("DROP TABLE IF EXISTS LW_RAILWAY")
 
-        SHPRead.readShape(connection, TestDatabaseManager.getResource("Train/RailTrack.shp").getPath())
-        DBFRead.read(connection, TestDatabaseManager.getResource("Train/RailTrain.dbf").getPath())
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("Train/RAIL_SECTIONS.shp").getPath(),
+                 "inputSRID": "2154"])
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("Train/RAIL_TRAFFIC.dbf").getPath(),
+                 "inputSRID": "2154"])
+
+
 
         String res = new Railway_Emission_from_Traffic().exec(connection,
-                ["tableRailwayTraffic": "RailTrain",
-                 "tableRailwayTrack": "RailTrack"
+                ["tableRailwayTraffic": "RAIL_TRAFFIC",
+                 "tableRailwayTrack": "RAIL_SECTIONS"
                 ])
 
         def fieldNames = JDBCUtilities.getFieldNames(connection.getMetaData(), "LW_RAILWAY")
