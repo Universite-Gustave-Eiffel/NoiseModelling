@@ -49,6 +49,10 @@ public class EvaluateRailwaySourceCnossos {
     private JsonNode CnossosVehicleData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Vehicule_definition.json"));
     private JsonNode CnossosTrainData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Train_definition.json"));
 
+    public void setEvaluateRailwaySourceNMPB() {
+        this.CnossosRailWayData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("coefficient_Railway_NMPB.json"));
+
+    }
 
     public void setEvaluateRailwaySourceCnossos(InputStream cnossosVehicleData,InputStream cnossosTrainData ) {
         this.CnossosVehicleData = parse(cnossosVehicleData);
