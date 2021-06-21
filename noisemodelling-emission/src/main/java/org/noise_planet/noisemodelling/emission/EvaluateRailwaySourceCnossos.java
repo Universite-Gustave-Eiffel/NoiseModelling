@@ -49,11 +49,6 @@ public class EvaluateRailwaySourceCnossos {
     private JsonNode CnossosVehicleData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Vehicule_definition.json"));
     private JsonNode CnossosTrainData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Train_definition.json"));
 
-    public void setEvaluateRailwaySourceNMPB() {
-        this.CnossosRailWayData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("coefficient_Railway_NMPB.json"));
-
-    }
-
     public void setEvaluateRailwaySourceCnossos(InputStream cnossosVehicleData,InputStream cnossosTrainData ) {
         this.CnossosVehicleData = parse(cnossosVehicleData);
         this.CnossosTrainData = parse(cnossosTrainData);
@@ -70,7 +65,7 @@ public class EvaluateRailwaySourceCnossos {
 
     public JsonNode getCnossosRailWayData(int spectreVer){
         if (spectreVer==1){
-            return CnossosRailWayData;
+            return parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("coefficients_Railway_v1.json"));
         }
         else {
             return CnossosRailWayData;
@@ -199,10 +194,10 @@ public class EvaluateRailwaySourceCnossos {
         String ref = "";
         if(refType.equals("RefRoughness")){ref = "WheelRoughness";}
         else if(refType.equals("RefContact")){ref = "ContactFilter";}
-        return getCnossosRailWayData(spectreVer).get("Vehicle").get(ref).get("Id" + String.valueOf(refId)).get("Values").get(lambdaId).doubleValue();
+        return getCnossosRailWayData(spectreVer).get("Vehicle").get(ref).get( String.valueOf(refId)).get("Values").get(lambdaId).doubleValue();
     }
     public Double getTrackRoughness(int trackRoughnessId, int spectreVer, int lambdaId) { //
-        return getCnossosRailWayData(spectreVer).get("Track").get("RailRoughness").get("Id" + String.valueOf(trackRoughnessId)).get("Values").get(lambdaId).doubleValue();
+        return getCnossosRailWayData(spectreVer).get("Track").get("RailRoughness").get( String.valueOf(trackRoughnessId)).get("Values").get(lambdaId).doubleValue();
     }
     public int getAxlesPerVeh(String typeVehicle) { //
         return getCnossosVehicleData().get(typeVehicle).get("NbAxlePerVeh").intValue();

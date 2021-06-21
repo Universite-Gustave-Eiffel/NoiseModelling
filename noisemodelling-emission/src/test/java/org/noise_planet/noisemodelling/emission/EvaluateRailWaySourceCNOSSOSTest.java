@@ -68,6 +68,7 @@ public class EvaluateRailWaySourceCNOSSOSTest {
         double[] expectedValuesLWBridge = new double[]{-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99};
 
         RailwayVehicleParametersCnossos vehicleParameters = new RailwayVehicleParametersCnossos(vehCat, vehicleSpeed,vehiclePerHour, rollingCondition,idlingTime);
+        vehicleParameters.setSpectreVer(1);
         RailwayTrackParametersCnossos trackParameters = new RailwayTrackParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
                 impactNoise, bridgeTransfert, curvature, vehicleCommercial,isTunnel, nTracks);
         RailWayLW lWRailWay = evaluateRailwaySourceCnossos.evaluate(vehicleParameters, trackParameters);
@@ -113,6 +114,8 @@ public class EvaluateRailWaySourceCNOSSOSTest {
 
         double[] expectedValuesLWRolling = new double[]{100.8970,101.8434,104.6603,107.0239,104.6611,104.0827,105.2341,109.9994,110.1740,110.1183,110.2914,110.7347,112.4299,111.8073,108.7535,104.3038,106.6040,105.3350,103.1827,100.7862,101.1828,100.6431,100.6290,102.1868};
         RailwayVehicleParametersCnossos vehicleParameters = new RailwayVehicleParametersCnossos(vehCat, vehicleSpeed,vehiclePerHour, rollingCondition,idlingTime);
+        vehicleParameters.setSpectreVer(1);
+
         RailwayTrackParametersCnossos trackParameters = new RailwayTrackParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
                 impactNoise, bridgeTransfert, curvature, vehicleCommercial,isTunnel, nTracks);
         lWRailWay = evaluateRailwaySourceCnossos.evaluate(vehicleParameters, trackParameters);
@@ -153,6 +156,8 @@ public class EvaluateRailWaySourceCNOSSOSTest {
         double[] expectedValuesLWBridge = new double[]{108.4579,109.4015,111.344,112.4959,111.1415,110.9017,105.8236,109.7833,111.592,115.0733,116.7548,116.8658,117.8667,116.2709,113.2686,102.3774,96.9285,95.8390,85.6001,75.2583,70.6990,62.9177,57.9386,54.5294};
 
         RailwayVehicleParametersCnossos vehicleParameters = new RailwayVehicleParametersCnossos(vehCat, vehicleSpeed,vehiclePerHour, rollingCondition,idlingTime);
+        vehicleParameters.setSpectreVer(1);
+
         RailwayTrackParametersCnossos trackParameters = new RailwayTrackParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
                 impactNoise, bridgeTransfert, curvature, vehicleCommercial,isTunnel, nTracks);
         lWRailWay = evaluateRailwaySourceCnossos.evaluate(vehicleParameters, trackParameters);
@@ -199,6 +204,8 @@ public class EvaluateRailWaySourceCNOSSOSTest {
 
 
         RailwayVehicleParametersCnossos vehicleParameters = new RailwayVehicleParametersCnossos(vehCat, vehicleSpeed,vehiclePerHour, rollingCondition,idlingTime);
+        vehicleParameters.setSpectreVer(1);
+
         RailwayTrackParametersCnossos trackParameters = new RailwayTrackParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
                 impactNoise, bridgeTransfert, curvature, vehicleCommercial,isTunnel, nTracks);
         lWRailWay = evaluateRailwaySourceCnossos.evaluate(vehicleParameters, trackParameters);
@@ -307,6 +314,7 @@ public class EvaluateRailWaySourceCNOSSOSTest {
 
             RailWayLW lWRailWay = null;
             RailwayVehicleParametersCnossos vehicleParameters = new RailwayVehicleParametersCnossos(vehCat, vehicleSpeed,vehiclePerHour, rollingCondition,idlingTime);
+            vehicleParameters.setSpectreVer(1);
 
             lWRailWay = evaluateRailwaySourceCnossos.evaluate(vehicleParameters, trackParameters);
 

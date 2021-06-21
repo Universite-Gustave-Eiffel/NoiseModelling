@@ -1,7 +1,7 @@
 {
    "Vehicle":{
       "Transfer":{
-         "Id1":{
+         "1":{
             "Description":"Roue-de-diametre-1200-mm",
             "Reference":"SNCF Juin 2021",
             "Spectre":[
@@ -31,7 +31,7 @@
                122.7
             ]
          },
-         "Id2":{
+         "2":{
             "Description":"Roue-de-diametre-920-mm",
             "Reference":"SNCF Juin 2021",
             "Spectre":[
@@ -61,7 +61,7 @@
                122.2
             ]
          },
-         "Id3":{
+         "3":{
             "Description":"Roue-de-diametre-840-mm",
             "Reference":"SNCF Juin 2021",
             "Spectre":[
@@ -91,7 +91,7 @@
                117.5
             ]
          },
-         "Id4":{
+         "4":{
             "Description":"Roue-de-diametre-680-mm",
             "Reference":"SNCF Juin 2021",
             "Spectre":[
@@ -123,7 +123,7 @@
          }
       },
       "WheelRoughness":{
-         "Id1":{
+         "1":{
             "Description":"Freins-semelles-fonte",
             "Reference":"SNCF Juin 2021",
             "Values":[
@@ -164,7 +164,7 @@
                -15
             ]
          },
-         "Id2":{
+         "2":{
             "Description":"Freins-semelles-composites",
             "Reference":"SNCF Juin 2021",
             "Values":[
@@ -205,7 +205,7 @@
                -17.8
             ]
          },
-         "Id3":{
+         "3":{
             "Description":"Freins-semelles-composites-+-disque",
             "Reference":"SNCF Juin 2021",
             "Values":[
@@ -246,7 +246,7 @@
                -20.5
             ]
          },
-         "Id4":{
+         "4":{
             "Description":"Freins-a-disque",
             "Reference":"SNCF Juin 2021",
             "Values":[
@@ -289,7 +289,7 @@
          }
       },
       "ContactFilter":{
-         "Id1":{
+         "1":{
             "Description":"Charge-a-l-es-sieu-50kN-Diametre-de-roue-360mm",
             "Reference":"SNCF Juin 2021",
             "Values":[
@@ -330,7 +330,7 @@
                -27.8
             ]
          },
-         "Id2":{
+         "2":{
             "Description":"Charge-a-l-es-sieu-50kN-Diametre-de-roue-680mm",
             "Reference":"SNCF Juin 2021",
             "Values":[
@@ -371,7 +371,7 @@
                -29.6
             ]
          },
-         "Id3":{
+         "3":{
             "Description":"Charge-a-l-es-sieu-25kN-Diametre-de-roue-920mm",
             "Reference":"SNCF Juin 2021",
             "Values":[
@@ -412,7 +412,7 @@
                -29
             ]
          },
-         "Id4":{
+         "4":{
             "Description":"Charge-a-l-es-sieu-50kN-Diametre-de-roue-920mm",
             "Reference":"SNCF Juin 2021",
             "Values":[
@@ -453,7 +453,7 @@
                -29.7
             ]
          },
-         "Id5":{
+         "5":{
             "Description":"Charge-a-l-es-sieu-100kN-Diametre-de-roue-920mm",
             "Reference":"SNCF Juin 2021",
             "Values":[
@@ -496,7 +496,7 @@
          }
       },
       "ConstantSpeed":{
-         "Id1":{
+         "1":{
             "Description":"Trains-a-grande-vitesse",
             "Reference":"SNCF Juin 2021",
             "Values":{
@@ -554,7 +554,7 @@
                ]
             }
          },
-         "Id2":{
+         "2":{
             "Description":"Automoteur-type-A",
             "Reference":"SNCF Juin 2021",
             "Values":{
@@ -612,7 +612,7 @@
                ]
             }
          },
-         "Id3":{
+         "3":{
             "Description":"Automoteur-type-B",
             "Reference":"SNCF Juin 2021",
             "Values":{
@@ -644,7 +644,7 @@
                ]
             }
          },
-         "Id4":{
+         "4":{
             "Description":"Automoteur-type-C",
             "Reference":"SNCF Juin 2021",
             "Values":{
@@ -702,7 +702,7 @@
                ]
             }
          },
-         "Id5":{
+         "5":{
             "Description":"Automoteur-type-D",
             "Reference":"SNCF Juin 2021",
             "Values":{
@@ -760,7 +760,7 @@
                ]
             }
          },
-         "Id6":{
+         "6":{
             "Description":"Automoteur-type-E",
             "Reference":"SNCF Juin 2021",
             "Values":{
@@ -818,7 +818,7 @@
                ]
             }
          },
-         "Id7":{
+         "7":{
             "Description":"Automoteur-type-F",
             "Reference":"SNCF Juin 2021",
             "Values":{
@@ -876,7 +876,7 @@
                ]
             }
          },
-         "Id8":{
+         "8":{
             "Description":"Automoteur-type-G",
             "Reference":"SNCF Juin 2021",
             "Values":{
@@ -934,7 +934,7 @@
                ]
             }
          },
-         "Id9":{
+         "9":{
             "Description":"Automoteur-type-H",
             "Reference":"SNCF Juin 2021",
             "Values":{
@@ -992,7 +992,7 @@
                ]
             }
          },
-         "Id10":{
+         "10":{
             "Description":"Rames-remorquees",
             "Reference":"SNCF Juin 2021",
             "Values":{
@@ -1050,7 +1050,7 @@
                ]
             }
          },
-         "Id11":{
+         "11":{
             "Description":"Voitures-remorquees-type-A",
             "Reference":"SNCF Juin 2021",
             "Values":{
@@ -1108,7 +1108,7 @@
                ]
             }
          },
-         "Id12":{
+         "12":{
             "Description":"Voitures-remorquees-type-B",
             "Reference":"SNCF Juin 2021",
             "Values":{
@@ -1166,7 +1166,7 @@
                ]
             }
          },
-         "Id13":{
+         "13":{
             "Description":"Tram-train",
             "Reference":"SNCF Juin 2021",
             "Values":{
@@ -1224,7 +1224,7 @@
                ]
             }
          },
-         "Id14":{
+         "14":{
             "Description":"Locomotive-type-A",
             "Reference":"SNCF Juin 2021",
             "Values":{
@@ -1282,7 +1282,7 @@
                ]
             }
          },
-         "Id15":{
+         "15":{
             "Description":"Locomotive-type-B",
             "Reference":"SNCF Juin 2021",
             "Values":{
@@ -1342,7 +1342,7 @@
          }
       },
       "AerodynamicNoise":{
-         "Id1":{
+         "1":{
             "DescriptionA":"LW.0-1",
             "DescriptionB":"LW.0-2",
             "Reference":"SNCF Juin 2021",
@@ -1405,7 +1405,7 @@
    },
    "Track":{
       "TrackTransfer":{
-         "Id1":{
+         "1":{
             "Description":"Traverse-monobloc-sur-semelle-souple",
             "Reference":"SNCF Juin 2021",
             "Spectre":[
@@ -1435,8 +1435,8 @@
                108.8
             ]
          },
-         "Id2":{
-            "Description":"Traverse-monobloc-sur-semelle-de-rigidite-moyenne",
+         "2":{
+            "Description":"Traverse-monobloc-sur-semelle-de-rigite-moyenne",
             "Reference":"SNCF Juin 2021",
             "Spectre":[
                34.6,
@@ -1465,8 +1465,8 @@
                108
             ]
          },
-         "Id3":{
-            "Description":"Traverse-monobloc-sur-semelle-ri-gide",
+         "3":{
+            "Description":"Traverse-monobloc-sur-semelle-ri-ge",
             "Reference":"SNCF Juin 2021",
             "Spectre":[
                32.5,
@@ -1495,7 +1495,7 @@
                108.1
             ]
          },
-         "Id4":{
+         "4":{
             "Description":"Traverse-bibloc-sur-semelle-souple",
             "Reference":"SNCF Juin 2021",
             "Spectre":[
@@ -1525,8 +1525,8 @@
                105.3
             ]
          },
-         "Id5":{
-            "Description":"Traverse-bibloc-sur-semelle-de-rigidite-moyenne",
+         "5":{
+            "Description":"Traverse-bibloc-sur-semelle-de-rigite-moyenne",
             "Reference":"SNCF Juin 2021",
             "Spectre":[
                34.4,
@@ -1555,8 +1555,8 @@
                108.5
             ]
          },
-         "Id6":{
-            "Description":"Traverse-bibloc-sur-semelle-ri-gide",
+         "6":{
+            "Description":"Traverse-bibloc-sur-semelle-ri-ge",
             "Reference":"SNCF Juin 2021",
             "Spectre":[
                14.7,
@@ -1585,7 +1585,7 @@
                105.6
             ]
          },
-         "Id7":{
+         "7":{
             "Description":"Traverse-en-bois",
             "Reference":"SNCF Juin 2021",
             "Spectre":[
@@ -1617,7 +1617,7 @@
          }
       },
       "RailRoughness":{
-         "Id1":{
+         "1":{
             "Description":"Lignes-Classiques",
             "Reference":"SNCF Juin 2021",
             "Values":[
@@ -1658,7 +1658,7 @@
                -28.5
             ]
          },
-         "Id2":{
+         "2":{
             "Description":"LGV",
             "Reference":"SNCF Juin 2021",
             "Values":[
@@ -1701,7 +1701,7 @@
          }
       },
       "ImpactNoise":{
-         "Id1":{
+         "1":{
             "Description":"Aiguillage/joint/croisement/100m",
             "Reference":"SNCF Juin 2021",
             "Values":[
@@ -1743,13 +1743,13 @@
             ]
          }
       },
-      "BrIdgeConstant":{
-         "Id1":{
+      "BrgeConstant":{
+         "1":{
             "Description":"Tout-type-de-pont-hors-ponts-metalliques-avec-voies-non-ballastees",
             "Reference":"SNCF Juin 2021",
             "Values":0
          },
-         "Id2":{
+         "2":{
             "Description":"Ponts-metalliques-avec-voies-non-ballastees",
             "Reference":"SNCF Juin 2021",
             "Values":5
