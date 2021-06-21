@@ -39,7 +39,7 @@ public class EvaluateRailWaySourceCNOSSOSTest {
     @Test
     public void Test_Cnossos_Rail_emission_section_1() {
 
-        evaluateRailwaySourceCnossos.setEvaluateRailwaySourceCnossos(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Vehicle_definitionNMPB.json.json"), EvaluateRailwaySourceCnossos.class.getResourceAsStream("Train_definition.json"));
+        evaluateRailwaySourceCnossos.setEvaluateRailwaySourceCnossos(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Vehicle_definitionNMPB.json"), EvaluateRailwaySourceCnossos.class.getResourceAsStream("Train_definition.json"));
 
         String vehCat = "SNCF-BB66400";
 
@@ -88,7 +88,7 @@ public class EvaluateRailWaySourceCNOSSOSTest {
     @Test
     public void Test_Cnossos_Rail_emission_section_2() {
 
-        evaluateRailwaySourceCnossos.setEvaluateRailwaySourceCnossos(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Vehicle_definitionNMPB.json.json"), EvaluateRailwaySourceCnossos.class.getResourceAsStream("Train_definition.json"));
+        evaluateRailwaySourceCnossos.setEvaluateRailwaySourceCnossos(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Vehicle_definitionNMPB.json"), EvaluateRailwaySourceCnossos.class.getResourceAsStream("Train_definition.json"));
 
         String vehCat = "SNCF-BB66400";
 
@@ -125,7 +125,7 @@ public class EvaluateRailWaySourceCNOSSOSTest {
     @Test
     public void Test_Cnossos_Rail_emission_section_3() {
 
-        evaluateRailwaySourceCnossos.setEvaluateRailwaySourceCnossos(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Vehicle_definitionNMPB.json.json"), EvaluateRailwaySourceCnossos.class.getResourceAsStream("Train_definition.json"));
+        evaluateRailwaySourceCnossos.setEvaluateRailwaySourceCnossos(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Vehicle_definitionNMPB.json"), EvaluateRailwaySourceCnossos.class.getResourceAsStream("Train_definition.json"));
 
 
         String vehCat = "SNCF-BB66400";
@@ -167,7 +167,7 @@ public class EvaluateRailWaySourceCNOSSOSTest {
     @Test
     public void Test_Cnossos_Rail_emission_section_4 () {
 
-        evaluateRailwaySourceCnossos.setEvaluateRailwaySourceCnossos(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Vehicle_definitionNMPB.json.json"), EvaluateRailwaySourceCnossos.class.getResourceAsStream("Train_definition.json"));
+        evaluateRailwaySourceCnossos.setEvaluateRailwaySourceCnossos(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Vehicle_definitionNMPB.json"), EvaluateRailwaySourceCnossos.class.getResourceAsStream("Train_definition.json"));
 
 
         String vehCat = "SNCF-BB66400";
@@ -216,7 +216,7 @@ public class EvaluateRailWaySourceCNOSSOSTest {
     @Test
     public void Test_Cnossos_Rail_emission_section_5() {
 
-        evaluateRailwaySourceCnossos.setEvaluateRailwaySourceCnossos(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Vehicle_definitionNMPB.json.json"), EvaluateRailwaySourceCnossos.class.getResourceAsStream("Train_definition.json"));
+        evaluateRailwaySourceCnossos.setEvaluateRailwaySourceCnossos(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Vehicle_definitionNMPB.json"), EvaluateRailwaySourceCnossos.class.getResourceAsStream("Train_definition.json"));
 
 
         String vehCat;

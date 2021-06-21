@@ -195,10 +195,10 @@ public class EvaluateRailwaySourceCnossos {
         String ref = "";
         if(refType.equals("RefRoughness")){ref = "WheelRoughness";}
         else if(refType.equals("RefContact")){ref = "ContactFilter";}
-        return getCnossosRailWayData(spectreVer).get("Vehicle").get(ref).get(String.valueOf(refId)).get("Values").get(lambdaId).doubleValue();
+        return getCnossosRailWayData(spectreVer).get("Vehicle").get(ref).get("Id" + String.valueOf(refId)).get("Values").get(lambdaId).doubleValue();
     }
     public Double getTrackRoughness(int trackRoughnessId, int spectreVer, int lambdaId) { //
-        return getCnossosRailWayData(spectreVer).get("Track").get("RailRoughness").get(String.valueOf(trackRoughnessId)).get("Values").get(lambdaId).doubleValue();
+        return getCnossosRailWayData(spectreVer).get("Track").get("RailRoughness").get("Id" + String.valueOf(trackRoughnessId)).get("Values").get(lambdaId).doubleValue();
     }
     public int getAxlesPerVeh(String typeVehicle) { //
         return getCnossosVehicleData().get(typeVehicle).get("NbAxlePerVeh").intValue();
