@@ -348,18 +348,24 @@ public class EvaluateRailwaySourceCnossos {
     private double[] evaluateLWSpectre(String typeVehicle,String ref,int runningCondition, double speed, int height,int spectreVer) {
         double [] lWSpectre = new double[24];
         for(int idFreq = 0; idFreq < 24; idFreq++) {
-            if(height==0){
-                lWSpectre[idFreq] = getSpectre(typeVehicle,ref, runningCondition,"A",spectreVer,idFreq);}
-            else if(height==1) {
-                lWSpectre[idFreq] = getSpectre(typeVehicle, ref, runningCondition,"B", spectreVer, idFreq);
-            }
-            if(ref.equals("RefAerodynamic")){
+            if(!ref.equals("RefAerodynamic")) {
+                if (height == 0) {
+                    lWSpectre[idFreq] = getSpectre(typeVehicle, ref, runningCondition, "A", spectreVer, idFreq);
+                } else if (height == 1) {
+                    lWSpectre[idFreq] = getSpectre(typeVehicle, ref, runningCondition, "B", spectreVer, idFreq);
+                }
+            }else{
                 if(speed<200){
                     lWSpectre[idFreq] =-99;
                 }else{
-                double v0Aero = getAeroV0Alpha(typeVehicle,ref, spectreVer, "V0");
-                double alphaAero = getAeroV0Alpha(typeVehicle,ref, spectreVer, "Alpha");
-                lWSpectre[idFreq] = lWSpectre[idFreq]+ alphaAero*Math.log10(speed/v0Aero);
+                    if (height == 0) {
+                        lWSpectre[idFreq] = getSpectre(typeVehicle, ref, runningCondition, "A", spectreVer, idFreq);
+                    } else if (height == 1) {
+                        lWSpectre[idFreq] = getSpectre(typeVehicle, ref, runningCondition, "B", spectreVer, idFreq);
+                    }
+                    double v0Aero = getAeroV0Alpha(typeVehicle,ref, spectreVer, "V0");
+                    double alphaAero = getAeroV0Alpha(typeVehicle,ref, spectreVer, "Alpha");
+                    lWSpectre[idFreq] = lWSpectre[idFreq]+ alphaAero*Math.log10(speed/v0Aero);
                 }
             }
         }

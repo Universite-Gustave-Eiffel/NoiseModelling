@@ -101,9 +101,10 @@ public class LDENPointNoiseMapFactoryTest {
         DBFRead.read(connection, LDENPointNoiseMapFactoryTest.class.getResource("RailTrain.dbf").getFile());
 
 
+
         LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_RAILWAY_FLOW);
         ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData());
-        ldenConfig.setCoefficientVersion(2);
+
         RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN", ldenConfig);
         railWayLWIterator.setDistance(2);
 

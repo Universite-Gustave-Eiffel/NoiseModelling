@@ -150,7 +150,7 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
         int impactNoise = 0;
         int bridgeTransfert = 0;
         int curvature = 0;
-        int railRoughness = 4;
+        int railRoughness = 1;
         double vMaxInfra = 160;
         double commercialSpeed = 160;
         boolean isTunnel = false;
