@@ -45,9 +45,9 @@ import static org.noise_planet.noisemodelling.emission.utils.interpLinear.interp
  */
 
 public class EvaluateRailwaySourceCnossos {
-    private JsonNode CnossosRailWayData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("coefficient_Railway_Cnossos.json"));
-    private JsonNode CnossosVehicleData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Vehicule_definition.json"));
-    private JsonNode CnossosTrainData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Train_definition.json"));
+    private JsonNode CnossosRailWayData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("coefficient_Railway_Cnossos_SNCF.json"));
+    private JsonNode CnossosVehicleData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Rail_Vehicles_SNCF_2021.json"));
+    private JsonNode CnossosTrainData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Rail_Train_SNCF_2021.json"));
 
     public void setEvaluateRailwaySourceCnossos(InputStream cnossosVehicleData,InputStream cnossosTrainData ) {
         this.CnossosVehicleData = parse(cnossosVehicleData);
@@ -65,7 +65,7 @@ public class EvaluateRailwaySourceCnossos {
 
     public JsonNode getCnossosRailWayData(int spectreVer){
         if (spectreVer==1){
-            return parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("coefficients_Railway_v1.json"));
+            return parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("coefficients_Railway_Cnossos_2020.json"));
         }
         else {
             return CnossosRailWayData;
