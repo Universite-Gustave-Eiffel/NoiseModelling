@@ -15,10 +15,9 @@ package org.noise_planet.noisemodelling.wps
 import groovy.sql.Sql
 import org.h2gis.functions.io.dbf.DBFRead
 import org.h2gis.functions.io.shp.SHPRead
-import org.junit.Test
 import org.h2gis.utilities.JDBCUtilities
+import org.junit.Test
 import org.noise_planet.noisemodelling.wps.Geometric_Tools.Set_Height
-import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_source
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_traffic
@@ -26,7 +25,6 @@ import org.noise_planet.noisemodelling.wps.NoiseModelling.Railway_Emission_from_
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Road_Emission_from_Traffic
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 /**
  * Test parsing of zip file using H2GIS database
  */
@@ -106,9 +104,7 @@ class TestNoiseModelling extends JdbcTestCase {
 
         def receiversLvl = sql.rows("SELECT * FROM LDAY_GEOM ORDER BY IDRECEIVER")
 
-        assertEquals(74.9,receiversLvl[0]["LEQ"] as Double,0.1)
-        assertEquals(46.9,receiversLvl[1]["LEQ"] as Double,0.1)
-        assertEquals(53.13,receiversLvl[2]["LEQ"] as Double,0.1)
+        assertEquals(71.0,receiversLvl[0]["LEQ"] as Double,0.1)
     }
 
     @Test

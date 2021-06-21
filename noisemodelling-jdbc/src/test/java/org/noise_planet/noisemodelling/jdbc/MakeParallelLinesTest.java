@@ -39,7 +39,6 @@ public class MakeParallelLinesTest {
         System.out.println(new GeometryFactory().createMultiLineString(new LineString[]{line, line2}));
     }
 
-
     @Test
     public void makeParallelLine3() throws ParseException {
         List<LineString> geometries = new ArrayList<>();
@@ -47,7 +46,7 @@ public class MakeParallelLinesTest {
         WKTReader wktReader  = new WKTReader();
         LineString line = (LineString) wktReader.read("LINESTRING(0 0,10 0)");
         lines.add(line);
-        int nbTrack = 2;
+        int nbTrack = 6;
         double distance = 1;
 
 
@@ -59,7 +58,7 @@ public class MakeParallelLinesTest {
         } else {
 
             if (even) {
-                for (int j = 1; j <= nbTrack / 2; j++) {
+                for (int j = 0; j < nbTrack / 2; j++) {
                     for (LineString subGeom : lines) {
                         geometries.add(MakeParallelLine(subGeom, (distance / 2) + distance * j));
                         geometries.add(MakeParallelLine(subGeom, -((distance / 2) + distance * j)));
@@ -78,8 +77,7 @@ public class MakeParallelLinesTest {
             }
 
         }
-        int a=1;
+        System.out.println(geometries);
     }
 }
-
 

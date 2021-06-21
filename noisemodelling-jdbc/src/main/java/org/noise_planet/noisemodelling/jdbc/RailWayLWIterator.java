@@ -323,7 +323,7 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
             }else {
 
                 if (even) {
-                    for (int j=1; j <= nbTrack/2 ; j++){
+                    for (int j=0; j < nbTrack/2 ; j++){
                         for (LineString subGeom : getGeometry()) {
                             geometries.add( MakeParallelLine(subGeom, ( distance / 2) + distance * j));
                             geometries.add(MakeParallelLine(subGeom, -((distance / 2) + distance * j)));
