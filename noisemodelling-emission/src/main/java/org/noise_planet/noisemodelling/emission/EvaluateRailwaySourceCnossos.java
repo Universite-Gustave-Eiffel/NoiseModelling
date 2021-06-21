@@ -45,8 +45,8 @@ import static org.noise_planet.noisemodelling.emission.utils.interpLinear.interp
  */
 
 public class EvaluateRailwaySourceCnossos {
-    private JsonNode CnossosRailWayData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("coefficients_Railway_cnossos.json"));
-    private JsonNode CnossosVehicleData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Vehicle.json"));
+    private JsonNode CnossosRailWayData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("coefficient_Railway_Cnossos.json"));
+    private JsonNode CnossosVehicleData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Vehicule_definition.json"));
     private JsonNode CnossosTrainData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Train_definition.json"));
 
 
@@ -201,7 +201,7 @@ public class EvaluateRailwaySourceCnossos {
         return getCnossosRailWayData(spectreVer).get("Track").get("RailRoughness").get(String.valueOf(trackRoughnessId)).get("Values").get(lambdaId).doubleValue();
     }
     public int getAxlesPerVeh(String typeVehicle) { //
-        return getCnossosVehicleData().get(typeVehicle).get("Axles").intValue();
+        return getCnossosVehicleData().get(typeVehicle).get("NbAxlePerVeh").intValue();
     }
     public double getSpectre(String typeVehicle, String ref, int runningCondition,String sourceHeight, int spectreVer, int freqId) { //
         int refId = getCnossosVehicleData().get(typeVehicle).get(ref).intValue();
