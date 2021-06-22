@@ -18,6 +18,7 @@ import org.h2gis.functions.io.shp.SHPRead
 import org.h2gis.utilities.JDBCUtilities
 import org.junit.Test
 import org.noise_planet.noisemodelling.wps.Geometric_Tools.Set_Height
+import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_source
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_traffic
@@ -60,7 +61,10 @@ class TestNoiseModelling extends JdbcTestCase {
                 ["pathFile" : TestNoiseModelling.getResource("Train/RAIL_TRAFFIC.dbf").getPath(),
                  "inputSRID": "2154"])
 
-
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("Train/receivers_Railway_.shp").getPath(),
+                 "inputSRID": "2154",
+                 "tableName" : "RECEIVERS"])
 
         String res = new Railway_Emission_from_Traffic().exec(connection,
                 ["tableRailwayTraffic": "RAIL_TRAFFIC",
@@ -81,13 +85,6 @@ class TestNoiseModelling extends JdbcTestCase {
         assertArrayEquals(expected.toArray(new String[expected.size()]), fieldNames.toArray(new String[fieldNames.size()]))
 
 
-        sql.execute("DROP TABLE IF EXISTS RECEIVERS")
-        sql.execute("CREATE TABLE RECEIVERS(PK SERIAL, THE_GEOM GEOMETRY)")
-        sql.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT(421506.21 6703298.90)')")
-        sql.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT(421507.35 6703319.66)')")
-        sql.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT(421501.83 6703349.68)')")
-        sql.execute("UPDATE RECEIVERS SET THE_GEOM = ST_SETSRID(THE_GEOM, 2154)")
-
         SHPRead.readShape(connection, TestDatabaseManager.getResource("Train/buildings2.shp").getPath(), "BUILDINGS")
 
         sql.execute("DROP TABLE IF EXISTS LDAY_GEOM")
@@ -104,7 +101,11 @@ class TestNoiseModelling extends JdbcTestCase {
 
         def receiversLvl = sql.rows("SELECT * FROM LDAY_GEOM ORDER BY IDRECEIVER")
 
-        assertEquals(71.0,receiversLvl[0]["LEQ"] as Double,0.1)
+        String export = new Export_Table().exec(connection,
+                ["exportPath"   : "target/LDAY_GEOM_rail.geojson",
+                 "tableToExport": "LDAY_GEOM"])
+
+        assertEquals(63.16,receiversLvl[0]["LEQ"] as Double,0.1)
     }
 
     @Test

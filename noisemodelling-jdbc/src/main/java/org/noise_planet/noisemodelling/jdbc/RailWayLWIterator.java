@@ -204,6 +204,10 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
             isTunnel = rs.getBoolean(sourceFields.get("ISTUNNEL"));
         }
 
+        if (sourceFields.containsKey("IDTUNNEL")) {
+            isTunnel = !rs.getString(sourceFields.get("IDTUNNEL")).isEmpty();
+        }
+
         if (sourceFields.containsKey("NTRACK")) {
             nbTrack = rs.getInt(sourceFields.get("NTRACK"));
         }

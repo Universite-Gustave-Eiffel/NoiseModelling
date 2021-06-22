@@ -205,7 +205,7 @@ def exec(Connection connection, input) {
         RailWayLW railWayLWDay = railWayLWGeom.getRailWayLWDay()
         RailWayLW railWayLWEvening = railWayLWGeom.getRailWayLWEvening()
         RailWayLW railWayLWNight = railWayLWGeom.getRailWayLWNight()
-        List<LineString> geometries = railWayLWGeom.getRailWayLWGeometry(2) //set distance between Rail
+        List<LineString> geometries = railWayLWGeom.getRailWayLWGeometry()
         int pk = railWayLWGeom.getPK()
         double[] LWDay
         double[] LWEvening
@@ -281,7 +281,7 @@ def exec(Connection connection, input) {
 
     // Add primary key to the LW table
     sql.execute("ALTER TABLE  LW_RAILWAY  ADD PK INT AUTO_INCREMENT PRIMARY KEY;")
-
+    sql.execute("UPDATE LW_RAILWAY SET THE_GEOM = ST_SETSRID(THE_GEOM, "+sridSources+")")
 
     resultString = "Calculation Done ! The table LW_RAILWAY has been created."
 
