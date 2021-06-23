@@ -67,7 +67,9 @@ public class EvaluateRailwaySourceCnossos {
         if (spectreVer==1){
             return parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("coefficients_Railway_Cnossos_2020.json"));
         }
-        else {
+        if (spectreVer==2) {
+            return parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("coefficients_Railway_Cnossos_SNCF.json"));
+        } else {
             return CnossosRailWayData;
         }
     }
@@ -199,8 +201,8 @@ public class EvaluateRailwaySourceCnossos {
     public Double getTrackRoughness(int trackRoughnessId, int spectreVer, int lambdaId) { //
         return getCnossosRailWayData(spectreVer).get("Track").get("RailRoughness").get( String.valueOf(trackRoughnessId)).get("Values").get(lambdaId).doubleValue();
     }
-    public int getAxlesPerVeh(String typeVehicle) { //
-        return getCnossosVehicleData().get(typeVehicle).get("NbAxlePerVeh").intValue();
+    public double getAxlesPerVeh(String typeVehicle) { //
+        return getCnossosVehicleData().get(typeVehicle).get("NbAxlePerVeh").doubleValue();
     }
     public double getSpectre(String typeVehicle, String ref, int runningCondition,String sourceHeight, int spectreVer, int freqId) { //
         int refId = getCnossosVehicleData().get(typeVehicle).get(ref).intValue();
@@ -288,7 +290,7 @@ public class EvaluateRailwaySourceCnossos {
         String typeVehicle = vehicleParameters.getTypeVehicle();
         double speedVehicle = vehicleParameters.getSpeedVehicle();
         double vehPerHour = vehicleParameters.getNumberVehicle();
-        int axlesPerVeh = getAxlesPerVeh(typeVehicle);
+        double axlesPerVeh = getAxlesPerVeh(typeVehicle);
         int runningCondition = vehicleParameters.getRunningCondition();
 
         double speedTrack = trackParameters.getSpeedTrack();
@@ -389,7 +391,7 @@ public class EvaluateRailwaySourceCnossos {
      * @return lWRoll(freq)
      **/
 
-    private double[] evaluateLWroughness(String ref, String typeVehicle, int trackRoughnessId, int impactId, int bridgeId, int curvature, double speed,int trackTransferId, int spectreVer, int axlesPerVeh) {
+    private double[] evaluateLWroughness(String ref, String typeVehicle, int trackRoughnessId, int impactId, int bridgeId, int curvature, double speed,int trackTransferId, int spectreVer, double axlesPerVeh) {
         double [] trackTransfer = new double[24];
         double [] lWTr = new double[24];
         double [] vehTransfer = new double[24];
