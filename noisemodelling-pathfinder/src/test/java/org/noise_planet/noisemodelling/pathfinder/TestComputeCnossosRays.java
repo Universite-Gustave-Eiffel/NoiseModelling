@@ -3,22 +3,17 @@ package org.noise_planet.noisemodelling.pathfinder;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.cts.crs.CRSException;
-import org.cts.op.CoordinateOperationException;
 import org.junit.Assert;
 import org.junit.Test;
 import org.locationtech.jts.geom.*;
-import org.locationtech.jts.geom.util.AffineTransformation;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
-import org.locationtech.jts.math.Vector2D;
 import org.noise_planet.noisemodelling.pathfinder.utils.Densifier3D;
 import org.noise_planet.noisemodelling.pathfinder.utils.GeoJSONDocument;
 import org.noise_planet.noisemodelling.pathfinder.utils.KMLDocument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.xml.stream.XMLStreamException;
 import java.io.*;
 import java.util.*;
 
@@ -88,7 +83,7 @@ public class TestComputeCnossosRays {
         profileBuilder.addBuilding(wktReader.read("POLYGON((10 4, 11 4, 11 6, 10 6, 10 4))"), 4, -1);
         profileBuilder.finishFeeding();
 
-        ComputeCnossosRays computeRays = new ComputeCnossosRays();
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(new CnossosPropagationData(profileBuilder));
         Coordinate p1 = new Coordinate(2, 6.5, 1.6);
         Coordinate p2 = new Coordinate(14, 6.5, 1.6);
 
@@ -179,7 +174,7 @@ public class TestComputeCnossosRays {
         ProfileBuilder.CutProfile profile = profileBuilder.getProfile(
                 new Coordinate(316876.05185368325, 6706318.789634008, 22.089050196052437),
                 new Coordinate(316747.10402055364, 6706422.950335046, 12.808121783800553));
-        PropagationPath propa = new ComputeCnossosRays().computeHorizontalEdgeDiffraction(profile, 0.0);
+        PropagationPath propa = new ComputeCnossosRays(new CnossosPropagationData(profileBuilder)).computeVerticalDiffraction(profile, 0.0);
         assertEquals(3, propa.getPointList().size());
     }
 
@@ -237,26 +232,26 @@ public class TestComputeCnossosRays {
 
         CnossosPropagationData processData = new CnossosPropagationData(profileBuilder);
         //new ArrayList<>(), manager, sourcesIndex, srclst, new ArrayList<>(), new ArrayList<>(), 0, 99, 1000,1000,0,0,new double[0],0,0,new EmptyProgressVisitor(), new ArrayList<>(), true
-        ComputeCnossosRays computeRays = new ComputeCnossosRays();
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(processData);
 
-        Assert.assertFalse(computeRays.computeFreefield(profileBuilder.getProfile(p1, p2), 0.0).getSegmentList().isEmpty());
+        Assert.assertFalse(computeRays.computeFreeField(profileBuilder.getProfile(p1, p2), 0.0).getSegmentList().isEmpty());
 
         List<Coordinate> pts = computeRays.computeSideHull(true, p1, p2, profileBuilder);
         assertEquals(5, pts.size());
         for (int i = 0; i < pts.size() - 1; i++) {
-            Assert.assertTrue(computeRays.computeFreefield(profileBuilder.getProfile(pts.get(i), pts.get(i + 1)), 0.0).getSegmentList().isEmpty());
+            Assert.assertTrue(computeRays.computeFreeField(profileBuilder.getProfile(pts.get(i), pts.get(i + 1)), 0.0).getSegmentList().isEmpty());
         }
 
         pts = computeRays.computeSideHull(false, p1, p2, profileBuilder);
         assertEquals(5, pts.size());
         for (int i = 0; i < pts.size() - 1; i++) {
-            Assert.assertTrue(computeRays.computeFreefield(profileBuilder.getProfile(pts.get(i), pts.get(i + 1)), 0.0).getSegmentList().isEmpty());
+            Assert.assertTrue(computeRays.computeFreeField(profileBuilder.getProfile(pts.get(i), pts.get(i + 1)), 0.0).getSegmentList().isEmpty());
         }
 
         CnossosPropagationData data = new CnossosPropagationData(profileBuilder);
         data.setComputeHorizontalDiffraction(true);
         data.setComputeVerticalDiffraction(true);
-        List<PropagationPath> prop = computeRays.directPath(p2, -1, p1, -1, data);
+        List<PropagationPath> prop = computeRays.directPath(p2, -1, p1, -1);
         // 3 paths
         // 1 over the building
         assertEquals(3, prop.size());
@@ -330,13 +325,13 @@ public class TestComputeCnossosRays {
 
         processData.addReceiver(p1);
         processData.addSource(factory.createPoint(p2));
-        ComputeCnossosRays computeRays = new ComputeCnossosRays();
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(processData);
 
         computeRays.setThreadCount(1);
 
         ComputeCnossosRaysOut computeRaysOut = new ComputeCnossosRaysOut(true, processData);
 
-        computeRays.run(processData, computeRaysOut);
+        computeRays.run(computeRaysOut);
 
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         PropagationPath.writePropagationPathListStream(new DataOutputStream(byteArrayOutputStream), computeRaysOut.propagationPaths);
@@ -367,11 +362,11 @@ public class TestComputeCnossosRays {
         profileBuilder.finishFeeding();
 
         CnossosPropagationData processData = new CnossosPropagationData(profileBuilder);
-        ComputeCnossosRays computeRays = new ComputeCnossosRays();
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(processData);
         Coordinate p1 = new Coordinate(4, 3, 3);
         Coordinate p2 = new Coordinate(13, 10, 6.7);
 
-        Assert.assertFalse(computeRays.computeFreefield(profileBuilder.getProfile(p1, p2), 0.0).getSegmentList().isEmpty());
+        Assert.assertFalse(computeRays.computeFreeField(profileBuilder.getProfile(p1, p2), 0.0).getSegmentList().isEmpty());
 
         // Check the computation of convex corners of a building
         List<Coordinate> b1OffsetRoof = profileBuilder.getWideAnglePointsByBuilding(1, Math.PI * (1 + 1 / 16.0), Math.PI * (2 - (1 / 16.)));
@@ -433,7 +428,7 @@ public class TestComputeCnossosRays {
         profileBuilder.finishFeeding();
 
         CnossosPropagationData processData = new CnossosPropagationData(profileBuilder);
-        ComputeCnossosRays computeRays = new ComputeCnossosRays();
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(processData);
         Coordinate p1 = new Coordinate(4.5, 6.5, 1.6);
         Coordinate p2 = new Coordinate(14, 6.5, 1.6);
 
@@ -492,9 +487,9 @@ public class TestComputeCnossosRays {
         rayData.setComputeVerticalDiffraction(true);
 
         ComputeCnossosRaysOut propDataOut = new ComputeCnossosRaysOut(true);
-        ComputeCnossosRays computeRays = new ComputeCnossosRays();
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
-        computeRays.run(rayData, propDataOut);
+        computeRays.run(propDataOut);
         if(storeGeoJSONRays) {
             exportRays("target/T05.geojson", propDataOut);
             //KMLDocument.exportScene("target/T05.kml", manager, propDataOut);
@@ -549,9 +544,9 @@ public class TestComputeCnossosRays {
         rayData.setComputeHorizontalDiffraction(true);
         rayData.setComputeVerticalDiffraction(true);
         ComputeCnossosRaysOut propDataOut = new ComputeCnossosRaysOut(true);
-        ComputeCnossosRays computeRays = new ComputeCnossosRays();
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
-        computeRays.run(rayData, propDataOut);
+        computeRays.run(propDataOut);
         if(storeGeoJSONRays) {
             exportRays("target/T06.geojson", propDataOut);
             //KMLDocument.exportScene("target/T06.kml", profileBuilder, propDataOut);
@@ -592,9 +587,9 @@ public class TestComputeCnossosRays {
         rayData.setComputeHorizontalDiffraction(true);
         rayData.setComputeVerticalDiffraction(true);
         ComputeCnossosRaysOut propDataOut = new ComputeCnossosRaysOut(true);
-        ComputeCnossosRays computeRays = new ComputeCnossosRays();
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
-        computeRays.run(rayData, propDataOut);
+        computeRays.run(propDataOut);
         if(storeGeoJSONRays) {
             exportRays("target/T07.geojson", propDataOut);
             //KMLDocument.exportScene("target/T07.kml", profileBuilder, propDataOut);
@@ -636,9 +631,9 @@ public class TestComputeCnossosRays {
         rayData.setComputeHorizontalDiffraction(true);
         rayData.setComputeVerticalDiffraction(true);
         ComputeCnossosRaysOut propDataOut = new ComputeCnossosRaysOut(true);
-        ComputeCnossosRays computeRays = new ComputeCnossosRays();
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
-        computeRays.run(rayData, propDataOut);
+        computeRays.run(propDataOut);
         if(storeGeoJSONRays) {
             exportRays("target/T08.geojson", propDataOut);
             //KMLDocument.exportScene("target/T08.kml", manager, propDataOut);
@@ -704,9 +699,9 @@ public class TestComputeCnossosRays {
         rayData.setGs(0.9);
 
         ComputeCnossosRaysOut propDataOut = new ComputeCnossosRaysOut(true);
-        ComputeCnossosRays computeRays = new ComputeCnossosRays();
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
-        computeRays.run(rayData, propDataOut);
+        computeRays.run(propDataOut);
 
         if(storeGeoJSONRays) {
             exportRays("target/T09.geojson", propDataOut);
@@ -753,9 +748,9 @@ public class TestComputeCnossosRays {
         rayData.setComputeHorizontalDiffraction(true);
         rayData.setComputeVerticalDiffraction(true);
         ComputeCnossosRaysOut propDataOut = new ComputeCnossosRaysOut(true, null);
-        ComputeCnossosRays computeRays = new ComputeCnossosRays();
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
-        computeRays.run(rayData, propDataOut);
+        computeRays.run(propDataOut);
         if(storeGeoJSONRays) {
             exportRays("target/T10.geojson", propDataOut);
             //KMLDocument.exportScene("target/T10.kml", manager, propDataOut);
@@ -796,9 +791,9 @@ public class TestComputeCnossosRays {
         rayData.setComputeHorizontalDiffraction(true);
         rayData.setComputeVerticalDiffraction(true);
         ComputeCnossosRaysOut propDataOut = new ComputeCnossosRaysOut(true);
-        ComputeCnossosRays computeRays = new ComputeCnossosRays();
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
-        computeRays.run(rayData, propDataOut);
+        computeRays.run(propDataOut);
         assertRaysEquals(TestComputeCnossosRays.class.getResourceAsStream("T11.geojson"), propDataOut);
     }
 
@@ -835,9 +830,9 @@ public class TestComputeCnossosRays {
         rayData.setComputeHorizontalDiffraction(true);
         rayData.setComputeVerticalDiffraction(true);
         ComputeCnossosRaysOut propDataOut = new ComputeCnossosRaysOut(true);
-        ComputeCnossosRays computeRays = new ComputeCnossosRays();
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
-        computeRays.run(rayData, propDataOut);
+        computeRays.run(propDataOut);
 
         assertRaysEquals(TestComputeCnossosRays.class.getResourceAsStream("T12.geojson"), propDataOut);
     }
@@ -898,9 +893,9 @@ public class TestComputeCnossosRays {
         rayData.setComputeHorizontalDiffraction(true);
         rayData.setComputeVerticalDiffraction(true);
         ComputeCnossosRaysOut propDataOut = new ComputeCnossosRaysOut(true);
-        ComputeCnossosRays computeRays = new ComputeCnossosRays();
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
-        computeRays.run(rayData, propDataOut);
+        computeRays.run(propDataOut);
 
         assertRaysEquals(TestComputeCnossosRays.class.getResourceAsStream("T13.geojson"), propDataOut);
     }
@@ -938,9 +933,9 @@ public class TestComputeCnossosRays {
         rayData.setComputeHorizontalDiffraction(true);
         rayData.setComputeVerticalDiffraction(true);
         ComputeCnossosRaysOut propDataOut = new ComputeCnossosRaysOut(true);
-        ComputeCnossosRays computeRays = new ComputeCnossosRays();
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
-        computeRays.run(rayData, propDataOut);
+        computeRays.run(propDataOut);
 
         assertRaysEquals(TestComputeCnossosRays.class.getResourceAsStream("T14.geojson"), propDataOut);
     }
@@ -993,9 +988,9 @@ public class TestComputeCnossosRays {
         rayData.setComputeHorizontalDiffraction(true);
         rayData.setComputeVerticalDiffraction(true);
          ComputeCnossosRaysOut propDataOut = new ComputeCnossosRaysOut(true);
-        ComputeCnossosRays computeRays = new ComputeCnossosRays();
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
-        computeRays.run(rayData, propDataOut);
+        computeRays.run(propDataOut);
 
         assertRaysEquals(TestComputeCnossosRays.class.getResourceAsStream("T15.geojson"), propDataOut);
     }
@@ -1055,9 +1050,9 @@ public class TestComputeCnossosRays {
         rayData.setComputeHorizontalDiffraction(true);
         rayData.setComputeVerticalDiffraction(true);
         ComputeCnossosRaysOut propDataOut = new ComputeCnossosRaysOut(true);
-        ComputeCnossosRays computeRays = new ComputeCnossosRays();
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
-        computeRays.run(rayData, propDataOut);
+        computeRays.run(propDataOut);
 
         assertRaysEquals(TestComputeCnossosRays.class.getResourceAsStream("T16.geojson"), propDataOut);
     }
@@ -1124,9 +1119,9 @@ public class TestComputeCnossosRays {
         rayData.setComputeVerticalDiffraction(true);
 
         ComputeCnossosRaysOut propDataOut = new ComputeCnossosRaysOut(true);
-        ComputeCnossosRays computeRays = new ComputeCnossosRays();
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
-        computeRays.run(rayData, propDataOut);
+        computeRays.run(propDataOut);
 
         assertRaysEquals(TestComputeCnossosRays.class.getResourceAsStream("T16b.geojson"), propDataOut);
     }
@@ -1187,9 +1182,9 @@ public class TestComputeCnossosRays {
         rayData.setComputeVerticalDiffraction(true);
 
         ComputeCnossosRaysOut propDataOut = new ComputeCnossosRaysOut(true);
-        ComputeCnossosRays computeRays = new ComputeCnossosRays();
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
-        computeRays.run(rayData, propDataOut);
+        computeRays.run(propDataOut);
 
         assertRaysEquals(TestComputeCnossosRays.class.getResourceAsStream("T17.geojson"), propDataOut);
     }
@@ -1257,9 +1252,9 @@ public class TestComputeCnossosRays {
         rayData.setComputeVerticalDiffraction(true);
 
         ComputeCnossosRaysOut propDataOut = new ComputeCnossosRaysOut(true);
-        ComputeCnossosRays computeRays = new ComputeCnossosRays();
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
-        computeRays.run(rayData, propDataOut);
+        computeRays.run(propDataOut);
 
         assertRaysEquals(TestComputeCnossosRays.class.getResourceAsStream("T18.geojson"), propDataOut);
     }
@@ -1326,9 +1321,9 @@ public class TestComputeCnossosRays {
         rayData.setComputeVerticalDiffraction(true);
 
         ComputeCnossosRaysOut propDataOut = new ComputeCnossosRaysOut(true);
-        ComputeCnossosRays computeRays = new ComputeCnossosRays();
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
-        computeRays.run(rayData, propDataOut);
+        computeRays.run(propDataOut);
 
         assertRaysEquals(TestComputeCnossosRays.class.getResourceAsStream("T18b.geojson"), propDataOut);
     }
@@ -1421,9 +1416,9 @@ public class TestComputeCnossosRays {
         rayData.setComputeVerticalDiffraction(true);
 
         ComputeCnossosRaysOut propDataOut = new ComputeCnossosRaysOut(true);
-        ComputeCnossosRays computeRays = new ComputeCnossosRays();
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
-        computeRays.run(rayData, propDataOut);
+        computeRays.run(propDataOut);
 
         assertRaysEquals(TestComputeCnossosRays.class.getResourceAsStream("T19.geojson"), propDataOut);
     }
@@ -1487,9 +1482,9 @@ public class TestComputeCnossosRays {
         rayData.setComputeVerticalDiffraction(false);
 
         ComputeCnossosRaysOut propDataOut = new ComputeCnossosRaysOut(true);
-        ComputeCnossosRays computeRays = new ComputeCnossosRays();
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
-        computeRays.run(rayData, propDataOut);
+        computeRays.run(propDataOut);
 
         assertRaysEquals(TestComputeCnossosRays.class.getResourceAsStream("T20.geojson"), propDataOut);
     }
@@ -1553,9 +1548,9 @@ public class TestComputeCnossosRays {
         rayData.setComputeVerticalDiffraction(true);
 
         ComputeCnossosRaysOut propDataOut = new ComputeCnossosRaysOut(true);
-        ComputeCnossosRays computeRays = new ComputeCnossosRays();
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
-        computeRays.run(rayData, propDataOut);
+        computeRays.run(propDataOut);
 
         assertRaysEquals(TestComputeCnossosRays.class.getResourceAsStream("T21.geojson"), propDataOut);
     }
@@ -1622,9 +1617,9 @@ public class TestComputeCnossosRays {
         rayData.setComputeHorizontalDiffraction(true);
 
         ComputeCnossosRaysOut propDataOut = new ComputeCnossosRaysOut(true);
-        ComputeCnossosRays computeRays = new ComputeCnossosRays();
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
-        computeRays.run(rayData, propDataOut);
+        computeRays.run(propDataOut);
 
         assertRaysEquals(TestComputeCnossosRays.class.getResourceAsStream("T22.geojson"), propDataOut);
     }
@@ -1716,9 +1711,9 @@ public class TestComputeCnossosRays {
 
 
         ComputeCnossosRaysOut propDataOut = new ComputeCnossosRaysOut(true);
-        ComputeCnossosRays computeRays = new ComputeCnossosRays();
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
-        computeRays.run(rayData, propDataOut);
+        computeRays.run(propDataOut);
 
         assertRaysEquals(TestComputeCnossosRays.class.getResourceAsStream("T23.geojson"), propDataOut);
     }
@@ -1812,9 +1807,9 @@ public class TestComputeCnossosRays {
         rayData.setGs(0.);
 
         ComputeCnossosRaysOut propDataOut = new ComputeCnossosRaysOut(true);
-        ComputeCnossosRays computeRays = new ComputeCnossosRays();
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
-        computeRays.run(rayData, propDataOut);
+        computeRays.run(propDataOut);
 
         assertRaysEquals(TestComputeCnossosRays.class.getResourceAsStream("T24.geojson"), propDataOut);
     }
@@ -1869,9 +1864,9 @@ public class TestComputeCnossosRays {
         rayData.setGs(0.);
 
         ComputeCnossosRaysOut propDataOut = new ComputeCnossosRaysOut(true);
-        ComputeCnossosRays computeRays = new ComputeCnossosRays();
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
-        computeRays.run(rayData, propDataOut);
+        computeRays.run(propDataOut);
 
         assertRaysEquals(TestComputeCnossosRays.class.getResourceAsStream("T25.geojson"), propDataOut);
     }
@@ -1913,9 +1908,9 @@ public class TestComputeCnossosRays {
         rayData.setComputeHorizontalDiffraction(true);
         rayData.setComputeVerticalDiffraction(true);
         ComputeCnossosRaysOut propDataOut = new ComputeCnossosRaysOut(true);
-        ComputeCnossosRays computeRays = new ComputeCnossosRays();
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
-        computeRays.run(rayData, propDataOut);
+        computeRays.run(propDataOut);
         assertRaysEquals(TestComputeCnossosRays.class.getResourceAsStream("T26.geojson"), propDataOut);
     }
 
@@ -1972,9 +1967,9 @@ public class TestComputeCnossosRays {
         rayData.addSource(factory.createPoint(new Coordinate(105, 35, -0.45)));
         rayData.setComputeVerticalDiffraction(true);
         ComputeCnossosRaysOut propDataOut = new ComputeCnossosRaysOut(true);
-        ComputeCnossosRays computeRays = new ComputeCnossosRays();
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
-        computeRays.run(rayData, propDataOut);
+        computeRays.run(propDataOut);
         assertRaysEquals(TestComputeCnossosRays.class.getResourceAsStream("T27.geojson"), propDataOut);
     }
 
@@ -2070,9 +2065,9 @@ public class TestComputeCnossosRays {
         rayData.setComputeVerticalDiffraction(true);
 
         ComputeCnossosRaysOut propDataOut = new ComputeCnossosRaysOut(true);
-        ComputeCnossosRays computeRays = new ComputeCnossosRays();
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
-        computeRays.run(rayData, propDataOut);
+        computeRays.run(propDataOut);
 
         assertRaysEquals(TestComputeCnossosRays.class.getResourceAsStream("T28.geojson"), propDataOut);
     }
@@ -2166,7 +2161,7 @@ public class TestComputeCnossosRays {
         CnossosPropagationData processData = new CnossosPropagationData(profileBuilder);
         // new ArrayList<>(), manager, sourcesIndex, srclst, new ArrayList<>(), new ArrayList<>(), 0, 99, 1000,1000,0,0,new double[0],0,0,new EmptyProgressVisitor(), new ArrayList<>(), true
 
-        ComputeCnossosRays computeRays = new ComputeCnossosRays();
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(processData);
 
         List<Coordinate> ray = computeRays.computeSideHull(false, receiver, source, profileBuilder);
         Assert.assertTrue(ray.isEmpty());

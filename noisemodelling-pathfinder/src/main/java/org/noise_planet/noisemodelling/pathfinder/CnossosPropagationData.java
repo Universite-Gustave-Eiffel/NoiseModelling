@@ -181,6 +181,9 @@ public class CnossosPropagationData {
         return computeVerticalDiffraction;
     }
 
+    public boolean isComputeDiffraction() {
+        return isComputeVerticalDiffraction() || isComputeHorizontalDiffraction();
+    }
 
 }
 

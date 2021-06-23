@@ -666,7 +666,27 @@ public class ProfileBuilder {
      * @return Cutting profile.
      */
     public CutProfile getProfile(Coordinate c0, Coordinate c1) {
-        return getProfile(c0, c1, 1.0);
+        return getProfile(c0, c1, 0.0);
+    }
+
+    /**
+     * Retrieve the cutting profile following the line build from the given cut points.
+     * @param c0 Starting point.
+     * @param c1 Ending point.
+     * @return Cutting profile.
+     */
+    public CutProfile getProfile(CutPoint c0, CutPoint c1) {
+        return getProfile(c0.getCoordinate(), c1.getCoordinate(), 1.0);
+    }
+
+    /**
+     * Retrieve the cutting profile following the line build from the given cut points.
+     * @param c0 Starting point.
+     * @param c1 Ending point.
+     * @return Cutting profile.
+     */
+    public CutProfile getProfile(CutPoint c0, CutPoint c1, double gS) {
+        return getProfile(c0.getCoordinate(), c1.getCoordinate(), gS);
     }
 
     /**
