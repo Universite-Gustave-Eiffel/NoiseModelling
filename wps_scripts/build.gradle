@@ -1,6 +1,25 @@
-apply plugin: 'groovy'
-apply plugin: 'java'
+plugins {
+    id 'java'
+    id 'groovy'
+    id 'java-library'
+    id 'maven-publish'
+    id 'signing'
+}
 
+group = 'org.orbisgis'
+version = '3.4.2-SNAPSHOT'
+
+publishing {
+    publications {
+        myLibrary(MavenPublication) {
+            from components.java
+        }
+    }
+
+    repositories {
+        mavenLocal()
+    }
+}
 repositories {
     mavenLocal()
     flatDir {
@@ -10,13 +29,13 @@ repositories {
         url "https://repo.osgeo.org/repository/release/"
     }
     maven {
-        url "http://download.osgeo.org/webdav/geotools/"
+        url "https://download.osgeo.org/webdav/geotools/"
     }
     maven {
-        url "http://maven.geo-solutions.it/"
+        url "https://maven.geo-solutions.it/"
     }
     maven {
-        url "http://nexus.orbisgis.org/repository/orbisgis-snapshot/"
+        url "https://nexus.orbisgis.org/repository/orbisgis-snapshot/"
     }
     maven {
         url "https://repo.matsim.org/repository/matsim/"
@@ -30,37 +49,57 @@ test {
     }
 }
 dependencies {
-    compile name: 'org/geoserver/script/gs-script-groovy/2.15.1/gs-script-groovy-2.15.1'
-    compile name: 'noisemodelling/noisemodelling-wps/1.0-SNAPSHOT/noisemodelling-wps-1.0-SNAPSHOT'
-    compile('org.geoserver.script:gs-script-core:2.15.1') {
+    implementation name: 'org/geoserver/script/gs-script-groovy/2.15.1/gs-script-groovy-2.15.1'
+    implementation name: 'noisemodelling/noisemodelling-wps/1.0-SNAPSHOT/noisemodelling-wps-1.0-SNAPSHOT'
+    implementation('org.geotools:gt-jdbc:21.1')
+    implementation('org.geoserver.script:gs-script-core:2.15.1') {
         exclude group: 'no.ecc.vectortile'
         exclude group: 'javax.media'
         exclude group: 'commons-beanutils'
         exclude group: 'org.locationtech.jts'
+        exclude group: 'org.geoserver', module: 'gs-wms'
+        exclude group: 'org.geoserver', module: 'gs-wfs'
+        exclude group: 'org.geoserver', module: 'gs-ows'
+        exclude group: 'org.geoserver', module: 'gs-rest'
+        exclude group: 'org.geoserver', module: 'gs-restconfig'
+        exclude group: 'org.geoserver', module: 'gs-main'
+        exclude group: 'org.geoserver', module: 'gs-wcs2_0'
+        exclude group: 'org.geoserver', module: 'gs-wcs1_1'
+        exclude group: 'org.geoserver', module: 'gs-wcs1_0'
+        exclude group: 'org.geotools.xsd', module: 'gt-xsd-sld'
+        exclude group: 'org.geotools.xsd', module: 'gt-xsd-wps'
+        exclude group: 'org.geotools', module: 'gt-process-raster'
+        exclude group: 'org.geotools', module: 'gt-process-feature'
     }
-    compile 'org.postgresql:postgresql:9.4-1201-jdbc41'
-    compile 'org.codehaus.groovy:groovy-all:2.5.5'
-    compile group: 'org.ejml', name: 'all', version: '0.29'
-    compile group: 'org.eclipse.emf', name: 'org.eclipse.emf.ecore', version: '2.10.1'
-    compile group: 'org.orbisgis', name: 'h2gis', version: '1.5.1-SNAPSHOT'
-    compile('org.locationtech.jts:jts-core:1.15.1') {
-        force=true
+    implementation 'org.postgresql:postgresql:9.4-1201-jdbc41'
+    implementation 'org.codehaus.groovy:groovy-all:2.5.5'
+    implementation group: 'org.ejml', name: 'all', version: '0.29'
+    implementation group: 'org.eclipse.emf', name: 'org.eclipse.emf.ecore', version: '2.10.1'
+    implementation group: 'org.orbisgis', name: 'h2gis', version: '1.5.1-SNAPSHOT'
+    implementation('org.locationtech.jts:jts-core:1.15.1') {
+        version {
+            strictly '[1.15, 1.16['
+            prefer '1.15.1'
+        }
     }
-    compile('org.locationtech.jts:jts-io:1.15.1') {
-        force=true
+    implementation('org.locationtech.jts:jts-io:1.15.1') {
+        version {
+            strictly '[1.15, 1.16['
+            prefer '1.15.1'
+        }
     }
-    compile group: 'org.orbisgis', name: 'noisemodelling-emission', version: '3.4.2-SNAPSHOT'
-    compile group: 'org.orbisgis', name: 'noisemodelling-propagation', version: '3.4.2-SNAPSHOT'
-    compile group: 'org.orbisgis', name: 'noisemodelling-pathfinder', version: '3.4.2-SNAPSHOT'
-    compile group: 'org.orbisgis', name: 'noisemodelling-jdbc', version: '3.4.2-SNAPSHOT'
-    compile group: 'org.orbisgis', name: 'h2gis-extension', version: '3.4.2-SNAPSHOT'
-    compile group: 'org.openstreetmap.osmosis', name: 'osmosis-core', version: '0.48.3'
-    compile group: 'org.openstreetmap.osmosis', name: 'osmosis-pbf', version: '0.46'
-    compile group: 'org.matsim', name: 'matsim', version: '11.0'
+    implementation group: 'org.orbisgis', name: 'noisemodelling-emission', version: '3.4.2-SNAPSHOT'
+    implementation group: 'org.orbisgis', name: 'noisemodelling-propagation', version: '3.4.2-SNAPSHOT'
+    implementation group: 'org.orbisgis', name: 'noisemodelling-pathfinder', version: '3.4.2-SNAPSHOT'
+    implementation group: 'org.orbisgis', name: 'noisemodelling-jdbc', version: '3.4.2-SNAPSHOT'
+    implementation group: 'org.orbisgis', name: 'h2gis-extension', version: '3.4.2-SNAPSHOT'
+    implementation group: 'org.openstreetmap.osmosis', name: 'osmosis-core', version: '0.48.3'
+    implementation group: 'org.openstreetmap.osmosis', name: 'osmosis-pbf', version: '0.48.3'
+    implementation group: 'org.matsim', name: 'matsim', version: '11.0'
 
-    compile 'com.opencsv:opencsv:4.0'
-    compile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.25'
-    testCompile 'junit:junit:4.12'
+    implementation 'com.opencsv:opencsv:4.0'
+    implementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.25'
+    testCompileOnly 'junit:junit:4.12'
 }
 
 task copyDependencies(type: Copy) {
