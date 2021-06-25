@@ -418,18 +418,23 @@ public class EvaluateRailwaySourceCnossos {
                 } else if (curvature == 3) {
                     lW[idFreq] = lW[idFreq] + 8;
                 }
+                if (spectreVer==2){
+                    if (bridgeId == 2) {
+                        lW[idFreq] = lW[idFreq] + 5;
+                    }
+                }
             }
         }else if(ref.equals("Bridge")){
             double [] lWBridge= new double[24];
-            if(bridgeId==3 || bridgeId==4){
-                for(int idFreq = 0; idFreq < 24; idFreq++) {
-                    lWBridge[idFreq] = getBridgeStructural(bridgeId,spectreVer,idFreq);
-                    lW[idFreq] = roughnessLtot[idFreq] + lWBridge[idFreq] + 10 * Math.log10(axlesPerVeh);
-                }
+            for(int idFreq = 0; idFreq < 24; idFreq++) {
+                lW[idFreq] = -99;
             }
-            else{
-                for(int idFreq = 0; idFreq < 24; idFreq++) {
-                    lW[idFreq] = -99;
+            if(spectreVer==1) {
+                if (bridgeId == 3 || bridgeId == 4) {
+                    for (int idFreq = 0; idFreq < 24; idFreq++) {
+                        lWBridge[idFreq] = getBridgeStructural(bridgeId, spectreVer, idFreq);
+                        lW[idFreq] = roughnessLtot[idFreq] + lWBridge[idFreq] + 10 * Math.log10(axlesPerVeh);
+                    }
                 }
             }
         }
