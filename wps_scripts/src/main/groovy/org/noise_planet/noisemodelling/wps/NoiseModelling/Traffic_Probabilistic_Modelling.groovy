@@ -497,7 +497,7 @@ def exec(Connection connection, input) {
  * Read source database and compute the sound emission spectrum of roads sources
  * */
 class WpsPropagationProcessDataProba extends PropagationProcessData {
-    static List<Integer> freq_lvl = Arrays.asList(PropagationProcessPathData.asOctaveBands(PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE));
+    static List<Integer> freq_lvl = Arrays.asList(PropagationProcessPathData.asOctaveBands(PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE))
 
     // Lden values
     public List<double[]> wjSourcesD = new ArrayList<>()
@@ -601,7 +601,7 @@ class WpsPropagationProcessDataProba extends PropagationProcessData {
             // Day
             int idFreq = 0
             for (int freq : freq_lvl) {
-                RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedD, hvSpeedD, hvSpeedD, lvSpeedD,
+                RoadSourceParametersCnossos rsParametersCnossos = new RoadSourceParametersCnossos(lvSpeedD, hvSpeedD, hvSpeedD, lvSpeedD,
                         lvSpeedD, Math.max(0, tvD - hvD), 0, hvD, 0, 0, freq, Temperature,
                         pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type)
                 ld[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
@@ -610,7 +610,7 @@ class WpsPropagationProcessDataProba extends PropagationProcessData {
             // Evening
             idFreq = 0
             for (int freq : freq_lvl) {
-                RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedE, hvSpeedE, hvSpeedE, lvSpeedE,
+                RoadSourceParametersCnossos rsParametersCnossos = new RoadSourceParametersCnossos(lvSpeedE, hvSpeedE, hvSpeedE, lvSpeedE,
                         lvSpeedE, Math.max(0, tvE - hvE), 0, hvE, 0, 0, freq, Temperature,
                         pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type)
                 le[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
@@ -619,7 +619,7 @@ class WpsPropagationProcessDataProba extends PropagationProcessData {
             // Night
             idFreq = 0
             for (int freq : freq_lvl) {
-                RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lvSpeedN, hvSpeedN, hvSpeedN, lvSpeedN,
+                RoadSourceParametersCnossos rsParametersCnossos = new RoadSourceParametersCnossos(lvSpeedN, hvSpeedN, hvSpeedN, lvSpeedN,
                         lvSpeedN, Math.max(0, tvN - hvN), 0, hvN, 0, 0, freq, Temperature,
                         pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type)
                 ln[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
@@ -727,7 +727,7 @@ class WpsPropagationProcessDataProba extends PropagationProcessData {
                 hgvPerHour = tmja * HV_PERCENTAGE * (hv_hourly_distribution[h] / 100.0);
                 int idFreq = 0;
                 for (int freq : freq_lvl) {
-                    RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(speedLv, speedMv, speedHgv, speedWav,
+                    RoadSourceParametersCnossos rsParametersCnossos = new RoadSourceParametersCnossos(speedLv, speedMv, speedHgv, speedWav,
                             speedWbv, lvPerHour, mvPerHour, hgvPerHour, wavPerHour, wbvPerHour, freq, Temperature,
                             roadSurface, Ts_stud, Pm_stud, Junc_dist, Junc_type);
                     rsParametersCnossos.setSpeedFromRoadCaracteristics(speed_lv, speed_lv, false, speed_lv, roadType);
@@ -745,7 +745,7 @@ class WpsPropagationProcessDataProba extends PropagationProcessData {
                 mvPerHour = tmja * HV_PERCENTAGE * (hv_hourly_distribution[h] / 100.0)
                 int idFreq = 0
                 for (int freq : freq_lvl) {
-                    RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(speedLv, speedMv, speedHgv, speedWav,
+                    RoadSourceParametersCnossos rsParametersCnossos = new RoadSourceParametersCnossos(speedLv, speedMv, speedHgv, speedWav,
                             speedWbv, lvPerHour, mvPerHour, hgvPerHour, wavPerHour, wbvPerHour, freq, Temperature,
                             roadSurface, Ts_stud, Pm_stud, Junc_dist, Junc_type);
                     rsParametersCnossos.setSpeedFromRoadCaracteristics(speed_lv, speed_lv, false, speed_lv, roadType)
@@ -763,7 +763,7 @@ class WpsPropagationProcessDataProba extends PropagationProcessData {
                 mvPerHour = tmja * HV_PERCENTAGE * (hv_hourly_distribution[h] / 100.0)
                 int idFreq = 0
                 for (int freq : freq_lvl) {
-                    RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(speedLv, speedMv, speedHgv, speedWav,
+                    RoadSourceParametersCnossos rsParametersCnossos = new RoadSourceParametersCnossos(speedLv, speedMv, speedHgv, speedWav,
                             speedWbv, lvPerHour, mvPerHour, hgvPerHour, wavPerHour, wbvPerHour, freq, Temperature,
                             roadSurface, Ts_stud, Pm_stud, Junc_dist, Junc_type);
                     rsParametersCnossos.setSpeedFromRoadCaracteristics(speed_lv, speed_lv, false, speed_lv, roadType)
@@ -841,7 +841,7 @@ class ProbabilisticProcessData {
                 double LwStd = 1
                 int VehId = 10
 
-                RSParametersDynamic rsParameters = new RSParametersDynamic(speed, acc, veh_type, acc_type, FreqParam, Temperature, RoadSurface, Stud, Junc_dist, Junc_type, LwStd, VehId)
+                RoadSourceParametersDynamic rsParameters = new RoadSourceParametersDynamic(speed, acc, veh_type, acc_type, FreqParam, Temperature, RoadSurface, Stud, Junc_dist, Junc_type, LwStd, VehId)
                 rsParameters.setSlopePercentage(0)
 
                 res_LV[kk] = EvaluateRoadSourceDynamic.evaluate(rsParameters)
@@ -865,7 +865,7 @@ class ProbabilisticProcessData {
                 double LwStd = 1
                 int VehId = 10
 
-                RSParametersDynamic rsParameters = new RSParametersDynamic(speed, acc, veh_type, acc_type, FreqParam, Temperature, RoadSurface, Stud, Junc_dist, Junc_type, LwStd, VehId)
+                RoadSourceParametersDynamic rsParameters = new RoadSourceParametersDynamic(speed, acc, veh_type, acc_type, FreqParam, Temperature, RoadSurface, Stud, Junc_dist, Junc_type, LwStd, VehId)
                 rsParameters.setSlopePercentage(0)
 
                 res_HV[kk] = EvaluateRoadSourceDynamic.evaluate(rsParameters)
@@ -891,7 +891,6 @@ class ProbabilisticProcessData {
         //////////////////////
         // Import file text
         //////////////////////
-        int i_read = 0;
 
         // Remplissage des variables avec le contenu du fichier plan d'exp
         sql.eachRow('SELECT PK,  SPEED, HV,LV FROM ' + tablename + ';') { row ->

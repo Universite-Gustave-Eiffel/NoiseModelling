@@ -165,7 +165,7 @@ public class EvaluateRoadSourceDynamic {
      * @param parameters Noise emission parameters
      * @return Noise level in dB
      */
-    public static double evaluate(RSParametersDynamic parameters) {
+    public static double evaluate(RoadSourceParametersDynamic parameters) {
         final double Compound;
         final boolean Stud = parameters.getStud();
         final double Junc_dist = parameters.getJunc_dist();

@@ -38,7 +38,7 @@ public class EvaluateRoadSourceDynamicTest {
         double LwStd = 1;
         int VehId = 10;
 
-        RSParametersDynamic rsParameters = new RSParametersDynamic(speed, acc, veh_type, acc_type, FreqParam, Temperature, RoadSurface, Stud, Junc_dist, Junc_type, LwStd, VehId);
+        RoadSourceParametersDynamic rsParameters = new RoadSourceParametersDynamic(speed, acc, veh_type, acc_type, FreqParam, Temperature, RoadSurface, Stud, Junc_dist, Junc_type, LwStd, VehId);
         rsParameters.setSlopePercentage(0);
         rsParameters.setCoeffVer(2);
         assertEquals(91.66, EvaluateRoadSourceDynamic.evaluate(rsParameters), EPSILON_TEST1);
@@ -58,7 +58,7 @@ public class EvaluateRoadSourceDynamicTest {
         int acc_type = 1;
         double LwStd = 1;
         int VehId = 10;
-        RSParametersDynamic rsParameters = new RSParametersDynamic(speed, acc, veh_type, acc_type, FreqParam, Temperature, RoadSurface, Stud, Junc_dist, Junc_type, LwStd, VehId);
+        RoadSourceParametersDynamic rsParameters = new RoadSourceParametersDynamic(speed, acc, veh_type, acc_type, FreqParam, Temperature, RoadSurface, Stud, Junc_dist, Junc_type, LwStd, VehId);
         rsParameters.setSlopePercentage(0);
         assertEquals(100.08, EvaluateRoadSourceDynamic.evaluate(rsParameters), EPSILON_TEST1);
     }
@@ -81,7 +81,7 @@ public class EvaluateRoadSourceDynamicTest {
         int acc_type = 1;
         double LwStd = 0;
         int VehId = 1;
-        RSParametersDynamic rsParameters = new RSParametersDynamic(speed, acc, veh_type, acc_type, FreqParam, Temperature, RoadSurface, Stud, Junc_dist, Junc_type, LwStd, VehId);
+        RoadSourceParametersDynamic rsParameters = new RoadSourceParametersDynamic(speed, acc, veh_type, acc_type, FreqParam, Temperature, RoadSurface, Stud, Junc_dist, Junc_type, LwStd, VehId);
         rsParameters.setSlopePercentage(0);
 
         assertEquals(78.62, EvaluateRoadSourceDynamic.evaluate(rsParameters), EPSILON_TEST1);

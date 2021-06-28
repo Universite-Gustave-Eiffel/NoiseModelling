@@ -1,0 +1,16 @@
+{ "CORAIL" : {
+    "Example2" : 1,
+    "Example1" : 8
+  },
+  "VB2N" : {
+    "Example2" : 1,
+    "Example1" : 7
+  },
+  "V2N" : {
+    "SNCF-BB66400" : 1,
+    "Example1" : 4
+  },
+  "FRET" : {
+    "SNCF-BB66400" : 1
+  }
+}

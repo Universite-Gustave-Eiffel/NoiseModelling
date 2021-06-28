@@ -69,6 +69,10 @@ inputs = [
                         '- <b> LWD63, LWD125, LWD250, LWD500, LWD1000, LWD2000, LWD4000, LWD8000 </b> : 8 columns giving the day emission sound level for each octave band (FLOAT). </br> ' +
                         '- <b> LWE* </b> : 8 columns giving the evening emission sound level for each octave band (FLOAT).</br> ' +
                         '- <b> LWN* </b> : 8 columns giving the night emission sound level for each octave band (FLOAT).</br> ' +
+                        '- <b> YAW </b> : Source horizontal orientation in degrees. For points 0&#176; North, 90&#176; East. For lines 0&#176; line direction, 90&#176; right of the line direction.  (FLOAT).</br> ' +
+                        '- <b> PITCH </b> : Source vertical orientation in degrees. 0&#176; front, 90&#176; top, -90&#176; bottom. (FLOAT).</br> ' +
+                        '- <b> ROLL </b> : Source roll in degrees (FLOAT).</br> ' +
+                        '- <b> DIR_ID </b> : identifier of the directivity sphere from tableSourceDirectivity parameter or train directivity if not provided -> OMNIDIRECTIONAL(0), ROLLING(1), TRACTIONA(2), TRACTIONB(3), AERODYNAMICA(4), AERODYNAMICB(5), BRIDGE(6) (INTEGER).</br> ' +
                         '</br> </br> <b> This table can be generated from the WPS Block "Road_Emission_from_Traffic". </b>',
                 type       : String.class
         ],
@@ -98,6 +102,17 @@ inputs = [
                         '</br>The table shall contain : </br> ' +
                         '- <b> THE_GEOM </b> : the 2D geometry of the sources (POLYGON or MULTIPOLYGON).</br> ' +
                         '- <b> G </b> : the acoustic absorption of a ground (FLOAT between 0 : very hard and 1 : very soft).</br> ',
+                min        : 0, max: 1, type: String.class
+        ],
+        tableSourceDirectivity          : [
+                name       : 'Source directivity table name',
+                title      : 'Source directivity table name',
+                description: '<b>Name of the emission directivity table. If not specified the default is train directivity of cnossos</b></br>  ' +
+                        '</br>The table shall contain the following fields : </br> ' +
+                        '- <b> DIR_ID </b> : identifier of the directivity sphere (INTEGER)</br> ' +
+                        '- <b> THETA </b> : Horizontal angle in degree. 0&#176; front and 90&#176; right (0-360) (FLOAT)</br> ' +
+                        '- <b> PHI </b> : Vertical angle in degree. 0&#176; front and 90&#176; top -90&#176; bottom (-90 - 90) (FLOAT)</br> ' +
+                        '- <b> LW63, LW125, LW250, LW500, LW1000, LW2000, LW4000, LW8000 </b> : attenuation levels in dB for each octave or third octave (FLOAT). </br> ' ,
                 min        : 0, max: 1, type: String.class
         ],
         paramWallAlpha          : [
@@ -375,6 +390,13 @@ def exec(Connection connection, input) {
         if (sridGROUND != sridSources) throw new IllegalArgumentException("Error : The SRID of table "+ground_table_name+" and "+sources_table_name+" are not the same.")
     }
 
+    String tableSourceDirectivity = ""
+    if (input['tableSourceDirectivity']) {
+        tableSourceDirectivity = input['tableSourceDirectivity']
+        // do it case-insensitive
+        tableSourceDirectivity = tableSourceDirectivity.toUpperCase()
+    }
+
 
     int reflexion_order = 0
     if (input['confReflOrder']) {
@@ -457,6 +479,15 @@ def exec(Connection connection, input) {
     ldenConfig.setMergeSources(!confExportSourceId)
 
     LDENPointNoiseMapFactory ldenProcessing = new LDENPointNoiseMapFactory(connection, ldenConfig)
+
+    // add optional discrete directivity table name
+    if(tableSourceDirectivity.isEmpty()) {
+        // Add train directivity
+        ldenProcessing.insertTrainDirectivity()
+    } else {
+        // Load table into specialized class
+        ldenProcessing.directionAttributes = DirectivityTableLoader.loadTable(connection, tableSourceDirectivity, 1)
+    }
     pointNoiseMap.setComputeHorizontalDiffraction(compute_horizontal_diffraction)
     pointNoiseMap.setComputeVerticalDiffraction(compute_vertical_diffraction)
     pointNoiseMap.setSoundReflectionOrder(reflexion_order)

@@ -17,7 +17,7 @@ import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Geometry
 import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceDynamic
-import org.noise_planet.noisemodelling.emission.RSParametersDynamic
+import org.noise_planet.noisemodelling.emission.RoadSourceParametersDynamic
 import org.noise_planet.noisemodelling.jdbc.PointNoiseMap
 import org.noise_planet.noisemodelling.pathfinder.*
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation
@@ -105,7 +105,7 @@ class CarsProcessData {
                     
                     int FreqParam = f
 
-                    RSParametersDynamic rsParameters = new RSParametersDynamic(speed,  acc,  veh_type_int, acc_type, FreqParam,  Temperature,  RoadSurface,Stud, Junc_dist, Junc_type,LwStd,id_veh)
+                    RoadSourceParametersDynamic rsParameters = new RoadSourceParametersDynamic(speed,  acc,  veh_type_int, acc_type, FreqParam,  Temperature,  RoadSurface,Stud, Junc_dist, Junc_type,LwStd,id_veh)
                     //RSParametersDynamic rsParameters = new RSParametersDynamic(speed,  acc,  1, acc_type, FreqParam,  Temperature,  RoadSurface,Stud, Junc_dist, Junc_type,LwStd,id_veh)
                     
                     //System.println(rsParameters)

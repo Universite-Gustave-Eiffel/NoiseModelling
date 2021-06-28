@@ -19,8 +19,7 @@ import com.fasterxml.jackson.databind.node.NullNode;
 import java.io.IOException;
 import java.io.InputStream;
 
-import static org.noise_planet.noisemodelling.emission.Utils.dbToW;
-import static org.noise_planet.noisemodelling.emission.Utils.wToDb;
+import static org.noise_planet.noisemodelling.emission.Utils.*;
 
 /**
  * Return the dB value corresponding to the parameters
@@ -189,8 +188,8 @@ public class EvaluateRoadSourceCnossos {
      * @param coeffVer
      * @return
      */
-    private static Double getDeltaStuddedTyres(RSParametersCnossos parameters, double Pm_stud, double Ts_stud,
-                                      int freqParam, int coeffVer, double vRef) throws IOException {
+    private static Double getDeltaStuddedTyres(RoadSourceParametersCnossos parameters, double Pm_stud, double Ts_stud,
+                                               int freqParam, int coeffVer, double vRef) throws IOException {
             double speed = parameters.getSpeedLv();
             double ps = Pm_stud * Ts_stud / 12; // Eq. 2.2.7 yearly average proportion of vehicles equipped with studded tyres
             speed = (speed >= 90) ? 90 : speed;
@@ -220,7 +219,7 @@ public class EvaluateRoadSourceCnossos {
     }
 
 
-    private static Double getDeltaSlope(RSParametersCnossos parameters, String category, double sign) throws IOException {
+    private static Double getDeltaSlope(RoadSourceParametersCnossos parameters, String category, double sign) throws IOException {
 
         double deltaSlope = 0;
         double slope = sign * parameters.getSlopePercentage();
@@ -261,20 +260,6 @@ public class EvaluateRoadSourceCnossos {
     }
 
 
-
-    /**
-     * Compute Noise Level from flow_rate and speed Eq 2.2.1 from Directive 2015/2019
-     * @param LWim LW,i,m is the directional sound power of a single vehicle and is expressed in dB (re. 10–12 W/m).
-     * @param Qm Traffic flow data Qm shall be expressed as yearly average per hour, per time period (day-evening-night), per vehicle class and per source line.
-     * @param vm The speed vm is a representative speed per vehicle category: in most cases the lower of the maximum legal speed for the section of road and the maximum legal speed for the vehicle category. If measurement data is unavailable, the maximum legal speed for the vehicle category shall be used.
-     * @return
-     * @throws IOException if speed < 0 km/h
-     */
-    private static Double Vperhour2NoiseLevel(double LWim, double Qm, double vm){
-       return LWim + 10 * Math.log10(Qm / (1000 * vm));
-    }
-
-
     /**
      * Energetic sum of 2 dB values
      * @param dB1 First value in dB
@@ -303,7 +288,7 @@ public class EvaluateRoadSourceCnossos {
      * @param parameters Noise emission parameters
      * @return Noise level in dB
      */
-    public static double evaluate(RSParametersCnossos parameters) throws IOException {
+    public static double evaluate(RoadSourceParametersCnossos parameters) throws IOException {
         final int freqParam = parameters.getFreqParam();
         final double Temperature = parameters.getTemperature();
         final double Ts_stud = parameters.getTsStud();

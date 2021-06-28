@@ -26,18 +26,21 @@ import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SpatialResultSet;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
+import org.noise_planet.noisemodelling.emission.DirectionAttributes;
 import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos;
-import org.noise_planet.noisemodelling.emission.RSParametersCnossos;
+import org.noise_planet.noisemodelling.emission.RoadSourceParametersCnossos;
 import org.noise_planet.noisemodelling.emission.Utils;
 import org.noise_planet.noisemodelling.pathfinder.ComputeRays;
 import org.noise_planet.noisemodelling.pathfinder.FastObstructionTest;
 import org.noise_planet.noisemodelling.pathfinder.PropagationProcessData;
 
-
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Read source database and compute the sound emission spectrum of roads sources
@@ -51,9 +54,10 @@ public class LDENPropagationProcessData extends PropagationProcessData {
     public List<double[]> wjSourcesN = new ArrayList<>();
     public List<double[]> wjSourcesDEN = new ArrayList<>();
 
-    public Map<Long, Integer> SourcesPk = new HashMap<>();
-
-    int idSource = 0;
+    /**
+     * Attenuation and other attributes relative to direction on sphere
+     */
+    public Map<Integer, DirectionAttributes> directionAttributes = new HashMap<>();
 
     LDENConfig ldenConfig;
 
@@ -62,10 +66,13 @@ public class LDENPropagationProcessData extends PropagationProcessData {
         this.ldenConfig = ldenConfig;
     }
 
+    public void setDirectionAttributes(Map<Integer, DirectionAttributes> directionAttributes) {
+        this.directionAttributes = directionAttributes;
+    }
+
     @Override
     public void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException, IOException {
         super.addSource(pk, geom, rs);
-        SourcesPk.put(pk, idSource++);
         double[][] res = computeLw(rs);
         if(ldenConfig.computeLDay) {
             wjSourcesD.add(res[0]);
@@ -78,6 +85,21 @@ public class LDENPropagationProcessData extends PropagationProcessData {
         }
         if(ldenConfig.computeLDEN) {
             wjSourcesDEN.add(res[3]);
+        }
+    }
+
+    @Override
+    public boolean isOmnidirectional(int srcIndex) {
+        return sourcesPk.size() > srcIndex && !sourceDirection.containsKey(sourcesPk.get(srcIndex));
+    }
+
+    @Override
+    public double getSourceAttenuation(int srcIndex, double frequency, float phi, float theta) {
+        int directivityIdentifier = sourceDirection.get(sourcesPk.get(srcIndex));
+        if(directionAttributes.containsKey(directivityIdentifier)) {
+            return directionAttributes.get(directivityIdentifier).getAttenuation(frequency, phi, theta);
+        } else {
+            return 0;
         }
     }
 
@@ -198,7 +220,7 @@ public class LDENPropagationProcessData extends PropagationProcessData {
         // Compute emission
         int idFreq = 0;
         for (int freq : ldenConfig.propagationProcessPathData.freq_lvl) {
-            RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(lv_speed, mv_speed, hgv_speed, wav_speed,
+            RoadSourceParametersCnossos rsParametersCnossos = new RoadSourceParametersCnossos(lv_speed, mv_speed, hgv_speed, wav_speed,
                     wbv_speed,lvPerHour, mvPerHour, hgvPerHour, wavPerHour, wbvPerHour, freq, temperature,
                     roadSurface, tsStud, pmStud, junctionDistance, junctionType);
             rsParametersCnossos.setSlopePercentage(slope);
@@ -268,6 +290,33 @@ public class LDENPropagationProcessData extends PropagationProcessData {
             // Night
             ln = ComputeRays.dbaToW(getEmissionFromResultSet(rs, "N", slope));
 
+        }else if(ldenConfig.input_mode == LDENConfig.INPUT_MODE.INPUT_MODE_RAILWAY_FLOW) {
+            // Extract road slope
+            double slope = 0;
+            try {
+                Geometry g = rs.getGeometry();
+                if(freeFieldFinder!=null && g != null && !g.isEmpty()) {
+                    Coordinate[] c = g.getCoordinates();
+                    if(c.length >= 2) {
+                        double z0 = freeFieldFinder.getHeightAtPosition(c[0]);
+                        double z1 = freeFieldFinder.getHeightAtPosition(c[1]);
+                        if(!Double.isNaN(z0) && !Double.isNaN(z1)) {
+                            slope = Utils.computeSlope(z0, z1, g.getLength());
+                        }
+                    }
+                }
+            } catch (SQLException ex) {
+                // ignore
+            }
+            // Day
+            ld = ComputeRays.dbaToW(getEmissionFromResultSet(rs, "D", slope));
+
+            // Evening
+            le = ComputeRays.dbaToW(getEmissionFromResultSet(rs, "E", slope));
+
+            // Night
+            ln = ComputeRays.dbaToW(getEmissionFromResultSet(rs, "N", slope));
+
         }
 
         // Combine day evening night sound levels
@@ -289,6 +338,14 @@ public class LDENPropagationProcessData extends PropagationProcessData {
             return wjSourcesN.get(sourceId);
         } else {
             return new double[0];
+        }
+    }
+
+    public static class OmnidirectionalDirection implements DirectionAttributes {
+
+        @Override
+        public double getAttenuation(double frequency, double phi, double theta) {
+            return 0;
         }
     }
 }

@@ -15,7 +15,7 @@ import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
 import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
-import org.noise_planet.noisemodelling.emission.RSParametersCnossos
+import org.noise_planet.noisemodelling.emission.RoadSourceParametersCnossos
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
 
 import java.sql.Connection
@@ -231,7 +231,7 @@ static double[][] computeLw(Long pk, Geometry geom, SpatialResultSet rs) throws 
     int idFreq = 0
 
     for (int freq : PropagationProcessPathData.freq_lvl) {
-        RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(v_vl_d, speedMv, v_pl_d, speedWav,
+        RoadSourceParametersCnossos rsParametersCnossos = new RoadSourceParametersCnossos(v_vl_d, speedMv, v_pl_d, speedWav,
                 speedWbv, q_vl_d, mvPerHour, q_pl_d, wavPerHour, wbvPerHour, freq, Temperature,
                 roadSurface, Ts_stud, Pm_stud, Junc_dist, Junc_type);
         ld[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
@@ -241,7 +241,7 @@ static double[][] computeLw(Long pk, Geometry geom, SpatialResultSet rs) throws 
     idFreq = 0
 
     for (int freq : PropagationProcessPathData.freq_lvl) {
-        RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(v_vl_e, speedMv, v_pl_e, speedWav,
+        RoadSourceParametersCnossos rsParametersCnossos = new RoadSourceParametersCnossos(v_vl_e, speedMv, v_pl_e, speedWav,
                 speedWbv, q_vl_e, mvPerHour, q_pl_e, wavPerHour, wbvPerHour, freq, Temperature,
                 roadSurface, Ts_stud, Pm_stud, Junc_dist, Junc_type);
         le[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
@@ -251,7 +251,7 @@ static double[][] computeLw(Long pk, Geometry geom, SpatialResultSet rs) throws 
     idFreq = 0
 
     for (int freq : PropagationProcessPathData.freq_lvl) {
-        RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(v_vl_n, speedMv, v_pl_n, speedWav,
+        RoadSourceParametersCnossos rsParametersCnossos = new RoadSourceParametersCnossos(v_vl_n, speedMv, v_pl_n, speedWav,
                 speedWbv, q_vl_n, mvPerHour, q_pl_n, wavPerHour, wbvPerHour, freq, Temperature,
                 roadSurface, Ts_stud, Pm_stud, Junc_dist, Junc_type);
         ln[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)

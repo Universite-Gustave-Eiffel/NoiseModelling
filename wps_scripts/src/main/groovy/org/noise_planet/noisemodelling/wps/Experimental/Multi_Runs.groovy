@@ -28,7 +28,7 @@ import org.h2gis.functions.io.geojson.GeoJsonDriverFunction
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
 import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
-import org.noise_planet.noisemodelling.emission.RSParametersCnossos
+import org.noise_planet.noisemodelling.emission.RoadSourceParametersCnossos
 import org.noise_planet.noisemodelling.emission.Utils
 import org.noise_planet.noisemodelling.pathfinder.*
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation
@@ -203,39 +203,6 @@ def exec(Connection connection, input) {
     fileInputStream.close()
     zipInputStream.close()
 
-    /* System.out.println("Read Sources")
-     sql.execute("DROP TABLE IF EXISTS RECEIVERS")
-     SHPRead.readShape(connection, "D:\\aumond\\Documents\\CENSE\\LorientMapNoise\\data\\RecepteursQuest3D.shp", "RECEIVERS")
-
-     HashMap<Integer, Double> pop = new HashMap<>()
-     // memes valeurs d e et n
-     sql.eachRow('SELECT id, pop FROM RECEIVERS;') { row ->
-         int id = (int) row[0]
-         pop.put(id, (Double) row[1])
-     }
-
-     // Load roads
-     System.out.println("Read road geometries and traffic")
-     // ICA 2019 - Sensitivity
-     sql.execute("DROP TABLE ROADS2 if exists;")
-     SHPRead.readShape(connection, "D:\\aumond\\Documents\\CENSE\\LorientMapNoise\\data\\RoadsICA2.shp", "ROADS2")
-     sql.execute("DROP TABLE ROADS if exists;")
-     sql.execute('CREATE TABLE ROADS AS SELECT CAST( OSM_ID AS INTEGER ) OSM_ID , THE_GEOM, TMJA_D,TMJA_E,TMJA_N,\n' +
-             'PL_D,PL_E,PL_N,\n' +
-             'LV_SPEE,PV_SPEE, PVMT FROM ROADS2;')
-
-     sql.execute('ALTER TABLE ROADS ALTER COLUMN OSM_ID SET NOT NULL;')
-     sql.execute('ALTER TABLE ROADS ADD PRIMARY KEY (OSM_ID);')
-     sql.execute("CREATE SPATIAL INDEX ON ROADS(THE_GEOM)")
-
-     System.out.println("Road file loaded")
-
-     // ICA 2019 - Sensitivity
-     sql.execute("DROP TABLE ROADS3 if exists;")
-     SHPRead.readShape(connection, "D:\\aumond\\Documents\\CENSE\\LorientMapNoise\\data\\Roads09083D.shp", "ROADS3")
-
-     System.out.println("Road file loaded")*/
-
 
     PropagationProcessPathData genericMeteoData = new PropagationProcessPathData()
 
@@ -264,11 +231,6 @@ def exec(Connection connection, input) {
             nrcv++
         }
     }
-
-    //FileInputStream fileInputStream = new FileInputStream(new File("D:\\aumond\\Documents\\CENSE\\LorientMapNoise\\rays0908.gz").getAbsolutePath())
-
-    //DataInputStream dataInputStream = new DataInputStream(gzipInputStream)
-    //System.out.println(dataInputStream)
 
     int oldIdReceiver = -1
 
@@ -518,7 +480,8 @@ class ReceiverSimulationProcess implements Runnable {
         if (nSimu < 1) nSimu = multiRunsProcessData.Simu.size()
 
         for (int r = 0; r < nSimu; ++r) {
-            simuSpectrum.put(r, new double[PropagationProcessPathData.freq_lvl.size()])
+            simuSpectrum.put(r, new double[PropagationProcessPathData.asOctaveBands(PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE).size()])
+
         }
 
         int idReceiver = -1
@@ -870,7 +833,6 @@ class MultiRunsProcessData {
     ArrayList<Integer> RoadJunction = new ArrayList<Integer>()
 
     Map<Integer, Integer> pk = new HashMap<>()
-    Map<Integer, Long> OSM_ID = new HashMap<>()
     Map<Integer, Geometry> the_geom = new HashMap<>()
 
     Map<Integer, Double> TV_D = new HashMap<>()
@@ -962,10 +924,6 @@ class MultiRunsProcessData {
          * @param Junc_dist Distance to junction
          * @param Junc_type Type of junction ((k = 1 for a crossing with traffic lights ; k = 2 for a roundabout)
          */
-        //connect
-        // Map<Integer, List<double[]>> sourceLevel = new HashMap<>()
-
-        // memes valeurs d e et n
 
 
         def list = [63, 125, 250, 500, 1000, 2000, 4000, 8000]
@@ -1020,101 +978,30 @@ class MultiRunsProcessData {
                 double[] res_e = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
                 double[] res_n = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
                 double[] res_den = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-                /*if (PL[r]) {
-                    PLD = PLD_Ref
-                    PLE = PLE_Ref
-                    PLN = PLN_Ref
-                } else {
-                    PLD = PLD_D
-                    PLE = PLE_D
-                    PLN = PLN_D
-                }
 
-                if (TMJA[r]) {
-                    TMJAD = TMJAD_Ref
-                    TMJAE = TMJAE_Ref
-                    TMJAN = TMJAN_Ref
-
-                } else {
-                    TMJAD = TMJAD_D
-                    TMJAE = TMJAE_D
-                    TMJAN = TMJAN_D
-                }*/
-
-                /*vl_d_per_hour = (TMJAD - (PLD * TMJAD / 100))
-                pl_d_per_hour = (TMJAD * PLD / 100)
-                vl_e_per_hour = (TMJAE - (TMJAE * PLE / 100))
-                pl_e_per_hour = (TMJAE * PLE / 100)
-                vl_n_per_hour = (TMJAN - (TMJAN * PLN / 100))
-                pl_n_per_hour = (TMJAN * PLN / 100)*/
-
-                /*if (Speed[r]) {
-                    lv_d_speed = speed_lv
-                    hv_d_speed = speed_pl
-                    lv_e_speed = speed_lv
-                    hv_e_speed = speed_pl
-                    lv_n_speed = speed_lv
-                    hv_n_speed = speed_pl
-                } else {
-                    lv_d_speed = speed_lv_d
-                    hv_d_speed = speed_lv_d
-                    lv_e_speed = speed_lv_d
-                    hv_e_speed = speed_lv_d
-                    lv_n_speed = speed_lv_d
-                    hv_n_speed = speed_lv_d
-                }*/
 
                 for (f in list) {
-                    // fois 0.5 car moitié dans un sens et moitié dans l'autre
-                    /*String RS = "NL01
-                    "
-                    switch (R_Road[r]){
-                        case 1:
-                            RS ="NL01"
-                            break
-                        case 2 :
-                            RS ="NL02"
-                            break
-                        case 3 :
-                            RS ="NL03"
-                            break
-                        case 4 :
-                            RS ="NL04"
-                            break
-                    }*/
+
                     String RS = "NL05"
                     if (RoadType[r] == 1) {
                         RS = road_pav
                     }
 
-                    /*"Refl",...
-                    "Dif_hor",...
-                    "Dif_ver ",...
-                    "DistProp",...
-                    "Veg",...
-                    "TMJA",...
-                    "PL",...
-                    "Speed",...
-                    "RoadType",...
-                    "TempMean",...
-                    "HumMean",...
-                    "Meteo",...
-                    "SpeedMean",...
-                    "FlowMean"};*/
+
                     def ml_d_per_hour = (double) TV_D.get(id) * MV[r] / 100
-                    def pl_d_per_hour = (double) (0.01*HV_D.get(id)*TV_D.get(id)) * HV[r]
+                    def pl_d_per_hour = (double) HV_D.get(id)* HV[r]
                     def wa_d_per_hour = (double) TV_D.get(id) * WV[r] / 100
                     def wb_d_per_hour = (double) 0.0
                     def vl_d_per_hour = (double) TV_D.get(id) - pl_d_per_hour - ml_d_per_hour - wa_d_per_hour
 
                     def ml_e_per_hour = (double) TV_E.get(id) * MV[r] / 100
-                    def pl_e_per_hour = (double) (0.01*HV_E.get(id)*TV_E.get(id)) * HV[r]
+                    def pl_e_per_hour = (double) HV_E.get(id)* HV[r]
                     def wa_e_per_hour = (double) TV_E.get(id) * WV[r] / 100
                     def wb_e_per_hour = (double) 0.0
                     def vl_e_per_hour = (double) TV_E.get(id) - pl_e_per_hour - ml_e_per_hour - wa_e_per_hour
 
                     def ml_n_per_hour = (double) TV_N.get(id) * MV[r] / 100
-                    def pl_n_per_hour = (double) (0.01*HV_N.get(id)*TV_N.get(id)) * HV[r]
+                    def pl_n_per_hour = (double) HV_N.get(id)* HV[r]
                     def wa_n_per_hour = (double) TV_N.get(id) * WV[r] / 100
                     def wb_n_per_hour = (double) 0.0
                     def vl_n_per_hour = (double) TV_N.get(id) - pl_n_per_hour - ml_n_per_hour - wa_n_per_hour
@@ -1133,29 +1020,19 @@ class MultiRunsProcessData {
                         FlowMean[r] = FlowMean_SmaAxes[r]
                     }
 
-
-
-
-
-                    RSParametersCnossos srcParameters_d = new RSParametersCnossos(lv_d_speed * SpeedMean[r], mv_d_speed * SpeedMean[r], hv_d_speed * SpeedMean[r], wav_d_speed * SpeedMean[r], wbv_d_speed * SpeedMean[r],
+                    RoadSourceParametersCnossos srcParameters_d = new RoadSourceParametersCnossos(lv_d_speed * SpeedMean[r], mv_d_speed * SpeedMean[r], hv_d_speed * SpeedMean[r], wav_d_speed * SpeedMean[r], wbv_d_speed * SpeedMean[r],
                             vl_d_per_hour * FlowMean[r], ml_d_per_hour * FlowMean[r], pl_d_per_hour * FlowMean[r], wa_d_per_hour * FlowMean[r], wb_d_per_hour * FlowMean[r],
                             f, TempMean[r], RS, 0, 0, 250, 1)
-                    RSParametersCnossos srcParameters_e = new RSParametersCnossos(lv_e_speed * SpeedMean[r], mv_e_speed * SpeedMean[r], hv_e_speed * SpeedMean[r], wav_e_speed * SpeedMean[r], wbv_e_speed * SpeedMean[r],
+                    RoadSourceParametersCnossos srcParameters_e = new RoadSourceParametersCnossos(lv_e_speed * SpeedMean[r], mv_e_speed * SpeedMean[r], hv_e_speed * SpeedMean[r], wav_e_speed * SpeedMean[r], wbv_e_speed * SpeedMean[r],
                             vl_e_per_hour * FlowMean[r], ml_e_per_hour * FlowMean[r], pl_e_per_hour * FlowMean[r], wa_e_per_hour * FlowMean[r], wb_e_per_hour * FlowMean[r],
                             f, TempMean[r], RS, 0, 0, 250, 1)
-                    RSParametersCnossos srcParameters_n = new RSParametersCnossos(lv_n_speed * SpeedMean[r], mv_n_speed * SpeedMean[r], hv_n_speed * SpeedMean[r], wav_n_speed * SpeedMean[r], wbv_n_speed * SpeedMean[r],
+                    RoadSourceParametersCnossos srcParameters_n = new RoadSourceParametersCnossos(lv_n_speed * SpeedMean[r], mv_n_speed * SpeedMean[r], hv_n_speed * SpeedMean[r], wav_n_speed * SpeedMean[r], wbv_n_speed * SpeedMean[r],
                             vl_n_per_hour * FlowMean[r], ml_n_per_hour * FlowMean[r], pl_n_per_hour * FlowMean[r], wa_n_per_hour * FlowMean[r], wb_n_per_hour * FlowMean[r],
                             f, TempMean[r], RS, 0, 0, 250, 1)
 
                     srcParameters_d.setSlopePercentage(Utils.computeSlope(0, 0, the_geom.get(id).getLength()))
                     srcParameters_e.setSlopePercentage(Utils.computeSlope(0, 0, the_geom.get(id).getLength()))
                     srcParameters_n.setSlopePercentage(Utils.computeSlope(0, 0, the_geom.get(id).getLength()))
-                    //res_d[kk] = EvaluateRoadSourceCnossos.evaluate(srcParameters_d)
-                    //res_e[kk] = EvaluateRoadSourceCnossos.evaluate(srcParameters_e)
-                    //res_n[kk] = EvaluateRoadSourceCnossos.evaluate(srcParameters_n)
-                    //srcParameters_d.setSlopePercentage(RSParametersCnossos.computeSlope(Zend, Zstart, the_geom.getLength()))
-                    //srcParameters_e.setSlopePercentage(RSParametersCnossos.computeSlope(Zend, Zstart, the_geom.getLength()))
-                    //srcParameters_n.setSlopePercentage(RSParametersCnossos.computeSlope(Zend, Zstart, the_geom.getLength()))
 
                     res_den[kk] += (12 *ComputeRays.dbaToW(EvaluateRoadSourceCnossos.evaluate(srcParameters_d)) +
                             4 * ComputeRays.dbaToW(EvaluateRoadSourceCnossos.evaluate(srcParameters_e) + 5) +
@@ -1357,7 +1234,7 @@ class MultiRunsProcessData {
         //////////////////////
 
 
-        sql.eachRow('SELECT ' + prop.getProperty("pkSources") + ', CAST(OSM_ID AS INTEGER) OSM_ID, the_geom , ' +
+        sql.eachRow('SELECT ' + prop.getProperty("pkSources") + ', the_geom , ' +
                 'TV_D,TV_E,TV_N,' +
                 'HV_D,HV_E,HV_N, ' +
                 'LV_SPD_D, LV_SPD_E, LV_SPD_N, ' +
@@ -1365,7 +1242,6 @@ class MultiRunsProcessData {
                 'PVMT FROM ' + tablename + ';') { fields ->
 
             pk.put((int) fields[prop.getProperty("pkSources")], (int) fields[prop.getProperty("pkSources")])
-            OSM_ID.put((int) fields[prop.getProperty("pkSources")], (long) fields["OSM_ID"])
             the_geom.put((int) fields[prop.getProperty("pkSources")], (Geometry) fields["the_geom"])
             TV_D.put((int) fields[prop.getProperty("pkSources")], (double) fields["TV_D"])
             TV_E.put((int) fields[prop.getProperty("pkSources")], (double) fields["TV_E"])

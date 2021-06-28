@@ -3,6 +3,7 @@ package org.noise_planet.noisemodelling.jdbc;
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.api.ProgressVisitor;
 import org.h2gis.functions.factory.H2GISDBFactory;
+import org.h2gis.functions.io.dbf.DBFRead;
 import org.h2gis.functions.io.shp.SHPRead;
 import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SFSUtilities;
@@ -10,9 +11,11 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.LineString;
+import org.noise_planet.noisemodelling.emission.RailWayLW;
 import org.noise_planet.noisemodelling.pathfinder.IComputeRaysOut;
-import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 import org.noise_planet.noisemodelling.pathfinder.RootProgressVisitor;
+import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,10 +24,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -93,6 +93,26 @@ public class LDENPointNoiseMapFactoryTest {
                 assertEquals(77.67 , leq[leq.length - 1] , 0.1);
             }
         }
+    }
+
+    @Test
+    public void testNoiseEmissionRailWay() throws SQLException, IOException {
+        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("RailTrack.shp").getFile());
+        DBFRead.read(connection, LDENPointNoiseMapFactoryTest.class.getResource("RailTrain.dbf").getFile());
+
+
+        LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_RAILWAY_FLOW);
+        ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData());
+        ldenConfig.setCoefficientVersion(2);
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN", ldenConfig);
+
+        RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
+        assertNotNull(v);
+        RailWayLW railWayLW = v.getRailWayLW();
+        List<LineString> geometries = v.getRailWayLWGeometry( 2); // TODO edit with specific distance set (plamade or other)
+
+        assertTrue(railWayLWIterator.hasNext());
+
     }
 
     @Test

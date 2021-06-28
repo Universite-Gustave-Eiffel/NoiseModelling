@@ -16,7 +16,7 @@ import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
 import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
-import org.noise_planet.noisemodelling.emission.RSParametersCnossos
+import org.noise_planet.noisemodelling.emission.RoadSourceParametersCnossos
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
 
 import java.sql.Connection
@@ -253,7 +253,7 @@ static double[][] computeLw(Long pk, Geometry geom, SpatialResultSet rs) throws 
         hgvPerHour = tmja * HV_PERCENTAGE * (hv_hourly_distribution[h] / 100.0);
         int idFreq = 0;
         for (int freq : PropagationProcessPathData.freq_lvl) {
-            RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(speedLv, speedMv, speedHgv, speedWav,
+            RoadSourceParametersCnossos rsParametersCnossos = new RoadSourceParametersCnossos(speedLv, speedMv, speedHgv, speedWav,
                     speedWbv, lvPerHour, mvPerHour, hgvPerHour, wavPerHour, wbvPerHour, freq, Temperature,
                     roadSurface, Ts_stud, Pm_stud, Junc_dist, Junc_type);
             rsParametersCnossos.setSpeedFromRoadCaracteristics(speed_lv, speed_lv, false, speed_lv, roadType);
@@ -271,7 +271,7 @@ static double[][] computeLw(Long pk, Geometry geom, SpatialResultSet rs) throws 
         mvPerHour = tmja * HV_PERCENTAGE * (hv_hourly_distribution[h] / 100.0)
         int idFreq = 0
         for(int freq : PropagationProcessPathData.freq_lvl) {
-            RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(speedLv, speedMv, speedHgv, speedWav,
+            RoadSourceParametersCnossos rsParametersCnossos = new RoadSourceParametersCnossos(speedLv, speedMv, speedHgv, speedWav,
                     speedWbv, lvPerHour, mvPerHour, hgvPerHour, wavPerHour, wbvPerHour, freq, Temperature,
                     roadSurface, Ts_stud, Pm_stud, Junc_dist, Junc_type);
             rsParametersCnossos.setSpeedFromRoadCaracteristics(speed_lv, speed_lv, false, speed_lv, roadType)
@@ -289,7 +289,7 @@ static double[][] computeLw(Long pk, Geometry geom, SpatialResultSet rs) throws 
         mvPerHour = tmja * HV_PERCENTAGE * (hv_hourly_distribution[h] / 100.0)
         int idFreq = 0
         for(int freq : PropagationProcessPathData.freq_lvl) {
-            RSParametersCnossos rsParametersCnossos = new RSParametersCnossos(speedLv, speedMv, speedHgv, speedWav,
+            RoadSourceParametersCnossos rsParametersCnossos = new RoadSourceParametersCnossos(speedLv, speedMv, speedHgv, speedWav,
                     speedWbv, lvPerHour, mvPerHour, hgvPerHour, wavPerHour, wbvPerHour, freq, Temperature,
                     roadSurface, Ts_stud, Pm_stud, Junc_dist, Junc_type);
             rsParametersCnossos.setSpeedFromRoadCaracteristics(speed_lv, speed_lv, false, speed_lv, roadType)
