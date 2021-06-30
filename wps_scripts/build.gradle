@@ -49,7 +49,11 @@ test {
     }
 }
 dependencies {
+    implementation('org.geotools:gt-jdbc:21.1') {
+        exclude group: 'javax.media'
+    }
     implementation('org.geoserver.script:gs-script-groovy:2.15.1') {
+        exclude group: 'org.geoscript'
         exclude group: 'no.ecc.vectortile'
         exclude group: 'javax.media'
         exclude group: 'commons-beanutils'
