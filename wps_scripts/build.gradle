@@ -11,7 +11,7 @@ version = '3.4.2-SNAPSHOT'
 
 publishing {
     publications {
-        myLibrary(MavenPublication) {
+        maven(MavenPublication) {
             from components.java
         }
     }
@@ -49,8 +49,9 @@ test {
     }
 }
 dependencies {
-    implementation name: 'org/geoserver/script/gs-script-groovy/2.15.1/gs-script-groovy-2.15.1'
-    implementation name: 'noisemodelling/noisemodelling-wps/1.0-SNAPSHOT/noisemodelling-wps-1.0-SNAPSHOT'
+    implementation(group: 'org.geoserver.script', name: 'gs-script-groovy', version: '2.15.1') {
+        exclude group: 'commons-beanutils'
+    }
     implementation('org.geotools:gt-jdbc:21.1')
     implementation('org.geoserver.script:gs-script-core:2.15.1') {
         exclude group: 'no.ecc.vectortile'
