@@ -96,7 +96,7 @@ class TestNoiseModelling extends JdbcTestCase {
 
         def receiversLvl = sql.rows("SELECT * FROM LDAY_GEOM ORDER BY IDRECEIVER")
 
-        assertEquals(71.0,receiversLvl[0]["LEQ"] as Double,0.1)
+        assertEquals(74.96,receiversLvl[0]["LEQ"] as Double,0.1)
     }
 
     @Test
