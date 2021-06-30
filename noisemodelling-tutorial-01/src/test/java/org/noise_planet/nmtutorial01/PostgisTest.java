@@ -38,8 +38,8 @@ public class PostgisTest {
         p.setProperty("serverName", "localhost");
         p.setProperty("portNumber", "5432");
         p.setProperty("databaseName", "postgres");
-        p.setProperty("user", "postgres");
-        p.setProperty("password", "");
+        p.setProperty("user", "orbisgis");
+        p.setProperty("password", "orbisgis");
         try(Connection connection = SFSUtilities.wrapConnection(dataSourceFactory.createDataSource(p).getConnection())) {
             Statement sql = connection.createStatement();
 
