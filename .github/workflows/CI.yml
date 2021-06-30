@@ -21,7 +21,7 @@ jobs:
           java-version: 1.8
       - name: Building
         run: |
-          mvn test install -B
+          mvn clean test install -B
           cd wps_scripts && ./gradlew test --info --stacktrace
       - name: Clean
         run: rm -f $HOME/.gradle/caches/modules-2/modules-2.lock
@@ -30,6 +30,5 @@ jobs:
         with:
           path: |
             $HOME/.m2/
-            $HOME/.gradle/caches/
             $HOME/.gradle/wrapper/
           key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
