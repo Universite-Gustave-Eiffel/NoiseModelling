@@ -13,7 +13,6 @@
 package org.noise_planet.noisemodelling.wps
 
 import groovy.sql.Sql
-import org.h2gis.functions.io.dbf.DBFRead
 import org.h2gis.functions.io.shp.SHPRead
 import org.h2gis.utilities.JDBCUtilities
 import org.junit.Test
@@ -93,9 +92,9 @@ class TestNoiseModelling extends JdbcTestCase {
                 ["tableBuilding"   : "BUILDINGS",
                  "tableSources"   : "LW_RAILWAY",
                  "tableReceivers": "RECEIVERS",
-                 "confSkipLevening": true,
-                 "confSkipLnight": true,
-                 "confSkipLden": true])
+                 "confSkipLevening": false,
+                 "confSkipLnight": false,
+                 "confSkipLden": false])
 
         assertTrue(JDBCUtilities.tableExists(connection, "LDAY_GEOM"))
 

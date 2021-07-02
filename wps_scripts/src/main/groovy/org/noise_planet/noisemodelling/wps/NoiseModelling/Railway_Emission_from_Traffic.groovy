@@ -26,7 +26,6 @@ import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.LineString
 import org.noise_planet.noisemodelling.emission.RailWayLW
 import org.noise_planet.noisemodelling.jdbc.LDENConfig
-import org.noise_planet.noisemodelling.jdbc.LDENPropagationProcessData
 import org.noise_planet.noisemodelling.jdbc.RailWayLWIterator
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
 import org.slf4j.Logger
@@ -201,11 +200,17 @@ def exec(Connection connection, input) {
     RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection, sources_geom_table_name, sources_table_traffic_name, ldenConfig)
     RailWayLWIterator.RailWayLWGeom railWayLWGeom;
 
+    railWayLWIterator.setDistance(2); // todo
+
     while ((railWayLWGeom = railWayLWIterator.next()) != null) {
+
+        railWayLWGeom.setNbTrack(3);
+
         RailWayLW railWayLWDay = railWayLWGeom.getRailWayLWDay()
         RailWayLW railWayLWEvening = railWayLWGeom.getRailWayLWEvening()
         RailWayLW railWayLWNight = railWayLWGeom.getRailWayLWNight()
         List<LineString> geometries = railWayLWGeom.getRailWayLWGeometry()
+        
         int pk = railWayLWGeom.getPK()
         double[] LWDay
         double[] LWEvening
