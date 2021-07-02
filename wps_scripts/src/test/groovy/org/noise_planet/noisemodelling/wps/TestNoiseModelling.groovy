@@ -19,6 +19,7 @@ import org.h2gis.utilities.JDBCUtilities
 import org.junit.Test
 import org.noise_planet.noisemodelling.wps.Geometric_Tools.Set_Height
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File
+import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_source
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_traffic
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Railway_Emission_from_Traffic
@@ -104,7 +105,7 @@ class TestNoiseModelling extends JdbcTestCase {
                 ["exportPath"   : "target/LDAY_GEOM_rail.geojson",
                  "tableToExport": "LDAY_GEOM"])
 
-        assertEquals(63.16,receiversLvl[0]["LEQ"] as Double,0.1)
+        assertEquals(63.47,receiversLvl[0]["LEQ"] as Double,0.1)
     }
 
     @Test

@@ -200,11 +200,7 @@ def exec(Connection connection, input) {
     RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection, sources_geom_table_name, sources_table_traffic_name, ldenConfig)
     RailWayLWIterator.RailWayLWGeom railWayLWGeom;
 
-    railWayLWIterator.setDistance(2); // todo
-
     while ((railWayLWGeom = railWayLWIterator.next()) != null) {
-
-        railWayLWGeom.setNbTrack(3);
 
         RailWayLW railWayLWDay = railWayLWGeom.getRailWayLWDay()
         RailWayLW railWayLWEvening = railWayLWGeom.getRailWayLWEvening()

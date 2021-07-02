@@ -35,7 +35,7 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
     private LDENConfig ldenConfig;
     private SpatialResultSet spatialResultSet;
     private int currentIdSection = -1;
-    public static double distance = 2;
+    public double distance = 2;
     public Map<String, Integer> sourceFields = null;
 
     public double getDistance() {
@@ -146,7 +146,7 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
         int rollingCondition = 0;
         double idlingTime = 0;
         int trackTransfer = 4;
-        double trackSpacing = 1;
+        double trackSpacing = 1.0;
         int impactNoise = 0;
         int bridgeTransfert = 0;
         int curvature = 0;
@@ -254,7 +254,7 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
     }
 
 
-    public static class RailWayLWGeom {
+    public class RailWayLWGeom {
         private RailWayLW railWayLW;
         private RailWayLW railWayLWDay;
         private RailWayLW railWayLWEvening;
