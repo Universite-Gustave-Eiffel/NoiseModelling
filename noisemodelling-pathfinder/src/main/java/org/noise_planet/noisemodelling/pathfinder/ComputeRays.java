@@ -33,7 +33,6 @@
  */
 package org.noise_planet.noisemodelling.pathfinder;
 
-import com.sun.org.apache.xpath.internal.operations.Or;
 import org.apache.commons.math3.geometry.euclidean.threed.Line;
 import org.apache.commons.math3.geometry.euclidean.threed.Plane;
 import org.h2gis.api.ProgressVisitor;
@@ -1101,7 +1100,7 @@ public class ComputeRays {
         }
         // Sort sources by power contribution descending
         Collections.sort(sourceList);
-        double powerAtSource = 0;
+        double maximumPowerAtReceiver = 0;
         //Iterate over source point sorted by maximal power by descending order
         for (SourcePointInfo src : sourceList) {
             // For each Pt Source - Pt Receiver
@@ -1117,13 +1116,13 @@ public class ComputeRays {
             double global = ComputeRays.sumArray(power.length, ComputeRays.dbaToW(power));
             totalPowerRemaining -= src.globalWj;
             if (power.length > 0) {
-                powerAtSource += global;
+                maximumPowerAtReceiver += global;
             } else {
-                powerAtSource += src.globalWj;
+                maximumPowerAtReceiver += src.globalWj;
             }
             totalPowerRemaining = Math.max(0, totalPowerRemaining);
             // If the delta between already received power and maximal potential power received is inferior than than data.maximumError
-            if ((progressVisitor != null && progressVisitor.isCanceled()) || (data.maximumError > 0 && wToDba(powerAtSource + totalPowerRemaining) - wToDba(powerAtSource) < data.maximumError)) {
+            if ((progressVisitor != null && progressVisitor.isCanceled()) || (data.noiseFloor > 0 && wToDba(maximumPowerAtReceiver) < data.noiseFloor) || (data.maximumError > 0 && wToDba(maximumPowerAtReceiver + totalPowerRemaining) - wToDba(maximumPowerAtReceiver) < data.maximumError)) {
                 break; //Stop looking for more rays
             }
         }
@@ -1132,8 +1131,7 @@ public class ComputeRays {
     }
 
     /**
-     * Must be called before computeSoundLevelAtPosition
-     */
+     * Must be called before computeSoundLevelAtPosition     */
     public void initStructures() {
         //Build R-tree for soil geometry and soil type
         rTreeOfGeoSoil = new STRtree();
