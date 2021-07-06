@@ -102,7 +102,7 @@ class Main {
         // Do not propagate for low emission or far away sources.
         // error in dB
         pointNoiseMap.setMaximumError(0.1d);
-        pointNoiseMap.setNoiseFloor(80d);
+        pointNoiseMap.setNoiseFloor(35d);
 
         // Init custom input in order to compute more than just attenuation
         // LW_ROADS contain Day Evening Night emission spectrum

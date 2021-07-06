@@ -1061,8 +1061,12 @@ public class ComputeRays {
         Iterator<Integer> regionSourcesLst = data.sourcesIndex
                 .query(receiverSourceRegion);
         List<SourcePointInfo> sourceList = new ArrayList<>();
+
         // Sum of all sources power using only geometric dispersion with direct field
         double totalPowerRemaining = 0;
+        if (data.noiseFloor>0) {
+            totalPowerRemaining = dbaToW(data.noiseFloor);
+        }
         while (regionSourcesLst.hasNext()) {
             Integer srcIndex = regionSourcesLst.next();
             if (!processedLineSources.contains(srcIndex)) {
@@ -1098,11 +1102,22 @@ public class ComputeRays {
                 }
             }
         }
+
         // Sort sources by power contribution descending
         Collections.sort(sourceList);
+        // Final sound power level at each receiver
         double maximumPowerAtReceiver = 0;
+        if (data.noiseFloor>0) {
+            maximumPowerAtReceiver = dbaToW(data.noiseFloor);
+        }
         //Iterate over source point sorted by maximal power by descending order
         for (SourcePointInfo src : sourceList) {
+            // If the delta between already received power and maximal potential power received is inferior than than data.maximumError
+            if ((progressVisitor != null && progressVisitor.isCanceled()) || (data.maximumError > 0 && wToDba(maximumPowerAtReceiver + totalPowerRemaining) - wToDba(maximumPowerAtReceiver) < data.maximumError)) {
+                break; //Stop looking for more rays
+            }
+
+
             // For each Pt Source - Pt Receiver
             Coordinate srcCoord = src.position;
 
@@ -1121,10 +1136,8 @@ public class ComputeRays {
                 maximumPowerAtReceiver += src.globalWj;
             }
             totalPowerRemaining = Math.max(0, totalPowerRemaining);
-            // If the delta between already received power and maximal potential power received is inferior than than data.maximumError
-            if ((progressVisitor != null && progressVisitor.isCanceled()) || (data.noiseFloor > 0 && wToDba(maximumPowerAtReceiver) < data.noiseFloor) || (data.maximumError > 0 && wToDba(maximumPowerAtReceiver + totalPowerRemaining) - wToDba(maximumPowerAtReceiver) < data.maximumError)) {
-                break; //Stop looking for more rays
-            }
+
+
         }
         // No more rays for this receiver
         dataOut.finalizeReceiver(idReceiver);
