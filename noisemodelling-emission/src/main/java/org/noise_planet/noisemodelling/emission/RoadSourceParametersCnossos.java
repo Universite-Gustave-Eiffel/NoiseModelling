@@ -28,7 +28,7 @@ public class RoadSourceParametersCnossos {
     private final double wbvPerHour; // Qm in 2015 directive
     private final int FreqParam; // Frequency in Hz
     private final double Temperature; // Temperature in °C
-    private final String roadSurface; // Road surface identifier, see coefficients_cnossos2019.json for name list
+    private final String roadSurface; // Road surface identifier, see coefficients_Road_Cnossos_2020.json for name list
     private final double tsStud; // Period (in months) where the average ratio of the total volume of light vehicles per hour equipped with studded tyres
     private final double qStudRatio; // Average ratio of the total volume of light vehicles per hour equipped with studded tyres during the period Ts_stud (in months)
     private final double Junc_dist; // Distance to junction

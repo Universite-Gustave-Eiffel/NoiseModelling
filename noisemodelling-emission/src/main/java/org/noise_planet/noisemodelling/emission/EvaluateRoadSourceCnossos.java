@@ -32,8 +32,8 @@ import static org.noise_planet.noisemodelling.emission.Utils.*;
 
 public class EvaluateRoadSourceCnossos {
 
-    private static JsonNode cnossosData = parse(EvaluateRoadSourceCnossos.class.getResourceAsStream("coefficients_cnossos.json"));
-    private static JsonNode cnossosData2019 = parse(EvaluateRoadSourceCnossos.class.getResourceAsStream("coefficients_cnossos2019.json")); // new coefficients in 2019 amendments
+    private static JsonNode cnossosData = parse(EvaluateRoadSourceCnossos.class.getResourceAsStream("coefficients_Road_Cnossos_2015.json"));
+    private static JsonNode cnossosData2019 = parse(EvaluateRoadSourceCnossos.class.getResourceAsStream("coefficients_Road_Cnossos_2020.json")); // new coefficients in 2019 amendments
 
     private static JsonNode parse(InputStream inputStream) {
         try {

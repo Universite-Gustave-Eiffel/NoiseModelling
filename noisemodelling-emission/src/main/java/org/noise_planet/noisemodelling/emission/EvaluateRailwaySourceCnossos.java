@@ -45,10 +45,9 @@ import static org.noise_planet.noisemodelling.emission.utils.interpLinear.interp
  */
 
 public class EvaluateRailwaySourceCnossos {
-    private JsonNode CnossosRailWayData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("coefficients_Railway_cnossos.json"));
-    private JsonNode CnossosVehicleData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Vehicle_definition.json"));
-    private JsonNode CnossosTrainData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Train_definition.json"));
-
+    private JsonNode CnossosRailWayData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("coefficient_Railway_Cnossos_SNCF.json"));
+    private JsonNode CnossosVehicleData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Rail_Vehicles_SNCF_2021.json"));
+    private JsonNode CnossosTrainData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Rail_Train_SNCF_2021.json"));
 
     public void setEvaluateRailwaySourceCnossos(InputStream cnossosVehicleData,InputStream cnossosTrainData ) {
         this.CnossosVehicleData = parse(cnossosVehicleData);
@@ -66,7 +65,7 @@ public class EvaluateRailwaySourceCnossos {
 
     public JsonNode getCnossosRailWayData(int spectreVer){
         if (spectreVer==1){
-            return CnossosRailWayData;
+            return parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("coefficients_Railway_Cnossos_2020.json"));
         }
         else {
             return CnossosRailWayData;
@@ -195,13 +194,13 @@ public class EvaluateRailwaySourceCnossos {
         String ref = "";
         if(refType.equals("RefRoughness")){ref = "WheelRoughness";}
         else if(refType.equals("RefContact")){ref = "ContactFilter";}
-        return getCnossosRailWayData(spectreVer).get("Vehicle").get(ref).get(String.valueOf(refId)).get("Values").get(lambdaId).doubleValue();
+        return getCnossosRailWayData(spectreVer).get("Vehicle").get(ref).get( String.valueOf(refId)).get("Values").get(lambdaId).doubleValue();
     }
     public Double getTrackRoughness(int trackRoughnessId, int spectreVer, int lambdaId) { //
-        return getCnossosRailWayData(spectreVer).get("Track").get("RailRoughness").get(String.valueOf(trackRoughnessId)).get("Values").get(lambdaId).doubleValue();
+        return getCnossosRailWayData(spectreVer).get("Track").get("RailRoughness").get( String.valueOf(trackRoughnessId)).get("Values").get(lambdaId).doubleValue();
     }
     public int getAxlesPerVeh(String typeVehicle) { //
-        return getCnossosVehicleData().get(typeVehicle).get("Axles").intValue();
+        return getCnossosVehicleData().get(typeVehicle).get("NbAxlePerVeh").intValue();
     }
     public double getSpectre(String typeVehicle, String ref, int runningCondition,String sourceHeight, int spectreVer, int freqId) { //
         int refId = getCnossosVehicleData().get(typeVehicle).get(ref).intValue();
@@ -349,18 +348,24 @@ public class EvaluateRailwaySourceCnossos {
     private double[] evaluateLWSpectre(String typeVehicle,String ref,int runningCondition, double speed, int height,int spectreVer) {
         double [] lWSpectre = new double[24];
         for(int idFreq = 0; idFreq < 24; idFreq++) {
-            if(height==0){
-                lWSpectre[idFreq] = getSpectre(typeVehicle,ref, runningCondition,"A",spectreVer,idFreq);}
-            else if(height==1) {
-                lWSpectre[idFreq] = getSpectre(typeVehicle, ref, runningCondition,"B", spectreVer, idFreq);
-            }
-            if(ref.equals("RefAerodynamic")){
+            if(!ref.equals("RefAerodynamic")) {
+                if (height == 0) {
+                    lWSpectre[idFreq] = getSpectre(typeVehicle, ref, runningCondition, "A", spectreVer, idFreq);
+                } else if (height == 1) {
+                    lWSpectre[idFreq] = getSpectre(typeVehicle, ref, runningCondition, "B", spectreVer, idFreq);
+                }
+            }else{
                 if(speed<200){
                     lWSpectre[idFreq] =-99;
                 }else{
-                double v0Aero = getAeroV0Alpha(typeVehicle,ref, spectreVer, "V0");
-                double alphaAero = getAeroV0Alpha(typeVehicle,ref, spectreVer, "Alpha");
-                lWSpectre[idFreq] = lWSpectre[idFreq]+ alphaAero*Math.log10(speed/v0Aero);
+                    if (height == 0) {
+                        lWSpectre[idFreq] = getSpectre(typeVehicle, ref, runningCondition, "A", spectreVer, idFreq);
+                    } else if (height == 1) {
+                        lWSpectre[idFreq] = getSpectre(typeVehicle, ref, runningCondition, "B", spectreVer, idFreq);
+                    }
+                    double v0Aero = getAeroV0Alpha(typeVehicle,ref, spectreVer, "V0");
+                    double alphaAero = getAeroV0Alpha(typeVehicle,ref, spectreVer, "Alpha");
+                    lWSpectre[idFreq] = lWSpectre[idFreq]+ alphaAero*Math.log10(speed/v0Aero);
                 }
             }
         }

@@ -21,7 +21,6 @@ import javax.xml.stream.XMLStreamException;
 import java.io.*;
 import java.util.*;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 
@@ -808,6 +807,7 @@ public class TestComputeRays {
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
         rayData.setComputeVerticalDiffraction(true);
+
         ComputeRaysOut propDataOut = new ComputeRaysOut(true);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);
