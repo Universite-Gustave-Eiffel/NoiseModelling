@@ -542,7 +542,7 @@
     "ReflectingBarrierEffect": 1,
     "NbCoach": 4,
     "FirstSourcePosition": 9.1,
-    "SourceSpacing": null,
+    "SourceSpacing": 18.2,
     "NbAxlePerVeh": 2.5,
     "RefAerodynamic": 0,
     "RefRoughness": 4,
