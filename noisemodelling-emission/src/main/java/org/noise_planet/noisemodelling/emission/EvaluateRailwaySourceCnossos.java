@@ -225,7 +225,7 @@ public class EvaluateRailwaySourceCnossos {
                 tractionSpectre = getCnossosRailWayData(spectreVer).get("Vehicle").get(condition).get(String.valueOf(refId)).get("Values").get(sourceHeight).get(freqId).doubleValue();
             }
             return tractionSpectre;
-        }else if(ref.equals("RefAerodynamic")){
+        }else if(ref.equals("RefAerodynamic") ){
             double aerodynamicNoise;
             aerodynamicNoise = getCnossosRailWayData(spectreVer).get("Vehicle").get("AerodynamicNoise").get(String.valueOf(refId)).get("Values").get(sourceHeight).get(freqId).doubleValue();
             return aerodynamicNoise;
@@ -347,6 +347,7 @@ public class EvaluateRailwaySourceCnossos {
      **/
     private double[] evaluateLWSpectre(String typeVehicle,String ref,int runningCondition, double speed, int height,int spectreVer) {
         double [] lWSpectre = new double[24];
+
         for(int idFreq = 0; idFreq < 24; idFreq++) {
             if(!ref.equals("RefAerodynamic")) {
                 if (height == 0) {
@@ -355,7 +356,8 @@ public class EvaluateRailwaySourceCnossos {
                     lWSpectre[idFreq] = getSpectre(typeVehicle, ref, runningCondition, "B", spectreVer, idFreq);
                 }
             }else{
-                if(speed<200){
+                int refId = getCnossosVehicleData().get(typeVehicle).get(ref).intValue();
+                if(speed<200  || refId==0){
                     lWSpectre[idFreq] =-99;
                 }else{
                     if (height == 0) {
