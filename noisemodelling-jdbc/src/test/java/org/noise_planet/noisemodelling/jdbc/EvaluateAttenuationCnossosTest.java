@@ -17,7 +17,7 @@ import java.util.*;
 import static org.junit.Assert.*;
 import static org.noise_planet.noisemodelling.jdbc.Utils.aWeighting;
 import static org.noise_planet.noisemodelling.jdbc.Utils.addArray;
-import static org.noise_planet.noisemodelling.pathfinder.ComputeRays.dbaToW;
+import static org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils.*;
 
 public class EvaluateAttenuationCnossosTest {
 
@@ -44,20 +44,14 @@ public class EvaluateAttenuationCnossosTest {
         Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 
         //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        ProfileBuilder builder = new ProfileBuilder();
+        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 250, -20, 80)), 0);
+        builder.finishFeeding();
 
-
-        mesh.finishPolygonFeeding(cellEnvelope);
-
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-                mesh.getTriNeighbors(), mesh.getVertices());
-
-        PropagationProcessData rayData = new PropagationProcessData(manager);
+        CnossosPropagationData rayData = new CnossosPropagationData(builder);
         rayData.addReceiver(new Coordinate(200, 50, 4));
         rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
         rayData.setComputeHorizontalDiffraction(true);
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 250, -20, 80)), 0));
         rayData.setComputeVerticalDiffraction(true);
 
         PropagationProcessPathData attData = new PropagationProcessPathData();
@@ -65,7 +59,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setTemperature(10);
 
         ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
-        ComputeRays computeRays = new ComputeRays(rayData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
@@ -83,20 +77,14 @@ public class EvaluateAttenuationCnossosTest {
         Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 
         //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        ProfileBuilder builder = new ProfileBuilder();
+        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 250, -20, 80)), 0.5);
+        builder.finishFeeding();
 
-
-        mesh.finishPolygonFeeding(cellEnvelope);
-
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-                mesh.getTriNeighbors(), mesh.getVertices());
-
-        PropagationProcessData rayData = new PropagationProcessData(manager);
+        CnossosPropagationData rayData = new CnossosPropagationData(builder);
         rayData.addReceiver(new Coordinate(200, 50, 4));
         rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
         rayData.setComputeHorizontalDiffraction(true);
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 250, -20, 80)), 0.5));
         rayData.setComputeVerticalDiffraction(true);
         rayData.setGs(0.5);
 
@@ -105,7 +93,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setTemperature(10);
 
         ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
-        ComputeRays computeRays = new ComputeRays(rayData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});
@@ -122,20 +110,14 @@ public class EvaluateAttenuationCnossosTest {
         Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 
         //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        ProfileBuilder builder = new ProfileBuilder();
+        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 250, -20, 80)), 1);
+        builder.finishFeeding();
 
-
-        mesh.finishPolygonFeeding(cellEnvelope);
-
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-                mesh.getTriNeighbors(), mesh.getVertices());
-
-        PropagationProcessData rayData = new PropagationProcessData(manager);
+        CnossosPropagationData rayData = new CnossosPropagationData(builder);
         rayData.addReceiver(new Coordinate(200, 50, 4));
         rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
         rayData.setComputeHorizontalDiffraction(true);
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 250, -20, 80)), 1));
         rayData.setComputeVerticalDiffraction(true);
         rayData.setGs(1.0);
 
@@ -144,7 +126,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setTemperature(10);
 
         ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
-        ComputeRays computeRays = new ComputeRays(rayData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});
@@ -161,22 +143,18 @@ public class EvaluateAttenuationCnossosTest {
         Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 
         //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        ProfileBuilder builder = new ProfileBuilder();
 
+        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -20, 80)), 0.2);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -20, 80)), 0.5);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -20, 80)), 0.9);
 
-        mesh.finishPolygonFeeding(cellEnvelope);
+        builder.finishFeeding();
 
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-                mesh.getTriNeighbors(), mesh.getVertices());
-
-        PropagationProcessData rayData = new PropagationProcessData(manager);
+        CnossosPropagationData rayData = new CnossosPropagationData(builder);
         rayData.addReceiver(new Coordinate(200, 50, 4));
         rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
         rayData.setComputeHorizontalDiffraction(true);
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -20, 80)), 0.2));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -20, 80)), 0.5));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -20, 80)), 0.9));
         rayData.setGs(0.2);
 
         rayData.setComputeVerticalDiffraction(true);
@@ -187,7 +165,7 @@ public class EvaluateAttenuationCnossosTest {
         //attData.setWindRose(FAV_WIND_ROSE);
 
         ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
-        ComputeRays computeRays = new ComputeRays(rayData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});
@@ -205,43 +183,41 @@ public class EvaluateAttenuationCnossosTest {
         Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 
         //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        ProfileBuilder builder = new ProfileBuilder();
 
         // Add topographic points
         //x1
-        mesh.addTopographicPoint(new Coordinate(0, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(225, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(225, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(0, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(120, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
-        mesh.addTopographicPoint(new Coordinate(205, -5, 10));
-        mesh.addTopographicPoint(new Coordinate(205, 75, 10));
-        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
+        builder.addTopographicPoint(new Coordinate(0, 80, 0));
+        builder.addTopographicPoint(new Coordinate(225, 80, 0));
+        builder.addTopographicPoint(new Coordinate(225, -20, 0));
+        builder.addTopographicPoint(new Coordinate(0, -20, 0));
+        builder.addTopographicPoint(new Coordinate(120, -20, 0));
+        builder.addTopographicPoint(new Coordinate(185, -5, 10));
+        builder.addTopographicPoint(new Coordinate(205, -5, 10));
+        builder.addTopographicPoint(new Coordinate(205, 75, 10));
+        builder.addTopographicPoint(new Coordinate(185, 75, 10));
         //x2
-        mesh.addTopographicPoint(new Coordinate(225, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(225, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(0, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(0, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(120, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(205, -5, 10));
-        mesh.addTopographicPoint(new Coordinate(205, 75, 10));
-        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
-        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
+        builder.addTopographicPoint(new Coordinate(225, 80, 0));
+        builder.addTopographicPoint(new Coordinate(225, -20, 0));
+        builder.addTopographicPoint(new Coordinate(0, -20, 0));
+        builder.addTopographicPoint(new Coordinate(0, 80, 0));
+        builder.addTopographicPoint(new Coordinate(120, 80, 0));
+        builder.addTopographicPoint(new Coordinate(205, -5, 10));
+        builder.addTopographicPoint(new Coordinate(205, 75, 10));
+        builder.addTopographicPoint(new Coordinate(185, 75, 10));
+        builder.addTopographicPoint(new Coordinate(185, -5, 10));
 
-        mesh.finishPolygonFeeding(cellEnvelope);
 
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-                mesh.getTriNeighbors(), mesh.getVertices());
+        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -20, 80)), 0.9);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -20, 80)), 0.5);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -20, 80)), 0.2);
 
-        PropagationProcessData rayData = new PropagationProcessData(manager);
+        builder.finishFeeding();
+
+        CnossosPropagationData rayData = new CnossosPropagationData(builder);
         rayData.addReceiver(new Coordinate(200, 50, 14));
         rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
         rayData.setComputeHorizontalDiffraction(true);
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -20, 80)), 0.9));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -20, 80)), 0.5));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -20, 80)), 0.2));
         rayData.setComputeVerticalDiffraction(true);
         rayData.setGs(0.9);
 
@@ -250,7 +226,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setTemperature(10);
 
         ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
-        ComputeRays computeRays = new ComputeRays(rayData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
@@ -271,44 +247,41 @@ public class EvaluateAttenuationCnossosTest {
         Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 
         //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        ProfileBuilder builder = new ProfileBuilder();
 
         // Add topographic points
         //x1
-        mesh.addTopographicPoint(new Coordinate(0, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(225, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(225, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(0, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(120, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
-        mesh.addTopographicPoint(new Coordinate(205, -5, 10));
-        mesh.addTopographicPoint(new Coordinate(205, 75, 10));
-        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
+        builder.addTopographicPoint(new Coordinate(0, 80, 0));
+        builder.addTopographicPoint(new Coordinate(225, 80, 0));
+        builder.addTopographicPoint(new Coordinate(225, -20, 0));
+        builder.addTopographicPoint(new Coordinate(0, -20, 0));
+        builder.addTopographicPoint(new Coordinate(120, -20, 0));
+        builder.addTopographicPoint(new Coordinate(185, -5, 10));
+        builder.addTopographicPoint(new Coordinate(205, -5, 10));
+        builder.addTopographicPoint(new Coordinate(205, 75, 10));
+        builder.addTopographicPoint(new Coordinate(185, 75, 10));
         //x2
-        mesh.addTopographicPoint(new Coordinate(225, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(225, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(0, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(0, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(120, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(205, -5, 10));
-        mesh.addTopographicPoint(new Coordinate(205, 75, 10));
-        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
-        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
+        builder.addTopographicPoint(new Coordinate(225, 80, 0));
+        builder.addTopographicPoint(new Coordinate(225, -20, 0));
+        builder.addTopographicPoint(new Coordinate(0, -20, 0));
+        builder.addTopographicPoint(new Coordinate(0, 80, 0));
+        builder.addTopographicPoint(new Coordinate(120, 80, 0));
+        builder.addTopographicPoint(new Coordinate(205, -5, 10));
+        builder.addTopographicPoint(new Coordinate(205, 75, 10));
+        builder.addTopographicPoint(new Coordinate(185, 75, 10));
+        builder.addTopographicPoint(new Coordinate(185, -5, 10));
 
-        mesh.finishPolygonFeeding(cellEnvelope);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -20, 80)), 0.9);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -20, 80)), 0.5);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -20, 80)), 0.2);
 
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-                mesh.getTriNeighbors(), mesh.getVertices());
+        builder.finishFeeding();
 
-        PropagationProcessData rayData = new PropagationProcessData(manager);
+        CnossosPropagationData rayData = new CnossosPropagationData(builder);
         rayData.addReceiver(new Coordinate(200, 50, 11.5));
         rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
 
         rayData.setComputeHorizontalDiffraction(true);
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -20, 80)), 0.9));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -20, 80)), 0.5));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -20, 80)), 0.2));
         rayData.setComputeVerticalDiffraction(true);
         rayData.setGs(0.9);
 
@@ -317,7 +290,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setTemperature(10);
 
         ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
-        ComputeRays computeRays = new ComputeRays(rayData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
@@ -336,29 +309,26 @@ public class EvaluateAttenuationCnossosTest {
         Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 
         //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        ProfileBuilder builder = new ProfileBuilder();
 
         // Add building
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(100, 240, 0),
                 new Coordinate(100.1, 240, 0),
                 new Coordinate(265.1, -180, 0),
                 new Coordinate(265, -180, 0),
-                new Coordinate(100, 240, 0)}), 6);
+                new Coordinate(100, 240, 0)}), 6, -1);
+        
+        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2);
 
-        mesh.finishPolygonFeeding(cellEnvelope);
+        builder.finishFeeding();
 
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-                mesh.getTriNeighbors(), mesh.getVertices());
-
-        PropagationProcessData rayData = new PropagationProcessData(manager);
+        CnossosPropagationData rayData = new CnossosPropagationData(builder);
         rayData.addReceiver(new Coordinate(200, 50, 4));
         rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
         rayData.setComputeHorizontalDiffraction(true);
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
         rayData.setComputeVerticalDiffraction(true);
         rayData.setGs(0.9);
 
@@ -368,7 +338,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setWindRose(HOM_WIND_ROSE);
         attData.setPrime2520(true);
         ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
-        ComputeRays computeRays = new ComputeRays(rayData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
@@ -386,29 +356,26 @@ public class EvaluateAttenuationCnossosTest {
         Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 
         //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        ProfileBuilder builder = new ProfileBuilder();
 
         // Add building
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(100, 240, 0),
                 new Coordinate(100.001, 240, 0),
                 new Coordinate(265.001, -180, 0),
                 new Coordinate(265, -180, 0),
-                new Coordinate(100, 240, 0)}), 6);
+                new Coordinate(100, 240, 0)}), 6, -1);
 
-        mesh.finishPolygonFeeding(cellEnvelope);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2);
 
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-                mesh.getTriNeighbors(), mesh.getVertices());
+        builder.finishFeeding();
 
-        PropagationProcessData rayData = new PropagationProcessData(manager);
+        CnossosPropagationData rayData = new CnossosPropagationData(builder);
         rayData.addReceiver(new Coordinate(200, 50, 4));
         rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
         rayData.setComputeHorizontalDiffraction(true);
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
         rayData.setComputeVerticalDiffraction(true);
         rayData.setGs(0.9);
 
@@ -418,7 +385,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setWindRose(FAV_WIND_ROSE);
         attData.setPrime2520(true);
         ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
-        ComputeRays computeRays = new ComputeRays(rayData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
@@ -437,29 +404,26 @@ public class EvaluateAttenuationCnossosTest {
         Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 
         //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        ProfileBuilder builder = new ProfileBuilder();
 
         // Add building
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(100, 240, 0),
                 new Coordinate(100.001, 240, 0),
                 new Coordinate(265.001, -180, 0),
                 new Coordinate(265, -180, 0),
-                new Coordinate(100, 240, 0)}), 6);
+                new Coordinate(100, 240, 0)}), 6, -1);
 
-        mesh.finishPolygonFeeding(cellEnvelope);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2);
 
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-                mesh.getTriNeighbors(), mesh.getVertices());
+        builder.finishFeeding();
 
-        PropagationProcessData rayData = new PropagationProcessData(manager);
+        CnossosPropagationData rayData = new CnossosPropagationData(builder);
         rayData.addReceiver(new Coordinate(200, 50, 4));
         rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
         rayData.setComputeHorizontalDiffraction(false);
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
         rayData.setComputeVerticalDiffraction(true);
         rayData.setGs(0.9);
 
@@ -469,7 +433,7 @@ public class EvaluateAttenuationCnossosTest {
         //attData.setWindRose(FAV_WIND_ROSE);
         attData.setPrime2520(true);
         ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
-        ComputeRays computeRays = new ComputeRays(rayData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
@@ -488,29 +452,26 @@ public class EvaluateAttenuationCnossosTest {
         Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 
         //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        ProfileBuilder builder = new ProfileBuilder();
 
         // Add building
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(175, 50, 0),
                 new Coordinate(175.01, 50, 0),
                 new Coordinate(190.01, 10, 0),
                 new Coordinate(190, 10, 0),
-                new Coordinate(175, 50, 0)}), 6);
+                new Coordinate(175, 50, 0)}), 6, -1);
 
-        mesh.finishPolygonFeeding(cellEnvelope);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2);
 
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-                mesh.getTriNeighbors(), mesh.getVertices());
+        builder.finishFeeding();
 
-        PropagationProcessData rayData = new PropagationProcessData(manager);
+        CnossosPropagationData rayData = new CnossosPropagationData(builder);
         rayData.addReceiver(new Coordinate(200, 50, 4));
         rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
         rayData.setComputeHorizontalDiffraction(false);
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
         rayData.setComputeVerticalDiffraction(true);
         rayData.setGs(0.9);
 
@@ -519,7 +480,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setTemperature(10);
         attData.setPrime2520(true);
         ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
-        ComputeRays computeRays = new ComputeRays(rayData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
@@ -537,29 +498,29 @@ public class EvaluateAttenuationCnossosTest {
 //        Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 //
 //        //Create obstruction test object
-//        MeshBuilder mesh = new MeshBuilder();
+//        ProfileBuilder builder = new ProfileBuilder();
 //
 //        // Add building
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+//        builder.addBuilding(factory.createPolygon(new Coordinate[]{
 //                new Coordinate(175, 50, 0),
 //                new Coordinate(175.01, 50, 0),
 //                new Coordinate(190.01, 10, 0),
 //                new Coordinate(190, 10, 0),
-//                new Coordinate(175, 50, 0)}), 6);
+//                new Coordinate(175, 50, 0)}), 6, -1);
 //
-//        mesh.finishPolygonFeeding(cellEnvelope);
+//        builder.finishFeeding();
 //
 //        //Retrieve Delaunay triangulation of scene
-//        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-//                mesh.getTriNeighbors(), mesh.getVertices());
+//        FastObstructionTest manager = new FastObstructionTest(builder.getPolygonWithHeight(), builder.getTriangles(),
+//                builder.getTriNeighbors(), builder.getVertices());
 //
-//        PropagationProcessData rayData = new PropagationProcessData(manager);
+//        CnossosPropagationData rayData = new CnossosPropagationData(builder);
 //        rayData.addReceiver(new Coordinate(200, 50, 4));
 //        rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
 //        rayData.setComputeHorizontalDiffraction(true);
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9));
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
+//        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9);
+//        builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5);
+//        builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2);
 //        rayData.setComputeVerticalDiffraction(false);
 //        rayData.setGs(0.9);
 //
@@ -569,7 +530,7 @@ public class EvaluateAttenuationCnossosTest {
 //        attData.setWindRose(HOM_WIND_ROSE);
 //        attData.setPrime2520(true);
 //        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
-//        ComputeRays computeRays = new ComputeRays(rayData);
+//        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
 //        computeRays.setThreadCount(1);
 //        computeRays.run(propDataOut);
 //
@@ -590,29 +551,29 @@ public class EvaluateAttenuationCnossosTest {
 //        Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 //
 //        //Create obstruction test object
-//        MeshBuilder mesh = new MeshBuilder();
+//        ProfileBuilder builder = new ProfileBuilder();
 //
 //        // Add building
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+//        builder.addBuilding(factory.createPolygon(new Coordinate[]{
 //                new Coordinate(175, 50, 0),
 //                new Coordinate(175.01, 50, 0),
 //                new Coordinate(190.01, 10, 0),
 //                new Coordinate(190, 10, 0),
-//                new Coordinate(175, 50, 0)}), 6);
+//                new Coordinate(175, 50, 0)}), 6, -1);
 //
-//        mesh.finishPolygonFeeding(cellEnvelope);
+//        builder.finishFeeding();
 //
 //        //Retrieve Delaunay triangulation of scene
-//        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-//                mesh.getTriNeighbors(), mesh.getVertices());
+//        FastObstructionTest manager = new FastObstructionTest(builder.getPolygonWithHeight(), builder.getTriangles(),
+//                builder.getTriNeighbors(), builder.getVertices());
 //
-//        PropagationProcessData rayData = new PropagationProcessData(manager);
+//        CnossosPropagationData rayData = new CnossosPropagationData(builder);
 //        rayData.addReceiver(new Coordinate(200, 50, 4));
 //        rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
 //        rayData.setComputeHorizontalDiffraction(true);
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9));
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
+//        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9);
+//        builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5);
+//        builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2);
 //        rayData.setComputeVerticalDiffraction(false);
 //        rayData.setGs(0.9);
 //
@@ -622,7 +583,7 @@ public class EvaluateAttenuationCnossosTest {
 //        attData.setWindRose(FAV_WIND_ROSE);
 //        attData.setPrime2520(true);
 //        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
-//        ComputeRays computeRays = new ComputeRays(rayData);
+//        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
 //        computeRays.setThreadCount(1);
 //        computeRays.run(propDataOut);
 //
@@ -644,29 +605,26 @@ public class EvaluateAttenuationCnossosTest {
         Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 
         //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        ProfileBuilder builder = new ProfileBuilder();
 
         // Add building
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(175, 50, 0),
                 new Coordinate(175.01, 50, 0),
                 new Coordinate(190.01, 10, 0),
                 new Coordinate(190, 10, 0),
-                new Coordinate(175, 50, 0)}), 6);
+                new Coordinate(175, 50, 0)}), 6, -1);
 
-        mesh.finishPolygonFeeding(cellEnvelope);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2);
 
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-                mesh.getTriNeighbors(), mesh.getVertices());
+        builder.finishFeeding();
 
-        PropagationProcessData rayData = new PropagationProcessData(manager);
+        CnossosPropagationData rayData = new CnossosPropagationData(builder);
         rayData.addReceiver(new Coordinate(200, 50, 4));
         rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
         rayData.setComputeHorizontalDiffraction(true);
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
         rayData.setComputeVerticalDiffraction(true);
         rayData.setGs(0.9);
 
@@ -675,7 +633,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setTemperature(10);
         attData.setPrime2520(true);
         ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
-        ComputeRays computeRays = new ComputeRays(rayData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
@@ -695,50 +653,47 @@ public class EvaluateAttenuationCnossosTest {
         Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 
         //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        ProfileBuilder builder = new ProfileBuilder();
 
         // Add building
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(175, 50, 0),
                 new Coordinate(175.01, 50, 0),
                 new Coordinate(190.01, 10, 0),
                 new Coordinate(190, 10, 0),
-                new Coordinate(175, 50, 0)}), 6.63);
+                new Coordinate(175, 50, 0)}), 6.63, -1);
 
         // Add topographic points
         //x1
-        mesh.addTopographicPoint(new Coordinate(0, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(225, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(225, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(0, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(120, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
-        mesh.addTopographicPoint(new Coordinate(205, -5, 10));
-        mesh.addTopographicPoint(new Coordinate(205, 75, 10));
-        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
+        builder.addTopographicPoint(new Coordinate(0, 80, 0));
+        builder.addTopographicPoint(new Coordinate(225, 80, 0));
+        builder.addTopographicPoint(new Coordinate(225, -20, 0));
+        builder.addTopographicPoint(new Coordinate(0, -20, 0));
+        builder.addTopographicPoint(new Coordinate(120, -20, 0));
+        builder.addTopographicPoint(new Coordinate(185, -5, 10));
+        builder.addTopographicPoint(new Coordinate(205, -5, 10));
+        builder.addTopographicPoint(new Coordinate(205, 75, 10));
+        builder.addTopographicPoint(new Coordinate(185, 75, 10));
         //x2
-        mesh.addTopographicPoint(new Coordinate(225, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(225, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(0, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(0, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(120, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(205, -5, 10));
-        mesh.addTopographicPoint(new Coordinate(205, 75, 10));
-        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
-        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
+        builder.addTopographicPoint(new Coordinate(225, 80, 0));
+        builder.addTopographicPoint(new Coordinate(225, -20, 0));
+        builder.addTopographicPoint(new Coordinate(0, -20, 0));
+        builder.addTopographicPoint(new Coordinate(0, 80, 0));
+        builder.addTopographicPoint(new Coordinate(120, 80, 0));
+        builder.addTopographicPoint(new Coordinate(205, -5, 10));
+        builder.addTopographicPoint(new Coordinate(205, 75, 10));
+        builder.addTopographicPoint(new Coordinate(185, 75, 10));
+        builder.addTopographicPoint(new Coordinate(185, -5, 10));
 
-        mesh.finishPolygonFeeding(cellEnvelope);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2);
 
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-                mesh.getTriNeighbors(), mesh.getVertices());
+        builder.finishFeeding();
 
-        PropagationProcessData rayData = new PropagationProcessData(manager);
+        CnossosPropagationData rayData = new CnossosPropagationData(builder);
         rayData.addReceiver(new Coordinate(200, 50, 14));
         rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
         rayData.setComputeVerticalDiffraction(true);
         rayData.setComputeHorizontalDiffraction(true);
         rayData.setGs(0.9);
@@ -748,7 +703,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setTemperature(10);
         attData.setPrime2520(true);
         ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
-        ComputeRays computeRays = new ComputeRays(rayData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
@@ -769,27 +724,24 @@ public class EvaluateAttenuationCnossosTest {
         Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 
         //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        ProfileBuilder builder = new ProfileBuilder();
 
         // Add building
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(55, 5, 0),
                 new Coordinate(65, 5, 0),
                 new Coordinate(65, 15, 0),
                 new Coordinate(55, 15, 0),
-                new Coordinate(55, 5, 0)}), 10);
+                new Coordinate(55, 5, 0)}), 10, -1);
 
-        mesh.finishPolygonFeeding(cellEnvelope);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 100, -100, 100)), 0.5);
 
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-                mesh.getTriNeighbors(), mesh.getVertices());
+        builder.finishFeeding();
 
-        PropagationProcessData rayData = new PropagationProcessData(manager);
+        CnossosPropagationData rayData = new CnossosPropagationData(builder);
         rayData.addReceiver(new Coordinate(70, 10, 4));
         rayData.addSource(factory.createPoint(new Coordinate(50, 10, 1)));
         rayData.setComputeHorizontalDiffraction(true);
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 100, -100, 100)), 0.5));
         rayData.setComputeVerticalDiffraction(true);
         rayData.setGs(0.5);
 
@@ -798,7 +750,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setTemperature(10);
         attData.setPrime2520(true);
         ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
-        ComputeRays computeRays = new ComputeRays(rayData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
@@ -817,27 +769,24 @@ public class EvaluateAttenuationCnossosTest {
         Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 
         //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        ProfileBuilder builder = new ProfileBuilder();
 
         // Add building
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(55, 5,0),
                 new Coordinate(65, 5,0),
                 new Coordinate(65, 15,0),
                 new Coordinate(55, 15,0),
-                new Coordinate(55, 5,0)}), 10);
+                new Coordinate(55, 5,0)}), 10, -1);
 
-        mesh.finishPolygonFeeding(cellEnvelope);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(-300, 300, -300, 300)), 0.5);
 
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-                mesh.getTriNeighbors(), mesh.getVertices());
+        builder.finishFeeding();
 
-        PropagationProcessData rayData = new PropagationProcessData(manager);
+        CnossosPropagationData rayData = new CnossosPropagationData(builder);
         rayData.addReceiver(new Coordinate(70, 10, 15));
         rayData.addSource(factory.createPoint(new Coordinate(50, 10, 1)));
         rayData.setComputeHorizontalDiffraction(true);
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(-300, 300, -300, 300)), 0.5));
         rayData.setComputeVerticalDiffraction(true);
         rayData.setGs(0.5);
 
@@ -846,7 +795,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setTemperature(10);
         attData.setPrime2520(false);
         ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
-        ComputeRays computeRays = new ComputeRays(rayData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
@@ -867,10 +816,10 @@ public class EvaluateAttenuationCnossosTest {
         Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 
         //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        ProfileBuilder builder = new ProfileBuilder();
 
         // Add building
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(11., 15.5, 0),
                 new Coordinate(12., 13, 0),
                 new Coordinate(14.5, 12, 0),
@@ -879,19 +828,16 @@ public class EvaluateAttenuationCnossosTest {
                 new Coordinate(17.0, 18, 0),
                 new Coordinate(14.5, 19, 0),
                 new Coordinate(12.0, 18, 0),
-                new Coordinate(11, 15.5, 0)}), 10);
+                new Coordinate(11, 15.5, 0)}), 10, -1);
 
-        mesh.finishPolygonFeeding(cellEnvelope);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(-300, 300, -300, 300)), 0.5);
 
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-                mesh.getTriNeighbors(), mesh.getVertices());
+        builder.finishFeeding();
 
-        PropagationProcessData rayData = new PropagationProcessData(manager);
+        CnossosPropagationData rayData = new CnossosPropagationData(builder);
         rayData.addReceiver(new Coordinate(30, 20, 6));
         rayData.addSource(factory.createPoint(new Coordinate(0, 10, 1)));
         rayData.setComputeHorizontalDiffraction(true);
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(-300, 300, -300, 300)), 0.5));
         rayData.setComputeVerticalDiffraction(true);
         rayData.setGs(0.5);
 
@@ -900,7 +846,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setTemperature(10);
         attData.setPrime2520(false);
         ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
-        ComputeRays computeRays = new ComputeRays(rayData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
@@ -920,10 +866,10 @@ public class EvaluateAttenuationCnossosTest {
         Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 
         //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        ProfileBuilder builder = new ProfileBuilder();
 
         // Add building
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(169.4, 41.0, 0),
                 new Coordinate(172.5, 33.5, 0),
                 new Coordinate(180.0, 30.4, 0),
@@ -932,42 +878,39 @@ public class EvaluateAttenuationCnossosTest {
                 new Coordinate(187.5, 48.5, 0),
                 new Coordinate(180.0, 51.6, 0),
                 new Coordinate(172.5, 48.5, 0),
-                new Coordinate(169.4, 41.0, 0)}), 20);
+                new Coordinate(169.4, 41.0, 0)}), 20, -1);
 
         //x1
-        mesh.addTopographicPoint(new Coordinate(0, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(225, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(225, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(0, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(120, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
-        mesh.addTopographicPoint(new Coordinate(205, -5, 10));
-        mesh.addTopographicPoint(new Coordinate(205, 75, 10));
-        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
+        builder.addTopographicPoint(new Coordinate(0, 80, 0));
+        builder.addTopographicPoint(new Coordinate(225, 80, 0));
+        builder.addTopographicPoint(new Coordinate(225, -20, 0));
+        builder.addTopographicPoint(new Coordinate(0, -20, 0));
+        builder.addTopographicPoint(new Coordinate(120, -20, 0));
+        builder.addTopographicPoint(new Coordinate(185, -5, 10));
+        builder.addTopographicPoint(new Coordinate(205, -5, 10));
+        builder.addTopographicPoint(new Coordinate(205, 75, 10));
+        builder.addTopographicPoint(new Coordinate(185, 75, 10));
         //x2
-        mesh.addTopographicPoint(new Coordinate(225, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(225, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(0, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(0, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(120, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(205, -5, 10));
-        mesh.addTopographicPoint(new Coordinate(205, 75, 10));
-        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
-        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
+        builder.addTopographicPoint(new Coordinate(225, 80, 0));
+        builder.addTopographicPoint(new Coordinate(225, -20, 0));
+        builder.addTopographicPoint(new Coordinate(0, -20, 0));
+        builder.addTopographicPoint(new Coordinate(0, 80, 0));
+        builder.addTopographicPoint(new Coordinate(120, 80, 0));
+        builder.addTopographicPoint(new Coordinate(205, -5, 10));
+        builder.addTopographicPoint(new Coordinate(205, 75, 10));
+        builder.addTopographicPoint(new Coordinate(185, 75, 10));
+        builder.addTopographicPoint(new Coordinate(185, -5, 10));
 
-        mesh.finishPolygonFeeding(cellEnvelope);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2);
 
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-                mesh.getTriNeighbors(), mesh.getVertices());
+        builder.finishFeeding();
 
-        PropagationProcessData rayData = new PropagationProcessData(manager);
+        CnossosPropagationData rayData = new CnossosPropagationData(builder);
         rayData.addReceiver(new Coordinate(200, 50, 28.5));
         rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
         rayData.setComputeHorizontalDiffraction(true);
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
         rayData.setComputeVerticalDiffraction(true);
         rayData.setGs(0.5);
 
@@ -976,7 +919,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setTemperature(10);
        // attData.setPrime2520(false);
         ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
-        ComputeRays computeRays = new ComputeRays(rayData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
@@ -996,10 +939,10 @@ public class EvaluateAttenuationCnossosTest {
         Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 
         //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        ProfileBuilder builder = new ProfileBuilder();
 
         // Add building
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(11., 15.5, 0),
                 new Coordinate(12., 13, 0),
                 new Coordinate(14.5, 12, 0),
@@ -1008,19 +951,16 @@ public class EvaluateAttenuationCnossosTest {
                 new Coordinate(17.0, 18, 0),
                 new Coordinate(14.5, 19, 0),
                 new Coordinate(12.0, 18, 0),
-                new Coordinate(11, 15.5, 0)}), 10);
+                new Coordinate(11, 15.5, 0)}), 10, -1);
 
-        mesh.finishPolygonFeeding(cellEnvelope);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(-300, 300, -300, 300)), 0.2);
 
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-                mesh.getTriNeighbors(), mesh.getVertices());
+        builder.finishFeeding();
 
-        PropagationProcessData rayData = new PropagationProcessData(manager);
+        CnossosPropagationData rayData = new CnossosPropagationData(builder);
         rayData.addReceiver(new Coordinate(25, 20, 23));
         rayData.addSource(factory.createPoint(new Coordinate(8, 10, 1)));
         rayData.setComputeHorizontalDiffraction(true);
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(-300, 300, -300, 300)), 0.2));
         rayData.setComputeVerticalDiffraction(true);
         rayData.setGs(0.2);
 
@@ -1029,7 +969,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setTemperature(10);
         attData.setPrime2520(false);
         ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
-        ComputeRays computeRays = new ComputeRays(rayData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
@@ -1047,48 +987,45 @@ public class EvaluateAttenuationCnossosTest {
         Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 
         //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        ProfileBuilder builder = new ProfileBuilder();
 
         // Add building
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(55.0, 5.0, 0),
                 new Coordinate(65.0, 5.0, 0),
                 new Coordinate(65.0, 15.0, 0),
                 new Coordinate(55.0, 15.0, 0),
-                new Coordinate(55.0, 5.0, 0)}), 8);
+                new Coordinate(55.0, 5.0, 0)}), 8, -1);
 
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(70, 14.5, 0),
                 new Coordinate(80.0, 10.2, 0),
                 new Coordinate(80.0, 20.2, 0),
-                new Coordinate(70, 14.5, 0)}), 12);
+                new Coordinate(70, 14.5, 0)}), 12, -1);
 
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(90.1, 19.5, 0),
                 new Coordinate(93.3, 17.8, 0),
                 new Coordinate(87.3, 6.6, 0),
                 new Coordinate(84.1, 8.3, 0),
-                new Coordinate(90.1, 19.5, 0)}), 10);
+                new Coordinate(90.1, 19.5, 0)}), 10, -1);
 
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(94.9, 14.1, 0),
                 new Coordinate(98.02, 12.37, 0),
                 new Coordinate(92.03, 1.2, 0),
                 new Coordinate(88.86, 2.9, 0),
-                new Coordinate(94.9, 14.1, 0)}), 10);
+                new Coordinate(94.9, 14.1, 0)}), 10, -1);
 
-        mesh.finishPolygonFeeding(cellEnvelope);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(-250, 250, -250, 250)), 0.5);
 
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-                mesh.getTriNeighbors(), mesh.getVertices());
+        builder.finishFeeding();
 
-        PropagationProcessData rayData = new PropagationProcessData(manager);
+        CnossosPropagationData rayData = new CnossosPropagationData(builder);
         rayData.addReceiver(new Coordinate(100, 15, 5));
         rayData.addSource(factory.createPoint(new Coordinate(50, 10, 1)));
         rayData.setComputeHorizontalDiffraction(true);
         rayData.setComputeVerticalDiffraction(true);
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(-250, 250, -250, 250)), 0.5));
 
         rayData.setGs(0.5);
 
@@ -1097,7 +1034,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setTemperature(10);
         attData.setPrime2520(false);
         ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
-        ComputeRays computeRays = new ComputeRays(rayData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
@@ -1115,51 +1052,48 @@ public class EvaluateAttenuationCnossosTest {
         Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 
         //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        ProfileBuilder builder = new ProfileBuilder();
 
         // Add building
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(114, 52, 0),
                 new Coordinate(170, 60, 0),
                 new Coordinate(170, 62, 0),
                 new Coordinate(114, 54, 0),
-                new Coordinate(114, 52, 0)}), 15,new double[]{0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.5});
+                new Coordinate(114, 52, 0)}), 15, Arrays.asList(0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.5));
 
 
         //x1
-        mesh.addTopographicPoint(new Coordinate(0, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(225, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(225, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(0, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(120, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
-        mesh.addTopographicPoint(new Coordinate(205, -5, 10));
-        mesh.addTopographicPoint(new Coordinate(205, 75, 10));
-        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
+        builder.addTopographicPoint(new Coordinate(0, 80, 0));
+        builder.addTopographicPoint(new Coordinate(225, 80, 0));
+        builder.addTopographicPoint(new Coordinate(225, -20, 0));
+        builder.addTopographicPoint(new Coordinate(0, -20, 0));
+        builder.addTopographicPoint(new Coordinate(120, -20, 0));
+        builder.addTopographicPoint(new Coordinate(185, -5, 10));
+        builder.addTopographicPoint(new Coordinate(205, -5, 10));
+        builder.addTopographicPoint(new Coordinate(205, 75, 10));
+        builder.addTopographicPoint(new Coordinate(185, 75, 10));
         //x2
-        mesh.addTopographicPoint(new Coordinate(225, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(225, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(0, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(0, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(120, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(205, -5, 10));
-        mesh.addTopographicPoint(new Coordinate(205, 75, 10));
-        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
-        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
+        builder.addTopographicPoint(new Coordinate(225, 80, 0));
+        builder.addTopographicPoint(new Coordinate(225, -20, 0));
+        builder.addTopographicPoint(new Coordinate(0, -20, 0));
+        builder.addTopographicPoint(new Coordinate(0, 80, 0));
+        builder.addTopographicPoint(new Coordinate(120, 80, 0));
+        builder.addTopographicPoint(new Coordinate(205, -5, 10));
+        builder.addTopographicPoint(new Coordinate(205, 75, 10));
+        builder.addTopographicPoint(new Coordinate(185, 75, 10));
+        builder.addTopographicPoint(new Coordinate(185, -5, 10));
 
-        mesh.finishPolygonFeeding(cellEnvelope);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -100, 100)), 0.5);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2);
 
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-                mesh.getTriNeighbors(), mesh.getVertices());
+        builder.finishFeeding();
 
-        PropagationProcessData rayData = new PropagationProcessData(manager);
+        CnossosPropagationData rayData = new CnossosPropagationData(builder);
         rayData.addReceiver(new Coordinate(200, 50, 14));
         rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
         rayData.setComputeHorizontalDiffraction(true);
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -100, 100)), 0.5));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2));
         rayData.setComputeVerticalDiffraction(true);
         rayData.setGs(0.9);
 
@@ -1168,7 +1102,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setTemperature(10);
         attData.setPrime2520(false);
         ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
-        ComputeRays computeRays = new ComputeRays(rayData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
@@ -1188,44 +1122,44 @@ public class EvaluateAttenuationCnossosTest {
         Envelope cellEnvelope = new Envelope(new Coordinate(-250., -250., 0.), new Coordinate(250, 250, 0.));
 
         //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        ProfileBuilder builder = new ProfileBuilder();
 
         // Add building
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(114, 52, 0),
                 new Coordinate(170, 60, 0),
                 new Coordinate(170, 62, 0),
                 new Coordinate(114, 54, 0),
-                new Coordinate(114, 52, 0)}), 15, new double[]{0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.5});
+                new Coordinate(114, 52, 0)}), 15, Arrays.asList(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.5));
 
         //x1
-        mesh.addTopographicPoint(new Coordinate(0, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(225, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(225, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(0, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(120, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
-        mesh.addTopographicPoint(new Coordinate(205, -5, 10));
-        mesh.addTopographicPoint(new Coordinate(205, 75, 10));
-        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
+        builder.addTopographicPoint(new Coordinate(0, 80, 0));
+        builder.addTopographicPoint(new Coordinate(225, 80, 0));
+        builder.addTopographicPoint(new Coordinate(225, -20, 0));
+        builder.addTopographicPoint(new Coordinate(0, -20, 0));
+        builder.addTopographicPoint(new Coordinate(120, -20, 0));
+        builder.addTopographicPoint(new Coordinate(185, -5, 10));
+        builder.addTopographicPoint(new Coordinate(205, -5, 10));
+        builder.addTopographicPoint(new Coordinate(205, 75, 10));
+        builder.addTopographicPoint(new Coordinate(185, 75, 10));
         //x2
-        mesh.addTopographicPoint(new Coordinate(225, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(225, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(0, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(0, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(120, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(205, -5, 10));
-        mesh.addTopographicPoint(new Coordinate(205, 75, 10));
-        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
-        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
+        builder.addTopographicPoint(new Coordinate(225, 80, 0));
+        builder.addTopographicPoint(new Coordinate(225, -20, 0));
+        builder.addTopographicPoint(new Coordinate(0, -20, 0));
+        builder.addTopographicPoint(new Coordinate(0, 80, 0));
+        builder.addTopographicPoint(new Coordinate(120, 80, 0));
+        builder.addTopographicPoint(new Coordinate(205, -5, 10));
+        builder.addTopographicPoint(new Coordinate(205, 75, 10));
+        builder.addTopographicPoint(new Coordinate(185, 75, 10));
+        builder.addTopographicPoint(new Coordinate(185, -5, 10));
 
-        mesh.finishPolygonFeeding(cellEnvelope);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -100, 100)), 0.5);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2);
 
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-                mesh.getTriNeighbors(), mesh.getVertices());
+        builder.finishFeeding();
 
-        DirectPropagationProcessData rayData = new DirectPropagationProcessData(manager);
+        DirectPropagationProcessData rayData = new DirectPropagationProcessData(builder);
         rayData.addReceiver(new Coordinate(200, 50, 11.5));
 
         PropagationProcessPathData attData = new PropagationProcessPathData();
@@ -1233,9 +1167,6 @@ public class EvaluateAttenuationCnossosTest {
         rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)), dbaToW(aWeighting(Collections.nCopies(attData.freq_lvl.size(), 93d))));
 
         rayData.setComputeHorizontalDiffraction(true);
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -100, 100)), 0.5));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2));
 
         rayData.setComputeVerticalDiffraction(true);
         rayData.setGs(0.9);
@@ -1244,7 +1175,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setTemperature(10);
         attData.setPrime2520(false);
         ComputeRaysOutAttenuation propDataOut = new RayOut(true, attData, rayData);
-        ComputeRays computeRays = new ComputeRays(rayData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
@@ -1260,61 +1191,55 @@ public class EvaluateAttenuationCnossosTest {
     public void TC18() throws LayerDelaunayError, IOException {
         GeometryFactory factory = new GeometryFactory();
 
-        //Scene dimension
-        Envelope cellEnvelope = new Envelope(new Coordinate(-250., -250., 0.), new Coordinate(250, 250, 0.));
-
         //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        ProfileBuilder builder = new ProfileBuilder();
 
         // Add building
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(114, 52),
                 new Coordinate(170, 60),
                 new Coordinate(170, 61),
                 new Coordinate(114, 53),
-                new Coordinate(114, 52)}), 15);
+                new Coordinate(114, 52)}), 15, -1);
 
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(87, 50),
                 new Coordinate(92, 32),
                 new Coordinate(92, 33),
                 new Coordinate(87, 51),
-                new Coordinate(87, 50)}), 12);
+                new Coordinate(87, 50)}), 12, -1);
 
         //x1
-        mesh.addTopographicPoint(new Coordinate(0, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(225, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(225, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(0, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(120, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
-        mesh.addTopographicPoint(new Coordinate(205, -5, 10));
-        mesh.addTopographicPoint(new Coordinate(205, 75, 10));
-        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
+        builder.addTopographicPoint(new Coordinate(0, 80, 0));
+        builder.addTopographicPoint(new Coordinate(225, 80, 0));
+        builder.addTopographicPoint(new Coordinate(225, -20, 0));
+        builder.addTopographicPoint(new Coordinate(0, -20, 0));
+        builder.addTopographicPoint(new Coordinate(120, -20, 0));
+        builder.addTopographicPoint(new Coordinate(185, -5, 10));
+        builder.addTopographicPoint(new Coordinate(205, -5, 10));
+        builder.addTopographicPoint(new Coordinate(205, 75, 10));
+        builder.addTopographicPoint(new Coordinate(185, 75, 10));
         //x2
-        mesh.addTopographicPoint(new Coordinate(225, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(225, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(0, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(0, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(120, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(205, -5, 10));
-        mesh.addTopographicPoint(new Coordinate(205, 75, 10));
-        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
-        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
+        builder.addTopographicPoint(new Coordinate(225, 80, 0));
+        builder.addTopographicPoint(new Coordinate(225, -20, 0));
+        builder.addTopographicPoint(new Coordinate(0, -20, 0));
+        builder.addTopographicPoint(new Coordinate(0, 80, 0));
+        builder.addTopographicPoint(new Coordinate(120, 80, 0));
+        builder.addTopographicPoint(new Coordinate(205, -5, 10));
+        builder.addTopographicPoint(new Coordinate(205, 75, 10));
+        builder.addTopographicPoint(new Coordinate(185, 75, 10));
+        builder.addTopographicPoint(new Coordinate(185, -5, 10));
 
-        mesh.finishPolygonFeeding(cellEnvelope);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -100, 100)), 0.5);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2);
 
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-                mesh.getTriNeighbors(), mesh.getVertices());
+        builder.finishFeeding();
 
-        PropagationProcessData rayData = new PropagationProcessData(manager);
+        CnossosPropagationData rayData = new CnossosPropagationData(builder);
         rayData.addReceiver(new Coordinate(200, 50, 12));
         rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
         rayData.setComputeHorizontalDiffraction(true);
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -100, 100)), 0.5));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2));
 
         rayData.setComputeVerticalDiffraction(true);
 
@@ -1325,7 +1250,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setTemperature(10);
         attData.setPrime2520(false);
         ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
-        ComputeRays computeRays = new ComputeRays(rayData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
@@ -1348,79 +1273,76 @@ public class EvaluateAttenuationCnossosTest {
         Envelope cellEnvelope = new Envelope(new Coordinate(-250., -250., 0.), new Coordinate(250, 250, 0.));
 
         //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        ProfileBuilder builder = new ProfileBuilder();
 
         // Add building
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(156, 28),
                 new Coordinate(145, 7),
                 new Coordinate(145, 8),
                 new Coordinate(156, 29),
-                new Coordinate(156, 28)}), 14);
+                new Coordinate(156, 28)}), 14, -1);
 
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(175, 35),
                 new Coordinate(188, 19),
                 new Coordinate(188, 20),
                 new Coordinate(175, 36),
-                new Coordinate(175, 35)}), 14.5);
+                new Coordinate(175, 35)}), 14.5, -1);
 
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(100, 24),
                 new Coordinate(118, 24),
                 new Coordinate(118, 30),
                 new Coordinate(100, 30),
-                new Coordinate(100, 24)}), 12);
+                new Coordinate(100, 24)}), 12, -1);
 
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(100, 15.1),
                 new Coordinate(118, 15.1),
                 new Coordinate(118, 23.9),
                 new Coordinate(100, 23.9),
-                new Coordinate(100, 15.1)}), 7);
+                new Coordinate(100, 15.1)}), 7, -1);
 
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(100, 9),
                 new Coordinate(118, 9),
                 new Coordinate(118, 15),
                 new Coordinate(100, 15),
-                new Coordinate(100, 9)}), 12);
+                new Coordinate(100, 9)}), 12, -1);
 
 
         //x1
-        mesh.addTopographicPoint(new Coordinate(0, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(225, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(225, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(0, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(120, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
-        mesh.addTopographicPoint(new Coordinate(205, -5, 10));
-        mesh.addTopographicPoint(new Coordinate(205, 75, 10));
-        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
+        builder.addTopographicPoint(new Coordinate(0, 80, 0));
+        builder.addTopographicPoint(new Coordinate(225, 80, 0));
+        builder.addTopographicPoint(new Coordinate(225, -20, 0));
+        builder.addTopographicPoint(new Coordinate(0, -20, 0));
+        builder.addTopographicPoint(new Coordinate(120, -20, 0));
+        builder.addTopographicPoint(new Coordinate(185, -5, 10));
+        builder.addTopographicPoint(new Coordinate(205, -5, 10));
+        builder.addTopographicPoint(new Coordinate(205, 75, 10));
+        builder.addTopographicPoint(new Coordinate(185, 75, 10));
         //x2
-        mesh.addTopographicPoint(new Coordinate(225, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(225, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(0, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(0, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(120, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(205, -5, 10));
-        mesh.addTopographicPoint(new Coordinate(205, 75, 10));
-        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
-        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
+        builder.addTopographicPoint(new Coordinate(225, 80, 0));
+        builder.addTopographicPoint(new Coordinate(225, -20, 0));
+        builder.addTopographicPoint(new Coordinate(0, -20, 0));
+        builder.addTopographicPoint(new Coordinate(0, 80, 0));
+        builder.addTopographicPoint(new Coordinate(120, 80, 0));
+        builder.addTopographicPoint(new Coordinate(205, -5, 10));
+        builder.addTopographicPoint(new Coordinate(205, 75, 10));
+        builder.addTopographicPoint(new Coordinate(185, 75, 10));
+        builder.addTopographicPoint(new Coordinate(185, -5, 10));
 
-        mesh.finishPolygonFeeding(cellEnvelope);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -100, 100)), 0.5);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2);
 
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-                mesh.getTriNeighbors(), mesh.getVertices());
+        builder.finishFeeding();
 
-        PropagationProcessData rayData = new PropagationProcessData(manager);
+        CnossosPropagationData rayData = new CnossosPropagationData(builder);
         rayData.addReceiver(new Coordinate(200, 30, 14));
         rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
         rayData.setComputeHorizontalDiffraction(true);
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -100, 100)), 0.5));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2));
 
         rayData.setComputeVerticalDiffraction(true);
 
@@ -1431,7 +1353,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setTemperature(10);
         attData.setPrime2520(false);
         ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
-        ComputeRays computeRays = new ComputeRays(rayData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
@@ -1450,10 +1372,10 @@ public class EvaluateAttenuationCnossosTest {
         Envelope cellEnvelope = new Envelope(new Coordinate(-250., -250., 0.), new Coordinate(250, 250, 0.));
 
         //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        ProfileBuilder builder = new ProfileBuilder();
 
         // Add building
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(167.2, 39.5),
                 new Coordinate(151.6, 48.5),
                 new Coordinate(141.1, 30.3),
@@ -1462,42 +1384,39 @@ public class EvaluateAttenuationCnossosTest {
                 new Coordinate(151.0, 31.5),
                 new Coordinate(155.5, 39.3),
                 new Coordinate(164.2, 34.3),
-                new Coordinate(167.2, 39.5)}), 0);
+                new Coordinate(167.2, 39.5)}), 0, -1);
 
         //x1
-        mesh.addTopographicPoint(new Coordinate(0, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(225, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(225, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(0, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(120, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
-        mesh.addTopographicPoint(new Coordinate(205, -5, 10));
-        mesh.addTopographicPoint(new Coordinate(205, 75, 10));
-        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
+        builder.addTopographicPoint(new Coordinate(0, 80, 0));
+        builder.addTopographicPoint(new Coordinate(225, 80, 0));
+        builder.addTopographicPoint(new Coordinate(225, -20, 0));
+        builder.addTopographicPoint(new Coordinate(0, -20, 0));
+        builder.addTopographicPoint(new Coordinate(120, -20, 0));
+        builder.addTopographicPoint(new Coordinate(185, -5, 10));
+        builder.addTopographicPoint(new Coordinate(205, -5, 10));
+        builder.addTopographicPoint(new Coordinate(205, 75, 10));
+        builder.addTopographicPoint(new Coordinate(185, 75, 10));
         //x2
-        mesh.addTopographicPoint(new Coordinate(225, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(225, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(0, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(0, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(120, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(205, -5, 10));
-        mesh.addTopographicPoint(new Coordinate(205, 75, 10));
-        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
-        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
+        builder.addTopographicPoint(new Coordinate(225, 80, 0));
+        builder.addTopographicPoint(new Coordinate(225, -20, 0));
+        builder.addTopographicPoint(new Coordinate(0, -20, 0));
+        builder.addTopographicPoint(new Coordinate(0, 80, 0));
+        builder.addTopographicPoint(new Coordinate(120, 80, 0));
+        builder.addTopographicPoint(new Coordinate(205, -5, 10));
+        builder.addTopographicPoint(new Coordinate(205, 75, 10));
+        builder.addTopographicPoint(new Coordinate(185, 75, 10));
+        builder.addTopographicPoint(new Coordinate(185, -5, 10));
 
-        mesh.finishPolygonFeeding(cellEnvelope);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -100, 100)), 0.5);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2);
 
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-                mesh.getTriNeighbors(), mesh.getVertices());
+        builder.finishFeeding();
 
-        PropagationProcessData rayData = new PropagationProcessData(manager);
+        CnossosPropagationData rayData = new CnossosPropagationData(builder);
         rayData.addReceiver(new Coordinate(200, 25, 14));
         rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
         rayData.setComputeHorizontalDiffraction(false);
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -100, 100)), 0.5));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2));
 
         rayData.setComputeVerticalDiffraction(false);
         rayData.setGs(0.9);
@@ -1507,7 +1426,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setTemperature(10);
         attData.setPrime2520(false);
         ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
-        ComputeRays computeRays = new ComputeRays(rayData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
@@ -1527,10 +1446,10 @@ public class EvaluateAttenuationCnossosTest {
         Envelope cellEnvelope = new Envelope(new Coordinate(-250., -250., 0.), new Coordinate(250, 250, 0.));
 
         //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        ProfileBuilder builder = new ProfileBuilder();
 
         // Add building
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(167.2, 39.5),
                 new Coordinate(151.6, 48.5),
                 new Coordinate(141.1, 30.3),
@@ -1539,42 +1458,39 @@ public class EvaluateAttenuationCnossosTest {
                 new Coordinate(151.0, 31.5),
                 new Coordinate(155.5, 39.3),
                 new Coordinate(164.2, 34.3),
-                new Coordinate(167.2, 39.5)}), 11.5);
+                new Coordinate(167.2, 39.5)}), 11.5, -1);
 
         //x1
-        mesh.addTopographicPoint(new Coordinate(0, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(225, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(225, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(0, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(120, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
-        mesh.addTopographicPoint(new Coordinate(205, -5, 10));
-        mesh.addTopographicPoint(new Coordinate(205, 75, 10));
-        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
+        builder.addTopographicPoint(new Coordinate(0, 80, 0));
+        builder.addTopographicPoint(new Coordinate(225, 80, 0));
+        builder.addTopographicPoint(new Coordinate(225, -20, 0));
+        builder.addTopographicPoint(new Coordinate(0, -20, 0));
+        builder.addTopographicPoint(new Coordinate(120, -20, 0));
+        builder.addTopographicPoint(new Coordinate(185, -5, 10));
+        builder.addTopographicPoint(new Coordinate(205, -5, 10));
+        builder.addTopographicPoint(new Coordinate(205, 75, 10));
+        builder.addTopographicPoint(new Coordinate(185, 75, 10));
         //x2
-        mesh.addTopographicPoint(new Coordinate(225, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(225, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(0, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(0, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(120, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(205, -5, 10));
-        mesh.addTopographicPoint(new Coordinate(205, 75, 10));
-        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
-        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
+        builder.addTopographicPoint(new Coordinate(225, 80, 0));
+        builder.addTopographicPoint(new Coordinate(225, -20, 0));
+        builder.addTopographicPoint(new Coordinate(0, -20, 0));
+        builder.addTopographicPoint(new Coordinate(0, 80, 0));
+        builder.addTopographicPoint(new Coordinate(120, 80, 0));
+        builder.addTopographicPoint(new Coordinate(205, -5, 10));
+        builder.addTopographicPoint(new Coordinate(205, 75, 10));
+        builder.addTopographicPoint(new Coordinate(185, 75, 10));
+        builder.addTopographicPoint(new Coordinate(185, -5, 10));
 
-        mesh.finishPolygonFeeding(cellEnvelope);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -100, 100)), 0.5);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2);
 
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-                mesh.getTriNeighbors(), mesh.getVertices());
+        builder.finishFeeding();
 
-        PropagationProcessData rayData = new PropagationProcessData(manager);
+        CnossosPropagationData rayData = new CnossosPropagationData(builder);
         rayData.addReceiver(new Coordinate(200, 25, 14));
         rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
 
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -100, 100)), 0.5));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2));
         rayData.setComputeHorizontalDiffraction(true);
         rayData.setComputeVerticalDiffraction(true);
         rayData.setReflexionOrder(0);
@@ -1585,7 +1501,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setTemperature(10);
         attData.setPrime2520(false);
         ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
-        ComputeRays computeRays = new ComputeRays(rayData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
@@ -1606,10 +1522,10 @@ public class EvaluateAttenuationCnossosTest {
         Envelope cellEnvelope = new Envelope(new Coordinate(-250., -250., 0.), new Coordinate(250, 250, 0.));
 
         //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        ProfileBuilder builder = new ProfileBuilder();
 
         // Add building
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(197, 36.0, 0),
                 new Coordinate(179, 36, 0),
                 new Coordinate(179, 15, 0),
@@ -1618,43 +1534,39 @@ public class EvaluateAttenuationCnossosTest {
                 new Coordinate(187, 21, 0),
                 new Coordinate(187, 30, 0),
                 new Coordinate(197, 30, 0),
-                new Coordinate(197, 36, 0)}), 20);
+                new Coordinate(197, 36, 0)}), 20, -1);
 
 
         //x1
-        mesh.addTopographicPoint(new Coordinate(0, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(225, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(225, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(0, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(120, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
-        mesh.addTopographicPoint(new Coordinate(205, -5, 10));
-        mesh.addTopographicPoint(new Coordinate(205, 75, 10));
-        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
+        builder.addTopographicPoint(new Coordinate(0, 80, 0));
+        builder.addTopographicPoint(new Coordinate(225, 80, 0));
+        builder.addTopographicPoint(new Coordinate(225, -20, 0));
+        builder.addTopographicPoint(new Coordinate(0, -20, 0));
+        builder.addTopographicPoint(new Coordinate(120, -20, 0));
+        builder.addTopographicPoint(new Coordinate(185, -5, 10));
+        builder.addTopographicPoint(new Coordinate(205, -5, 10));
+        builder.addTopographicPoint(new Coordinate(205, 75, 10));
+        builder.addTopographicPoint(new Coordinate(185, 75, 10));
         //x2
-        mesh.addTopographicPoint(new Coordinate(225, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(225, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(0, -20, 0));
-        mesh.addTopographicPoint(new Coordinate(0, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(120, 80, 0));
-        mesh.addTopographicPoint(new Coordinate(205, -5, 10));
-        mesh.addTopographicPoint(new Coordinate(205, 75, 10));
-        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
-        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
+        builder.addTopographicPoint(new Coordinate(225, 80, 0));
+        builder.addTopographicPoint(new Coordinate(225, -20, 0));
+        builder.addTopographicPoint(new Coordinate(0, -20, 0));
+        builder.addTopographicPoint(new Coordinate(0, 80, 0));
+        builder.addTopographicPoint(new Coordinate(120, 80, 0));
+        builder.addTopographicPoint(new Coordinate(205, -5, 10));
+        builder.addTopographicPoint(new Coordinate(205, 75, 10));
+        builder.addTopographicPoint(new Coordinate(185, 75, 10));
+        builder.addTopographicPoint(new Coordinate(185, -5, 10));
 
-        mesh.finishPolygonFeeding(cellEnvelope);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -100, 100)), 0.5);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2);
 
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-                mesh.getTriNeighbors(), mesh.getVertices());
+        builder.finishFeeding();
 
-        PropagationProcessData rayData = new PropagationProcessData(manager);
+        CnossosPropagationData rayData = new CnossosPropagationData(builder);
         rayData.addReceiver(new Coordinate(187.05, 25, 14));
         rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
-
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -100, 100)), 0.5));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2));
 
         rayData.setComputeVerticalDiffraction(true);
         rayData.setComputeHorizontalDiffraction(true);
@@ -1666,7 +1578,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setTemperature(10);
         attData.setPrime2520(false);
         ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
-        ComputeRays computeRays = new ComputeRays(rayData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
@@ -1689,19 +1601,19 @@ public class EvaluateAttenuationCnossosTest {
         Envelope cellEnvelope = new Envelope(new Coordinate(-250., -250., 0.), new Coordinate(250, 250, 0.));
 
         //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        ProfileBuilder builder = new ProfileBuilder();
 
         // Add building 20% abs
         List<Double> buildingsAbs = Collections.nCopies(attData.freq_lvl.size(), 0.2);
 
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(75, 34, 0),
                 new Coordinate(110, 34, 0),
                 new Coordinate(110, 26, 0),
                 new Coordinate(75, 26, 0),
                 new Coordinate(75, 34, 0)}), 9, buildingsAbs);
 
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(83, 18, 0),
                 new Coordinate(118, 18, 0),
                 new Coordinate(118, 10, 0),
@@ -1710,60 +1622,57 @@ public class EvaluateAttenuationCnossosTest {
 
         // Ground Surface
 
-        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
+        builder.addTopographicLine(factory.createLineString(new Coordinate[]{
                 new Coordinate(30, -14, 0), // 1
                 new Coordinate(122, -14, 0),// 1 - 2
                 new Coordinate(122, 45, 0), // 2 - 3
                 new Coordinate(30, 45, 0),  // 3 - 4
                 new Coordinate(30, -14, 0) // 4
         }));
-        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
+        builder.addTopographicLine(factory.createLineString(new Coordinate[]{
                 new Coordinate(59.6, -9.87, 0), // 5
                 new Coordinate(76.84, -5.28, 0), // 5-6
                 new Coordinate(63.71, 41.16, 0), // 6-7
                 new Coordinate(46.27, 36.28, 0), // 7-8
                 new Coordinate(59.6, -9.87, 0) // 8
         }));
-        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
+        builder.addTopographicLine(factory.createLineString(new Coordinate[]{
                 new Coordinate(46.27, 36.28, 0), // 9
                 new Coordinate(54.68, 37.59, 5), // 9-10
                 new Coordinate(55.93, 37.93, 5), // 10-11
                 new Coordinate(63.71, 41.16, 0) // 11
         }));
-        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
+        builder.addTopographicLine(factory.createLineString(new Coordinate[]{
                 new Coordinate(59.6, -9.87, 0), // 12
                 new Coordinate(67.35, -6.83, 5), // 12-13
                 new Coordinate(68.68, -6.49, 5), // 13-14
                 new Coordinate(76.84, -5.28, 0) // 14
         }));
-        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
+        builder.addTopographicLine(factory.createLineString(new Coordinate[]{
                 new Coordinate(54.68, 37.59, 5), //15
                 new Coordinate(67.35, -6.83, 5)
         }));
-        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
+        builder.addTopographicLine(factory.createLineString(new Coordinate[]{
                 new Coordinate(55.93, 37.93, 5), //16
                 new Coordinate(68.68, -6.49, 5)
         }));
-
-        mesh.finishPolygonFeeding(cellEnvelope);
-
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-                mesh.getTriNeighbors(), mesh.getVertices());
-
-        PropagationProcessData rayData = new PropagationProcessData(manager);
-        rayData.addReceiver(new Coordinate(107, 25.95, 4));
-        rayData.addSource(factory.createPoint(new Coordinate(38, 14, 1)));
-        rayData.setComputeHorizontalDiffraction(false);
-        // Create porous surface as defined by the test:
-        // The surface of the earth berm is porous (G = 1).
-        rayData.addSoilType(new GeoWithSoilType(factory.createPolygon(new Coordinate[]{
+        builder.addGroundEffect(factory.createPolygon(new Coordinate[]{
                 new Coordinate(59.6, -9.87, 0), // 5
                 new Coordinate(76.84, -5.28, 0), // 5-6
                 new Coordinate(63.71, 41.16, 0), // 6-7
                 new Coordinate(46.27, 36.28, 0), // 7-8
                 new Coordinate(59.6, -9.87, 0) // 8
-        }), 1.));
+        }), 1.);
+
+
+        builder.finishFeeding();
+
+        CnossosPropagationData rayData = new CnossosPropagationData(builder);
+        rayData.addReceiver(new Coordinate(107, 25.95, 4));
+        rayData.addSource(factory.createPoint(new Coordinate(38, 14, 1)));
+        rayData.setComputeHorizontalDiffraction(false);
+        // Create porous surface as defined by the test:
+        // The surface of the earth berm is porous (G = 1).
 
         rayData.setComputeVerticalDiffraction(true);
         rayData.setReflexionOrder(0);
@@ -1774,7 +1683,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setTemperature(10);
         attData.setPrime2520(false);
         ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
-        ComputeRays computeRays = new ComputeRays(rayData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
@@ -1800,19 +1709,19 @@ public class EvaluateAttenuationCnossosTest {
         Envelope cellEnvelope = new Envelope(new Coordinate(-250., -250., 0.), new Coordinate(250, 250, 0.));
 
         //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        ProfileBuilder builder = new ProfileBuilder();
 
         // Add building 20% abs
         List<Double> buildingsAbs = Collections.nCopies(attData.freq_lvl.size(), 0.2);
 
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(75, 34, 0),
                 new Coordinate(110, 34, 0),
                 new Coordinate(110, 26, 0),
                 new Coordinate(75, 26, 0),
                 new Coordinate(75, 34, 0)}), 9, buildingsAbs);
 
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(83, 18, 0),
                 new Coordinate(118, 18, 0),
                 new Coordinate(118, 10, 0),
@@ -1821,60 +1730,57 @@ public class EvaluateAttenuationCnossosTest {
 
         // Ground Surface
 
-        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
+        builder.addTopographicLine(factory.createLineString(new Coordinate[]{
                 new Coordinate(30, -14, 0), // 1
                 new Coordinate(122, -14, 0),// 1 - 2
                 new Coordinate(122, 45, 0), // 2 - 3
                 new Coordinate(30, 45, 0),  // 3 - 4
                 new Coordinate(30, -14, 0) // 4
         }));
-        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
+        builder.addTopographicLine(factory.createLineString(new Coordinate[]{
                 new Coordinate(59.6, -9.87, 0), // 5
                 new Coordinate(76.84, -5.28, 0), // 5-6
                 new Coordinate(63.71, 41.16, 0), // 6-7
                 new Coordinate(46.27, 36.28, 0), // 7-8
                 new Coordinate(59.6, -9.87, 0) // 8
         }));
-        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
+        builder.addTopographicLine(factory.createLineString(new Coordinate[]{
                 new Coordinate(46.27, 36.28, 0), // 9
                 new Coordinate(54.68, 37.59, 5), // 9-10
                 new Coordinate(55.93, 37.93, 5), // 10-11
                 new Coordinate(63.71, 41.16, 0) // 11
         }));
-        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
+        builder.addTopographicLine(factory.createLineString(new Coordinate[]{
                 new Coordinate(59.6, -9.87, 0), // 12
                 new Coordinate(67.35, -6.83, 5), // 12-13
                 new Coordinate(68.68, -6.49, 5), // 13-14
                 new Coordinate(76.84, -5.28, 0) // 14
         }));
-        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
+        builder.addTopographicLine(factory.createLineString(new Coordinate[]{
                 new Coordinate(54.68, 37.59, 5), //15
                 new Coordinate(67.35, -6.83, 5)
         }));
-        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
+        builder.addTopographicLine(factory.createLineString(new Coordinate[]{
                 new Coordinate(55.93, 37.93, 5), //16
                 new Coordinate(68.68, -6.49, 5)
         }));
 
-        mesh.finishPolygonFeeding(cellEnvelope);
-
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-                mesh.getTriNeighbors(), mesh.getVertices());
-
-        PropagationProcessData rayData = new PropagationProcessData(manager);
-        rayData.addReceiver(new Coordinate(106, 18.5, 4));
-        rayData.addSource(factory.createPoint(new Coordinate(38, 14, 1)));
-        rayData.setComputeHorizontalDiffraction(true);
-        // Create porus surface as defined by the test:
-        // The surface of the earth berm is porous (G = 1).
-        rayData.addSoilType(new GeoWithSoilType(factory.createPolygon(new Coordinate[]{
+        builder.addGroundEffect(factory.createPolygon(new Coordinate[]{
                 new Coordinate(59.6, -9.87, 0), // 5
                 new Coordinate(76.84, -5.28, 0), // 5-6
                 new Coordinate(63.71, 41.16, 0), // 6-7
                 new Coordinate(46.27, 36.28, 0), // 7-8
                 new Coordinate(59.6, -9.87, 0) // 8
-        }), 1.));
+        }), 1.);
+
+        builder.finishFeeding();
+
+        CnossosPropagationData rayData = new CnossosPropagationData(builder);
+        rayData.addReceiver(new Coordinate(106, 18.5, 4));
+        rayData.addSource(factory.createPoint(new Coordinate(38, 14, 1)));
+        rayData.setComputeHorizontalDiffraction(true);
+        // Create porus surface as defined by the test:
+        // The surface of the earth berm is porous (G = 1).
 
         rayData.setComputeVerticalDiffraction(true);
         rayData.setComputeHorizontalDiffraction(true);
@@ -1886,7 +1792,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setTemperature(10);
         attData.setPrime2520(false);
         ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
-        ComputeRays computeRays = new ComputeRays(rayData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
@@ -1912,38 +1818,34 @@ public class EvaluateAttenuationCnossosTest {
         Envelope cellEnvelope = new Envelope(new Coordinate(-250., -250., 0.), new Coordinate(250, 250, 0.));
 
         //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        ProfileBuilder builder = new ProfileBuilder();
 
 
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(75, 34, 0),
                 new Coordinate(110, 34, 0),
                 new Coordinate(110, 26, 0),
                 new Coordinate(75, 26, 0),
-                new Coordinate(75, 34, 0)}), 9);
+                new Coordinate(75, 34, 0)}), 9, -1);
 
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(83, 18, 0),
                 new Coordinate(118, 18, 0),
                 new Coordinate(118, 10, 0),
                 new Coordinate(83, 10, 0),
-                new Coordinate(83, 18, 0)}), 8);
+                new Coordinate(83, 18, 0)}), 8, -1);
 
         // screen
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(59.19, 24.47, 0),
                 new Coordinate(64.17, 6.95, 0),
                 new Coordinate(64.171, 6.951, 0),
                 new Coordinate(59.191, 24.471, 0),
-                new Coordinate(59.19, 24.47, 0)}), 5);
+                new Coordinate(59.19, 24.47, 0)}), 5, -1);
 
-        mesh.finishPolygonFeeding(cellEnvelope);
+        builder.finishFeeding();
 
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-                mesh.getTriNeighbors(), mesh.getVertices());
-
-        PropagationProcessData rayData = new PropagationProcessData(manager);
+        CnossosPropagationData rayData = new CnossosPropagationData(builder);
         rayData.addReceiver(new Coordinate(106, 18.5, 4));
         rayData.addSource(factory.createPoint(new Coordinate(38, 14, 1)));
         rayData.setComputeHorizontalDiffraction(true);
@@ -1960,7 +1862,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setPrime2520(false);
         //attData.setWindRose(HOM_WIND_ROSE);
         ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
-        ComputeRays computeRays = new ComputeRays(rayData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
@@ -1984,30 +1886,27 @@ public class EvaluateAttenuationCnossosTest {
         Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 
         //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        ProfileBuilder builder = new ProfileBuilder();
 
         // Add building
         // screen
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(74.0, 52.0, 0),
                 new Coordinate(130.0, 60.0, 0),
                 new Coordinate(130.01, 60.01, 0),
                 new Coordinate(74.01, 52.01, 0),
-                new Coordinate(74.0, 52.0, 0)}), 7); // not exacly the same
+                new Coordinate(74.0, 52.0, 0)}), 7, -1); // not exacly the same
 
 
-        mesh.finishPolygonFeeding(cellEnvelope);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -10, 100)), 0.0);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -10, 100)), 0.5);
 
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-                mesh.getTriNeighbors(), mesh.getVertices());
+        builder.finishFeeding();
 
-        PropagationProcessData rayData = new PropagationProcessData(manager);
+        CnossosPropagationData rayData = new CnossosPropagationData(builder);
         rayData.addReceiver(new Coordinate(120, 50, 8));
         rayData.addSource(factory.createPoint(new Coordinate(10, 10, 0.05)));
         rayData.setComputeHorizontalDiffraction(true);
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -10, 100)), 0.0));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -10, 100)), 0.5));
         rayData.setComputeVerticalDiffraction(true);
         rayData.setComputeHorizontalDiffraction(true);
 
@@ -2023,7 +1922,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setPrime2520(false);
         //attData.setWindRose(HOM_WIND_ROSE);
         ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
-        ComputeRays computeRays = new ComputeRays(rayData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
@@ -2046,19 +1945,19 @@ public class EvaluateAttenuationCnossosTest {
         Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 
         //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        ProfileBuilder builder = new ProfileBuilder();
 
         // Add building
         // screen
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(114.0, 52.0, 0),
                 new Coordinate(170.0, 60.0, 0),
                 new Coordinate(170.01, 60.01, 0),
                 new Coordinate(114.01, 52.01, 0),
-                new Coordinate(114.0, 52.0, 0)}), 4); // not exacly the same
+                new Coordinate(114.0, 52.0, 0)}), 4, -1); // not exacly the same
 
 
-        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
+        builder.addTopographicLine(factory.createLineString(new Coordinate[]{
                 new Coordinate(-200, -200, -0.5), // 5
                 new Coordinate(110, -200, -0.5), // 5-6
                 new Coordinate(110, 200, -0.5), // 6-7
@@ -2066,7 +1965,7 @@ public class EvaluateAttenuationCnossosTest {
                 new Coordinate(-200, -200, -0.5) // 8
         }));
 
-        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{
+        builder.addTopographicLine(factory.createLineString(new Coordinate[]{
                 new Coordinate(111, -200, 0), // 5
                 new Coordinate(200, -200, 0), // 5-6
                 new Coordinate(200, 200, 0), // 6-7
@@ -2075,18 +1974,14 @@ public class EvaluateAttenuationCnossosTest {
         }));
 
 
-        mesh.finishPolygonFeeding(cellEnvelope);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(80, 110, 20, 80)), 0.0);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(110, 215, 20, 80)), 1.0);
 
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-                mesh.getTriNeighbors(), mesh.getVertices());
+        builder.finishFeeding();
 
-        PropagationProcessData rayData = new PropagationProcessData(manager);
+        CnossosPropagationData rayData = new CnossosPropagationData(builder);
         rayData.addReceiver(new Coordinate(200, 50, 4));
         rayData.addSource(factory.createPoint(new Coordinate(105, 35, -0.45)));
-
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(80, 110, 20, 80)), 0.0));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(110, 215, 20, 80)), 1.0));
         rayData.setComputeHorizontalDiffraction(true);
 
         rayData.setComputeVerticalDiffraction(true);
@@ -2101,7 +1996,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setPrime2520(false);
         //attData.setWindRose(HOM_WIND_ROSE);
         ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
-        ComputeRays computeRays = new ComputeRays(rayData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
@@ -2123,45 +2018,45 @@ public class EvaluateAttenuationCnossosTest {
         Envelope cellEnvelope = new Envelope(new Coordinate(-1500., -1500., 0.), new Coordinate(1500, 1500, 0.));
 
         //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        ProfileBuilder builder = new ProfileBuilder();
 
         // Add building
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(113, 10, 0),
                 new Coordinate(127, 16, 0),
                 new Coordinate(102, 70, 0),
                 new Coordinate(88, 64, 0),
-                new Coordinate(113, 10, 0)}), 6);
+                new Coordinate(113, 10, 0)}), 6, -1);
 
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(176, 19, 0),
                 new Coordinate(164, 88, 0),
                 new Coordinate(184, 91, 0),
                 new Coordinate(196, 22, 0),
-                new Coordinate(176, 19, 0)}), 10);
+                new Coordinate(176, 19, 0)}), 10, -1);
 
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(250, 70, 0),
                 new Coordinate(250, 180, 0),
                 new Coordinate(270, 180, 0),
                 new Coordinate(270, 70, 0),
-                new Coordinate(250, 70, 0)}), 14);
+                new Coordinate(250, 70, 0)}), 14, -1);
 
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(332, 32, 0),
                 new Coordinate(348, 126, 0),
                 new Coordinate(361, 108, 0),
                 new Coordinate(349, 44, 0),
-                new Coordinate(332, 32, 0)}), 10);
+                new Coordinate(332, 32, 0)}), 10, -1);
 
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(400, 5, 0),
                 new Coordinate(400, 85, 0),
                 new Coordinate(415, 85, 0),
                 new Coordinate(415, 5, 0),
-                new Coordinate(400, 5, 0)}), 9);
+                new Coordinate(400, 5, 0)}), 9, -1);
 
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(444, 47, 0),
                 new Coordinate(436, 136, 0),
                 new Coordinate(516, 143, 0),
@@ -2170,39 +2065,36 @@ public class EvaluateAttenuationCnossosTest {
                 new Coordinate(502, 127, 0),
                 new Coordinate(452, 123, 0),
                 new Coordinate(459, 48, 0),
-                new Coordinate(444, 47, 0)}), 12);
+                new Coordinate(444, 47, 0)}), 12, -1);
 
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(773, 12, 0),
                 new Coordinate(728, 90, 0),
                 new Coordinate(741, 98, 0),
                 new Coordinate(786, 20, 0),
-                new Coordinate(773, 12, 0)}), 14);
+                new Coordinate(773, 12, 0)}), 14, -1);
 
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(972, 82, 0),
                 new Coordinate(979, 121, 0),
                 new Coordinate(993, 118, 0),
                 new Coordinate(986, 79, 0),
-                new Coordinate(972, 82, 0)}), 8);
+                new Coordinate(972, 82, 0)}), 8, -1);
 
         //x2
-        mesh.addTopographicPoint(new Coordinate(-1300, -1300, 0));
-        mesh.addTopographicPoint(new Coordinate(1300, 1300, 0));
-        mesh.addTopographicPoint(new Coordinate(-1300, 1300, 0));
-        mesh.addTopographicPoint(new Coordinate(1300, -1300, 0));
+        builder.addTopographicPoint(new Coordinate(-1300, -1300, 0));
+        builder.addTopographicPoint(new Coordinate(1300, 1300, 0));
+        builder.addTopographicPoint(new Coordinate(-1300, 1300, 0));
+        builder.addTopographicPoint(new Coordinate(1300, -1300, 0));
 
-        mesh.finishPolygonFeeding(cellEnvelope);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(-11, 1011, -300, 300)), 0.5);
 
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-                mesh.getTriNeighbors(), mesh.getVertices());
+        builder.finishFeeding();
 
-        PropagationProcessData rayData = new PropagationProcessData(manager);
+        CnossosPropagationData rayData = new CnossosPropagationData(builder);
         rayData.addReceiver(new Coordinate(1000, 100, 1));
         rayData.addSource(factory.createPoint(new Coordinate(0, 50, 4)));
         rayData.setComputeHorizontalDiffraction(true);
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(-11, 1011, -300, 300)), 0.5));
         rayData.maxSrcDist = 1500;
         rayData.setComputeVerticalDiffraction(true);
 
@@ -2214,7 +2106,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setPrime2520(false);
         //attData.setWindRose(HOM_WIND_ROSE);
         ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
-        ComputeRays computeRays = new ComputeRays(rayData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
@@ -2226,7 +2118,7 @@ public class EvaluateAttenuationCnossosTest {
 
 
     /**
-     * Test optimisation feature {@link PropagationProcessData#maximumError}
+     * Test optimisation feature {@link CnossosPropagationData#maximumError}
      */
     @Test
     public void testIgnoreNonSignificantSources() throws LayerDelaunayError {
@@ -2236,27 +2128,24 @@ public class EvaluateAttenuationCnossosTest {
         Envelope cellEnvelope = new Envelope(new Coordinate(-1200, -1200, 0.), new Coordinate(1200, 1200, 0.));
 
         //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        ProfileBuilder builder = new ProfileBuilder();
 
-        mesh.finishPolygonFeeding(cellEnvelope);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2);
 
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-                mesh.getTriNeighbors(), mesh.getVertices());
+        builder.finishFeeding();
 
         double[] roadLvl = new double[]{25.65, 38.15, 54.35, 60.35, 74.65, 66.75, 59.25, 53.95};
         for(int i = 0; i < roadLvl.length; i++) {
             roadLvl[i] = dbaToW(roadLvl[i]);
         }
 
-        DirectPropagationProcessData rayData = new DirectPropagationProcessData(manager);
+        DirectPropagationProcessData rayData = new DirectPropagationProcessData(builder);
         rayData.addReceiver(new Coordinate(0, 0, 4));
         rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)), roadLvl);
         rayData.addSource(factory.createPoint(new Coordinate(1100, 1100, 1)), roadLvl);
         rayData.setComputeHorizontalDiffraction(true);
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
         rayData.setComputeVerticalDiffraction(true);
 
         rayData.maxSrcDist = 2000;
@@ -2266,14 +2155,14 @@ public class EvaluateAttenuationCnossosTest {
         attData.setHumidity(70);
         attData.setTemperature(10);
         RayOut propDataOut = new RayOut(true, attData, rayData);
-        ComputeRays computeRays = new ComputeRays(rayData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
         // Second source has not been computed because at best it would only increase the received level of only 0.0004 dB
         assertEquals(1, propDataOut.receiversAttenuationLevels.size());
 
-        assertEquals(44.07, ComputeRays.wToDba(ComputeRays.sumArray(roadLvl.length, dbaToW(propDataOut.getVerticesSoundLevel().get(0).value))), 0.1);
+        assertEquals(44.07, wToDba(sumArray(roadLvl.length, dbaToW(propDataOut.getVerticesSoundLevel().get(0).value))), 0.1);
     }
 
     @Test
@@ -2304,20 +2193,20 @@ public class EvaluateAttenuationCnossosTest {
         Envelope cellEnvelope = new Envelope(new Coordinate(-1200, -1200, 0.), new Coordinate(1200, 1200, 0.));
 
         //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        ProfileBuilder builder = new ProfileBuilder();
 
-        mesh.finishPolygonFeeding(cellEnvelope);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2);
 
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-                mesh.getTriNeighbors(), mesh.getVertices());
+        builder.finishFeeding();
 
         double[] roadLvl = new double[]{25.65, 38.15, 54.35, 60.35, 74.65, 66.75, 59.25, 53.95};
         for(int i = 0; i < roadLvl.length; i++) {
             roadLvl[i] = dbaToW(roadLvl[i]);
         }
 
-        DirectPropagationProcessData rayData = new DirectPropagationProcessData(manager);
+        DirectPropagationProcessData rayData = new DirectPropagationProcessData(builder);
         rayData.addReceiver(new Coordinate(50, 50, 0.05));
         rayData.addReceiver(new Coordinate(48, 50, 4));
         rayData.addReceiver(new Coordinate(44, 50, 4));
@@ -2326,15 +2215,12 @@ public class EvaluateAttenuationCnossosTest {
         rayData.addReceiver(new Coordinate(0, 50, 4));
 
         List<Coordinate> srcPtsRef = new ArrayList<>();
-        ComputeRays.splitLineStringIntoPoints(geomSource, 1.0, srcPtsRef);
+        ComputeCnossosRays.splitLineStringIntoPoints(geomSource, 1.0, srcPtsRef);
         for(Coordinate srcPtRef : srcPtsRef) {
             rayData.addSource(factory.createPoint(srcPtRef), roadLvl);
         }
 
         rayData.setComputeHorizontalDiffraction(true);
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
         rayData.setComputeVerticalDiffraction(true);
         rayData.maxSrcDist = 2000;
 
@@ -2343,7 +2229,7 @@ public class EvaluateAttenuationCnossosTest {
         attData.setTemperature(10);
 
         RayOut propDataOut = new RayOut(true, attData, rayData);
-        ComputeRays computeRays = new ComputeRays(rayData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.makeRelativeZToAbsolute();
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -2362,7 +2248,7 @@ public class EvaluateAttenuationCnossosTest {
                 levelsPerReceiver.put(lvl.receiverId, lvl.value);
             } else {
                 // merge
-                levelsPerReceiver.put(lvl.receiverId, ComputeRays.sumDbArray(levelsPerReceiver.get(lvl.receiverId),
+                levelsPerReceiver.put(lvl.receiverId, sumDbArray(levelsPerReceiver.get(lvl.receiverId),
                         lvl.value));
             }
         }
@@ -2375,7 +2261,7 @@ public class EvaluateAttenuationCnossosTest {
                 levelsPerReceiverLines.put(lvl.receiverId, lvl.value);
             } else {
                 // merge
-                levelsPerReceiverLines.put(lvl.receiverId, ComputeRays.sumDbArray(levelsPerReceiverLines.get(lvl.receiverId),
+                levelsPerReceiverLines.put(lvl.receiverId, sumDbArray(levelsPerReceiverLines.get(lvl.receiverId),
                         lvl.value));
             }
         }
@@ -2411,28 +2297,25 @@ public class EvaluateAttenuationCnossosTest {
 
         WKTReader wktReader = new WKTReader();
         //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        ProfileBuilder builder = new ProfileBuilder();
 
-        mesh.addGeometry(wktReader.read("POLYGON ((-111 -35, -111 82, 70 82, 70 285, 282 285, 282 -35, -111 -35))"), 10);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2);
 
-        mesh.finishPolygonFeeding(cellEnvelope);
+        builder.addBuilding(wktReader.read("POLYGON ((-111 -35, -111 82, 70 82, 70 285, 282 285, 282 -35, -111 -35))"), 10, -1);
 
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-                mesh.getTriNeighbors(), mesh.getVertices());
+        builder.finishFeeding();
 
         double[] roadLvl = new double[]{25.65, 38.15, 54.35, 60.35, 74.65, 66.75, 59.25, 53.95};
         for(int i = 0; i < roadLvl.length; i++) {
             roadLvl[i] = dbaToW(roadLvl[i]);
         }
 
-        DirectPropagationProcessData rayData = new DirectPropagationProcessData(manager);
+        DirectPropagationProcessData rayData = new DirectPropagationProcessData(builder);
         rayData.addReceiver(new Coordinate(162, 80, 150));
         rayData.addSource(factory.createPoint(new Coordinate(-150, 200, 1)), roadLvl);
         rayData.setComputeHorizontalDiffraction(true);
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
         rayData.setComputeVerticalDiffraction(true);
 
         rayData.maxSrcDist = 2000;
@@ -2441,13 +2324,13 @@ public class EvaluateAttenuationCnossosTest {
         attData.setHumidity(70);
         attData.setTemperature(10);
         RayOut propDataOut = new RayOut(true, attData, rayData);
-        ComputeRays computeRays = new ComputeRays(rayData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
         assertEquals(1, propDataOut.receiversAttenuationLevels.size());
 
-        assertEquals(14.6, ComputeRays.wToDba(ComputeRays.sumArray(roadLvl.length, dbaToW(propDataOut.getVerticesSoundLevel().get(0).value))), 0.1);
+        assertEquals(14.6, wToDba(sumArray(roadLvl.length, dbaToW(propDataOut.getVerticesSoundLevel().get(0).value))), 0.1);
     }
 
 
@@ -2475,16 +2358,16 @@ public class EvaluateAttenuationCnossosTest {
         @Override
         public double[] computeAttenuation(PropagationProcessPathData pathData, long sourceId, double sourceLi, long receiverId, List<PropagationPath> propagationPath) {
             double[] attenuation = super.computeAttenuation(pathData, sourceId, sourceLi, receiverId, propagationPath);
-            double[] soundLevel = ComputeRays.wToDba(ComputeRays.multArray(processData.wjSources.get((int)sourceId), dbaToW(attenuation)));
+            double[] soundLevel = wToDba(multArray(processData.wjSources.get((int)sourceId), dbaToW(attenuation)));
             return soundLevel;
         }
     }
 
-    private static final class DirectPropagationProcessData extends PropagationProcessData {
+    private static final class DirectPropagationProcessData extends CnossosPropagationData {
         private List<double[]> wjSources = new ArrayList<>();
 
-        public DirectPropagationProcessData(FastObstructionTest freeFieldFinder) {
-            super(freeFieldFinder);
+        public DirectPropagationProcessData(ProfileBuilder builder) {
+            super(builder);
         }
 
         public void addSource(Geometry geom, double[] spectrum) {

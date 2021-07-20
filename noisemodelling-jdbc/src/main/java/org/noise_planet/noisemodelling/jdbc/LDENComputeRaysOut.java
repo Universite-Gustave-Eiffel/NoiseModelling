@@ -1,6 +1,5 @@
 package org.noise_planet.noisemodelling.jdbc;
 
-import org.noise_planet.noisemodelling.pathfinder.ComputeRays;
 import org.noise_planet.noisemodelling.pathfinder.IComputeRaysOut;
 import org.noise_planet.noisemodelling.pathfinder.PropagationPath;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
@@ -12,6 +11,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicLong;
+
+import static org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils.*;
 
 public class LDENComputeRaysOut extends ComputeRaysOutAttenuation {
     LdenData ldenData;
@@ -41,10 +42,10 @@ public class LDENComputeRaysOut extends ComputeRaysOutAttenuation {
         void processAndPushResult(long receiverPK, List<double[]> wjSources, ConcurrentLinkedDeque<VerticeSL> result) {
             double[] levels = new double[ldenComputeRaysOut.genericMeteoData.freq_lvl.size()];
             for (VerticeSL lvl : receiverAttenuationLevels) {
-                levels = ComputeRays.sumArray(levels,
-                        ComputeRays.dbaToW(ComputeRays.sumArray(ComputeRays.wToDba(wjSources.get((int) lvl.sourceId)), lvl.value)));
+                levels = sumArray(levels,
+                        dbaToW(sumArray(wToDba(wjSources.get((int) lvl.sourceId)), lvl.value)));
             }
-            pushInStack(result, new VerticeSL(receiverPK, -1, ComputeRays.wToDba(levels)));
+            pushInStack(result, new VerticeSL(receiverPK, -1, wToDba(levels)));
         }
 
         /**
@@ -116,7 +117,7 @@ public class LDENComputeRaysOut extends ComputeRaysOutAttenuation {
                         levelsPerSourceLines.put(lvl.sourceId, lvl.value);
                     } else {
                         // merge
-                        levelsPerSourceLines.put(lvl.sourceId, ComputeRays.sumDbArray(levelsPerSourceLines.get(lvl.sourceId),
+                        levelsPerSourceLines.put(lvl.sourceId, sumDbArray(levelsPerSourceLines.get(lvl.sourceId),
                                 lvl.value));
                     }
                 }
@@ -131,22 +132,22 @@ public class LDENComputeRaysOut extends ComputeRaysOutAttenuation {
                         }
                     }
                     if(ldenConfig.computeLDay) {
-                        double[] levels = ComputeRays.sumArray(ComputeRays.wToDba(ldenComputeRaysOut.ldenPropagationProcessData.
+                        double[] levels = sumArray(wToDba(ldenComputeRaysOut.ldenPropagationProcessData.
                                 wjSourcesD.get((int) sourceId)), entry.getValue());
                         pushInStack(ldenComputeRaysOut.ldenData.lDayLevels, new VerticeSL(receiverPK, sourcePK, levels));
                     }
                     if(ldenConfig.computeLEvening) {
-                        double[] levels = ComputeRays.sumArray(ComputeRays.wToDba(ldenComputeRaysOut.ldenPropagationProcessData.
+                        double[] levels = sumArray(wToDba(ldenComputeRaysOut.ldenPropagationProcessData.
                                 wjSourcesE.get((int) sourceId)), entry.getValue());
                         pushInStack(ldenComputeRaysOut.ldenData.lEveningLevels, new VerticeSL(receiverPK, sourcePK, levels));
                     }
                     if(ldenConfig.computeLNight) {
-                        double[] levels = ComputeRays.sumArray(ComputeRays.wToDba(ldenComputeRaysOut.ldenPropagationProcessData.
+                        double[] levels = sumArray(wToDba(ldenComputeRaysOut.ldenPropagationProcessData.
                                 wjSourcesN.get((int) sourceId)), entry.getValue());
                         pushInStack(ldenComputeRaysOut.ldenData.lNightLevels, new VerticeSL(receiverPK, sourcePK, levels));
                     }
                     if(ldenConfig.computeLDEN) {
-                        double[] levels = ComputeRays.sumArray(ComputeRays.wToDba(ldenComputeRaysOut.ldenPropagationProcessData.
+                        double[] levels = sumArray(wToDba(ldenComputeRaysOut.ldenPropagationProcessData.
                                 wjSourcesDEN.get((int) sourceId)), entry.getValue());
                         pushInStack(ldenComputeRaysOut.ldenData.lDenLevels, new VerticeSL(receiverPK, sourcePK, levels));
                     }

@@ -46,6 +46,7 @@ import org.locationtech.jts.io.WKTReader;
 import java.util.*;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.noise_planet.noisemodelling.pathfinder.ProfileBuilder.IntersectionType.BUILDING;
 
 public class TestWallReflection extends TestCase {
 
@@ -106,7 +107,7 @@ public class TestWallReflection extends TestCase {
 		
 	}
 
-	public static List<MirrorReceiverResult> getReceiverImages(Coordinate receiver, Coordinate source, List<FastObstructionTest.Wall> walls, int order) {
+	public static List<MirrorReceiverResult> getReceiverImages(Coordinate receiver, Coordinate source, List<ProfileBuilder.Wall> walls, int order) {
         MirrorReceiverIterator.It mirrorReceiverResults =
                 new MirrorReceiverIterator.It(receiver, walls, new LineSegment(source, receiver), 9999, order, 9999);
 
@@ -136,15 +137,15 @@ public class TestWallReflection extends TestCase {
 
     @Test
     public void testWallReceiverImageOrder3() {
-        List<FastObstructionTest.Wall> walls = new ArrayList<>();
-        walls.add(new FastObstructionTest.Wall(new Coordinate(355265.87,6688353.34), new Coordinate(355267.89,6688335.39) , 2));
-        walls.add(new FastObstructionTest.Wall(new Coordinate(355267.89,6688335.39), new Coordinate(355080.59,6688318.03) , 2));
-        walls.add(new FastObstructionTest.Wall(new Coordinate(355091.25,6688308.90), new Coordinate(355268.15,6688325.84) , 1));
-        walls.add(new FastObstructionTest.Wall(new Coordinate(355079.33,6688338.38), new Coordinate(355265.87,6688353.34) , 2));
-        walls.add(new FastObstructionTest.Wall(new Coordinate(355080.59,6688318.03), new Coordinate(355079.33,6688338.38) , 2));
-        walls.add(new FastObstructionTest.Wall(new Coordinate(355270.96,6688300.54), new Coordinate(355093.28,6688287.69) , 1));
-        walls.add(new FastObstructionTest.Wall(new Coordinate(355093.28,6688287.69), new Coordinate(355091.25,6688308.90) , 1));
-        walls.add(new FastObstructionTest.Wall(new Coordinate(355268.15,6688325.84), new Coordinate(355270.96,6688300.54) , 1));
+        List<ProfileBuilder.Wall> walls = new ArrayList<>();
+        walls.add(new ProfileBuilder.Wall(new Coordinate(355265.87,6688353.34), new Coordinate(355267.89,6688335.39) , 2, BUILDING));
+        walls.add(new ProfileBuilder.Wall(new Coordinate(355267.89,6688335.39), new Coordinate(355080.59,6688318.03) , 2, BUILDING));
+        walls.add(new ProfileBuilder.Wall(new Coordinate(355091.25,6688308.90), new Coordinate(355268.15,6688325.84) , 1, BUILDING));
+        walls.add(new ProfileBuilder.Wall(new Coordinate(355079.33,6688338.38), new Coordinate(355265.87,6688353.34) , 2, BUILDING));
+        walls.add(new ProfileBuilder.Wall(new Coordinate(355080.59,6688318.03), new Coordinate(355079.33,6688338.38) , 2, BUILDING));
+        walls.add(new ProfileBuilder.Wall(new Coordinate(355270.96,6688300.54), new Coordinate(355093.28,6688287.69) , 1, BUILDING));
+        walls.add(new ProfileBuilder.Wall(new Coordinate(355093.28,6688287.69), new Coordinate(355091.25,6688308.90) , 1, BUILDING));
+        walls.add(new ProfileBuilder.Wall(new Coordinate(355268.15,6688325.84), new Coordinate(355270.96,6688300.54) , 1, BUILDING));
         Coordinate receiver = new Coordinate(355261.53293337114, 6688329.444505501, 1.6);
         Coordinate source = new Coordinate(355104.51057583705, 6688315.152817895, 0.05);
 
@@ -197,15 +198,15 @@ public class TestWallReflection extends TestCase {
     @Test
     public void testWallReceiverImageOrder4() {
 
-        List<FastObstructionTest.Wall> walls = new ArrayList<>();
-        walls.add(new FastObstructionTest.Wall(new Coordinate(355265.87,6688353.34), new Coordinate(355267.89,6688335.39) , 2));
-        walls.add(new FastObstructionTest.Wall(new Coordinate(355267.89,6688335.39), new Coordinate(355080.59,6688318.03) , 2));
-        walls.add(new FastObstructionTest.Wall(new Coordinate(355091.25,6688308.90), new Coordinate(355268.15,6688325.84) , 1));
-        walls.add(new FastObstructionTest.Wall(new Coordinate(355079.33,6688338.38), new Coordinate(355265.87,6688353.34) , 2));
-        walls.add(new FastObstructionTest.Wall(new Coordinate(355080.59,6688318.03), new Coordinate(355079.33,6688338.38) , 2));
-        walls.add(new FastObstructionTest.Wall(new Coordinate(355270.96,6688300.54), new Coordinate(355093.28,6688287.69) , 1));
-        walls.add(new FastObstructionTest.Wall(new Coordinate(355093.28,6688287.69), new Coordinate(355091.25,6688308.90) , 1));
-        walls.add(new FastObstructionTest.Wall(new Coordinate(355268.15,6688325.84), new Coordinate(355270.96,6688300.54) , 1));
+        List<ProfileBuilder.Wall> walls = new ArrayList<>();
+        walls.add(new ProfileBuilder.Wall(new Coordinate(355265.87,6688353.34), new Coordinate(355267.89,6688335.39) , 2, BUILDING));
+        walls.add(new ProfileBuilder.Wall(new Coordinate(355267.89,6688335.39), new Coordinate(355080.59,6688318.03) , 2, BUILDING));
+        walls.add(new ProfileBuilder.Wall(new Coordinate(355091.25,6688308.90), new Coordinate(355268.15,6688325.84) , 1, BUILDING));
+        walls.add(new ProfileBuilder.Wall(new Coordinate(355079.33,6688338.38), new Coordinate(355265.87,6688353.34) , 2, BUILDING));
+        walls.add(new ProfileBuilder.Wall(new Coordinate(355080.59,6688318.03), new Coordinate(355079.33,6688338.38) , 2, BUILDING));
+        walls.add(new ProfileBuilder.Wall(new Coordinate(355270.96,6688300.54), new Coordinate(355093.28,6688287.69) , 1, BUILDING));
+        walls.add(new ProfileBuilder.Wall(new Coordinate(355093.28,6688287.69), new Coordinate(355091.25,6688308.90) , 1, BUILDING));
+        walls.add(new ProfileBuilder.Wall(new Coordinate(355268.15,6688325.84), new Coordinate(355270.96,6688300.54) , 1, BUILDING));
         Coordinate receiver = new Coordinate(355261.53293337114, 6688329.444505501, 1.6);
         Coordinate source = new Coordinate(355104.51057583705, 6688315.152817895, 0.05);
 
@@ -224,18 +225,18 @@ public class TestWallReflection extends TestCase {
         Coordinate f = new Coordinate(7, 7);
         Coordinate g = new Coordinate(3, 5);
         Coordinate h = new Coordinate(7, 5);
-        List<FastObstructionTest.Wall> walls = new ArrayList<>(8);
+        List<ProfileBuilder.Wall> walls = new ArrayList<>(8);
         // Order of walls points must be counter clock wise (from exterior of building)
         // Building 1
-        walls.add(new FastObstructionTest.Wall(a, b, 0));
-        walls.add(new FastObstructionTest.Wall(b, d, 0));
-        walls.add(new FastObstructionTest.Wall(d, c, 0));
-        walls.add(new FastObstructionTest.Wall(c, a, 0));
+        walls.add(new ProfileBuilder.Wall(a, b, 0, BUILDING));
+        walls.add(new ProfileBuilder.Wall(b, d, 0, BUILDING));
+        walls.add(new ProfileBuilder.Wall(d, c, 0, BUILDING));
+        walls.add(new ProfileBuilder.Wall(c, a, 0, BUILDING));
         // Building 2
-        walls.add(new FastObstructionTest.Wall(g, e, 1));
-        walls.add(new FastObstructionTest.Wall(h, g, 1));
-        walls.add(new FastObstructionTest.Wall(f, h, 1));
-        walls.add(new FastObstructionTest.Wall(e, f, 1));
+        walls.add(new ProfileBuilder.Wall(g, e, 1, BUILDING));
+        walls.add(new ProfileBuilder.Wall(h, g, 1, BUILDING));
+        walls.add(new ProfileBuilder.Wall(f, h, 1, BUILDING));
+        walls.add(new ProfileBuilder.Wall(e, f, 1, BUILDING));
         Coordinate receiver = new Coordinate(0, 4);
         Coordinate source = new Coordinate(9, 4);
 
@@ -313,34 +314,22 @@ public class TestWallReflection extends TestCase {
 
         GeometryFactory factory = new GeometryFactory();
         WKTReader wktReader = new WKTReader(factory);
-        //Scene dimension
-        Envelope cellEnvelope = wktReader.read("POLYGON ((316849.05 6703855.11, 316849.05 6703924.04, " +
-                "316925.36 6703924.04, 316925.36 6703855.11, 316849.05 6703855.11))").getEnvelopeInternal();
-        Coordinate p1 = new Coordinate(316914.1, 6703907.5, 4);
-        Coordinate p2 = new Coordinate(316913.4, 6703879, 4);
         //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        ProfileBuilder builder = new ProfileBuilder();
 
-        mesh.addGeometry(wktReader.read("POLYGON ((316900.21711186244 6703891.837263795, 316903.24859771173 6703904.468454833, 316926.44405761914 6703898.451414739, 316925.433562336 6703889.678478417, 316914.1343878069 6703892.480306247, 316913.53727695777 6703890.367452473, 316906.78533120255 6703892.066921813, 316906.4178783723 6703890.32152087, 316900.21711186244 6703891.837263795))"), 11.915885805791621);
-        mesh.addGeometry(wktReader.read("POLYGON ((316886.41 6703903.61, 316888.31 6703910.59, 316899.79 6703907.69, 316897.99 6703900.71, 316886.41 6703903.61))"), 13.143551238469575);
+        builder.addBuilding(wktReader.read("POLYGON ((316900.21711186244 6703891.837263795, 316903.24859771173 6703904.468454833, 316926.44405761914 6703898.451414739, 316925.433562336 6703889.678478417, 316914.1343878069 6703892.480306247, 316913.53727695777 6703890.367452473, 316906.78533120255 6703892.066921813, 316906.4178783723 6703890.32152087, 316900.21711186244 6703891.837263795))"), 11.915885805791621);
+        builder.addBuilding(wktReader.read("POLYGON ((316886.41 6703903.61, 316888.31 6703910.59, 316899.79 6703907.69, 316897.99 6703900.71, 316886.41 6703903.61))"), 13.143551238469575);
 
-        mesh.finishPolygonFeeding(cellEnvelope);
+        builder.finishFeeding();
 
 
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(), mesh.getTriNeighbors(), mesh.getVertices());
-
-        PropagationProcessData data = new PropagationProcessData(manager);
-	    ComputeRays computeRays = new ComputeRays(data);
-	    computeRays.initStructures();
+        CnossosPropagationData data = new CnossosPropagationData(builder);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(data);
         data.reflexionOrder = 1;
 	    Coordinate receiver = new Coordinate(316898.0027227718, 6703891.69841584, 4);
 	    Coordinate source = new Coordinate(316900.8845049501,6703903.754851485, 0.05);
-        List<FastObstructionTest.Wall> walls = data.freeFieldFinder.getLimitsInRange(
-                data.maxRefDist, source, false);
-        assertEquals(13, walls.size());
         List<PropagationPath> paths;
-        paths = computeRays.computeReflexion(receiver, source, false, walls);
+        paths = computeRays.computeReflexion(receiver, source, false);
         assertEquals(1, paths.size());
         List<PointPath> pts = paths.get(0).getPointList();
         assertEquals(3, pts.size());
@@ -352,17 +341,17 @@ public class TestWallReflection extends TestCase {
         assertEquals(0, receiver.distance(pts.get(2).coordinate), 1e-6);
 
         data.reflexionOrder = 2;
-        paths = computeRays.computeReflexion(receiver, source, false, walls);
+        paths = computeRays.computeReflexion(receiver, source, false);
         assertEquals(2, paths.size());
-        pts = paths.get(1).getPointList();
+        pts = paths.get(0).getPointList();
         // 2 ref points
         assertEquals(4, pts.size());
         assertEquals(PointPath.POINT_TYPE.SRCE, pts.get(0).type);
         assertEquals(0, source.distance(pts.get(0).coordinate), 1e-6);
         assertEquals(PointPath.POINT_TYPE.REFL, pts.get(1).type);
-        assertEquals(0, new Coordinate(316898.18, 6703901.42, 0.99).distance(pts.get(1).coordinate), 0.01);
+        assertEquals(0, new Coordinate(316898.18, 6703901.42, 0.99).distance(pts.get(1).coordinate), 1);
         assertEquals(PointPath.POINT_TYPE.REFL, pts.get(2).type);
-        assertEquals(0, new Coordinate(316900.80, 6703894.30, 3).distance(pts.get(2).coordinate), 0.01);
+        assertEquals(0, new Coordinate(316900.80, 6703894.30, 3).distance(pts.get(2).coordinate), 1);
         assertEquals(PointPath.POINT_TYPE.RECV, pts.get(3).type);
         assertEquals(0, receiver.distance(pts.get(3).coordinate), 1e-6);
     }

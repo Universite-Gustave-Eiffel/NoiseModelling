@@ -15,6 +15,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils.*;
+
 public class Utils {
     public static double[] addArray(double[] first, double[] second) {
         int length = Math.min(first.length, second.length);
@@ -33,8 +35,8 @@ public class Utils {
 
     public static class JDBCPropagationData implements PointNoiseMap.PropagationProcessDataFactory {
         @Override
-        public PropagationProcessData create(FastObstructionTest freeFieldFinder) {
-            return new DirectPropagationProcessData(freeFieldFinder);
+        public CnossosPropagationData create(ProfileBuilder builder) {
+            return new DirectPropagationProcessData(builder);
         }
 
         @Override
@@ -51,7 +53,7 @@ public class Utils {
         }
 
         @Override
-        public IComputeRaysOut create(PropagationProcessData threadData, PropagationProcessPathData pathData) {
+        public IComputeRaysOut create(CnossosPropagationData threadData, PropagationProcessPathData pathData) {
             return new RayOut(keepRays, pathData, (DirectPropagationProcessData)threadData);
         }
     }
@@ -67,17 +69,17 @@ public class Utils {
         @Override
         public double[] computeAttenuation(PropagationProcessPathData pathData, long sourceId, double sourceLi, long receiverId, List<PropagationPath> propagationPath) {
             double[] attenuation = super.computeAttenuation(pathData, sourceId, sourceLi, receiverId, propagationPath);
-            double[] soundLevel = ComputeRays.wToDba(ComputeRays.multArray(processData.wjSources.get((int)sourceId), ComputeRays.dbaToW(attenuation)));
+            double[] soundLevel = wToDba(multArray(processData.wjSources.get((int)sourceId), dbaToW(attenuation)));
             return soundLevel;
         }
     }
 
-    private static class DirectPropagationProcessData extends PropagationProcessData {
+    private static class DirectPropagationProcessData extends CnossosPropagationData {
         List<double[]> wjSources = new ArrayList<>();
         private final static String[] powerColumns = new String[]{"db_m63", "db_m125", "db_m250", "db_m500", "db_m1000", "db_m2000", "db_m4000", "db_m8000"};
 
-        public DirectPropagationProcessData(FastObstructionTest freeFieldFinder) {
-            super(freeFieldFinder);
+        public DirectPropagationProcessData(ProfileBuilder builder) {
+            super(builder);
         }
 
 
@@ -87,7 +89,7 @@ public class Utils {
             double sl[] = new double[powerColumns.length];
             int i = 0;
             for(String columnName : powerColumns) {
-                sl[i++] = ComputeRays.dbaToW(rs.getDouble(columnName));
+                sl[i++] = dbaToW(rs.getDouble(columnName));
             }
             wjSources.add(sl);
         }

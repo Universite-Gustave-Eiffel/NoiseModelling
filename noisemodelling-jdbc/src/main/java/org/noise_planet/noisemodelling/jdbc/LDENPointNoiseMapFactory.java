@@ -38,6 +38,8 @@ import java.sql.Statement;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
+import static org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils.*;
+
 /**
  *
  */
@@ -194,14 +196,14 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
     }
 
     @Override
-    public LDENPropagationProcessData create(FastObstructionTest freeFieldFinder) {
-        LDENPropagationProcessData ldenPropagationProcessData = new LDENPropagationProcessData(freeFieldFinder, ldenConfig);
+    public LDENPropagationProcessData create(ProfileBuilder builder) {
+        LDENPropagationProcessData ldenPropagationProcessData = new LDENPropagationProcessData(builder, ldenConfig);
         ldenPropagationProcessData.setDirectionAttributes(directionAttributes);
         return ldenPropagationProcessData;
     }
 
     @Override
-    public IComputeRaysOut create(PropagationProcessData threadData, PropagationProcessPathData pathData) {
+    public IComputeRaysOut create(CnossosPropagationData threadData, PropagationProcessPathData pathData) {
         return new LDENComputeRaysOut(pathData, (LDENPropagationProcessData)threadData, ldenData);
     }
 
@@ -285,10 +287,10 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
                     ps.setDouble(parameterIndex++, value);
                 }
                 // laeq value
-                ps.setDouble(parameterIndex++, ComputeRays.wToDba(ComputeRays.sumArray(ComputeRays.dbaToW(ComputeRays.sumArray(row.value, a_weighting)))));
+                ps.setDouble(parameterIndex++, wToDba(sumArray(dbaToW(sumArray(row.value, a_weighting)))));
 
                 // leq value
-                ps.setDouble(parameterIndex++, ComputeRays.wToDba(ComputeRays.sumArray(ComputeRays.dbaToW(row.value))));
+                ps.setDouble(parameterIndex++, wToDba(sumArray(dbaToW(row.value))));
 
                 ps.addBatch();
                 batchSize++;

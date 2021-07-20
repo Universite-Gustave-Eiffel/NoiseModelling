@@ -7,9 +7,8 @@ import org.h2gis.utilities.SpatialResultSet;
 import org.h2gis.utilities.TableLocation;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.WKTWriter;
-import org.noise_planet.noisemodelling.pathfinder.GeoWithSoilType;
-import org.noise_planet.noisemodelling.pathfinder.MeshBuilder;
-import org.noise_planet.noisemodelling.pathfinder.PropagationProcessData;
+import org.noise_planet.noisemodelling.pathfinder.CnossosPropagationData;
+import org.noise_planet.noisemodelling.pathfinder.ProfileBuilder;
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +20,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.noise_planet.noisemodelling.pathfinder.utils.AlphaUtils.getWallAlpha;
 
 /**
  * Common attributes for propagation of sound sources.
@@ -124,7 +125,7 @@ public abstract class JdbcNoiseMap {
         this.groundSurfaceSplitSideLength = groundSurfaceSplitSideLength;
     }
 
-    protected void fetchCellDem(Connection connection, Envelope fetchEnvelope, MeshBuilder mesh) throws SQLException {
+    protected void fetchCellDem(Connection connection, Envelope fetchEnvelope, ProfileBuilder mesh) throws SQLException {
         if(!demTable.isEmpty()) {
             List<String> geomFields = SFSUtilities.getGeometryFields(connection,
                     TableLocation.parse(demTable));
@@ -149,7 +150,7 @@ public abstract class JdbcNoiseMap {
         }
     }
 
-    protected void fetchCellSoilAreas(Connection connection, Envelope fetchEnvelope, List<GeoWithSoilType> geoWithSoil)
+    protected void fetchCellSoilAreas(Connection connection, Envelope fetchEnvelope, ProfileBuilder builder)
             throws SQLException {
         if(!soilTableName.isEmpty()){
             double startX = Math.floor(fetchEnvelope.getMinX() / groundSurfaceSplitSideLength) * groundSurfaceSplitSideLength;
@@ -181,7 +182,7 @@ public abstract class JdbcNoiseMap {
                                     try {
                                         Geometry inters = poly.intersection(envGeom);
                                         if (!inters.isEmpty() && (inters instanceof Polygon || inters instanceof MultiPolygon)) {
-                                            geoWithSoil.add(new GeoWithSoilType(inters, g));
+                                            builder.addGroundEffect(inters, g);
                                         }
                                     } catch (TopologyException | IllegalArgumentException ex) {
                                         // Ignore
@@ -198,15 +199,15 @@ public abstract class JdbcNoiseMap {
     }
 
 
-    void fetchCellBuildings(Connection connection, Envelope fetchEnvelope, MeshBuilder mesh) throws SQLException {
-        ArrayList<MeshBuilder.PolygonWithHeight> buildings = new ArrayList<>();
+    void fetchCellBuildings(Connection connection, Envelope fetchEnvelope, ProfileBuilder builder) throws SQLException {
+        ArrayList<ProfileBuilder.Building> buildings = new ArrayList<>();
         fetchCellBuildings(connection, fetchEnvelope, buildings);
-        for(MeshBuilder.PolygonWithHeight building : buildings) {
-            mesh.addGeometry(building);
+        for(ProfileBuilder.Building building : buildings) {
+            builder.addBuilding(building);
         }
     }
 
-    void fetchCellBuildings(Connection connection, Envelope fetchEnvelope, List<MeshBuilder.PolygonWithHeight> buildings) throws SQLException {
+    void fetchCellBuildings(Connection connection, Envelope fetchEnvelope, List<ProfileBuilder.Building> buildings) throws SQLException {
         Geometry envGeo = geometryFactory.toGeometry(fetchEnvelope);
         boolean fetchAlpha = JDBCUtilities.hasField(connection, buildingsTableName, alphaFieldName);
         String additionalQuery = "";
@@ -237,7 +238,7 @@ public abstract class JdbcNoiseMap {
                 double oldAlpha = wallAbsorption;
                 List<Double> alphaList = new ArrayList<>(propagationProcessPathData.freq_lvl.size());
                 for(double freq : propagationProcessPathData.freq_lvl_exact) {
-                    alphaList.add(MeshBuilder.getWallAlpha(oldAlpha, freq));
+                    alphaList.add(getWallAlpha(oldAlpha, freq));
                 }
                 while (rs.next()) {
                     //if we don't have height of building
@@ -256,17 +257,20 @@ public abstract class JdbcNoiseMap {
                                 alphaList.clear();
                                 oldAlpha = rs.getDouble(alphaFieldName);
                                 for(double freq : propagationProcessPathData.freq_lvl_exact) {
-                                    alphaList.add(MeshBuilder.getWallAlpha(oldAlpha, freq));
+                                    alphaList.add(getWallAlpha(oldAlpha, freq));
                                 }
                             }
 
-                            MeshBuilder.PolygonWithHeight poly = new MeshBuilder.PolygonWithHeight(intersectedGeometry,
-                                    heightField.isEmpty() ? Double.MAX_VALUE : rs.getDouble(heightField),
-                                    alphaList);
+                            int pk = -1;
                             if(columnIndex != 0) {
-                                poly.setPrimaryKey(rs.getInt(columnIndex));
+                                pk = rs.getInt(columnIndex);
                             }
-                            buildings.add(poly);
+                            for(int i=0; i<intersectedGeometry.getNumGeometries(); i++) {
+                                ProfileBuilder.Building poly = new ProfileBuilder.Building((Polygon) intersectedGeometry.getGeometryN(i),
+                                        heightField.isEmpty() ? Double.MAX_VALUE : rs.getDouble(heightField),
+                                        alphaList, pk);
+                                buildings.add(poly);
+                            }
                         }
                     }
                 }
@@ -282,7 +286,7 @@ public abstract class JdbcNoiseMap {
      * @param propagationProcessData (Out) Propagation process input data
      * @throws SQLException
      */
-    public void fetchCellSource(Connection connection,Envelope fetchEnvelope, PropagationProcessData propagationProcessData)
+    public void fetchCellSource(Connection connection,Envelope fetchEnvelope, CnossosPropagationData propagationProcessData)
             throws SQLException, IOException {
         TableLocation sourceTableIdentifier = TableLocation.parse(sourcesTableName);
         List<String> geomFields = SFSUtilities.getGeometryFields(connection, sourceTableIdentifier);

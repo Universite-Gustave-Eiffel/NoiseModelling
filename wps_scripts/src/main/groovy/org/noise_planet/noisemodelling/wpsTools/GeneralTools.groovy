@@ -18,7 +18,7 @@
 
 package org.noise_planet.noisemodelling.wpsTools
 
-import org.noise_planet.noisemodelling.pathfinder.FastObstructionTest
+import org.noise_planet.noisemodelling.pathfinder.ProfileBuilder
 import org.noise_planet.noisemodelling.pathfinder.utils.KMLDocument
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation
 
@@ -70,7 +70,7 @@ class GeneralTools {
      * @return
      * @throws IOException
      */
-    def static exportScene(String name, FastObstructionTest manager, ComputeRaysOutAttenuation result) throws IOException {
+    def static exportScene(String name, ProfileBuilder manager, ComputeRaysOutAttenuation result) throws IOException {
         try {
             FileOutputStream outData = new FileOutputStream(name)
             KMLDocument kmlDocument = new KMLDocument(outData)
@@ -82,7 +82,7 @@ class GeneralTools {
             if (result != null) {
                 kmlDocument.writeRays(result.getPropagationPaths())
             }
-            if (manager != null && manager.isHasBuildingWithHeight()) {
+            if (manager != null) {
                 kmlDocument.writeBuildings(manager)
             }
             kmlDocument.writeFooter()

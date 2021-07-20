@@ -143,7 +143,10 @@ public class ProfileBuilder {
      * @param building Building.
      */
     public Building addBuilding(Building building) {
-        if(!isFeedingFinished) {
+        if(building.poly == null) {
+            LOGGER.error("Cannot add a building with null geometry.");
+        }
+        else if(!isFeedingFinished) {
             if(envelope == null) {
                 envelope = building.poly.getEnvelopeInternal();
             }
@@ -156,8 +159,8 @@ public class ProfileBuilder {
         }
         else{
             LOGGER.warn("Cannot add building, feeding is finished.");
-            return null;
         }
+        return null;
     }
 
     /**
@@ -234,7 +237,7 @@ public class ProfileBuilder {
      * @param id     Database primary key.
      */
     public Building addBuilding(Geometry geom, double height, List<Double> alphas, int id) {
-        if(! (geom instanceof Polygon)) {
+        if(geom == null && ! (geom instanceof Polygon)) {
             LOGGER.error("Building geometry should be Polygon");
             return null;
         }
@@ -580,7 +583,8 @@ public class ProfileBuilder {
         }
         else {
             for (Building b : buildings) {
-                if(Double.isNaN(b.poly.getCoordinate().z) || b.poly.getCoordinate().z == 0.0) {
+                if(b != null && b.poly != null && b.poly.getCoordinate() != null && (
+                        Double.isNaN(b.poly.getCoordinate().z) || b.poly.getCoordinate().z == 0.0)) {
                     b.poly.apply(new UpdateZ(b.height));
                 }
             }
@@ -676,7 +680,7 @@ public class ProfileBuilder {
      * @return Cutting profile.
      */
     public CutProfile getProfile(CutPoint c0, CutPoint c1) {
-        return getProfile(c0.getCoordinate(), c1.getCoordinate(), 1.0);
+        return getProfile(c0, c1, 0.0);
     }
 
     /**
@@ -686,7 +690,17 @@ public class ProfileBuilder {
      * @return Cutting profile.
      */
     public CutProfile getProfile(CutPoint c0, CutPoint c1, double gS) {
-        return getProfile(c0.getCoordinate(), c1.getCoordinate(), gS);
+        CutProfile profile = getProfile(c0.getCoordinate(), c1.getCoordinate(), gS);
+
+        profile.source.buildingId = c0.buildingId;
+        profile.source.groundCoef = c0.groundCoef;
+        profile.source.wallAlpha = c0.wallAlpha;
+
+        profile.receiver.buildingId = c1.buildingId;
+        profile.receiver.groundCoef = c1.groundCoef;
+        profile.receiver.wallAlpha = c1.wallAlpha;
+
+        return profile;
     }
 
     /**
@@ -699,7 +713,6 @@ public class ProfileBuilder {
         CutProfile profile = new CutProfile();
 
         profile.addSource(c0);
-        boolean firstBuildingFound = false;
 
         List<LineSegment> lines = new ArrayList<>();
         LineSegment fullLine = new LineSegment(c0, c1);
@@ -786,7 +799,8 @@ public class ProfileBuilder {
                         profile.addBuildingCutPt(intersection, facetLine.originId);
                     }
                     else if(facetLine.type == IntersectionType.GROUND_EFFECT) {
-                        profile.addGroundCutPt(intersection, facetLine.originId);
+                        Coordinate c = new Coordinate(intersection.x, intersection.y, getZ(intersection));
+                        profile.addGroundCutPt(c, facetLine.originId);
                     }
                 }
             }
@@ -852,7 +866,7 @@ public class ProfileBuilder {
             Coordinate p2 = vertices.get(tri.getB());
             Coordinate p3 = vertices.get(tri.getC());
             Polygon poly = FACTORY.createPolygon(new Coordinate[]{p1, p2, p3, p1});
-            if (poly.contains(FACTORY.createPoint(c))) {
+            if (poly.intersects(FACTORY.createPoint(c))) {
                 return Vertex.interpolateZ(c, p1, p2, p3);
             }
         }
@@ -921,6 +935,7 @@ public class ProfileBuilder {
          */
         public void addBuildingCutPt(Coordinate coord, int id) {
             pts.add(new CutPoint(coord, IntersectionType.BUILDING, id));
+            pts.get(pts.size()-1).buildingId = id;
             hasBuildingInter = true;
         }
 
@@ -1025,23 +1040,18 @@ public class ProfileBuilder {
 
         public boolean isFreeField() {
             if(isFreeField == null) {
-                if(!intersectBuilding() && !intersectTopography()) {
-                    isFreeField = false;
-                }
-                else {
-                    isFreeField = true;
-                    List<CutPoint> pts = getCutPoints().stream()
-                            .filter(cutPoint -> cutPoint.getType() == IntersectionType.BUILDING ||
-                                                cutPoint.getType() == IntersectionType.TOPOGRAPHY)
-                            .collect(Collectors.toList());
-                    LineSegment srcRcvLine = new LineSegment(source.getCoordinate(), receiver.getCoordinate());
-                    for(CutPoint pt : pts) {
-                        double frac = srcRcvLine.segmentFraction(pt.getCoordinate());
-                        double z = source.getCoordinate().z + frac * (receiver.getCoordinate().z-source.getCoordinate().z);
-                        if(z < pt.getCoordinate().z) {
-                            isFreeField = false;
-                            break;
-                        }
+                isFreeField = true;
+                List<CutPoint> pts = getCutPoints().stream()
+                        .filter(cutPoint -> cutPoint.getType() == IntersectionType.BUILDING ||
+                                            cutPoint.getType() == IntersectionType.TOPOGRAPHY)
+                        .collect(Collectors.toList());
+                LineSegment srcRcvLine = new LineSegment(source.getCoordinate(), receiver.getCoordinate());
+                for(CutPoint pt : pts) {
+                    double frac = srcRcvLine.segmentFraction(pt.getCoordinate());
+                    double z = source.getCoordinate().z + frac * (receiver.getCoordinate().z-source.getCoordinate().z);
+                    if(z < pt.getCoordinate().z) {
+                        isFreeField = false;
+                        break;
                     }
                 }
             }
@@ -1278,6 +1288,10 @@ public class ProfileBuilder {
             }
             zTopo = minZ/(coordinates.length-1);
             return zTopo;
+        }
+
+        public double getZ() {
+            return zTopo + height;
         }
     }
 

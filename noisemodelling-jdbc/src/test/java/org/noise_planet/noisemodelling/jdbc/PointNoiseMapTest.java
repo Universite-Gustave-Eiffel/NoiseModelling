@@ -133,8 +133,8 @@ public class PointNoiseMapTest {
                     IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, i, j, progressVisitor, receivers);
                     if(out instanceof ComputeRaysOutAttenuation) {
                         ComputeRaysOutAttenuation rout = (ComputeRaysOutAttenuation) out;
-                        for(GeoWithSoilType soil : rout.inputData.getSoilList()) {
-                            assertTrue(soil.getGeo().getArea() < expectedMaxArea);
+                        for(ProfileBuilder.GroundEffect soil : rout.inputData.profileBuilder.getGroundEffects()) {
+                            assertTrue(soil.getGeometry().getArea() < expectedMaxArea);
                         }
                     }
                 }

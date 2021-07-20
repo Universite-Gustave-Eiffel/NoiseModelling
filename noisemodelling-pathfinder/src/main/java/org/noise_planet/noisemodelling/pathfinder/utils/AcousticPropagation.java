@@ -1,6 +1,6 @@
 package org.noise_planet.noisemodelling.pathfinder.utils;
 
-import static org.noise_planet.noisemodelling.pathfinder.Utils.wToDba;
+import static org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils.wToDba;
 
 public class AcousticPropagation {
 

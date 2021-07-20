@@ -42,9 +42,7 @@ import org.locationtech.jts.geom.GeometryFactory;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 
 /**
@@ -70,6 +68,12 @@ public class CnossosPropagationData {
     public QueryGeometryStructure sourcesIndex = new QueryRTree();
     /** Sources geometries. Can be LINESTRING or POINT */
     public List<Geometry> sourceGeometries = new ArrayList<>();
+    /** Source orientation for emission computation */
+    public Map<Long, Orientation> sourceOrientation = new HashMap<>();
+    /**
+     * Link between sources PK and direction attenuation index
+     */
+    public Map<Long, Integer> sourceDirection = new HashMap<>();
 
 
 
@@ -185,6 +189,25 @@ public class CnossosPropagationData {
         return isComputeVerticalDiffraction() || isComputeHorizontalDiffraction();
     }
 
+    /**
+     * Return directivity attenuation. Default implementation define only omnidirectional sources.
+     * @param srcIndex Source index in the list sourceGeometries
+     * @param frequency Frequency in Hertz
+     * @param phi (0 2π) 0 is front
+     * @param theta (-π/2 π/2) 0 is horizontal π is top
+     * @return Attenuation in dB
+     */
+    public double getSourceAttenuation(int srcIndex, double frequency, float phi, float theta) {
+        return 0;
+    }
+
+    /**
+     * @param srcIndex Source index in the list sourceGeometries
+     * @return True if the source is omnidirectional and so does not have orientation dependant attenuation.
+     */
+    public boolean isOmnidirectional(int srcIndex) {
+        return true;
+    }
 }
 
 

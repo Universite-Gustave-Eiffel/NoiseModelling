@@ -39,14 +39,12 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.math.Vector3D;
 import org.noise_planet.noisemodelling.pathfinder.*;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+
+import static org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils.*;
 
 /**
  * Way to store data computed by threads.
@@ -60,9 +58,9 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
     public List<PropagationPath> propagationPaths = Collections.synchronizedList(new ArrayList<PropagationPath>());
 
     public PropagationProcessPathData genericMeteoData;
-    public PropagationProcessData inputData;
+    public CnossosPropagationData inputData;
 
-    public ComputeRaysOutAttenuation(boolean keepRays, PropagationProcessPathData pathData, PropagationProcessData inputData) {
+    public ComputeRaysOutAttenuation(boolean keepRays, PropagationProcessPathData pathData, CnossosPropagationData inputData) {
         this.keepRays = keepRays;
         this.genericMeteoData = pathData;
         this.inputData = inputData;
@@ -115,7 +113,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
 
     }
 
-    public PropagationProcessData getInputData() {
+    public CnossosPropagationData getInputData() {
         return inputData;
     }
 
@@ -194,7 +192,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
                 }
 
                 // Compute attenuation under the wind conditions using the ray direction
-                double[] aGlobalMeteoRay = ComputeRays.sumArrayWithPonderation(aGlobalMeteoFav, aGlobalMeteoHom, pathData.getWindRose()[roseindex]);
+                double[] aGlobalMeteoRay = sumArrayWithPonderation(aGlobalMeteoFav, aGlobalMeteoHom, pathData.getWindRose()[roseindex]);
 
                 // Apply attenuation due to sound direction
                 if(inputData != null && !inputData.isOmnidirectional((int)sourceId)) {
@@ -212,13 +210,13 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
                                 pathData.freq_lvl.get(idfreq), (float)Math.toRadians(directivityToPick.yaw),
                                 (float)Math.toRadians(directivityToPick.pitch));
                     }
-                    aGlobalMeteoRay = ComputeRays.sumArray(aGlobalMeteoRay, attSource);
+                    aGlobalMeteoRay = sumArray(aGlobalMeteoRay, attSource);
                 }
 
 
 
                 if (propagationAttenuationSpectrum != null) {
-                    propagationAttenuationSpectrum = ComputeRays.sumDbArray(aGlobalMeteoRay, propagationAttenuationSpectrum);
+                    propagationAttenuationSpectrum = sumDbArray(aGlobalMeteoRay, propagationAttenuationSpectrum);
                 } else {
                     propagationAttenuationSpectrum = aGlobalMeteoRay;
                 }
@@ -227,7 +225,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
                 // For line source, take account of li coefficient
                 if(sourceLi > 1.0) {
                     for (int i = 0; i < propagationAttenuationSpectrum.length; i++) {
-                        propagationAttenuationSpectrum[i] = ComputeRays.wToDba(ComputeRays.dbaToW(propagationAttenuationSpectrum[i]) * sourceLi);
+                        propagationAttenuationSpectrum[i] = wToDba(dbaToW(propagationAttenuationSpectrum[i]) * sourceLi);
                     }
                 }
                 return propagationAttenuationSpectrum;
@@ -373,7 +371,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
                         levelsPerSourceLines.put(lvl.sourceId, lvl.value);
                     } else {
                         // merge
-                        levelsPerSourceLines.put(lvl.sourceId, ComputeRays.sumDbArray(levelsPerSourceLines.get(lvl.sourceId),
+                        levelsPerSourceLines.put(lvl.sourceId, sumDbArray(levelsPerSourceLines.get(lvl.sourceId),
                                 lvl.value));
                     }
                 }

@@ -18,13 +18,8 @@ import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.index.strtree.STRtree;
-import org.noise_planet.noisemodelling.pathfinder.ComputeRays;
+import org.noise_planet.noisemodelling.pathfinder.*;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
-import org.noise_planet.noisemodelling.pathfinder.FastObstructionTest;
-import org.noise_planet.noisemodelling.pathfinder.IComputeRaysOut;
-import org.noise_planet.noisemodelling.pathfinder.LayerDelaunayError;
-import org.noise_planet.noisemodelling.pathfinder.MeshBuilder;
-import org.noise_planet.noisemodelling.pathfinder.PropagationProcessData;
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,10 +72,10 @@ public class PointNoiseMap extends JdbcNoiseMap {
      * @return Data input for cell evaluation
      * @throws SQLException
      */
-    public PropagationProcessData prepareCell(Connection connection,int cellI, int cellJ,
+    public CnossosPropagationData prepareCell(Connection connection,int cellI, int cellJ,
                                               ProgressVisitor progression, Set<Long> skipReceivers) throws SQLException, IOException {
         boolean isH2 = JDBCUtilities.isH2DataBase(connection.getMetaData());
-        MeshBuilder mesh = new MeshBuilder();
+        ProfileBuilder builder = new ProfileBuilder();
         int ij = cellI * gridDim + cellJ + 1;
         if(verbose) {
             logger.info("Begin processing of cell " + ij + " / " + gridDim * gridDim);
@@ -96,28 +91,21 @@ public class PointNoiseMap extends JdbcNoiseMap {
         // feed freeFieldFinder for fast intersection query
         // optimization
         // Fetch buildings in extendedEnvelope
-        fetchCellBuildings(connection, expandedCellEnvelop, mesh);
+        fetchCellBuildings(connection, expandedCellEnvelop, builder);
         //if we have topographic points data
-        fetchCellDem(connection, expandedCellEnvelop, mesh);
+        fetchCellDem(connection, expandedCellEnvelop, builder);
 
-        // Data fetching for collision test is done.
-        Envelope meshEnvelope = new Envelope(expandedCellEnvelop);
-        // Expand again envelope for sound sources or buildings sides that are close to the edge
-        meshEnvelope.expandBy(10);
-        try {
-            mesh.finishPolygonFeeding(expandedCellEnvelop);
-        } catch (LayerDelaunayError ex) {
-            throw new SQLException(ex.getLocalizedMessage(), ex);
-        }
-        FastObstructionTest freeFieldFinder = new FastObstructionTest(mesh.getPolygonWithHeight(),
-                mesh.getTriangles(), mesh.getTriNeighbors(), mesh.getVertices());
+        // Fetch soil areas
+        fetchCellSoilAreas(connection, expandedCellEnvelop, builder);
+
+        builder.finishFeeding();
 
 
-        PropagationProcessData propagationProcessData;
+        CnossosPropagationData propagationProcessData;
         if(propagationProcessDataFactory != null) {
-            propagationProcessData = propagationProcessDataFactory.create(freeFieldFinder);
+            propagationProcessData = propagationProcessDataFactory.create(builder);
         } else {
-            propagationProcessData = new PropagationProcessData(freeFieldFinder);
+            propagationProcessData = new CnossosPropagationData(builder);
         }
         propagationProcessData.reflexionOrder = soundReflectionOrder;
         propagationProcessData.maximumError = getMaximumError();
@@ -130,9 +118,6 @@ public class PointNoiseMap extends JdbcNoiseMap {
         fetchCellSource(connection, expandedCellEnvelop, propagationProcessData);
 
         propagationProcessData.cellId = ij;
-
-        // Fetch soil areas
-        fetchCellSoilAreas(connection, expandedCellEnvelop, propagationProcessData.getSoilList());
 
         // Fetch receivers
 
@@ -233,12 +218,12 @@ public class PointNoiseMap extends JdbcNoiseMap {
      */
     public IComputeRaysOut evaluateCell(Connection connection, int cellI, int cellJ,
                                         ProgressVisitor progression, Set<Long> skipReceivers) throws SQLException, IOException {
-        PropagationProcessData threadData = prepareCell(connection, cellI, cellJ, progression, skipReceivers);
+        CnossosPropagationData threadData = prepareCell(connection, cellI, cellJ, progression, skipReceivers);
 
         if(verbose) {
             logger.info(String.format("This computation area contains %d receivers %d sound sources and %d buildings",
                     threadData.receivers.size(), threadData.sourceGeometries.size(),
-                    threadData.freeFieldFinder.getBuildingCount()));
+                    threadData.profileBuilder.getBuildingCount()));
         }
         IComputeRaysOut computeRaysOut;
         if(computeRaysOutFactory == null) {
@@ -247,7 +232,7 @@ public class PointNoiseMap extends JdbcNoiseMap {
             computeRaysOut = computeRaysOutFactory.create(threadData, propagationProcessPathData);
         }
 
-        ComputeRays computeRays = new ComputeRays(threadData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(threadData);
 
         if(threadCount > 0) {
             computeRays.setThreadCount(threadCount);
@@ -275,13 +260,13 @@ public class PointNoiseMap extends JdbcNoiseMap {
     }
 
     public interface PropagationProcessDataFactory {
-        PropagationProcessData create(FastObstructionTest freeFieldFinder);
+        CnossosPropagationData create(ProfileBuilder builder);
 
         void initialize(Connection connection, PointNoiseMap pointNoiseMap) throws SQLException;
     }
 
     public interface IComputeRaysOutFactory {
-        IComputeRaysOut create(PropagationProcessData threadData, PropagationProcessPathData pathData);
+        IComputeRaysOut create(CnossosPropagationData threadData, PropagationProcessPathData pathData);
     }
 
     /**

@@ -220,7 +220,9 @@ public class EvaluateAttenuationCnossos {
                 /*if (gToSigma || alphaUniqueValue > 1){
                     PropagationProcessData.getWallAlpha(alphaUniqueValue, data.freq_lvl.get(idf));
                 }*/
-                aRef[idf] += -10 * Math.log10(1 - alpha.get(idf));
+                if(alpha != null && !alpha.isEmpty()) {
+                    aRef[idf] += -10 * Math.log10(1 - alpha.get(idf));
+                }
             }
         }
         return aRef;
@@ -271,7 +273,6 @@ public class EvaluateAttenuationCnossos {
         double[] aDif = new double[data.freq_lvl.size()];
 
         double[] aBoundary;
-
 
         // Set Gm and Gw for AGround SR - Table 2.5.b
         if (path.isFavorable()) {

@@ -103,7 +103,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         return bufferOp.getResultGeometry(bufferSize);
     }
 
-    private void feedDelaunay(List<MeshBuilder.PolygonWithHeight> buildings, LayerDelaunay delaunayTool, Envelope boundingBoxFilter,
+    private void feedDelaunay(List<ProfileBuilder.Building> buildings, LayerDelaunay delaunayTool, Envelope boundingBoxFilter,
                               double srcDistance, LinkedList<LineString> delaunaySegments, double minRecDist,
                               double buildingBuffer) throws LayerDelaunayError {
         Envelope extendedEnvelope = new Envelope(boundingBoxFilter);
@@ -117,7 +117,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         Envelope fetchBox = new Envelope(boundingBoxFilter);
         fetchBox.expandBy(buildingBuffer);
         Geometry fetchGeometry = geometryFactory.toGeometry(fetchBox);
-        for(MeshBuilder.PolygonWithHeight building : buildings) {
+        for(ProfileBuilder.Building building : buildings) {
             if(building.getGeometry().intersects(fetchGeometry)) {
                 toUnite.add(building.getGeometry());
             }
@@ -175,7 +175,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
      */
     public void computeDelaunay(LayerDelaunay cellMesh,
                                 Envelope mainEnvelope, int cellI, int cellJ, double maxSrcDist, Collection<Geometry> sources,
-                                double minRecDist, double maximumArea, double buildingBuffer, List<MeshBuilder.PolygonWithHeight> buildings)
+                                double minRecDist, double maximumArea, double buildingBuffer, List<ProfileBuilder.Building> buildings)
             throws LayerDelaunayError {
 
         Envelope cellEnvelope = getCellEnv(mainEnvelope, cellI, cellJ,
@@ -252,12 +252,12 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         Envelope cellEnvelope = getCellEnv(mainEnvelope, cellI,
                 cellJ, getCellWidth(), getCellHeight());
         // Fetch all source located in expandedCellEnvelop
-        PropagationProcessData data = new PropagationProcessData(null);
+        CnossosPropagationData data = new CnossosPropagationData(null);
         fetchCellSource(connection, cellEnvelope, data);
 
         List<Geometry> sourceDelaunayGeometries = data.sourceGeometries;
 
-        ArrayList<MeshBuilder.PolygonWithHeight> buildings = new ArrayList<>();
+        ArrayList<ProfileBuilder.Building> buildings = new ArrayList<>();
         fetchCellBuildings(connection, cellEnvelope, buildings);
 
         LayerTinfour cellMesh = new LayerTinfour();

@@ -50,9 +50,9 @@ public class PointPath {
      * @param cutPoint CutPoint to use to generate the PointPath
      * @param defaultType Defaut point type to use if the cut point is nor a source, nor a receiver.
      */
-    public PointPath(ProfileBuilder.CutPoint cutPoint, POINT_TYPE defaultType, double gs) {
+    public PointPath(ProfileBuilder.CutPoint cutPoint, POINT_TYPE defaultType, double gs, double altitude) {
         this.coordinate = cutPoint.getCoordinate();
-        this.altitude = cutPoint.getTopoHeight() + cutPoint.getBuildingHeight();
+        this.altitude = altitude;
         this.gs = gs;
         this.alphaWall = cutPoint.getWallAlpha();
         this.buildingId = cutPoint.getBuildingId();

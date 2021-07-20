@@ -221,7 +221,7 @@ public class KMLDocument {
         return this;
     }
 
-    public KMLDocument writeBuildings(FastObstructionTest manager) throws XMLStreamException {
+    public KMLDocument writeBuildings(ProfileBuilder profileBuilder) throws XMLStreamException {
         xmlOut.writeStartElement("Schema");
         xmlOut.writeAttribute("name", "buildings");
         xmlOut.writeAttribute("id", "buildings");
@@ -234,58 +234,14 @@ public class KMLDocument {
         xmlOut.writeStartElement("name");
         xmlOut.writeCharacters("building");
         xmlOut.writeEndElement();//Name
-        List<MeshBuilder.PolygonWithHeight> buildings = manager.getPolygonWithHeight();
+        List<ProfileBuilder.Building> buildings = profileBuilder.getBuildings();
         List<Polygon> polygons = new ArrayList<>(buildings.size());
         int idPoly = 0;
 
-        for(MeshBuilder.PolygonWithHeight triangle : buildings) {
-            Coordinate[] original = triangle.getGeometry().getCoordinates();
+        for(ProfileBuilder.Building building : buildings) {
+            Coordinate[] original = building.getGeometry().getCoordinates();
             Coordinate[] coordinates = new Coordinate[original.length];
-            double z = manager.getBuildingRoofZ(idPoly + 1);
-            for(int i = 0; i < coordinates.length; i++) {
-                coordinates[i] = copyCoord(new Coordinate(original[i].x, original[i].y, z));
-            }
-            if(coordinates.length > 3 && coordinates[0].equals2D(coordinates[coordinates.length - 1])) {
-                Polygon poly = geometryFactory.createPolygon(coordinates);
-                if(!Orientation.isCCW(poly.getCoordinates())) {
-                    poly = (Polygon) poly.reverse();
-                }
-                // Apply CRS transform
-                doTransform(poly);
-                polygons.add(poly);
-            }
-            idPoly++;
-        }
-        //Write geometry
-        xmlOut.writeCharacters(KMLWriter.writeGeometry(geometryFactory.createMultiPolygon(
-                polygons.toArray(new Polygon[polygons.size()])), Double.NaN,
-                wgs84Precision, true, KMLWriter.ALTITUDE_MODE_RELATIVETOGROUND));
-        xmlOut.writeEndElement();//Write Placemark
-        xmlOut.writeEndElement();//Folder
-        return this;
-    }
-
-    public KMLDocument writeBuildings(ProfileBuilder builder) throws XMLStreamException {
-        xmlOut.writeStartElement("Schema");
-        xmlOut.writeAttribute("name", "buildings");
-        xmlOut.writeAttribute("id", "buildings");
-        xmlOut.writeEndElement();//Write schema
-        xmlOut.writeStartElement("Folder");
-        xmlOut.writeStartElement("name");
-        xmlOut.writeCharacters("buildings");
-        xmlOut.writeEndElement();//Name
-        xmlOut.writeStartElement("Placemark");
-        xmlOut.writeStartElement("name");
-        xmlOut.writeCharacters("building");
-        xmlOut.writeEndElement();//Name
-        List<ProfileBuilder.Building> buildings = builder.getBuildings();
-        List<Polygon> polygons = new ArrayList<>(buildings.size());
-        int idPoly = 0;
-
-        for(ProfileBuilder.Building triangle : buildings) {
-            Coordinate[] original = triangle.getGeometry().getCoordinates();
-            Coordinate[] coordinates = new Coordinate[original.length];
-            double z = builder.getBuilding(idPoly).getGeometry().getCoordinate().z;
+            double z = profileBuilder.getBuilding(idPoly + 1).getZ();
             for(int i = 0; i < coordinates.length; i++) {
                 coordinates[i] = copyCoord(new Coordinate(original[i].x, original[i].y, z));
             }
@@ -374,7 +330,7 @@ public class KMLDocument {
         }
     }
 
-    public static void exportScene(String name, FastObstructionTest manager, ComputeRaysOut result) throws IOException {
+    public static void exportScene(String name, ProfileBuilder profileBuilder, ComputeRaysOut result) throws IOException {
         try {
             Coordinate proj = new Coordinate( 351714.794877, 6685824.856402, 0);
             FileOutputStream outData = new FileOutputStream(name);
@@ -382,14 +338,12 @@ public class KMLDocument {
             kmlDocument.setInputCRS("EPSG:2154");
             kmlDocument.setOffset(proj);
             kmlDocument.writeHeader();
-            if(manager != null) {
-                kmlDocument.writeTopographic(manager.getTriangles(), manager.getVertices());
+            if(profileBuilder != null) {
+                kmlDocument.writeTopographic(profileBuilder.getTriangles(), profileBuilder.getVertices());
+                kmlDocument.writeBuildings(profileBuilder);
             }
             if(result != null) {
                 kmlDocument.writeRays(result.getPropagationPaths());
-            }
-            if(manager != null && manager.isHasBuildingWithHeight()) {
-                kmlDocument.writeBuildings(manager);
             }
             kmlDocument.writeFooter();
         } catch (XMLStreamException | CoordinateOperationException | CRSException ex) {

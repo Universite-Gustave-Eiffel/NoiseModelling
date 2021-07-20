@@ -31,6 +31,7 @@ import org.noise_planet.noisemodelling.emission.*
 import org.noise_planet.noisemodelling.pathfinder.*
 import org.noise_planet.noisemodelling.propagation.*
 import org.noise_planet.noisemodelling.jdbc.*
+import org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils
 
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -219,9 +220,9 @@ def exec(Connection connection, input) {
 
             // Compute emission sound level for each road segment
             def results = ldenData.computeLw(rs)
-            def lday = ComputeRays.wToDba(results[0])
-            def levening = ComputeRays.wToDba(results[1])
-            def lnight = ComputeRays.wToDba(results[2])
+            def lday = PowerUtils.wToDba(results[0])
+            def levening = PowerUtils.wToDba(results[1])
+            def lnight = PowerUtils.wToDba(results[2])
             // fill the LW_ROADS table
             ps.addBatch(rs.getLong(pkIndex) as Integer, geo as Geometry,
                     lday[0] as Double, lday[1] as Double, lday[2] as Double,

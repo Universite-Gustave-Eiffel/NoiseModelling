@@ -43,20 +43,16 @@ public class TestComputeRaysFull {
         Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 
         //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        ProfileBuilder builder = new ProfileBuilder();
 
+        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 250, -20, 80)), 0);
 
-        mesh.finishPolygonFeeding(cellEnvelope);
+        builder.finishFeeding();
 
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-                mesh.getTriNeighbors(), mesh.getVertices());
-
-        PropagationProcessData rayData = new PropagationProcessData(manager);
+        CnossosPropagationData rayData = new CnossosPropagationData(builder);
         rayData.addReceiver(new Coordinate(200, 50, 4));
         rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
         rayData.setComputeHorizontalDiffraction(true);
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 250, -20, 80)), 0));
         rayData.setComputeVerticalDiffraction(true);
 
         PropagationProcessPathData attData = new PropagationProcessPathData();
@@ -64,7 +60,7 @@ public class TestComputeRaysFull {
         attData.setTemperature(10);
 
         ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
-        ComputeRays computeRays = new ComputeRays(rayData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});
@@ -81,20 +77,16 @@ public class TestComputeRaysFull {
         Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 
         //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        ProfileBuilder builder = new ProfileBuilder();
 
+        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 250, -20, 80)), 0.5);
 
-        mesh.finishPolygonFeeding(cellEnvelope);
+        builder.finishFeeding();
 
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-                mesh.getTriNeighbors(), mesh.getVertices());
-
-        PropagationProcessData rayData = new PropagationProcessData(manager);
+        CnossosPropagationData rayData = new CnossosPropagationData(builder);
         rayData.addReceiver(new Coordinate(200, 50, 4));
         rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
         rayData.setComputeHorizontalDiffraction(true);
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 250, -20, 80)), 0.5));
         rayData.setComputeVerticalDiffraction(true);
 
         PropagationProcessPathData attData = new PropagationProcessPathData();
@@ -102,7 +94,7 @@ public class TestComputeRaysFull {
         attData.setTemperature(10);
 
         ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
-        ComputeRays computeRays = new ComputeRays(rayData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});
@@ -119,20 +111,16 @@ public class TestComputeRaysFull {
         Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 
         //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        ProfileBuilder builder = new ProfileBuilder();
 
+        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 250, -20, 80)), 1);
 
-        mesh.finishPolygonFeeding(cellEnvelope);
+        builder.finishFeeding();
 
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-                mesh.getTriNeighbors(), mesh.getVertices());
-
-        PropagationProcessData rayData = new PropagationProcessData(manager);
+        CnossosPropagationData rayData = new CnossosPropagationData(builder);
         rayData.addReceiver(new Coordinate(200, 50, 4));
         rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
         rayData.setComputeHorizontalDiffraction(true);
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 250, -20, 80)), 1));
         rayData.setComputeVerticalDiffraction(true);
 
         PropagationProcessPathData attData = new PropagationProcessPathData();
@@ -140,7 +128,7 @@ public class TestComputeRaysFull {
         attData.setTemperature(10);
 
         ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
-        ComputeRays computeRays = new ComputeRays(rayData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});
@@ -157,29 +145,26 @@ public class TestComputeRaysFull {
         Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 
         //Create obstruction test object
-        MeshBuilder mesh = new MeshBuilder();
+        ProfileBuilder builder = new ProfileBuilder();
+
+        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5);
+        builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2);
 
         // Add building
-        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+        builder.addBuilding(factory.createPolygon(new Coordinate[]{
                 new Coordinate(100, 240, 0),
                 new Coordinate(100.1, 240, 0),
                 new Coordinate(265.1, -180, 0),
                 new Coordinate(265, -180, 0),
                 new Coordinate(100, 240, 0)}), 6);
 
-        mesh.finishPolygonFeeding(cellEnvelope);
+        builder.finishFeeding();
 
-        //Retrieve Delaunay triangulation of scene
-        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
-                mesh.getTriNeighbors(), mesh.getVertices());
-
-        PropagationProcessData rayData = new PropagationProcessData(manager);
+        CnossosPropagationData rayData = new CnossosPropagationData(builder);
         rayData.addReceiver(new Coordinate(200, 50, 4));
         rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
         rayData.setComputeHorizontalDiffraction(true);
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
-        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
         rayData.setComputeVerticalDiffraction(true);
 
         PropagationProcessPathData attData = new PropagationProcessPathData();
@@ -187,7 +172,7 @@ public class TestComputeRaysFull {
         attData.setTemperature(10);
         attData.setWindRose(new double[]{0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5});
         ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
-        ComputeRays computeRays = new ComputeRays(rayData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
@@ -206,7 +191,7 @@ public class TestComputeRaysFull {
 //        Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 //
 //        //Create obstruction test object
-//        MeshBuilder mesh = new MeshBuilder();
+//        ProfileBuilder builder = new ProfileBuilder();
 //
 //        // Add topographic points
 //        //x1
@@ -230,19 +215,19 @@ public class TestComputeRaysFull {
 //        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
 //        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
 //
-//        mesh.finishPolygonFeeding(cellEnvelope);
+//        builder.finishFeeding();
 //
 //        //Retrieve Delaunay triangulation of scene
-//        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+//        FastObstructionTest builder = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
 //                mesh.getTriNeighbors(), mesh.getVertices());
 //
-//        PropagationProcessData rayData = new PropagationProcessData(manager);
+//        CnossosPropagationData rayData = new CnossosPropagationData(builder);
 //        rayData.addReceiver(new Coordinate(200, 50, 11.5));
 //        rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
 //        rayData.setComputeHorizontalDiffraction(true);
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -20, 80)), 0.9));
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -20, 80)), 0.5));
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -20, 80)), 0.2));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -20, 80)), 0.9));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -20, 80)), 0.5));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -20, 80)), 0.2));
 //        rayData.setComputeVerticalDiffraction(true);
 //        PropagationProcessPathData attData = new PropagationProcessPathData();
 //        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
@@ -251,7 +236,7 @@ public class TestComputeRaysFull {
 //        computeRays.run(propDataOut);
 //        if(storeGeoJSONRays) {
 //            exportRays("target/T06.geojson", propDataOut);
-//            exportScene("target/T06.kml", manager, propDataOut);
+//            exportScene("target/T06.kml", builder, propDataOut);
 //        } else {
 //            assertRaysEquals(TestComputeRaysFull.class.getResourceAsStream("T06.geojson"), propDataOut);
 //        }
@@ -269,29 +254,29 @@ public class TestComputeRaysFull {
 //        Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 //
 //        //Create obstruction test object
-//        MeshBuilder mesh = new MeshBuilder();
+//        ProfileBuilder builder = new ProfileBuilder();
 //
 //        // Add building
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+//        builder.addBuilding(factory.createPolygon(new Coordinate[]{
 //                new Coordinate(100, 240, 0),
 //                new Coordinate(100.1, 240, 0),
 //                new Coordinate(265.1, -180, 0),
 //                new Coordinate(265, -180, 0),
 //                new Coordinate(100, 240, 0)}), 6);
 //
-//        mesh.finishPolygonFeeding(cellEnvelope);
+//        builder.finishFeeding();
 //
 //        //Retrieve Delaunay triangulation of scene
-//        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+//        FastObstructionTest builder = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
 //                mesh.getTriNeighbors(), mesh.getVertices());
 //
-//        PropagationProcessData rayData = new PropagationProcessData(manager);
+//        CnossosPropagationData rayData = new CnossosPropagationData(builder);
 //        rayData.addReceiver(new Coordinate(200, 50, 4));
 //        rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
 //        rayData.setComputeHorizontalDiffraction(true);
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9));
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
 //        rayData.setComputeVerticalDiffraction(true);
 //        PropagationProcessPathData attData = new PropagationProcessPathData();
 //        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
@@ -300,7 +285,7 @@ public class TestComputeRaysFull {
 //        computeRays.run(propDataOut);
 //        if(storeGeoJSONRays) {
 //            exportRays("target/T07.geojson", propDataOut);
-//            exportScene("target/T07.kml", manager, propDataOut);
+//            exportScene("target/T07.kml", builder, propDataOut);
 //        } else {
 //            assertRaysEquals(TestComputeRaysFull.class.getResourceAsStream("T07.geojson"), propDataOut);
 //        }
@@ -327,29 +312,29 @@ public class TestComputeRaysFull {
 //        Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 //
 //        //Create obstruction test object
-//        MeshBuilder mesh = new MeshBuilder();
+//        ProfileBuilder builder = new ProfileBuilder();
 //
 //        // Add building
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+//        builder.addBuilding(factory.createPolygon(new Coordinate[]{
 //                new Coordinate(175, 50, 0),
 //                new Coordinate(175.01, 50, 0),
 //                new Coordinate(190.01, 10, 0),
 //                new Coordinate(190, 10, 0),
 //                new Coordinate(175, 50, 0)}), 6);
 //
-//        mesh.finishPolygonFeeding(cellEnvelope);
+//        builder.finishFeeding();
 //
 //        //Retrieve Delaunay triangulation of scene
-//        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+//        FastObstructionTest builder = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
 //                mesh.getTriNeighbors(), mesh.getVertices());
 //
-//        PropagationProcessData rayData = new PropagationProcessData(manager);
+//        CnossosPropagationData rayData = new CnossosPropagationData(builder);
 //        rayData.addReceiver(new Coordinate(200, 50, 4));
 //        rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
 //        rayData.setComputeHorizontalDiffraction(true);
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9));
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
 //        rayData.setComputeVerticalDiffraction(true);
 //        PropagationProcessPathData attData = new PropagationProcessPathData();
 //        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
@@ -358,7 +343,7 @@ public class TestComputeRaysFull {
 //        computeRays.run(propDataOut);
 //        if(storeGeoJSONRays) {
 //            exportRays("target/T08.geojson", propDataOut);
-//            exportScene("target/T08.kml", manager, propDataOut);
+//            exportScene("target/T08.kml", builder, propDataOut);
 //        } else {
 //            assertRaysEquals(TestComputeRaysFull.class.getResourceAsStream("T08.geojson"), propDataOut);
 //        }
@@ -377,29 +362,29 @@ public class TestComputeRaysFull {
 //        Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 //
 //        //Create obstruction test object
-//        MeshBuilder mesh = new MeshBuilder();
+//        ProfileBuilder builder = new ProfileBuilder();
 //
 //        // Add building
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+//        builder.addBuilding(factory.createPolygon(new Coordinate[]{
 //                new Coordinate(55, 5, 0),
 //                new Coordinate(65, 5, 0),
 //                new Coordinate(65, 15, 0),
 //                new Coordinate(55, 15, 0),
 //                new Coordinate(55, 5, 0)}), 10);
 //
-//        mesh.finishPolygonFeeding(cellEnvelope);
+//        builder.finishFeeding();
 //
 //        //Retrieve Delaunay triangulation of scene
-//        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+//        FastObstructionTest builder = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
 //                mesh.getTriNeighbors(), mesh.getVertices());
 //
-//        PropagationProcessData rayData = new PropagationProcessData(manager);
+//        CnossosPropagationData rayData = new CnossosPropagationData(builder);
 //        rayData.addReceiver(new Coordinate(70, 10, 4));
 //        rayData.addSource(factory.createPoint(new Coordinate(50, 10, 1)));
 //        rayData.setComputeHorizontalDiffraction(true);
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9));
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
 //        rayData.setComputeVerticalDiffraction(true);
 //        PropagationProcessPathData attData = new PropagationProcessPathData();
 //        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
@@ -408,7 +393,7 @@ public class TestComputeRaysFull {
 //        computeRays.run(propDataOut);
 //        if(storeGeoJSONRays) {
 //            exportRays("target/T10.geojson", propDataOut);
-//            exportScene("target/T10.kml", manager, propDataOut);
+//            exportScene("target/T10.kml", builder, propDataOut);
 //        } else {
 //            assertRaysEquals(TestComputeRaysFull.class.getResourceAsStream("T10.geojson"), propDataOut);
 //        }
@@ -426,29 +411,29 @@ public class TestComputeRaysFull {
 //        Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 //
 //        //Create obstruction test object
-//        MeshBuilder mesh = new MeshBuilder();
+//        ProfileBuilder builder = new ProfileBuilder();
 //
 //        // Add building
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+//        builder.addBuilding(factory.createPolygon(new Coordinate[]{
 //                new Coordinate(55, 5,0),
 //                new Coordinate(65, 5,0),
 //                new Coordinate(65, 15,0),
 //                new Coordinate(55, 15,0),
 //                new Coordinate(55, 5,0)}), 10);
 //
-//        mesh.finishPolygonFeeding(cellEnvelope);
+//        builder.finishFeeding();
 //
 //        //Retrieve Delaunay triangulation of scene
-//        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+//        FastObstructionTest builder = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
 //                mesh.getTriNeighbors(), mesh.getVertices());
 //
-//        PropagationProcessData rayData = new PropagationProcessData(manager);
+//        CnossosPropagationData rayData = new CnossosPropagationData(builder);
 //        rayData.addReceiver(new Coordinate(70, 10, 15));
 //        rayData.addSource(factory.createPoint(new Coordinate(50, 10, 1)));
 //        rayData.setComputeHorizontalDiffraction(true);
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9));
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
 //        rayData.setComputeVerticalDiffraction(true);
 //        PropagationProcessPathData attData = new PropagationProcessPathData();
 //        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
@@ -457,7 +442,7 @@ public class TestComputeRaysFull {
 //        computeRays.run(propDataOut);
 //        if(storeGeoJSONRays) {
 //            exportRays("target/T11.geojson", propDataOut);
-//            exportScene("target/T11.kml", manager, propDataOut);
+//            exportScene("target/T11.kml", builder, propDataOut);
 //        } else {
 //            assertRaysEquals(TestComputeRaysFull.class.getResourceAsStream("T11.geojson"), propDataOut);
 //        }
@@ -476,10 +461,10 @@ public class TestComputeRaysFull {
 //        Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 //
 //        //Create obstruction test object
-//        MeshBuilder mesh = new MeshBuilder();
+//        ProfileBuilder builder = new ProfileBuilder();
 //
 //        // Add building
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+//        builder.addBuilding(factory.createPolygon(new Coordinate[]{
 //                new Coordinate(11., 15.5, 0),
 //                new Coordinate(12., 13, 0),
 //                new Coordinate(14.5, 12, 0),
@@ -490,17 +475,17 @@ public class TestComputeRaysFull {
 //                new Coordinate(12.0, 18, 0),
 //                new Coordinate(11, 15.5, 0)}), 10);
 //
-//        mesh.finishPolygonFeeding(cellEnvelope);
+//        builder.finishFeeding();
 //
 //        //Retrieve Delaunay triangulation of scene
-//        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+//        FastObstructionTest builder = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
 //                mesh.getTriNeighbors(), mesh.getVertices());
 //
-//        PropagationProcessData rayData = new PropagationProcessData(manager);
+//        CnossosPropagationData rayData = new CnossosPropagationData(builder);
 //        rayData.addReceiver(new Coordinate(30, 20, 6));
 //        rayData.addSource(factory.createPoint(new Coordinate(0, 10, 1)));
 //        rayData.setComputeHorizontalDiffraction(true);
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.5));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.5));
 //        rayData.setComputeVerticalDiffraction(true);
 //        PropagationProcessPathData attData = new PropagationProcessPathData();
 //        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
@@ -509,7 +494,7 @@ public class TestComputeRaysFull {
 //        computeRays.run(propDataOut);
 //        if(storeGeoJSONRays) {
 //            exportRays("target/T12.geojson", propDataOut);
-//            exportScene("target/T12.kml", manager, propDataOut);
+//            exportScene("target/T12.kml", builder, propDataOut);
 //        } else {
 //            assertRaysEquals(TestComputeRaysFull.class.getResourceAsStream("T12.geojson"), propDataOut);
 //        }
@@ -527,10 +512,10 @@ public class TestComputeRaysFull {
 //        Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 //
 //        //Create obstruction test object
-//        MeshBuilder mesh = new MeshBuilder();
+//        ProfileBuilder builder = new ProfileBuilder();
 //
 //        // Add building
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+//        builder.addBuilding(factory.createPolygon(new Coordinate[]{
 //                new Coordinate(169.4, 41.0, 0),
 //                new Coordinate(172.5, 33.5, 0),
 //                new Coordinate(180.0, 30.4, 0),
@@ -562,19 +547,19 @@ public class TestComputeRaysFull {
 //        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
 //        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
 //
-//        mesh.finishPolygonFeeding(cellEnvelope);
+//        builder.finishFeeding();
 //
 //        //Retrieve Delaunay triangulation of scene
-//        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+//        FastObstructionTest builder = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
 //                mesh.getTriNeighbors(), mesh.getVertices());
 //
-//        PropagationProcessData rayData = new PropagationProcessData(manager);
+//        CnossosPropagationData rayData = new CnossosPropagationData(builder);
 //        rayData.addReceiver(new Coordinate(200, 50, 28.5));
 //        rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
 //        rayData.setComputeHorizontalDiffraction(true);
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9));
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
 //        rayData.setComputeVerticalDiffraction(true);
 //        PropagationProcessPathData attData = new PropagationProcessPathData();
 //        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
@@ -583,7 +568,7 @@ public class TestComputeRaysFull {
 //        computeRays.run(propDataOut);
 //        if(storeGeoJSONRays) {
 //            exportRays("target/T13.geojson", propDataOut);
-//            exportScene("target/T13.kml", manager, propDataOut);
+//            exportScene("target/T13.kml", builder, propDataOut);
 //        } else {
 //            assertRaysEquals(TestComputeRaysFull.class.getResourceAsStream("T13.geojson"), propDataOut);
 //        }
@@ -599,10 +584,10 @@ public class TestComputeRaysFull {
 //        Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 //
 //        //Create obstruction test object
-//        MeshBuilder mesh = new MeshBuilder();
+//        ProfileBuilder builder = new ProfileBuilder();
 //
 //        // Add building
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+//        builder.addBuilding(factory.createPolygon(new Coordinate[]{
 //                new Coordinate(11., 15.5, 0),
 //                new Coordinate(12., 13, 0),
 //                new Coordinate(14.5, 12, 0),
@@ -613,17 +598,17 @@ public class TestComputeRaysFull {
 //                new Coordinate(12.0, 18, 0),
 //                new Coordinate(11, 15.5, 0)}), 10);
 //
-//        mesh.finishPolygonFeeding(cellEnvelope);
+//        builder.finishFeeding();
 //
 //        //Retrieve Delaunay triangulation of scene
-//        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+//        FastObstructionTest builder = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
 //                mesh.getTriNeighbors(), mesh.getVertices());
 //
-//        PropagationProcessData rayData = new PropagationProcessData(manager);
+//        CnossosPropagationData rayData = new CnossosPropagationData(builder);
 //        rayData.addReceiver(new Coordinate(25, 20, 23));
 //        rayData.addSource(factory.createPoint(new Coordinate(8, 10, 1)));
 //        rayData.setComputeHorizontalDiffraction(true);
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(-300, 300, -300, 300)), 0.2));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(-300, 300, -300, 300)), 0.2));
 //        rayData.setComputeVerticalDiffraction(true);
 //        PropagationProcessPathData attData = new PropagationProcessPathData();
 //        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
@@ -632,7 +617,7 @@ public class TestComputeRaysFull {
 //        computeRays.run(propDataOut);
 //        if(storeGeoJSONRays) {
 //            exportRays("target/T14.geojson", propDataOut);
-//            exportScene("target/T14.kml", manager, propDataOut);
+//            exportScene("target/T14.kml", builder, propDataOut);
 //        } else {
 //            assertRaysEquals(TestComputeRaysFull.class.getResourceAsStream("T14.geojson"), propDataOut);
 //        }
@@ -647,48 +632,48 @@ public class TestComputeRaysFull {
 //        Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 //
 //        //Create obstruction test object
-//        MeshBuilder mesh = new MeshBuilder();
+//        ProfileBuilder builder = new ProfileBuilder();
 //
 //        // Add building
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+//        builder.addBuilding(factory.createPolygon(new Coordinate[]{
 //                new Coordinate(55.0, 5.0, 0),
 //                new Coordinate(65.0, 5.0, 0),
 //                new Coordinate(65.0, 15.0, 0),
 //                new Coordinate(55.0, 15.0, 0),
 //                new Coordinate(55.0, 5.0, 0)}), 8);
 //
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+//        builder.addBuilding(factory.createPolygon(new Coordinate[]{
 //                new Coordinate(70, 14.5, 0),
 //                new Coordinate(80.0, 10.2, 0),
 //                new Coordinate(80.0, 20.2, 0),
 //                new Coordinate(70, 14.5, 0)}), 12);
 //
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+//        builder.addBuilding(factory.createPolygon(new Coordinate[]{
 //                new Coordinate(90.1, 19.5, 0),
 //                new Coordinate(93.3, 17.8, 0),
 //                new Coordinate(87.3, 6.6, 0),
 //                new Coordinate(84.1, 8.3, 0),
 //                new Coordinate(90.1, 19.5, 0)}), 10);
 //
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+//        builder.addBuilding(factory.createPolygon(new Coordinate[]{
 //                new Coordinate(94.9, 14.1, 0),
 //                new Coordinate(98.02, 12.37, 0),
 //                new Coordinate(92.03, 1.2, 0),
 //                new Coordinate(88.86, 2.9, 0),
 //                new Coordinate(94.9, 14.1, 0)}), 10);
 //
-//        mesh.finishPolygonFeeding(cellEnvelope);
+//        builder.finishFeeding();
 //
 //        //Retrieve Delaunay triangulation of scene
-//        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+//        FastObstructionTest builder = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
 //                mesh.getTriNeighbors(), mesh.getVertices());
 //
-//        PropagationProcessData rayData = new PropagationProcessData(manager);
+//        CnossosPropagationData rayData = new CnossosPropagationData(builder);
 //        rayData.addReceiver(new Coordinate(100, 15, 5));
 //        rayData.addSource(factory.createPoint(new Coordinate(50, 10, 1)));
 //        rayData.setComputeHorizontalDiffraction(true);
 //        rayData.setComputeVerticalDiffraction(true);
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(-250, 250, -250, 250)), 0.5));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(-250, 250, -250, 250)), 0.5));
 //        PropagationProcessPathData attData = new PropagationProcessPathData();
 //        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
 //        ComputeRays computeRays = new ComputeRays(rayData);
@@ -696,7 +681,7 @@ public class TestComputeRaysFull {
 //        computeRays.run(propDataOut);
 //        if(storeGeoJSONRays) {
 //            exportRays("target/T15.geojson", propDataOut);
-//            exportScene("target/T15.kml", manager, propDataOut);
+//            exportScene("target/T15.kml", builder, propDataOut);
 //        } else {
 //            assertRaysEquals(TestComputeRaysFull.class.getResourceAsStream("T15.geojson"), propDataOut);
 //        }
@@ -714,10 +699,10 @@ public class TestComputeRaysFull {
 //        Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
 //
 //        //Create obstruction test object
-//        MeshBuilder mesh = new MeshBuilder();
+//        ProfileBuilder builder = new ProfileBuilder();
 //
 //        // Add building
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+//        builder.addBuilding(factory.createPolygon(new Coordinate[]{
 //                new Coordinate(114, 52, 0),
 //                new Coordinate(170, 60, 0),
 //                new Coordinate(170, 62, 0),
@@ -746,19 +731,19 @@ public class TestComputeRaysFull {
 //        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
 //        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
 //
-//        mesh.finishPolygonFeeding(cellEnvelope);
+//        builder.finishFeeding();
 //
 //        //Retrieve Delaunay triangulation of scene
-//        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+//        FastObstructionTest builder = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
 //                mesh.getTriNeighbors(), mesh.getVertices());
 //
-//        PropagationProcessData rayData = new PropagationProcessData(manager);
+//        CnossosPropagationData rayData = new CnossosPropagationData(builder);
 //        rayData.addReceiver(new Coordinate(200, 50, 14));
 //        rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
 //        rayData.setComputeHorizontalDiffraction(true);
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9));
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -100, 100)), 0.5));
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -100, 100)), 0.5));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2));
 //        rayData.setComputeVerticalDiffraction(true);
 //        PropagationProcessPathData attData = new PropagationProcessPathData();
 //        ComputeRaysOut propDataOut = new ComputeRaysOut(true, attData);
@@ -767,7 +752,7 @@ public class TestComputeRaysFull {
 //        computeRays.run(propDataOut);
 //        if(storeGeoJSONRays) {
 //            exportRays("target/T16.geojson", propDataOut);
-//            exportScene("target/T16.kml", manager, propDataOut);
+//            exportScene("target/T16.kml", builder, propDataOut);
 //        } else {
 //            assertRaysEquals(TestComputeRaysFull.class.getResourceAsStream("T16.geojson"), propDataOut);
 //        }
@@ -785,10 +770,10 @@ public class TestComputeRaysFull {
 //        Envelope cellEnvelope = new Envelope(new Coordinate(-250., -250., 0.), new Coordinate(250, 250, 0.));
 //
 //        //Create obstruction test object
-//        MeshBuilder mesh = new MeshBuilder();
+//        ProfileBuilder builder = new ProfileBuilder();
 //
 //        // Add building
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+//        builder.addBuilding(factory.createPolygon(new Coordinate[]{
 //                new Coordinate(114, 52, 0),
 //                new Coordinate(170, 60, 0),
 //                new Coordinate(170, 62, 0),
@@ -796,7 +781,7 @@ public class TestComputeRaysFull {
 //                new Coordinate(114, 52, 0)}), 20);
 //
 //        // Add building
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+//        builder.addBuilding(factory.createPolygon(new Coordinate[]{
 //                new Coordinate(114, 12, 0),
 //                new Coordinate(170, 30, 0),
 //                new Coordinate(170, 32, 0),
@@ -824,19 +809,19 @@ public class TestComputeRaysFull {
 //        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
 //        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
 //
-//        mesh.finishPolygonFeeding(cellEnvelope);
+//        builder.finishFeeding();
 //
 //        //Retrieve Delaunay triangulation of scene
-//        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+//        FastObstructionTest builder = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
 //                mesh.getTriNeighbors(), mesh.getVertices());
 //
-//        PropagationProcessData rayData = new PropagationProcessData(manager);
+//        CnossosPropagationData rayData = new CnossosPropagationData(builder);
 //        rayData.addReceiver(new Coordinate(200, 50, 15));
 //        rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
 //        rayData.setComputeHorizontalDiffraction(true);
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9));
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -100, 100)), 0.5));
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -100, 100)), 0.5));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2));
 //        rayData.setComputeVerticalDiffraction(true);
 //
 //        PropagationProcessPathData attData = new PropagationProcessPathData();
@@ -847,7 +832,7 @@ public class TestComputeRaysFull {
 //
 //        if(storeGeoJSONRays) {
 //            exportRays("target/T16b.geojson", propDataOut);
-//            exportScene("target/T16b.kml", manager, propDataOut);
+//            exportScene("target/T16b.kml", builder, propDataOut);
 //        } else {
 //            assertRaysEquals(TestComputeRaysFull.class.getResourceAsStream("T16b.geojson"), propDataOut);
 //        }
@@ -867,10 +852,10 @@ public class TestComputeRaysFull {
 //        Envelope cellEnvelope = new Envelope(new Coordinate(-250., -250., 0.), new Coordinate(250, 250, 0.));
 //
 //        //Create obstruction test object
-//        MeshBuilder mesh = new MeshBuilder();
+//        ProfileBuilder builder = new ProfileBuilder();
 //
 //        // Add building
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+//        builder.addBuilding(factory.createPolygon(new Coordinate[]{
 //                new Coordinate(114, 52, 0),
 //                new Coordinate(170, 60, 0),
 //                new Coordinate(170, 62, 0),
@@ -898,19 +883,19 @@ public class TestComputeRaysFull {
 //        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
 //        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
 //
-//        mesh.finishPolygonFeeding(cellEnvelope);
+//        builder.finishFeeding();
 //
 //        //Retrieve Delaunay triangulation of scene
-//        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+//        FastObstructionTest builder = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
 //                mesh.getTriNeighbors(), mesh.getVertices());
 //
-//        PropagationProcessData rayData = new PropagationProcessData(manager);
+//        CnossosPropagationData rayData = new CnossosPropagationData(builder);
 //        rayData.addReceiver(new Coordinate(200, 50, 11.5));
 //        rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
 //        rayData.setComputeHorizontalDiffraction(true);
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9));
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -100, 100)), 0.5));
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -100, 100)), 0.5));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2));
 //
 //        rayData.setComputeVerticalDiffraction(true);
 //
@@ -922,7 +907,7 @@ public class TestComputeRaysFull {
 //
 //        if(storeGeoJSONRays) {
 //            exportRays("target/T17.geojson", propDataOut);
-//            exportScene("target/T17.kml", manager, propDataOut);
+//            exportScene("target/T17.kml", builder, propDataOut);
 //        } else {
 //            assertRaysEquals(TestComputeRaysFull.class.getResourceAsStream("T17.geojson"), propDataOut);
 //        }
@@ -941,17 +926,17 @@ public class TestComputeRaysFull {
 //        Envelope cellEnvelope = new Envelope(new Coordinate(-250., -250., 0.), new Coordinate(250, 250, 0.));
 //
 //        //Create obstruction test object
-//        MeshBuilder mesh = new MeshBuilder();
+//        ProfileBuilder builder = new ProfileBuilder();
 //
 //        // Add building
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+//        builder.addBuilding(factory.createPolygon(new Coordinate[]{
 //                new Coordinate(114, 52),
 //                new Coordinate(170, 60),
 //                new Coordinate(170, 61),
 //                new Coordinate(114, 53),
 //                new Coordinate(114, 52)}), 15);
 //
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+//        builder.addBuilding(factory.createPolygon(new Coordinate[]{
 //                new Coordinate(87, 50),
 //                new Coordinate(92, 32),
 //                new Coordinate(92, 33),
@@ -979,19 +964,19 @@ public class TestComputeRaysFull {
 //        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
 //        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
 //
-//        mesh.finishPolygonFeeding(cellEnvelope);
+//        builder.finishFeeding();
 //
 //        //Retrieve Delaunay triangulation of scene
-//        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+//        FastObstructionTest builder = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
 //                mesh.getTriNeighbors(), mesh.getVertices());
 //
-//        PropagationProcessData rayData = new PropagationProcessData(manager);
+//        CnossosPropagationData rayData = new CnossosPropagationData(builder);
 //        rayData.addReceiver(new Coordinate(200, 50, 12));
 //        rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
 //        rayData.setComputeHorizontalDiffraction(true);
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9));
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -100, 100)), 0.5));
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -100, 100)), 0.5));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2));
 //
 //        rayData.setComputeVerticalDiffraction(true);
 //
@@ -1003,7 +988,7 @@ public class TestComputeRaysFull {
 //
 //        if(storeGeoJSONRays) {
 //            exportRays("target/T18.geojson", propDataOut);
-//            exportScene("target/T18.kml", manager, propDataOut);
+//            exportScene("target/T18.kml", builder, propDataOut);
 //        } else {
 //            assertRaysEquals(TestComputeRaysFull.class.getResourceAsStream("T18.geojson"), propDataOut);
 //        }
@@ -1022,17 +1007,17 @@ public class TestComputeRaysFull {
 //        Envelope cellEnvelope = new Envelope(new Coordinate(-250., -250., 0.), new Coordinate(250, 250, 0.));
 //
 //        //Create obstruction test object
-//        MeshBuilder mesh = new MeshBuilder();
+//        ProfileBuilder builder = new ProfileBuilder();
 //
 //        // Add building
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+//        builder.addBuilding(factory.createPolygon(new Coordinate[]{
 //                new Coordinate(114, 52),
 //                new Coordinate(170, 60),
 //                new Coordinate(170, 61),
 //                new Coordinate(114, 53),
 //                new Coordinate(114, 52)}), 15);
 //
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+//        builder.addBuilding(factory.createPolygon(new Coordinate[]{
 //                new Coordinate(87, 50),
 //                new Coordinate(92, 32),
 //                new Coordinate(92, 33),
@@ -1060,19 +1045,19 @@ public class TestComputeRaysFull {
 //        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
 //        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
 //
-//        mesh.finishPolygonFeeding(cellEnvelope);
+//        builder.finishFeeding();
 //
 //        //Retrieve Delaunay triangulation of scene
-//        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+//        FastObstructionTest builder = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
 //                mesh.getTriNeighbors(), mesh.getVertices());
 //
-//        PropagationProcessData rayData = new PropagationProcessData(manager);
-//        rayData.addReceiver(new Coordinate(200, 50, 12+ manager.getHeightAtPosition(new Coordinate(200, 50, 12))));
+//        CnossosPropagationData rayData = new CnossosPropagationData(builder);
+//        rayData.addReceiver(new Coordinate(200, 50, 12+ builder.getHeightAtPosition(new Coordinate(200, 50, 12))));
 //        rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
 //        rayData.setComputeHorizontalDiffraction(true);
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9));
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -100, 100)), 0.5));
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -100, 100)), 0.5));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2));
 //
 //        rayData.setComputeVerticalDiffraction(true);
 //
@@ -1084,7 +1069,7 @@ public class TestComputeRaysFull {
 //
 //        if(storeGeoJSONRays) {
 //            exportRays("target/T18b.geojson", propDataOut);
-//            exportScene("target/T18b.kml", manager, propDataOut);
+//            exportScene("target/T18b.kml", builder, propDataOut);
 //        } else {
 //            assertRaysEquals(TestComputeRaysFull.class.getResourceAsStream("T18b.geojson"), propDataOut);
 //        }
@@ -1105,40 +1090,40 @@ public class TestComputeRaysFull {
 //        Envelope cellEnvelope = new Envelope(new Coordinate(-250., -250., 0.), new Coordinate(250, 250, 0.));
 //
 //        //Create obstruction test object
-//        MeshBuilder mesh = new MeshBuilder();
+//        ProfileBuilder builder = new ProfileBuilder();
 //
 //
 //
 //        // Add building
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+//        builder.addBuilding(factory.createPolygon(new Coordinate[]{
 //                new Coordinate(156, 28),
 //                new Coordinate(145, 7),
 //                new Coordinate(145, 8),
 //                new Coordinate(156, 29),
 //                new Coordinate(156, 28)}), 14);
 //
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+//        builder.addBuilding(factory.createPolygon(new Coordinate[]{
 //                new Coordinate(175, 35),
 //                new Coordinate(188, 19),
 //                new Coordinate(188, 20),
 //                new Coordinate(175, 36),
 //                new Coordinate(175, 35)}), 14.5);
 //
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+//        builder.addBuilding(factory.createPolygon(new Coordinate[]{
 //                new Coordinate(100, 24),
 //                new Coordinate(118, 24),
 //                new Coordinate(118, 30),
 //                new Coordinate(100, 30),
 //                new Coordinate(100, 24)}), 12);
 //
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+//        builder.addBuilding(factory.createPolygon(new Coordinate[]{
 //                new Coordinate(100, 15.1),
 //                new Coordinate(118, 15.1),
 //                new Coordinate(118, 23.9),
 //                new Coordinate(100, 23.9),
 //                new Coordinate(100, 15.1)}), 7);
 //
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+//        builder.addBuilding(factory.createPolygon(new Coordinate[]{
 //                new Coordinate(100, 9),
 //                new Coordinate(118, 9),
 //                new Coordinate(118, 15),
@@ -1167,19 +1152,19 @@ public class TestComputeRaysFull {
 //        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
 //        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
 //
-//        mesh.finishPolygonFeeding(cellEnvelope);
+//        builder.finishFeeding();
 //
 //        //Retrieve Delaunay triangulation of scene
-//        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+//        FastObstructionTest builder = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
 //                mesh.getTriNeighbors(), mesh.getVertices());
 //
-//        PropagationProcessData rayData = new PropagationProcessData(manager);
+//        CnossosPropagationData rayData = new CnossosPropagationData(builder);
 //        rayData.addReceiver(new Coordinate(200, 30, 14));
 //        rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
 //        rayData.setComputeHorizontalDiffraction(true);
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9));
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -100, 100)), 0.5));
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -100, 100)), 0.5));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2));
 //
 //        rayData.setComputeVerticalDiffraction(true);
 //
@@ -1191,7 +1176,7 @@ public class TestComputeRaysFull {
 //
 //        if(storeGeoJSONRays) {
 //            exportRays("target/T19.geojson", propDataOut);
-//            exportScene("target/T19.kml", manager, propDataOut);
+//            exportScene("target/T19.kml", builder, propDataOut);
 //        } else {
 //            assertRaysEquals(TestComputeRaysFull.class.getResourceAsStream("T19.geojson"), propDataOut);
 //        }
@@ -1209,10 +1194,10 @@ public class TestComputeRaysFull {
 //        Envelope cellEnvelope = new Envelope(new Coordinate(-250., -250., 0.), new Coordinate(250, 250, 0.));
 //
 //        //Create obstruction test object
-//        MeshBuilder mesh = new MeshBuilder();
+//        ProfileBuilder builder = new ProfileBuilder();
 //
 //        // Add building
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+//        builder.addBuilding(factory.createPolygon(new Coordinate[]{
 //                new Coordinate(167.2, 39.5),
 //                new Coordinate(151.6, 48.5),
 //                new Coordinate(141.1, 30.3),
@@ -1244,19 +1229,19 @@ public class TestComputeRaysFull {
 //        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
 //        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
 //
-//        mesh.finishPolygonFeeding(cellEnvelope);
+//        builder.finishFeeding();
 //
 //        //Retrieve Delaunay triangulation of scene
-//        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+//        FastObstructionTest builder = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
 //                mesh.getTriNeighbors(), mesh.getVertices());
 //
-//        PropagationProcessData rayData = new PropagationProcessData(manager);
+//        CnossosPropagationData rayData = new CnossosPropagationData(builder);
 //        rayData.addReceiver(new Coordinate(187.05, 25, 14));
 //        rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
 //        rayData.setComputeHorizontalDiffraction(true);
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9));
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -100, 100)), 0.5));
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -100, 100)), 0.5));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2));
 //
 //        rayData.setComputeVerticalDiffraction(true);
 //
@@ -1268,7 +1253,7 @@ public class TestComputeRaysFull {
 //
 //        if(storeGeoJSONRays) {
 //            exportRays("target/T21.geojson", propDataOut);
-//            exportScene("target/T21.kml", manager, propDataOut);
+//            exportScene("target/T21.kml", builder, propDataOut);
 //        } else {
 //            assertRaysEquals(TestComputeRaysFull.class.getResourceAsStream("T21.geojson"), propDataOut);
 //        }
@@ -1288,10 +1273,10 @@ public class TestComputeRaysFull {
 //        Envelope cellEnvelope = new Envelope(new Coordinate(-250., -250., 0.), new Coordinate(250, 250, 0.));
 //
 //        //Create obstruction test object
-//        MeshBuilder mesh = new MeshBuilder();
+//        ProfileBuilder builder = new ProfileBuilder();
 //
 //        // Add building
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+//        builder.addBuilding(factory.createPolygon(new Coordinate[]{
 //                new Coordinate(197, 36.0, 0),
 //                new Coordinate(179, 36, 0),
 //                new Coordinate(179, 15, 0),
@@ -1324,19 +1309,19 @@ public class TestComputeRaysFull {
 //        mesh.addTopographicPoint(new Coordinate(185, 75, 10));
 //        mesh.addTopographicPoint(new Coordinate(185, -5, 10));
 //
-//        mesh.finishPolygonFeeding(cellEnvelope);
+//        builder.finishFeeding();
 //
 //        //Retrieve Delaunay triangulation of scene
-//        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+//        FastObstructionTest builder = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
 //                mesh.getTriNeighbors(), mesh.getVertices());
 //
-//        PropagationProcessData rayData = new PropagationProcessData(manager);
+//        CnossosPropagationData rayData = new CnossosPropagationData(builder);
 //        rayData.addReceiver(new Coordinate(187.05, 25, 14));
 //        rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
 //        rayData.setComputeHorizontalDiffraction(true);
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9));
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -100, 100)), 0.5));
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -100, 100)), 0.5));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2));
 //
 //        rayData.setComputeVerticalDiffraction(true);
 //
@@ -1348,7 +1333,7 @@ public class TestComputeRaysFull {
 //
 //        if(storeGeoJSONRays) {
 //            exportRays("target/T22.geojson", propDataOut);
-//            exportScene("target/T22.kml", manager, propDataOut);
+//            exportScene("target/T22.kml", builder, propDataOut);
 //        } else {
 //            assertRaysEquals(TestComputeRaysFull.class.getResourceAsStream("T22.geojson"), propDataOut);
 //        }
@@ -1368,17 +1353,17 @@ public class TestComputeRaysFull {
 //        Envelope cellEnvelope = new Envelope(new Coordinate(-250., -250., 0.), new Coordinate(250, 250, 0.));
 //
 //        //Create obstruction test object
-//        MeshBuilder mesh = new MeshBuilder();
+//        ProfileBuilder builder = new ProfileBuilder();
 //
 //        // Add building
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+//        builder.addBuilding(factory.createPolygon(new Coordinate[]{
 //                new Coordinate(75, 34, 0),
 //                new Coordinate(110, 34, 0),
 //                new Coordinate(110, 26, 0),
 //                new Coordinate(75, 26, 0),
 //                new Coordinate(75, 34, 0)}), 9);
 //
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+//        builder.addBuilding(factory.createPolygon(new Coordinate[]{
 //                new Coordinate(83, 18, 0),
 //                new Coordinate(118, 18, 0),
 //                new Coordinate(118, 10, 0),
@@ -1420,17 +1405,17 @@ public class TestComputeRaysFull {
 //        mesh.addTopographicPoint(new Coordinate(67.35, -6.93, 5));
 //        mesh.addTopographicPoint(new Coordinate(68.68, -6.49, 5));
 //
-//        mesh.finishPolygonFeeding(cellEnvelope);
+//        builder.finishFeeding();
 //
 //        //Retrieve Delaunay triangulation of scene
-//        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+//        FastObstructionTest builder = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
 //                mesh.getTriNeighbors(), mesh.getVertices());
 //
-//        PropagationProcessData rayData = new PropagationProcessData(manager);
+//        CnossosPropagationData rayData = new CnossosPropagationData(builder);
 //        rayData.addReceiver(new Coordinate(107, 25.95, 4));
 //        rayData.addSource(factory.createPoint(new Coordinate(38, 14, 1)));
 //        rayData.setComputeHorizontalDiffraction(true);
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(0, 250, -100, 100)), 0.));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(0, 250, -100, 100)), 0.));
 //
 //        rayData.setComputeVerticalDiffraction(true);
 //
@@ -1442,7 +1427,7 @@ public class TestComputeRaysFull {
 //
 //        if(storeGeoJSONRays) {
 //            exportRays("target/T23.geojson", propDataOut);
-//            exportScene("target/T23.kml", manager, propDataOut);
+//            exportScene("target/T23.kml", builder, propDataOut);
 //        } else {
 //            assertRaysEquals(TestComputeRaysFull.class.getResourceAsStream("T23.geojson"), propDataOut);
 //        }
@@ -1462,45 +1447,45 @@ public class TestComputeRaysFull {
 //        Envelope cellEnvelope = new Envelope(new Coordinate(-1500., -1500., 0.), new Coordinate(1500, 1500, 0.));
 //
 //        //Create obstruction test object
-//        MeshBuilder mesh = new MeshBuilder();
+//        ProfileBuilder builder = new ProfileBuilder();
 //
 //        // Add building
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+//        builder.addBuilding(factory.createPolygon(new Coordinate[]{
 //                new Coordinate(113, 10, 0+upKml),
 //                new Coordinate(127, 16, 0+upKml),
 //                new Coordinate(102, 70, 0+upKml),
 //                new Coordinate(88, 64, 0+upKml),
 //                new Coordinate(113, 10, 0+upKml)}), 6);
 //
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+//        builder.addBuilding(factory.createPolygon(new Coordinate[]{
 //                new Coordinate(176, 19, 0+upKml),
 //                new Coordinate(164, 88, 0+upKml),
 //                new Coordinate(184, 91, 0+upKml),
 //                new Coordinate(196, 22, 0+upKml),
 //                new Coordinate(176, 19, 0+upKml)}), 10);
 //
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+//        builder.addBuilding(factory.createPolygon(new Coordinate[]{
 //                new Coordinate(250, 70, 0+upKml),
 //                new Coordinate(250, 180, 0+upKml),
 //                new Coordinate(270, 180, 0+upKml),
 //                new Coordinate(270, 70, 0+upKml),
 //                new Coordinate(250, 70, 0+upKml)}), 14);
 //
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+//        builder.addBuilding(factory.createPolygon(new Coordinate[]{
 //                new Coordinate(332, 32, 0+upKml),
 //                new Coordinate(348, 126, 0+upKml),
 //                new Coordinate(361, 108, 0+upKml),
 //                new Coordinate(349, 44, 0+upKml),
 //                new Coordinate(332, 32, 0+upKml)}), 10);
 //
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+//        builder.addBuilding(factory.createPolygon(new Coordinate[]{
 //                new Coordinate(400, 5, 0+upKml),
 //                new Coordinate(400, 85, 0+upKml),
 //                new Coordinate(415, 85, 0+upKml),
 //                new Coordinate(415, 5, 0+upKml),
 //                new Coordinate(400, 5, 0+upKml)}), 9);
 //
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+//        builder.addBuilding(factory.createPolygon(new Coordinate[]{
 //                new Coordinate(444, 47, 0+upKml),
 //                new Coordinate(436, 136, 0+upKml),
 //                new Coordinate(516, 143, 0+upKml),
@@ -1511,14 +1496,14 @@ public class TestComputeRaysFull {
 //                new Coordinate(459, 48, 0+upKml),
 //                new Coordinate(444, 47, 0+upKml)}), 12);
 //
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+//        builder.addBuilding(factory.createPolygon(new Coordinate[]{
 //                new Coordinate(773, 12, 0+upKml),
 //                new Coordinate(728, 90, 0+upKml),
 //                new Coordinate(741, 98, 0+upKml),
 //                new Coordinate(786, 20, 0+upKml),
 //                new Coordinate(773, 12, 0+upKml)}), 14);
 //
-//        mesh.addGeometry(factory.createPolygon(new Coordinate[]{
+//        builder.addBuilding(factory.createPolygon(new Coordinate[]{
 //                new Coordinate(972, 82, 0+upKml),
 //                new Coordinate(979, 121, 0+upKml),
 //                new Coordinate(993, 118, 0+upKml),
@@ -1531,17 +1516,17 @@ public class TestComputeRaysFull {
 //        mesh.addTopographicPoint(new Coordinate(-1300, 1300, 0+upKml));
 //        mesh.addTopographicPoint(new Coordinate(1300, -1300, 0+upKml));
 //
-//        mesh.finishPolygonFeeding(cellEnvelope);
+//        builder.finishFeeding();
 //
 //        //Retrieve Delaunay triangulation of scene
-//        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+//        FastObstructionTest builder = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
 //                mesh.getTriNeighbors(), mesh.getVertices());
 //
-//        PropagationProcessData rayData = new PropagationProcessData(manager);
+//        CnossosPropagationData rayData = new CnossosPropagationData(builder);
 //        rayData.addReceiver(new Coordinate(1000, 100, 1+upKml));
 //        rayData.addSource(factory.createPoint(new Coordinate(0, 50, 4+upKml)));
 //        rayData.setComputeHorizontalDiffraction(true);
-//        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(-11, 1011, -300, 300)), 0.5));
+//       builder.addGroundEffect(factory.toGeometry(new Envelope(-11, 1011, -300, 300)), 0.5));
 //        rayData.maxSrcDist = 1500;
 //        rayData.setComputeVerticalDiffraction(true);
 //
@@ -1553,7 +1538,7 @@ public class TestComputeRaysFull {
 //
 //        if(storeGeoJSONRays) {
 //            exportRays("target/T28.geojson", propDataOut);
-//            exportScene("target/T28.kml", manager, propDataOut);
+//            exportScene("target/T28.kml", builder, propDataOut);
 //        } else {
 //            assertRaysEquals(TestComputeRaysFull.class.getResourceAsStream("T28.geojson"), propDataOut);
 //        }
@@ -1574,7 +1559,7 @@ public class TestComputeRaysFull {
         jsonDocument.writeFooter();
     }
 
-    private void exportScene(String name, FastObstructionTest manager, ComputeRaysOutAttenuation result) throws IOException {
+    private void exportScene(String name, ProfileBuilder builder, ComputeRaysOutAttenuation result) throws IOException {
         try {
             Coordinate proj = new Coordinate( 351714.794877, 6685824.856402, 0);
             FileOutputStream outData = new FileOutputStream(name);
@@ -1582,14 +1567,12 @@ public class TestComputeRaysFull {
             kmlDocument.setInputCRS("EPSG:2154");
             kmlDocument.setOffset(proj);
             kmlDocument.writeHeader();
-            if(manager != null) {
-                kmlDocument.writeTopographic(manager.getTriangles(), manager.getVertices());
+            if(builder != null) {
+                kmlDocument.writeTopographic(builder.getTriangles(), builder.getVertices());
+                kmlDocument.writeBuildings(builder);
             }
             if(result != null) {
                 kmlDocument.writeRays(result.getPropagationPaths());
-            }
-            if(manager != null && manager.isHasBuildingWithHeight()) {
-                kmlDocument.writeBuildings(manager);
             }
             kmlDocument.writeFooter();
         } catch (XMLStreamException | CoordinateOperationException | CRSException ex) {
@@ -1615,7 +1598,7 @@ public class TestComputeRaysFull {
         assertEquals(rootNode, resultNode);
     }
 
-    private static Geometry addGround(MeshBuilder mesh) throws IOException {
+    private static Geometry addGround(ProfileBuilder builder) throws IOException {
         List<LineSegment> lineSegments = new ArrayList<>();
         lineSegments.add(new LineSegment(new Coordinate(0, 80, 0), new Coordinate(225, 80, 0)));
         lineSegments.add(new LineSegment(new Coordinate(225, 80, 0), new Coordinate(225, -20, 0)));
@@ -1641,7 +1624,7 @@ public class TestComputeRaysFull {
         geo = geo.union();
         geo = Densifier3D.densify(geo, 4);
         for(Coordinate pt : geo.getCoordinates()) {
-            mesh.addTopographicPoint(pt);
+            builder.addTopographicPoint(pt);
         }
 //        for(int idGeo = 0; idGeo < geo.getNumGeometries(); idGeo++) {
 //            Geometry line = geo.getGeometryN(idGeo);

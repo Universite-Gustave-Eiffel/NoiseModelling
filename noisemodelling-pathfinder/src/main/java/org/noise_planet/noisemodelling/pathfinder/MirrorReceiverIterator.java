@@ -46,7 +46,7 @@ import java.util.*;
  */
 public class MirrorReceiverIterator implements Iterator<MirrorReceiverResult> {
     private final Coordinate receiverCoord;
-    private final List<FastObstructionTest.Wall> nearBuildingsWalls;
+    private final List<ProfileBuilder.Wall> nearBuildingsWalls;
     private final LineSegment srcReceiver;
     private final double distanceLimitation;
     private final double propagationLimitation;
@@ -55,7 +55,7 @@ public class MirrorReceiverIterator implements Iterator<MirrorReceiverResult> {
     private MirrorReceiverResult current = null;
     private final int maxDepth;
 
-    private MirrorReceiverIterator(Coordinate receiverCoord, List<FastObstructionTest.Wall> nearBuildingsWalls,
+    private MirrorReceiverIterator(Coordinate receiverCoord, List<ProfileBuilder.Wall> nearBuildingsWalls,
                                   LineSegment srcReceiver, double distanceLimitation, int maxDepth, double propagationLimitation) {
         this.receiverCoord = receiverCoord;
         this.nearBuildingsWalls = nearBuildingsWalls;
@@ -81,31 +81,31 @@ public class MirrorReceiverIterator implements Iterator<MirrorReceiverResult> {
             List<Integer> currentWall = wallIdentifierIt.next();
             MirrorReceiverResult parent = fetchParent(current, currentWall);
             int wallId = currentWall.get(currentWall.size() - 1);
-            FastObstructionTest.Wall wall = nearBuildingsWalls.get(wallId);
+            ProfileBuilder.Wall wall = nearBuildingsWalls.get(wallId);
             //Counter ClockWise test. Walls vertices are CCW oriented.
             //This help to test if a wall could see a point or another wall
             //If the triangle formed by two point of the wall + the receiver is CCW then the wall is oriented toward the point.
             boolean isCCW;
             Coordinate receiverIm;
             if (parent == null) { //If it is the first depth wall
-                isCCW = MirrorReceiverIterator.wallPointTest(wall, receiverCoord);
+                isCCW = MirrorReceiverIterator.wallPointTest(wall.getLine(), receiverCoord);
                 receiverIm = receiverCoord;
             } else {
                 //Call wall visibility test
                 receiverIm = parent.getReceiverPos();
-                isCCW = MirrorReceiverIterator.wallWallTest(nearBuildingsWalls.get(parent.getWallId()), wall)
-                         && MirrorReceiverIterator.wallPointTest(wall, receiverCoord);
+                isCCW = MirrorReceiverIterator.wallWallTest(nearBuildingsWalls.get(parent.getWallId()).getLine(), wall.getLine())
+                         && MirrorReceiverIterator.wallPointTest(wall.getLine(), receiverCoord);
             }
             if (isCCW) {
-                Coordinate intersectionPt = wall.project(receiverIm);
-                if (wall.distance(srcReceiver) < distanceLimitation) // Test maximum distance constraint
+                Coordinate intersectionPt = wall.getLine().project(receiverIm);
+                if (wall.getLine().distance(srcReceiver) < distanceLimitation) // Test maximum distance constraint
                 {
                     Coordinate mirrored = new Coordinate(2 * intersectionPt.x
                             - receiverIm.x, 2 * intersectionPt.y
                             - receiverIm.y, receiverIm.z);
                     if (srcReceiver.p0.distance(mirrored) < propagationLimitation) {
                         next = new MirrorReceiverResult(mirrored,
-                                parent, wallId, wall.getBuildingId());
+                                parent, wallId, wall.getOriginId());
                         break;
                     }
                 }
@@ -177,13 +177,13 @@ public class MirrorReceiverIterator implements Iterator<MirrorReceiverResult> {
 
     public static final class It implements Iterable<MirrorReceiverResult> {
         private final Coordinate receiverCoord;
-        private final List<FastObstructionTest.Wall> nearBuildingsWalls;
+        private final List<ProfileBuilder.Wall> nearBuildingsWalls;
         private final LineSegment srcReceiver;
         private final double distanceLimitation;
         private final int maxDepth;
         private final double propagationLimitation;
 
-        public It(Coordinate receiverCoord, List<FastObstructionTest.Wall> nearBuildingsWalls,
+        public It(Coordinate receiverCoord, List<ProfileBuilder.Wall> nearBuildingsWalls,
                   LineSegment srcReceiver, double distanceLimitation, int maxDepth, double propagationLimitation) {
             this.receiverCoord = receiverCoord;
             this.nearBuildingsWalls = nearBuildingsWalls;

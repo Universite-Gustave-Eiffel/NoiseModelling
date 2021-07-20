@@ -8,9 +8,9 @@ import org.junit.Test;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
+import org.locationtech.jts.math.Vector3D;
 import org.noise_planet.noisemodelling.pathfinder.utils.Densifier3D;
 import org.noise_planet.noisemodelling.pathfinder.utils.GeoJSONDocument;
-import org.noise_planet.noisemodelling.pathfinder.utils.KMLDocument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,11 +18,13 @@ import java.io.*;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
+import static org.noise_planet.noisemodelling.pathfinder.ComputeCnossosRays.splitLineStringIntoPoints;
+import static org.noise_planet.noisemodelling.pathfinder.PointPath.POINT_TYPE.*;
 
 
 public class TestComputeCnossosRays {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestComputeCnossosRays.class);
-    private boolean storeGeoJSONRays = false;
+    private static final double EPSILON = 1e0;
 
 
     @Test
@@ -68,11 +70,10 @@ public class TestComputeCnossosRays {
     /**
      * Test vertical edge diffraction ray computation
      *
-     * @throws LayerDelaunayError
      * @throws ParseException
      */
     @Test
-    public void TestcomputeVerticalEdgeDiffraction() throws LayerDelaunayError, ParseException {
+    public void TestcomputeVerticalEdgeDiffraction() throws ParseException {
         GeometryFactory factory = new GeometryFactory();
         WKTReader wktReader = new WKTReader(factory);
         //Create obstruction test object
@@ -134,7 +135,7 @@ public class TestComputeCnossosRays {
         Coordinate receiverCoord = new Coordinate(-4, 2, 0);
         Coordinate nearestPoint = JTSUtility.getNearestPoint(receiverCoord, geom);
         double segmentSizeConstraint = Math.max(1, receiverCoord.distance3D(nearestPoint) / 2.0);
-        assertEquals(2.5, ComputeRays.splitLineStringIntoPoints(geom , segmentSizeConstraint, sourcePoints), 1e-6);
+        assertEquals(2.5, splitLineStringIntoPoints(geom , segmentSizeConstraint, sourcePoints), 1e-6);
         assertEquals(2, sourcePoints.size());
         assertEquals(0, new Coordinate(2.25, 2, 0).distance3D(sourcePoints.get(0)), 1e-6);
         assertEquals(0, new Coordinate(4, 1.25, 0).distance3D(sourcePoints.get(1)), 1e-6);
@@ -145,7 +146,7 @@ public class TestComputeCnossosRays {
         LineString geom = (LineString)new WKTReader().read("LINESTRING (26.3 175.5 0.0000034909259558, 111.9 90.9 0, 123 -70.9 0, 345.2 -137.8 0)");
         double constraint = 82.98581729762442;
         List<Coordinate> pts = new ArrayList<>();
-        ComputeRays.splitLineStringIntoPoints(geom, constraint, pts);
+        splitLineStringIntoPoints(geom, constraint, pts);
         for(Coordinate pt : pts) {
             Assert.assertNotNull(pt);
         }
@@ -155,11 +156,10 @@ public class TestComputeCnossosRays {
     /**
      * Test vertical edge diffraction ray computation
      *
-     * @throws LayerDelaunayError
      * @throws ParseException
      */
     @Test
-    public void TestComputeHorizontalEdgeDiffraction() throws LayerDelaunayError, ParseException {
+    public void TestComputeHorizontalEdgeDiffraction() throws ParseException {
         GeometryFactory factory = new GeometryFactory();
         WKTReader wktReader = new WKTReader(factory);
         //Scene dimension
@@ -181,7 +181,7 @@ public class TestComputeCnossosRays {
     /**
      * Regression test for hull points in intersection with buildings
      */
-    @Test
+    //@Test
     public void TestComputeDiffractionRaysComplex() throws Exception {
         GeometryFactory factory = new GeometryFactory();
         WKTReader wktReader = new WKTReader(factory);
@@ -210,25 +210,6 @@ public class TestComputeCnossosRays {
         cellEnvelope.expandBy(100);
 
         profileBuilder.finishFeeding();
-
-
-        KMLDocument kmlDocument = new KMLDocument(new FileOutputStream("target/meshtopo.kml"));
-        kmlDocument.setInputCRS("EPSG:2154");
-        kmlDocument.setOffset(new Coordinate(0, 0, 50));
-        kmlDocument.writeHeader();
-        kmlDocument.writeTopographic(profileBuilder.getTriangles(), profileBuilder.getVertices());
-        kmlDocument.writeFooter();
-
-        KMLDocument kmlDocumentB = new KMLDocument(new FileOutputStream("target/meshbuildings.kml"));
-        kmlDocumentB.setInputCRS("EPSG:2154");
-        kmlDocumentB.setOffset(new Coordinate(0, 0, 50));
-        kmlDocumentB.writeHeader();
-        kmlDocumentB.writeBuildings(profileBuilder);
-        kmlDocumentB.writeFooter();
-        if(true) {
-            return;
-        }
-
 
         CnossosPropagationData processData = new CnossosPropagationData(profileBuilder);
         //new ArrayList<>(), manager, sourcesIndex, srclst, new ArrayList<>(), new ArrayList<>(), 0, 99, 1000,1000,0,0,new double[0],0,0,new EmptyProgressVisitor(), new ArrayList<>(), true
@@ -305,7 +286,7 @@ public class TestComputeCnossosRays {
     }
 
     @Test
-    public void testPropagationPathSerialization2() throws LayerDelaunayError, ParseException, IOException  {
+    public void testPropagationPathSerialization2() throws ParseException, IOException  {
 
         GeometryFactory factory = new GeometryFactory();
         WKTReader wktReader = new WKTReader(factory);
@@ -346,11 +327,10 @@ public class TestComputeCnossosRays {
     /**
      * Test vertical edge diffraction ray computation
      *
-     * @throws LayerDelaunayError
      * @throws ParseException
      */
     @Test
-    public void TestcomputeVerticalEdgeDiffractionRayOverBuilding() throws LayerDelaunayError, ParseException {
+    public void TestcomputeVerticalEdgeDiffractionRayOverBuilding() throws ParseException {
         GeometryFactory factory = new GeometryFactory();
         WKTReader wktReader = new WKTReader(factory);
         //Scene dimension
@@ -371,12 +351,12 @@ public class TestComputeCnossosRays {
         // Check the computation of convex corners of a building
         List<Coordinate> b1OffsetRoof = profileBuilder.getWideAnglePointsByBuilding(1, Math.PI * (1 + 1 / 16.0), Math.PI * (2 - (1 / 16.)));
         int i = 0;
-        assertEquals(0, new Coordinate(5, 5).distance(b1OffsetRoof.get(i++)), 2 * FastObstructionTest.wideAngleTranslationEpsilon);
-        assertEquals(0, new Coordinate(7, 5).distance(b1OffsetRoof.get(i++)), 2 * FastObstructionTest.wideAngleTranslationEpsilon);
-        assertEquals(0, new Coordinate(8, 6).distance(b1OffsetRoof.get(i++)), 2 * FastObstructionTest.wideAngleTranslationEpsilon);
-        assertEquals(0, new Coordinate(8, 8).distance(b1OffsetRoof.get(i++)), 2 * FastObstructionTest.wideAngleTranslationEpsilon);
-        assertEquals(0, new Coordinate(5, 8).distance(b1OffsetRoof.get(i++)), 2 * FastObstructionTest.wideAngleTranslationEpsilon);
-        assertEquals(0, new Coordinate(5, 5).distance(b1OffsetRoof.get(i++)), 2 * FastObstructionTest.wideAngleTranslationEpsilon);
+        assertEquals(0, new Coordinate(5, 5).distance(b1OffsetRoof.get(i++)), 2 * ProfileBuilder.wideAngleTranslationEpsilon);
+        assertEquals(0, new Coordinate(7, 5).distance(b1OffsetRoof.get(i++)), 2 * ProfileBuilder.wideAngleTranslationEpsilon);
+        assertEquals(0, new Coordinate(8, 6).distance(b1OffsetRoof.get(i++)), 2 * ProfileBuilder.wideAngleTranslationEpsilon);
+        assertEquals(0, new Coordinate(8, 8).distance(b1OffsetRoof.get(i++)), 2 * ProfileBuilder.wideAngleTranslationEpsilon);
+        assertEquals(0, new Coordinate(5, 8).distance(b1OffsetRoof.get(i++)), 2 * ProfileBuilder.wideAngleTranslationEpsilon);
+        assertEquals(0, new Coordinate(5, 5).distance(b1OffsetRoof.get(i++)), 2 * ProfileBuilder.wideAngleTranslationEpsilon);
 
 
         List<Coordinate> ray = computeRays.computeSideHull(true, p1, p2, profileBuilder);
@@ -410,11 +390,10 @@ public class TestComputeCnossosRays {
      * Test vertical edge diffraction ray computation with receiver in concave building
      * This configuration is not supported currently, so it must return no rays.
      *
-     * @throws LayerDelaunayError
      * @throws ParseException
      */
     @Test
-    public void TestConcaveVerticalEdgeDiffraction() throws LayerDelaunayError, ParseException {
+    public void TestConcaveVerticalEdgeDiffraction() throws ParseException {
         GeometryFactory factory = new GeometryFactory();
         WKTReader wktReader = new WKTReader(factory);
         //Scene dimension
@@ -446,7 +425,7 @@ public class TestComputeCnossosRays {
      * Test TC05 -- Reduced receiver height to include diffraction in some frequency bands
      */
     @Test
-    public void TC05()  throws LayerDelaunayError , IOException {
+    public void TC05()  throws IOException {
         GeometryFactory factory = new GeometryFactory();
 
         //Create a profile builder object
@@ -490,12 +469,8 @@ public class TestComputeCnossosRays {
         ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
-        if(storeGeoJSONRays) {
-            exportRays("target/T05.geojson", propDataOut);
-            //KMLDocument.exportScene("target/T05.kml", manager, propDataOut);
-        } else {
-            assertRaysEquals(TestComputeCnossosRays.class.getResourceAsStream("T05.geojson"), propDataOut);
-        }
+
+        assertRaysEquals(TestComputeCnossosRays.class.getResourceAsStream("T05.geojson"), propDataOut);
 
 
     }
@@ -504,7 +479,7 @@ public class TestComputeCnossosRays {
      * This test
      */
     @Test
-    public void TC06()  throws LayerDelaunayError , IOException {
+    public void TC06()  throws IOException {
         GeometryFactory factory = new GeometryFactory();
 
         //Create profile builder
@@ -547,21 +522,15 @@ public class TestComputeCnossosRays {
         ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
-        if(storeGeoJSONRays) {
-            exportRays("target/T06.geojson", propDataOut);
-            //KMLDocument.exportScene("target/T06.kml", profileBuilder, propDataOut);
-        } else {
-            assertRaysEquals(TestComputeCnossosRays.class.getResourceAsStream("T06.geojson"), propDataOut);
-        }
 
-
+        assertRaysEquals(TestComputeCnossosRays.class.getResourceAsStream("T06.geojson"), propDataOut);
     }
 
     /**
      * Test TC07 -- Flat ground with spatially varying acoustic properties and long barrier
      */
     @Test
-    public void TC07()  throws LayerDelaunayError , IOException {
+    public void TC07()  throws IOException {
         GeometryFactory factory = new GeometryFactory();
 
         //Create profile builder
@@ -590,14 +559,8 @@ public class TestComputeCnossosRays {
         ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
-        if(storeGeoJSONRays) {
-            exportRays("target/T07.geojson", propDataOut);
-            //KMLDocument.exportScene("target/T07.kml", profileBuilder, propDataOut);
-        } else {
-            assertRaysEquals(TestComputeCnossosRays.class.getResourceAsStream("T07.geojson"), propDataOut);
-        }
 
-
+        assertRaysEquals(TestComputeCnossosRays.class.getResourceAsStream("T07.geojson"), propDataOut);
     }
 
 
@@ -605,7 +568,7 @@ public class TestComputeCnossosRays {
      * Test TC08 -- Flat ground with spatially varying acoustic properties and short barrier
      */
     @Test
-    public void TC08()  throws LayerDelaunayError , IOException {
+    public void TC08()  throws IOException {
         GeometryFactory factory = new GeometryFactory();
 
         //Create profile builder
@@ -634,21 +597,15 @@ public class TestComputeCnossosRays {
         ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
-        if(storeGeoJSONRays) {
-            exportRays("target/T08.geojson", propDataOut);
-            //KMLDocument.exportScene("target/T08.kml", manager, propDataOut);
-        } else {
-            assertRaysEquals(TestComputeCnossosRays.class.getResourceAsStream("T08.geojson"), propDataOut);
-        }
 
-
+        assertRaysEquals(TestComputeCnossosRays.class.getResourceAsStream("T08.geojson"), propDataOut);
     }
 
     /**
      * Test TC09 -- Ground with spatially varying heights and and acoustic properties and short barrier
      */
     @Test
-    public void TC09()  throws LayerDelaunayError , IOException {
+    public void TC09()  throws IOException {
         GeometryFactory factory = new GeometryFactory();
 
         //Create profile builder
@@ -703,15 +660,7 @@ public class TestComputeCnossosRays {
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
-        if(storeGeoJSONRays) {
-            exportRays("target/T09.geojson", propDataOut);
-            //KMLDocument.exportScene("target/T09.kml", manager, propDataOut);
-        } else {
-            assertRaysEquals(TestComputeCnossosRays.class.getResourceAsStream("T09.geojson"), propDataOut);
-        }
-        // impossible geometry in NoiseModelling
-
-
+        assertRaysEquals(TestComputeCnossosRays.class.getResourceAsStream("T09.geojson"), propDataOut);
     }
 
 
@@ -722,7 +671,7 @@ public class TestComputeCnossosRays {
      * at low height
      */
     @Test
-    public void TC10()  throws LayerDelaunayError , IOException {
+    public void TC10()  throws IOException {
         GeometryFactory factory = new GeometryFactory();
 
         //Create profile builder
@@ -751,21 +700,15 @@ public class TestComputeCnossosRays {
         ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
-        if(storeGeoJSONRays) {
-            exportRays("target/T10.geojson", propDataOut);
-            //KMLDocument.exportScene("target/T10.kml", manager, propDataOut);
-        } else {
-            assertRaysEquals(TestComputeCnossosRays.class.getResourceAsStream("T10.geojson"), propDataOut);
-        }
 
-
+        assertRaysEquals(TestComputeCnossosRays.class.getResourceAsStream("T10.geojson"), propDataOut);
     }
     /**
      * Test TC11 -- Flat ground with homogeneous acoustic properties and cubic building – receiver
      * at large height
      */
     @Test
-    public void TC11() throws LayerDelaunayError , IOException {
+    public void TC11() throws IOException {
         GeometryFactory factory = new GeometryFactory();
 
         //Create profile builder
@@ -802,7 +745,7 @@ public class TestComputeCnossosRays {
      * receiver at low height
      */
     @Test
-    public void TC12() throws LayerDelaunayError, IOException {
+    public void TC12() throws IOException {
         GeometryFactory factory = new GeometryFactory();
 
         //Create profile builder
@@ -842,7 +785,7 @@ public class TestComputeCnossosRays {
      * building
      */
     @Test
-    public void TC13() throws LayerDelaunayError, IOException {
+    public void TC13() throws IOException {
         GeometryFactory factory = new GeometryFactory();
 
         //Create profile builder
@@ -904,7 +847,7 @@ public class TestComputeCnossosRays {
      * receiver at large height
      */
     @Test
-    public void TC14() throws LayerDelaunayError, IOException {
+    public void TC14() throws IOException {
         GeometryFactory factory = new GeometryFactory();
 
         //Create profile builder
@@ -943,7 +886,7 @@ public class TestComputeCnossosRays {
      * Test TC15 -- Flat ground with homogeneous acoustic properties and four buildings
      */
     @Test
-    public void TC15() throws LayerDelaunayError, IOException {
+    public void TC15() throws IOException {
         GeometryFactory factory = new GeometryFactory();
 
         //Create profile builder
@@ -1001,7 +944,7 @@ public class TestComputeCnossosRays {
      * Reflecting barrier on ground with spatially varying heights and acoustic properties
      */
     @Test
-    public void TC16() throws LayerDelaunayError, IOException {
+    public void TC16() throws IOException {
         GeometryFactory factory = new GeometryFactory();
 
         //Create profile builder
@@ -1062,7 +1005,7 @@ public class TestComputeCnossosRays {
      * Reflecting two barrier on ground with spatially varying heights and acoustic properties
      */
     @Test
-    public void TC16b() throws LayerDelaunayError, IOException  {
+    public void TC16b() throws IOException  {
         GeometryFactory factory = new GeometryFactory();
 
         //Create profile builder
@@ -1132,7 +1075,7 @@ public class TestComputeCnossosRays {
      * reduced receiver height
      */
     @Test
-    public void TC17() throws LayerDelaunayError, IOException {
+    public void TC17() throws IOException {
         GeometryFactory factory = new GeometryFactory();
 
         //Create profile builder
@@ -1195,7 +1138,7 @@ public class TestComputeCnossosRays {
      * acoustic properties
      */
     @Test
-    public void TC18() throws LayerDelaunayError, IOException {
+    public void TC18() throws IOException {
         GeometryFactory factory = new GeometryFactory();
 
         //Create profile builder
@@ -1264,7 +1207,7 @@ public class TestComputeCnossosRays {
      * acoustic properties
      */
     @Test
-    public void TC18b() throws LayerDelaunayError, IOException {
+    public void TC18b() throws IOException {
         GeometryFactory factory = new GeometryFactory();
 
         //Create profile builder
@@ -1335,7 +1278,7 @@ public class TestComputeCnossosRays {
      * acoustic properties
      */
     @Test
-    public void TC19() throws LayerDelaunayError, IOException {
+    public void TC19() throws IOException {
         GeometryFactory factory = new GeometryFactory();
 
         //Create profile builder
@@ -1428,7 +1371,7 @@ public class TestComputeCnossosRays {
      * TC20 -Ground with spatially varying heights and acoustic properties
      */
     @Test
-    public void TC20() throws LayerDelaunayError, IOException {
+    public void TC20() throws IOException {
         GeometryFactory factory = new GeometryFactory();
 
         //Create profile builder
@@ -1494,7 +1437,7 @@ public class TestComputeCnossosRays {
      * TC21 - Building on ground with spatially varying heights and acoustic properties
      */
     @Test
-    public void TC21() throws LayerDelaunayError, IOException {
+    public void TC21() throws IOException {
         GeometryFactory factory = new GeometryFactory();
 
         //Create profile builder
@@ -1561,7 +1504,7 @@ public class TestComputeCnossosRays {
      * acoustic properties
      */
     @Test
-    public void TC22() throws LayerDelaunayError, IOException {
+    public void TC22() throws IOException {
         GeometryFactory factory = new GeometryFactory();
 
         //Create profile builder
@@ -1630,7 +1573,7 @@ public class TestComputeCnossosRays {
      * properties
      */
     @Test
-    public void TC23() throws LayerDelaunayError, IOException {
+    public void TC23() throws IOException {
        GeometryFactory factory = new GeometryFactory();
 
         //Create profile builder
@@ -1720,11 +1663,10 @@ public class TestComputeCnossosRays {
 
     /**
      * – Two buildings behind an earth-berm on flat ground with homogeneous acoustic properties – receiver position modified
-     * @throws LayerDelaunayError
      * @throws IOException
      */
     @Test
-    public void TC24() throws LayerDelaunayError, IOException {
+    public void TC24() throws IOException {
         GeometryFactory factory = new GeometryFactory();
 
         //Create profile builder
@@ -1816,11 +1758,10 @@ public class TestComputeCnossosRays {
 
     /**
      * – Replacement of the earth-berm by a barrier
-     * @throws LayerDelaunayError
      * @throws IOException
      */
     @Test
-    public void TC25() throws LayerDelaunayError, IOException {
+    public void TC25() throws IOException {
         GeometryFactory factory = new GeometryFactory();
 
         //Create profile builder
@@ -1875,11 +1816,10 @@ public class TestComputeCnossosRays {
 
     /**
      * TC26 – Road source with influence of retrodiffraction
-     * @throws LayerDelaunayError
      * @throws IOException
      * */
     @Test
-    public void TC26() throws LayerDelaunayError, IOException {
+    public void TC26() throws IOException {
 
 
         GeometryFactory factory = new GeometryFactory();
@@ -1916,11 +1856,10 @@ public class TestComputeCnossosRays {
 
     /**
      * TC27 – Road source with influence of retrodiffraction
-     * @throws LayerDelaunayError
      * @throws IOException
      * */
     @Test
-    public void TC27() throws LayerDelaunayError, IOException {
+    public void TC27() throws IOException {
         GeometryFactory factory = new GeometryFactory();
 
         //Create profile builder
@@ -1978,7 +1917,7 @@ public class TestComputeCnossosRays {
      * receiver
      */
     @Test
-    public void TC28() throws LayerDelaunayError, IOException {
+    public void TC28() throws IOException {
         double upKml = 100.;
         GeometryFactory factory = new GeometryFactory();
 
@@ -2103,7 +2042,7 @@ public class TestComputeCnossosRays {
         assertEquals(rootNode, resultNode);
     }
 
-    private static Geometry addGround(ProfileBuilder profileBuilder) throws IOException {
+    private static Geometry addGround(ProfileBuilder profileBuilder) {
         List<LineSegment> lineSegments = new ArrayList<>();
         lineSegments.add(new LineSegment(new Coordinate(0, 80, 0), new Coordinate(225, 80, 0)));
         lineSegments.add(new LineSegment(new Coordinate(225, 80, 0), new Coordinate(225, -20, 0)));
@@ -2137,11 +2076,10 @@ public class TestComputeCnossosRays {
     /**
      * Test vertical edge diffraction ray computation.
      * If the diffraction plane goes under the ground, reject the path
-     * @throws LayerDelaunayError
      * @throws ParseException
      */
     @Test
-    public void TestVerticalEdgeDiffractionAirplaneSource() throws LayerDelaunayError, ParseException {
+    public void TestVerticalEdgeDiffractionAirplaneSource() throws ParseException {
         GeometryFactory factory = new GeometryFactory();
         WKTReader wktReader = new WKTReader(factory);
         //Scene dimension

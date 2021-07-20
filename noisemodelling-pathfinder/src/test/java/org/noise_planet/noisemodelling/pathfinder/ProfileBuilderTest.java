@@ -201,10 +201,10 @@ public class ProfileBuilderTest {
         assertEquals(0.1, pts.get(0).getCoordinate().z, DELTA);
         assertEquals(1.92, pts.get(1).getCoordinate().x, DELTA);
         assertEquals(3.16, pts.get(1).getCoordinate().y, DELTA);
-        assertEquals(Double.NaN, pts.get(1).getCoordinate().z, DELTA);
+        assertEquals(0.0, pts.get(1).getCoordinate().z, DELTA);
         assertEquals(6.11764705882353, pts.get(2).getCoordinate().x, DELTA);
         assertEquals(7.88235294117647, pts.get(2).getCoordinate().y, DELTA);
-        assertEquals(Double.NaN, pts.get(2).getCoordinate().z, DELTA);
+        assertEquals(0.0, pts.get(2).getCoordinate().z, DELTA);
         assertEquals(8.0, pts.get(3).getCoordinate().x, DELTA);
         assertEquals(10.0, pts.get(3).getCoordinate().y, DELTA);
         assertEquals(0.3, pts.get(3).getCoordinate().z, DELTA);
@@ -247,10 +247,6 @@ public class ProfileBuilderTest {
         assertEquals(8.0, pts.get(15).getCoordinate().x, DELTA);
         assertEquals(10.0, pts.get(15).getCoordinate().y, DELTA);
         assertEquals(0.3, pts.get(15).getCoordinate().z, DELTA);
-
-        for(ProfileBuilder.CutPoint cut : pts) {
-            System.out.println(cut);
-        }
     }
 
     //TODO source on ground effect

@@ -50,9 +50,9 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class ComputeRaysOut implements IComputeRaysOut {
     public List<PropagationPath> propagationPaths = Collections.synchronizedList(new ArrayList<PropagationPath>());
-    public PropagationProcessData inputData;
+    public CnossosPropagationData inputData;
 
-    public ComputeRaysOut(boolean keepRays, PropagationProcessData inputData) {
+    public ComputeRaysOut(boolean keepRays, CnossosPropagationData inputData) {
         this.keepRays = keepRays;
         this.inputData = inputData;
     }
@@ -75,7 +75,7 @@ public class ComputeRaysOut implements IComputeRaysOut {
 
     }
 
-    public PropagationProcessData getInputData() {
+    public CnossosPropagationData getInputData() {
         return inputData;
     }
 

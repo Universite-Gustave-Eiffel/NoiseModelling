@@ -470,7 +470,7 @@ public class LDENPointNoiseMapFactoryTest {
                 IComputeRaysOut ret = pointNoiseMap.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers);
                 if(ret instanceof LDENComputeRaysOut) {
                     LDENComputeRaysOut out = (LDENComputeRaysOut)ret;
-                    for(Coordinate v : out.ldenPropagationProcessData.freeFieldFinder.getVertices()) {
+                    for(Coordinate v : out.ldenPropagationProcessData.profileBuilder.getVertices()) {
                         assertEquals(0.0, v.z, 1e-6);
                     }
                 }

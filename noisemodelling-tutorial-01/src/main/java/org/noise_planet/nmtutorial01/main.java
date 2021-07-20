@@ -7,11 +7,11 @@ import org.h2gis.api.ProgressVisitor;
 import org.h2gis.functions.io.csv.CSVDriverFunction;
 import org.h2gis.functions.io.geojson.GeoJsonRead;
 import org.h2gis.utilities.SFSUtilities;
+import org.noise_planet.noisemodelling.pathfinder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.utils.KMLDocument;
 import org.noise_planet.noisemodelling.jdbc.LDENConfig;
 import org.noise_planet.noisemodelling.jdbc.LDENPointNoiseMapFactory;
 import org.noise_planet.noisemodelling.jdbc.PointNoiseMap;
-import org.noise_planet.noisemodelling.pathfinder.FastObstructionTest;
 import org.noise_planet.noisemodelling.pathfinder.IComputeRaysOut;
 import org.noise_planet.noisemodelling.pathfinder.RootProgressVisitor;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
@@ -145,7 +145,7 @@ class Main {
                 // Export as a Google Earth 3d scene
                 if (out instanceof ComputeRaysOutAttenuation) {
                     ComputeRaysOutAttenuation cellStorage = (ComputeRaysOutAttenuation) out;
-                    exportScene(String.format(Locale.ROOT,"target/scene_%d_%d.kml", cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex()), cellStorage.inputData.freeFieldFinder, cellStorage);
+                    exportScene(String.format(Locale.ROOT,"target/scene_%d_%d.kml", cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex()), cellStorage.inputData.profileBuilder, cellStorage);
                 }
             }
         } finally {
@@ -163,20 +163,20 @@ class Main {
     }
 
 
-    public static void exportScene(String name, FastObstructionTest manager, ComputeRaysOutAttenuation result) throws IOException {
+    public static void exportScene(String name, ProfileBuilder builder, ComputeRaysOutAttenuation result) throws IOException {
         try {
             FileOutputStream outData = new FileOutputStream(name);
             KMLDocument kmlDocument = new KMLDocument(outData);
             kmlDocument.setInputCRS("EPSG:2154");
             kmlDocument.writeHeader();
-            if(manager != null) {
-                kmlDocument.writeTopographic(manager.getTriangles(), manager.getVertices());
+            if(builder != null) {
+                kmlDocument.writeTopographic(builder.getTriangles(), builder.getVertices());
             }
             if(result != null) {
                 kmlDocument.writeRays(result.getPropagationPaths());
             }
-            if(manager != null && manager.isHasBuildingWithHeight()) {
-                kmlDocument.writeBuildings(manager);
+            if(builder != null) {
+                kmlDocument.writeBuildings(builder);
             }
             kmlDocument.writeFooter();
         } catch (XMLStreamException | CoordinateOperationException | CRSException ex) {
