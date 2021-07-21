@@ -1215,7 +1215,7 @@ public class ComputeCnossosRays {
         @Override
         public void filter(CoordinateSequence coordinateSequence, int i) {
             Coordinate pt = coordinateSequence.getCoordinate(i);
-            Double zGround = profileBuilder.getZ(pt);
+            Double zGround = profileBuilder.getTopoZ(pt);
             if (!zGround.isNaN() && (resetZ || Double.isNaN(pt.getOrdinate(2)) || Double.compare(0, pt.getOrdinate(2)) == 0)) {
                 pt.setOrdinate(2, zGround + (Double.isNaN(pt.getOrdinate(2)) ? 0 : pt.getOrdinate(2)));
                 geometryChanged.set(true);
