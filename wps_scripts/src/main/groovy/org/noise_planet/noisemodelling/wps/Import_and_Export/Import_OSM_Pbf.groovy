@@ -246,7 +246,7 @@ def exec(Connection connection, input) {
 
     if (!ignoreRoads) {
         sql.execute("DROP TABLE IF EXISTS ROADS")
-        sql.execute("create table ROADS (PK serial, ID_WAY integer, THE_GEOM geometry, LV_D integer, LV_E integer,LV_N integer,HV_D integer,HV_E integer,HV_N integer,LV_SPD_D integer,LV_SPD_E integer,LV_SPD_N integer,HV_SPD_D integer, HV_SPD_E integer,HV_SPD_N integer, PVMT varchar(10));")
+        sql.execute("create table ROADS (PK serial, ID_WAY integer, THE_GEOM geometry, TYPE varchar, LV_D integer, LV_E integer,LV_N integer,HV_D integer,HV_E integer,HV_N integer,LV_SPD_D integer,LV_SPD_E integer,LV_SPD_N integer,HV_SPD_D integer, HV_SPD_E integer,HV_SPD_N integer, PVMT varchar(10));")
 
         for (Road road: handler.roads) {
             if (road.geom.isEmpty()) {
@@ -254,6 +254,7 @@ def exec(Connection connection, input) {
             }
             String query = 'INSERT INTO ROADS(ID_WAY, ' +
                     'THE_GEOM, ' +
+                    'TYPE, ' +
                     'LV_D, LV_E, LV_N, ' +
                     'HV_D, HV_E, HV_N, ' +
                     'LV_SPD_D, LV_SPD_E, LV_SPD_N, ' +
@@ -261,8 +262,8 @@ def exec(Connection connection, input) {
                     'PVMT) ' +
                     ' VALUES (?,' +
                     'st_setsrid(st_updatez(ST_precisionreducer(ST_SIMPLIFYPRESERVETOPOLOGY(ST_TRANSFORM(ST_GeomFromText(?, 4326), '+srid+'),0.1),1), 0.05), ' + srid + '),' +
-                    '?,?,?,?,?,?,?,?,?,?,?,?,?);'
-            sql.execute(query, [road.id, road.geom,
+                    '?,?,?,?,?,?,?,?,?,?,?,?,?,?);'
+            sql.execute(query, [road.id, road.geom, road.type,
                     road.getNbLV("d"), road.getNbLV("e"), road.getNbLV("n"),
                     road.getNbHV("d"), road.getNbHV("e"), road.getNbHV("n"),
                     Road.speed[road.category], Road.speed[road.category], Road.speed[road.category],
