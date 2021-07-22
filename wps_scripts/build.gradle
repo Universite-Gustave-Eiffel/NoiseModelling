@@ -21,6 +21,7 @@ publishing {
     }
 }
 repositories {
+    mavenLocal() // TODO remove this on major release
     mavenCentral()
     maven {
         url "libs/"
@@ -40,7 +41,6 @@ repositories {
     maven {
         url "https://repo.matsim.org/repository/matsim/"
     }
-    mavenLocal()
 }
 
 test {
