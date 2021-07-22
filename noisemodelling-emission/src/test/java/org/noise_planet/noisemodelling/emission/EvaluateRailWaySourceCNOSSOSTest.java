@@ -329,11 +329,17 @@ public class EvaluateRailWaySourceCNOSSOSTest {
 
         evaluateRailwaySourceCnossos.setEvaluateRailwaySourceCnossos(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Rail_Vehicles_SNCF_2021.json"), EvaluateRailwaySourceCnossos.class.getResourceAsStream("Rail_Train_SNCF_2021.json"));
 
-        String vehCat = "SNCF19";
+        String vehCat = "SNCF2";
 
         double vehicleSpeed = 80;
         int rollingCondition = 0;
         double idlingTime = 0;
+
+        // Set : Take into account the number of coaches and the number of units
+        double nBCoach = 10;
+        double nBUnit = 2;
+        double acountCoachUnit = 10 * Math.log10(nBUnit*nBCoach);
+
 
         int  nTracks=2;
         int trackTransfer = 5;
@@ -346,14 +352,15 @@ public class EvaluateRailWaySourceCNOSSOSTest {
         double vMaxInfra = 160;
         double vehicleCommercial= 120;
 
+        double tDay = 1;
         double vehiclePerHour = (1000*vehicleSpeed); //for one vehicle
+        double deltaL0 = 10*Math.log10(vehiclePerHour*nTracks);
 
-        double[] expectedValuesLWRolling = new double[]{98.6704,99.6343,101.5298,102.8865,100.3316,99.6011,100.4072,105.7262,107.2207,108.4848,109.4223,110.1035,111.8706,111.4956,108.5828,104.2152,106.5525,105.2982,103.1594,100.7729,101.1764,100.6417,100.6287,102.1869};
-        double[] expectedValuesLWTractionA = new double[]{98.8613,94.7613,92.5613,94.5613,92.7613,92.7613,92.9613,94.7613,94.5613,95.6613,95.5613,98.5613,95.1613,95.0613,95.0613,94.0613,94.0613,99.3613,92.4613,89.4613,86.9613,84.0613,81.4613,79.1613};
-        double[] expectedValuesLWTractionB = new double[]{103.1613,99.9613,95.4613,93.9613,93.2613,93.5613,92.8613,92.6613,92.3613,92.7613,92.7613,96.7613,92.6613,92.9613,92.8613,93.0613,93.1613,98.2613,91.4613,88.6613,85.9613,83.3613,80.8613,78.6613};
-        double[] expectedValuesLWAerodynamicA = new double[]{-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99};
-        double[] expectedValuesLWAerodynamicB = new double[]{-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99};
-        double[] expectedValuesLWBridge = new double[]{-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99};
+        double deltaTDay = 10*Math.log10(tDay)-deltaL0;
+        //
+
+
+        double[] expectedValuesLWRolling = new double[]{16.9475,22.5814,27.2733,44.0837,46.0001,47.3733,49.0470,52.0237,52.6801,53.0160,52.1571,55.0792,59.4930,59.6502,57.2043,55.3730,57.9983,59.5517,58.9960,57.3328,54.5985,49.3786,48.0600,45.9195};
 
         RailwayVehicleParametersCnossos vehicleParameters = new RailwayVehicleParametersCnossos(vehCat, vehicleSpeed,vehiclePerHour, rollingCondition,idlingTime);
         vehicleParameters.setSpectreVer(2);
@@ -362,13 +369,11 @@ public class EvaluateRailWaySourceCNOSSOSTest {
         RailWayLW lWRailWay = evaluateRailwaySourceCnossos.evaluate(vehicleParameters, trackParameters);
 
         for (int idFreq = 0; idFreq < 24; idFreq++) {
-            assertEquals(expectedValuesLWRolling[idFreq], lWRailWay.getLWRolling()[idFreq], EPSILON_TEST1);
-            assertEquals(expectedValuesLWTractionA[idFreq], lWRailWay.getLWTractionA()[idFreq], EPSILON_TEST1);
-            assertEquals(expectedValuesLWTractionB[idFreq], lWRailWay.getLWTractionB()[idFreq], EPSILON_TEST1);
-            assertEquals(expectedValuesLWAerodynamicA[idFreq], lWRailWay.getLWAerodynamicA()[idFreq], EPSILON_TEST1);
-            assertEquals(expectedValuesLWAerodynamicB[idFreq], lWRailWay.getLWAerodynamicB()[idFreq], EPSILON_TEST1);
-            assertEquals(expectedValuesLWBridge[idFreq], lWRailWay.getLWBridge()[idFreq], EPSILON_TEST1);
+            lWRailWay.getLWRolling()[idFreq]=lWRailWay.getLWRolling()[idFreq] + acountCoachUnit;
+            // Compute sound powers per track meter
+            lWRailWay.getLWRolling()[idFreq] = 10*Math.log10(Math.pow(10,(lWRailWay.getLWRolling()[idFreq]+deltaTDay)/10));
 
+            assertEquals(expectedValuesLWRolling[idFreq], lWRailWay.getLWRolling()[idFreq] , EPSILON_TEST1);
         }
 
     }

@@ -305,6 +305,9 @@ public class EvaluateRailwaySourceCnossos {
         double speed = min(speedVehicle,min(speedTrack, speedCommercial));
 
         boolean isTunnel = false ;//trackParameters.getIsTunnel();
+        // %% Take into account the number of coach and the number of units
+        // 10*log10(NbUnit*NbCoach);
+
 
         if(isTunnel){
             double [] lWSpectre = new double[24];
@@ -314,6 +317,8 @@ public class EvaluateRailwaySourceCnossos {
             RailWayLW lWRailWay = new RailWayLW(lWSpectre, lWSpectre, lWSpectre, lWSpectre, lWSpectre, lWSpectre);
             return lWRailWay;
         }else {
+
+
             //  Rolling noise calcul
             double[] lWRolling = evaluateLWroughness("Rolling", typeVehicle, trackRoughnessId, impactId, bridgeId, curvature, speed, trackTransferId, spectreVer, axlesPerVeh);
             // Traction noise calcul

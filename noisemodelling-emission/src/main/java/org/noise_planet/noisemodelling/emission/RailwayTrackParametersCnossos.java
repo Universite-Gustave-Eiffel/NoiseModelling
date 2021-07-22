@@ -40,8 +40,8 @@ public class RailwayTrackParametersCnossos {
     private int impactNoise;
     private int bridgeTransfert;
     private double speedCommercial; // commercial speed on the track (km/h)
-     private int nTrack;
-      private boolean isTunnel;
+    private int nTrack;
+    private boolean isTunnel;
 
     public void setIsTunnel(boolean tunnel) {
         isTunnel = tunnel;
