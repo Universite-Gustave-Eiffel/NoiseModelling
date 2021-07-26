@@ -44,6 +44,7 @@ import org.locationtech.jts.index.strtree.STRtree;
 import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.math.Vector3D;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
+import org.noise_planet.noisemodelling.pathfinder.utils.ProfilerThread;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,6 +66,7 @@ public class ComputeRays {
     private final static double MAX_RATIO_HULL_DIRECT_PATH = 4;
     private int threadCount;
     private PropagationProcessData data;
+    private ProfilerThread profilerThread;
 
     private STRtree rTreeOfGeoSoil;
     private final static Logger LOGGER = LoggerFactory.getLogger(ComputeRays.class);
@@ -1176,26 +1178,33 @@ public class ComputeRays {
                 TimeUnit.SECONDS);
         int maximumReceiverBatch = (int) Math.ceil(data.receivers.size() / (double) splitCount);
         int endReceiverRange = 0;
-        while (endReceiverRange < data.receivers.size()) {
-            if (propaProcessProgression != null && propaProcessProgression.isCanceled()) {
-                break;
-            }
-            int newEndReceiver = Math.min(endReceiverRange + maximumReceiverBatch, data.receivers.size());
-            RangeReceiversComputation batchThread = new RangeReceiversComputation(endReceiverRange,
-                    newEndReceiver, this, debugInfo, propaProcessProgression,
-                    computeRaysOut.subProcess(endReceiverRange, newEndReceiver));
-            if (threadCount != 1) {
-                threadManager.executeBlocking(batchThread);
-            } else {
-                batchThread.run();
-            }
-            endReceiverRange = newEndReceiver;
-        }
-        threadManager.shutdown();
+        profilerThread = new ProfilerThread();
         try {
-            threadManager.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException ex) {
-            LOGGER.error(ex.getLocalizedMessage(), ex);
+            new Thread(profilerThread).start();
+            while (endReceiverRange < data.receivers.size()) {
+                if (propaProcessProgression != null && propaProcessProgression.isCanceled()) {
+                    break;
+                }
+                int newEndReceiver = Math.min(endReceiverRange + maximumReceiverBatch, data.receivers.size());
+                RangeReceiversComputation batchThread = new RangeReceiversComputation(endReceiverRange,
+                        newEndReceiver, this, debugInfo, propaProcessProgression,
+                        computeRaysOut.subProcess(endReceiverRange, newEndReceiver));
+                if (threadCount != 1) {
+                    threadManager.executeBlocking(batchThread);
+                } else {
+                    batchThread.run();
+                }
+                endReceiverRange = newEndReceiver;
+            }
+            threadManager.shutdown();
+            try {
+                threadManager.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException ex) {
+                LOGGER.error(ex.getLocalizedMessage(), ex);
+            }
+        } finally {
+            profilerThread.doRun.set(false);
+            profilerThread.printStats();
         }
     }
 
@@ -1246,8 +1255,12 @@ private static final class RangeReceiversComputation implements Runnable {
                     }
                 }
                 Coordinate receiverCoord = propagationProcess.data.receivers.get(idReceiver);
+                long start = propagationProcess.profilerThread.timeTracker.get();
 
                 propagationProcess.computeRaysAtPosition(receiverCoord, idReceiver, debugInfo, dataOut, progressVisitor);
+
+                propagationProcess.profilerThread.onEndComputation(idReceiver,
+                        (int)(propagationProcess.profilerThread.timeTracker.get() - start));
 
                 if (progressVisitor != null) {
                     progressVisitor.endStep();
