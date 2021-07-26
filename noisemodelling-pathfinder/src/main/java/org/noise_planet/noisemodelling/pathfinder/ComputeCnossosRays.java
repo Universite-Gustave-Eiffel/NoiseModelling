@@ -40,7 +40,6 @@ import org.locationtech.jts.algorithm.*;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.geom.impl.CoordinateArraySequence;
 import org.locationtech.jts.index.ItemVisitor;
-import org.locationtech.jts.io.WKTWriter;
 import org.locationtech.jts.math.Vector3D;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
 import org.slf4j.Logger;
@@ -52,11 +51,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import static java.lang.Math.max;
-import static org.noise_planet.noisemodelling.pathfinder.ComputeCnossosRays.ComputationSide.*;
+import static org.noise_planet.noisemodelling.pathfinder.ComputeCnossosRays.ComputationSide.LEFT;
+import static org.noise_planet.noisemodelling.pathfinder.ComputeCnossosRays.ComputationSide.RIGHT;
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticPropagation.getADiv;
-import static org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils.dbaToW;
-import static org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils.sumArray;
-import static org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils.wToDba;
+import static org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils.*;
 
 /**
  * @author Nicolas Fortin

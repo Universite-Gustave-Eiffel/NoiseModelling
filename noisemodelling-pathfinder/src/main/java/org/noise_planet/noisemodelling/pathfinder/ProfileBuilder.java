@@ -886,7 +886,9 @@ public class ProfileBuilder {
                     currentGround = groundEffects.get(cut.id);
                     if(previous != null &&
                             cut.getCoordinate().x == previous.getCoordinate().x &&
-                            cut.getCoordinate().y == previous.getCoordinate().y) {
+                            cut.getCoordinate().y == previous.getCoordinate().y &&
+                            previous.getType() != IntersectionType.SOURCE &&
+                            previous.getType() != IntersectionType.RECEIVER ) {
                         toRemove.add(previous);
                     }
                 }

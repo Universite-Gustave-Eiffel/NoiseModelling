@@ -8,18 +8,19 @@ import org.junit.Test;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
-import org.locationtech.jts.math.Vector3D;
 import org.noise_planet.noisemodelling.pathfinder.utils.Densifier3D;
 import org.noise_planet.noisemodelling.pathfinder.utils.GeoJSONDocument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.noise_planet.noisemodelling.pathfinder.ComputeCnossosRays.splitLineStringIntoPoints;
-import static org.noise_planet.noisemodelling.pathfinder.PointPath.POINT_TYPE.*;
 
 
 public class TestComputeCnossosRays {
@@ -700,7 +701,7 @@ public class TestComputeCnossosRays {
         ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
-
+        exportRays("T10_pierre.kml", propDataOut);
         assertRaysEquals(TestComputeCnossosRays.class.getResourceAsStream("T10.geojson"), propDataOut);
     }
     /**
