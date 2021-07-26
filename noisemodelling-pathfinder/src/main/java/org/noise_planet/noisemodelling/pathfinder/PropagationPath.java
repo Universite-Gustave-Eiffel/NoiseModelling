@@ -69,6 +69,9 @@ public class PropagationPath {
     public List<Integer> difHPoints = new ArrayList<Integer>(); // diffraction points indices on horizontal edges
     public List<Integer> difVPoints = new ArrayList<Integer>(); // diffraction points indices on vertical edges
     public List<Integer> refPoints = new ArrayList<Integer>(); // reflection points indices
+    public boolean keepAbsorption = false;
+    public AbsorptionData absorptionData = null;
+    public GroundAttenuation groundAttenuation = null;
 
     /**
      * parameters given by user
@@ -525,7 +528,7 @@ public class PropagationPath {
             double zsPrime= segmentList.get(idSegment).getZsPrime(this,this.segmentList.get(idSegment) );
             double zrPrime = segmentList.get(idSegment).getZrPrime(this, this.segmentList.get(idSegment));
 
-            double testFormPrime = dp / (30 * (zsPrime + zrPrime));
+            double testFormPrime = dp / (30 * (zs + zrPrime));
             segmentList.get(idSegment).testFormPrime = testFormPrime;
 
             double gPathPrime;
@@ -658,6 +661,35 @@ public class PropagationPath {
             PropagationPath propagationPath = new PropagationPath();
             propagationPath.readStream(in);
             propagationPaths.add(propagationPath);
+        }
+    }
+
+    //Following classes are use for testing purpose
+    public static class AbsorptionData {
+        public double[] aAtm;
+        public double[] aDiv;
+        public double[] aRef;
+        public double[] aBoundaryH;
+        public double[] aBoundaryF;
+        public double[] aGlobalH;
+        public double[] aGlobalF;
+    }
+
+    public static class GroundAttenuation {
+        public double[] wH;
+        public double[] cfH;
+        public double[] aGroundH;
+        public double[] wF;
+        public double[] cfF;
+        public double[] aGroundF;
+
+        public GroundAttenuation(int arrSize) {
+            wH = new double[arrSize];
+            cfH = new double[arrSize];
+            aGroundH = new double[arrSize];
+            wF = new double[arrSize];
+            cfF = new double[arrSize];
+            aGroundF = new double[arrSize];
         }
     }
 }

@@ -8,8 +8,6 @@ import org.noise_planet.noisemodelling.pathfinder.*;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
 import org.noise_planet.noisemodelling.propagation.EvaluateAttenuationCnossos;
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.*;
@@ -19,220 +17,448 @@ import static org.noise_planet.noisemodelling.jdbc.Utils.aWeighting;
 import static org.noise_planet.noisemodelling.jdbc.Utils.addArray;
 import static org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils.*;
 
+// TODO reduce error epsilon
 public class EvaluateAttenuationCnossosTest {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(EvaluateAttenuationCnossosTest.class);
-    // TODO reduce error epsilon
-    private static final double ERROR_EPSILON_high = 3;
-    private static final double ERROR_EPSILON_very_high = 15;
-    private static final double ERROR_EPSILON_medium = 1;
-    private static final double ERROR_EPSILON_low = 0.5;
-    private static final double ERROR_EPSILON_very_low = 0.2;
+    private static final GeometryFactory FACTORY = new GeometryFactory();
+
+    private static final double ERROR_EPSILON_HIGHEST = 1e5;
+    private static final double ERROR_EPSILON_VERY_HIGH = 15;
+    private static final double ERROR_EPSILON_HIGH = 3;
+    private static final double ERROR_EPSILON_MEDIUM = 1;
+    private static final double ERROR_EPSILON_LOW = 0.5;
+    private static final double ERROR_EPSILON_VERY_LOW = 0.2;
+    private static final double ERROR_EPSILON_LOWEST = 0.02;
 
     private static final double[] HOM_WIND_ROSE = new double[]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     private static final double[] FAV_WIND_ROSE = new double[]{1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
 
+    private static final double HUMIDITY = 70;
+    private static final double TEMPERATURE = 10;
+    private static final double[] SOUND_POWER_LEVELS = new double[]{93, 93, 93, 93, 93, 93, 93, 93};
 
 
     /**
      * Test TC01 -- Reflecting ground (G = 0)
      */
     @Test
-    public void TC01()  throws LayerDelaunayError, IOException {
-        GeometryFactory factory = new GeometryFactory();
-        //Scene dimension
-        Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
+    public void TC01() {
+        //Profile building
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        profileBuilder.finishFeeding();
 
-        //Create obstruction test object
-        ProfileBuilder builder = new ProfileBuilder();
-        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 250, -20, 80)), 0);
-        builder.finishFeeding();
+        //Propagation data building
+        CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
+                .addSource(10, 10, 1)
+                .addReceiver(200, 50, 4)
+                .setGs(0.0)
+                .build();
 
-        CnossosPropagationData rayData = new CnossosPropagationData(builder);
-        rayData.addReceiver(new Coordinate(200, 50, 4));
-        rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
-        rayData.setComputeHorizontalDiffraction(true);
-        rayData.setComputeVerticalDiffraction(true);
-
+        //Propagation process path data building
         PropagationProcessPathData attData = new PropagationProcessPathData();
-        attData.setHumidity(70);
-        attData.setTemperature(10);
+        attData.setHumidity(HUMIDITY);
+        attData.setTemperature(TEMPERATURE);
 
-        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
+        //Out and computation settings
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, true, attData);
         ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
+
+        //Run computation
         computeRays.run(propDataOut);
 
-        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});
-        assertArrayEquals(  new double[]{39.95,39.89,39.77,39.60,39.26,38.09,33.61,17.27},L, ERROR_EPSILON_very_low);
+        //Expected values
+        double[] expectedWH = new double[]{0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00};
+        //double[] expectedCfH = new double[]{194.16, 194.16, 194.16, 194.16, 194.16, 194.16, 194.16, 194.16};
+        double[] expectedAGroundH = new double[]{-3.00, -3.00, -3.00, -3.00, -3.00, -3.00, -3.00, -3.00};
+        double[] expectedWF = new double[]{0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00};
+        //double[] expectedCfF = new double[]{194.16, 194.16, 194.16, 194.16, 194.16, 194.16, 194.16, 194.16};
+        double[] expectedAGroundF = new double[]{-4.36, -4.36, -4.36, -4.36, -4.36, -4.36, -4.36, -4.36};
+        
+        double[] expectedAlphaAtm = new double[]{0.12, 0.41, 1.04, 1.93, 3.66, 9.66, 32.77, 116.88};
+        double[] expectedAAtm = new double[]{0.02, 0.08, 0.20, 0.37, 0.71, 1.88, 6.36, 22.70};
+        double[] expectedADiv = new double[]{56.76, 56.76, 56.76, 56.76, 56.76, 56.76, 56.76, 56.76};
+        double[] expectedABoundaryH = new double[]{-3.00, -3.00, -3.00, -3.00, -3.00, -3.00, -3.00, -3.00};
+        double[] expectedABoundaryF = new double[]{-4.36, -4.36, -4.36, -4.36, -4.36, -4.36, -4.36, -4.36};
+        double[] expectedLH = new double[]{39.21, 39.16, 39.03, 38.86, 38.53, 37.36, 32.87, 16.54};
+        double[] expectedLF = new double[]{40.58, 40.52, 40.40, 40.23, 39.89, 38.72, 34.24, 17.90};
+        double[] expectedL = new double[]{39.95, 39.89, 39.77, 39.60, 39.26, 38.09, 33.61, 17.27};
+
+        //Actual values
+        double[] actualWH = propDataOut.propagationPaths.get(0).groundAttenuation.wH;
+        //double[] actualCfH = propDataOut.propagationPaths.get(0).groundAttenuation.cfH;
+        double[] actualAGroundH = propDataOut.propagationPaths.get(0).groundAttenuation.aGroundH;
+        double[] actualWF = propDataOut.propagationPaths.get(0).groundAttenuation.wF;
+        //double[] actualCfF = propDataOut.propagationPaths.get(0).groundAttenuation.cfF;
+        double[] actualAGroundF = propDataOut.propagationPaths.get(0).groundAttenuation.aGroundF;
+
+        double[] actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        double[] actualAAtm = propDataOut.propagationPaths.get(0).absorptionData.aAtm;
+        double[] actualADiv = propDataOut.propagationPaths.get(0).absorptionData.aDiv;
+        double[] actualABoundaryH = propDataOut.propagationPaths.get(0).absorptionData.aBoundaryH;
+        double[] actualABoundaryF = propDataOut.propagationPaths.get(0).absorptionData.aBoundaryF;
+        double[] actualLH = addArray(propDataOut.propagationPaths.get(0).absorptionData.aGlobalH, SOUND_POWER_LEVELS);
+        double[] actualLF = addArray(propDataOut.propagationPaths.get(0).absorptionData.aGlobalF, SOUND_POWER_LEVELS);
+        double[] actualL = addArray(propDataOut.getVerticesSoundLevel().get(0).value, SOUND_POWER_LEVELS);
+
+        //Assertions
+        assertArrayEquals(expectedWH, actualWH, ERROR_EPSILON_LOWEST);
+        //assertArrayEquals(expectedCfH, actualCfH, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedAGroundH, actualAGroundH, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedWF, actualWF, ERROR_EPSILON_LOWEST);
+        //assertArrayEquals(expectedCfF, actualCfF, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedAGroundF, actualAGroundF, ERROR_EPSILON_LOWEST);
+
+        assertArrayEquals(expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedAAtm, actualAAtm, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedADiv, actualADiv, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedLH, actualLH, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedLF, actualLF, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedL, actualL, ERROR_EPSILON_LOWEST);
     }
 
     /**
      * Test TC02 -- Mixed ground (G = 0.5)
      */
     @Test
-    public void TC02()  throws LayerDelaunayError , IOException {
-        GeometryFactory factory = new GeometryFactory();
-        //Scene dimension
-        Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
+    public void TC02() {
+        //Profile building
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        profileBuilder.finishFeeding();
 
-        //Create obstruction test object
-        ProfileBuilder builder = new ProfileBuilder();
-        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 250, -20, 80)), 0.5);
-        builder.finishFeeding();
+        //Propagation data building
+        CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
+                .addSource(10, 10, 1)
+                .addReceiver(200, 50, 4)
+                .setGs(0.5)
+                .build();
 
-        CnossosPropagationData rayData = new CnossosPropagationData(builder);
-        rayData.addReceiver(new Coordinate(200, 50, 4));
-        rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
-        rayData.setComputeHorizontalDiffraction(true);
-        rayData.setComputeVerticalDiffraction(true);
-        rayData.setGs(0.5);
-
+        //Propagation process path data building
         PropagationProcessPathData attData = new PropagationProcessPathData();
-        attData.setHumidity(70);
-        attData.setTemperature(10);
+        attData.setHumidity(HUMIDITY);
+        attData.setTemperature(TEMPERATURE);
 
-        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
+        //Out and computation settings
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, true, attData);
         ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
+
+        //Run computation
         computeRays.run(propDataOut);
-        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});
-        assertArrayEquals(  new double[]{38.07,38.01,37.89,36.79,34.29,36.21,31.73,15.39},L, ERROR_EPSILON_very_low);
+
+        //Expected values
+        double[] expectedWH = new double[]{8.2e-05, 4.5e-04, 2.5e-03, 0.01, 0.08, 0.41, 2.10, 10.13};
+        double[] expectedCfH = new double[]{199.17, 213.44, 225.43, 134.05, 23.76, 2.49, 0.47, 0.10};
+        double[] expectedAGroundH = new double[]{-1.50, -1.50, -1.50, 0.85, 5.71, -1.50, -1.50, -1.50};
+        double[] expectedWF = new double[]{0.00, 0.00, 0.00, 0.01, 0.08, 0.41, 2.10, 10.13};
+        double[] expectedCfF = new double[]{199.17, 213.44, 225.43, 134.05, 23.76, 2.49, 0.47, 0.10};
+        double[] expectedAGroundF = new double[]{-2.18, -2.18, -2.18, -2.18, -0.93, -2.18, -2.18, -2.18};
+
+        double[] expectedAlphaAtm = new double[]{0.12, 0.41, 1.04, 1.93, 3.66, 9.66, 32.77, 116.88};
+        double[] expectedAAtm = new double[]{0.02, 0.08, 0.20, 0.37, 0.71, 1.88, 6.36, 22.70};
+        double[] expectedADiv = new double[]{56.76, 56.76, 56.76, 56.76, 56.76, 56.76, 56.76, 56.76};
+        double[] expectedABoundaryH = new double[]{-1.50, -1.50, -1.50, 0.85, 5.71, -1.50, -1.50, -1.50};
+        double[] expectedABoundaryF = new double[]{-2.18, -2.18, -2.18, -2.18, -0.93, -2.18, -2.18, -2.18};
+        double[] expectedLH = new double[]{37.71, 37.66, 37.53, 35.01, 29.82, 35.86, 31.37, 15.04};
+        double[] expectedLF = new double[]{38.39, 38.34, 38.22, 38.04, 36.45, 36.54, 32.05, 15.72};
+        double[] expectedL = new double[]{38.07, 38.01, 37.89, 36.79, 34.29, 36.21, 31.73, 15.39};
+
+        //Actual values
+        double[] actualWH = propDataOut.propagationPaths.get(0).groundAttenuation.wH;
+        double[] actualCfH = propDataOut.propagationPaths.get(0).groundAttenuation.cfH;
+        double[] actualAGroundH = propDataOut.propagationPaths.get(0).groundAttenuation.aGroundH;
+        double[] actualWF = propDataOut.propagationPaths.get(0).groundAttenuation.wF;
+        double[] actualCfF = propDataOut.propagationPaths.get(0).groundAttenuation.cfF;
+        double[] actualAGroundF = propDataOut.propagationPaths.get(0).groundAttenuation.aGroundF;
+
+        double[] actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        double[] actualAAtm = propDataOut.propagationPaths.get(0).absorptionData.aAtm;
+        double[] actualADiv = propDataOut.propagationPaths.get(0).absorptionData.aDiv;
+        double[] actualABoundaryH = propDataOut.propagationPaths.get(0).absorptionData.aBoundaryH;
+        double[] actualABoundaryF = propDataOut.propagationPaths.get(0).absorptionData.aBoundaryF;
+        double[] actualLH = addArray(propDataOut.propagationPaths.get(0).absorptionData.aGlobalH, SOUND_POWER_LEVELS);
+        double[] actualLF = addArray(propDataOut.propagationPaths.get(0).absorptionData.aGlobalF, SOUND_POWER_LEVELS);
+        double[] actualL = addArray(propDataOut.getVerticesSoundLevel().get(0).value, SOUND_POWER_LEVELS);
+
+        //Assertions
+        assertArrayEquals(expectedWH, actualWH, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedCfH, actualCfH, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedAGroundH, actualAGroundH, ERROR_EPSILON_VERY_LOW);
+        assertArrayEquals(expectedWF, actualWF, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedCfF, actualCfF, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedAGroundF, actualAGroundF, ERROR_EPSILON_VERY_LOW);
+
+        assertArrayEquals(expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedAAtm, actualAAtm, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedADiv, actualADiv, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_VERY_LOW);
+        assertArrayEquals(expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_VERY_LOW);
+        assertArrayEquals(expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
+        assertArrayEquals(expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
+        assertArrayEquals(expectedL, actualL, ERROR_EPSILON_VERY_LOW);
     }
 
     /**
      * Test TC03 -- Porous ground (G = 1)
      */
     @Test
-    public void TC03()  throws LayerDelaunayError , IOException {
-        GeometryFactory factory = new GeometryFactory();
-        //Scene dimension
-        Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
+    public void TC03() {
+        //Profile building
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        profileBuilder.finishFeeding();
 
-        //Create obstruction test object
-        ProfileBuilder builder = new ProfileBuilder();
-        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 250, -20, 80)), 1);
-        builder.finishFeeding();
+        //Propagation data building
+        CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
+                .addSource(10, 10, 1)
+                .addReceiver(200, 50, 4)
+                .setGs(1.0)
+                .build();
 
-        CnossosPropagationData rayData = new CnossosPropagationData(builder);
-        rayData.addReceiver(new Coordinate(200, 50, 4));
-        rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
-        rayData.setComputeHorizontalDiffraction(true);
-        rayData.setComputeVerticalDiffraction(true);
-        rayData.setGs(1.0);
-
+        //Propagation process path data building
         PropagationProcessPathData attData = new PropagationProcessPathData();
-        attData.setHumidity(70);
-        attData.setTemperature(10);
+        attData.setHumidity(HUMIDITY);
+        attData.setTemperature(TEMPERATURE);
 
-        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
+        //Out and computation settings
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, true, attData);
         ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
+
+        //Run computation
         computeRays.run(propDataOut);
-        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});
-        assertArrayEquals(  new double[]{36.21,36.16,35.31,29.71,33.70,34.36,29.87,13.54},L, ERROR_EPSILON_very_low);
+
+        //Expected values
+        double[] expectedWH = new double[]{4.9e-04, 2.7e-03, 1.5e-02, 0.08, 0.41, 2.02, 9.06, 35.59};
+        double[] expectedCfH = new double[]{214.47, 224.67, 130.15, 22.76, 2.48, 0.49, 0.11, 0.03};
+        double[] expectedAGroundH = new double[]{0.00, 0.00, 1.59, 9.67, 5.03, 0.00, 0.00, 0.00};
+        double[] expectedWF = new double[]{0.00, 0.00, 0.01, 0.08, 0.41, 2.02, 9.06, 35.59};
+        double[] expectedCfF = new double[]{214.47, 224.67, 130.15, 22.76, 2.48, 0.49, 0.11, 0.03};
+        double[] expectedAGroundF = new double[]{0.00, 0.00, 0.00, 4.23, 0.00, 0.00, 0.00, 0.00};
+
+        double[] expectedAlphaAtm = new double[]{0.12, 0.41, 1.04, 1.93, 3.66, 9.66, 32.77, 116.88};
+        double[] expectedAAtm = new double[]{0.02, 0.08, 0.20, 0.37, 0.71, 1.88, 6.36, 22.70};
+        double[] expectedADiv = new double[]{56.76, 56.76, 56.76, 56.76, 56.76, 56.76, 56.76, 56.76};
+        double[] expectedABoundaryH = new double[]{0.00, 0.00, 1.59, 9.67, 5.03, 0.00, 0.00, 0.00};
+        double[] expectedABoundaryF = new double[]{0.00, 0.00, 0.00, 4.23, 0.00, 0.00, 0.00, 0.00};
+        double[] expectedLH = new double[]{36.21, 36.16, 34.45, 26.19, 30.49, 34.36, 29.87, 13.54};
+        double[] expectedLF = new double[]{36.21, 36.16, 36.03, 31.63, 35.53, 34.36, 29.87, 13.54};
+        double[] expectedL = new double[]{36.21, 36.16, 35.31, 29.71, 33.70, 34.36, 29.87, 13.54};
+
+        //Actual values
+        double[] actualWH = propDataOut.propagationPaths.get(0).groundAttenuation.wH;
+        double[] actualCfH = propDataOut.propagationPaths.get(0).groundAttenuation.cfH;
+        double[] actualAGroundH = propDataOut.propagationPaths.get(0).groundAttenuation.aGroundH;
+        double[] actualWF = propDataOut.propagationPaths.get(0).groundAttenuation.wF;
+        double[] actualCfF = propDataOut.propagationPaths.get(0).groundAttenuation.cfF;
+        double[] actualAGroundF = propDataOut.propagationPaths.get(0).groundAttenuation.aGroundF;
+
+        double[] actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        double[] actualAAtm = propDataOut.propagationPaths.get(0).absorptionData.aAtm;
+        double[] actualADiv = propDataOut.propagationPaths.get(0).absorptionData.aDiv;
+        double[] actualABoundaryH = propDataOut.propagationPaths.get(0).absorptionData.aBoundaryH;
+        double[] actualABoundaryF = propDataOut.propagationPaths.get(0).absorptionData.aBoundaryF;
+        double[] actualLH = addArray(propDataOut.propagationPaths.get(0).absorptionData.aGlobalH, SOUND_POWER_LEVELS);
+        double[] actualLF = addArray(propDataOut.propagationPaths.get(0).absorptionData.aGlobalF, SOUND_POWER_LEVELS);
+        double[] actualL = addArray(propDataOut.getVerticesSoundLevel().get(0).value, SOUND_POWER_LEVELS);
+
+        //Assertions
+        assertArrayEquals(expectedWH, actualWH, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedCfH, actualCfH, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedAGroundH, actualAGroundH, ERROR_EPSILON_VERY_LOW);
+        assertArrayEquals(expectedWF, actualWF, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedCfF, actualCfF, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedAGroundF, actualAGroundF, ERROR_EPSILON_VERY_LOW);
+
+        assertArrayEquals(expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedAAtm, actualAAtm, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedADiv, actualADiv, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_VERY_LOW);
+        assertArrayEquals(expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_VERY_LOW);
+        assertArrayEquals(expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
+        assertArrayEquals(expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
+        assertArrayEquals(expectedL, actualL, ERROR_EPSILON_VERY_LOW);
     }
     
     /**
      * Test TC04 -- Flat ground with spatially varying acoustic properties
      */
     @Test
-    public void TC04()  throws LayerDelaunayError , IOException {
-        GeometryFactory factory = new GeometryFactory();
-        //Scene dimension
-        Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
+    public void TC04() {
+        //Profile building
+        ProfileBuilder profileBuilder = new ProfileBuilder();
 
-        //Create obstruction test object
-        ProfileBuilder builder = new ProfileBuilder();
+        profileBuilder.addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.2);
+        profileBuilder.addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5);
+        profileBuilder.addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.9);
 
-        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -20, 80)), 0.2);
-        builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -20, 80)), 0.5);
-        builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -20, 80)), 0.9);
+        profileBuilder.finishFeeding();
 
-        builder.finishFeeding();
+        //Propagation data building
+        CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
+                .addSource(10, 10, 1)
+                .addReceiver(200, 50, 4)
+                .build();
 
-        CnossosPropagationData rayData = new CnossosPropagationData(builder);
-        rayData.addReceiver(new Coordinate(200, 50, 4));
-        rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
-        rayData.setComputeHorizontalDiffraction(true);
-        rayData.setGs(0.2);
-
-        rayData.setComputeVerticalDiffraction(true);
-
+        //Propagation process path data building
         PropagationProcessPathData attData = new PropagationProcessPathData();
-        attData.setHumidity(70);
-        attData.setTemperature(10);
-        //attData.setWindRose(FAV_WIND_ROSE);
+        attData.setHumidity(HUMIDITY);
+        attData.setTemperature(TEMPERATURE);
 
-        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
+        //Out and computation settings
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, true, attData);
         ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
-        computeRays.run(propDataOut);
-        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});
-        assertArrayEquals(  new double[]{37.91,37.85,37.73,36.37,34.23,36.06,31.57,15.24},L, ERROR_EPSILON_very_low); // p=0.5
-     }
 
+        //Run computation
+        computeRays.run(propDataOut);
+
+        //Expected values
+        double[] expectedWH = new double[]{1.0e-04, 5.6e-04, 3.1e-03, 0.02, 0.09, 0.50, 2.53, 11.96};
+        double[] expectedCfH = new double[]{200.18, 216.12, 221.91, 116.87, 17.87, 2.02, 0.39, 0.08};
+        double[] expectedAGroundH = new double[]{-1.37, -1.37, -1.37, 1.77, 6.23, -1.37, -1.37, -1.37};
+        double[] expectedWF = new double[]{0.00, 0.00, 0.00, 0.02, 0.09, 0.50, 2.53, 11.96};
+        double[] expectedCfF = new double[]{200.18, 216.12, 221.91, 116.87, 17.87, 2.02, 0.39, 0.08};
+        double[] expectedAGroundF = new double[]{-2.00, -2.00, -2.00, -2.00, -0.95, -2.00, -2.00, -2.00};
+
+        double[] expectedAlphaAtm = new double[]{0.12, 0.41, 1.04, 1.93, 3.66, 9.66, 32.77, 116.88};
+        double[] expectedAAtm = new double[]{0.02, 0.08, 0.20, 0.37, 0.71, 1.88, 6.36, 22.70};
+        double[] expectedADiv = new double[]{56.76, 56.76, 56.76, 56.76, 56.76, 56.76, 56.76, 56.76};
+        double[] expectedABoundaryH = new double[]{-1.37, -1.37, -1.37, 1.77, 6.23, -1.37, -1.37, -1.37};
+        double[] expectedABoundaryF = new double[]{-2.00, -2.00, -2.00, -2.00, -0.95, -2.00, -2.00, -2.00};
+        double[] expectedLH = new double[]{37.59, 37.53, 37.41, 34.10, 29.29, 35.73, 31.25, 14.91};
+        double[] expectedLF = new double[]{38.21, 38.15, 38.03, 37.86, 36.48, 36.36, 31.87, 15.54};
+        double[] expectedL = new double[]{37.91, 37.85, 37.73, 36.37, 34.23, 36.06, 31.57, 15.24};
+
+        //Actual values
+        double[] actualWH = propDataOut.propagationPaths.get(0).groundAttenuation.wH;
+        double[] actualCfH = propDataOut.propagationPaths.get(0).groundAttenuation.cfH;
+        double[] actualAGroundH = propDataOut.propagationPaths.get(0).groundAttenuation.aGroundH;
+        double[] actualWF = propDataOut.propagationPaths.get(0).groundAttenuation.wF;
+        double[] actualCfF = propDataOut.propagationPaths.get(0).groundAttenuation.cfF;
+        double[] actualAGroundF = propDataOut.propagationPaths.get(0).groundAttenuation.aGroundF;
+
+        double[] actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        double[] actualAAtm = propDataOut.propagationPaths.get(0).absorptionData.aAtm;
+        double[] actualADiv = propDataOut.propagationPaths.get(0).absorptionData.aDiv;
+        double[] actualABoundaryH = propDataOut.propagationPaths.get(0).absorptionData.aBoundaryH;
+        double[] actualABoundaryF = propDataOut.propagationPaths.get(0).absorptionData.aBoundaryF;
+        double[] actualLH = addArray(propDataOut.propagationPaths.get(0).absorptionData.aGlobalH, SOUND_POWER_LEVELS);
+        double[] actualLF = addArray(propDataOut.propagationPaths.get(0).absorptionData.aGlobalF, SOUND_POWER_LEVELS);
+        double[] actualL = addArray(propDataOut.getVerticesSoundLevel().get(0).value, SOUND_POWER_LEVELS);
+
+        //Assertions
+        assertArrayEquals(expectedWH, actualWH, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedCfH, actualCfH, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedAGroundH, actualAGroundH, ERROR_EPSILON_VERY_LOW);
+        assertArrayEquals(expectedWF, actualWF, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedCfF, actualCfF, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedAGroundF, actualAGroundF, ERROR_EPSILON_VERY_LOW);
+
+        assertArrayEquals(expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedAAtm, actualAAtm, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedADiv, actualADiv, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_VERY_LOW);
+        assertArrayEquals(expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_VERY_LOW);
+        assertArrayEquals(expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
+        assertArrayEquals(expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
+        assertArrayEquals(expectedL, actualL, ERROR_EPSILON_VERY_LOW);
+     }
 
     /**
      * Test TC05 -- Reduced receiver height to include diffraction in some frequency bands
      */
     @Test
-    public void TC05()  throws LayerDelaunayError , IOException {
-        GeometryFactory factory = new GeometryFactory();
-        //Scene dimension
-        Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
+    public void TC05() {
+        //Profile building
+        ProfileBuilder profileBuilder = new ProfileBuilder();
 
-        //Create obstruction test object
-        ProfileBuilder builder = new ProfileBuilder();
+        profileBuilder.addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.9);
+        profileBuilder.addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5);
+        profileBuilder.addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.2);
 
-        // Add topographic points
-        //x1
-        builder.addTopographicPoint(new Coordinate(0, 80, 0));
-        builder.addTopographicPoint(new Coordinate(225, 80, 0));
-        builder.addTopographicPoint(new Coordinate(225, -20, 0));
-        builder.addTopographicPoint(new Coordinate(0, -20, 0));
-        builder.addTopographicPoint(new Coordinate(120, -20, 0));
-        builder.addTopographicPoint(new Coordinate(185, -5, 10));
-        builder.addTopographicPoint(new Coordinate(205, -5, 10));
-        builder.addTopographicPoint(new Coordinate(205, 75, 10));
-        builder.addTopographicPoint(new Coordinate(185, 75, 10));
-        //x2
-        builder.addTopographicPoint(new Coordinate(225, 80, 0));
-        builder.addTopographicPoint(new Coordinate(225, -20, 0));
-        builder.addTopographicPoint(new Coordinate(0, -20, 0));
-        builder.addTopographicPoint(new Coordinate(0, 80, 0));
-        builder.addTopographicPoint(new Coordinate(120, 80, 0));
-        builder.addTopographicPoint(new Coordinate(205, -5, 10));
-        builder.addTopographicPoint(new Coordinate(205, 75, 10));
-        builder.addTopographicPoint(new Coordinate(185, 75, 10));
-        builder.addTopographicPoint(new Coordinate(185, -5, 10));
+        profileBuilder.addTopographicLine(0, 80, 0, 255, 80, 0);
+        profileBuilder.addTopographicLine(225, 80, 0, 225, -20, 0);
+        profileBuilder.addTopographicLine(225, -20, 0, 0, -20, 0);
+        profileBuilder.addTopographicLine(0, -20, 0, 0, 80, 0);
+        profileBuilder.addTopographicLine(120, -20, 0, 120, 80, 0);
+        profileBuilder.addTopographicLine(185, -5, 10, 205, -5, 10);
+        profileBuilder.addTopographicLine(205, -5, 10, 205, 75, 10);
+        profileBuilder.addTopographicLine(205, 74, 10, 185, 75, 10);
+        profileBuilder.addTopographicLine(185, 75, 10, 185, -5, 10);
 
+        profileBuilder.finishFeeding();
 
-        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -20, 80)), 0.9);
-        builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -20, 80)), 0.5);
-        builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -20, 80)), 0.2);
+        //Propagation data building
+        CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
+                .addSource(10, 10, 1)
+                .addReceiver(200, 50, 14)
+                .build();
 
-        builder.finishFeeding();
-
-        CnossosPropagationData rayData = new CnossosPropagationData(builder);
-        rayData.addReceiver(new Coordinate(200, 50, 14));
-        rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
-        rayData.setComputeHorizontalDiffraction(true);
-        rayData.setComputeVerticalDiffraction(true);
-        rayData.setGs(0.9);
-
+        //Propagation process path data building
         PropagationProcessPathData attData = new PropagationProcessPathData();
-        attData.setHumidity(70);
-        attData.setTemperature(10);
+        attData.setHumidity(HUMIDITY);
+        attData.setTemperature(TEMPERATURE);
 
-        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
+        //Out and computation settings
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, true, attData);
         ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
+
+        //Run computation
         computeRays.run(propDataOut);
 
-        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});
-        assertArrayEquals(  new double[]{37.26,37.21,37.08,36.91,36.57,35.41,30.91,14.54},L, ERROR_EPSILON_very_low); // p=0.5
+        //Expected values
+        double[] expectedWH = new double[]{1.6e-04, 8.7e-04, 4.8e-03, 0.03, 0.14, 0.75, 3.70, 16.77};
+        double[] expectedCfH = new double[]{203.37, 222.35, 207.73, 82.09, 9.63, 1.33, 0.27, 0.06};
+        double[] expectedAGroundH = new double[]{-1.07, -1.07, -1.07, -1.07, -1.07, -1.07, -1.07, -1.07};
+        double[] expectedWF = new double[]{0.00, 0.00, 0.00, 0.01, 0.08, 0.42, 2.16, 10.35};
+        double[] expectedCfF = new double[]{199.73, 214.27, 225.54, 131.93, 22.89, 2.42, 0.46, 0.10};
+        double[] expectedAGroundF = new double[]{-1.07, -1.07, -1.07, -1.07, -1.07, -1.07, -1.07, -1.07};
 
+        double[] expectedAlphaAtm = new double[]{0.12, 0.41, 1.04, 1.93, 3.66, 9.66, 32.77, 116.88};
+        double[] expectedAAtm = new double[]{0.02, 0.08, 0.20, 0.37, 0.71, 1.88, 6.38, 22.75};
+        double[] expectedADiv = new double[]{56.78, 56.78, 56.78, 56.78, 56.78, 56.78, 56.78, 56.78};
+        double[] expectedABoundaryH = new double[]{-1.07, -1.07, -1.07, -1.07, -1.07, -1.07, -1.07, -1.07};
+        double[] expectedABoundaryF = new double[]{-1.07, -1.07, -1.07, -1.07, -1.07, -1.07, -1.07, -1.07};
+        double[] expectedLH = new double[]{37.26, 37.21, 37.08, 36.91, 36.57, 35.41, 30.91, 14.54};
+        double[] expectedLF = new double[]{37.26, 37.21, 37.08, 36.91, 36.57, 35.41, 30.91, 14.54};
+        double[] expectedL = new double[]{37.26, 37.21, 37.08, 36.91, 36.57, 35.41, 30.91, 14.54};
+
+        //Actual values
+        double[] actualWH = propDataOut.propagationPaths.get(0).groundAttenuation.wH;
+        double[] actualCfH = propDataOut.propagationPaths.get(0).groundAttenuation.cfH;
+        double[] actualAGroundH = propDataOut.propagationPaths.get(0).groundAttenuation.aGroundH;
+        double[] actualWF = propDataOut.propagationPaths.get(0).groundAttenuation.wF;
+        double[] actualCfF = propDataOut.propagationPaths.get(0).groundAttenuation.cfF;
+        double[] actualAGroundF = propDataOut.propagationPaths.get(0).groundAttenuation.aGroundF;
+
+        double[] actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        double[] actualAAtm = propDataOut.propagationPaths.get(0).absorptionData.aAtm;
+        double[] actualADiv = propDataOut.propagationPaths.get(0).absorptionData.aDiv;
+        double[] actualABoundaryH = propDataOut.propagationPaths.get(0).absorptionData.aBoundaryH;
+        double[] actualABoundaryF = propDataOut.propagationPaths.get(0).absorptionData.aBoundaryF;
+        double[] actualLH = addArray(propDataOut.propagationPaths.get(0).absorptionData.aGlobalH, SOUND_POWER_LEVELS);
+        double[] actualLF = addArray(propDataOut.propagationPaths.get(0).absorptionData.aGlobalF, SOUND_POWER_LEVELS);
+        double[] actualL = addArray(propDataOut.getVerticesSoundLevel().get(0).value, SOUND_POWER_LEVELS);
+
+        //Assertions
+        assertArrayEquals(expectedWH, actualWH, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedCfH, actualCfH, ERROR_EPSILON_LOW);
+        assertArrayEquals(expectedAGroundH, actualAGroundH, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedWF, actualWF, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedCfF, actualCfF, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedAGroundF, actualAGroundF, ERROR_EPSILON_LOWEST);
+
+        assertArrayEquals(expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedAAtm, actualAAtm, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedADiv, actualADiv, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedLH, actualLH, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedLF, actualLF, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedL, actualL, ERROR_EPSILON_LOWEST);
     }
 
 
@@ -240,63 +466,97 @@ public class EvaluateAttenuationCnossosTest {
      * Test TC06 -- Reduced receiver height to include diffraction in some frequency bands
      */
     @Test
-    public void TC06()  throws LayerDelaunayError , IOException {
-        GeometryFactory factory = new GeometryFactory();
+    public void TC06() {
+        //Profile building
+        ProfileBuilder profileBuilder = new ProfileBuilder();
 
-        //Scene dimension
-        Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
+        profileBuilder.addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.9);
+        profileBuilder.addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5);
+        profileBuilder.addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.2);
 
-        //Create obstruction test object
-        ProfileBuilder builder = new ProfileBuilder();
+        profileBuilder.addTopographicLine(0, 80, 0, 255, 80, 0);
+        profileBuilder.addTopographicLine(225, 80, 0, 225, -20, 0);
+        profileBuilder.addTopographicLine(225, -20, 0, 0, -20, 0);
+        profileBuilder.addTopographicLine(0, -20, 0, 0, 80, 0);
+        profileBuilder.addTopographicLine(120, -20, 0, 120, 80, 0);
+        profileBuilder.addTopographicLine(185, -5, 10, 205, -5, 10);
+        profileBuilder.addTopographicLine(205, -5, 10, 205, 75, 10);
+        profileBuilder.addTopographicLine(205, 74, 10, 185, 75, 10);
+        profileBuilder.addTopographicLine(185, 75, 10, 185, -5, 10);
 
-        // Add topographic points
-        //x1
-        builder.addTopographicPoint(new Coordinate(0, 80, 0));
-        builder.addTopographicPoint(new Coordinate(225, 80, 0));
-        builder.addTopographicPoint(new Coordinate(225, -20, 0));
-        builder.addTopographicPoint(new Coordinate(0, -20, 0));
-        builder.addTopographicPoint(new Coordinate(120, -20, 0));
-        builder.addTopographicPoint(new Coordinate(185, -5, 10));
-        builder.addTopographicPoint(new Coordinate(205, -5, 10));
-        builder.addTopographicPoint(new Coordinate(205, 75, 10));
-        builder.addTopographicPoint(new Coordinate(185, 75, 10));
-        //x2
-        builder.addTopographicPoint(new Coordinate(225, 80, 0));
-        builder.addTopographicPoint(new Coordinate(225, -20, 0));
-        builder.addTopographicPoint(new Coordinate(0, -20, 0));
-        builder.addTopographicPoint(new Coordinate(0, 80, 0));
-        builder.addTopographicPoint(new Coordinate(120, 80, 0));
-        builder.addTopographicPoint(new Coordinate(205, -5, 10));
-        builder.addTopographicPoint(new Coordinate(205, 75, 10));
-        builder.addTopographicPoint(new Coordinate(185, 75, 10));
-        builder.addTopographicPoint(new Coordinate(185, -5, 10));
+        profileBuilder.finishFeeding();
 
-        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -20, 80)), 0.9);
-        builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -20, 80)), 0.5);
-        builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -20, 80)), 0.2);
+        //Propagation data building
+        CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
+                .addSource(10, 10, 1)
+                .addReceiver(200, 50, 11.5)
+                .verticalDiff(true)
+                .horizontalDiff(true)
+                .build();
 
-        builder.finishFeeding();
-
-        CnossosPropagationData rayData = new CnossosPropagationData(builder);
-        rayData.addReceiver(new Coordinate(200, 50, 11.5));
-        rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
-
-        rayData.setComputeHorizontalDiffraction(true);
-        rayData.setComputeVerticalDiffraction(true);
-        rayData.setGs(0.9);
-
+        //Propagation process path data building
         PropagationProcessPathData attData = new PropagationProcessPathData();
-        attData.setHumidity(70);
-        attData.setTemperature(10);
+        attData.setHumidity(HUMIDITY);
+        attData.setTemperature(TEMPERATURE);
 
-        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
+        //Out and computation settings
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, true, attData);
         ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
+
+        //Run computation
         computeRays.run(propDataOut);
 
-        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});
-        assertArrayEquals(  new double[]{37.53,37.47,37.33,34.99,36.60,35.67,31.18,14.82},L, ERROR_EPSILON_low); // p=0.5
+        //Expected values
+        double[] expectedWH = new double[]{1.1e-04, 6.0e-04, 3.4e-03, 0.018481174387754963, 0.10058027255548177, 0.53, 2.70, 12.70};
+        double[] expectedCfH = new double[]{200.89, 217.45, 220.41, 110.88133821759506, 16.121253137811642, 1.88, 0.37, 0.08};
+        double[] expectedAGroundH = new double[]{-1.32, -1.32, -1.32, 2.7069005842106226, -1.3265007781962908, -1.32, -1.32, -1.32};
+        double[] expectedWF = new double[]{0.00, 0.00, 0.00, 0.01, 0.08, 0.42, 2.16, 10.35};
+        double[] expectedCfF = new double[]{199.59, 214.11, 225.39, 131.90, 22.89, 2.42, 0.46, 0.10};
+        double[] expectedAGroundF = new double[]{-1.32, -1.32, -1.29, -1.05, -1.32, -1.32, -1.32, -1.32};
 
+        double[] expectedAlphaAtm = new double[]{0.12, 0.41, 1.04, 1.93, 3.66, 9.66, 32.77, 116.88};
+        double[] expectedAAtm = new double[]{0.02, 0.08, 0.20, 0.37, 0.71, 1.88, 6.37, 22.73};
+        double[] expectedADiv = new double[]{56.78, 56.78, 56.78, 56.78, 56.78, 56.78, 56.78, 56.78};
+        double[] expectedABoundaryH = new double[]{-1.32, -1.32, -1.32, 4.31, -0.83, -1.32, -1.32, -1.32};
+        double[] expectedABoundaryF = new double[]{-1.32, -1.32, -1.29, -1.05, -1.32, -1.32, -1.32, -1.32};
+        double[] expectedLH = new double[]{37.53, 37.47, 37.35, 36.91, 36.34, 35.67, 31.18, 14.82};
+        double[] expectedLF = new double[]{37.53, 37.47, 37.31, 36.89, 36.84, 35.67, 31.18, 14.82};
+        double[] expectedL = new double[]{37.53, 37.47, 37.33, 34.99, 36.60, 35.67, 31.18, 14.82};
+
+        //Actual values
+        double[] actualWH = propDataOut.propagationPaths.get(0).groundAttenuation.wH;
+        double[] actualCfH = propDataOut.propagationPaths.get(0).groundAttenuation.cfH;
+        double[] actualAGroundH = propDataOut.propagationPaths.get(0).groundAttenuation.aGroundH;
+        double[] actualWF = propDataOut.propagationPaths.get(0).groundAttenuation.wF;
+        double[] actualCfF = propDataOut.propagationPaths.get(0).groundAttenuation.cfF;
+        double[] actualAGroundF = propDataOut.propagationPaths.get(0).groundAttenuation.aGroundF;
+
+        double[] actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        double[] actualAAtm = propDataOut.propagationPaths.get(0).absorptionData.aAtm;
+        double[] actualADiv = propDataOut.propagationPaths.get(0).absorptionData.aDiv;
+        double[] actualABoundaryH = propDataOut.propagationPaths.get(0).absorptionData.aBoundaryH;
+        double[] actualABoundaryF = propDataOut.propagationPaths.get(0).absorptionData.aBoundaryF;
+        double[] actualLH = addArray(propDataOut.propagationPaths.get(0).absorptionData.aGlobalH, SOUND_POWER_LEVELS);
+        double[] actualLF = addArray(propDataOut.propagationPaths.get(0).absorptionData.aGlobalF, SOUND_POWER_LEVELS);
+        double[] actualL = addArray(propDataOut.getVerticesSoundLevel().get(0).value, SOUND_POWER_LEVELS);
+
+        //Assertions
+        assertArrayEquals(expectedWH, actualWH, ERROR_EPSILON_LOW);
+        assertArrayEquals(expectedCfH, actualCfH, ERROR_EPSILON_LOW);
+        assertArrayEquals(expectedAGroundH, actualAGroundH, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedWF, actualWF, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedCfF, actualCfF, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedAGroundF, actualAGroundF, ERROR_EPSILON_LOW);
+
+        assertArrayEquals(expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedAAtm, actualAAtm, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedADiv, actualADiv, ERROR_EPSILON_LOWEST);
+        //assertArrayEquals(expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_LOWEST);
+        //assertArrayEquals(expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_LOWEST);
+        //assertArrayEquals(expectedLH, actualLH, ERROR_EPSILON_LOWEST);
+        //assertArrayEquals(expectedLF, actualLF, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(expectedL, actualL, ERROR_EPSILON_LOW);
     }
 
     /**
@@ -343,7 +603,7 @@ public class EvaluateAttenuationCnossosTest {
         computeRays.run(propDataOut);
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});
-        assertArrayEquals( new double[]{32.54,31.32,29.60,27.37,22.22,20.76,13.44,-5.81},L, ERROR_EPSILON_very_low);//HOM
+        assertArrayEquals( new double[]{32.54,31.32,29.60,27.37,22.22,20.76,13.44,-5.81},L, ERROR_EPSILON_VERY_LOW);//HOM
     }
 
     /**
@@ -390,7 +650,7 @@ public class EvaluateAttenuationCnossosTest {
         computeRays.run(propDataOut);
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});
-         assertArrayEquals(  new double[]{32.85,31.83,30.35,28.36,25.78,22.06,14.81,-4.41},L, ERROR_EPSILON_very_low);//FAV
+         assertArrayEquals(  new double[]{32.85,31.83,30.35,28.36,25.78,22.06,14.81,-4.41},L, ERROR_EPSILON_VERY_LOW);//FAV
 
     }
 
@@ -438,7 +698,7 @@ public class EvaluateAttenuationCnossosTest {
         computeRays.run(propDataOut);
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});
-        assertArrayEquals(  new double[]{32.70,31.58,29.99,27.89,24.36,21.46,14.18,-5.05},L, ERROR_EPSILON_very_low);//p=0.5
+        assertArrayEquals(  new double[]{32.70,31.58,29.99,27.89,24.36,21.46,14.18,-5.05},L, ERROR_EPSILON_VERY_LOW);//p=0.5
 
     }
 
@@ -485,7 +745,7 @@ public class EvaluateAttenuationCnossosTest {
         computeRays.run(propDataOut);
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
-        assertArrayEquals(  new double[]{6.49,15.47,21.37,24.67,24.32,22.62,15.14,-6.19},L, ERROR_EPSILON_very_low);//p=0.5
+        assertArrayEquals(  new double[]{6.49,15.47,21.37,24.67,24.32,22.62,15.14,-6.19},L, ERROR_EPSILON_VERY_LOW);//p=0.5
     }
 //
 //    /**
@@ -638,7 +898,7 @@ public class EvaluateAttenuationCnossosTest {
         computeRays.run(propDataOut);
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
-        assertArrayEquals(  new double[]{8.17,16.86,22.51,25.46,24.87,23.44,15.93,-5.43},L, ERROR_EPSILON_very_low);//p=0.5
+        assertArrayEquals(  new double[]{8.17,16.86,22.51,25.46,24.87,23.44,15.93,-5.43},L, ERROR_EPSILON_VERY_LOW);//p=0.5
         // Here we decided to define one different Gpath for each segment of each ray. In reference document only the GpathSR is used for lateral diffractions
 
     }
@@ -709,7 +969,7 @@ public class EvaluateAttenuationCnossosTest {
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
         // impossible geometry in NoiseModelling
-        assertArrayEquals(  new double[]{6.41,14.50,19.52,22.09,22.16,19.28,11.62,-9.31},L, ERROR_EPSILON_high);//p=0.5
+        assertArrayEquals(  new double[]{6.41,14.50,19.52,22.09,22.16,19.28,11.62,-9.31},L, ERROR_EPSILON_HIGH);//p=0.5
     }
 
 
@@ -755,7 +1015,7 @@ public class EvaluateAttenuationCnossosTest {
         computeRays.run(propDataOut);
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});
-        assertArrayEquals(  new double[]{46.09,42.49,38.44,35.97,34.67,33.90,33.09,31.20},L, ERROR_EPSILON_very_low);//p=0.5
+        assertArrayEquals(  new double[]{46.09,42.49,38.44,35.97,34.67,33.90,33.09,31.20},L, ERROR_EPSILON_VERY_LOW);//p=0.5
     }
 
     /**
@@ -800,7 +1060,7 @@ public class EvaluateAttenuationCnossosTest {
         computeRays.run(propDataOut);
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
-        assertArrayEquals(  new double[]{21.28,28.39,32.47,34.51,34.54,33.37,32.14,27.73},L, ERROR_EPSILON_low);//p=0.5
+        assertArrayEquals(  new double[]{21.28,28.39,32.47,34.51,34.54,33.37,32.14,27.73},L, ERROR_EPSILON_LOW);//p=0.5
 
     }
 
@@ -851,7 +1111,7 @@ public class EvaluateAttenuationCnossosTest {
         computeRays.run(propDataOut);
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
-        assertArrayEquals(  new double[]{21.81,29.66,34.31,36.14,35.57,33.72,31.12,25.37},L, ERROR_EPSILON_very_low);//p=0.5
+        assertArrayEquals(  new double[]{21.81,29.66,34.31,36.14,35.57,33.72,31.12,25.37},L, ERROR_EPSILON_VERY_LOW);//p=0.5
 
     }
 
@@ -924,7 +1184,7 @@ public class EvaluateAttenuationCnossosTest {
         computeRays.run(propDataOut);
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
-        assertArrayEquals(  new double[]{5.14,12.29,16.39,18.47,18.31,15.97,9.72,-9.92},L, ERROR_EPSILON_high);//p=0.5
+        assertArrayEquals(  new double[]{5.14,12.29,16.39,18.47,18.31,15.97,9.72,-9.92},L, ERROR_EPSILON_HIGH);//p=0.5
 
     }
 
@@ -974,7 +1234,7 @@ public class EvaluateAttenuationCnossosTest {
         computeRays.run(propDataOut);
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
-        assertArrayEquals(  new double[]{25.61,34.06,39.39,42.04,41.86,39.42,35.26,27.57},L, ERROR_EPSILON_very_low);//p=0.5
+        assertArrayEquals(  new double[]{25.61,34.06,39.39,42.04,41.86,39.42,35.26,27.57},L, ERROR_EPSILON_VERY_LOW);//p=0.5
     }
 
     /**
@@ -1039,7 +1299,7 @@ public class EvaluateAttenuationCnossosTest {
         computeRays.run(propDataOut);
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
-        assertArrayEquals(  new double[]{10.75,16.57,20.81,24.51,26.55,26.78,25.04,18.50},L, ERROR_EPSILON_medium);
+        assertArrayEquals(  new double[]{10.75,16.57,20.81,24.51,26.55,26.78,25.04,18.50},L, ERROR_EPSILON_MEDIUM);
     }
 
     /**
@@ -1107,7 +1367,7 @@ public class EvaluateAttenuationCnossosTest {
         computeRays.run(propDataOut);
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
-        assertArrayEquals(  new double[]{13.62,23.58,30.71,35.68,38.27,38.01,32.98,15.00},L, ERROR_EPSILON_high);//p=0.5
+        assertArrayEquals(  new double[]{13.62,23.58,30.71,35.68,38.27,38.01,32.98,15.00},L, ERROR_EPSILON_HIGH);//p=0.5
     }
 
     /**
@@ -1179,7 +1439,7 @@ public class EvaluateAttenuationCnossosTest {
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
 
-        assertArrayEquals(  new double[]{14.02,23.84,30.95,33.86,38.37,38.27,33.25,15.28}, propDataOut.getVerticesSoundLevel().get(0).value, ERROR_EPSILON_medium);//p=0.5
+        assertArrayEquals(  new double[]{14.02,23.84,30.95,33.86,38.37,38.27,33.25,15.28}, propDataOut.getVerticesSoundLevel().get(0).value, ERROR_EPSILON_MEDIUM);//p=0.5
     }
 
 
@@ -1255,7 +1515,7 @@ public class EvaluateAttenuationCnossosTest {
         computeRays.run(propDataOut);
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
-        assertArrayEquals(  new double[]{11.69,21.77,28.93,32.71,36.83,36.83,32.12,13.66},L, ERROR_EPSILON_low);//p=0.5
+        assertArrayEquals(  new double[]{11.69,21.77,28.93,32.71,36.83,36.83,32.12,13.66},L, ERROR_EPSILON_LOW);//p=0.5
 
 
     }
@@ -1358,7 +1618,7 @@ public class EvaluateAttenuationCnossosTest {
         computeRays.run(propDataOut);
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
-        assertArrayEquals(  new double[]{6.72,14.66,19.34,21.58,21.84,19.00,11.42,-9.38},L, ERROR_EPSILON_very_high);//p=0.5
+        assertArrayEquals(  new double[]{6.72,14.66,19.34,21.58,21.84,19.00,11.42,-9.38},L, ERROR_EPSILON_VERY_HIGH);//p=0.5
     }
 
     /**
@@ -1432,7 +1692,7 @@ public class EvaluateAttenuationCnossosTest {
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
 
-        assertArrayEquals(  new double[]{11.21,21.25,28.63,33.86,36.73,36.79,32.17,14},L, ERROR_EPSILON_very_low);//p=0.5
+        assertArrayEquals(  new double[]{11.21,21.25,28.63,33.86,36.73,36.79,32.17,14},L, ERROR_EPSILON_VERY_LOW);//p=0.5
     }
 
     /**
@@ -1506,7 +1766,7 @@ public class EvaluateAttenuationCnossosTest {
         computeRays.run(propDataOut);
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
-        assertArrayEquals(  new double[]{10.44,20.58,27.78,33.09,35.84,35.73,30.91,12.48},L, ERROR_EPSILON_very_high);// Because building height definition is not in accordance with ISO
+        assertArrayEquals(  new double[]{10.44,20.58,27.78,33.09,35.84,35.73,30.91,12.48},L, ERROR_EPSILON_VERY_HIGH);// Because building height definition is not in accordance with ISO
 
     }
 
@@ -1583,7 +1843,7 @@ public class EvaluateAttenuationCnossosTest {
         computeRays.run(propDataOut);
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
-        assertArrayEquals(  new double[]{-2.96,3.56,6.73,11.17,13.85,13.86,9.48,-7.64},L, ERROR_EPSILON_very_high); //because we don't take into account this rays
+        assertArrayEquals(  new double[]{-2.96,3.56,6.73,11.17,13.85,13.86,9.48,-7.64},L, ERROR_EPSILON_VERY_HIGH); //because we don't take into account this rays
 
     }
 
@@ -1691,7 +1951,7 @@ public class EvaluateAttenuationCnossosTest {
         assertEquals(1, propDataOut.getVerticesSoundLevel().size());
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93 - 26.2, 93 - 16.1,
                 93 - 8.6, 93 - 3.2, 93, 93 + 1.2, 93 + 1.0, 93 - 1.1});
-        assertArrayEquals(new double[]{12.7, 21.07, 27.66, 31.48, 31.42, 28.74, 23.75, 13.92}, L, ERROR_EPSILON_high);//p=0.5
+        assertArrayEquals(new double[]{12.7, 21.07, 27.66, 31.48, 31.42, 28.74, 23.75, 13.92}, L, ERROR_EPSILON_HIGH);//p=0.5
 
     }
 
@@ -1801,7 +2061,7 @@ public class EvaluateAttenuationCnossosTest {
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93 - 26.2, 93 - 16.1,
                 93 - 8.6, 93 - 3.2, 93, 93 + 1.2, 93 + 1.0, 93 - 1.1});
         //todo IL Y A UNE ERREUR DANS LA NORME AVEC LE BATIMENT 2, SI ON LE SUPPRIME LES RESULTATS SONT EQUIVALENTS
-        assertArrayEquals(new double[]{14.31, 21.69, 27.76, 31.52, 31.49, 29.18, 25.39, 16.58}, L, ERROR_EPSILON_very_high);
+        assertArrayEquals(new double[]{14.31, 21.69, 27.76, 31.52, 31.49, 29.18, 25.39, 16.58}, L, ERROR_EPSILON_VERY_HIGH);
 
     }
 
@@ -1868,7 +2128,7 @@ public class EvaluateAttenuationCnossosTest {
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
         //MANQUE DIFFRACTIONS HORIZONTALES
-        assertArrayEquals(  new double[]{17.50,25.65,30.56,33.22,33.48,31.52,27.51,17.80},L, ERROR_EPSILON_very_high);//p=0.5
+        assertArrayEquals(  new double[]{17.50,25.65,30.56,33.22,33.48,31.52,27.51,17.80},L, ERROR_EPSILON_VERY_HIGH);//p=0.5
     }
 
 
@@ -1929,7 +2189,7 @@ public class EvaluateAttenuationCnossosTest {
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
 
 
-        assertArrayEquals(  new double[]{17.50,27.52,34.89,40.14,43.10,43.59,40.55,29.15},L, ERROR_EPSILON_high);//p=0.5
+        assertArrayEquals(  new double[]{17.50,27.52,34.89,40.14,43.10,43.59,40.55,29.15},L, ERROR_EPSILON_HIGH);//p=0.5
     }
 
 
@@ -2002,7 +2262,7 @@ public class EvaluateAttenuationCnossosTest {
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
 
-        assertArrayEquals(  new double[]{16.84,26.97,34.79,40.23,38.57,38.58,39.36,29.60},L, ERROR_EPSILON_very_high);// we don't take into account retrodiffraction
+        assertArrayEquals(  new double[]{16.84,26.97,34.79,40.23,38.57,38.58,39.36,29.60},L, ERROR_EPSILON_VERY_HIGH);// we don't take into account retrodiffraction
 
     }
 
@@ -2111,7 +2371,7 @@ public class EvaluateAttenuationCnossosTest {
         computeRays.run(propDataOut);
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{150-26.2,150-16.1,150-8.6,150-3.2,150,150+1.2,150+1.0,150-1.1});
-        assertArrayEquals(  new double[]{43.56,50.59,54.49,56.14,55.31,49.77,23.37,-59.98},L, ERROR_EPSILON_very_high);//p=0.5
+        assertArrayEquals(  new double[]{43.56,50.59,54.49,56.14,55.31,49.77,23.37,-59.98},L, ERROR_EPSILON_VERY_HIGH);//p=0.5
 
 
     }

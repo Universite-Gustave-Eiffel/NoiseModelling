@@ -39,6 +39,8 @@ import org.noise_planet.noisemodelling.pathfinder.SegmentPath;
 import java.util.Arrays;
 import java.util.List;
 
+import static java.lang.Math.pow;
+
 /**
  * Return the dB value corresponding to the parameters
  * Following Directive 2015/996/EN
@@ -90,7 +92,7 @@ public class EvaluateAttenuationCnossos {
             double Ch = 1; // Eq 2.5.21
 
             if (srpath.eLength > 0.3) {
-                double gammaPart = Math.pow((5 * freq_lambda[idfreq]) / srpath.eLength, 2);
+                double gammaPart = pow((5 * freq_lambda[idfreq]) / srpath.eLength, 2);
                 cprime = (1. + gammaPart) / (ONETHIRD + gammaPart); // Eq. 2.5.23
             } else {
                 cprime = 1.;
@@ -149,13 +151,17 @@ public class EvaluateAttenuationCnossos {
         double AGround;
 
         for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
+            int fm = data.freq_lvl.get(idfreq);
+            double gw = segmentPath.gw;
+            double dp = segmentPath.dp;
+
             //NF S 31-133 page 41 c
-            double k = 2 * Math.PI * data.freq_lvl.get(idfreq) / data.getCelerity();
+            double k = 2 * Math.PI * fm / data.getCelerity();
             //NF S 31-113 page 41 w
-            double w = 0.0185 * Math.pow(data.freq_lvl.get(idfreq), 2.5) * Math.pow(segmentPath.gw, 2.6) /
-                    (Math.pow(data.freq_lvl.get(idfreq), 1.5) * Math.pow(segmentPath.gw, 2.6) + 1.3 * Math.pow(10, 3) * Math.pow(data.freq_lvl.get(idfreq), 0.75) * Math.pow(segmentPath.gw, 1.3) + 1.16 * Math.pow(10, 6));
+            double w = 0.0185 * pow(fm, 2.5) * pow(gw, 2.6) /
+                    (pow(fm, 1.5) * pow(gw, 2.6) + 1.3e3 * pow(fm, 0.75) * pow(gw, 1.3) + 1.16e6);
             //NF S 31-113 page 41 Cf
-            double cf = segmentPath.dp * (1 + 3 * w * segmentPath.dp * Math.pow(Math.E, -Math.sqrt(w * segmentPath.dp))) / (1 + w * segmentPath.dp);
+            double cf = dp * (1 + 3 * w * dp * pow(Math.E, -Math.sqrt(w * dp))) / (1 + w * dp);
             //NF S 31-113 page 41 A sol
 
             if (path.isFavorable()) {
@@ -173,18 +179,32 @@ public class EvaluateAttenuationCnossos {
                     }
                 }
                 /** eq. 2.5.20**/
-                AGround = -10 * Math.log10(4 * Math.pow(k, 2) / Math.pow(segmentPath.dp, 2) *
-                        (Math.pow(segmentPath.zsPrime, 2) - Math.sqrt(2 * cf / k) * segmentPath.zsPrime + cf / k) *
-                        (Math.pow(segmentPath.zrPrime, 2) - Math.sqrt(2 * cf / k) * segmentPath.zrPrime + cf / k));
+                AGround = -10 * Math.log10(4 * pow(k, 2) / pow(segmentPath.dp, 2) *
+                        (pow(segmentPath.zsPrime, 2) - Math.sqrt(2 * cf / k) * segmentPath.zsPrime + cf / k) *
+                        (pow(segmentPath.zrPrime, 2) - Math.sqrt(2 * cf / k) * segmentPath.zrPrime + cf / k));
             } else {
                 /** eq. 2.5.15**/
-                AGround = -10 * Math.log10(4 * Math.pow(k, 2) / Math.pow(segmentPath.dp, 2) *
-                        (Math.pow(segmentPath.zs, 2) - Math.sqrt(2 * cf / k) * segmentPath.zs + cf / k) *
-                        (Math.pow(segmentPath.zr, 2) - Math.sqrt(2 * cf / k) * segmentPath.zr + cf / k));
+                AGround = -10 * Math.log10(4 * pow(k, 2) / pow(segmentPath.dp, 2) *
+                        (pow(segmentPath.zs, 2) - Math.sqrt(2 * cf / k) * segmentPath.zs + cf / k) *
+                        (pow(segmentPath.zr, 2) - Math.sqrt(2 * cf / k) * segmentPath.zr + cf / k));
                 /** eq. 2.5.18**/
                 aGroundmin = -3 * (1 - segmentPath.gm);
             }
             aGround[idfreq] = Math.max(AGround, aGroundmin);
+
+            //For testing purpose
+            if(path.keepAbsorption) {
+                if(path.isFavorable()) {
+                    path.groundAttenuation.wF[idfreq] = w;
+                    path.groundAttenuation.cfF[idfreq] = cf;
+                    path.groundAttenuation.aGroundF[idfreq] = aGround[idfreq];
+                }
+                else{
+                    path.groundAttenuation.wH[idfreq] = w;
+                    path.groundAttenuation.cfH[idfreq] = cf;
+                    path.groundAttenuation.aGroundH[idfreq] = aGround[idfreq];
+                }
+            }
 
         }
         return aGround;
@@ -198,7 +218,7 @@ public class EvaluateAttenuationCnossos {
      * @return Δsol(S, O) if Asol(S,O) is given or Δsol(O,R) if Asol(O,R) is given
      */
     public double getDeltaGround(double aGround, double deltaDifPrim, double deltaDif) {
-        double attArg = 1 + (Math.pow(10, -aGround / 20) - 1) * Math.pow(10, -(deltaDifPrim - deltaDif) / 20);
+        double attArg = 1 + (pow(10, -aGround / 20) - 1) * pow(10, -(deltaDifPrim - deltaDif) / 20);
         if (attArg < 0) {
             attArg = 0;
         }
@@ -253,6 +273,16 @@ public class EvaluateAttenuationCnossos {
                 aGroundmin = -3;
             }
             java.util.Arrays.fill(aGround, aGroundmin);
+
+            //For testing purpose
+            if(path.keepAbsorption) {
+                if(path.isFavorable()) {
+                    path.groundAttenuation.aGroundF = aGround;
+                }
+                else{
+                    path.groundAttenuation.aGroundH = aGround;
+                }
+            }
         } else {
             aGround = getAGroundCore(path, segmentPath, data);
         }

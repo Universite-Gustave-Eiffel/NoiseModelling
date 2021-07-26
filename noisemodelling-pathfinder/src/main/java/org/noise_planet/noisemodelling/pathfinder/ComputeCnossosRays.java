@@ -40,6 +40,7 @@ import org.locationtech.jts.algorithm.*;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.geom.impl.CoordinateArraySequence;
 import org.locationtech.jts.index.ItemVisitor;
+import org.locationtech.jts.io.WKTWriter;
 import org.locationtech.jts.math.Vector3D;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
 import org.slf4j.Logger;
@@ -364,8 +365,8 @@ public class ComputeCnossosRays {
         segments.add(createSegment(cutProfile, src, rcv));
 
         List<PointPath> points = new ArrayList<>();
-        points.add(new PointPath(src, PointPath.POINT_TYPE.SRCE, gs, data.profileBuilder.getTopoZ(src.getCoordinate())));
-        points.add(new PointPath(rcv, PointPath.POINT_TYPE.RECV, gs, data.profileBuilder.getTopoZ(rcv.getCoordinate())));
+        points.add(new PointPath(src, PointPath.POINT_TYPE.SRCE, src.getGroundCoef(), data.profileBuilder.getTopoZ(src.getCoordinate())));
+        points.add(new PointPath(rcv, PointPath.POINT_TYPE.RECV, rcv.getGroundCoef(), data.profileBuilder.getTopoZ(rcv.getCoordinate())));
         points.get(0).buildingId = src.getBuildingId();
         points.get(1).buildingId = rcv.getBuildingId();
 
@@ -629,7 +630,7 @@ public class ComputeCnossosRays {
             }
             if (offset >= 0) {
                 org.apache.commons.math3.geometry.euclidean.threed.Vector3D i = plane.intersection(new Line(new org.apache.commons.math3.geometry.euclidean.threed.Vector3D(roofPts.get(idp).x, roofPts.get(idp).y, Double.MIN_VALUE), coordinateToVector(roofPts.get(idp)), epsilon));
-                polyCut.add(new Coordinate(i.getX(), i.getY(), i.getZ()));
+                if(i!=null)polyCut.add(new Coordinate(i.getX(), i.getY(), i.getZ()));
             }
             lastOffset = offset;
         }
@@ -1054,6 +1055,18 @@ public class ComputeCnossosRays {
         data.receivers = Arrays.asList(sequence.toCoordinateArray());
     }
 
+    private static double insertPtSource(Coordinate source, Coordinate receiverPos, Integer sourceId,
+                                         List<SourcePointInfo> sourceList, double[] wj, double li) {
+        // Compute maximal power at freefield at the receiver position with reflective ground
+        double aDiv = -getADiv(CGAlgorithms3D.distance(receiverPos, source));
+        double[] srcWJ = new double[wj.length];
+        for (int idFreq = 0; idFreq < srcWJ.length; idFreq++) {
+            srcWJ[idFreq] = wj[idFreq] * li * dbaToW(aDiv) * dbaToW(3);
+        }
+        sourceList.add(new SourcePointInfo(srcWJ, sourceId, source, li));
+        return sumArray(srcWJ.length, srcWJ);
+    }
+
     private static double insertPtSource(Point source, Coordinate receiverPos, Integer sourceId,
                                          List<SourcePointInfo> sourceList, double[] wj, double li) {
         // Compute maximal power at freefield at the receiver position with reflective ground
@@ -1076,9 +1089,10 @@ public class ComputeCnossosRays {
             segmentSizeConstraint = max(1, receiverCoord.distance(nearestPoint) / 2.0);
         }
         double li = splitLineStringIntoPoints(source, segmentSizeConstraint, pts);
-        for (Coordinate pt : pts) {
+        for (int ptIndex = 0; ptIndex < pts.size(); ptIndex++) {
+            Coordinate pt = pts.get(ptIndex);
             if (pt.distance(receiverCoord) < data.maxSrcDist) {
-                totalPowerRemaining += insertPtSource(FACTORY.createPoint(pt), receiverCoord, srcIndex, sourceList, wj, li);
+                totalPowerRemaining += insertPtSource(pt, receiverCoord, srcIndex, sourceList, wj, li);
             }
         }
         return totalPowerRemaining;
@@ -1215,7 +1229,7 @@ public class ComputeCnossosRays {
         @Override
         public void filter(CoordinateSequence coordinateSequence, int i) {
             Coordinate pt = coordinateSequence.getCoordinate(i);
-            Double zGround = profileBuilder.getZ(pt);
+            Double zGround = profileBuilder.getTopoZ(pt);
             if (!zGround.isNaN() && (resetZ || Double.isNaN(pt.getOrdinate(2)) || Double.compare(0, pt.getOrdinate(2)) == 0)) {
                 pt.setOrdinate(2, zGround + (Double.isNaN(pt.getOrdinate(2)) ? 0 : pt.getOrdinate(2)));
                 geometryChanged.set(true);

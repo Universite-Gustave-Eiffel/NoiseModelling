@@ -71,7 +71,6 @@ import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.io.kml.KMLWriter;
 import org.noise_planet.noisemodelling.pathfinder.*;
-import org.noise_planet.noisemodelling.pathfinder.ComputeRaysOut;
 
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
@@ -327,27 +326,6 @@ public class KMLDocument {
                 Logger.getLogger(KMLDocument.class.getName()).log(Level.SEVERE, (String)null, var3);
             }
 
-        }
-    }
-
-    public static void exportScene(String name, ProfileBuilder profileBuilder, ComputeRaysOut result) throws IOException {
-        try {
-            Coordinate proj = new Coordinate( 351714.794877, 6685824.856402, 0);
-            FileOutputStream outData = new FileOutputStream(name);
-            KMLDocument kmlDocument = new KMLDocument(outData);
-            kmlDocument.setInputCRS("EPSG:2154");
-            kmlDocument.setOffset(proj);
-            kmlDocument.writeHeader();
-            if(profileBuilder != null) {
-                kmlDocument.writeTopographic(profileBuilder.getTriangles(), profileBuilder.getVertices());
-                kmlDocument.writeBuildings(profileBuilder);
-            }
-            if(result != null) {
-                kmlDocument.writeRays(result.getPropagationPaths());
-            }
-            kmlDocument.writeFooter();
-        } catch (XMLStreamException | CoordinateOperationException | CRSException ex) {
-            throw new IOException(ex);
         }
     }
 }

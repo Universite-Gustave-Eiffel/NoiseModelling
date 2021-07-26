@@ -334,6 +334,23 @@ public class ProfileBuilder {
      * Add the topographic line in the data, to complete the topographic data.
      * @param lineSegment Topographic line.
      */
+    public void addTopographicLine(double x0, double y0, double z0, double x1, double y1, double z1) {
+        if(!isFeedingFinished) {
+            LineString lineSegment = FACTORY.createLineString(new Coordinate[]{new Coordinate(x0, y0, z0), new Coordinate(x1, y1, z1)});
+            if(envelope == null) {
+                envelope = lineSegment.getEnvelopeInternal();
+            }
+            else {
+                envelope.expandToInclude(lineSegment.getEnvelopeInternal());
+            }
+            this.topoLines.add(lineSegment);
+        }
+    }
+
+    /**
+     * Add the topographic line in the data, to complete the topographic data.
+     * @param lineSegment Topographic line.
+     */
     public void addTopographicLine(LineString lineSegment) {
         if(!isFeedingFinished) {
             if(envelope == null) {
@@ -353,6 +370,33 @@ public class ProfileBuilder {
      */
     public void addGroundEffect(Geometry geom, double coefficient) {
         if(!isFeedingFinished) {
+            if(envelope == null) {
+                envelope = geom.getEnvelopeInternal();
+            }
+            else {
+                envelope.expandToInclude(geom.getEnvelopeInternal());
+            }
+            this.groundEffects.add(new GroundEffect(geom, coefficient));
+        }
+    }
+
+    /**
+     * Add a ground effect.
+     * @param minX        Ground effect minimum X.
+     * @param maxX        Ground effect maximum X.
+     * @param minY        Ground effect minimum Y.
+     * @param maxY        Ground effect maximum Y.
+     * @param coefficient Ground effect coefficient.
+     */
+    public void addGroundEffect(double minX, double maxX, double minY, double maxY, double coefficient) {
+        if(!isFeedingFinished) {
+            Geometry geom = FACTORY.createPolygon(new Coordinate[]{
+                    new Coordinate(minX, minY),
+                    new Coordinate(minX, maxY),
+                    new Coordinate(maxX, maxY),
+                    new Coordinate(maxX, minY),
+                    new Coordinate(minX, minY)
+            });
             if(envelope == null) {
                 envelope = geom.getEnvelopeInternal();
             }
@@ -831,6 +875,8 @@ public class ProfileBuilder {
                 currentGround = ground;
             }
         }
+        List<CutPoint> toRemove = new ArrayList<>();
+        CutPoint previous = null;
         for(CutPoint cut : profile.pts) {
             if(cut.type == IntersectionType.GROUND_EFFECT) {
                 if(currentGround == groundEffects.get(cut.id)) {
@@ -838,10 +884,17 @@ public class ProfileBuilder {
                 }
                 else {
                     currentGround = groundEffects.get(cut.id);
+                    if(previous != null &&
+                            cut.getCoordinate().x == previous.getCoordinate().x &&
+                            cut.getCoordinate().y == previous.getCoordinate().y) {
+                        toRemove.add(previous);
+                    }
                 }
             }
             cut.groundCoef = currentGround != null ? currentGround.coef : gS;
+            previous = cut;
         }
+        profile.pts.removeAll(toRemove);
         return profile;
     }
 

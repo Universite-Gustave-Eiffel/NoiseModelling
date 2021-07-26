@@ -71,7 +71,14 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
         this.genericMeteoData = pathData;
     }
 
+    public ComputeRaysOutAttenuation(boolean keepRays, boolean keepAbsorption, PropagationProcessPathData pathData) {
+        this.keepRays = keepRays;
+        this.keepAbsorption = keepAbsorption;
+        this.genericMeteoData = pathData;
+    }
+
     public boolean keepRays = true;
+    public boolean keepAbsorption = false;
     public AtomicLong rayCount = new AtomicLong();
     public AtomicLong nb_couple_receiver_src = new AtomicLong();
     public AtomicLong nb_obstr_test = new AtomicLong();
@@ -165,6 +172,16 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
 
                 double[] Aref = evaluateAttenuationCnossos.evaluateAref(propath, pathData);
 
+                //For testing purpose
+                if(keepAbsorption) {
+                    propath.keepAbsorption = true;
+                    propath.absorptionData = new PropagationPath.AbsorptionData();
+                    propath.groundAttenuation = new PropagationPath.GroundAttenuation(pathData.freq_lvl.size());
+                    propath. absorptionData.aRef = Aref.clone();
+                    propath.absorptionData.aDiv = Adiv.clone();
+                    propath.absorptionData.aAtm = Aatm.clone();
+                }
+
                 //
                 int roseindex = getRoseIndex(ptList.get(0).coordinate, ptList.get(ptList.size() - 1).coordinate);
                 double[] aGlobalMeteoHom = new double[pathData.freq_lvl.size()];
@@ -179,6 +196,11 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
                     for (int idfreq = 0; idfreq < pathData.freq_lvl.size(); idfreq++) {
                         aGlobalMeteoHom[idfreq] = -(Adiv[idfreq] + Aatm[idfreq] + Aboundary[idfreq] + Aref[idfreq]); // Eq. 2.5.6
                     }
+                    //For testing purpose
+                    if(keepAbsorption) {
+                        propath.absorptionData.aBoundaryH = Aboundary.clone();
+                        propath.absorptionData.aGlobalH = aGlobalMeteoHom.clone();
+                    }
                 }
 
                 // Compute favorable conditions attenuation
@@ -188,6 +210,11 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
                     Aboundary = evaluateAttenuationCnossos.evaluateAboundary(propath, pathData, true);
                     for (int idfreq = 0; idfreq < pathData.freq_lvl.size(); idfreq++) {
                         aGlobalMeteoFav[idfreq] = -(Adiv[idfreq] + Aatm[idfreq] + Aboundary[idfreq]+ Aref[idfreq]); // Eq. 2.5.8
+                    }
+                    //For testing purpose
+                    if(keepAbsorption) {
+                        propath.absorptionData.aBoundaryF = Aboundary.clone();
+                        propath.absorptionData.aGlobalF = aGlobalMeteoFav.clone();
                     }
                 }
 
