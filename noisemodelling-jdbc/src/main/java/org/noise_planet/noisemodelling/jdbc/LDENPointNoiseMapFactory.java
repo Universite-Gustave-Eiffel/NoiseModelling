@@ -310,7 +310,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
                 sb.append(" (IDRECEIVER bigint NOT NULL");
                 sb.append(", IDSOURCE bigint NOT NULL");
             } else {
-                sb.append(" (IDRECEIVER bigint");
+                sb.append(" (IDRECEIVER bigint NOT NULL");
             }
             for (int idfreq = 0; idfreq < ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
                 sb.append(", HZ");

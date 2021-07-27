@@ -49,6 +49,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -166,6 +167,14 @@ public class ComputeRays {
         this.data = data;
         Runtime runtime = Runtime.getRuntime();
         this.threadCount = runtime.availableProcessors();
+    }
+
+    public ProfilerThread getProfilerThread() {
+        return profilerThread;
+    }
+
+    public void setProfilerThread(ProfilerThread profilerThread) {
+        this.profilerThread = profilerThread;
     }
 
     public int getThreadCount() {
@@ -1171,30 +1180,35 @@ public class ComputeRays {
         // maxSrcDist meters
         ProgressVisitor propaProcessProgression = data.cellProg;
 
-        int splitCount = threadCount;
         ThreadPool threadManager = new ThreadPool(
-                splitCount,
-                splitCount + 1, Long.MAX_VALUE,
+                threadCount,
+                threadCount + 1, Long.MAX_VALUE,
                 TimeUnit.SECONDS);
-        int maximumReceiverBatch = (int) Math.ceil(data.receivers.size() / (double) splitCount);
-        int endReceiverRange = 0;
-        profilerThread = new ProfilerThread();
+        if(profilerThread == null) {
+            profilerThread = new ProfilerThread();
+        } else {
+            profilerThread.doRun.set(true);
+        }
         try {
             new Thread(profilerThread).start();
-            while (endReceiverRange < data.receivers.size()) {
+            ConcurrentLinkedDeque<Integer> receiversToCompute = new ConcurrentLinkedDeque<>();
+            // receiversToCompute is a stack of receiver to compute
+            // all concurrent threads will consume this stack in order to keep the number of working
+            // concurrent thread until the end
+            for(int receiverId =0; receiverId < data.receivers.size(); receiverId++) {
+                receiversToCompute.add(receiverId);
+            }
+            for(int idThread = 0; idThread < threadCount; idThread++) {
                 if (propaProcessProgression != null && propaProcessProgression.isCanceled()) {
                     break;
                 }
-                int newEndReceiver = Math.min(endReceiverRange + maximumReceiverBatch, data.receivers.size());
-                RangeReceiversComputation batchThread = new RangeReceiversComputation(endReceiverRange,
-                        newEndReceiver, this, debugInfo, propaProcessProgression,
-                        computeRaysOut.subProcess(endReceiverRange, newEndReceiver));
+                RangeReceiversComputation batchThread = new RangeReceiversComputation(receiversToCompute, this, debugInfo, propaProcessProgression,
+                        computeRaysOut.subProcess());
                 if (threadCount != 1) {
                     threadManager.executeBlocking(batchThread);
                 } else {
                     batchThread.run();
                 }
-                endReceiverRange = newEndReceiver;
             }
             threadManager.shutdown();
             try {
@@ -1227,18 +1241,16 @@ public class ComputeRays {
     }
 
 private static final class RangeReceiversComputation implements Runnable {
-    private final int startReceiver; // Included
-    private final int endReceiver; // Excluded
+    private ConcurrentLinkedDeque<Integer> receiversToCompute;
     private ComputeRays propagationProcess;
     private List<PropagationDebugInfo> debugInfo;
     private ProgressVisitor progressVisitor;
     private IComputeRaysOut dataOut;
 
-    public RangeReceiversComputation(int startReceiver, int endReceiver, ComputeRays propagationProcess,
+    public RangeReceiversComputation(ConcurrentLinkedDeque<Integer> receiversToCompute, ComputeRays propagationProcess,
                                      List<PropagationDebugInfo> debugInfo, ProgressVisitor progressVisitor,
                                      IComputeRaysOut dataOut) {
-        this.startReceiver = startReceiver;
-        this.endReceiver = endReceiver;
+        this.receiversToCompute = receiversToCompute;
         this.propagationProcess = propagationProcess;
         this.debugInfo = debugInfo;
         this.progressVisitor = progressVisitor;
@@ -1248,7 +1260,8 @@ private static final class RangeReceiversComputation implements Runnable {
     @Override
     public void run() {
         try {
-            for (int idReceiver = startReceiver; idReceiver < endReceiver; idReceiver++) {
+            while(!receiversToCompute.isEmpty()) {
+                int idReceiver = receiversToCompute.pop();
                 if (progressVisitor != null) {
                     if (progressVisitor.isCanceled()) {
                         break;
@@ -1260,12 +1273,15 @@ private static final class RangeReceiversComputation implements Runnable {
                 propagationProcess.computeRaysAtPosition(receiverCoord, idReceiver, debugInfo, dataOut, progressVisitor);
 
                 propagationProcess.profilerThread.onEndComputation(idReceiver,
-                        (int)(propagationProcess.profilerThread.timeTracker.get() - start));
+                        (int) (propagationProcess.profilerThread.timeTracker.get() - start));
 
                 if (progressVisitor != null) {
                     progressVisitor.endStep();
                 }
+
             }
+        } catch (NoSuchElementException ex) {
+            // ignore as it is expected at the end of the computation
         } catch (Exception ex) {
             LOGGER.error(ex.getLocalizedMessage(), ex);
             if (progressVisitor != null) {

@@ -19,9 +19,7 @@ public interface IComputeRaysOut {
     void finalizeReceiver(long receiverId);
     /**
      * If the implementation does not support thread concurrency, this method is called to return an instance
-     * @param receiverStart
-     * @param receiverEnd
      * @return
      */
-    IComputeRaysOut subProcess(int receiverStart, int receiverEnd);
+    IComputeRaysOut subProcess();
 }
