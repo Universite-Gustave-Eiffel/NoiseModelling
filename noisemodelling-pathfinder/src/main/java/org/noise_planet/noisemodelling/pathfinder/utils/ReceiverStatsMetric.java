@@ -34,12 +34,14 @@ public class ReceiverStatsMetric implements ProfilerThread.Metric {
 
     @Override
     public String[] getCurrentValues() {
-        return new String[] {
+        String[] res = new String[] {
                 Integer.toString((int)stats.getMin()),
                 Integer.toString((int)stats.getPercentile(50)),
                 Integer.toString((int)stats.getMean()),
                 Integer.toString((int)stats.getMax())
         };
+        stats.clear();
+        return res;
     }
 
     public static class ReceiverProfile {

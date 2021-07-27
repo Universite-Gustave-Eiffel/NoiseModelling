@@ -15,7 +15,8 @@ public class ProfilerThread  implements Runnable {
     public Logger log = LoggerFactory.getLogger(ProfilerThread.class);
     public AtomicLong timeTracker = new AtomicLong(System.currentTimeMillis());
     private AtomicBoolean doRun = new AtomicBoolean(true);
-    private int writeInterval = 300;
+    private int writeInterval = 60;
+    private int flushInterval = 300;
     private File outputFile;
     long start;
     private Map<String, Integer> metricsIndex = new HashMap<>();
@@ -39,9 +40,17 @@ public class ProfilerThread  implements Runnable {
         this.writeInterval = writeInterval;
     }
 
+    /**
+     * @param flushInterval Time in seconds between each effective write on the hard drive
+     */
+    public void setFlushInterval(int flushInterval) {
+        this.flushInterval = flushInterval;
+    }
+
     @Override
     public void run() {
         long lastWrite = 0;
+        long lastFlush = 0;
         try(BufferedWriter b = new BufferedWriter(new FileWriter(outputFile))) {
             StringBuilder sb = new StringBuilder();
             for(Metric m : metrics) {
@@ -54,6 +63,7 @@ public class ProfilerThread  implements Runnable {
             }
             sb.append("\n");
             b.write(sb.toString());
+            b.flush();
             while (doRun.get()) {
                 timeTracker.set(System.currentTimeMillis());
                 for(Metric m : metrics) {
@@ -75,6 +85,10 @@ public class ProfilerThread  implements Runnable {
                         b.write(sb.toString());
                     } else {
                         Thread.sleep(2);
+                    }
+                    if((timeTracker.get() - lastFlush) / 1000.0 >= flushInterval ) {
+                        lastFlush = timeTracker.get();
+                        b.flush();
                     }
                 } catch (InterruptedException ex) {
                     break;
