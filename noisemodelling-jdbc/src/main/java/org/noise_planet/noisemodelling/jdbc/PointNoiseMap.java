@@ -13,7 +13,9 @@ package org.noise_planet.noisemodelling.jdbc;
 
 import org.h2gis.api.ProgressVisitor;
 import org.h2gis.utilities.*;
-import org.locationtech.jts.geom.*;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Envelope;
+import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.index.strtree.STRtree;
 import org.noise_planet.noisemodelling.pathfinder.ComputeRays;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
