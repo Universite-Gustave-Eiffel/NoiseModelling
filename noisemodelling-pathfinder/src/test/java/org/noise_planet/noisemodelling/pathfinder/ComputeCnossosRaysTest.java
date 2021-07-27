@@ -2,10 +2,10 @@ package org.noise_planet.noisemodelling.pathfinder;
 
 import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.LineSegment;
+import org.locationtech.jts.geom.Envelope;
+import org.locationtech.jts.geom.GeometryFactory;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 
@@ -15,7 +15,7 @@ public class ComputeCnossosRaysTest {
     private static final double DELTA_COORDS = 1e-8;
 
     //Error for G path value
-    private static final double DELTA_G_PATH = 1e-4;
+    private static final double DELTA_G_PATH = 0.01;
 
     /**
      * Test TC01 -- Reflecting ground (G = 0)
@@ -264,6 +264,67 @@ public class ComputeCnossosRaysTest {
         assertPaths(pts, gPaths, propDataOut.getPropagationPaths());
     }
 
+
+    /**
+     * Test TC07 -- Flat ground with spatially varying acoustic properties and long barrier
+     */
+    @Test
+    public void TC07() {
+
+        GeometryFactory factory = new GeometryFactory();
+
+        //Create profile builder
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+
+        // Add building
+        profileBuilder.addBuilding(factory.createPolygon(new Coordinate[]{
+                new Coordinate(100, 240, 0),
+                new Coordinate(100.1, 240, 0),
+                new Coordinate(265.1, -180, 0),
+                new Coordinate(265, -180, 0),
+                new Coordinate(100, 240, 0)}), 6, -1);
+
+        profileBuilder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9);
+        profileBuilder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5);
+        profileBuilder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2);
+
+        profileBuilder.finishFeeding();
+
+
+        //Propagation data building
+        CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
+                .addSource(10, 10, 1)
+                .addReceiver(200, 50, 4)
+                .build();
+
+        rayData.setComputeHorizontalDiffraction(true);
+        rayData.setComputeVerticalDiffraction(true);
+
+        //Out and computation settings
+        ComputeCnossosRaysOut propDataOut = new ComputeCnossosRaysOut(true);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
+        computeRays.setThreadCount(1);
+
+        //Run computation
+        computeRays.run(propDataOut);
+
+        //Expected values
+        double[][][] pts = new double[][][]{
+                {{10.0, 10.0, 1.0}, {200.0, 50.0, 4.0}} //Path 1 : direct
+        };
+        double[][] gPaths = new double[][]{
+                {0.55,0.2} //Path 1 : direct
+        };
+
+        //Assertion
+        assertPaths(pts, gPaths, propDataOut.getPropagationPaths());
+
+
+    }
+
+
+
+
     private static void assertPaths(double[][][] expectedPts, double[][] expectedGPaths, List<PropagationPath> actualPaths) {
         assertEquals("Expected path count is different than actual path count.", expectedPts.length, actualPaths.size());
         for(int i=0; i<expectedPts.length; i++) {
@@ -278,6 +339,11 @@ public class ComputeCnossosRaysTest {
             for(int j=0; j<expectedGPaths[i].length; j++) {
                 assertEquals("Path " + i + " g path " + j, expectedGPaths[i][j], path.getSegmentList().get(j).gPath, DELTA_G_PATH);
             }
+
+
+
         }
     }
+
+
 }

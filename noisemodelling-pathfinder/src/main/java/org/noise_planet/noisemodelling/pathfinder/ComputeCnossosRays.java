@@ -689,8 +689,10 @@ public class ComputeCnossosRays {
             if(i != pts.size()-2) {
                 PointPath pt = points.get(points.size()-1);
                 pt.type = PointPath.POINT_TYPE.DIFH;
-                if(pt.buildingId != -1)
+                if(pt.buildingId != -1) {
                     pt.alphaWall = data.profileBuilder.getBuilding(pt.buildingId).getAlphas();
+                    pt.setBuildingHeight(data.profileBuilder.getBuilding(pt.buildingId).getHeight());
+                }
             }
         }
 

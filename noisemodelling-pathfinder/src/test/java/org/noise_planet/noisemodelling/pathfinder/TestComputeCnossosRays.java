@@ -701,7 +701,7 @@ public class TestComputeCnossosRays {
         ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
-        exportRays("T10_pierre.kml", propDataOut);
+        //exportRays("T10_pierre.kml", propDataOut);
         assertRaysEquals(TestComputeCnossosRays.class.getResourceAsStream("T10.geojson"), propDataOut);
     }
     /**

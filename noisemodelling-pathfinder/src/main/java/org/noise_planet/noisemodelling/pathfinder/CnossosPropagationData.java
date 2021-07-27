@@ -36,9 +36,7 @@ package org.noise_planet.noisemodelling.pathfinder;
 import org.h2gis.api.ProgressVisitor;
 import org.h2gis.utilities.SpatialResultSet;
 import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryFactory;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -57,6 +55,7 @@ public class CnossosPropagationData {
     public static final double DEFAULT_MAXIMUM_REF_DIST = 50;
     public static final double DEFAULT_RECEIVER_DIST = 1.0;
     public static final double DEFAULT_GS = 0.0;
+    public static final double DEFAULT_G = 0.0;
 
     public List<Long> receiversPk = new ArrayList<>();
     public List<Long> sourcesPk = new ArrayList<>();

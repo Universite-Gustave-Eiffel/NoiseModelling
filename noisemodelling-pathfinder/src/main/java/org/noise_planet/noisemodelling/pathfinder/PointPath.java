@@ -18,6 +18,12 @@ public class PointPath {
     public double gs;       // only if POINT_TYPE = SRCE or RECV, G coefficient right above the point
     public List<Double> alphaWall = Collections.unmodifiableList(Arrays.asList(0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1));; // only if POINT_TYPE = REFL, alpha coefficient
     public int buildingId; // only if POINT_TYPE = REFL
+
+    public void setBuildingHeight(double buildingHeight) {
+        this.buildingHeight = buildingHeight;
+    }
+
+    public double buildingHeight; // only if POINT_TYPE = REFL
     public POINT_TYPE type; // type of point
     public enum POINT_TYPE {
         SRCE,

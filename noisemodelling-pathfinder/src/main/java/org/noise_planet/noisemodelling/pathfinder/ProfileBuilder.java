@@ -851,9 +851,9 @@ public class ProfileBuilder {
         }
         //Receiver
         profile.addReceiver(c1);
-
+        // TODO IL NE FAUT PAS SORT MAIS RAJOUTER UN POINT G avant source et après recepteurs
         //Sort all the cut point in order to set the ground coefficients.
-        profile.sort();
+        /*profile.sort();
         //If ordering puts source at last position, reverse the list
         if(profile.pts.get(0) != profile.source) {
             if(profile.pts.get(profile.pts.size()-1) != profile.source) {
@@ -863,7 +863,7 @@ public class ProfileBuilder {
                 LOGGER.error("The receiver have to be first or last cut point");
             }
             profile.reverse();
-        }
+        }*/
 
 
         //Sets the ground effects
@@ -1076,7 +1076,14 @@ public class ProfileBuilder {
             CutPoint current = p0;
             double totLength = new LineSegment(p0.getCoordinate(), p1.getCoordinate()).getLength();
             double rsLength = 0.0;
-            List<CutPoint> pts = getCutPoints().stream().sorted(CutPoint::compareTo).collect(Collectors.toList());
+            //List<CutPoint> pts = getCutPoints().stream().sorted(CutPoint::compareTo).collect(Collectors.toList());
+
+            List<CutPoint> pts = getCutPoints().stream()
+                    .filter(cutPoint -> cutPoint.getType() != IntersectionType.TOPOGRAPHY)
+                    .filter(cutPoint -> cutPoint.getType() != IntersectionType.BUILDING)
+                    .sorted(CutPoint::compareTo).collect(Collectors.toList());
+
+
             for(CutPoint cut : pts) {
                 if(cut.compareTo(current)>=0 && cut.compareTo(p1)<=0) {
                     LineSegment seg = new LineSegment(current.getCoordinate(), cut.getCoordinate());
@@ -1287,6 +1294,11 @@ public class ProfileBuilder {
     public static class Building {
         /** Building footprint. */
         private final Polygon poly;
+
+        public double getHeight() {
+            return height;
+        }
+
         /** Height of the building. */
         private final double height;
         private double zTopo = Double.NaN;
