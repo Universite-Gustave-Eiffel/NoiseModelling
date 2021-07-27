@@ -851,9 +851,9 @@ public class ProfileBuilder {
         }
         //Receiver
         profile.addReceiver(c1);
-        // TODO IL NE FAUT PAS SORT MAIS RAJOUTER UN POINT G avant source et après recepteurs
+
         //Sort all the cut point in order to set the ground coefficients.
-        /*profile.sort();
+        profile.sort();
         //If ordering puts source at last position, reverse the list
         if(profile.pts.get(0) != profile.source) {
             if(profile.pts.get(profile.pts.size()-1) != profile.source) {
@@ -863,7 +863,7 @@ public class ProfileBuilder {
                 LOGGER.error("The receiver have to be first or last cut point");
             }
             profile.reverse();
-        }*/
+        }
 
 
         //Sets the ground effects
@@ -1085,14 +1085,14 @@ public class ProfileBuilder {
 
 
             for(CutPoint cut : pts) {
-                if(cut.compareTo(current)>=0 && cut.compareTo(p1)<=0) {
+                if(cut.compareTo(current)>0 && cut.compareTo(p1)<0) {
                     LineSegment seg = new LineSegment(current.getCoordinate(), cut.getCoordinate());
                     rsLength += seg.getLength() * current.getGroundCoef();
                     current = cut;
                 }
             }
             LineSegment seg = new LineSegment(current.getCoordinate(), p1.getCoordinate());
-            rsLength += seg.getLength() * current.getGroundCoef();
+            rsLength += seg.getLength() * p1.getGroundCoef();
             return rsLength / totLength;
         }
 

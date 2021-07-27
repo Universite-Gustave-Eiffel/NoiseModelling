@@ -642,9 +642,9 @@ public class ComputeCnossosRays {
         List<SegmentPath> segments = new ArrayList<>();
         List<SegmentPath> srPath = new ArrayList<>();
         List<PointPath> points = new ArrayList<>();
-
+//
         List<ProfileBuilder.CutPoint> cutPts = cutProfile.getCutPoints().stream()
-                    .filter(cutPoint -> cutPoint.getType() != ProfileBuilder.IntersectionType.GROUND_EFFECT)
+                .filter(cutPoint -> cutPoint.getType() != ProfileBuilder.IntersectionType.GROUND_EFFECT)
                     .collect(Collectors.toList());
         Coordinate src = cutProfile.getSource().getCoordinate();
         Coordinate rcv = cutProfile.getReceiver().getCoordinate();
