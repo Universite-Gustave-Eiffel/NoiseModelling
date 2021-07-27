@@ -13,10 +13,7 @@ package org.noise_planet.noisemodelling.jdbc;
 
 import org.h2gis.api.ProgressVisitor;
 import org.h2gis.utilities.*;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.Envelope;
-import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.*;
 import org.locationtech.jts.index.strtree.STRtree;
 import org.noise_planet.noisemodelling.pathfinder.ComputeRays;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
@@ -209,7 +206,7 @@ public class PointNoiseMap extends JdbcNoiseMap {
         try (SpatialResultSet srs = rs.unwrap(SpatialResultSet.class)) {
             while (srs.next()) {
                 Geometry pt = srs.getGeometry();
-                if(pt instanceof Point && !pt.isEmpty()) {
+                if(pt != null && !pt.isEmpty()) {
                     Coordinate ptCoord = pt.getCoordinate();
                     List queryResult = rtree.query(new Envelope(ptCoord));
                     for(Object o : queryResult) {
