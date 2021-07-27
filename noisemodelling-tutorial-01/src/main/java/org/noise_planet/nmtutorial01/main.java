@@ -7,6 +7,7 @@ import org.h2gis.api.ProgressVisitor;
 import org.h2gis.functions.io.csv.CSVDriverFunction;
 import org.h2gis.functions.io.geojson.GeoJsonRead;
 import org.h2gis.utilities.SFSUtilities;
+import org.noise_planet.noisemodelling.pathfinder.utils.JVMMemoryMetric;
 import org.noise_planet.noisemodelling.pathfinder.utils.KMLDocument;
 import org.noise_planet.noisemodelling.jdbc.LDENConfig;
 import org.noise_planet.noisemodelling.jdbc.LDENPointNoiseMapFactory;
@@ -14,6 +15,8 @@ import org.noise_planet.noisemodelling.jdbc.PointNoiseMap;
 import org.noise_planet.noisemodelling.pathfinder.FastObstructionTest;
 import org.noise_planet.noisemodelling.pathfinder.IComputeRaysOut;
 import org.noise_planet.noisemodelling.pathfinder.RootProgressVisitor;
+import org.noise_planet.noisemodelling.pathfinder.utils.ProfilerThread;
+import org.noise_planet.noisemodelling.pathfinder.utils.ProgressMetric;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -135,8 +138,15 @@ class Main {
         long start = System.currentTimeMillis();
 
         // Iterate over computation areas
+        ProfilerThread profilerThread = new ProfilerThread(new File("target/profile.csv"));
+        profilerThread.addMetric(tableWriter);
+        profilerThread.addMetric(new ProgressMetric(progressLogger));
+        profilerThread.addMetric(new JVMMemoryMetric());
+        profilerThread.setWriteInterval(2);
+        pointNoiseMap.setProfilerThread(profilerThread);
         try {
             tableWriter.start();
+            new Thread(profilerThread).start();
             // Fetch cell identifiers with receivers
             Map<PointNoiseMap.CellIndex, Integer> cells = pointNoiseMap.searchPopulatedCells(connection);
             ProgressVisitor progressVisitor = progressLogger.subProcess(cells.size());
@@ -150,8 +160,10 @@ class Main {
                 }
             }
         } finally {
+            profilerThread.stop();
             tableWriter.stop();
         }
+
         long computationTime = System.currentTimeMillis() - start;
         logger.info(String.format(Locale.ROOT, "Computed in %d ms, %.2f ms per receiver", computationTime,computationTime / (double)receivers.size()));
         // Export result tables as csv files

@@ -1,81 +1,145 @@
 package org.noise_planet.noisemodelling.pathfinder.utils;
 
-import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Locale;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class ProfilerThread  implements Runnable {
     public Logger log = LoggerFactory.getLogger(ProfilerThread.class);
     public AtomicLong timeTracker = new AtomicLong(System.currentTimeMillis());
-    public AtomicBoolean doRun = new AtomicBoolean(true);
-    private ConcurrentLinkedDeque<ReceiverProfile> receiverProfiles = new ConcurrentLinkedDeque<>();
-    private DescriptiveStatistics stats = new DescriptiveStatistics();
-    private static final int PROCESSING_TIMEOUT = 5000;
+    private AtomicBoolean doRun = new AtomicBoolean(true);
+    private int writeInterval = 300;
+    private File outputFile;
+    long start;
+    private Map<String, Integer> metricsIndex = new HashMap<>();
+    private List<Metric> metrics = new ArrayList<>();
+
+    public ProfilerThread(File outputFile) {
+        this.outputFile = outputFile;
+        start = System.currentTimeMillis();
+        addMetric(new TimeMetric(timeTracker, start));
+    }
+
+    public void addMetric(Metric metric) {
+        metrics.add(metric);
+        metricsIndex.put(metric.getClass().getName(), metrics.size() - 1);
+    }
+
+    /**
+     * @param writeInterval In seconds, intervals for writing new metrics in the csv file
+     */
+    public void setWriteInterval(int writeInterval) {
+        this.writeInterval = writeInterval;
+    }
 
     @Override
     public void run() {
-        while (doRun.get() || !receiverProfiles.isEmpty()) {
-            timeTracker.set(System.currentTimeMillis());
-            try {
-                if(!receiverProfiles.isEmpty()) {
-                    while (!receiverProfiles.isEmpty()) {
-                        ReceiverProfile receiverProfile = receiverProfiles.pop();
-                        stats.addValue(receiverProfile.computationTime);
+        long lastWrite = 0;
+        try(BufferedWriter b = new BufferedWriter(new FileWriter(outputFile))) {
+            StringBuilder sb = new StringBuilder();
+            for(Metric m : metrics) {
+                for(String columnName : m.getColumnNames()) {
+                    if(sb.length() != 0) {
+                        sb.append(",");
                     }
-                } else {
-                    Thread.sleep(2);
+                    sb.append(columnName);
                 }
-            } catch (InterruptedException ex) {
-                break;
             }
-        }
-    }
-
-    public void printStats() {
-        if (doRun.get()) {
-            return;
-        }
-        long start = System.currentTimeMillis();
-        while (!receiverProfiles.isEmpty()) {
-            try {
-                if( System.currentTimeMillis() - start > PROCESSING_TIMEOUT) {
-                    return;
+            sb.append("\n");
+            b.write(sb.toString());
+            while (doRun.get()) {
+                timeTracker.set(System.currentTimeMillis());
+                for(Metric m : metrics) {
+                    m.tick(timeTracker.get());
                 }
-                Thread.sleep(50);
-            } catch (InterruptedException ex) {
-                return;
+                try {
+                    if((timeTracker.get() - lastWrite) / 1000.0 >= writeInterval ) {
+                        lastWrite = timeTracker.get();
+                        sb = new StringBuilder();
+                        for(Metric m : metrics) {
+                            for(String metricValue : m.getCurrentValues()) {
+                                if(sb.length() != 0) {
+                                    sb.append(",");
+                                }
+                                sb.append(metricValue);
+                            }
+                        }
+                        sb.append("\n");
+                        b.write(sb.toString());
+                    } else {
+                        Thread.sleep(2);
+                    }
+                } catch (InterruptedException ex) {
+                    break;
+                }
             }
+        } catch (IOException ex) {
+            log.error("Error while writing file", ex);
         }
-        double mean = stats.getMean();
-        double max = stats.getMax();
-        double min = stats.getMin();
-        double median = stats.getPercentile(50);
-        log.info(String.format(Locale.ROOT, "Receiver computation statistics: " +
-                "mean: %d ms  min: %d ms max: %d ms  median: %d ms",
-                (int) mean, (int) min, (int) max, (int) median));
     }
 
-    public void clearStats() {
-        stats.clear();
-        receiverProfiles.clear();
+    public void stop() {
+        doRun.set(false);
     }
 
-    public void onEndComputation(int receiverId, int computationTime) {
-        receiverProfiles.add(new ReceiverProfile(receiverId, computationTime));
-    }
-
-    public static class ReceiverProfile {
-        public int receiverId;
-        public int computationTime;
-
-        public ReceiverProfile(int receiverId, int computationTime) {
-            this.receiverId = receiverId;
-            this.computationTime = computationTime;
+    public <T extends Metric> T getMetric(Class<T> metricClass) {
+        Integer mIndex = metricsIndex.get(metricClass.getName());
+        if(mIndex != null) {
+            Metric o = metrics.get(mIndex);
+            if (metricClass.isInstance(o)) {
+                return metricClass.cast(o);
+            } else {
+                return null;
+            }
+        } else {
+            return null;
         }
+    }
+
+    private class TimeMetric implements Metric {
+        AtomicLong timeTracker;
+        long startTime;
+
+        public TimeMetric(AtomicLong timeTracker, long startTime) {
+            this.timeTracker = timeTracker;
+            this.startTime = startTime;
+        }
+
+        @Override
+        public String[] getColumnNames() {
+            return new String[] {"time"};
+        }
+
+        @Override
+        public String[] getCurrentValues() {
+            return new String[] {String.format(Locale.ROOT, "%.2f", (timeTracker.get() - start) / 1e3)};
+        }
+
+        @Override
+        public void tick(long currentMillis) {
+
+        }
+    }
+
+    /**
+     * Metric is a collection of statistics to write on the profile csv file
+     */
+    public interface Metric {
+        String[] getColumnNames();
+        String[] getCurrentValues();
+
+        /**
+         * Called with little intervals in order to process metrics on the same thread than
+         * the call to getCurrentValues
+         * @param currentMillis Time
+         */
+        void tick(long currentMillis);
     }
 }

@@ -45,6 +45,7 @@ import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.math.Vector3D;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
 import org.noise_planet.noisemodelling.pathfinder.utils.ProfilerThread;
+import org.noise_planet.noisemodelling.pathfinder.utils.ReceiverStatsMetric;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -169,10 +170,20 @@ public class ComputeRays {
         this.threadCount = runtime.availableProcessors();
     }
 
+    /**
+     * Computation stacks and timing are collected by this class in order
+     * to profile the execution of the simulation
+     * @return Instance of ProfilerThread or null
+     */
     public ProfilerThread getProfilerThread() {
         return profilerThread;
     }
 
+    /**
+     * Computation stacks and timing are collected by this class in order
+     * to profile the execution of the simulation
+     * @param profilerThread Instance of ProfilerThread
+     */
     public void setProfilerThread(ProfilerThread profilerThread) {
         this.profilerThread = profilerThread;
     }
@@ -1184,41 +1195,31 @@ public class ComputeRays {
                 threadCount,
                 threadCount + 1, Long.MAX_VALUE,
                 TimeUnit.SECONDS);
-        if(profilerThread == null) {
-            profilerThread = new ProfilerThread();
-        } else {
-            profilerThread.doRun.set(true);
+
+        ConcurrentLinkedDeque<Integer> receiversToCompute = new ConcurrentLinkedDeque<>();
+        // receiversToCompute is a stack of receiver to compute
+        // all concurrent threads will consume this stack in order to keep the number of working
+        // concurrent thread until the end
+        for(int receiverId =0; receiverId < data.receivers.size(); receiverId++) {
+            receiversToCompute.add(receiverId);
         }
+        for(int idThread = 0; idThread < threadCount; idThread++) {
+            if (propaProcessProgression != null && propaProcessProgression.isCanceled()) {
+                break;
+            }
+            RangeReceiversComputation batchThread = new RangeReceiversComputation(receiversToCompute, this, debugInfo, propaProcessProgression,
+                    computeRaysOut.subProcess());
+            if (threadCount != 1) {
+                threadManager.executeBlocking(batchThread);
+            } else {
+                batchThread.run();
+            }
+        }
+        threadManager.shutdown();
         try {
-            new Thread(profilerThread).start();
-            ConcurrentLinkedDeque<Integer> receiversToCompute = new ConcurrentLinkedDeque<>();
-            // receiversToCompute is a stack of receiver to compute
-            // all concurrent threads will consume this stack in order to keep the number of working
-            // concurrent thread until the end
-            for(int receiverId =0; receiverId < data.receivers.size(); receiverId++) {
-                receiversToCompute.add(receiverId);
-            }
-            for(int idThread = 0; idThread < threadCount; idThread++) {
-                if (propaProcessProgression != null && propaProcessProgression.isCanceled()) {
-                    break;
-                }
-                RangeReceiversComputation batchThread = new RangeReceiversComputation(receiversToCompute, this, debugInfo, propaProcessProgression,
-                        computeRaysOut.subProcess());
-                if (threadCount != 1) {
-                    threadManager.executeBlocking(batchThread);
-                } else {
-                    batchThread.run();
-                }
-            }
-            threadManager.shutdown();
-            try {
-                threadManager.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
-            } catch (InterruptedException ex) {
-                LOGGER.error(ex.getLocalizedMessage(), ex);
-            }
-        } finally {
-            profilerThread.doRun.set(false);
-            profilerThread.printStats();
+            threadManager.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException ex) {
+            LOGGER.error(ex.getLocalizedMessage(), ex);
         }
     }
 
@@ -1268,12 +1269,19 @@ private static final class RangeReceiversComputation implements Runnable {
                     }
                 }
                 Coordinate receiverCoord = propagationProcess.data.receivers.get(idReceiver);
-                long start = propagationProcess.profilerThread.timeTracker.get();
+                long start = 0;
+                if(propagationProcess.profilerThread != null) {
+                    start = propagationProcess.profilerThread.timeTracker.get();
+                }
 
                 propagationProcess.computeRaysAtPosition(receiverCoord, idReceiver, debugInfo, dataOut, progressVisitor);
 
-                propagationProcess.profilerThread.onEndComputation(idReceiver,
-                        (int) (propagationProcess.profilerThread.timeTracker.get() - start));
+                // Save computation time for this receiver
+                if(propagationProcess.profilerThread != null &&
+                        propagationProcess.profilerThread.getMetric(ReceiverStatsMetric.class) != null) {
+                    propagationProcess.profilerThread.getMetric(ReceiverStatsMetric.class).onEndComputation(idReceiver,
+                            (int) (propagationProcess.profilerThread.timeTracker.get() - start));
+                }
 
                 if (progressVisitor != null) {
                     progressVisitor.endStep();

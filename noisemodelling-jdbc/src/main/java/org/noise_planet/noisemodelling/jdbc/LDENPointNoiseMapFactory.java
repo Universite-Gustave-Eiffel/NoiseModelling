@@ -26,6 +26,7 @@ import org.h2gis.utilities.JDBCUtilities;
 import org.noise_planet.noisemodelling.emission.DirectionAttributes;
 import org.noise_planet.noisemodelling.emission.RailWayLW;
 import org.noise_planet.noisemodelling.pathfinder.*;
+import org.noise_planet.noisemodelling.pathfinder.utils.ProfilerThread;
 import org.noise_planet.noisemodelling.propagation.*;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
 import org.slf4j.Logger;
@@ -41,7 +42,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 /**
  *
  */
-public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProcessDataFactory, PointNoiseMap.IComputeRaysOutFactory {
+public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProcessDataFactory, PointNoiseMap.IComputeRaysOutFactory, ProfilerThread.Metric {
     LDENConfig ldenConfig;
     TableWriter tableWriter;
     Thread tableWriterThread;
@@ -57,6 +58,21 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
     public LDENPointNoiseMapFactory(Connection connection, LDENConfig ldenConfig) {
         this.ldenConfig = ldenConfig;
         this.connection = connection;
+    }
+
+    @Override
+    public String[] getColumnNames() {
+        return new String[] {"jdbc_stack"};
+    }
+
+    @Override
+    public String[] getCurrentValues() {
+        return new String[] {Long.toString(ldenData.queueSize.get())};
+    }
+
+    @Override
+    public void tick(long currentMillis) {
+
     }
 
     public void insertTrainDirectivity() {
