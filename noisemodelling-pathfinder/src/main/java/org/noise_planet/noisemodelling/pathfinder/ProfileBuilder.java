@@ -756,7 +756,7 @@ public class ProfileBuilder {
     public CutProfile getProfile(Coordinate c0, Coordinate c1, double gS) {
         CutProfile profile = new CutProfile();
 
-        profile.addSource(c0);
+
 
         List<LineSegment> lines = new ArrayList<>();
         LineSegment fullLine = new LineSegment(c0, c1);
@@ -849,17 +849,21 @@ public class ProfileBuilder {
                 }
             }
         }
+//Sort all the cut point in order to set the ground coefficients.
+        profile.sort();
+        profile.reverse();
+        profile.addSource(c0);
+        profile.reverse();
         //Receiver
         profile.addReceiver(c1);
 
-        //Sort all the cut point in order to set the ground coefficients.
-        profile.sort();
+
         //If ordering puts source at last position, reverse the list
         if(profile.pts.get(0) != profile.source) {
-            if(profile.pts.get(profile.pts.size()-1) != profile.source) {
+            if(profile.pts.get(profile.pts.size()-1) != profile.source && profile.pts.get(0) != profile.source) {
                 LOGGER.error("The source have to be first or last cut point");
             }
-            if(profile.pts.get(0) != profile.receiver) {
+            if(profile.pts.get(profile.pts.size()-1) != profile.receiver && profile.pts.get(0) != profile.receiver) {
                 LOGGER.error("The receiver have to be first or last cut point");
             }
             profile.reverse();
