@@ -379,6 +379,10 @@ public class ComputeRays {
         List<PropagationPath> reflexionPropagationPaths = new ArrayList<>();
 
         for (MirrorReceiverResult receiverReflection : receiverReflections) {
+            // Check propagation distance limitation
+            if(receiverReflection.getReceiverPos().distance3D(srcCoord) > data.maxSrcDist) {
+                break;
+            }
             // Print wall reflections
             //System.out.println(Arrays.toString(asWallArray(receiverReflection)));
             List<MirrorReceiverResult> rayPath = new ArrayList<>(data.reflexionOrder + 2);
@@ -392,6 +396,12 @@ public class ComputeRays {
             linters.computeIntersection(seg.p0, seg.p1,
                     receiverReflection.getReceiverPos(),
                     destinationPt);
+
+            // Check first wall distance reflection limitation
+            if(linters.hasIntersection() && new Coordinate(
+                    linters.getIntersection(0)).distance(srcCoord) > data.maxRefDist) {
+                break;
+            }
             while (linters.hasIntersection() && MirrorReceiverIterator.wallPointTest(seg, destinationPt)) {
                 // There are a probable reflection point on the segment
                 Coordinate reflectionPt = new Coordinate(
