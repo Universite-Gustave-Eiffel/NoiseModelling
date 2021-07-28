@@ -55,7 +55,7 @@ import java.util.*;
  */
 public class PropagationProcessData {
     public static final double DEFAULT_MAX_PROPAGATION_DISTANCE = 1200;
-    public static final double DEFAULT_MAXIMUM_REF_DIST = 50;
+    public static final double DEFAULT_MAXIMUM_REF_DIST = 700;
     public static final double DEFAULT_RECEIVER_DIST = 1.0;
     public static final double DEFAULT_GS = 0.0;
     public static final String YAW_DATABASE_FIELD = "YAW";

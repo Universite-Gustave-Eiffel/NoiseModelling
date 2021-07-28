@@ -44,10 +44,13 @@ import org.locationtech.jts.index.strtree.STRtree;
 import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.math.Vector3D;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
+import org.noise_planet.noisemodelling.pathfinder.utils.ProfilerThread;
+import org.noise_planet.noisemodelling.pathfinder.utils.ReceiverStatsMetric;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -65,6 +68,7 @@ public class ComputeRays {
     private final static double MAX_RATIO_HULL_DIRECT_PATH = 4;
     private int threadCount;
     private PropagationProcessData data;
+    private ProfilerThread profilerThread;
 
     private STRtree rTreeOfGeoSoil;
     private final static Logger LOGGER = LoggerFactory.getLogger(ComputeRays.class);
@@ -164,6 +168,24 @@ public class ComputeRays {
         this.data = data;
         Runtime runtime = Runtime.getRuntime();
         this.threadCount = runtime.availableProcessors();
+    }
+
+    /**
+     * Computation stacks and timing are collected by this class in order
+     * to profile the execution of the simulation
+     * @return Instance of ProfilerThread or null
+     */
+    public ProfilerThread getProfilerThread() {
+        return profilerThread;
+    }
+
+    /**
+     * Computation stacks and timing are collected by this class in order
+     * to profile the execution of the simulation
+     * @param profilerThread Instance of ProfilerThread
+     */
+    public void setProfilerThread(ProfilerThread profilerThread) {
+        this.profilerThread = profilerThread;
     }
 
     public int getThreadCount() {
@@ -347,22 +369,20 @@ public class ComputeRays {
         return walls;
     }
 
-    public List<PropagationPath> computeReflexion(Coordinate receiverCoord,
-                                                  Coordinate srcCoord, boolean favorable, List<FastObstructionTest.Wall> nearBuildingsWalls) {
-//                for(FastObstructionTest.Wall wall : nearBuildingsWalls) {
-//                    System.out.println(String.format(Locale.ROOT, "walls.add(new FastObstructionTest.Wall(new Coordinate(%.2f,%.2f), new Coordinate(%.2f,%.2f) , %d));", wall.p0.x, wall.p0.y, wall.p1.x, wall.p1.y, wall.getBuildingId()));
-//                }
+    public List<PropagationPath> computeReflexion(Coordinate receiverCoord, Coordinate srcCoord, boolean favorable,
+                                                  List<FastObstructionTest.Wall> nearBuildingsWalls,
+                                                  List<MirrorReceiverResult> receiverReflections) {
         // Compute receiver mirror
         LineSegment srcReceiver = new LineSegment(srcCoord, receiverCoord);
         LineIntersector linters = new RobustLineIntersector();
 
         List<PropagationPath> reflexionPropagationPaths = new ArrayList<>();
 
-
-        MirrorReceiverIterator.It mirroredReceivers = new MirrorReceiverIterator.It(receiverCoord, nearBuildingsWalls,
-                srcReceiver, Integer.MAX_VALUE, data.reflexionOrder, data.maxSrcDist);
-
-        for (MirrorReceiverResult receiverReflection : mirroredReceivers) {
+        for (MirrorReceiverResult receiverReflection : receiverReflections) {
+            // Check propagation distance limitation
+            if(receiverReflection.getReceiverPos().distance3D(srcCoord) > data.maxSrcDist) {
+                break;
+            }
             // Print wall reflections
             //System.out.println(Arrays.toString(asWallArray(receiverReflection)));
             List<MirrorReceiverResult> rayPath = new ArrayList<>(data.reflexionOrder + 2);
@@ -376,6 +396,12 @@ public class ComputeRays {
             linters.computeIntersection(seg.p0, seg.p1,
                     receiverReflection.getReceiverPos(),
                     destinationPt);
+
+            // Check first wall distance reflection limitation
+            if(linters.hasIntersection() && new Coordinate(
+                    linters.getIntersection(0)).distance(srcCoord) > data.maxRefDist) {
+                break;
+            }
             while (linters.hasIntersection() && MirrorReceiverIterator.wallPointTest(seg, destinationPt)) {
                 // There are a probable reflection point on the segment
                 Coordinate reflectionPt = new Coordinate(
@@ -959,8 +985,8 @@ public class ComputeRays {
      * @return Minimal power level (dB) or maximum attenuation (dB)
      */
     private double[] receiverSourcePropa(SourcePointInfo src,
-                                         Coordinate receiverCoord, int rcvId,
-                                         List<FastObstructionTest.Wall> nearBuildingsWalls, List<PropagationDebugInfo> debugInfo, IComputeRaysOut dataOut) {
+                                         Coordinate receiverCoord, int rcvId, List<PropagationDebugInfo> debugInfo,
+                                         IComputeRaysOut dataOut,List<FastObstructionTest.Wall> nearBuildingsWalls, List<MirrorReceiverResult> mirrorReceiverResults) {
         Coordinate srcCoord = src.position;
         int srcId = src.sourcePrimaryKey;
         double sourceLi = src.li;
@@ -975,7 +1001,8 @@ public class ComputeRays {
 
             // Process specular reflection
             if (data.reflexionOrder > 0) {
-                List<PropagationPath> propagationPaths_all = computeReflexion(receiverCoord, srcCoord, false, nearBuildingsWalls);
+                List<PropagationPath> propagationPaths_all = computeReflexion(receiverCoord, srcCoord,
+                        false, nearBuildingsWalls, mirrorReceiverResults);
                 propagationPaths.addAll(propagationPaths_all);
             }
 
@@ -1047,10 +1074,13 @@ public class ComputeRays {
     public void computeRaysAtPosition(Coordinate receiverCoord, int idReceiver, List<PropagationDebugInfo> debugInfo, IComputeRaysOut dataOut, ProgressVisitor progressVisitor) {
         // List of walls within maxReceiverSource distance
         HashSet<Integer> processedLineSources = new HashSet<Integer>(); //Already processed Raw source (line and/or points)
-        Set<FastObstructionTest.Wall> wallsReceiver = new HashSet<>();
+        List<FastObstructionTest.Wall> wallsReceiver = new ArrayList<>();
+        List<MirrorReceiverResult> mirrorReceiverResults = new ArrayList<>();
         if (data.reflexionOrder > 0) {
             wallsReceiver.addAll(data.freeFieldFinder.getLimitsInRange(
                     data.maxRefDist, receiverCoord, false));
+            new MirrorReceiverIterator.It(receiverCoord, wallsReceiver,
+                    Integer.MAX_VALUE, data.reflexionOrder, data.maxSrcDist).forEach(mirrorReceiverResults::add);
         }
         double searchSourceDistance = data.maxSrcDist;
         Envelope receiverSourceRegion = new Envelope(receiverCoord.x
@@ -1126,8 +1156,8 @@ public class ComputeRays {
                 wallsSource.addAll(data.freeFieldFinder.getLimitsInRange(
                         data.maxRefDist, srcCoord, false));
             }
-            double[] power = receiverSourcePropa(src, receiverCoord, idReceiver,
-                    new ArrayList<>(wallsSource), debugInfo, dataOut);
+            double[] power = receiverSourcePropa(src, receiverCoord, idReceiver
+                    , debugInfo, dataOut, wallsReceiver, mirrorReceiverResults);
             double global = ComputeRays.sumArray(power.length, ComputeRays.dbaToW(power));
             totalPowerRemaining -= src.globalWj;
             if (power.length > 0) {
@@ -1169,27 +1199,29 @@ public class ComputeRays {
         // maxSrcDist meters
         ProgressVisitor propaProcessProgression = data.cellProg;
 
-        int splitCount = threadCount;
         ThreadPool threadManager = new ThreadPool(
-                splitCount,
-                splitCount + 1, Long.MAX_VALUE,
+                threadCount,
+                threadCount + 1, Long.MAX_VALUE,
                 TimeUnit.SECONDS);
-        int maximumReceiverBatch = (int) Math.ceil(data.receivers.size() / (double) splitCount);
-        int endReceiverRange = 0;
-        while (endReceiverRange < data.receivers.size()) {
+
+        ConcurrentLinkedDeque<Integer> receiversToCompute = new ConcurrentLinkedDeque<>();
+        // receiversToCompute is a stack of receiver to compute
+        // all concurrent threads will consume this stack in order to keep the number of working
+        // concurrent thread until the end
+        for(int receiverId =0; receiverId < data.receivers.size(); receiverId++) {
+            receiversToCompute.add(receiverId);
+        }
+        for(int idThread = 0; idThread < threadCount; idThread++) {
             if (propaProcessProgression != null && propaProcessProgression.isCanceled()) {
                 break;
             }
-            int newEndReceiver = Math.min(endReceiverRange + maximumReceiverBatch, data.receivers.size());
-            RangeReceiversComputation batchThread = new RangeReceiversComputation(endReceiverRange,
-                    newEndReceiver, this, debugInfo, propaProcessProgression,
-                    computeRaysOut.subProcess(endReceiverRange, newEndReceiver));
+            RangeReceiversComputation batchThread = new RangeReceiversComputation(receiversToCompute, this, debugInfo, propaProcessProgression,
+                    computeRaysOut.subProcess());
             if (threadCount != 1) {
                 threadManager.executeBlocking(batchThread);
             } else {
                 batchThread.run();
             }
-            endReceiverRange = newEndReceiver;
         }
         threadManager.shutdown();
         try {
@@ -1218,18 +1250,16 @@ public class ComputeRays {
     }
 
 private static final class RangeReceiversComputation implements Runnable {
-    private final int startReceiver; // Included
-    private final int endReceiver; // Excluded
+    private ConcurrentLinkedDeque<Integer> receiversToCompute;
     private ComputeRays propagationProcess;
     private List<PropagationDebugInfo> debugInfo;
     private ProgressVisitor progressVisitor;
     private IComputeRaysOut dataOut;
 
-    public RangeReceiversComputation(int startReceiver, int endReceiver, ComputeRays propagationProcess,
+    public RangeReceiversComputation(ConcurrentLinkedDeque<Integer> receiversToCompute, ComputeRays propagationProcess,
                                      List<PropagationDebugInfo> debugInfo, ProgressVisitor progressVisitor,
                                      IComputeRaysOut dataOut) {
-        this.startReceiver = startReceiver;
-        this.endReceiver = endReceiver;
+        this.receiversToCompute = receiversToCompute;
         this.propagationProcess = propagationProcess;
         this.debugInfo = debugInfo;
         this.progressVisitor = progressVisitor;
@@ -1239,20 +1269,35 @@ private static final class RangeReceiversComputation implements Runnable {
     @Override
     public void run() {
         try {
-            for (int idReceiver = startReceiver; idReceiver < endReceiver; idReceiver++) {
+            while(!receiversToCompute.isEmpty()) {
+                int idReceiver = receiversToCompute.pop();
                 if (progressVisitor != null) {
                     if (progressVisitor.isCanceled()) {
                         break;
                     }
                 }
                 Coordinate receiverCoord = propagationProcess.data.receivers.get(idReceiver);
+                long start = 0;
+                if(propagationProcess.profilerThread != null) {
+                    start = propagationProcess.profilerThread.timeTracker.get();
+                }
 
                 propagationProcess.computeRaysAtPosition(receiverCoord, idReceiver, debugInfo, dataOut, progressVisitor);
+
+                // Save computation time for this receiver
+                if(propagationProcess.profilerThread != null &&
+                        propagationProcess.profilerThread.getMetric(ReceiverStatsMetric.class) != null) {
+                    propagationProcess.profilerThread.getMetric(ReceiverStatsMetric.class).onEndComputation(idReceiver,
+                            (int) (propagationProcess.profilerThread.timeTracker.get() - start));
+                }
 
                 if (progressVisitor != null) {
                     progressVisitor.endStep();
                 }
+
             }
+        } catch (NoSuchElementException ex) {
+            // ignore as it is expected at the end of the computation
         } catch (Exception ex) {
             LOGGER.error(ex.getLocalizedMessage(), ex);
             if (progressVisitor != null) {

@@ -30,6 +30,9 @@ import org.h2gis.utilities.wrapper.ConnectionWrapper
 
 import org.noise_planet.noisemodelling.emission.*
 import org.noise_planet.noisemodelling.pathfinder.*
+import org.noise_planet.noisemodelling.pathfinder.utils.JVMMemoryMetric
+import org.noise_planet.noisemodelling.pathfinder.utils.ProfilerThread
+import org.noise_planet.noisemodelling.pathfinder.utils.ProgressMetric
 import org.noise_planet.noisemodelling.propagation.*
 import org.noise_planet.noisemodelling.jdbc.*
 
@@ -559,9 +562,16 @@ def exec(Connection connection, input) {
 
 
     logger.info("Start calculation... ")
-
+    ProfilerThread profilerThread = new ProfilerThread(new File("webapps/root/profile.csv"));
+    profilerThread.addMetric(ldenProcessing);
+    profilerThread.addMetric(new ProgressMetric(progressLogger));
+    profilerThread.addMetric(new JVMMemoryMetric());
+    profilerThread.setWriteInterval(300);
+    profilerThread.setFlushInterval(300);
+    pointNoiseMap.setProfilerThread(profilerThread);
     try {
         ldenProcessing.start()
+        new Thread(profilerThread).start();
         // Iterate over computation areas
         int k = 0
         Map cells = pointNoiseMap.searchPopulatedCells(connection)
@@ -581,6 +591,7 @@ def exec(Connection connection, input) {
         System.err.println(ex);
         throw ex;
     } finally {
+        profilerThread.stop();
         ldenProcessing.stop()
     }
 

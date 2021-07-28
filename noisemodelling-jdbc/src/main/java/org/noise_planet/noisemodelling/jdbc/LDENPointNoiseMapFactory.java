@@ -26,6 +26,7 @@ import org.h2gis.utilities.JDBCUtilities;
 import org.noise_planet.noisemodelling.emission.DirectionAttributes;
 import org.noise_planet.noisemodelling.emission.RailWayLW;
 import org.noise_planet.noisemodelling.pathfinder.*;
+import org.noise_planet.noisemodelling.pathfinder.utils.ProfilerThread;
 import org.noise_planet.noisemodelling.propagation.*;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
 import org.slf4j.Logger;
@@ -41,7 +42,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 /**
  *
  */
-public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProcessDataFactory, PointNoiseMap.IComputeRaysOutFactory {
+public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProcessDataFactory, PointNoiseMap.IComputeRaysOutFactory, ProfilerThread.Metric {
     LDENConfig ldenConfig;
     TableWriter tableWriter;
     Thread tableWriterThread;
@@ -57,6 +58,21 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
     public LDENPointNoiseMapFactory(Connection connection, LDENConfig ldenConfig) {
         this.ldenConfig = ldenConfig;
         this.connection = connection;
+    }
+
+    @Override
+    public String[] getColumnNames() {
+        return new String[] {"jdbc_stack"};
+    }
+
+    @Override
+    public String[] getCurrentValues() {
+        return new String[] {Long.toString(ldenData.queueSize.get())};
+    }
+
+    @Override
+    public void tick(long currentMillis) {
+
     }
 
     public void insertTrainDirectivity() {
@@ -310,7 +326,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
                 sb.append(" (IDRECEIVER bigint NOT NULL");
                 sb.append(", IDSOURCE bigint NOT NULL");
             } else {
-                sb.append(" (IDRECEIVER SERIAL PRIMARY KEY");
+                sb.append(" (IDRECEIVER bigint NOT NULL");
             }
             for (int idfreq = 0; idfreq < ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
                 sb.append(", HZ");
@@ -318,10 +334,18 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
                 sb.append(" numeric(5, 2)");
             }
             sb.append(", LAEQ numeric(5, 2), LEQ numeric(5, 2)");
-            if(!ldenConfig.mergeSources) {
-                sb.append(", PRIMARY KEY(IDRECEIVER, IDSOURCE)");
-            }
             sb.append(")");
+            return sb.toString();
+        }
+
+        private String forgePkTable(String tableName) {
+            StringBuilder sb = new StringBuilder("alter table ");
+            sb.append(tableName);
+            if (!ldenConfig.mergeSources) {
+                sb.append(" ADD PRIMARY KEY(IDRECEIVER, IDSOURCE)");
+            } else {
+                sb.append(" ADD PRIMARY KEY(IDRECEIVER)");
+            }
             return sb.toString();
         }
 
@@ -331,7 +355,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
             try(Statement sql = connection.createStatement()) {
                 if(ldenConfig.exportRays) {
                     sql.execute(String.format("DROP TABLE IF EXISTS %s", ldenConfig.raysTable));
-                    sql.execute("CREATE TABLE "+ldenConfig.raysTable+"(pk serial primary key, the_geom geometry, IDRECEIVER bigint NOT NULL, IDSOURCE bigint NOT NULL)");
+                    sql.execute("CREATE TABLE "+ldenConfig.raysTable+"(pk bigint auto_increment, the_geom geometry, IDRECEIVER bigint NOT NULL, IDSOURCE bigint NOT NULL)");
                 }
                 if(ldenConfig.computeLDay) {
                     sql.execute(String.format("DROP TABLE IF EXISTS %s", ldenConfig.lDayTable));
@@ -373,6 +397,20 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
                         // ignore
                         break;
                     }
+                }
+                // Set primary keys
+                LOGGER.info("Write done, apply primary keys");
+                if(ldenConfig.computeLDay) {
+                    sql.execute(forgePkTable(ldenConfig.lDayTable));
+                }
+                if(ldenConfig.computeLEvening) {
+                    sql.execute(forgePkTable(ldenConfig.lEveningTable));
+                }
+                if(ldenConfig.computeLNight) {
+                    sql.execute(forgePkTable(ldenConfig.lNightTable));
+                }
+                if(ldenConfig.computeLDEN) {
+                    sql.execute(forgePkTable(ldenConfig.lDenTable));
                 }
             } catch (SQLException e) {
                 LOGGER.error("SQL Writer exception", e);
