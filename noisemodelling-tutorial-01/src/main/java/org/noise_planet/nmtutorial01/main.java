@@ -95,7 +95,7 @@ class Main {
         PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS", "LW_ROADS", "RECEIVERS");
 
         pointNoiseMap.setMaximumPropagationDistance(160.0d);
-        pointNoiseMap.setSoundReflectionOrder(2);
+        pointNoiseMap.setSoundReflectionOrder(0);
         pointNoiseMap.setComputeHorizontalDiffraction(true);
         pointNoiseMap.setComputeVerticalDiffraction(true);
         // Building height field name
@@ -118,7 +118,7 @@ class Main {
 
         LDENPointNoiseMapFactory tableWriter = new LDENPointNoiseMapFactory(connection, ldenConfig);
 
-        tableWriter.setKeepRays(true);
+        tableWriter.setKeepRays(false);
 
         pointNoiseMap.setPropagationProcessDataFactory(tableWriter);
         pointNoiseMap.setComputeRaysOutFactory(tableWriter);
@@ -128,7 +128,7 @@ class Main {
         pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
 
         // force the creation of a 2x2 cells
-        pointNoiseMap.setGridDim(1);
+        pointNoiseMap.setGridDim(2);
 
 
         // Set of already processed receivers
