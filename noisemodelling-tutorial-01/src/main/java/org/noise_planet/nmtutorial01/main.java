@@ -95,7 +95,7 @@ class Main {
         PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS", "LW_ROADS", "RECEIVERS");
 
         pointNoiseMap.setMaximumPropagationDistance(160.0d);
-        pointNoiseMap.setSoundReflectionOrder(0);
+        pointNoiseMap.setSoundReflectionOrder(2);
         pointNoiseMap.setComputeHorizontalDiffraction(true);
         pointNoiseMap.setComputeVerticalDiffraction(true);
         // Building height field name
@@ -128,7 +128,7 @@ class Main {
         pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
 
         // force the creation of a 2x2 cells
-        pointNoiseMap.setGridDim(2);
+        pointNoiseMap.setGridDim(1);
 
 
         // Set of already processed receivers
@@ -143,6 +143,7 @@ class Main {
         profilerThread.addMetric(new ProgressMetric(progressLogger));
         profilerThread.addMetric(new JVMMemoryMetric());
         profilerThread.setWriteInterval(2);
+        profilerThread.setFlushInterval(15);
         pointNoiseMap.setProfilerThread(profilerThread);
         try {
             tableWriter.start();

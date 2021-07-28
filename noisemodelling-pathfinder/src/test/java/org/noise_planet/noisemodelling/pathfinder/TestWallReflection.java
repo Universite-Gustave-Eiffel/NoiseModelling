@@ -108,7 +108,7 @@ public class TestWallReflection extends TestCase {
 
 	public static List<MirrorReceiverResult> getReceiverImages(Coordinate receiver, Coordinate source, List<FastObstructionTest.Wall> walls, int order) {
         MirrorReceiverIterator.It mirrorReceiverResults =
-                new MirrorReceiverIterator.It(receiver, walls, new LineSegment(source, receiver), 9999, order, 9999);
+                new MirrorReceiverIterator.It(receiver, walls, 9999, order, 9999);
 
         List<MirrorReceiverResult> res = new ArrayList<>();
         for(MirrorReceiverResult r : mirrorReceiverResults) {
@@ -240,7 +240,7 @@ public class TestWallReflection extends TestCase {
         Coordinate source = new Coordinate(9, 4);
 
         MirrorReceiverIterator.It mirrorReceiverResults =
-                new MirrorReceiverIterator.It(receiver, walls, new LineSegment(source, receiver), 20, 2, 40);
+                new MirrorReceiverIterator.It(receiver, walls, 20, 2, 40);
         Iterator<MirrorReceiverResult> it = mirrorReceiverResults.iterator();
         wallTest(new Coordinate(0, 2), new int[]{0}, it.next());
         wallTest(new Coordinate(6, 2), new int[]{0, 4}, it.next());
@@ -340,7 +340,10 @@ public class TestWallReflection extends TestCase {
                 data.maxRefDist, source, false);
         assertEquals(13, walls.size());
         List<PropagationPath> paths;
-        paths = computeRays.computeReflexion(receiver, source, false, walls);
+        List<MirrorReceiverResult> mirrorReceiverResults = new ArrayList<>();
+        new MirrorReceiverIterator.It(receiver, walls,
+                Integer.MAX_VALUE, data.reflexionOrder, data.maxSrcDist).forEach(mirrorReceiverResults::add);
+        paths = computeRays.computeReflexion(receiver, source, false, walls, mirrorReceiverResults);
         assertEquals(1, paths.size());
         List<PointPath> pts = paths.get(0).getPointList();
         assertEquals(3, pts.size());
@@ -352,7 +355,10 @@ public class TestWallReflection extends TestCase {
         assertEquals(0, receiver.distance(pts.get(2).coordinate), 1e-6);
 
         data.reflexionOrder = 2;
-        paths = computeRays.computeReflexion(receiver, source, false, walls);
+        mirrorReceiverResults = new ArrayList<>();
+        new MirrorReceiverIterator.It(receiver, walls,
+                Integer.MAX_VALUE, data.reflexionOrder, data.maxSrcDist).forEach(mirrorReceiverResults::add);
+        paths = computeRays.computeReflexion(receiver, source, false, walls, mirrorReceiverResults);
         assertEquals(2, paths.size());
         pts = paths.get(1).getPointList();
         // 2 ref points

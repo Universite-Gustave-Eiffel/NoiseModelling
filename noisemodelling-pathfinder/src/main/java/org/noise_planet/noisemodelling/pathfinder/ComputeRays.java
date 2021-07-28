@@ -369,22 +369,16 @@ public class ComputeRays {
         return walls;
     }
 
-    public List<PropagationPath> computeReflexion(Coordinate receiverCoord,
-                                                  Coordinate srcCoord, boolean favorable, List<FastObstructionTest.Wall> nearBuildingsWalls) {
-//                for(FastObstructionTest.Wall wall : nearBuildingsWalls) {
-//                    System.out.println(String.format(Locale.ROOT, "walls.add(new FastObstructionTest.Wall(new Coordinate(%.2f,%.2f), new Coordinate(%.2f,%.2f) , %d));", wall.p0.x, wall.p0.y, wall.p1.x, wall.p1.y, wall.getBuildingId()));
-//                }
+    public List<PropagationPath> computeReflexion(Coordinate receiverCoord, Coordinate srcCoord, boolean favorable,
+                                                  List<FastObstructionTest.Wall> nearBuildingsWalls,
+                                                  List<MirrorReceiverResult> receiverReflections) {
         // Compute receiver mirror
         LineSegment srcReceiver = new LineSegment(srcCoord, receiverCoord);
         LineIntersector linters = new RobustLineIntersector();
 
         List<PropagationPath> reflexionPropagationPaths = new ArrayList<>();
 
-
-        MirrorReceiverIterator.It mirroredReceivers = new MirrorReceiverIterator.It(receiverCoord, nearBuildingsWalls,
-                srcReceiver, Integer.MAX_VALUE, data.reflexionOrder, data.maxSrcDist);
-
-        for (MirrorReceiverResult receiverReflection : mirroredReceivers) {
+        for (MirrorReceiverResult receiverReflection : receiverReflections) {
             // Print wall reflections
             //System.out.println(Arrays.toString(asWallArray(receiverReflection)));
             List<MirrorReceiverResult> rayPath = new ArrayList<>(data.reflexionOrder + 2);
@@ -981,8 +975,8 @@ public class ComputeRays {
      * @return Minimal power level (dB) or maximum attenuation (dB)
      */
     private double[] receiverSourcePropa(SourcePointInfo src,
-                                         Coordinate receiverCoord, int rcvId,
-                                         List<FastObstructionTest.Wall> nearBuildingsWalls, List<PropagationDebugInfo> debugInfo, IComputeRaysOut dataOut) {
+                                         Coordinate receiverCoord, int rcvId, List<PropagationDebugInfo> debugInfo,
+                                         IComputeRaysOut dataOut,List<FastObstructionTest.Wall> nearBuildingsWalls, List<MirrorReceiverResult> mirrorReceiverResults) {
         Coordinate srcCoord = src.position;
         int srcId = src.sourcePrimaryKey;
         double sourceLi = src.li;
@@ -997,7 +991,8 @@ public class ComputeRays {
 
             // Process specular reflection
             if (data.reflexionOrder > 0) {
-                List<PropagationPath> propagationPaths_all = computeReflexion(receiverCoord, srcCoord, false, nearBuildingsWalls);
+                List<PropagationPath> propagationPaths_all = computeReflexion(receiverCoord, srcCoord,
+                        false, nearBuildingsWalls, mirrorReceiverResults);
                 propagationPaths.addAll(propagationPaths_all);
             }
 
@@ -1069,10 +1064,13 @@ public class ComputeRays {
     public void computeRaysAtPosition(Coordinate receiverCoord, int idReceiver, List<PropagationDebugInfo> debugInfo, IComputeRaysOut dataOut, ProgressVisitor progressVisitor) {
         // List of walls within maxReceiverSource distance
         HashSet<Integer> processedLineSources = new HashSet<Integer>(); //Already processed Raw source (line and/or points)
-        Set<FastObstructionTest.Wall> wallsReceiver = new HashSet<>();
+        List<FastObstructionTest.Wall> wallsReceiver = new ArrayList<>();
+        List<MirrorReceiverResult> mirrorReceiverResults = new ArrayList<>();
         if (data.reflexionOrder > 0) {
             wallsReceiver.addAll(data.freeFieldFinder.getLimitsInRange(
                     data.maxRefDist, receiverCoord, false));
+            new MirrorReceiverIterator.It(receiverCoord, wallsReceiver,
+                    Integer.MAX_VALUE, data.reflexionOrder, data.maxSrcDist).forEach(mirrorReceiverResults::add);
         }
         double searchSourceDistance = data.maxSrcDist;
         Envelope receiverSourceRegion = new Envelope(receiverCoord.x
@@ -1148,8 +1146,8 @@ public class ComputeRays {
                 wallsSource.addAll(data.freeFieldFinder.getLimitsInRange(
                         data.maxRefDist, srcCoord, false));
             }
-            double[] power = receiverSourcePropa(src, receiverCoord, idReceiver,
-                    new ArrayList<>(wallsSource), debugInfo, dataOut);
+            double[] power = receiverSourcePropa(src, receiverCoord, idReceiver
+                    , debugInfo, dataOut, wallsReceiver, mirrorReceiverResults);
             double global = ComputeRays.sumArray(power.length, ComputeRays.dbaToW(power));
             totalPowerRemaining -= src.globalWj;
             if (power.length > 0) {
