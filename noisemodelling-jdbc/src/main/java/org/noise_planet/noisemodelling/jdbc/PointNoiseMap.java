@@ -214,6 +214,7 @@ public class PointNoiseMap extends JdbcNoiseMap {
             throw new SQLException("The table "+receiverTableName+" does not contain a Geometry field, then the extent " +
                     "cannot be computed");
         }
+        logger.info("Collect all receivers in order to localize populated cells");
         geometryField = geometryFields.get(0);
         ResultSet rs = connection.createStatement().executeQuery("SELECT " + geometryField + " FROM " + receiverTableName);
         // Construct RTree with cells envelopes

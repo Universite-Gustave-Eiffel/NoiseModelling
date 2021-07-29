@@ -908,14 +908,12 @@ public class ComputeRays {
 
         boolean freefield = true;
         boolean topographyHideReceiver = false;
-        boolean buildingOnPath = false;
 
         List<TriIdWithIntersection> inters = new ArrayList<>();
         data.freeFieldFinder.computePropagationPath(srcCoord, receiverCoord, false, inters, true);
         for (TriIdWithIntersection intersection : inters) {
             if (intersection.getBuildingId() > 0) {
                 topographyHideReceiver = true;
-                buildingOnPath = true;
             }
             if (intersection.isIntersectionOnBuilding() || intersection.isIntersectionOnTopography()) {
                 freefield = false;
@@ -990,14 +988,13 @@ public class ComputeRays {
         Coordinate srcCoord = src.position;
         int srcId = src.sourcePrimaryKey;
         double sourceLi = src.li;
-        List<PropagationPath> propagationPaths;
         // Build mirrored receiver list from wall list
 
         double PropaDistance = srcCoord.distance(receiverCoord);
         if (PropaDistance < data.maxSrcDist) {
 
-            // Process direct path (including horizontal and vertical diffractions)
-            propagationPaths = directPath(srcCoord, receiverCoord, data.isComputeVerticalDiffraction(), true);
+            // Process direct path (including horizontal and vertical diffraction)
+            List<PropagationPath> propagationPaths = directPath(srcCoord, receiverCoord, data.isComputeVerticalDiffraction(), true);
 
             // Process specular reflection
             if (data.reflexionOrder > 0) {
