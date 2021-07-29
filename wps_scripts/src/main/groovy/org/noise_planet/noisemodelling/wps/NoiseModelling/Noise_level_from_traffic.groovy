@@ -157,7 +157,7 @@ inputs = [
                 description: 'Number of thread to use on the computer (INTEGER).' +
                         '</br> To set this value, look at the number of cores you have.' +
                         '</br> If it is set to 0, use the maximum number of cores available.' +
-                        '</br> </br> <b> Default value : 1 </b>',
+                        '</br> </br> <b> Default value : 0 </b>',
                 min        : 0, max: 1,
                 type       : String.class
         ],
@@ -439,7 +439,7 @@ def exec(Connection connection, input) {
         wall_alpha = Double.valueOf(input['paramWallAlpha'])
     }
 
-    int n_thread = 1
+    int n_thread = 0
     if (input['confThreadNumber']) {
         n_thread = Integer.valueOf(input['confThreadNumber'])
     }

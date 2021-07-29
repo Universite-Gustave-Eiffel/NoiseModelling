@@ -1198,6 +1198,11 @@ public class ComputeRays {
         // maxSrcDist meters
         ProgressVisitor propaProcessProgression = data.cellProg;
 
+        if(threadCount == 0) {
+            Runtime runtime = Runtime.getRuntime();
+            this.threadCount = Math.max(1, runtime.availableProcessors());
+        }
+
         ThreadPool threadManager = new ThreadPool(
                 threadCount,
                 threadCount + 1, Long.MAX_VALUE,
