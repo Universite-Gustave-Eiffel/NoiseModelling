@@ -1079,8 +1079,7 @@ public class ComputeRays {
         if (data.reflexionOrder > 0) {
             wallsReceiver.addAll(data.freeFieldFinder.getLimitsInRange(
                     data.maxRefDist, receiverCoord, false));
-            new MirrorReceiverIterator.It(receiverCoord, wallsReceiver,
-                    Integer.MAX_VALUE, data.reflexionOrder, data.maxSrcDist).forEach(mirrorReceiverResults::add);
+            new MirrorReceiverIterator.It(receiverCoord, wallsReceiver, data.reflexionOrder).forEach(mirrorReceiverResults::add);
         }
         double searchSourceDistance = data.maxSrcDist;
         Envelope receiverSourceRegion = new Envelope(receiverCoord.x

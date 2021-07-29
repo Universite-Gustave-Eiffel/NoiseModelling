@@ -41,7 +41,6 @@ import java.util.concurrent.ConcurrentLinkedDeque;
  * Generate stats about receiver computation time
  */
 public class ReceiverStatsMetric implements ProfilerThread.Metric {
-    public static final String RECEIVER_COMPUTATION_TIME = "RECEIVER_COMPUTATION_TIME";
     private ConcurrentLinkedDeque<ReceiverProfile> receiverProfiles = new ConcurrentLinkedDeque<>();
     private DescriptiveStatistics stats = new DescriptiveStatistics();
 

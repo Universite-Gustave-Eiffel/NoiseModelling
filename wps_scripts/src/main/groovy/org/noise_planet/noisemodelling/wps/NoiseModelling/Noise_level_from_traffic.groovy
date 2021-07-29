@@ -33,6 +33,7 @@ import org.noise_planet.noisemodelling.pathfinder.*
 import org.noise_planet.noisemodelling.pathfinder.utils.JVMMemoryMetric
 import org.noise_planet.noisemodelling.pathfinder.utils.ProfilerThread
 import org.noise_planet.noisemodelling.pathfinder.utils.ProgressMetric
+import org.noise_planet.noisemodelling.pathfinder.utils.ReceiverStatsMetric
 import org.noise_planet.noisemodelling.propagation.*
 import org.noise_planet.noisemodelling.jdbc.*
 
@@ -566,6 +567,7 @@ def exec(Connection connection, input) {
     profilerThread.addMetric(ldenProcessing);
     profilerThread.addMetric(new ProgressMetric(progressLogger));
     profilerThread.addMetric(new JVMMemoryMetric());
+    profilerThread.addMetric(new ReceiverStatsMetric());
     profilerThread.setWriteInterval(300);
     profilerThread.setFlushInterval(300);
     pointNoiseMap.setProfilerThread(profilerThread);
