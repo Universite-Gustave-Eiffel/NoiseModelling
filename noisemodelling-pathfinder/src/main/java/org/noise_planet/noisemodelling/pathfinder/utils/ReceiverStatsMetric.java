@@ -41,48 +41,71 @@ import java.util.concurrent.ConcurrentLinkedDeque;
  * Generate stats about receiver computation time
  */
 public class ReceiverStatsMetric implements ProfilerThread.Metric {
-    private ConcurrentLinkedDeque<ReceiverProfile> receiverProfiles = new ConcurrentLinkedDeque<>();
-    private DescriptiveStatistics stats = new DescriptiveStatistics();
+    private ConcurrentLinkedDeque<ReceiverComputationTime> receiverComputationTimes = new ConcurrentLinkedDeque<>();
+    private ConcurrentLinkedDeque<ReceiverRays> receiverRaysDeque = new ConcurrentLinkedDeque<>();
+    private DescriptiveStatistics computationTime = new DescriptiveStatistics();
+    private DescriptiveStatistics computationRays = new DescriptiveStatistics();
 
     public ReceiverStatsMetric() {
     }
 
     @Override
     public void tick(long currentMillis) {
-        while (!receiverProfiles.isEmpty()) {
-            ReceiverProfile receiverProfile = receiverProfiles.pop();
-            stats.addValue(receiverProfile.computationTime);
+        while (!receiverComputationTimes.isEmpty()) {
+            ReceiverComputationTime receiverProfile = receiverComputationTimes.pop();
+            computationTime.addValue(receiverProfile.computationTime);
+        }
+        while (!receiverRaysDeque.isEmpty()) {
+            ReceiverRays receiverProfile = receiverRaysDeque.pop();
+            computationTime.addValue(receiverProfile.numberOfRays);
         }
     }
 
     @Override
     public String[] getColumnNames() {
-        return new String[] {"receiver_min","receiver_median","receiver_mean","receiver_max"};
+        return new String[] {"receiver_min","receiver_median","receiver_mean","receiver_max", "receiver_median_rays", "receiver_max_rays"};
     }
 
     public void onEndComputation(int receiverId, int computationTime) {
-        receiverProfiles.add(new ReceiverProfile(receiverId, computationTime));
+        receiverComputationTimes.add(new ReceiverComputationTime(receiverId, computationTime));
+    }
+
+    public void onReceiverRays(int receiverId, int receiverRays) {
+        receiverRaysDeque.add(new ReceiverRays(receiverId, receiverRays));
     }
 
     @Override
     public String[] getCurrentValues() {
         String[] res = new String[] {
-                Integer.toString((int)stats.getMin()),
-                Integer.toString((int)stats.getPercentile(50)),
-                Integer.toString((int)stats.getMean()),
-                Integer.toString((int)stats.getMax())
+                Integer.toString((int) computationTime.getMin()),
+                Integer.toString((int) computationTime.getPercentile(50)),
+                Integer.toString((int) computationTime.getMean()),
+                Integer.toString((int) computationTime.getMax()),
+                Integer.toString((int) computationRays.getPercentile(50)),
+                Integer.toString((int) computationRays.getMax())
         };
-        stats.clear();
+        computationTime.clear();
+        computationRays.clear();
         return res;
     }
 
-    public static class ReceiverProfile {
+    private static class ReceiverComputationTime {
         public int receiverId;
         public int computationTime;
 
-        public ReceiverProfile(int receiverId, int computationTime) {
+        public ReceiverComputationTime(int receiverId, int computationTime) {
             this.receiverId = receiverId;
             this.computationTime = computationTime;
+        }
+    }
+
+    private static class ReceiverRays {
+        public int receiverId;
+        public int numberOfRays;
+
+        public ReceiverRays(int receiverId, int numberOfRays) {
+            this.receiverId = receiverId;
+            this.numberOfRays = numberOfRays;
         }
     }
 }

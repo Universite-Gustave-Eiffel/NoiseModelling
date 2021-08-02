@@ -373,7 +373,6 @@ public class ComputeRays {
                                                   List<FastObstructionTest.Wall> nearBuildingsWalls,
                                                   List<MirrorReceiverResult> receiverReflections) {
         // Compute receiver mirror
-        LineSegment srcReceiver = new LineSegment(srcCoord, receiverCoord);
         LineIntersector linters = new RobustLineIntersector();
 
         List<PropagationPath> reflexionPropagationPaths = new ArrayList<>();
@@ -1010,6 +1009,12 @@ public class ComputeRays {
                     // Compute the propagation source phi and theta
                     propagationPath.setSourceOrientation(src.getOrientation());
                 }
+
+                if(profilerThread != null &&
+                        profilerThread.getMetric(ReceiverStatsMetric.class) != null) {
+                    profilerThread.getMetric(ReceiverStatsMetric.class).onReceiverRays(rcvId, propagationPaths.size());
+                }
+
                 return dataOut.addPropagationPaths(srcId, sourceLi, rcvId, propagationPaths);
             }
         }
