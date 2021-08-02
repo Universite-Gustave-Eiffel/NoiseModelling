@@ -204,6 +204,11 @@ public class EvaluateRailwaySourceCnossos {
     public double getAxlesPerVeh(String typeVehicle) { //
         return getCnossosVehicleData().get(typeVehicle).get("NbAxlePerVeh").doubleValue();
     }
+
+    public double getNbCoach(String typeVehicle) { //
+        return + 10 * Math.log10(getCnossosVehicleData().get(typeVehicle).get("NbCoach").doubleValue());
+    }
+
     public double getSpectre(String typeVehicle, String ref, int runningCondition,String sourceHeight, int spectreVer, int freqId) { //
         int refId = getCnossosVehicleData().get(typeVehicle).get(ref).intValue();
         if(ref.equals("RefTraction")) {
@@ -331,12 +336,12 @@ public class EvaluateRailwaySourceCnossos {
             double[] lWBridge = evaluateLWroughness("Bridge", typeVehicle, trackRoughnessId, impactId, bridgeId, curvature, speed, trackTransferId, spectreVer, axlesPerVeh);
 
             for (int i=0;i<lWRolling.length;i++) {
-                lWRolling[i] = Vperhour2NoiseLevel(lWRolling[i], vehPerHour, speed);
-                lWTractionA[i] = Vperhour2NoiseLevel(lWTractionA[i], vehPerHour, speed);
-                lWTractionB[i] = Vperhour2NoiseLevel(lWTractionB[i], vehPerHour, speed);
-                lWAerodynamicA[i] = Vperhour2NoiseLevel(lWAerodynamicA[i], vehPerHour, speed);
-                lWAerodynamicB[i] = Vperhour2NoiseLevel(lWAerodynamicB[i], vehPerHour, speed);
-                lWBridge[i] = Vperhour2NoiseLevel(lWBridge[i], vehPerHour, speed);
+                lWRolling[i] = Vperhour2NoiseLevel(lWRolling[i], vehPerHour, speed) + getNbCoach(typeVehicle);
+                lWTractionA[i] = Vperhour2NoiseLevel(lWTractionA[i], vehPerHour, speed)+ getNbCoach(typeVehicle);
+                lWTractionB[i] = Vperhour2NoiseLevel(lWTractionB[i], vehPerHour, speed)+ getNbCoach(typeVehicle);
+                lWAerodynamicA[i] = Vperhour2NoiseLevel(lWAerodynamicA[i], vehPerHour, speed)+ getNbCoach(typeVehicle);
+                lWAerodynamicB[i] = Vperhour2NoiseLevel(lWAerodynamicB[i], vehPerHour, speed)+ getNbCoach(typeVehicle);
+                lWBridge[i] = Vperhour2NoiseLevel(lWBridge[i], vehPerHour, speed)+ getNbCoach(typeVehicle);
             }
 
             RailWayLW lWRailWay = new RailWayLW(lWRolling, lWTractionA, lWTractionB, lWAerodynamicA, lWAerodynamicB, lWBridge);

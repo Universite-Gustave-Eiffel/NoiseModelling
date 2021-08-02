@@ -335,11 +335,8 @@ public class EvaluateRailWaySourceCNOSSOSTest {
         int rollingCondition = 0;
         double idlingTime = 0;
 
-        // Set : Take into account the number of coaches and the number of units
-        double nBCoach = 10;
+        // Set : Take into account the number of units
         double nBUnit = 2;
-        double acountCoachUnit = 10 * Math.log10(nBUnit*nBCoach);
-
 
         int  nTracks=2;
         int trackTransfer = 5;
@@ -369,9 +366,8 @@ public class EvaluateRailWaySourceCNOSSOSTest {
         RailWayLW lWRailWay = evaluateRailwaySourceCnossos.evaluate(vehicleParameters, trackParameters);
 
         for (int idFreq = 0; idFreq < 24; idFreq++) {
-            lWRailWay.getLWRolling()[idFreq]=lWRailWay.getLWRolling()[idFreq] + acountCoachUnit;
             // Compute sound powers per track meter
-            lWRailWay.getLWRolling()[idFreq] = 10*Math.log10(Math.pow(10,(lWRailWay.getLWRolling()[idFreq]+deltaTDay)/10));
+            lWRailWay.getLWRolling()[idFreq] = 10*Math.log10(Math.pow(10,(lWRailWay.getLWRolling()[idFreq]+10 * Math.log10(nBUnit)+deltaTDay)/10));
 
             assertEquals(expectedValuesLWRolling[idFreq], lWRailWay.getLWRolling()[idFreq] , EPSILON_TEST1);
         }
