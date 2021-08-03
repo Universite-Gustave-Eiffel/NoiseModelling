@@ -373,7 +373,6 @@ public class ComputeRays {
                                                   List<FastObstructionTest.Wall> nearBuildingsWalls,
                                                   List<MirrorReceiverResult> receiverReflections) {
         // Compute receiver mirror
-        LineSegment srcReceiver = new LineSegment(srcCoord, receiverCoord);
         LineIntersector linters = new RobustLineIntersector();
 
         List<PropagationPath> reflexionPropagationPaths = new ArrayList<>();
@@ -908,14 +907,12 @@ public class ComputeRays {
 
         boolean freefield = true;
         boolean topographyHideReceiver = false;
-        boolean buildingOnPath = false;
 
         List<TriIdWithIntersection> inters = new ArrayList<>();
         data.freeFieldFinder.computePropagationPath(srcCoord, receiverCoord, false, inters, true);
         for (TriIdWithIntersection intersection : inters) {
             if (intersection.getBuildingId() > 0) {
                 topographyHideReceiver = true;
-                buildingOnPath = true;
             }
             if (intersection.isIntersectionOnBuilding() || intersection.isIntersectionOnTopography()) {
                 freefield = false;
@@ -990,14 +987,13 @@ public class ComputeRays {
         Coordinate srcCoord = src.position;
         int srcId = src.sourcePrimaryKey;
         double sourceLi = src.li;
-        List<PropagationPath> propagationPaths;
         // Build mirrored receiver list from wall list
 
         double PropaDistance = srcCoord.distance(receiverCoord);
         if (PropaDistance < data.maxSrcDist) {
 
-            // Process direct path (including horizontal and vertical diffractions)
-            propagationPaths = directPath(srcCoord, receiverCoord, data.isComputeVerticalDiffraction(), true);
+            // Process direct path (including horizontal and vertical diffraction)
+            List<PropagationPath> propagationPaths = directPath(srcCoord, receiverCoord, data.isComputeVerticalDiffraction(), true);
 
             // Process specular reflection
             if (data.reflexionOrder > 0) {
@@ -1013,6 +1009,12 @@ public class ComputeRays {
                     // Compute the propagation source phi and theta
                     propagationPath.setSourceOrientation(src.getOrientation());
                 }
+
+                if(profilerThread != null &&
+                        profilerThread.getMetric(ReceiverStatsMetric.class) != null) {
+                    profilerThread.getMetric(ReceiverStatsMetric.class).onReceiverRays(rcvId, propagationPaths.size());
+                }
+
                 return dataOut.addPropagationPaths(srcId, sourceLi, rcvId, propagationPaths);
             }
         }
@@ -1079,8 +1081,7 @@ public class ComputeRays {
         if (data.reflexionOrder > 0) {
             wallsReceiver.addAll(data.freeFieldFinder.getLimitsInRange(
                     data.maxRefDist, receiverCoord, false));
-            new MirrorReceiverIterator.It(receiverCoord, wallsReceiver,
-                    Integer.MAX_VALUE, data.reflexionOrder, data.maxSrcDist).forEach(mirrorReceiverResults::add);
+            new MirrorReceiverIterator.It(receiverCoord, wallsReceiver, data.reflexionOrder).forEach(mirrorReceiverResults::add);
         }
         double searchSourceDistance = data.maxSrcDist;
         Envelope receiverSourceRegion = new Envelope(receiverCoord.x
@@ -1198,6 +1199,11 @@ public class ComputeRays {
         // For each vertices, find sources where the distance is within
         // maxSrcDist meters
         ProgressVisitor propaProcessProgression = data.cellProg;
+
+        if(threadCount == 0) {
+            Runtime runtime = Runtime.getRuntime();
+            this.threadCount = Math.max(1, runtime.availableProcessors());
+        }
 
         ThreadPool threadManager = new ThreadPool(
                 threadCount,
