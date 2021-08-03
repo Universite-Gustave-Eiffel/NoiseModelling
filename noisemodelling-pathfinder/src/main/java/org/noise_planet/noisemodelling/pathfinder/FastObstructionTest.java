@@ -60,6 +60,7 @@ public class FastObstructionTest {
     public static final double epsilon = 1e-7;
     public static final double wideAngleTranslationEpsilon = 0.01;
     private static final double MINIMAL_REFLECTION_WALL_LENGTH = 1.0;
+    private Map<Integer, ArrayList<Coordinate>> wideAnglePointsCache = new HashMap<>();
     private STRtree polygonIndex;
     private List<Triangle> triVertices;
     private List<Coordinate> vertices;
@@ -538,41 +539,43 @@ public class FastObstructionTest {
      * @return List of corners within parameters range
      */
     public List<Coordinate> getWideAnglePointsByBuilding(int build, double minAngle, double maxAngle) {
-        List <Coordinate> verticesBuilding = new ArrayList<>();
-        Coordinate[] ring = getBuilding(build).getExteriorRing().getCoordinates();
-        if(!Orientation.isCCW(ring)) {
-            for (int i = 0; i < ring.length / 2; i++) {
-                Coordinate temp = ring[i];
-                ring[i] = ring[ring.length - 1 - i];
-                ring[ring.length - 1 - i] = temp;
+        if(wideAnglePointsCache.containsKey(build)) {
+            return wideAnglePointsCache.get(build);
+        } else {
+            ArrayList<Coordinate> verticesBuilding = new ArrayList<>();
+            Coordinate[] ring = getBuilding(build).getExteriorRing().getCoordinates();
+            if (!Orientation.isCCW(ring)) {
+                for (int i = 0; i < ring.length / 2; i++) {
+                    Coordinate temp = ring[i];
+                    ring[i] = ring[ring.length - 1 - i];
+                    ring[ring.length - 1 - i] = temp;
+                }
             }
+            for (int i = 0; i < ring.length - 1; i++) {
+                int i1 = i > 0 ? i - 1 : ring.length - 2;
+                int i3 = i + 1;
+                double smallestAngle = Angle.angleBetweenOriented(ring[i1], ring[i], ring[i3]);
+                double openAngle;
+                if (smallestAngle >= 0) {
+                    // corresponds to a counterclockwise (CCW) rotation
+                    openAngle = smallestAngle;
+                } else {
+                    // corresponds to a clockwise (CW) rotation
+                    openAngle = 2 * Math.PI + smallestAngle;
+                }
+                // Open Angle is the building angle in the free field area
+                if (openAngle > minAngle && openAngle < maxAngle) {
+                    // corresponds to a counterclockwise (CCW) rotation
+                    double midAngle = openAngle / 2;
+                    double midAngleFromZero = Angle.angle(ring[i], ring[i1]) + midAngle;
+                    Coordinate offsetPt = new Coordinate(ring[i].x + Math.cos(midAngleFromZero) * wideAngleTranslationEpsilon, ring[i].y + Math.sin(midAngleFromZero) * wideAngleTranslationEpsilon, getBuildingRoofZ(build) + wideAngleTranslationEpsilon);
+                    verticesBuilding.add(offsetPt);
+                }
+            }
+            verticesBuilding.add(verticesBuilding.get(0));
+            wideAnglePointsCache.put(build, verticesBuilding);
+            return verticesBuilding;
         }
-        for(int i=0; i < ring.length - 1; i++) {
-            int i1 = i > 0 ? i-1 : ring.length - 2;
-            int i3 = i + 1;
-            double smallestAngle = Angle.angleBetweenOriented(ring[i1], ring[i], ring[i3]);
-            double openAngle;
-            if(smallestAngle >= 0) {
-                // corresponds to a counterclockwise (CCW) rotation
-                openAngle = smallestAngle;
-            } else {
-                // corresponds to a clockwise (CW) rotation
-                openAngle = 2 * Math.PI + smallestAngle;
-            }
-            // Open Angle is the building angle in the free field area
-            if(openAngle > minAngle && openAngle < maxAngle) {
-                // corresponds to a counterclockwise (CCW) rotation
-                double midAngle = openAngle / 2;
-                double midAngleFromZero = Angle.angle(ring[i], ring[i1]) + midAngle;
-                Coordinate offsetPt = new Coordinate(
-                        ring[i].x + Math.cos(midAngleFromZero) * wideAngleTranslationEpsilon,
-                        ring[i].y + Math.sin(midAngleFromZero) * wideAngleTranslationEpsilon,
-                        getBuildingRoofZ(build) + wideAngleTranslationEpsilon);
-                verticesBuilding.add(offsetPt);
-            }
-        }
-        verticesBuilding.add(verticesBuilding.get(0));
-        return verticesBuilding;
     }
 
     /**
