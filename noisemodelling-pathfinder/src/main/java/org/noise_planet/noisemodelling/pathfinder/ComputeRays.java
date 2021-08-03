@@ -1445,8 +1445,6 @@ private static final class IntersectionRayVisitor extends FastObstructionTest.In
             input.addAll(roofPoints.subList(0, roofPoints.size() - 1));
             buildingsInIntersection.add(buildingId);
             foundIntersection = true;
-            // Stop iterating bounding boxes
-            throw new IllegalStateException();
         }
     }
 

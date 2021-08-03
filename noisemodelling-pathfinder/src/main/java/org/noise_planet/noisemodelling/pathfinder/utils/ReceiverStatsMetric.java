@@ -57,7 +57,7 @@ public class ReceiverStatsMetric implements ProfilerThread.Metric {
         }
         while (!receiverRaysDeque.isEmpty()) {
             ReceiverRays receiverProfile = receiverRaysDeque.pop();
-            computationTime.addValue(receiverProfile.numberOfRays);
+            computationRays.addValue(receiverProfile.numberOfRays);
         }
     }
 

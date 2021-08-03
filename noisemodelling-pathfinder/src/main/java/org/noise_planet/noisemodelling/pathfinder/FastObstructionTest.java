@@ -35,14 +35,12 @@ package org.noise_planet.noisemodelling.pathfinder;
 
 import org.locationtech.jts.algorithm.Angle;
 import org.locationtech.jts.algorithm.Orientation;
-import org.locationtech.jts.algorithm.RectangleLineIntersector;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.index.ItemVisitor;
 import org.locationtech.jts.index.strtree.STRtree;
 import org.locationtech.jts.io.WKTWriter;
 import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
-import org.noise_planet.noisemodelling.pathfinder.utils.Densifier3D;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,8 +60,6 @@ public class FastObstructionTest {
     public static final double epsilon = 1e-7;
     public static final double wideAngleTranslationEpsilon = 0.01;
     private static final double MINIMAL_REFLECTION_WALL_LENGTH = 1.0;
-    // Split ray to test up to 200m length (in order to reduce returns results)
-    private static final double STRTREE_TRAVERSAL_SPLIT = 300;
     private STRtree polygonIndex;
     private List<Triangle> triVertices;
     private List<Coordinate> vertices;
@@ -1438,11 +1434,7 @@ public class FastObstructionTest {
             int buildingId = (Integer) item;
             if(!buildingsprocessed.contains(buildingId)) {
                 buildingsprocessed.add(buildingId);
-                final MeshBuilder.PolygonWithHeight p = polygonWithHeight.get(buildingId - 1);
-                RectangleLineIntersector rect = new RectangleLineIntersector(p.geo.getEnvelopeInternal());
-                if (rect.intersects(p1, p2) && p.geo.intersects(seg)) {
-                    addBuilding(buildingId);
-                }
+                addBuilding(buildingId);
             }
         }
 
