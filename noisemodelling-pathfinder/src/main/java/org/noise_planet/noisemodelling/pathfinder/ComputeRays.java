@@ -621,27 +621,22 @@ public class ComputeRays {
 
 
     public PropagationPath computeVerticalEdgeDiffraction(Coordinate receiverCoord,
-                                                          Coordinate srcCoord, List<TriIdWithIntersection> allInterPoints, String side) {
+                                                          Coordinate srcCoord, String side) {
 
-        PropagationPath propagationPath = new PropagationPath();
         PropagationPath propagationPath2 = new PropagationPath();
         List<Coordinate> coordinates = new ArrayList<>();
-        boolean validDiffraction;
 
-        PropagationPath propagationPath3 = computeFreefield(receiverCoord, srcCoord, allInterPoints);
-
-        if (side == "right") {
+        if (side.equals("right")) {
             // Right hand
             coordinates = computeSideHull(false, srcCoord, receiverCoord);
             Collections.reverse(coordinates);
-        }
-        if (side == "left") {
+        } else if (side.equals("left")) {
             coordinates = computeSideHull(true, srcCoord, receiverCoord);
         }
 
         if (!coordinates.isEmpty()) {
             if (coordinates.size() > 2) {
-                propagationPath = computeFreefield(coordinates.get(1), coordinates.get(0), null);
+                PropagationPath propagationPath = computeFreefield(coordinates.get(1), coordinates.get(0), null);
                 propagationPath.getPointList().get(1).setType(PointPath.POINT_TYPE.DIFV);
                 propagationPath2.setPointList(propagationPath.getPointList());
                 propagationPath2.setSegmentList(propagationPath.getSegmentList());
@@ -944,7 +939,7 @@ public class ComputeRays {
             // todo if one of the points > roof or < floor, get out this path
             PropagationPath propagationPath3 = computeFreefield(receiverCoord, srcCoord, inters);
 
-            PropagationPath propagationPath = computeVerticalEdgeDiffraction(srcCoord, receiverCoord,inters, "left");
+            PropagationPath propagationPath = computeVerticalEdgeDiffraction(srcCoord, receiverCoord, "left");
             if (propagationPath.getPointList()!=null) {
                 for (int i = 0; i < propagationPath.getSegmentList().size(); i++) {
                     if (propagationPath.getSegmentList().get(i).getSegmentLength() < 0.1) {
@@ -955,7 +950,7 @@ public class ComputeRays {
                 propagationPath.setSRList(propagationPath3.getSRList());
                 propagationPaths.add(propagationPath);
             }
-            propagationPath = computeVerticalEdgeDiffraction(srcCoord, receiverCoord,inters, "right");
+            propagationPath = computeVerticalEdgeDiffraction(srcCoord, receiverCoord, "right");
             if (propagationPath.getPointList()!=null) {
                 for (int i = 0; i < propagationPath.getSegmentList().size(); i++) {
                     if (propagationPath.getSegmentList().get(i).getSegmentLength() < 0.1) {
@@ -1445,8 +1440,6 @@ private static final class IntersectionRayVisitor extends FastObstructionTest.In
             input.addAll(roofPoints.subList(0, roofPoints.size() - 1));
             buildingsInIntersection.add(buildingId);
             foundIntersection = true;
-            // Stop iterating bounding boxes
-            throw new IllegalStateException();
         }
     }
 
