@@ -53,6 +53,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticPropagation.getADiv;
 
@@ -972,12 +974,12 @@ public class ComputeRays {
      * @param receiverCoord      coordinate of receiver
      * @param rcvId              receiver identifier
      * @param nearBuildingsWalls Walls to use in reflection
-     * @param debugInfo
+     * @param raysCount number of rays computed in this function
      * @param dataOut
      * @return Minimal power level (dB) or maximum attenuation (dB)
      */
     private double[] receiverSourcePropa(SourcePointInfo src,
-                                         Coordinate receiverCoord, int rcvId, List<PropagationDebugInfo> debugInfo,
+                                         Coordinate receiverCoord, int rcvId, AtomicInteger raysCount,
                                          IComputeRaysOut dataOut,List<FastObstructionTest.Wall> nearBuildingsWalls, List<MirrorReceiverResult> mirrorReceiverResults) {
         Coordinate srcCoord = src.position;
         int srcId = src.sourcePrimaryKey;
@@ -1005,9 +1007,8 @@ public class ComputeRays {
                     propagationPath.setSourceOrientation(src.getOrientation());
                 }
 
-                if(profilerThread != null &&
-                        profilerThread.getMetric(ReceiverStatsMetric.class) != null) {
-                    profilerThread.getMetric(ReceiverStatsMetric.class).onReceiverRays(rcvId, propagationPaths.size());
+                if(raysCount != null) {
+                    raysCount.addAndGet(propagationPaths.size());
                 }
 
                 return dataOut.addPropagationPaths(srcId, sourceLi, rcvId, propagationPaths);
@@ -1137,6 +1138,7 @@ public class ComputeRays {
             maximumPowerAtReceiver = dbaToW(data.noiseFloor);
         }
         //Iterate over source point sorted by maximal power by descending order
+        AtomicInteger raysCount = new AtomicInteger(0);
         for (SourcePointInfo src : sourceList) {
             // If the delta between already received power and maximal potential power received is inferior than than data.maximumError
             if ((progressVisitor != null && progressVisitor.isCanceled()) || (data.maximumError > 0 && wToDba(maximumPowerAtReceiver + totalPowerRemaining) - wToDba(maximumPowerAtReceiver) < data.maximumError)) {
@@ -1153,7 +1155,7 @@ public class ComputeRays {
                         data.maxRefDist, srcCoord, false));
             }
             double[] power = receiverSourcePropa(src, receiverCoord, idReceiver
-                    , debugInfo, dataOut, wallsReceiver, mirrorReceiverResults);
+                    , raysCount, dataOut, wallsReceiver, mirrorReceiverResults);
             double global = ComputeRays.sumArray(power.length, ComputeRays.dbaToW(power));
             totalPowerRemaining -= src.globalWj;
             if (power.length > 0) {
@@ -1164,6 +1166,10 @@ public class ComputeRays {
             totalPowerRemaining = Math.max(0, totalPowerRemaining);
 
 
+        }
+        if(profilerThread != null &&
+                profilerThread.getMetric(ReceiverStatsMetric.class) != null) {
+            profilerThread.getMetric(ReceiverStatsMetric.class).onReceiverRays(idReceiver, raysCount.get());
         }
         // No more rays for this receiver
         dataOut.finalizeReceiver(idReceiver);
