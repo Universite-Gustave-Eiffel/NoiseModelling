@@ -21,7 +21,6 @@ import javax.xml.stream.XMLStreamException;
 import java.io.*;
 import java.util.*;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 
@@ -129,6 +128,20 @@ public class TestComputeRays {
         assertEquals(0, new Coordinate(11, 4).distance(ray.get(i++)), 0.02);
         assertEquals(0, new Coordinate(10, 4).distance(ray.get(i++)), 0.02);
         assertEquals(0, new Coordinate(6, 5).distance(ray.get(i++)), 0.02);
+        assertEquals(0, p1.distance(ray.get(i++)), 0.02);
+
+        p1 = new Coordinate(5.04, 3.25, 1.6);
+        p2 = new Coordinate(14.88, 8.39, 1.6);
+        ray = computeRays.computeSideHull(true, p2, p1);
+        i = 0;
+        assertEquals(0, p2.distance(ray.get(i++)), 0.02);
+        assertEquals(0, new Coordinate(11, 4).distance(ray.get(i++)), 0.02);
+        assertEquals(0, p1.distance(ray.get(i++)), 0.02);
+
+        ray = computeRays.computeSideHull(false, p2, p1);
+        i = 0;
+        assertEquals(0, p2.distance(ray.get(i++)), 0.02);
+        assertEquals(0, new Coordinate(10, 6).distance(ray.get(i++)), 0.02);
         assertEquals(0, p1.distance(ray.get(i++)), 0.02);
     }
 
@@ -808,6 +821,7 @@ public class TestComputeRays {
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5));
         rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2));
         rayData.setComputeVerticalDiffraction(true);
+
         ComputeRaysOut propDataOut = new ComputeRaysOut(true);
         ComputeRays computeRays = new ComputeRays(rayData);
         computeRays.setThreadCount(1);

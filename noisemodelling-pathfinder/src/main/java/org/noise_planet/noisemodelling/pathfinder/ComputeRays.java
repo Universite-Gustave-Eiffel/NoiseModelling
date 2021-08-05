@@ -33,7 +33,6 @@
  */
 package org.noise_planet.noisemodelling.pathfinder;
 
-import com.sun.org.apache.xpath.internal.operations.Or;
 import org.apache.commons.math3.geometry.euclidean.threed.Line;
 import org.apache.commons.math3.geometry.euclidean.threed.Plane;
 import org.h2gis.api.ProgressVisitor;
@@ -45,12 +44,17 @@ import org.locationtech.jts.index.strtree.STRtree;
 import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.math.Vector3D;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
+import org.noise_planet.noisemodelling.pathfinder.utils.ProfilerThread;
+import org.noise_planet.noisemodelling.pathfinder.utils.ReceiverStatsMetric;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticPropagation.getADiv;
 
@@ -66,6 +70,7 @@ public class ComputeRays {
     private final static double MAX_RATIO_HULL_DIRECT_PATH = 4;
     private int threadCount;
     private PropagationProcessData data;
+    private ProfilerThread profilerThread;
 
     private STRtree rTreeOfGeoSoil;
     private final static Logger LOGGER = LoggerFactory.getLogger(ComputeRays.class);
@@ -165,6 +170,24 @@ public class ComputeRays {
         this.data = data;
         Runtime runtime = Runtime.getRuntime();
         this.threadCount = runtime.availableProcessors();
+    }
+
+    /**
+     * Computation stacks and timing are collected by this class in order
+     * to profile the execution of the simulation
+     * @return Instance of ProfilerThread or null
+     */
+    public ProfilerThread getProfilerThread() {
+        return profilerThread;
+    }
+
+    /**
+     * Computation stacks and timing are collected by this class in order
+     * to profile the execution of the simulation
+     * @param profilerThread Instance of ProfilerThread
+     */
+    public void setProfilerThread(ProfilerThread profilerThread) {
+        this.profilerThread = profilerThread;
     }
 
     public int getThreadCount() {
@@ -348,22 +371,19 @@ public class ComputeRays {
         return walls;
     }
 
-    public List<PropagationPath> computeReflexion(Coordinate receiverCoord,
-                                                  Coordinate srcCoord, boolean favorable, List<FastObstructionTest.Wall> nearBuildingsWalls) {
-//                for(FastObstructionTest.Wall wall : nearBuildingsWalls) {
-//                    System.out.println(String.format(Locale.ROOT, "walls.add(new FastObstructionTest.Wall(new Coordinate(%.2f,%.2f), new Coordinate(%.2f,%.2f) , %d));", wall.p0.x, wall.p0.y, wall.p1.x, wall.p1.y, wall.getBuildingId()));
-//                }
+    public List<PropagationPath> computeReflexion(Coordinate receiverCoord, Coordinate srcCoord, boolean favorable,
+                                                  List<FastObstructionTest.Wall> nearBuildingsWalls,
+                                                  List<MirrorReceiverResult> receiverReflections) {
         // Compute receiver mirror
-        LineSegment srcReceiver = new LineSegment(srcCoord, receiverCoord);
         LineIntersector linters = new RobustLineIntersector();
 
         List<PropagationPath> reflexionPropagationPaths = new ArrayList<>();
 
-
-        MirrorReceiverIterator.It mirroredReceivers = new MirrorReceiverIterator.It(receiverCoord, nearBuildingsWalls,
-                srcReceiver, Integer.MAX_VALUE, data.reflexionOrder, data.maxSrcDist);
-
-        for (MirrorReceiverResult receiverReflection : mirroredReceivers) {
+        for (MirrorReceiverResult receiverReflection : receiverReflections) {
+            // Check propagation distance limitation
+            if(receiverReflection.getReceiverPos().distance3D(srcCoord) > data.maxSrcDist) {
+                break;
+            }
             // Print wall reflections
             //System.out.println(Arrays.toString(asWallArray(receiverReflection)));
             List<MirrorReceiverResult> rayPath = new ArrayList<>(data.reflexionOrder + 2);
@@ -377,6 +397,12 @@ public class ComputeRays {
             linters.computeIntersection(seg.p0, seg.p1,
                     receiverReflection.getReceiverPos(),
                     destinationPt);
+
+            // Check first wall distance reflection limitation
+            if(linters.hasIntersection() && new Coordinate(
+                    linters.getIntersection(0)).distance(srcCoord) > data.maxRefDist) {
+                break;
+            }
             while (linters.hasIntersection() && MirrorReceiverIterator.wallPointTest(seg, destinationPt)) {
                 // There are a probable reflection point on the segment
                 Coordinate reflectionPt = new Coordinate(
@@ -597,27 +623,22 @@ public class ComputeRays {
 
 
     public PropagationPath computeVerticalEdgeDiffraction(Coordinate receiverCoord,
-                                                          Coordinate srcCoord, List<TriIdWithIntersection> allInterPoints, String side) {
+                                                          Coordinate srcCoord, String side) {
 
-        PropagationPath propagationPath = new PropagationPath();
         PropagationPath propagationPath2 = new PropagationPath();
         List<Coordinate> coordinates = new ArrayList<>();
-        boolean validDiffraction;
 
-        PropagationPath propagationPath3 = computeFreefield(receiverCoord, srcCoord, allInterPoints);
-
-        if (side == "right") {
+        if (side.equals("right")) {
             // Right hand
             coordinates = computeSideHull(false, srcCoord, receiverCoord);
             Collections.reverse(coordinates);
-        }
-        if (side == "left") {
+        } else if (side.equals("left")) {
             coordinates = computeSideHull(true, srcCoord, receiverCoord);
         }
 
         if (!coordinates.isEmpty()) {
             if (coordinates.size() > 2) {
-                propagationPath = computeFreefield(coordinates.get(1), coordinates.get(0), null);
+                PropagationPath propagationPath = computeFreefield(coordinates.get(1), coordinates.get(0), null);
                 propagationPath.getPointList().get(1).setType(PointPath.POINT_TYPE.DIFV);
                 propagationPath2.setPointList(propagationPath.getPointList());
                 propagationPath2.setSegmentList(propagationPath.getSegmentList());
@@ -883,14 +904,12 @@ public class ComputeRays {
 
         boolean freefield = true;
         boolean topographyHideReceiver = false;
-        boolean buildingOnPath = false;
 
         List<TriIdWithIntersection> inters = new ArrayList<>();
         data.freeFieldFinder.computePropagationPath(srcCoord, receiverCoord, false, inters, true);
         for (TriIdWithIntersection intersection : inters) {
             if (intersection.getBuildingId() > 0) {
                 topographyHideReceiver = true;
-                buildingOnPath = true;
             }
             if (intersection.isIntersectionOnBuilding() || intersection.isIntersectionOnTopography()) {
                 freefield = false;
@@ -922,7 +941,7 @@ public class ComputeRays {
             // todo if one of the points > roof or < floor, get out this path
             PropagationPath propagationPath3 = computeFreefield(receiverCoord, srcCoord, inters);
 
-            PropagationPath propagationPath = computeVerticalEdgeDiffraction(srcCoord, receiverCoord,inters, "left");
+            PropagationPath propagationPath = computeVerticalEdgeDiffraction(srcCoord, receiverCoord, "left");
             if (propagationPath.getPointList()!=null) {
                 for (int i = 0; i < propagationPath.getSegmentList().size(); i++) {
                     if (propagationPath.getSegmentList().get(i).getSegmentLength() < 0.1) {
@@ -933,7 +952,7 @@ public class ComputeRays {
                 propagationPath.setSRList(propagationPath3.getSRList());
                 propagationPaths.add(propagationPath);
             }
-            propagationPath = computeVerticalEdgeDiffraction(srcCoord, receiverCoord,inters, "right");
+            propagationPath = computeVerticalEdgeDiffraction(srcCoord, receiverCoord, "right");
             if (propagationPath.getPointList()!=null) {
                 for (int i = 0; i < propagationPath.getSegmentList().size(); i++) {
                     if (propagationPath.getSegmentList().get(i).getSegmentLength() < 0.1) {
@@ -955,28 +974,28 @@ public class ComputeRays {
      * @param receiverCoord      coordinate of receiver
      * @param rcvId              receiver identifier
      * @param nearBuildingsWalls Walls to use in reflection
-     * @param debugInfo
+     * @param raysCount number of rays computed in this function
      * @param dataOut
      * @return Minimal power level (dB) or maximum attenuation (dB)
      */
     private double[] receiverSourcePropa(SourcePointInfo src,
-                                         Coordinate receiverCoord, int rcvId,
-                                         List<FastObstructionTest.Wall> nearBuildingsWalls, List<PropagationDebugInfo> debugInfo, IComputeRaysOut dataOut) {
+                                         Coordinate receiverCoord, int rcvId, AtomicInteger raysCount,
+                                         IComputeRaysOut dataOut,List<FastObstructionTest.Wall> nearBuildingsWalls, List<MirrorReceiverResult> mirrorReceiverResults) {
         Coordinate srcCoord = src.position;
         int srcId = src.sourcePrimaryKey;
         double sourceLi = src.li;
-        List<PropagationPath> propagationPaths;
         // Build mirrored receiver list from wall list
 
         double PropaDistance = srcCoord.distance(receiverCoord);
         if (PropaDistance < data.maxSrcDist) {
 
-            // Process direct path (including horizontal and vertical diffractions)
-            propagationPaths = directPath(srcCoord, receiverCoord, data.isComputeVerticalDiffraction(), true);
+            // Process direct path (including horizontal and vertical diffraction)
+            List<PropagationPath> propagationPaths = directPath(srcCoord, receiverCoord, data.isComputeVerticalDiffraction(), true);
 
             // Process specular reflection
             if (data.reflexionOrder > 0) {
-                List<PropagationPath> propagationPaths_all = computeReflexion(receiverCoord, srcCoord, false, nearBuildingsWalls);
+                List<PropagationPath> propagationPaths_all = computeReflexion(receiverCoord, srcCoord,
+                        false, nearBuildingsWalls, mirrorReceiverResults);
                 propagationPaths.addAll(propagationPaths_all);
             }
 
@@ -987,6 +1006,11 @@ public class ComputeRays {
                     // Compute the propagation source phi and theta
                     propagationPath.setSourceOrientation(src.getOrientation());
                 }
+
+                if(raysCount != null) {
+                    raysCount.addAndGet(propagationPaths.size());
+                }
+
                 return dataOut.addPropagationPaths(srcId, sourceLi, rcvId, propagationPaths);
             }
         }
@@ -1048,10 +1072,12 @@ public class ComputeRays {
     public void computeRaysAtPosition(Coordinate receiverCoord, int idReceiver, List<PropagationDebugInfo> debugInfo, IComputeRaysOut dataOut, ProgressVisitor progressVisitor) {
         // List of walls within maxReceiverSource distance
         HashSet<Integer> processedLineSources = new HashSet<Integer>(); //Already processed Raw source (line and/or points)
-        Set<FastObstructionTest.Wall> wallsReceiver = new HashSet<>();
+        List<FastObstructionTest.Wall> wallsReceiver = new ArrayList<>();
+        List<MirrorReceiverResult> mirrorReceiverResults = new ArrayList<>();
         if (data.reflexionOrder > 0) {
             wallsReceiver.addAll(data.freeFieldFinder.getLimitsInRange(
                     data.maxRefDist, receiverCoord, false));
+            new MirrorReceiverIterator.It(receiverCoord, wallsReceiver, data.reflexionOrder).forEach(mirrorReceiverResults::add);
         }
         double searchSourceDistance = data.maxSrcDist;
         Envelope receiverSourceRegion = new Envelope(receiverCoord.x
@@ -1062,8 +1088,12 @@ public class ComputeRays {
         Iterator<Integer> regionSourcesLst = data.sourcesIndex
                 .query(receiverSourceRegion);
         List<SourcePointInfo> sourceList = new ArrayList<>();
+
         // Sum of all sources power using only geometric dispersion with direct field
         double totalPowerRemaining = 0;
+        if (data.noiseFloor>0) {
+            totalPowerRemaining = dbaToW(data.noiseFloor);
+        }
         while (regionSourcesLst.hasNext()) {
             Integer srcIndex = regionSourcesLst.next();
             if (!processedLineSources.contains(srcIndex)) {
@@ -1099,11 +1129,23 @@ public class ComputeRays {
                 }
             }
         }
+
         // Sort sources by power contribution descending
         Collections.sort(sourceList);
-        double powerAtSource = 0;
+        // Final sound power level at each receiver
+        double maximumPowerAtReceiver = 0;
+        if (data.noiseFloor>0) {
+            maximumPowerAtReceiver = dbaToW(data.noiseFloor);
+        }
         //Iterate over source point sorted by maximal power by descending order
+        AtomicInteger raysCount = new AtomicInteger(0);
         for (SourcePointInfo src : sourceList) {
+            // If the delta between already received power and maximal potential power received is inferior than than data.maximumError
+            if ((progressVisitor != null && progressVisitor.isCanceled()) || (data.maximumError > 0 && wToDba(maximumPowerAtReceiver + totalPowerRemaining) - wToDba(maximumPowerAtReceiver) < data.maximumError)) {
+                break; //Stop looking for more rays
+            }
+
+
             // For each Pt Source - Pt Receiver
             Coordinate srcCoord = src.position;
 
@@ -1112,28 +1154,29 @@ public class ComputeRays {
                 wallsSource.addAll(data.freeFieldFinder.getLimitsInRange(
                         data.maxRefDist, srcCoord, false));
             }
-            double[] power = receiverSourcePropa(src, receiverCoord, idReceiver,
-                    new ArrayList<>(wallsSource), debugInfo, dataOut);
+            double[] power = receiverSourcePropa(src, receiverCoord, idReceiver
+                    , raysCount, dataOut, wallsReceiver, mirrorReceiverResults);
             double global = ComputeRays.sumArray(power.length, ComputeRays.dbaToW(power));
             totalPowerRemaining -= src.globalWj;
             if (power.length > 0) {
-                powerAtSource += global;
+                maximumPowerAtReceiver += global;
             } else {
-                powerAtSource += src.globalWj;
+                maximumPowerAtReceiver += src.globalWj;
             }
             totalPowerRemaining = Math.max(0, totalPowerRemaining);
-            // If the delta between already received power and maximal potential power received is inferior than than data.maximumError
-            if ((progressVisitor != null && progressVisitor.isCanceled()) || (data.maximumError > 0 && wToDba(powerAtSource + totalPowerRemaining) - wToDba(powerAtSource) < data.maximumError)) {
-                break; //Stop looking for more rays
-            }
+
+
+        }
+        if(profilerThread != null &&
+                profilerThread.getMetric(ReceiverStatsMetric.class) != null) {
+            profilerThread.getMetric(ReceiverStatsMetric.class).onReceiverRays(idReceiver, raysCount.get());
         }
         // No more rays for this receiver
         dataOut.finalizeReceiver(idReceiver);
     }
 
     /**
-     * Must be called before computeSoundLevelAtPosition
-     */
+     * Must be called before computeSoundLevelAtPosition     */
     public void initStructures() {
         //Build R-tree for soil geometry and soil type
         rTreeOfGeoSoil = new STRtree();
@@ -1158,27 +1201,34 @@ public class ComputeRays {
         // maxSrcDist meters
         ProgressVisitor propaProcessProgression = data.cellProg;
 
-        int splitCount = threadCount;
+        if(threadCount == 0) {
+            Runtime runtime = Runtime.getRuntime();
+            this.threadCount = Math.max(1, runtime.availableProcessors());
+        }
+
         ThreadPool threadManager = new ThreadPool(
-                splitCount,
-                splitCount + 1, Long.MAX_VALUE,
+                threadCount,
+                threadCount + 1, Long.MAX_VALUE,
                 TimeUnit.SECONDS);
-        int maximumReceiverBatch = (int) Math.ceil(data.receivers.size() / (double) splitCount);
-        int endReceiverRange = 0;
-        while (endReceiverRange < data.receivers.size()) {
+
+        ConcurrentLinkedDeque<Integer> receiversToCompute = new ConcurrentLinkedDeque<>();
+        // receiversToCompute is a stack of receiver to compute
+        // all concurrent threads will consume this stack in order to keep the number of working
+        // concurrent thread until the end
+        for(int receiverId =0; receiverId < data.receivers.size(); receiverId++) {
+            receiversToCompute.add(receiverId);
+        }
+        for(int idThread = 0; idThread < threadCount; idThread++) {
             if (propaProcessProgression != null && propaProcessProgression.isCanceled()) {
                 break;
             }
-            int newEndReceiver = Math.min(endReceiverRange + maximumReceiverBatch, data.receivers.size());
-            RangeReceiversComputation batchThread = new RangeReceiversComputation(endReceiverRange,
-                    newEndReceiver, this, debugInfo, propaProcessProgression,
-                    computeRaysOut.subProcess(endReceiverRange, newEndReceiver));
+            RangeReceiversComputation batchThread = new RangeReceiversComputation(receiversToCompute, this, debugInfo, propaProcessProgression,
+                    computeRaysOut.subProcess());
             if (threadCount != 1) {
                 threadManager.executeBlocking(batchThread);
             } else {
                 batchThread.run();
             }
-            endReceiverRange = newEndReceiver;
         }
         threadManager.shutdown();
         try {
@@ -1207,18 +1257,16 @@ public class ComputeRays {
     }
 
 private static final class RangeReceiversComputation implements Runnable {
-    private final int startReceiver; // Included
-    private final int endReceiver; // Excluded
+    private ConcurrentLinkedDeque<Integer> receiversToCompute;
     private ComputeRays propagationProcess;
     private List<PropagationDebugInfo> debugInfo;
     private ProgressVisitor progressVisitor;
     private IComputeRaysOut dataOut;
 
-    public RangeReceiversComputation(int startReceiver, int endReceiver, ComputeRays propagationProcess,
+    public RangeReceiversComputation(ConcurrentLinkedDeque<Integer> receiversToCompute, ComputeRays propagationProcess,
                                      List<PropagationDebugInfo> debugInfo, ProgressVisitor progressVisitor,
                                      IComputeRaysOut dataOut) {
-        this.startReceiver = startReceiver;
-        this.endReceiver = endReceiver;
+        this.receiversToCompute = receiversToCompute;
         this.propagationProcess = propagationProcess;
         this.debugInfo = debugInfo;
         this.progressVisitor = progressVisitor;
@@ -1228,20 +1276,35 @@ private static final class RangeReceiversComputation implements Runnable {
     @Override
     public void run() {
         try {
-            for (int idReceiver = startReceiver; idReceiver < endReceiver; idReceiver++) {
+            while(!receiversToCompute.isEmpty()) {
+                int idReceiver = receiversToCompute.pop();
                 if (progressVisitor != null) {
                     if (progressVisitor.isCanceled()) {
                         break;
                     }
                 }
                 Coordinate receiverCoord = propagationProcess.data.receivers.get(idReceiver);
+                long start = 0;
+                if(propagationProcess.profilerThread != null) {
+                    start = propagationProcess.profilerThread.timeTracker.get();
+                }
 
                 propagationProcess.computeRaysAtPosition(receiverCoord, idReceiver, debugInfo, dataOut, progressVisitor);
+
+                // Save computation time for this receiver
+                if(propagationProcess.profilerThread != null &&
+                        propagationProcess.profilerThread.getMetric(ReceiverStatsMetric.class) != null) {
+                    propagationProcess.profilerThread.getMetric(ReceiverStatsMetric.class).onEndComputation(idReceiver,
+                            (int) (propagationProcess.profilerThread.timeTracker.get() - start));
+                }
 
                 if (progressVisitor != null) {
                     progressVisitor.endStep();
                 }
+
             }
+        } catch (NoSuchElementException ex) {
+            // ignore as it is expected at the end of the computation
         } catch (Exception ex) {
             LOGGER.error(ex.getLocalizedMessage(), ex);
             if (progressVisitor != null) {
@@ -1383,8 +1446,6 @@ private static final class IntersectionRayVisitor extends FastObstructionTest.In
             input.addAll(roofPoints.subList(0, roofPoints.size() - 1));
             buildingsInIntersection.add(buildingId);
             foundIntersection = true;
-            // Stop iterating bounding boxes
-            throw new IllegalStateException();
         }
     }
 

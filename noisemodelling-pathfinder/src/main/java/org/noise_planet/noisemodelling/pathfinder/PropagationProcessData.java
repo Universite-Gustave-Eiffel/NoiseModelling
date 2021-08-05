@@ -33,15 +33,13 @@
  */
 package org.noise_planet.noisemodelling.pathfinder;
 
+import org.h2gis.api.ProgressVisitor;
 import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SpatialResultSet;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
-import org.h2gis.api.ProgressVisitor;
 import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.math.Matrix;
-import org.locationtech.jts.math.Vector3D;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -57,7 +55,7 @@ import java.util.*;
  */
 public class PropagationProcessData {
     public static final double DEFAULT_MAX_PROPAGATION_DISTANCE = 1200;
-    public static final double DEFAULT_MAXIMUM_REF_DIST = 50;
+    public static final double DEFAULT_MAXIMUM_REF_DIST = 700;
     public static final double DEFAULT_RECEIVER_DIST = 1.0;
     public static final double DEFAULT_GS = 0.0;
     public static final String YAW_DATABASE_FIELD = "YAW";
@@ -100,6 +98,11 @@ public class PropagationProcessData {
 
     /** maximum dB Error, stop calculation if the sum of further sources contributions are smaller than this value */
     public double maximumError = Double.NEGATIVE_INFINITY;
+
+    /** stop calculation if the sum of further sources contributions are smaller than this value */
+    public double noiseFloor = Double.NEGATIVE_INFINITY;
+
+
     /** cellId only used in output data */
     public int cellId;
     /** Progression information */

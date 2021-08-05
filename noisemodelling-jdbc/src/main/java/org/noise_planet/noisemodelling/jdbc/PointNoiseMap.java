@@ -16,9 +16,9 @@ import org.h2gis.utilities.*;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.index.strtree.STRtree;
 import org.noise_planet.noisemodelling.pathfinder.ComputeRays;
+import org.noise_planet.noisemodelling.pathfinder.utils.ProfilerThread;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
 import org.noise_planet.noisemodelling.pathfinder.FastObstructionTest;
 import org.noise_planet.noisemodelling.pathfinder.IComputeRaysOut;
@@ -46,10 +46,30 @@ public class PointNoiseMap extends JdbcNoiseMap {
     private IComputeRaysOutFactory computeRaysOutFactory;
     private Logger logger = LoggerFactory.getLogger(PointNoiseMap.class);
     private int threadCount = 0;
+    private ProfilerThread profilerThread;
 
     public PointNoiseMap(String buildingsTableName, String sourcesTableName, String receiverTableName) {
         super(buildingsTableName, sourcesTableName);
         this.receiverTableName = receiverTableName;
+    }
+
+
+    /**
+     * Computation stacks and timing are collected by this class in order
+     * to profile the execution of the simulation
+     * @return Instance of ProfilerThread or null
+     */
+    public ProfilerThread getProfilerThread() {
+        return profilerThread;
+    }
+
+    /**
+     * Computation stacks and timing are collected by this class in order
+     * to profile the execution of the simulation
+     * @param profilerThread Instance of ProfilerThread
+     */
+    public void setProfilerThread(ProfilerThread profilerThread) {
+        this.profilerThread = profilerThread;
     }
 
     public void setComputeRaysOutFactory(IComputeRaysOutFactory computeRaysOutFactory) {
@@ -121,6 +141,7 @@ public class PointNoiseMap extends JdbcNoiseMap {
         }
         propagationProcessData.reflexionOrder = soundReflectionOrder;
         propagationProcessData.maximumError = getMaximumError();
+        propagationProcessData.noiseFloor = getNoiseFloor();
         propagationProcessData.maxRefDist = maximumReflectionDistance;
         propagationProcessData.maxSrcDist = maximumPropagationDistance;
         propagationProcessData.setComputeVerticalDiffraction(computeVerticalDiffraction);
@@ -193,6 +214,7 @@ public class PointNoiseMap extends JdbcNoiseMap {
             throw new SQLException("The table "+receiverTableName+" does not contain a Geometry field, then the extent " +
                     "cannot be computed");
         }
+        logger.info("Collect all receivers in order to localize populated cells");
         geometryField = geometryFields.get(0);
         ResultSet rs = connection.createStatement().executeQuery("SELECT " + geometryField + " FROM " + receiverTableName);
         // Construct RTree with cells envelopes
@@ -208,7 +230,7 @@ public class PointNoiseMap extends JdbcNoiseMap {
         try (SpatialResultSet srs = rs.unwrap(SpatialResultSet.class)) {
             while (srs.next()) {
                 Geometry pt = srs.getGeometry();
-                if(pt instanceof Point && !pt.isEmpty()) {
+                if(pt != null && !pt.isEmpty()) {
                     Coordinate ptCoord = pt.getCoordinate();
                     List queryResult = rtree.query(new Envelope(ptCoord));
                     for(Object o : queryResult) {
@@ -248,6 +270,10 @@ public class PointNoiseMap extends JdbcNoiseMap {
         }
 
         ComputeRays computeRays = new ComputeRays(threadData);
+
+        if(profilerThread != null) {
+            computeRays.setProfilerThread(profilerThread);
+        }
 
         if(threadCount > 0) {
             computeRays.setThreadCount(threadCount);

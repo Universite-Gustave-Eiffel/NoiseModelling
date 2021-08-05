@@ -25,7 +25,7 @@ public class LDENComputeRaysOut extends ComputeRaysOutAttenuation {
 
 
     @Override
-    public IComputeRaysOut subProcess(int receiverStart, int receiverEnd) {
+    public IComputeRaysOut subProcess() {
         return new ThreadComputeRaysOut(this);
     }
 

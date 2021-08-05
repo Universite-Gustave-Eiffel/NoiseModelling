@@ -7,7 +7,7 @@ import org.h2gis.api.ProgressVisitor;
 import org.h2gis.functions.io.csv.CSVDriverFunction;
 import org.h2gis.functions.io.geojson.GeoJsonRead;
 import org.h2gis.utilities.SFSUtilities;
-import org.noise_planet.noisemodelling.pathfinder.utils.KMLDocument;
+import org.noise_planet.noisemodelling.pathfinder.utils.*;
 import org.noise_planet.noisemodelling.jdbc.LDENConfig;
 import org.noise_planet.noisemodelling.jdbc.LDENPointNoiseMapFactory;
 import org.noise_planet.noisemodelling.jdbc.PointNoiseMap;
@@ -102,6 +102,7 @@ class Main {
         // Do not propagate for low emission or far away sources.
         // error in dB
         pointNoiseMap.setMaximumError(0.1d);
+        pointNoiseMap.setNoiseFloor(35d);
 
         // Init custom input in order to compute more than just attenuation
         // LW_ROADS contain Day Evening Night emission spectrum
@@ -114,7 +115,7 @@ class Main {
 
         LDENPointNoiseMapFactory tableWriter = new LDENPointNoiseMapFactory(connection, ldenConfig);
 
-        tableWriter.setKeepRays(true);
+        tableWriter.setKeepRays(false);
 
         pointNoiseMap.setPropagationProcessDataFactory(tableWriter);
         pointNoiseMap.setComputeRaysOutFactory(tableWriter);
@@ -134,8 +135,17 @@ class Main {
         long start = System.currentTimeMillis();
 
         // Iterate over computation areas
+        ProfilerThread profilerThread = new ProfilerThread(new File("target/profile.csv"));
+        profilerThread.addMetric(tableWriter);
+        profilerThread.addMetric(new ProgressMetric(progressLogger));
+        profilerThread.addMetric(new JVMMemoryMetric());
+        profilerThread.addMetric(new ReceiverStatsMetric());
+        profilerThread.setWriteInterval(2);
+        profilerThread.setFlushInterval(15);
+        pointNoiseMap.setProfilerThread(profilerThread);
         try {
             tableWriter.start();
+            new Thread(profilerThread).start();
             // Fetch cell identifiers with receivers
             Map<PointNoiseMap.CellIndex, Integer> cells = pointNoiseMap.searchPopulatedCells(connection);
             ProgressVisitor progressVisitor = progressLogger.subProcess(cells.size());
@@ -149,8 +159,10 @@ class Main {
                 }
             }
         } finally {
+            profilerThread.stop();
             tableWriter.stop();
         }
+
         long computationTime = System.currentTimeMillis() - start;
         logger.info(String.format(Locale.ROOT, "Computed in %d ms, %.2f ms per receiver", computationTime,computationTime / (double)receivers.size()));
         // Export result tables as csv files

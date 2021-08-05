@@ -26,7 +26,6 @@ import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.LineString
 import org.noise_planet.noisemodelling.emission.RailWayLW
 import org.noise_planet.noisemodelling.jdbc.LDENConfig
-import org.noise_planet.noisemodelling.jdbc.LDENPropagationProcessData
 import org.noise_planet.noisemodelling.jdbc.RailWayLWIterator
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
 import org.slf4j.Logger
@@ -202,10 +201,12 @@ def exec(Connection connection, input) {
     RailWayLWIterator.RailWayLWGeom railWayLWGeom;
 
     while ((railWayLWGeom = railWayLWIterator.next()) != null) {
+
         RailWayLW railWayLWDay = railWayLWGeom.getRailWayLWDay()
         RailWayLW railWayLWEvening = railWayLWGeom.getRailWayLWEvening()
         RailWayLW railWayLWNight = railWayLWGeom.getRailWayLWNight()
-        List<LineString> geometries = railWayLWGeom.getRailWayLWGeometry(2) //set distance between Rail
+        List<LineString> geometries = railWayLWGeom.getRailWayLWGeometry()
+        
         int pk = railWayLWGeom.getPK()
         double[] LWDay
         double[] LWEvening
@@ -281,7 +282,7 @@ def exec(Connection connection, input) {
 
     // Add primary key to the LW table
     sql.execute("ALTER TABLE  LW_RAILWAY  ADD PK INT AUTO_INCREMENT PRIMARY KEY;")
-
+    sql.execute("UPDATE LW_RAILWAY SET THE_GEOM = ST_SETSRID(THE_GEOM, "+sridSources+")")
 
     resultString = "Calculation Done ! The table LW_RAILWAY has been created."
 
