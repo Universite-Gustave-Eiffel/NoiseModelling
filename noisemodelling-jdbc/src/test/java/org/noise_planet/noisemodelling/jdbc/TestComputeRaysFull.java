@@ -62,9 +62,10 @@ public class TestComputeRaysFull {
         PropagationProcessPathData attData = new PropagationProcessPathData();
         attData.setHumidity(70);
         attData.setTemperature(10);
-
+rayData.noiseFloor = 40;
         ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
         ComputeRays computeRays = new ComputeRays(rayData);
+
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});

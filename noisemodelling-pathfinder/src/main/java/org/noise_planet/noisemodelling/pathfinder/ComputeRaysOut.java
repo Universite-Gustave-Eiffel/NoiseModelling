@@ -63,12 +63,6 @@ public class ComputeRaysOut implements IComputeRaysOut {
 
     public boolean keepRays = true;
     public AtomicLong rayCount = new AtomicLong();
-    public AtomicLong nb_couple_receiver_src = new AtomicLong();
-    public AtomicLong nb_obstr_test = new AtomicLong();
-    public AtomicLong nb_image_receiver = new AtomicLong();
-    public AtomicLong nb_reflexion_path = new AtomicLong();
-    public AtomicLong nb_diffraction_path = new AtomicLong();
-    public AtomicInteger cellComputed = new AtomicInteger();
 
     @Override
     public void finalizeReceiver(long receiverId) {
@@ -89,7 +83,7 @@ public class ComputeRaysOut implements IComputeRaysOut {
     }
 
     @Override
-    public IComputeRaysOut subProcess(int receiverStart, int receiverEnd) {
+    public IComputeRaysOut subProcess() {
         return new ThreadRaysOut(this);
     }
 
@@ -100,42 +94,6 @@ public class ComputeRaysOut implements IComputeRaysOut {
     public void clearPropagationPaths() {
         this.propagationPaths.clear();
     }
-
-    public void appendReflexionPath(long added) {
-        nb_reflexion_path.addAndGet(added);
-    }
-
-    public void appendDiffractionPath(long added) {
-        nb_diffraction_path.addAndGet(added);
-    }
-
-    public void appendImageReceiver(long added) {
-        nb_image_receiver.addAndGet(added);
-    }
-
-    public void appendSourceCount(long srcCount) {
-        nb_couple_receiver_src.addAndGet(srcCount);
-    }
-
-    public void appendFreeFieldTestCount(long freeFieldTestCount) {
-        nb_obstr_test.addAndGet(freeFieldTestCount);
-    }
-
-    public synchronized void log(String str) {
-
-    }
-
-    /**
-     * Increment cell computed counter by 1
-     */
-    public synchronized void appendCellComputed() {
-        cellComputed.addAndGet(1);
-    }
-
-    public synchronized long getCellComputed() {
-        return cellComputed.get();
-    }
-
 
     public static class ThreadRaysOut implements IComputeRaysOut {
         protected ComputeRaysOut multiThreadParent;
@@ -183,8 +141,8 @@ public class ComputeRaysOut implements IComputeRaysOut {
     }
 
     @Override
-    public IComputeRaysOut subProcess(int receiverStart, int receiverEnd) {
-        return multiThreadParent.subProcess(receiverStart, receiverEnd);
+    public IComputeRaysOut subProcess() {
+        return multiThreadParent.subProcess();
     }
 }
 }

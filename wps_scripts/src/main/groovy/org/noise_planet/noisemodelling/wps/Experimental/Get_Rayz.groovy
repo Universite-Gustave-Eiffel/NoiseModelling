@@ -468,7 +468,7 @@ class PropagationPathStorage extends ComputeRaysOutAttenuation {
     }
 
     @Override
-    IComputeRaysOut subProcess(int i, int i1) {
+    IComputeRaysOut subProcess() {
         return new PropagationPathStorageThread(this)
     }
 
@@ -518,7 +518,7 @@ class PropagationPathStorage extends ComputeRaysOutAttenuation {
         }
 
         @Override
-        IComputeRaysOut subProcess(int receiverStart, int receiverEnd) {
+        IComputeRaysOut subProcess() {
             return null
         }
 

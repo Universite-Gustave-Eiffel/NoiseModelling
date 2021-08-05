@@ -1345,6 +1345,8 @@
          "1":{
             "DescriptionA":"LW.0-1",
             "DescriptionB":"LW.0-2",
+            "V0":0,
+            "Alpha":0,
             "Reference":"SNCF Juin 2021",
             "Values":{
                "A":[

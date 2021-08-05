@@ -5,7 +5,7 @@
     <name>noisemodelling-parent</name>
     <artifactId>noisemodelling-parent</artifactId>
     <groupId>org.orbisgis</groupId>
-    <version>3.4.2-SNAPSHOT</version>
+    <version>3.4.4-SNAPSHOT</version>
     <description>NoiseModelling is an extension of H2GIS</description>
     <organization>
         <name>Lab-STICC - UMR CNRS 6285</name>
@@ -75,12 +75,12 @@
                 <snapshotRepository>
                     <id>orbisgis-deploy-snapshots</id>
                     <name>Internal Snaphots</name>
-                    <url>https://nexus-ng.orbisgis.org/repository/orbisgis-snapshot/</url>
+                    <url>http://nexus.orbisgis.org/repository/orbisgis-snapshot/</url>
                 </snapshotRepository>
                 <repository>
                     <id>orbisgis-deploy-release</id>
                     <name>Internal Releases</name>
-                    <url>https://nexus-ng.orbisgis.org/repository/orbisgis-release/</url>
+                    <url>http://nexus.orbisgis.org/repository/orbisgis-release/</url>
                 </repository>
             </distributionManagement>
         </profile>

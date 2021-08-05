@@ -240,7 +240,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
     }
 
     @Override
-    public IComputeRaysOut subProcess(int receiverStart, int receiverEnd) {
+    public IComputeRaysOut subProcess() {
         return new ThreadRaysOut(this);
     }
 
@@ -394,8 +394,8 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
         }
 
         @Override
-        public IComputeRaysOut subProcess(int receiverStart, int receiverEnd) {
-            return multiThreadParent.subProcess(receiverStart, receiverEnd);
+        public IComputeRaysOut subProcess() {
+            return multiThreadParent.subProcess();
         }
     }
 }

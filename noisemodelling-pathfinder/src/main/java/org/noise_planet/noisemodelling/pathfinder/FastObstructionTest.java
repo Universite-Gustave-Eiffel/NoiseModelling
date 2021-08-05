@@ -35,14 +35,12 @@ package org.noise_planet.noisemodelling.pathfinder;
 
 import org.locationtech.jts.algorithm.Angle;
 import org.locationtech.jts.algorithm.Orientation;
-import org.locationtech.jts.algorithm.RectangleLineIntersector;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.index.ItemVisitor;
 import org.locationtech.jts.index.strtree.STRtree;
 import org.locationtech.jts.io.WKTWriter;
 import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
-import org.noise_planet.noisemodelling.pathfinder.utils.Densifier3D;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,13 +60,9 @@ public class FastObstructionTest {
     public static final double epsilon = 1e-7;
     public static final double wideAngleTranslationEpsilon = 0.01;
     private static final double MINIMAL_REFLECTION_WALL_LENGTH = 1.0;
-    // Split ray to test up to 200m length (in order to reduce returns results)
-    private static final double STRTREE_TRAVERSAL_SPLIT = 300;
-    private STRtree polygonIndex;
     private List<Triangle> triVertices;
     private List<Coordinate> vertices;
     private List<Triangle> triNeighbors; // Neighbors
-    private List<Integer> buildingsPK = new ArrayList<>();
     private List<MeshBuilder.PolygonWithHeight> polygonWithHeight = new ArrayList<MeshBuilder.PolygonWithHeight>();//list polygon with height
     private Envelope meshEnvelope;
 
@@ -98,12 +92,6 @@ public class FastObstructionTest {
             hasBuildingWithHeight = hasBuildingWithHeight || poly.hasHeight();
         }
         this.polygonWithHeight = polygonWithHeightArray;
-        this.polygonIndex = new STRtree(Math.max(20, polygonWithHeightArray.size()));
-        // Index buildings
-        for(int i = 0; i < polygonWithHeightArray.size(); i++) {
-            MeshBuilder.PolygonWithHeight p = polygonWithHeightArray.get(i);
-            polygonIndex.insert(p.geo.getEnvelopeInternal(), i + 1);
-        }
         this.triVertices = triangles;
         this.triNeighbors = triNeighbors;
         this.vertices = points;
@@ -134,14 +122,28 @@ public class FastObstructionTest {
      * @return Building identifier (1-n) intersected by the line
      */
     public void getBuildingsOnPath(Coordinate p1, Coordinate p2, IntersectionRayVisitor visitor) {
-        Envelope pathEnv = new Envelope(p1, p2);
-        try {
-            polygonIndex.query(pathEnv, visitor);
-        } catch (IllegalStateException ex) {
-            //Ignore
+        // Navigate through triangle feeding the visitor with intersecting buildings
+        LineSegment propaLine = new LineSegment(p1, p2);
+        //get receiver triangle id
+        int curTriP1 = getTriangleIdByCoordinate(p1);
+        HashSet<Integer> navigationHistory = new HashSet<Integer>();
+        int navigationTri = curTriP1;
+        while (navigationTri != -1) {
+            navigationHistory.add(navigationTri);
+            Coordinate[] tri = getTriangle(navigationTri);
+            if (dotInTri(p2, tri[0], tri[1], tri[2])) {
+                return;
+            }
+            TriIdWithIntersection propaTri = this.getNextTri(navigationTri, propaLine, navigationHistory);
+            if(propaTri.isIntersectionOnBuilding()) {
+                visitor.visitItem(propaTri.getBuildingId());
+                if(!visitor.doContinue()) {
+                    return;
+                }
+            }
+            navigationTri = propaTri.getTriID();
         }
     }
-
 
     public Envelope getMeshEnvelope() {
         return meshEnvelope;
@@ -1438,11 +1440,7 @@ public class FastObstructionTest {
             int buildingId = (Integer) item;
             if(!buildingsprocessed.contains(buildingId)) {
                 buildingsprocessed.add(buildingId);
-                final MeshBuilder.PolygonWithHeight p = polygonWithHeight.get(buildingId - 1);
-                RectangleLineIntersector rect = new RectangleLineIntersector(p.geo.getEnvelopeInternal());
-                if (rect.intersects(p1, p2) && p.geo.intersects(seg)) {
-                    addBuilding(buildingId);
-                }
+                addBuilding(buildingId);
             }
         }
 

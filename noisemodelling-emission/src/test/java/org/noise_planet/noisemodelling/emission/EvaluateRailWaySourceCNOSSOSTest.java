@@ -35,7 +35,37 @@ import static org.junit.Assert.assertEquals;
 public class EvaluateRailWaySourceCNOSSOSTest {
     private static final double EPSILON_TEST1 = 0.0001;
     EvaluateRailwaySourceCnossos evaluateRailwaySourceCnossos = new EvaluateRailwaySourceCnossos();
-    
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testUnknownVehicle() {
+        evaluateRailwaySourceCnossos.setEvaluateRailwaySourceCnossos(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Rail_Vehicles_SNCF_2015.json"), EvaluateRailwaySourceCnossos.class.getResourceAsStream("Rail_Train_SNCF_2021.json"));
+        String vehCat = "notsupported";
+
+        double vehicleSpeed = 80;
+        int rollingCondition = 0;
+        double idlingTime = 0;
+
+        int nTracks = 2;
+        int trackTransfer = 7;
+        int railRoughness = 3;
+        int impactNoise = 1;
+        int bridgeTransfert = 0;
+        int curvature = 0;
+        boolean isTunnel = false;
+
+        double vMaxInfra = 160;
+        double vehicleCommercial = 120;
+
+        double vehiclePerHour = (1000 * vehicleSpeed); //for one vehicle
+
+        RailwayVehicleParametersCnossos vehicleParameters = new RailwayVehicleParametersCnossos(vehCat, vehicleSpeed, vehiclePerHour, rollingCondition, idlingTime);
+        vehicleParameters.setSpectreVer(1);
+        RailwayTrackParametersCnossos trackParameters = new RailwayTrackParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
+                impactNoise, bridgeTransfert, curvature, vehicleCommercial, isTunnel, nTracks);
+
+        evaluateRailwaySourceCnossos.evaluate(vehicleParameters, trackParameters);
+    }
+
     @Test
     public void Test_Cnossos_Rail_emission_section_1() {
 
