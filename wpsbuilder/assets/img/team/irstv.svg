@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="210mm"
+   height="297mm"
+   id="svg3151"
+   version="1.1"
+   inkscape:version="0.48.4 r9939"
+   sodipodi:docname="Nouveau document 2">
+  <defs
+     id="defs3153" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="0.35"
+     inkscape:cx="375"
+     inkscape:cy="520"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:window-width="1680"
+     inkscape:window-height="1022"
+     inkscape:window-x="1680"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata3156">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Calque 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <path
+       inkscape:connector-curvature="0"
+       id="path3040"
+       style="fill:#b1d13d;fill-opacity:1;fill-rule:nonzero;stroke:none"
+       d="m 331.60945,477.40031 182.33375,-17.54875 0.16125,123.85625 -88.29375,21.165 -94.20125,-127.4725 z"
+       inkscape:export-filename="/home/gpetit/Documents/IRSTV/Logo_IRSTV/Nouveau/logo_irtsv_full.png"
+       inkscape:export-xdpi="108.53256"
+       inkscape:export-ydpi="108.53256" />
+    <path
+       inkscape:connector-curvature="0"
+       id="path3044"
+       style="fill:#00bae5;fill-opacity:1;fill-rule:nonzero;stroke:none"
+       d="m 513.94345,459.85206 -87.97125,144.78875 88.1325,-20.9325 -0.16125,-123.85625 z"
+       inkscape:export-filename="/home/gpetit/Documents/IRSTV/Logo_IRSTV/Nouveau/logo_irtsv_full.png"
+       inkscape:export-xdpi="108.53256"
+       inkscape:export-ydpi="108.53256" />
+    <g
+       id="g3058"
+       transform="matrix(1.25,0,0,-1.25,425.81108,604.87281)"
+       inkscape:export-filename="/home/gpetit/Documents/IRSTV/Logo_IRSTV/Nouveau/logo_irtsv_full.png"
+       inkscape:export-xdpi="108.53256"
+       inkscape:export-ydpi="108.53256">
+      <path
+         inkscape:connector-curvature="0"
+         id="path3060"
+         style="fill:#8ed0e8;fill-opacity:1;fill-rule:nonzero;stroke:none"
+         d="M 0,0 -10.806,67.569 70.635,16.932 0,0 z" />
+    </g>
+    <path
+       inkscape:connector-curvature="0"
+       id="path3064"
+       style="fill:#fffa45;fill-opacity:1;fill-rule:nonzero;stroke:none"
+       d="m 425.81108,604.87281 -13.5075,-84.46125 -38.56875,-47.06625 -42.125,4.055 94.20125,127.4725 z"
+       inkscape:export-filename="/home/gpetit/Documents/IRSTV/Logo_IRSTV/Nouveau/logo_irtsv_full.png"
+       inkscape:export-xdpi="108.53256"
+       inkscape:export-ydpi="108.53256" />
+    <path
+       inkscape:connector-curvature="0"
+       id="path3294"
+       style="fill:#ff8b00;fill-opacity:1;fill-rule:nonzero;stroke:none"
+       d="m 363.84945,521.02768 48.455,-0.61625 13.50625,84.46126 -61.96125,-83.84501 z"
+       inkscape:export-filename="/home/gpetit/Documents/IRSTV/Logo_IRSTV/Nouveau/logo_irtsv_full.png"
+       inkscape:export-xdpi="108.53256"
+       inkscape:export-ydpi="108.53256" />
+  </g>
+</svg>

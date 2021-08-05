@@ -11,7 +11,7 @@
     <parent>
         <groupId>org.orbisgis</groupId>
         <artifactId>noisemodelling-parent</artifactId>
-        <version>3.4.3</version>
+        <version>3.4.4-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <description>Test case with OpenStreetMap buildings and roads</description>
