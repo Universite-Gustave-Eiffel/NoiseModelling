@@ -7,7 +7,7 @@ plugins {
 }
 
 group = 'org.orbisgis'
-version = '3.4.3'
+version = '3.4.4-SNAPSHOT'
 
 publishing {
     publications {
@@ -89,11 +89,11 @@ dependencies {
             prefer '1.15.1'
         }
     }
-    implementation group: 'org.orbisgis', name: 'noisemodelling-emission', version: '3.4.3'
-    implementation group: 'org.orbisgis', name: 'noisemodelling-propagation', version: '3.4.3'
-    implementation group: 'org.orbisgis', name: 'noisemodelling-pathfinder', version: '3.4.3'
-    implementation group: 'org.orbisgis', name: 'noisemodelling-jdbc', version: '3.4.3'
-    implementation group: 'org.orbisgis', name: 'h2gis-extension', version: '3.4.3'
+    implementation group: 'org.orbisgis', name: 'noisemodelling-emission', version: '3.4.4-SNAPSHOT'
+    implementation group: 'org.orbisgis', name: 'noisemodelling-propagation', version: '3.4.4-SNAPSHOT'
+    implementation group: 'org.orbisgis', name: 'noisemodelling-pathfinder', version: '3.4.4-SNAPSHOT'
+    implementation group: 'org.orbisgis', name: 'noisemodelling-jdbc', version: '3.4.4-SNAPSHOT'
+    implementation group: 'org.orbisgis', name: 'h2gis-extension', version: '3.4.4-SNAPSHOT'
     implementation group: 'org.openstreetmap.osmosis', name: 'osmosis-core', version: '0.48.3'
     implementation group: 'org.openstreetmap.osmosis', name: 'osmosis-pbf', version: '0.48.3'
     implementation(group: 'org.matsim', name: 'matsim', version: '11.0') {
