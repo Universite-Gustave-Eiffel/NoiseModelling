@@ -21,7 +21,7 @@ import static org.noise_planet.noisemodelling.jdbc.MakeParallelLines.MakeParalle
 
 
 public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGeom> {
-
+    private final EvaluateRailwaySourceCnossos evaluateRailwaySourceCnossos = new EvaluateRailwaySourceCnossos();
     private Connection connection;
     private RailWayLW railWayLWsum;
     private RailWayLW railWayLWsumDay;
@@ -218,7 +218,7 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
         }
 
 
-        EvaluateRailwaySourceCnossos evaluateRailwaySourceCnossos = new EvaluateRailwaySourceCnossos();
+
 
         RailWayLW  lWRailWay = new RailWayLW();
 
