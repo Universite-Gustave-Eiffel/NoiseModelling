@@ -249,7 +249,7 @@ def exec(Connection connection, input) {
         sql.execute("create table ROADS (PK serial, ID_WAY integer, THE_GEOM geometry, TYPE varchar, LV_D integer, LV_E integer,LV_N integer,HV_D integer,HV_E integer,HV_N integer,LV_SPD_D integer,LV_SPD_E integer,LV_SPD_N integer,HV_SPD_D integer, HV_SPD_E integer,HV_SPD_N integer, PVMT varchar(10));")
 
         for (Road road: handler.roads) {
-            if (road.geom.isEmpty()) {
+            if (road.geom.isEmpty() || road.category == 7) {
                 continue;
             }
             String query = 'INSERT INTO ROADS(ID_WAY, ' +
