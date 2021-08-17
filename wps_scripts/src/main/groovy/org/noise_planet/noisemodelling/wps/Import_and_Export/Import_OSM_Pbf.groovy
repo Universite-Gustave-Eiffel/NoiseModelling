@@ -249,7 +249,7 @@ def exec(Connection connection, input) {
         sql.execute("create table ROADS (PK serial, ID_WAY integer, THE_GEOM geometry, TYPE varchar, LV_D integer, LV_E integer,LV_N integer,HV_D integer,HV_E integer,HV_N integer,LV_SPD_D integer,LV_SPD_E integer,LV_SPD_N integer,HV_SPD_D integer, HV_SPD_E integer,HV_SPD_N integer, PVMT varchar(10));")
 
         for (Road road: handler.roads) {
-            if (road.geom.isEmpty() || road.category == 7) {
+            if (road.geom.isEmpty()) {
                 continue;
             }
             String query = 'INSERT INTO ROADS(ID_WAY, ' +
@@ -561,13 +561,13 @@ public class Building {
 
 public class Road {
 
-    def static aadf_d = [26103, 17936, 7124, 1400, 700, 350, 175, 0]
-    def static aadf_e = [7458, 3826, 1069, 400, 200, 100, 50, 0]
-    def static aadf_n = [3729, 2152, 712, 200, 100, 50, 25, 0]
-    def static hv_d = [0.25, 0.2, 0.2, 0.15, 0.10, 0.05, 0.02, 0.00]
-    def static hv_e = [0.35, 0.2, 0.15, 0.10, 0.06, 0.02, 0.01, 0.00]
-    def static hv_n = [0.45, 0.2, 0.1, 0.05, 0.03, 0.01, 0.0, 0.00]
-    def static speed = [130, 110, 80, 80, 50, 30, 30, 0]
+    def static aadf_d = [26103, 17936, 7124, 1400, 700, 350, 175]
+    def static aadf_e = [7458, 3826, 1069, 400, 200, 100, 50]
+    def static aadf_n = [3729, 2152, 712, 200, 100, 50, 25]
+    def static hv_d = [0.25, 0.2, 0.2, 0.15, 0.10, 0.05, 0.02]
+    def static hv_e = [0.35, 0.2, 0.15, 0.10, 0.06, 0.02, 0.01]
+    def static hv_n = [0.45, 0.2, 0.1, 0.05, 0.03, 0.01, 0.0]
+    def static speed = [130, 110, 80, 80, 50, 30, 30]
 
     def static hours_in_d = 12
     def static hours_in_e = 4
@@ -579,7 +579,7 @@ public class Road {
     double maxspeed = 0.0;
     boolean oneway = false;
     String type = null;
-    int category = 7;
+    int category = 5;
 
     Road(Way way) {
         this.way = way;
