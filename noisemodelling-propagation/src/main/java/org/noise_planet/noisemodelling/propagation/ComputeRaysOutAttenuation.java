@@ -147,6 +147,9 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
             // Compute receiver/source attenuation
             EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
 
+            if(inputData != null && inputData.sourceGs.containsKey(sourceId)) {
+                inputData.setGs(inputData.getSourceGs((int) sourceId));
+            }
 
             double[] propagationAttenuationSpectrum = null;
             for (PropagationPath propath : propagationPath) {

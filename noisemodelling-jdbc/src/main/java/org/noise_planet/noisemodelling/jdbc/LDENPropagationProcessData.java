@@ -103,6 +103,11 @@ public class LDENPropagationProcessData extends PropagationProcessData {
         }
     }
 
+    @Override
+    public double getSourceGs(int srcIndex){
+        return sourceGs.get(sourcesPk.get(srcIndex));
+    }
+
     /**
      * @param rs result set of source
      * @param period D or E or N
