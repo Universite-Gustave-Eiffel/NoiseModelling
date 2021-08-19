@@ -64,6 +64,7 @@ public class PropagationPath {
     int idReceiver;
     Orientation sourceOrientation =
             new Orientation(0,0,0);
+    double gs;
     private boolean initialized = false;
     // computed in Augmented Path
     public List<Integer> difHPoints = new ArrayList<Integer>(); // diffraction points indices on horizontal edges
@@ -94,6 +95,15 @@ public class PropagationPath {
     public void setSourceOrientation(Orientation sourceOrientation) {
         this.sourceOrientation = sourceOrientation;
     }
+
+    public double getGs() {
+        return gs;
+    }
+
+    public void setGs(double gs) {
+        this.gs = gs;
+    }
+
 
     /**
      * @return Propagation path as a geometry object
@@ -135,6 +145,7 @@ public class PropagationPath {
         out.writeFloat(sourceOrientation.yaw);
         out.writeFloat(sourceOrientation.pitch);
         out.writeFloat(sourceOrientation.roll);
+        out.writeFloat((float) gs);
         out.writeInt(idReceiver);
         out.writeInt(pointList.size());
         for(PointPath pointPath : pointList) {
@@ -163,7 +174,10 @@ public class PropagationPath {
         float bearing = in.readFloat();
         float inclination = in.readFloat();
         float roll = in.readFloat();
+        double gs = in.readFloat();
+        setGs(gs);
         setSourceOrientation(new Orientation(bearing, inclination, roll));
+
         idReceiver = in.readInt();
         int pointListSize = in.readInt();
         pointList = new ArrayList<>(pointListSize);
@@ -458,7 +472,7 @@ public class PropagationPath {
         // if dp <= 30(zs + zr), then the distinction between the type of ground located near the source and the type of ground located near the receiver is negligible.
         // Eq. 2.5.14
         if (testForm <= 1) {
-            SR.gPathPrime = testForm * SR.gPath + (1 - testForm) * pointList.get(0).gs;
+            SR.gPathPrime = testForm * SR.gPath + (1 - testForm) * getGs();
         } else {
             SR.gPathPrime = SR.gPath;
         }
@@ -516,7 +530,7 @@ public class PropagationPath {
 
 
 
-            double gs = pointList.get(0).gs;
+            double gs = getGs();
 
             double testForm = dp / (30 * (zs + zr));
             segmentList.get(idSegment).testForm = testForm;

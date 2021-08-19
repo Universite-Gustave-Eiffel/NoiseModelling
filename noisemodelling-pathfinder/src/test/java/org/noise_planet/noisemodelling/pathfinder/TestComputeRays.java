@@ -291,7 +291,7 @@ public class TestComputeRays {
         List<PropagationPath> expected = new ArrayList<>();
         expected.add(new PropagationPath(true,
                 Arrays.asList(new PointPath(
-                        new Coordinate(1,2,3), 15.0, 1, Collections.nCopies(8, 0.23), 8,
+                        new Coordinate(1,2,3), 15.0,  Collections.nCopies(8, 0.23), 8,
                         PointPath.POINT_TYPE.RECV)),
                 Arrays.asList(new SegmentPath(0.15,
                         new org.locationtech.jts.math.Vector3D(1,1,1),
@@ -303,7 +303,7 @@ public class TestComputeRays {
                         new Coordinate(1.5,2.5,3.5)))));
         expected.add(new PropagationPath(true,
                 Arrays.asList(new PointPath(
-                        new Coordinate(2,7,1), 1.0, 0.5, Collections.nCopies(8,0.4), 1,
+                        new Coordinate(2,7,1), 1.0,  Collections.nCopies(8,0.4), 1,
                         PointPath.POINT_TYPE.DIFV)),
                 Arrays.asList(new SegmentPath(0.115,
                         new org.locationtech.jts.math.Vector3D(11,13,14),
