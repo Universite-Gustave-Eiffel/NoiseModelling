@@ -46,6 +46,7 @@ public abstract class JdbcNoiseMap {
     protected boolean sourceHasAbsoluteZCoordinates = false;
     protected double maximumPropagationDistance = 750;
     protected double maximumReflectionDistance = 100;
+    protected double gs = 0;
     // Soil areas are splited by the provided size in order to reduce the propagation time
     protected double groundSurfaceSplitSideLength = 200;
     protected int soundReflectionOrder = 2;
@@ -524,6 +525,18 @@ public abstract class JdbcNoiseMap {
      */
     public void setMaximumPropagationDistance(double maximumPropagationDistance) {
         this.maximumPropagationDistance = maximumPropagationDistance;
+    }
+
+    /**
+     *
+     * @param gs ground factor above the sound source
+     */
+    public void setGs(double gs) {
+        this.gs = gs;
+    }
+
+    public double getGs() {
+        return this.gs;
     }
 
     public double getNoiseFloor() {
