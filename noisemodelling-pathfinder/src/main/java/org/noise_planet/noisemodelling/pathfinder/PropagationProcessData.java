@@ -62,6 +62,7 @@ public class PropagationProcessData {
     public static final String PITCH_DATABASE_FIELD = "PITCH";
     public static final String ROLL_DATABASE_FIELD = "ROLL";
     public static final String DIRECTIVITY_DATABASE_FIELD = "DIR_ID";
+    public static final String GS_DATABASE_FIELD = "GS";
 
     public List<Long> receiversPk = new ArrayList<>();
     public List<Long> sourcesPk = new ArrayList<>();
@@ -79,6 +80,14 @@ public class PropagationProcessData {
      * Link between sources PK and direction attenuation index
      */
     public Map<Long, Integer> sourceDirection = new HashMap<>();
+
+
+
+
+    /**
+     * Link between sources PK and gs coefficient
+     */
+    public Map<Long, Double> sourceGs = new HashMap<>();
 
 
     /** Maximum reflexion order */
@@ -131,6 +140,12 @@ public class PropagationProcessData {
         addSource(pk, geom);
         sourceOrientation.put(pk, orientation);
     }
+
+    public void addSource(Long pk, Geometry geom, Double gs) {
+        addSource(pk, geom);
+        sourceGs.put(pk, gs);
+    }
+
     /**
      * Add geometry with additional attributes
      * @param pk Unique source identifier
@@ -167,6 +182,11 @@ public class PropagationProcessData {
         }
         if(hasOrientation) {
             sourceOrientation.put(pk, new Orientation(yaw, pitch, roll));
+        }
+
+        int gsField = JDBCUtilities.getFieldIndex(rs.getMetaData(), GS_DATABASE_FIELD);
+        if(sourceFieldNames.containsKey(GS_DATABASE_FIELD)) {
+            sourceGs.put(pk, rs.getDouble(gsField));
         }
     }
 
@@ -241,6 +261,10 @@ public class PropagationProcessData {
         this.gS = gS;
     }
 
+
+    public double getSourceGs(int srcIndex) {
+        return this.gS;
+    }
 
     public boolean isComputeHorizontalDiffraction() {
         return computeHorizontalDiffraction;
