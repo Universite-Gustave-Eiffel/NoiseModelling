@@ -80,6 +80,7 @@ public class CnossosBench {
         pointNoiseMap.setComputeHorizontalDiffraction(false);
         pointNoiseMap.setComputeVerticalDiffraction(false);
         pointNoiseMap.setVerbose(false);
+        pointNoiseMap.setThreadCount(1);
 
         pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
 
@@ -87,7 +88,7 @@ public class CnossosBench {
 
         List<Double> levels = new ArrayList<>();
         SHPWrite.exportTable(connection, "target/buildings.shp", "BUILDINGS");
-        for(int refOrder = 0; refOrder < 100; refOrder++) {
+        for(int refOrder = 99; refOrder < 100; refOrder++) {
             pointNoiseMap.setSoundReflectionOrder(refOrder);
             try {
                 factory.start();

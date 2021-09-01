@@ -157,7 +157,14 @@ public class ComputeCnossosRays {
                 if (source instanceof Point) {
                     Coordinate ptpos = source.getCoordinate();
                     if (ptpos.distance(rcv.getCoord()) < data.maxSrcDist) {
-                        totalPowerRemaining += insertPtSource((Point) source, rcv.getCoord(), srcIndex, sourceList, wj, 1.);
+                        Orientation orientation = null;
+                        if(data.sourcesPk.size() > srcIndex) {
+                            orientation = data.sourceOrientation.get(data.sourcesPk.get(srcIndex));
+                        }
+                        if(orientation == null) {
+                            orientation = new Orientation(0,0, 0);
+                        }
+                        totalPowerRemaining += insertPtSource((Point) source, rcv.getCoord(), srcIndex, sourceList, wj, 1., orientation);
                     }
                 } else if (source instanceof LineString) {
                     totalPowerRemaining += addLineSource((LineString) source, rcv.getCoord(), srcIndex, sourceList, wj);
@@ -246,7 +253,7 @@ public class ComputeCnossosRays {
      */
     public List<PropagationPath> directPath(SourcePointInfo src,
                                             ReceiverPointInfo rcv) {
-        return directPath(src.getCoord(), src.getId(), rcv.getCoord(), rcv.getId());
+        return directPath(src.getCoord(), src.getId(), src.getOrientation(), rcv.getCoord(), rcv.getId());
     }
 
     /**
@@ -257,7 +264,7 @@ public class ComputeCnossosRays {
      * @param rcvId    Receiver point identifier.
      * @return Calculated propagation paths.
      */
-    public List<PropagationPath> directPath(Coordinate srcCoord, int srcId, Coordinate rcvCoord, int rcvId) {
+    public List<PropagationPath> directPath(Coordinate srcCoord, int srcId, Orientation orientation, Coordinate rcvCoord, int rcvId) {
         List<PropagationPath> propagationPaths = new ArrayList<>();
         ProfileBuilder.CutProfile cutProfile = data.profileBuilder.getProfile(srcCoord, rcvCoord, data.gS);
         //If the field is free, simplify the computation
@@ -305,6 +312,7 @@ public class ComputeCnossosRays {
         for(PropagationPath propagationPath : propagationPaths) {
             propagationPath.idSource = srcId;
             propagationPath.idReceiver = rcvId;
+            propagationPath.setSourceOrientation(orientation);
         }
 
         return propagationPaths;
@@ -724,7 +732,7 @@ public class ComputeCnossosRays {
                 .filter(cutPoint -> cutPoint.getType() == ProfileBuilder.IntersectionType.BUILDING)
                 .map(cutPoint -> data.profileBuilder.getProcessedWalls().get((cutPoint.getId())))
                 .collect(Collectors.toList());
-        for(ProfileBuilder.Wall wall : buildWallsFromRtree) {
+        for(ProfileBuilder.Wall wall : buildWalls) {
             if(parent != null && buildWalls.indexOf(wall) == parent.getWallId()) {
                 continue;
             }
@@ -743,12 +751,6 @@ public class ComputeCnossosRays {
             }
             double frac = wall.getLine().segmentFraction(inter);
             inter.z = wall.getLine().p0.z + frac * (wall.getLine().p1.z - wall.getLine().p0.z);
-
-            if(data.reflexionOrder > depth) {
-                MirrorReceiverResult p = new MirrorReceiverResult(rcvMirror, parent,
-                        data.profileBuilder.getProcessedWalls().indexOf(wall), wall.getOriginId());
-                results.addAll(getMirrorReceivers(buildWalls, srcCoord, inter, srcMirrRcvLine, depth+1, p));
-            }
             //Check if an other wall is masking the current
             double dist = new LineSegment(srcCoord, inter).getLength();
             boolean skipWall = false;
@@ -775,6 +777,11 @@ public class ComputeCnossosRays {
                 }
             }
             if (!skipWall) {
+                if(data.reflexionOrder > depth) {
+                    MirrorReceiverResult p = new MirrorReceiverResult(rcvMirror, parent,
+                            data.profileBuilder.getProcessedWalls().indexOf(wall), wall.getOriginId());
+                    results.addAll(getMirrorReceivers(buildWalls, srcCoord, inter, srcMirrRcvLine, depth+1, p));
+                }
                 results.add(new MirrorReceiverResult(rcvMirror, parent,
                         data.profileBuilder.getProcessedWalls().indexOf(wall), wall.getOriginId()));
             }
@@ -944,7 +951,7 @@ public class ComputeCnossosRays {
 
 
     public void computeReflexionOverBuildings(Coordinate p0, Coordinate p1, List<PointPath> points, List<SegmentPath> segments, List<SegmentPath> srPath, CnossosPropagationData data) {
-        List<PropagationPath> propagationPaths = directPath(p0, -1, p1, -1);
+        List<PropagationPath> propagationPaths = directPath(p0, -1, null, p1, -1);
         if (!propagationPaths.isEmpty()) {
             PropagationPath propagationPath = propagationPaths.get(0);
             points.addAll(propagationPath.getPointList());
@@ -1071,26 +1078,26 @@ public class ComputeCnossosRays {
     }
 
     private static double insertPtSource(Coordinate source, Coordinate receiverPos, Integer sourceId,
-                                         List<SourcePointInfo> sourceList, double[] wj, double li) {
+                                         List<SourcePointInfo> sourceList, double[] wj, double li, Orientation orientation) {
         // Compute maximal power at freefield at the receiver position with reflective ground
         double aDiv = -getADiv(CGAlgorithms3D.distance(receiverPos, source));
         double[] srcWJ = new double[wj.length];
         for (int idFreq = 0; idFreq < srcWJ.length; idFreq++) {
             srcWJ[idFreq] = wj[idFreq] * li * dbaToW(aDiv) * dbaToW(3);
         }
-        sourceList.add(new SourcePointInfo(srcWJ, sourceId, source, li));
+        sourceList.add(new SourcePointInfo(srcWJ, sourceId, source, li, orientation));
         return sumArray(srcWJ.length, srcWJ);
     }
 
     private static double insertPtSource(Point source, Coordinate receiverPos, Integer sourceId,
-                                         List<SourcePointInfo> sourceList, double[] wj, double li) {
+                                         List<SourcePointInfo> sourceList, double[] wj, double li, Orientation orientation) {
         // Compute maximal power at freefield at the receiver position with reflective ground
         double aDiv = -getADiv(CGAlgorithms3D.distance(receiverPos, source.getCoordinate()));
         double[] srcWJ = new double[wj.length];
         for (int idFreq = 0; idFreq < srcWJ.length; idFreq++) {
             srcWJ[idFreq] = wj[idFreq] * li * dbaToW(aDiv) * dbaToW(3);
         }
-        sourceList.add(new SourcePointInfo(srcWJ, sourceId, source.getCoordinate(), li));
+        sourceList.add(new SourcePointInfo(srcWJ, sourceId, source.getCoordinate(), li, orientation));
         return sumArray(srcWJ.length, srcWJ);
     }
 
@@ -1107,7 +1114,24 @@ public class ComputeCnossosRays {
         for (int ptIndex = 0; ptIndex < pts.size(); ptIndex++) {
             Coordinate pt = pts.get(ptIndex);
             if (pt.distance(receiverCoord) < data.maxSrcDist) {
-                totalPowerRemaining += insertPtSource(pt, receiverCoord, srcIndex, sourceList, wj, li);
+                // use the orientation computed from the line source coordinates
+                Vector3D v;
+                if(ptIndex == 0) {
+                    v = new Vector3D(source.getCoordinates()[0], pts.get(ptIndex));
+                } else {
+                    v = new Vector3D(pts.get(ptIndex - 1), pts.get(ptIndex));
+                }
+                Orientation orientation;
+                if(data.sourcesPk.size() > srcIndex && data.sourceOrientation.containsKey(data.sourcesPk.get(srcIndex))) {
+                    // If the line source already provide an orientation then alter the line orientation
+                    orientation = data.sourceOrientation.get(data.sourcesPk.get(srcIndex));
+                    orientation = Orientation.fromVector(
+                            Orientation.rotate(new Orientation(orientation.yaw, orientation.roll, 0),
+                                    v.normalize()), orientation.roll);
+                } else {
+                    orientation = Orientation.fromVector(v.normalize(), 0);
+                }
+                totalPowerRemaining += insertPtSource(pt, receiverCoord, srcIndex, sourceList, wj, li, orientation);
             }
         }
         return totalPowerRemaining;
@@ -1128,7 +1152,7 @@ public class ComputeCnossosRays {
             this.endReceiver = endReceiver;
             this.propagationProcess = propagationProcess;
             this.visitor = visitor;
-            this.dataOut = dataOut.subProcess(startReceiver, endReceiver);
+            this.dataOut = dataOut.subProcess();
             this.data = data;
         }
 
@@ -1183,13 +1207,14 @@ public class ComputeCnossosRays {
         private final int sourcePrimaryKey;
         private Coordinate position;
         private final double globalWj;
+        private Orientation orientation;
 
         /**
          * @param wj               Maximum received power from this source
          * @param sourcePrimaryKey
          * @param position
          */
-        public SourcePointInfo(double[] wj, int sourcePrimaryKey, Coordinate position, double li) {
+        public SourcePointInfo(double[] wj, int sourcePrimaryKey, Coordinate position, double li, Orientation orientation) {
             this.sourcePrimaryKey = sourcePrimaryKey;
             this.position = position;
             if (Double.isNaN(position.z)) {
@@ -1197,6 +1222,11 @@ public class ComputeCnossosRays {
             }
             this.globalWj = sumArray(wj.length, wj);
             this.li = li;
+            this.orientation = orientation;
+        }
+
+        public Orientation getOrientation() {
+            return orientation;
         }
 
         public Coordinate getCoord() {
