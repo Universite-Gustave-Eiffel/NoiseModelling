@@ -7,6 +7,7 @@ import org.h2gis.api.ProgressVisitor;
 import org.h2gis.functions.io.csv.CSVDriverFunction;
 import org.h2gis.functions.io.geojson.GeoJsonRead;
 import org.h2gis.utilities.SFSUtilities;
+import org.noise_planet.noisemodelling.pathfinder.utils.*;
 import org.noise_planet.noisemodelling.pathfinder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.utils.KMLDocument;
 import org.noise_planet.noisemodelling.jdbc.LDENConfig;
@@ -102,6 +103,7 @@ class Main {
         // Do not propagate for low emission or far away sources.
         // error in dB
         pointNoiseMap.setMaximumError(0.1d);
+        pointNoiseMap.setNoiseFloor(35d);
 
         // Init custom input in order to compute more than just attenuation
         // LW_ROADS contain Day Evening Night emission spectrum
@@ -114,7 +116,7 @@ class Main {
 
         LDENPointNoiseMapFactory tableWriter = new LDENPointNoiseMapFactory(connection, ldenConfig);
 
-        tableWriter.setKeepRays(true);
+        tableWriter.setKeepRays(false);
 
         pointNoiseMap.setPropagationProcessDataFactory(tableWriter);
         pointNoiseMap.setComputeRaysOutFactory(tableWriter);

@@ -109,7 +109,7 @@ public class TestWallReflection extends TestCase {
 
 	public static List<MirrorReceiverResult> getReceiverImages(Coordinate receiver, Coordinate source, List<ProfileBuilder.Wall> walls, int order) {
         MirrorReceiverIterator.It mirrorReceiverResults =
-                new MirrorReceiverIterator.It(receiver, walls, new LineSegment(source, receiver), 9999, order, 9999);
+                new MirrorReceiverIterator.It(receiver, walls, order);
 
         List<MirrorReceiverResult> res = new ArrayList<>();
         for(MirrorReceiverResult r : mirrorReceiverResults) {
@@ -241,7 +241,7 @@ public class TestWallReflection extends TestCase {
         Coordinate source = new Coordinate(9, 4);
 
         MirrorReceiverIterator.It mirrorReceiverResults =
-                new MirrorReceiverIterator.It(receiver, walls, new LineSegment(source, receiver), 20, 2, 40);
+                new MirrorReceiverIterator.It(receiver, walls,  2);
         Iterator<MirrorReceiverResult> it = mirrorReceiverResults.iterator();
         wallTest(new Coordinate(0, 2), new int[]{0}, it.next());
         wallTest(new Coordinate(6, 2), new int[]{0, 4}, it.next());

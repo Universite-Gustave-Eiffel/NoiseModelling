@@ -13,13 +13,6 @@
 package org.noise_planet.noisemodelling.emission;
 
 import org.junit.Test;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.math.Vector2D;
-
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.Locale;
 
 import static org.junit.Assert.assertEquals;
 
@@ -43,8 +36,41 @@ public class EvaluateRailWaySourceCNOSSOSTest {
     private static final double EPSILON_TEST1 = 0.0001;
     EvaluateRailwaySourceCnossos evaluateRailwaySourceCnossos = new EvaluateRailwaySourceCnossos();
 
+    @Test(expected = IllegalArgumentException.class)
+    public void testUnknownVehicle() {
+        evaluateRailwaySourceCnossos.setEvaluateRailwaySourceCnossos(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Rail_Vehicles_SNCF_2015.json"), EvaluateRailwaySourceCnossos.class.getResourceAsStream("Rail_Train_SNCF_2021.json"));
+        String vehCat = "notsupported";
+
+        double vehicleSpeed = 80;
+        int rollingCondition = 0;
+        double idlingTime = 0;
+
+        int nTracks = 2;
+        int trackTransfer = 7;
+        int railRoughness = 3;
+        int impactNoise = 1;
+        int bridgeTransfert = 0;
+        int curvature = 0;
+        boolean isTunnel = false;
+
+        double vMaxInfra = 160;
+        double vehicleCommercial = 120;
+
+        double vehiclePerHour = (1000 * vehicleSpeed); //for one vehicle
+
+        RailwayVehicleParametersCnossos vehicleParameters = new RailwayVehicleParametersCnossos(vehCat, vehicleSpeed, vehiclePerHour, rollingCondition, idlingTime);
+        vehicleParameters.setSpectreVer(1);
+        RailwayTrackParametersCnossos trackParameters = new RailwayTrackParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
+                impactNoise, bridgeTransfert, curvature, vehicleCommercial, isTunnel, nTracks);
+
+        evaluateRailwaySourceCnossos.evaluate(vehicleParameters, trackParameters);
+    }
+
     @Test
     public void Test_Cnossos_Rail_emission_section_1() {
+
+        evaluateRailwaySourceCnossos.setEvaluateRailwaySourceCnossos(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Rail_Vehicles_SNCF_2015.json"), EvaluateRailwaySourceCnossos.class.getResourceAsStream("Rail_Train_SNCF_2021.json"));
+
         String vehCat = "SNCF-BB66400";
 
         double vehicleSpeed = 80;
@@ -72,6 +98,7 @@ public class EvaluateRailWaySourceCNOSSOSTest {
         double[] expectedValuesLWBridge = new double[]{-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99};
 
         RailwayVehicleParametersCnossos vehicleParameters = new RailwayVehicleParametersCnossos(vehCat, vehicleSpeed,vehiclePerHour, rollingCondition,idlingTime);
+        vehicleParameters.setSpectreVer(1);
         RailwayTrackParametersCnossos trackParameters = new RailwayTrackParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
                 impactNoise, bridgeTransfert, curvature, vehicleCommercial,isTunnel, nTracks);
         RailWayLW lWRailWay = evaluateRailwaySourceCnossos.evaluate(vehicleParameters, trackParameters);
@@ -91,6 +118,9 @@ public class EvaluateRailWaySourceCNOSSOSTest {
 
     @Test
     public void Test_Cnossos_Rail_emission_section_2() {
+
+        evaluateRailwaySourceCnossos.setEvaluateRailwaySourceCnossos(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Rail_Vehicles_SNCF_2015.json"), EvaluateRailwaySourceCnossos.class.getResourceAsStream("Rail_Train_SNCF_2021.json"));
+
         String vehCat = "SNCF-BB66400";
 
         double vehicleSpeed = 80;
@@ -114,6 +144,8 @@ public class EvaluateRailWaySourceCNOSSOSTest {
 
         double[] expectedValuesLWRolling = new double[]{100.8970,101.8434,104.6603,107.0239,104.6611,104.0827,105.2341,109.9994,110.1740,110.1183,110.2914,110.7347,112.4299,111.8073,108.7535,104.3038,106.6040,105.3350,103.1827,100.7862,101.1828,100.6431,100.6290,102.1868};
         RailwayVehicleParametersCnossos vehicleParameters = new RailwayVehicleParametersCnossos(vehCat, vehicleSpeed,vehiclePerHour, rollingCondition,idlingTime);
+        vehicleParameters.setSpectreVer(1);
+
         RailwayTrackParametersCnossos trackParameters = new RailwayTrackParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
                 impactNoise, bridgeTransfert, curvature, vehicleCommercial,isTunnel, nTracks);
         lWRailWay = evaluateRailwaySourceCnossos.evaluate(vehicleParameters, trackParameters);
@@ -125,6 +157,10 @@ public class EvaluateRailWaySourceCNOSSOSTest {
 
     @Test
     public void Test_Cnossos_Rail_emission_section_3() {
+
+        evaluateRailwaySourceCnossos.setEvaluateRailwaySourceCnossos(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Rail_Vehicles_SNCF_2015.json"), EvaluateRailwaySourceCnossos.class.getResourceAsStream("Rail_Train_SNCF_2021.json"));
+
+
         String vehCat = "SNCF-BB66400";
 
         double vehicleSpeed = 80;
@@ -150,6 +186,8 @@ public class EvaluateRailWaySourceCNOSSOSTest {
         double[] expectedValuesLWBridge = new double[]{108.4579,109.4015,111.344,112.4959,111.1415,110.9017,105.8236,109.7833,111.592,115.0733,116.7548,116.8658,117.8667,116.2709,113.2686,102.3774,96.9285,95.8390,85.6001,75.2583,70.6990,62.9177,57.9386,54.5294};
 
         RailwayVehicleParametersCnossos vehicleParameters = new RailwayVehicleParametersCnossos(vehCat, vehicleSpeed,vehiclePerHour, rollingCondition,idlingTime);
+        vehicleParameters.setSpectreVer(1);
+
         RailwayTrackParametersCnossos trackParameters = new RailwayTrackParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
                 impactNoise, bridgeTransfert, curvature, vehicleCommercial,isTunnel, nTracks);
         lWRailWay = evaluateRailwaySourceCnossos.evaluate(vehicleParameters, trackParameters);
@@ -163,6 +201,10 @@ public class EvaluateRailWaySourceCNOSSOSTest {
 
     @Test
     public void Test_Cnossos_Rail_emission_section_4 () {
+
+        evaluateRailwaySourceCnossos.setEvaluateRailwaySourceCnossos(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Rail_Vehicles_SNCF_2015.json"), EvaluateRailwaySourceCnossos.class.getResourceAsStream("Rail_Train_SNCF_2021.json"));
+
+
         String vehCat = "SNCF-BB66400";
 
         double vehicleSpeed = 200;
@@ -192,6 +234,8 @@ public class EvaluateRailWaySourceCNOSSOSTest {
 
 
         RailwayVehicleParametersCnossos vehicleParameters = new RailwayVehicleParametersCnossos(vehCat, vehicleSpeed,vehiclePerHour, rollingCondition,idlingTime);
+        vehicleParameters.setSpectreVer(1);
+
         RailwayTrackParametersCnossos trackParameters = new RailwayTrackParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
                 impactNoise, bridgeTransfert, curvature, vehicleCommercial,isTunnel, nTracks);
         lWRailWay = evaluateRailwaySourceCnossos.evaluate(vehicleParameters, trackParameters);
@@ -208,6 +252,10 @@ public class EvaluateRailWaySourceCNOSSOSTest {
 
     @Test
     public void Test_Cnossos_Rail_emission_section_5() {
+
+        evaluateRailwaySourceCnossos.setEvaluateRailwaySourceCnossos(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Rail_Vehicles_SNCF_2015.json"), EvaluateRailwaySourceCnossos.class.getResourceAsStream("Rail_Train_SNCF_2021.json"));
+
+
         String vehCat;
         double vehicleSpeed;
         double tDay;
@@ -296,6 +344,7 @@ public class EvaluateRailWaySourceCNOSSOSTest {
 
             RailWayLW lWRailWay = null;
             RailwayVehicleParametersCnossos vehicleParameters = new RailwayVehicleParametersCnossos(vehCat, vehicleSpeed,vehiclePerHour, rollingCondition,idlingTime);
+            vehicleParameters.setSpectreVer(1);
 
             lWRailWay = evaluateRailwaySourceCnossos.evaluate(vehicleParameters, trackParameters);
 

@@ -58,7 +58,7 @@ public class TestComputeRaysFull {
         PropagationProcessPathData attData = new PropagationProcessPathData();
         attData.setHumidity(70);
         attData.setTemperature(10);
-
+        rayData.noiseFloor = 40;
         ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
         ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);

@@ -34,9 +34,12 @@
 package org.noise_planet.noisemodelling.pathfinder;
 
 import org.h2gis.api.ProgressVisitor;
+import org.h2gis.api.ProgressVisitor;
+import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SpatialResultSet;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.GeometryFactory;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -52,10 +55,13 @@ import java.util.*;
  */
 public class CnossosPropagationData {
     public static final double DEFAULT_MAX_PROPAGATION_DISTANCE = 1200;
-    public static final double DEFAULT_MAXIMUM_REF_DIST = 50;
+    public static final double DEFAULT_MAXIMUM_REF_DIST = 700;
     public static final double DEFAULT_RECEIVER_DIST = 1.0;
     public static final double DEFAULT_GS = 0.0;
-    public static final double DEFAULT_G = 0.0;
+    public static final String YAW_DATABASE_FIELD = "YAW";
+    public static final String PITCH_DATABASE_FIELD = "PITCH";
+    public static final String ROLL_DATABASE_FIELD = "ROLL";
+    public static final String DIRECTIVITY_DATABASE_FIELD = "DIR_ID";
 
     public List<Long> receiversPk = new ArrayList<>();
     public List<Long> sourcesPk = new ArrayList<>();
@@ -75,7 +81,6 @@ public class CnossosPropagationData {
     public Map<Long, Integer> sourceDirection = new HashMap<>();
 
 
-
     /** Maximum reflexion order */
     public int reflexionOrder = 1;
     /** Compute horizontal diffraction rays over vertical edges */
@@ -93,6 +98,11 @@ public class CnossosPropagationData {
 
     /** maximum dB Error, stop calculation if the sum of further sources contributions are smaller than this value */
     public double maximumError = Double.NEGATIVE_INFINITY;
+
+    /** stop calculation if the sum of further sources contributions are smaller than this value */
+    public double noiseFloor = Double.NEGATIVE_INFINITY;
+
+
     /** cellId only used in output data */
     public int cellId;
     /** Progression information */
@@ -100,6 +110,7 @@ public class CnossosPropagationData {
     /** list Geometry of soil and the type of this soil */
     protected List<GeoWithSoilType> soilList = new ArrayList<>();
 
+    Map<String, Integer> sourceFieldNames = new HashMap<>();
 
 
     public CnossosPropagationData(ProfileBuilder profileBuilder) {
@@ -115,6 +126,11 @@ public class CnossosPropagationData {
         addSource(geom);
         sourcesPk.add(pk);
     }
+
+    public void addSource(Long pk, Geometry geom, Orientation orientation) {
+        addSource(pk, geom);
+        sourceOrientation.put(pk, orientation);
+    }
     /**
      * Add geometry with additional attributes
      * @param pk Unique source identifier
@@ -123,6 +139,35 @@ public class CnossosPropagationData {
      */
     public void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException, IOException {
         addSource(pk, geom);
+        if(sourceFieldNames.isEmpty()) {
+            List<String> fieldNames = JDBCUtilities.getFieldNames(rs.getMetaData());
+            for(int idField = 0; idField < fieldNames.size(); idField++) {
+                sourceFieldNames.put(fieldNames.get(idField).toUpperCase(Locale.ROOT), idField + 1);
+            }
+        }
+        float yaw = 0;
+        float pitch = 0;
+        float roll = 0;
+        boolean hasOrientation = false;
+        if(sourceFieldNames.containsKey(YAW_DATABASE_FIELD)) {
+            yaw = rs.getFloat(sourceFieldNames.get(YAW_DATABASE_FIELD));
+            hasOrientation = true;
+        }
+        if(sourceFieldNames.containsKey(PITCH_DATABASE_FIELD)) {
+            pitch = rs.getFloat(sourceFieldNames.get(PITCH_DATABASE_FIELD));
+            hasOrientation = true;
+        }
+        if(sourceFieldNames.containsKey(ROLL_DATABASE_FIELD)) {
+            roll = rs.getFloat(sourceFieldNames.get(ROLL_DATABASE_FIELD));
+            hasOrientation = true;
+        }
+        int directivityField = JDBCUtilities.getFieldIndex(rs.getMetaData(), DIRECTIVITY_DATABASE_FIELD);
+        if(sourceFieldNames.containsKey(DIRECTIVITY_DATABASE_FIELD)) {
+            sourceDirection.put(pk, rs.getInt(directivityField));
+        }
+        if(hasOrientation) {
+            sourceOrientation.put(pk, new Orientation(yaw, pitch, roll));
+        }
     }
 
     public void setSources(List<Geometry> sourceGeometries) {
@@ -135,7 +180,7 @@ public class CnossosPropagationData {
 
     /**
      * Optional - Return the maximal power spectrum of the sound source
-     * @param sourceId Source identifier (index in {@link CnossosPropagationData#sourceGeometries})
+     * @param sourceId Source identifier (index in {@link PropagationProcessData#sourceGeometries})
      * @return maximal power spectrum or empty array
      */
     public double[] getMaximalSourcePower(int sourceId) {

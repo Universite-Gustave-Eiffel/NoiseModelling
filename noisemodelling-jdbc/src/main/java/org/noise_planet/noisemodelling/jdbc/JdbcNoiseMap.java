@@ -57,6 +57,12 @@ public abstract class JdbcNoiseMap {
     protected double wallAbsorption = 100000;
     /** maximum dB Error, stop calculation if the sum of further sources contributions are smaller than this value */
     public double maximumError = Double.NEGATIVE_INFINITY;
+
+
+
+    /** stop calculation if the sum of further sources contributions are smaller than this value */
+    public double noiseFloor = Double.NEGATIVE_INFINITY;
+
     protected String heightField = "";
     protected GeometryFactory geometryFactory;
     protected int parallelComputationCount = 0;
@@ -524,6 +530,13 @@ public abstract class JdbcNoiseMap {
         this.maximumPropagationDistance = maximumPropagationDistance;
     }
 
+    public double getNoiseFloor() {
+        return noiseFloor;
+    }
+
+    public void setNoiseFloor(double noiseFloor) {
+        this.noiseFloor = noiseFloor;
+    }
 
     /**
      * @return maximum dB Error, stop calculation if the maximum sum of further sources contributions are smaller than this value

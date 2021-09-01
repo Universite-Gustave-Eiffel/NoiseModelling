@@ -19,6 +19,7 @@ import org.h2gis.utilities.JDBCUtilities
 import org.junit.Test
 import org.noise_planet.noisemodelling.wps.Geometric_Tools.Set_Height
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File
+import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_source
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_traffic
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Railway_Emission_from_Traffic
@@ -51,12 +52,23 @@ class TestNoiseModelling extends JdbcTestCase {
 
         sql.execute("DROP TABLE IF EXISTS LW_RAILWAY")
 
-        SHPRead.readShape(connection, TestDatabaseManager.getResource("Train/RailTrack.shp").getPath())
-        DBFRead.read(connection, TestDatabaseManager.getResource("Train/RailTrain.dbf").getPath())
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("Train/RAIL_SECTIONS.shp").getPath(),
+                 "inputSRID": "2154"])
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("Train/RAIL_TRAFFIC.dbf").getPath(),
+                 "inputSRID": "2154"])
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("Train/receivers_Railway_.shp").getPath(),
+                 "inputSRID": "2154",
+                 "tableName" : "RECEIVERS"])
 
         String res = new Railway_Emission_from_Traffic().exec(connection,
-                ["tableRailwayTraffic": "RailTrain",
-                 "tableRailwayTrack": "RailTrack"
+                ["tableRailwayTraffic": "RAIL_TRAFFIC",
+                 "tableRailwayTrack": "RAIL_SECTIONS"
                 ])
 
         def fieldNames = JDBCUtilities.getFieldNames(connection.getMetaData(), "LW_RAILWAY")
@@ -73,13 +85,6 @@ class TestNoiseModelling extends JdbcTestCase {
         assertArrayEquals(expected.toArray(new String[expected.size()]), fieldNames.toArray(new String[fieldNames.size()]))
 
 
-        sql.execute("DROP TABLE IF EXISTS RECEIVERS")
-        sql.execute("CREATE TABLE RECEIVERS(PK SERIAL, THE_GEOM GEOMETRY)")
-        sql.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT(421506.21 6703298.90)')")
-        sql.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT(421507.35 6703319.66)')")
-        sql.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT(421501.83 6703349.68)')")
-        sql.execute("UPDATE RECEIVERS SET THE_GEOM = ST_SETSRID(THE_GEOM, 2154)")
-
         SHPRead.readShape(connection, TestDatabaseManager.getResource("Train/buildings2.shp").getPath(), "BUILDINGS")
 
         sql.execute("DROP TABLE IF EXISTS LDAY_GEOM")
@@ -88,15 +93,19 @@ class TestNoiseModelling extends JdbcTestCase {
                 ["tableBuilding"   : "BUILDINGS",
                  "tableSources"   : "LW_RAILWAY",
                  "tableReceivers": "RECEIVERS",
-                 "confSkipLevening": true,
-                 "confSkipLnight": true,
-                 "confSkipLden": true])
+                 "confSkipLevening": false,
+                 "confSkipLnight": false,
+                 "confSkipLden": false])
 
         assertTrue(JDBCUtilities.tableExists(connection, "LDAY_GEOM"))
 
         def receiversLvl = sql.rows("SELECT * FROM LDAY_GEOM ORDER BY IDRECEIVER")
 
-        assertEquals(71.0,receiversLvl[0]["LEQ"] as Double,0.1)
+        String export = new Export_Table().exec(connection,
+                ["exportPath"   : "target/LDAY_GEOM_rail.geojson",
+                 "tableToExport": "LDAY_GEOM"])
+
+        assertEquals(63.47,receiversLvl[0]["LEQ"] as Double,0.1)
     }
 
     @Test

@@ -32,6 +32,10 @@ import org.locationtech.jts.geom.GeometryFactory
 
 import org.noise_planet.noisemodelling.emission.*
 import org.noise_planet.noisemodelling.pathfinder.*
+import org.noise_planet.noisemodelling.pathfinder.utils.JVMMemoryMetric
+import org.noise_planet.noisemodelling.pathfinder.utils.ReceiverStatsMetric
+import org.noise_planet.noisemodelling.pathfinder.utils.ProfilerThread
+import org.noise_planet.noisemodelling.pathfinder.utils.ProgressMetric
 import org.noise_planet.noisemodelling.propagation.*
 import org.noise_planet.noisemodelling.jdbc.*
 
@@ -149,7 +153,7 @@ inputs = [
                 description: 'Number of thread to use on the computer (INTEGER).' +
                         '</br> To set this value, look at the number of cores you have.' +
                         '</br> If it is set to 0, use the maximum number of cores available.' +
-                        '</br> </br> <b> Default value : 1 </b>',
+                        '</br> </br> <b> Default value : 0 </b>',
                 min        : 0, max: 1, type: String.class
         ],
         confDiffVertical        : [
@@ -216,9 +220,9 @@ inputs = [
                                    type       : Double.class
         ],
         confFavorableOccurrences: [
-                name       : 'Probability of occurrences table',
-                title      : 'Probability of occurrences table',
-                description: 'Table of probability of occurrences of favourable propagation conditions.' +
+                name       : 'Probability of occurrences',
+                title      : 'Probability of occurrences',
+                description: 'comma-delimited string containing the probability of occurrences of favourable propagation conditions.' +
                         'The north slice is the last array index not the first one<br/>' +
                         'Slice width are 22.5&#176;: (16 slices)<br/><ul>' +
                         '<li>The first column 22.5&#176; contain occurrences between 11.25 to 33.75 &#176;</li>' +
@@ -418,7 +422,7 @@ def exec(Connection connection, input) {
         wall_alpha = Double.valueOf(input['paramWallAlpha'])
     }
 
-    int n_thread = 1
+    int n_thread = 0
     if (input['confThreadNumber']) {
         n_thread = Integer.valueOf(input['confThreadNumber'])
     }
@@ -549,8 +553,17 @@ def exec(Connection connection, input) {
     RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1)
 
     logger.info("Start calculation... ")
+    ProfilerThread profilerThread = new ProfilerThread(new File("webapps/root/profile.csv"));
+    profilerThread.addMetric(ldenProcessing);
+    profilerThread.addMetric(new ProgressMetric(progressLogger));
+    profilerThread.addMetric(new JVMMemoryMetric());
+    profilerThread.addMetric(new ReceiverStatsMetric());
+    profilerThread.setWriteInterval(300);
+    profilerThread.setFlushInterval(300);
+    pointNoiseMap.setProfilerThread(profilerThread);
     try {
         ldenProcessing.start()
+        new Thread(profilerThread).start();
         // Iterate over computation areas
         int k = 0
         Map cells = pointNoiseMap.searchPopulatedCells(connection);
@@ -565,6 +578,7 @@ def exec(Connection connection, input) {
             pointNoiseMap.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers)
         }
     } finally {
+        profilerThread.stop();
         ldenProcessing.stop()
     }
 

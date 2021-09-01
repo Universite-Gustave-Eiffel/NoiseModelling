@@ -46,6 +46,7 @@ import java.util.*;
  */
 public class MirrorReceiverIterator implements Iterator<MirrorReceiverResult> {
     private final Coordinate receiverCoord;
+    private final List<FastObstructionTest.Wall> nearBuildingsWalls;
     private final List<ProfileBuilder.Wall> nearBuildingsWalls;
     private final LineSegment srcReceiver;
     private final double distanceLimitation;
@@ -55,14 +56,13 @@ public class MirrorReceiverIterator implements Iterator<MirrorReceiverResult> {
     private MirrorReceiverResult current = null;
     private final int maxDepth;
 
+    private MirrorReceiverIterator(Coordinate receiverCoord, List<FastObstructionTest.Wall> nearBuildingsWalls
+           , int maxDepth) {
     private MirrorReceiverIterator(Coordinate receiverCoord, List<ProfileBuilder.Wall> nearBuildingsWalls,
                                   LineSegment srcReceiver, double distanceLimitation, int maxDepth, double propagationLimitation) {
         this.receiverCoord = receiverCoord;
         this.nearBuildingsWalls = nearBuildingsWalls;
-        this.srcReceiver = srcReceiver;
-        this.distanceLimitation = distanceLimitation;
         this.wallIdentifierIt = new CrossTableIterator(maxDepth, nearBuildingsWalls.size());
-        this.propagationLimitation = propagationLimitation;
         this.maxDepth = maxDepth;
         fetchNext();
     }
@@ -181,22 +181,17 @@ public class MirrorReceiverIterator implements Iterator<MirrorReceiverResult> {
         private final LineSegment srcReceiver;
         private final double distanceLimitation;
         private final int maxDepth;
-        private final double propagationLimitation;
 
-        public It(Coordinate receiverCoord, List<ProfileBuilder.Wall> nearBuildingsWalls,
-                  LineSegment srcReceiver, double distanceLimitation, int maxDepth, double propagationLimitation) {
+        public It(Coordinate receiverCoord, List<ProfileBuilder.Wall> nearBuildingsWalls, int maxDepth) {
             this.receiverCoord = receiverCoord;
             this.nearBuildingsWalls = nearBuildingsWalls;
-            this.srcReceiver = srcReceiver;
-            this.distanceLimitation = distanceLimitation;
             this.maxDepth = maxDepth;
-            this.propagationLimitation = propagationLimitation;
         }
 
         @Override
         public java.util.Iterator<MirrorReceiverResult> iterator() {
-            return new MirrorReceiverIterator(receiverCoord, nearBuildingsWalls, srcReceiver, distanceLimitation,
-                    maxDepth,propagationLimitation);
+            return new MirrorReceiverIterator(receiverCoord, nearBuildingsWalls,
+                    maxDepth);
         }
     }
 

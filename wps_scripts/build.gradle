@@ -7,7 +7,7 @@ plugins {
 }
 
 group = 'org.orbisgis'
-version = '3.4.2-SNAPSHOT'
+version = '3.4.3'
 
 publishing {
     publications {
@@ -21,9 +21,10 @@ publishing {
     }
 }
 repositories {
-    mavenLocal()
-    flatDir {
-        dirs 'libs'
+    mavenLocal() // TODO remove this on major release
+    mavenCentral()
+    maven {
+        url "libs/"
     }
     maven {
         url "https://repo.osgeo.org/repository/release/"
@@ -40,7 +41,6 @@ repositories {
     maven {
         url "https://repo.matsim.org/repository/matsim/"
     }
-    mavenCentral()
 }
 
 test {
@@ -49,10 +49,11 @@ test {
     }
 }
 dependencies {
-    implementation name: 'org/geoserver/script/gs-script-groovy/2.15.1/gs-script-groovy-2.15.1'
-    implementation name: 'noisemodelling/noisemodelling-wps/1.0-SNAPSHOT/noisemodelling-wps-1.0-SNAPSHOT'
-    implementation('org.geotools:gt-jdbc:21.1')
-    implementation('org.geoserver.script:gs-script-core:2.15.1') {
+    implementation('org.geotools:gt-jdbc:21.1') {
+        exclude group: 'javax.media'
+    }
+    implementation('org.geoserver.script:gs-script-groovy:2.15.1') {
+        exclude group: 'org.geoscript'
         exclude group: 'no.ecc.vectortile'
         exclude group: 'javax.media'
         exclude group: 'commons-beanutils'
@@ -88,14 +89,16 @@ dependencies {
             prefer '1.15.1'
         }
     }
-    implementation group: 'org.orbisgis', name: 'noisemodelling-emission', version: '3.4.2-SNAPSHOT'
-    implementation group: 'org.orbisgis', name: 'noisemodelling-propagation', version: '3.4.2-SNAPSHOT'
-    implementation group: 'org.orbisgis', name: 'noisemodelling-pathfinder', version: '3.4.2-SNAPSHOT'
-    implementation group: 'org.orbisgis', name: 'noisemodelling-jdbc', version: '3.4.2-SNAPSHOT'
-    implementation group: 'org.orbisgis', name: 'h2gis-extension', version: '3.4.2-SNAPSHOT'
+    implementation group: 'org.orbisgis', name: 'noisemodelling-emission', version: '3.4.3'
+    implementation group: 'org.orbisgis', name: 'noisemodelling-propagation', version: '3.4.3'
+    implementation group: 'org.orbisgis', name: 'noisemodelling-pathfinder', version: '3.4.3'
+    implementation group: 'org.orbisgis', name: 'noisemodelling-jdbc', version: '3.4.3'
+    implementation group: 'org.orbisgis', name: 'h2gis-extension', version: '3.4.3'
     implementation group: 'org.openstreetmap.osmosis', name: 'osmosis-core', version: '0.48.3'
     implementation group: 'org.openstreetmap.osmosis', name: 'osmosis-pbf', version: '0.48.3'
-    implementation group: 'org.matsim', name: 'matsim', version: '11.0'
+    implementation(group: 'org.matsim', name: 'matsim', version: '11.0') {
+        exclude group: 'org.geotools'
+    }
 
     implementation 'com.opencsv:opencsv:4.0'
     implementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.25'
