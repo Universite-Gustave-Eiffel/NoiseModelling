@@ -219,7 +219,10 @@ public class EvaluateAttenuationCnossos {
      */
     public double getDeltaGround(double aGround, double deltaDifPrim, double deltaDif) {
         double attArg = 1 + (pow(10, -aGround / 20) - 1) * pow(10, -(deltaDifPrim - deltaDif) / 20);
-        if (attArg < 0) {
+        if(Double.isNaN(attArg)){
+            attArg = Double.MAX_VALUE;
+        }
+        else if (attArg < 0) {
             attArg = 0;
         }
         return -20 * Math.log10(attArg);

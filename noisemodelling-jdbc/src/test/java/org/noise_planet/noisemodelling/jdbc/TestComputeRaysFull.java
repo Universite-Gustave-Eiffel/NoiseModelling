@@ -157,7 +157,7 @@ public class TestComputeRaysFull {
                 new Coordinate(100.1, 240, 0),
                 new Coordinate(265.1, -180, 0),
                 new Coordinate(265, -180, 0),
-                new Coordinate(100, 240, 0)}), 6);
+                new Coordinate(100, 240, 0)}), 6, -1);
 
         builder.finishFeeding();
 

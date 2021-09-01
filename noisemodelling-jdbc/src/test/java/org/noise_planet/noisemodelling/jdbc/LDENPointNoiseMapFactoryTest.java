@@ -516,6 +516,7 @@ public class LDENPointNoiseMapFactoryTest {
         pointNoiseMap.setComputeHorizontalDiffraction(true);
         pointNoiseMap.setComputeVerticalDiffraction(true);
         pointNoiseMap.setSoundReflectionOrder(0);
+        //pointNoiseMap.setThreadCount(1);
 
         // Set of already processed receivers
         Set<Long> receivers = new HashSet<>();
