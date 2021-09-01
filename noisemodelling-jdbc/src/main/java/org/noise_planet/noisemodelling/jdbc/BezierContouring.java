@@ -376,20 +376,22 @@ public class BezierContouring {
                     ArrayList<Polygon> polygons = new ArrayList<>();
                     explode(entry.getValue().get(0), polygons);
                     for(Polygon polygon : polygons) {
-                        Coordinate[] extRing = generateBezierCurves(polygon.getExteriorRing().getCoordinates(), segmentTree, deltaPoints);
-                        LinearRing[] holes = new LinearRing[polygon.getNumInteriorRing()];
-                        for(int idHole = 0; idHole < holes.length; idHole++) {
-                            Coordinate[] hole = generateBezierCurves(polygon.getInteriorRingN(idHole).getCoordinates(), segmentTree, deltaPoints);
-                            holes[idHole] = factory.createLinearRing(hole);
+                        if(!polygon.isEmpty()) {
+                            Coordinate[] extRing = generateBezierCurves(polygon.getExteriorRing().getCoordinates(), segmentTree, deltaPoints);
+                            LinearRing[] holes = new LinearRing[polygon.getNumInteriorRing()];
+                            for (int idHole = 0; idHole < holes.length; idHole++) {
+                                Coordinate[] hole = generateBezierCurves(polygon.getInteriorRingN(idHole).getCoordinates(), segmentTree, deltaPoints);
+                                holes[idHole] = factory.createLinearRing(hole);
+                            }
+                            polygon = factory.createPolygon(factory.createLinearRing(extRing), holes);
+                            TopologyPreservingSimplifier simplifier = new TopologyPreservingSimplifier(polygon);
+                            simplifier.setDistanceTolerance(epsilon);
+                            Geometry res = simplifier.getResultGeometry();
+                            if (res instanceof Polygon) {
+                                polygon = (Polygon) res;
+                            }
+                            newPolygons.add(polygon);
                         }
-                        polygon = factory.createPolygon(factory.createLinearRing(extRing), holes);
-                        TopologyPreservingSimplifier simplifier = new TopologyPreservingSimplifier(polygon);
-                        simplifier.setDistanceTolerance(epsilon);
-                        Geometry res = simplifier.getResultGeometry();
-                        if(res instanceof Polygon) {
-                            polygon = (Polygon) res;
-                        }
-                        newPolygons.add(polygon);
                     }
                     entry.getValue().clear();
                     entry.getValue().addAll(newPolygons);
