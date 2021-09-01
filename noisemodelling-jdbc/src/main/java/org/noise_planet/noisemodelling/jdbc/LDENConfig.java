@@ -64,6 +64,7 @@ public class LDENConfig {
     String lwFrequencyPrepend = "LW";
 
     File sqlOutputFile;
+    Boolean dropResultsTable = true;
 
     public LDENConfig(INPUT_MODE input_mode) {
         this.input_mode = input_mode;
@@ -86,6 +87,20 @@ public class LDENConfig {
      */
     public File getSqlOutputFile() {
         return sqlOutputFile;
+    }
+
+    /**
+     * @return Drop previous results tables before inserting results
+     */
+    public Boolean getDropResultsTable() {
+        return dropResultsTable;
+    }
+
+    /**
+     * @param dropResultsTable Drop previous results tables before inserting results
+     */
+    public void setDropResultsTable(Boolean dropResultsTable) {
+        this.dropResultsTable = dropResultsTable;
     }
 
     /**

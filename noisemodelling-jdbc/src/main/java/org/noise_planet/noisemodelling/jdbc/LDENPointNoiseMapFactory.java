@@ -237,7 +237,6 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
         boolean started = false;
         BufferedWriter o;
         WKTWriter wktWriter = new WKTWriter(3);
-        boolean dropTable = true;
 
         public TableWriter(Connection connection, LDENConfig ldenConfig, LDENComputeRaysOut.LdenData ldenData) {
             this.connection = connection;
@@ -382,7 +381,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
 
         public void init() throws SQLException, IOException {
             if(ldenConfig.exportRays) {
-                if(dropTable) {
+                if(ldenConfig.dropResultsTable) {
                     String q = String.format("DROP TABLE IF EXISTS %s;", ldenConfig.raysTable);
                     processQuery(q);
                 }
@@ -390,7 +389,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
                 processQuery(q);
             }
             if(ldenConfig.computeLDay) {
-                if(dropTable) {
+                if(ldenConfig.dropResultsTable) {
                     String q = String.format("DROP TABLE IF EXISTS %s;", ldenConfig.lDayTable);
                     processQuery(q);
                 }
@@ -398,7 +397,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
                 processQuery(q);
             }
             if(ldenConfig.computeLEvening) {
-                if(dropTable) {
+                if(ldenConfig.dropResultsTable) {
                     String q = String.format("DROP TABLE IF EXISTS %s;", ldenConfig.lEveningTable);
                     processQuery(q);
                 }
@@ -406,7 +405,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
                 processQuery(q);
             }
             if(ldenConfig.computeLNight) {
-                if(dropTable) {
+                if(ldenConfig.dropResultsTable) {
                     String q = String.format("DROP TABLE IF EXISTS %s;", ldenConfig.lNightTable);
                     processQuery(q);
                 }
@@ -414,7 +413,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
                 processQuery(q);
             }
             if(ldenConfig.computeLDEN) {
-                if(dropTable) {
+                if(ldenConfig.dropResultsTable) {
                     String q = String.format("DROP TABLE IF EXISTS %s;", ldenConfig.lDenTable);
                     processQuery(q);
                 }
