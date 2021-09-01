@@ -23,6 +23,8 @@ package org.noise_planet.noisemodelling.jdbc;
 
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 
+import java.io.File;
+
 /**
  * Configuration of NoiseModelling computation based on database data using standard Lden outputs
  */
@@ -61,6 +63,8 @@ public class LDENConfig {
 
     String lwFrequencyPrepend = "LW";
 
+    File sqlOutputFile;
+
     public LDENConfig(INPUT_MODE input_mode) {
         this.input_mode = input_mode;
     }
@@ -75,6 +79,20 @@ public class LDENConfig {
 
     public void setLwFrequencyPrepend(String lwFrequencyPrepend) {
         this.lwFrequencyPrepend = lwFrequencyPrepend;
+    }
+
+    /**
+     * @return The filePath of results outputs as sql commands.
+     */
+    public File getSqlOutputFile() {
+        return sqlOutputFile;
+    }
+
+    /**
+     * @param sqlOutputFile
+     */
+    public void setSqlOutputFile(File sqlOutputFile) {
+        this.sqlOutputFile = sqlOutputFile;
     }
 
     public void setPropagationProcessPathData(PropagationProcessPathData propagationProcessPathData) {

@@ -23,8 +23,10 @@
 package org.noise_planet.noisemodelling.jdbc;
 
 import org.h2gis.utilities.JDBCUtilities;
+import org.locationtech.jts.io.WKTWriter;
 import org.noise_planet.noisemodelling.emission.DirectionAttributes;
 import org.noise_planet.noisemodelling.emission.RailWayLW;
+import org.noise_planet.noisemodelling.jdbc.utils.StringPreparedStatements;
 import org.noise_planet.noisemodelling.pathfinder.*;
 import org.noise_planet.noisemodelling.pathfinder.utils.ProfilerThread;
 import org.noise_planet.noisemodelling.propagation.*;
@@ -32,6 +34,10 @@ import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -223,14 +229,19 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
 
     private static class TableWriter implements Runnable {
         Logger LOGGER = LoggerFactory.getLogger(TableWriter.class);
+        File sqlFilePath;
         private Connection connection;
         LDENConfig ldenConfig;
         LDENComputeRaysOut.LdenData ldenData;
         double[] a_weighting;
         boolean started = false;
+        BufferedWriter o;
+        WKTWriter wktWriter = new WKTWriter(3);
+        boolean dropTable = true;
 
         public TableWriter(Connection connection, LDENConfig ldenConfig, LDENComputeRaysOut.LdenData ldenData) {
             this.connection = connection;
+            this.sqlFilePath = ldenConfig.sqlOutputFile;
             this.ldenConfig = ldenConfig;
             this.ldenData = ldenData;
             a_weighting = new double[ldenConfig.propagationProcessPathData.freq_lvl_a_weighting.size()];
@@ -242,7 +253,12 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
         void processRaysStack(ConcurrentLinkedDeque<PropagationPath> stack) throws SQLException {
             String query = "INSERT INTO " + ldenConfig.raysTable + "(the_geom , IDRECEIVER , IDSOURCE ) VALUES (?, ?, ?)";
             // PK, GEOM, ID_RECEIVER, ID_SOURCE
-            PreparedStatement ps = connection.prepareStatement(query);
+            PreparedStatement ps;
+            if(sqlFilePath == null) {
+                ps = connection.prepareStatement(query);
+            } else {
+                ps = new StringPreparedStatements(o, query);
+            }
             int batchSize = 0;
             while(!stack.isEmpty()) {
                 PropagationPath row = stack.pop();
@@ -282,7 +298,12 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
                 query.append(", ?"); // freq value
             }
             query.append(", ?, ?);"); // laeq, leq
-            PreparedStatement ps = connection.prepareStatement(query.toString());
+            PreparedStatement ps;
+            if(sqlFilePath == null) {
+                ps = connection.prepareStatement(query.toString());
+            } else {
+                ps = new StringPreparedStatements(o, query.toString());
+            }
             int batchSize = 0;
             while(!stack.isEmpty()) {
                 ComputeRaysOutAttenuation.VerticeSL row = stack.pop();
@@ -349,73 +370,134 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
             return sb.toString();
         }
 
+        private void processQuery(String query) throws SQLException, IOException {
+            if(sqlFilePath == null) {
+                try(Statement sql = connection.createStatement()) {
+                    sql.execute(query);
+                }
+            } else {
+                o.write(query+"\n");
+            }
+        }
+
+        public void init() throws SQLException, IOException {
+            if(ldenConfig.exportRays) {
+                if(dropTable) {
+                    String q = String.format("DROP TABLE IF EXISTS %s;", ldenConfig.raysTable);
+                    processQuery(q);
+                }
+                String q = "CREATE TABLE IF NOT EXISTS "+ldenConfig.raysTable+"(pk bigint auto_increment, the_geom geometry, IDRECEIVER bigint NOT NULL, IDSOURCE bigint NOT NULL);";
+                processQuery(q);
+            }
+            if(ldenConfig.computeLDay) {
+                if(dropTable) {
+                    String q = String.format("DROP TABLE IF EXISTS %s;", ldenConfig.lDayTable);
+                    processQuery(q);
+                }
+                String q = forgeCreateTable(ldenConfig.lDayTable);
+                processQuery(q);
+            }
+            if(ldenConfig.computeLEvening) {
+                if(dropTable) {
+                    String q = String.format("DROP TABLE IF EXISTS %s;", ldenConfig.lEveningTable);
+                    processQuery(q);
+                }
+                String q = forgeCreateTable(ldenConfig.lEveningTable);
+                processQuery(q);
+            }
+            if(ldenConfig.computeLNight) {
+                if(dropTable) {
+                    String q = String.format("DROP TABLE IF EXISTS %s;", ldenConfig.lNightTable);
+                    processQuery(q);
+                }
+                String q = forgeCreateTable(ldenConfig.lNightTable);
+                processQuery(q);
+            }
+            if(ldenConfig.computeLDEN) {
+                if(dropTable) {
+                    String q = String.format("DROP TABLE IF EXISTS %s;", ldenConfig.lDenTable);
+                    processQuery(q);
+                }
+                String q = forgeCreateTable(ldenConfig.lDenTable);
+                processQuery(q);
+            }
+        }
+
+        void mainLoop() throws SQLException, IOException {
+            while (!ldenConfig.aborted) {
+                started = true;
+                try {
+                    if(!ldenData.lDayLevels.isEmpty()) {
+                        processStack(ldenConfig.lDayTable, ldenData.lDayLevels);
+                    } else if(!ldenData.lEveningLevels.isEmpty()) {
+                        processStack(ldenConfig.lEveningTable, ldenData.lEveningLevels);
+                    } else if(!ldenData.lNightLevels.isEmpty()) {
+                        processStack(ldenConfig.lNightTable, ldenData.lNightLevels);
+                    } else if(!ldenData.lDenLevels.isEmpty()) {
+                        processStack(ldenConfig.lDenTable, ldenData.lDenLevels);
+                    } else if(!ldenData.rays.isEmpty()) {
+                        processRaysStack(ldenData.rays);
+                    } else {
+                        if(ldenConfig.exitWhenDone) {
+                            break;
+                        } else {
+                            Thread.sleep(50);
+                        }
+                    }
+                } catch (InterruptedException ex) {
+                    // ignore
+                    break;
+                }
+            }
+        }
+
+        void createKeys()  throws SQLException, IOException {
+            // Set primary keys
+            LOGGER.info("Write done, apply primary keys");
+            if(ldenConfig.computeLDay) {
+                processQuery(forgePkTable(ldenConfig.lDayTable));
+            }
+            if(ldenConfig.computeLEvening) {
+                processQuery(forgePkTable(ldenConfig.lEveningTable));
+            }
+            if(ldenConfig.computeLNight) {
+                processQuery(forgePkTable(ldenConfig.lNightTable));
+            }
+            if(ldenConfig.computeLDEN) {
+                processQuery(forgePkTable(ldenConfig.lDenTable));
+            }
+        }
+
         @Override
         public void run() {
             // Drop and create tables
-            try(Statement sql = connection.createStatement()) {
-                if(ldenConfig.exportRays) {
-                    sql.execute(String.format("DROP TABLE IF EXISTS %s", ldenConfig.raysTable));
-                    sql.execute("CREATE TABLE "+ldenConfig.raysTable+"(pk bigint auto_increment, the_geom geometry, IDRECEIVER bigint NOT NULL, IDSOURCE bigint NOT NULL)");
+            if(sqlFilePath == null) {
+                try {
+                    init();
+                    mainLoop();
+                    createKeys();
+                } catch (SQLException e) {
+                    LOGGER.error("SQL Writer exception", e);
+                    LOGGER.error(e.getLocalizedMessage(), e.getNextException());
+                    ldenConfig.aborted = true;
+                } catch (IOException e) {
+                    LOGGER.error("File Writer exception", e);
+                    ldenConfig.aborted = true;
                 }
-                if(ldenConfig.computeLDay) {
-                    sql.execute(String.format("DROP TABLE IF EXISTS %s", ldenConfig.lDayTable));
-                    sql.execute(forgeCreateTable(ldenConfig.lDayTable));
+            } else {
+                try(BufferedWriter bw = new BufferedWriter(new FileWriter(sqlFilePath))) {
+                    o = bw;
+                    init();
+                    mainLoop();
+                    createKeys();
+                } catch (SQLException e) {
+                    LOGGER.error("SQL Writer exception", e);
+                    LOGGER.error(e.getLocalizedMessage(), e.getNextException());
+                    ldenConfig.aborted = true;
+                } catch (IOException e) {
+                    LOGGER.error("File Writer exception", e);
+                    ldenConfig.aborted = true;
                 }
-                if(ldenConfig.computeLEvening) {
-                    sql.execute(String.format("DROP TABLE IF EXISTS %s", ldenConfig.lEveningTable));
-                    sql.execute(forgeCreateTable(ldenConfig.lEveningTable));
-                }
-                if(ldenConfig.computeLNight) {
-                    sql.execute(String.format("DROP TABLE IF EXISTS %s", ldenConfig.lNightTable));
-                    sql.execute(forgeCreateTable(ldenConfig.lNightTable));
-                }
-                if(ldenConfig.computeLDEN) {
-                    sql.execute(String.format("DROP TABLE IF EXISTS %s", ldenConfig.lDenTable));
-                    sql.execute(forgeCreateTable(ldenConfig.lDenTable));
-                }
-                while (!ldenConfig.aborted) {
-                    started = true;
-                    try {
-                        if(!ldenData.lDayLevels.isEmpty()) {
-                            processStack(ldenConfig.lDayTable, ldenData.lDayLevels);
-                        } else if(!ldenData.lEveningLevels.isEmpty()) {
-                            processStack(ldenConfig.lEveningTable, ldenData.lEveningLevels);
-                        } else if(!ldenData.lNightLevels.isEmpty()) {
-                            processStack(ldenConfig.lNightTable, ldenData.lNightLevels);
-                        } else if(!ldenData.lDenLevels.isEmpty()) {
-                            processStack(ldenConfig.lDenTable, ldenData.lDenLevels);
-                        } else if(!ldenData.rays.isEmpty()) {
-                            processRaysStack(ldenData.rays);
-                        } else {
-                            if(ldenConfig.exitWhenDone) {
-                                break;
-                            } else {
-                                Thread.sleep(50);
-                            }
-                        }
-                    } catch (InterruptedException ex) {
-                        // ignore
-                        break;
-                    }
-                }
-                // Set primary keys
-                LOGGER.info("Write done, apply primary keys");
-                if(ldenConfig.computeLDay) {
-                    sql.execute(forgePkTable(ldenConfig.lDayTable));
-                }
-                if(ldenConfig.computeLEvening) {
-                    sql.execute(forgePkTable(ldenConfig.lEveningTable));
-                }
-                if(ldenConfig.computeLNight) {
-                    sql.execute(forgePkTable(ldenConfig.lNightTable));
-                }
-                if(ldenConfig.computeLDEN) {
-                    sql.execute(forgePkTable(ldenConfig.lDenTable));
-                }
-            } catch (SQLException e) {
-                LOGGER.error("SQL Writer exception", e);
-                LOGGER.error(e.getLocalizedMessage(), e.getNextException());
-                ldenConfig.aborted = true;
             }
             // LOGGER.info("Exit TableWriter");
         }
