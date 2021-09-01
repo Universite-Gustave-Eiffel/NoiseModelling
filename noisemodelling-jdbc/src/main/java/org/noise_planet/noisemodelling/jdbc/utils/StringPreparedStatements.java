@@ -14,6 +14,9 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * This class implements PreparedStatement in order to output to a File instead of a connection
+ */
 public class StringPreparedStatements implements PreparedStatement {
     BufferedWriter w;
     String query;

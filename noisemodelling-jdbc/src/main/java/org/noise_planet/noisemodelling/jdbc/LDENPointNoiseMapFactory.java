@@ -236,7 +236,6 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
         double[] a_weighting;
         boolean started = false;
         BufferedWriter o;
-        WKTWriter wktWriter = new WKTWriter(3);
 
         public TableWriter(Connection connection, LDENConfig ldenConfig, LDENComputeRaysOut.LdenData ldenData) {
             this.connection = connection;
@@ -250,7 +249,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
         }
 
         void processRaysStack(ConcurrentLinkedDeque<PropagationPath> stack) throws SQLException {
-            String query = "INSERT INTO " + ldenConfig.raysTable + "(the_geom , IDRECEIVER , IDSOURCE ) VALUES (?, ?, ?)";
+            String query = "INSERT INTO " + ldenConfig.raysTable + "(the_geom , IDRECEIVER , IDSOURCE ) VALUES (?, ?, ?);";
             // PK, GEOM, ID_RECEIVER, ID_SOURCE
             PreparedStatement ps;
             if(sqlFilePath == null) {
@@ -354,7 +353,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
                 sb.append(" numeric(5, 2)");
             }
             sb.append(", LAEQ numeric(5, 2), LEQ numeric(5, 2)");
-            sb.append(")");
+            sb.append(");");
             return sb.toString();
         }
 
@@ -362,9 +361,9 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
             StringBuilder sb = new StringBuilder("alter table ");
             sb.append(tableName);
             if (!ldenConfig.mergeSources) {
-                sb.append(" ADD PRIMARY KEY(IDRECEIVER, IDSOURCE)");
+                sb.append(" ADD PRIMARY KEY(IDRECEIVER, IDSOURCE);");
             } else {
-                sb.append(" ADD PRIMARY KEY(IDRECEIVER)");
+                sb.append(" ADD PRIMARY KEY(IDRECEIVER);");
             }
             return sb.toString();
         }
