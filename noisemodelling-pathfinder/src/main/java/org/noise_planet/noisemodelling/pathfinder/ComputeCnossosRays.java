@@ -270,11 +270,11 @@ public class ComputeCnossosRays {
         //If the field is free, simplify the computation
         boolean freeField = cutProfile.isFreeField();
         if(freeField) {
-            propagationPaths.add(computeFreeField(cutProfile, data.gS));
+            propagationPaths.add(computeFreeField(cutProfile));
         }
         else {
             if(data.isComputeDiffraction()) {
-                PropagationPath freePath = computeFreeField(cutProfile, data.gS);
+                PropagationPath freePath = computeFreeField(cutProfile);
                 if (data.isComputeVerticalDiffraction()) {
                     PropagationPath propagationPath = computeVerticalDiffraction(cutProfile, data.gS);
                     propagationPath.getSRSegmentList().addAll(freePath.getSRSegmentList());
@@ -359,10 +359,9 @@ public class ComputeCnossosRays {
     /**
      * Compute the propagation in case of free field.
      * @param cutProfile CutProfile containing all the data for propagation computation.
-     * @param gs         Source factor absorption coefficient.
      * @return The calculated propagation path.
      */
-    public PropagationPath computeFreeField(ProfileBuilder.CutProfile cutProfile, double gs) {
+    public PropagationPath computeFreeField(ProfileBuilder.CutProfile cutProfile) {
         ProfileBuilder.CutPoint src = cutProfile.getSource();
         ProfileBuilder.CutPoint rcv = cutProfile.getReceiver();
 
@@ -374,7 +373,9 @@ public class ComputeCnossosRays {
         points.add(new PointPath(src, PointPath.POINT_TYPE.SRCE, src.getGroundCoef(), data.profileBuilder.getTopoZ(src.getCoordinate())));
         points.add(new PointPath(rcv, PointPath.POINT_TYPE.RECV, rcv.getGroundCoef(), data.profileBuilder.getTopoZ(rcv.getCoordinate())));
         points.get(0).buildingId = src.getBuildingId();
+        points.get(0).wallId = src.getWallId();
         points.get(1).buildingId = rcv.getBuildingId();
+        points.get(1).wallId = rcv.getWallId();
 
         return new PropagationPath(false, points, segments, segments);
     }
@@ -406,20 +407,20 @@ public class ComputeCnossosRays {
         if (!coordinates.isEmpty()) {
             if (coordinates.size() > 2) {
                 ProfileBuilder.CutProfile profile = data.profileBuilder.getProfile(coordinates.get(0), coordinates.get(1), data.gS);
-                freePath = computeFreeField(profile, data.gS);
+                freePath = computeFreeField(profile);
                 freePath.getPointList().get(1).setType(PointPath.POINT_TYPE.DIFV);
                 propagationPath.setPointList(freePath.getPointList());
                 propagationPath.setSegmentList(freePath.getSegmentList());
                 int j;
                 for (j = 1; j < coordinates.size() - 2; j++) {
                     profile = data.profileBuilder.getProfile(coordinates.get(j), coordinates.get(j+1), data.gS);
-                    freePath = computeFreeField(profile, data.gS);
+                    freePath = computeFreeField(profile);
                     freePath.getPointList().get(1).setType(PointPath.POINT_TYPE.DIFV);
                     propagationPath.getPointList().add(freePath.getPointList().get(1));
                     propagationPath.getSegmentList().addAll(freePath.getSegmentList());
                 }
                 profile = data.profileBuilder.getProfile(coordinates.get(j), coordinates.get(j+1), data.gS);
-                freePath = computeFreeField(profile, data.gS);
+                freePath = computeFreeField(profile);
                 propagationPath.getPointList().add(freePath.getPointList().get(1));
                 propagationPath.getSegmentList().addAll(freePath.getSegmentList());
             }
@@ -693,7 +694,7 @@ public class ComputeCnossosRays {
         }
 
         for (int i = 0; i < pts.size() - 1; i++) {
-            PropagationPath free = computeFreeField(data.profileBuilder.getProfile(pts.get(i), pts.get(i+1)), gs);
+            PropagationPath free = computeFreeField(data.profileBuilder.getProfile(pts.get(i), pts.get(i+1)));
             if(i==0) {
                 points.add(free.getPointList().get(0));
             }
@@ -705,6 +706,10 @@ public class ComputeCnossosRays {
                 if(pt.buildingId != -1) {
                     pt.alphaWall = data.profileBuilder.getBuilding(pt.buildingId).getAlphas();
                     pt.setBuildingHeight(data.profileBuilder.getBuilding(pt.buildingId).getHeight());
+                }
+                else if(pt.wallId != -1) {
+                    pt.alphaWall = data.profileBuilder.getWall(pt.wallId).getAlphas();
+                    pt.setBuildingHeight(data.profileBuilder.getWall(pt.wallId).getHeight());
                 }
             }
         }
@@ -728,10 +733,6 @@ public class ComputeCnossosRays {
                                                          Coordinate rcvCoord, LineSegment srcRcvLine, int depth, MirrorReceiverResult parent) {
         List<MirrorReceiverResult> results = new ArrayList<>();
         ProfileBuilder.CutProfile profile = data.profileBuilder.getProfile(srcCoord, rcvCoord);
-        List<ProfileBuilder.Wall> buildWallsFromRtree = profile.getCutPoints().stream()
-                .filter(cutPoint -> cutPoint.getType() == ProfileBuilder.IntersectionType.BUILDING)
-                .map(cutPoint -> data.profileBuilder.getProcessedWalls().get((cutPoint.getId())))
-                .collect(Collectors.toList());
         for(ProfileBuilder.Wall wall : buildWalls) {
             if(parent != null && buildWalls.indexOf(wall) == parent.getWallId()) {
                 continue;
@@ -910,7 +911,8 @@ public class ComputeCnossosRays {
                 for (int idPt = 0; idPt < rayPath.size() - 1; idPt++) {
                     Coordinate firstPt = rayPath.get(idPt).getReceiverPos();
                     MirrorReceiverResult refl = rayPath.get(idPt + 1);
-                    reflPoint = new PointPath(refl.getReceiverPos(), 0, 1, data.profileBuilder.getBuilding(refl.getBuildingId()).getAlphas(), refl.getBuildingId(), PointPath.POINT_TYPE.REFL);
+                    reflPoint = new PointPath(refl.getReceiverPos(), 0, 1, data.profileBuilder.getBuilding(refl.getBuildingId()).getAlphas(), PointPath.POINT_TYPE.REFL);
+                    reflPoint.setBuildingId(refl.getBuildingId());
                     points.add(reflPoint);
                     segments.add(new SegmentPath(1, new Vector3D(firstPt), refl.getReceiverPos()));
                 }

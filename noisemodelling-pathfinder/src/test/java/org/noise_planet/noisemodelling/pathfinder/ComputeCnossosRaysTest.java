@@ -23,8 +23,7 @@ public class ComputeCnossosRaysTest {
     @Test
     public void TC01() {
         //Profile building
-        ProfileBuilder profileBuilder = new ProfileBuilder();
-        profileBuilder.finishFeeding();
+        ProfileBuilder profileBuilder = new ProfileBuilder().finishFeeding();
 
         //Propagation data building
         CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
@@ -59,8 +58,7 @@ public class ComputeCnossosRaysTest {
     @Test
     public void TC02() {
         //Profile building
-        ProfileBuilder profileBuilder = new ProfileBuilder();
-        profileBuilder.finishFeeding();
+        ProfileBuilder profileBuilder = new ProfileBuilder().finishFeeding();
 
         //Propagation data building
         CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
@@ -95,8 +93,7 @@ public class ComputeCnossosRaysTest {
     @Test
     public void TC03() {
         //Profile building
-        ProfileBuilder profileBuilder = new ProfileBuilder();
-        profileBuilder.finishFeeding();
+        ProfileBuilder profileBuilder = new ProfileBuilder().finishFeeding();
 
         //Propagation data building
         CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
@@ -131,12 +128,12 @@ public class ComputeCnossosRaysTest {
     @Test
     public void TC04() {
         //Profile building
-        ProfileBuilder profileBuilder = new ProfileBuilder();
-        //Ground effects
-        profileBuilder.addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.2);
-        profileBuilder.addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5);
-        profileBuilder.addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.9);
-        profileBuilder.finishFeeding();
+        ProfileBuilder profileBuilder = new ProfileBuilder()
+                //Ground effects
+                .addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.2)
+                .addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5)
+                .addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.9)
+                .finishFeeding();
 
         //Propagation data building
         CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
@@ -172,22 +169,22 @@ public class ComputeCnossosRaysTest {
     @Test
     public void TC05() {
         //Profile building
-        ProfileBuilder profileBuilder = new ProfileBuilder();
+        ProfileBuilder profileBuilder = new ProfileBuilder()
         //Ground effects
-        profileBuilder.addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.9);
-        profileBuilder.addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5);
-        profileBuilder.addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.2);
+                .addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.9)
+                .addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5)
+                .addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.2)
         //Topography
-        profileBuilder.addTopographicLine(0, 80, 0, 225, 80, 0);
-        profileBuilder.addTopographicLine(225, 80, 0, 225, -20, 0);
-        profileBuilder.addTopographicLine(225, -20, 0, 0, -20, 0);
-        profileBuilder.addTopographicLine(0, -20, 0, 0, 80, 0);
-        profileBuilder.addTopographicLine(120, -20, 0, 120, 80, 0);
-        profileBuilder.addTopographicLine(185, -5, 10, 205, -5, 10);
-        profileBuilder.addTopographicLine(205, -5, 10, 205, 75, 0);
-        profileBuilder.addTopographicLine(205, 75, 0, 185, 75, 0);
-        profileBuilder.addTopographicLine(185, 75, 0, 185, -5, 0);
-        profileBuilder.finishFeeding();
+                .addTopographicLine(0, 80, 0, 225, 80, 0)
+                .addTopographicLine(225, 80, 0, 225, -20, 0)
+                .addTopographicLine(225, -20, 0, 0, -20, 0)
+                .addTopographicLine(0, -20, 0, 0, 80, 0)
+                .addTopographicLine(120, -20, 0, 120, 80, 0)
+                .addTopographicLine(185, -5, 10, 205, -5, 10)
+                .addTopographicLine(205, -5, 10, 205, 75, 0)
+                .addTopographicLine(205, 75, 0, 185, 75, 0)
+                .addTopographicLine(185, 75, 0, 185, -5, 0)
+                .finishFeeding();
 
         //Propagation data building
         CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
@@ -221,22 +218,22 @@ public class ComputeCnossosRaysTest {
     @Test
     public void TC06() {
         //Profile building
-        ProfileBuilder profileBuilder = new ProfileBuilder();
+        ProfileBuilder profileBuilder = new ProfileBuilder()
         //Ground effects
-        profileBuilder.addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.9);
-        profileBuilder.addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5);
-        profileBuilder.addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.2);
+                .addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.9)
+                .addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5)
+                .addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.2)
         //Topography
-        profileBuilder.addTopographicLine(0, 80, 0, 225, 80, 0);
-        profileBuilder.addTopographicLine(225, 80, 0, 225, -20, 0);
-        profileBuilder.addTopographicLine(225, -20, 0, 0, -20, 0);
-        profileBuilder.addTopographicLine(0, -20, 0, 0, 80, 0);
-        profileBuilder.addTopographicLine(120, -20, 0, 120, 80, 0);
-        profileBuilder.addTopographicLine(185, -5, 10, 205, -5, 10);
-        profileBuilder.addTopographicLine(205, -5, 10, 205, 75, 0);
-        profileBuilder.addTopographicLine(205, 75, 0, 185, 75, 0);
-        profileBuilder.addTopographicLine(185, 75, 0, 185, -5, 0);
-        profileBuilder.finishFeeding();
+                .addTopographicLine(0, 80, 0, 225, 80, 0)
+                .addTopographicLine(225, 80, 0, 225, -20, 0)
+                .addTopographicLine(225, -20, 0, 0, -20, 0)
+                .addTopographicLine(0, -20, 0, 0, 80, 0)
+                .addTopographicLine(120, -20, 0, 120, 80, 0)
+                .addTopographicLine(185, -5, 10, 205, -5, 10)
+                .addTopographicLine(205, -5, 10, 205, 75, 0)
+                .addTopographicLine(205, 75, 0, 185, 75, 0)
+                .addTopographicLine(185, 75, 0, 185, -5, 0)
+                .finishFeeding();
 
         //Propagation data building
         CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
@@ -264,7 +261,6 @@ public class ComputeCnossosRaysTest {
         assertPaths(pts, gPaths, propDataOut.getPropagationPaths());
     }
 
-
     /**
      * Test TC07 -- Flat ground with spatially varying acoustic properties and long barrier
      */
@@ -274,21 +270,19 @@ public class ComputeCnossosRaysTest {
         GeometryFactory factory = new GeometryFactory();
 
         //Create profile builder
-        ProfileBuilder profileBuilder = new ProfileBuilder();
+        ProfileBuilder profileBuilder = new ProfileBuilder()
 
         // Add building
-        profileBuilder.addBuilding(factory.createPolygon(new Coordinate[]{
-                new Coordinate(100, 240, 0),
-                new Coordinate(100.1, 240, 0),
-                new Coordinate(265.1, -180, 0),
-                new Coordinate(265, -180, 0),
-                new Coordinate(100, 240, 0)}), 6, -1);
+                .addWalls(new Coordinate[]{
+                        new Coordinate(100, 240, 0),
+                        new Coordinate(265, -180, 0)},
+                        6, 1)
+        // Add ground effect
+                .addGroundEffect(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9)
+                .addGroundEffect(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5)
+                .addGroundEffect(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2)
 
-        profileBuilder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9);
-        profileBuilder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5);
-        profileBuilder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2);
-
-        profileBuilder.finishFeeding();
+                .finishFeeding();
 
 
         //Propagation data building
@@ -310,7 +304,7 @@ public class ComputeCnossosRaysTest {
 
         //Expected values
         double[][][] pts = new double[][][]{
-                {{10.0, 10.0, 1.0}, {200.0, 50.0, 4.0}} //Path 1 : direct
+                {{10.0, 10.0, 1.0}, {176.58, 45.07, 6.0}, {200.0, 50.0, 4.0}} //Path 1 : direct
         };
         double[][] gPaths = new double[][]{
                 {0.55,0.2} //Path 1 : direct
@@ -318,13 +312,16 @@ public class ComputeCnossosRaysTest {
 
         //Assertion
         assertPaths(pts, gPaths, propDataOut.getPropagationPaths());
-
-
     }
 
 
-
-
+    /**
+     * Assertions for a list of {@link PropagationPath}.
+     * @param expectedPts    Array of arrays of array of expected coordinates (xyz) of points of paths. To each path
+     *                       corresponds an array of points. To each point corresponds an array of coordinates (xyz).
+     * @param expectedGPaths Array of arrays of gPaths values. To each path corresponds an arrays of gPath values.
+     * @param actualPaths    Computed arrays of {@link PropagationPath}.
+     */
     private static void assertPaths(double[][][] expectedPts, double[][] expectedGPaths, List<PropagationPath> actualPaths) {
         assertEquals("Expected path count is different than actual path count.", expectedPts.length, actualPaths.size());
         for(int i=0; i<expectedPts.length; i++) {
@@ -335,7 +332,7 @@ public class ComputeCnossosRaysTest {
                 assertEquals("Path "+i+" point "+j+" coord Y", expectedPts[i][j][1], point.coordinate.y, DELTA_COORDS);
                 assertEquals("Path "+i+" point "+j+" coord Z", expectedPts[i][j][2], point.coordinate.z, DELTA_COORDS);
             }
-            assertEquals("Expected path segments count is different than actual path segment count.", expectedGPaths[i].length, path.getSegmentList().size());
+            assertEquals("Expected path["+i+"] segments count is different than actual path segment count.", expectedGPaths[i].length, path.getSegmentList().size());
             for(int j=0; j<expectedGPaths[i].length; j++) {
                 assertEquals("Path " + i + " g path " + j, expectedGPaths[i][j], path.getSegmentList().get(j).gPath, DELTA_G_PATH);
             }

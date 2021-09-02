@@ -51,7 +51,7 @@ public class ProfileBuilderTest {
     public void finishBuildingFeedingTest() throws ParseException {
         ProfileBuilder profileBuilder = new ProfileBuilder(3, 3, 3, 2);
         profileBuilder.addBuilding(READER.read("POLYGON((1 1,5 1,5 5,1 5,1 1))"), 10);
-        assertTrue(profileBuilder.finishFeeding());
+        assertNotNull(profileBuilder.finishFeeding());
         profileBuilder.addBuilding(READER.read("POLYGON((10 10,15 10,15 15,10 15,10 10))"), 23);
         profileBuilder.addBuilding(READER.read("POLYGON((6 8,8 10,8 4,6 8))"), 56);
 
@@ -113,7 +113,7 @@ public class ProfileBuilderTest {
         profileBuilder.addTopographicPoint(new Coordinate(7, 9, 2.5));
         profileBuilder.addTopographicPoint(new Coordinate(2, 4, 2.5));
         profileBuilder.addTopographicPoint(new Coordinate(6, 1, 3.0));
-        assertTrue(profileBuilder.finishFeeding());
+        assertNotNull(profileBuilder.finishFeeding());
         profileBuilder.addTopographicPoint(new Coordinate(4, 4, 3.0));
         profileBuilder.addTopographicPoint(new Coordinate(2, 5, 3.0));
         profileBuilder.addTopographicPoint(new Coordinate(1, 9, 2.0));
@@ -176,7 +176,7 @@ public class ProfileBuilderTest {
     public void groundBuildingFeedingTest() throws ParseException {
         ProfileBuilder profileBuilder = new ProfileBuilder(3, 3, 3, 2);
         profileBuilder.addGroundEffect(READER.read("POLYGON((-1 7, -0.5 8, 0 8.5, 1 9, 1.5 7, 2 6, 2.5 7, 3 9, 5.5 8.5, 7 7, 7 6, 5 5, 5 4, 4 2, 2 3, 1 5, 0 6, -1 7))"), 0.5);
-        assertTrue(profileBuilder.finishFeeding());
+        assertNotNull(profileBuilder.finishFeeding());
         profileBuilder.addGroundEffect(READER.read("POLYGON((8 1, 7 2, 7 4.5, 8 5, 9 4.5, 10 3.5, 9.5 2, 8 1))"), 0.25);
 
         assertEquals(1, profileBuilder.getGroundEffects().size());

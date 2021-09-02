@@ -45,6 +45,8 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.noise_planet.noisemodelling.pathfinder.ProfileBuilder.IntersectionType.TOPOGRAPHY;
+
 //TODO use NaN for building height
 //TODO fix wall references id in order to use also real wall database key
 //TODO check how the wall alpha are set to the cut point
@@ -142,7 +144,7 @@ public class ProfileBuilder {
      * Add the given {@link Geometry} footprint.
      * @param building Building.
      */
-    public Building addBuilding(Building building) {
+    public ProfileBuilder addBuilding(Building building) {
         if(building.poly == null) {
             LOGGER.error("Cannot add a building with null geometry.");
         }
@@ -155,7 +157,7 @@ public class ProfileBuilder {
             }
             buildings.add(building);
             buildingTree.insert(building.poly.getEnvelopeInternal(), buildings.size());
-            return building;
+            return this;
         }
         else{
             LOGGER.warn("Cannot add building, feeding is finished.");
@@ -167,8 +169,25 @@ public class ProfileBuilder {
      * Add the given {@link Geometry} footprint.
      * @param geom   Building footprint.
      */
-    public Building addBuilding(Geometry geom) {
+    public ProfileBuilder addBuilding(Geometry geom) {
         return addBuilding(geom, -1);
+    }
+
+    /**
+     * Add the given {@link Geometry} footprint.
+     * @param coords Building footprint coordinates.
+     */
+    public ProfileBuilder addBuilding(Coordinate[] coords) {
+        Coordinate[] polyCoords;
+        int l = coords.length;
+        if(coords[0] != coords[l-1]) {
+            polyCoords = Arrays.copyOf(coords, l+1);
+            polyCoords[l-1] = new Coordinate(coords[0]);
+        }
+        else {
+            polyCoords = coords;
+        }
+        return addBuilding(FACTORY.createPolygon(polyCoords), -1);
     }
 
     /**
@@ -176,8 +195,26 @@ public class ProfileBuilder {
      * @param geom   Building footprint.
      * @param height Building height.
      */
-    public Building addBuilding(Geometry geom, double height) {
+    public ProfileBuilder addBuilding(Geometry geom, double height) {
         return addBuilding(geom, height, new ArrayList<>());
+    }
+
+    /**
+     * Add the given {@link Geometry} footprint.
+     * @param coords Building footprint coordinates.
+     * @param height Building height.
+     */
+    public ProfileBuilder addBuilding(Coordinate[] coords, double height) {
+        Coordinate[] polyCoords;
+        int l = coords.length;
+        if(coords[0] != coords[l-1]) {
+            polyCoords = Arrays.copyOf(coords, l+1);
+            polyCoords[l-1] = new Coordinate(coords[0]);
+        }
+        else {
+            polyCoords = coords;
+        }
+        return addBuilding(FACTORY.createPolygon(polyCoords), height, new ArrayList<>());
     }
 
     /**
@@ -185,8 +222,26 @@ public class ProfileBuilder {
      * @param geom   Building footprint.
      * @param id     Database primary key.
      */
-    public Building addBuilding(Geometry geom, int id) {
+    public ProfileBuilder addBuilding(Geometry geom, int id) {
         return addBuilding(geom, Double.NaN, id);
+    }
+
+    /**
+     * Add the given {@link Geometry} footprint.
+     * @param coords Building footprint coordinates.
+     * @param id     Database primary key.
+     */
+    public ProfileBuilder addBuilding(Coordinate[] coords, int id) {
+        Coordinate[] polyCoords;
+        int l = coords.length;
+        if(coords[0] != coords[l-1]) {
+            polyCoords = Arrays.copyOf(coords, l+1);
+            polyCoords[l-1] = new Coordinate(coords[0]);
+        }
+        else {
+            polyCoords = coords;
+        }
+        return addBuilding(FACTORY.createPolygon(polyCoords), id);
     }
 
     /**
@@ -195,8 +250,27 @@ public class ProfileBuilder {
      * @param height Building height.
      * @param id     Database id.
      */
-    public Building addBuilding(Geometry geom, double height, int id) {
+    public ProfileBuilder addBuilding(Geometry geom, double height, int id) {
         return addBuilding(geom, height, new ArrayList<>(), id);
+    }
+
+    /**
+     * Add the given {@link Geometry} footprint.
+     * @param coords Building footprint coordinates.
+     * @param height Building height.
+     * @param id     Database primary key.
+     */
+    public ProfileBuilder addBuilding(Coordinate[] coords, double height, int id) {
+        Coordinate[] polyCoords;
+        int l = coords.length;
+        if(coords[0] != coords[l-1]) {
+            polyCoords = Arrays.copyOf(coords, l+1);
+            polyCoords[l-1] = new Coordinate(coords[0]);
+        }
+        else {
+            polyCoords = coords;
+        }
+        return addBuilding(FACTORY.createPolygon(polyCoords), height, new ArrayList<>(), id);
     }
 
     /**
@@ -205,8 +279,27 @@ public class ProfileBuilder {
      * @param height Building height.
      * @param alphas Absorption coefficients.
      */
-    public Building addBuilding(Geometry geom, double height, List<Double> alphas) {
+    public ProfileBuilder addBuilding(Geometry geom, double height, List<Double> alphas) {
         return addBuilding(geom, height, alphas, -1);
+    }
+
+    /**
+     * Add the given {@link Geometry} footprint.
+     * @param coords Building footprint coordinates.
+     * @param height Building height.
+     * @param alphas Absorption coefficients.
+     */
+    public ProfileBuilder addBuilding(Coordinate[] coords, double height, List<Double> alphas) {
+        Coordinate[] polyCoords;
+        int l = coords.length;
+        if(coords[0] != coords[l-1]) {
+            polyCoords = Arrays.copyOf(coords, l+1);
+            polyCoords[l-1] = new Coordinate(coords[0]);
+        }
+        else {
+            polyCoords = coords;
+        }
+        return addBuilding(FACTORY.createPolygon(polyCoords), height, alphas, -1);
     }
 
     /**
@@ -214,8 +307,26 @@ public class ProfileBuilder {
      * @param geom   Building footprint.
      * @param alphas Absorption coefficients.
      */
-    public Building addBuilding(Geometry geom, List<Double> alphas) {
+    public ProfileBuilder addBuilding(Geometry geom, List<Double> alphas) {
         return addBuilding(geom, Double.NaN, alphas, -1);
+    }
+
+    /**
+     * Add the given {@link Geometry} footprint.
+     * @param coords Building footprint coordinates.
+     * @param alphas Absorption coefficients.
+     */
+    public ProfileBuilder addBuilding(Coordinate[] coords, List<Double> alphas) {
+        Coordinate[] polyCoords;
+        int l = coords.length;
+        if(coords[0] != coords[l-1]) {
+            polyCoords = Arrays.copyOf(coords, l+1);
+            polyCoords[l-1] = new Coordinate(coords[0]);
+        }
+        else {
+            polyCoords = coords;
+        }
+        return addBuilding(FACTORY.createPolygon(polyCoords), Double.NaN, alphas, -1);
     }
 
     /**
@@ -224,8 +335,27 @@ public class ProfileBuilder {
      * @param alphas Absorption coefficients.
      * @param id     Database primary key.
      */
-    public Building addBuilding(Geometry geom, List<Double> alphas, int id) {
+    public ProfileBuilder addBuilding(Geometry geom, List<Double> alphas, int id) {
         return addBuilding(geom, Double.NaN, alphas, id);
+    }
+
+    /**
+     * Add the given {@link Geometry} footprint.
+     * @param coords Building footprint coordinates.
+     * @param alphas Absorption coefficients.
+     * @param id     Database primary key.
+     */
+    public ProfileBuilder addBuilding(Coordinate[] coords, List<Double> alphas, int id) {
+        Coordinate[] polyCoords;
+        int l = coords.length;
+        if(coords[0] != coords[l-1]) {
+            polyCoords = Arrays.copyOf(coords, l+1);
+            polyCoords[l-1] = new Coordinate(coords[0]);
+        }
+        else {
+            polyCoords = coords;
+        }
+        return addBuilding(FACTORY.createPolygon(polyCoords), Double.NaN, alphas, id);
     }
 
     /**
@@ -236,7 +366,7 @@ public class ProfileBuilder {
      * @param alphas Absorption coefficients.
      * @param id     Database primary key.
      */
-    public Building addBuilding(Geometry geom, double height, List<Double> alphas, int id) {
+    public ProfileBuilder addBuilding(Geometry geom, double height, List<Double> alphas, int id) {
         if(geom == null && ! (geom instanceof Polygon)) {
             LOGGER.error("Building geometry should be Polygon");
             return null;
@@ -252,7 +382,7 @@ public class ProfileBuilder {
             Building building = new Building(poly, height, alphas, id);
             buildings.add(building);
             buildingTree.insert(building.poly.getEnvelopeInternal(), buildings.size());
-            return building;
+            return this;
         }
         else{
             LOGGER.warn("Cannot add building, feeding is finished.");
@@ -261,13 +391,42 @@ public class ProfileBuilder {
     }
 
     /**
+     * Add the given {@link Geometry} footprint.
+     * @param height Building height.
+     * @param alphas Absorption coefficients.
+     * @param id     Database primary key.
+     */
+    public ProfileBuilder addBuilding(Coordinate[] coords, double height, List<Double> alphas, int id) {
+        Coordinate[] polyCoords;
+        int l = coords.length;
+        if(coords[0] != coords[l-1]) {
+            polyCoords = Arrays.copyOf(coords, l+1);
+            polyCoords[l-1] = new Coordinate(coords[0]);
+        }
+        else {
+            polyCoords = coords;
+        }
+        return addBuilding(FACTORY.createPolygon(polyCoords), height, alphas, id);
+    }
+
+    /**
      * Add the given {@link Geometry} footprint, height, alphas (absorption coefficients) and a database id as wall.
      * @param geom   Wall footprint.
      * @param height Wall height.
      * @param id     Database key.
      */
-    public List<Wall> addWalls(LineString geom, double height, int id) {
-        return addWalls(geom, height, 0.0, id);
+    public ProfileBuilder addWalls(LineString geom, double height, int id) {
+        return addWalls(geom, height, new ArrayList<>(), id);
+    }
+
+    /**
+     * Add the given {@link Geometry} footprint, height, alphas (absorption coefficients) and a database id as wall.
+     * @param coords Wall footprint coordinates.
+     * @param height Wall height.
+     * @param id     Database key.
+     */
+    public ProfileBuilder addWalls(Coordinate[] coords, double height, int id) {
+        return addWalls(FACTORY.createLineString(coords), height, new ArrayList<>(), id);
     }
 
     /**
@@ -275,8 +434,17 @@ public class ProfileBuilder {
      * @param geom   Wall footprint.
      * @param id     Database key.
      */
-    public List<Wall> addWalls(LineString geom, int id) {
-        return addWalls(geom, 0.0, -1, id);
+    public ProfileBuilder addWalls(LineString geom, int id) {
+        return addWalls(geom, 0.0, new ArrayList<>(), id);
+    }
+
+    /**
+     * Add the given {@link Geometry} footprint, height, alphas (absorption coefficients) and a database id as wall.
+     * @param coords Wall footprint coordinates.
+     * @param id     Database key.
+     */
+    public ProfileBuilder addWalls(Coordinate[] coords, int id) {
+        return addWalls(FACTORY.createLineString(coords), 0.0, new ArrayList<>(), id);
     }
 
     /**
@@ -286,7 +454,7 @@ public class ProfileBuilder {
      * @param alphas Absorption coefficient.
      * @param id     Database key.
      */
-    public List<Wall> addWalls(LineString geom, double height, double alphas, int id) {
+    public ProfileBuilder addWalls(LineString geom, double height, List<Double> alphas, int id) {
         if(!isFeedingFinished) {
             if(envelope == null) {
                 envelope = geom.getEnvelopeInternal();
@@ -302,7 +470,7 @@ public class ProfileBuilder {
                 wallList.add(wall);
             }
             walls.addAll(wallList);
-            return wallList;
+            return this;
         }
         else{
             LOGGER.warn("Cannot add building, feeding is finished.");
@@ -311,10 +479,19 @@ public class ProfileBuilder {
     }
 
     /**
+     * Add the given {@link Geometry} footprint, height, alphas (absorption coefficients) and a database id as wall.
+     * @param coords Wall footprint coordinates.
+     * @param id     Database key.
+     */
+    public ProfileBuilder addWalls(Coordinate[] coords, double height, List<Double> alphas, int id) {
+        return addWalls(FACTORY.createLineString(coords), height, alphas, id);
+    }
+
+    /**
      * Add the topographic point in the data, to complete the topographic data.
      * @param point Topographic point.
      */
-    public void addTopographicPoint(Coordinate point) {
+    public ProfileBuilder addTopographicPoint(Coordinate point) {
         if(!isFeedingFinished) {
             //Force to 3D
             if (Double.isNaN(point.z)) {
@@ -328,13 +505,13 @@ public class ProfileBuilder {
             }
             this.topoPoints.add(point);
         }
+        return this;
     }
 
     /**
      * Add the topographic line in the data, to complete the topographic data.
-     * @param lineSegment Topographic line.
      */
-    public void addTopographicLine(double x0, double y0, double z0, double x1, double y1, double z1) {
+    public ProfileBuilder addTopographicLine(double x0, double y0, double z0, double x1, double y1, double z1) {
         if(!isFeedingFinished) {
             LineString lineSegment = FACTORY.createLineString(new Coordinate[]{new Coordinate(x0, y0, z0), new Coordinate(x1, y1, z1)});
             if(envelope == null) {
@@ -345,13 +522,14 @@ public class ProfileBuilder {
             }
             this.topoLines.add(lineSegment);
         }
+        return this;
     }
 
     /**
      * Add the topographic line in the data, to complete the topographic data.
      * @param lineSegment Topographic line.
      */
-    public void addTopographicLine(LineString lineSegment) {
+    public ProfileBuilder addTopographicLine(LineString lineSegment) {
         if(!isFeedingFinished) {
             if(envelope == null) {
                 envelope = lineSegment.getEnvelopeInternal();
@@ -361,6 +539,7 @@ public class ProfileBuilder {
             }
             this.topoLines.add(lineSegment);
         }
+        return this;
     }
 
     /**
@@ -368,7 +547,7 @@ public class ProfileBuilder {
      * @param geom        Ground effect area footprint.
      * @param coefficient Ground effect coefficient.
      */
-    public void addGroundEffect(Geometry geom, double coefficient) {
+    public ProfileBuilder addGroundEffect(Geometry geom, double coefficient) {
         if(!isFeedingFinished) {
             if(envelope == null) {
                 envelope = geom.getEnvelopeInternal();
@@ -378,6 +557,7 @@ public class ProfileBuilder {
             }
             this.groundEffects.add(new GroundEffect(geom, coefficient));
         }
+        return this;
     }
 
     /**
@@ -388,7 +568,7 @@ public class ProfileBuilder {
      * @param maxY        Ground effect maximum Y.
      * @param coefficient Ground effect coefficient.
      */
-    public void addGroundEffect(double minX, double maxX, double minY, double maxY, double coefficient) {
+    public ProfileBuilder addGroundEffect(double minX, double maxX, double minY, double maxY, double coefficient) {
         if(!isFeedingFinished) {
             Geometry geom = FACTORY.createPolygon(new Coordinate[]{
                     new Coordinate(minX, minY),
@@ -405,30 +585,7 @@ public class ProfileBuilder {
             }
             this.groundEffects.add(new GroundEffect(geom, coefficient));
         }
-    }
-
-    /**
-     * Add teh given coordinate as source.
-     * @param coordinate Source coordinate to add.
-     */
-    public void addSource(Coordinate coordinate) {
-        sources.add(FACTORY.createPoint(new Coordinate(coordinate.x, coordinate.y, coordinate.z)));
-    }
-
-    /**
-     * Add teh given geometry as source.
-     * @param geometry Source geometry to add.
-     */
-    public void addSource(Geometry geometry) {
-        sources.add(geometry);
-    }
-
-    /**
-     * Add teh given coordinate as receiver.
-     * @param coordinate Receiver coordinate to add.
-     */
-    public void addReceiver(Coordinate coordinate) {
-        receivers.add(new Coordinate(coordinate.x, coordinate.y, coordinate.z));
+        return this;
     }
 
     public List<Wall> getProcessedWalls() {
@@ -458,6 +615,31 @@ public class ProfileBuilder {
      */
     public Building getBuilding(int id) {
         return buildings.get(id);
+    }
+
+    /**
+     * Retrieve the wall list.
+     * @return The wall list.
+     */
+    public List<Wall> getWalls() {
+        return walls;
+    }
+
+    /**
+     * Retrieve the count of wall add to this builder.
+     * @return The count of wall.
+     */
+    public int getWallCount() {
+        return walls.size();
+    }
+
+    /**
+     * Retrieve the wall with the given id (id is starting from 1).
+     * @param id Id of the wall
+     * @return The wall corresponding to the given id.
+     */
+    public Wall getWall(int id) {
+        return walls.get(id);
     }
 
     /**
@@ -531,7 +713,7 @@ public class ProfileBuilder {
      *
      * @return True if the finishing has been successfully done, false otherwise.
      */
-    public boolean finishFeeding() {
+    public ProfileBuilder finishFeeding() {
         isFeedingFinished = true;
         //Process sources
         if(!sources.isEmpty()) {
@@ -548,7 +730,7 @@ public class ProfileBuilder {
                 layerDelaunay.setMaxArea(maxArea);
             } catch (LayerDelaunayError e) {
                 LOGGER.error("Unable to set the Delaunay triangle maximum area.", e);
-                return false;
+                return null;
             }
             try {
                 for (Coordinate topoPoint : topoPoints) {
@@ -556,7 +738,7 @@ public class ProfileBuilder {
                 }
             } catch (LayerDelaunayError e) {
                 LOGGER.error("Error while adding topographic points to Delaunay layer.", e);
-                return false;
+                return null;
             }
             try {
                 for (LineString topoLine : topoLines) {
@@ -565,20 +747,20 @@ public class ProfileBuilder {
                 }
             } catch (LayerDelaunayError e) {
                 LOGGER.error("Error while adding topographic points to Delaunay layer.", e);
-                return false;
+                return null;
             }
             //Process Delaunay
             try {
                 layerDelaunay.processDelaunay();
             } catch (LayerDelaunayError e) {
                 LOGGER.error("Error while processing Delaunay.", e);
-                return false;
+                return null;
             }
             try {
                 topoTriangles = layerDelaunay.getTriangles();
             } catch (LayerDelaunayError e) {
                 LOGGER.error("Error while getting triangles", e);
-                return false;
+                return null;
             }
             //Feed the RTree
             topoTree = new STRtree(topoNodeCapacity);
@@ -586,19 +768,19 @@ public class ProfileBuilder {
                 vertices = layerDelaunay.getVertices();
             } catch (LayerDelaunayError e) {
                 LOGGER.error("Error while getting vertices", e);
-                return false;
+                return null;
             }
             List<Wall> topoWalls = new ArrayList<>();
             for (int i = 0; i < topoTriangles.size(); i++) {
                 Triangle tri = topoTriangles.get(i);
-                Envelope env = FACTORY.createLineString(new Coordinate[]{
-                                vertices.get(tri.getA()),
-                                vertices.get(tri.getB()),
-                                vertices.get(tri.getC())}).getEnvelopeInternal();
+                Coordinate vA = vertices.get(tri.getA());
+                Coordinate vB = vertices.get(tri.getB());
+                Coordinate vC = vertices.get(tri.getC());
+                Envelope env = FACTORY.createLineString(new Coordinate[]{vA, vB, vC}).getEnvelopeInternal();
                 topoTree.insert(env, i);
-                topoWalls.add(new Wall(vertices.get(tri.getA()), vertices.get(tri.getB()), i, IntersectionType.TOPOGRAPHY));
-                topoWalls.add(new Wall(vertices.get(tri.getB()), vertices.get(tri.getC()), i, IntersectionType.TOPOGRAPHY));
-                topoWalls.add(new Wall(vertices.get(tri.getC()), vertices.get(tri.getA()), i, IntersectionType.TOPOGRAPHY));
+                topoWalls.add(new Wall(vA, vB, i, TOPOGRAPHY));
+                topoWalls.add(new Wall(vB, vC, i, TOPOGRAPHY));
+                topoWalls.add(new Wall(vC, vA, i, TOPOGRAPHY));
             }
             List<Wall> toRemove = new ArrayList<>();
             for(int i=0; i<topoWalls.size(); i++) {
@@ -624,12 +806,28 @@ public class ProfileBuilder {
                     b.poly.apply(new UpdateZ(b.height + b.updateZTopo(this)));
                 }
             }
+            for (Wall w : walls) {
+                if(Double.isNaN(w.line.p0.z) || w.line.p0.z == 0.0) {
+                    w.line.p0.z = w.height + getTopoZ(w.line.p0);
+                }
+                if(Double.isNaN(w.line.p1.z) || w.line.p1.z == 0.0) {
+                    w.line.p1.z = w.height + getTopoZ(w.line.p1);
+                }
+            }
         }
         else {
             for (Building b : buildings) {
                 if(b != null && b.poly != null && b.poly.getCoordinate() != null && (
                         Double.isNaN(b.poly.getCoordinate().z) || b.poly.getCoordinate().z == 0.0)) {
                     b.poly.apply(new UpdateZ(b.height));
+                }
+            }
+            for (Wall w : walls) {
+                if(Double.isNaN(w.line.p0.z) || w.line.p0.z == 0.0) {
+                    w.line.p0.z = w.height;
+                }
+                if(Double.isNaN(w.line.p1.z) || w.line.p1.z == 0.0) {
+                    w.line.p1.z = w.height;
                 }
             }
         }
@@ -641,6 +839,15 @@ public class ProfileBuilder {
             for (int i = 0; i < coords.length - 1; i++) {
                 LineSegment lineSegment = new LineSegment(coords[i], coords[i + 1]);
                 processedWalls.add(new Wall(lineSegment, j, IntersectionType.BUILDING));
+                rtree.insert(lineSegment.toGeometry(FACTORY).getEnvelopeInternal(), processedWalls.size()-1);
+            }
+        }
+        for (int j = 0; j < walls.size(); j++) {
+            Wall wall = walls.get(j);
+            Coordinate[] coords = new Coordinate[]{wall.line.p0, wall.line.p1};
+            for (int i = 0; i < coords.length - 1; i++) {
+                LineSegment lineSegment = new LineSegment(coords[i], coords[i + 1]);
+                processedWalls.add(new Wall(lineSegment, j, IntersectionType.WALL));
                 rtree.insert(lineSegment.toGeometry(FACTORY).getEnvelopeInternal(), processedWalls.size()-1);
             }
         }
@@ -666,7 +873,7 @@ public class ProfileBuilder {
                 }
             }
         }
-        return true;
+        return this;
     }
 
     public double getZ(Coordinate reflectionPt) {
@@ -756,8 +963,6 @@ public class ProfileBuilder {
     public CutProfile getProfile(Coordinate c0, Coordinate c1, double gS) {
         CutProfile profile = new CutProfile();
 
-
-
         List<LineSegment> lines = new ArrayList<>();
         LineSegment fullLine = new LineSegment(c0, c1);
         double l = fullLine.getLength();
@@ -787,19 +992,19 @@ public class ProfileBuilder {
                     Coordinate intersection = line.intersection(triLine);
                     if (intersection != null) {
                         intersection.z = triLine.p0.z + (triLine.p1.z - triLine.p0.z) * triLine.segmentFraction(intersection);
-                        topoCutPts.add(new CutPoint(intersection, IntersectionType.TOPOGRAPHY, i));
+                        topoCutPts.add(new CutPoint(intersection, TOPOGRAPHY, i));
                     }
                     triLine = new LineSegment(vertices.get(triangle.getB()), vertices.get(triangle.getC()));
                     intersection = line.intersection(triLine);
                     if (intersection != null) {
                         intersection.z = triLine.p0.z + (triLine.p1.z - triLine.p0.z) * triLine.segmentFraction(intersection);
-                        topoCutPts.add(new CutPoint(intersection, IntersectionType.TOPOGRAPHY, i));
+                        topoCutPts.add(new CutPoint(intersection, TOPOGRAPHY, i));
                     }
                     triLine = new LineSegment(vertices.get(triangle.getC()), vertices.get(triangle.getA()));
                     intersection = line.intersection(triLine);
                     if (intersection != null) {
                         intersection.z = triLine.p0.z + (triLine.p1.z - triLine.p0.z) * triLine.segmentFraction(intersection);
-                        topoCutPts.add(new CutPoint(intersection, IntersectionType.TOPOGRAPHY, i));
+                        topoCutPts.add(new CutPoint(intersection, TOPOGRAPHY, i));
                     }
                 }
             }
@@ -841,6 +1046,9 @@ public class ProfileBuilder {
 
                     if(facetLine.type == IntersectionType.BUILDING) {
                         profile.addBuildingCutPt(intersection, facetLine.originId);
+                    }
+                    else if(facetLine.type == IntersectionType.WALL) {
+                        profile.addWallCutPt(intersection, facetLine.originId);
                     }
                     else if(facetLine.type == IntersectionType.GROUND_EFFECT) {
                         Coordinate c = new Coordinate(intersection.x, intersection.y, getZ(intersection));
@@ -935,7 +1143,7 @@ public class ProfileBuilder {
     /**
      * Different type of intersection.
      */
-    enum IntersectionType {BUILDING, TOPOGRAPHY, GROUND_EFFECT, SOURCE, RECEIVER;
+    enum IntersectionType {BUILDING, WALL, TOPOGRAPHY, GROUND_EFFECT, SOURCE, RECEIVER;
 
         PointPath.POINT_TYPE toPointType(PointPath.POINT_TYPE dflt) {
             if(this.equals(ProfileBuilder.IntersectionType.SOURCE)){
@@ -999,12 +1207,23 @@ public class ProfileBuilder {
         }
 
         /**
+         * Add a building cutting point.
+         * @param coord Coordinate of the cutting point.
+         * @param id    Id of the cut building.
+         */
+        public void addWallCutPt(Coordinate coord, int id) {
+            pts.add(new CutPoint(coord, IntersectionType.WALL, id));
+            pts.get(pts.size()-1).wallId = id;
+            hasBuildingInter = true;
+        }
+
+        /**
          * Add a topographic cutting point.
          * @param coord Coordinate of the cutting point.
          * @param id    Id of the cut topography.
          */
         public void addTopoCutPt(Coordinate coord, int id) {
-            pts.add(new CutPoint(coord, IntersectionType.TOPOGRAPHY, id));
+            pts.add(new CutPoint(coord, TOPOGRAPHY, id));
             hasTopographyInter = true;
         }
 
@@ -1083,7 +1302,7 @@ public class ProfileBuilder {
             //List<CutPoint> pts = getCutPoints().stream().sorted(CutPoint::compareTo).collect(Collectors.toList());
 
             List<CutPoint> pts = getCutPoints().stream()
-                    .filter(cutPoint -> cutPoint.getType() != IntersectionType.TOPOGRAPHY)
+                    .filter(cutPoint -> cutPoint.getType() != TOPOGRAPHY)
                     .filter(cutPoint -> cutPoint.getType() != IntersectionType.BUILDING)
                     .sorted(CutPoint::compareTo).collect(Collectors.toList());
 
@@ -1109,7 +1328,8 @@ public class ProfileBuilder {
                 isFreeField = true;
                 List<CutPoint> pts = getCutPoints().stream()
                         .filter(cutPoint -> cutPoint.getType() == IntersectionType.BUILDING ||
-                                            cutPoint.getType() == IntersectionType.TOPOGRAPHY)
+                                cutPoint.getType() == IntersectionType.WALL ||
+                                cutPoint.getType() == TOPOGRAPHY)
                         .collect(Collectors.toList());
                 LineSegment srcRcvLine = new LineSegment(source.getCoordinate(), receiver.getCoordinate());
                 for(CutPoint pt : pts) {
@@ -1137,8 +1357,10 @@ public class ProfileBuilder {
         private final int id;
         /** Identifier of the building containing the point. -1 if no building. */
         private int buildingId;
+        /** Identifier of the wall containing the point. -1 if no wall. */
+        private int wallId;
         /** Height of the building containing the point. NaN of no building. */
-        private double buildingHeight;
+        private double height;
         /** Topographic height of the point. */
         private double topoHeight;
         /** Ground effect coefficient. 0 if there is no coefficient. */
@@ -1157,9 +1379,10 @@ public class ProfileBuilder {
             this.type = type;
             this.id = id;
             this.buildingId = -1;
+            this.wallId = -1;
             this.groundCoef = 0;
             this.wallAlpha = new ArrayList<>();
-            this.buildingHeight = 0;
+            this.height = 0;
             this.topoHeight = 0;
         }
 
@@ -1169,6 +1392,16 @@ public class ProfileBuilder {
          */
         public void setBuildingId(int buildingId) {
             this.buildingId = buildingId;
+            this.wallId = -1;
+        }
+
+        /**
+         * Sets the id of the wall containing the point.
+         * @param wallId Id of the wall containing the point.
+         */
+        public void setWallId(int wallId) {
+            this.wallId = wallId;
+            this.buildingId = -1;
         }
 
         /**
@@ -1181,10 +1414,10 @@ public class ProfileBuilder {
 
         /**
          * Sets the building height.
-         * @param buildingHeight The building height.
+         * @param height The building height.
          */
-        public void setBuildingHeight(double buildingHeight) {
-            this.buildingHeight = buildingHeight;
+        public void setHeight(double height) {
+            this.height = height;
         }
 
         /**
@@ -1228,6 +1461,14 @@ public class ProfileBuilder {
         }
 
         /**
+         * Retrieve the identifier of the wall containing the point. If no wall, returns -1.
+         * @return Wall identifier or -1
+         */
+        public int getWallId() {
+            return wallId;
+        }
+
+        /**
          * Retrieve the ground effect coefficient of the point. If there is no coefficient, returns 0.
          * @return Ground effect coefficient or NaN.
          */
@@ -1239,8 +1480,8 @@ public class ProfileBuilder {
          * Retrieve the height of the building containing the point. If there is no building, returns NaN.
          * @return The building height, or NaN if no building.
          */
-        public double getBuildingHeight() {
-            return buildingHeight;
+        public double getHeight() {
+            return height;
         }
 
         /**
@@ -1271,7 +1512,7 @@ public class ProfileBuilder {
             str += "(" + coordinate.x +"," + coordinate.y +"," + coordinate.z + ") ; ";
             str += "grd : " + groundCoef + " ; ";
             str += "topoH : " + topoHeight + " ; ";
-            str += "buildH : " + buildingHeight + " ; ";
+            str += "buildH : " + height + " ; ";
             str += "buildId : " + buildingId + " ; ";
             str += "alpha : " + wallAlpha + " ; ";
             return str;
@@ -1377,7 +1618,7 @@ public class ProfileBuilder {
         /** Id or index of the source building or topographic triangle. */
         private final int originId;
         /** Wall alpha value. */
-        private double alpha;
+        private List<Double> alphas;
         /** Wall height, if -1, use z coordinate. */
         private double height;
 
@@ -1390,7 +1631,7 @@ public class ProfileBuilder {
             this.line = line;
             this.originId = originId;
             this.type = type;
-            this.alpha = 0;
+            this.alphas = new ArrayList<>();
         }
 
         /**
@@ -1403,15 +1644,15 @@ public class ProfileBuilder {
             this.line = new LineSegment(p0, p1);
             this.originId = originId;
             this.type = type;
-            this.alpha = 0;
+            this.alphas = new ArrayList<>();
         }
 
         /**
-         * Sets the wall alpha.
-         * @param alpha Wall alpha.
+         * Sets the wall alphas.
+         * @param alphas Wall alphas.
          */
-        public void setAlpha(double alpha) {
-            this.alpha = alpha;
+        public void setAlpha(List<Double> alphas) {
+            this.alphas = alphas;
         }
 
         /**
@@ -1439,11 +1680,11 @@ public class ProfileBuilder {
         }
 
         /**
-         * Retrieve the alpha of the wall.
-         * @return Alpha of the wall.
+         * Retrieve the alphas of the wall.
+         * @return Alphas of the wall.
          */
-        public double getAlpha() {
-            return alpha;
+        public List<Double> getAlphas() {
+            return alphas;
         }
 
         /**

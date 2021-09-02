@@ -17,7 +17,8 @@ public class PointPath {
     public double altitude; // altitude of relief (exact)
     public double gs;       // only if POINT_TYPE = SRCE or RECV, G coefficient right above the point
     public List<Double> alphaWall = Collections.unmodifiableList(Arrays.asList(0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1));; // only if POINT_TYPE = REFL, alpha coefficient
-    public int buildingId; // only if POINT_TYPE = REFL
+    public int buildingId = -1; // only if POINT_TYPE = REFL
+    public int wallId = -1;
 
     public void setBuildingHeight(double buildingHeight) {
         this.buildingHeight = buildingHeight;
@@ -39,7 +40,6 @@ public class PointPath {
      * @param altitude
      * @param gs
      * @param alphaWall
-     * @param buildingId
      * @param type
      */
     public PointPath(Coordinate coordinate, double altitude, double gs, List<Double> alphaWall, int buildingId, POINT_TYPE type) {
@@ -53,15 +53,30 @@ public class PointPath {
 
     /**
      * parameters given by user
+     * @param coordinate
+     * @param altitude
+     * @param gs
+     * @param alphaWall
+     * @param type
+     */
+    public PointPath(Coordinate coordinate, double altitude, double gs, List<Double> alphaWall, POINT_TYPE type) {
+        this.coordinate = coordinate;
+        this.altitude = altitude;
+        this.gs = gs;
+        this.alphaWall = alphaWall;
+        this.type = type;
+    }
+
+    /**
+     * parameters given by user
      * @param cutPoint CutPoint to use to generate the PointPath
-     * @param defaultType Defaut point type to use if the cut point is nor a source, nor a receiver.
+     * @param defaultType Default point type to use if the cut point is nor a source, nor a receiver.
      */
     public PointPath(ProfileBuilder.CutPoint cutPoint, POINT_TYPE defaultType, double gs, double altitude) {
         this.coordinate = cutPoint.getCoordinate();
         this.altitude = altitude;
         this.gs = gs;
         this.alphaWall = cutPoint.getWallAlpha();
-        this.buildingId = cutPoint.getBuildingId();
         this.type = cutPoint.getType().toPointType(defaultType);
     }
 
@@ -71,10 +86,9 @@ public class PointPath {
      * @param altitude
      * @param gs
      * @param alphaWall
-     * @param buildingId
      * @param type
      */
-    public PointPath(Coordinate coordinate, double altitude, double gs, double[] alphaWall, int buildingId, POINT_TYPE type) {
+    public PointPath(Coordinate coordinate, double altitude, double gs, double[] alphaWall, POINT_TYPE type) {
         this.coordinate = coordinate;
         this.altitude = altitude;
         this.gs = gs;
@@ -82,14 +96,12 @@ public class PointPath {
         for(double a : alphaWall) {
             this.alphaWall.add(a);
         }
-        this.buildingId = buildingId;
         this.type = type;
     }
 
     public PointPath() {
-
+        new PointPath();
     }
-
 
     /**
      * Writes the content of this object into <code>out</code>.
@@ -133,10 +145,6 @@ public class PointPath {
         this.type =  type;
     }
 
-    public void setBuildingId(int buildingId) {
-        this.buildingId =  buildingId;
-    }
-
     public void setAlphaWall(List<Double> alphaWall) {
         this.alphaWall = new ArrayList<>(alphaWall);
     }
@@ -145,6 +153,15 @@ public class PointPath {
         return buildingId;
     }
 
+    public void setBuildingId(int id) {
+        buildingId = id;
+        wallId = -1;
+    }
+
+    public void setWallId(int id) {
+        wallId = id;
+        buildingId = -1;
+    }
 
     public void setCoordinate(Coordinate coordinate) {
         this.coordinate =  coordinate;
