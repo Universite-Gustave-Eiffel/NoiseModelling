@@ -265,6 +265,13 @@ public class EvaluateAttenuationCnossos {
         // Here there is a debate if use the condition isgDisc or not
         // In Directive 2015-2019, isgDisc == true because the term – 3(1 – Gm) takes into account the fact that when the source and the receiver are far apart, the first reflection source side is no longer on the platform but on natural land.
         if (segmentPath.gPath == 0 && data.isgDisc()) {
+
+            //For testing purpose
+            if(path.keepAbsorption) {
+                //Used to calculate value ignored like Cf
+                getAGroundCore(path, segmentPath, data);
+            }
+
             if (path.isFavorable()) {
                 // The lower bound of Aground,F (calculated with unmodified heights) depends on the geometry of the path
                 if (segmentPath.testForm <= 1) {

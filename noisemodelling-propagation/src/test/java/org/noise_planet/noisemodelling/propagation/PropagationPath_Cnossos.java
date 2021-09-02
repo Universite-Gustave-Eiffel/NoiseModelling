@@ -54,10 +54,10 @@ public class PropagationPath_Cnossos {
         List<SegmentPath> srPath = new ArrayList<SegmentPath>();
         Vector3D flatTopography = new Vector3D(new Coordinate(0,0,0),new Coordinate(0,0,0));
 
-        points.add(new PointPath(new Coordinate(0,0,0),1,0,new double[0], -1, PointPath.POINT_TYPE.SRCE));
+        points.add(new PointPath(new Coordinate(0,0,0),1,0, new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
         points.add(new PointPath(new Coordinate(10,0,0),1,Double.NaN,Collections.nCopies(8, 0.5), -1, PointPath.POINT_TYPE.DIFH));
         points.add(new PointPath(new Coordinate(20,0,0),1,Double.NaN,Collections.nCopies(8, 0.5), -1, PointPath.POINT_TYPE.DIFH));
-        points.add(new PointPath(new Coordinate(30,30,0),1,0,new double[0], -1, PointPath.POINT_TYPE.RECV));
+        points.add(new PointPath(new Coordinate(30,30,0),1,0, new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
         segments.add(new SegmentPath(1, flatTopography,new Coordinate(0,0,0)));
         segments.add(new SegmentPath(1, flatTopography,new Coordinate(0,0,0)));
         srPath.add(new SegmentPath(1,flatTopography,new Coordinate(0,0,0)));

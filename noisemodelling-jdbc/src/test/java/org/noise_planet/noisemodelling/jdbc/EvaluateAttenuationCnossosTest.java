@@ -49,7 +49,6 @@ public class EvaluateAttenuationCnossosTest {
         }
     }
 
-    //TODO ensure that Cf value test can be ignored
     /**
      * Test TC01 -- Reflecting ground (G = 0)
      */
@@ -116,10 +115,10 @@ public class EvaluateAttenuationCnossosTest {
 
         //Assertions
         assertDoubleArrayEquals("WH", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
-        //assertDoubleArrayEquals("CfH", expectedCfH, actualCfH, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("CfH", expectedCfH, actualCfH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundH", expectedAGroundH, actualAGroundH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("WF", expectedWF, actualWF, ERROR_EPSILON_LOWEST);
-        //assertDoubleArrayEquals("CfF", expectedCfF, actualCfF, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("CfF", expectedCfF, actualCfF, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundF", expectedAGroundF, actualAGroundF, ERROR_EPSILON_LOWEST);
 
         assertDoubleArrayEquals("AlphaAtm", expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_LOWEST);

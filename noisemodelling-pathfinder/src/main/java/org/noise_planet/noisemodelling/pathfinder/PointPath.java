@@ -99,9 +99,7 @@ public class PointPath {
         this.type = type;
     }
 
-    public PointPath() {
-        new PointPath();
-    }
+    public PointPath() {}
 
     /**
      * Writes the content of this object into <code>out</code>.
