@@ -23,14 +23,13 @@
 package org.noise_planet.noisemodelling.jdbc;
 
 import org.h2gis.utilities.JDBCUtilities;
-import org.locationtech.jts.io.WKTWriter;
 import org.noise_planet.noisemodelling.emission.DirectionAttributes;
 import org.noise_planet.noisemodelling.emission.RailWayLW;
 import org.noise_planet.noisemodelling.jdbc.utils.StringPreparedStatements;
 import org.noise_planet.noisemodelling.pathfinder.*;
 import org.noise_planet.noisemodelling.pathfinder.utils.ProfilerThread;
-import org.noise_planet.noisemodelling.propagation.*;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
+import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -292,10 +291,14 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
             if(!ldenConfig.mergeSources) {
                 query.append(", ?"); // ID_SOURCE
             }
-            for(int idfreq=0; idfreq < ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
-                query.append(", ?"); // freq value
+            if (!ldenConfig.computeLAEQOnly) {
+                for (int idfreq = 0; idfreq < ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
+                    query.append(", ?"); // freq value
+                }
+                query.append(", ?, ?);"); // laeq, leq
+            }else{
+                query.append(", ?);"); // laeq, leq
             }
-            query.append(", ?, ?);"); // laeq, leq
             PreparedStatement ps;
             if(sqlFilePath == null) {
                 ps = connection.prepareStatement(query.toString());
@@ -311,19 +314,25 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
                 if(!ldenConfig.mergeSources) {
                     ps.setLong(parameterIndex++, row.sourceId);
                 }
-                for(int idfreq=0;idfreq < ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
-                    Double value = row.value[idfreq];
-                    if(!Double.isFinite(value)) {
-                        value = -99.0;
-                        row.value[idfreq] = value;
+
+                if (!ldenConfig.computeLAEQOnly){
+                    for(int idfreq=0;idfreq < ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
+                        Double value = row.value[idfreq];
+                        if(!Double.isFinite(value)) {
+                            value = -99.0;
+                            row.value[idfreq] = value;
+                        }
+                        ps.setDouble(parameterIndex++, value);
                     }
-                    ps.setDouble(parameterIndex++, value);
+
                 }
                 // laeq value
                 ps.setDouble(parameterIndex++, ComputeRays.wToDba(ComputeRays.sumArray(ComputeRays.dbaToW(ComputeRays.sumArray(row.value, a_weighting)))));
 
                 // leq value
-                ps.setDouble(parameterIndex++, ComputeRays.wToDba(ComputeRays.sumArray(ComputeRays.dbaToW(row.value))));
+                if (!ldenConfig.computeLAEQOnly) {
+                    ps.setDouble(parameterIndex++, ComputeRays.wToDba(ComputeRays.sumArray(ComputeRays.dbaToW(row.value))));
+                }
 
                 ps.addBatch();
                 batchSize++;
@@ -347,13 +356,18 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
             } else {
                 sb.append(" (IDRECEIVER bigint NOT NULL");
             }
-            for (int idfreq = 0; idfreq < ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
-                sb.append(", HZ");
-                sb.append(ldenConfig.propagationProcessPathData.freq_lvl.get(idfreq));
-                sb.append(" numeric(5, 2)");
+            if (ldenConfig.computeLAEQOnly){
+                sb.append(", LAEQ numeric(5, 2)");
+                sb.append(");");
+            } else {
+                for (int idfreq = 0; idfreq < ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
+                    sb.append(", HZ");
+                    sb.append(ldenConfig.propagationProcessPathData.freq_lvl.get(idfreq));
+                    sb.append(" numeric(5, 2)");
+                }
+                sb.append(", LAEQ numeric(5, 2), LEQ numeric(5, 2)");
+                sb.append(");");
             }
-            sb.append(", LAEQ numeric(5, 2), LEQ numeric(5, 2)");
-            sb.append(");");
             return sb.toString();
         }
 
