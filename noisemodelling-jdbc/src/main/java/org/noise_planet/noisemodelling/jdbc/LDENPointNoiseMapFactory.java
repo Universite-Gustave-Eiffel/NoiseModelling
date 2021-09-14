@@ -327,7 +327,11 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
 
                 }
                 // laeq value
-                ps.setDouble(parameterIndex++, ComputeRays.wToDba(ComputeRays.sumArray(ComputeRays.dbaToW(ComputeRays.sumArray(row.value, a_weighting)))));
+                double value = ComputeRays.wToDba(ComputeRays.sumArray(ComputeRays.dbaToW(ComputeRays.sumArray(row.value, a_weighting))));
+                if(!Double.isFinite(value)) {
+                    value = -99;
+                }
+                ps.setDouble(parameterIndex++, value);
 
                 // leq value
                 if (!ldenConfig.computeLAEQOnly) {
