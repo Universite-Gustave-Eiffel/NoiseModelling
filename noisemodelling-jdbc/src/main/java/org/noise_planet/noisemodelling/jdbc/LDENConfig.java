@@ -48,6 +48,16 @@ public class LDENConfig {
     boolean computeLEvening = false;
     boolean computeLNight = false;
     boolean computeLDEN = true;
+
+    public boolean isComputeLAEQOnly() {
+        return computeLAEQOnly;
+    }
+
+    public void setComputeLAEQOnly(boolean computeLAEQOnly) {
+        this.computeLAEQOnly = computeLAEQOnly;
+    }
+
+    boolean computeLAEQOnly = false;
     boolean exportRays = false;
     // Maximum result stack to be inserted in database
     // if the stack is full, the computation core is waiting
