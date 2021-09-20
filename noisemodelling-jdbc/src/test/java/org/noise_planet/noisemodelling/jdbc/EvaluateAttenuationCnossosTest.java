@@ -6,12 +6,11 @@ import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 import org.noise_planet.noisemodelling.pathfinder.*;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
-import org.noise_planet.noisemodelling.propagation.EvaluateAttenuationCnossos;
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.IOException;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -2520,7 +2519,7 @@ public class EvaluateAttenuationCnossosTest {
      * propath.writeStream(new DataOutputStream(bos));
      * new String(Base64.getEncoder().encode(bos.toByteArray()));
      */
-    @Test
+ /*   @Test
     public void TestRegressionNaN() throws LayerDelaunayError, IOException {
         String path = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABkELTp9wo7AcQVnI2rXCgfo/qZmZmZmZmgAAAAAAAAAAAAAAAAAAAAAACH/4" +
                 "AAAAAAAAf/gAAAAAAAB/+AAAAAAAAH/4AAAAAAAAf/gAAAAAAAB/+AAAAAAAAH/4AAAAAAAAf/gAAAAAAAD/////AAAAAEELUD" +
@@ -2560,4 +2559,47 @@ public class EvaluateAttenuationCnossosTest {
         }
 
     }
+*/
+
+
+    /**
+     * Test Gs -- Two receivers, first reflecting gs=0 and the second gs = 1 / reflecting ground
+     */
+    @Test
+    public void TestGs()  throws LayerDelaunayError, IOException {
+        GeometryFactory factory = new GeometryFactory();
+        //Scene dimension
+        Envelope cellEnvelope = new Envelope(new Coordinate(-300., -300., 0.), new Coordinate(300, 300, 0.));
+
+        //Create obstruction test object
+        MeshBuilder mesh = new MeshBuilder();
+
+
+        mesh.finishPolygonFeeding(cellEnvelope);
+
+        //Retrieve Delaunay triangulation of scene
+        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+                mesh.getTriNeighbors(), mesh.getVertices());
+
+        PropagationProcessData rayData = new PropagationProcessData(manager);
+        rayData.addReceiver(new Coordinate(200, 50, 4));
+        rayData.addSource((long) 1,factory.createPoint(new Coordinate(10, 10, 4)),0.0);
+        rayData.addSource((long) 2,factory.createPoint(new Coordinate(10, 10, 4)),1.0);
+        rayData.setComputeHorizontalDiffraction(false);
+        rayData.addSoilType(new GeoWithSoilType(factory.toGeometry(new Envelope(-250, 250, -250, 250)), 0.0));
+        rayData.setComputeVerticalDiffraction(false);
+
+        PropagationProcessPathData attData = new PropagationProcessPathData();
+        attData.setHumidity(70);
+        attData.setTemperature(10);
+
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
+        ComputeRays computeRays = new ComputeRays(rayData);
+        computeRays.setThreadCount(1);
+        computeRays.run(propDataOut);
+
+        assertFalse(Arrays.equals(propDataOut.getVerticesSoundLevel().get(0).value, propDataOut.getVerticesSoundLevel().get(1).value));
+
+        }
+
 }

@@ -114,8 +114,6 @@ public class EvaluateRailWaySourceCNOSSOSTest {
         }
     }
 
-
-
     @Test
     public void Test_Cnossos_Rail_emission_section_2() {
 
@@ -356,52 +354,53 @@ public class EvaluateRailWaySourceCNOSSOSTest {
 
     }
 
-   /* @Test
+    @Test
     public void Test_Cnossos_Rail_emission_section_6() {
-        String vehCat = "SNCF-BB66400";
+
+        evaluateRailwaySourceCnossos.setEvaluateRailwaySourceCnossos(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Rail_Vehicles_SNCF_2021.json"), EvaluateRailwaySourceCnossos.class.getResourceAsStream("Rail_Train_SNCF_2021.json"));
+
+        String vehCat = "SNCF2";
 
         double vehicleSpeed = 80;
-        double tDay = 1;
-        double tEvening = 0.3;
-        double tNight = 0.25;
-
-
         int rollingCondition = 0;
         double idlingTime = 0;
 
+        // Set : Take into account the number of units
+        double nBUnit = 2;
+
         int  nTracks=2;
-        int trackTransfer = 7;
-        int railRoughness = 3;
-        int impactNoise = 1;
+        int trackTransfer = 5;
+        int railRoughness = 1;
+        int impactNoise = 0;
         int bridgeTransfert = 0;
         int curvature = 0;
-        boolean isTunnel = true;
+        boolean isTunnel = false;
 
         double vMaxInfra = 160;
         double vehicleCommercial= 120;
 
-        int vehiclePerHour = (int) (1000*vehicleSpeed);
+        double tDay = 1;
+        double vehiclePerHour = (1000*vehicleSpeed); //for one vehicle
+        double deltaL0 = 10*Math.log10(vehiclePerHour*nTracks);
 
-        RailWayLW lWRailWay;
+        double deltaTDay = 10*Math.log10(tDay)-deltaL0;
+        //
 
-        double[] expectedValuesLWRolling = new double[]{-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99};
-        double[] expectedValuesLWTractionA = new double[]{-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99};
-        double[] expectedValuesLWTractionB = new double[]{-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99};
-        double[] expectedValuesLWAerodynamicA = new double[]{-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99};
-        double[] expectedValuesLWAerodynamicB = new double[]{-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99};
-        double[] expectedValuesLWBridge = new double[]{-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99};
+
+        double[] expectedValuesLWRolling = new double[]{16.9475,22.5814,27.2733,44.0837,46.0001,47.3733,49.0470,52.0237,52.6801,53.0160,52.1571,55.0792,59.4930,59.6502,57.2043,55.3730,57.9983,59.5517,58.9960,57.3328,54.5985,49.3786,48.0600,45.9195};
+
         RailwayVehicleParametersCnossos vehicleParameters = new RailwayVehicleParametersCnossos(vehCat, vehicleSpeed,vehiclePerHour, rollingCondition,idlingTime);
+        vehicleParameters.setSpectreVer(2);
         RailwayTrackParametersCnossos trackParameters = new RailwayTrackParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
                 impactNoise, bridgeTransfert, curvature, vehicleCommercial,isTunnel, nTracks);
-        lWRailWay = evaluateRailwaySourceCnossos.evaluate(vehicleParameters, trackParameters);
+        RailWayLW lWRailWay = evaluateRailwaySourceCnossos.evaluate(vehicleParameters, trackParameters);
 
         for (int idFreq = 0; idFreq < 24; idFreq++) {
-            assertEquals(expectedValuesLWRolling[idFreq], lWRailWay.getLWRolling()[idFreq], EPSILON_TEST1);
-            assertEquals(expectedValuesLWTractionA[idFreq], lWRailWay.getLWTractionA()[idFreq], EPSILON_TEST1);
-            assertEquals(expectedValuesLWTractionB[idFreq], lWRailWay.getLWTractionB()[idFreq], EPSILON_TEST1);
-            assertEquals(expectedValuesLWAerodynamicA[idFreq], lWRailWay.getLWAerodynamicA()[idFreq], EPSILON_TEST1);
-            assertEquals(expectedValuesLWAerodynamicB[idFreq], lWRailWay.getLWAerodynamicB()[idFreq], EPSILON_TEST1);
-            assertEquals(expectedValuesLWBridge[idFreq], lWRailWay.getLWBridge()[idFreq], EPSILON_TEST1);
+            // Compute sound powers per track meter
+            lWRailWay.getLWRolling()[idFreq] = 10*Math.log10(Math.pow(10,(lWRailWay.getLWRolling()[idFreq]+10 * Math.log10(nBUnit)+deltaTDay)/10));
+
+            assertEquals(expectedValuesLWRolling[idFreq], lWRailWay.getLWRolling()[idFreq] , EPSILON_TEST1);
         }
-    }*/
+
+    }
 }

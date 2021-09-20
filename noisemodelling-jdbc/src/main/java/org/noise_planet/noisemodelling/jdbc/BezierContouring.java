@@ -30,6 +30,8 @@ import org.locationtech.jts.index.quadtree.Quadtree;
 import org.locationtech.jts.operation.union.CascadedPolygonUnion;
 import org.locationtech.jts.simplify.TopologyPreservingSimplifier;
 import org.noise_planet.noisemodelling.pathfinder.ComputeRays;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.text.DecimalFormat;
@@ -40,6 +42,7 @@ import java.util.*;
  * @author  Nicolas Fortin, Université Gustave Eiffel
  */
 public class BezierContouring {
+    Logger log = LoggerFactory.getLogger(BezierContouring.class);
     static final int BATCH_MAX_SIZE = 500;
     String pointTable = "LDEN_RESULT";
     String triangleTable = "TRIANGLES";
@@ -376,20 +379,22 @@ public class BezierContouring {
                     ArrayList<Polygon> polygons = new ArrayList<>();
                     explode(entry.getValue().get(0), polygons);
                     for(Polygon polygon : polygons) {
-                        Coordinate[] extRing = generateBezierCurves(polygon.getExteriorRing().getCoordinates(), segmentTree, deltaPoints);
-                        LinearRing[] holes = new LinearRing[polygon.getNumInteriorRing()];
-                        for(int idHole = 0; idHole < holes.length; idHole++) {
-                            Coordinate[] hole = generateBezierCurves(polygon.getInteriorRingN(idHole).getCoordinates(), segmentTree, deltaPoints);
-                            holes[idHole] = factory.createLinearRing(hole);
+                        if(!polygon.isEmpty()) {
+                            Coordinate[] extRing = generateBezierCurves(polygon.getExteriorRing().getCoordinates(), segmentTree, deltaPoints);
+                            LinearRing[] holes = new LinearRing[polygon.getNumInteriorRing()];
+                            for (int idHole = 0; idHole < holes.length; idHole++) {
+                                Coordinate[] hole = generateBezierCurves(polygon.getInteriorRingN(idHole).getCoordinates(), segmentTree, deltaPoints);
+                                holes[idHole] = factory.createLinearRing(hole);
+                            }
+                            polygon = factory.createPolygon(factory.createLinearRing(extRing), holes);
+                            TopologyPreservingSimplifier simplifier = new TopologyPreservingSimplifier(polygon);
+                            simplifier.setDistanceTolerance(epsilon);
+                            Geometry res = simplifier.getResultGeometry();
+                            if (res instanceof Polygon) {
+                                polygon = (Polygon) res;
+                            }
+                            newPolygons.add(polygon);
                         }
-                        polygon = factory.createPolygon(factory.createLinearRing(extRing), holes);
-                        TopologyPreservingSimplifier simplifier = new TopologyPreservingSimplifier(polygon);
-                        simplifier.setDistanceTolerance(epsilon);
-                        Geometry res = simplifier.getResultGeometry();
-                        if(res instanceof Polygon) {
-                            polygon = (Polygon) res;
-                        }
-                        newPolygons.add(polygon);
                     }
                     entry.getValue().clear();
                     entry.getValue().addAll(newPolygons);
@@ -404,9 +409,14 @@ public class BezierContouring {
                 ArrayList<Polygon> polygons = new ArrayList<>();
                 if(!smooth) {
                     // Merge triangles
-                    CascadedPolygonUnion union = new CascadedPolygonUnion(entry.getValue());
-                    Geometry mergeTriangles = union.union();
-                    explode(mergeTriangles, polygons);
+                    try {
+                        CascadedPolygonUnion union = new CascadedPolygonUnion(entry.getValue());
+                        Geometry mergeTriangles = union.union();
+                        explode(mergeTriangles, polygons);
+                    } catch (TopologyException t) {
+                        log.warn(t.getLocalizedMessage(), t);
+                        explode(factory.createGeometryCollection(entry.getValue().toArray(new Geometry[0])), polygons);
+                    }
                 } else {
                     explode(factory.createGeometryCollection(entry.getValue().toArray(new Geometry[0])), polygons);
                 }

@@ -54,15 +54,16 @@ public class PropagationPath_Cnossos {
         List<SegmentPath> srPath = new ArrayList<SegmentPath>();
         Vector3D flatTopography = new Vector3D(new Coordinate(0,0,0),new Coordinate(0,0,0));
 
-        points.add(new PointPath(new Coordinate(0,0,0),1,0,new double[0], -1, PointPath.POINT_TYPE.SRCE));
-        points.add(new PointPath(new Coordinate(10,0,0),1,Double.NaN,Collections.nCopies(8, 0.5), -1, PointPath.POINT_TYPE.DIFH));
-        points.add(new PointPath(new Coordinate(20,0,0),1,Double.NaN,Collections.nCopies(8, 0.5), -1, PointPath.POINT_TYPE.DIFH));
-        points.add(new PointPath(new Coordinate(30,30,0),1,0,new double[0], -1, PointPath.POINT_TYPE.RECV));
+        points.add(new PointPath(new Coordinate(0,0,0),1,new double[0], -1, PointPath.POINT_TYPE.SRCE));
+        points.add(new PointPath(new Coordinate(10,0,0),Double.NaN,Collections.nCopies(8, 0.5), -1, PointPath.POINT_TYPE.DIFH));
+        points.add(new PointPath(new Coordinate(20,0,0),Double.NaN,Collections.nCopies(8, 0.5), -1, PointPath.POINT_TYPE.DIFH));
+        points.add(new PointPath(new Coordinate(30,30,0),0,new double[0], -1, PointPath.POINT_TYPE.RECV));
         segments.add(new SegmentPath(1, flatTopography,new Coordinate(0,0,0)));
         segments.add(new SegmentPath(1, flatTopography,new Coordinate(0,0,0)));
         srPath.add(new SegmentPath(1,flatTopography,new Coordinate(0,0,0)));
 
         PropagationPath propagationPath = new PropagationPath(favorable,points,segments,srPath);
+        propagationPath.setGs(0);
         PropagationProcessPathData propData = new PropagationProcessPathData();
         propData.setTemperature(15);
         propData.setHumidity(70);
@@ -84,12 +85,13 @@ public class PropagationPath_Cnossos {
         List<SegmentPath> srPath = new ArrayList<SegmentPath>();
         Vector3D flatTopography = new Vector3D(new Coordinate(0,0,0),new Coordinate(0,0,0));
 
-        points.add(new PointPath(new Coordinate(0,0,1),0,0,new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
-        points.add(new PointPath(new Coordinate(200,0,4),0,0,new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
+        points.add(new PointPath(new Coordinate(0,0,1),0,new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
+        points.add(new PointPath(new Coordinate(200,0,4),0,new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
         segments.add(new SegmentPath(0, flatTopography,new Coordinate(0,0,0)));
         srPath.add(new SegmentPath(0,flatTopography,new Coordinate(0,0,0)));
 
         PropagationPath propagationPath = new PropagationPath(favorable,points,segments, srPath);
+        propagationPath.setGs(0.0);
         PropagationProcessPathData propData = new PropagationProcessPathData();
         propData.setTemperature(15);
         propData.setHumidity(70);
@@ -112,11 +114,12 @@ public class PropagationPath_Cnossos {
         List<SegmentPath> srPath = new ArrayList<SegmentPath>();
         Vector3D flatTopography = new Vector3D(new Coordinate(0,0,0),new Coordinate(200,0,0));
 
-        points.add(new PointPath(new Coordinate(0, 0, 0.05), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
-        points.add(new PointPath(new Coordinate(200, 0, 4), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
+        points.add(new PointPath(new Coordinate(0, 0, 0.05), 0,  new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
+        points.add(new PointPath(new Coordinate(200, 0, 4), 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
         srPath.add(new SegmentPath(1,flatTopography,new Coordinate(0,0,0)));
 
         PropagationPath propagationPath = new PropagationPath(false,points,segments, srPath);
+        propagationPath.setGs(0.0);
         PropagationProcessPathData propData = new PropagationProcessPathData();
         propData.setTemperature(15);
         propData.setHumidity(70);
@@ -137,11 +140,12 @@ public class PropagationPath_Cnossos {
         List<SegmentPath> srPath = new ArrayList<SegmentPath>();
         Vector3D flatTopography = new Vector3D(new Coordinate(0,0,0),new Coordinate(200,0,0));
 
-        points.add(new PointPath(new Coordinate(0, 0, 0.05), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
-        points.add(new PointPath(new Coordinate(200, 0, 4), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
+        points.add(new PointPath(new Coordinate(0, 0, 0.05), 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
+        points.add(new PointPath(new Coordinate(200, 0, 4), 0,  new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
         srPath.add(new SegmentPath(1,flatTopography,new Coordinate(0,0,0)));
 
         PropagationPath propagationPath = new PropagationPath(true,points,segments, srPath);
+        propagationPath.setGs(0.0);
         PropagationProcessPathData propData = new PropagationProcessPathData();
         propData.setTemperature(15);
         propData.setHumidity(70);
@@ -162,11 +166,12 @@ public class PropagationPath_Cnossos {
         List<SegmentPath> srPath = new ArrayList<SegmentPath>();
         Vector3D flatTopography = new Vector3D(new Coordinate(0,0,0),new Coordinate(200,0,0));
 
-        points.add(new PointPath(new Coordinate(0, 0, 0.05), 0.0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
-        points.add(new PointPath(new Coordinate(200, 0, 4.), 0., 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
+        points.add(new PointPath(new Coordinate(0, 0, 0.05), 0.0, new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
+        points.add(new PointPath(new Coordinate(200, 0, 4.), 0.,  new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
         srPath.add(new SegmentPath(0.7,flatTopography,new Coordinate(0,0,0)));
 
         PropagationPath propagationPath = new PropagationPath(true,points,segments, srPath);
+        propagationPath.setGs(0.0);
         PropagationProcessPathData propData = new PropagationProcessPathData();
         propData.setTemperature(15);
         propData.setHumidity(70);
@@ -188,11 +193,12 @@ public class PropagationPath_Cnossos {
         List<SegmentPath> srPath = new ArrayList<SegmentPath>();
         Vector3D flatTopography = new Vector3D(new Coordinate(0,0,0),new Coordinate(200,0,0));
 
-        points.add(new PointPath(new Coordinate(0, 0, 0.05), 0., 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
-        points.add(new PointPath(new Coordinate(200, 0, 4.), 0., 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
+        points.add(new PointPath(new Coordinate(0, 0, 0.05), 0.,  new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
+        points.add(new PointPath(new Coordinate(200, 0, 4.), 0.,  new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
         srPath.add(new SegmentPath(0.7,flatTopography,new Coordinate(0,0,0)));
 
         PropagationPath propagationPath = new PropagationPath(false,points,segments, srPath);
+        propagationPath.setGs(0.0);
         PropagationProcessPathData propData = new PropagationProcessPathData();
         propData.setTemperature(15);
         propData.setHumidity(70);
@@ -200,75 +206,6 @@ public class PropagationPath_Cnossos {
 
         EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
         splCompare(evaluateAttenuationCnossos.evaluate(propagationPath, propData), "Test T03H", new double[]{-56.1, -56.2, -56.3, -60.6, -66.0, -72.6, -80.8, -88.5}, ERROR_EPSILON_TEST_T);
-    }
-
-
-    /**
-     * Sound propagation
-     * T05
-     * Diffraction on horizontal edges - building
-     *
-     * @throws LayerDelaunayError
-     */
-    @Test
-    public void T05H() throws LayerDelaunayError {
-
-        List<PointPath> points = new ArrayList<PointPath>();
-        List<SegmentPath> segments = new ArrayList<SegmentPath>();
-        List<SegmentPath> srPath = new ArrayList<SegmentPath>();
-        Vector3D flatTopography = new Vector3D(new Coordinate(0,0,0),new Coordinate(150,0,0));
-
-        points.add(new PointPath(new Coordinate(0, 0, 0.05), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
-        points.add(new PointPath(new Coordinate(50, 0, 10.0), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.DIFH));
-        points.add(new PointPath(new Coordinate(100, 0, 10.0), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.DIFH));
-        points.add(new PointPath(new Coordinate(150, 0, 2.0), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
-        // only first and last segment are necessary, even if it is possible to add more.
-        segments.add(new SegmentPath(0, flatTopography,new Coordinate(0,0,0)));
-        segments.add(new SegmentPath(0, flatTopography,new Coordinate(0,0,0)));
-        srPath.add(new SegmentPath(0,flatTopography,new Coordinate(0,0,0)));
-
-        PropagationPath propagationPath = new PropagationPath(false,points,segments, srPath);
-        PropagationProcessPathData propData = new PropagationProcessPathData();
-        propData.setTemperature(15);
-        propData.setHumidity(70);
-
-        EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
-        splCompare(evaluateAttenuationCnossos.evaluate(propagationPath, propData), "Test T05H", new double[]{-63.4, -67.2, -70.6, -73.9, -74.6, -75.3, -78.0, -88.2}, ERROR_EPSILON_TEST_T);
-
-  }
-
-    /**
-     * Sound propagation
-     * T05
-     * Diffraction on horizontal edges - building
-     *
-     * @throws LayerDelaunayError
-     */
-    @Test
-    public void T05F() throws LayerDelaunayError {
-
-        List<PointPath> points = new ArrayList<PointPath>();
-        List<SegmentPath> segments = new ArrayList<SegmentPath>();
-        List<SegmentPath> srPath = new ArrayList<SegmentPath>();
-        Vector3D flatTopography = new Vector3D(new Coordinate(0,0,0),new Coordinate(150,0,0));
-
-        points.add(new PointPath(new Coordinate(0, 0, 0.05), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
-        points.add(new PointPath(new Coordinate(50, 0, 10.0), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.DIFH));
-        points.add(new PointPath(new Coordinate(100, 0, 10.0), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.DIFH));
-        points.add(new PointPath(new Coordinate(150, 0, 2.0), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
-        // only first and last segment are necessary, even if it is possible to add more.
-        segments.add(new SegmentPath(0.0, flatTopography,new Coordinate(0,0,0)));
-        segments.add(new SegmentPath(0.0, flatTopography,new Coordinate(0,0,0)));
-        srPath.add(new SegmentPath(0.0,flatTopography,new Coordinate(0,0,0)));
-
-        PropagationPath propagationPath = new PropagationPath(true,points,segments, srPath);
-        PropagationProcessPathData propData = new PropagationProcessPathData();
-        propData.setTemperature(15);
-        propData.setHumidity(70);
-
-        EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
-        splCompare(evaluateAttenuationCnossos.evaluate(propagationPath, propData), "Test T05F", new double[]{-63.2, -67.0, -70.4, -73.6, -74.6, -75.3, -78.0, -88.07}, ERROR_EPSILON_TEST_T);
-
     }
 
 
@@ -287,12 +224,13 @@ public class PropagationPath_Cnossos {
         List<SegmentPath> srPath = new ArrayList<SegmentPath>();
         Vector3D smallSlope = new Vector3D(new Coordinate(0,0,0),new Coordinate(150,0,2));
 
-        points.add(new PointPath(new Coordinate(0, 0, 0.05), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
-        points.add(new PointPath(new Coordinate(150, 0, 10.0), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
+        points.add(new PointPath(new Coordinate(0, 0, 0.05), 0,  new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
+        points.add(new PointPath(new Coordinate(150, 0, 10.0), 0,  new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
         // only first and last segment are necessary, even if it is possible to add more.
         srPath.add(new SegmentPath(0.7,smallSlope,new Coordinate(0,0,0)));
 
         PropagationPath propagationPath = new PropagationPath(false,points,segments, srPath);
+        propagationPath.setGs(0.0);
         PropagationProcessPathData propData = new PropagationProcessPathData();
         propData.setTemperature(15);
         propData.setHumidity(70);
@@ -316,12 +254,13 @@ public class PropagationPath_Cnossos {
         List<SegmentPath> srPath = new ArrayList<SegmentPath>();
         Vector3D smallSlope = new Vector3D(new Coordinate(0,0,0),new Coordinate(150,0,2));
 
-        points.add(new PointPath(new Coordinate(0, 0, 0.05), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
-        points.add(new PointPath(new Coordinate(150, 0, 10.0), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
+        points.add(new PointPath(new Coordinate(0, 0, 0.05), 0,  new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
+        points.add(new PointPath(new Coordinate(150, 0, 10.0), 0,  new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
         // only first and last segment are necessary, even if it is possible to add more.
         srPath.add(new SegmentPath(0.7,smallSlope,new Coordinate(0,0,0)));
 
         PropagationPath propagationPath = new PropagationPath(true,points,segments, srPath);
+        propagationPath.setGs(0.0);
         PropagationProcessPathData propData = new PropagationProcessPathData();
         propData.setTemperature(15);
         propData.setHumidity(70);
@@ -345,13 +284,14 @@ public class PropagationPath_Cnossos {
         List<SegmentPath> srPath = new ArrayList<SegmentPath>();
         Vector3D flatTopography = new Vector3D(new Coordinate(0,0,0),new Coordinate(150,0,0));
 
-        points.add(new PointPath(new Coordinate(0, 0, 4), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
-        points.add(new PointPath(new Coordinate(75, 20, 4), 0, Double.NaN, Collections.nCopies(8, 0.3), -1, PointPath.POINT_TYPE.REFL));
-        points.add(new PointPath(new Coordinate(150, 0, 4), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
+        points.add(new PointPath(new Coordinate(0, 0, 4), 0,  new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
+        points.add(new PointPath(new Coordinate(75, 20, 4), 0, Collections.nCopies(8, 0.3), -1, PointPath.POINT_TYPE.REFL));
+        points.add(new PointPath(new Coordinate(150, 0, 4), 0,  new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
         // only first and last segment are necessary, even if it is possible to add more.
         srPath.add(new SegmentPath(0.,flatTopography,new Coordinate(0,0,0)));
 
         PropagationPath propagationPath = new PropagationPath(false,points,segments, srPath);
+        propagationPath.setGs(0.0);
         PropagationProcessPathData propData = new PropagationProcessPathData();
         propData.setTemperature(15);
         propData.setHumidity(70);
@@ -380,12 +320,13 @@ public class PropagationPath_Cnossos {
         List<SegmentPath> srPath = new ArrayList<SegmentPath>();
 
         Vector3D flatTopography = new Vector3D(new Coordinate(10,10,0),new Coordinate(200,50,0));
-        points.add(new PointPath(new Coordinate(10, 10, 1), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
-        points.add(new PointPath(new Coordinate(200, 50, 4), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
+        points.add(new PointPath(new Coordinate(10, 10, 1), 0,  new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
+        points.add(new PointPath(new Coordinate(200, 50, 4), 0,  new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
         segments.add(new SegmentPath(0, flatTopography,new Coordinate(0,0,0)));
         srPath.add(new SegmentPath(0,flatTopography,new Coordinate(0,0,0)));
 
         PropagationPath propagationPath = new PropagationPath(false,points,segments, srPath);
+        propagationPath.setGs(0.0);
         PropagationProcessPathData propData = new PropagationProcessPathData();
         propData.setTemperature(10);
         propData.setHumidity(70);
@@ -408,12 +349,13 @@ public class PropagationPath_Cnossos {
         List<SegmentPath> srPath = new ArrayList<SegmentPath>();
         Vector3D flatTopography = new Vector3D(new Coordinate(10,10,0),new Coordinate(200,50,0));
 
-        points.add(new PointPath(new Coordinate(10, 10, 1), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
-        points.add(new PointPath(new Coordinate(200, 50, 4), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
+        points.add(new PointPath(new Coordinate(10, 10, 1), 0,  new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
+        points.add(new PointPath(new Coordinate(200, 50, 4), 0,  new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
         segments.add(new SegmentPath(0, flatTopography,new Coordinate(0,0,0)));
         srPath.add(new SegmentPath(0,flatTopography,new Coordinate(0,0,0)));
 
         PropagationPath propagationPath = new PropagationPath(true,points,segments, srPath);
+        propagationPath.setGs(0.0);
         PropagationProcessPathData propData = new PropagationProcessPathData();
         propData.setTemperature(10);
         propData.setHumidity(70);
@@ -439,9 +381,9 @@ public class PropagationPath_Cnossos {
         List<SegmentPath> segments = new ArrayList<SegmentPath>();
         List<SegmentPath> srPath = new ArrayList<SegmentPath>();
 
-        points.add(new PointPath(new Coordinate(10, 10, 4.0), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
-        points.add(new PointPath(new Coordinate(175, 50, 4.0), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.DIFV));
-        points.add(new PointPath(new Coordinate(200, 10, 4.0), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
+        points.add(new PointPath(new Coordinate(10, 10, 4.0), 0,  new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
+        points.add(new PointPath(new Coordinate(175, 50, 4.0), 0,  new ArrayList<>(), -1, PointPath.POINT_TYPE.DIFV));
+        points.add(new PointPath(new Coordinate(200, 10, 4.0), 0,  new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
         // only first and last segment are necessary, even if it is possible to add more.
         segments.add(new SegmentPath(0.0, new Vector3D(new Coordinate(10,10,0),new Coordinate(175,50,0)),new Coordinate(0,0,0)));
         segments.add(new SegmentPath(0.0, new Vector3D(new Coordinate(175,50,0),new Coordinate(200,10,0)),new Coordinate(0,0,0)));
