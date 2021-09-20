@@ -3,10 +3,7 @@ package org.noise_planet.noisemodelling.jdbc.utils;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.io.WKTWriter;
 
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.Reader;
+import java.io.*;
 import java.math.BigDecimal;
 import java.net.URL;
 import java.sql.*;
@@ -18,12 +15,12 @@ import java.util.Map;
  * This class implements PreparedStatement in order to output to a File instead of a connection
  */
 public class StringPreparedStatements implements PreparedStatement {
-    BufferedWriter w;
+    Writer w;
     String query;
     Map<Integer, Object> parameters = new HashMap<>();
     WKTWriter wktWriter = new WKTWriter(3);
 
-    public StringPreparedStatements(BufferedWriter w, String query) {
+    public StringPreparedStatements(Writer w, String query) {
         this.w = w;
         this.query = query;
     }

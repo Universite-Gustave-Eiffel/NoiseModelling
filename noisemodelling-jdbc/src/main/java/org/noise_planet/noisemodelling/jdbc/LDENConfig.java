@@ -74,6 +74,7 @@ public class LDENConfig {
     String lwFrequencyPrepend = "LW";
 
     File sqlOutputFile;
+    Boolean sqlOutputFileCompression = true;
     Boolean dropResultsTable = true;
 
     public LDENConfig(INPUT_MODE input_mode) {
@@ -104,6 +105,14 @@ public class LDENConfig {
      */
     public Boolean getDropResultsTable() {
         return dropResultsTable;
+    }
+
+    public Boolean getSqlOutputFileCompression() {
+        return sqlOutputFileCompression;
+    }
+
+    public void setSqlOutputFileCompression(Boolean sqlOutputFileCompression) {
+        this.sqlOutputFileCompression = sqlOutputFileCompression;
     }
 
     /**

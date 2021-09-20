@@ -33,16 +33,14 @@ import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.zip.GZIPOutputStream;
 
 /**
  *
@@ -53,6 +51,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
     Thread tableWriterThread;
     Connection connection;
     static final int BATCH_MAX_SIZE = 500;
+    static final int WRITER_CACHE = 65536;
     LDENComputeRaysOut.LdenData ldenData = new LDENComputeRaysOut.LdenData();
     /**
      * Attenuation and other attributes relative to direction on sphere
@@ -234,7 +233,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
         LDENComputeRaysOut.LdenData ldenData;
         double[] a_weighting;
         boolean started = false;
-        BufferedWriter o;
+        Writer o;
 
         public TableWriter(Connection connection, LDENConfig ldenConfig, LDENComputeRaysOut.LdenData ldenData) {
             this.connection = connection;
@@ -484,6 +483,14 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
             }
         }
 
+        OutputStreamWriter getStream() throws IOException {
+            if(ldenConfig.sqlOutputFileCompression) {
+                return new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(sqlFilePath), WRITER_CACHE));
+            } else {
+                return new OutputStreamWriter(new BufferedOutputStream(new FileOutputStream(sqlFilePath), WRITER_CACHE));
+            }
+        }
+
         @Override
         public void run() {
             // Drop and create tables
@@ -501,7 +508,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
                     ldenConfig.aborted = true;
                 }
             } else {
-                try(BufferedWriter bw = new BufferedWriter(new FileWriter(sqlFilePath))) {
+                try(OutputStreamWriter bw = getStream()) {
                     o = bw;
                     init();
                     mainLoop();
