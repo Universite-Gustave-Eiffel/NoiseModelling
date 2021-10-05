@@ -36,6 +36,7 @@ package org.noise_planet.noisemodelling.pathfinder;
 import org.locationtech.jts.algorithm.CGAlgorithms3D;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.LineSegment;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.math.Vector3D;
 
@@ -43,7 +44,11 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+
+import static org.noise_planet.noisemodelling.pathfinder.utils.GeometryUtils.projectPointOnSegment;
+import static org.noise_planet.noisemodelling.pathfinder.utils.GeometryUtils.projectPointOnVector;
 
 /**
  * PropagationPath
@@ -56,7 +61,7 @@ import java.util.List;
 
 public class PropagationPath {
     // given by user
-    private List<SegmentPath> srList; // list of source-receiver path (including prime path)
+    private SegmentPath srSegment; // list of source-receiver path (including prime path)
     private List<PointPath> pointList; // list of points (source, receiver or diffraction and reflection points)
     private List<SegmentPath> segmentList; // list of segments [S,O1] and [On-1,R] (O1 and On-1 are respectively the first diffraction point and On-1 the last diffration point)
     private boolean favorable; // if true, favorable meteorological condition path
@@ -70,8 +75,8 @@ public class PropagationPath {
     public List<Integer> difVPoints = new ArrayList<Integer>(); // diffraction points indices on vertical edges
     public List<Integer> refPoints = new ArrayList<Integer>(); // reflection points indices
     public boolean keepAbsorption = false;
-    public AbsorptionData absorptionData = null;
-    public GroundAttenuation groundAttenuation = null;
+    public AbsorptionData absorptionData = new AbsorptionData();
+    public GroundAttenuation groundAttenuation = new GroundAttenuation();
 
     /**
      * parameters given by user
@@ -79,11 +84,11 @@ public class PropagationPath {
      * @param pointList
      * @param segmentList
      */
-    public PropagationPath(boolean favorable, List<PointPath> pointList, List<SegmentPath> segmentList , List<SegmentPath> srList) {
+    public PropagationPath(boolean favorable, List<PointPath> pointList, List<SegmentPath> segmentList , SegmentPath srSegment) {
         this.favorable = favorable;
         this.pointList = pointList;
         this.segmentList = segmentList;
-        this.srList = srList;
+        this.srSegment = srSegment;
     }
 
     public PropagationPath() {
@@ -147,10 +152,7 @@ public class PropagationPath {
         for(SegmentPath segmentPath : segmentList) {
             segmentPath.writeStream(out);
         }
-        out.writeInt(srList.size());
-        for(SegmentPath segmentPath : srList) {
-            segmentPath.writeStream(out);
-        }
+        srSegment.writeStream(out);
     }
 
     /**
@@ -182,13 +184,8 @@ public class PropagationPath {
             segmentPath.readStream(in);
             segmentList.add(segmentPath);
         }
-        int srListSize = in.readInt();
-        srList = new ArrayList<>(srListSize);
-        for(int i=0; i < srListSize; i++) {
-            SegmentPath segmentPath = new SegmentPath();
-            segmentPath.readStream(in);
-            srList.add(segmentPath);
-        }
+        SegmentPath srSegment = new SegmentPath();
+        srSegment.readStream(in);
     }
 
 
@@ -204,13 +201,13 @@ public class PropagationPath {
 
     public List<SegmentPath> getSegmentList() {return segmentList;}
 
-    public List<SegmentPath> getSRSegmentList() {return srList;}
+    public SegmentPath getSRSegment() {return srSegment;}
 
     public void setPointList(List<PointPath> pointList) {this.pointList = pointList;}
 
     public void setSegmentList(List<SegmentPath>  segmentList) {this.segmentList = segmentList;}
 
-    public void setSRList(List<SegmentPath> srList) {this.srList = srList;}
+    public void setSRSegment(SegmentPath srSegment) {this.srSegment = srSegment;}
 
 
     public PropagationPath(List<SegmentPath> segmentList) {
@@ -226,33 +223,14 @@ public class PropagationPath {
         setInitialized(false);
     }
 
-
-    public Coordinate projectPointonSegment(Coordinate P, Vector3D vector, Coordinate pInit) {
-        Coordinate A = new Coordinate(pInit.x, pInit.y,pInit.z);
-        Coordinate B = new Coordinate(vector.getX()+pInit.x, vector.getY()+pInit.y,vector.getZ()+pInit.z);
-
-        return new Coordinate(A.x+(Vector3D.dot(A,P,A,B) / Vector3D.dot(A,B,A,B))*vector.getX(),
-                A.y+(Vector3D.dot(A,P,A,B) / Vector3D.dot(A,B,A,B))*vector.getY(),
-                A.z+(Vector3D.dot(A,P,A,B) / Vector3D.dot(A,B,A,B))*vector.getZ());
-    }
-
-
-    public Coordinate projectPointonVector(Coordinate P, Vector3D vector,Coordinate pInit) {
-        Coordinate A = new Coordinate(pInit.x, pInit.y,pInit.z);
-        Coordinate B = new Coordinate(vector.getX()+pInit.x, vector.getY()+pInit.y,vector.getZ()+pInit.z);
-        return new Coordinate(A.x+(Vector3D.dot(A,P,A,B) / Vector3D.dot(A,B,A,B))*vector.getX(),
-                A.y+(Vector3D.dot(A,P,A,B) / Vector3D.dot(A,B,A,B))*vector.getY(),
-                A.z+(Vector3D.dot(A,P,A,B) / Vector3D.dot(A,B,A,B))*vector.getZ());
-    }
-
     /**
      * Initialise the propagation path
      */
     public void initPropagationPath() {
         if(!isInitialized()) {
-            computeAugmentedPath();
-            computeAugmentedSegments();
-            computeAugmentedSRPath();
+            //computeAugmentedPath();
+            //computeAugmentedSegments();
+            //computeAugmentedSRPath();
             setInitialized(true);
         }
     }
@@ -264,43 +242,30 @@ public class PropagationPath {
     public void computeAugmentedSRPath() {
         double dPath =0 ;
 
-        SegmentPath SR = this.srList.get(0);
-
-        SR.idPtStart = 0;
-        SR.idPtFinal = pointList.size()-1;
-
-        // Original absolute coordinates
-        Coordinate S = (Coordinate) pointList.get(0).coordinate.clone();
-        Coordinate R = (Coordinate) pointList.get(pointList.size()-1).coordinate.clone();
-
-        // Projected source and receiver on MeanPlane
-        Coordinate SGround = projectPointonVector(S,SR.vector3D,SR.pInit);
-        Coordinate RGround = projectPointonVector(R,SR.vector3D,SR.pInit);
-
-        SR.d = CGAlgorithms3D.distance(S, R);
-        SR.dp = CGAlgorithms3D.distance(SGround, RGround);
+        srSegment.idPtStart = 0;
+        srSegment.idPtFinal = pointList.size()-1;
 
         // In case of reflections the slanted path passes through the image sources.
         if (refPoints.size()>0){
-            Coordinate ini = S;
-            Coordinate iniGround = SGround;
-            SR.d =0.;
-            SR.dp = 0.;
+            Coordinate ini = srSegment.s;
+            Coordinate iniGround = srSegment.sMeanPlane;
+            srSegment.d =0.;
+            srSegment.dp = 0.;
             for (int idPoint = 1; idPoint < pointList.size(); idPoint++) {
                 if (pointList.get(idPoint).type == PointPath.POINT_TYPE.REFL){
-                    SR.d += CGAlgorithms3D.distance(ini, pointList.get(idPoint).coordinate);
+                    srSegment.d += CGAlgorithms3D.distance(ini, pointList.get(idPoint).coordinate);
                     ini = pointList.get(idPoint).coordinate;
 
-                    SR.dp += CGAlgorithms3D.distance(iniGround, projectPointonVector(pointList.get(idPoint).coordinate,SR.vector3D,SR.pInit));
-                    iniGround = projectPointonVector(pointList.get(idPoint).coordinate,SR.vector3D,SR.pInit);
+                    srSegment.dp += CGAlgorithms3D.distance(iniGround, projectPointOnVector(pointList.get(idPoint).coordinate,srSegment.meanGdPlane,srSegment.pInit));
+                    iniGround = projectPointOnVector(pointList.get(idPoint).coordinate,srSegment.meanGdPlane,srSegment.pInit);
                 }
             }
-            SR.d  += CGAlgorithms3D.distance(ini, R);
-            SR.dp += CGAlgorithms3D.distance(iniGround, RGround);
+            srSegment.d  += CGAlgorithms3D.distance(ini, srSegment.r);
+            srSegment.dp += CGAlgorithms3D.distance(iniGround, srSegment.rMeanPlane);
         }
 
-        SR.dc = (favorable) ? getRayCurveLength(SR.d,SR.d): SR.d;
-        SR.dPath = SR.d;
+        srSegment.dc = (favorable) ? getRayCurveLength(srSegment.d,srSegment.d): srSegment.d;
+        srSegment.dPath = srSegment.d;
         if (difVPoints.size()>0) {
             double gPath = 0;
             double dpSegments = 0;
@@ -316,22 +281,22 @@ public class PropagationPath {
             }
 
             if (pointList.size()>3){
-                SR.eLength = dPath;
+                srSegment.eLength = dPath;
             }
-            SR.dPath = dPath
-                    + CGAlgorithms3D.distance(S, pointList.get(1).coordinate)
-                    + CGAlgorithms3D.distance(pointList.get(pointList.size()-2).coordinate,R);
-            SR.dc = SR.d;
+            srSegment.dPath = dPath
+                    + CGAlgorithms3D.distance(srSegment.s, pointList.get(1).coordinate)
+                    + CGAlgorithms3D.distance(pointList.get(pointList.size()-2).coordinate, srSegment.r);
+            srSegment.dc = srSegment.d;
 
             double convex = 1; // if path is convex, delta is positive, otherwise negative
 
-            SR.gPath = gPath/SR.dPath;
+            srSegment.gPath = gPath/srSegment.dPath;
 
-            SR.dp = SR.dPath;
+            srSegment.dp = srSegment.dPath;
 
             // todo handle with unconvex path
             //if (Vector3D.dot(S,R,S,pointList.get(difVPoints.get(0)).coordinate)<0){convex = -1;}
-            SR.delta = convex * (SR.dPath - SR.d);
+            srSegment.delta = convex * (srSegment.dPath - srSegment.d);
         }
 
         // diffraction on horizontal edges
@@ -340,49 +305,49 @@ public class PropagationPath {
             dPath = 0;
 
             // Symmetric coordinates to the gound mean plane see Figure 2.5.c
-            Coordinate SGroundSeg = this.segmentList.get(0).sGround;
-            Coordinate RGroundSeg = this.segmentList.get(segmentList.size()-1).rGround;
-            Coordinate Sprime = new Coordinate(2 * SGroundSeg.x - S.x, 2 * SGroundSeg.y - S.y, 2 * SGroundSeg.z - S.z);
-            Coordinate Rprime = new Coordinate(2 * RGroundSeg.x - R.x, 2 * RGroundSeg.y - R.y, 2 * RGroundSeg.z - R.z);
+            Coordinate SGroundSeg = this.segmentList.get(0).sMeanPlane;
+            Coordinate RGroundSeg = this.segmentList.get(segmentList.size()-1).rMeanPlane;
+            Coordinate Sprime = new Coordinate(2 * SGroundSeg.x - srSegment.s.x, 2 * SGroundSeg.y - srSegment.s.y, 2 * SGroundSeg.z - srSegment.s.z);
+            Coordinate Rprime = new Coordinate(2 * RGroundSeg.x - srSegment.r.x, 2 * RGroundSeg.y - srSegment.r.y, 2 * RGroundSeg.z - srSegment.r.z);
 
-            double gpath = SR.gPath;
-            SegmentPath SRp = new SegmentPath(gpath, new Vector3D(S, Rprime),SR.pInit);
-            SegmentPath SpR = new SegmentPath(gpath, new Vector3D(Sprime, R),Sprime);
+            double gpath = srSegment.gPath;
+            SegmentPath SRp = new SegmentPath(gpath, new Vector3D(srSegment.s, Rprime),srSegment.pInit);
+            SegmentPath SpR = new SegmentPath(gpath, new Vector3D(Sprime, srSegment.r),Sprime);
 
-            SpR.d = CGAlgorithms3D.distance(Sprime, R);
-            SRp.d = CGAlgorithms3D.distance(S, Rprime);
+            SpR.d = new LineSegment(Sprime, srSegment.r).getLength();
+            SRp.d = new LineSegment(srSegment.s, Rprime).getLength();
 
-            SRp.dp = SR.dp;
-            SpR.dp = SR.dp;
+            SRp.dp = srSegment.dp;
+            SpR.dp = srSegment.dp;
 
             if (!this.favorable){
                 for (int idPoint = 2; idPoint < pointList.size()-1; idPoint++) {
-                    dPath += CGAlgorithms3D.distance(pointList.get(idPoint - 1).coordinate, pointList.get(idPoint).coordinate);
+                    dPath += new LineSegment(pointList.get(idPoint - 1).coordinate, pointList.get(idPoint).coordinate).getLength();
                 }
 
                 if (pointList.size()>3){
-                    SR.eLength = dPath;
+                    srSegment.eLength = dPath;
                     SpR.eLength = dPath;
                     SRp.eLength = dPath;
                 }
-                SR.dPath = dPath
-                        + CGAlgorithms3D.distance(S, pointList.get(1).coordinate)
-                        + CGAlgorithms3D.distance(pointList.get(pointList.size()-2).coordinate,R);
+                srSegment.dPath = dPath
+                        + new LineSegment(srSegment.s, pointList.get(1).coordinate).getLength()
+                        + new LineSegment(pointList.get(pointList.size()-2).coordinate,srSegment.r).getLength();
                 SpR.dPath = dPath
-                        + CGAlgorithms3D.distance(Sprime, pointList.get(1).coordinate)
-                        + CGAlgorithms3D.distance(pointList.get(pointList.size()-2).coordinate,R);
+                        + new LineSegment(Sprime, pointList.get(1).coordinate).getLength()
+                        + new LineSegment(pointList.get(pointList.size()-2).coordinate,srSegment.r).getLength();
                 SRp.dPath = dPath
-                        + CGAlgorithms3D.distance(S, pointList.get(1).coordinate)
-                        + CGAlgorithms3D.distance(pointList.get(pointList.size()-2).coordinate,Rprime);
+                        + new LineSegment(srSegment.s, pointList.get(1).coordinate).getLength()
+                        + new LineSegment(pointList.get(pointList.size()-2).coordinate,Rprime).getLength();
 
                 SpR.dc = SpR.d;
                 SRp.dc = SRp.d;
-                SR.dc = SR.d;
+                srSegment.dc = srSegment.d;
 
                 // if path is convex, delta is positive, otherwise negative
-                double convex = Vector3D.dot(S,R,S,pointList.get(difHPoints.get(0)).coordinate)<0 ? -1 : 1;
+                double convex = Vector3D.dot(srSegment.s, srSegment.r, srSegment.s, pointList.get(difHPoints.get(0)).coordinate)<0 ? -1 : 1;
 
-                SR.delta = convex * (SR.dPath - SR.d);
+                srSegment.delta = convex * (srSegment.dPath - srSegment.d);
                 SRp.delta = convex * (SRp.dPath - SRp.d);
                 SpR.delta = convex * (SpR.dPath - SpR.d);
             }
@@ -391,154 +356,119 @@ public class PropagationPath {
 
                 // if the straight sound ray SR is masked by the obstacle (1st and 2nd case in Figure 2.5.e)
                 for (int idPoint = 2; idPoint < pointList.size()-1; idPoint++) {
-                    dPath += getRayCurveLength(CGAlgorithms3D.distance(pointList.get(idPoint - 1).coordinate, pointList.get(idPoint).coordinate), SR.d);
+                    dPath += getRayCurveLength(CGAlgorithms3D.distance(pointList.get(idPoint - 1).coordinate, pointList.get(idPoint).coordinate), srSegment.d);
                 }
 
                 if (difHPoints.size()>1){
                     double dDif = CGAlgorithms3D.distance(pointList.get(difHPoints.get(0)).coordinate,pointList.get(difHPoints.get(difHPoints.size()-1)).coordinate);
-                    SR.eLength = getRayCurveLength(dDif,SR.d);
-                    SpR.eLength = SR.eLength;
-                    SRp.eLength = SR.eLength;
+                    srSegment.eLength = getRayCurveLength(dDif,srSegment.d);
+                    SpR.eLength = srSegment.eLength;
+                    SRp.eLength = srSegment.eLength;
                 }
 
-                SR.dPath = dPath
-                        + getRayCurveLength(CGAlgorithms3D.distance(S, pointList.get(1).coordinate), SR.d)
-                        + getRayCurveLength(CGAlgorithms3D.distance(pointList.get(pointList.size()-2).coordinate, R), SR.d);
-                SR.dc = getRayCurveLength(SR.d, SR.d);
+                srSegment.dPath = dPath
+                        + getRayCurveLength(CGAlgorithms3D.distance(srSegment.s, pointList.get(1).coordinate), srSegment.d)
+                        + getRayCurveLength(CGAlgorithms3D.distance(pointList.get(pointList.size()-2).coordinate, srSegment.r), srSegment.d);
+                srSegment.dc = getRayCurveLength(srSegment.d, srSegment.d);
 
                 if (difHPoints.size()>0) {
                     SpR.dPath = dPath
-                            + getRayCurveLength(CGAlgorithms3D.distance(Sprime, pointList.get(1).coordinate), SR.d)
-                            + getRayCurveLength(CGAlgorithms3D.distance(pointList.get(pointList.size() - 2).coordinate, R), SR.d);
-                    SpR.dc = getRayCurveLength(SpR.d, SR.d);
+                            + getRayCurveLength(CGAlgorithms3D.distance(Sprime, pointList.get(1).coordinate), srSegment.d)
+                            + getRayCurveLength(CGAlgorithms3D.distance(pointList.get(pointList.size() - 2).coordinate, srSegment.r), srSegment.d);
+                    SpR.dc = getRayCurveLength(SpR.d, srSegment.d);
 
                     SRp.dPath = dPath
-                            + getRayCurveLength(CGAlgorithms3D.distance(S, pointList.get(1).coordinate), SR.d)
-                            + getRayCurveLength(CGAlgorithms3D.distance(pointList.get(pointList.size() - 2).coordinate, Rprime), SR.d);
-                    SRp.dc = getRayCurveLength(SRp.d, SR.d);
+                            + getRayCurveLength(CGAlgorithms3D.distance(srSegment.s, pointList.get(1).coordinate), srSegment.d)
+                            + getRayCurveLength(CGAlgorithms3D.distance(pointList.get(pointList.size() - 2).coordinate, Rprime), srSegment.d);
+                    SRp.dc = getRayCurveLength(SRp.d, srSegment.d);
                 }
 
                 // todo for the multiple diffractions in favourable conditions: Eq. 2.5.28
 
                 // Iif the straight sound ray SR is not masked by the obstacle (3rd case in Figure 2.5.e)
-                if (Vector3D.dot(S,R,S,pointList.get(difHPoints.get(0)).coordinate)<0) {
-                    Coordinate A = projectPointonVector(pointList.get(difHPoints.get(0)).coordinate,SR.vector3D, SR.pInit);
-                    double SA = getRayCurveLength(CGAlgorithms3D.distance(S, A), SR.d);
-                    double AR = getRayCurveLength(CGAlgorithms3D.distance(A, R), SR.d);
-                    double SO = getRayCurveLength(CGAlgorithms3D.distance(S, pointList.get(difHPoints.get(0)).coordinate), SR.d);
-                    double OR = getRayCurveLength(CGAlgorithms3D.distance(pointList.get(difHPoints.get(0)).coordinate, R), SR.d);
-                    double SpA = getRayCurveLength(CGAlgorithms3D.distance(Sprime, A), SR.d);
-                    double ARp = getRayCurveLength(CGAlgorithms3D.distance(A, Rprime), SR.d);
-                    double SpO = getRayCurveLength(CGAlgorithms3D.distance(Sprime, pointList.get(difHPoints.get(0)).coordinate), SR.d);
-                    double ORp = getRayCurveLength(CGAlgorithms3D.distance(pointList.get(difHPoints.get(0)).coordinate, Rprime), SR.d);
-                    SR.delta =  2*SA+2*AR-SO-OR-SR.dc; // Eq. 2.5.27
+                if (Vector3D.dot(srSegment.s, srSegment.r , srSegment.s, pointList.get(difHPoints.get(0)).coordinate)<0) {
+                    Coordinate A = projectPointOnVector(pointList.get(difHPoints.get(0)).coordinate,srSegment.meanGdPlane, srSegment.pInit);
+                    double SA = getRayCurveLength(CGAlgorithms3D.distance(srSegment.s, A), srSegment.d);
+                    double AR = getRayCurveLength(CGAlgorithms3D.distance(A, srSegment.r), srSegment.d);
+                    double SO = getRayCurveLength(CGAlgorithms3D.distance(srSegment.s, pointList.get(difHPoints.get(0)).coordinate), srSegment.d);
+                    double OR = getRayCurveLength(CGAlgorithms3D.distance(pointList.get(difHPoints.get(0)).coordinate, srSegment.r), srSegment.d);
+                    double SpA = getRayCurveLength(CGAlgorithms3D.distance(Sprime, A), srSegment.d);
+                    double ARp = getRayCurveLength(CGAlgorithms3D.distance(A, Rprime), srSegment.d);
+                    double SpO = getRayCurveLength(CGAlgorithms3D.distance(Sprime, pointList.get(difHPoints.get(0)).coordinate), srSegment.d);
+                    double ORp = getRayCurveLength(CGAlgorithms3D.distance(pointList.get(difHPoints.get(0)).coordinate, Rprime), srSegment.d);
+                    srSegment.delta =  2*SA+2*AR-SO-OR-srSegment.dc; // Eq. 2.5.27
                     SRp.delta =  2*SA+2*ARp-SO-ORp-SRp.dc;
                     SpR.delta = 2*SpA+2*AR-SpO-OR-SpR.dc;
                 }else {
-                    SR.delta =  SR.dPath - SR.dc; // Eq. 2.5.26
+                    srSegment.delta =  srSegment.dPath - srSegment.dc; // Eq. 2.5.26
                     SRp.delta = SRp.dPath - SRp.dc;
                     SpR.delta = SpR.dPath - SpR.dc;
                 }
             }
-            this.srList.add(SpR);
-            this.srList.add(SRp);
+            //this.srList.add(SpR);
+            //this.srList.add(SRp);
         }
 
-
-        SR.zs  =SR.getZs(this, SR);
-        SR.zr  =SR.getZr(this, SR);
-
         // see Point 5.3 Equivalent heights in AFNOR document
-        if (SR.zs<=0){SR.zs = 0.000000001;}
-        if (SR.zr<=0){SR.zr = 0.000000001;}
+        if (srSegment.zsH <=0){srSegment.zsH = 0.000000001;}
+        if (srSegment.zrH <=0){srSegment.zrH = 0.000000001;}
 
 
-        double testForm = SR.dp / (30 * (SR.zs + SR.zr)); // if <= 1, then the distinction between the type of ground located near the source and the type of ground located near the receiver is negligible.
-        SR.testForm = testForm;
+        double testForm = srSegment.dp / (30 * (srSegment.zsH + srSegment.zrH)); // if <= 1, then the distinction between the type of ground located near the source and the type of ground located near the receiver is negligible.
+        srSegment.testFormH = testForm;
 
         double gPathPrime;
 
         // if dp <= 30(zs + zr), then the distinction between the type of ground located near the source and the type of ground located near the receiver is negligible.
         // Eq. 2.5.14
         if (testForm <= 1) {
-            SR.gPathPrime = testForm * SR.gPath + (1 - testForm) * pointList.get(0).gs;
+            srSegment.gPathPrime = testForm * srSegment.gPath + (1 - testForm) * pointList.get(0).gs;
         } else {
-            SR.gPathPrime = SR.gPath;
+            srSegment.gPathPrime = srSegment.gPath;
         }
 
-        this.srList.set(0,SR);
+        //this.srList.set(0,SR);
 
         // Compute PRIME zs, zr and testForm
-        double zsPrime= SR.getZsPrime(this,SR );
-        double zrPrime = SR.getZrPrime(this, SR);
+        double zsPrime= srSegment.getZsPrime(this, srSegment);
+        double zrPrime = srSegment.getZrPrime(this, srSegment);
 
-        double testFormPrime = SR.dp / (30 * (zsPrime + zrPrime));
-        SR.testFormPrime = testFormPrime;
+        srSegment.testFormF = srSegment.dp / (30 * (zsPrime + zrPrime));
     }
 
 
     void computeAugmentedSegments() {
         for (int idSegment = 0; idSegment < segmentList.size(); idSegment++) {
 
-            segmentList.get(idSegment).idPtStart = idSegment;
-            segmentList.get(idSegment).idPtFinal = idSegment+1;
+            SegmentPath seg = segmentList.get(idSegment);
 
-            double zs = segmentList.get(idSegment).getZs(this, this.segmentList.get(idSegment));
-            double zr = segmentList.get(idSegment).getZr(this, this.segmentList.get(idSegment));
+            seg.idPtStart = idSegment;
+            seg.idPtFinal = idSegment+1;
 
             // see Point 5.3 Equivalent heights in AFNOR document
-            if (zs<=0){zs = 0.000000001;}
-            if (zr<=0){zr = 0.000000001;}
+            if (seg.zsH <=0){seg.zsH = 0.000000001;}
+            if (seg.zrH <=0){seg.zrH = 0.000000001;}
 
-            this.segmentList.get(idSegment).zs  = zs;
-            this.segmentList.get(idSegment).zr = zr;
-
-            Coordinate S = (Coordinate) pointList.get(idSegment).coordinate.clone();
-            Coordinate R = (Coordinate) pointList.get(idSegment+1).coordinate.clone();
-
-            // Projected source and receiver on MeanPlane
-            Coordinate SGround = projectPointonVector(S,segmentList.get(idSegment).vector3D,segmentList.get(idSegment).pInit);
-            Coordinate RGround = projectPointonVector(R,segmentList.get(idSegment).vector3D,segmentList.get(idSegment).pInit);
-
-            this.segmentList.get(idSegment).sGround = SGround;
-            this.segmentList.get(idSegment).rGround = RGround;
-
-            double dp = CGAlgorithms3D.distance(SGround, RGround);
-            segmentList.get(idSegment).dp = dp;
-
-            double d = CGAlgorithms3D.distance(S, R);
-            segmentList.get(idSegment).d = d;
-
-            if (!this.favorable){
-                segmentList.get(idSegment).dc = d;
-            }
-            else
-            {
-                segmentList.get(idSegment).dc = getRayCurveLength(d, d);
-            }
-
-
+            seg.dc = favorable ? getRayCurveLength(seg.d, seg.d) : seg.d;
 
             double gs = pointList.get(0).gs;
 
-            double testForm = dp / (30 * (zs + zr));
-            segmentList.get(idSegment).testForm = testForm;
+            seg.testFormH = seg.dp / (30 * (seg.zsH + seg.zrH));
 
             // Compute PRIME zs, zr and testForm
-            double zsPrime= segmentList.get(idSegment).getZsPrime(this,this.segmentList.get(idSegment) );
-            double zrPrime = segmentList.get(idSegment).getZrPrime(this, this.segmentList.get(idSegment));
+            double zsPrime= seg.getZsPrime(this, seg );
+            double zrPrime = seg.getZrPrime(this, seg);
 
-            double testFormPrime = dp / (30 * (zs + zrPrime));
-            segmentList.get(idSegment).testFormPrime = testFormPrime;
+            seg.testFormF = seg.dp / (30 * (zsPrime + zrPrime));
 
             double gPathPrime;
 
-            if (testForm <= 1) {
-                gPathPrime = testForm * segmentList.get(idSegment).gPath + (1 - testForm) * gs;
+            if (seg.testFormH <= 1) {
+                gPathPrime = seg.testFormH * seg.gPath + (1 - seg.testFormH) * gs;
             } else {
-                gPathPrime = segmentList.get(idSegment).gPath;
+                gPathPrime = seg.gPath;
             }
-            this.segmentList.get(idSegment).gPathPrime = gPathPrime;
+            seg.gPathPrime = gPathPrime;
 
         }
 
@@ -568,12 +498,12 @@ public class PropagationPath {
     }
 
     double computeZs(SegmentPath segmentPath) {
-        double zs = pointList.get(segmentPath.idPtStart).coordinate.z - projectPointonSegment(pointList.get(segmentPath.idPtStart).coordinate,segmentPath.vector3D,segmentPath.pInit).z;
+        double zs = pointList.get(segmentPath.idPtStart).coordinate.z - projectPointOnSegment(pointList.get(segmentPath.idPtStart).coordinate,segmentPath.meanGdPlane,segmentPath.pInit).z;
         return ((zs > 0) ? zs : 0); // Section 2.5.3 - If the equivalent height of a point becomes negative, i.e. if the point is located below the mean ground plane, a null height is retained, and the equivalent point is then identical with its possible image.
     }
 
     public double computeZr(SegmentPath segmentPath) {
-        double zr = pointList.get(segmentPath.idPtFinal).coordinate.z - projectPointonSegment(pointList.get(segmentPath.idPtFinal).coordinate,segmentPath.vector3D,segmentPath.pInit).z;
+        double zr = pointList.get(segmentPath.idPtFinal).coordinate.z - projectPointOnSegment(pointList.get(segmentPath.idPtFinal).coordinate,segmentPath.meanGdPlane,segmentPath.pInit).z;
         return ((zr > 0) ? zr : 0); // Section 2.5.3 - If the equivalent height of a point becomes negative, i.e. if the point is located below the mean ground plane, a null height is retained, and the equivalent point is then identical with its possible image.
     }
 
@@ -585,9 +515,9 @@ public class PropagationPath {
     public double computeZsPrime(SegmentPath segmentPath) {
         // The height corrections deltazs and deltazr convey the effect of the sound ray bending. deltazT accounts for the effect of the turbulence.
         double alpha0 = 2 * Math.pow(10, -4);
-        double deltazt = 6 * Math.pow(10, -3) * segmentPath.dp / (segmentPath.zs + segmentPath.zr);
-        double deltazs = alpha0 * Math.pow((segmentPath.zs / (segmentPath.zs + segmentPath.zr)), 2) * (Math.pow(segmentPath.dp, 2) / 2);
-        return segmentPath.zs + deltazs + deltazt;
+        double deltazt = 6 * Math.pow(10, -3) * segmentPath.dp / (segmentPath.zsH + segmentPath.zrH);
+        double deltazs = alpha0 * Math.pow((segmentPath.zsH / (segmentPath.zsH + segmentPath.zrH)), 2) * (Math.pow(segmentPath.dp, 2) / 2);
+        return segmentPath.zsH + deltazs + deltazt;
     }
 
     /**
@@ -598,9 +528,9 @@ public class PropagationPath {
     public double computeZrPrime(SegmentPath segmentPath) {
         // The height corrections deltazs and deltazr convey the effect of the sound ray bending. deltazT accounts for the effect of the turbulence.
         double alpha0 = 2 * Math.pow(10, -4);
-        double deltazt = 6 * Math.pow(10, -3) * segmentPath.dp / (segmentPath.zs + segmentPath.zr);
-        double deltazr = alpha0 * Math.pow((segmentPath.zr / (segmentPath.zs + segmentPath.zr)), 2) * (Math.pow(segmentPath.dp, 2) / 2);
-        return segmentPath.zr + deltazr + deltazt;
+        double deltazt = 6 * Math.pow(10, -3) * segmentPath.dp / (segmentPath.zsH + segmentPath.zrH);
+        double deltazr = alpha0 * Math.pow((segmentPath.zrH / (segmentPath.zsH + segmentPath.zrH)), 2) * (Math.pow(segmentPath.dp, 2) / 2);
+        return segmentPath.zrH + deltazr + deltazt;
     }
 
     /**
@@ -673,6 +603,20 @@ public class PropagationPath {
         public double[] aBoundaryF;
         public double[] aGlobalH;
         public double[] aGlobalF;
+        public double[] aDifH;
+        public double[] aDifF;
+
+        public void init(int size) {
+            aAtm = new double[size];
+            aDiv = new double[size];
+            aRef = new double[size];
+            aBoundaryH = new double[size];
+            aBoundaryF = new double[size];
+            aGlobalH = new double[size];
+            aGlobalF = new double[size];
+            aDifH = new double[size];
+            aDifF = new double[size];
+        }
     }
 
     public static class GroundAttenuation {
@@ -683,13 +627,13 @@ public class PropagationPath {
         public double[] cfF;
         public double[] aGroundF;
 
-        public GroundAttenuation(int arrSize) {
-            wH = new double[arrSize];
-            cfH = new double[arrSize];
-            aGroundH = new double[arrSize];
-            wF = new double[arrSize];
-            cfF = new double[arrSize];
-            aGroundF = new double[arrSize];
+        public void init(int size) {
+            wH = new double[size];
+            cfH = new double[size];
+            aGroundH = new double[size];
+            wF = new double[size];
+            cfF = new double[size];
+            aGroundF = new double[size];
         }
     }
 }

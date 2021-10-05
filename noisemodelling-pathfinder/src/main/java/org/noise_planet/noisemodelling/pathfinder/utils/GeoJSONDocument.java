@@ -67,7 +67,7 @@ public class GeoJSONDocument {
         jsonGenerator.writeObjectFieldStart("properties");
         jsonGenerator.writeNumberField("receiver", path.getIdReceiver());
         jsonGenerator.writeNumberField("source", path.getIdSource());
-        if(path.getSRSegmentList() == null || path.getSRSegmentList().isEmpty()) {
+        if(path.getSRSegment() == null) {
             path.computeAugmentedSRPath();
         }
         jsonGenerator.writeArrayFieldStart("gPath");

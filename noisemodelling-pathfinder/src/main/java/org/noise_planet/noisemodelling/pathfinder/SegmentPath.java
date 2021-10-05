@@ -11,8 +11,12 @@ public class SegmentPath {
 
     //  given by user
     public double gPath;          // G coefficient for the considered path segment
-    public Vector3D vector3D;     // mean ground plane for the considered path segment
+    public Vector3D meanGdPlane;     // mean ground plane for the considered path segment
     public Coordinate pInit;     // Init point of the mean ground plane
+    public Coordinate s;
+    public Coordinate r;
+    public double a;
+    public double b;
 
     // computed in AugmentedSegments
     public int idPtStart;               // start point indice for the considered path segment
@@ -21,22 +25,27 @@ public class SegmentPath {
     public Double gPathPrime = null;    //Gpath prime , calculated from Gpath and geometry
     public Double gw = null;
     public Double gm = null;
-    public Double zs = null; // The equivalent source height
-    public Double zr = null; //the equivalent receiver height
-    public Coordinate sGround = null; // projection of source  points on ground for each segment
-    public Coordinate rGround = null; // projection of receiver points on ground for each segment
+    public Double zsH = null; // The equivalent source height
+    public Double zrH = null; //the equivalent receiver height
+    public Double testFormH = null;
 
-    public Double zsPrime = null;
-    public Double zrPrime = null;
-    public Double testForm = null;
-    public Double testFormPrime = null;
+    public Coordinate sMeanPlane = null; // projection of source  points on ground for each segment
+    public Coordinate rMeanPlane = null; // projection of receiver points on ground for each segment
+    public Coordinate sPrime = null;
+    public Coordinate rPrime = null;
+
+    public Double zsF = null;
+    public Double zrF = null;
+    public Double testFormF = null;
 
     public Double dPath; // direct ray between source and receiver passing by diffraction and reflection points
     public Double d ; // direct ray between source and receiver
     public Double dc; // direct ray sensible to meteorological conditions (can be curve) between source and receiver
     public Double dp; // The distance between the source and receiver in projection over the mean ground plane
     public Double eLength = 0.0; // distance between first and last diffraction point
-    public Double delta;
+    public Double delta = 1.0;
+    public double dPrime;
+    public double deltaPrime;
 
 
     public void setDelta(Double delta) {
@@ -50,15 +59,14 @@ public class SegmentPath {
     /**
      * @param gPath
      */
-
-    public SegmentPath(double gPath, Vector3D vector3D, Coordinate pInit) {
+    public SegmentPath(double gPath, Vector3D meanGdPlane, Coordinate pInit) {
         this.gPath = gPath;
-        this.vector3D = vector3D;
+        this.meanGdPlane = meanGdPlane;
         this.pInit = pInit;
     }
 
     public double getSegmentLength() {
-        return this.vector3D.length();
+        return this.meanGdPlane.length();
     }
 
     public SegmentPath() {
@@ -72,7 +80,7 @@ public class SegmentPath {
      */
     public void writeStream( DataOutputStream out ) throws IOException {
         out.writeDouble(gPath);
-        PropagationPath.writeVector(out, vector3D);
+        PropagationPath.writeVector(out, meanGdPlane);
         PropagationPath.writeCoordinate(out, pInit);
     }
 
@@ -85,7 +93,7 @@ public class SegmentPath {
      */
     public void readStream( DataInputStream in ) throws IOException {
         gPath = in.readDouble();
-        vector3D = PropagationPath.readVector(in);
+        meanGdPlane = PropagationPath.readVector(in);
         pInit = PropagationPath.readCoordinate(in);
     }
 
@@ -116,30 +124,30 @@ public class SegmentPath {
 
 
     public Double getZs(PropagationPath path, SegmentPath segmentPath) {
-        if(zs == null) {
-            zs = path.computeZs(segmentPath);
+        if(zsH == null) {
+            zsH = path.computeZs(segmentPath);
         }
-        return zs;
+        return zsH;
     }
 
     public Double getZr(PropagationPath path, SegmentPath segmentPath) {
-        if(zr == null) {
-            zr = path.computeZr(segmentPath);
+        if(zrH == null) {
+            zrH = path.computeZr(segmentPath);
         }
-        return zr;
+        return zrH;
     }
 
     public Double getZsPrime(PropagationPath path, SegmentPath segmentPath) {
-        if(zsPrime == null) {
-            zsPrime = path.computeZsPrime(segmentPath);
+        if(zsF == null) {
+            zsF = path.computeZsPrime(segmentPath);
         }
-        return zsPrime;
+        return zsF;
     }
 
     public Double getZrPrime(PropagationPath path, SegmentPath segmentPath) {
-        if(zrPrime == null) {
-            zrPrime = path.computeZrPrime(segmentPath);
+        if(zrF == null) {
+            zrF = path.computeZrPrime(segmentPath);
         }
-        return zrPrime;
+        return zrF;
     }
 }

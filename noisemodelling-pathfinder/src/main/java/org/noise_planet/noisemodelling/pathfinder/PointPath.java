@@ -20,6 +20,41 @@ public class PointPath {
     public int buildingId = -1; // only if POINT_TYPE = REFL
     public int wallId = -1;
 
+    public double deltaH;
+    public double deltaF;
+    public double deltaPrimeH;
+    public double deltaPrimeF;
+    public double deltaSPrimeR;
+    public double deltaSRPrime;
+    public ABoundary aBoundary = new ABoundary();
+
+    public class ABoundary {
+        public double[] deltaDiffSR;
+        public double[] aGroundSO;
+        public double[] aGroundOR;
+        public double[] deltaDiffSPrimeR;
+        public double[] deltaDiffSRPrime;
+        public double[] deltaGroundSO;
+        public double[] deltaGroundOR;
+        public double[] aDiff;
+
+        private boolean init = false;
+
+        public void init(int freqCount) {
+            if(!init) {
+                deltaDiffSR = new double[freqCount];
+                aGroundSO = new double[freqCount];
+                aGroundOR = new double[freqCount];
+                deltaDiffSPrimeR = new double[freqCount];
+                deltaDiffSRPrime = new double[freqCount];
+                deltaGroundSO = new double[freqCount];
+                deltaGroundOR = new double[freqCount];
+                aDiff = new double[freqCount];
+                init = true;
+            }
+        }
+    }
+
     public void setBuildingHeight(double buildingHeight) {
         this.buildingHeight = buildingHeight;
     }
@@ -31,7 +66,8 @@ public class PointPath {
         REFL,
         DIFV,
         DIFH,
-        RECV
+        RECV,
+        DIFH_RCRIT;
     }
 
     /**

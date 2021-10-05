@@ -7,14 +7,24 @@ import org.locationtech.jts.geom.GeometryFactory;
 
 import java.util.List;
 
+import static java.lang.Double.NaN;
 import static org.junit.Assert.assertEquals;
 
 public class ComputeCnossosRaysTest {
 
-    //Error for coordinates
-    private static final double DELTA_COORDS = 1e-8;
+    /**
+     *  Error for coordinates
+     */
+    private static final double DELTA_COORDS = 0.01;
 
-    //Error for G path value
+    /**
+     *  Error for planes values
+     */
+    private static final double DELTA_PLANES = 0.01;
+
+    /**
+     *  Error for G path value
+     */
     private static final double DELTA_G_PATH = 0.01;
 
     /**
@@ -42,7 +52,7 @@ public class ComputeCnossosRaysTest {
 
         //Expected values
         double[][][] pts = new double[][][]{
-                {{10.0, 10.0, 1.0}, {200.0, 50.0, 4.0}} //Path 1 : direct
+                {{0.00, 1.00}, {194.16, 4.00}} //Path 1 : direct
         };
         double[][] gPaths = new double[][]{
                 {0.0} //Path 1 : direct
@@ -77,7 +87,7 @@ public class ComputeCnossosRaysTest {
 
         //Expected values
         double[][][] pts = new double[][][]{
-                {{10.0, 10.0, 1.0}, {200.0, 50.0, 4.0}} //Path 1 : direct
+                {{0.00, 1.00}, {194.16, 4.00}} //Path 1 : direct
         };
         double[][] gPaths = new double[][]{
                 {0.5} //Path 1 : direct
@@ -112,7 +122,7 @@ public class ComputeCnossosRaysTest {
 
         //Expected values
         double[][][] pts = new double[][][]{
-                {{10.0, 10.0, 1.0}, {200.0, 50.0, 4.0}} //Path 1 : direct
+                {{0.00, 1.00}, {194.16, 4.00}} //Path 1 : direct
         };
         double[][] gPaths = new double[][]{
                 {1.0} //Path 1 : direct
@@ -153,7 +163,7 @@ public class ComputeCnossosRaysTest {
 
         //Expected values
         double[][][] pts = new double[][][]{
-                {{10.0, 10.0, 1.0}, {200.0, 50.0, 4.0}} //Path 1 : direct
+                {{0.00, 1.00}, {194.16, 4.00}} //Path 1 : direct
         };
         double[][] gPaths = new double[][]{
                 {0.2*(40.88/194.16) + 0.5*(102.19/194.16) + 0.9*(51.09/194.16)} //Path 1 : direct
@@ -181,9 +191,9 @@ public class ComputeCnossosRaysTest {
                 .addTopographicLine(0, -20, 0, 0, 80, 0)
                 .addTopographicLine(120, -20, 0, 120, 80, 0)
                 .addTopographicLine(185, -5, 10, 205, -5, 10)
-                .addTopographicLine(205, -5, 10, 205, 75, 0)
-                .addTopographicLine(205, 75, 0, 185, 75, 0)
-                .addTopographicLine(185, 75, 0, 185, -5, 0)
+                .addTopographicLine(205, -5, 10, 205, 75, 10)
+                .addTopographicLine(205, 75, 10, 185, 75, 10)
+                .addTopographicLine(185, 75, 10, 185, -5, 10)
                 .finishFeeding();
 
         //Propagation data building
@@ -202,14 +212,20 @@ public class ComputeCnossosRaysTest {
 
         //Expected values
         double[][][] pts = new double[][][]{
-                {{10.0, 10.0, 1.0}, {200.0, 50.0, 4.0}} //Path 1 : direct
+                {{0.00, 1.00}, {194.16, 14.00}} //Path 1 : direct
         };
         double[][] gPaths = new double[][]{
                 {(0.9*40.88 + 0.5*102.19 + 0.2*51.09)/194.16} //Path 1 : direct
         };
+        double [][] meanPlanes = new double[][]{
+                //  a      b    zs    zr      dp    Gp   Gp'
+                {0.05, -2.83, 3.83, 6.16, 194.59, 0.51, 0.64}
+        };
 
         //Assertion
         assertPaths(pts, gPaths, propDataOut.getPropagationPaths());
+        assertPlanes(meanPlanes, propDataOut.getPropagationPaths().get(0).getSRSegment());
+        assertPlanes(meanPlanes, propDataOut.getPropagationPaths().get(0).getSegmentList());
     }
 
     /**
@@ -230,9 +246,9 @@ public class ComputeCnossosRaysTest {
                 .addTopographicLine(0, -20, 0, 0, 80, 0)
                 .addTopographicLine(120, -20, 0, 120, 80, 0)
                 .addTopographicLine(185, -5, 10, 205, -5, 10)
-                .addTopographicLine(205, -5, 10, 205, 75, 0)
-                .addTopographicLine(205, 75, 0, 185, 75, 0)
-                .addTopographicLine(185, 75, 0, 185, -5, 0)
+                .addTopographicLine(205, -5, 10, 205, 75, 10)
+                .addTopographicLine(205, 75, 10, 185, 75, 10)
+                .addTopographicLine(185, 75, 10, 185, -5, 10)
                 .finishFeeding();
 
         //Propagation data building
@@ -251,14 +267,25 @@ public class ComputeCnossosRaysTest {
 
         //Expected values
         double[][][] pts = new double[][][]{
-                {{10.0, 10.0, 1.0}, {200.0, 50.0, 4.0}} //Path 1 : direct
+                {{0.00, 1.00}, {178.84, 10.0}, {194.16, 11.5}} //Path 1 : direct
         };
         double[][] gPaths = new double[][]{
-                {(0.9*40.88 + 0.5*102.19 + 0.2*51.09)/194.16} //Path 1 : direct
+                {0.53, 0.20} //Path 1 : direct
+        };
+        double [][] srMeanPlanes = new double[][]{
+                //  a      b    zs    zr      dp    Gp   Gp'
+                {0.05, -2.83, 3.83, 3.66, 194.45, 0.51, 0.56}
+        };
+        double [][] segmentsMeanPlanes = new double[][]{
+                //  a      b    zs    zr      dp    Gp   Gp'
+                {0.05, -2.33, 3.33, 3.95, 179.06, 0.53, 0.60},
+                {0.00, 10.00, 0.00, 1.50, 015.33, 0.20,  NaN}
         };
 
         //Assertion
         assertPaths(pts, gPaths, propDataOut.getPropagationPaths());
+        assertPlanes(srMeanPlanes, propDataOut.getPropagationPaths().get(0).getSRSegment());
+        assertPlanes(segmentsMeanPlanes, propDataOut.getPropagationPaths().get(0).getSegmentList());
     }
 
     /**
@@ -289,10 +316,9 @@ public class ComputeCnossosRaysTest {
         CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
                 .addSource(10, 10, 1)
                 .addReceiver(200, 50, 4)
+                .verticalDiff(true)
+                .horizontalDiff(true)
                 .build();
-
-        rayData.setComputeHorizontalDiffraction(true);
-        rayData.setComputeVerticalDiffraction(true);
 
         //Out and computation settings
         ComputeCnossosRaysOut propDataOut = new ComputeCnossosRaysOut(true);
@@ -326,21 +352,35 @@ public class ComputeCnossosRaysTest {
         assertEquals("Expected path count is different than actual path count.", expectedPts.length, actualPaths.size());
         for(int i=0; i<expectedPts.length; i++) {
             PropagationPath path = actualPaths.get(i);
-            for(int j=0; j<expectedPts.length; j++){
+            for(int j=0; j<expectedPts[i].length; j++){
                 PointPath point = path.getPointList().get(j);
                 assertEquals("Path "+i+" point "+j+" coord X", expectedPts[i][j][0], point.coordinate.x, DELTA_COORDS);
                 assertEquals("Path "+i+" point "+j+" coord Y", expectedPts[i][j][1], point.coordinate.y, DELTA_COORDS);
-                assertEquals("Path "+i+" point "+j+" coord Z", expectedPts[i][j][2], point.coordinate.z, DELTA_COORDS);
             }
             assertEquals("Expected path["+i+"] segments count is different than actual path segment count.", expectedGPaths[i].length, path.getSegmentList().size());
             for(int j=0; j<expectedGPaths[i].length; j++) {
                 assertEquals("Path " + i + " g path " + j, expectedGPaths[i][j], path.getSegmentList().get(j).gPath, DELTA_G_PATH);
             }
-
-
-
         }
     }
+    private static void assertPlanes(double[][] expectedPlanes, List<SegmentPath> segments) {
+        assertPlanes(expectedPlanes, segments.toArray(new SegmentPath[0]));
+    }
 
+    private static void assertPlanes(double[][] expectedPlanes, SegmentPath... segments) {
+        assertEquals("Expected segments count is different than actual path count.", expectedPlanes.length, segments.length);
+        for(int i=0; i<expectedPlanes.length; i++) {
+            SegmentPath segment = segments[i];
+            assertEquals("a", expectedPlanes[i][0], segment.a, DELTA_PLANES);
+            assertEquals("b", expectedPlanes[i][1], segment.b, DELTA_PLANES);
+            assertEquals("zs", expectedPlanes[i][2], segment.zsH, DELTA_PLANES);
+            assertEquals("zr", expectedPlanes[i][3], segment.zrH, DELTA_PLANES);
+            assertEquals("dp", expectedPlanes[i][4], segment.dp, DELTA_PLANES);
+            assertEquals("gPath", expectedPlanes[i][5], segment.gPath, DELTA_PLANES);
+            if(!Double.isNaN(expectedPlanes[i][6])) {
+                assertEquals("gPrimePath", expectedPlanes[i][6], segment.gPathPrime, DELTA_PLANES);
+            }
+        }
+    }
 
 }

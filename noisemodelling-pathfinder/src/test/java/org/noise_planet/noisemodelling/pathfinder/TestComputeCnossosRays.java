@@ -19,7 +19,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 import static org.noise_planet.noisemodelling.pathfinder.ComputeCnossosRays.splitLineStringIntoPoints;
 
 
@@ -149,7 +149,7 @@ public class TestComputeCnossosRays {
         List<Coordinate> pts = new ArrayList<>();
         splitLineStringIntoPoints(geom, constraint, pts);
         for(Coordinate pt : pts) {
-            Assert.assertNotNull(pt);
+            assertNotNull(pt);
         }
         assertEquals(7, pts.size());
     }
@@ -216,18 +216,18 @@ public class TestComputeCnossosRays {
         //new ArrayList<>(), manager, sourcesIndex, srclst, new ArrayList<>(), new ArrayList<>(), 0, 99, 1000,1000,0,0,new double[0],0,0,new EmptyProgressVisitor(), new ArrayList<>(), true
         ComputeCnossosRays computeRays = new ComputeCnossosRays(processData);
 
-        Assert.assertFalse(computeRays.computeFreeField(profileBuilder.getProfile(p1, p2)).getSegmentList().isEmpty());
+        Assert.assertFalse(computeRays.computeFreeField(profileBuilder.getProfile(p1, p2), processData).getSegmentList().isEmpty());
 
         List<Coordinate> pts = computeRays.computeSideHull(true, p1, p2, profileBuilder);
         assertEquals(5, pts.size());
         for (int i = 0; i < pts.size() - 1; i++) {
-            Assert.assertTrue(computeRays.computeFreeField(profileBuilder.getProfile(pts.get(i), pts.get(i + 1))).getSegmentList().isEmpty());
+            Assert.assertTrue(computeRays.computeFreeField(profileBuilder.getProfile(pts.get(i), pts.get(i + 1)), processData).getSegmentList().isEmpty());
         }
 
         pts = computeRays.computeSideHull(false, p1, p2, profileBuilder);
         assertEquals(5, pts.size());
         for (int i = 0; i < pts.size() - 1; i++) {
-            Assert.assertTrue(computeRays.computeFreeField(profileBuilder.getProfile(pts.get(i), pts.get(i + 1))).getSegmentList().isEmpty());
+            Assert.assertTrue(computeRays.computeFreeField(profileBuilder.getProfile(pts.get(i), pts.get(i + 1)), processData).getSegmentList().isEmpty());
         }
 
         CnossosPropagationData data = new CnossosPropagationData(profileBuilder);
@@ -249,11 +249,11 @@ public class TestComputeCnossosRays {
                 Arrays.asList(new SegmentPath(0.15,
                         new org.locationtech.jts.math.Vector3D(1,1,1),
                         new Coordinate(1.5,2.5,3.5))),
-                Arrays.asList(new SegmentPath(0.35,
+                /*Arrays.asList(*/new SegmentPath(0.35,
                         new org.locationtech.jts.math.Vector3D(2,2,3),
-                        new Coordinate(4.5,5.5,8.5)), new SegmentPath(0.15,
+                        new Coordinate(4.5,5.5,8.5))/*, new SegmentPath(0.15,
                         new org.locationtech.jts.math.Vector3D(1,1,1),
-                        new Coordinate(1.5,2.5,3.5)))));
+                        new Coordinate(1.5,2.5,3.5)))*/));
         expected.add(new PropagationPath(true,
                 Arrays.asList(new PointPath(
                         new Coordinate(2,7,1), 1.0, 0.5, Collections.nCopies(8,0.4), 1,
@@ -261,7 +261,7 @@ public class TestComputeCnossosRays {
                 Arrays.asList(new SegmentPath(0.115,
                         new org.locationtech.jts.math.Vector3D(11,13,14),
                         new Coordinate(1.5,21.5,13.5))),
-                new ArrayList<>()));
+                null));
         expected.get(0).setIdReceiver(5) ;
         expected.get(0).setIdSource(10);
         expected.get(0).setIdReceiver(6) ;
@@ -279,7 +279,7 @@ public class TestComputeCnossosRays {
         assertEquals(expected.get(0).getPointList().get(0).coordinate, got.get(0).getPointList().get(0).coordinate);
         assertEquals(1, expected.get(1).getPointList().size());
         assertEquals(PointPath.POINT_TYPE.DIFV, expected.get(1).getPointList().get(0).type);
-        assertEquals(0, expected.get(1).getSRSegmentList().size());
+        assertNotNull(expected.get(1).getSRSegment());
         assertEquals(expected.get(0).getIdReceiver(), got.get(0).getIdReceiver());
         assertEquals(expected.get(0).getIdSource(), got.get(0).getIdSource());
         assertEquals(expected.get(1).getIdReceiver(), got.get(1).getIdReceiver());
@@ -347,7 +347,7 @@ public class TestComputeCnossosRays {
         Coordinate p1 = new Coordinate(4, 3, 3);
         Coordinate p2 = new Coordinate(13, 10, 6.7);
 
-        Assert.assertFalse(computeRays.computeFreeField(profileBuilder.getProfile(p1, p2)).getSegmentList().isEmpty());
+        Assert.assertFalse(computeRays.computeFreeField(profileBuilder.getProfile(p1, p2), null).getSegmentList().isEmpty());
 
         // Check the computation of convex corners of a building
         List<Coordinate> b1OffsetRoof = profileBuilder.getWideAnglePointsByBuilding(1, Math.PI * (1 + 1 / 16.0), Math.PI * (2 - (1 / 16.)));

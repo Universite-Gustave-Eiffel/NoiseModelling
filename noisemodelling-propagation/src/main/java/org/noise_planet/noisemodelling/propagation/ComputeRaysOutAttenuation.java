@@ -147,118 +147,104 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
         }
     }
 
-    public double[] computeAttenuation(PropagationProcessPathData pathData, long sourceId, double sourceLi, long receiverId, List<PropagationPath> propagationPath) {
-        if(pathData != null) {
-            // Compute receiver/source attenuation
-            EvaluateAttenuationCnossos evaluateAttenuationCnossos = new EvaluateAttenuationCnossos();
+    public double[] computeAttenuation(PropagationProcessPathData data, long sourceId, double sourceLi, long receiverId, List<PropagationPath> propagationPath) {
+        if (data == null) {
+            return new double[0];
+        }
+        // Compute receiver/source attenuation
+        double[] propagationAttenuationSpectrum = null;
+        for (PropagationPath proPath : propagationPath) {
+            if(keepAbsorption) {
+                proPath.keepAbsorption = true;
+                proPath.groundAttenuation.init(data.freq_lvl.size());
+                proPath.absorptionData.init(data.freq_lvl.size());
+            }
+            EvaluateAttenuationCnossos.init(data);
+            //ADiv computation
+            double[] aDiv = EvaluateAttenuationCnossos.aDiv(proPath, data);
+            //AAtm computation
+            double[] aAtm = EvaluateAttenuationCnossos.aAtm(data, proPath.getSRSegment().d);
+            //ARef computation
+            double[] aRef = EvaluateAttenuationCnossos.evaluateAref(proPath, data);
+            //ABoundary computation
+            double[] aBoundary;// = EvaluateAttenuationCnossos.getAGroundCore(proPath, proPath.getSegmentList().get(0), data);
+            double[] aGlobalMeteoHom = new double[data.freq_lvl.size()];
+            double[] aGlobalMeteoFav = new double[data.freq_lvl.size()];
 
-
-            double[] propagationAttenuationSpectrum = null;
-            for (PropagationPath propath : propagationPath) {
-                List<PointPath> ptList = propath.getPointList();
-
-                propath.initPropagationPath();
-                evaluateAttenuationCnossos.initEvaluateAttenutation(pathData);
-
-                double[] Adiv = evaluateAttenuationCnossos.evaluateAdiv(propath, pathData);
-
-                double[] Aatm;
-                // In addition, Aatm and Aground shall be calculated from the total length of the propagation path.
-                if (propath.difVPoints.size() > 0) {
-                    Aatm = evaluateAttenuationCnossos.evaluateAatm(pathData, propath.getSRSegmentList().get(0).dPath);
-                }else{
-                    Aatm = evaluateAttenuationCnossos.evaluateAatm(pathData, propath.getSRSegmentList().get(0).d);
+            List<PointPath> ptList = proPath.getPointList();
+            int roseindex = getRoseIndex(ptList.get(0).coordinate, ptList.get(ptList.size() - 1).coordinate);
+            // Homogenous conditions
+            if (data.getWindRose()[roseindex]!=1) {
+                proPath.setFavorable(false);
+                aBoundary = EvaluateAttenuationCnossos.aBoundary(proPath, data);
+                for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
+                    aGlobalMeteoHom[idfreq] = -(aDiv[idfreq] + aAtm[idfreq] + aBoundary[idfreq] + aRef[idfreq]); // Eq. 2.5.6
                 }
-
-                double[] Aref = evaluateAttenuationCnossos.evaluateAref(propath, pathData);
-
                 //For testing purpose
                 if(keepAbsorption) {
-                    propath.keepAbsorption = true;
-                    propath.absorptionData = new PropagationPath.AbsorptionData();
-                    propath.groundAttenuation = new PropagationPath.GroundAttenuation(pathData.freq_lvl.size());
-                    propath. absorptionData.aRef = Aref.clone();
-                    propath.absorptionData.aDiv = Adiv.clone();
-                    propath.absorptionData.aAtm = Aatm.clone();
-                }
-
-                //
-                int roseindex = getRoseIndex(ptList.get(0).coordinate, ptList.get(ptList.size() - 1).coordinate);
-                double[] aGlobalMeteoHom = new double[pathData.freq_lvl.size()];
-                double[] aGlobalMeteoFav = new double[pathData.freq_lvl.size()];
-                double[] Aboundary;
-
-                if (pathData.getWindRose()[roseindex]!=1) {
-                    // Compute homogeneous conditions attenuation
-                    propath.setFavorable(false);
-                    propath.initPropagationPath();
-                    Aboundary = evaluateAttenuationCnossos.evaluateAboundary(propath, pathData, false);
-                    for (int idfreq = 0; idfreq < pathData.freq_lvl.size(); idfreq++) {
-                        aGlobalMeteoHom[idfreq] = -(Adiv[idfreq] + Aatm[idfreq] + Aboundary[idfreq] + Aref[idfreq]); // Eq. 2.5.6
-                    }
-                    //For testing purpose
-                    if(keepAbsorption) {
-                        propath.absorptionData.aBoundaryH = Aboundary.clone();
-                        propath.absorptionData.aGlobalH = aGlobalMeteoHom.clone();
-                    }
-                }
-
-                // Compute favorable conditions attenuation
-                if (pathData.getWindRose()[roseindex]!=0) {
-                    propath.setFavorable(true);
-                    propath.initPropagationPath();
-                    Aboundary = evaluateAttenuationCnossos.evaluateAboundary(propath, pathData, true);
-                    for (int idfreq = 0; idfreq < pathData.freq_lvl.size(); idfreq++) {
-                        aGlobalMeteoFav[idfreq] = -(Adiv[idfreq] + Aatm[idfreq] + Aboundary[idfreq]+ Aref[idfreq]); // Eq. 2.5.8
-                    }
-                    //For testing purpose
-                    if(keepAbsorption) {
-                        propath.absorptionData.aBoundaryF = Aboundary.clone();
-                        propath.absorptionData.aGlobalF = aGlobalMeteoFav.clone();
-                    }
-                }
-
-                // Compute attenuation under the wind conditions using the ray direction
-                double[] aGlobalMeteoRay = sumArrayWithPonderation(aGlobalMeteoFav, aGlobalMeteoHom, pathData.getWindRose()[roseindex]);
-
-                // Apply attenuation due to sound direction
-                if(inputData != null && !inputData.isOmnidirectional((int)sourceId)) {
-                    Orientation sourceOrientation = propath.getSourceOrientation();
-                    // fetch orientation of the first ray
-                    Coordinate nextPointFromSource = propath.getPointList().get(1).coordinate;
-                    Coordinate sourceCoordinate = propath.getPointList().get(0).coordinate;
-                    Vector3D outgoingRay = new Vector3D(new Coordinate(nextPointFromSource.x - sourceCoordinate.x,
-                            nextPointFromSource.y - sourceCoordinate.y,
-                            nextPointFromSource.z - sourceCoordinate.z)).normalize();
-                    Orientation directivityToPick = Orientation.fromVector(Orientation.rotate(sourceOrientation, outgoingRay, true), 0);
-                    double[] attSource = new double[pathData.freq_lvl.size()];
-                    for (int idfreq = 0; idfreq < pathData.freq_lvl.size(); idfreq++) {
-                        attSource[idfreq] = inputData.getSourceAttenuation((int) sourceId,
-                                pathData.freq_lvl.get(idfreq), (float)Math.toRadians(directivityToPick.yaw),
-                                (float)Math.toRadians(directivityToPick.pitch));
-                    }
-                    aGlobalMeteoRay = sumArray(aGlobalMeteoRay, attSource);
-                }
-
-
-
-                if (propagationAttenuationSpectrum != null) {
-                    propagationAttenuationSpectrum = sumDbArray(aGlobalMeteoRay, propagationAttenuationSpectrum);
-                } else {
-                    propagationAttenuationSpectrum = aGlobalMeteoRay;
+                    proPath.absorptionData.aBoundaryH = aBoundary.clone();
+                    proPath.absorptionData.aGlobalH = aGlobalMeteoHom.clone();
                 }
             }
+            // Favorable conditions
+            if (data.getWindRose()[roseindex]!=0) {
+                proPath.setFavorable(true);
+                aBoundary = EvaluateAttenuationCnossos.aBoundary(proPath, data);
+                for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
+                    aGlobalMeteoFav[idfreq] = -(aDiv[idfreq] + aAtm[idfreq] + aBoundary[idfreq]+ aRef[idfreq]); // Eq. 2.5.8
+                }
+                //For testing purpose
+                if(keepAbsorption) {
+                    proPath.absorptionData.aBoundaryF = aBoundary.clone();
+                    proPath.absorptionData.aGlobalF = aGlobalMeteoFav.clone();
+                }
+            }
+
+            //For testing purpose
+            if(keepAbsorption) {
+                proPath.keepAbsorption = true;
+                proPath.absorptionData.aDiv = aDiv.clone();
+                proPath.absorptionData.aAtm = aAtm.clone();
+            }
+
+            // Compute attenuation under the wind conditions using the ray direction
+            double[] aGlobalMeteoRay = sumArrayWithPonderation(aGlobalMeteoFav, aGlobalMeteoHom, data.getWindRose()[roseindex]);
+
+            // Apply attenuation due to sound direction
+            if(inputData != null && !inputData.isOmnidirectional((int)sourceId)) {
+                Orientation sourceOrientation = proPath.getSourceOrientation();
+                // fetch orientation of the first ray
+                Coordinate nextPointFromSource = proPath.getPointList().get(1).coordinate;
+                Coordinate sourceCoordinate = proPath.getPointList().get(0).coordinate;
+                Vector3D outgoingRay = new Vector3D(new Coordinate(nextPointFromSource.x - sourceCoordinate.x,
+                        nextPointFromSource.y - sourceCoordinate.y,
+                        nextPointFromSource.z - sourceCoordinate.z)).normalize();
+                Orientation directivityToPick = Orientation.fromVector(Orientation.rotate(sourceOrientation, outgoingRay, true), 0);
+                double[] attSource = new double[data.freq_lvl.size()];
+                for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
+                    attSource[idfreq] = inputData.getSourceAttenuation((int) sourceId,
+                            data.freq_lvl.get(idfreq), (float)Math.toRadians(directivityToPick.yaw),
+                            (float)Math.toRadians(directivityToPick.pitch));
+                }
+                aGlobalMeteoRay = sumArray(aGlobalMeteoRay, attSource);
+            }
+
+
+
             if (propagationAttenuationSpectrum != null) {
-                // For line source, take account of li coefficient
-                if(sourceLi > 1.0) {
-                    for (int i = 0; i < propagationAttenuationSpectrum.length; i++) {
-                        propagationAttenuationSpectrum[i] = wToDba(dbaToW(propagationAttenuationSpectrum[i]) * sourceLi);
-                    }
-                }
-                return propagationAttenuationSpectrum;
+                propagationAttenuationSpectrum = sumDbArray(aGlobalMeteoRay, propagationAttenuationSpectrum);
             } else {
-                return new double[0];
+                propagationAttenuationSpectrum = aGlobalMeteoRay;
             }
+        }
+        if (propagationAttenuationSpectrum != null) {
+            // For line source, take account of li coefficient
+            if(sourceLi > 1.0) {
+                for (int i = 0; i < propagationAttenuationSpectrum.length; i++) {
+                    propagationAttenuationSpectrum[i] = wToDba(dbaToW(propagationAttenuationSpectrum[i]) * sourceLi);
+                }
+            }
+            return propagationAttenuationSpectrum;
         } else {
             return new double[0];
         }
@@ -354,7 +340,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
                     for(PropagationPath path : propagationPath) {
                         // Copy path content in order to keep original ids for other method calls
                         PropagationPath pathPk = new PropagationPath(path.isFavorable(), path.getPointList(),
-                                path.getSegmentList(), path.getSRSegmentList());
+                                path.getSegmentList(), path.getSRSegment());
                         pathPk.setIdReceiver(multiThreadParent.inputData.receiversPk.get((int)receiverId).intValue());
                         pathPk.setIdSource(multiThreadParent.inputData.sourcesPk.get((int)sourceId).intValue());
                         pathPk.setSourceOrientation(path.getSourceOrientation());

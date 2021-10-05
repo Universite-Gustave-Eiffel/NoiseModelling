@@ -67,8 +67,8 @@ public class Utils {
         }
 
         @Override
-        public double[] computeAttenuation(PropagationProcessPathData pathData, long sourceId, double sourceLi, long receiverId, List<PropagationPath> propagationPath) {
-            double[] attenuation = super.computeAttenuation(pathData, sourceId, sourceLi, receiverId, propagationPath);
+        public double[] computeAttenuation(PropagationProcessPathData data, long sourceId, double sourceLi, long receiverId, List<PropagationPath> propagationPath) {
+            double[] attenuation = super.computeAttenuation(data, sourceId, sourceLi, receiverId, propagationPath);
             double[] soundLevel = wToDba(multArray(processData.wjSources.get((int)sourceId), dbaToW(attenuation)));
             return soundLevel;
         }

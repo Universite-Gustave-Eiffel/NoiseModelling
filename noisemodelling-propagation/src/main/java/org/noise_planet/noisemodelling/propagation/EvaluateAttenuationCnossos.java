@@ -1,4 +1,4 @@
-/**
+/*
  * NoiseMap is a scientific computation plugin for OrbisGIS developed in order to
  * evaluate the noise impact on urban mobility plans. This model is
  * based on the French standard method NMPB2008. It includes traffic-to-noise
@@ -33,13 +33,15 @@
  */
 package org.noise_planet.noisemodelling.propagation;
 
+import org.noise_planet.noisemodelling.pathfinder.PointPath;
 import org.noise_planet.noisemodelling.pathfinder.PropagationPath;
 import org.noise_planet.noisemodelling.pathfinder.SegmentPath;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static java.lang.Math.pow;
+import static java.lang.Math.*;
 
 /**
  * Return the dB value corresponding to the parameters
@@ -49,32 +51,11 @@ import static java.lang.Math.pow;
  */
 
 public class EvaluateAttenuationCnossos {
-    private final static double ONETHIRD = 1. / 3.;
-    private int nbfreq;
-    private double[] freq_lambda;
-    private double[] aGlobal;
-    boolean gToSigma = false; // Todo publish parameter issue #13
+    private static double[] freq_lambda;
+    private static double[] aGlobal;
 
-    public void setaGlobal(double[] aGlobal) {
-        this.aGlobal = aGlobal;
-    }
-
-    public void setFreq_lambda(double[] freq_lambda) {
-        this.freq_lambda = freq_lambda;
-    }
-
-
-
-    public double[] getaGlobal() {
+    public static double[] getaGlobal() {
         return aGlobal;
-    }
-
-    public boolean isgToSigma() {
-        return gToSigma;
-    }
-
-    public void setgToSigma(boolean gToSigma) {
-        this.gToSigma = gToSigma;
     }
 
     /**
@@ -83,17 +64,15 @@ public class EvaluateAttenuationCnossos {
      * @param data
      * @return
      */
-    public double[] getDeltaDif(SegmentPath srpath, PropagationProcessPathData data) {
+    public static double[] getDeltaDif(SegmentPath srpath, PropagationProcessPathData data) {
         double[] DeltaDif = new double[data.freq_lvl.size()];
         double cprime;
 
         for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
-
             double Ch = 1; // Eq 2.5.21
-
             if (srpath.eLength > 0.3) {
                 double gammaPart = pow((5 * freq_lambda[idfreq]) / srpath.eLength, 2);
-                cprime = (1. + gammaPart) / (ONETHIRD + gammaPart); // Eq. 2.5.23
+                cprime = (1. + gammaPart) / (1./3. + gammaPart); // Eq. 2.5.23
             } else {
                 cprime = 1.;
             }
@@ -103,19 +82,13 @@ public class EvaluateAttenuationCnossos {
                     * cprime * srpath.getDelta();
 
             double deltaDif = 0.;
-
             if (testForm >= -2.) {
-                deltaDif = 10 * Ch * Math
-                        .log10(Math.max(0, 3 + testForm));
+                deltaDif = 10 * Ch * log10(Math.max(0, 3 + testForm));
             }
-
             DeltaDif[idfreq] = Math.max(0, deltaDif);
-
         }
         return DeltaDif;
-
     }
-
 
     /**
      * Compute attenuation of sound energy by distance. Minimum distance is one
@@ -125,8 +98,9 @@ public class EvaluateAttenuationCnossos {
      * @return Attenuated sound level. Take only account of geometric dispersion
      * of sound wave.
      */
-    public static double getADiv(double distance) {
-        return Utils.wToDb(4 * Math.PI * Math.max(1, distance * distance));
+    private static double getADiv(double distance) {
+        //return Utils.wToDb(4 * Math.PI * Math.max(1, distance * distance));
+        return 20*log10(distance)+11;
     }
 
     /**
@@ -135,8 +109,8 @@ public class EvaluateAttenuationCnossos {
      * @param alpha_atmo Atmospheric alpha (dB/km)
      * @return
      */
-    public static double getAAtm(double dist, double alpha_atmo) {
-        return (alpha_atmo * dist) / 1000.;
+    private static double getAAtm(double dist, double alpha_atmo) {
+        return alpha_atmo * dist / 1000.;
     }
 
     /**
@@ -147,7 +121,7 @@ public class EvaluateAttenuationCnossos {
     public static double[] getAGroundCore(PropagationPath path, SegmentPath segmentPath, PropagationProcessPathData data) {
 
         double[] aGround = new double[data.freq_lvl.size()];
-        double aGroundmin;
+        double aGroundMin;
         double AGround;
 
         for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
@@ -158,49 +132,51 @@ public class EvaluateAttenuationCnossos {
             //NF S 31-133 page 41 c
             double k = 2 * Math.PI * fm / data.getCelerity();
             //NF S 31-113 page 41 w
+            //eq 2.5.17
             double w = 0.0185 * pow(fm, 2.5) * pow(gw, 2.6) /
                     (pow(fm, 1.5) * pow(gw, 2.6) + 1.3e3 * pow(fm, 0.75) * pow(gw, 1.3) + 1.16e6);
             //NF S 31-113 page 41 Cf
-            double cf = dp * (1 + 3 * w * dp * pow(Math.E, -Math.sqrt(w * dp))) / (1 + w * dp);
+            //eq 2.5.16
+            double cf = dp * (1 + 3 * w * dp * pow(Math.E, -sqrt(w * dp))) / (1 + w * dp);
             //NF S 31-113 page 41 A sol
 
             if (path.isFavorable()) {
                 if (data.isPrime2520()) {
-                    if (segmentPath.testFormPrime <= 1) {
-                        aGroundmin = -3 * (1 - segmentPath.gm);
+                    if (segmentPath.testFormF <= 1) {
+                        aGroundMin = -3 * (1 - segmentPath.gm);
                     } else {
-                        aGroundmin = -3 * (1 - segmentPath.gm) * (1 + 2 * (1 - (1 / segmentPath.testFormPrime)));
+                        aGroundMin = -3 * (1 - segmentPath.gm) * (1 + 2 * (1 - (1 / segmentPath.testFormF)));
                     }
                 } else {
-                    if (segmentPath.testForm <= 1) {
-                        aGroundmin = -3 * (1 - segmentPath.gm);
+                    if (segmentPath.testFormH <= 1) {
+                        aGroundMin = -3 * (1 - segmentPath.gm);
                     } else {
-                        aGroundmin = -3 * (1 - segmentPath.gm) * (1 + 2 * (1 - (1 / segmentPath.testForm)));
+                        aGroundMin = -3 * (1 - segmentPath.gm) * (1 + 2 * (1 - (1 / segmentPath.testFormH)));
                     }
                 }
-                /** eq. 2.5.20**/
-                AGround = -10 * Math.log10(4 * pow(k, 2) / pow(segmentPath.dp, 2) *
-                        (pow(segmentPath.zsPrime, 2) - Math.sqrt(2 * cf / k) * segmentPath.zsPrime + cf / k) *
-                        (pow(segmentPath.zrPrime, 2) - Math.sqrt(2 * cf / k) * segmentPath.zrPrime + cf / k));
+                /* eq. 2.5.20 */
+                AGround = -10 * log10(4 * pow(k, 2) / pow(segmentPath.dp, 2) *
+                        (pow(segmentPath.zsF, 2) - sqrt(2 * cf / k) * segmentPath.zsF + cf / k) *
+                        (pow(segmentPath.zrF, 2) - sqrt(2 * cf / k) * segmentPath.zrF + cf / k));
             } else {
-                /** eq. 2.5.15**/
-                AGround = -10 * Math.log10(4 * pow(k, 2) / pow(segmentPath.dp, 2) *
-                        (pow(segmentPath.zs, 2) - Math.sqrt(2 * cf / k) * segmentPath.zs + cf / k) *
-                        (pow(segmentPath.zr, 2) - Math.sqrt(2 * cf / k) * segmentPath.zr + cf / k));
-                /** eq. 2.5.18**/
-                aGroundmin = -3 * (1 - segmentPath.gm);
+                /* eq. 2.5.15 */
+                AGround = -10 * log10(4 * pow(k, 2) / pow(segmentPath.dp, 2) *
+                        (pow(segmentPath.zsH, 2) - sqrt(2 * cf / k) * segmentPath.zsH + cf / k) *
+                        (pow(segmentPath.zrH, 2) - sqrt(2 * cf / k) * segmentPath.zrH + cf / k));
+                /* eq. 2.5.18 */
+                aGroundMin = -3 * (1 - segmentPath.gm);
             }
-            aGround[idfreq] = Math.max(AGround, aGroundmin);
+            aGround[idfreq] = Math.max(AGround, aGroundMin);
 
             //For testing purpose
             if(path.keepAbsorption) {
                 if(path.isFavorable()) {
-                    path.groundAttenuation.wF[idfreq] = w;
+                    path.groundAttenuation.wF[idfreq] += w;
                     path.groundAttenuation.cfF[idfreq] = cf;
                     path.groundAttenuation.aGroundF[idfreq] = aGround[idfreq];
                 }
                 else{
-                    path.groundAttenuation.wH[idfreq] = w;
+                    path.groundAttenuation.wH[idfreq] += w;
                     path.groundAttenuation.cfH[idfreq] = cf;
                     path.groundAttenuation.aGroundH[idfreq] = aGround[idfreq];
                 }
@@ -217,7 +193,7 @@ public class EvaluateAttenuationCnossos {
      * @param deltaDif     Δdif(S, R)
      * @return Δsol(S, O) if Asol(S,O) is given or Δsol(O,R) if Asol(O,R) is given
      */
-    public double getDeltaGround(double aGround, double deltaDifPrim, double deltaDif) {
+    private static double getDeltaGround(double aGround, double deltaDifPrim, double deltaDif) {
         double attArg = 1 + (pow(10, -aGround / 20) - 1) * pow(10, -(deltaDifPrim - deltaDif) / 20);
         if(Double.isNaN(attArg)){
             attArg = Double.MAX_VALUE;
@@ -225,7 +201,7 @@ public class EvaluateAttenuationCnossos {
         else if (attArg < 0) {
             attArg = 0;
         }
-        return -20 * Math.log10(attArg);
+        return -20 * log10(attArg);
     }
 
     /**
@@ -234,17 +210,14 @@ public class EvaluateAttenuationCnossos {
      * @param data
      * @return
      */
-    public double[] getARef(PropagationPath path, PropagationProcessPathData data) {
+    private static double[] getARef(PropagationPath path, PropagationProcessPathData data) {
         double[] aRef = new double[data.freq_lvl.size()];
         Arrays.fill(aRef, 0.0);
-        for (int idf = 0; idf < nbfreq; idf++) {
+        for (int idf = 0; idf < data.freq_lvl.size(); idf++) {
             for (int idRef = 0; idRef < path.refPoints.size(); idRef++) {
                 List<Double> alpha = path.getPointList().get(path.refPoints.get(idRef)).alphaWall;
-                /*if (gToSigma || alphaUniqueValue > 1){
-                    PropagationProcessData.getWallAlpha(alphaUniqueValue, data.freq_lvl.get(idf));
-                }*/
                 if(alpha != null && !alpha.isEmpty()) {
-                    aRef[idf] += -10 * Math.log10(1 - alpha.get(idf));
+                    aRef[idf] += -10 * log10(1 - alpha.get(idf));
                 }
             }
         }
@@ -258,14 +231,13 @@ public class EvaluateAttenuationCnossos {
      * @param data
      * @return
      */
-    public double[] getAGround(SegmentPath segmentPath, PropagationPath path, PropagationProcessPathData data) {
-        double[] aGround = new double[data.freq_lvl.size()];
-        double aGroundmin;
-
+    private static double[] aGround(SegmentPath segmentPath, PropagationPath path, PropagationProcessPathData data) {
         // Here there is a debate if use the condition isgDisc or not
         // In Directive 2015-2019, isgDisc == true because the term – 3(1 – Gm) takes into account the fact that when the source and the receiver are far apart, the first reflection source side is no longer on the platform but on natural land.
-        if (segmentPath.gPath == 0 && data.isgDisc()) {
-
+        if (!(segmentPath.gPath == 0 && data.isgDisc())) {
+            return getAGroundCore(path, segmentPath, data);
+        } else {
+            double aGroundMin;
             //For testing purpose
             if(path.keepAbsorption) {
                 //Used to calculate value ignored like Cf
@@ -274,15 +246,17 @@ public class EvaluateAttenuationCnossos {
 
             if (path.isFavorable()) {
                 // The lower bound of Aground,F (calculated with unmodified heights) depends on the geometry of the path
-                if (segmentPath.testForm <= 1) {
-                    aGroundmin = -3 * (1 - segmentPath.gm);
+                if (segmentPath.testFormH <= 1) {
+                    aGroundMin = -3 * (1 - segmentPath.gm);
                 } else {
-                    aGroundmin = -3 * (1 - segmentPath.gm) * (1 + 2 * (1 - (1 / segmentPath.testForm)));
+                    aGroundMin = -3 * (1 - segmentPath.gm) * (1 + 2 * (1 - (1 / segmentPath.testFormH)));
                 }
             } else {
-                aGroundmin = -3;
+                aGroundMin = -3;
             }
-            java.util.Arrays.fill(aGround, aGroundmin);
+
+            double[] aGround = new double[data.freq_lvl.size()];
+            Arrays.fill(aGround, aGroundMin);
 
             //For testing purpose
             if(path.keepAbsorption) {
@@ -293,10 +267,8 @@ public class EvaluateAttenuationCnossos {
                     path.groundAttenuation.aGroundH = aGround;
                 }
             }
-        } else {
-            aGround = getAGroundCore(path, segmentPath, data);
+            return aGround;
         }
-        return aGround;
     }
 
     /**
@@ -305,9 +277,10 @@ public class EvaluateAttenuationCnossos {
      * @param data
      * @return
      */
-    public double[] getABoundary(PropagationPath path, PropagationProcessPathData data) {
+    private static double[] getABoundary(PropagationPath path, PropagationProcessPathData data) {
 
-        List<SegmentPath> srPath = path.getSRSegmentList();
+        SegmentPath srPath = path.getSRSegment();
+        List<SegmentPath> segments = path.getSegmentList();
 
         double[] aGround;
         double[] aDif = new double[data.freq_lvl.size()];
@@ -316,82 +289,89 @@ public class EvaluateAttenuationCnossos {
 
         // Set Gm and Gw for AGround SR - Table 2.5.b
         if (path.isFavorable()) {
-            srPath.get(0).setGw(srPath.get(0).gPath);
-            srPath.get(0).setGm(srPath.get(0).gPathPrime);
+            srPath.setGw(srPath.gPath);
         } else {
-            srPath.get(0).setGw(srPath.get(0).gPathPrime);
-            srPath.get(0).setGm(srPath.get(0).gPathPrime);
+            srPath.setGw(srPath.gPathPrime);
+        }
+        srPath.setGm(srPath.gPathPrime);
+
+        List<Integer> difBands = new ArrayList<>();
+        List<Integer> noDifBands = new ArrayList<>();
+        double deltaD = srPath.d - (segments.get(0).d + segments.get(1).dp);
+        double deltaDPrime = -srPath.dPrime + segments.get(0).dPrime + segments.get(1).dPrime;
+        for(int freq : data.freq_lvl) {
+            double lambda = 340.0 / freq;
+            if(deltaD > -lambda/20) {
+                if(deltaD > (lambda/4 - deltaDPrime)) {
+                    difBands.add(data.freq_lvl.indexOf(freq));
+                }
+                else {
+                    noDifBands.add(data.freq_lvl.indexOf(freq));
+                }
+            }
         }
 
-        if (path.difHPoints.size() > 0) {
+        //if (path.difHPoints.size() > 0) {
             // Adif is calculated with diffraction. The ground effect is taken into account in the Adif equation itself (Aground = 0 dB). This therefore gives Aboundary = Adif
             List<SegmentPath> segmentPath = path.getSegmentList();
 
-            double[] DeltaDifSR; // is the attenuation due to the diffraction between the source S and the receiver R
+            double[] deltaDifSR; // is the attenuation due to the diffraction between the source S and the receiver R
             double[] DeltaDifSpR;
-            double[] DeltaDifSRp;
+            double[] deltaDifSRp;
             double[] aGroundSO; // is the attenuation due to the ground effect on the source side, weighted by the diffraction on the source side; where it is understood that O = O1 in case of multiple diffractions as in Figure 2.5.f
             double[] aGroundOR; // is the attenuation due to the ground effect on the receiver side, weighted by the diffraction on the receiver side.
 
-            DeltaDifSR = getDeltaDif(srPath.get(0), data);
-            DeltaDifSpR = getDeltaDif(srPath.get(srPath.size() - 2), data);
-            DeltaDifSRp = getDeltaDif(srPath.get(srPath.size() - 1), data);
+            deltaDifSR = getDeltaDif(srPath, data);
+            DeltaDifSpR = getDeltaDif(segments.get(segments.size() - 2), data);
+            deltaDifSRp = getDeltaDif(segments.get(segments.size() - 1), data);
 
             // Set Gm and Gw for AGround SO - Table 2.5.b
             if (path.isFavorable()) {
                 segmentPath.get(0).setGw(segmentPath.get(0).gPath);
-                segmentPath.get(0).setGm(segmentPath.get(0).gPathPrime);
             } else {
                 segmentPath.get(0).setGw(segmentPath.get(0).gPathPrime);
-                segmentPath.get(0).setGm(segmentPath.get(0).gPathPrime);
             }
-            aGroundSO = getAGround(segmentPath.get(0), path, data);
+            segmentPath.get(0).setGm(segmentPath.get(0).gPathPrime);
+            aGroundSO = aGround(segmentPath.get(0), path, data);
 
             // Set Gm and Gw for AGround OR - Table 2.5.b
-            if (path.isFavorable()) {
-                segmentPath.get(segmentPath.size() - 1).setGw(segmentPath.get(segmentPath.size() - 1).gPath);
-                segmentPath.get(segmentPath.size() - 1).setGm(segmentPath.get(segmentPath.size() - 1).gPath);
-            } else {
-                segmentPath.get(segmentPath.size() - 1).setGw(segmentPath.get(segmentPath.size() - 1).gPath);
-                segmentPath.get(segmentPath.size() - 1).setGm(segmentPath.get(segmentPath.size() - 1).gPath);
-            }
-            aGroundOR = getAGround(segmentPath.get(segmentPath.size() - 1), path, data);
+            segmentPath.get(segmentPath.size() - 1).setGw(segmentPath.get(segmentPath.size() - 1).gPath);
+            segmentPath.get(segmentPath.size() - 1).setGm(segmentPath.get(segmentPath.size() - 1).gPath);
+            aGroundOR = aGround(segmentPath.get(segmentPath.size() - 1), path, data);
 
             double[] deltaGroundSO = new double[data.freq_lvl.size()];
             double[] deltaGroundOR = new double[data.freq_lvl.size()];
             // Eq 2.5.30 - Eq. 2.5.31 - Eq. 2.5.32
-            for (int idf = 0; idf < nbfreq; idf++) {
+            for (int idf : difBands) {
                 // if Deltadif > 25: Deltadif = 25 dB for a diffraction on a horizontal edge and only on the term Deltadif which figures in the calculation of Adif. This upper bound shall not be applied in the Deltadif terms that intervene in the calculation of Deltaground, or for a diffraction on a vertical edge (lateral diffraction) in the case of industrial noise mapping
-                if (segmentPath.get(segmentPath.size() - 1).zr > 0.0000001) {// see 5.3 Equivalent heights from AFNOR document
-                    deltaGroundSO[idf]  = getDeltaGround(aGroundSO[idf], DeltaDifSpR[idf],DeltaDifSR[idf]);
-                    deltaGroundOR[idf] = getDeltaGround(aGroundOR[idf], DeltaDifSRp[idf], DeltaDifSR[idf]);
+                if (segmentPath.get(segmentPath.size() - 1).zrH > 0.0000001) {// see 5.3 Equivalent heights from AFNOR document
+                    deltaGroundSO[idf]  = getDeltaGround(aGroundSO[idf], DeltaDifSpR[idf],deltaDifSR[idf]);
+                    deltaGroundOR[idf] = getDeltaGround(aGroundOR[idf], deltaDifSRp[idf], deltaDifSR[idf]);
                 }else{
-                    deltaGroundSO[idf]  = getDeltaGround(aGroundSO[idf], DeltaDifSpR[idf],DeltaDifSR[idf]);
+                    deltaGroundSO[idf]  = getDeltaGround(aGroundSO[idf], DeltaDifSpR[idf],deltaDifSR[idf]);
                     deltaGroundOR[idf]  = aGroundOR[idf];
                 }
-                aDif[idf] = Math.min(25, DeltaDifSR[idf]) + deltaGroundSO[idf] + deltaGroundOR[idf]; // Eq. 2.5.30
+                aDif[idf] = Math.min(25, deltaDifSR[idf]) + deltaGroundSO[idf] + deltaGroundOR[idf]; // Eq. 2.5.30
             }
 
             aBoundary = aDif;
-        } else {
+        //} else {
             // Aground is calculated with no diffraction (Adif = 0 dB) and Aboundary = Aground;
             // In addition, Aatm and Aground shall be calculated from the total length of the propagation path.
-            aGround = getAGround(srPath.get(0), path, data);
+            aGround = aGround(srPath, path, data);
             aBoundary = aGround;
 
             if (path.difVPoints.size() > 0 ) {
 
-                aDif = getDeltaDif(srPath.get(0), data);
+                aDif = getDeltaDif(srPath, data);
 
                 // Eq. 2.5.33 - Eq. 2.5.34
-                for (int idf = 0; idf < nbfreq; idf++) {
+                for (int idf : noDifBands) {
                     aBoundary[idf] = aDif[idf] + aGround[idf];
                 }
 
             }
-        }
-
-
+        //}
 
         return aBoundary;
     }
@@ -400,31 +380,24 @@ public class EvaluateAttenuationCnossos {
      *
      * @param data
      */
-    public void initEvaluateAttenutation(PropagationProcessPathData data) {
+    public static void init(PropagationProcessPathData data) {
         // init
         aGlobal = new double[data.freq_lvl.size()];
-        nbfreq = data.freq_lvl.size();
 
         // Init wave length for each frequency
-        freq_lambda = new double[nbfreq];
-        for (int idf = 0; idf < nbfreq; idf++) {
+        freq_lambda = new double[data.freq_lvl.size()];
+        for (int idf = 0; idf < data.freq_lvl.size(); idf++) {
             if (data.freq_lvl.get(idf) > 0) {
                 freq_lambda[idf] = data.getCelerity() / data.freq_lvl.get(idf);
             } else {
                 freq_lambda[idf] = 1;
             }
         }
-
     }
 
-
-    public double[] evaluateAdiv(PropagationPath path, PropagationProcessPathData data) {
+    public static double[] aDiv(PropagationPath path, PropagationProcessPathData data) {
         double[] aDiv = new double[data.freq_lvl.size()];
-        double att ;
-        att = getADiv(path.getSRSegmentList().get(0).d);
-        for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
-            aDiv[idfreq] = att;
-        }
+        Arrays.fill(aDiv, getADiv(path.getSRSegment().d));
         return aDiv;
     }
 
@@ -434,13 +407,13 @@ public class EvaluateAttenuationCnossos {
      * @param distance
      * @return
      */
-    public double[] evaluateAatm(PropagationProcessPathData data, double distance) {
+    public static double[] aAtm(PropagationProcessPathData data, double distance) {
         // init
         double[] aAtm = new double[data.freq_lvl.size()];
         // init atmosphere
         double[] alpha_atmo = data.getAlpha_atmo();
 
-        for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
+        for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
             aAtm[idfreq] = getAAtm(distance, alpha_atmo[idfreq]);
         }
         return aAtm;
@@ -452,7 +425,7 @@ public class EvaluateAttenuationCnossos {
      * @param data
      * @return
      */
-    public double[] evaluateAref(PropagationPath path, PropagationProcessPathData data) {
+    public static double[] evaluateAref(PropagationPath path, PropagationProcessPathData data) {
         return getARef(path, data);
     }
 
@@ -463,14 +436,12 @@ public class EvaluateAttenuationCnossos {
      * @param Favorable
      * @return
      */
-    public double[] evaluateAboundary(PropagationPath path, PropagationProcessPathData data, boolean Favorable) {
+    public static double[] evaluateAboundary(PropagationPath path, PropagationProcessPathData data, boolean Favorable) {
         double[] aBoundary;
         // boundary (ground + diffration)
         aBoundary = getABoundary(path, data);
         return aBoundary;
     }
-
-
 
     /**
      * Only for propagation Path Cnossos
@@ -479,16 +450,15 @@ public class EvaluateAttenuationCnossos {
      * @param data
      * @return
      */
-    public double[] evaluate(PropagationPath path, PropagationProcessPathData data) {
+    public static double[] evaluate(PropagationPath path, PropagationProcessPathData data) {
         // init
         aGlobal = new double[data.freq_lvl.size()];
         double[] aBoundary;
         double[] aRef;
-        nbfreq = data.freq_lvl.size();
 
         // Init wave length for each frequency
-        freq_lambda = new double[nbfreq];
-        for (int idf = 0; idf < nbfreq; idf++) {
+        freq_lambda = new double[data.freq_lvl.size()];
+        for (int idf = 0; idf < data.freq_lvl.size(); idf++) {
             if (data.freq_lvl.get(idf) > 0) {
                 freq_lambda[idf] = data.getCelerity() / data.freq_lvl.get(idf);
             } else {
@@ -505,9 +475,9 @@ public class EvaluateAttenuationCnossos {
         double aDiv;
         // divergence
         if (path.refPoints.size() > 0) {
-            aDiv = getADiv(path.getSRSegmentList().get(0).dPath);
+            aDiv = getADiv(path.getSRSegment().dPath);
         } else {
-            aDiv = getADiv(path.getSRSegmentList().get(0).d);
+            aDiv = getADiv(path.getSRSegment().d);
         }
 
 
@@ -517,18 +487,183 @@ public class EvaluateAttenuationCnossos {
         // reflections
         aRef = getARef(path, data);
 
-        for (int idfreq = 0; idfreq < nbfreq; idfreq++) {
+        for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
             // atm
             double aAtm;
             if (path.difVPoints.size() > 0 || path.refPoints.size() > 0) {
-                aAtm = getAAtm(path.getSRSegmentList().get(0).dPath, alpha_atmo[idfreq]);
+                aAtm = getAAtm(path.getSRSegment().dPath, alpha_atmo[idfreq]);
             } else {
-                aAtm = getAAtm(path.getSRSegmentList().get(0).d, alpha_atmo[idfreq]);
+                aAtm = getAAtm(path.getSRSegment().d, alpha_atmo[idfreq]);
             }
 
             aGlobal[idfreq] = -(aDiv + aAtm + aBoundary[idfreq] + aRef[idfreq]);
 
         }
         return aGlobal;
+    }
+
+    private static boolean isValidRcrit(PointPath pp, int freq, boolean favorable) {
+        double lambda = 340.0/freq;
+        return favorable ?
+                pp.deltaF > -lambda / 20 && pp.deltaF > lambda / 4 - pp.deltaPrimeF :
+                pp.deltaH > -lambda / 20 && pp.deltaH > lambda / 4 - pp.deltaPrimeH;
+    }
+
+    public static double[] aBoundary(PropagationPath path, PropagationProcessPathData data) {
+        double[] aGround = new double[data.freq_lvl.size()];
+        double[] aDif = new double[data.freq_lvl.size()];
+        List<PointPath> diffPts = new ArrayList<>();
+        for(int i=0; i<path.getPointList().size(); i++) {
+            if(path.difHPoints.contains(i)) {
+                diffPts.add(path.getPointList().get(i));
+            }
+        }
+        diffPts.forEach(pp -> pp.aBoundary.init(data.freq_lvl.size()));
+        // Without diff
+        for(int i=0; i<data.freq_lvl.size(); i++) {
+            int finalI = i;
+            PointPath first = diffPts.stream()
+                    .filter(pp -> pp.type.equals(PointPath.POINT_TYPE.DIFH) ||
+                            (pp.type.equals(PointPath.POINT_TYPE.DIFH_RCRIT) &&
+                                    isValidRcrit(pp, data.freq_lvl.get(finalI), path.isFavorable())))
+                    .findFirst()
+                    .orElse(null);
+            if (first != null && !path.isFavorable()) {
+                aGround[i] = 0.;
+                aDif[i] = path.isFavorable() ? aDifF(path, data, i) : aDifH(path, data, i, first);
+            }
+            // With diff
+            else {
+                aDif[i] = 0.;
+                aGround[i] = path.isFavorable() ? aGroundF(path, path.getSRSegment(), data, i) : aGroundH(path, path.getSRSegment(), data, i);
+            }
+
+        }
+        if(path.keepAbsorption) {
+            if (path.isFavorable()) {
+                path.groundAttenuation.aGroundF = aGround;
+                path.absorptionData.aDifF = aDif;
+            } else {
+                path.groundAttenuation.aGroundH = aGround;
+                path.absorptionData.aDifH = aDif;
+            }
+        }
+        double[] aBoundary = new double[data.freq_lvl.size()];
+        for(int i=0; i<data.freq_lvl.size(); i++) {
+            aBoundary[i] = aGround[i] + aDif[i];
+        }
+        return aBoundary;
+    }
+
+    private static double aDifH(PropagationPath proPath, PropagationProcessPathData data, int i, PointPath pp) {
+        SegmentPath first = proPath.getSegmentList().get(0);
+        SegmentPath last = proPath.getSegmentList().get(proPath.getSegmentList().size()-1);
+
+        double ch = 1.;
+        double lambda = 340.0/data.freq_lvl.get(i);
+        double cSecond = 1.;
+
+        double _delta = pp.deltaH;
+        double testForm = 40/lambda*cSecond*_delta;
+        double deltaDiffSR = testForm>=-2 ? 10*ch*log10(3+testForm) : 0;
+
+        _delta = pp.deltaSPrimeR;
+        testForm = 40/lambda*cSecond*_delta;
+        double deltaDiffSPrimeR = testForm>=-2 ? 10*ch*log10(3+testForm) : 0;
+
+        _delta = pp.deltaSRPrime;
+        testForm = 40/lambda*cSecond*_delta;
+        double deltaDiffSRPrime = testForm>=-2 ? 10*ch*log10(3+testForm) : 0;
+
+        double aGroundSO = proPath.isFavorable() ? aGroundF(proPath, first, data, i) : aGroundH(proPath, first, data, i);
+        double aGroundOR = proPath.isFavorable() ? aGroundF(proPath, last, data, i) : aGroundH(proPath, last, data, i, true);
+        double deltaGroundSO = -20*log10(1+(pow(10, -aGroundSO/20)-1)*pow(10, -(deltaDiffSPrimeR-deltaDiffSR)/20));
+        double deltaGroundOR = -20*log10(1+(pow(10, -aGroundOR/20)-1)*pow(10, -(deltaDiffSRPrime-deltaDiffSR)/20));
+
+        double aDiff = min(25, max(0, deltaDiffSR)) + deltaGroundSO + deltaGroundOR;
+        if(proPath.keepAbsorption) {
+            pp.aBoundary.deltaDiffSR[i] = deltaDiffSR;
+            pp.aBoundary.aGroundSO[i] = aGroundSO;
+            pp.aBoundary.aGroundOR[i] = aGroundOR;
+            pp.aBoundary.deltaDiffSPrimeR[i] = deltaDiffSPrimeR;
+            pp.aBoundary.deltaDiffSRPrime[i] = deltaDiffSRPrime;
+            pp.aBoundary.deltaGroundSO[i] = deltaGroundSO;
+            pp.aBoundary.deltaGroundOR[i] = deltaGroundOR;
+            pp.aBoundary.aDiff[i] = aDiff;
+        }
+
+        return aDiff;
+    }
+
+    private static double aDifF(PropagationPath path, PropagationProcessPathData data, int i) {
+        return 0;
+    }
+
+    private static double[] computeCfKValues(PropagationPath proPath, SegmentPath path, PropagationProcessPathData data, int idFreq) {
+        return computeCfKValues(proPath, path, data, idFreq, false);
+    }
+    private static double[] computeCfKValues(PropagationPath proPath, SegmentPath path, PropagationProcessPathData data, int idFreq, boolean forceGPath) {
+        int fm = data.freq_lvl.get(idFreq);
+        double c = data.getCelerity();
+        double dp = path.dp;
+        double k = 2*PI*fm/c;
+        double gw = forceGPath ? path.gPath : proPath.isFavorable() ? path.gPath : path.gPathPrime;
+        double w = 0.0185 * pow(fm, 2.5) * pow(gw, 2.6) /
+                (pow(fm, 1.5) * pow(gw, 2.6) + 1.3e3 * pow(fm, 0.75) * pow(gw, 1.3) + 1.16e6);
+        double cf = dp * (1 + 3 * w * dp * exp(-sqrt(w * dp))) / (1 + w * dp);
+        return new double[]{cf, k, w};
+    }
+
+    public static double aGroundH(PropagationPath proPath, SegmentPath path, PropagationProcessPathData data, int idFreq) {
+        return aGroundH(proPath, path, data, idFreq, false);
+    }
+
+    public static double aGroundH(PropagationPath proPath, SegmentPath path, PropagationProcessPathData data, int idFreq, boolean forceGPath) {
+        double[] values = computeCfKValues(proPath, path, data, idFreq, forceGPath);
+        double cf = values[0];
+        double k = values[1];
+        double w = values[2];
+        if(proPath.keepAbsorption && path == proPath.getSRSegment()) {
+            proPath.groundAttenuation.wH[idFreq] = w;
+            proPath.groundAttenuation.cfH[idFreq] = cf;
+        }
+        if(path.gPath == 0) {
+            return -3;
+        }
+        double dp = path.dp;
+        double gm = forceGPath ? path.gPath : path.gPathPrime;
+        double aGroundHMin = -3*(1-gm);
+        double zs = path.zsH;
+        double zr = path.zrH;
+        double aGroundHComputed = -10 * log10(4 * (k*k) / (dp*dp) *
+                (zs*zs - sqrt(2 * cf / k) * zs + cf / k) *
+                (zr*zr - sqrt(2 * cf / k) * zr + cf / k));
+        return max(aGroundHComputed, aGroundHMin);
+    }
+
+    //Todo check if the favorable testform should be use instead
+    public static double aGroundF(PropagationPath proPath, SegmentPath path, PropagationProcessPathData data, int idFreq) {
+        double[] values = computeCfKValues(proPath, path, data, idFreq);
+        double cf = values[0];
+        double k = values[1];
+        double w = values[2];
+        if(proPath.keepAbsorption && path == proPath.getSRSegment()) {
+            proPath.groundAttenuation.wF[idFreq] = w;
+            proPath.groundAttenuation.cfF[idFreq] = cf;
+        }
+        double gm = path.gPathPrime;
+        double aGroundFMin = path.testFormF <= 1 ? -3 * (1 - gm) : -3 * (1 - gm) * (1 + 2 * (1 - (1 / path.testFormF)));
+        if(path.gPath == 0) {
+            return aGroundFMin;
+        }
+        else {
+            double dp = path.dp;
+            double zs = path.zsF;
+            double zr = path.zrF;
+            double aGroundFComputed = -10 * log10(4 * (k*k) / (dp*dp) *
+                    (zs*zs - sqrt(2 * cf / k) * zs + cf / k) *
+                    (zr*zr - sqrt(2 * cf / k) * zr + cf / k));
+            return max(aGroundFComputed, aGroundFMin);
+        }
     }
 }
