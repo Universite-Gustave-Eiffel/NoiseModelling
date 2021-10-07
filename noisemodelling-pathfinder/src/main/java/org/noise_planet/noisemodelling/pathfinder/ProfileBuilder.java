@@ -417,8 +417,8 @@ public class ProfileBuilder {
      * @param height Wall height.
      * @param id     Database key.
      */
-    public ProfileBuilder addWalls(LineString geom, double height, int id) {
-        return addWalls(geom, height, new ArrayList<>(), id);
+    public ProfileBuilder addWall(LineString geom, double height, int id) {
+        return addWall(geom, height, new ArrayList<>(), id);
     }
 
     /**
@@ -427,8 +427,8 @@ public class ProfileBuilder {
      * @param height Wall height.
      * @param id     Database key.
      */
-    public ProfileBuilder addWalls(Coordinate[] coords, double height, int id) {
-        return addWalls(FACTORY.createLineString(coords), height, new ArrayList<>(), id);
+    public ProfileBuilder addWall(Coordinate[] coords, double height, int id) {
+        return addWall(FACTORY.createLineString(coords), height, new ArrayList<>(), id);
     }
 
     /**
@@ -436,8 +436,8 @@ public class ProfileBuilder {
      * @param geom   Wall footprint.
      * @param id     Database key.
      */
-    public ProfileBuilder addWalls(LineString geom, int id) {
-        return addWalls(geom, 0.0, new ArrayList<>(), id);
+    public ProfileBuilder addWall(LineString geom, int id) {
+        return addWall(geom, 0.0, new ArrayList<>(), id);
     }
 
     /**
@@ -445,8 +445,8 @@ public class ProfileBuilder {
      * @param coords Wall footprint coordinates.
      * @param id     Database key.
      */
-    public ProfileBuilder addWalls(Coordinate[] coords, int id) {
-        return addWalls(FACTORY.createLineString(coords), 0.0, new ArrayList<>(), id);
+    public ProfileBuilder addWall(Coordinate[] coords, int id) {
+        return addWall(FACTORY.createLineString(coords), 0.0, new ArrayList<>(), id);
     }
 
     /**
@@ -456,7 +456,7 @@ public class ProfileBuilder {
      * @param alphas Absorption coefficient.
      * @param id     Database key.
      */
-    public ProfileBuilder addWalls(LineString geom, double height, List<Double> alphas, int id) {
+    public ProfileBuilder addWall(LineString geom, double height, List<Double> alphas, int id) {
         if(!isFeedingFinished) {
             if(envelope == null) {
                 envelope = geom.getEnvelopeInternal();
@@ -485,8 +485,8 @@ public class ProfileBuilder {
      * @param coords Wall footprint coordinates.
      * @param id     Database key.
      */
-    public ProfileBuilder addWalls(Coordinate[] coords, double height, List<Double> alphas, int id) {
-        return addWalls(FACTORY.createLineString(coords), height, alphas, id);
+    public ProfileBuilder addWall(Coordinate[] coords, double height, List<Double> alphas, int id) {
+        return addWall(FACTORY.createLineString(coords), height, alphas, id);
     }
 
     /**

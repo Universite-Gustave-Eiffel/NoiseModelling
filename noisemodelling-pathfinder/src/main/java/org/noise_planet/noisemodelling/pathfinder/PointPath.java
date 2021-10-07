@@ -24,9 +24,12 @@ public class PointPath {
     public double deltaF;
     public double deltaPrimeH;
     public double deltaPrimeF;
-    public double deltaSPrimeR;
-    public double deltaSRPrime;
-    public ABoundary aBoundary = new ABoundary();
+    public double deltaSPrimeRH;
+    public double deltaSRPrimeH;
+    public ABoundary aBoundaryH = new ABoundary();
+    public ABoundary aBoundaryF = new ABoundary();
+    public double deltaSPrimeRF;
+    public double deltaSRPrimeF;
 
     public class ABoundary {
         public double[] deltaDiffSR;

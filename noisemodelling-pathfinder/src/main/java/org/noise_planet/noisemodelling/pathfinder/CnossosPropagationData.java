@@ -34,12 +34,10 @@
 package org.noise_planet.noisemodelling.pathfinder;
 
 import org.h2gis.api.ProgressVisitor;
-import org.h2gis.api.ProgressVisitor;
 import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SpatialResultSet;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryFactory;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -221,16 +219,16 @@ public class CnossosPropagationData {
     }
 
 
-    public boolean isComputeHorizontalDiffraction() {
+    public boolean isComputeVEdgeDiffraction() {
         return computeHorizontalDiffraction;
     }
 
-    public boolean isComputeVerticalDiffraction() {
+    public boolean isComputeHEdgeDiffraction() {
         return computeVerticalDiffraction;
     }
 
     public boolean isComputeDiffraction() {
-        return isComputeVerticalDiffraction() || isComputeHorizontalDiffraction();
+        return isComputeHEdgeDiffraction() || isComputeVEdgeDiffraction();
     }
 
     /**

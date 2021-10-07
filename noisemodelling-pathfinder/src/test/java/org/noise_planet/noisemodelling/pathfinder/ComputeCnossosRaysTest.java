@@ -299,12 +299,12 @@ public class ComputeCnossosRaysTest {
         //Create profile builder
         ProfileBuilder profileBuilder = new ProfileBuilder()
 
-        // Add building
-                .addWalls(new Coordinate[]{
-                        new Coordinate(100, 240, 0),
-                        new Coordinate(265, -180, 0)},
+                // Add building
+                .addWall(new Coordinate[]{
+                                new Coordinate(100, 240, 0),
+                                new Coordinate(265, -180, 0)},
                         6, 1)
-        // Add ground effect
+                // Add ground effect
                 .addGroundEffect(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9)
                 .addGroundEffect(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5)
                 .addGroundEffect(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2)
@@ -330,14 +330,17 @@ public class ComputeCnossosRaysTest {
 
         //Expected values
         double[][][] pts = new double[][][]{
-                {{10.0, 10.0, 1.0}, {176.58, 45.07, 6.0}, {200.0, 50.0, 4.0}} //Path 1 : direct
+                {{0.00, 1.00}, {170.23, 6.0}, {194.16, 4.0}} //Path 1 : direct
         };
-        double[][] gPaths = new double[][]{
-                {0.55,0.2} //Path 1 : direct
+        double [][] segmentsMeanPlanes = new double[][]{
+                //  a     b    zs    zr      dp    Gp   Gp'
+                {0.00, 0.00, 1.00, 6.00, 170.23, 0.55, 0.61},
+                {0.00, 0.00, 6.00, 4.00, 023.93, 0.20,  NaN}
         };
 
         //Assertion
-        assertPaths(pts, gPaths, propDataOut.getPropagationPaths());
+        assertPaths(pts, propDataOut.getPropagationPaths());
+        assertPlanes(segmentsMeanPlanes, propDataOut.getPropagationPaths().get(0).getSegmentList());
     }
 
 
@@ -360,6 +363,25 @@ public class ComputeCnossosRaysTest {
             assertEquals("Expected path["+i+"] segments count is different than actual path segment count.", expectedGPaths[i].length, path.getSegmentList().size());
             for(int j=0; j<expectedGPaths[i].length; j++) {
                 assertEquals("Path " + i + " g path " + j, expectedGPaths[i][j], path.getSegmentList().get(j).gPath, DELTA_G_PATH);
+            }
+        }
+    }
+
+
+    /**
+     * Assertions for a list of {@link PropagationPath}.
+     * @param expectedPts    Array of arrays of array of expected coordinates (xyz) of points of paths. To each path
+     *                       corresponds an array of points. To each point corresponds an array of coordinates (xyz).
+     * @param actualPaths    Computed arrays of {@link PropagationPath}.
+     */
+    private static void assertPaths(double[][][] expectedPts, List<PropagationPath> actualPaths) {
+        assertEquals("Expected path count is different than actual path count.", expectedPts.length, actualPaths.size());
+        for(int i=0; i<expectedPts.length; i++) {
+            PropagationPath path = actualPaths.get(i);
+            for(int j=0; j<expectedPts[i].length; j++){
+                PointPath point = path.getPointList().get(j);
+                assertEquals("Path "+i+" point "+j+" coord X", expectedPts[i][j][0], point.coordinate.x, DELTA_COORDS);
+                assertEquals("Path "+i+" point "+j+" coord Y", expectedPts[i][j][1], point.coordinate.y, DELTA_COORDS);
             }
         }
     }

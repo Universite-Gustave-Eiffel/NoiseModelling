@@ -55,7 +55,7 @@ import static java.lang.Math.max;
 import static org.noise_planet.noisemodelling.pathfinder.ComputeCnossosRays.ComputationSide.LEFT;
 import static org.noise_planet.noisemodelling.pathfinder.ComputeCnossosRays.ComputationSide.RIGHT;
 import static org.noise_planet.noisemodelling.pathfinder.PointPath.POINT_TYPE.DIFH_RCRIT;
-import static org.noise_planet.noisemodelling.pathfinder.ProfileBuilder.IntersectionType.GROUND_EFFECT;
+import static org.noise_planet.noisemodelling.pathfinder.ProfileBuilder.IntersectionType.*;
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticPropagation.getADiv;
 import static org.noise_planet.noisemodelling.pathfinder.utils.GeometryUtils.projectPointOnLine;
 import static org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils.*;
@@ -277,13 +277,12 @@ public class ComputeCnossosRays {
             propagationPaths.add(computeFreeField(cutProfile, data));
         }
         else if(data.isComputeDiffraction()) {
-            PropagationPath freePath = computeFreeField(cutProfile, data);
-            if (data.isComputeVerticalDiffraction()) {
+            if (data.isComputeHEdgeDiffraction()) {
                 PropagationPath propagationPath = computeVerticalDiffraction(cutProfile, data.gS);
-                propagationPath.setSRSegment(freePath.getSRSegment());
                 propagationPaths.add(propagationPath);
             }
-            if (data.isComputeHorizontalDiffraction()) {
+            if (data.isComputeVEdgeDiffraction()) {
+                PropagationPath freePath = computeFreeField(cutProfile, data);
                 PropagationPath propagationPath = computeHorizontalDiffraction(srcCoord, rcvCoord, data, LEFT);
                 if (propagationPath.getPointList() != null) {
                     for (int i = 0; i < propagationPath.getSegmentList().size(); i++) {
@@ -320,46 +319,110 @@ public class ComputeCnossosRays {
         return propagationPaths;
     }
 
-    private SegmentPath createSegment(ProfileBuilder.CutProfile cutProfile,
-                                      ProfileBuilder.CutPoint src, ProfileBuilder.CutPoint rcv) {
-        // Compute mean ground plan
-        List<Coordinate> rSground = cutProfile.getCutPoints().stream()
-                .map(cutPoint -> new Coordinate(
-                        cutPoint.getCoordinate().x,
-                        cutPoint.getCoordinate().y,
-                        data.profileBuilder.getZGround(cutPoint)
-                )).collect(Collectors.toList());
-        //Set the src and rcv to the ground
-        rSground.get(0).z = data.profileBuilder.getZGround(rSground.get(0));
-        rSground.get(rSground.size()-1).z = data.profileBuilder.getZGround(rSground.get(rSground.size()-1));
-        double angle = new LineSegment(rSground.get(0), rSground.get(rSground.size() - 1)).angle();
-        rSground = JTSUtility.getNewCoordinateSystem(rSground);
-        Coordinate projReceiver;
-        Coordinate projSource;
-        double[] ab = JTSUtility.getMeanPlaneCoefficients(rSground.toArray(new Coordinate[rSground.size()]));
-        Coordinate pInit = new Coordinate();
-        Coordinate rotatedReceiver = new Coordinate(rSground.get(rSground.size() - 1));
-        rotatedReceiver.setOrdinate(1, rcv.getCoordinate().z);
-        Coordinate rotatedSource = new Coordinate(rSground.get(0));
-        rotatedSource.setOrdinate(1, src.getCoordinate().z);
-        projReceiver = JTSUtility.makeProjectedPoint(ab[0], ab[1], rotatedReceiver);
-        projSource = JTSUtility.makeProjectedPoint(ab[0], ab[1], rotatedSource);
-        pInit = JTSUtility.makeProjectedPoint(ab[0], ab[1], new Coordinate(0, 0, 0));
-        projReceiver = JTSUtility.getOldCoordinateSystem(projReceiver, angle);
-        projSource = JTSUtility.getOldCoordinateSystem(projSource, angle);
-        pInit = JTSUtility.getOldCoordinateSystem(pInit, angle);
-
-        projReceiver.x = src.getCoordinate().x + projReceiver.x;
-        projSource.x = src.getCoordinate().x + projSource.x;
-        projReceiver.y = src.getCoordinate().y + projReceiver.y;
-        projSource.y = src.getCoordinate().y + projSource.y;
-        pInit.x = src.getCoordinate().x + pInit.x;
-        pInit.y = src.getCoordinate().y + pInit.y;
-        return new SegmentPath(cutProfile.getGPath(), new Vector3D(projSource, projReceiver), pInit);
-    }
-
     private static double toCurve(double mn, double d){
         return 2*max(1000, 8*d)* asin(mn/(2*max(1000, 8*d)));
+    }
+
+    private static SegmentPath computeSegment(Coordinate src, Coordinate rcv, double[] meanPlane, double gPath, double gS) {
+        SegmentPath seg = new SegmentPath();
+        Coordinate srcMeanPlane = projectPointOnLine(src, meanPlane[0], meanPlane[1]);
+        Coordinate rcvMeanPlane = projectPointOnLine(rcv, meanPlane[0], meanPlane[1]);
+
+        seg.s = src;
+        seg.r = rcv;
+        seg.sMeanPlane = srcMeanPlane;
+        seg.rMeanPlane = rcvMeanPlane;
+        seg.sPrime = new Coordinate(seg.s.x+(seg.sMeanPlane.x-seg.s.x)*2, seg.s.y+(seg.sMeanPlane.y-seg.s.y)*2);
+        seg.rPrime = new Coordinate(seg.r.x+(seg.rMeanPlane.x-seg.r.x)*2, seg.r.y+(seg.rMeanPlane.y-seg.r.y)*2);
+        seg.d = new LineSegment(src, rcv).getLength();
+        seg.dp = new LineSegment(srcMeanPlane, rcvMeanPlane).getLength();
+        seg.zsH = new LineSegment(src, srcMeanPlane).getLength();
+        seg.zrH = new LineSegment(rcv, rcvMeanPlane).getLength();
+        seg.a = meanPlane[0];
+        seg.b = meanPlane[1];
+        seg.testFormH = seg.dp/(30*(seg.zsH +seg.zrH));
+        seg.gPath = gPath;
+        seg.gPathPrime = seg.testFormH <= 1 ? seg.gPath*(seg.testFormH) + gS*(1-seg.testFormH) : seg.gPath;
+        double deltaZT = 6e-3 * seg.dp / (seg.zsH + seg.zrH);
+        double deltaZS = ALPHA0 * Math.pow((seg.zsH / (seg.zsH + seg.zrH)), 2) * (seg.dp*seg.dp / 2);
+        seg.zsF = seg.zsH + deltaZS + deltaZT;
+        double deltaZR = ALPHA0 * Math.pow((seg.zrH / (seg.zsH + seg.zrH)), 2) * (seg.dp*seg.dp / 2);
+        seg.zrF = seg.zrH + deltaZR + deltaZT;
+        seg.testFormF = seg.dp/(30*(seg.zsF +seg.zrF));
+
+        return seg;
+    }
+
+    private static List<Coordinate> computeGroundPts(ProfileBuilder.CutProfile cutProfile, CnossosPropagationData data) {
+        List<Coordinate> pts2D = cutProfile.getCutPoints().stream()
+                .filter(cut -> cut.getType() != GROUND_EFFECT)
+                .map(ProfileBuilder.CutPoint::getCoordinate)
+                .collect(Collectors.toList());
+        pts2D = JTSUtility.getNewCoordinateSystem(pts2D);
+        List<Coordinate> toRemove = new ArrayList<>();
+        for(int i=1; i<pts2D.size(); i++) {
+            if(pts2D.get(i).x == pts2D.get(i-1).x) {
+                toRemove.add(pts2D.get(i));
+            }
+        }
+        pts2D.removeAll(toRemove);
+
+        List<Coordinate> pts2DGround = new ArrayList<>();
+        for(int i=0; i<pts2D.size(); i++) {
+            Coordinate c = new Coordinate(pts2D.get(i));
+            if(i==0) {
+                c = new Coordinate(pts2D.get(i).x, data.profileBuilder.getZGround(cutProfile.getSource()));
+            }
+            else if(i == pts2D.size()-1) {
+                c = new Coordinate(pts2D.get(i).x, data.profileBuilder.getZGround(cutProfile.getReceiver()));
+            }
+            pts2DGround.add(c);
+        }
+        return pts2DGround;
+    }
+
+    private static List<Coordinate> computePts2D(ProfileBuilder.CutProfile cutProfile) {
+        List<Coordinate> pts2D = cutProfile.getCutPoints().stream()
+                .filter(cut -> cut.getType() != GROUND_EFFECT)
+                .map(ProfileBuilder.CutPoint::getCoordinate)
+                .collect(Collectors.toList());
+        pts2D = JTSUtility.getNewCoordinateSystem(pts2D);
+        List<Coordinate> toRemove = new ArrayList<>();
+        for(int i=1; i<pts2D.size(); i++) {
+            if(pts2D.get(i).x == pts2D.get(i-1).x) {
+                toRemove.add(pts2D.get(i));
+            }
+        }
+        pts2D.removeAll(toRemove);
+        return pts2D;
+    }
+
+    private static List<Coordinate> computePts2DGround(ProfileBuilder.CutProfile cutProfile, CnossosPropagationData data) {
+        List<Coordinate> pts2D = cutProfile.getCutPoints().stream()
+                .filter(cut -> cut.getType() != GROUND_EFFECT)
+                .map(cut -> new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, data.profileBuilder.getZGround(cut)))
+                .collect(Collectors.toList());
+        pts2D = JTSUtility.getNewCoordinateSystem(pts2D);
+        List<Coordinate> toRemove = new ArrayList<>();
+        for(int i=1; i<pts2D.size(); i++) {
+            if(pts2D.get(i).x == pts2D.get(i-1).x) {
+                toRemove.add(pts2D.get(i));
+            }
+        }
+        pts2D.removeAll(toRemove);
+
+        List<Coordinate> pts2DGround = new ArrayList<>();
+        for(int i=0; i<pts2D.size(); i++) {
+            Coordinate c = new Coordinate(pts2D.get(i));
+            if(i==0) {
+                c = new Coordinate(pts2D.get(i).x, data.profileBuilder.getZGround(cutProfile.getSource()));
+            }
+            else if(i == pts2D.size()-1) {
+                c = new Coordinate(pts2D.get(i).x, data.profileBuilder.getZGround(cutProfile.getReceiver()));
+            }
+            pts2DGround.add(c);
+        }
+        return pts2DGround;
     }
 
     /**
@@ -374,52 +437,14 @@ public class ComputeCnossosRays {
         List<ProfileBuilder.CutPoint> cuts = cutProfile.getCutPoints().stream()
                 .filter(cut -> cut.getType() != GROUND_EFFECT)
                 .collect(Collectors.toList());
-        List<Coordinate> pts2D = cuts.stream()
-                .map(ProfileBuilder.CutPoint::getCoordinate)
-                .collect(Collectors.toList());
-        pts2D = JTSUtility.getNewCoordinateSystem(pts2D);
-        Coordinate src = pts2D.get(0);
-        Coordinate rcv = pts2D.get(pts2D.size()-1);
-
-        List<Coordinate> pts2DGround = new ArrayList<>();
-        for(int i=0; i<pts2D.size(); i++) {
-            Coordinate c = new Coordinate(pts2D.get(i));
-            if(i==0) {
-                c = new Coordinate(src.x, data.profileBuilder.getZGround(srcCut));
-            }
-            else if(i == pts2D.size()-1) {
-                c = new Coordinate(rcv.x, data.profileBuilder.getZGround(rcvCut));
-            }
-            pts2DGround.add(c);
-        }
+        List<Coordinate> pts2DGround = computePts2DGround(cutProfile, data);
+        Coordinate src = new Coordinate(pts2DGround.get(0));
+        src.y = srcCut.getCoordinate().z;
+        Coordinate rcv = new Coordinate(pts2DGround.get(pts2DGround.size()-1));
+        rcv.y = rcvCut.getCoordinate().z;
         double[] meanPlane = JTSUtility.getMeanPlaneCoefficients(pts2DGround.toArray(new Coordinate[0]));
-        Coordinate srcMeanPlane = projectPointOnLine(src, meanPlane[0], meanPlane[1]);
-        Coordinate rcvMeanPlane = projectPointOnLine(rcv, meanPlane[0], meanPlane[1]);
-
+        SegmentPath srSeg = computeSegment(src, rcv, meanPlane, cutProfile.getGPath(srcCut, rcvCut), srcCut.getGroundCoef());
         LineSegment dSR = new LineSegment(src, rcv);
-        SegmentPath srSeg = new SegmentPath(cutProfile.getGPath(),
-                new Vector3D(srcMeanPlane, rcvMeanPlane), srcMeanPlane);
-        srSeg.s = src;
-        srSeg.r = rcv;
-        srSeg.sMeanPlane = srcMeanPlane;
-        srSeg.rMeanPlane = rcvMeanPlane;
-        srSeg.sPrime = new Coordinate(srSeg.s.x+(srSeg.sMeanPlane.x-srSeg.s.x)*2, srSeg.s.y+(srSeg.sMeanPlane.y-srSeg.s.y)*2);
-        srSeg.rPrime = new Coordinate(srSeg.r.x+(srSeg.rMeanPlane.x-srSeg.r.x)*2, srSeg.r.y+(srSeg.rMeanPlane.y-srSeg.r.y)*2);
-        srSeg.d = dSR.getLength();
-        srSeg.dp = new LineSegment(srcMeanPlane, rcvMeanPlane).getLength();
-        srSeg.zsH = new LineSegment(src, srcMeanPlane).getLength();
-        srSeg.zrH = new LineSegment(rcv, rcvMeanPlane).getLength();
-        srSeg.a = meanPlane[0];
-        srSeg.b = meanPlane[1];
-        srSeg.testFormH = srSeg.dp/(30*(srSeg.zsH +srSeg.zrH));
-        srSeg.gPath = cutProfile.getGPath(srcCut, rcvCut);
-        srSeg.gPathPrime = srSeg.testFormH <= 1 ? srSeg.gPath*(srSeg.testFormH) + srcCut.getGroundCoef()*(1-srSeg.testFormH) : srSeg.gPath;
-        double deltaZT = 6e-3 * srSeg.dp / (srSeg.zsH + srSeg.zrH);
-        double deltaZS = ALPHA0 * Math.pow((srSeg.zsH / (srSeg.zsH + srSeg.zrH)), 2) * (srSeg.dp*srSeg.dp / 2);
-        srSeg.zsF = srSeg.zsH + deltaZS + deltaZT;
-        double deltaZR = ALPHA0 * Math.pow((srSeg.zrH / (srSeg.zsH + srSeg.zrH)), 2) * (srSeg.dp*srSeg.dp / 2);
-        srSeg.zrF = srSeg.zrH + deltaZR + deltaZT;
-        srSeg.testFormF = srSeg.dp/(30*(srSeg.zsF +srSeg.zrF));
 
         List<SegmentPath> segments = new ArrayList<>();
 
@@ -435,13 +460,9 @@ public class ComputeCnossosRays {
             // Compute mean ground plan
             for (int iO = 1; iO < pts2DGround.size() - 1; iO++) {
                 Coordinate o = pts2DGround.get(iO);
-                ProfileBuilder.CutPoint oCut = cuts.get(iO);
 
                 double dSO = new LineSegment(src, o).getLength();
-                double dSPrimeO = new LineSegment(srSeg.sPrime, o).getLength();
-
                 double dOR = new LineSegment(o, rcv).getLength();
-                double dORPrime = new LineSegment(o, srSeg.rPrime).getLength();
 
                 PointPath pO = new PointPath(o, o.z, srcCut.getGroundCoef(), new ArrayList<>(), DIFH_RCRIT);
                 pO.deltaH = dSR.orientationIndex(o) * (dSO + dOR - srSeg.d);
@@ -460,65 +481,22 @@ public class ComputeCnossosRays {
                     //Add point path
 
                     //Plane S->O
-                    SegmentPath seg1 = createSegment(cutProfile, srcCut, oCut);
                     Coordinate[] soCoords = Arrays.copyOfRange(pts2DGround.toArray(new Coordinate[0]), 0, iO + 1);
                     double[] abs = JTSUtility.getMeanPlaneCoefficients(soCoords);
-                    seg1.s = new Coordinate(src);
-                    seg1.r = new Coordinate(o);
-                    seg1.a = abs[0];
-                    seg1.b = abs[1];
-                    seg1.sMeanPlane = JTSUtility.makeProjectedPoint(abs[0], abs[1], src);
-                    seg1.rMeanPlane = JTSUtility.makeProjectedPoint(abs[0], abs[1], o);
-                    seg1.sPrime = new Coordinate(seg1.s.x+(seg1.sMeanPlane.x-seg1.s.x)*2, seg1.s.y+(seg1.sMeanPlane.y-seg1.s.y)*2);
-                    seg1.rPrime = new Coordinate(seg1.r.x+(seg1.rMeanPlane.x-seg1.r.x)*2, seg1.r.y+(seg1.rMeanPlane.y-seg1.r.y)*2);
-                    seg1.d = dSO;
-                    seg1.dp = new LineSegment(seg1.sMeanPlane, seg1.rMeanPlane).getLength();
-                    seg1.zsH = new LineSegment(src, seg1.sMeanPlane).getLength();
-                    seg1.zrH = new LineSegment(o, seg1.rMeanPlane).getLength();
-                    seg1.testFormH = seg1.dp/(30*(seg1.zsH +seg1.zrH));
-                    seg1.gPath = cutProfile.getGPath(srcCut, cuts.get(iO));
-                    seg1.gPathPrime = seg1.dp <= 30*(seg1.zsH +seg1.zrH) ? seg1.gPath*(seg1.testFormH) + srcCut.getGroundCoef()*(1-seg1.testFormH) : seg1.gPath;
-                    deltaZT = 6e-3 * seg1.dp / (seg1.zsH + seg1.zrH);
-                    deltaZS = ALPHA0 * Math.pow((seg1.zsH / (seg1.zsH + seg1.zrH)), 2) * (seg1.dp*seg1.dp / 2);
-                    seg1.zsF = seg1.zsH + deltaZS + deltaZT;
-                    deltaZR = ALPHA0 * Math.pow((seg1.zrH / (seg1.zsH + seg1.zrH)), 2) * (seg1.dp*seg1.dp / 2);
-                    seg1.zrF = seg1.zrH + deltaZR + deltaZT;
-                    seg1.testFormF = seg1.dp/(30*(seg1.zsF +seg1.zrF));
+                    SegmentPath seg1 = computeSegment(src, o, abs, cutProfile.getGPath(srcCut, cuts.get(iO)), srcCut.getGroundCoef());
 
                     LineSegment sPrimeR = new LineSegment(seg1.sPrime, rcv);
                     LineSegment sPrimeO = new LineSegment(seg1.sPrime, o);
-                    pO.deltaSPrimeR = sPrimeR.orientationIndex(o)*(sPrimeO.getLength() + dOR - sPrimeR.getLength());
-
+                    pO.deltaSPrimeRH = sPrimeR.orientationIndex(o)*(sPrimeO.getLength() + dOR - sPrimeR.getLength());
 
                     //Plane O->R
-                    SegmentPath seg2 = createSegment(cutProfile, oCut, rcvCut);
                     Coordinate[] orCoords = Arrays.copyOfRange(pts2DGround.toArray(new Coordinate[0]), iO, pts2DGround.size());
                     double[] abr = JTSUtility.getMeanPlaneCoefficients(orCoords);
-                    seg2.s = new Coordinate(o);
-                    seg2.r = new Coordinate(rcv);
-                    seg2.a = abr[0];
-                    seg2.b = abr[1];
-                    seg2.sMeanPlane = JTSUtility.makeProjectedPoint(abr[0], abr[1], o);
-                    seg2.rMeanPlane = JTSUtility.makeProjectedPoint(abr[0], abr[1], rcv);
-                    seg2.sPrime = new Coordinate(seg2.s.x+(seg2.sMeanPlane.x-seg2.s.x)*2, seg2.s.y+(seg2.sMeanPlane.y-seg2.s.y)*2);
-                    seg2.rPrime = new Coordinate(seg2.r.x+(seg2.rMeanPlane.x-seg2.r.x)*2, seg2.r.y+(seg2.rMeanPlane.y-seg2.r.y)*2);
-                    seg2.d = dOR;
-                    seg2.dp = new LineSegment(seg2.sMeanPlane, seg2.rMeanPlane).getLength();
-                    seg2.zsH = new LineSegment(o, seg2.sMeanPlane).getLength();
-                    seg2.zrH = new LineSegment(rcv, seg2.rMeanPlane).getLength();
-                    seg2.testFormH = seg2.dp/(30*(seg2.zsH +seg2.zrH));
-                    seg2.gPath = cutProfile.getGPath(cuts.get(iO), rcvCut);
-                    seg2.gPathPrime = seg2.dp <= 30*(seg2.zsH +seg2.zrH) ? seg2.gPath*(seg2.testFormH) + srcCut.getGroundCoef()*(1-seg2.testFormH) : seg2.gPath;
-                    deltaZT = 6e-3 * seg2.dp / (seg2.zsH + seg2.zrH);
-                    deltaZS = ALPHA0 * Math.pow((seg2.zsH / (seg2.zsH + seg2.zrH)), 2) * (seg2.dp*seg2.dp / 2);
-                    seg2.zsF = seg2.zsH + deltaZS + deltaZT;
-                    deltaZR = ALPHA0 * Math.pow((seg2.zrH / (seg2.zsH + seg2.zrH)), 2) * (seg2.dp*seg2.dp / 2);
-                    seg2.zrF = seg2.zrH + deltaZR + deltaZT;
-                    seg2.testFormF = seg2.dp/(30*(seg2.zsF +seg2.zrF));
+                    SegmentPath seg2 = computeSegment(o, rcv, abr, cutProfile.getGPath(cuts.get(iO), rcvCut), srcCut.getGroundCoef());
 
                     LineSegment sRPrime = new LineSegment(src, seg2.rPrime);
                     LineSegment oRPrime = new LineSegment(o, seg2.rPrime);
-                    pO.deltaSRPrime = sRPrime.orientationIndex(o)*(dSO + oRPrime.getLength() - sRPrime.getLength());
+                    pO.deltaSRPrimeH = sRPrime.orientationIndex(o)*(dSO + oRPrime.getLength() - sRPrime.getLength());
 
 
                     Coordinate srcPrime = new Coordinate(src.x + (seg1.sMeanPlane.x - src.x) * 2, src.y + (seg1.sMeanPlane.y - src.y) * 2);
@@ -530,13 +508,6 @@ public class ComputeCnossosRays {
                     seg2.dPrime = new LineSegment(o, rcvPrime).getLength();
 
                     pO.deltaPrimeH = dSPrimeRPrime.orientationIndex(o) * (seg1.dPrime + seg2.dPrime - srSeg.dPrime);
-                    if(dSR.orientationIndex(o) == 1) {
-                        pO.deltaF = toCurve(seg1.dPrime, srSeg.dPrime) + toCurve(seg2.dPrime, srSeg.dPrime) - toCurve(srSeg.dPrime, srSeg.dPrime);
-                    }
-                    else {
-                        Coordinate pA = dSR.pointAlong((o.x-srcPrime.x)/(rcvPrime.x-srcPrime.x));
-                        pO.deltaF =2*toCurve(new LineSegment(srcPrime, pA).getLength(), srSeg.dPrime) + 2*toCurve(new LineSegment(pA, rcvPrime).getLength(), srSeg.dPrime) - toCurve(seg1.dPrime, srSeg.dPrime) - toCurve(seg2.dPrime, srSeg.dPrime) - toCurve(srSeg.dPrime, srSeg.dPrime);
-                    }
                     validFreq = new ArrayList<>(Arrays.asList(63, 125, 250, 500, 1000, 2000, 4000, 8000))
                             .stream()
                             .filter(f -> pO.deltaH > (340./f) / 4 - pO.deltaPrimeH)
@@ -830,39 +801,43 @@ public class ComputeCnossosRays {
 
     public PropagationPath computeVerticalDiffraction(ProfileBuilder.CutProfile cutProfile, double gs) {
         List<SegmentPath> segments = new ArrayList<>();
-        SegmentPath srPath = null;
         List<PointPath> points = new ArrayList<>();
 //
         List<ProfileBuilder.CutPoint> cutPts = cutProfile.getCutPoints().stream()
                 .filter(cutPoint -> cutPoint.getType() != GROUND_EFFECT)
                     .collect(Collectors.toList());
-        Coordinate src = cutProfile.getSource().getCoordinate();
-        Coordinate rcv = cutProfile.getReceiver().getCoordinate();
-        LineSegment srcRcvLine = new LineSegment(src, rcv);
-        List<ProfileBuilder.CutPoint> pts = new ArrayList<>();
-        pts.add(cutProfile.getSource());
-        for(int i=1; i<cutPts.size(); i++) {
-            ProfileBuilder.CutPoint pt = cutPts.get(i);
-            double frac = srcRcvLine.segmentFraction(pt.getCoordinate());
-            double z = 0.0;
-            for(int j=i+1; j<cutPts.size(); j++) {
-                z = max(z, srcRcvLine.p0.z + frac*(cutPts.get(j).getCoordinate().z-srcRcvLine.p0.z));
+        List<Coordinate> pts2D = computePts2D(cutProfile);
+        List<Coordinate> ptsGround = computePts2DGround(cutProfile, data);
+        double[] meanPlane = JTSUtility.getMeanPlaneCoefficients(ptsGround.toArray(new Coordinate[0]));
+        SegmentPath srPath = computeSegment(pts2D.get(0), pts2D.get(pts2D.size()-1), meanPlane, cutProfile.getGPath(), cutProfile.getSource().getGroundCoef());
+
+        PropagationPath propagationPath = new PropagationPath(true, points, segments, srPath);
+
+        LineSegment srcRcvLine = new LineSegment(pts2D.get(0), pts2D.get(pts2D.size()-1));
+        List<Coordinate> pts = new ArrayList<>();
+        pts.add(pts2D.get(0));
+        for(int i=1; i<pts2D.size(); i++) {
+            Coordinate pt = pts2D.get(i);
+            double frac = srcRcvLine.segmentFraction(pt);
+            double y = 0.0;
+            for(int j=i+1; j<pts2D.size(); j++) {
+                y = max(y, srcRcvLine.p0.y + frac*(pts2D.get(j).y-srcRcvLine.p0.y));
             }
-            if(z <= pt.getCoordinate().z){
+            if(y <= pt.y){
                 pts.add(pt);
-                srcRcvLine = new LineSegment(pt.getCoordinate(), cutProfile.getReceiver().getCoordinate());
+                srcRcvLine = new LineSegment(pt, cutProfile.getReceiver().getCoordinate());
 
                 //Filter point to only keep hull.
-                List<ProfileBuilder.CutPoint> toRemove = new ArrayList<>();
+                List<Coordinate> toRemove = new ArrayList<>();
                 //check if last-1 point is under or not the surrounding points
                 for(int j = pts.size()-2; j > 0; j--) {
-                    if(pts.get(j).getCoordinate().z==Double.MAX_VALUE || Double.isInfinite(pts.get(j).getCoordinate().z)) {
+                    if(pts.get(j).y==Double.MAX_VALUE || Double.isInfinite(pts.get(j).y)) {
                         toRemove.add(pts.get(j));
                     }
                     //line between last point and previous-1 point
                     else {
-                        LineSegment lineRm = new LineSegment(pts.get(j - 1).getCoordinate(), pt.getCoordinate());
-                        Coordinate cRm = pts.get(j).getCoordinate();
+                        LineSegment lineRm = new LineSegment(pts.get(j - 1), pt);
+                        Coordinate cRm = pts.get(j);
                         double fracRm = lineRm.segmentFraction(cRm);
                         double zRm = lineRm.p0.z + fracRm * (lineRm.p1.z - lineRm.p0.z);
                         if (zRm >= cRm.z) {
@@ -874,14 +849,17 @@ public class ComputeCnossosRays {
             }
         }
 
-        for (int i = 0; i < pts.size() - 1; i++) {
-            PropagationPath free = computeFreeField(data.profileBuilder.getProfile(pts.get(i), pts.get(i+1)), data);
-            if(i==0) {
-                points.add(free.getPointList().get(0));
+        for (int i = 1; i < pts.size(); i++) {
+            ProfileBuilder.CutProfile profile = data.profileBuilder.getProfile(cutPts.get(i-1), cutPts.get(i));
+            meanPlane = JTSUtility.getMeanPlaneCoefficients(ptsGround.subList(i-1, i+1).toArray(new Coordinate[0]));
+            SegmentPath path = computeSegment(pts2D.get(i-1), pts2D.get(i), meanPlane, profile.getGPath(), profile.getSource().getGroundCoef());
+            segments.add(path);
+            if(points.isEmpty()) {
+                points.add(new PointPath(path.s,  data.profileBuilder.getZGround(path.s), cutPts.get(i-1).getGroundCoef(), cutPts.get(i-1).getWallAlpha(), PointPath.POINT_TYPE.SRCE));
             }
-            points.add(free.getPointList().get(1));
-            segments.add(free.getSegmentList().get(0));
-            if(i != pts.size()-2) {
+            points.add(new PointPath(path.r,  data.profileBuilder.getZGround(path.r), cutPts.get(i).getGroundCoef(), cutPts.get(i).getWallAlpha(), PointPath.POINT_TYPE.RECV));
+            if(i != pts.size()-1) {
+                propagationPath.difHPoints.add(i);
                 PointPath pt = points.get(points.size()-1);
                 pt.type = PointPath.POINT_TYPE.DIFH;
                 if(pt.buildingId != -1) {
@@ -895,13 +873,51 @@ public class ComputeCnossosRays {
             }
         }
 
-        for (int i = 0; i < segments.size(); i++) {
-            if (segments.get(i).getSegmentLength() < 0.1) {
-                segments.remove(i);
-                points.remove(i + 1);
+        Coordinate src = points.get(0).coordinate;
+        Coordinate rcv = points.get(points.size()-1).coordinate;
+        for(int i=1; i<points.size()-1; i++) {
+            if(!points.get(i).type.equals(PointPath.POINT_TYPE.DIFH)) {
+                continue;
+            }
+            PointPath pO = points.get(i);
+            Coordinate o = pO.coordinate;
+            SegmentPath seg1 = segments.get(i-1);
+            SegmentPath seg2 = segments.get(i);
+            double dSO = new LineSegment(src, o).getLength();
+            double dOR = new LineSegment(o, rcv).getLength();
+            LineSegment sr = new LineSegment(src, rcv);
+
+            pO.deltaH = sr.orientationIndex(o) * (dSO + dOR - srPath.d);
+
+            LineSegment sPrimeR = new LineSegment(seg1.sPrime, rcv);
+            LineSegment sPrimeO = new LineSegment(seg1.sPrime, o);
+            pO.deltaSPrimeRH = sPrimeR.orientationIndex(o)*(sPrimeO.getLength() + dOR - sPrimeR.getLength());
+            pO.deltaSPrimeRF = toCurve(sPrimeO.getLength(), sPrimeR.getLength()) + toCurve(dOR, sPrimeR.getLength()) - toCurve(sPrimeR.getLength(), sPrimeR.getLength());
+
+            LineSegment sRPrime = new LineSegment(src, seg2.rPrime);
+            LineSegment oRPrime = new LineSegment(o, seg2.rPrime);
+            pO.deltaSRPrimeH = sRPrime.orientationIndex(o)*(dSO + oRPrime.getLength() - sRPrime.getLength());
+            pO.deltaSRPrimeF = toCurve(dSO, sRPrime.getLength()) + toCurve(oRPrime.getLength(), sRPrime.getLength()) - toCurve(sRPrime.getLength(), sRPrime.getLength());
+
+            Coordinate srcPrime = new Coordinate(src.x + (seg1.sMeanPlane.x - src.x) * 2, src.y + (seg1.sMeanPlane.y - src.y) * 2);
+            Coordinate rcvPrime = new Coordinate(rcv.x + (seg2.rMeanPlane.x - rcv.x) * 2, rcv.y + (seg2.rMeanPlane.y - rcv.y) * 2);
+
+            LineSegment dSPrimeRPrime = new LineSegment(srcPrime, rcvPrime);
+            srPath.dPrime = dSPrimeRPrime.getLength();
+            seg1.dPrime = new LineSegment(srcPrime, o).getLength();
+            seg2.dPrime = new LineSegment(o, rcvPrime).getLength();
+
+            pO.deltaPrimeH = dSPrimeRPrime.orientationIndex(o) * (seg1.dPrime + seg2.dPrime - srPath.dPrime);
+            if(sr.orientationIndex(o) == 1) {
+                pO.deltaF = toCurve(seg1.d, srPath.d) + toCurve(seg2.d, srPath.d) - toCurve(srPath.d, srPath.d);
+            }
+            else {
+                Coordinate pA = sr.pointAlong((o.x-srcPrime.x)/(rcvPrime.x-srcPrime.x));
+                pO.deltaF =2*toCurve(new LineSegment(srcPrime, pA).getLength(), srPath.dPrime) + 2*toCurve(new LineSegment(pA, rcvPrime).getLength(), srPath.dPrime) - toCurve(seg1.dPrime, srPath.dPrime) - toCurve(seg2.dPrime, srPath.dPrime) - toCurve(srPath.dPrime, srPath.dPrime);
             }
         }
-        return new PropagationPath(true, points, segments, srPath);
+
+        return propagationPath;
     }
 
 

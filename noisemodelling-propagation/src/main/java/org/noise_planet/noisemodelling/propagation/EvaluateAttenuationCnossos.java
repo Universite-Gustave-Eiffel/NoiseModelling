@@ -42,6 +42,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static java.lang.Math.*;
+import static org.noise_planet.noisemodelling.pathfinder.PointPath.POINT_TYPE.DIFH_RCRIT;
 
 /**
  * Return the dB value corresponding to the parameters
@@ -518,33 +519,39 @@ public class EvaluateAttenuationCnossos {
                 diffPts.add(path.getPointList().get(i));
             }
         }
-        diffPts.forEach(pp -> pp.aBoundary.init(data.freq_lvl.size()));
+        diffPts.forEach(pp -> {
+            pp.aBoundaryH.init(data.freq_lvl.size());
+            pp.aBoundaryF.init(data.freq_lvl.size());
+        });
         // Without diff
         for(int i=0; i<data.freq_lvl.size(); i++) {
             int finalI = i;
             PointPath first = diffPts.stream()
                     .filter(pp -> pp.type.equals(PointPath.POINT_TYPE.DIFH) ||
-                            (pp.type.equals(PointPath.POINT_TYPE.DIFH_RCRIT) &&
+                            (pp.type.equals(DIFH_RCRIT) &&
                                     isValidRcrit(pp, data.freq_lvl.get(finalI), path.isFavorable())))
                     .findFirst()
                     .orElse(null);
-            if (first != null && !path.isFavorable()) {
+            aGround[i] = path.isFavorable() ? aGroundF(path, path.getSRSegment(), data, i) : aGroundH(path, path.getSRSegment(), data, i);
+            if (path.isFavorable()) {
+                path.groundAttenuation.aGroundF[i] = aGround[i];
+            } else {
+                path.groundAttenuation.aGroundH[i] = aGround[i];
+            }
+            if (first != null) {
+                aDif[i] = aDif(path, data, i, first);
                 aGround[i] = 0.;
-                aDif[i] = path.isFavorable() ? aDifF(path, data, i) : aDifH(path, data, i, first);
             }
             // With diff
             else {
                 aDif[i] = 0.;
-                aGround[i] = path.isFavorable() ? aGroundF(path, path.getSRSegment(), data, i) : aGroundH(path, path.getSRSegment(), data, i);
             }
 
         }
         if(path.keepAbsorption) {
             if (path.isFavorable()) {
-                path.groundAttenuation.aGroundF = aGround;
                 path.absorptionData.aDifF = aDif;
             } else {
-                path.groundAttenuation.aGroundH = aGround;
                 path.absorptionData.aDifH = aDif;
             }
         }
@@ -555,23 +562,23 @@ public class EvaluateAttenuationCnossos {
         return aBoundary;
     }
 
-    private static double aDifH(PropagationPath proPath, PropagationProcessPathData data, int i, PointPath pp) {
+    private static double aDif(PropagationPath proPath, PropagationProcessPathData data, int i, PointPath pp) {
         SegmentPath first = proPath.getSegmentList().get(0);
         SegmentPath last = proPath.getSegmentList().get(proPath.getSegmentList().size()-1);
 
         double ch = 1.;
-        double lambda = 340.0/data.freq_lvl.get(i);
+        double lambda = 340.0 / data.freq_lvl.get(i);
         double cSecond = 1.;
 
-        double _delta = pp.deltaH;
+        double _delta = proPath.isFavorable() ? pp.deltaF : pp.deltaH;
         double testForm = 40/lambda*cSecond*_delta;
         double deltaDiffSR = testForm>=-2 ? 10*ch*log10(3+testForm) : 0;
 
-        _delta = pp.deltaSPrimeR;
+        _delta = proPath.isFavorable() ? pp.deltaSPrimeRF : pp.deltaSPrimeRH;
         testForm = 40/lambda*cSecond*_delta;
         double deltaDiffSPrimeR = testForm>=-2 ? 10*ch*log10(3+testForm) : 0;
 
-        _delta = pp.deltaSRPrime;
+        _delta = proPath.isFavorable() ? pp.deltaSRPrimeF : pp.deltaSRPrimeH;
         testForm = 40/lambda*cSecond*_delta;
         double deltaDiffSRPrime = testForm>=-2 ? 10*ch*log10(3+testForm) : 0;
 
@@ -582,21 +589,29 @@ public class EvaluateAttenuationCnossos {
 
         double aDiff = min(25, max(0, deltaDiffSR)) + deltaGroundSO + deltaGroundOR;
         if(proPath.keepAbsorption) {
-            pp.aBoundary.deltaDiffSR[i] = deltaDiffSR;
-            pp.aBoundary.aGroundSO[i] = aGroundSO;
-            pp.aBoundary.aGroundOR[i] = aGroundOR;
-            pp.aBoundary.deltaDiffSPrimeR[i] = deltaDiffSPrimeR;
-            pp.aBoundary.deltaDiffSRPrime[i] = deltaDiffSRPrime;
-            pp.aBoundary.deltaGroundSO[i] = deltaGroundSO;
-            pp.aBoundary.deltaGroundOR[i] = deltaGroundOR;
-            pp.aBoundary.aDiff[i] = aDiff;
+            if(proPath.isFavorable()) {
+                pp.aBoundaryF.deltaDiffSR[i] = deltaDiffSR;
+                pp.aBoundaryF.aGroundSO[i] = aGroundSO;
+                pp.aBoundaryF.aGroundOR[i] = aGroundOR;
+                pp.aBoundaryF.deltaDiffSPrimeR[i] = deltaDiffSPrimeR;
+                pp.aBoundaryF.deltaDiffSRPrime[i] = deltaDiffSRPrime;
+                pp.aBoundaryF.deltaGroundSO[i] = deltaGroundSO;
+                pp.aBoundaryF.deltaGroundOR[i] = deltaGroundOR;
+                pp.aBoundaryF.aDiff[i] = aDiff;
+            }
+            else {
+                pp.aBoundaryH.deltaDiffSR[i] = deltaDiffSR;
+                pp.aBoundaryH.aGroundSO[i] = aGroundSO;
+                pp.aBoundaryH.aGroundOR[i] = aGroundOR;
+                pp.aBoundaryH.deltaDiffSPrimeR[i] = deltaDiffSPrimeR;
+                pp.aBoundaryH.deltaDiffSRPrime[i] = deltaDiffSRPrime;
+                pp.aBoundaryH.deltaGroundSO[i] = deltaGroundSO;
+                pp.aBoundaryH.deltaGroundOR[i] = deltaGroundOR;
+                pp.aBoundaryH.aDiff[i] = aDiff;
+            }
         }
 
         return aDiff;
-    }
-
-    private static double aDifF(PropagationPath path, PropagationProcessPathData data, int i) {
-        return 0;
     }
 
     private static double[] computeCfKValues(PropagationPath proPath, SegmentPath path, PropagationProcessPathData data, int idFreq) {
@@ -652,7 +667,7 @@ public class EvaluateAttenuationCnossos {
             proPath.groundAttenuation.cfF[idFreq] = cf;
         }
         double gm = path.gPathPrime;
-        double aGroundFMin = path.testFormF <= 1 ? -3 * (1 - gm) : -3 * (1 - gm) * (1 + 2 * (1 - (1 / path.testFormF)));
+        double aGroundFMin = path.testFormH <= 1 ? -3 * (1 - gm) : -3 * (1 - gm) * (1 + 2 * (1 - (1 / path.testFormH)));
         if(path.gPath == 0) {
             return aGroundFMin;
         }
