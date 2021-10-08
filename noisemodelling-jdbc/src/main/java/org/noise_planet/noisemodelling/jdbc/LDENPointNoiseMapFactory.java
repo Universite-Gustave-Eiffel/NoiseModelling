@@ -378,7 +378,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
             if (ldenConfig.mergeSources) {
                 return "ALTER TABLE " + tableName + " ADD PRIMARY KEY(IDRECEIVER);";
             } else {
-                return "CREATE INDEX ON " + tableName + " (IDRECEIVER);");
+                return "CREATE INDEX ON " + tableName + " (IDRECEIVER);";
             }
         }
 
