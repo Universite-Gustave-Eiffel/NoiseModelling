@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.node.NullNode;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Map;
 
 import static java.lang.Math.min;
@@ -250,7 +251,13 @@ public class EvaluateRailwaySourceCnossos {
                         condition = "IdlingSpeed";
                         break;
                 }
-                tractionSpectre = getCnossosRailWayData(spectreVer).get("Vehicle").get(condition).get(String.valueOf(refId)).get("Values").get(sourceHeight).get(freqId).doubleValue();
+                try {
+                    tractionSpectre = getCnossosRailWayData(spectreVer).get("Vehicle").get(condition).get(String.valueOf(refId)).get("Values").get(sourceHeight).get(freqId).doubleValue();
+                } catch (NullPointerException ex) {
+                    throw new IllegalArgumentException(String.format(Locale.ROOT, "Could not find traction spectrum for the following parameters " +
+                            "getCnossosRailWayData(%d).get(\"Vehicle\").get(%s).get(String.valueOf" +
+                            "(%d)).get(\"Values\").get(%s).get(%d)", spectreVer, condition, refId, sourceHeight, freqId));
+                }
             }
             return tractionSpectre;
         }else if(ref.equals("RefAerodynamic") ){
