@@ -398,15 +398,15 @@ def exec(Connection connection, input) {
             IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), cellProg, receivers)
             logger.info(out.toString())
             if (out instanceof ComputeRaysOut) {
-                Map<Long, ArrayList<ComputeRaysOut.VerticeSL>> levelsBySource = new HashMap<>()
+                Map<Long, ArrayList<ComputeRaysOutAttenuation.VerticeSL>> levelsBySource = new HashMap<>()
 
                 // Index and store (in memory) levels by source identifier (position)
-                List<ComputeRaysOut.VerticeSL> verticeSLList = ((ComputeRaysOut) out).getVerticesSoundLevel()
+                List<ComputeRaysOutAttenuation.VerticeSL> verticeSLList = ((ComputeRaysOut) out).getVerticesSoundLevel()
                 logger.info(String.format("Computation of attenuation done, looking for drone emission (%d rays to process)", verticeSLList.size() as Integer))
-                for(ComputeRaysOut.VerticeSL att : verticeSLList) {
-                    ArrayList<ComputeRaysOut.VerticeSL> srcReceivers
+                for(ComputeRaysOutAttenuation.VerticeSL att : verticeSLList) {
+                    ArrayList<ComputeRaysOutAttenuation.VerticeSL> srcReceivers
                     if(!levelsBySource.containsKey(att.sourceId as Long)) {
-                        srcReceivers = new ArrayList<ComputeRaysOut.VerticeSL>()
+                        srcReceivers = new ArrayList<ComputeRaysOutAttenuation.VerticeSL>()
                         levelsBySource.put(att.sourceId as Long, srcReceivers)
                     } else {
                         srcReceivers = levelsBySource.get(att.sourceId as Long)
@@ -448,7 +448,7 @@ def exec(Connection connection, input) {
                     }
                     soundLevelsTime = t
 
-                    for(ComputeRaysOut.VerticeSL att : levelsBySource.get(idPositionDynamic as Long)) {
+                    for(ComputeRaysOutAttenuation.VerticeSL att : levelsBySource.get(idPositionDynamic as Long)) {
                         int idReceiver = (Integer) att.receiverId
                         Coordinate A = geomFixedSources.get(idPositionDynamic)
                         Coordinate B = geomReceivers.get(idReceiver)
