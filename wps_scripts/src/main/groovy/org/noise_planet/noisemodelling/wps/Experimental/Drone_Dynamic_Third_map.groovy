@@ -606,7 +606,7 @@ def exec(Connection connection, input) {
     }
     // Do not propagate for low emission or far away sources.
     // error in dB
-   // pointNoiseMap.setMaximumError(0.1d);
+    // pointNoiseMap.setMaximumError(0.1d);
 
 
     pointNoiseMap.setMaximumPropagationDistance(max_src_dist)
@@ -831,12 +831,12 @@ def exec(Connection connection, input) {
 
     storageFactory.closeWriteThread()
     // Zip all NoiseModellong Get Rays files in folder and delete others
-   // FileOutputStream fos = new FileOutputStream("/home/pierre/Desktop/TOOLS/NoiseModelling_3.3.1_Drone/data_dir/data/DEV3912/DEBUG/" + "Rays.zip")
-   // ZipOutputStream zipOut = new ZipOutputStream(fos)
-   // for (String srcFile : srcFiles) {
-   //     File fileToZip = new File(new File("/home/pierre/Desktop/TOOLS/NoiseModelling_3.3.1_Drone/data_dir/data/DEV3912/DEBUG/" + srcFile).absolutePath)
-   //     FileInputStream fis = new FileInputStream(fileToZip)
-   //     ZipEntry zipEntry = new ZipEntry(fileToZip.getName())
+    // FileOutputStream fos = new FileOutputStream("/home/pierre/Desktop/TOOLS/NoiseModelling_3.3.1_Drone/data_dir/data/DEV3912/DEBUG/" + "Rays.zip")
+    // ZipOutputStream zipOut = new ZipOutputStream(fos)
+    // for (String srcFile : srcFiles) {
+    //     File fileToZip = new File(new File("/home/pierre/Desktop/TOOLS/NoiseModelling_3.3.1_Drone/data_dir/data/DEV3912/DEBUG/" + srcFile).absolutePath)
+    //     FileInputStream fis = new FileInputStream(fileToZip)
+    //     ZipEntry zipEntry = new ZipEntry(fileToZip.getName())
     //    zipOut.putNextEntry(zipEntry)
 
     //    byte[] bytes = new byte[1024]
@@ -847,8 +847,8 @@ def exec(Connection connection, input) {
     //    fis.close()
     //    fileSuccessfullyDeleted = new File("/home/pierre/Desktop/TOOLS/NoiseModelling_3.3.1_Drone/data_dir/data/DEV3912/DEBUG/" + srcFile).delete()
     //    System.println(srcFile + ' has been added to the zip file')
-   // }
-   // zipOut.close()
+    // }
+    // zipOut.close()
     //fos.close()
     long computationTime = System.currentTimeMillis() - start
     logger.info(String.format("Calculation done in %d seconds, %d milliseconds by receiver (%d receivers)", (computationTime / 1000) as Long, (computationTime / receivers.size()) as Long, receivers.size() as Integer))
