@@ -149,8 +149,8 @@ public class ComputeCnossosRaysTest {
         CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
                 .addSource(10, 10, 1)
                 .addReceiver(200, 50, 4)
-                .horizontalDiff(true)
-                .verticalDiff(true)
+                .vEdgeDiff(true)
+                .hEdgeDiff(true)
                 .build();
 
         //Out and computation settings
@@ -316,8 +316,8 @@ public class ComputeCnossosRaysTest {
         CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
                 .addSource(10, 10, 1)
                 .addReceiver(200, 50, 4)
-                .verticalDiff(true)
-                .horizontalDiff(true)
+                .hEdgeDiff(true)
+                .vEdgeDiff(false)
                 .build();
 
         //Out and computation settings
@@ -341,6 +341,73 @@ public class ComputeCnossosRaysTest {
         //Assertion
         assertPaths(pts, propDataOut.getPropagationPaths());
         assertPlanes(segmentsMeanPlanes, propDataOut.getPropagationPaths().get(0).getSegmentList());
+    }
+
+    /**
+     * Test TC08 -- Flat ground with spatially varying acoustic properties and short barrier
+     */
+    @Test
+    public void TC08() {
+
+        GeometryFactory factory = new GeometryFactory();
+
+        //Create profile builder
+        ProfileBuilder profileBuilder = new ProfileBuilder()
+
+                // Add building
+                .addWall(new Coordinate[]{
+                                new Coordinate(175, 50, 0),
+                                new Coordinate(190, 10, 0)},
+                        6, 1)
+                // Add ground effect
+                .addGroundEffect(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9)
+                .addGroundEffect(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5)
+                .addGroundEffect(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2)
+
+                .finishFeeding();
+
+
+        //Propagation data building
+        CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
+                .addSource(10, 10, 1)
+                .addReceiver(200, 50, 4)
+                .hEdgeDiff(true)
+                .vEdgeDiff(true)
+                .build();
+
+        //Out and computation settings
+        ComputeCnossosRaysOut propDataOut = new ComputeCnossosRaysOut(true);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
+        computeRays.setThreadCount(1);
+
+        //Run computation
+        computeRays.run(propDataOut);
+
+        //Expected values
+        double[][][] pts = new double[][][]{
+                {{0.00, 1.00}, {170.49, 6.0}, {194.16, 4.0}}, //Path 1 : direct
+                {{0.00, 1.00}, {194.78, 4.0}}, //Path 2 : left side
+                {{0.00, 1.00}, {221.23, 4.0}}  //Path 3 : right side
+        };
+        double [][] segmentsMeanPlanes0 = new double[][]{
+                //  a     b    zs    zr      dp    Gp   Gp'
+                {0.00, 0.00, 1.00, 6.00, 170.49, 0.55, 0.61},
+                {0.00, 0.00, 6.00, 4.00, 023.68, 0.20,  NaN}
+        };
+        double [][] segmentsMeanPlanes1 = new double[][]{
+                //  a     b    zs    zr      dp    Gp   Gp'
+                {0.00, 0.00, 1.00, 4.00, 194.78, 0.51, 0.51}
+        };
+        double [][] segmentsMeanPlanes2 = new double[][]{
+                //  a     b    zs    zr      dp    Gp   Gp'
+                {0.00, 0.00, 1.00, 4.00, 221.23, 0.46, 0.46}
+        };
+
+        //Assertion
+        //assertPaths(pts, propDataOut.getPropagationPaths());
+        assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
+        assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
+        assertPlanes(segmentsMeanPlanes2, propDataOut.getPropagationPaths().get(2).getSRSegment());
     }
 
 

@@ -604,6 +604,7 @@ public class PropagationPath {
         public double[] aGlobalF;
         public double[] aDifH;
         public double[] aDifF;
+        public double[] aGlobal;
 
         public void init(int size) {
             aAtm = new double[size];
@@ -615,6 +616,7 @@ public class PropagationPath {
             aGlobalF = new double[size];
             aDifH = new double[size];
             aDifF = new double[size];
+            aGlobal = new double[size];
         }
     }
 

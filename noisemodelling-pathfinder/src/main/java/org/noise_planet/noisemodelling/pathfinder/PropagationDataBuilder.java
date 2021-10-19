@@ -28,12 +28,12 @@ public class PropagationDataBuilder {
         return this;
     }
 
-    public PropagationDataBuilder horizontalDiff(boolean hDiff) {
+    public PropagationDataBuilder vEdgeDiff(boolean hDiff) {
         data.setComputeHorizontalDiffraction(hDiff);
         return this;
     }
 
-    public PropagationDataBuilder verticalDiff(boolean vDiff) {
+    public PropagationDataBuilder hEdgeDiff(boolean vDiff) {
         data.setComputeVerticalDiffraction(vDiff);
         return this;
     }

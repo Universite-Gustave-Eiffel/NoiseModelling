@@ -175,7 +175,7 @@ public class TestComputeCnossosRays {
         ProfileBuilder.CutProfile profile = profileBuilder.getProfile(
                 new Coordinate(316876.05185368325, 6706318.789634008, 22.089050196052437),
                 new Coordinate(316747.10402055364, 6706422.950335046, 12.808121783800553));
-        PropagationPath propa = new ComputeCnossosRays(new CnossosPropagationData(profileBuilder)).computeVerticalDiffraction(profile, 0.0);
+        PropagationPath propa = new ComputeCnossosRays(new CnossosPropagationData(profileBuilder)).computeHEdgeDiffraction(profile, 0.0);
         assertEquals(3, propa.getPointList().size());
     }
 

@@ -86,7 +86,9 @@ public class ProfileBuilder {
     /** List of walls. */
     private final List<Wall> walls = new ArrayList<>();
     /** Building RTree. */
-    private STRtree buildingTree;
+    private final STRtree buildingTree;
+    /** Building RTree. */
+    private final STRtree wallTree = new STRtree(TREE_NODE_CAPACITY);
     /** Global RTree. */
     private STRtree rtree;
 
@@ -466,7 +468,7 @@ public class ProfileBuilder {
             }
             List<Wall> wallList = new ArrayList<>();
             for(int i=0; i<geom.getNumPoints()-1; i++) {
-                Wall wall = new Wall(geom.getCoordinateN(i), geom.getCoordinateN(i+1), id, IntersectionType.BUILDING);
+                Wall wall = new Wall(geom.getCoordinateN(i), geom.getCoordinateN(i+1), id, IntersectionType.BUILDING, i!=0, i!=geom.getNumPoints()-2);
                 wall.setHeight(height);
                 wall.setAlpha(alphas);
                 wallList.add(wall);
@@ -1686,6 +1688,8 @@ public class ProfileBuilder {
         private List<Double> alphas;
         /** Wall height, if -1, use z coordinate. */
         private double height;
+        private boolean hasP0Neighbour = false;
+        private boolean hasP1Neighbour = false;
 
         /**
          * Constructor using segment and id.
@@ -1710,6 +1714,21 @@ public class ProfileBuilder {
             this.originId = originId;
             this.type = type;
             this.alphas = new ArrayList<>();
+        }
+
+        /**
+         * Constructor using start/end point and id.
+         * @param p0       Start point of the segment.
+         * @param p1       End point of the segment.
+         * @param originId Id or index of the source building or topographic triangle.
+         */
+        public Wall(Coordinate p0, Coordinate p1, int originId, IntersectionType type, boolean hasP0Neighbour, boolean hasP1Neighbour) {
+            this.line = new LineSegment(p0, p1);
+            this.originId = originId;
+            this.type = type;
+            this.alphas = new ArrayList<>();
+            this.hasP0Neighbour = hasP0Neighbour;
+            this.hasP1Neighbour = hasP1Neighbour;
         }
 
         /**
@@ -1762,6 +1781,14 @@ public class ProfileBuilder {
 
         public IntersectionType getType() {
             return type;
+        }
+
+        public boolean hasP0Neighbour() {
+            return hasP0Neighbour;
+        }
+
+        public boolean hasP1Neighbour() {
+            return hasP1Neighbour;
         }
     }
 

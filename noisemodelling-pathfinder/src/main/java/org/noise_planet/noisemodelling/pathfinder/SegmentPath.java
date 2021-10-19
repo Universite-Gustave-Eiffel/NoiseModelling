@@ -66,7 +66,7 @@ public class SegmentPath {
     }
 
     public double getSegmentLength() {
-        return this.meanGdPlane.length();
+        return d;
     }
 
     public SegmentPath() {

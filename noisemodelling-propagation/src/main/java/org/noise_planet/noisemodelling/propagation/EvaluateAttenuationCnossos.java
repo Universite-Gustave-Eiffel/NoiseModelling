@@ -42,7 +42,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static java.lang.Math.*;
-import static org.noise_planet.noisemodelling.pathfinder.PointPath.POINT_TYPE.DIFH_RCRIT;
+import static org.noise_planet.noisemodelling.pathfinder.PointPath.POINT_TYPE.*;
 
 /**
  * Return the dB value corresponding to the parameters
@@ -398,7 +398,7 @@ public class EvaluateAttenuationCnossos {
 
     public static double[] aDiv(PropagationPath path, PropagationProcessPathData data) {
         double[] aDiv = new double[data.freq_lvl.size()];
-        Arrays.fill(aDiv, getADiv(path.getSRSegment().d));
+        Arrays.fill(aDiv, getADiv(path.difVPoints.isEmpty() ? path.getSRSegment().d : path.getSRSegment().dc));
         return aDiv;
     }
 
@@ -518,6 +518,9 @@ public class EvaluateAttenuationCnossos {
             if(path.difHPoints.contains(i)) {
                 diffPts.add(path.getPointList().get(i));
             }
+            else if(path.difVPoints.contains(i)) {
+                diffPts.add(path.getPointList().get(i));
+            }
         }
         diffPts.forEach(pp -> {
             pp.aBoundaryH.init(data.freq_lvl.size());
@@ -527,12 +530,14 @@ public class EvaluateAttenuationCnossos {
         for(int i=0; i<data.freq_lvl.size(); i++) {
             int finalI = i;
             PointPath first = diffPts.stream()
-                    .filter(pp -> pp.type.equals(PointPath.POINT_TYPE.DIFH) ||
+                    .filter(pp -> pp.type.equals(PointPath.POINT_TYPE.DIFH) || pp.type.equals(DIFV) ||
                             (pp.type.equals(DIFH_RCRIT) &&
                                     isValidRcrit(pp, data.freq_lvl.get(finalI), path.isFavorable())))
                     .findFirst()
                     .orElse(null);
-            aGround[i] = path.isFavorable() ? aGroundF(path, path.getSRSegment(), data, i) : aGroundH(path, path.getSRSegment(), data, i);
+            aGround[i] = path.isFavorable() ?
+                    aGroundF(path, path.getSRSegment(), data, i, (first != null && first.type.equals(DIFV))) :
+                    aGroundH(path, path.getSRSegment(), data, i, (first != null && first.type.equals(DIFV)));
             if (path.isFavorable()) {
                 path.groundAttenuation.aGroundF[i] = aGround[i];
             } else {
@@ -540,7 +545,9 @@ public class EvaluateAttenuationCnossos {
             }
             if (first != null) {
                 aDif[i] = aDif(path, data, i, first);
-                aGround[i] = 0.;
+                if(!first.type.equals(DIFV)) {
+                    aGround[i] = 0.;
+                }
             }
             // With diff
             else {
@@ -570,9 +577,21 @@ public class EvaluateAttenuationCnossos {
         double lambda = 340.0 / data.freq_lvl.get(i);
         double cSecond = 1.;
 
-        double _delta = proPath.isFavorable() ? pp.deltaF : pp.deltaH;
+        double _delta = proPath.isFavorable() && pp.type.equals(DIFH) ? pp.deltaF : pp.deltaH;
         double testForm = 40/lambda*cSecond*_delta;
         double deltaDiffSR = testForm>=-2 ? 10*ch*log10(3+testForm) : 0;
+
+        if(pp.type.equals(DIFV)) {
+            if(proPath.keepAbsorption) {
+                if(proPath.isFavorable()) {
+                    pp.aBoundaryF.deltaDiffSR[i] = deltaDiffSR;
+                }
+                else {
+                    pp.aBoundaryH.deltaDiffSR[i] = deltaDiffSR;
+                }
+            }
+            return deltaDiffSR;
+        }
 
         _delta = proPath.isFavorable() ? pp.deltaSPrimeRF : pp.deltaSPrimeRH;
         testForm = 40/lambda*cSecond*_delta;
@@ -658,6 +677,9 @@ public class EvaluateAttenuationCnossos {
 
     //Todo check if the favorable testform should be use instead
     public static double aGroundF(PropagationPath proPath, SegmentPath path, PropagationProcessPathData data, int idFreq) {
+        return aGroundF(proPath, path, data, idFreq, false);
+    }
+    public static double aGroundF(PropagationPath proPath, SegmentPath path, PropagationProcessPathData data, int idFreq, boolean forceGPath) {
         double[] values = computeCfKValues(proPath, path, data, idFreq);
         double cf = values[0];
         double k = values[1];
@@ -666,7 +688,7 @@ public class EvaluateAttenuationCnossos {
             proPath.groundAttenuation.wF[idFreq] = w;
             proPath.groundAttenuation.cfF[idFreq] = cf;
         }
-        double gm = path.gPathPrime;
+        double gm = forceGPath ? path.gPath : path.gPathPrime;
         double aGroundFMin = path.testFormH <= 1 ? -3 * (1 - gm) : -3 * (1 - gm) * (1 + 2 * (1 - (1 / path.testFormH)));
         if(path.gPath == 0) {
             return aGroundFMin;

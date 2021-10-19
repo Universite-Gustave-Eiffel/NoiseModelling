@@ -167,7 +167,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
             //ARef computation
             double[] aRef = EvaluateAttenuationCnossos.evaluateAref(proPath, data);
             //ABoundary computation
-            double[] aBoundary;// = EvaluateAttenuationCnossos.getAGroundCore(proPath, proPath.getSegmentList().get(0), data);
+            double[] aBoundary;
             double[] aGlobalMeteoHom = new double[data.freq_lvl.size()];
             double[] aGlobalMeteoFav = new double[data.freq_lvl.size()];
 
@@ -209,6 +209,11 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
 
             // Compute attenuation under the wind conditions using the ray direction
             double[] aGlobalMeteoRay = sumArrayWithPonderation(aGlobalMeteoFav, aGlobalMeteoHom, data.getWindRose()[roseindex]);
+
+            //For testing purpose
+            if(keepAbsorption) {
+                proPath.absorptionData.aGlobal = aGlobalMeteoRay.clone();
+            }
 
             // Apply attenuation due to sound direction
             if(inputData != null && !inputData.isOmnidirectional((int)sourceId)) {
