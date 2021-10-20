@@ -386,8 +386,8 @@ public class ComputeCnossosRaysTest {
         //Expected values
         double[][][] pts = new double[][][]{
                 {{0.00, 1.00}, {170.49, 6.0}, {194.16, 4.0}}, //Path 1 : direct
-                {{0.00, 1.00}, {194.78, 4.0}}, //Path 2 : left side
-                {{0.00, 1.00}, {221.23, 4.0}}  //Path 3 : right side
+                {{0.00, 1.00}, {169.78, 3.61}, {194.78, 4.0}}, //Path 2 : left side
+                {{0.00, 1.00}, {180.00, 3.44}, {221.23, 4.0}}  //Path 3 : right side
         };
         double [][] segmentsMeanPlanes0 = new double[][]{
                 //  a     b    zs    zr      dp    Gp   Gp'
@@ -404,12 +404,83 @@ public class ComputeCnossosRaysTest {
         };
 
         //Assertion
-        //assertPaths(pts, propDataOut.getPropagationPaths());
+        assertPaths(pts, propDataOut.getPropagationPaths());
         assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
         assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
         assertPlanes(segmentsMeanPlanes2, propDataOut.getPropagationPaths().get(2).getSRSegment());
     }
 
+    /**
+     * Test TC09 -- Ground with spatially varying heights and and acoustic properties and short barrier
+     */
+    @Test
+    public void TC09() {
+        //Profile building
+        ProfileBuilder profileBuilder = new ProfileBuilder()
+                //Ground effects
+                .addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.9)
+                .addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5)
+                .addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.2)
+                //Topography
+                .addTopographicLine(0, 80, 0, 225, 80, 0)
+                .addTopographicLine(225, 80, 0, 225, -20, 0)
+                .addTopographicLine(225, -20, 0, 0, -20, 0)
+                .addTopographicLine(0, -20, 0, 0, 80, 0)
+                .addTopographicLine(120, -20, 0, 120, 80, 0)
+                .addTopographicLine(185, -5, 10, 205, -5, 10)
+                .addTopographicLine(205, -5, 10, 205, 75, 10)
+                .addTopographicLine(205, 75, 10, 185, 75, 10)
+                .addTopographicLine(185, 75, 10, 185, -5, 10)
+                // Add building
+                .addWall(new Coordinate[]{
+                                new Coordinate(175, 50, 17),
+                                new Coordinate(190, 10, 14)},
+                         1)
+                .finishFeeding();
+
+        //Propagation data building
+        CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
+                .addSource(10, 10, 1)
+                .addReceiver(200, 50, 14)
+                .hEdgeDiff(true)
+                .vEdgeDiff(true)
+                .setGs(0.9)
+                .build();
+
+        //Out and computation settings
+        ComputeCnossosRaysOut propDataOut = new ComputeCnossosRaysOut(true);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
+        computeRays.setThreadCount(1);
+
+        //Run computation
+        computeRays.run(propDataOut);
+
+        //Expected values
+        double[][][] pts = new double[][][]{
+                {{0.00, 1.00}, {170.49, 16.63}, {194.16, 14.0}}, //Path 1 : direct
+                {{0.00, 1.00}, {169.78, 12.33}, {194.78, 14.0}}, //Path 2 : left side
+                {{0.00, 1.00}, {180.00, 11.58}, {221.23, 14.0}}  //Path 3 : right side
+        };
+        double [][] segmentsMeanPlanes0 = new double[][]{
+                //  a     b    zs    zr      dp    Gp   Gp'
+                {0.04, -1.96, 2.96, 11.68, 170.98, 0.55, 0.76},
+                {0.04, 1.94, 7.36, 3.71, 23.54, 0.20,  NaN}
+        };
+        double [][] segmentsMeanPlanes1 = new double[][]{
+                //  a     b    zs    zr      dp    Gp   Gp'
+                {0.05, -2.82, 3.81, 6.23, 195.20, 0.51, 0.64}
+        };
+        double [][] segmentsMeanPlanes2 = new double[][]{
+                //  a     b    zs    zr      dp    Gp   Gp'
+                {0.06, -3.10, 4.09, 3.77, 221.62, 0.46, 0.49}
+        };
+
+        //Assertion
+        assertPaths(pts, propDataOut.getPropagationPaths());
+        assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
+        assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
+        assertPlanes(segmentsMeanPlanes2, propDataOut.getPropagationPaths().get(2).getSRSegment());
+    }
 
     /**
      * Assertions for a list of {@link PropagationPath}.

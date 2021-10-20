@@ -536,8 +536,8 @@ public class EvaluateAttenuationCnossos {
                     .findFirst()
                     .orElse(null);
             aGround[i] = path.isFavorable() ?
-                    aGroundF(path, path.getSRSegment(), data, i, (first != null && first.type.equals(DIFV))) :
-                    aGroundH(path, path.getSRSegment(), data, i, (first != null && first.type.equals(DIFV)));
+                    aGroundF(path, path.getSRSegment(), data, i) :
+                    aGroundH(path, path.getSRSegment(), data, i);
             if (path.isFavorable()) {
                 path.groundAttenuation.aGroundF[i] = aGround[i];
             } else {
