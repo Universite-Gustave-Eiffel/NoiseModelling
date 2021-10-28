@@ -30,7 +30,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
 import org.noise_planet.noisemodelling.pathfinder.*;
+import org.noise_planet.noisemodelling.pathfinder.utils.KMLDocument;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
+import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,10 +40,9 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class TestCodeRegression {
     Logger logger = LoggerFactory.getLogger(TestCodeRegression.class);
@@ -79,14 +80,38 @@ public class TestCodeRegression {
         pointNoiseMap.setMaximumPropagationDistance(2000);
         pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
         pointNoiseMap.setGridDim(1);
-        ComputeRaysOutAttenuation out = (ComputeRaysOutAttenuation)pointNoiseMap.evaluateCell(connection, 0, 0, new EmptyProgressVisitor(), receiversDone);
-        logger.info(out.toString());
-        // Generate propagation data for the selected cell
-        PropagationProcessData threadData = out.inputData;
+
+        PropagationProcessData threadData = pointNoiseMap.prepareCell(connection, 0, 0,
+                new EmptyProgressVisitor(), receiversDone);
+
+        ComputeRaysOutAttenuation computeRaysOut = new ComputeRaysOutAttenuation(true,
+                pointNoiseMap.propagationProcessPathData ,threadData);
+
         ComputeRays computeRays = new ComputeRays(threadData);
+
         computeRays.makeReceiverRelativeZToAbsolute();
+
         computeRays.makeSourceRelativeZToAbsolute();
+
         computeRays.initStructures();
+
         List<TriIdWithIntersection> intersectionList = new ArrayList<>();
+
+        Coordinate sourceCoordinate = new Coordinate(813695.47,6388792.07);
+        Coordinate receiverCoordinate = new Coordinate(813791.12,6388661.00);
+        receiverCoordinate.setOrdinate(2, threadData.freeFieldFinder.getHeightAtPosition(receiverCoordinate) + 4);
+        AtomicInteger raysCount = new AtomicInteger();
+        ComputeRays.SourcePointInfo srcPoint = new ComputeRays.SourcePointInfo(
+                threadData.getMaximalSourcePower(0),0,
+                new Coordinate(sourceCoordinate.x,sourceCoordinate.y, threadData.freeFieldFinder.getHeightAtPosition(sourceCoordinate) + 4),1.0,new Orientation(0,0, 0),0);
+
+        computeRays.receiverSourcePropa( srcPoint, receiverCoordinate, 0
+                , raysCount, computeRaysOut, new ArrayList<FastObstructionTest.Wall>(), new ArrayList<MirrorReceiverResult>());
+
+
+        for(ComputeRaysOutAttenuation.VerticeSL v : computeRaysOut.receiversAttenuationLevels) {
+            logger.info(Arrays.toString(v.value));
+        }
+
     }
 }
