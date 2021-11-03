@@ -61,6 +61,12 @@ public class TestCodeRegression {
         }
     }
 
+    Coordinate get3dCoordinate(FastObstructionTest ft, double x, double y, double deltaZ) {
+        Coordinate c = new Coordinate(x,y);
+        c.setOrdinate(2, ft.getHeightAtPosition(c) + deltaZ);
+        return c;
+    }
+
     @Test
     public void testDiffractionOverDem() throws SQLException, IOException {
         // Import Data
@@ -95,16 +101,12 @@ public class TestCodeRegression {
 
         computeRays.initStructures();
 
-        List<TriIdWithIntersection> intersectionList = new ArrayList<>();
-
-        Coordinate sourceCoordinate = new Coordinate(813695.47,6388792.07);
-        Coordinate receiverCoordinate = new Coordinate(813791.12,6388661.00);
-        receiverCoordinate.setOrdinate(2, threadData.freeFieldFinder.getHeightAtPosition(receiverCoordinate) + 4);
+        Coordinate sourceCoordinate = get3dCoordinate(threadData.freeFieldFinder, 813343.64,6388665.24, 0.05);
+        Coordinate receiverCoordinate = get3dCoordinate(threadData.freeFieldFinder, 813345.06, 6388577.92, 4);
         AtomicInteger raysCount = new AtomicInteger();
         ComputeRays.SourcePointInfo srcPoint = new ComputeRays.SourcePointInfo(
                 threadData.getMaximalSourcePower(0),0,
-                new Coordinate(sourceCoordinate.x,sourceCoordinate.y, threadData.freeFieldFinder.getHeightAtPosition(sourceCoordinate) + 4),1.0,new Orientation(0,0, 0),0);
-
+                sourceCoordinate,1.0,new Orientation(0,0, 0),0);
         computeRays.receiverSourcePropa( srcPoint, receiverCoordinate, 0
                 , raysCount, computeRaysOut, new ArrayList<FastObstructionTest.Wall>(), new ArrayList<MirrorReceiverResult>());
 
