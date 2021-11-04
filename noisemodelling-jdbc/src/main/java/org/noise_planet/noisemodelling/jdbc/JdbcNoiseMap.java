@@ -353,11 +353,10 @@ public abstract class JdbcNoiseMap {
             throw new SQLException(new IllegalArgumentException(
                     "Maximum wall seeking distance cannot be superior than maximum propagation distance"));
         }
-        if(sourcesTableName.isEmpty()) {
-            throw new SQLException("A sound source table must be provided");
-        }
         int srid = 0;
-        srid = SFSUtilities.getSRID(connection, TableLocation.parse(sourcesTableName));
+        if(!sourcesTableName.isEmpty()) {
+            srid = SFSUtilities.getSRID(connection, TableLocation.parse(sourcesTableName));
+        }
         if(srid == 0) {
             srid = SFSUtilities.getSRID(connection, TableLocation.parse(buildingsTableName));
         }

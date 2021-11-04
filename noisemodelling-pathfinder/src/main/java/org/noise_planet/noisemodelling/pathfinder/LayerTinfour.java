@@ -268,8 +268,7 @@ public class LayerTinfour implements LayerDelaunay {
             if(Orientation.isCCW(hCoordinates)) {
                 CoordinateArrays.reverse(hCoordinates);
             }
-            // Should be clock wise
-            List<Vertex> vertexList = new ArrayList<>();
+            List<Vertex> vertexList = new ArrayList<>(hCoordinates.length);
             for(int vId = 0; vId < hCoordinates.length - 1 ; vId++) {
                 vertexList.add(addCoordinate(hCoordinates[vId], buildingId));
             }

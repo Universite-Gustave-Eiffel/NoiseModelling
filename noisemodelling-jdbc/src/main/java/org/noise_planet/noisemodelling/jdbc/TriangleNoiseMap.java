@@ -16,14 +16,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
+import java.sql.*;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -41,6 +35,8 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
     private double receiverHeight = 1.6;
     private double buildingBuffer = 2;
     private String exceptionDumpFolder = "";
+    private AtomicInteger constraintId = new AtomicInteger(1);
+    private double epsilon = 1e-6;
 
     /**
      * @param buildingsTableName Buildings table
@@ -88,7 +84,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
                 explodeAndAddPolygon(subGeom, delaunayTool);
             }
         } else if(intersectedGeometry instanceof Polygon && !intersectedGeometry.isEmpty()){
-            delaunayTool.addPolygon((Polygon)intersectedGeometry, 1);
+            delaunayTool.addPolygon((Polygon)intersectedGeometry, constraintId.getAndAdd(1));
         }
     }
 
@@ -127,8 +123,8 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         LinkedList<Geometry> toUniteFinal = new LinkedList<>();
         if (!toUnite.isEmpty()) {
             Geometry bufferBuildings = merge(toUnite, buildingBuffer);
-            //bufferBuildings = TopologyPreservingSimplifier.simplify(bufferBuildings,
-            //        minRecDist / 2);
+            bufferBuildings = TopologyPreservingSimplifier.simplify(bufferBuildings,
+                    epsilon);
             toUniteFinal.add(bufferBuildings); // Add buildingsTableName to triangulation
         }
         Geometry geom1 = geometryFactory.createPolygon();
@@ -142,7 +138,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
                     Geometry bufferRoads = merge(toUniteRoads, minRecDist / 2);
                     // Remove small artifacts due to multiple buffer crosses
                     bufferRoads = TopologyPreservingSimplifier.simplify(bufferRoads,
-                            minRecDist / 2);
+                            epsilon);
                     toUniteFinal.add(bufferRoads); // Merge roads with minRecDist m
                 }
             }
@@ -235,7 +231,25 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
 
     @Override
     protected Envelope getComputationEnvelope(Connection connection) throws SQLException {
-        return SFSUtilities.getTableEnvelope(connection, TableLocation.parse(sourcesTableName), "");
+        Envelope computationEnvelope = new Envelope();
+        if(!sourcesTableName.isEmpty()) {
+            computationEnvelope.expandToInclude(SFSUtilities.getTableEnvelope(connection, TableLocation.parse(sourcesTableName), ""));
+        }
+        if(!buildingsTableName.isEmpty()) {
+            computationEnvelope.expandToInclude(SFSUtilities.getTableEnvelope(connection, TableLocation.parse(buildingsTableName), ""));
+        }
+        return computationEnvelope;
+    }
+
+    public double getEpsilon() {
+        return epsilon;
+    }
+
+    /**
+     * @param epsilon Merge points that are closer that this epsilon value
+     */
+    public void setEpsilon(double epsilon) {
+        this.epsilon = epsilon;
     }
 
     public void generateReceivers(Connection connection, int cellI, int cellJ, String receiverTableName, String trianglesTableName, AtomicInteger receiverPK) throws SQLException, LayerDelaunayError, IOException {
@@ -253,7 +267,9 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
                 cellJ, getCellWidth(), getCellHeight());
         // Fetch all source located in expandedCellEnvelop
         PropagationProcessData data = new PropagationProcessData(null);
-        fetchCellSource(connection, cellEnvelope, data);
+        if(!sourcesTableName.isEmpty()) {
+            fetchCellSource(connection, cellEnvelope, data);
+        }
 
         List<Geometry> sourceDelaunayGeometries = data.sourceGeometries;
 
@@ -261,6 +277,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         fetchCellBuildings(connection, cellEnvelope, buildings);
 
         LayerTinfour cellMesh = new LayerTinfour();
+        cellMesh.setEpsilon(epsilon);
         cellMesh.setDumpFolder(exceptionDumpFolder);
         try {
             computeDelaunay(cellMesh, mainEnvelope, cellI,
@@ -285,7 +302,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
             vertices.add(translatedVertex);
         }
         // Do not add triangles associated with buildings
-        List<Triangle> triangles = new ArrayList<>();
+        List<Triangle> triangles = new ArrayList<>(cellMesh.getTriangles().size());
         for(Triangle triangle : cellMesh.getTriangles()) {
             if(triangle.getAttribute() == 0) {
                 triangles.add(triangle);
