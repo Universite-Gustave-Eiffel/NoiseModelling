@@ -30,6 +30,7 @@ public class PointPath {
     public ABoundary aBoundaryF = new ABoundary();
     public double deltaSPrimeRF;
     public double deltaSRPrimeF;
+    public double e=0;
 
     public class ABoundary {
         public double[] deltaDiffSR;

@@ -44,6 +44,7 @@ import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineSegment;
 import org.locationtech.jts.geom.LineString;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -294,4 +295,7 @@ public class JTSUtility {
         return offsetHull;
     }
 
+    public static double dist3D(Coordinate c0, Coordinate c1) {
+        return Math.sqrt(Math.pow(c1.x-c0.x, 2) + Math.pow(c1.y-c0.y, 2) + Math.pow(c1.z-c0.z, 2));
+    }
 }

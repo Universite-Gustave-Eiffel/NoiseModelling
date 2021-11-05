@@ -503,7 +503,7 @@ public class EvaluateAttenuationCnossos {
         return aGlobal;
     }
 
-    private static boolean isValidRcrit(PointPath pp, int freq, boolean favorable) {
+    private static boolean isValidRcrit(PropagationPath pp, int freq, boolean favorable) {
         double lambda = 340.0/freq;
         return favorable ?
                 pp.deltaF > -lambda / 20 && pp.deltaF > lambda / 4 - pp.deltaPrimeF :
@@ -522,17 +522,15 @@ public class EvaluateAttenuationCnossos {
                 diffPts.add(path.getPointList().get(i));
             }
         }
-        diffPts.forEach(pp -> {
-            pp.aBoundaryH.init(data.freq_lvl.size());
-            pp.aBoundaryF.init(data.freq_lvl.size());
-        });
+        path.aBoundaryH.init(data.freq_lvl.size());
+        path.aBoundaryF.init(data.freq_lvl.size());
         // Without diff
         for(int i=0; i<data.freq_lvl.size(); i++) {
             int finalI = i;
             PointPath first = diffPts.stream()
                     .filter(pp -> pp.type.equals(PointPath.POINT_TYPE.DIFH) || pp.type.equals(DIFV) ||
                             (pp.type.equals(DIFH_RCRIT) &&
-                                    isValidRcrit(pp, data.freq_lvl.get(finalI), path.isFavorable())))
+                                    isValidRcrit(path, data.freq_lvl.get(finalI), path.isFavorable())))
                     .findFirst()
                     .orElse(null);
             aGround[i] = path.isFavorable() ?
@@ -544,7 +542,7 @@ public class EvaluateAttenuationCnossos {
                 path.groundAttenuation.aGroundH[i] = aGround[i];
             }
             if (first != null) {
-                aDif[i] = aDif(path, data, i, first);
+                aDif[i] = aDif(path, data, i, first.type);
                 if(!first.type.equals(DIFV)) {
                     aGround[i] = 0.;
                 }
@@ -569,64 +567,65 @@ public class EvaluateAttenuationCnossos {
         return aBoundary;
     }
 
-    private static double aDif(PropagationPath proPath, PropagationProcessPathData data, int i, PointPath pp) {
+    private static double aDif(PropagationPath proPath, PropagationProcessPathData data, int i, PointPath.POINT_TYPE type) {
         SegmentPath first = proPath.getSegmentList().get(0);
         SegmentPath last = proPath.getSegmentList().get(proPath.getSegmentList().size()-1);
 
         double ch = 1.;
         double lambda = 340.0 / data.freq_lvl.get(i);
-        double cSecond = 1.;
+        double cSecond = (type.equals(DIFH) && proPath.difHPoints.size() <= 1) || (type.equals(DIFV) && proPath.difVPoints.size() <= 1) || proPath.e <= 0.3 ? 1. :
+                (1+pow(5*lambda/proPath.e, 2))/(1./3+pow(5*lambda/proPath.e, 2));
 
-        double _delta = proPath.isFavorable() && pp.type.equals(DIFH) ? pp.deltaF : pp.deltaH;
+        double _delta = proPath.isFavorable() && (type.equals(DIFH) || type.equals(DIFH_RCRIT)) ? proPath.deltaF : proPath.deltaH;
         double testForm = 40/lambda*cSecond*_delta;
         double deltaDiffSR = testForm>=-2 ? 10*ch*log10(3+testForm) : 0;
 
-        if(pp.type.equals(DIFV)) {
+        if(type.equals(DIFV)) {
             if(proPath.keepAbsorption) {
                 if(proPath.isFavorable()) {
-                    pp.aBoundaryF.deltaDiffSR[i] = deltaDiffSR;
+                    proPath.aBoundaryF.deltaDiffSR[i] = deltaDiffSR;
                 }
                 else {
-                    pp.aBoundaryH.deltaDiffSR[i] = deltaDiffSR;
+                    proPath.aBoundaryH.deltaDiffSR[i] = deltaDiffSR;
                 }
             }
             return deltaDiffSR;
         }
 
-        _delta = proPath.isFavorable() ? pp.deltaSPrimeRF : pp.deltaSPrimeRH;
+        _delta = proPath.isFavorable() ? proPath.deltaSPrimeRF : proPath.deltaSPrimeRH;
         testForm = 40/lambda*cSecond*_delta;
         double deltaDiffSPrimeR = testForm>=-2 ? 10*ch*log10(3+testForm) : 0;
 
-        _delta = proPath.isFavorable() ? pp.deltaSRPrimeF : pp.deltaSRPrimeH;
+        _delta = proPath.isFavorable() ? proPath.deltaSRPrimeF : proPath.deltaSRPrimeH;
         testForm = 40/lambda*cSecond*_delta;
         double deltaDiffSRPrime = testForm>=-2 ? 10*ch*log10(3+testForm) : 0;
 
         double aGroundSO = proPath.isFavorable() ? aGroundF(proPath, first, data, i) : aGroundH(proPath, first, data, i);
-        double aGroundOR = proPath.isFavorable() ? aGroundF(proPath, last, data, i) : aGroundH(proPath, last, data, i, true);
+        double aGroundOR = proPath.isFavorable() ? aGroundF(proPath, last, data, i, true) : aGroundH(proPath, last, data, i, true);
         double deltaGroundSO = -20*log10(1+(pow(10, -aGroundSO/20)-1)*pow(10, -(deltaDiffSPrimeR-deltaDiffSR)/20));
         double deltaGroundOR = -20*log10(1+(pow(10, -aGroundOR/20)-1)*pow(10, -(deltaDiffSRPrime-deltaDiffSR)/20));
 
         double aDiff = min(25, max(0, deltaDiffSR)) + deltaGroundSO + deltaGroundOR;
         if(proPath.keepAbsorption) {
             if(proPath.isFavorable()) {
-                pp.aBoundaryF.deltaDiffSR[i] = deltaDiffSR;
-                pp.aBoundaryF.aGroundSO[i] = aGroundSO;
-                pp.aBoundaryF.aGroundOR[i] = aGroundOR;
-                pp.aBoundaryF.deltaDiffSPrimeR[i] = deltaDiffSPrimeR;
-                pp.aBoundaryF.deltaDiffSRPrime[i] = deltaDiffSRPrime;
-                pp.aBoundaryF.deltaGroundSO[i] = deltaGroundSO;
-                pp.aBoundaryF.deltaGroundOR[i] = deltaGroundOR;
-                pp.aBoundaryF.aDiff[i] = aDiff;
+                proPath.aBoundaryF.deltaDiffSR[i] = deltaDiffSR;
+                proPath.aBoundaryF.aGroundSO[i] = aGroundSO;
+                proPath.aBoundaryF.aGroundOR[i] = aGroundOR;
+                proPath.aBoundaryF.deltaDiffSPrimeR[i] = deltaDiffSPrimeR;
+                proPath.aBoundaryF.deltaDiffSRPrime[i] = deltaDiffSRPrime;
+                proPath.aBoundaryF.deltaGroundSO[i] = deltaGroundSO;
+                proPath.aBoundaryF.deltaGroundOR[i] = deltaGroundOR;
+                proPath.aBoundaryF.aDiff[i] = aDiff;
             }
             else {
-                pp.aBoundaryH.deltaDiffSR[i] = deltaDiffSR;
-                pp.aBoundaryH.aGroundSO[i] = aGroundSO;
-                pp.aBoundaryH.aGroundOR[i] = aGroundOR;
-                pp.aBoundaryH.deltaDiffSPrimeR[i] = deltaDiffSPrimeR;
-                pp.aBoundaryH.deltaDiffSRPrime[i] = deltaDiffSRPrime;
-                pp.aBoundaryH.deltaGroundSO[i] = deltaGroundSO;
-                pp.aBoundaryH.deltaGroundOR[i] = deltaGroundOR;
-                pp.aBoundaryH.aDiff[i] = aDiff;
+                proPath.aBoundaryH.deltaDiffSR[i] = deltaDiffSR;
+                proPath.aBoundaryH.aGroundSO[i] = aGroundSO;
+                proPath.aBoundaryH.aGroundOR[i] = aGroundOR;
+                proPath.aBoundaryH.deltaDiffSPrimeR[i] = deltaDiffSPrimeR;
+                proPath.aBoundaryH.deltaDiffSRPrime[i] = deltaDiffSRPrime;
+                proPath.aBoundaryH.deltaGroundSO[i] = deltaGroundSO;
+                proPath.aBoundaryH.deltaGroundOR[i] = deltaGroundOR;
+                proPath.aBoundaryH.aDiff[i] = aDiff;
             }
         }
 
