@@ -114,7 +114,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         fetchBox.expandBy(buildingBuffer);
         Geometry fetchGeometry = geometryFactory.toGeometry(fetchBox);
         for(MeshBuilder.PolygonWithHeight building : buildings) {
-            if(building.getGeometry().intersects(fetchGeometry)) {
+            if(building.getGeometry().distance(fetchGeometry) < buildingBuffer) {
                 toUnite.add(building.getGeometry());
             }
         }
@@ -196,19 +196,19 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         // Add roads into delaunay tool
         LinkedList<LineString> delaunaySegments = new LinkedList<>();
         if (minRecDist > 0.1) {
-            for (Geometry pt : sources) {
-                Envelope ptEnv = pt.getEnvelopeInternal();
+            for (Geometry sourceGeometry : sources) {
+                Envelope ptEnv = sourceGeometry.getEnvelopeInternal();
                 if (ptEnv.intersects(expandedCellEnvelop)) {
-                    if (pt instanceof Point) {
+                    if (sourceGeometry instanceof Point) {
                         // Add square in rendering
-                        cellMesh.addPolygon((Polygon)cellEnvelopeGeometry.intersection(pt.buffer(minRecDist, BufferParameters.CAP_SQUARE)), 1);
+                        cellMesh.addPolygon((Polygon)cellEnvelopeGeometry.intersection(sourceGeometry.buffer(minRecDist, BufferParameters.CAP_SQUARE)), 1);
                     } else {
-                        if (pt instanceof LineString) {
-                            delaunaySegments.add((LineString) (pt));
-                        } else if (pt instanceof MultiLineString) {
-                            int nbLineString = pt.getNumGeometries();
+                        if (sourceGeometry instanceof LineString) {
+                            delaunaySegments.add((LineString) (sourceGeometry));
+                        } else if (sourceGeometry instanceof MultiLineString) {
+                            int nbLineString = sourceGeometry.getNumGeometries();
                             for (int idLineString = 0; idLineString < nbLineString; idLineString++) {
-                                delaunaySegments.add((LineString) (pt
+                                delaunaySegments.add((LineString) (sourceGeometry
                                         .getGeometryN(idLineString)));
                             }
                         }
@@ -283,7 +283,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         // Fetch all source located in expandedCellEnvelop
         PropagationProcessData data = new PropagationProcessData(null);
         if(!sourcesTableName.isEmpty()) {
-            fetchCellSource(connection, cellEnvelope, data);
+            fetchCellSource(connection, cellEnvelope, data, false);
         }
 
         List<Geometry> sourceDelaunayGeometries = data.sourceGeometries;

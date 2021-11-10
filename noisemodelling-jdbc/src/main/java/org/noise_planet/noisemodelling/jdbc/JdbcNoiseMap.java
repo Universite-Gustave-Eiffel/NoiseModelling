@@ -289,7 +289,7 @@ public abstract class JdbcNoiseMap {
      * @param propagationProcessData (Out) Propagation process input data
      * @throws SQLException
      */
-    public void fetchCellSource(Connection connection,Envelope fetchEnvelope, PropagationProcessData propagationProcessData)
+    public void fetchCellSource(Connection connection,Envelope fetchEnvelope, PropagationProcessData propagationProcessData, boolean doIntersection)
             throws SQLException, IOException {
         TableLocation sourceTableIdentifier = TableLocation.parse(sourcesTableName);
         List<String> geomFields = SFSUtilities.getGeometryFields(connection, sourceTableIdentifier);
@@ -315,7 +315,9 @@ public abstract class JdbcNoiseMap {
                 while (rs.next()) {
                     Geometry geo = rs.getGeometry();
                     if (geo != null) {
-                        geo = domainConstraint.intersection(geo);
+                        if(doIntersection) {
+                            geo = domainConstraint.intersection(geo);
+                        }
                         if(!geo.isEmpty()) {
                             propagationProcessData.addSource(rs.getLong(pkIndex), geo, rs);
                         }
