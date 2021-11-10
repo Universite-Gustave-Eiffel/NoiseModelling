@@ -11,7 +11,6 @@ import org.locationtech.jts.operation.buffer.BufferParameters;
 import org.locationtech.jts.simplify.TopologyPreservingSimplifier;
 import org.noise_planet.noisemodelling.pathfinder.*;
 import org.noise_planet.noisemodelling.pathfinder.Triangle;
-import org.noise_planet.noisemodelling.pathfinder.utils.Densifier3D;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +36,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
     private String exceptionDumpFolder = "";
     private AtomicInteger constraintId = new AtomicInteger(1);
     private double epsilon = 1e-6;
+    private double geometrySimplificationDistance = 1;
 
     /**
      * @param buildingsTableName Buildings table
@@ -123,8 +123,12 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         LinkedList<Geometry> toUniteFinal = new LinkedList<>();
         if (!toUnite.isEmpty()) {
             Geometry bufferBuildings = merge(toUnite, buildingBuffer);
-            bufferBuildings = TopologyPreservingSimplifier.simplify(bufferBuildings,
-                    epsilon);
+            bufferBuildings = TopologyPreservingSimplifier.simplify(bufferBuildings, geometrySimplificationDistance);
+            // Densify buildings to follow triangle area constraint
+            if(maximumArea > 1) {
+                double triangleSide = (2*Math.pow(maximumArea, 0.5)) / Math.pow(3, 0.25);
+                bufferBuildings = Densifier.densify(bufferBuildings, triangleSide);
+            }
             toUniteFinal.add(bufferBuildings); // Add buildingsTableName to triangulation
         }
         Geometry geom1 = geometryFactory.createPolygon();
@@ -137,8 +141,12 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
                     // Build Polygons buffer from roads lines
                     Geometry bufferRoads = merge(toUniteRoads, minRecDist / 2);
                     // Remove small artifacts due to multiple buffer crosses
-                    bufferRoads = TopologyPreservingSimplifier.simplify(bufferRoads,
-                            epsilon);
+                    bufferRoads = TopologyPreservingSimplifier.simplify(bufferRoads, geometrySimplificationDistance);
+                    // Densify roads to follow triangle area constraint
+                    if(maximumArea > 1) {
+                        double triangleSide = (2*Math.pow(maximumArea, 0.5)) / Math.pow(3, 0.25);
+                        bufferRoads = Densifier.densify(bufferRoads, triangleSide);
+                    }
                     toUniteFinal.add(bufferRoads); // Merge roads with minRecDist m
                 }
             }
@@ -217,7 +225,6 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         cellMesh.setRetrieveNeighbors(false);
         // Add cell envelope
         if (maximumArea > 1) {
-            cellMesh.setMaxArea(maximumArea);
             double triangleSide = (2*Math.pow(maximumArea, 0.5)) / Math.pow(3, 0.25);
             Polygon polygon = (Polygon)Densifier.densify(new GeometryFactory().toGeometry(cellEnvelope), triangleSide);
             cellMesh.addLineString(polygon.getExteriorRing(), 0);
@@ -243,6 +250,14 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
 
     public double getEpsilon() {
         return epsilon;
+    }
+
+    public double getGeometrySimplificationDistance() {
+        return geometrySimplificationDistance;
+    }
+
+    public void setGeometrySimplificationDistance(double geometrySimplificationDistance) {
+        this.geometrySimplificationDistance = geometrySimplificationDistance;
     }
 
     /**
@@ -279,6 +294,8 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         LayerTinfour cellMesh = new LayerTinfour();
         cellMesh.setEpsilon(epsilon);
         cellMesh.setDumpFolder(exceptionDumpFolder);
+        cellMesh.setMaxArea(maximumArea > 1 ? maximumArea : 0);
+
         try {
             computeDelaunay(cellMesh, mainEnvelope, cellI,
                     cellJ,

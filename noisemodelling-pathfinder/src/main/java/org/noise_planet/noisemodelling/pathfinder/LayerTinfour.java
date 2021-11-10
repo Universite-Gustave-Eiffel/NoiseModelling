@@ -179,7 +179,7 @@ public class LayerTinfour implements LayerDelaunay {
             tin.add(meshPoints, null);
             // Add constraints
             try {
-                tin.addConstraints(constraints, maxArea > 0);
+                tin.addConstraints(constraints, false);
             }catch (IllegalStateException ex) {
                 // Got error
                 // Dump input data
