@@ -289,7 +289,9 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         List<Geometry> sourceDelaunayGeometries = data.sourceGeometries;
 
         ArrayList<MeshBuilder.PolygonWithHeight> buildings = new ArrayList<>();
-        fetchCellBuildings(connection, cellEnvelope, buildings);
+        Envelope expandedCell = new Envelope(cellEnvelope);
+        expandedCell.expandBy(buildingBuffer);
+        fetchCellBuildings(connection, expandedCell, buildings);
 
         LayerTinfour cellMesh = new LayerTinfour();
         cellMesh.setEpsilon(epsilon);
