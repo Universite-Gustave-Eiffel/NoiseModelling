@@ -321,12 +321,13 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
             vertices.add(translatedVertex);
         }
         // Do not add triangles associated with buildings
-        List<Triangle> triangles = new ArrayList<>(cellMesh.getTriangles().size());
-        for(Triangle triangle : cellMesh.getTriangles()) {
-            if(triangle.getAttribute() == 0) {
-                triangles.add(triangle);
-            }
-        }
+        List<Triangle> triangles = cellMesh.getTriangles();
+        //List<Triangle> triangles = new ArrayList<>(cellMesh.getTriangles().size());
+        //for(Triangle triangle : cellMesh.getTriangles()) {
+        //    if(triangle.getAttribute() == 0) {
+        //        triangles.add(triangle);
+        //    }
+        //}
         nbreceivers += vertices.size();
 
         if(!JDBCUtilities.tableExists(connection, receiverTableName)) {
