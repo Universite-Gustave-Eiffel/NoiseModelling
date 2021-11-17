@@ -124,12 +124,14 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         if (!toUnite.isEmpty()) {
             Geometry bufferBuildings = merge(toUnite, buildingBuffer);
             bufferBuildings = TopologyPreservingSimplifier.simplify(bufferBuildings, geometrySimplificationDistance);
-            // Densify buildings to follow triangle area constraint
-            if(maximumArea > 1) {
-                double triangleSide = (2*Math.pow(maximumArea, 0.5)) / Math.pow(3, 0.25);
-                bufferBuildings = Densifier.densify(bufferBuildings, triangleSide);
+            if(bufferBuildings.getNumPoints() > 3) {
+                // Densify buildings to follow triangle area constraint
+                if (maximumArea > 1) {
+                    double triangleSide = (2 * Math.pow(maximumArea, 0.5)) / Math.pow(3, 0.25);
+                    bufferBuildings = Densifier.densify(bufferBuildings, triangleSide);
+                }
+                toUniteFinal.add(bufferBuildings); // Add buildingsTableName to triangulation
             }
-            toUniteFinal.add(bufferBuildings); // Add buildingsTableName to triangulation
         }
         Geometry geom1 = geometryFactory.createPolygon();
         Geometry geom2 = geometryFactory.createPolygon();
