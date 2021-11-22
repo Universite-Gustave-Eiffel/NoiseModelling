@@ -918,6 +918,72 @@ public class ComputeCnossosRaysTest {
         assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSegmentList());
     }*/
 
+    @Test
+    public void TC19() {
+        //Profile building
+        ProfileBuilder profileBuilder = new ProfileBuilder()
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(100, 24, 12),
+                        new Coordinate(118, 24, 12),
+                        new Coordinate(118, 30, 12),
+                        new Coordinate(100, 30, 12),
+                })
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(110, 15, 7),
+                        new Coordinate(118, 15, 7),
+                        new Coordinate(118, 24, 7),
+                        new Coordinate(110, 24, 7),
+                })
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(90.1, 19.5, 10),
+                        new Coordinate(93.3, 17.8, 10),
+                        new Coordinate(87.3, 6.6, 10),
+                        new Coordinate(84.1, 8.3, 10),
+                })
+                .addWall(new Coordinate[]{
+                        new Coordinate(94.9, 14.1, 10),
+                        new Coordinate(98.02, 12.3, 10),
+                }, -1)
+                .finishFeeding();
+
+        //Propagation data building
+        CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
+                .addSource(10, 10, 1)
+                .addReceiver(200, 30, 14)
+                .hEdgeDiff(true)
+                .vEdgeDiff(true)
+                .setGs(0.5)
+                .build();
+
+        //Out and computation settings
+        ComputeCnossosRaysOut propDataOut = new ComputeCnossosRaysOut(true);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
+        computeRays.setThreadCount(1);
+
+        //Run computation
+        computeRays.run(propDataOut);
+
+        //Expected values
+        double [][] segmentsMeanPlanes0 = new double[][]{
+                //  a     b     zs    zr    dp    Gp   Gp'
+                {0.00, 0.00,  1.00, 8.00, 5.02, 0.50, 0.50},
+                {0.00, 0.00, 10.00, 5.00, 8.73, 0.50,  NaN}
+        };
+        double [][] segmentsMeanPlanes1 = new double[][]{
+                //  a      b    zs    zr     dp    Gp    Gp'
+                {0.08, -1.19, 2.18, 2.01, 54.80, 0.46, 0.48}
+        };
+        double [][] segmentsMeanPlanes2 = new double[][]{
+                //  a     b    zs    zr     dp    Gp    Gp'
+                {0.00, 0.00, 1.00, 5.00, 53.60, 0.50, 0.50}
+        };
+
+        //Assertion
+        assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
+        assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
+        assertPlanes(segmentsMeanPlanes2, propDataOut.getPropagationPaths().get(2).getSRSegment());
+    }
+
     /**
      * Assertions for a list of {@link PropagationPath}.
      * @param expectedPts    Array of arrays of array of expected coordinates (xyz) of points of paths. To each path
