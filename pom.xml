@@ -70,21 +70,6 @@
     </build>
     <profiles>
         <profile>
-            <id>orbisgis-deploy</id>
-            <distributionManagement>
-                <snapshotRepository>
-                    <id>orbisgis-deploy-snapshots</id>
-                    <name>Internal Snaphots</name>
-                    <url>http://nexus.orbisgis.org/repository/orbisgis-snapshot/</url>
-                </snapshotRepository>
-                <repository>
-                    <id>orbisgis-deploy-release</id>
-                    <name>Internal Releases</name>
-                    <url>http://nexus.orbisgis.org/repository/orbisgis-release/</url>
-                </repository>
-            </distributionManagement>
-        </profile>
-        <profile>
             <id>maven-deploy</id>
             <distributionManagement>
                 <snapshotRepository>
@@ -129,9 +114,18 @@
             <url>https://repo2.maven.org/maven2</url>
         </repository>
         <repository>
-            <id>nexus.orbisgis.org</id>
-            <name>OrbisGIS snapshot repo</name>
-            <url>https://nexus.orbisgis.org/repository/orbisgis-snapshot/</url>
+            <id>ossrh-snapshot</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>ossrh-release</id>
+            <url>https://oss.sonatype.org/content/repositories/releases/</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
         </repository>
     </repositories>
 
