@@ -36,7 +36,10 @@ repositories {
         url "https://maven.geo-solutions.it/"
     }
     maven {
-        url "https://nexus.orbisgis.org/repository/orbisgis-snapshot/"
+        url "https://oss.sonatype.org/content/repositories/snapshots/"
+    }
+    maven {
+        url "https://oss.sonatype.org/content/repositories/releases/"
     }
     maven {
         url "https://repo.matsim.org/repository/matsim/"
