@@ -282,11 +282,11 @@ public class ComputeCnossosRays {
             }
             if (data.isComputeVEdgeDiffraction()) {
                 PropagationPath propagationPath = computeVEdgeDiffraction(srcCoord, rcvCoord, data, LEFT);
-                if (propagationPath.getPointList() != null) {
+                if (propagationPath != null && propagationPath.getPointList() != null) {
                     propagationPaths.add(propagationPath);
                 }
                 propagationPath = computeVEdgeDiffraction(srcCoord, rcvCoord, data, RIGHT);
-                if (propagationPath.getPointList() != null) {
+                if (propagationPath != null && propagationPath.getPointList() != null) {
                     propagationPaths.add(propagationPath);
                 }
             }
@@ -651,6 +651,9 @@ public class ComputeCnossosRays {
 
     private List<Coordinate> toDirectLine(List<Coordinate> coordinates) {
         List<Coordinate> coords = new ArrayList<>();
+        if(coordinates.isEmpty()) {
+            return coords;
+        }
         Coordinate prev = coordinates.get(0);
         double d = 0;
         for(Coordinate c : coordinates) {
@@ -832,96 +835,6 @@ public class ComputeCnossosRays {
 
         return propagationPath;
     }
-/*
-    private List<Coordinate> rubberBand(boolean left, Coordinate p1, Coordinate p2, ProfileBuilder profileBuilder) {
-        List<ProfileBuilder.Wall> walls = getHullWalls(left, p1, p2, profileBuilder, new ArrayList<>());
-        List<LineSegment> rotWalls = new ArrayList<>();
-        for(ProfileBuilder.Wall w : walls) {
-            Coordinate w0 = w.getLine().p0;
-            Coordinate c0 = new Coordinate(w0.x*cos(a), w0.z, left ? -w0.y : w0.y);
-            Coordinate c0Gr = new Coordinate(c0);
-            c0Gr.y = profileBuilder.getZGround(c0);
-            Coordinate w1 = w.getLine().p1;
-            Coordinate c1 = new Coordinate(w1.x*cos(a), w1.z, left ? -w1.y : w1.y);
-            Coordinate c1Gr = new Coordinate(c1);
-            c1Gr.y = profileBuilder.getZGround(c1);
-            if(!c0.equals(c1)) {
-                rotWalls.add(new LineSegment(c0, c1));
-            }
-            rotWalls.add(new LineSegment(c0, c0Gr));
-            rotWalls.add(new LineSegment(c1, c1Gr));
-        }
-        List<LineSegment> filtered = new ArrayList<>();
-        //Filtering
-        for(LineSegment ls : rotWalls) {
-            boolean valid = true;
-            for(LineSegment f : filtered) {
-                if(f.p0.equals(ls.p0) && f.p1.equals(ls.p1)) {
-                    if(f.p0.z < ls.p0.z) {
-                        filtered.remove(f);
-                    }
-                    else {
-                        valid = false;
-                    }
-                    break;
-                }
-            }
-            if(valid) {
-                filtered.add(ls);
-            }
-        }
-
-        List<Coordinate> coords = new ArrayList<>();
-        LineSegment rs = new LineSegment(
-                new Coordinate(p1.x, p1.z, left ? -p1.y : p1.y),
-                new Coordinate(p2.x, p2.z, left ? -p2.y : p2.y));
-        for(LineSegment ls : filtered) {
-            Coordinate inter = ls.intersection(rs);
-            if(inter != null) {
-                coords.add(new Coordinate(inter.x, left ? -ls.p0.z : ls.p0.z, inter.y));
-            }
-        }
-        coords.add(0, new Coordinate(p1));
-        coords.add(new Coordinate(p2));
-
-        //Handle concave path
-        int size = -1;
-        while(size != coords.size()) {
-            size = coords.size();
-            for (int i = 0; i < coords.size() - 2; i++) {
-                LineSegment l02 = new LineSegment(coords.get(i), coords.get(i + 2));
-                if (l02.orientationIndex(coords.get(i + 1)) == (left ? 1 : -1)) {
-                    double d02 = JTSUtility.dist3D(coords.get(i), coords.get(i + 2));
-                    double d01 = JTSUtility.dist3D(coords.get(i), coords.get(i + 1));
-                    double d12 = JTSUtility.dist3D(coords.get(i + 1), coords.get(i + 2));
-                    if (d01 + d12 > d02*1.01) {
-                        coords.remove(i + 1);
-                        break;
-                    }
-                }
-            }
-        }
-
-        return coords;
-    }
-
-    public List<Coordinate> computeSideHull(boolean left, Coordinate p1, Coordinate p2, ProfileBuilder profileBuilder) {
-        List<Coordinate> coords = rubberBand(left, p1, p2, profileBuilder);
-
-        double totDist = 0;
-        for(int i=1; i< coords.size(); i++) {
-            totDist += new LineSegment(coords.get(i-1), coords.get(i)).getLength();
-        }
-        double z0 = coords.get(0).z;
-        double delta = coords.get(coords.size()-1).z-z0;
-        double currDist = 0;
-        //Z is not calculated in the same way as CNOSSOS which results seem wrong and doesn't seem to use the rubber band methods but just the x axis
-        for(int i=1; i< coords.size()-1; i++) {
-            currDist += new LineSegment(coords.get(i-1), coords.get(i)).getLength();
-            coords.get(i).z = z0 + delta*(currDist/totDist);
-        }
-        return coords;
-    }*/
 
     /**
      * Compute Side Hull

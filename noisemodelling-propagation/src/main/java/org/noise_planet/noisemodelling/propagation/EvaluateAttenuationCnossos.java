@@ -431,20 +431,6 @@ public class EvaluateAttenuationCnossos {
     }
 
     /**
-     *
-     * @param path
-     * @param data
-     * @param Favorable
-     * @return
-     */
-    public static double[] evaluateAboundary(PropagationPath path, PropagationProcessPathData data, boolean Favorable) {
-        double[] aBoundary;
-        // boundary (ground + diffration)
-        aBoundary = getABoundary(path, data);
-        return aBoundary;
-    }
-
-    /**
      * Only for propagation Path Cnossos
      * // todo erase evaluate
      * @param path
@@ -536,10 +522,12 @@ public class EvaluateAttenuationCnossos {
             aGround[i] = path.isFavorable() ?
                     aGroundF(path, path.getSRSegment(), data, i) :
                     aGroundH(path, path.getSRSegment(), data, i);
-            if (path.isFavorable()) {
-                path.groundAttenuation.aGroundF[i] = aGround[i];
-            } else {
-                path.groundAttenuation.aGroundH[i] = aGround[i];
+            if(path.groundAttenuation != null && path.groundAttenuation.aGroundF != null) {
+                if (path.isFavorable()) {
+                    path.groundAttenuation.aGroundF[i] = aGround[i];
+                } else {
+                    path.groundAttenuation.aGroundH[i] = aGround[i];
+                }
             }
             if (first != null) {
                 aDif[i] = aDif(path, data, i, first.type);
