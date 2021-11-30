@@ -216,18 +216,18 @@ public class TestComputeCnossosRays {
         //new ArrayList<>(), manager, sourcesIndex, srclst, new ArrayList<>(), new ArrayList<>(), 0, 99, 1000,1000,0,0,new double[0],0,0,new EmptyProgressVisitor(), new ArrayList<>(), true
         ComputeCnossosRays computeRays = new ComputeCnossosRays(processData);
 
-        Assert.assertFalse(computeRays.computeFreeField(profileBuilder.getProfile(p1, p2), processData).getSegmentList().isEmpty());
+        Assert.assertFalse(computeRays.computeFreeField(profileBuilder.getProfile(p1, p2), processData, false).getSegmentList().isEmpty());
 
         List<Coordinate> pts = computeRays.computeSideHull(true, p1, p2, profileBuilder);
         assertEquals(5, pts.size());
         for (int i = 0; i < pts.size() - 1; i++) {
-            Assert.assertTrue(computeRays.computeFreeField(profileBuilder.getProfile(pts.get(i), pts.get(i + 1)), processData).getSegmentList().isEmpty());
+            Assert.assertTrue(computeRays.computeFreeField(profileBuilder.getProfile(pts.get(i), pts.get(i + 1)), processData, false).getSegmentList().isEmpty());
         }
 
         pts = computeRays.computeSideHull(false, p1, p2, profileBuilder);
         assertEquals(5, pts.size());
         for (int i = 0; i < pts.size() - 1; i++) {
-            Assert.assertTrue(computeRays.computeFreeField(profileBuilder.getProfile(pts.get(i), pts.get(i + 1)), processData).getSegmentList().isEmpty());
+            Assert.assertTrue(computeRays.computeFreeField(profileBuilder.getProfile(pts.get(i), pts.get(i + 1)), processData, false).getSegmentList().isEmpty());
         }
 
         CnossosPropagationData data = new CnossosPropagationData(profileBuilder);
@@ -347,7 +347,7 @@ public class TestComputeCnossosRays {
         Coordinate p1 = new Coordinate(4, 3, 3);
         Coordinate p2 = new Coordinate(13, 10, 6.7);
 
-        Assert.assertFalse(computeRays.computeFreeField(profileBuilder.getProfile(p1, p2), null).getSegmentList().isEmpty());
+        Assert.assertFalse(computeRays.computeFreeField(profileBuilder.getProfile(p1, p2), null, false).getSegmentList().isEmpty());
 
         // Check the computation of convex corners of a building
         List<Coordinate> b1OffsetRoof = profileBuilder.getWideAnglePointsByBuilding(1, Math.PI * (1 + 1 / 16.0), Math.PI * (2 - (1 / 16.)));

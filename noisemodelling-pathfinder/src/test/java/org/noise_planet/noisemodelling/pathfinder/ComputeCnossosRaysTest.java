@@ -5,6 +5,7 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.GeometryFactory;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static java.lang.Double.NaN;
@@ -862,7 +863,7 @@ public class ComputeCnossosRaysTest {
     /**
      * Test TC16 -- Reflecting barrier on ground with spatially varying heights and acoustic properties
      */
-    /*@Test
+    @Test
     public void TC16() {
         //Profile building
         ProfileBuilder profileBuilder = new ProfileBuilder()
@@ -884,13 +885,14 @@ public class ComputeCnossosRaysTest {
                 .addWall(new Coordinate[]{
                         new Coordinate(114, 52, 15),
                         new Coordinate(170, 60, 15)
-                }, -1)
+                }, 15, Arrays.asList(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.5), -1)
                 .finishFeeding();
 
         //Propagation data building
         CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
                 .addSource(10, 10, 1)
                 .addReceiver(200, 50, 14)
+                .setGs(0.9)
                 .build();
         rayData.reflexionOrder=1;
 
@@ -910,13 +912,13 @@ public class ComputeCnossosRaysTest {
 
         double [][] segmentsMeanPlanes1 = new double[][]{
                 //  a     b     zs    zr      dp    Gp   Gp'
-                {0.05, -2.80, 3.80, 6.37, 194.45, 0.51, 0.65}
+                {0.05, -2.80, 3.80, 6.37, 198.45, 0.51, 0.65}
         };
 
         //Assertion
-        assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
-        assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSegmentList());
-    }*/
+        assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSRSegment());
+        assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
+    }
 
     @Test
     public void TC19() {

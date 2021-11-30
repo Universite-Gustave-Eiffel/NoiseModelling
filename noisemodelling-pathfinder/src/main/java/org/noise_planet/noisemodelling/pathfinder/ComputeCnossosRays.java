@@ -71,6 +71,8 @@ public class ComputeCnossosRays {
     private static final double MAX_RATIO_HULL_DIRECT_PATH = 4;
     private static final Logger LOGGER = LoggerFactory.getLogger(ComputeCnossosRays.class);
 
+    private static final GeometryFactory GEOMETRY_FACTORY = new GeometryFactory();
+
     /** Propagation data to use for computation. */
     private final CnossosPropagationData data;
 
@@ -273,7 +275,7 @@ public class ComputeCnossosRays {
         //If the field is free, simplify the computation
         boolean freeField = cutProfile.isFreeField();
         if(freeField) {
-            propagationPaths.add(computeFreeField(cutProfile, data));
+            propagationPaths.add(computeFreeField(cutProfile, data, true));
         }
         else if(data.isComputeDiffraction()) {
             if (data.isComputeHEdgeDiffraction()) {
@@ -306,9 +308,15 @@ public class ComputeCnossosRays {
     }
 
     private static SegmentPath computeSegment(Coordinate src, Coordinate rcv, double[] meanPlane, double gPath, double gS) {
+        return computeSegment(src, src.y, rcv, rcv.y, meanPlane, gPath, gS);
+    }
+
+    private static SegmentPath computeSegment(Coordinate src, double sz, Coordinate rcv, double rz, double[] meanPlane, double gPath, double gS) {
         SegmentPath seg = new SegmentPath();
-        Coordinate srcMeanPlane = projectPointOnLine(src, meanPlane[0], meanPlane[1]);
-        Coordinate rcvMeanPlane = projectPointOnLine(rcv, meanPlane[0], meanPlane[1]);
+        Coordinate srcZ = new Coordinate(src.x, sz);
+        Coordinate rcvZ = new Coordinate(rcv.x, rz);
+        Coordinate srcMeanPlane = projectPointOnLine(srcZ, meanPlane[0], meanPlane[1]);
+        Coordinate rcvMeanPlane = projectPointOnLine(rcvZ, meanPlane[0], meanPlane[1]);
 
         seg.s = src;
         seg.r = rcv;
@@ -318,8 +326,8 @@ public class ComputeCnossosRays {
         seg.rPrime = new Coordinate(seg.r.x+(seg.rMeanPlane.x-seg.r.x)*2, seg.r.y+(seg.rMeanPlane.y-seg.r.y)*2);
         seg.d = new LineSegment(src, rcv).getLength();
         seg.dp = new LineSegment(srcMeanPlane, rcvMeanPlane).getLength();
-        seg.zsH = new LineSegment(src, srcMeanPlane).getLength();
-        seg.zrH = new LineSegment(rcv, rcvMeanPlane).getLength();
+        seg.zsH = new LineSegment(srcZ, srcMeanPlane).getLength();
+        seg.zrH = new LineSegment(rcvZ, rcvMeanPlane).getLength();
         seg.a = meanPlane[0];
         seg.b = meanPlane[1];
         seg.testFormH = seg.dp/(30*(seg.zsH +seg.zrH));
@@ -414,7 +422,7 @@ public class ComputeCnossosRays {
      * @param cutProfile CutProfile containing all the data for propagation computation.
      * @return The calculated propagation path.
      */
-    public PropagationPath computeFreeField(ProfileBuilder.CutProfile cutProfile, CnossosPropagationData data) {
+    public PropagationPath computeFreeField(ProfileBuilder.CutProfile cutProfile, CnossosPropagationData data, boolean isSrSeg) {
         ProfileBuilder.CutPoint srcCut = cutProfile.getSource();
         ProfileBuilder.CutPoint rcvCut = cutProfile.getReceiver();
 
@@ -423,9 +431,13 @@ public class ComputeCnossosRays {
                 .collect(Collectors.toList());
         List<Coordinate> pts2DGround = computePts2DGround(cutProfile, data);
         Coordinate src = new Coordinate(pts2DGround.get(0));
-        src.y = srcCut.getCoordinate().z;
+        if(!Double.isNaN(srcCut.getCoordinate().z)) {
+            src.y = srcCut.getCoordinate().z;
+        }
         Coordinate rcv = new Coordinate(pts2DGround.get(pts2DGround.size()-1));
-        rcv.y = rcvCut.getCoordinate().z;
+        if(!Double.isNaN(rcvCut.getCoordinate().z)) {
+            rcv.y = rcvCut.getCoordinate().z;
+        }
         double[] meanPlane;
 
         double firstY = pts2DGround.get(0).y;
@@ -434,7 +446,13 @@ public class ComputeCnossosRays {
         } else {
             meanPlane = JTSUtility.getMeanPlaneCoefficients(pts2DGround.toArray(new Coordinate[0]));
         }
-        SegmentPath srSeg = computeSegment(src, rcv, meanPlane, cutProfile.getGPath(srcCut, rcvCut), srcCut.getGroundCoef());
+        SegmentPath srSeg;
+        if(isSrSeg) {
+            srSeg = computeSegment(new Coordinate(src.x, srcCut.getCoordinate().z), new Coordinate(rcv.x, rcvCut.getCoordinate().z), meanPlane, cutProfile.getGPath(srcCut, rcvCut), srcCut.getGroundCoef());
+        }
+        else {
+            srSeg = computeSegment(src, rcv, meanPlane, cutProfile.getGPath(srcCut, rcvCut), srcCut.getGroundCoef());
+        }
         LineSegment dSR = new LineSegment(src, rcv);
 
         List<SegmentPath> segments = new ArrayList<>();
@@ -557,7 +575,7 @@ public class ComputeCnossosRays {
                             .filter(cut -> cut.getType().equals(BUILDING) || cut.getType().equals(TOPOGRAPHY) || cut.getType().equals(RECEIVER))
                             .map(ProfileBuilder.CutPoint::getCoordinate)
                             .collect(Collectors.toList()));
-                    freePaths.addAll(computeFreeField(profile, data).getSegmentList());
+                    freePaths.addAll(computeFreeField(profile, data, false).getSegmentList());
                 }
                 //Filter bridge
                 List<Integer> toRemove = new ArrayList<>();
@@ -854,7 +872,7 @@ public class ComputeCnossosRays {
 
         // Intersection test cache
         Set<LineSegment> freeFieldSegments = new HashSet<>();
-        GeometryFactory geometryFactory = new GeometryFactory();
+        GeometryFactory geometryFactory = GEOMETRY_FACTORY;
 
         List<Coordinate> input = new ArrayList<>();
 
@@ -1012,7 +1030,7 @@ public class ComputeCnossosRays {
             this.buildings = buildings;
             this.p1 = p1;
             this.p2 = p2;
-            seg = new LineSegment(p1, p2).toGeometry(new GeometryFactory());
+            seg = new LineSegment(p1, p2).toGeometry(GEOMETRY_FACTORY);
         }
 
         @Override
@@ -1049,7 +1067,7 @@ public class ComputeCnossosRays {
         }
     }
     private static final class WallIntersectionRayVisitor implements ItemVisitor {
-        private static final GeometryFactory FACTORY = new GeometryFactory();
+        private static final GeometryFactory FACTORY = GEOMETRY_FACTORY;
         Set<Integer> itemProcessed = new HashSet<>();
         List<ProfileBuilder.Wall> walls;
         Coordinate p1;
@@ -1071,7 +1089,7 @@ public class ComputeCnossosRays {
             this.walls = walls;
             this.p1 = p1;
             this.p2 = p2;
-            seg = new LineSegment(p1, p2).toGeometry(new GeometryFactory());
+            seg = new LineSegment(p1, p2).toGeometry(GEOMETRY_FACTORY);
         }
 
         @Override
@@ -1187,11 +1205,11 @@ public class ComputeCnossosRays {
             if (!skipWall) {
                 if(data.reflexionOrder > depth) {
                     MirrorReceiverResult p = new MirrorReceiverResult(rcvMirror, parent,
-                            data.profileBuilder.getProcessedWalls().indexOf(wall), wall.getOriginId());
+                            data.profileBuilder.getProcessedWalls().indexOf(wall), wall.getOriginId(), wall.getType());
                     results.addAll(getMirrorReceivers(buildWalls, srcCoord, inter, srcMirrRcvLine, depth+1, p));
                 }
                 results.add(new MirrorReceiverResult(rcvMirror, parent,
-                        data.profileBuilder.getProcessedWalls().indexOf(wall), wall.getOriginId()));
+                        data.profileBuilder.getProcessedWalls().indexOf(wall), wall.getOriginId(), wall.getType()));
             }
         }
         return results;
@@ -1205,7 +1223,7 @@ public class ComputeCnossosRays {
         LineIntersector linters = new RobustLineIntersector();
         //Keep only building walls which are not too far.
         List<ProfileBuilder.Wall> buildWalls = data.profileBuilder.getProcessedWalls().stream()
-                .filter(wall -> wall.getType().equals(ProfileBuilder.IntersectionType.BUILDING))
+                .filter(wall -> wall.getType().equals(BUILDING) || wall.getType().equals(WALL))
                 .filter(wall -> wall.getLine().distance(srcRcvLine) < data.maxRefDist)
                 .collect(Collectors.toList());
 
@@ -1255,7 +1273,9 @@ public class ComputeCnossosRays {
                 // reflection point and old reflection pt (or source position)
                 validReflection = Double.isNaN(receiverReflectionCursor.getReceiverPos().z) ||
                         Double.isNaN(reflectionPt.z) || Double.isNaN(destinationPt.z) /*|| seg.getOriginId() == 0*/
-                        || (reflectionPt.z < data.profileBuilder.getBuilding(seg.getOriginId()).getGeometry().getCoordinate().z
+                        || (
+                            (seg.getType().equals(BUILDING) && reflectionPt.z < data.profileBuilder.getBuilding(seg.getOriginId()).getGeometry().getCoordinate().z ||
+                            seg.getType().equals(WALL) && reflectionPt.z < data.profileBuilder.getWall(seg.getOriginId()).getLine().toGeometry(GEOMETRY_FACTORY).getCoordinate().z)
                         && reflectionPt.z > data.profileBuilder.getZGround(reflectionPt)
                         && destinationPt.z > data.profileBuilder.getZGround(destinationPt));
                 if (validReflection) // Source point can see receiver image
@@ -1312,14 +1332,28 @@ public class ComputeCnossosRays {
                 }
                 PointPath reflPoint = points.get(points.size() - 1);
                 reflPoint.setType(PointPath.POINT_TYPE.REFL);
-                reflPoint.setBuildingId(rayPath.get(0).getBuildingId());
-                reflPoint.setAlphaWall(data.profileBuilder.getBuilding(reflPoint.getBuildingId()).getAlphas());
+                if(rayPath.get(0).getType().equals(BUILDING)) {
+                    reflPoint.setBuildingId(rayPath.get(0).getBuildingId());
+                    reflPoint.setAlphaWall(data.profileBuilder.getBuilding(reflPoint.getBuildingId()).getAlphas());
+                }
+                else {
+                    reflPoint.setWallId(rayPath.get(0).getWallId());
+                    reflPoint.setAlphaWall(data.profileBuilder.getWall(rayPath.get(0).getWallId()).getAlphas());
+                }
                 // Add intermediate reflections
-                for (int idPt = 0; idPt < rayPath.size() - 1; idPt++) {
+                /*for (int idPt = 0; idPt < rayPath.size() - 1; idPt++) {
                     Coordinate firstPt = rayPath.get(idPt).getReceiverPos();
                     MirrorReceiverResult refl = rayPath.get(idPt + 1);
-                    reflPoint = new PointPath(refl.getReceiverPos(), 0, 1, data.profileBuilder.getBuilding(refl.getBuildingId()).getAlphas(), PointPath.POINT_TYPE.REFL);
-                    reflPoint.setBuildingId(refl.getBuildingId());
+                    reflPoint = new PointPath(refl.getReceiverPos(), 0, 1, new ArrayList<>(), PointPath.POINT_TYPE.REFL);
+
+                    if(rayPath.get(0).getType().equals(BUILDING)) {
+                        reflPoint.setBuildingId(rayPath.get(0).getBuildingId());
+                        reflPoint.setAlphaWall(data.profileBuilder.getBuilding(reflPoint.getBuildingId()).getAlphas());
+                    }
+                    else {
+                        reflPoint.setWallId(rayPath.get(0).getWallId());
+                        reflPoint.setAlphaWall(data.profileBuilder.getWall(reflPoint.getBuildingId()).getAlphas());
+                    }
                     points.add(reflPoint);
                     segments.add(new SegmentPath(1, new Vector3D(firstPt), refl.getReceiverPos()));
                 }
@@ -1336,7 +1370,14 @@ public class ComputeCnossosRays {
                             // A diffraction point may have offset in height the reflection coordinate
                             points.get(i).coordinate.z = Vertex.interpolateZ(points.get(i).coordinate, points.get(i - 1).coordinate, points.get(i + 1).coordinate);
                             //check if in building && if under floor
-                            if (points.get(i).coordinate.z > data.profileBuilder.getBuilding(points.get(i).getBuildingId()).getGeometry().getCoordinate().z
+                            Geometry geom;
+                            if(points.get(i).getBuildingId()!=-1) {
+                                geom = data.profileBuilder.getBuilding(points.get(i).getBuildingId()).getGeometry();
+                            }
+                            else {
+                                geom = data.profileBuilder.getWall(points.get(i).getWallId()).getLine().toGeometry(GEOMETRY_FACTORY);
+                            }
+                            if (points.get(i).coordinate.z > geom.getCoordinate().z
                                     || points.get(i).coordinate.z <= data.profileBuilder.getZGround(points.get(i).coordinate)) {
                                 points.clear();
                                 segments.clear();
@@ -1349,8 +1390,42 @@ public class ComputeCnossosRays {
                             break;
                         }
                     }
-                }
-                if (points.size() > 2) {
+                }*/
+                if (rayPath.size() > 0) {
+                    List<Coordinate> pts = new ArrayList<>();
+                    pts.add(srcCoord);
+                    rayPath.forEach(mrr -> pts.add(mrr.getReceiverPos()));
+                    pts.add(rcvCoord);
+                    List<SegmentPath> freePaths = new ArrayList<>();
+                    List<Coordinate> topoPts = new ArrayList<>();
+                    topoPts.add(new Coordinate(srcCoord));
+                    for(int i=0; i<pts.size()-1; i++) {
+                        ProfileBuilder.CutProfile profile = data.profileBuilder.getProfile(pts.get(i), pts.get(i+1), data.gS);
+                        topoPts.addAll(profile.getCutPoints().stream()
+                                .filter(cut -> cut.getType().equals(BUILDING) || cut.getType().equals(TOPOGRAPHY) || cut.getType().equals(RECEIVER))
+                                .map(ProfileBuilder.CutPoint::getCoordinate)
+                                .collect(Collectors.toList()));
+                        if(i<pts.size()-2){
+                            topoPts.add(topoPts.get(topoPts.size()-1));
+                            topoPts.add(topoPts.get(topoPts.size()-1));
+                        }
+                        freePaths.addAll(computeFreeField(profile, data, false).getSegmentList());
+                    }
+                    for(int i=0; i<topoPts.size(); i++) {
+                        final Coordinate pt = topoPts.get(i);
+                        pt.z = data.profileBuilder.getZGround(pt);
+                    }
+                    topoPts = toDirectLine(topoPts);
+                    double g = 0;
+                    double d = 0;
+                    for(SegmentPath s : freePaths) {
+                        d+=s.d;
+                    }
+                    for(SegmentPath s : freePaths) {
+                        g+=s.gPath*s.d/d;
+                    }
+                    double[] meanPlan = JTSUtility.getMeanPlaneCoefficients(topoPts.toArray(new Coordinate[0]));
+                    srPath = computeSegment(topoPts.get(0), srcCoord.z, topoPts.get(topoPts.size()-1), rcvCoord.z, meanPlan, g, data.gS);
                     reflexionPropagationPaths.add(new PropagationPath(favorable, points, segments, srPath));
                 }
             }

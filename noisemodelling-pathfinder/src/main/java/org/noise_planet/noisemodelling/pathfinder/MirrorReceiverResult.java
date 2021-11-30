@@ -47,6 +47,7 @@ public class MirrorReceiverResult {
 	private final MirrorReceiverResult parentMirror;
 	private final int wallId; // Wall index of the last mirrored processed
     private final int buildingId; // building that belongs to this wall
+    private final ProfileBuilder.IntersectionType type;
 
     /**
      * @return coordinate of mirrored receiver
@@ -86,11 +87,12 @@ public class MirrorReceiverResult {
      * @param wallId Wall index of the last mirrored processed
      * @param buildingId building that belongs to this wall
      */
-    public MirrorReceiverResult(Coordinate receiverPos, MirrorReceiverResult parentMirror, int wallId, int buildingId) {
+    public MirrorReceiverResult(Coordinate receiverPos, MirrorReceiverResult parentMirror, int wallId, int buildingId, ProfileBuilder.IntersectionType type) {
         this.receiverPos = receiverPos;
         this.parentMirror = parentMirror;
         this.wallId = wallId;
         this.buildingId = buildingId;
+        this.type = type;
     }
 
     /**
@@ -102,6 +104,7 @@ public class MirrorReceiverResult {
         this.parentMirror = cpy.parentMirror;
         this.wallId = cpy.wallId;
         this.buildingId = cpy.buildingId;
+        this.type = cpy.type;
     }
 
     @Override
@@ -115,5 +118,9 @@ public class MirrorReceiverResult {
     @Override
     public int hashCode() {
         return Objects.hash(receiverPos, parentMirror, wallId, buildingId);
+    }
+
+    public ProfileBuilder.IntersectionType getType() {
+        return type;
     }
 }

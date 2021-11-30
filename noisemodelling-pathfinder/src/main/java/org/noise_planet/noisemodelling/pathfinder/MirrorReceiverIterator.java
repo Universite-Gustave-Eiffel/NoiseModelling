@@ -95,7 +95,7 @@ public class MirrorReceiverIterator implements Iterator<MirrorReceiverResult> {
                         - receiverIm.x, 2 * intersectionPt.y
                         - receiverIm.y, receiverIm.z);
                 next = new MirrorReceiverResult(mirrored,
-                        parent, wallId, wall.getOriginId());
+                        parent, wallId, wall.getOriginId(), wall.getType());
                 break;
             }
             // MirrorReceiverResult has not been found with this wall

@@ -190,6 +190,9 @@ public class PointPath {
     public int getBuildingId() {
         return buildingId;
     }
+    public int getWallId() {
+        return wallId;
+    }
 
     public void setBuildingId(int id) {
         buildingId = id;
