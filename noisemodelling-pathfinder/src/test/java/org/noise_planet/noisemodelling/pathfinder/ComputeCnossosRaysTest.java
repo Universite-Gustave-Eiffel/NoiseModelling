@@ -920,6 +920,68 @@ public class ComputeCnossosRaysTest {
         assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
     }
 
+    /**
+     * TC17 - Reflecting barrier on ground with spatially varying heights and acoustic properties reduced receiver height
+     *
+     * No data provided usable for testing.
+     */
+    //@Test
+    public void TC17() {
+        //Profile building
+        ProfileBuilder profileBuilder = new ProfileBuilder()
+                //Ground effects
+                .addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.9)
+                .addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5)
+                .addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.2)
+                //Topography
+                .addTopographicLine(0, 80, 0, 225, 80, 0)
+                .addTopographicLine(225, 80, 0, 225, -20, 0)
+                .addTopographicLine(225, -20, 0, 0, -20, 0)
+                .addTopographicLine(0, -20, 0, 0, 80, 0)
+                .addTopographicLine(120, -20, 0, 120, 80, 0)
+                .addTopographicLine(185, -5, 10, 205, -5, 10)
+                .addTopographicLine(205, -5, 10, 205, 75, 10)
+                .addTopographicLine(205, 75, 10, 185, 75, 10)
+                .addTopographicLine(185, 75, 10, 185, -5, 10)
+
+                .addWall(new Coordinate[]{
+                        new Coordinate(114, 52, 15),
+                        new Coordinate(170, 60, 15)
+                }, 15, Arrays.asList(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.5), -1)
+                .finishFeeding();
+
+        //Propagation data building
+        CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
+                .addSource(10, 10, 1)
+                .addReceiver(200, 50, 11.5)
+                .setGs(0.9)
+                .build();
+        rayData.reflexionOrder=1;
+
+        //Out and computation settings
+        ComputeCnossosRaysOut propDataOut = new ComputeCnossosRaysOut(true);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
+        computeRays.setThreadCount(1);
+
+        //Run computation
+        computeRays.run(propDataOut);
+
+        //Expected values
+        double [][] segmentsMeanPlanes0 = new double[][]{
+                //  a     b     zs    zr      dp    Gp   Gp'
+                {0.05, -2.83, 3.83, 6.16, 194.59, 0.54, 0.64}
+        };
+
+        double [][] segmentsMeanPlanes1 = new double[][]{
+                //  a     b     zs    zr      dp    Gp   Gp'
+                {0.05, -2.80, 3.80, 6.37, 198.45, 0.51, 0.65}
+        };
+
+        //Assertion
+        assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSRSegment());
+        assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
+    }
+
     @Test
     public void TC19() {
         //Profile building

@@ -216,7 +216,7 @@ public class EvaluateAttenuationCnossosTest {
         assertDoubleArrayEquals("ABoundaryF", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LH", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LF", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("L", expectedL, actualL, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("L", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
     }
 
     /**
@@ -1358,10 +1358,10 @@ public class EvaluateAttenuationCnossosTest {
         double[] actualL = addArray(proPath.absorptionData.aGlobal, SOUND_POWER_LEVELS);
 
         //Assertions
-        //assertEquals(0.00, proPath.getSRSegment().sPrime.x, ERROR_EPSILON_LOWEST);
-        //assertEquals(-1.00, proPath.getSRSegment().sPrime.y, ERROR_EPSILON_LOWEST);
-        //assertEquals(20.00, proPath.getSRSegment().rPrime.x, ERROR_EPSILON_LOWEST);
-        //assertEquals(-4.00, proPath.getSRSegment().rPrime.y, ERROR_EPSILON_LOWEST);
+        assertEquals(0.00, proPath.getSRSegment().sPrime.x, ERROR_EPSILON_MEDIUM);
+        assertEquals(-1.00, proPath.getSRSegment().sPrime.y, ERROR_EPSILON_HIGHEST);
+        assertEquals(20.00, proPath.getSRSegment().rPrime.x, ERROR_EPSILON_LOW);
+        assertEquals(-4.00, proPath.getSRSegment().rPrime.y, ERROR_EPSILON_HIGHEST);
 
         assertDoubleArrayEquals("DeltaDiffSRH - vertical plane", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundSOH - vertical plane", expectedAGroundSOH, actualAGroundSOH, ERROR_EPSILON_VERY_LOW);
@@ -1577,10 +1577,10 @@ public class EvaluateAttenuationCnossosTest {
         double[] actualL = addArray(proPath.absorptionData.aGlobal, SOUND_POWER_LEVELS);
 
         //Assertions
-        //assertEquals(0.00, proPath.getSRSegment().sPrime.x, ERROR_EPSILON_LOWEST);
-        //assertEquals(-1.00, proPath.getSRSegment().sPrime.y, ERROR_EPSILON_LOWEST);
-        //assertEquals(5.10, proPath.getSRSegment().rPrime.x, ERROR_EPSILON_LOWEST);
-        //assertEquals(-1.76, proPath.getSRSegment().rPrime.y, ERROR_EPSILON_LOWEST);
+        assertEquals(0.00, proPath.getSRSegment().sPrime.x, ERROR_EPSILON_HIGH);
+        assertEquals(-1.00, proPath.getSRSegment().sPrime.y, ERROR_EPSILON_HIGHEST);
+        assertEquals(5.10, proPath.getSRSegment().rPrime.x, ERROR_EPSILON_HIGHEST);
+        assertEquals(-1.76, proPath.getSRSegment().rPrime.y, ERROR_EPSILON_HIGHEST);
 
         assertDoubleArrayEquals("DeltaDiffSRH - vertical plane", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundSOH - vertical plane", expectedAGroundSOH, actualAGroundSOH, ERROR_EPSILON_VERY_LOW);
@@ -1787,10 +1787,10 @@ public class EvaluateAttenuationCnossosTest {
         double[] actualL = addArray(proPath.absorptionData.aGlobal, SOUND_POWER_LEVELS);
 
         //Assertions
-        //assertEquals(0.00, proPath.getSRSegment().sPrime.x, ERROR_EPSILON_LOWEST);
-        //assertEquals(-1.00, proPath.getSRSegment().sPrime.y, ERROR_EPSILON_LOWEST);
-        //assertEquals(5.10, proPath.getSRSegment().rPrime.x, ERROR_EPSILON_LOWEST);
-        //assertEquals(-1.76, proPath.getSRSegment().rPrime.y, ERROR_EPSILON_LOWEST);
+        assertEquals(0.00, proPath.getSRSegment().sPrime.x, ERROR_EPSILON_LOW);
+        assertEquals(-1.00, proPath.getSRSegment().sPrime.y, ERROR_EPSILON_HIGH);
+        assertEquals(5.10, proPath.getSRSegment().rPrime.x, ERROR_EPSILON_HIGHEST);
+        assertEquals(-1.76, proPath.getSRSegment().rPrime.y, ERROR_EPSILON_HIGHEST);
 
         assertDoubleArrayEquals("DeltaDiffSRH - vertical plane", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("AGroundSOH - vertical plane", expectedAGroundSOH, actualAGroundSOH, ERROR_EPSILON_VERY_LOW);
@@ -2209,7 +2209,7 @@ public class EvaluateAttenuationCnossosTest {
         double[] expectedABoundaryF = new double[]{4.48, 6.16, 8.30, 10.78, 13.50, 16.36, 19.29, 22.26};
         double[] expectedLH = new double[]{48.10, 46.41, 44.26, 41.74, 38.97, 35.94, 32.33, 26.87};
         double[] expectedLF = new double[]{48.10, 46.42, 44.26, 41.75, 38.98, 35.95, 32.33, 26.88};
-        //double[] expectedL = new double[]{28.23, 24.73, 20.59, 16.85, 13.34, 10.88, 6.35, -10.14};
+        double[] expectedL = new double[]{28.23, 24.73, 20.59, 16.85, 13.34, 10.88, 6.35, -10.14};
 
         //Actual values
         PropagationPath proPath = propDataOut.propagationPaths.get(0);
@@ -2238,13 +2238,13 @@ public class EvaluateAttenuationCnossosTest {
         double[] actualABoundaryF = proPath.absorptionData.aBoundaryF;
         double[] actualLH = addArray(proPath.absorptionData.aGlobalH, SOUND_POWER_LEVELS);
         double[] actualLF = addArray(proPath.absorptionData.aGlobalF, SOUND_POWER_LEVELS);
-        //double[] actualL = addArray(proPath.absorptionData.aGlobal, SOUND_POWER_LEVELS);
+        double[] actualL = addArray(proPath.absorptionData.aGlobal, SOUND_POWER_LEVELS);
 
         //Assertions
         assertEquals(0.00, proPath.getSegmentList().get(0).sPrime.x, ERROR_EPSILON_LOWEST);
         assertEquals(-1.00, proPath.getSegmentList().get(0).sPrime.y, ERROR_EPSILON_LOWEST);
         assertEquals(-6.35, proPath.getSegmentList().get(1).rPrime.x, ERROR_EPSILON_LOWEST);
-        //assertEquals(-2.48, proPath.getSegmentList().get(1).rPrime.y, ERROR_EPSILON_LOWEST);
+        assertEquals(-2.48, proPath.getSegmentList().get(1).rPrime.y, ERROR_EPSILON_LOW);
 
         assertDoubleArrayEquals("DeltaDiffSRH - vertical plane", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("AGroundSOH - vertical plane", expectedAGroundSOH, actualAGroundSOH, ERROR_EPSILON_LOWEST);
@@ -2271,7 +2271,7 @@ public class EvaluateAttenuationCnossosTest {
         assertDoubleArrayEquals("ABoundaryF - vertical plane", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("LH - vertical plane", expectedLH, actualLH, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_LOW);
-        //assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_HIGHEST);
 
 
         //Path1 : right lateral
@@ -2521,20 +2521,20 @@ public class EvaluateAttenuationCnossosTest {
         actualLH = addArray(proPath.absorptionData.aGlobalH, SOUND_POWER_LEVELS);
 
         //Assertions
-        /*assertDoubleArrayEquals("WH - right lateral", expectedWH, actualWH, ERROR_EPSILON_MEDIUM);
-        assertDoubleArrayEquals("CfH - right lateral", expectedCfH, actualCfH, ERROR_EPSILON_LOW);
-        assertDoubleArrayEquals("AGroundH - right lateral", expectedAGroundH, actualAGroundH, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("WF - right lateral", expectedWF, actualWF, ERROR_EPSILON_LOW);
-        assertDoubleArrayEquals("CfF - right lateral", expectedCfF, actualCfF, ERROR_EPSILON_LOW);
-        assertDoubleArrayEquals("AGroundF - right lateral", expectedAGroundF, actualAGroundF, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("WH - right lateral", expectedWH, actualWH, ERROR_EPSILON_MEDIUM);
+        assertDoubleArrayEquals("CfH - right lateral", expectedCfH, actualCfH, ERROR_EPSILON_HIGH);
+        assertDoubleArrayEquals("AGroundH - right lateral", expectedAGroundH, actualAGroundH, ERROR_EPSILON_MEDIUM);
+        assertDoubleArrayEquals("WF - right lateral", expectedWF, actualWF, ERROR_EPSILON_HIGH);
+        assertDoubleArrayEquals("CfF - right lateral", expectedCfF, actualCfF, ERROR_EPSILON_HIGHEST);
+        assertDoubleArrayEquals("AGroundF - right lateral", expectedAGroundF, actualAGroundF, ERROR_EPSILON_LOW);
 
         assertDoubleArrayEquals("AlphaAtm - right lateral", expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AAtm - right lateral", expectedAAtm, actualAAtm, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("ADiv - right lateral", expectedADiv, actualADiv, ERROR_EPSILON_LOW);
-        assertDoubleArrayEquals("AGroundH - right lateral", expectedAGroundH, actualAGroundH, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("AGroundF - right lateral", expectedAGroundF, actualAGroundF, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("DeltaDiffSRH - right lateral", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_LOW);*/
-        //assertDoubleArrayEquals("LH - right lateral", expectedLH, actualLH, ERROR_EPSILON_MEDIUM);
+        assertDoubleArrayEquals("AGroundH - right lateral", expectedAGroundH, actualAGroundH, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("AGroundF - right lateral", expectedAGroundF, actualAGroundF, ERROR_EPSILON_MEDIUM);
+        assertDoubleArrayEquals("DeltaDiffSRH - right lateral", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_HIGH);
+        assertDoubleArrayEquals("LH - right lateral", expectedLH, actualLH, ERROR_EPSILON_MEDIUM);
 
 
         //Path2 : left lateral
@@ -2568,20 +2568,20 @@ public class EvaluateAttenuationCnossosTest {
         actualLH = addArray(proPath.absorptionData.aGlobalH, SOUND_POWER_LEVELS);
 
         //Assertions
-        /*assertDoubleArrayEquals("WH - left lateral", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("CfH - left lateral", expectedCfH, actualCfH, ERROR_EPSILON_LOW);
+        assertDoubleArrayEquals("WH - left lateral", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("CfH - left lateral", expectedCfH, actualCfH, ERROR_EPSILON_HIGH);
         assertDoubleArrayEquals("AGroundH - left lateral", expectedAGroundH, actualAGroundH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("WF - left lateral", expectedWF, actualWF, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("CfF - left lateral", expectedCfF, actualCfF, ERROR_EPSILON_LOW);
+        assertDoubleArrayEquals("CfF - left lateral", expectedCfF, actualCfF, ERROR_EPSILON_HIGH);
         assertDoubleArrayEquals("AGroundF - left lateral", expectedAGroundF, actualAGroundF, ERROR_EPSILON_LOWEST);
 
         assertDoubleArrayEquals("AlphaAtm - left lateral", expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("AAtm - left lateral", expectedAAtm, actualAAtm, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("AAtm - left lateral", expectedAAtm, actualAAtm, ERROR_EPSILON_HIGH);
         assertDoubleArrayEquals("ADiv - left lateral", expectedADiv, actualADiv, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundH - left lateral", expectedAGroundH, actualAGroundH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundF - left lateral", expectedAGroundF, actualAGroundF, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("DeltaDiffSRH - left lateral", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_LOW);*/
-        //assertDoubleArrayEquals("LH - left lateral", expectedLH, actualLH, ERROR_EPSILON_MEDIUM);
+        assertDoubleArrayEquals("DeltaDiffSRH - left lateral", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_HIGH);
+        assertDoubleArrayEquals("LH - left lateral", expectedLH, actualLH, ERROR_EPSILON_HIGH);
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
         assertArrayEquals(new double[]{10.75,16.57,20.81,24.51,26.55,26.78,25.04,18.50},L, ERROR_EPSILON_VERY_LOW);
@@ -2639,76 +2639,59 @@ public class EvaluateAttenuationCnossosTest {
         computeRays.run(propDataOut);
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
-        assertArrayEquals(  new double[]{13.62,23.58,30.71,35.68,38.27,38.01,32.98,15.00},L, ERROR_EPSILON_HIGH);//p=0.5
+        assertArrayEquals(  new double[]{13.62,23.58,30.71,35.68,38.27,38.01,32.98,15.00},L, ERROR_EPSILON_HIGH);
     }
 
     /**
      * TC17 - Reflecting barrier on ground with spatially varying heights and acoustic properties
      * reduced receiver height
      */
-    //@Test
-    public void TC17() throws LayerDelaunayError, IOException {
-        GeometryFactory factory = new GeometryFactory();
+    @Test
+    public void TC17() {
+        //Profile building
+        ProfileBuilder profileBuilder = new ProfileBuilder()
+                //Ground effects
+                .addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.9)
+                .addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5)
+                .addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.2)
+                //Topography
+                .addTopographicLine(0, 80, 0, 225, 80, 0)
+                .addTopographicLine(225, 80, 0, 225, -20, 0)
+                .addTopographicLine(225, -20, 0, 0, -20, 0)
+                .addTopographicLine(0, -20, 0, 0, 80, 0)
+                .addTopographicLine(120, -20, 0, 120, 80, 0)
+                .addTopographicLine(185, -5, 10, 205, -5, 10)
+                .addTopographicLine(205, -5, 10, 205, 75, 10)
+                .addTopographicLine(205, 75, 10, 185, 75, 10)
+                .addTopographicLine(185, 75, 10, 185, -5, 10)
 
-        //Scene dimension
-        Envelope cellEnvelope = new Envelope(new Coordinate(-250., -250., 0.), new Coordinate(250, 250, 0.));
+                .addWall(new Coordinate[]{
+                        new Coordinate(114, 52, 15),
+                        new Coordinate(170, 60, 15)
+                }, 15, Arrays.asList(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.5), -1)
+                .finishFeeding();
 
-        //Create obstruction test object
-        ProfileBuilder builder = new ProfileBuilder();
+        //Propagation data building
+        CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
+                .addSource(10, 10, 1)
+                .addReceiver(200, 50, 11.5)
+                .hEdgeDiff(true)
+                .vEdgeDiff(true)
+                .setGs(0.9)
+                .build();
+        rayData.reflexionOrder=1;
 
-        // Add building
-        builder.addBuilding(factory.createPolygon(new Coordinate[]{
-                new Coordinate(114, 52, 0),
-                new Coordinate(170, 60, 0),
-                new Coordinate(170, 62, 0),
-                new Coordinate(114, 54, 0),
-                new Coordinate(114, 52, 0)}), 15, Arrays.asList(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.5));
-
-        //x1
-        builder.addTopographicPoint(new Coordinate(0, 80, 0));
-        builder.addTopographicPoint(new Coordinate(225, 80, 0));
-        builder.addTopographicPoint(new Coordinate(225, -20, 0));
-        builder.addTopographicPoint(new Coordinate(0, -20, 0));
-        builder.addTopographicPoint(new Coordinate(120, -20, 0));
-        builder.addTopographicPoint(new Coordinate(185, -5, 10));
-        builder.addTopographicPoint(new Coordinate(205, -5, 10));
-        builder.addTopographicPoint(new Coordinate(205, 75, 10));
-        builder.addTopographicPoint(new Coordinate(185, 75, 10));
-        //x2
-        builder.addTopographicPoint(new Coordinate(225, 80, 0));
-        builder.addTopographicPoint(new Coordinate(225, -20, 0));
-        builder.addTopographicPoint(new Coordinate(0, -20, 0));
-        builder.addTopographicPoint(new Coordinate(0, 80, 0));
-        builder.addTopographicPoint(new Coordinate(120, 80, 0));
-        builder.addTopographicPoint(new Coordinate(205, -5, 10));
-        builder.addTopographicPoint(new Coordinate(205, 75, 10));
-        builder.addTopographicPoint(new Coordinate(185, 75, 10));
-        builder.addTopographicPoint(new Coordinate(185, -5, 10));
-
-        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9);
-        builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -100, 100)), 0.5);
-        builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2);
-
-        builder.finishFeeding();
-
-        DirectPropagationProcessData rayData = new DirectPropagationProcessData(builder);
-        rayData.addReceiver(new Coordinate(200, 50, 11.5));
-
+        //Propagation process path data building
         PropagationProcessPathData attData = new PropagationProcessPathData();
-        // Push source with sound level
-        rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)), dbaToW(aWeighting(Collections.nCopies(attData.freq_lvl.size(), 93d))));
+        attData.setHumidity(HUMIDITY);
+        attData.setTemperature(TEMPERATURE);
 
-        rayData.setComputeHorizontalDiffraction(true);
-
-        rayData.setComputeVerticalDiffraction(true);
-        rayData.setGs(0.9);
-
-        attData.setHumidity(70);
-        attData.setTemperature(10);
-        attData.setPrime2520(false);
-        ComputeRaysOutAttenuation propDataOut = new RayOut(true, attData, rayData);
+        //Out and computation settings
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, true, attData);
         ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
+
+        //Run computation
         computeRays.run(propDataOut);
 
         assertArrayEquals(  new double[]{14.02,23.84,30.95,33.86,38.37,38.27,33.25,15.28}, propDataOut.getVerticesSoundLevel().get(0).value, ERROR_EPSILON_MEDIUM);//p=0.5
