@@ -13,7 +13,7 @@ The **documentation** is available [here](https://noisemodelling.readthedocs.io/
 
 It can be freely used either for research and education, as well as by experts in a professional use.
 
-This plugin is distributed under **GPL 3 license** and is developed by the DECIDE team from the [Lab-STICC](http://www.labsticc.fr/en/teams/m-570-decide.htm) (CNRS) and by the [Mixt Research Unit in Environmental Acoustics](http://www.umrae.fr/) (Ifsttar).
+This plugin is distributed under **GPL 3 license** and is developed by the DECIDE team from the [Lab-STICC](http://www.labsticc.fr/en/teams/m-570-decide.htm) (CNRS) and by the [ Research Unit in Environmental Acoustics](http://www.umrae.fr/) (Université Gustave Eiffel, Cerema).
 
 For more information:
 * about NoiseModelling, [see the website](http://noise-planet.org/)
