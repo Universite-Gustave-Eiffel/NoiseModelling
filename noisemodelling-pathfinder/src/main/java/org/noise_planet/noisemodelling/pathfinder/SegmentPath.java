@@ -106,7 +106,7 @@ public class SegmentPath {
         this.gm = g;
     }
 
-    public Double getGw() {
+    /*public Double getGw() {
         return gw;
     }
 
@@ -119,7 +119,7 @@ public class SegmentPath {
             path.computeAugmentedSegments();
         }
         return gPathPrime;
-    }
+    }*/
 
 
 

@@ -76,6 +76,7 @@ public class PropagationPath {
     public boolean keepAbsorption = false;
     public AbsorptionData absorptionData = new AbsorptionData();
     public GroundAttenuation groundAttenuation = new GroundAttenuation();
+    public ReflectionAttenuation reflectionAttenuation = new ReflectionAttenuation();
 
     public double deltaH;
     public double deltaF;
@@ -88,6 +89,8 @@ public class PropagationPath {
     public double deltaSPrimeRF;
     public double deltaSRPrimeF;
     public double e=0;
+    public double deltaRetroH;
+    public double deltaRetroF;
 
     public class ABoundary {
         public double[] deltaDiffSR;
@@ -474,7 +477,7 @@ public class PropagationPath {
         srSegment.testFormF = srSegment.dp / (30 * (zsPrime + zrPrime));
     }
 
-
+/*
     void computeAugmentedSegments() {
         for (int idSegment = 0; idSegment < segmentList.size(); idSegment++) {
 
@@ -511,30 +514,7 @@ public class PropagationPath {
         }
 
     }
-
-    private void computeAugmentedPath() {
-        difVPoints.clear();
-        difHPoints.clear();
-        refPoints.clear();
-        for (int idPoint = 0; idPoint < pointList.size(); idPoint++) {
-
-            if (pointList.get(idPoint).type==PointPath.POINT_TYPE.DIFV)
-            {
-                difVPoints.add(idPoint);
-            }
-            if (pointList.get(idPoint).type==PointPath.POINT_TYPE.DIFH)
-            {
-                difHPoints.add(idPoint);
-            }
-
-            if (pointList.get(idPoint).type==PointPath.POINT_TYPE.REFL)
-            {
-                refPoints.add(idPoint);
-            }
-        }
-
-    }
-
+*/
     double computeZs(SegmentPath segmentPath) {
         double zs = pointList.get(segmentPath.idPtStart).coordinate.z - projectPointOnSegment(pointList.get(segmentPath.idPtStart).coordinate,segmentPath.meanGdPlane,segmentPath.pInit).z;
         return ((zs > 0) ? zs : 0); // Section 2.5.3 - If the equivalent height of a point becomes negative, i.e. if the point is located below the mean ground plane, a null height is retained, and the equivalent point is then identical with its possible image.
@@ -674,6 +654,16 @@ public class PropagationPath {
             wF = new double[size];
             cfF = new double[size];
             aGroundF = new double[size];
+        }
+    }
+
+    public static class ReflectionAttenuation {
+        public double[] dLRetro;
+        public double[] dLAbs;
+
+        public void init(int size) {
+            dLRetro = new double[size];
+            dLAbs = new double[size];
         }
     }
 }

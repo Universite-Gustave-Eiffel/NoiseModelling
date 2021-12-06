@@ -19,45 +19,7 @@ public class PointPath {
     public List<Double> alphaWall = Collections.unmodifiableList(Arrays.asList(0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1));; // only if POINT_TYPE = REFL, alpha coefficient
     public int buildingId = -1; // only if POINT_TYPE = REFL
     public int wallId = -1;
-
-    public double deltaH;
-    public double deltaF;
-    public double deltaPrimeH;
-    public double deltaPrimeF;
-    public double deltaSPrimeRH;
-    public double deltaSRPrimeH;
-    public ABoundary aBoundaryH = new ABoundary();
-    public ABoundary aBoundaryF = new ABoundary();
-    public double deltaSPrimeRF;
-    public double deltaSRPrimeF;
     public double e=0;
-
-    public class ABoundary {
-        public double[] deltaDiffSR;
-        public double[] aGroundSO;
-        public double[] aGroundOR;
-        public double[] deltaDiffSPrimeR;
-        public double[] deltaDiffSRPrime;
-        public double[] deltaGroundSO;
-        public double[] deltaGroundOR;
-        public double[] aDiff;
-
-        private boolean init = false;
-
-        public void init(int freqCount) {
-            if(!init) {
-                deltaDiffSR = new double[freqCount];
-                aGroundSO = new double[freqCount];
-                aGroundOR = new double[freqCount];
-                deltaDiffSPrimeR = new double[freqCount];
-                deltaDiffSRPrime = new double[freqCount];
-                deltaGroundSO = new double[freqCount];
-                deltaGroundOR = new double[freqCount];
-                aDiff = new double[freqCount];
-                init = true;
-            }
-        }
-    }
 
     public void setBuildingHeight(double buildingHeight) {
         this.buildingHeight = buildingHeight;

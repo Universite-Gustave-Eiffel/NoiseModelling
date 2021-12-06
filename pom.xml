@@ -121,9 +121,14 @@
             <url>https://repo2.maven.org/maven2</url>
         </repository>
         <repository>
-            <id>nexus.orbisgis.org</id>
-            <name>OrbisGIS snapshot repo</name>
-            <url>https://nexus.orbisgis.org/repository/orbisgis-snapshot/</url>
+            <id>oss-sonatype</id>
+            <name>oss-sonatype-snapshot</name>
+            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+        </repository>
+        <repository>
+            <id>orbisgis-release</id>
+            <name>oss-sonatype-release</name>
+            <url>https://oss.sonatype.org/content/repositories/releases/</url>
         </repository>
     </repositories>
 

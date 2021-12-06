@@ -185,6 +185,10 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
                     proPath.absorptionData.aBoundaryH = aBoundary.clone();
                     proPath.absorptionData.aGlobalH = aGlobalMeteoHom.clone();
                 }
+                //TODO retrodiff
+                /*if(!proPath.refPoints.isEmpty()) {
+                    EvaluateAttenuationCnossos.deltaRetrodif(proPath, data);
+                }*/
             }
             // Favorable conditions
             if (data.getWindRose()[roseindex]!=0) {
@@ -198,6 +202,10 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
                     proPath.absorptionData.aBoundaryF = aBoundary.clone();
                     proPath.absorptionData.aGlobalF = aGlobalMeteoFav.clone();
                 }
+                //TODO retrodiff
+                /*if(!proPath.refPoints.isEmpty()) {
+                    EvaluateAttenuationCnossos.deltaRetrodif(proPath, data);
+                }*/
             }
 
             //For testing purpose
@@ -233,8 +241,6 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
                 }
                 aGlobalMeteoRay = sumArray(aGlobalMeteoRay, attSource);
             }
-
-
 
             if (propagationAttenuationSpectrum != null) {
                 propagationAttenuationSpectrum = sumDbArray(aGlobalMeteoRay, propagationAttenuationSpectrum);

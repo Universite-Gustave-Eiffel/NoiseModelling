@@ -555,6 +555,31 @@ public class EvaluateAttenuationCnossos {
         return aBoundary;
     }
 
+    public static double[] deltaRetrodif(PropagationPath reflect, PropagationProcessPathData data) {
+        double[] retroDiff = new double[data.freq_lvl.size()];
+        for(int i=0; i<data.freq_lvl.size(); i++) {
+            if(reflect.refPoints.size() == 0) {
+                retroDiff[i]=0;
+            }
+            PointPath pp = reflect.getPointList().get(reflect.refPoints.get(0));
+            double ch = 1.;
+            double lambda = 340.0 / data.freq_lvl.get(i);
+            double deltaPrime = reflect.isFavorable() ? reflect.deltaRetroF : reflect.deltaRetroH;
+            double testForm = 40.0/lambda*deltaPrime;
+            double dLRetro = testForm >= -2 ? 10*ch*log10(3+testForm) : 0;
+            double dLAbs = 10*log10(1-pp.alphaWall.get(i));
+            if(reflect.keepAbsorption) {
+                if(reflect.reflectionAttenuation.dLRetro == null) {
+                    reflect.reflectionAttenuation.init(data.freq_lvl.size());
+                }
+                reflect.reflectionAttenuation.dLRetro[i] = dLRetro;
+                reflect.reflectionAttenuation.dLAbs[i] = dLAbs;
+            }
+            retroDiff[i]= dLRetro + dLAbs;
+        }
+        return retroDiff;
+    }
+
     private static double aDif(PropagationPath proPath, PropagationProcessPathData data, int i, PointPath.POINT_TYPE type) {
         SegmentPath first = proPath.getSegmentList().get(0);
         SegmentPath last = proPath.getSegmentList().get(proPath.getSegmentList().size()-1);

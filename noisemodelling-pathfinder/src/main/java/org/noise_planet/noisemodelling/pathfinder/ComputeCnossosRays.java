@@ -1325,12 +1325,16 @@ public class ComputeCnossosRays {
                 List<PointPath> points = new ArrayList<PointPath>();
                 List<SegmentPath> segments = new ArrayList<SegmentPath>();
                 SegmentPath srPath = null;
+                List<Integer> reflIdx = new ArrayList<>();
+                PropagationPath proPath = new PropagationPath(favorable, points, segments, srPath);
+                proPath.refPoints = reflIdx;
                 // Compute direct path between source and first reflection point, add profile to the data
                 computeReflexionOverBuildings(srcCoord, rayPath.get(0).getReceiverPos(), points, segments, srPath, data);
                 if (points.isEmpty()) {
                     continue;
                 }
                 PointPath reflPoint = points.get(points.size() - 1);
+                reflIdx.add(points.size() - 1);
                 reflPoint.setType(PointPath.POINT_TYPE.REFL);
                 if(rayPath.get(0).getType().equals(BUILDING)) {
                     reflPoint.setBuildingId(rayPath.get(0).getBuildingId());
@@ -1341,7 +1345,7 @@ public class ComputeCnossosRays {
                     reflPoint.setAlphaWall(data.profileBuilder.getWall(rayPath.get(0).getWallId()).getAlphas());
                 }
                 // Add intermediate reflections
-                /*for (int idPt = 0; idPt < rayPath.size() - 1; idPt++) {
+                for (int idPt = 0; idPt < rayPath.size() - 1; idPt++) {
                     Coordinate firstPt = rayPath.get(idPt).getReceiverPos();
                     MirrorReceiverResult refl = rayPath.get(idPt + 1);
                     reflPoint = new PointPath(refl.getReceiverPos(), 0, 1, new ArrayList<>(), PointPath.POINT_TYPE.REFL);
@@ -1390,7 +1394,9 @@ public class ComputeCnossosRays {
                             break;
                         }
                     }
-                }*/
+                }
+
+
                 if (rayPath.size() > 0) {
                     List<Coordinate> pts = new ArrayList<>();
                     pts.add(srcCoord);
@@ -1418,15 +1424,24 @@ public class ComputeCnossosRays {
                     topoPts = toDirectLine(topoPts);
                     double g = 0;
                     double d = 0;
-                    for(SegmentPath s : freePaths) {
+                    for(SegmentPath s : segments) {
                         d+=s.d;
                     }
-                    for(SegmentPath s : freePaths) {
+                    for(SegmentPath s : segments) {
                         g+=s.gPath*s.d/d;
                     }
                     double[] meanPlan = JTSUtility.getMeanPlaneCoefficients(topoPts.toArray(new Coordinate[0]));
-                    srPath = computeSegment(topoPts.get(0), srcCoord.z, topoPts.get(topoPts.size()-1), rcvCoord.z, meanPlan, g, data.gS);
-                    reflexionPropagationPaths.add(new PropagationPath(favorable, points, segments, srPath));
+                    proPath.setSRSegment(computeSegment(topoPts.get(0), srcCoord.z, topoPts.get(topoPts.size()-1), rcvCoord.z, meanPlan, g, data.gS));
+                    //TODO retrodiff
+                    /*proPath.refPoints = reflIdx;
+                    Coordinate projSrc = data.profileBuilder.getWall(reflPoint.getWallId()).getLine().project(srcCoord);
+                    double dx = projSrc.x-srcCoord.x;
+                    double dy = projSrc.y-srcCoord.y;
+                    Coordinate srcPrime = new Coordinate(srcCoord.x-2*dx, srcCoord.y-2*dy, srcCoord.z);
+                    double dReflPrime = new LineSegment(srcPrime, pts.get(1)).getLength() + new LineSegment(pts.get(1), rcvCoord).getLength();
+                    proPath.deltaRetroH = JTSUtility.dist3D(srcPrime, rcvCoord)-dReflPrime;
+                    proPath.deltaRetroF = toCurve(d, JTSUtility.dist3D(srcPrime, rcvCoord))-toCurve(dReflPrime, d);*/
+                    reflexionPropagationPaths.add(proPath);
                 }
             }
         }
