@@ -925,7 +925,8 @@ public class ComputeCnossosRaysTest {
      *
      * No data provided usable for testing.
      */
-    //@Test
+    //TODO : no data provided in the document for this test.
+    @Test
     public void TC17() {
         //Profile building
         ProfileBuilder profileBuilder = new ProfileBuilder()
@@ -999,15 +1000,33 @@ public class ComputeCnossosRaysTest {
                         new Coordinate(110, 24, 7),
                 })
                 .addBuilding(new Coordinate[]{
-                        new Coordinate(90.1, 19.5, 10),
-                        new Coordinate(93.3, 17.8, 10),
-                        new Coordinate(87.3, 6.6, 10),
-                        new Coordinate(84.1, 8.3, 10),
+                        new Coordinate(100, 9, 12),
+                        new Coordinate(118, 9, 12),
+                        new Coordinate(118, 15, 12),
+                        new Coordinate(100, 15, 12),
                 })
                 .addWall(new Coordinate[]{
-                        new Coordinate(94.9, 14.1, 10),
-                        new Coordinate(98.02, 12.3, 10),
+                        new Coordinate(156.00, 28.00, 14),
+                        new Coordinate(145.00, 7.00, 14),
                 }, -1)
+                .addWall(new Coordinate[]{
+                        new Coordinate(175.00, 35.00, 14.5),
+                        new Coordinate(188.00, 19.00, 14.5),
+                }, -1)
+                //Ground effects
+                .addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.9)
+                .addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5)
+                .addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.2)
+                //Topography
+                .addTopographicLine(0, 80, 0, 225, 80, 0)
+                .addTopographicLine(225, 80, 0, 225, -20, 0)
+                .addTopographicLine(225, -20, 0, 0, -20, 0)
+                .addTopographicLine(0, -20, 0, 0, 80, 0)
+                .addTopographicLine(120, -20, 0, 120, 80, 0)
+                .addTopographicLine(185, -5, 10, 205, -5, 10)
+                .addTopographicLine(205, -5, 10, 205, 75, 10)
+                .addTopographicLine(205, 75, 10, 185, 75, 10)
+                .addTopographicLine(185, 75, 10, 185, -5, 10)
                 .finishFeeding();
 
         //Propagation data building
@@ -1016,7 +1035,7 @@ public class ComputeCnossosRaysTest {
                 .addReceiver(200, 30, 14)
                 .hEdgeDiff(true)
                 .vEdgeDiff(true)
-                .setGs(0.5)
+                .setGs(0.9)
                 .build();
 
         //Out and computation settings
@@ -1029,17 +1048,17 @@ public class ComputeCnossosRaysTest {
 
         //Expected values
         double [][] segmentsMeanPlanes0 = new double[][]{
-                //  a     b     zs    zr    dp    Gp   Gp'
-                {0.00, 0.00,  1.00, 8.00, 5.02, 0.50, 0.50},
-                {0.00, 0.00, 10.00, 5.00, 8.73, 0.50,  NaN}
+                //  a      b     zs     zr      dp    Gp   Gp'
+                {0.03, -1.09,  2.09, 10.89, 145.65, 0.57, 0.78},
+                {0.02,  6.42,  4.76,  3.89,  19.38, 0.20,  NaN}
         };
         double [][] segmentsMeanPlanes1 = new double[][]{
-                //  a      b    zs    zr     dp    Gp    Gp'
-                {0.08, -1.19, 2.18, 2.01, 54.80, 0.46, 0.48}
+                //  a      b    zs    zr      dp    Gp    Gp'
+                {0.06, -2.92, 3.92, 5.66, 196.38, 0.50, 0.62}
         };
         double [][] segmentsMeanPlanes2 = new double[][]{
-                //  a     b    zs    zr     dp    Gp    Gp'
-                {0.00, 0.00, 1.00, 5.00, 53.60, 0.50, 0.50}
+                //  a      b    zs    zr      dp    Gp    Gp'
+                {0.06, -2.01, 3.00, 5.00, 192.81, 0.46, 0.55}
         };
 
         //Assertion

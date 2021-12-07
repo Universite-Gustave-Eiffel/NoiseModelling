@@ -579,7 +579,7 @@ public class ComputeCnossosRays {
                 }
                 //Filter bridge
                 List<Integer> toRemove = new ArrayList<>();
-                for(int i=0; i<coordinates.size()-1; i++) {
+                /*for(int i=0; i<coordinates.size()-1; i++) {
                     Coordinate c0 = coordinates.get(i);
                     Coordinate c1 = coordinates.get(i+1);
                     boolean between = false;
@@ -595,7 +595,7 @@ public class ComputeCnossosRays {
                             toRemove.add(j);
                         }
                     }
-                }
+                }*/
                 Collections.sort(toRemove);
                 Collections.reverse(toRemove);
                 for(int i : toRemove) {
