@@ -5,10 +5,12 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.GeometryFactory;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
 import static java.lang.Double.NaN;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 public class ComputeCnossosRaysTest {
@@ -983,6 +985,60 @@ public class ComputeCnossosRaysTest {
         assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
     }
 
+    /**
+     * TC18 - Screening and reflecting barrier on ground with spatially varying heights and
+     * acoustic properties
+     */
+    //TODO : not tested
+    //@Test
+    public void TC18() {
+        //Profile building
+        ProfileBuilder profileBuilder = new ProfileBuilder()
+                .addWall(new Coordinate[]{
+                        new Coordinate(114, 52, 15),
+                        new Coordinate(170, 60, 15),
+                }, -1)
+                .addWall(new Coordinate[]{
+                        new Coordinate(87, 50, 12),
+                        new Coordinate(92, 32, 12),
+                }, -1)
+                //Ground effects
+                .addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.9)
+                .addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5)
+                .addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.2)
+                //Topography
+                .addTopographicLine(0, 80, 0, 225, 80, 0)
+                .addTopographicLine(225, 80, 0, 225, -20, 0)
+                .addTopographicLine(225, -20, 0, 0, -20, 0)
+                .addTopographicLine(0, -20, 0, 0, 80, 0)
+                .addTopographicLine(120, -20, 0, 120, 80, 0)
+                .addTopographicLine(185, -5, 10, 205, -5, 10)
+                .addTopographicLine(205, -5, 10, 205, 75, 10)
+                .addTopographicLine(205, 75, 10, 185, 75, 10)
+                .addTopographicLine(185, 75, 10, 185, -5, 10)
+                .finishFeeding();
+
+        //Propagation data building
+        CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
+                .addSource(10, 10, 1)
+                .addReceiver(200, 50, 12)
+                .setGs(0.9)
+                .build();
+        rayData.reflexionOrder=1;
+
+        //Out and computation settings
+        ComputeCnossosRaysOut propDataOut = new ComputeCnossosRaysOut(true);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
+        computeRays.setThreadCount(1);
+
+        //Run computation
+        computeRays.run(propDataOut);
+    }
+
+    /**
+     * TC19 - Complex object and 2 barriers on ground with spatially varying heights and
+     * acoustic properties
+     */
     @Test
     public void TC19() {
         //Profile building
@@ -1065,6 +1121,118 @@ public class ComputeCnossosRaysTest {
         assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
         assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
         assertPlanes(segmentsMeanPlanes2, propDataOut.getPropagationPaths().get(2).getSRSegment());
+    }
+
+    /**
+     * TC20 - Ground with spatially varying heights and acoustic properties
+     */
+    @Test
+    public void TC20() {
+        //Profile building
+        ProfileBuilder profileBuilder = new ProfileBuilder()
+                //Ground effects
+                .addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.9)
+                .addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5)
+                .addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.2)
+                //Topography
+                .addTopographicLine(0, 80, 0, 225, 80, 0)
+                .addTopographicLine(225, 80, 0, 225, -20, 0)
+                .addTopographicLine(225, -20, 0, 0, -20, 0)
+                .addTopographicLine(0, -20, 0, 0, 80, 0)
+                .addTopographicLine(120, -20, 0, 120, 80, 0)
+                .addTopographicLine(185, -5, 10, 205, -5, 10)
+                .addTopographicLine(205, -5, 10, 205, 75, 10)
+                .addTopographicLine(205, 75, 10, 185, 75, 10)
+                .addTopographicLine(185, 75, 10, 185, -5, 10)
+                .finishFeeding();
+
+        //Propagation data building
+        CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
+                .addSource(10, 10, 1)
+                .addReceiver(200, 25, 14)
+                .hEdgeDiff(true)
+                .vEdgeDiff(true)
+                .setGs(0.9)
+                .build();
+
+        //Out and computation settings
+        ComputeCnossosRaysOut propDataOut = new ComputeCnossosRaysOut(true);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
+        computeRays.setThreadCount(1);
+
+        //Run computation
+        computeRays.run(propDataOut);
+
+        //Expected values
+        double [][] segmentsMeanPlanes0 = new double[][]{
+                //  a     b     zs    zr      dp    Gp   Gp'
+                {0.05, -2.83, 3.83, 6.16, 191.02, 0.54, 0.64}
+        };
+
+        //Assertion
+        assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
+    }
+
+    /**
+     * TC21 - Building on ground with spatially varying heights and acoustic properties
+     */
+    @Test
+    public void TC21()  {
+        //Profile building
+        ProfileBuilder profileBuilder = new ProfileBuilder()
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(167.2, 39.5, 11.5),
+                        new Coordinate(151.6, 48.5, 11.5),
+                        new Coordinate(141.1, 30.3, 11.5),
+                        new Coordinate(156.7, 21.3, 11.5),
+                        new Coordinate(159.7, 26.5, 11.5),
+                        new Coordinate(151.0, 31.5, 11.5),
+                        new Coordinate(155.5, 39.3, 11.5),
+                        new Coordinate(164.2, 34.3, 11.5)
+                })
+                //Ground effects
+                .addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.9)
+                .addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5)
+                .addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.2)
+                //Topography
+                .addTopographicLine(0, 80, 0, 225, 80, 0)
+                .addTopographicLine(225, 80, 0, 225, -20, 0)
+                .addTopographicLine(225, -20, 0, 0, -20, 0)
+                .addTopographicLine(0, -20, 0, 0, 80, 0)
+                .addTopographicLine(120, -20, 0, 120, 80, 0)
+                .addTopographicLine(185, -5, 10, 205, -5, 10)
+                .addTopographicLine(205, -5, 10, 205, 75, 10)
+                .addTopographicLine(205, 75, 10, 185, 75, 10)
+                .addTopographicLine(185, 75, 10, 185, -5, 10)
+                .finishFeeding();
+
+        //Propagation data building
+        CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
+                .addSource(10, 10, 1)
+                .addReceiver(200, 25, 14)
+                .hEdgeDiff(true)
+                .vEdgeDiff(true)
+                .setGs(0.9)
+                .build();
+
+        //Out and computation settings
+        ComputeCnossosRaysOut propDataOut = new ComputeCnossosRaysOut(true);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
+        computeRays.setThreadCount(1);
+
+        //Run computation
+        computeRays.run(propDataOut);
+
+        //Expected values
+        double [][] segmentsMeanPlanes0 = new double[][]{
+                //  a     b     zs    zr      dp    Gp   Gp'
+                {0.02, -1.04, 2.04, 9.07, 146.96, 0.60, 0.77},
+                {0.10, -8.64, 5.10, 3.12, 43.87, 0.20, NaN}
+        };
+
+        //Assertion
+        assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
+        assertEquals(3, propDataOut.getPropagationPaths().size());
     }
 
     /**

@@ -318,8 +318,8 @@ public class ComputeCnossosRays {
         Coordinate srcMeanPlane = projectPointOnLine(srcZ, meanPlane[0], meanPlane[1]);
         Coordinate rcvMeanPlane = projectPointOnLine(rcvZ, meanPlane[0], meanPlane[1]);
 
-        seg.s = src;
-        seg.r = rcv;
+        seg.s = srcZ;
+        seg.r = rcvZ;
         seg.sMeanPlane = srcMeanPlane;
         seg.rMeanPlane = rcvMeanPlane;
         seg.sPrime = new Coordinate(seg.s.x+(seg.sMeanPlane.x-seg.s.x)*2, seg.s.y+(seg.sMeanPlane.y-seg.s.y)*2);
@@ -525,6 +525,13 @@ public class ComputeCnossosRays {
                     seg2.dPrime = new LineSegment(o, rcvPrime).getLength();
 
                     propagationPath.deltaPrimeH = dSPrimeRPrime.orientationIndex(o) * (seg1.dPrime + seg2.dPrime - srSeg.dPrime);
+                    if(dSPrimeRPrime.orientationIndex(o) == 1) {
+                        propagationPath.deltaPrimeF = toCurve(seg1.dPrime, srSeg.dPrime) + toCurve(seg2.dPrime, srSeg.dPrime) - toCurve(srSeg.dPrime, srSeg.dPrime);
+                    }
+                    else {
+                        Coordinate pA = dSPrimeRPrime.pointAlong((o.x-srcPrime.x)/(rcvPrime.x-srcPrime.x));
+                        propagationPath.deltaPrimeF =2*toCurve(new LineSegment(srcPrime, pA).getLength(), srSeg.dPrime) + 2*toCurve(new LineSegment(pA, srcPrime).getLength(), srSeg.dPrime) - toCurve(seg1.dPrime, srSeg.dPrime) - toCurve(seg2.dPrime, srSeg.d) - toCurve(srSeg.dPrime, srSeg.dPrime);
+                    }
                     validFreq = new ArrayList<>(Arrays.asList(63, 125, 250, 500, 1000, 2000, 4000, 8000))
                             .stream()
                             .filter(f -> propagationPath.deltaH > (340./f) / 4 - propagationPath.deltaPrimeH)
@@ -579,7 +586,7 @@ public class ComputeCnossosRays {
                 }
                 //Filter bridge
                 List<Integer> toRemove = new ArrayList<>();
-                /*for(int i=0; i<coordinates.size()-1; i++) {
+                for(int i=0; i<coordinates.size()-1; i++) {
                     Coordinate c0 = coordinates.get(i);
                     Coordinate c1 = coordinates.get(i+1);
                     boolean between = false;
@@ -595,7 +602,7 @@ public class ComputeCnossosRays {
                             toRemove.add(j);
                         }
                     }
-                }*/
+                }
                 Collections.sort(toRemove);
                 Collections.reverse(toRemove);
                 for(int i : toRemove) {
@@ -638,6 +645,7 @@ public class ComputeCnossosRays {
                 PointPath rcv = new PointPath(coords.get(coords.size()-1), data.profileBuilder.getZ(coordinates.get(coordinates.size()-1)), data.gS, new ArrayList<>(), RECV);
                 double[] meanPlan = JTSUtility.getMeanPlaneCoefficients(groundPts.toArray(new Coordinate[0]));
                 SegmentPath srSeg = computeSegment(src.coordinate, rcv.coordinate, meanPlan, g, data.gS);
+                LineSegment sr = new LineSegment(src.coordinate, rcv.coordinate);
                 srSeg.dc = sqrt(pow(rcvCoord.x-srcCoord.x, 2) + pow(rcvCoord.y-srcCoord.y, 2) + pow(rcvCoord.z-srcCoord.z, 2));
 
                 List<PointPath> pps = new ArrayList<>();
@@ -662,6 +670,8 @@ public class ComputeCnossosRays {
                 path.deltaH = segs.get(0).d + e + segs.get(segs.size()-1).d - srSeg.dc;
                 path.e = e;
                 path.difVPoints.add(1);
+
+                //TODO : implement R-crit for Vertical Diff
             }
         }
         return path;
@@ -822,8 +832,6 @@ public class ComputeCnossosRays {
         double dOnR = new LineSegment(cn, rcv).getLength();
         LineSegment sr = new LineSegment(src, rcv);
 
-        propagationPath.deltaH = sr.orientationIndex(c0) * (dSO0 + e + dOnR - srPath.d);
-
         LineSegment sPrimeR = new LineSegment(seg1.sPrime, rcv);
         LineSegment sPrimeO = new LineSegment(seg1.sPrime, c0);
         propagationPath.deltaSPrimeRH = sPrimeR.orientationIndex(c0)*(sPrimeO.getLength() + e + dOnR - sPrimeR.getLength());
@@ -842,13 +850,25 @@ public class ComputeCnossosRays {
         seg1.dPrime = new LineSegment(srcPrime, c0).getLength();
         seg2.dPrime = new LineSegment(cn, rcvPrime).getLength();
 
-        propagationPath.deltaPrimeH = dSPrimeRPrime.orientationIndex(c0) * (seg1.dPrime + e + seg2.dPrime - srPath.dPrime);
+
+        propagationPath.deltaH = sr.orientationIndex(c0) * (dSO0 + e + dOnR - srPath.d);
         if(sr.orientationIndex(c0) == 1) {
             propagationPath.deltaF = toCurve(seg1.d, srPath.d) + toCurve(e, srPath.d)  + toCurve(seg2.d, srPath.d) - toCurve(srPath.d, srPath.d);
         }
         else {
             Coordinate pA = sr.pointAlong((c0.x-srcPrime.x)/(rcvPrime.x-srcPrime.x));
             propagationPath.deltaF =2*toCurve(new LineSegment(srcPrime, pA).getLength(), srPath.dPrime) + 2*toCurve(new LineSegment(pA, rcvPrime).getLength(), srPath.dPrime) - toCurve(seg1.dPrime, srPath.dPrime) - toCurve(seg2.dPrime, srPath.dPrime) - toCurve(srPath.dPrime, srPath.dPrime);
+        }
+
+        propagationPath.deltaPrimeH = dSPrimeRPrime.orientationIndex(c0) * (seg1.dPrime + e + seg2.dPrime - srPath.dPrime);
+
+        propagationPath.deltaPrimeH = dSPrimeRPrime.orientationIndex(c0) * (seg1.dPrime + seg2.dPrime - srPath.dPrime);
+        if(dSPrimeRPrime.orientationIndex(c0) == 1) {
+            propagationPath.deltaPrimeF = toCurve(seg1.dPrime, srPath.dPrime) + toCurve(seg2.dPrime, srPath.dPrime) - toCurve(srPath.dPrime, srPath.dPrime);
+        }
+        else {
+            Coordinate pA = dSPrimeRPrime.pointAlong((c0.x-srcPrime.x)/(rcvPrime.x-srcPrime.x));
+            propagationPath.deltaPrimeF =2*toCurve(new LineSegment(srcPrime, pA).getLength(), srPath.dPrime) + 2*toCurve(new LineSegment(pA, srcPrime).getLength(), srPath.dPrime) - toCurve(seg1.dPrime, srPath.dPrime) - toCurve(seg2.dPrime, srPath.d) - toCurve(srPath.dPrime, srPath.dPrime);
         }
 
         return propagationPath;

@@ -492,8 +492,8 @@ public class EvaluateAttenuationCnossos {
     private static boolean isValidRcrit(PropagationPath pp, int freq, boolean favorable) {
         double lambda = 340.0/freq;
         return favorable ?
-                pp.deltaF > -lambda / 20 && pp.deltaF > lambda / 4 - pp.deltaPrimeF :
-                pp.deltaH > -lambda / 20 && pp.deltaH > lambda / 4 - pp.deltaPrimeH;
+                pp.deltaF > -lambda / 20 && pp.deltaF > lambda / 4 - pp.deltaPrimeF || pp.deltaF > 0 :
+                pp.deltaH > -lambda / 20 && pp.deltaH > lambda / 4 - pp.deltaPrimeH || pp.deltaH > 0 ;
     }
 
     public static double[] aBoundary(PropagationPath path, PropagationProcessPathData data) {
@@ -590,8 +590,12 @@ public class EvaluateAttenuationCnossos {
                 (1+pow(5*lambda/proPath.e, 2))/(1./3+pow(5*lambda/proPath.e, 2));
 
         double _delta = proPath.isFavorable() && (type.equals(DIFH) || type.equals(DIFH_RCRIT)) ? proPath.deltaF : proPath.deltaH;
+        double deltaDStar = (proPath.getSegmentList().get(0).dPrime+proPath.getSegmentList().get(proPath.getSegmentList().size()-1).dPrime-proPath.getSRSegment().dPrime);
+        double deltaDiffSR = 0;
         double testForm = 40/lambda*cSecond*_delta;
-        double deltaDiffSR = testForm>=-2 ? 10*ch*log10(3+testForm) : 0;
+        if(_delta >= 0 || (_delta > -lambda/20 && _delta > lambda/4 - deltaDStar)) {
+            deltaDiffSR = testForm>=-2 ? 10*ch*log10(3+testForm) : 0;
+        }
 
         if(type.equals(DIFV)) {
             if(proPath.keepAbsorption) {
