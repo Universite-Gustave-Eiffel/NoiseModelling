@@ -296,6 +296,10 @@ public class JTSUtility {
     }
 
     public static double dist3D(Coordinate c0, Coordinate c1) {
-        return Math.sqrt(Math.pow(c1.x-c0.x, 2) + Math.pow(c1.y-c0.y, 2) + Math.pow(c1.z-c0.z, 2));
+        return Math.sqrt((c1.x-c0.x)*(c1.x-c0.x) + (c1.y-c0.y)*(c1.y-c0.y) + (c1.z-c0.z)*(c1.z-c0.z));
+    }
+
+    public static Double dist2D(Coordinate c0, Coordinate c1) {
+        return Math.sqrt((c1.x-c0.x)*(c1.x-c0.x) + (c1.y-c0.y)*(c1.y-c0.y));
     }
 }

@@ -46,6 +46,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.noise_planet.noisemodelling.pathfinder.JTSUtility.dist2D;
 import static org.noise_planet.noisemodelling.pathfinder.utils.GeometryUtils.projectPointOnSegment;
 import static org.noise_planet.noisemodelling.pathfinder.utils.GeometryUtils.projectPointOnVector;
 
@@ -355,15 +356,15 @@ public class PropagationPath {
             SegmentPath SRp = new SegmentPath(gpath, new Vector3D(srSegment.s, Rprime),srSegment.pInit);
             SegmentPath SpR = new SegmentPath(gpath, new Vector3D(Sprime, srSegment.r),Sprime);
 
-            SpR.d = new LineSegment(Sprime, srSegment.r).getLength();
-            SRp.d = new LineSegment(srSegment.s, Rprime).getLength();
+            SpR.d = dist2D(Sprime, srSegment.r);
+            SRp.d = dist2D(srSegment.s, Rprime);
 
             SRp.dp = srSegment.dp;
             SpR.dp = srSegment.dp;
 
             if (!this.favorable){
                 for (int idPoint = 2; idPoint < pointList.size()-1; idPoint++) {
-                    dPath += new LineSegment(pointList.get(idPoint - 1).coordinate, pointList.get(idPoint).coordinate).getLength();
+                    dPath += dist2D(pointList.get(idPoint - 1).coordinate, pointList.get(idPoint).coordinate);
                 }
 
                 if (pointList.size()>3){
@@ -372,14 +373,14 @@ public class PropagationPath {
                     SRp.eLength = dPath;
                 }
                 srSegment.dPath = dPath
-                        + new LineSegment(srSegment.s, pointList.get(1).coordinate).getLength()
-                        + new LineSegment(pointList.get(pointList.size()-2).coordinate,srSegment.r).getLength();
+                        + dist2D(srSegment.s, pointList.get(1).coordinate)
+                        + dist2D(pointList.get(pointList.size()-2).coordinate,srSegment.r);
                 SpR.dPath = dPath
-                        + new LineSegment(Sprime, pointList.get(1).coordinate).getLength()
-                        + new LineSegment(pointList.get(pointList.size()-2).coordinate,srSegment.r).getLength();
+                        + dist2D(Sprime, pointList.get(1).coordinate)
+                        + dist2D(pointList.get(pointList.size()-2).coordinate,srSegment.r);
                 SRp.dPath = dPath
-                        + new LineSegment(srSegment.s, pointList.get(1).coordinate).getLength()
-                        + new LineSegment(pointList.get(pointList.size()-2).coordinate,Rprime).getLength();
+                        + dist2D(srSegment.s, pointList.get(1).coordinate)
+                        + dist2D(pointList.get(pointList.size()-2).coordinate, Rprime);
 
                 SpR.dc = SpR.d;
                 SRp.dc = SRp.d;

@@ -53,6 +53,7 @@ import java.util.stream.Collectors;
 import static java.lang.Math.*;
 import static org.noise_planet.noisemodelling.pathfinder.ComputeCnossosRays.ComputationSide.LEFT;
 import static org.noise_planet.noisemodelling.pathfinder.ComputeCnossosRays.ComputationSide.RIGHT;
+import static org.noise_planet.noisemodelling.pathfinder.JTSUtility.dist2D;
 import static org.noise_planet.noisemodelling.pathfinder.PointPath.POINT_TYPE.*;
 import static org.noise_planet.noisemodelling.pathfinder.ProfileBuilder.IntersectionType.*;
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticPropagation.getADiv;
@@ -234,18 +235,17 @@ public class ComputeCnossosRays {
     private double[] rcvSrcPropagation(SourcePointInfo src, double srcLi,
                                          ReceiverPointInfo rcv, IComputeRaysOut dataOut) {
 
-        List<PropagationPath> propagationPaths = new ArrayList<>();
         double propaDistance = src.getCoord().distance(rcv.getCoord());
         if (propaDistance < data.maxSrcDist) {
-            propagationPaths.addAll(directPath(src, rcv));
-            // Process specular reflection
+            // Process direct : horizontal and vertical diff
+            List<PropagationPath> propagationPaths = new ArrayList<>(directPath(src, rcv));
+            // Process reflection
             if (data.reflexionOrder > 0) {
-                List<PropagationPath> propagationPaths_all = computeReflexion(rcv.getCoord(), src.getCoord(), false);
-                propagationPaths.addAll(propagationPaths_all);
+                propagationPaths.addAll(computeReflexion(rcv.getCoord(), src.getCoord(), false));
             }
-        }
-        if (propagationPaths.size() > 0) {
-            return dataOut.addPropagationPaths(src.getId(), srcLi, rcv.getId(), propagationPaths);
+            if (!propagationPaths.isEmpty()) {
+                return dataOut.addPropagationPaths(src.getId(), srcLi, rcv.getId(), propagationPaths);
+            }
         }
         return new double[0];
     }
@@ -273,14 +273,12 @@ public class ComputeCnossosRays {
         List<PropagationPath> propagationPaths = new ArrayList<>();
         ProfileBuilder.CutProfile cutProfile = data.profileBuilder.getProfile(srcCoord, rcvCoord, data.gS);
         //If the field is free, simplify the computation
-        boolean freeField = cutProfile.isFreeField();
-        if(freeField) {
+        if(cutProfile.isFreeField()) {
             propagationPaths.add(computeFreeField(cutProfile, data, true));
         }
         else if(data.isComputeDiffraction()) {
             if (data.isComputeHEdgeDiffraction()) {
-                PropagationPath propagationPath = computeHEdgeDiffraction(cutProfile, data.gS);
-                propagationPaths.add(propagationPath);
+                propagationPaths.add(computeHEdgeDiffraction(cutProfile, data.gS));
             }
             if (data.isComputeVEdgeDiffraction()) {
                 PropagationPath propagationPath = computeVEdgeDiffraction(srcCoord, rcvCoord, data, LEFT);
@@ -324,10 +322,10 @@ public class ComputeCnossosRays {
         seg.rMeanPlane = rcvMeanPlane;
         seg.sPrime = new Coordinate(seg.s.x+(seg.sMeanPlane.x-seg.s.x)*2, seg.s.y+(seg.sMeanPlane.y-seg.s.y)*2);
         seg.rPrime = new Coordinate(seg.r.x+(seg.rMeanPlane.x-seg.r.x)*2, seg.r.y+(seg.rMeanPlane.y-seg.r.y)*2);
-        seg.d = new LineSegment(src, rcv).getLength();
-        seg.dp = new LineSegment(srcMeanPlane, rcvMeanPlane).getLength();
-        seg.zsH = new LineSegment(srcZ, srcMeanPlane).getLength();
-        seg.zrH = new LineSegment(rcvZ, rcvMeanPlane).getLength();
+        seg.d = dist2D(src, rcv);
+        seg.dp = dist2D(srcMeanPlane, rcvMeanPlane);
+        seg.zsH = dist2D(srcZ, srcMeanPlane);
+        seg.zrH = dist2D(rcvZ, rcvMeanPlane);
         seg.a = meanPlane[0];
         seg.b = meanPlane[1];
         seg.testFormH = seg.dp/(30*(seg.zsH +seg.zrH));
@@ -470,8 +468,8 @@ public class ComputeCnossosRays {
             for (int iO = 1; iO < pts2DGround.size() - 1; iO++) {
                 Coordinate o = pts2DGround.get(iO);
 
-                double dSO = new LineSegment(src, o).getLength();
-                double dOR = new LineSegment(o, rcv).getLength();
+                double dSO = dist2D(src, o);
+                double dOR = dist2D(o, rcv);
 
                 PointPath pO = new PointPath(o, o.z, srcCut.getGroundCoef(), new ArrayList<>(), DIFH_RCRIT);
                 propagationPath.deltaH = dSR.orientationIndex(o) * (dSO + dOR - srSeg.d);
@@ -480,7 +478,7 @@ public class ComputeCnossosRays {
                 }
                 else {
                     Coordinate pA = dSR.pointAlong((o.x-src.x)/(rcv.x-src.x));
-                    propagationPath.deltaF =2*toCurve(new LineSegment(src, pA).getLength(), srSeg.d) + 2*toCurve(new LineSegment(pA, rcv).getLength(), srSeg.d) - toCurve(dSO, srSeg.d) - toCurve(dOR, srSeg.d) - toCurve(srSeg.d, srSeg.d);
+                    propagationPath.deltaF =2*toCurve(dist2D(src, pA), srSeg.d) + 2*toCurve(dist2D(pA, rcv), srSeg.d) - toCurve(dSO, srSeg.d) - toCurve(dOR, srSeg.d) - toCurve(srSeg.d, srSeg.d);
                 }
                 List<Integer> validFreq = new ArrayList<>(Arrays.asList(63, 125, 250, 500, 1000, 2000, 4000, 8000))
                         .stream()
@@ -499,8 +497,9 @@ public class ComputeCnossosRays {
                     SegmentPath seg1 = computeSegment(src, o, abs, cutProfile.getGPath(srcCut, cuts.get(iO)), srcCut.getGroundCoef());
 
                     LineSegment sPrimeR = new LineSegment(seg1.sPrime, rcv);
-                    LineSegment sPrimeO = new LineSegment(seg1.sPrime, o);
-                    propagationPath.deltaSPrimeRH = sPrimeR.orientationIndex(o)*(sPrimeO.getLength() + dOR - sPrimeR.getLength());
+                    double dSPrimeO = dist2D(seg1.sPrime, o);
+                    double dSPrimeR = dist2D(seg1.sPrime, rcv);
+                    propagationPath.deltaSPrimeRH = sPrimeR.orientationIndex(o)*(dSPrimeO + dOR - dSPrimeR);
 
                     //Plane O->R
                     Coordinate[] orCoords = Arrays.copyOfRange(pts2DGround.toArray(new Coordinate[0]), iO, pts2DGround.size());
@@ -512,17 +511,18 @@ public class ComputeCnossosRays {
                     SegmentPath seg2 = computeSegment(o, rcv, abr, cutProfile.getGPath(cuts.get(iO), rcvCut), srcCut.getGroundCoef());
 
                     LineSegment sRPrime = new LineSegment(src, seg2.rPrime);
-                    LineSegment oRPrime = new LineSegment(o, seg2.rPrime);
-                    propagationPath.deltaSRPrimeH = sRPrime.orientationIndex(o)*(dSO + oRPrime.getLength() - sRPrime.getLength());
+                    double dORPrime = dist2D(o, seg2.rPrime);
+                    double dSRPrime = dist2D(src, seg2.rPrime);
+                    propagationPath.deltaSRPrimeH = sRPrime.orientationIndex(o)*(dSO + dORPrime - dSRPrime);
 
 
                     Coordinate srcPrime = new Coordinate(src.x + (seg1.sMeanPlane.x - src.x) * 2, src.y + (seg1.sMeanPlane.y - src.y) * 2);
                     Coordinate rcvPrime = new Coordinate(rcv.x + (seg2.rMeanPlane.x - rcv.x) * 2, rcv.y + (seg2.rMeanPlane.y - rcv.y) * 2);
 
                     LineSegment dSPrimeRPrime = new LineSegment(srcPrime, rcvPrime);
-                    srSeg.dPrime = dSPrimeRPrime.getLength();
-                    seg1.dPrime = new LineSegment(srcPrime, o).getLength();
-                    seg2.dPrime = new LineSegment(o, rcvPrime).getLength();
+                    srSeg.dPrime = dist2D(srcPrime, rcvPrime);
+                    seg1.dPrime = dist2D(srcPrime, o);
+                    seg2.dPrime = dist2D(o, rcvPrime);
 
                     propagationPath.deltaPrimeH = dSPrimeRPrime.orientationIndex(o) * (seg1.dPrime + seg2.dPrime - srSeg.dPrime);
                     if(dSPrimeRPrime.orientationIndex(o) == 1) {
@@ -530,7 +530,7 @@ public class ComputeCnossosRays {
                     }
                     else {
                         Coordinate pA = dSPrimeRPrime.pointAlong((o.x-srcPrime.x)/(rcvPrime.x-srcPrime.x));
-                        propagationPath.deltaPrimeF =2*toCurve(new LineSegment(srcPrime, pA).getLength(), srSeg.dPrime) + 2*toCurve(new LineSegment(pA, srcPrime).getLength(), srSeg.dPrime) - toCurve(seg1.dPrime, srSeg.dPrime) - toCurve(seg2.dPrime, srSeg.d) - toCurve(srSeg.dPrime, srSeg.dPrime);
+                        propagationPath.deltaPrimeF =2*toCurve(dist2D(srcPrime, pA), srSeg.dPrime) + 2*toCurve(dist2D(pA, srcPrime), srSeg.dPrime) - toCurve(seg1.dPrime, srSeg.dPrime) - toCurve(seg2.dPrime, srSeg.d) - toCurve(srSeg.dPrime, srSeg.dPrime);
                     }
                     validFreq = new ArrayList<>(Arrays.asList(63, 125, 250, 500, 1000, 2000, 4000, 8000))
                             .stream()
@@ -685,7 +685,7 @@ public class ComputeCnossosRays {
         Coordinate prev = coordinates.get(0);
         double d = 0;
         for(Coordinate c : coordinates) {
-            d+=new LineSegment(prev, c).getLength();
+            d+=dist2D(prev, c);
             prev = c;
             coords.add(new Coordinate(d, c.z));
         }
@@ -828,27 +828,30 @@ public class ComputeCnossosRays {
         SegmentPath seg1 = segments.get(0);
         SegmentPath seg2 = segments.get(segments.size()-1);
 
-        double dSO0 = new LineSegment(src,c0).getLength();
-        double dOnR = new LineSegment(cn, rcv).getLength();
+        double dSO0 = dist2D(src,c0);
+        double dOnR = dist2D(cn, rcv);
         LineSegment sr = new LineSegment(src, rcv);
 
         LineSegment sPrimeR = new LineSegment(seg1.sPrime, rcv);
         LineSegment sPrimeO = new LineSegment(seg1.sPrime, c0);
-        propagationPath.deltaSPrimeRH = sPrimeR.orientationIndex(c0)*(sPrimeO.getLength() + e + dOnR - sPrimeR.getLength());
-        propagationPath.deltaSPrimeRF = toCurve(sPrimeO.getLength(), sPrimeR.getLength()) + toCurve(e, sPrimeR.getLength()) + toCurve(dOnR, sPrimeR.getLength()) - toCurve(sPrimeR.getLength(), sPrimeR.getLength());
+        double dSPrimeR = dist2D(seg1.sPrime, rcv);
+        double dSPrimeO = dist2D(seg1.sPrime, c0);
+        propagationPath.deltaSPrimeRH = sPrimeR.orientationIndex(c0)*(dSPrimeO + e + dOnR - dSPrimeR);
+        propagationPath.deltaSPrimeRF = toCurve(dSPrimeO, dSPrimeR) + toCurve(e, dSPrimeR) + toCurve(dOnR, dSPrimeR) - toCurve(dSPrimeR, dSPrimeR);
 
         LineSegment sRPrime = new LineSegment(src, seg2.rPrime);
-        LineSegment oRPrime = new LineSegment(cn, seg2.rPrime);
-        propagationPath.deltaSRPrimeH = (src.x>seg2.rPrime.x?-1:1)*sRPrime.orientationIndex(cn)*(dSO0 + e + oRPrime.getLength() - sRPrime.getLength());
-        propagationPath.deltaSRPrimeF = toCurve(dSO0, sRPrime.getLength()) + toCurve(e, sRPrime.getLength()) + toCurve(oRPrime.getLength(), sRPrime.getLength()) - toCurve(sRPrime.getLength(), sRPrime.getLength());
+        double dSRPrime = dist2D(src, seg2.rPrime);
+        double dORPrime = dist2D(cn, seg2.rPrime);
+        propagationPath.deltaSRPrimeH = (src.x>seg2.rPrime.x?-1:1)*sRPrime.orientationIndex(cn)*(dSO0 + e + dORPrime - dSRPrime);
+        propagationPath.deltaSRPrimeF = toCurve(dSO0, dSRPrime) + toCurve(e, dSRPrime) + toCurve(dORPrime, dSRPrime) - toCurve(dSRPrime, dSRPrime);
 
         Coordinate srcPrime = new Coordinate(src.x + (seg1.sMeanPlane.x - src.x) * 2, src.y + (seg1.sMeanPlane.y - src.y) * 2);
         Coordinate rcvPrime = new Coordinate(rcv.x + (seg2.rMeanPlane.x - rcv.x) * 2, rcv.y + (seg2.rMeanPlane.y - rcv.y) * 2);
 
         LineSegment dSPrimeRPrime = new LineSegment(srcPrime, rcvPrime);
-        srPath.dPrime = dSPrimeRPrime.getLength();
-        seg1.dPrime = new LineSegment(srcPrime, c0).getLength();
-        seg2.dPrime = new LineSegment(cn, rcvPrime).getLength();
+        srPath.dPrime = dist2D(srcPrime, rcvPrime);
+        seg1.dPrime = dist2D(srcPrime, c0);
+        seg2.dPrime = dist2D(cn, rcvPrime);
 
 
         propagationPath.deltaH = sr.orientationIndex(c0) * (dSO0 + e + dOnR - srPath.d);
@@ -857,7 +860,7 @@ public class ComputeCnossosRays {
         }
         else {
             Coordinate pA = sr.pointAlong((c0.x-srcPrime.x)/(rcvPrime.x-srcPrime.x));
-            propagationPath.deltaF =2*toCurve(new LineSegment(srcPrime, pA).getLength(), srPath.dPrime) + 2*toCurve(new LineSegment(pA, rcvPrime).getLength(), srPath.dPrime) - toCurve(seg1.dPrime, srPath.dPrime) - toCurve(seg2.dPrime, srPath.dPrime) - toCurve(srPath.dPrime, srPath.dPrime);
+            propagationPath.deltaF =2*toCurve(dist2D(srcPrime, pA), srPath.dPrime) + 2*toCurve(dist2D(pA, rcvPrime), srPath.dPrime) - toCurve(seg1.dPrime, srPath.dPrime) - toCurve(seg2.dPrime, srPath.dPrime) - toCurve(srPath.dPrime, srPath.dPrime);
         }
 
         propagationPath.deltaPrimeH = dSPrimeRPrime.orientationIndex(c0) * (seg1.dPrime + e + seg2.dPrime - srPath.dPrime);
@@ -868,7 +871,7 @@ public class ComputeCnossosRays {
         }
         else {
             Coordinate pA = dSPrimeRPrime.pointAlong((c0.x-srcPrime.x)/(rcvPrime.x-srcPrime.x));
-            propagationPath.deltaPrimeF =2*toCurve(new LineSegment(srcPrime, pA).getLength(), srPath.dPrime) + 2*toCurve(new LineSegment(pA, srcPrime).getLength(), srPath.dPrime) - toCurve(seg1.dPrime, srPath.dPrime) - toCurve(seg2.dPrime, srPath.d) - toCurve(srPath.dPrime, srPath.dPrime);
+            propagationPath.deltaPrimeF =2*toCurve(dist2D(srcPrime, pA), srPath.dPrime) + 2*toCurve(dist2D(pA, srcPrime), srPath.dPrime) - toCurve(seg1.dPrime, srPath.dPrime) - toCurve(seg2.dPrime, srPath.d) - toCurve(srPath.dPrime, srPath.dPrime);
         }
 
         return propagationPath;
@@ -1198,7 +1201,7 @@ public class ComputeCnossosRays {
             double frac = wall.getLine().segmentFraction(inter);
             inter.z = wall.getLine().p0.z + frac * (wall.getLine().p1.z - wall.getLine().p0.z);
             //Check if an other wall is masking the current
-            double dist = new LineSegment(srcCoord, inter).getLength();
+            double dist = dist2D(srcCoord, inter);
             boolean skipWall = false;
             List<ProfileBuilder.Wall> walls = new ArrayList<>();
             buildWalls.forEach(w -> {
@@ -1214,7 +1217,7 @@ public class ComputeCnossosRays {
                     double d1 = srcMirrRcvLine.segmentFraction(inter);
                     double d2 = srcMirrRcvLine.segmentFraction(otherInter);
                     if (otherInterZ > d2 * inter.z / d1) {
-                        double otherDist = new LineSegment(srcCoord, otherInter).getLength();
+                        double otherDist = dist2D(srcCoord, otherInter);
                         if (otherDist < dist) {
                             skipWall = true;
                             break;
@@ -1453,14 +1456,6 @@ public class ComputeCnossosRays {
                     double[] meanPlan = JTSUtility.getMeanPlaneCoefficients(topoPts.toArray(new Coordinate[0]));
                     proPath.setSRSegment(computeSegment(topoPts.get(0), srcCoord.z, topoPts.get(topoPts.size()-1), rcvCoord.z, meanPlan, g, data.gS));
                     //TODO retrodiff
-                    /*proPath.refPoints = reflIdx;
-                    Coordinate projSrc = data.profileBuilder.getWall(reflPoint.getWallId()).getLine().project(srcCoord);
-                    double dx = projSrc.x-srcCoord.x;
-                    double dy = projSrc.y-srcCoord.y;
-                    Coordinate srcPrime = new Coordinate(srcCoord.x-2*dx, srcCoord.y-2*dy, srcCoord.z);
-                    double dReflPrime = new LineSegment(srcPrime, pts.get(1)).getLength() + new LineSegment(pts.get(1), rcvCoord).getLength();
-                    proPath.deltaRetroH = JTSUtility.dist3D(srcPrime, rcvCoord)-dReflPrime;
-                    proPath.deltaRetroF = toCurve(d, JTSUtility.dist3D(srcPrime, rcvCoord))-toCurve(dReflPrime, d);*/
                     reflexionPropagationPaths.add(proPath);
                 }
             }

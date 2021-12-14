@@ -46,6 +46,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.noise_planet.noisemodelling.pathfinder.JTSUtility.dist2D;
 import static org.noise_planet.noisemodelling.pathfinder.ProfileBuilder.IntersectionType.*;
 
 //TODO use NaN for building height
@@ -970,7 +971,7 @@ public class ProfileBuilder {
 
         List<LineSegment> lines = new ArrayList<>();
         LineSegment fullLine = new LineSegment(c0, c1);
-        double l = fullLine.getLength();
+        double l = dist2D(c0, c1);
         //If the line length if greater than the MAX_LINE_LENGTH value, split it into multiple lines
         if(l < maxLineLength) {
             lines.add(fullLine);
@@ -1423,7 +1424,7 @@ public class ProfileBuilder {
 
         public double getGPath(CutPoint p0, CutPoint p1) {
             CutPoint current = p0;
-            double totLength = new LineSegment(p0.getCoordinate(), p1.getCoordinate()).getLength();
+            double totLength = dist2D(p0.getCoordinate(), p1.getCoordinate());
             double rsLength = 0.0;
             //List<CutPoint> pts = getCutPoints().stream().sorted(CutPoint::compareTo).collect(Collectors.toList());
 
@@ -1435,13 +1436,11 @@ public class ProfileBuilder {
 
             for(CutPoint cut : pts) {
                 if(cut.compareTo(current)>=0 && cut.compareTo(p1)<0) {
-                    LineSegment seg = new LineSegment(current.getCoordinate(), cut.getCoordinate());
-                    rsLength += seg.getLength() * current.getGroundCoef();
+                    rsLength += dist2D(current.getCoordinate(), cut.getCoordinate()) * current.getGroundCoef();
                     current = cut;
                 }
             }
-            LineSegment seg = new LineSegment(current.getCoordinate(), p1.getCoordinate());
-            rsLength += seg.getLength() * p1.getGroundCoef();
+            rsLength += dist2D(current.getCoordinate(), p1.getCoordinate()) * p1.getGroundCoef();
             return rsLength / totLength;
         }
 
