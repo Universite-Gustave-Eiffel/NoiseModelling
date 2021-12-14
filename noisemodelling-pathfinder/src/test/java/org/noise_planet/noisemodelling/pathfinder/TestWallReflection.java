@@ -33,20 +33,21 @@
  */
 package org.noise_planet.noisemodelling.pathfinder;
 
+import junit.framework.TestCase;
 import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.Envelope;
-import org. locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.LineSegment;
-
-import junit.framework.TestCase;
+import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.noise_planet.noisemodelling.pathfinder.ProfileBuilder.IntersectionType.BUILDING;
+import static org.noise_planet.noisemodelling.pathfinder.ProfileBuilder.IntersectionType.WALL;
 
 public class TestWallReflection extends TestCase {
 
@@ -77,18 +78,20 @@ public class TestWallReflection extends TestCase {
 		Coordinate c2=new Coordinate(16,3);
 		
 		
-		LineSegment a01=new LineSegment(a0,a1);
-		LineSegment a12=new LineSegment(a1,a2);
-		LineSegment a23=new LineSegment(a2,a3);
-		LineSegment a30=new LineSegment(a3,a0);
-		
-		LineSegment b01=new LineSegment(b0,b1);
-		LineSegment b12=new LineSegment(b1,b2);
-		LineSegment b23=new LineSegment(b2,b3);
-		LineSegment b30=new LineSegment(b3,b0);
+		ProfileBuilder.Wall a01=new ProfileBuilder.Wall(a0,a1,0,WALL);
+        ProfileBuilder.Wall a12=new ProfileBuilder.Wall(a1,a2,0,WALL);
+        ProfileBuilder.Wall a23=new ProfileBuilder.Wall(a2,a3,0,WALL);
+        ProfileBuilder.Wall a30=new ProfileBuilder.Wall(a3,a0,0,WALL);
 
-		LineSegment c01=new LineSegment(c0,c1);
-		LineSegment c12=new LineSegment(c1,c2);
+        ProfileBuilder.Wall b01=new ProfileBuilder.Wall(b0,b1,0,WALL);
+        ProfileBuilder.Wall b12=new ProfileBuilder.Wall(b1,b2,0,WALL);
+        ProfileBuilder.Wall b23=new ProfileBuilder.Wall(b2,b3,0,WALL);
+        ProfileBuilder.Wall b30=new ProfileBuilder.Wall(b3,b0,0,WALL);
+
+        ProfileBuilder.Wall c01=new ProfileBuilder.Wall(c0,c1,0,WALL);
+        ProfileBuilder.Wall c12=new ProfileBuilder.Wall(c1,c2,0,WALL);
+
+
 		//Test cases Walls face to face
 		assertTrue(MirrorReceiverIterator.wallWallTest(b30, a23));
 		assertTrue(MirrorReceiverIterator.wallWallTest(b30, a12));
