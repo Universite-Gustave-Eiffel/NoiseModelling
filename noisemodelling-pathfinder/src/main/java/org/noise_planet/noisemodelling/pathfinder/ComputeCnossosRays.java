@@ -718,14 +718,14 @@ public class ComputeCnossosRays {
             case WALL:
                 ProfileBuilder.Wall w = profileBuilder.getWall(cut.getWallId());
                 hull.add(w);
-                boolean useP0 = new LineSegment(p1, p2).orientationIndex(w.getLine().p0) == (left ? -1 : 1);
-                hull.addAll(getHullWalls(left, useP0 ? w.getLine().p0 : w.getLine().p1, p2, profileBuilder, usedWall));
+                boolean useP0 = new LineSegment(p1, p2).orientationIndex(w.p0) == (left ? -1 : 1);
+                hull.addAll(getHullWalls(left, useP0 ? w.p0 : w.p1, p2, profileBuilder, usedWall));
                 break;
             case BUILDING:
                 w = profileBuilder.getProcessedWalls().get(cut.getWallId());
                 hull.add(w);
-                useP0 = new LineSegment(p1, p2).orientationIndex(w.getLine().p0) == (left ? -1 : 1);
-                Coordinate c = new Coordinate(useP0 ? w.getLine().p0 : w.getLine().p1);
+                useP0 = new LineSegment(p1, p2).orientationIndex(w.p0) == (left ? -1 : 1);
+                Coordinate c = new Coordinate(useP0 ? w.p0 : w.p1);
                 c.z = profileBuilder.getZGround(c);
                 hull.addAll(getHullWalls(left, c, p2, profileBuilder, usedWall));
                 break;
@@ -1121,8 +1121,8 @@ public class ComputeCnossosRays {
             if(!itemProcessed.contains(id)) {
                 itemProcessed.add(id);
                 final ProfileBuilder.Wall w = walls.get(id-1);
-                RectangleLineIntersector rect = new RectangleLineIntersector(w.getLine().toGeometry(FACTORY).getEnvelopeInternal());
-                if (rect.intersects(p1, p2) && w.getLine().toGeometry(FACTORY).intersects(seg)) {
+                RectangleLineIntersector rect = new RectangleLineIntersector(w.getLine().getEnvelopeInternal());
+                if (rect.intersects(p1, p2) && w.getLine().intersects(seg)) {
                     addItem(id);
                 }
             }
@@ -1132,7 +1132,7 @@ public class ComputeCnossosRays {
             if (wallsInIntersection.contains(id)) {
                 return;
             }
-            List<Coordinate> roofPoints = Arrays.asList(profileBuilder.getWall(id-1).getLine().toGeometry(FACTORY).getCoordinates());
+            List<Coordinate> roofPoints = Arrays.asList(profileBuilder.getWall(id-1).getLine().getCoordinates());
             // Create a cut of the building volume
             roofPoints = cutRoofPointsWithPlane(cutPlane, roofPoints);
             if (!roofPoints.isEmpty()) {
@@ -1186,7 +1186,7 @@ public class ComputeCnossosRays {
                 continue;
             }
             //Calculate the coordinate of the mirror rcv
-            Coordinate proj = wall.getLine().project(rcvCoord);
+            Coordinate proj = wall.getLineSegment().project(rcvCoord);
             Coordinate rcvMirror = new Coordinate(2*proj.x-rcvCoord.x, 2*proj.y-rcvCoord.y, rcvCoord.z);
             //If the mirror rcv is too far, skip it
             if(srcRcvLine.p0.distance(rcvMirror) > data.maxSrcDist) {
@@ -1194,12 +1194,12 @@ public class ComputeCnossosRays {
             }
 
             LineSegment srcMirrRcvLine = new LineSegment(srcCoord, rcvMirror);
-            Coordinate inter = srcMirrRcvLine.intersection(wall.getLine());
+            Coordinate inter = srcMirrRcvLine.intersection(wall.getLineSegment());
             if (inter == null) {
                 continue;
             }
-            double frac = wall.getLine().segmentFraction(inter);
-            inter.z = wall.getLine().p0.z + frac * (wall.getLine().p1.z - wall.getLine().p0.z);
+            double frac = wall.getLineSegment().segmentFraction(inter);
+            inter.z = wall.p0.z + frac * (wall.p1.z - wall.p0.z);
             //Check if an other wall is masking the current
             double dist = dist2D(srcCoord, inter);
             boolean skipWall = false;
@@ -1210,10 +1210,10 @@ public class ComputeCnossosRays {
                 }
             });
             for (ProfileBuilder.Wall otherWall : walls) {
-                Coordinate otherInter = srcMirrRcvLine.intersection(otherWall.getLine());
+                Coordinate otherInter = srcMirrRcvLine.intersection(otherWall.getLineSegment());
                 if (otherInter != null) {
-                    double otherFrac = otherWall.getLine().segmentFraction(otherInter);
-                    double otherInterZ = otherWall.getLine().p0.z + otherFrac * (otherWall.getLine().p1.z - otherWall.getLine().p0.z);
+                    double otherFrac = otherWall.getLineSegment().segmentFraction(otherInter);
+                    double otherInterZ = otherWall.p0.z + otherFrac * (otherWall.p1.z - otherWall.p0.z);
                     double d1 = srcMirrRcvLine.segmentFraction(inter);
                     double d2 = srcMirrRcvLine.segmentFraction(otherInter);
                     if (otherInterZ > d2 * inter.z / d1) {
@@ -1245,9 +1245,11 @@ public class ComputeCnossosRays {
         LineSegment srcRcvLine = new LineSegment(srcCoord, rcvCoord);
         LineIntersector linters = new RobustLineIntersector();
         //Keep only building walls which are not too far.
+        Envelope env = new Envelope(srcRcvLine.p0, srcRcvLine.p1);
+        env.expandBy(data.maxRefDist);
         List<ProfileBuilder.Wall> buildWalls = data.profileBuilder.getProcessedWalls().stream()
                 .filter(wall -> wall.getType().equals(BUILDING) || wall.getType().equals(WALL))
-                .filter(wall -> wall.getLine().distance(srcRcvLine) < data.maxRefDist)
+                .filter(wall -> env.intersects(wall.getLine().getEnvelopeInternal()))
                 .collect(Collectors.toList());
 
         List<MirrorReceiverResult> mirrorResults = getMirrorReceivers(buildWalls, srcCoord, rcvCoord, srcRcvLine);
@@ -1263,7 +1265,7 @@ public class ComputeCnossosRays {
             // segment or not
             Coordinate destinationPt = new Coordinate(srcCoord);
 
-            linters.computeIntersection(seg.getLine().p0, seg.getLine().p1,
+            linters.computeIntersection(seg.p0, seg.p1,
                     receiverReflection.getReceiverPos(),
                     destinationPt);
             while (linters.hasIntersection() /*&& MirrorReceiverIterator.wallPointTest(seg.getLine(), destinationPt)*/) {
@@ -1298,7 +1300,7 @@ public class ComputeCnossosRays {
                         Double.isNaN(reflectionPt.z) || Double.isNaN(destinationPt.z) /*|| seg.getOriginId() == 0*/
                         || (
                             (seg.getType().equals(BUILDING) && reflectionPt.z < data.profileBuilder.getBuilding(seg.getOriginId()).getGeometry().getCoordinate().z ||
-                            seg.getType().equals(WALL) && reflectionPt.z < data.profileBuilder.getWall(seg.getOriginId()).getLine().toGeometry(GEOMETRY_FACTORY).getCoordinate().z)
+                            seg.getType().equals(WALL) && reflectionPt.z < data.profileBuilder.getWall(seg.getOriginId()).getLine().getCoordinate().z)
                         && reflectionPt.z > data.profileBuilder.getZGround(reflectionPt)
                         && destinationPt.z > data.profileBuilder.getZGround(destinationPt));
                 if (validReflection) // Source point can see receiver image
@@ -1319,7 +1321,7 @@ public class ComputeCnossosRays {
                         seg = buildWalls
                                 .get(receiverReflectionCursor
                                         .getWallId());
-                        linters.computeIntersection(seg.getLine().p0, seg.getLine().p1,
+                        linters.computeIntersection(seg.p0, seg.p1,
                                 receiverReflectionCursor
                                         .getReceiverPos(),
                                 destinationPt
@@ -1402,7 +1404,7 @@ public class ComputeCnossosRays {
                                 geom = data.profileBuilder.getBuilding(points.get(i).getBuildingId()).getGeometry();
                             }
                             else {
-                                geom = data.profileBuilder.getWall(points.get(i).getWallId()).getLine().toGeometry(GEOMETRY_FACTORY);
+                                geom = data.profileBuilder.getWall(points.get(i).getWallId()).getLine();
                             }
                             if (points.get(i).coordinate.z > geom.getCoordinate().z
                                     || points.get(i).coordinate.z <= data.profileBuilder.getZGround(points.get(i).coordinate)) {

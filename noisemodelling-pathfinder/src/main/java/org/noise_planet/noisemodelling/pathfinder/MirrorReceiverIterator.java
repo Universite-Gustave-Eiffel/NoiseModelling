@@ -81,16 +81,16 @@ public class MirrorReceiverIterator implements Iterator<MirrorReceiverResult> {
             boolean isCCW;
             Coordinate receiverIm;
             if (parent == null) { //If it is the first depth wall
-                isCCW = MirrorReceiverIterator.wallPointTest(wall.getLine(), receiverCoord);
+                isCCW = MirrorReceiverIterator.wallPointTest(wall, receiverCoord);
                 receiverIm = receiverCoord;
             } else {
                 //Call wall visibility test
                 receiverIm = parent.getReceiverPos();
-                isCCW = MirrorReceiverIterator.wallWallTest(nearBuildingsWalls.get(parent.getWallId()).getLine(), wall.getLine())
-                         && MirrorReceiverIterator.wallPointTest(wall.getLine(), receiverCoord);
+                isCCW = MirrorReceiverIterator.wallWallTest(nearBuildingsWalls.get(parent.getWallId()), wall)
+                         && MirrorReceiverIterator.wallPointTest(wall, receiverCoord);
             }
             if (isCCW) {
-                Coordinate intersectionPt = wall.getLine().project(receiverIm);
+                Coordinate intersectionPt = wall.getLineSegment().project(receiverIm);
                 Coordinate mirrored = new Coordinate(2 * intersectionPt.x
                         - receiverIm.x, 2 * intersectionPt.y
                         - receiverIm.y, receiverIm.z);
@@ -148,8 +148,11 @@ public class MirrorReceiverIterator implements Iterator<MirrorReceiverResult> {
      * @param wall2
      * @return True if the walls are face to face
      */
-    public static boolean wallWallTest(LineSegment wall1, LineSegment wall2) {
-        return ((Orientation.isCCW(new Coordinate[]{wall1.getCoordinate(0), wall1.getCoordinate(1), wall2.getCoordinate(0), wall1.getCoordinate(0)}) || Orientation.isCCW(new Coordinate[]{wall1.getCoordinate(0), wall1.getCoordinate(1), wall2.getCoordinate(1), wall1.getCoordinate(0)})) && (Orientation.isCCW(new Coordinate[]{wall2.getCoordinate(0), wall2.getCoordinate(1), wall1.getCoordinate(0), wall2.getCoordinate(0)}) || Orientation.isCCW(new Coordinate[]{wall2.getCoordinate(0), wall2.getCoordinate(1), wall1.getCoordinate(1), wall2.getCoordinate(0)})));
+    public static boolean wallWallTest(ProfileBuilder.Wall wall1, ProfileBuilder.Wall wall2) {
+        return ((Orientation.isCCW(new Coordinate[]{wall1.p0, wall1.p1, wall2.p0, wall1.p1}) ||
+                        Orientation.isCCW(new Coordinate[]{wall1.p0, wall1.p1, wall2.p1, wall1.p0})) &&
+                (Orientation.isCCW(new Coordinate[]{wall2.p0, wall2.p1, wall1.p0, wall2.p0}) ||
+                        Orientation.isCCW(new Coordinate[]{wall2.p0, wall2.p1, wall1.p1, wall2.p0})));
     }
 
     /**
@@ -159,8 +162,8 @@ public class MirrorReceiverIterator implements Iterator<MirrorReceiverResult> {
      * @param pt
      * @return True if the wall is oriented to the point
      */
-    public static boolean wallPointTest(LineSegment wall1, Coordinate pt) {
-        return Orientation.isCCW(new Coordinate[]{wall1.getCoordinate(0), wall1.getCoordinate(1), pt, wall1.getCoordinate(0)});
+    public static boolean wallPointTest(ProfileBuilder.Wall wall1, Coordinate pt) {
+        return Orientation.isCCW(new Coordinate[]{wall1.p0, wall1.p1, pt, wall1.p0});
     }
 
     public static final class It implements Iterable<MirrorReceiverResult> {

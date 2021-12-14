@@ -474,7 +474,7 @@ public class ProfileBuilder {
                 wall.setHeight(height);
                 wall.setAlpha(alphas);
                 walls.add(wall);
-                wallTree.insert(wall.line.toGeometry(FACTORY).getEnvelopeInternal(), walls.size());
+                wallTree.insert(wall.line.getEnvelopeInternal(), walls.size());
             }
             return this;
         }
@@ -793,8 +793,8 @@ public class ProfileBuilder {
                 Wall wall = topoWalls.get(i);
                 List<Wall> walls = topoWalls.subList(i, topoWalls.size());
                 for(Wall w : walls) {
-                    if((w.getLine().p0.equals(wall.getLine().p0) && w.getLine().p1.equals(wall.getLine().p1)) ||
-                            (w.getLine().p0.equals(wall.getLine().p1) && w.getLine().p1.equals(wall.getLine().p0))) {
+                    if((w.p0.equals(wall.p0) && w.p1.equals(wall.p1)) ||
+                            (w.p0.equals(wall.p1) && w.p1.equals(wall.p0))) {
                         toRemove.add(wall);
                     }
                 }
@@ -802,7 +802,7 @@ public class ProfileBuilder {
             topoWalls.removeAll(toRemove);
             for(Wall wall : topoWalls) {
                 processedWalls.add(wall);
-                rtree.insert(wall.getLine().toGeometry(FACTORY).getEnvelopeInternal(), processedWalls.size() - 1);
+                rtree.insert(wall.getLine().getEnvelopeInternal(), processedWalls.size() - 1);
             }
         }
         //Update building z
@@ -813,11 +813,11 @@ public class ProfileBuilder {
                 }
             }
             for (Wall w : walls) {
-                if(Double.isNaN(w.line.p0.z) || w.line.p0.z == 0.0) {
-                    w.line.p0.z = w.height + getZGround(w.line.p0);
+                if(Double.isNaN(w.p0.z) || w.p0.z == 0.0) {
+                    w.p0.z = w.height + getZGround(w.p0);
                 }
-                if(Double.isNaN(w.line.p1.z) || w.line.p1.z == 0.0) {
-                    w.line.p1.z = w.height + getZGround(w.line.p1);
+                if(Double.isNaN(w.p1.z) || w.p1.z == 0.0) {
+                    w.p1.z = w.height + getZGround(w.p1);
                 }
             }
         }
@@ -829,11 +829,11 @@ public class ProfileBuilder {
                 }
             }
             for (Wall w : walls) {
-                if(Double.isNaN(w.line.p0.z) || w.line.p0.z == 0.0) {
-                    w.line.p0.z = w.height;
+                if(Double.isNaN(w.p0.z) || w.p0.z == 0.0) {
+                    w.p0.z = w.height;
                 }
-                if(Double.isNaN(w.line.p1.z) || w.line.p1.z == 0.0) {
-                    w.line.p1.z = w.height;
+                if(Double.isNaN(w.p1.z) || w.p1.z == 0.0) {
+                    w.p1.z = w.height;
                 }
             }
         }
@@ -850,7 +850,7 @@ public class ProfileBuilder {
         }
         for (int j = 0; j < walls.size(); j++) {
             Wall wall = walls.get(j);
-            Coordinate[] coords = new Coordinate[]{wall.line.p0, wall.line.p1};
+            Coordinate[] coords = new Coordinate[]{wall.p0, wall.p1};
             for (int i = 0; i < coords.length - 1; i++) {
                 LineSegment lineSegment = new LineSegment(coords[i], coords[i + 1]);
                 processedWalls.add(new Wall(lineSegment, j, IntersectionType.WALL));
@@ -1039,11 +1039,11 @@ public class ProfileBuilder {
             int buildId = -1;
             for (int i : indexes) {
                 Wall facetLine = processedWalls.get(i);
-                Coordinate intersection = fullLine.intersection(facetLine.line);
+                Coordinate intersection = fullLine.intersection(facetLine.ls);
                 if (intersection != null) {
                     intersection = new Coordinate(intersection);
-                    if(!Double.isNaN(facetLine.line.p0.z) && !Double.isNaN(facetLine.line.p1.z)) {
-                        intersection.z = Vertex.interpolateZ(intersection, facetLine.line.p0, facetLine.line.p1);
+                    if(!Double.isNaN(facetLine.p0.z) && !Double.isNaN(facetLine.p1.z)) {
+                        intersection.z = Vertex.interpolateZ(intersection, facetLine.p0, facetLine.p1);
                     }
                     else if(topoTree == null) {
                         intersection.z = Double.NaN;
@@ -1058,7 +1058,7 @@ public class ProfileBuilder {
                         profile.addWallCutPt(intersection, facetLine.originId);
                     }
                     else if(facetLine.type == IntersectionType.GROUND_EFFECT) {
-                        if(!intersection.equals(facetLine.line.p0) && !intersection.equals(facetLine.line.p1)) {
+                        if(!intersection.equals(facetLine.p0) && !intersection.equals(facetLine.p1)) {
                             Coordinate c = new Coordinate(intersection.x, intersection.y, getZ(intersection));
                             profile.addGroundCutPt(c, facetLine.originId);
                         }
@@ -1755,7 +1755,7 @@ public class ProfileBuilder {
      */
     public static class Wall {
         /** Segment of the wall. */
-        private final LineSegment line;
+        private final LineString line;
         /** Type of the wall */
         private final IntersectionType type;
         /** Id or index of the source building or topographic triangle. */
@@ -1766,6 +1766,9 @@ public class ProfileBuilder {
         private double height;
         private boolean hasP0Neighbour = false;
         private boolean hasP1Neighbour = false;
+        public Coordinate p0;
+        public Coordinate p1;
+        private LineSegment ls;
 
         /**
          * Constructor using segment and id.
@@ -1773,7 +1776,24 @@ public class ProfileBuilder {
          * @param originId Id or index of the source building or topographic triangle.
          */
         public Wall(LineSegment line, int originId, IntersectionType type) {
+            this.p0 = line.p0;
+            this.p1 = line.p1;
+            this.line = FACTORY.createLineString(new Coordinate[]{p0, p1});
+            this.ls = line;
+            this.originId = originId;
+            this.type = type;
+            this.alphas = new ArrayList<>();
+        }
+        /**
+         * Constructor using segment and id.
+         * @param line     Segment of the wall.
+         * @param originId Id or index of the source building or topographic triangle.
+         */
+        public Wall(LineString line, int originId, IntersectionType type) {
             this.line = line;
+            this.p0 = line.getCoordinateN(0);
+            this.p1 = line.getCoordinateN(line.getNumPoints()-1);
+            this.ls = new LineSegment(p0, p1);
             this.originId = originId;
             this.type = type;
             this.alphas = new ArrayList<>();
@@ -1786,7 +1806,10 @@ public class ProfileBuilder {
          * @param originId Id or index of the source building or topographic triangle.
          */
         public Wall(Coordinate p0, Coordinate p1, int originId, IntersectionType type) {
-            this.line = new LineSegment(p0, p1);
+            this.line = FACTORY.createLineString(new Coordinate[]{p0, p1});
+            this.p0 = p0;
+            this.p1 = p1;
+            this.ls = new LineSegment(p0, p1);
             this.originId = originId;
             this.type = type;
             this.alphas = new ArrayList<>();
@@ -1799,7 +1822,10 @@ public class ProfileBuilder {
          * @param originId Id or index of the source building or topographic triangle.
          */
         public Wall(Coordinate p0, Coordinate p1, int originId, IntersectionType type, boolean hasP0Neighbour, boolean hasP1Neighbour) {
-            this.line = new LineSegment(p0, p1);
+            this.line = FACTORY.createLineString(new Coordinate[]{p0, p1});
+            this.p0 = p0;
+            this.p1 = p1;
+            this.ls = new LineSegment(p0, p1);
             this.originId = originId;
             this.type = type;
             this.alphas = new ArrayList<>();
@@ -1827,8 +1853,12 @@ public class ProfileBuilder {
          * Retrieve the segment.
          * @return Segment of the wall.
          */
-        public LineSegment getLine() {
+        public LineString getLine() {
             return line;
+        }
+
+        public LineSegment getLineSegment() {
+            return ls;
         }
 
         /**
