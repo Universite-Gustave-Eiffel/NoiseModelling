@@ -40,7 +40,7 @@ public class RailwayVehicleParametersCnossos {
     private int runningCondition=0; // 0 = constand speed, 1 = acceleration , 2 =decceleration, 3 = idling
     private double idlingTime=0; // if idling, idling time (seconds)
 
-    private int spectreVer = 2; // version of cnossos coefficient, if 2 == amendments 2019
+    private int spectreVer = 2; // version of cnossos coefficient, if 1 == amendments 2020 if 2 == 2021 SNCF
 
 
     public void setSpectreVer(int spectreVer) {

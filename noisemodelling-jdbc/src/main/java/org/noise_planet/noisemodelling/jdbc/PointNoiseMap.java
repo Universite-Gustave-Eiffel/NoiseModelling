@@ -111,6 +111,7 @@ public class PointNoiseMap extends JdbcNoiseMap {
         propagationProcessData.noiseFloor = getNoiseFloor();
         propagationProcessData.maxRefDist = maximumReflectionDistance;
         propagationProcessData.maxSrcDist = maximumPropagationDistance;
+        propagationProcessData.gS = getGs();
         propagationProcessData.setComputeVerticalDiffraction(computeVerticalDiffraction);
         propagationProcessData.setComputeHorizontalDiffraction(computeHorizontalDiffraction);
 

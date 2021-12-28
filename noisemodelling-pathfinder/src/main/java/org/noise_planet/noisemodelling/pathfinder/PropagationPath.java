@@ -69,6 +69,7 @@ public class PropagationPath {
     int idReceiver;
     Orientation sourceOrientation =
             new Orientation(0,0,0);
+    double gs;
     private boolean initialized = false;
     // computed in Augmented Path
     public List<Integer> difHPoints = new ArrayList<Integer>(); // diffraction points indices on horizontal edges
@@ -145,6 +146,15 @@ public class PropagationPath {
         this.sourceOrientation = sourceOrientation;
     }
 
+    public double getGs() {
+        return gs;
+    }
+
+    public void setGs(double gs) {
+        this.gs = gs;
+    }
+
+
     /**
      * @return Propagation path as a geometry object
      */
@@ -185,6 +195,7 @@ public class PropagationPath {
         out.writeFloat(sourceOrientation.yaw);
         out.writeFloat(sourceOrientation.pitch);
         out.writeFloat(sourceOrientation.roll);
+        out.writeFloat((float) gs);
         out.writeInt(idReceiver);
         out.writeInt(pointList.size());
         for(PointPath pointPath : pointList) {
@@ -210,7 +221,10 @@ public class PropagationPath {
         float bearing = in.readFloat();
         float inclination = in.readFloat();
         float roll = in.readFloat();
+        double gs = in.readFloat();
+        setGs(gs);
         setSourceOrientation(new Orientation(bearing, inclination, roll));
+
         idReceiver = in.readInt();
         int pointListSize = in.readInt();
         pointList = new ArrayList<>(pointListSize);
@@ -493,7 +507,7 @@ public class PropagationPath {
 
             seg.dc = favorable ? getRayCurveLength(seg.d, seg.d) : seg.d;
 
-            double gs = pointList.get(0).gs;
+            double gs = getGs();
 
             seg.testFormH = seg.dp / (30 * (seg.zsH + seg.zrH));
 

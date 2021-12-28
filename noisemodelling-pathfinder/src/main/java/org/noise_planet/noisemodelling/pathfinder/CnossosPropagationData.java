@@ -79,6 +79,14 @@ public class CnossosPropagationData {
     public Map<Long, Integer> sourceDirection = new HashMap<>();
 
 
+
+
+    /**
+     * Link between sources PK and gs coefficient
+     */
+    public Map<Long, Double> sourceGs = new HashMap<>();
+
+
     /** Maximum reflexion order */
     public int reflexionOrder = 1;
     /** Compute horizontal diffraction rays over vertical edges */
@@ -129,6 +137,12 @@ public class CnossosPropagationData {
         addSource(pk, geom);
         sourceOrientation.put(pk, orientation);
     }
+
+    public void addSource(Long pk, Geometry geom, Double gs) {
+        addSource(pk, geom);
+        sourceGs.put(pk, gs);
+    }
+
     /**
      * Add geometry with additional attributes
      * @param pk Unique source identifier
@@ -165,6 +179,11 @@ public class CnossosPropagationData {
         }
         if(hasOrientation) {
             sourceOrientation.put(pk, new Orientation(yaw, pitch, roll));
+        }
+
+        int gsField = JDBCUtilities.getFieldIndex(rs.getMetaData(), GS_DATABASE_FIELD);
+        if(sourceFieldNames.containsKey(GS_DATABASE_FIELD)) {
+            sourceGs.put(pk, rs.getDouble(gsField));
         }
     }
 
@@ -218,6 +237,10 @@ public class CnossosPropagationData {
         this.gS = gS;
     }
 
+
+    public double getSourceGs(int srcIndex) {
+        return this.gS;
+    }
 
     public boolean isComputeVEdgeDiffraction() {
         return computeHorizontalDiffraction;

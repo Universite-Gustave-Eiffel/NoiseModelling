@@ -19,8 +19,6 @@ import com.fasterxml.jackson.databind.node.NullNode;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -48,6 +46,8 @@ import static org.noise_planet.noisemodelling.emission.utils.interpLinear.interp
 
 public class EvaluateRailwaySourceCnossos {
     private JsonNode CnossosRailWayData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("coefficient_Railway_Cnossos_SNCF.json"));
+    private JsonNode CnossosRailWayData2020 = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("coefficients_Railway_Cnossos_2020.json"));
+    private JsonNode CnossosRailWayDataSncf = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("coefficients_Railway_Cnossos_SNCF.json"));
     private JsonNode CnossosVehicleData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Rail_Vehicles_SNCF_2021.json"));
     private JsonNode CnossosTrainData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Rail_Train_SNCF_2021.json"));
 
@@ -67,11 +67,16 @@ public class EvaluateRailwaySourceCnossos {
 
     public JsonNode getCnossosRailWayData(int spectreVer){
         if (spectreVer==1){
-            return parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("coefficients_Railway_Cnossos_2020.json"));
-        }
-        else {
+            return CnossosRailWayData2020;
+        } else if (spectreVer==2) {
+            return CnossosRailWayDataSncf;
+        } else {
             return CnossosRailWayData;
         }
+    }
+
+    public static<T> Iterable<T> iteratorToIterable(Iterator<T> iterator) {
+        return () -> iterator;
     }
 
     public JsonNode getCnossosVehicleNode(String typeVehicle) {
@@ -210,14 +215,21 @@ public class EvaluateRailwaySourceCnossos {
     public Double getTrackRoughness(int trackRoughnessId, int spectreVer, int lambdaId) { //
         return getCnossosRailWayData(spectreVer).get("Track").get("RailRoughness").get( String.valueOf(trackRoughnessId)).get("Values").get(lambdaId).doubleValue();
     }
-    public static<T> Iterable<T> iteratorToIterable(Iterator<T> iterator) {
-        return () -> iterator;
+    public double getAxlesPerVeh(String typeVehicle) { //
+        return getCnossosVehicleNode(typeVehicle).get("NbAxlePerVeh").doubleValue();
     }
 
+    public int getNbCoach(String typeVehicle) { //
+        int nbCoach ;
+        try {
+            nbCoach = getCnossosVehicleData().get(typeVehicle).get("NbCoach").intValue();
+        } catch (Exception e) {
+            nbCoach = 1;
+        }
 
-    public int getAxlesPerVeh(String typeVehicle) { //
-        return getCnossosVehicleNode(typeVehicle).get("NbAxlePerVeh").intValue();
+        return nbCoach;
     }
+
     public double getSpectre(String typeVehicle, String ref, int runningCondition,String sourceHeight, int spectreVer, int freqId) { //
         int refId = getCnossosVehicleNode(typeVehicle).get(ref).intValue();
         if(ref.equals("RefTraction")) {
@@ -304,7 +316,7 @@ public class EvaluateRailwaySourceCnossos {
         String typeVehicle = vehicleParameters.getTypeVehicle();
         double speedVehicle = vehicleParameters.getSpeedVehicle();
         double vehPerHour = vehicleParameters.getNumberVehicle();
-        int axlesPerVeh = getAxlesPerVeh(typeVehicle);
+        double axlesPerVeh = getAxlesPerVeh(typeVehicle);
         int runningCondition = vehicleParameters.getRunningCondition();
 
         double speedTrack = trackParameters.getSpeedTrack();
@@ -319,6 +331,9 @@ public class EvaluateRailwaySourceCnossos {
         double speed = min(speedVehicle,min(speedTrack, speedCommercial));
 
         boolean isTunnel = false ;//trackParameters.getIsTunnel();
+        // %% Take into account the number of coach and the number of units
+        // 10*log10(NbUnit*NbCoach);
+
 
         if(isTunnel){
             double [] lWSpectre = new double[24];
@@ -340,12 +355,12 @@ public class EvaluateRailwaySourceCnossos {
             double[] lWBridge = evaluateLWroughness("Bridge", typeVehicle, trackRoughnessId, impactId, bridgeId, curvature, speed, trackTransferId, spectreVer, axlesPerVeh);
 
             for (int i=0;i<lWRolling.length;i++) {
-                lWRolling[i] = Vperhour2NoiseLevel(lWRolling[i], vehPerHour, speed);
-                lWTractionA[i] = Vperhour2NoiseLevel(lWTractionA[i], vehPerHour, speed);
-                lWTractionB[i] = Vperhour2NoiseLevel(lWTractionB[i], vehPerHour, speed);
-                lWAerodynamicA[i] = Vperhour2NoiseLevel(lWAerodynamicA[i], vehPerHour, speed);
-                lWAerodynamicB[i] = Vperhour2NoiseLevel(lWAerodynamicB[i], vehPerHour, speed);
-                lWBridge[i] = Vperhour2NoiseLevel(lWBridge[i], vehPerHour, speed);
+                lWRolling[i] = Vperhour2NoiseLevel(lWRolling[i], vehPerHour*getNbCoach(typeVehicle), speed) ;
+                lWTractionA[i] = Vperhour2NoiseLevel(lWTractionA[i], vehPerHour*getNbCoach(typeVehicle), speed);
+                lWTractionB[i] = Vperhour2NoiseLevel(lWTractionB[i], vehPerHour*getNbCoach(typeVehicle), speed);
+                lWAerodynamicA[i] = Vperhour2NoiseLevel(lWAerodynamicA[i], vehPerHour*getNbCoach(typeVehicle), speed);
+                lWAerodynamicB[i] = Vperhour2NoiseLevel(lWAerodynamicB[i], vehPerHour*getNbCoach(typeVehicle), speed);
+                lWBridge[i] = Vperhour2NoiseLevel(lWBridge[i], vehPerHour*getNbCoach(typeVehicle), speed);
             }
 
             RailWayLW lWRailWay = new RailWayLW(lWRolling, lWTractionA, lWTractionB, lWAerodynamicA, lWAerodynamicB, lWBridge);
@@ -407,7 +422,7 @@ public class EvaluateRailwaySourceCnossos {
      * @return lWRoll(freq)
      **/
 
-    private double[] evaluateLWroughness(String ref, String typeVehicle, int trackRoughnessId, int impactId, int bridgeId, int curvature, double speed,int trackTransferId, int spectreVer, int axlesPerVeh) {
+    private double[] evaluateLWroughness(String ref, String typeVehicle, int trackRoughnessId, int impactId, int bridgeId, int curvature, double speed,int trackTransferId, int spectreVer, double axlesPerVeh) {
         double [] trackTransfer = new double[24];
         double [] lWTr = new double[24];
         double [] vehTransfer = new double[24];
@@ -434,18 +449,23 @@ public class EvaluateRailwaySourceCnossos {
                 } else if (curvature == 3) {
                     lW[idFreq] = lW[idFreq] + 8;
                 }
+                if (spectreVer==2){
+                    if (bridgeId == 2) {
+                        lW[idFreq] = lW[idFreq] + 5;
+                    }
+                }
             }
         }else if(ref.equals("Bridge")){
             double [] lWBridge= new double[24];
-            if(bridgeId==3 || bridgeId==4){
-                for(int idFreq = 0; idFreq < 24; idFreq++) {
-                    lWBridge[idFreq] = getBridgeStructural(bridgeId,spectreVer,idFreq);
-                    lW[idFreq] = roughnessLtot[idFreq] + lWBridge[idFreq] + 10 * Math.log10(axlesPerVeh);
-                }
+            for(int idFreq = 0; idFreq < 24; idFreq++) {
+                lW[idFreq] = -99;
             }
-            else{
-                for(int idFreq = 0; idFreq < 24; idFreq++) {
-                    lW[idFreq] = -99;
+            if(spectreVer==1) {
+                if (bridgeId == 3 || bridgeId == 4) {
+                    for (int idFreq = 0; idFreq < 24; idFreq++) {
+                        lWBridge[idFreq] = getBridgeStructural(bridgeId, spectreVer, idFreq);
+                        lW[idFreq] = roughnessLtot[idFreq] + lWBridge[idFreq] + 10 * Math.log10(axlesPerVeh);
+                    }
                 }
             }
         }

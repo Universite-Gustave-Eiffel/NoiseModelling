@@ -29,18 +29,20 @@ import org.locationtech.jts.geom.*;
 import org.locationtech.jts.index.quadtree.Quadtree;
 import org.locationtech.jts.operation.union.CascadedPolygonUnion;
 import org.locationtech.jts.simplify.TopologyPreservingSimplifier;
+import org.noise_planet.noisemodelling.pathfinder.ComputeRays;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.text.DecimalFormat;
 import java.util.*;
-
-import static org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils.dbaToW;
 
 /**
  * Create isosurfaces
  * @author  Nicolas Fortin, Université Gustave Eiffel
  */
 public class BezierContouring {
+    Logger log = LoggerFactory.getLogger(BezierContouring.class);
     static final int BATCH_MAX_SIZE = 500;
     String pointTable = "LDEN_RESULT";
     String triangleTable = "TRIANGLES";
@@ -66,7 +68,7 @@ public class BezierContouring {
         DecimalFormat format = new DecimalFormat("#.##");
         for (int idiso = 0; idiso < isoLevels.size(); idiso++) {
             double lvl = isoLevels.get(idiso);
-            this.isoLevels.add(dbaToW(lvl));
+            this.isoLevels.add(ComputeRays.dbaToW(lvl));
             if (idiso == 0) {
                 this.isoLabels.add(String.format(Locale.ROOT, "< %s", format.format(lvl)));
             } else if(idiso < isoLevels.size() - 1){
@@ -377,20 +379,22 @@ public class BezierContouring {
                     ArrayList<Polygon> polygons = new ArrayList<>();
                     explode(entry.getValue().get(0), polygons);
                     for(Polygon polygon : polygons) {
-                        Coordinate[] extRing = generateBezierCurves(polygon.getExteriorRing().getCoordinates(), segmentTree, deltaPoints);
-                        LinearRing[] holes = new LinearRing[polygon.getNumInteriorRing()];
-                        for(int idHole = 0; idHole < holes.length; idHole++) {
-                            Coordinate[] hole = generateBezierCurves(polygon.getInteriorRingN(idHole).getCoordinates(), segmentTree, deltaPoints);
-                            holes[idHole] = factory.createLinearRing(hole);
+                        if(!polygon.isEmpty()) {
+                            Coordinate[] extRing = generateBezierCurves(polygon.getExteriorRing().getCoordinates(), segmentTree, deltaPoints);
+                            LinearRing[] holes = new LinearRing[polygon.getNumInteriorRing()];
+                            for (int idHole = 0; idHole < holes.length; idHole++) {
+                                Coordinate[] hole = generateBezierCurves(polygon.getInteriorRingN(idHole).getCoordinates(), segmentTree, deltaPoints);
+                                holes[idHole] = factory.createLinearRing(hole);
+                            }
+                            polygon = factory.createPolygon(factory.createLinearRing(extRing), holes);
+                            TopologyPreservingSimplifier simplifier = new TopologyPreservingSimplifier(polygon);
+                            simplifier.setDistanceTolerance(epsilon);
+                            Geometry res = simplifier.getResultGeometry();
+                            if (res instanceof Polygon) {
+                                polygon = (Polygon) res;
+                            }
+                            newPolygons.add(polygon);
                         }
-                        polygon = factory.createPolygon(factory.createLinearRing(extRing), holes);
-                        TopologyPreservingSimplifier simplifier = new TopologyPreservingSimplifier(polygon);
-                        simplifier.setDistanceTolerance(epsilon);
-                        Geometry res = simplifier.getResultGeometry();
-                        if(res instanceof Polygon) {
-                            polygon = (Polygon) res;
-                        }
-                        newPolygons.add(polygon);
                     }
                     entry.getValue().clear();
                     entry.getValue().addAll(newPolygons);
@@ -405,9 +409,14 @@ public class BezierContouring {
                 ArrayList<Polygon> polygons = new ArrayList<>();
                 if(!smooth) {
                     // Merge triangles
-                    CascadedPolygonUnion union = new CascadedPolygonUnion(entry.getValue());
-                    Geometry mergeTriangles = union.union();
-                    explode(mergeTriangles, polygons);
+                    try {
+                        CascadedPolygonUnion union = new CascadedPolygonUnion(entry.getValue());
+                        Geometry mergeTriangles = union.union();
+                        explode(mergeTriangles, polygons);
+                    } catch (TopologyException t) {
+                        log.warn(t.getLocalizedMessage(), t);
+                        explode(factory.createGeometryCollection(entry.getValue().toArray(new Geometry[0])), polygons);
+                    }
                 } else {
                     explode(factory.createGeometryCollection(entry.getValue().toArray(new Geometry[0])), polygons);
                 }
@@ -501,9 +510,9 @@ public class BezierContouring {
                     Coordinate b = new Coordinate(rs.getDouble(xb), rs.getDouble(yb));
                     Coordinate c = new Coordinate(rs.getDouble(xc), rs.getDouble(yc));
                     // Fetch data
-                    TriMarkers triMarkers = new TriMarkers(a, b, c, dbaToW(rs.getDouble(lvla)),
-                            dbaToW(rs.getDouble(lvlb)),
-                            dbaToW(rs.getDouble(lvlc)));
+                    TriMarkers triMarkers = new TriMarkers(a, b, c, ComputeRays.dbaToW(rs.getDouble(lvla)),
+                            ComputeRays.dbaToW(rs.getDouble(lvlb)),
+                            ComputeRays.dbaToW(rs.getDouble(lvlc)));
                     // Split triangle
                     Map<Short, Deque<TriMarkers>> res = Contouring.processTriangle(triMarkers, isoLevels);
                     for(Map.Entry<Short, Deque<TriMarkers>> entry : res.entrySet()) {

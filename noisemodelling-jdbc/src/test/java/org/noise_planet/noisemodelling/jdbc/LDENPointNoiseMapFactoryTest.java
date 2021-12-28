@@ -368,6 +368,81 @@ public class LDENPointNoiseMapFactoryTest {
     }
 
     @Test
+    public void testTableGenerationFromTrafficNightOnlyLaeq() throws SQLException, IOException {
+        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("roads_traff.shp").getFile());
+        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("buildings.shp").getFile());
+        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("receivers.shp").getFile());
+
+        LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW);
+
+        LDENPointNoiseMapFactory factory = new LDENPointNoiseMapFactory(connection, ldenConfig);
+
+        assertFalse(JDBCUtilities.tableExists(connection, ldenConfig.lDayTable));
+        assertFalse(JDBCUtilities.tableExists(connection, ldenConfig.lEveningTable));
+        assertFalse(JDBCUtilities.tableExists(connection, ldenConfig.lNightTable));
+        assertFalse(JDBCUtilities.tableExists(connection, ldenConfig.lDenTable));
+
+        ldenConfig.setComputeLDay(false);
+        ldenConfig.setComputeLEvening(false);
+        ldenConfig.setComputeLNight(true);
+        ldenConfig.setComputeLAEQOnly(true);
+        ldenConfig.setComputeLDEN(false);
+        ldenConfig.setMergeSources(true); // No idsource column
+
+        PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS", "ROADS_TRAFF",
+                "RECEIVERS");
+
+        pointNoiseMap.setComputeRaysOutFactory(factory);
+        pointNoiseMap.setPropagationProcessDataFactory(factory);
+
+        pointNoiseMap.setMaximumPropagationDistance(100.0);
+        pointNoiseMap.setComputeHorizontalDiffraction(false);
+        pointNoiseMap.setComputeVerticalDiffraction(false);
+        pointNoiseMap.setSoundReflectionOrder(0);
+
+        // Set of already processed receivers
+        Set<Long> receivers = new HashSet<>();
+
+        try {
+            RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1);
+
+            pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
+
+            factory.start();
+
+            pointNoiseMap.setGridDim(4); // force grid size
+
+            Map<PointNoiseMap.CellIndex, Integer> cells = pointNoiseMap.searchPopulatedCells(connection);
+            ProgressVisitor progressVisitor = progressLogger.subProcess(cells.size());
+            // Iterate over computation areas
+            for(PointNoiseMap.CellIndex cellIndex : new TreeSet<>(cells.keySet())) {
+                // Run ray propagation
+                pointNoiseMap.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers);
+            }
+        }finally {
+            factory.stop();
+        }
+        connection.commit();
+
+        // Check table creation
+        assertFalse(JDBCUtilities.tableExists(connection, ldenConfig.lDayTable));
+        assertFalse(JDBCUtilities.tableExists(connection, ldenConfig.lEveningTable));
+        assertTrue(JDBCUtilities.tableExists(connection, ldenConfig.lNightTable));
+        assertFalse(JDBCUtilities.tableExists(connection, ldenConfig.lDenTable));
+
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) CPT FROM " + ldenConfig.lNightTable)) {
+            assertTrue(rs.next());
+            assertEquals(830, rs.getInt(1));
+        }
+
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT MAX(LAEQ) LAEQ FROM "+ ldenConfig.lNightTable)) {
+            assertTrue(rs.next());
+            assertEquals(75, rs.getDouble("LAEQ"), 2.0);
+        }
+
+    }
+
+    @Test
     public void testReadFrequencies() throws SQLException, IOException {
         SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("lw_roads.shp").getFile());
         SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("buildings.shp").getFile());

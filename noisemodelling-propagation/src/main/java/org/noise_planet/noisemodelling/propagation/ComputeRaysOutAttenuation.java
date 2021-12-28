@@ -355,6 +355,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
                         pathPk.setIdReceiver(multiThreadParent.inputData.receiversPk.get((int)receiverId).intValue());
                         pathPk.setIdSource(multiThreadParent.inputData.sourcesPk.get((int)sourceId).intValue());
                         pathPk.setSourceOrientation(path.getSourceOrientation());
+                        pathPk.setGs(path.getGs());
                         propagationPaths.add(pathPk);
                     }
                 } else {

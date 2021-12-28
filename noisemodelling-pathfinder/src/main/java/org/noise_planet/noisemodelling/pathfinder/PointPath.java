@@ -15,7 +15,6 @@ public class PointPath {
     // given by user
     public Coordinate coordinate; // coordinate (absolute)
     public double altitude; // altitude of relief (exact)
-    public double gs;       // only if POINT_TYPE = SRCE or RECV, G coefficient right above the point
     public List<Double> alphaWall = Collections.unmodifiableList(Arrays.asList(0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1));; // only if POINT_TYPE = REFL, alpha coefficient
     public int buildingId = -1; // only if POINT_TYPE = REFL
     public int wallId = -1;
@@ -44,10 +43,9 @@ public class PointPath {
      * @param alphaWall
      * @param type
      */
-    public PointPath(Coordinate coordinate, double altitude, double gs, List<Double> alphaWall, int buildingId, POINT_TYPE type) {
+    public PointPath(Coordinate coordinate, double altitude, List<Double> alphaWall, int buildingId, POINT_TYPE type) {
         this.coordinate = coordinate;
         this.altitude = altitude;
-        this.gs = gs;
         this.alphaWall = alphaWall;
         this.buildingId = buildingId;
         this.type = type;

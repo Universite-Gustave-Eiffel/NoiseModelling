@@ -13,6 +13,7 @@ import org.noise_planet.noisemodelling.emission.RailwayVehicleParametersCnossos;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.*;
 
@@ -21,7 +22,7 @@ import static org.noise_planet.noisemodelling.jdbc.MakeParallelLines.MakeParalle
 
 
 public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGeom> {
-
+    private final EvaluateRailwaySourceCnossos evaluateRailwaySourceCnossos = new EvaluateRailwaySourceCnossos();
     private Connection connection;
     private RailWayLW railWayLWsum;
     private RailWayLW railWayLWsumDay;
@@ -69,6 +70,17 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
         return inputLineStrings;
     }
 
+    public static boolean hasColumn(SpatialResultSet rs, String columnName) throws SQLException {
+        ResultSetMetaData rsmd = rs.getMetaData();
+        int columns = rsmd.getColumnCount();
+        for (int x = 1; x <= columns; x++) {
+            if (columnName.equals(rsmd.getColumnName(x))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @Override
     public RailWayLWGeom next() {
         try {
@@ -82,6 +94,8 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
                 railWayLWsumNight = getRailwayEmissionFromResultSet(spatialResultSet, "NIGHT");
 
                 railWayLWfinal.setNbTrack(spatialResultSet.getInt("NTRACK"));
+                if (hasColumn(spatialResultSet, "GS")) railWayLWfinal.setGs(spatialResultSet.getDouble("GS"));
+
                 currentIdSection = spatialResultSet.getInt("PK");
                 railWayLWfinal.setPK(currentIdSection);
                 railWayLWfinal.setGeometry(splitGeometry(spatialResultSet.getGeometry()));
@@ -102,6 +116,7 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
                     railWayLWfinal.setGeometry(splitGeometry(spatialResultSet.getGeometry()));
                     railWayLWfinal.setPK(spatialResultSet.getInt("PK"));
                     railWayLWfinal.setNbTrack(spatialResultSet.getInt("NTRACK"));
+                    if (hasColumn(spatialResultSet, "GS")) railWayLWfinal.setGs(spatialResultSet.getDouble("GS"));
                     railWayLWsum = getRailwayEmissionFromResultSet(spatialResultSet, "DAY");
                     railWayLWsumDay = getRailwayEmissionFromResultSet(spatialResultSet, "DAY");
                     railWayLWsumEvening = getRailwayEmissionFromResultSet(spatialResultSet, "EVENING");
@@ -218,7 +233,7 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
         }
 
 
-        EvaluateRailwaySourceCnossos evaluateRailwaySourceCnossos = new EvaluateRailwaySourceCnossos();
+
 
         RailWayLW  lWRailWay = new RailWayLW();
 
@@ -262,6 +277,17 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
         private List<LineString> geometry;
         private int pk;
         private int nbTrack;
+
+        public double getGs() {
+            return gs;
+        }
+
+        public void setGs(double gs) {
+            this.gs = gs;
+        }
+
+        private double gs;
+
 
         public RailWayLW getRailWayLW() {
             return railWayLW;
