@@ -106,6 +106,11 @@ public class SegmentPath {
         this.gm = g;
     }
 
+    public void setGpath(double gPath, double gS) {
+        this.gPath = gPath;
+        this.gPathPrime = this.testFormH <= 1 ? this.gPath*(this.testFormH) + gS*(1-this.testFormH) : this.gPath;
+    }
+
     /*public Double getGw() {
         return gw;
     }

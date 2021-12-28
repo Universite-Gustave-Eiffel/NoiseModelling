@@ -144,10 +144,10 @@ public class LDENPointNoiseMapFactoryTest {
         pointNoiseMap.setComputeRaysOutFactory(factory);
         pointNoiseMap.setPropagationProcessDataFactory(factory);
 
-        pointNoiseMap.setMaximumPropagationDistance(250.0);
-        pointNoiseMap.setComputeHorizontalDiffraction(true);
-        pointNoiseMap.setComputeVerticalDiffraction(true);
-        pointNoiseMap.setSoundReflectionOrder(1);
+        pointNoiseMap.setMaximumPropagationDistance(100.0);
+        pointNoiseMap.setComputeHorizontalDiffraction(false);
+        pointNoiseMap.setComputeVerticalDiffraction(false);
+        pointNoiseMap.setSoundReflectionOrder(0);
 
         // Set of already processed receivers
         Set<Long> receivers = new HashSet<>();

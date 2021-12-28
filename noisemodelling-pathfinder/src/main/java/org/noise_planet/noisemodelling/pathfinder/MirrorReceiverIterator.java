@@ -150,7 +150,7 @@ public class MirrorReceiverIterator implements Iterator<MirrorReceiverResult> {
      */
     public static boolean wallWallTest(ProfileBuilder.Wall wall1, ProfileBuilder.Wall wall2) {
         return ((Orientation.isCCW(new Coordinate[]{wall1.p0, wall1.p1, wall2.p0, wall1.p1}) ||
-                        Orientation.isCCW(new Coordinate[]{wall1.p0, wall1.p1, wall2.p1, wall1.p0})) &&
+                Orientation.isCCW(new Coordinate[]{wall1.p0, wall1.p1, wall2.p1, wall1.p0})) &&
                 (Orientation.isCCW(new Coordinate[]{wall2.p0, wall2.p1, wall1.p0, wall2.p0}) ||
                         Orientation.isCCW(new Coordinate[]{wall2.p0, wall2.p1, wall1.p1, wall2.p0})));
     }
