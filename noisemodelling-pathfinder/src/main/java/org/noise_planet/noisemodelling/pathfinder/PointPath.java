@@ -59,10 +59,9 @@ public class PointPath {
      * @param alphaWall
      * @param type
      */
-    public PointPath(Coordinate coordinate, double altitude, double gs, List<Double> alphaWall, POINT_TYPE type) {
+    public PointPath(Coordinate coordinate, double altitude, List<Double> alphaWall, POINT_TYPE type) {
         this.coordinate = coordinate;
         this.altitude = altitude;
-        this.gs = gs;
         this.alphaWall = alphaWall;
         this.type = type;
     }
@@ -72,10 +71,9 @@ public class PointPath {
      * @param cutPoint CutPoint to use to generate the PointPath
      * @param defaultType Default point type to use if the cut point is nor a source, nor a receiver.
      */
-    public PointPath(ProfileBuilder.CutPoint cutPoint, POINT_TYPE defaultType, double gs, double altitude) {
+    public PointPath(ProfileBuilder.CutPoint cutPoint, POINT_TYPE defaultType, double altitude) {
         this.coordinate = cutPoint.getCoordinate();
         this.altitude = altitude;
-        this.gs = gs;
         this.alphaWall = cutPoint.getWallAlpha();
         this.type = cutPoint.getType().toPointType(defaultType);
     }
@@ -88,10 +86,9 @@ public class PointPath {
      * @param alphaWall
      * @param type
      */
-    public PointPath(Coordinate coordinate, double altitude, double gs, double[] alphaWall, POINT_TYPE type) {
+    public PointPath(Coordinate coordinate, double altitude, double[] alphaWall, POINT_TYPE type) {
         this.coordinate = coordinate;
         this.altitude = altitude;
-        this.gs = gs;
         this.alphaWall = new ArrayList<>(alphaWall.length);
         for(double a : alphaWall) {
             this.alphaWall.add(a);
@@ -109,7 +106,6 @@ public class PointPath {
     public void writeStream( DataOutputStream out ) throws IOException {
         PropagationPath.writeCoordinate(out, coordinate);
         out.writeDouble(altitude);
-        out.writeDouble(gs);
         out.writeShort(alphaWall.size());
         for (Double bandAlpha : alphaWall) {
             out.writeDouble(bandAlpha);
@@ -128,7 +124,6 @@ public class PointPath {
     public void readStream( DataInputStream in ) throws IOException {
         coordinate = PropagationPath.readCoordinate(in);
         altitude = in.readDouble();
-        gs = in.readDouble();
         int nbFreq = in.readShort();
         ArrayList<Double> readAlpha = new ArrayList<>(nbFreq);
         for (int j = 0; j< nbFreq; j++){

@@ -328,7 +328,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
 
                 }
                 // laeq value
-                double value = ComputeRays.wToDba(ComputeRays.sumArray(ComputeRays.dbaToW(ComputeRays.sumArray(row.value, a_weighting))));
+                double value = wToDba(sumArray(dbaToW(sumArray(row.value, a_weighting))));
                 if(!Double.isFinite(value)) {
                     value = -99;
                 }
@@ -336,7 +336,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
 
                 // leq value
                 if (!ldenConfig.computeLAEQOnly) {
-                    ps.setDouble(parameterIndex++, ComputeRays.wToDba(ComputeRays.sumArray(ComputeRays.dbaToW(row.value))));
+                    ps.setDouble(parameterIndex++, wToDba(sumArray(dbaToW(row.value))));
                 }
 
                 ps.addBatch();

@@ -149,7 +149,7 @@ public class ProfileBuilder {
      * @param groundNodeCapacity   Ground RTree node capacity.
      * @param maxLineLength        Max length of line part used for profile retrieving.
      */
-    public ProfileBuilder(int buildingNodeCapacity, int topoNodeCapacity, int groundNodeCapacity, int maxLineLength) throws IOException {
+    public ProfileBuilder(int buildingNodeCapacity, int topoNodeCapacity, int groundNodeCapacity, int maxLineLength) {
         this.buildingNodeCapacity = buildingNodeCapacity;
         this.topoNodeCapacity = topoNodeCapacity;
         this.groundNodeCapacity = groundNodeCapacity;

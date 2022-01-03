@@ -478,7 +478,7 @@ public class PropagationPath {
         // if dp <= 30(zs + zr), then the distinction between the type of ground located near the source and the type of ground located near the receiver is negligible.
         // Eq. 2.5.14
         if (testForm <= 1) {
-            srSegment.gPathPrime = testForm * srSegment.gPath + (1 - testForm) * pointList.get(0).gs;
+            srSegment.gPathPrime = testForm * srSegment.gPath + (1 - testForm) * getGs();
         } else {
             srSegment.gPathPrime = srSegment.gPath;
         }

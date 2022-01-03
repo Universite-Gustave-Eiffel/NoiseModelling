@@ -29,13 +29,14 @@ import org.locationtech.jts.geom.*;
 import org.locationtech.jts.index.quadtree.Quadtree;
 import org.locationtech.jts.operation.union.CascadedPolygonUnion;
 import org.locationtech.jts.simplify.TopologyPreservingSimplifier;
-import org.noise_planet.noisemodelling.pathfinder.ComputeRays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.text.DecimalFormat;
 import java.util.*;
+
+import static org.noise_planet.noisemodelling.emission.Utils.dbaToW;
 
 /**
  * Create isosurfaces
@@ -68,7 +69,7 @@ public class BezierContouring {
         DecimalFormat format = new DecimalFormat("#.##");
         for (int idiso = 0; idiso < isoLevels.size(); idiso++) {
             double lvl = isoLevels.get(idiso);
-            this.isoLevels.add(ComputeRays.dbaToW(lvl));
+            this.isoLevels.add(dbaToW(lvl));
             if (idiso == 0) {
                 this.isoLabels.add(String.format(Locale.ROOT, "< %s", format.format(lvl)));
             } else if(idiso < isoLevels.size() - 1){
@@ -510,9 +511,9 @@ public class BezierContouring {
                     Coordinate b = new Coordinate(rs.getDouble(xb), rs.getDouble(yb));
                     Coordinate c = new Coordinate(rs.getDouble(xc), rs.getDouble(yc));
                     // Fetch data
-                    TriMarkers triMarkers = new TriMarkers(a, b, c, ComputeRays.dbaToW(rs.getDouble(lvla)),
-                            ComputeRays.dbaToW(rs.getDouble(lvlb)),
-                            ComputeRays.dbaToW(rs.getDouble(lvlc)));
+                    TriMarkers triMarkers = new TriMarkers(a, b, c, dbaToW(rs.getDouble(lvla)),
+                            dbaToW(rs.getDouble(lvlb)),
+                            dbaToW(rs.getDouble(lvlc)));
                     // Split triangle
                     Map<Short, Deque<TriMarkers>> res = Contouring.processTriangle(triMarkers, isoLevels);
                     for(Map.Entry<Short, Deque<TriMarkers>> entry : res.entrySet()) {

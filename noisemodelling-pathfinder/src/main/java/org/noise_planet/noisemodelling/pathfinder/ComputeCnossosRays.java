@@ -463,7 +463,7 @@ public class ComputeCnossosRays {
         List<SegmentPath> segments = new ArrayList<>();
 
         List<PointPath> points = new ArrayList<>();
-        PointPath srcPP = new PointPath(src, data.profileBuilder.getZGround(srcCut), srcCut.getGroundCoef(), srcCut.getWallAlpha(), PointPath.POINT_TYPE.SRCE);
+        PointPath srcPP = new PointPath(src, data.profileBuilder.getZGround(srcCut), srcCut.getWallAlpha(), PointPath.POINT_TYPE.SRCE);
         srcPP.buildingId = srcCut.getBuildingId();
         srcPP.wallId = srcCut.getWallId();
         points.add(srcPP);
@@ -477,7 +477,7 @@ public class ComputeCnossosRays {
         if(segments.isEmpty()) {
             segments.add(srSeg);
         }
-        PointPath rcvPP = new PointPath(rcv, data.profileBuilder.getZGround(rcvCut), rcvCut.getGroundCoef(), rcvCut.getWallAlpha(), PointPath.POINT_TYPE.RECV);
+        PointPath rcvPP = new PointPath(rcv, data.profileBuilder.getZGround(rcvCut), rcvCut.getWallAlpha(), PointPath.POINT_TYPE.RECV);
         rcvPP.buildingId = rcvCut.getBuildingId();
         rcvPP.wallId = rcvCut.getWallId();
         points.add(rcvPP);
@@ -573,7 +573,7 @@ public class ComputeCnossosRays {
                     segments.add(seg1);
                     segments.add(seg2);
 
-                    points.add(new PointPath(o, o.z, srcCut.getGroundCoef(), new ArrayList<>(), DIFH_RCRIT));
+                    points.add(new PointPath(o, o.z, new ArrayList<>(), DIFH_RCRIT));
                     propagationPath.difHPoints.add(points.size() - 1);
                 }
             }
@@ -671,8 +671,8 @@ public class ComputeCnossosRays {
                 for(SegmentPath seg : freePaths) {
                     g+=seg.gPath*seg.d/d;
                 }*/
-                PointPath src = new PointPath(coords.get(0), data.profileBuilder.getZ(coordinates.get(0)), data.gS, new ArrayList<>(), SRCE);
-                PointPath rcv = new PointPath(coords.get(coords.size()-1), data.profileBuilder.getZ(coordinates.get(coordinates.size()-1)), data.gS, new ArrayList<>(), RECV);
+                PointPath src = new PointPath(coords.get(0), data.profileBuilder.getZ(coordinates.get(0)), new ArrayList<>(), SRCE);
+                PointPath rcv = new PointPath(coords.get(coords.size()-1), data.profileBuilder.getZ(coordinates.get(coordinates.size()-1)), new ArrayList<>(), RECV);
                 double[] meanPlan = JTSUtility.getMeanPlaneCoefficients(groundPts.toArray(new Coordinate[0]));
                 SegmentPath srSeg = computeSegment(src.coordinate, rcv.coordinate, meanPlan, g, data.gS);
                 //LineSegment sr = new LineSegment(src.coordinate, rcv.coordinate);
@@ -685,7 +685,7 @@ public class ComputeCnossosRays {
                 path = new PropagationPath(false, pps, segs, srSeg);
                 double e = 0;
                 for(int i=1; i<coordinates.size()-1; i++) {
-                    PointPath diff = new PointPath(coords.get(i), data.profileBuilder.getZ(coordinates.get(i)), data.gS, new ArrayList<>(), DIFV);
+                    PointPath diff = new PointPath(coords.get(i), data.profileBuilder.getZ(coordinates.get(i)), new ArrayList<>(), DIFV);
                     pps.add(diff);
                     path.difVPoints.add(i);
                     SegmentPath seg = computeSegment(previous.coordinate, diff.coordinate, meanPlan, g, data.gS);
@@ -790,10 +790,10 @@ public class ComputeCnossosRays {
             SegmentPath path = computeSegment(pts2D.get(i0), pts2D.get(i1), meanPlane, profile.getGPath(), profile.getSource().getGroundCoef());
             segments.add(path);
             if(points.isEmpty()) {
-                points.add(new PointPath(path.s,  data.profileBuilder.getZGround(path.s), cutPt0.getGroundCoef(), cutPt0.getWallAlpha(), PointPath.POINT_TYPE.SRCE));
+                points.add(new PointPath(path.s,  data.profileBuilder.getZGround(path.s), cutPt0.getWallAlpha(), PointPath.POINT_TYPE.SRCE));
                 src = path.s;
             }
-            points.add(new PointPath(path.r,  data.profileBuilder.getZGround(path.r), cutPt1.getGroundCoef(), cutPt1.getWallAlpha(), PointPath.POINT_TYPE.RECV));
+            points.add(new PointPath(path.r,  data.profileBuilder.getZGround(path.r), cutPt1.getWallAlpha(), PointPath.POINT_TYPE.RECV));
             if(i != pts.size()-1) {
                 if(i != 1) {
                     e += path.d;
@@ -1360,7 +1360,7 @@ public class ComputeCnossosRays {
                 for (int idPt = 0; idPt < rayPath.size() - 1; idPt++) {
                     Coordinate firstPt = rayPath.get(idPt).getReceiverPos();
                     MirrorReceiverResult refl = rayPath.get(idPt + 1);
-                    reflPoint = new PointPath(refl.getReceiverPos(), 0, 1, new ArrayList<>(), PointPath.POINT_TYPE.REFL);
+                    reflPoint = new PointPath(refl.getReceiverPos(), 0, new ArrayList<>(), PointPath.POINT_TYPE.REFL);
 
                     if(rayPath.get(0).getType().equals(BUILDING)) {
                         reflPoint.setBuildingId(rayPath.get(0).getBuildingId());

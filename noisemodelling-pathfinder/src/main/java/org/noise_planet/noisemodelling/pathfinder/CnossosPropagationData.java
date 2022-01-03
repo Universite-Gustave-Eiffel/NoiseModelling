@@ -60,6 +60,7 @@ public class CnossosPropagationData {
     public static final String PITCH_DATABASE_FIELD = "PITCH";
     public static final String ROLL_DATABASE_FIELD = "ROLL";
     public static final String DIRECTIVITY_DATABASE_FIELD = "DIR_ID";
+    public static final String GS_DATABASE_FIELD = "GS";
 
     public List<Long> receiversPk = new ArrayList<>();
     public List<Long> sourcesPk = new ArrayList<>();

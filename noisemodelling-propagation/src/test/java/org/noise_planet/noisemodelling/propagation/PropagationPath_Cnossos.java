@@ -54,10 +54,10 @@ public class PropagationPath_Cnossos {
         SegmentPath srPath;
         Vector3D flatTopography = new Vector3D(new Coordinate(0,0,0),new Coordinate(0,0,0));
 
-        points.add(new PointPath(new Coordinate(0,0,0),1,0, new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
-        points.add(new PointPath(new Coordinate(10,0,0),1,Double.NaN,Collections.nCopies(8, 0.5), -1, PointPath.POINT_TYPE.DIFH));
-        points.add(new PointPath(new Coordinate(20,0,0),1,Double.NaN,Collections.nCopies(8, 0.5), -1, PointPath.POINT_TYPE.DIFH));
-        points.add(new PointPath(new Coordinate(30,30,0),1,0, new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
+        points.add(new PointPath(new Coordinate(0,0,0),1, new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
+        points.add(new PointPath(new Coordinate(10,0,0),1,Collections.nCopies(8, 0.5), -1, PointPath.POINT_TYPE.DIFH));
+        points.add(new PointPath(new Coordinate(20,0,0),1,Collections.nCopies(8, 0.5), -1, PointPath.POINT_TYPE.DIFH));
+        points.add(new PointPath(new Coordinate(30,30,0),1, new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
         segments.add(new SegmentPath(1, flatTopography,new Coordinate(0,0,0)));
         segments.add(new SegmentPath(1, flatTopography,new Coordinate(0,0,0)));
         srPath = new SegmentPath(1,flatTopography,new Coordinate(0,0,0));
@@ -218,10 +218,10 @@ public class PropagationPath_Cnossos {
         SegmentPath srPath;
         Vector3D flatTopography = new Vector3D(new Coordinate(0,0,0),new Coordinate(150,0,0));
 
-        points.add(new PointPath(new Coordinate(0, 0, 0.05), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
-        points.add(new PointPath(new Coordinate(50, 0, 10.0), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.DIFH));
-        points.add(new PointPath(new Coordinate(100, 0, 10.0), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.DIFH));
-        points.add(new PointPath(new Coordinate(150, 0, 2.0), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
+        points.add(new PointPath(new Coordinate(0, 0, 0.05), 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
+        points.add(new PointPath(new Coordinate(50, 0, 10.0), 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.DIFH));
+        points.add(new PointPath(new Coordinate(100, 0, 10.0), 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.DIFH));
+        points.add(new PointPath(new Coordinate(150, 0, 2.0), 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
         // only first and last segment are necessary, even if it is possible to add more.
         segments.add(new SegmentPath(0, flatTopography,new Coordinate(0,0,0)));
         segments.add(new SegmentPath(0, flatTopography,new Coordinate(0,0,0)));
@@ -251,10 +251,10 @@ public class PropagationPath_Cnossos {
         SegmentPath srPath;
         Vector3D flatTopography = new Vector3D(new Coordinate(0,0,0),new Coordinate(150,0,0));
 
-        points.add(new PointPath(new Coordinate(0, 0, 0.05), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
-        points.add(new PointPath(new Coordinate(50, 0, 10.0), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.DIFH));
-        points.add(new PointPath(new Coordinate(100, 0, 10.0), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.DIFH));
-        points.add(new PointPath(new Coordinate(150, 0, 2.0), 0, 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
+        points.add(new PointPath(new Coordinate(0, 0, 0.05), 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.SRCE));
+        points.add(new PointPath(new Coordinate(50, 0, 10.0), 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.DIFH));
+        points.add(new PointPath(new Coordinate(100, 0, 10.0), 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.DIFH));
+        points.add(new PointPath(new Coordinate(150, 0, 2.0), 0, new ArrayList<>(), -1, PointPath.POINT_TYPE.RECV));
         // only first and last segment are necessary, even if it is possible to add more.
         segments.add(new SegmentPath(0.0, flatTopography,new Coordinate(0,0,0)));
         segments.add(new SegmentPath(0.0, flatTopography,new Coordinate(0,0,0)));
