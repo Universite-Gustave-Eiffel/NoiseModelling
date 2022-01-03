@@ -128,7 +128,7 @@ public class ProfileBuilder {
 
     {
         try {
-            writer = new FileWriter("/tmp/log_of_profiles");
+            writer = new FileWriter("target/log_of_profiles");
         } catch (IOException e) {
             e.printStackTrace();
         }
