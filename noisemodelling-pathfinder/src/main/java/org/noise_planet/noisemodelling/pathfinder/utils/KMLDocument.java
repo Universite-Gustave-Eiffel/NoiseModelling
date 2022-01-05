@@ -76,10 +76,8 @@ import org.noise_planet.noisemodelling.pathfinder.ComputeRaysOut;
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
-import java.io.BufferedOutputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -101,13 +99,14 @@ public class KMLDocument {
     //https://gisjames.wordpress.com/2016/04/27/deciding-how-many-decimal-places-to-include-when-reporting-latitude-and-longitude/
     private int wgs84Precision = 7;
     private GeometryFactory geometryFactory = new GeometryFactory();
+    private BufferedWriter bufferedWriter;
     private CoordinateOperation transform = null;
 
     public KMLDocument(OutputStream outputStream) throws XMLStreamException {
         final XMLOutputFactory streamWriterFactory = XMLOutputFactory.newFactory();
-        streamWriterFactory.setProperty("escapeCharacters", false);
+        bufferedWriter = new BufferedWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8));
         xmlOut = streamWriterFactory.createXMLStreamWriter(
-                new BufferedOutputStream(outputStream), "UTF-8");
+                bufferedWriter);
     }
 
     /**
@@ -214,8 +213,13 @@ public class KMLDocument {
             polygons[idTri++] = poly;
         }
         //Write geometry
-        xmlOut.writeCharacters(KMLWriter.writeGeometry(geometryFactory.createMultiPolygon(polygons), Double.NaN,
-                wgs84Precision, false, KMLWriter.ALTITUDE_MODE_ABSOLUTE));
+        xmlOut.flush();
+        try {
+            bufferedWriter.write(KMLWriter.writeGeometry(geometryFactory.createMultiPolygon(polygons), Double.NaN,
+                    wgs84Precision, false, KMLWriter.ALTITUDE_MODE_ABSOLUTE));
+        } catch (IOException ex) {
+            throw new XMLStreamException(ex);
+        }
         xmlOut.writeEndElement();//Write Placemark
         xmlOut.writeEndElement();//Folder
         return this;
@@ -257,9 +261,14 @@ public class KMLDocument {
             idPoly++;
         }
         //Write geometry
-        xmlOut.writeCharacters(KMLWriter.writeGeometry(geometryFactory.createMultiPolygon(
-                polygons.toArray(new Polygon[polygons.size()])), Double.NaN,
-                wgs84Precision, true, KMLWriter.ALTITUDE_MODE_RELATIVETOGROUND));
+        xmlOut.flush();
+        try {
+            bufferedWriter.write(KMLWriter.writeGeometry(geometryFactory.createMultiPolygon(
+                            polygons.toArray(new Polygon[0])), Double.NaN,
+                    wgs84Precision, true, KMLWriter.ALTITUDE_MODE_RELATIVETOGROUND));
+        } catch (IOException ex) {
+            throw new XMLStreamException(ex);
+        }
         xmlOut.writeEndElement();//Write Placemark
         xmlOut.writeEndElement();//Folder
         return this;
@@ -288,8 +297,13 @@ public class KMLDocument {
             // Apply CRS transform
             doTransform(lineString);
             //Write geometry
-            xmlOut.writeCharacters(KMLWriter.writeGeometry(lineString, Double.NaN,
-                    wgs84Precision, false, KMLWriter.ALTITUDE_MODE_ABSOLUTE));
+            xmlOut.flush();
+            try {
+                bufferedWriter.write(KMLWriter.writeGeometry(lineString, Double.NaN,
+                        wgs84Precision, false, KMLWriter.ALTITUDE_MODE_ABSOLUTE));
+            } catch (IOException ex) {
+                throw new XMLStreamException(ex);
+            }
             xmlOut.writeEndElement();//Write Placemark
         }
         xmlOut.writeEndElement();//Folder
