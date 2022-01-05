@@ -31,6 +31,7 @@ jobs:
         env:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+        if: github.event_name == 'push'
       - name: Clean
         run: rm -f $HOME/.gradle/caches/modules-2/modules-2.lock
       - name: Cache
