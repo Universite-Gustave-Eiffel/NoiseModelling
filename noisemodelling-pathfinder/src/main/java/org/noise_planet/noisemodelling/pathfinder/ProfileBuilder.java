@@ -124,16 +124,6 @@ public class ProfileBuilder {
     /** Maximum area of triangles. */
     private double maxArea;
 
-    private FileWriter writer;
-
-    {
-        try {
-            writer = new FileWriter("/tmp/log_of_profiles");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
     /**
      * Main empty constructor.
      */
@@ -788,34 +778,29 @@ public class ProfileBuilder {
                 LOGGER.error("Error while getting vertices", e);
                 return null;
             }
-            List<Wall> topoWalls = new ArrayList<>();
+            // wallIndex set will merge shared triangle segments
+            Set<IntegerTuple> wallIndex = new HashSet<>();
             for (int i = 0; i < topoTriangles.size(); i++) {
-                Triangle tri = topoTriangles.get(i);
-                Coordinate vA = vertices.get(tri.getA());
-                Coordinate vB = vertices.get(tri.getB());
-                Coordinate vC = vertices.get(tri.getC());
-                Envelope env = FACTORY.createLineString(new Coordinate[]{vA, vB, vC}).getEnvelopeInternal();
-                topoTree.insert(env, i);
-                topoWalls.add(new Wall(vA, vB, i, TOPOGRAPHY));
-                topoWalls.add(new Wall(vB, vC, i, TOPOGRAPHY));
-                topoWalls.add(new Wall(vC, vA, i, TOPOGRAPHY));
-            }
-            List<Wall> toRemove = new ArrayList<>();
-            for(int i=0; i<topoWalls.size(); i++) {
-                Wall wall = topoWalls.get(i);
-                List<Wall> walls = topoWalls.subList(i, topoWalls.size());
-                for(Wall w : walls) {
-                    if((w.p0.equals(wall.p0) && w.p1.equals(wall.p1)) ||
-                            (w.p0.equals(wall.p1) && w.p1.equals(wall.p0))) {
-                        toRemove.add(wall);
-                    }
+                final Triangle tri = topoTriangles.get(i);
+                wallIndex.add(new IntegerTuple(tri.getA(), tri.getB(), i));
+                wallIndex.add(new IntegerTuple(tri.getB(), tri.getC(), i));
+                wallIndex.add(new IntegerTuple(tri.getC(), tri.getA(), i));
+                // Insert triangle in rtree
+                if(topoTree != null) {
+                    Coordinate vA = vertices.get(tri.getA());
+                    Coordinate vB = vertices.get(tri.getB());
+                    Coordinate vC = vertices.get(tri.getC());
+                    Envelope env = FACTORY.createLineString(new Coordinate[]{vA, vB, vC}).getEnvelopeInternal();
+                    topoTree.insert(env, i);
                 }
             }
-            topoWalls.removeAll(toRemove);
-            for(Wall wall : topoWalls) {
+            //TODO : Seems to be useless, to check
+            /*for (IntegerTuple wallId : wallIndex) {
+                Coordinate vA = vertices.get(wallId.nodeIndexA);
+                Coordinate vB = vertices.get(wallId.nodeIndexB);
+                Wall wall = new Wall(vA, vB, wallId.triangleIdentifier, TOPOGRAPHY);
                 processedWalls.add(wall);
-                rtree.insert(wall.getLine().getEnvelopeInternal(), processedWalls.size() - 1);
-            }
+            }*/
         }
         //Update building z
         if(topoTree != null) {
@@ -1035,11 +1020,6 @@ public class ProfileBuilder {
      * @return Cutting profile.
      */
     public CutProfile getProfile(Coordinate c0, Coordinate c1, double gS) {
-        try {
-            writer.write(c0.toString()+","+c1.toString()+"\n");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
         CutProfile profile = new CutProfile();
 
         List<LineSegment> lines = new ArrayList<>();
@@ -2087,6 +2067,46 @@ public class ProfileBuilder {
             wallTree.query(pathEnv, visitor);
         } catch (IllegalStateException ex) {
             //Ignore
+        }
+    }
+
+
+    /**
+     * Hold two integers. Used to store unique triangle segments
+     */
+    private static class IntegerTuple {
+        int nodeIndexA;
+        int nodeIndexB;
+        int triangleIdentifier;
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            IntegerTuple that = (IntegerTuple) o;
+            return nodeIndexA == that.nodeIndexA && nodeIndexB == that.nodeIndexB;
+        }
+
+        @Override
+        public String toString() {
+            return "IntegerTuple{" + "nodeIndexA=" + nodeIndexA + ", nodeIndexB=" + nodeIndexB + ", " +
+                    "triangleIdentifier=" + triangleIdentifier + '}';
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(nodeIndexA, nodeIndexB);
+        }
+
+        public IntegerTuple(int nodeIndexA, int nodeIndexB, int triangleIdentifier) {
+            if(nodeIndexA < nodeIndexB) {
+                this.nodeIndexA = nodeIndexA;
+                this.nodeIndexB = nodeIndexB;
+            } else {
+                this.nodeIndexA = nodeIndexB;
+                this.nodeIndexB = nodeIndexA;
+            }
+            this.triangleIdentifier = triangleIdentifier;
         }
     }
 }

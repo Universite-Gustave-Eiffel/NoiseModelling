@@ -238,8 +238,8 @@ public class JTSUtility {
         double valB = valB1 + 2 * valB2;
         double dist3 = Math.pow (profile[n].x - profile[0].x, 3) ;
         double dist4 = Math.pow (profile[n].x - profile[0].x, 4) ;
-        assert (dist3 > 0) ;
-        assert (dist4 > 0) ;
+        //assert (dist3 > 0) ;
+        //assert (dist4 > 0) ;
         /*
          * equation VI-4
          */
