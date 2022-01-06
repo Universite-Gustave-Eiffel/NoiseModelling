@@ -7,14 +7,13 @@ import org.h2gis.api.ProgressVisitor;
 import org.h2gis.functions.io.csv.CSVDriverFunction;
 import org.h2gis.functions.io.geojson.GeoJsonRead;
 import org.h2gis.utilities.SFSUtilities;
-import org.noise_planet.noisemodelling.pathfinder.utils.*;
-import org.noise_planet.noisemodelling.pathfinder.ProfileBuilder;
-import org.noise_planet.noisemodelling.pathfinder.utils.KMLDocument;
 import org.noise_planet.noisemodelling.jdbc.LDENConfig;
 import org.noise_planet.noisemodelling.jdbc.LDENPointNoiseMapFactory;
 import org.noise_planet.noisemodelling.jdbc.PointNoiseMap;
 import org.noise_planet.noisemodelling.pathfinder.IComputeRaysOut;
+import org.noise_planet.noisemodelling.pathfinder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.RootProgressVisitor;
+import org.noise_planet.noisemodelling.pathfinder.utils.KMLDocument;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -99,7 +98,7 @@ class Main {
         // Building height field name
         pointNoiseMap.setHeightField("HEIGHT");
         // Point cloud height above sea level POINT(X Y Z)
-        pointNoiseMap.setDemTable("DEM");
+       // pointNoiseMap.setDemTable("DEM");
         // Do not propagate for low emission or far away sources.
         // error in dB
         pointNoiseMap.setMaximumError(0.1d);
@@ -126,7 +125,7 @@ class Main {
         pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
 
         // force the creation of a 2x2 cells
-        pointNoiseMap.setGridDim(2);
+        pointNoiseMap.setGridDim(1);
 
 
         // Set of already processed receivers
@@ -164,7 +163,6 @@ class Main {
 
     }
 
-
     public static void exportScene(String name, ProfileBuilder builder, ComputeRaysOutAttenuation result) throws IOException {
         try {
             FileOutputStream outData = new FileOutputStream(name);
@@ -180,9 +178,14 @@ class Main {
             if(builder != null) {
                 kmlDocument.writeBuildings(builder);
             }
+            if(result != null) {
+                kmlDocument.writeProfile(builder.getProfile(result.getInputData().sourceGeometries.get(0).getCoordinate(),result.getInputData().receivers.get(0)));
+            }
+
             kmlDocument.writeFooter();
         } catch (XMLStreamException | CoordinateOperationException | CRSException ex) {
             throw new IOException(ex);
         }
     }
+
 }
