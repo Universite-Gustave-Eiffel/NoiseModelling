@@ -281,7 +281,10 @@ public class ComputeCnossosRays {
         }
         else if(data.isComputeDiffraction()) {
             if (data.isComputeHEdgeDiffraction()) {
-                propagationPaths.add(computeHEdgeDiffraction(cutProfile));
+                PropagationPath propagationPath = computeHEdgeDiffraction(cutProfile);
+                if(propagationPath != null) {
+                    propagationPaths.add(propagationPath);
+                }
             }
             if (data.isComputeVEdgeDiffraction()) {
                 PropagationPath propagationPath = computeVEdgeDiffraction(srcCoord, rcvCoord, data, LEFT);
