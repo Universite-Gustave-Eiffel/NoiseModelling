@@ -88,7 +88,7 @@ public class CnossosBench {
 
         List<Double> levels = new ArrayList<>();
         SHPWrite.exportTable(connection, "target/buildings.shp", "BUILDINGS");
-        for(int refOrder = 99; refOrder < 100; refOrder++) {
+        for(int refOrder = 1; refOrder < 100; refOrder++) {
             pointNoiseMap.setSoundReflectionOrder(refOrder);
             try {
                 factory.start();

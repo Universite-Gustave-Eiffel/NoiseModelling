@@ -281,7 +281,7 @@ public class ComputeCnossosRays {
         }
         else if(data.isComputeDiffraction()) {
             if (data.isComputeHEdgeDiffraction()) {
-                propagationPaths.add(computeHEdgeDiffraction(cutProfile, data.gS));
+                propagationPaths.add(computeHEdgeDiffraction(cutProfile));
             }
             if (data.isComputeVEdgeDiffraction()) {
                 PropagationPath propagationPath = computeVEdgeDiffraction(srcCoord, rcvCoord, data, LEFT);
@@ -722,7 +722,7 @@ public class ComputeCnossosRays {
         return coords;
     }
 
-    public PropagationPath computeHEdgeDiffraction(ProfileBuilder.CutProfile cutProfile, double gs) {
+    public PropagationPath computeHEdgeDiffraction(ProfileBuilder.CutProfile cutProfile) {
         List<SegmentPath> segments = new ArrayList<>();
         List<PointPath> points = new ArrayList<>();
         List<ProfileBuilder.CutPoint> cutPts = cutProfile.getCutPoints().stream()
@@ -1181,21 +1181,18 @@ public class ComputeCnossosRays {
             }
             //Calculate the coordinate of the mirror rcv
             Coordinate proj = wall.getLineSegment().project(rcvCoord);
-            Coordinate rcvMirror = new Coordinate(2*proj.x-rcvCoord.x, 2*proj.y-rcvCoord.y, rcvCoord.z);
             //If the mirror rcv is too far, skip it
-            if(srcRcvLine.p0.distance(rcvMirror) > data.maxSrcDist) {
+            if(srcRcvLine.p0.distance(proj) > data.maxSrcDist/2) {
                 continue;
             }
 
+            Coordinate rcvMirror = new Coordinate(2*proj.x-rcvCoord.x, 2*proj.y-rcvCoord.y, rcvCoord.z);
             LineSegment srcMirrRcvLine = new LineSegment(srcCoord, rcvMirror);
             Coordinate inter = srcMirrRcvLine.intersection(wall.getLineSegment());
             if (inter == null) {
                 continue;
             }
-            double frac = wall.getLineSegment().segmentFraction(inter);
-            inter.z = wall.p0.z + frac * (wall.p1.z - wall.p0.z);
             //Check if an other wall is masking the current
-            double dist = dist2D(srcCoord, inter);
             boolean skipWall = false;
             List<ProfileBuilder.Wall> walls = new ArrayList<>();
             walls.addAll(wall.getObstacle().getWalls());
@@ -1208,6 +1205,7 @@ public class ComputeCnossosRays {
                     double d2 = srcMirrRcvLine.segmentFraction(otherInter);
                     if (otherInterZ > d2 * inter.z / d1) {
                         double otherDist = dist2D(srcCoord, otherInter);
+                        double dist = dist2D(srcCoord, inter);
                         if (otherDist < dist) {
                             skipWall = true;
                             break;
@@ -1319,7 +1317,7 @@ public class ComputeCnossosRays {
                     break;
                 }
             }
-            if (validReflection && !rayPath.isEmpty()) {
+            if (validReflection) {
                 // Check intermediate reflections
                 for (int idPt = 0; idPt < rayPath.size() - 1; idPt++) {
                     Coordinate firstPt = rayPath.get(idPt).getReceiverPos();
@@ -1414,7 +1412,6 @@ public class ComputeCnossosRays {
                     pts.add(srcCoord);
                     rayPath.forEach(mrr -> pts.add(mrr.getReceiverPos()));
                     pts.add(rcvCoord);
-                    List<SegmentPath> freePaths = new ArrayList<>();
                     List<Coordinate> topoPts = new ArrayList<>();
                     topoPts.add(new Coordinate(srcCoord));
                     double g = 0;
@@ -1429,14 +1426,12 @@ public class ComputeCnossosRays {
                             topoPts.add(topoPts.get(topoPts.size()-1));
                             topoPts.add(topoPts.get(topoPts.size()-1));
                         }
-                        freePaths.addAll(computeFreeField(profile, data, false).getSegmentList());
                         double dist = dist2D(pts.get(i), pts.get(i+1));
                         g+=profile.getGPath()*dist;
                         d+=dist;
                     }
                     g/=d;
-                    for(int i=0; i<topoPts.size(); i++) {
-                        final Coordinate pt = topoPts.get(i);
+                    for (final Coordinate pt : topoPts) {
                         pt.z = data.profileBuilder.getZGround(pt);
                     }
                     topoPts = toDirectLine(topoPts);

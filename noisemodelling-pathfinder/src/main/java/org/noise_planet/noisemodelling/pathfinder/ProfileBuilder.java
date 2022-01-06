@@ -124,16 +124,6 @@ public class ProfileBuilder {
     /** Maximum area of triangles. */
     private double maxArea;
 
-    private FileWriter writer;
-
-    {
-        try {
-            writer = new FileWriter("/tmp/log_of_profiles");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
     /**
      * Main empty constructor.
      */
@@ -1035,11 +1025,6 @@ public class ProfileBuilder {
      * @return Cutting profile.
      */
     public CutProfile getProfile(Coordinate c0, Coordinate c1, double gS) {
-        try {
-            writer.write(c0.toString()+","+c1.toString()+"\n");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
         CutProfile profile = new CutProfile();
 
         List<LineSegment> lines = new ArrayList<>();

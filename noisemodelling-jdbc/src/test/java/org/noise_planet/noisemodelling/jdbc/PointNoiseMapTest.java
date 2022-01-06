@@ -95,10 +95,10 @@ public class PointNoiseMapTest {
 
 
             DataOutputStream outputBin = new DataOutputStream(new FileOutputStream("./target/test-resources/propaMap.bin"));
-            PropagationPath.writePropagationPathListStream(outputBin, propaMap);
+            //PropagationPath.writePropagationPathListStream(outputBin, propaMap);
             propaMap.clear();
             DataInputStream input = new DataInputStream(new FileInputStream("./target/test-resources/propaMap.bin"));
-            PropagationPath.readPropagationPathListStream(input, propaMap);
+            //PropagationPath.readPropagationPathListStream(input, propaMap);
 
 
             assertEquals(3, allLevels.size());
