@@ -1187,19 +1187,17 @@ public class ComputeCnossosRays {
             }
             //Calculate the coordinate of the mirror rcv
             Coordinate proj = wall.getLineSegment().project(rcvCoord);
-            Coordinate rcvMirror = new Coordinate(2*proj.x-rcvCoord.x, 2*proj.y-rcvCoord.y, rcvCoord.z);
             //If the mirror rcv is too far, skip it
-            if(srcRcvLine.p0.distance(rcvMirror) > data.maxSrcDist) {
+            if(srcRcvLine.p0.distance(proj) > data.maxSrcDist/2) {
                 continue;
             }
 
+            Coordinate rcvMirror = new Coordinate(2*proj.x-rcvCoord.x, 2*proj.y-rcvCoord.y, rcvCoord.z);
             LineSegment srcMirrRcvLine = new LineSegment(srcCoord, rcvMirror);
             Coordinate inter = srcMirrRcvLine.intersection(wall.getLineSegment());
             if (inter == null) {
                 continue;
             }
-            double frac = wall.getLineSegment().segmentFraction(inter);
-            inter.z = wall.p0.z + frac * (wall.p1.z - wall.p0.z);
             //Check if an other wall is masking the current
             boolean skipWall = false;
             List<ProfileBuilder.Wall> walls = new ArrayList<>();
