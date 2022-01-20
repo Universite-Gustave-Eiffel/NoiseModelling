@@ -244,7 +244,7 @@ public class ComputeCnossosRays {
             List<PropagationPath> propagationPaths = new ArrayList<>(directPath(src, rcv));
             // Process reflection
             if (data.reflexionOrder > 0) {
-                propagationPaths.addAll(computeReflexion(rcv.getCoord(), src.getCoord(), false));
+                propagationPaths.addAll(computeReflexion(rcv.getCoord(), src.getCoord(), false, src.getOrientation()));
             }
             if (!propagationPaths.isEmpty()) {
                 return dataOut.addPropagationPaths(src.getId(), srcLi, rcv.getId(), propagationPaths);
@@ -275,6 +275,7 @@ public class ComputeCnossosRays {
     public List<PropagationPath> directPath(Coordinate srcCoord, int srcId, Orientation orientation, Coordinate rcvCoord, int rcvId) {
         List<PropagationPath> propagationPaths = new ArrayList<>();
         ProfileBuilder.CutProfile cutProfile = data.profileBuilder.getProfile(srcCoord, rcvCoord, data.gS);
+        cutProfile.setSrcOrientation(orientation);
         //If the field is free, simplify the computation
         if(cutProfile.isFreeField()) {
             propagationPaths.add(computeFreeField(cutProfile, data, true));
@@ -287,11 +288,11 @@ public class ComputeCnossosRays {
                 }
             }
             if (data.isComputeVEdgeDiffraction()) {
-                PropagationPath propagationPath = computeVEdgeDiffraction(srcCoord, rcvCoord, data, LEFT);
+                PropagationPath propagationPath = computeVEdgeDiffraction(srcCoord, rcvCoord, data, LEFT, orientation);
                 if (propagationPath != null && propagationPath.getPointList() != null) {
                     propagationPaths.add(propagationPath);
                 }
-                propagationPath = computeVEdgeDiffraction(srcCoord, rcvCoord, data, RIGHT);
+                propagationPath = computeVEdgeDiffraction(srcCoord, rcvCoord, data, RIGHT, orientation);
                 if (propagationPath != null && propagationPath.getPointList() != null) {
                     propagationPaths.add(propagationPath);
                 }
@@ -389,6 +390,17 @@ public class ComputeCnossosRays {
         return pts2DGround;
     }
 
+    private static Orientation computeOrientation(Orientation sourceOrientation, ProfileBuilder.CutPoint src, ProfileBuilder.CutPoint next){
+        return computeOrientation(sourceOrientation, src.getCoordinate(), next.getCoordinate());
+    }
+
+    private static Orientation computeOrientation(Orientation sourceOrientation, Coordinate src, Coordinate next){
+        Vector3D outgoingRay = new Vector3D(new Coordinate(next.x - src.x,
+                next.y - src.y,
+                next.z - src.z)).normalize();
+        return Orientation.fromVector(Orientation.rotate(sourceOrientation, outgoingRay, true), 0);
+    }
+
     /**
      * Compute the propagation in case of free field.
      * @param cutProfile CutProfile containing all the data for propagation computation.
@@ -433,6 +445,7 @@ public class ComputeCnossosRays {
         PointPath srcPP = new PointPath(src, data.profileBuilder.getZGround(srcCut), srcCut.getWallAlpha(), PointPath.POINT_TYPE.SRCE);
         srcPP.buildingId = srcCut.getBuildingId();
         srcPP.wallId = srcCut.getWallId();
+        srcPP.orientation = computeOrientation(cutProfile.getSrcOrientation(), srcCut, rcvCut);
         points.add(srcPP);
 
         PropagationPath propagationPath = new PropagationPath(false, points, segments, srSeg);
@@ -556,7 +569,7 @@ public class ComputeCnossosRays {
      * @return The propagation path of the horizontal diffraction.
      */
     public PropagationPath computeVEdgeDiffraction(Coordinate rcvCoord, Coordinate srcCoord,
-                                                   CnossosPropagationData data, ComputationSide side) {
+                                                   CnossosPropagationData data, ComputationSide side, Orientation orientation) {
 
         PropagationPath path = null;
         List<Coordinate> coordinates = computeSideHull(side != LEFT, new Coordinate(rcvCoord), new Coordinate(srcCoord), data.profileBuilder);
@@ -571,6 +584,7 @@ public class ComputeCnossosRays {
                 double d = 0;
                 for(int i=0; i<coordinates.size()-1; i++) {
                     ProfileBuilder.CutProfile profile = data.profileBuilder.getProfile(coordinates.get(i), coordinates.get(i+1), data.gS);
+                    profile.setSrcOrientation(orientation);
                     double dist = dist2D(coordinates.get(i), coordinates.get(i+1));
                     g+=profile.getGPath()*dist;
                     d+=dist;
@@ -638,6 +652,7 @@ public class ComputeCnossosRays {
                     g+=seg.gPath*seg.d/d;
                 }*/
                 PointPath src = new PointPath(coords.get(0), data.profileBuilder.getZ(coordinates.get(0)), new ArrayList<>(), SRCE);
+                src.orientation = computeOrientation(orientation, coords.get(0), coords.get(1));
                 PointPath rcv = new PointPath(coords.get(coords.size()-1), data.profileBuilder.getZ(coordinates.get(coordinates.size()-1)), new ArrayList<>(), RECV);
                 double[] meanPlan = JTSUtility.getMeanPlaneCoefficients(groundPts.toArray(new Coordinate[0]));
                 SegmentPath srSeg = computeSegment(src.coordinate, rcv.coordinate, meanPlan, g, data.gS);
@@ -757,6 +772,7 @@ public class ComputeCnossosRays {
             segments.add(path);
             if(points.isEmpty()) {
                 points.add(new PointPath(path.s,  data.profileBuilder.getZGround(cutPt0), cutPt0.getWallAlpha(), PointPath.POINT_TYPE.SRCE));
+                points.get(0).orientation = computeOrientation(cutProfile.getSrcOrientation(), cutPts.get(0), cutPts.get(1));
                 src = path.s;
             }
             points.add(new PointPath(path.r,  data.profileBuilder.getZGround(cutPt1), cutPt1.getWallAlpha(), PointPath.POINT_TYPE.RECV));
@@ -1199,7 +1215,7 @@ public class ComputeCnossosRays {
     }
 
     public List<PropagationPath> computeReflexion(Coordinate rcvCoord,
-                                                  Coordinate srcCoord, boolean favorable) {
+                                                  Coordinate srcCoord, boolean favorable, Orientation orientation) {
 
         // Compute receiver mirror
         LineSegment srcRcvLine = new LineSegment(srcCoord, rcvCoord);
@@ -1311,7 +1327,7 @@ public class ComputeCnossosRays {
                 PropagationPath proPath = new PropagationPath(favorable, points, segments, srPath);
                 proPath.refPoints = reflIdx;
                 // Compute direct path between source and first reflection point, add profile to the data
-                computeReflexionOverBuildings(srcCoord, rayPath.get(0).getReceiverPos(), points, segments, srPath, data);
+                computeReflexionOverBuildings(srcCoord, rayPath.get(0).getReceiverPos(), points, segments, srPath, data, orientation);
                 if (points.isEmpty()) {
                     continue;
                 }
@@ -1345,7 +1361,7 @@ public class ComputeCnossosRays {
                 }
                 // Compute direct path between receiver and last reflection point, add profile to the data
                 List<PointPath> lastPts = new ArrayList<>();
-                computeReflexionOverBuildings(rayPath.get(rayPath.size() - 1).getReceiverPos(), rcvCoord, lastPts, segments, srPath, data);
+                computeReflexionOverBuildings(rayPath.get(rayPath.size() - 1).getReceiverPos(), rcvCoord, lastPts, segments, srPath, data, orientation);
                 if (lastPts.isEmpty()) {
                     continue;
                 }
@@ -1426,8 +1442,10 @@ public class ComputeCnossosRays {
     }
 
 
-    public void computeReflexionOverBuildings(Coordinate p0, Coordinate p1, List<PointPath> points, List<SegmentPath> segments, SegmentPath srPath, CnossosPropagationData data) {
-        List<PropagationPath> propagationPaths = directPath(p0, -1, null, p1, -1);
+    public void computeReflexionOverBuildings(Coordinate p0, Coordinate p1, List<PointPath> points,
+                                              List<SegmentPath> segments, SegmentPath srPath,
+                                              CnossosPropagationData data, Orientation orientation) {
+        List<PropagationPath> propagationPaths = directPath(p0, -1, orientation, p1, -1);
         if (!propagationPaths.isEmpty()) {
             PropagationPath propagationPath = propagationPaths.get(0);
             points.addAll(propagationPath.getPointList());

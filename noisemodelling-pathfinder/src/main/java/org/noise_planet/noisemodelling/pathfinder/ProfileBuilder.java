@@ -35,7 +35,6 @@ package org.noise_planet.noisemodelling.pathfinder;
 
 import org.locationtech.jts.algorithm.Angle;
 import org.locationtech.jts.algorithm.CGAlgorithms3D;
-import org.locationtech.jts.algorithm.Orientation;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.index.ItemVisitor;
 import org.locationtech.jts.index.strtree.STRtree;
@@ -43,11 +42,10 @@ import org.locationtech.jts.triangulate.quadedge.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.locationtech.jts.algorithm.Orientation.isCCW;
 import static org.noise_planet.noisemodelling.pathfinder.JTSUtility.dist2D;
 import static org.noise_planet.noisemodelling.pathfinder.ProfileBuilder.IntersectionType.*;
 
@@ -1336,6 +1334,7 @@ public class ProfileBuilder {
         /** True if contains a ground effect cutting point. */
         private Boolean hasGroundEffectInter = false;
         private Boolean isFreeField;
+        private Orientation srcOrientation;
 
         /**
          * Add the source point.
@@ -1443,6 +1442,14 @@ public class ProfileBuilder {
          */
         public void reverse() {
             Collections.reverse(pts);
+        }
+
+        public void setSrcOrientation(Orientation srcOrientation){
+            this.srcOrientation = srcOrientation;
+        }
+
+        public Orientation getSrcOrientation(){
+            return srcOrientation;
         }
 
         public boolean intersectBuilding(){
@@ -2010,7 +2017,7 @@ public class ProfileBuilder {
     public List<Coordinate> getWideAnglePointsByBuilding(int build, double minAngle, double maxAngle) {
         List <Coordinate> verticesBuilding = new ArrayList<>();
         Coordinate[] ring = getBuilding(build-1).getGeometry().getExteriorRing().getCoordinates();
-        if(!Orientation.isCCW(ring)) {
+        if(!isCCW(ring)) {
             for (int i = 0; i < ring.length / 2; i++) {
                 Coordinate temp = ring[i];
                 ring[i] = ring[ring.length - 1 - i];
