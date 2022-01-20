@@ -351,48 +351,12 @@ public class ComputeCnossosRays {
         return seg;
     }
 
-    private static List<Coordinate> computeGroundPts(ProfileBuilder.CutProfile cutProfile, CnossosPropagationData data) {
-        List<Coordinate> pts2D = cutProfile.getCutPoints().stream()
-                .filter(cut -> cut.getType() != GROUND_EFFECT)
-                .map(ProfileBuilder.CutPoint::getCoordinate)
-                .collect(Collectors.toList());
-        pts2D = JTSUtility.getNewCoordinateSystem(pts2D);
-        List<Coordinate> toRemove = new ArrayList<>();
-        for(int i=1; i<pts2D.size(); i++) {
-            if(pts2D.get(i).x == pts2D.get(i-1).x) {
-                toRemove.add(pts2D.get(i));
-            }
-        }
-        pts2D.removeAll(toRemove);
-
-        List<Coordinate> pts2DGround = new ArrayList<>();
-        for(int i=0; i<pts2D.size(); i++) {
-            Coordinate c = new Coordinate(pts2D.get(i));
-            if(i==0) {
-                c = new Coordinate(pts2D.get(i).x, data.profileBuilder.getZGround(cutProfile.getSource()));
-            }
-            else if(i == pts2D.size()-1) {
-                c = new Coordinate(pts2D.get(i).x, data.profileBuilder.getZGround(cutProfile.getReceiver()));
-            }
-            pts2DGround.add(c);
-        }
-        return pts2DGround;
-    }
-
     private static List<Coordinate> computePts2D(ProfileBuilder.CutProfile cutProfile) {
         List<Coordinate> pts2D = cutProfile.getCutPoints().stream()
                 .filter(cut -> cut.getType() != GROUND_EFFECT)
                 .map(ProfileBuilder.CutPoint::getCoordinate)
                 .collect(Collectors.toList());
-        pts2D = JTSUtility.getNewCoordinateSystem(pts2D);
-        List<Coordinate> toRemove = new ArrayList<>();
-        /*for(int i=1; i<pts2D.size(); i++) {
-            if(pts2D.get(i).x == pts2D.get(i-1).x) {
-                toRemove.add(pts2D.get(i));
-            }
-        }*/
-        pts2D.removeAll(toRemove);
-        return pts2D;
+        return JTSUtility.getNewCoordinateSystem(pts2D);
     }
 
     private static List<Coordinate> computePts2DGround(ProfileBuilder.CutProfile cutProfile, CnossosPropagationData data) {
@@ -642,10 +606,9 @@ public class ComputeCnossosRays {
                     topoPts.remove(i);
                 }
                 //Set z value
-                for(int i=0; i<topoPts.size(); i++) {
-                    final Coordinate pt = topoPts.get(i);
+                for (final Coordinate pt : topoPts) {
                     coordinates.forEach(c -> {
-                        if(c.equals(pt) && c.z == pt.z) {
+                        if (c.equals(pt) && c.z == pt.z) {
                             pt.z = data.profileBuilder.getZGround(pt);
                         }
                     });
@@ -793,10 +756,10 @@ public class ComputeCnossosRays {
             SegmentPath path = computeSegment(pts2D.get(i0), pts2D.get(i1), meanPlane, profile.getGPath(), profile.getSource().getGroundCoef());
             segments.add(path);
             if(points.isEmpty()) {
-                points.add(new PointPath(path.s,  data.profileBuilder.getZGround(path.s), cutPt0.getWallAlpha(), PointPath.POINT_TYPE.SRCE));
+                points.add(new PointPath(path.s,  data.profileBuilder.getZGround(cutPt0), cutPt0.getWallAlpha(), PointPath.POINT_TYPE.SRCE));
                 src = path.s;
             }
-            points.add(new PointPath(path.r,  data.profileBuilder.getZGround(path.r), cutPt1.getWallAlpha(), PointPath.POINT_TYPE.RECV));
+            points.add(new PointPath(path.r,  data.profileBuilder.getZGround(cutPt1), cutPt1.getWallAlpha(), PointPath.POINT_TYPE.RECV));
             if(i != pts.size()-1) {
                 if(i != 1) {
                     e += path.d;
