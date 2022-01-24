@@ -5,12 +5,14 @@ import org.h2gis.api.ProgressVisitor;
 import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.functions.io.dbf.DBFRead;
 import org.h2gis.functions.io.shp.SHPRead;
+import org.h2gis.functions.spatial.edit.ST_AddZ;
 import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SFSUtilities;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.LineString;
 import org.noise_planet.noisemodelling.emission.RailWayLW;
 import org.noise_planet.noisemodelling.pathfinder.IComputeRaysOut;
@@ -114,6 +116,218 @@ public class LDENPointNoiseMapFactoryTest {
         RailWayLW railWayLW = v.getRailWayLW();
         List<LineString> geometries = v.getRailWayLWGeometry();
         assertTrue(railWayLWIterator.hasNext());
+
+    }
+
+    @Test
+    public void testNoiseEmissionRailWayForPropa() throws SQLException, IOException {
+        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/Rail_Section.shp").getFile());
+        DBFRead.read(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/Rail_Traffic.dbf").getFile());
+
+
+        // drop table LW_RAILWAY if exists and the create and prepare the table
+        connection.createStatement().executeQuery("drop table if exists LW_RAILWAY;");
+
+        // Build and execute queries
+        StringBuilder createTableQuery = new StringBuilder("create table LW_RAILWAY (ID_SECTION int," +
+                " the_geom geometry, DIR_ID int");
+        StringBuilder insertIntoQuery = new StringBuilder("INSERT INTO LW_RAILWAY(ID_SECTION, the_geom," +
+                " DIR_ID");
+        StringBuilder insertIntoValuesQuery = new StringBuilder("?,?,?");
+        for(int thirdOctave : PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
+            createTableQuery.append(", LWD");
+            createTableQuery.append(thirdOctave);
+            createTableQuery.append(" double precision");
+            insertIntoQuery.append(", LWD");
+            insertIntoQuery.append(thirdOctave);
+            insertIntoValuesQuery.append(", ?");
+        }
+        for(int thirdOctave : PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
+            createTableQuery.append(", LWE");
+            createTableQuery.append(thirdOctave);
+            createTableQuery.append(" double precision");
+            insertIntoQuery.append(", LWE");
+            insertIntoQuery.append(thirdOctave);
+            insertIntoValuesQuery.append(", ?");
+        }
+        for(int thirdOctave : PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
+            createTableQuery.append(", LWN");
+            createTableQuery.append(thirdOctave);
+            createTableQuery.append(" double precision");
+            insertIntoQuery.append(", LWN");
+            insertIntoQuery.append(thirdOctave);
+            insertIntoValuesQuery.append(", ?");
+        }
+        createTableQuery.append(")");
+        insertIntoQuery.append(") VALUES (");
+        insertIntoQuery.append(insertIntoValuesQuery);
+        insertIntoQuery.append(")");
+        connection.createStatement().executeQuery(createTableQuery.toString());
+
+        // --------------------------------------
+        // Start calculation and fill the table
+        // --------------------------------------
+
+        // Get Class to compute LW
+        LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_RAILWAY_FLOW);
+        ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData());
+        ldenConfig.setCoefficientVersion(2);
+
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"Rail_Section", "Rail_Traffic", ldenConfig);
+        RailWayLWIterator.RailWayLWGeom railWayLWGeom;
+
+        while ((railWayLWGeom = railWayLWIterator.next()) != null) {
+
+            RailWayLW railWayLWDay = railWayLWGeom.getRailWayLWDay();
+            RailWayLW railWayLWEvening = railWayLWGeom.getRailWayLWEvening();
+            RailWayLW railWayLWNight = railWayLWGeom.getRailWayLWNight();
+            List<LineString> geometries = railWayLWGeom.getRailWayLWGeometry();
+
+            int pk = railWayLWGeom.getPK();
+            double[] LWDay;
+            double[] LWEvening;
+            double[] LWNight;
+            double heightSource;
+            int directivityId;
+            for (int iSource = 0; iSource < 6; iSource++) {
+                switch (iSource) {
+                    case 0:
+                        LWDay = railWayLWDay.getLWRolling();
+                        LWEvening = railWayLWEvening.getLWRolling();
+                        LWNight = railWayLWNight.getLWRolling();
+                        heightSource = 0.5;
+                        directivityId = 1;
+                        break;
+                    case 1:
+                        LWDay = railWayLWDay.getLWTractionA();
+                        LWEvening = railWayLWEvening.getLWTractionA();
+                        LWNight = railWayLWNight.getLWTractionA();
+                        heightSource = 0.5;
+                        directivityId = 2;
+                        break;
+                    case 2:
+                        LWDay = railWayLWDay.getLWTractionB();
+                        LWEvening = railWayLWEvening.getLWTractionB();
+                        LWNight = railWayLWNight.getLWTractionB();
+                        heightSource = 4;
+                        directivityId = 3;
+                        break;
+                    case 3:
+                        LWDay = railWayLWDay.getLWAerodynamicA();
+                        LWEvening = railWayLWEvening.getLWAerodynamicA();
+                        LWNight = railWayLWNight.getLWAerodynamicA();
+                        heightSource = 0.5;
+                        directivityId = 4;
+                        break
+                    case 4:
+                        LWDay = railWayLWDay.getLWAerodynamicB();
+                        LWEvening = railWayLWEvening.getLWAerodynamicB();
+                        LWNight = railWayLWNight.getLWAerodynamicB();
+                        heightSource = 4;
+                        directivityId = 5;
+                        break;
+                    case 5:
+                        LWDay = railWayLWDay.getLWBridge();
+                        LWEvening = railWayLWEvening.getLWBridge();
+                        LWNight = railWayLWNight.getLWBridge();
+                        heightSource = 0.5;
+                        directivityId = 6;
+                        break;
+                }
+
+                for (int nTrack = 0; nTrack < geometries.size(); nTrack++) {
+// ICI DEMANDER A NICO
+                    connection.prepareStatement(100, insertIntoQuery.toString()) { ps ->
+                            Geometry trackGeometry = (Geometry) geometries.get(nTrack);
+                        Geometry sourceGeometry = trackGeometry.copy();
+                        // offset geometry z
+                        sourceGeometry.apply(new ST_AddZ.AddZCoordinateSequenceFilter(heightSource));
+                        def batchData = [pk as int, sourceGeometry as Geometry, directivityId as int];
+                        batchData.addAll(LWDay);
+                        batchData.addAll(LWEvening);
+                        batchData.addAll(LWNight);
+                        ps.addBatch(batchData);
+                    }
+                }
+            }
+
+        }
+
+        // Add primary key to the LW table
+        connection.createStatement().executeQuery("ALTER TABLE  LW_RAILWAY  ADD PK INT AUTO_INCREMENT PRIMARY KEY;");
+        connection.createStatement().executeQuery("UPDATE LW_RAILWAY SET THE_GEOM = ST_SETSRID(THE_GEOM, 2154)");
+
+        RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
+        assertNotNull(v);
+        RailWayLW railWayLW = v.getRailWayLW();
+        List<LineString> geometries = v.getRailWayLWGeometry();
+        assertEquals(geometries.size(),2);
+
+        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/Recepteurs.shp").getFile());
+        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/Buildings.shp").getFile());
+        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/Rail_protect.shp").getFile());
+
+        // ICI POUR CHANGER HAUTEUR ET G ECRAN
+        connection.createStatement().executeQuery("CREATE TABLE SCREENS AS SELECT ST_BUFFER(the_geom, 0.1, 'join=mitre endcap=flat') as the_geom, pk, height, g FROM Rail_protect");
+
+        // Count receivers
+        int nbReceivers = 0;
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) CPT FROM Recepteurs")) {
+            assertTrue(rs.next());
+            nbReceivers = rs.getInt(1);
+        }
+
+        // ICI HAUTEUR RECPTEUR
+        connection.createStatement().executeQuery("UPDATE SET Recepteurs THE_GEOM = ST_SETSRID(ST_UPDATEZ(THE_GEOM,2.0),2154);");
+
+
+        ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN);
+
+        ldenConfig.setComputeLDay(true);
+        ldenConfig.setComputeLEvening(false);
+        ldenConfig.setComputeLNight(false);
+        ldenConfig.setComputeLDEN(false);
+
+        LDENPointNoiseMapFactory factory = new LDENPointNoiseMapFactory(connection, ldenConfig);
+
+        PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS", "LW_RAILWAY",
+                "RECEPTEURS");
+
+        pointNoiseMap.setComputeRaysOutFactory(factory);
+        pointNoiseMap.setPropagationProcessDataFactory(factory);
+
+        pointNoiseMap.setMaximumPropagationDistance(750.0);
+        pointNoiseMap.setComputeHorizontalDiffraction(true);
+        pointNoiseMap.setComputeVerticalDiffraction(true);
+        pointNoiseMap.setSoundReflectionOrder(0);
+
+        // Set of already processed receivers
+        Set<Long> receivers = new HashSet<>();
+
+        try {
+            RootProgressVisitor progressLogger = new RootProgressVisitor(1, false, 1);
+            pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
+            factory.start();
+            Map<PointNoiseMap.CellIndex, Integer> cells = pointNoiseMap.searchPopulatedCells(connection);
+            ProgressVisitor progressVisitor = progressLogger.subProcess(cells.size());
+            // Iterate over computation areas
+            for(PointNoiseMap.CellIndex cellIndex : new TreeSet<>(cells.keySet())) {
+                // Run ray propagation
+                pointNoiseMap.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers);
+            }
+        }finally {
+            factory.stop();
+        }
+        connection.commit();
+        // retrieve receiver value
+        assertEquals(nbReceivers, receivers.size());
+
+        // ICI A MODIFIER
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT leq, laeq FROM "+ ldenConfig.lDayTable + " LVL, RECEPTEURS R WHERE LVL.IDRECEIVER = R.PK AND R.PK = 1")) {
+            assertTrue(rs.next());
+            assertEquals(56.58, rs.getDouble(1), 2.0);
+            assertEquals(49.24,rs.getDouble(2), 2.0);
+        }
 
     }
 
