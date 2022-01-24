@@ -347,7 +347,7 @@ public class TestComputeCnossosRays {
         Coordinate p1 = new Coordinate(4, 3, 3);
         Coordinate p2 = new Coordinate(13, 10, 6.7);
 
-        Assert.assertFalse(computeRays.computeFreeField(profileBuilder.getProfile(p1, p2), null, false).getSegmentList().isEmpty());
+        Assert.assertFalse(computeRays.computeFreeField(profileBuilder.getProfile(p1, p2), new CnossosPropagationData(profileBuilder), false).getSegmentList().isEmpty());
 
         // Check the computation of convex corners of a building
         List<Coordinate> b1OffsetRoof = profileBuilder.getWideAnglePointsByBuilding(1, Math.PI * (1 + 1 / 16.0), Math.PI * (2 - (1 / 16.)));
