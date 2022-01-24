@@ -37,6 +37,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
     private AtomicInteger constraintId = new AtomicInteger(1);
     private double epsilon = 1e-6;
     private double geometrySimplificationDistance = 1;
+    private boolean isoSurfaceInBuildings = false;
 
     /**
      * @param buildingsTableName Buildings table
@@ -44,6 +45,20 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
      */
     public TriangleNoiseMap(String buildingsTableName, String sourcesTableName) {
         super(buildingsTableName, sourcesTableName);
+    }
+
+    /**
+     * @return True if isosurface will be placed into buildings
+     */
+    public boolean isIsoSurfaceInBuildings() {
+        return isoSurfaceInBuildings;
+    }
+
+    /**
+     * @param isoSurfaceInBuildings Set true in order to place isosurface in buildings
+     */
+    public void setIsoSurfaceInBuildings(boolean isoSurfaceInBuildings) {
+        this.isoSurfaceInBuildings = isoSurfaceInBuildings;
     }
 
     /**
@@ -323,13 +338,18 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
             vertices.add(translatedVertex);
         }
         // Do not add triangles associated with buildings
-        List<Triangle> triangles = cellMesh.getTriangles();
-        //List<Triangle> triangles = new ArrayList<>(cellMesh.getTriangles().size());
-        //for(Triangle triangle : cellMesh.getTriangles()) {
-        //    if(triangle.getAttribute() == 0) {
-        //        triangles.add(triangle);
-        //    }
-        //}
+        List<Triangle> triangles;
+        if (!isoSurfaceInBuildings) {
+            triangles = new ArrayList<>(cellMesh.getTriangles().size());
+            for (Triangle triangle : cellMesh.getTriangles()) {
+                if (triangle.getAttribute() == 0) {
+                    // place only triangles not associated to a building
+                    triangles.add(triangle);
+                }
+            }
+        } else {
+            triangles = cellMesh.getTriangles();
+        }
         nbreceivers += vertices.size();
 
         if(!JDBCUtilities.tableExists(connection, receiverTableName)) {
