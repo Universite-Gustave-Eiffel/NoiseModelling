@@ -252,7 +252,7 @@ public class LDENPointNoiseMapFactoryTest {
                     }
                     ps.addBatch();
                 }
-                ps.execute();
+                ps.executeBatch();
             }
 
         }
