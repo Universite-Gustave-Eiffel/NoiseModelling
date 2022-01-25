@@ -123,7 +123,7 @@ public class LDENPointNoiseMapFactoryTest {
 
 
         // drop table LW_RAILWAY if exists and the create and prepare the table
-        connection.createStatement().execute("drop table if exists LW_RAILWAY;");
+      //  connection.createStatement().execute("drop table if exists LW_RAILWAY;");
 
         // Build and execute queries
         StringBuilder createTableQuery = new StringBuilder("create table LW_RAILWAY (ID_SECTION int," +
