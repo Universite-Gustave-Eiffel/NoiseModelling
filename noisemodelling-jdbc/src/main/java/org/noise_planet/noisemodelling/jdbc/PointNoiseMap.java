@@ -323,6 +323,11 @@ public class PointNoiseMap extends JdbcNoiseMap {
             this.latitudeIndex = latitudeIndex;
         }
 
+        @Override
+        public String toString() {
+            return String.format("CellIndex(%d, %d);", longitudeIndex, latitudeIndex);
+        }
+
         public int getLongitudeIndex() {
             return longitudeIndex;
         }
