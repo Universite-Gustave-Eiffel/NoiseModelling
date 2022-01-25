@@ -123,7 +123,7 @@ public class LDENPointNoiseMapFactoryTest {
 
 
         // drop table LW_RAILWAY if exists and the create and prepare the table
-      //  connection.createStatement().execute("drop table if exists LW_RAILWAY;");
+        connection.createStatement().execute("drop table if exists LW_RAILWAY;");
 
         // Build and execute queries
         StringBuilder createTableQuery = new StringBuilder("create table LW_RAILWAY (ID_SECTION int," +
@@ -252,6 +252,7 @@ public class LDENPointNoiseMapFactoryTest {
                     }
                     ps.addBatch();
                 }
+                ps.execute();
             }
 
         }
@@ -326,7 +327,7 @@ public class LDENPointNoiseMapFactoryTest {
         assertEquals(nbReceivers, receivers.size());
 
         // ICI A MODIFIER
-        try(ResultSet rs = connection.createStatement().executeQuery("SELECT leq, laeq FROM "+ ldenConfig.lDayTable + " LVL, RECEPTEURS R WHERE LVL.IDRECEIVER = R.PK AND R.PK = 1")) {
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT laeq FROM "+ ldenConfig.lDayTable + " LVL, RECEPTEURS R WHERE LVL.IDRECEIVER = R.PK")) {
             assertTrue(rs.next());
             assertEquals(56.58, rs.getDouble(1), 2.0);
             assertEquals(49.24,rs.getDouble(2), 2.0);
