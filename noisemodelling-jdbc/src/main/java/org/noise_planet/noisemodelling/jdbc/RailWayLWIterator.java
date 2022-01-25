@@ -28,14 +28,15 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
     private RailWayLW railWayLWsumDay;
     private RailWayLW railWayLWsumEvening;
     private RailWayLW railWayLWsumNight;
-    private RailWayLWGeom railWayLWfinal = new RailWayLWGeom();
+    private RailWayLWGeom railWayLWCurrent = null;
     private String tableTrain;
     private String tableTrack;
-
-    private int nbTrack = 1;
+    private int nbTrack;
+    private int currentIdSection = -1;
+    List<LineString> railWayGeoms;
+    double gs;
     private LDENConfig ldenConfig;
     private SpatialResultSet spatialResultSet;
-    private int currentIdSection = -1;
     public double distance = 2;
     public Map<String, Integer> sourceFields = null;
 
@@ -53,12 +54,14 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
         this.tableTrain = tableTrain;
         this.tableTrack = tableTrack;
         this.ldenConfig = ldenConfig;
+        railWayLWCurrent = fetchNext();
     }
 
     @Override
     public boolean hasNext() {
-        return railWayLWfinal != null;
+        return railWayLWCurrent != null;
     }
+
     private List<LineString> splitGeometry(Geometry geometry){
         List<LineString> inputLineStrings = new ArrayList<>();
         for (int id = 0; id < geometry.getNumGeometries(); id++) {
@@ -83,63 +86,64 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
 
     @Override
     public RailWayLWGeom next() {
+        RailWayLWGeom current = railWayLWCurrent;
+        railWayLWCurrent = fetchNext();
+        return current;
+    }
+
+    private RailWayLWGeom fetchNext() {
         try {
             if (spatialResultSet == null) {
                 spatialResultSet = connection.createStatement().executeQuery("SELECT r1.*, r2.* FROM " + tableTrain + " r1, " + tableTrack + " r2 WHERE r1.IDSECTION= R2.IDSECTION ; ").unwrap(SpatialResultSet.class);
-                spatialResultSet.next();
+                if(!spatialResultSet.next()) {
+                    return null;
+                }
 
                 railWayLWsum = getRailwayEmissionFromResultSet(spatialResultSet, "DAY");
                 railWayLWsumDay = getRailwayEmissionFromResultSet(spatialResultSet, "DAY");
                 railWayLWsumEvening = getRailwayEmissionFromResultSet(spatialResultSet, "EVENING");
                 railWayLWsumNight = getRailwayEmissionFromResultSet(spatialResultSet, "NIGHT");
 
-                railWayLWfinal.setNbTrack(spatialResultSet.getInt("NTRACK"));
-                if (hasColumn(spatialResultSet, "GS")) railWayLWfinal.setGs(spatialResultSet.getDouble("GS"));
+                nbTrack = spatialResultSet.getInt("NTRACK");
+                if (hasColumn(spatialResultSet, "GS")) {
+                    gs = spatialResultSet.getDouble("GS");
+                }
 
                 currentIdSection = spatialResultSet.getInt("PK");
-                railWayLWfinal.setPK(currentIdSection);
-                railWayLWfinal.setGeometry(splitGeometry(spatialResultSet.getGeometry()));
+                railWayGeoms = splitGeometry(spatialResultSet.getGeometry());
             }
-            if (!spatialResultSet.next()){
-                railWayLWfinal.setRailWayLW(railWayLWsum);
-                railWayLWfinal.setRailWayLWDay(railWayLWsumDay);
-                railWayLWfinal.setRailWayLWEvening(railWayLWsumEvening);
-                railWayLWfinal.setRailWayLWNight(railWayLWsumNight);
+            if(currentIdSection == -1) {
+                return null;
             }
+            RailWayLWGeom railWayLWNext = new RailWayLWGeom(railWayLWsum, railWayLWsumDay, railWayLWsumEvening, railWayLWsumNight, railWayGeoms, currentIdSection, nbTrack, distance, gs);
+            currentIdSection = -1;
             while (spatialResultSet.next()) {
-                if (currentIdSection == spatialResultSet.getInt("PK")) {
+                if (railWayLWNext.pk == spatialResultSet.getInt("PK")) {
                     railWayLWsum = RailWayLW.sumRailWayLW(railWayLWsum, getRailwayEmissionFromResultSet(spatialResultSet, "DAY"));
                     railWayLWsumDay = RailWayLW.sumRailWayLW(railWayLWsumDay, getRailwayEmissionFromResultSet(spatialResultSet, "DAY"));
                     railWayLWsumEvening = RailWayLW.sumRailWayLW(railWayLWsumEvening, getRailwayEmissionFromResultSet(spatialResultSet, "EVENING"));
                     railWayLWsumNight = RailWayLW.sumRailWayLW(railWayLWsumNight, getRailwayEmissionFromResultSet(spatialResultSet, "NIGHT"));
                 } else {
-                    railWayLWfinal.setRailWayLW(railWayLWsum);
-                    railWayLWfinal.setRailWayLWDay(railWayLWsumDay);
-                    railWayLWfinal.setRailWayLWEvening(railWayLWsumEvening);
-                    railWayLWfinal.setRailWayLWNight(railWayLWsumNight);
-                    RailWayLWGeom previousRailWayLW = railWayLWfinal;
-                    railWayLWfinal = new RailWayLWGeom();
-                    railWayLWfinal.setGeometry(splitGeometry(spatialResultSet.getGeometry()));
-                    railWayLWfinal.setPK(spatialResultSet.getInt("PK"));
-                    railWayLWfinal.setNbTrack(spatialResultSet.getInt("NTRACK"));
-                    if (hasColumn(spatialResultSet, "GS")) railWayLWfinal.setGs(spatialResultSet.getDouble("GS"));
+                    // finalize current value
+                    railWayLWNext.setRailWayLW(railWayLWsum);
+                    railWayLWNext.setRailWayLWDay(railWayLWsumDay);
+                    railWayLWNext.setRailWayLWEvening(railWayLWsumEvening);
+                    railWayLWNext.setRailWayLWNight(railWayLWsumNight);
+                    // read next instance attributes for the next() call
+                    railWayGeoms = splitGeometry(spatialResultSet.getGeometry());
+                    currentIdSection = spatialResultSet.getInt("PK");
+                    nbTrack = spatialResultSet.getInt("NTRACK");
+                    if (hasColumn(spatialResultSet, "GS")) {
+                        gs = spatialResultSet.getDouble("GS");
+                    }
                     railWayLWsum = getRailwayEmissionFromResultSet(spatialResultSet, "DAY");
                     railWayLWsumDay = getRailwayEmissionFromResultSet(spatialResultSet, "DAY");
                     railWayLWsumEvening = getRailwayEmissionFromResultSet(spatialResultSet, "EVENING");
                     railWayLWsumNight = getRailwayEmissionFromResultSet(spatialResultSet, "NIGHT");
-                    railWayLWfinal.setRailWayLW(railWayLWsum);
-                    railWayLWfinal.setRailWayLWDay(railWayLWsumDay);
-                    railWayLWfinal.setRailWayLWEvening(railWayLWsumEvening);
-                    railWayLWfinal.setRailWayLWNight(railWayLWsumNight);
-                    currentIdSection = spatialResultSet.getInt("PK");
-                    return previousRailWayLW;
+                    break;
                 }
             }
-
-            RailWayLWGeom previousRailWayLW = railWayLWfinal;
-            railWayLWfinal=null;
-            return previousRailWayLW;
-
+            return railWayLWNext;
         } catch (SQLException | IOException throwables) {
             throw new NoSuchElementException(throwables.getMessage());
         }
@@ -285,14 +289,17 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
         private int nbTrack;
         private double distance;
 
-        public double getDistance() {
-            return distance;
-        }
-
-        public void setDistance(double distance) {
+        public RailWayLWGeom(RailWayLW railWayLW, RailWayLW railWayLWDay, RailWayLW railWayLWEvening, RailWayLW railWayLWNight, List<LineString> geometry, int pk, int nbTrack, double distance, double gs) {
+            this.railWayLW = railWayLW;
+            this.railWayLWDay = railWayLWDay;
+            this.railWayLWEvening = railWayLWEvening;
+            this.railWayLWNight = railWayLWNight;
+            this.geometry = geometry;
+            this.pk = pk;
+            this.nbTrack = nbTrack;
             this.distance = distance;
+            this.gs = gs;
         }
-
 
         public double getGs() {
             return gs;
@@ -304,6 +311,13 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
 
         private double gs;
 
+        public double getDistance() {
+            return distance;
+        }
+
+        public void setDistance(double distance) {
+            this.distance = distance;
+        }
 
         public RailWayLW getRailWayLW() {
             return railWayLW;

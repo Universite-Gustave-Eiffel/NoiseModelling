@@ -171,9 +171,9 @@ public class LDENPointNoiseMapFactoryTest {
         ldenConfig.setCoefficientVersion(2);
 
         RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"Rail_Section", "Rail_Traffic", ldenConfig);
-        RailWayLWIterator.RailWayLWGeom railWayLWGeom;
 
-        while ((railWayLWGeom = railWayLWIterator.next()) != null) {
+        while (railWayLWIterator.hasNext()) {
+            RailWayLWIterator.RailWayLWGeom railWayLWGeom = railWayLWIterator.next();
 
             RailWayLW railWayLWDay = railWayLWGeom.getRailWayLWDay();
             RailWayLW railWayLWEvening = railWayLWGeom.getRailWayLWEvening();
@@ -257,9 +257,10 @@ public class LDENPointNoiseMapFactoryTest {
         }
 
         // Add primary key to the LW table
-        connection.createStatement().executeQuery("ALTER TABLE  LW_RAILWAY  ADD PK INT AUTO_INCREMENT PRIMARY KEY;");
-        connection.createStatement().executeQuery("UPDATE LW_RAILWAY SET THE_GEOM = ST_SETSRID(THE_GEOM, 2154)");
+        connection.createStatement().execute("ALTER TABLE  LW_RAILWAY  ADD PK INT AUTO_INCREMENT PRIMARY KEY;");
+        connection.createStatement().execute("UPDATE LW_RAILWAY SET THE_GEOM = ST_SETSRID(THE_GEOM, 2154)");
 
+        railWayLWIterator = new RailWayLWIterator(connection,"Rail_Section", "Rail_Traffic", ldenConfig);
         RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
         assertNotNull(v);
         List<LineString> geometries = v.getRailWayLWGeometry();
@@ -270,7 +271,7 @@ public class LDENPointNoiseMapFactoryTest {
         SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/Rail_protect.shp").getFile());
 
         // ICI POUR CHANGER HAUTEUR ET G ECRAN
-        connection.createStatement().executeQuery("CREATE TABLE SCREENS AS SELECT ST_BUFFER(the_geom, 0.1, 'join=mitre endcap=flat') as the_geom, pk, height, g FROM Rail_protect");
+        connection.createStatement().execute("CREATE TABLE SCREENS AS SELECT ST_BUFFER(the_geom, 0.1, 'join=mitre endcap=flat') as the_geom, pk, height, g FROM Rail_protect");
 
         // Count receivers
         int nbReceivers = 0;
@@ -280,7 +281,7 @@ public class LDENPointNoiseMapFactoryTest {
         }
 
         // ICI HAUTEUR RECPTEUR
-        connection.createStatement().executeQuery("UPDATE SET Recepteurs THE_GEOM = ST_SETSRID(ST_UPDATEZ(THE_GEOM,2.0),2154);");
+        connection.createStatement().execute("UPDATE Recepteurs SET THE_GEOM = ST_SETSRID(ST_UPDATEZ(THE_GEOM,2.0),2154);");
 
 
         ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN);
