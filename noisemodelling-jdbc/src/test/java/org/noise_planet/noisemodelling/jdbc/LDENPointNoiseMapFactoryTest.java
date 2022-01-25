@@ -22,10 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -126,7 +123,7 @@ public class LDENPointNoiseMapFactoryTest {
 
 
         // drop table LW_RAILWAY if exists and the create and prepare the table
-        connection.createStatement().executeQuery("drop table if exists LW_RAILWAY;");
+        connection.createStatement().execute("drop table if exists LW_RAILWAY;");
 
         // Build and execute queries
         StringBuilder createTableQuery = new StringBuilder("create table LW_RAILWAY (ID_SECTION int," +
@@ -162,7 +159,7 @@ public class LDENPointNoiseMapFactoryTest {
         insertIntoQuery.append(") VALUES (");
         insertIntoQuery.append(insertIntoValuesQuery);
         insertIntoQuery.append(")");
-        connection.createStatement().executeQuery(createTableQuery.toString());
+        connection.createStatement().execute(createTableQuery.toString());
 
         // --------------------------------------
         // Start calculation and fill the table
@@ -184,11 +181,11 @@ public class LDENPointNoiseMapFactoryTest {
             List<LineString> geometries = railWayLWGeom.getRailWayLWGeometry();
 
             int pk = railWayLWGeom.getPK();
-            double[] LWDay;
-            double[] LWEvening;
-            double[] LWNight;
-            double heightSource;
-            int directivityId;
+            double[] LWDay = new double[0];
+            double[] LWEvening = new double[0];
+            double[] LWNight = new double[0];
+            double heightSource = 0;
+            int directivityId = 0;
             for (int iSource = 0; iSource < 6; iSource++) {
                 switch (iSource) {
                     case 0:
@@ -218,7 +215,7 @@ public class LDENPointNoiseMapFactoryTest {
                         LWNight = railWayLWNight.getLWAerodynamicA();
                         heightSource = 0.5;
                         directivityId = 4;
-                        break
+                        break;
                     case 4:
                         LWDay = railWayLWDay.getLWAerodynamicB();
                         LWEvening = railWayLWEvening.getLWAerodynamicB();
@@ -235,19 +232,25 @@ public class LDENPointNoiseMapFactoryTest {
                         break;
                 }
 
-                for (int nTrack = 0; nTrack < geometries.size(); nTrack++) {
-// ICI DEMANDER A NICO
-                    connection.prepareStatement(100, insertIntoQuery.toString()) { ps ->
-                            Geometry trackGeometry = (Geometry) geometries.get(nTrack);
-                        Geometry sourceGeometry = trackGeometry.copy();
-                        // offset geometry z
-                        sourceGeometry.apply(new ST_AddZ.AddZCoordinateSequenceFilter(heightSource));
-                        def batchData = [pk as int, sourceGeometry as Geometry, directivityId as int];
-                        batchData.addAll(LWDay);
-                        batchData.addAll(LWEvening);
-                        batchData.addAll(LWNight);
-                        ps.addBatch(batchData);
+                PreparedStatement ps = connection.prepareStatement(insertIntoQuery.toString());
+                for (Geometry trackGeometry : geometries) {
+                    Geometry sourceGeometry = trackGeometry.copy();
+                    // offset geometry z
+                    sourceGeometry.apply(new ST_AddZ.AddZCoordinateSequenceFilter(heightSource));
+                    int cursor = 1;
+                    ps.setInt(cursor++, pk);
+                    ps.setObject(cursor++, sourceGeometry);
+                    ps.setInt(cursor++, directivityId);
+                    for (double v : LWDay) {
+                        ps.setDouble(cursor++, v);
                     }
+                    for (double v : LWEvening) {
+                        ps.setDouble(cursor++, v);
+                    }
+                    for (double v : LWNight) {
+                        ps.setDouble(cursor++, v);
+                    }
+                    ps.addBatch();
                 }
             }
 
@@ -259,7 +262,6 @@ public class LDENPointNoiseMapFactoryTest {
 
         RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
         assertNotNull(v);
-        RailWayLW railWayLW = v.getRailWayLW();
         List<LineString> geometries = v.getRailWayLWGeometry();
         assertEquals(geometries.size(),2);
 
