@@ -4,6 +4,7 @@ import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.api.ProgressVisitor;
 import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.functions.io.dbf.DBFRead;
+import org.h2gis.functions.io.shp.SHPDriverFunction;
 import org.h2gis.functions.io.shp.SHPRead;
 import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SFSUtilities;
@@ -19,6 +20,7 @@ import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -624,6 +626,108 @@ public class LDENPointNoiseMapFactoryTest {
             assertEquals(56.58, rs.getDouble(1), 2.0);
             assertEquals(49.24,rs.getDouble(2), 2.0);
         }
+
+    }
+
+    @Test
+    public void TestPointSource() throws SQLException, IOException {
+        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("PointSource/DEM_fence.shp").getFile());
+        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("PointSource/LANDCOVER.shp").getFile());
+        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("PointSource/RCVS20.shp").getFile());
+        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("PointSource/NO_BUILD.shp").getFile());
+        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("PointSource/BUILD_GRID2.shp").getFile());
+
+        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("PointSource/SourceSi.shp").getFile());
+
+        // PROPAGATION PART
+        // --------------
+
+        LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN);
+        ldenConfig.setComputeLDay(true);
+        ldenConfig.setComputeLEvening(false);
+        ldenConfig.setComputeLNight(false);
+        ldenConfig.setComputeLDEN(false);
+        ldenConfig.setMergeSources(true); // No idsource column
+
+        LDENPointNoiseMapFactory factory = new LDENPointNoiseMapFactory(connection, ldenConfig);
+
+        // ICI HAUTEUR RECPTEUR
+        connection.createStatement().execute("UPDATE RCVS20 SET THE_GEOM = ST_SETSRID(ST_UPDATEZ(THE_GEOM,40.0),2154);");
+        connection.createStatement().execute("UPDATE SOURCESI SET THE_GEOM = ST_SETSRID(ST_UPDATEZ(THE_GEOM,40.0),2154);");
+        connection.createStatement().execute("UPDATE NO_BUILD SET THE_GEOM = ST_SETSRID(THE_GEOM,2154);");
+        connection.createStatement().execute("UPDATE NO_BUILD SET HEIGHT = 0;");
+        connection.createStatement().execute("UPDATE BUILD_GRID2 SET THE_GEOM = ST_SETSRID(THE_GEOM,2154);");
+        connection.createStatement().execute("UPDATE BUILD_GRID2 SET HEIGHT = 0;");
+
+
+        PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILD_GRID2", "SOURCESI",
+                "RCVS20");
+
+        pointNoiseMap.setComputeRaysOutFactory(factory);
+        pointNoiseMap.setPropagationProcessDataFactory(factory);
+
+        pointNoiseMap.setMaximumPropagationDistance(5000);
+        pointNoiseMap.setComputeHorizontalDiffraction(false);
+        pointNoiseMap.setComputeVerticalDiffraction(false);
+        pointNoiseMap.setSoundReflectionOrder(0);
+
+        // Set of already processed receivers
+        Set<Long> receivers = new HashSet<>();
+
+        try {
+            RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1);
+
+            pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
+
+            factory.start();
+
+            pointNoiseMap.setGridDim(1); // force grid size
+
+            Map<PointNoiseMap.CellIndex, Integer> cells = pointNoiseMap.searchPopulatedCells(connection);
+            ProgressVisitor progressVisitor = progressLogger.subProcess(cells.size());
+            // Iterate over computation areas
+            for(PointNoiseMap.CellIndex cellIndex : new TreeSet<>(cells.keySet())) {
+                // Run ray propagation
+                pointNoiseMap.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers);
+            }
+        }finally {
+            factory.stop();
+        }
+        connection.commit();
+
+        // Check table creation
+        assertTrue(JDBCUtilities.tableExists(connection, ldenConfig.lDayTable));
+
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) CPT FROM " + ldenConfig.lDayTable)) {
+            assertTrue(rs.next());
+            assertEquals(21, rs.getInt(1));
+        }
+
+        connection.createStatement().execute("CREATE TABLE RESULTS AS SELECT R.the_geom the_geom, R.PK pk,R.PK2 pk2, LVL.* FROM "+ ldenConfig.lDayTable + " LVL, RCVS20 R WHERE LVL.IDRECEIVER = R.PK2");
+        SHPDriverFunction shpDriver = new SHPDriverFunction();
+        shpDriver.exportTable(connection, "RESULTS", new File("target/Results_PtSource.shp"), new EmptyProgressVisitor());
+
+
+
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM "+ ldenConfig.lDayTable)) {
+            assertTrue(rs.next());
+         /*   double[] leqs = new double[ldenConfig.propagationProcessPathData.freq_lvl.size()];
+            for (int idfreq = 1; idfreq <= ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
+                leqs[idfreq - 1] = rs.getDouble(idfreq);
+            }
+            assertEquals(75, leqs[0], 2.0);
+            assertEquals(69, leqs[1], 2.0);
+            assertEquals(68, leqs[2], 2.0);
+            assertEquals(69, leqs[3], 2.0);
+            assertEquals(71, leqs[4], 2.0);
+            assertEquals(69, leqs[5], 2.0);
+            assertEquals(60, leqs[6], 2.0);
+            assertEquals(51, leqs[7], 2.0);
+
+            assertEquals(79, rs.getDouble(9), 2.0);
+            assertEquals(75,rs.getDouble(10), 2.0);*/
+        }
+
 
     }
 }
