@@ -818,8 +818,7 @@ public class ProfileBuilder {
         }
         else {
             for (Building b : buildings) {
-                if(b != null && b.poly != null && b.poly.getCoordinate() != null && (
-                        Double.isNaN(b.poly.getCoordinate().z) || b.poly.getCoordinate().z == 0.0)) {
+                 if(b != null && b.poly != null && b.poly.getCoordinate() != null ) {
                     b.poly.apply(new UpdateZ(b.height));
                 }
             }
@@ -1734,11 +1733,6 @@ public class ProfileBuilder {
     public static class Building implements Obstacle {
         /** Building footprint. */
         private final Polygon poly;
-
-        public double getHeight() {
-            return height;
-        }
-
         /** Height of the building. */
         private final double height;
         private double zTopo = 0.0;
@@ -1762,6 +1756,13 @@ public class ProfileBuilder {
             this.alphas.addAll(alphas);
             this.pk = key;
         }
+
+        /**
+         * get Height from Building
+         * @return height
+         */
+        public double getHeight() { return height; }
+
 
         /**
          * Retrieve the building footprint.
@@ -1797,6 +1798,9 @@ public class ProfileBuilder {
             zTopo = minZ/(coordinates.length-1);
             return zTopo;
         }
+
+
+
 
         public double getZ() {
             return zTopo + height;
