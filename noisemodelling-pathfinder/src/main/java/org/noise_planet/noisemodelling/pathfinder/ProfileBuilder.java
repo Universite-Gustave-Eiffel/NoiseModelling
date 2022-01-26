@@ -122,6 +122,16 @@ public class ProfileBuilder {
     /** Maximum area of triangles. */
     private double maxArea;
 
+    /** if true take into account z value on Buildings Polygons
+     * In this case, z represent the altitude (from the sea to the top of the wall) */
+    private boolean zBuildings = false;
+
+
+    public void setzBuildings(boolean zBuildings) {
+        this.zBuildings = zBuildings;
+    }
+
+
     /**
      * Main empty constructor.
      */
@@ -384,7 +394,7 @@ public class ProfileBuilder {
             else {
                 envelope.expandToInclude(geom.getEnvelopeInternal());
             }
-            Building building = new Building(poly, height, alphas, id);
+            Building building = new Building(poly, height, alphas, id, zBuildings);
             buildings.add(building);
             buildingTree.insert(building.poly.getEnvelopeInternal(), buildings.size());
             //TODO : generalization of building coefficient
@@ -818,9 +828,11 @@ public class ProfileBuilder {
         }
         else {
             for (Building b : buildings) {
-                 if(b != null && b.poly != null && b.poly.getCoordinate() != null ) {
+                if(b != null && b.poly != null && b.poly.getCoordinate() != null && (!zBuildings ||
+                        Double.isNaN(b.poly.getCoordinate().z) || b.poly.getCoordinate().z == 0.0)) {
                     b.poly.apply(new UpdateZ(b.height));
                 }
+
             }
             for (Wall w : walls) {
                 if(Double.isNaN(w.p0.z) || w.p0.z == 0.0) {
@@ -1738,6 +1750,10 @@ public class ProfileBuilder {
         private double zTopo = 0.0;
         /** Absorption coefficients. */
         private final List<Double> alphas;
+
+        /** if true take into account z value on Buildings Polygons */
+        private final boolean zBuildings;
+
         /** Primary key of the building in the database. */
         private int pk = -1;
         private List<Wall> walls = new ArrayList<>();
@@ -1749,12 +1765,13 @@ public class ProfileBuilder {
          * @param alphas Absorption coefficients.
          * @param key Primary key of the building in the database.
          */
-        public Building(Polygon poly, double height, List<Double> alphas, int key) {
+        public Building(Polygon poly, double height, List<Double> alphas, int key, boolean zBuildings) {
             this.poly = poly;
             this.height = height;
             this.alphas = new ArrayList<>();
             this.alphas.addAll(alphas);
             this.pk = key;
+            this.zBuildings = zBuildings;
         }
 
         /**
@@ -1798,9 +1815,6 @@ public class ProfileBuilder {
             zTopo = minZ/(coordinates.length-1);
             return zTopo;
         }
-
-
-
 
         public double getZ() {
             return zTopo + height;

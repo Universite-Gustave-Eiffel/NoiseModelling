@@ -48,6 +48,9 @@ public abstract class JdbcNoiseMap {
     protected double maximumPropagationDistance = 750;
     protected double maximumReflectionDistance = 100;
     protected double gs = 0;
+    /** if true take into account z value on Buildings Polygons
+     * In this case, z represent the altitude (from the sea to the top of the wall) */
+    protected boolean zBuildings = false;
     // Soil areas are splited by the provided size in order to reduce the propagation time
     protected double groundSurfaceSplitSideLength = 200;
     protected int soundReflectionOrder = 2;
@@ -58,8 +61,6 @@ public abstract class JdbcNoiseMap {
     protected double wallAbsorption = 100000;
     /** maximum dB Error, stop calculation if the sum of further sources contributions are smaller than this value */
     public double maximumError = Double.NEGATIVE_INFINITY;
-
-
 
     /** stop calculation if the sum of further sources contributions are smaller than this value */
     public double noiseFloor = Double.NEGATIVE_INFINITY;
@@ -275,7 +276,8 @@ public abstract class JdbcNoiseMap {
                             for(int i=0; i<intersectedGeometry.getNumGeometries(); i++) {
                                 ProfileBuilder.Building poly = new ProfileBuilder.Building((Polygon) intersectedGeometry.getGeometryN(i),
                                         heightField.isEmpty() ? Double.MAX_VALUE : rs.getDouble(heightField),
-                                        alphaList, pk);
+                                        alphaList, pk, iszBuildings());
+
                                 buildings.add(poly);
                             }
                         }
@@ -464,6 +466,16 @@ public abstract class JdbcNoiseMap {
     public void setSourceHasAbsoluteZCoordinates(boolean sourceHasAbsoluteZCoordinates) {
         this.sourceHasAbsoluteZCoordinates = sourceHasAbsoluteZCoordinates;
     }
+
+
+    public boolean iszBuildings() {
+        return zBuildings;
+    }
+
+    public void setzBuildings(boolean zBuildings) {
+        this.zBuildings = zBuildings;
+    }
+
 
     /**
      * Extracted from NMPB 2008-2 7.3.2
