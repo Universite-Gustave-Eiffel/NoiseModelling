@@ -813,7 +813,7 @@ public class ProfileBuilder {
         //Update building z
         if(topoTree != null) {
             for (Building b : buildings) {
-                if(Double.isNaN(b.poly.getCoordinate().z) || b.poly.getCoordinate().z == 0.0) {
+                if(Double.isNaN(b.poly.getCoordinate().z) || b.poly.getCoordinate().z == 0.0 || !zBuildings) {
                     b.poly.apply(new UpdateZ(b.height + b.updateZTopo(this)));
                 }
             }
