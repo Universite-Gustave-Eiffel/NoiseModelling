@@ -659,15 +659,15 @@ public class LDENPointNoiseMapFactoryTest {
         LDENPointNoiseMapFactory factory = new LDENPointNoiseMapFactory(connection, ldenConfig);
 
         // ICI HAUTEUR RECPTEUR
-        connection.createStatement().execute("UPDATE RCVS20 SET THE_GEOM = ST_SETSRID(ST_UPDATEZ(THE_GEOM,40.0),2154);");
-        connection.createStatement().execute("UPDATE SOURCESI SET THE_GEOM = ST_SETSRID(ST_UPDATEZ(THE_GEOM,40.0),2154);");
+        connection.createStatement().execute("UPDATE RCVS20 SET THE_GEOM = ST_SETSRID(ST_UPDATEZ(THE_GEOM,2.0),2154);");
+        connection.createStatement().execute("UPDATE SOURCESI SET THE_GEOM = ST_SETSRID(ST_UPDATEZ(THE_GEOM,10.0),2154);");
         connection.createStatement().execute("UPDATE NO_BUILD SET THE_GEOM = ST_SETSRID(THE_GEOM,2154);");
         connection.createStatement().execute("UPDATE NO_BUILD SET HEIGHT = 0;");
         connection.createStatement().execute("UPDATE BUILD_GRID2 SET THE_GEOM = ST_SETSRID(THE_GEOM,2154);");
-        connection.createStatement().execute("UPDATE BUILD_GRID2 SET HEIGHT = 0;");
-        String name_output = "NO_BUILD";
+        //connection.createStatement().execute("UPDATE BUILD_GRID2 SET HEIGHT = 0;");
+        String name_output = "real";
 
-        PointNoiseMap pointNoiseMap = new PointNoiseMap("NO_BUILD", "SOURCESI",
+        PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILD_GRID2", "SOURCESI",
                 "RCVS20");
 
         pointNoiseMap.setComputeRaysOutFactory(factory);
@@ -759,7 +759,7 @@ public class LDENPointNoiseMapFactoryTest {
                 kmlDocument.writeBuildings(builder);
             }
             if(result != null) {
-                kmlDocument.writeProfile(builder.getProfile(result.getInputData().sourceGeometries.get(0).getCoordinate(),result.getInputData().receivers.get(0)));
+                kmlDocument.writeProfile(builder.getProfile(result.getInputData().sourceGeometries.get(0).getCoordinate(),result.getInputData().receivers.get(1)));
             }
 
             kmlDocument.writeFooter();
