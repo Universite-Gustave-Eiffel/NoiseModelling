@@ -64,7 +64,7 @@ public abstract class JdbcNoiseMap {
     /** stop calculation if the sum of further sources contributions are smaller than this value */
     public double noiseFloor = Double.NEGATIVE_INFINITY;
 
-    protected String heightField = "";
+    protected String heightField = "HEIGHT";
     protected GeometryFactory geometryFactory;
     protected int parallelComputationCount = 0;
     // Initialised attributes
