@@ -658,9 +658,9 @@ public class LDENPointNoiseMapFactoryTest {
         connection.createStatement().execute("UPDATE NO_BUILD SET HEIGHT = 0;");
         connection.createStatement().execute("UPDATE BUILD_GRID2 SET THE_GEOM = ST_SETSRID(THE_GEOM,2154);");
         connection.createStatement().execute("UPDATE BUILD_GRID2 SET HEIGHT = 0;");
+        String name_output = "NO_BUILD";
 
-
-        PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILD_GRID2", "SOURCESI",
+        PointNoiseMap pointNoiseMap = new PointNoiseMap("NO_BUILD", "SOURCESI",
                 "RCVS20");
 
         pointNoiseMap.setComputeRaysOutFactory(factory);
@@ -705,7 +705,7 @@ public class LDENPointNoiseMapFactoryTest {
 
         connection.createStatement().execute("CREATE TABLE RESULTS AS SELECT R.the_geom the_geom, R.PK pk,R.PK2 pk2, LVL.* FROM "+ ldenConfig.lDayTable + " LVL, RCVS20 R WHERE LVL.IDRECEIVER = R.PK2");
         SHPDriverFunction shpDriver = new SHPDriverFunction();
-        shpDriver.exportTable(connection, "RESULTS", new File("target/Results_PtSource.shp"), new EmptyProgressVisitor());
+        shpDriver.exportTable(connection, "RESULTS", new File("target/Results_PtSource"+name_output+".shp"), new EmptyProgressVisitor());
 
 
 
