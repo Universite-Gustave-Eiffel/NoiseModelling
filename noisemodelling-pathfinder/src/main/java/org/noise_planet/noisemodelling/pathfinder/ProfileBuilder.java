@@ -1741,7 +1741,7 @@ public class ProfileBuilder {
 
         /** Height of the building. */
         private final double height;
-        private double zTopo = Double.NaN;
+        private double zTopo = 0.0;
         /** Absorption coefficients. */
         private final List<Double> alphas;
         /** Primary key of the building in the database. */

@@ -1,5 +1,7 @@
 package org.noise_planet.noisemodelling.jdbc;
 
+import org.cts.crs.CRSException;
+import org.cts.op.CoordinateOperationException;
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.api.ProgressVisitor;
 import org.h2gis.functions.factory.H2GISDBFactory;
@@ -15,12 +17,17 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.LineString;
 import org.noise_planet.noisemodelling.emission.RailWayLW;
 import org.noise_planet.noisemodelling.pathfinder.IComputeRaysOut;
+import org.noise_planet.noisemodelling.pathfinder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.RootProgressVisitor;
+import org.noise_planet.noisemodelling.pathfinder.utils.KMLDocument;
+import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.xml.stream.XMLStreamException;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -665,7 +672,7 @@ public class LDENPointNoiseMapFactoryTest {
 
         pointNoiseMap.setComputeRaysOutFactory(factory);
         pointNoiseMap.setPropagationProcessDataFactory(factory);
-
+        pointNoiseMap.setHeightField("HEIGHT");
         pointNoiseMap.setMaximumPropagationDistance(5000);
         pointNoiseMap.setComputeHorizontalDiffraction(false);
         pointNoiseMap.setComputeVerticalDiffraction(false);
@@ -688,7 +695,12 @@ public class LDENPointNoiseMapFactoryTest {
             // Iterate over computation areas
             for(PointNoiseMap.CellIndex cellIndex : new TreeSet<>(cells.keySet())) {
                 // Run ray propagation
-                pointNoiseMap.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers);
+                IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers);
+                // Export as a Google Earth 3d scene
+                if (out instanceof ComputeRaysOutAttenuation) {
+                    ComputeRaysOutAttenuation cellStorage = (ComputeRaysOutAttenuation) out;
+                    exportScene(String.format(Locale.ROOT,"target/PtSource_scene_%d_%d.kml", cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex()), cellStorage.inputData.profileBuilder, cellStorage);
+                }
             }
         }finally {
             factory.stop();
@@ -729,5 +741,30 @@ public class LDENPointNoiseMapFactoryTest {
         }
 
 
+    }
+
+    public static void exportScene(String name, ProfileBuilder builder, ComputeRaysOutAttenuation result) throws IOException {
+        try {
+            FileOutputStream outData = new FileOutputStream(name);
+            KMLDocument kmlDocument = new KMLDocument(outData);
+            kmlDocument.setInputCRS("EPSG:2154");
+            kmlDocument.writeHeader();
+            if(builder != null) {
+                kmlDocument.writeTopographic(builder.getTriangles(), builder.getVertices());
+            }
+            if(result != null) {
+                kmlDocument.writeRays(result.getPropagationPaths());
+            }
+            if(builder != null) {
+                kmlDocument.writeBuildings(builder);
+            }
+            if(result != null) {
+                kmlDocument.writeProfile(builder.getProfile(result.getInputData().sourceGeometries.get(0).getCoordinate(),result.getInputData().receivers.get(0)));
+            }
+
+            kmlDocument.writeFooter();
+        } catch (XMLStreamException | CoordinateOperationException | CRSException ex) {
+            throw new IOException(ex);
+        }
     }
 }
