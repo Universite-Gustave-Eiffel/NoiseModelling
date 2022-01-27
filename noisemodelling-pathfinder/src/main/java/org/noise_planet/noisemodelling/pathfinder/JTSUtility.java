@@ -238,8 +238,8 @@ public class JTSUtility {
         double valB = valB1 + 2 * valB2;
         double dist3 = Math.pow (profile[n].x - profile[0].x, 3) ;
         double dist4 = Math.pow (profile[n].x - profile[0].x, 4) ;
-        assert (dist3 > 0) ;
-        assert (dist4 > 0) ;
+        //assert (dist3 > 0) ;
+        //assert (dist4 > 0) ;
         /*
          * equation VI-4
          */
@@ -301,5 +301,9 @@ public class JTSUtility {
 
     public static Double dist2D(Coordinate c0, Coordinate c1) {
         return Math.sqrt((c1.x-c0.x)*(c1.x-c0.x) + (c1.y-c0.y)*(c1.y-c0.y));
+    }
+
+    public static double getSlope(Coordinate p0, Coordinate p1) {
+        return (p1.y-p0.y)/(p1.x-p0.x);
     }
 }

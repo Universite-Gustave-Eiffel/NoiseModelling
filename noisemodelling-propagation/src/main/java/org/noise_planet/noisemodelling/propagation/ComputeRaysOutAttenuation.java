@@ -185,10 +185,6 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
                     proPath.absorptionData.aBoundaryH = aBoundary.clone();
                     proPath.absorptionData.aGlobalH = aGlobalMeteoHom.clone();
                 }
-                //TODO retrodiff
-                /*if(!proPath.refPoints.isEmpty()) {
-                    EvaluateAttenuationCnossos.deltaRetrodif(proPath, data);
-                }*/
             }
             // Favorable conditions
             if (data.getWindRose()[roseindex]!=0) {
@@ -202,10 +198,6 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
                     proPath.absorptionData.aBoundaryF = aBoundary.clone();
                     proPath.absorptionData.aGlobalF = aGlobalMeteoFav.clone();
                 }
-                //TODO retrodiff
-                /*if(!proPath.refPoints.isEmpty()) {
-                    EvaluateAttenuationCnossos.deltaRetrodif(proPath, data);
-                }*/
             }
 
             //For testing purpose
@@ -225,14 +217,15 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
 
             // Apply attenuation due to sound direction
             if(inputData != null && !inputData.isOmnidirectional((int)sourceId)) {
-                Orientation sourceOrientation = proPath.getSourceOrientation();
+                /*Orientation sourceOrientation = proPath.getSourceOrientation();
                 // fetch orientation of the first ray
                 Coordinate nextPointFromSource = proPath.getPointList().get(1).coordinate;
                 Coordinate sourceCoordinate = proPath.getPointList().get(0).coordinate;
                 Vector3D outgoingRay = new Vector3D(new Coordinate(nextPointFromSource.x - sourceCoordinate.x,
                         nextPointFromSource.y - sourceCoordinate.y,
                         nextPointFromSource.z - sourceCoordinate.z)).normalize();
-                Orientation directivityToPick = Orientation.fromVector(Orientation.rotate(sourceOrientation, outgoingRay, true), 0);
+                Orientation directivityToPick = Orientation.fromVector(Orientation.rotate(sourceOrientation, outgoingRay, true), 0);*/
+                Orientation directivityToPick = proPath.getPointList().get(0).orientation;
                 double[] attSource = new double[data.freq_lvl.size()];
                 for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
                     attSource[idfreq] = inputData.getSourceAttenuation((int) sourceId,

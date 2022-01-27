@@ -332,7 +332,7 @@ public class TestWallReflection extends TestCase {
 	    Coordinate receiver = new Coordinate(316898.0027227718, 6703891.69841584, 4);
 	    Coordinate source = new Coordinate(316900.8845049501,6703903.754851485, 0.05);
         List<PropagationPath> paths;
-        paths = computeRays.computeReflexion(receiver, source, false);
+        paths = computeRays.computeReflexion(receiver, source, false, null);
         assertEquals(1, paths.size());
         List<PointPath> pts = paths.get(0).getPointList();
         assertEquals(3, pts.size());
@@ -344,7 +344,7 @@ public class TestWallReflection extends TestCase {
         assertEquals(0, receiver.distance(pts.get(2).coordinate), 1e-6);
 
         data.reflexionOrder = 2;
-        paths = computeRays.computeReflexion(receiver, source, false);
+        paths = computeRays.computeReflexion(receiver, source, false, null);
         assertEquals(2, paths.size());
         pts = paths.get(0).getPointList();
         // 2 ref points

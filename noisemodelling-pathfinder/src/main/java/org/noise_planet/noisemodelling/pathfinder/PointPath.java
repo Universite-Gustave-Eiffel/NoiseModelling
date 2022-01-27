@@ -19,6 +19,7 @@ public class PointPath {
     public int buildingId = -1; // only if POINT_TYPE = REFL
     public int wallId = -1;
     public double e=0;
+    public Orientation orientation;
 
     public void setBuildingHeight(double buildingHeight) {
         this.buildingHeight = buildingHeight;

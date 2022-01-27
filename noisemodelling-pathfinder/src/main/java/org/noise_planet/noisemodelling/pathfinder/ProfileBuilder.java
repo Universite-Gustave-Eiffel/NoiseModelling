@@ -35,7 +35,6 @@ package org.noise_planet.noisemodelling.pathfinder;
 
 import org.locationtech.jts.algorithm.Angle;
 import org.locationtech.jts.algorithm.CGAlgorithms3D;
-import org.locationtech.jts.algorithm.Orientation;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.index.ItemVisitor;
 import org.locationtech.jts.index.strtree.STRtree;
@@ -43,11 +42,10 @@ import org.locationtech.jts.triangulate.quadedge.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.locationtech.jts.algorithm.Orientation.isCCW;
 import static org.noise_planet.noisemodelling.pathfinder.JTSUtility.dist2D;
 import static org.noise_planet.noisemodelling.pathfinder.ProfileBuilder.IntersectionType.*;
 
@@ -123,17 +121,6 @@ public class ProfileBuilder {
     private Envelope envelope;
     /** Maximum area of triangles. */
     private double maxArea;
-
-    private FileWriter writer;
-
-    {
-        try {
-            writer = new FileWriter("target/log_of_profiles");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
     /**
      * Main empty constructor.
      */
@@ -788,34 +775,29 @@ public class ProfileBuilder {
                 LOGGER.error("Error while getting vertices", e);
                 return null;
             }
-            List<Wall> topoWalls = new ArrayList<>();
+            // wallIndex set will merge shared triangle segments
+            Set<IntegerTuple> wallIndex = new HashSet<>();
             for (int i = 0; i < topoTriangles.size(); i++) {
-                Triangle tri = topoTriangles.get(i);
-                Coordinate vA = vertices.get(tri.getA());
-                Coordinate vB = vertices.get(tri.getB());
-                Coordinate vC = vertices.get(tri.getC());
-                Envelope env = FACTORY.createLineString(new Coordinate[]{vA, vB, vC}).getEnvelopeInternal();
-                topoTree.insert(env, i);
-                topoWalls.add(new Wall(vA, vB, i, TOPOGRAPHY));
-                topoWalls.add(new Wall(vB, vC, i, TOPOGRAPHY));
-                topoWalls.add(new Wall(vC, vA, i, TOPOGRAPHY));
-            }
-            List<Wall> toRemove = new ArrayList<>();
-            for(int i=0; i<topoWalls.size(); i++) {
-                Wall wall = topoWalls.get(i);
-                List<Wall> walls = topoWalls.subList(i, topoWalls.size());
-                for(Wall w : walls) {
-                    if((w.p0.equals(wall.p0) && w.p1.equals(wall.p1)) ||
-                            (w.p0.equals(wall.p1) && w.p1.equals(wall.p0))) {
-                        toRemove.add(wall);
-                    }
+                final Triangle tri = topoTriangles.get(i);
+                wallIndex.add(new IntegerTuple(tri.getA(), tri.getB(), i));
+                wallIndex.add(new IntegerTuple(tri.getB(), tri.getC(), i));
+                wallIndex.add(new IntegerTuple(tri.getC(), tri.getA(), i));
+                // Insert triangle in rtree
+                if(topoTree != null) {
+                    Coordinate vA = vertices.get(tri.getA());
+                    Coordinate vB = vertices.get(tri.getB());
+                    Coordinate vC = vertices.get(tri.getC());
+                    Envelope env = FACTORY.createLineString(new Coordinate[]{vA, vB, vC}).getEnvelopeInternal();
+                    topoTree.insert(env, i);
                 }
             }
-            topoWalls.removeAll(toRemove);
-            for(Wall wall : topoWalls) {
+            //TODO : Seems to be useless, to check
+            /*for (IntegerTuple wallId : wallIndex) {
+                Coordinate vA = vertices.get(wallId.nodeIndexA);
+                Coordinate vB = vertices.get(wallId.nodeIndexB);
+                Wall wall = new Wall(vA, vB, wallId.triangleIdentifier, TOPOGRAPHY);
                 processedWalls.add(wall);
-                rtree.insert(wall.getLine().getEnvelopeInternal(), processedWalls.size() - 1);
-            }
+            }*/
         }
         //Update building z
         if(topoTree != null) {
@@ -912,7 +894,10 @@ public class ProfileBuilder {
         List<Wall> list = new ArrayList<>();
         List<Integer> indexes = rtree.query(env);
         for(int i : indexes) {
-            list.add(getProcessedWalls().get(i));
+            Wall w = getProcessedWalls().get(i);
+            if(w.getType().equals(BUILDING) || w.getType().equals(WALL)) {
+                list.add(w);
+            }
         }
         return list;
     }
@@ -1035,11 +1020,6 @@ public class ProfileBuilder {
      * @return Cutting profile.
      */
     public CutProfile getProfile(Coordinate c0, Coordinate c1, double gS) {
-        try {
-            writer.write(c0.toString()+","+c1.toString()+"\n");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
         CutProfile profile = new CutProfile();
 
         List<LineSegment> lines = new ArrayList<>();
@@ -1356,6 +1336,7 @@ public class ProfileBuilder {
         /** True if contains a ground effect cutting point. */
         private Boolean hasGroundEffectInter = false;
         private Boolean isFreeField;
+        private Orientation srcOrientation;
 
         /**
          * Add the source point.
@@ -1463,6 +1444,14 @@ public class ProfileBuilder {
          */
         public void reverse() {
             Collections.reverse(pts);
+        }
+
+        public void setSrcOrientation(Orientation srcOrientation){
+            this.srcOrientation = srcOrientation;
+        }
+
+        public Orientation getSrcOrientation(){
+            return srcOrientation;
         }
 
         public boolean intersectBuilding(){
@@ -2030,7 +2019,7 @@ public class ProfileBuilder {
     public List<Coordinate> getWideAnglePointsByBuilding(int build, double minAngle, double maxAngle) {
         List <Coordinate> verticesBuilding = new ArrayList<>();
         Coordinate[] ring = getBuilding(build-1).getGeometry().getExteriorRing().getCoordinates();
-        if(!Orientation.isCCW(ring)) {
+        if(!isCCW(ring)) {
             for (int i = 0; i < ring.length / 2; i++) {
                 Coordinate temp = ring[i];
                 ring[i] = ring[ring.length - 1 - i];
@@ -2087,6 +2076,46 @@ public class ProfileBuilder {
             wallTree.query(pathEnv, visitor);
         } catch (IllegalStateException ex) {
             //Ignore
+        }
+    }
+
+
+    /**
+     * Hold two integers. Used to store unique triangle segments
+     */
+    private static class IntegerTuple {
+        int nodeIndexA;
+        int nodeIndexB;
+        int triangleIdentifier;
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            IntegerTuple that = (IntegerTuple) o;
+            return nodeIndexA == that.nodeIndexA && nodeIndexB == that.nodeIndexB;
+        }
+
+        @Override
+        public String toString() {
+            return "IntegerTuple{" + "nodeIndexA=" + nodeIndexA + ", nodeIndexB=" + nodeIndexB + ", " +
+                    "triangleIdentifier=" + triangleIdentifier + '}';
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(nodeIndexA, nodeIndexB);
+        }
+
+        public IntegerTuple(int nodeIndexA, int nodeIndexB, int triangleIdentifier) {
+            if(nodeIndexA < nodeIndexB) {
+                this.nodeIndexA = nodeIndexA;
+                this.nodeIndexB = nodeIndexB;
+            } else {
+                this.nodeIndexA = nodeIndexB;
+                this.nodeIndexB = nodeIndexA;
+            }
+            this.triangleIdentifier = triangleIdentifier;
         }
     }
 }

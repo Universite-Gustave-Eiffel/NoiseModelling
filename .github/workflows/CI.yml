@@ -19,10 +19,18 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 1.8
+          server-id: ossrh
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
       - name: Building
         run: |
           mvn test install -B
           cd wps_scripts && ./gradlew test --info --stacktrace
+      - name: Deploy
+        run: mvn clean deploy -B -P maven-deploy
+        env:
+          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
       - name: Clean
         run: rm -f $HOME/.gradle/caches/modules-2/modules-2.lock
       - name: Cache

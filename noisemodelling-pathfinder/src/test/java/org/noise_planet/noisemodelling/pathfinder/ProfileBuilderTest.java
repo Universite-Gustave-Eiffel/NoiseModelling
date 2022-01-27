@@ -73,13 +73,13 @@ public class ProfileBuilderTest {
 
         ProfileBuilder.CutProfile profile = profileBuilder.getProfile(new Coordinate(0, 1, 0.1), new Coordinate(8, 10, 0.3));
         List<ProfileBuilder.CutPoint> pts = profile.getCutPoints();
-        assertEquals(4, pts.size());
+        assertEquals(8, pts.size());
         assertEquals(0.0, pts.get(0).getCoordinate().x, DELTA);
         assertEquals(1.0, pts.get(0).getCoordinate().y, DELTA);
         assertEquals(0.1, pts.get(0).getCoordinate().z, DELTA);
-        assertEquals(8.0, pts.get(3).getCoordinate().x, DELTA);
-        assertEquals(10.0, pts.get(3).getCoordinate().y, DELTA);
-        assertEquals(0.3, pts.get(3).getCoordinate().z, DELTA);
+        assertEquals(8.0, pts.get(7).getCoordinate().x, DELTA);
+        assertEquals(10.0, pts.get(7).getCoordinate().y, DELTA);
+        assertEquals(0.3, pts.get(7).getCoordinate().z, DELTA);
     }
 
     /**
@@ -142,16 +142,13 @@ public class ProfileBuilderTest {
 
         ProfileBuilder.CutProfile profile = profileBuilder.getProfile(new Coordinate(0, 1, 0.1), new Coordinate(8, 10, 0.3));
         List<ProfileBuilder.CutPoint> pts = profile.getCutPoints();
-        assertEquals(11, pts.size());
+        assertEquals(10, pts.size());
         assertEquals(0.0, pts.get(0).getCoordinate().x, DELTA);
         assertEquals(1.0, pts.get(0).getCoordinate().y, DELTA);
         assertEquals(0.1, pts.get(0).getCoordinate().z, DELTA);
-        assertEquals(2.2857142857142856, pts.get(1).getCoordinate().x, DELTA);
-        assertEquals(3.5714285714285716, pts.get(1).getCoordinate().y, DELTA);
-        assertEquals(2.357142857142857, pts.get(1).getCoordinate().z, DELTA);
-        assertEquals(8.0, pts.get(10).getCoordinate().x, DELTA);
-        assertEquals(10.0, pts.get(10).getCoordinate().y, DELTA);
-        assertEquals(0.3, pts.get(10).getCoordinate().z, DELTA);
+        assertEquals(8.0, pts.get(9).getCoordinate().x, DELTA);
+        assertEquals(10.0, pts.get(9).getCoordinate().y, DELTA);
+        assertEquals(0.3, pts.get(9).getCoordinate().z, DELTA);
     }
 
     /**
@@ -199,12 +196,6 @@ public class ProfileBuilderTest {
         assertEquals(0.0, pts.get(0).getCoordinate().x, DELTA);
         assertEquals(1.0, pts.get(0).getCoordinate().y, DELTA);
         assertEquals(0.1, pts.get(0).getCoordinate().z, DELTA);
-        assertEquals(1.92, pts.get(1).getCoordinate().x, DELTA);
-        assertEquals(3.16, pts.get(1).getCoordinate().y, DELTA);
-        assertEquals(0.0, pts.get(1).getCoordinate().z, DELTA);
-        assertEquals(6.11764705882353, pts.get(2).getCoordinate().x, DELTA);
-        assertEquals(7.88235294117647, pts.get(2).getCoordinate().y, DELTA);
-        assertEquals(0.0, pts.get(2).getCoordinate().z, DELTA);
         assertEquals(8.0, pts.get(3).getCoordinate().x, DELTA);
         assertEquals(10.0, pts.get(3).getCoordinate().y, DELTA);
         assertEquals(0.3, pts.get(3).getCoordinate().z, DELTA);
@@ -240,13 +231,13 @@ public class ProfileBuilderTest {
 
         ProfileBuilder.CutProfile profile = profileBuilder.getProfile(new Coordinate(0, 1, 0.1), new Coordinate(8, 10, 0.3));
         List<ProfileBuilder.CutPoint> pts = profile.getCutPoints();
-        assertEquals(16, pts.size());
+        assertEquals(19, pts.size());
         assertEquals(0.0, pts.get(0).getCoordinate().x, DELTA);
         assertEquals(1.0, pts.get(0).getCoordinate().y, DELTA);
         assertEquals(0.1, pts.get(0).getCoordinate().z, DELTA);
-        assertEquals(8.0, pts.get(15).getCoordinate().x, DELTA);
-        assertEquals(10.0, pts.get(15).getCoordinate().y, DELTA);
-        assertEquals(0.3, pts.get(15).getCoordinate().z, DELTA);
+        assertEquals(8.0, pts.get(18).getCoordinate().x, DELTA);
+        assertEquals(10.0, pts.get(18).getCoordinate().y, DELTA);
+        assertEquals(0.3, pts.get(18).getCoordinate().z, DELTA);
     }
 
     //TODO source on ground effect
