@@ -1267,7 +1267,7 @@ public class EvaluateAttenuationCnossosTest {
     }
 
     /**
-     * Test TC09 -- Flat ground with homogeneous acoustic properties and cubic building – receiver at low height
+     * Test TC10 -- Flat ground with homogeneous acoustic properties and cubic building – receiver at low height
      */
     @Test
     public void TC10() {
@@ -1488,7 +1488,7 @@ public class EvaluateAttenuationCnossosTest {
     }
 
     /**
-     * Test TC11 -- Flat ground with homogeneous acoustic properties and cubic building – receiver at low height
+     * Test TC11 -- Flat ground with homogeneous acoustic properties and cubic building – receiver at large height
      */
     @Test
     public void TC11() {
@@ -1660,8 +1660,8 @@ public class EvaluateAttenuationCnossosTest {
         assertDoubleArrayEquals("ADiv - right lateral", expectedADiv, actualADiv, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("AGroundH - right lateral", expectedAGroundH, actualAGroundH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("AGroundF - right lateral", expectedAGroundF, actualAGroundF, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("DeltaDiffSRH - right lateral", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_MEDIUM);
-        assertDoubleArrayEquals("LH - right lateral", expectedLH, actualLH, ERROR_EPSILON_MEDIUM);
+        assertDoubleArrayEquals("DeltaDiffSRH - right lateral", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_LOW);
+        assertDoubleArrayEquals("LH - right lateral", expectedLH, actualLH, ERROR_EPSILON_LOW);
 
 
         //Path2 : left lateral
@@ -1687,10 +1687,10 @@ public class EvaluateAttenuationCnossosTest {
         assertDoubleArrayEquals("CfH", expectedCfH, actualCfH, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("AGroundH", expectedAGroundH, actualAGroundH, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("WF", expectedWF, actualWF, ERROR_EPSILON_LOW);
-        assertDoubleArrayEquals("CfF", expectedCfF, actualCfF, ERROR_EPSILON_MEDIUM);
+        assertDoubleArrayEquals("CfF", expectedCfF, actualCfF, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("AGroundF", expectedAGroundF, actualAGroundF, ERROR_EPSILON_VERY_LOW);
 
-        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
+        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, sumArray(SOUND_POWER_LEVELS, A_WEIGHTING));
         assertArrayEquals(  new double[]{21.28,28.39,32.47,34.51,34.54,33.37,32.14,27.73},L, ERROR_EPSILON_VERY_LOW);//p=0.5
     }
 

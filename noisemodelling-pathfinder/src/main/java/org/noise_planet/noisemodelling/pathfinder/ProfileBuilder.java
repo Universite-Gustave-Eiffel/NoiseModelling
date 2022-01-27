@@ -121,17 +121,6 @@ public class ProfileBuilder {
     private Envelope envelope;
     /** Maximum area of triangles. */
     private double maxArea;
-
-    /** if true take into account z value on Buildings Polygons
-     * In this case, z represent the altitude (from the sea to the top of the wall) */
-    private boolean zBuildings = false;
-
-
-    public void setzBuildings(boolean zBuildings) {
-        this.zBuildings = zBuildings;
-    }
-
-
     /**
      * Main empty constructor.
      */
@@ -906,7 +895,10 @@ public class ProfileBuilder {
         List<Wall> list = new ArrayList<>();
         List<Integer> indexes = rtree.query(env);
         for(int i : indexes) {
-            list.add(getProcessedWalls().get(i));
+            Wall w = getProcessedWalls().get(i);
+            if(w.getType().equals(BUILDING) || w.getType().equals(WALL)) {
+                list.add(w);
+            }
         }
         return list;
     }
