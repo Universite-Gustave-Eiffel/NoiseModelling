@@ -895,7 +895,10 @@ public class ProfileBuilder {
         List<Wall> list = new ArrayList<>();
         List<Integer> indexes = rtree.query(env);
         for(int i : indexes) {
-            list.add(getProcessedWalls().get(i));
+            Wall w = getProcessedWalls().get(i);
+            if(w.getType().equals(BUILDING) || w.getType().equals(WALL)) {
+                list.add(w);
+            }
         }
         return list;
     }

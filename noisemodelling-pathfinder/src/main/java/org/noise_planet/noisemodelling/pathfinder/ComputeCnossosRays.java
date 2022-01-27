@@ -1167,10 +1167,11 @@ public class ComputeCnossosRays {
                                                          Coordinate rcvCoord, LineSegment srcRcvLine, int depth, MirrorReceiverResult parent) {
         List<MirrorReceiverResult> results = new ArrayList<>();
         for(ProfileBuilder.Wall wall : buildWalls) {
-            if(parent != null && buildWalls.indexOf(wall) == parent.getWallId()) {
+            if(parent != null && buildWalls.indexOf(wall) == parent.getWallId() ||
+                    JTSUtility.getSlope(wall.p0, wall.p1) == JTSUtility.getSlope(srcCoord, rcvCoord)) {
                 continue;
             }
-            //Calculate the coordinate of the mirror rcv
+            //Calculate the coordinate of projection
             Coordinate proj = wall.getLineSegment().project(rcvCoord);
             //If the mirror rcv is too far, skip it
             if(srcRcvLine.p0.distance(proj) > data.maxSrcDist/2) {
