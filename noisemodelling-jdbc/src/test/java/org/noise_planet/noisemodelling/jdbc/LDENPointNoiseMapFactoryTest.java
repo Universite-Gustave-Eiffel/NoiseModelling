@@ -273,8 +273,11 @@ public class LDENPointNoiseMapFactoryTest {
         SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/Buildings.shp").getFile());
         SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/Rail_protect.shp").getFile());
 
+        //TODO envoyer Rail section a Gwen car je veux un DEM de la plateform et si il arrive pas demander à Pierre
+        //SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/DEM.shp").getFile());
+
         // ICI POUR CHANGER HAUTEUR ET G ECRAN
-        connection.createStatement().execute("CREATE TABLE SCREENS AS SELECT ST_BUFFER(the_geom, 0.1, 'join=mitre endcap=flat') as the_geom, pk, height, g FROM Rail_protect");
+        connection.createStatement().execute("CREATE TABLE SCREENS AS SELECT ST_BUFFER(the_geom, 5, 'join=mitre endcap=flat') as the_geom, pk as pk, 1000 as height, g as g FROM Rail_protect");
 
         // Count receivers
         int nbReceivers = 0;
@@ -296,15 +299,17 @@ public class LDENPointNoiseMapFactoryTest {
 
         LDENPointNoiseMapFactory factory = new LDENPointNoiseMapFactory(connection, ldenConfig);
 
-        PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS", "LW_RAILWAY",
+        PointNoiseMap pointNoiseMap = new PointNoiseMap("SCREENS", "LW_RAILWAY",
                 "RECEPTEURS");
 
         pointNoiseMap.setComputeRaysOutFactory(factory);
         pointNoiseMap.setPropagationProcessDataFactory(factory);
 
+        //pointNoiseMap.setDemTable("DEM");
+
         pointNoiseMap.setMaximumPropagationDistance(750.0);
         pointNoiseMap.setComputeHorizontalDiffraction(true);
-        pointNoiseMap.setComputeVerticalDiffraction(true);
+        pointNoiseMap.setComputeVerticalDiffraction(false);
         pointNoiseMap.setSoundReflectionOrder(0);
 
         // Set of already processed receivers
@@ -329,15 +334,38 @@ public class LDENPointNoiseMapFactoryTest {
         assertEquals(nbReceivers, receivers.size());
 
         // ICI A MODIFIER
-        try(ResultSet rs = connection.createStatement().executeQuery("SELECT laeq FROM "+ ldenConfig.lDayTable + " LVL, RECEPTEURS R WHERE LVL.IDRECEIVER = R.PK2")) {
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT PK,PK2,laeq FROM "+ ldenConfig.lDayTable + " LVL, RECEPTEURS R WHERE LVL.IDRECEIVER = R.PK2 ORDER BY PK2")) {
+            /*assertTrue(rs.next());
+            assertEquals(47.60, rs.getDouble(1), 2.0);
             assertTrue(rs.next());
-        //    assertEquals(56.58, rs.getDouble(1), 2.0);
-                   }
+            assertEquals(56.58, rs.getDouble(1), 2.0);
+            assertTrue(rs.next());
+            assertEquals(56.58, rs.getDouble(1), 2.0);
+            assertTrue(rs.next());
+            assertEquals(56.58, rs.getDouble(1), 2.0);
+            assertTrue(rs.next());
+            assertEquals(56.58, rs.getDouble(1), 2.0);
+            assertTrue(rs.next());
+            assertEquals(56.58, rs.getDouble(1), 2.0);
+            assertTrue(rs.next());
+            assertEquals(56.58, rs.getDouble(1), 2.0);
+            assertTrue(rs.next());
+            assertEquals(56.58, rs.getDouble(1), 2.0);
+            assertTrue(rs.next());
+            assertEquals(56.58, rs.getDouble(1), 2.0);
+            assertTrue(rs.next());
+            assertEquals(56.58, rs.getDouble(1), 2.0);
+            assertTrue(rs.next());
+            assertEquals(56.58, rs.getDouble(1), 2.0);*/
+        }
 
-        connection.createStatement().execute("CREATE TABLE RESULTS AS SELECT R.the_geom the_geom, R.PK pk, laeq laeq FROM "+ ldenConfig.lDayTable + " LVL, RECEPTEURS R WHERE LVL.IDRECEIVER = R.PK2");
+        connection.createStatement().execute("CREATE TABLE RESULTS AS SELECT R.the_geom the_geom, R.PK pk, R.PK2 pk2,laeq laeq FROM "+ ldenConfig.lDayTable + " LVL, RECEPTEURS R WHERE LVL.IDRECEIVER = R.PK2");
         SHPDriverFunction shpDriver = new SHPDriverFunction();
         shpDriver.exportTable(connection, "RESULTS", new File("target/Results_railway_Propa_1.shp"), new EmptyProgressVisitor());
 
+
+        shpDriver.exportTable(connection, "SCREENS", new File("target/SCREENS_control.shp"), new EmptyProgressVisitor());
+        shpDriver.exportTable(connection, "LW_RAILWAY", new File("target/LW_RAILWAY_control.shp"), new EmptyProgressVisitor());
 
 
     }
