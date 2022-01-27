@@ -9,12 +9,13 @@ import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
 import org.noise_planet.noisemodelling.propagation.EvaluateAttenuationCnossos;
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.IOException;
 import java.util.*;
 
 import static java.lang.Double.NaN;
 import static org.junit.Assert.*;
-import static org.noise_planet.noisemodelling.jdbc.Utils.aWeighting;
 import static org.noise_planet.noisemodelling.jdbc.Utils.addArray;
 import static org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils.*;
 
@@ -1034,8 +1035,10 @@ public class EvaluateAttenuationCnossosTest {
                 .addWall(new Coordinate[]{
                                 new Coordinate(175, 50, 17),
                                 new Coordinate(190, 10, 14)},
-                        1)
-                .finishFeeding();
+                        1);
+
+        profileBuilder.setzBuildings(true);
+        profileBuilder.finishFeeding();
 
         //Propagation data building
         CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
@@ -1274,9 +1277,11 @@ public class EvaluateAttenuationCnossosTest {
                         new Coordinate(55, 5, 10),
                         new Coordinate(65, 5, 10),
                         new Coordinate(65, 15, 10),
-                        new Coordinate(55, 15, 10),
-                })
-                .finishFeeding();
+                        new Coordinate(55, 15, 10)
+                });
+
+        profileBuilder.setzBuildings(true);
+        profileBuilder.finishFeeding();
 
         //Propagation data building
         CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
@@ -1493,9 +1498,10 @@ public class EvaluateAttenuationCnossosTest {
                         new Coordinate(55, 5, 10),
                         new Coordinate(65, 5, 10),
                         new Coordinate(65, 15, 10),
-                        new Coordinate(55, 15, 10),
-                })
-                .finishFeeding();
+                        new Coordinate(55, 15, 10)
+                });
+        profileBuilder.setzBuildings(true);
+        profileBuilder.finishFeeding();
 
         //Propagation data building
         CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
@@ -1704,8 +1710,9 @@ public class EvaluateAttenuationCnossosTest {
                         new Coordinate(17.0, 18.0, 10),
                         new Coordinate(14.5, 19.0, 10),
                         new Coordinate(12.0, 18.0, 10),
-                })
-                .finishFeeding();
+                });
+        profileBuilder.setzBuildings(true);
+        profileBuilder.finishFeeding();
 
         //Propagation data building
         CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
@@ -1927,8 +1934,9 @@ public class EvaluateAttenuationCnossosTest {
                 .addTopographicLine(185, -5, 10, 205, -5, 10)
                 .addTopographicLine(205, -5, 10, 205, 75, 10)
                 .addTopographicLine(205, 75, 10, 185, 75, 10)
-                .addTopographicLine(185, 75, 10, 185, -5, 10)
-                .finishFeeding();
+                .addTopographicLine(185, 75, 10, 185, -5, 10);
+        profileBuilder.setzBuildings(true);
+        profileBuilder.finishFeeding();
 
         //Propagation data building
         CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
@@ -2158,8 +2166,9 @@ public class EvaluateAttenuationCnossosTest {
                         new Coordinate(17.0, 18.0, 10),
                         new Coordinate(14.5, 19.0, 10),
                         new Coordinate(12.0, 18.0, 10),
-                })
-                .finishFeeding();
+                });
+        profileBuilder.setzBuildings(true);
+        profileBuilder.finishFeeding();
 
         //Propagation data building
         CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
@@ -2395,14 +2404,15 @@ public class EvaluateAttenuationCnossosTest {
                         new Coordinate(93.3, 17.8, 10),
                         new Coordinate(87.3, 6.6, 10),
                         new Coordinate(84.1, 8.3, 10),
-                })
+                });
                 /*.addBuilding(new Coordinate[]{
                         new Coordinate(94.9, 14.1, 10),
                         new Coordinate(98.02, 12.3, 10),
                         new Coordinate(92.03, 1.2, 10),
                         new Coordinate(88.86, 2.9, 10),
                 })*/
-                .finishFeeding();
+        profileBuilder.setzBuildings(true);
+        profileBuilder.finishFeeding();
 
         //Propagation data building
         CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)

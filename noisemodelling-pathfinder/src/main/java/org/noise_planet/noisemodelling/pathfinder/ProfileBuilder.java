@@ -383,7 +383,7 @@ public class ProfileBuilder {
             else {
                 envelope.expandToInclude(geom.getEnvelopeInternal());
             }
-            Building building = new Building(poly, height, alphas, id);
+            Building building = new Building(poly, height, alphas, id, zBuildings);
             buildings.add(building);
             buildingTree.insert(building.poly.getEnvelopeInternal(), buildings.size());
             //TODO : generalization of building coefficient
@@ -802,7 +802,7 @@ public class ProfileBuilder {
         //Update building z
         if(topoTree != null) {
             for (Building b : buildings) {
-                if(Double.isNaN(b.poly.getCoordinate().z) || b.poly.getCoordinate().z == 0.0) {
+                if(Double.isNaN(b.poly.getCoordinate().z) || b.poly.getCoordinate().z == 0.0 || !zBuildings) {
                     b.poly.apply(new UpdateZ(b.height + b.updateZTopo(this)));
                 }
             }
@@ -817,10 +817,11 @@ public class ProfileBuilder {
         }
         else {
             for (Building b : buildings) {
-                if(b != null && b.poly != null && b.poly.getCoordinate() != null && (
+                if(b != null && b.poly != null && b.poly.getCoordinate() != null && (!zBuildings ||
                         Double.isNaN(b.poly.getCoordinate().z) || b.poly.getCoordinate().z == 0.0)) {
                     b.poly.apply(new UpdateZ(b.height));
                 }
+
             }
             for (Wall w : walls) {
                 if(Double.isNaN(w.p0.z) || w.p0.z == 0.0) {
@@ -1736,16 +1737,15 @@ public class ProfileBuilder {
     public static class Building implements Obstacle {
         /** Building footprint. */
         private final Polygon poly;
-
-        public double getHeight() {
-            return height;
-        }
-
         /** Height of the building. */
         private final double height;
-        private double zTopo = Double.NaN;
+        private double zTopo = 0.0;
         /** Absorption coefficients. */
         private final List<Double> alphas;
+
+        /** if true take into account z value on Buildings Polygons */
+        private final boolean zBuildings;
+
         /** Primary key of the building in the database. */
         private int pk = -1;
         private List<Wall> walls = new ArrayList<>();
@@ -1757,13 +1757,21 @@ public class ProfileBuilder {
          * @param alphas Absorption coefficients.
          * @param key Primary key of the building in the database.
          */
-        public Building(Polygon poly, double height, List<Double> alphas, int key) {
+        public Building(Polygon poly, double height, List<Double> alphas, int key, boolean zBuildings) {
             this.poly = poly;
             this.height = height;
             this.alphas = new ArrayList<>();
             this.alphas.addAll(alphas);
             this.pk = key;
+            this.zBuildings = zBuildings;
         }
+
+        /**
+         * get Height from Building
+         * @return height
+         */
+        public double getHeight() { return height; }
+
 
         /**
          * Retrieve the building footprint.
