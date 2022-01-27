@@ -5,10 +5,7 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import org.locationtech.jts.geom.Coordinate;
-import org.noise_planet.noisemodelling.pathfinder.PointPath;
-import org.noise_planet.noisemodelling.pathfinder.PropagationPath;
-import org.noise_planet.noisemodelling.pathfinder.SegmentPath;
-import org.noise_planet.noisemodelling.pathfinder.Triangle;
+import org.noise_planet.noisemodelling.pathfinder.*;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -49,6 +46,28 @@ public class GeoJSONDocument {
         jsonGenerator.writeStartObject();
         jsonGenerator.writeStringField("type", "FeatureCollection");
         jsonGenerator.writeArrayFieldStart("features");
+    }
+
+
+    public void writeProfile(ProfileBuilder.CutProfile profile) throws IOException {
+        jsonGenerator.writeStartObject();
+        jsonGenerator.writeStringField("type", "Feature");
+        jsonGenerator.writeObjectFieldStart("geometry");
+        jsonGenerator.writeStringField("type", "LineString");
+        jsonGenerator.writeFieldName("coordinates");
+        jsonGenerator.writeStartArray();
+
+        for(ProfileBuilder.CutPoint cutPoint : profile.getCutPoints()) {
+            writeCoordinate(new Coordinate(cutPoint.getCoordinate()));
+        }
+        jsonGenerator.writeEndArray();
+        jsonGenerator.writeEndObject(); // geometry
+        // Write properties
+        jsonGenerator.writeObjectFieldStart("properties");
+        jsonGenerator.writeNumberField("receiver", profile.getReceiver().getId());
+        jsonGenerator.writeNumberField("source", profile.getSource().getId());
+        jsonGenerator.writeEndObject(); // properties
+        jsonGenerator.writeEndObject();
     }
 
     public void writeRay(PropagationPath path) throws IOException {

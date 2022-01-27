@@ -63,21 +63,17 @@ import org.cts.op.CoordinateOperationFactory;
 import org.cts.registry.EPSGRegistry;
 import org.cts.registry.RegistryManager;
 import org.locationtech.jts.algorithm.Orientation;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.CoordinateFilter;
-import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.LineString;
-import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.kml.KMLWriter;
-import org.noise_planet.noisemodelling.pathfinder.*;
+import org.noise_planet.noisemodelling.pathfinder.PointPath;
+import org.noise_planet.noisemodelling.pathfinder.ProfileBuilder;
+import org.noise_planet.noisemodelling.pathfinder.PropagationPath;
+import org.noise_planet.noisemodelling.pathfinder.Triangle;
 
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
 import java.io.BufferedOutputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -240,7 +236,7 @@ public class KMLDocument {
         for(ProfileBuilder.Building building : buildings) {
             Coordinate[] original = building.getGeometry().getCoordinates();
             Coordinate[] coordinates = new Coordinate[original.length];
-            double z = profileBuilder.getBuilding(idPoly + 1).getZ();
+            double z = profileBuilder.getBuilding(idPoly ).getZ();
             for(int i = 0; i < coordinates.length; i++) {
                 coordinates[i] = copyCoord(new Coordinate(original[i].x, original[i].y, z));
             }
@@ -260,6 +256,41 @@ public class KMLDocument {
                 polygons.toArray(new Polygon[polygons.size()])), Double.NaN,
                 wgs84Precision, true, KMLWriter.ALTITUDE_MODE_RELATIVETOGROUND));
         xmlOut.writeEndElement();//Write Placemark
+        xmlOut.writeEndElement();//Folder
+        return this;
+    }
+
+    public KMLDocument writeProfile(ProfileBuilder.CutProfile profile) throws XMLStreamException {
+        xmlOut.writeStartElement("Schema");
+        xmlOut.writeAttribute("name", "rays");
+        xmlOut.writeAttribute("id", "rays");
+        xmlOut.writeEndElement();//Write schema
+        xmlOut.writeStartElement("Folder");
+        xmlOut.writeStartElement("name");
+        xmlOut.writeCharacters("rays");
+        xmlOut.writeEndElement();//Name
+
+        xmlOut.writeStartElement("Placemark");
+        xmlOut.writeStartElement("name");
+        xmlOut.writeCharacters(String.format("R:%d S:%d", 0, 0));
+        xmlOut.writeEndElement();//Name
+
+        Coordinate[] coordinates = new Coordinate[profile.getCutPoints().size()];
+        int i=0;
+
+        for(ProfileBuilder.CutPoint cutPoint : profile.getCutPoints()) {
+
+            coordinates[i++] = copyCoord(cutPoint.getCoordinate());
+        }
+
+        LineString lineString = geometryFactory.createLineString(coordinates);
+        // Apply CRS transform
+        doTransform(lineString);
+        //Write geometry
+        xmlOut.writeCharacters(KMLWriter.writeGeometry(lineString, Double.NaN,
+                wgs84Precision, false, KMLWriter.ALTITUDE_MODE_ABSOLUTE));
+        xmlOut.writeEndElement();//Write Placemark
+
         xmlOut.writeEndElement();//Folder
         return this;
     }
