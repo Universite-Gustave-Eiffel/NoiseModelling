@@ -121,7 +121,6 @@ public class ProfileBuilder {
     private Envelope envelope;
     /** Maximum area of triangles. */
     private double maxArea;
-
     /**
      * Main empty constructor.
      */
