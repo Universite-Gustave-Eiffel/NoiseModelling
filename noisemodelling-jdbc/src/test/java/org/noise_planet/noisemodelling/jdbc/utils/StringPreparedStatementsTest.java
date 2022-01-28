@@ -26,6 +26,6 @@ public class StringPreparedStatementsTest {
         p.setDouble(4, 15.2);
         p.addBatch();
         w.flush();
-        assertEquals("INSERT INTO TABLE VALUES(15, 'Test '' Hello', 'POINT (1 2 3)', 15.2);\n", sb.toString());
+        assertEquals("INSERT INTO TABLE VALUES(15, 'Test '' Hello', 'POINT Z(1 2 3)', 15.2);\n", sb.toString());
     }
 }

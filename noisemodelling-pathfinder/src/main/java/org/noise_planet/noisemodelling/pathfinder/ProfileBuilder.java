@@ -41,10 +41,11 @@ import org.locationtech.jts.index.strtree.STRtree;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static java.lang.Double.NaN;
+import static java.lang.Double.isNaN;
 import static org.locationtech.jts.algorithm.Orientation.isCCW;
 import static org.noise_planet.noisemodelling.pathfinder.JTSUtility.dist2D;
 import static org.noise_planet.noisemodelling.pathfinder.ProfileBuilder.IntersectionType.*;
@@ -238,7 +239,7 @@ public class ProfileBuilder {
      * @param id     Database primary key.
      */
     public ProfileBuilder addBuilding(Geometry geom, int id) {
-        return addBuilding(geom, Double.NaN, id);
+        return addBuilding(geom, NaN, id);
     }
 
     /**
@@ -323,7 +324,7 @@ public class ProfileBuilder {
      * @param alphas Absorption coefficients.
      */
     public ProfileBuilder addBuilding(Geometry geom, List<Double> alphas) {
-        return addBuilding(geom, Double.NaN, alphas, -1);
+        return addBuilding(geom, NaN, alphas, -1);
     }
 
     /**
@@ -341,7 +342,7 @@ public class ProfileBuilder {
         else {
             polyCoords = coords;
         }
-        return addBuilding(FACTORY.createPolygon(polyCoords), Double.NaN, alphas, -1);
+        return addBuilding(FACTORY.createPolygon(polyCoords), NaN, alphas, -1);
     }
 
     /**
@@ -351,7 +352,7 @@ public class ProfileBuilder {
      * @param id     Database primary key.
      */
     public ProfileBuilder addBuilding(Geometry geom, List<Double> alphas, int id) {
-        return addBuilding(geom, Double.NaN, alphas, id);
+        return addBuilding(geom, NaN, alphas, id);
     }
 
     /**
@@ -370,7 +371,7 @@ public class ProfileBuilder {
         else {
             polyCoords = coords;
         }
-        return addBuilding(FACTORY.createPolygon(polyCoords), Double.NaN, alphas, id);
+        return addBuilding(FACTORY.createPolygon(polyCoords), NaN, alphas, id);
     }
 
     /**
@@ -510,7 +511,7 @@ public class ProfileBuilder {
     public ProfileBuilder addTopographicPoint(Coordinate point) {
         if(!isFeedingFinished) {
             //Force to 3D
-            if (Double.isNaN(point.z)) {
+            if (isNaN(point.z)) {
                 point.setCoordinate(new Coordinate(point.x, point.y, 0.));
             }
             if(envelope == null) {
@@ -813,15 +814,16 @@ public class ProfileBuilder {
         //Update building z
         if(topoTree != null) {
             for (Building b : buildings) {
-                if(Double.isNaN(b.poly.getCoordinate().z) || b.poly.getCoordinate().z == 0.0 || !zBuildings) {
+                if(isNaN(b.poly.getCoordinate().z) || b.poly.getCoordinate().z == 0.0 || !zBuildings) {
+                    b.poly2D_3D();
                     b.poly.apply(new UpdateZ(b.height + b.updateZTopo(this)));
                 }
             }
             for (Wall w : walls) {
-                if(Double.isNaN(w.p0.z) || w.p0.z == 0.0) {
+                if(isNaN(w.p0.z) || w.p0.z == 0.0) {
                     w.p0.z = w.height + getZGround(w.p0);
                 }
-                if(Double.isNaN(w.p1.z) || w.p1.z == 0.0) {
+                if(isNaN(w.p1.z) || w.p1.z == 0.0) {
                     w.p1.z = w.height + getZGround(w.p1);
                 }
             }
@@ -829,16 +831,18 @@ public class ProfileBuilder {
         else {
             for (Building b : buildings) {
                 if(b != null && b.poly != null && b.poly.getCoordinate() != null && (!zBuildings ||
-                        Double.isNaN(b.poly.getCoordinate().z) || b.poly.getCoordinate().z == 0.0)) {
+                        isNaN(b.poly.getCoordinate().z) || b.poly.getCoordinate().z == 0.0)) {
+
+                    b.poly2D_3D();
                     b.poly.apply(new UpdateZ(b.height));
                 }
 
             }
             for (Wall w : walls) {
-                if(Double.isNaN(w.p0.z) || w.p0.z == 0.0) {
+                if(isNaN(w.p0.z) || w.p0.z == 0.0) {
                     w.p0.z = w.height;
                 }
-                if(Double.isNaN(w.p1.z) || w.p1.z == 0.0) {
+                if(isNaN(w.p1.z) || w.p1.z == 0.0) {
                     w.p1.z = w.height;
                 }
             }
@@ -935,7 +939,9 @@ public class ProfileBuilder {
 
         @Override
         public void filter(CoordinateSequence seq, int i) {
+
             seq.setOrdinate(i, 2, z);
+
             if (i == seq.size()) {
                 done = true;
             }
@@ -1224,7 +1230,7 @@ public class ProfileBuilder {
             Coordinate intersection = fullLine.intersection(facetLine.ls);
             if (intersection != null) {
                 intersection = new Coordinate(intersection);
-                if(!Double.isNaN(facetLine.p0.z) && !Double.isNaN(facetLine.p1.z)) {
+                if(!isNaN(facetLine.p0.z) && !isNaN(facetLine.p1.z)) {
                     if(facetLine.p0.z == facetLine.p1.z) {
                         intersection.z = facetLine.p0.z;
                     }
@@ -1233,7 +1239,7 @@ public class ProfileBuilder {
                     }
                 }
                 else if(topoTree == null) {
-                    intersection.z = Double.NaN;
+                    intersection.z = NaN;
                 }
                 else {
                     intersection.z = getZGround(intersection);
@@ -1747,7 +1753,7 @@ public class ProfileBuilder {
      */
     public static class Building implements Obstacle {
         /** Building footprint. */
-        private final Polygon poly;
+        private Polygon poly;
         /** Height of the building. */
         private final double height;
         private double zTopo = 0.0;
@@ -1760,6 +1766,40 @@ public class ProfileBuilder {
         /** Primary key of the building in the database. */
         private int pk = -1;
         private List<Wall> walls = new ArrayList<>();
+
+        /**
+         *
+         */
+        public void poly2D_3D(){
+
+            GeometryFactory f = new GeometryFactory();
+
+            LinearRing shell2D = poly.getExteriorRing();
+            Coordinate[] newCoordinate = new Coordinate[shell2D.getNumPoints()];
+            for (int idCoordinate=0;idCoordinate<newCoordinate.length;idCoordinate++) {
+                newCoordinate[idCoordinate] = new Coordinate(shell2D.getCoordinateN(idCoordinate).getX(),shell2D.getCoordinateN(idCoordinate).getY(),0.0);
+            }
+
+            LinearRing shell3D = f.createLinearRing(newCoordinate);
+
+            LinearRing[] holes = new LinearRing[poly.getNumInteriorRing()];
+            for (int idHole=0;idHole<holes.length;idHole++){
+                LinearRing lr2D = poly.getInteriorRingN(idHole);
+                newCoordinate = new Coordinate[lr2D.getNumPoints()];
+                for (int idCoordinate=0;idCoordinate<newCoordinate.length;idCoordinate++) {
+                    newCoordinate[idCoordinate] = new Coordinate(lr2D.getCoordinateN(idCoordinate).getX(),
+                                                        lr2D.getCoordinateN(idCoordinate).getY(),
+                            0.0);
+                }
+
+                holes[idHole]=f.createLinearRing(newCoordinate);
+            }
+
+
+            Polygon newPoly = f.createPolygon(shell3D, holes);
+            this.poly = newPoly;
+        }
+
 
         /**
          * Main constructor.

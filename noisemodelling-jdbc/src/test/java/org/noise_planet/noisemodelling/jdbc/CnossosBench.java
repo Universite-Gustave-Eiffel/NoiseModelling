@@ -52,10 +52,10 @@ public class CnossosBench {
                 47.20571385749249);
 
         try(Statement st = connection.createStatement()) {
-            st.execute("CREATE TABLE BUILDINGS(pk serial primary key, geom geometry, height double) as select null, ST_Transform(st_setsrid(the_geom,4326), 2154) geom, 4  from testrefl_buildings");
-            st.execute(String.format(Locale.ROOT,"CREATE TABLE SRC(pk serial primary key, geom geometry, lwd63 double, lwd125 double, lwd250 double, lwd500 double, lwd1000 double, lwd2000 double, lwd4000 double, lwd8000 double,lwe63 double, lwe125 double, lwe250 double, lwe500 double, lwe1000 double, lwe2000 double, lwe4000 double, lwe8000 double, lwn63 double, lwn125 double, lwn250 double, lwn500 double, lwn1000 double, lwn2000 double, lwn4000 double, lwn8000 double) as select null, ST_Transform(st_setsrid(ST_MakePoint(%.5f, %.5f, 0.05),4326), 2154) the_geom, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80",src.x, src.y));
+            st.execute("CREATE TABLE BUILDINGS(pk serial primary key, geom geometry, height double) as select (row_number() over())::int, ST_Transform(st_setsrid(the_geom,4326), 2154) geom, 4  from testrefl_buildings");
+            st.execute(String.format(Locale.ROOT,"CREATE TABLE SRC(pk serial primary key, geom geometry, lwd63 double, lwd125 double, lwd250 double, lwd500 double, lwd1000 double, lwd2000 double, lwd4000 double, lwd8000 double,lwe63 double, lwe125 double, lwe250 double, lwe500 double, lwe1000 double, lwe2000 double, lwe4000 double, lwe8000 double, lwn63 double, lwn125 double, lwn250 double, lwn500 double, lwn1000 double, lwn2000 double, lwn4000 double, lwn8000 double) as select (row_number() over())::int, ST_Transform(st_setsrid(ST_MakePoint(%.5f, %.5f, 0.05),4326), 2154) the_geom, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80",src.x, src.y));
 
-            st.execute(String.format(Locale.ROOT,"CREATE TABLE RECEIVERS(pk serial primary key, geom geometry) as select null, ST_Transform(st_setsrid(ST_MakePoint(%.5f, %.5f, 1.6),4326), 2154) the_geom",receiver.x, receiver.y));
+            st.execute(String.format(Locale.ROOT,"CREATE TABLE RECEIVERS(pk serial primary key, geom geometry) as select (row_number() over())::int, ST_Transform(st_setsrid(ST_MakePoint(%.5f, %.5f, 1.6),4326), 2154) the_geom",receiver.x, receiver.y));
         }
 
         LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN);
@@ -87,7 +87,7 @@ public class CnossosBench {
         pointNoiseMap.setGridDim(1); // force grid size
 
         List<Double> levels = new ArrayList<>();
-        SHPWrite.exportTable(connection, "target/buildings.shp", "BUILDINGS");
+        SHPWrite.exportTable(connection, "target/buildings.shp", "BUILDINGS", "UTF-8",true);
         for(int refOrder = 1; refOrder < 100; refOrder++) {
             pointNoiseMap.setSoundReflectionOrder(refOrder);
             try {

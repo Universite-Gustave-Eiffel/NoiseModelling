@@ -9,8 +9,8 @@ INSERT INTO buildings(the_geom, height) VALUES
 ('POLYGON ((137 89, 137 109, 153 109, 153 89, 137 89))',5),
 ('MULTIPOLYGON (((140 0,230 0, 230 60, 140 60,140 40,210 40,210 20, 140 20, 140 0)))',10);
 drop table if exists sound_source;
-create table sound_source(the_geom geometry,gid serial, db_m63 double,db_m125 double,db_m250 double,db_m500 double, db_m1000 double,db_m2000 double, db_m4000 double,db_m8000 double);
-insert into sound_source VALUES ('LINESTRING (26.3 175.5 0.05, 111.9 90.9 0.05, 123 -70.9 0.05, 345.2 -137.8 0.05)',1, 25.65, 38.15, 54.35, 60.35, 74.65, 66.75, 59.25, 53.95);
+create table sound_source(the_geom geometry,gid serial PRIMARY KEY, db_m63 double,db_m125 double,db_m250 double,db_m500 double, db_m1000 double,db_m2000 double, db_m4000 double,db_m8000 double);
+insert into sound_source VALUES ('LINESTRINGZ (26.3 175.5 0.05, 111.9 90.9 0.05, 123 -70.9 0.05, 345.2 -137.8 0.05)',1, 25.65, 38.15, 54.35, 60.35, 74.65, 66.75, 59.25, 53.95);
 -- Create Digital elevation model using gaussian 2d function
 drop table if exists all_dem;
 SET @DOMAIN_XMIN = SELECT ST_XMIN(ST_EXPAND(ST_EXTENT(THE_GEOM), 100, 100)) FROM SOUND_SOURCE;
@@ -22,11 +22,13 @@ SET @MOUNTAIN_X = -80;
 SET @MOUNTAIN_Y = 50;
 SET @MONTAIN_WIDTH = 8;
 SET @MOUNTAIN_LENGTH = 50;
-create table all_dem(the_geom POINT,Z double as ST_Z(the_geom)) as select ST_MAKEPOINT(X * ((@DOMAIN_XMAX - @DOMAIN_XMIN) / @POINT_COUNT) + @DOMAIN_XMIN, Y * ((@DOMAIN_YMAX - @DOMAIN_YMIN) / @POINT_COUNT) + @DOMAIN_YMIN,
+create table all_dem(the_geom GEOMETRY(POINTZ), Z double ) as select ST_MAKEPOINT(X * ((@DOMAIN_XMAX - @DOMAIN_XMIN) / @POINT_COUNT) + @DOMAIN_XMIN, Y * ((@DOMAIN_YMAX - @DOMAIN_YMIN) / @POINT_COUNT) + @DOMAIN_YMIN,
 -- Gaussian
 10 * EXP(-(POWER(X - ((@MOUNTAIN_X - @DOMAIN_XMIN) / (@DOMAIN_XMAX - @DOMAIN_XMIN) * @POINT_COUNT)  ,2) / @MONTAIN_WIDTH  + POWER(Y - ((@MOUNTAIN_Y - @DOMAIN_YMIN) / (@DOMAIN_YMAX - @DOMAIN_YMIN) * @POINT_COUNT) ,2) / @MOUNTAIN_LENGTH ))) the_geom,
 
 null  from (select X from system_range(0,@POINT_COUNT)),(select X Y from system_range(0,@POINT_COUNT)) ;
+--Z as ST_Z(the_geom)
+
 select (-24 - @DOMAIN_XMIN) / (@DOMAIN_XMAX - @DOMAIN_XMIN) * @POINT_COUNT;
 -- Remove dem point too close from buildings
 drop table if exists dem;

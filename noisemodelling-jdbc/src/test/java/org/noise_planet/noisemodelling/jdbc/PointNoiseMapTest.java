@@ -58,10 +58,10 @@ public class PointNoiseMapTest {
         try(Statement st = connection.createStatement()) {
             st.execute(getRunScriptRes("scene_with_dem.sql"));
             st.execute("DROP TABLE IF EXISTS RECEIVERS");
-            st.execute("CREATE TABLE RECEIVERS(the_geom POINT, GID SERIAL)");
-            st.execute("INSERT INTO RECEIVERS(the_geom) VALUES ('POINT(-72 41 11)')");
-            st.execute("INSERT INTO RECEIVERS(the_geom) VALUES ('POINT(-9 41 1.6)')");
-            st.execute("INSERT INTO RECEIVERS(the_geom) VALUES ('POINT(70 11 7)')");
+            st.execute("CREATE TABLE RECEIVERS(the_geom GEOMETRY(POINTZ), GID SERIAL PRIMARY KEY)");
+            st.execute("INSERT INTO RECEIVERS(the_geom) VALUES ('POINTZ(-72 41 11)')");
+            st.execute("INSERT INTO RECEIVERS(the_geom) VALUES ('POINTZ(-9 41 1.6)')");
+            st.execute("INSERT INTO RECEIVERS(the_geom) VALUES ('POINTZ(70 11 7)')");
             PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS", "SOUND_SOURCE", "RECEIVERS");
             pointNoiseMap.setComputeHorizontalDiffraction(true);
             pointNoiseMap.setComputeVerticalDiffraction(true);
