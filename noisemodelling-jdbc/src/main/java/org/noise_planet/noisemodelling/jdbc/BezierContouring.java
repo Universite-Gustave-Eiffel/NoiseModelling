@@ -443,8 +443,8 @@ public class BezierContouring {
     }
 
     public void createTable(Connection connection) throws SQLException {
-        List<String> fields = JDBCUtilities.getFieldNames(connection.getMetaData(), TableLocation.parse(pointTable).toString());
-        int pk = JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse(pointTable).toString());
+        List<String> fields = JDBCUtilities.getColumnNames(connection, TableLocation.parse(pointTable).toString());
+        int pk = JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse(pointTable));
         if(pk == 0) {
             throw new SQLException(pointTable+" does not contain a primary key");
         }

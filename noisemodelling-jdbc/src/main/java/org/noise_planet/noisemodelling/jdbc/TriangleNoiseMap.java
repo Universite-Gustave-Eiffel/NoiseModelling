@@ -1,17 +1,17 @@
 package org.noise_planet.noisemodelling.jdbc;
 
+import org.h2gis.utilities.GeometryTableUtilities;
 import org.h2gis.utilities.JDBCUtilities;
-import org.h2gis.utilities.SFSUtilities;
 import org.h2gis.utilities.TableLocation;
+import org.h2gis.utilities.dbtypes.DBUtils;
 import org.locationtech.jts.densify.Densifier;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.WKTWriter;
 import org.locationtech.jts.operation.buffer.BufferOp;
 import org.locationtech.jts.operation.buffer.BufferParameters;
 import org.locationtech.jts.simplify.TopologyPreservingSimplifier;
-import org.noise_planet.noisemodelling.pathfinder.*;
 import org.noise_planet.noisemodelling.pathfinder.Triangle;
-import org.noise_planet.noisemodelling.pathfinder.utils.Densifier3D;
+import org.noise_planet.noisemodelling.pathfinder.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -235,7 +235,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
 
     @Override
     protected Envelope getComputationEnvelope(Connection connection) throws SQLException {
-        return SFSUtilities.getTableEnvelope(connection, TableLocation.parse(sourcesTableName), "");
+        return GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(sourcesTableName, DBUtils.getDBType(connection))).getEnvelopeInternal();
     }
 
     public void generateReceivers(Connection connection, int cellI, int cellJ, String receiverTableName, String trianglesTableName, AtomicInteger receiverPK) throws SQLException, LayerDelaunayError, IOException {

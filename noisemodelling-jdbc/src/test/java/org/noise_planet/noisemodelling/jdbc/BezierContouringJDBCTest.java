@@ -4,7 +4,6 @@ import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.functions.io.geojson.GeoJsonRead;
 import org.h2gis.functions.io.shp.SHPWrite;
 import org.h2gis.utilities.JDBCUtilities;
-import org.h2gis.utilities.SFSUtilities;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -15,7 +14,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 public class BezierContouringJDBCTest {
 
@@ -23,7 +22,7 @@ public class BezierContouringJDBCTest {
 
     @Before
     public void tearUp() throws Exception {
-        connection = SFSUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(BezierContouringJDBCTest.class.getSimpleName(), true, ""));
+        connection = JDBCUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(BezierContouringJDBCTest.class.getSimpleName(), true, ""));
     }
 
     @After
@@ -36,8 +35,8 @@ public class BezierContouringJDBCTest {
 
     @Test
     public void testBezierContouring() throws SQLException, IOException {
-        GeoJsonRead.readGeoJson(connection, BezierContouringJDBCTest.class.getResource("lden_geom.geojson").getFile());
-        GeoJsonRead.readGeoJson(connection, BezierContouringJDBCTest.class.getResource("triangles.geojson").getFile());
+        GeoJsonRead.importTable(connection, BezierContouringJDBCTest.class.getResource("lden_geom.geojson").getFile());
+        GeoJsonRead.importTable(connection, BezierContouringJDBCTest.class.getResource("triangles.geojson").getFile());
         try(Statement st = connection.createStatement()) {
             st.execute("ALTER TABLE LDEN_GEOM ALTER COLUMN IDRECEIVER INTEGER NOT NULL");
             st.execute("ALTER TABLE LDEN_GEOM ADD PRIMARY KEY (IDRECEIVER)");
@@ -68,6 +67,6 @@ public class BezierContouringJDBCTest {
         assertTrue(fieldValues.contains("8"));
         assertTrue(fieldValues.contains("9"));
 
-        SHPWrite.exportTable(connection, "target/contouring.shp", "CONTOURING_NOISE_MAP");
+        SHPWrite.exportTable(connection, "target/contouring.shp", "CONTOURING_NOISE_MAP","UTF-8",true);
     }
 }

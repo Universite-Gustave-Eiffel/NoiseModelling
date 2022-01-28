@@ -20,11 +20,11 @@
     </licenses>
     <properties>
         <jts-core-groupId>org.locationtech.jts</jts-core-groupId>
-        <jts-core-version>1.15.1</jts-core-version>
-        <jts-io-version>1.15.1</jts-io-version>
-        <h2-version>1.4.197</h2-version>
+        <jts-core-version>1.18.2</jts-core-version>
+        <jts-io-version>1.18.2</jts-io-version>
+        <h2-version>2.0.202</h2-version>
         <h2-group>org.orbisgis</h2-group>
-        <h2gis-version>1.5.1-SNAPSHOT</h2gis-version>
+        <h2gis-version>2.0.0</h2gis-version>
     </properties>
     <modules>
         <module>noisemodelling-emission</module>
@@ -32,7 +32,6 @@
         <module>noisemodelling-propagation</module>
         <module>noisemodelling-jdbc</module>
         <module>noisemodelling-tutorial-01</module>
-        <module>h2gis-extension</module>
     </modules>
     <scm>
         <connection>scm:git:https://github.com/Ifsttar/NoiseModelling.git</connection>

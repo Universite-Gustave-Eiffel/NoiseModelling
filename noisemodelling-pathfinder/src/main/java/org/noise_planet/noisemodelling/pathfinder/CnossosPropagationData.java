@@ -153,7 +153,7 @@ public class CnossosPropagationData {
     public void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException, IOException {
         addSource(pk, geom);
         if(sourceFieldNames.isEmpty()) {
-            List<String> fieldNames = JDBCUtilities.getFieldNames(rs.getMetaData());
+            List<String> fieldNames = JDBCUtilities.getColumnNames(rs.getMetaData());
             for(int idField = 0; idField < fieldNames.size(); idField++) {
                 sourceFieldNames.put(fieldNames.get(idField).toUpperCase(Locale.ROOT), idField + 1);
             }

@@ -93,7 +93,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
     public void initialize(Connection connection, PointNoiseMap pointNoiseMap) throws SQLException {
         if(ldenConfig.input_mode == LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN) {
             // Fetch source fields
-            List<String> sourceField = JDBCUtilities.getFieldNames(connection.getMetaData(), pointNoiseMap.getSourcesTableName());
+            List<String> sourceField = JDBCUtilities.getColumnNames(connection, pointNoiseMap.getSourcesTableName());
             List<Integer> frequencyValues = new ArrayList<>();
             List<Integer> allFrequencyValues = Arrays.asList(PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE);
             String period = "";

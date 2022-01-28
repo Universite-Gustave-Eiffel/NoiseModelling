@@ -13,11 +13,15 @@ package org.noise_planet.noisemodelling.jdbc;
 
 import org.h2gis.api.ProgressVisitor;
 import org.h2gis.utilities.*;
+import org.h2gis.utilities.dbtypes.DBUtils;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.index.strtree.STRtree;
-import org.noise_planet.noisemodelling.pathfinder.*;
+import org.noise_planet.noisemodelling.pathfinder.CnossosPropagationData;
+import org.noise_planet.noisemodelling.pathfinder.ComputeCnossosRays;
+import org.noise_planet.noisemodelling.pathfinder.IComputeRaysOut;
+import org.noise_planet.noisemodelling.pathfinder.ProfileBuilder;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 import org.slf4j.Logger;
@@ -73,7 +77,8 @@ public class PointNoiseMap extends JdbcNoiseMap {
      */
     public CnossosPropagationData prepareCell(Connection connection,int cellI, int cellJ,
                                               ProgressVisitor progression, Set<Long> skipReceivers) throws SQLException, IOException {
-        boolean isH2 = JDBCUtilities.isH2DataBase(connection.getMetaData());
+        boolean isH2 = JDBCUtilities.isH2DataBase(connection);
+
         ProfileBuilder builder = new ProfileBuilder();
         int ij = cellI * gridDim + cellJ + 1;
         if(verbose) {
@@ -122,19 +127,19 @@ public class PointNoiseMap extends JdbcNoiseMap {
 
         // Fetch receivers
 
-        String receiverGeomName = SFSUtilities.getGeometryFields(connection,
+        String receiverGeomName = GeometryTableUtilities.getGeometryColumnNames(connection,
                 TableLocation.parse(receiverTableName)).get(0);
-        int intPk = JDBCUtilities.getIntegerPrimaryKey(connection, receiverTableName);
+        int intPk = JDBCUtilities.getIntegerPrimaryKey(connection, new TableLocation(receiverTableName));
         String pkSelect = "";
         if(intPk >= 1) {
-            pkSelect = ", " + TableLocation.quoteIdentifier(JDBCUtilities.getFieldName(connection.getMetaData(), receiverTableName, intPk), isH2);
+            pkSelect = ", " + TableLocation.quoteIdentifier(JDBCUtilities.getColumnName(connection, receiverTableName, intPk), DBUtils.getDBType(connection));
         } else {
             throw new SQLException(String.format("Table %s missing primary key for receiver identification", receiverTableName));
         }
         try (PreparedStatement st = connection.prepareStatement(
-                "SELECT " + TableLocation.quoteIdentifier(receiverGeomName, isH2) + pkSelect + " FROM " +
+                "SELECT " + TableLocation.quoteIdentifier(receiverGeomName, DBUtils.getDBType(connection) ) + pkSelect + " FROM " +
                         receiverTableName + " WHERE " +
-                        TableLocation.quoteIdentifier(receiverGeomName, isH2) + " && ?::geometry")) {
+                        TableLocation.quoteIdentifier(receiverGeomName, DBUtils.getDBType(connection)) + " && ?::geometry")) {
             st.setObject(1, geometryFactory.toGeometry(cellEnvelope));
             try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
                 while (rs.next()) {
@@ -159,7 +164,7 @@ public class PointNoiseMap extends JdbcNoiseMap {
 
     @Override
     protected Envelope getComputationEnvelope(Connection connection) throws SQLException {
-        return SFSUtilities.getTableEnvelope(connection, TableLocation.parse(receiverTableName), "");
+        return GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(receiverTableName, DBUtils.getDBType(connection))).getEnvelopeInternal();
     }
 
     /**
@@ -173,7 +178,7 @@ public class PointNoiseMap extends JdbcNoiseMap {
             throw new IllegalStateException("Call initialize before calling searchPopulatedCells");
         }
         Map<CellIndex, Integer> cellIndices = new HashMap<>();
-        List<String> geometryFields = SFSUtilities.getGeometryFields(connection, TableLocation.parse(receiverTableName));
+        List<String> geometryFields = GeometryTableUtilities.getGeometryColumnNames(connection, TableLocation.parse(receiverTableName));
         String geometryField;
         if(geometryFields.isEmpty()) {
             throw new SQLException("The table "+receiverTableName+" does not contain a Geometry field, then the extent " +

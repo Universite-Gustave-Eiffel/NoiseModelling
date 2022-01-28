@@ -2,8 +2,7 @@ package org.noise_planet.noisemodelling.jdbc;
 
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.functions.factory.H2GISDBFactory;
-import org.h2gis.functions.io.shp.SHPRead;
-import org.h2gis.utilities.SFSUtilities;
+import org.h2gis.utilities.JDBCUtilities;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -38,7 +37,7 @@ public class PointNoiseMapTest {
 
     @Before
     public void tearUp() throws Exception {
-        connection = SFSUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(PointNoiseMapTest.class.getSimpleName(), true, ""));
+        connection = JDBCUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(PointNoiseMapTest.class.getSimpleName(), true, ""));
     }
 
     @After
@@ -193,7 +192,7 @@ public class PointNoiseMapTest {
 
     private static String createSource(Geometry source, double lvl, Orientation sourceOrientation, int directivityId) {
         StringBuilder sb = new StringBuilder("CREATE TABLE ROADS_GEOM(PK SERIAL PRIMARY KEY, THE_GEOM GEOMETRY, YAW REAL, PITCH REAL, ROLL REAL, DIR_ID INT");
-        StringBuilder values = new StringBuilder("null, ST_SETSRID('");
+        StringBuilder values = new StringBuilder("(row_number() over())::int, ST_SETSRID('");
         values.append(new WKTWriter(3).write(source));
         values.append("', 2154) THE_GEOM, ");
         values.append(sourceOrientation.yaw);
@@ -226,13 +225,13 @@ public class PointNoiseMapTest {
     @Test
     public void testPointDirectivity() throws Exception {
         try (Statement st = connection.createStatement()) {
-            st.execute("CREATE TABLE BUILDINGS(pk serial, the_geom geometry, height real)");
-            st.execute(createSource(new GeometryFactory().createPoint(new Coordinate(223915.72,6757480.22 )),
+            st.execute("CREATE TABLE BUILDINGS(pk serial  PRIMARY KEY, the_geom geometry, height real)");
+            st.execute(createSource(new GeometryFactory().createPoint(new Coordinate(223915.72,6757480.22,0.0 )),
                     91, new Orientation(90,15,0),
                     RailWayLW.TrainNoiseSource.TRACTIONB.ordinal() + 1));
-            st.execute("create table receivers(id serial, the_geom point);\n" +
-                    "insert into receivers(the_geom) values ('POINT (223915.72 6757490.22)');" +
-                    "insert into receivers(the_geom) values ('POINT (223925.72 6757480.22)');");
+            st.execute("create table receivers(id serial PRIMARY KEY, the_geom GEOMETRY(POINTZ));\n" +
+                    "insert into receivers(the_geom) values ('POINTZ (223915.72 6757490.22 0.0)');" +
+                    "insert into receivers(the_geom) values ('POINTZ (223925.72 6757480.22 0.0)');");
             PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS", "ROADS_GEOM", "RECEIVERS");
             pointNoiseMap.setComputeHorizontalDiffraction(false);
             pointNoiseMap.setComputeVerticalDiffraction(false);
@@ -289,15 +288,15 @@ public class PointNoiseMapTest {
     @Test
     public void testLineDirectivity() throws Exception {
         try (Statement st = connection.createStatement()) {
-            st.execute("CREATE TABLE BUILDINGS(pk serial, the_geom geometry, height real)");
+            st.execute("CREATE TABLE BUILDINGS(pk serial PRIMARY KEY, the_geom geometry, height real)");
             st.execute(createSource(new GeometryFactory().createLineString(
                     new Coordinate[]{new Coordinate(223915.72,6757480.22 ,5),
                             new Coordinate(223920.72,6757485.22, 5.1 )}), 91,
                     new Orientation(0,0,0),
                     RailWayLW.TrainNoiseSource.TRACTIONB.ordinal() + 1));
-            st.execute("create table receivers(id serial, the_geom point);\n" +
-                    "insert into receivers(the_geom) values ('POINT (223922.55 6757495.27)');" +
-                    "insert into receivers(the_geom) values ('POINT (223936.42 6757471.91)');");
+            st.execute("create table receivers(id serial PRIMARY KEY, the_geom GEOMETRY(pointZ));\n" +
+                    "insert into receivers(the_geom) values ('POINTZ (223922.55 6757495.27 0.0)');" +
+                    "insert into receivers(the_geom) values ('POINTZ (223936.42 6757471.91 0.0)');");
             PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS", "ROADS_GEOM", "RECEIVERS");
             pointNoiseMap.setComputeHorizontalDiffraction(false);
             pointNoiseMap.setComputeVerticalDiffraction(false);

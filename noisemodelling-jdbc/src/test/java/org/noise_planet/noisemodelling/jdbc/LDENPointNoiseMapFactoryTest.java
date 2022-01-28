@@ -9,7 +9,6 @@ import org.h2gis.functions.io.dbf.DBFRead;
 import org.h2gis.functions.io.shp.SHPDriverFunction;
 import org.h2gis.functions.io.shp.SHPRead;
 import org.h2gis.utilities.JDBCUtilities;
-import org.h2gis.utilities.SFSUtilities;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -45,7 +44,7 @@ public class LDENPointNoiseMapFactoryTest {
 
     @Before
     public void tearUp() throws Exception {
-        connection = SFSUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(LDENPointNoiseMapFactoryTest.class.getSimpleName(), true, ""));
+        connection = JDBCUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(LDENPointNoiseMapFactoryTest.class.getSimpleName(), true, ""));
     }
 
     @After
@@ -57,7 +56,7 @@ public class LDENPointNoiseMapFactoryTest {
 
     @Test
     public void testNoiseEmission() throws SQLException, IOException {
-        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("roads_traff.shp").getFile());
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("roads_traff.shp").getFile());
         LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW);
         ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData());
         ldenConfig.setCoefficientVersion(1);
@@ -106,8 +105,8 @@ public class LDENPointNoiseMapFactoryTest {
 
     @Test
     public void testNoiseEmissionRailWay() throws SQLException, IOException {
-        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("RailTrack.shp").getFile());
-        DBFRead.read(connection, LDENPointNoiseMapFactoryTest.class.getResource("RailTrain.dbf").getFile());
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("RailTrack.shp").getFile());
+        DBFRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("RailTrain.dbf").getFile());
 
 
 
@@ -128,9 +127,9 @@ public class LDENPointNoiseMapFactoryTest {
 
     @Test
     public void testTableGenerationFromTraffic() throws SQLException, IOException {
-        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("roads_traff.shp").getFile());
-        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("buildings.shp").getFile());
-        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("receivers.shp").getFile());
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("roads_traff.shp").getFile());
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("buildings.shp").getFile());
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("receivers.shp").getFile());
 
         LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW);
 
@@ -290,9 +289,9 @@ public class LDENPointNoiseMapFactoryTest {
 
     @Test
     public void testTableGenerationFromTrafficNightOnly() throws SQLException, IOException {
-        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("roads_traff.shp").getFile());
-        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("buildings.shp").getFile());
-        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("receivers.shp").getFile());
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("roads_traff.shp").getFile());
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("buildings.shp").getFile());
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("receivers.shp").getFile());
 
         LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW);
 
@@ -378,9 +377,9 @@ public class LDENPointNoiseMapFactoryTest {
 
     @Test
     public void testTableGenerationFromTrafficNightOnlyLaeq() throws SQLException, IOException {
-        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("roads_traff.shp").getFile());
-        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("buildings.shp").getFile());
-        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("receivers.shp").getFile());
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("roads_traff.shp").getFile());
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("buildings.shp").getFile());
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("receivers.shp").getFile());
 
         LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW);
 
@@ -453,9 +452,9 @@ public class LDENPointNoiseMapFactoryTest {
 
     @Test
     public void testReadFrequencies() throws SQLException, IOException {
-        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("lw_roads.shp").getFile());
-        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("buildings.shp").getFile());
-        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("receivers.shp").getFile());
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("lw_roads.shp").getFile());
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("buildings.shp").getFile());
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("receivers.shp").getFile());
 
         LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN);
 
@@ -509,9 +508,9 @@ public class LDENPointNoiseMapFactoryTest {
 
     @Test
     public void testNoDemBuildingsZ() throws SQLException, IOException {
-        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("lw_roads.shp").getFile());
-        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("buildings.shp").getFile());
-        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("receivers.shp").getFile());
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("lw_roads.shp").getFile());
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("buildings.shp").getFile());
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("receivers.shp").getFile());
 
         LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN);
 
@@ -572,9 +571,9 @@ public class LDENPointNoiseMapFactoryTest {
     // Check regression of finding cell i,j that contains receivers
     @Test
     public void testRegression1() throws SQLException, IOException {
-        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("regression1/lw_roads_fence.shp").getFile(), "LW_ROADS");
-        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("regression1/bati_fence.shp").getFile(), "BUILDINGS");
-        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("regression1/receivers.shp").getFile(), "RECEIVERS");
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("regression1/lw_roads_fence.shp").getFile());
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("regression1/bati_fence.shp").getFile());
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("regression1/receivers.shp").getFile());
 
         // Count receivers
         int nbReceivers = 0;
@@ -592,7 +591,7 @@ public class LDENPointNoiseMapFactoryTest {
 
         LDENPointNoiseMapFactory factory = new LDENPointNoiseMapFactory(connection, ldenConfig);
 
-        PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS", "LW_ROADS",
+        PointNoiseMap pointNoiseMap = new PointNoiseMap("BATI_FENCE", "LW_ROADS_FENCE",
                 "RECEIVERS");
 
         pointNoiseMap.setComputeRaysOutFactory(factory);
@@ -638,13 +637,13 @@ public class LDENPointNoiseMapFactoryTest {
 
     @Test
     public void TestPointSource() throws SQLException, IOException {
-        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("PointSource/DEM_fence.shp").getFile());
-        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("PointSource/LANDCOVER.shp").getFile());
-        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("PointSource/RCVS20.shp").getFile());
-        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("PointSource/NO_BUILD.shp").getFile());
-        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("PointSource/BUILD_GRID2.shp").getFile());
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PointSource/DEM_fence.shp").getFile());
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PointSource/LANDCOVER.shp").getFile());
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PointSource/RCVS20.shp").getFile());
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PointSource/NO_BUILD.shp").getFile());
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PointSource/BUILD_GRID2.shp").getFile());
 
-        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("PointSource/SourceSi.shp").getFile());
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PointSource/SourceSi.shp").getFile());
 
         // PROPAGATION PART
         // --------------

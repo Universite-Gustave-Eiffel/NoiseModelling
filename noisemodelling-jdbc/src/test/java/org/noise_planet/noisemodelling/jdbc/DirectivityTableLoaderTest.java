@@ -1,11 +1,10 @@
 package org.noise_planet.noisemodelling.jdbc;
 
 import org.h2gis.functions.factory.H2GISDBFactory;
-import org.h2gis.utilities.SFSUtilities;
+import org.h2gis.utilities.JDBCUtilities;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.noise_planet.noisemodelling.emission.DirectionAttributes;
 import org.noise_planet.noisemodelling.emission.DiscreteDirectionAttributes;
 import org.noise_planet.noisemodelling.emission.RailWayLW;
 
@@ -23,7 +22,7 @@ public class DirectivityTableLoaderTest {
 
     @Before
     public void tearUp() throws Exception {
-        connection = SFSUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(DirectivityTableLoaderTest.class.getSimpleName(), true, ""));
+        connection = JDBCUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(DirectivityTableLoaderTest.class.getSimpleName(), true, ""));
     }
 
     @After

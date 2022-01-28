@@ -12,7 +12,6 @@
 package org.noise_planet.noisemodelling.jdbc;
 
 import org.h2gis.utilities.JDBCUtilities;
-import org.noise_planet.noisemodelling.emission.DirectionAttributes;
 import org.noise_planet.noisemodelling.emission.DiscreteDirectionAttributes;
 
 import java.sql.Connection;
@@ -39,7 +38,7 @@ public class DirectivityTableLoader {
      */
     public static Map<Integer, DiscreteDirectionAttributes> loadTable(Connection connection, String tableName, int defaultInterpolation) throws SQLException {
         Map<Integer, DiscreteDirectionAttributes> directionAttributes = new HashMap<>();
-        List<String> fields = JDBCUtilities.getFieldNames(connection.getMetaData(), tableName);
+        List<String> fields = JDBCUtilities.getColumnNames(connection, tableName);
         // fetch provided frequencies
         List<String> frequenciesFields = new ArrayList<>();
         for(String field : fields) {

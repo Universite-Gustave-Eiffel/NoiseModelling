@@ -149,7 +149,7 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
         if (sourceFields == null) {
             sourceFields = new HashMap<>();
             int fieldId = 1;
-            for (String fieldName : JDBCUtilities.getFieldNames(rs.getMetaData())) {
+            for (String fieldName : JDBCUtilities.getColumnNames(rs.getMetaData())) {
                 sourceFields.put(fieldName.toUpperCase(), fieldId++);
             }
         }

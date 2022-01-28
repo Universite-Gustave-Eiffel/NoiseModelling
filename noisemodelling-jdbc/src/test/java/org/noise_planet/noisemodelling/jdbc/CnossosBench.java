@@ -4,7 +4,7 @@ import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.functions.io.geojson.GeoJsonRead;
 import org.h2gis.functions.io.shp.SHPWrite;
-import org.h2gis.utilities.SFSUtilities;
+import org.h2gis.utilities.JDBCUtilities;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -29,7 +29,7 @@ public class CnossosBench {
 
     @Before
     public void tearUp() throws Exception {
-        connection = SFSUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(LDENPointNoiseMapFactoryTest.class.getSimpleName(), true, ""));
+        connection = JDBCUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(LDENPointNoiseMapFactoryTest.class.getSimpleName(), true, ""));
     }
 
     @After
@@ -42,7 +42,7 @@ public class CnossosBench {
     @Test
     public void testReflectionOrder() throws SQLException, IOException {
 
-        GeoJsonRead.readGeoJson(connection, CnossosBench.class.getResource("testrefl_buildings.geojson").getFile());
+        GeoJsonRead.importTable(connection, CnossosBench.class.getResource("testrefl_buildings.geojson").getFile());
 
         Coordinate src = new Coordinate(-1.5587684512138364,
                         47.205498836592874);
