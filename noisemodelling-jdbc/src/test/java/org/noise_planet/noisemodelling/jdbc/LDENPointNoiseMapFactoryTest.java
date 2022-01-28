@@ -6,7 +6,9 @@ import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.functions.io.dbf.DBFRead;
 import org.h2gis.functions.io.shp.SHPDriverFunction;
 import org.h2gis.functions.io.shp.SHPRead;
+import org.h2gis.functions.spatial.convert.ST_Force3D;
 import org.h2gis.functions.spatial.edit.ST_AddZ;
+import org.h2gis.functions.spatial.edit.ST_UpdateZ;
 import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SFSUtilities;
 import org.junit.After;
@@ -233,9 +235,9 @@ public class LDENPointNoiseMapFactoryTest {
                         directivityId = 6;
                         break;
                 }
-
                 PreparedStatement ps = connection.prepareStatement(insertIntoQuery.toString());
                 for (Geometry trackGeometry : geometries) {
+                    ST_Force3D.force3D(trackGeometry);
                     Geometry sourceGeometry = trackGeometry.copy();
                     // offset geometry z
                     sourceGeometry.apply(new ST_AddZ.AddZCoordinateSequenceFilter(heightSource));
@@ -277,7 +279,7 @@ public class LDENPointNoiseMapFactoryTest {
         //SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/DEM.shp").getFile());
 
         // ICI POUR CHANGER HAUTEUR ET G ECRAN
-        connection.createStatement().execute("CREATE TABLE SCREENS AS SELECT ST_BUFFER(the_geom, 5, 'join=mitre endcap=flat') as the_geom, pk as pk, 1000 as height, g as g FROM Rail_protect");
+        connection.createStatement().execute("CREATE TABLE SCREENS AS SELECT ST_BUFFER(the_geom, 5, 'join=mitre endcap=flat') as the_geom, pk as pk, 3.0 as height, g as g FROM Rail_protect");
 
         // Count receivers
         int nbReceivers = 0;
@@ -288,6 +290,7 @@ public class LDENPointNoiseMapFactoryTest {
 
         // ICI HAUTEUR RECPTEUR
         connection.createStatement().execute("UPDATE Recepteurs SET THE_GEOM = ST_SETSRID(ST_UPDATEZ(THE_GEOM,2.0),2154);");
+        connection.createStatement().execute("UPDATE LW_RAILWAY SET THE_GEOM = ST_SETSRID(ST_UPDATEZ(THE_GEOM,2.0),2154);");
 
 
         ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN);
@@ -308,8 +311,8 @@ public class LDENPointNoiseMapFactoryTest {
         //pointNoiseMap.setDemTable("DEM");
 
         pointNoiseMap.setMaximumPropagationDistance(750.0);
-        pointNoiseMap.setComputeHorizontalDiffraction(true);
-        pointNoiseMap.setComputeVerticalDiffraction(false);
+        pointNoiseMap.setComputeHorizontalDiffraction(false);
+        pointNoiseMap.setComputeVerticalDiffraction(true);
         pointNoiseMap.setSoundReflectionOrder(0);
 
         // Set of already processed receivers
