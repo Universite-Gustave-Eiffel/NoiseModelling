@@ -20,7 +20,6 @@ import org.locationtech.jts.geom.LineString;
 import org.noise_planet.noisemodelling.emission.RailWayLW;
 import org.noise_planet.noisemodelling.pathfinder.IComputeRaysOut;
 import org.noise_planet.noisemodelling.pathfinder.ProfileBuilder;
-import org.noise_planet.noisemodelling.pathfinder.PropagationPath;
 import org.noise_planet.noisemodelling.pathfinder.RootProgressVisitor;
 import org.noise_planet.noisemodelling.pathfinder.utils.KMLDocument;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
@@ -34,7 +33,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.sql.*;
 import java.util.*;
-import java.util.concurrent.ConcurrentLinkedDeque;
 
 import static org.junit.Assert.*;
 
@@ -304,7 +302,10 @@ public class LDENPointNoiseMapFactoryTest {
         }
 
         // ICI HAUTEUR RECPTEUR
-        //connection.createStatement().execute("UPDATE RECEPTEURS SET THE_GEOM = ST_SETSRID(ST_UPDATEZ(THE_GEOM,10.0),2154);");
+        connection.createStatement().execute("SELECT UpdateGeometrySRID('RECEPTEURS', 'THE_GEOM', 2154);");
+        connection.createStatement().execute("SELECT UpdateGeometrySRID('LW_RAILWAY', 'THE_GEOM', 2154);");
+
+        connection.createStatement().execute("UPDATE RECEPTEURS SET THE_GEOM = ST_UPDATEZ(THE_GEOM,4.0);");
         //connection.createStatement().execute("UPDATE LW_RAILWAY SET THE_GEOM = ST_SETSRID(ST_UPDATEZ(THE_GEOM,0.5),2154);");
 
 
@@ -328,9 +329,9 @@ public class LDENPointNoiseMapFactoryTest {
 
         //pointNoiseMap.setDemTable("DEM");
 
-        pointNoiseMap.setMaximumPropagationDistance(750.0);
-        pointNoiseMap.setComputeHorizontalDiffraction(true);
-        pointNoiseMap.setComputeVerticalDiffraction(true);
+        pointNoiseMap.setMaximumPropagationDistance(250.0);
+        pointNoiseMap.setComputeHorizontalDiffraction(false);
+        pointNoiseMap.setComputeVerticalDiffraction(false);
         pointNoiseMap.setSoundReflectionOrder(0);
 
         // Set of already processed receivers
@@ -1029,7 +1030,8 @@ public class LDENPointNoiseMapFactoryTest {
 
     public static void exportScene(String name, ProfileBuilder builder, ComputeRaysOutAttenuation result) throws IOException {
         try {
-            List<PropagationPath> propagationPaths = new ArrayList((LDENComputeRaysOut) result).ldenData.rays);
+            //List<PropagationPath> propagationPaths = new ArrayList<>();
+            //propagationPaths.addAll(((LDENComputeRaysOut) result).ldenData.rays);
             FileOutputStream outData = new FileOutputStream(name);
             KMLDocument kmlDocument = new KMLDocument(outData);
             kmlDocument.setInputCRS("EPSG:2154");
@@ -1038,13 +1040,13 @@ public class LDENPointNoiseMapFactoryTest {
                 kmlDocument.writeTopographic(builder.getTriangles(), builder.getVertices());
             }
             if(result != null) {
-                kmlDocument.writeRays(propagationPaths);
+              //  kmlDocument.writeRays(propagationPaths);
             }
             if(builder != null) {
                 kmlDocument.writeBuildings(builder);
             }
             if(result != null) {
-                kmlDocument.writeProfile(builder.getProfile(result.getInputData().sourceGeometries.get(0).getCoordinate(),result.getInputData().receivers.get(1)));
+                kmlDocument.writeProfile(builder.getProfile(result.getInputData().sourceGeometries.get(0).getCoordinate(),result.getInputData().receivers.get(0)));
             }
 
             kmlDocument.writeFooter();
