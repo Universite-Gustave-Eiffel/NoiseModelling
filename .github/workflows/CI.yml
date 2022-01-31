@@ -27,10 +27,11 @@ jobs:
           mvn test install -B
           cd wps_scripts && ./gradlew test --info --stacktrace
       - name: Deploy
-        run: mvn clean deploy -B -P maven-deploy
         env:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+        if: env.MAVEN_USERNAME != null
+        run: mvn clean deploy -B -P maven-deploy
       - name: Clean
         run: rm -f $HOME/.gradle/caches/modules-2/modules-2.lock
       - name: Cache
