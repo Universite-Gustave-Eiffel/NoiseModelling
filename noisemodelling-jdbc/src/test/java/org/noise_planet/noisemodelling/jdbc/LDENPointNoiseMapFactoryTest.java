@@ -122,7 +122,7 @@ public class LDENPointNoiseMapFactoryTest {
 
     @Test
     public void testNoiseEmissionRailWayForPropa() throws SQLException, IOException {
-        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/Rail_Section.shp").getFile());
+        SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/Rail_Section2.shp").getFile());
         DBFRead.read(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/Rail_Traffic.dbf").getFile());
 
 
@@ -174,7 +174,7 @@ public class LDENPointNoiseMapFactoryTest {
         ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData());
         ldenConfig.setCoefficientVersion(2);
 
-        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"Rail_Section", "Rail_Traffic", ldenConfig);
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"Rail_Section2", "Rail_Traffic", ldenConfig);
 
         while (railWayLWIterator.hasNext()) {
             RailWayLWIterator.RailWayLWGeom railWayLWGeom = railWayLWIterator.next();
@@ -237,7 +237,6 @@ public class LDENPointNoiseMapFactoryTest {
                 }
                 PreparedStatement ps = connection.prepareStatement(insertIntoQuery.toString());
                 for (Geometry trackGeometry : geometries) {
-                    ST_Force3D.force3D(trackGeometry);
                     Geometry sourceGeometry = trackGeometry.copy();
                     // offset geometry z
                     sourceGeometry.apply(new ST_AddZ.AddZCoordinateSequenceFilter(heightSource));
@@ -265,7 +264,7 @@ public class LDENPointNoiseMapFactoryTest {
         connection.createStatement().execute("ALTER TABLE  LW_RAILWAY  ADD PK INT AUTO_INCREMENT PRIMARY KEY;");
         connection.createStatement().execute("UPDATE LW_RAILWAY SET THE_GEOM = ST_SETSRID(THE_GEOM, 2154)");
 
-        railWayLWIterator = new RailWayLWIterator(connection,"Rail_Section", "Rail_Traffic", ldenConfig);
+        railWayLWIterator = new RailWayLWIterator(connection,"Rail_Section2", "Rail_Traffic", ldenConfig);
         RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
         assertNotNull(v);
         List<LineString> geometries = v.getRailWayLWGeometry();
@@ -290,7 +289,7 @@ public class LDENPointNoiseMapFactoryTest {
 
         // ICI HAUTEUR RECPTEUR
         connection.createStatement().execute("UPDATE Recepteurs SET THE_GEOM = ST_SETSRID(ST_UPDATEZ(THE_GEOM,2.0),2154);");
-        connection.createStatement().execute("UPDATE LW_RAILWAY SET THE_GEOM = ST_SETSRID(ST_UPDATEZ(THE_GEOM,2.0),2154);");
+        //connection.createStatement().execute("UPDATE LW_RAILWAY SET THE_GEOM = ST_SETSRID(ST_UPDATEZ(THE_GEOM,0.5),2154);");
 
 
         ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN);
@@ -311,7 +310,7 @@ public class LDENPointNoiseMapFactoryTest {
         //pointNoiseMap.setDemTable("DEM");
 
         pointNoiseMap.setMaximumPropagationDistance(750.0);
-        pointNoiseMap.setComputeHorizontalDiffraction(false);
+        pointNoiseMap.setComputeHorizontalDiffraction(true);
         pointNoiseMap.setComputeVerticalDiffraction(true);
         pointNoiseMap.setSoundReflectionOrder(0);
 
