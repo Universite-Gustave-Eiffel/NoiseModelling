@@ -640,6 +640,8 @@ public class LDENPointNoiseMapFactoryTest {
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PointSource/DEM_fence.shp").getFile());
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PointSource/LANDCOVER.shp").getFile());
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PointSource/RCVS20.shp").getFile());
+
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PointSource/RCVSCircle.shp").getFile());
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PointSource/NO_BUILD.shp").getFile());
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PointSource/BUILD_GRID2.shp").getFile());
 
@@ -658,24 +660,32 @@ public class LDENPointNoiseMapFactoryTest {
         LDENPointNoiseMapFactory factory = new LDENPointNoiseMapFactory(connection, ldenConfig);
 
         // ICI HAUTEUR RECPTEUR
-        connection.createStatement().execute("UPDATE RCVS20 SET THE_GEOM = ST_SETSRID(ST_UPDATEZ(THE_GEOM,2.0),2154);");
-        connection.createStatement().execute("UPDATE SOURCESI SET THE_GEOM = ST_SETSRID(ST_UPDATEZ(THE_GEOM,10.0),2154);");
-        connection.createStatement().execute("UPDATE NO_BUILD SET THE_GEOM = ST_SETSRID(THE_GEOM,2154);");
+
+        connection.createStatement().execute("SELECT UpdateGeometrySRID('RCVSCIRCLE', 'THE_GEOM', 2154);");
+
+        connection.createStatement().execute("CREATE TABLE RECEIVERS(PK SERIAL PRIMARY KEY, the_geom GEOMETRY(POINTZ) ) AS SELECT (row_number() over())::int, ST_UPDATEZ(ST_FORCE3D(THE_GEOM),5.0) FROM RCVSCIRCLE;");
+       // connection.createStatement().execute("UPDATE RCVS20 SET THE_GEOM = ST_UPDATEZ(ST_FORCE3D(THE_GEOM),5.0);");
+        connection.createStatement().execute("UPDATE SOURCESI SET THE_GEOM = ST_UPDATEZ(THE_GEOM,10.0);");
+        connection.createStatement().execute("SELECT UpdateGeometrySRID('NO_BUILD', 'THE_GEOM', 2154);");
         connection.createStatement().execute("UPDATE NO_BUILD SET HEIGHT = 0;");
-        connection.createStatement().execute("UPDATE BUILD_GRID2 SET THE_GEOM = ST_SETSRID(THE_GEOM,2154);");
+        connection.createStatement().execute("SELECT UpdateGeometrySRID('BUILD_GRID2', 'THE_GEOM', 2154);");
+        connection.createStatement().execute("SELECT UpdateGeometrySRID('DEM_FENCE', 'THE_GEOM', 2154);");
+        connection.createStatement().execute("SELECT UpdateGeometrySRID('LANDCOVER', 'THE_GEOM', 2154);");
         //connection.createStatement().execute("UPDATE BUILD_GRID2 SET HEIGHT = 0;");
         String name_output = "real";
 
         PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILD_GRID2", "SOURCESI",
-                "RCVS20");
+                "RECEIVERS");
 
         pointNoiseMap.setComputeRaysOutFactory(factory);
         pointNoiseMap.setPropagationProcessDataFactory(factory);
         pointNoiseMap.setHeightField("HEIGHT");
         pointNoiseMap.setMaximumPropagationDistance(5000);
-        pointNoiseMap.setComputeHorizontalDiffraction(false);
-        pointNoiseMap.setComputeVerticalDiffraction(false);
-        pointNoiseMap.setSoundReflectionOrder(0);
+        pointNoiseMap.setComputeHorizontalDiffraction(true);
+        pointNoiseMap.setComputeVerticalDiffraction(true);
+        pointNoiseMap.setSoundReflectionOrder(1);
+        pointNoiseMap.setDemTable("DEM_FENCE");
+        pointNoiseMap.setSoilTableName("LANDCOVER");
 
         // Set of already processed receivers
         Set<Long> receivers = new HashSet<>();
@@ -711,12 +721,12 @@ public class LDENPointNoiseMapFactoryTest {
 
         try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) CPT FROM " + ldenConfig.lDayTable)) {
             assertTrue(rs.next());
-            assertEquals(21, rs.getInt(1));
+            assertEquals(4361, rs.getInt(1));
         }
 
-        connection.createStatement().execute("CREATE TABLE RESULTS AS SELECT R.the_geom the_geom, R.PK pk,R.PK2 pk2, LVL.* FROM "+ ldenConfig.lDayTable + " LVL, RCVS20 R WHERE LVL.IDRECEIVER = R.PK2");
+        connection.createStatement().execute("CREATE TABLE RESULTS AS SELECT R.the_geom the_geom, R.PK pk, LVL.* FROM "+ ldenConfig.lDayTable + " LVL, RECEIVERS R WHERE LVL.IDRECEIVER = R.PK");
         SHPDriverFunction shpDriver = new SHPDriverFunction();
-        shpDriver.exportTable(connection, "RESULTS", new File("target/Results_PtSource"+name_output+".shp"), new EmptyProgressVisitor());
+        shpDriver.exportTable(connection, "RESULTS", new File("target/Results_PtSource"+name_output+".shp"), true,new EmptyProgressVisitor());
 
 
 
