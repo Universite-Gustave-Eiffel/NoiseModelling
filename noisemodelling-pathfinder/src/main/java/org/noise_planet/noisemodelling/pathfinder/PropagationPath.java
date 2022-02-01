@@ -36,7 +36,6 @@ package org.noise_planet.noisemodelling.pathfinder;
 import org.locationtech.jts.algorithm.CGAlgorithms3D;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.LineSegment;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.math.Vector3D;
 
@@ -189,6 +188,7 @@ public class PropagationPath {
      * @param out the stream to write into
      * @throws java.io.IOException if an I/O-error occurs
      */
+    /*
     public void writeStream( DataOutputStream out ) throws IOException {
         out.writeBoolean(favorable);
         out.writeInt(idSource);
@@ -207,7 +207,7 @@ public class PropagationPath {
         }
         srSegment.writeStream(out);
     }
-
+*/
     /**
      * Reads the content of this object from <code>out</code>. All
      * properties should be set to their default value or to the value read
@@ -603,12 +603,13 @@ public class PropagationPath {
      * @param out the stream to write into
      * @throws java.io.IOException if an I/O-error occurs
      */
+    /*
     public static void writePropagationPathListStream( DataOutputStream out, List<PropagationPath> propagationPaths ) throws IOException {
         out.writeInt(propagationPaths.size());
         for(PropagationPath propagationPath : propagationPaths) {
             propagationPath.writeStream(out);
         }
-    }
+    }*/
 
     /**
      * Reads the content of this object from <code>out</code>. All

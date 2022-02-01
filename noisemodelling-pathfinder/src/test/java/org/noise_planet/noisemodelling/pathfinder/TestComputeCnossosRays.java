@@ -13,13 +13,15 @@ import org.noise_planet.noisemodelling.pathfinder.utils.GeoJSONDocument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.noise_planet.noisemodelling.pathfinder.ComputeCnossosRays.splitLineStringIntoPoints;
 
 
@@ -239,7 +241,7 @@ public class TestComputeCnossosRays {
         assertEquals(3, prop.size());
     }
 
-    @Test
+   /* @Test
     public void testPropagationPathSerialization() throws IOException {
         List<PropagationPath> expected = new ArrayList<>();
         expected.add(new PropagationPath(true,
@@ -249,11 +251,11 @@ public class TestComputeCnossosRays {
                 Arrays.asList(new SegmentPath(0.15,
                         new org.locationtech.jts.math.Vector3D(1,1,1),
                         new Coordinate(1.5,2.5,3.5))),
-                /*Arrays.asList(*/new SegmentPath(0.35,
+                Arrays.asList(new SegmentPath(0.35,
                         new org.locationtech.jts.math.Vector3D(2,2,3),
-                        new Coordinate(4.5,5.5,8.5))/*, new SegmentPath(0.15,
+                        new Coordinate(4.5,5.5,8.5)), new SegmentPath(0.15,
                         new org.locationtech.jts.math.Vector3D(1,1,1),
-                        new Coordinate(1.5,2.5,3.5)))*/));
+                        new Coordinate(1.5,2.5,3.5)))));
         expected.add(new PropagationPath(true,
                 Arrays.asList(new PointPath(
                         new Coordinate(2,7,1), 1.0, Collections.nCopies(8,0.4), 1,
@@ -285,7 +287,8 @@ public class TestComputeCnossosRays {
         assertEquals(expected.get(1).getIdReceiver(), got.get(1).getIdReceiver());
         assertEquals(expected.get(1).getIdSource(), got.get(1).getIdSource());
     }
-
+*/
+/*
     @Test
     public void testPropagationPathSerialization2() throws ParseException, IOException  {
 
@@ -324,7 +327,7 @@ public class TestComputeCnossosRays {
 
         Assert.assertEquals(computeRaysOut.propagationPaths.size(), got.size());
     }
-
+*/
     /**
      * Test vertical edge diffraction ray computation
      *
