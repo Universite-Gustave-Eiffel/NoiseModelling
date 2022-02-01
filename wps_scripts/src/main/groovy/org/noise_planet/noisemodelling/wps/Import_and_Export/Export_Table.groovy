@@ -29,7 +29,7 @@ import org.h2gis.functions.io.kml.KMLDriverFunction
 import org.h2gis.functions.io.shp.SHPDriverFunction
 import org.h2gis.functions.io.tsv.TSVDriverFunction
 import org.h2gis.utilities.JDBCUtilities
-import org.h2gis.utilities.SFSUtilities
+import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.TableLocation
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -138,7 +138,7 @@ def exec(Connection connection, input) {
 
 
     //get SRID of the table
-    int srid = SFSUtilities.getSRID(connection, TableLocation.parse(tableToExport))
+    int srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(tableToExport))
     // if a SRID exists
     if (srid < 0) {
         System.println("Warning ! No SRID found !")

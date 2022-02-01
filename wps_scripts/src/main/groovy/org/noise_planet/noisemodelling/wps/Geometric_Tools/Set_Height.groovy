@@ -20,7 +20,7 @@ import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
-import org.h2gis.utilities.SFSUtilities
+import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.TableLocation
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -98,7 +98,7 @@ def exec(Connection connection, input) {
     Double h = input['height']
 
     //get SRID of the table
-    int srid = SFSUtilities.getSRID(connection, TableLocation.parse(table_name))
+    int srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(table_name))
     if (srid == 3785 || srid == 4326) throw new IllegalArgumentException("Error : This SRID is not metric. Please use another SRID for your table.")
     if (srid == 0) throw new IllegalArgumentException("Error : The table does not have an associated SRID.")
 

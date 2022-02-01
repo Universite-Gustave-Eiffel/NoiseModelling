@@ -82,7 +82,7 @@ def exec(Connection connection, input) {
     StringBuilder sb = new StringBuilder()
 
     // Get every table names
-    List<String> tables = JDBCUtilities.getTableNames(connection.getMetaData(), null, "PUBLIC", "%", null)
+    List<String> tables = JDBCUtilities.getTableNames(connection, null, "PUBLIC", "%", null)
     // Loop over the tables
     tables.each { t ->
         TableLocation tab = TableLocation.parse(t)
@@ -90,8 +90,8 @@ def exec(Connection connection, input) {
             sb.append(tab.getTable())
             sb.append("</br>")
             if (showColumnName) {
-                List<String> fields = JDBCUtilities.getFieldNames(connection.getMetaData(), t)
-                Integer keyColumnIndex = JDBCUtilities.getIntegerPrimaryKey(connection, t)
+                List<String> fields = JDBCUtilities.getColumnNames(connection, t)
+                Integer keyColumnIndex = JDBCUtilities.getIntegerPrimaryKey(connection, tab)
                 int columnIndex = 1;
                 fields.each {
                     f ->

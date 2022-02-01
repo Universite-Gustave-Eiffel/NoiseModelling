@@ -15,7 +15,7 @@ package org.noise_planet.noisemodelling.wps
 import groovy.sql.Sql
 import org.h2gis.functions.io.shp.SHPRead
 import org.h2gis.utilities.JDBCUtilities
-import org.h2gis.utilities.SFSUtilities
+import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.TableLocation
 import org.junit.Test
 import org.noise_planet.noisemodelling.wps.Acoustic_Tools.Add_Laeq_Leq_columns
@@ -90,7 +90,7 @@ class TestAcousticTools extends JdbcTestCase {
 
         new Create_Isosurface().exec(connection, [resultTable : "LDEN_GEOM"])
 
-        assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("CONTOURING_NOISE_MAP")))
+        assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("CONTOURING_NOISE_MAP")))
 
 
         List<String> fieldValues = JDBCUtilities.getUniqueFieldValues(connection, "CONTOURING_NOISE_MAP", "ISOLVL");

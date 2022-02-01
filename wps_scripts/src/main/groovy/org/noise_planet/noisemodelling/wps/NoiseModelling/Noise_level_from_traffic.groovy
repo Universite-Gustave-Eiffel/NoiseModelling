@@ -24,7 +24,7 @@ import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.api.ProgressVisitor
 import org.h2gis.utilities.JDBCUtilities
-import org.h2gis.utilities.SFSUtilities
+import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 
@@ -346,13 +346,13 @@ def exec(Connection connection, input) {
     // do it case-insensitive
     sources_table_name = sources_table_name.toUpperCase()
     // Check if srid are in metric projection.
-    int sridSources = SFSUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
+    int sridSources = GeometryTableUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
     if (sridSources == 3785 || sridSources == 4326) throw new IllegalArgumentException("Error : Please use a metric projection for "+sources_table_name+".")
     if (sridSources == 0) throw new IllegalArgumentException("Error : The table "+sources_table_name+" does not have an associated SRID.")
 
     //Get the geometry field of the source table
     TableLocation sourceTableIdentifier = TableLocation.parse(sources_table_name)
-    List<String> geomFields = SFSUtilities.getGeometryFields(connection, sourceTableIdentifier)
+    List<String> geomFields = GeometryTableUtilities.getGeometryColumnNames(connection, sourceTableIdentifier)
     if (geomFields.isEmpty()) {
         throw new SQLException(String.format("The table %s does not exists or does not contain a geometry field", sourceTableIdentifier))
     }
@@ -368,12 +368,12 @@ def exec(Connection connection, input) {
     receivers_table_name = receivers_table_name.toUpperCase()
     //Get the geometry field of the receiver table
     TableLocation receiverTableIdentifier = TableLocation.parse(receivers_table_name)
-    List<String> geomFieldsRcv = SFSUtilities.getGeometryFields(connection, receiverTableIdentifier)
+    List<String> geomFieldsRcv = GeometryTableUtilities.getGeometryColumnNames(connection, receiverTableIdentifier)
     if (geomFieldsRcv.isEmpty()) {
         throw new SQLException(String.format("The table %s does not exists or does not contain a geometry field", receiverTableIdentifier))
     }
     // Check if srid are in metric projection and are all the same.
-    int sridReceivers = SFSUtilities.getSRID(connection, TableLocation.parse(receivers_table_name))
+    int sridReceivers = GeometryTableUtilities.getSRID(connection, TableLocation.parse(receivers_table_name))
     if (sridReceivers == 3785 || sridReceivers == 4326) throw new IllegalArgumentException("Error : Please use a metric projection for "+receivers_table_name+".")
     if (sridReceivers == 0) throw new IllegalArgumentException("Error : The table "+receivers_table_name+" does not have an associated SRID.")
     if (sridReceivers != sridSources) throw new IllegalArgumentException("Error : The SRID of table "+sources_table_name+" and "+receivers_table_name+" are not the same.")
@@ -389,7 +389,7 @@ def exec(Connection connection, input) {
     // do it case-insensitive
     building_table_name = building_table_name.toUpperCase()
     // Check if srid are in metric projection and are all the same.
-    int sridBuildings = SFSUtilities.getSRID(connection, TableLocation.parse(building_table_name))
+    int sridBuildings = GeometryTableUtilities.getSRID(connection, TableLocation.parse(building_table_name))
     if (sridBuildings == 3785 || sridReceivers == 4326) throw new IllegalArgumentException("Error : Please use a metric projection for "+building_table_name+".")
     if (sridBuildings == 0) throw new IllegalArgumentException("Error : The table "+building_table_name+" does not have an associated SRID.")
     if (sridReceivers != sridBuildings) throw new IllegalArgumentException("Error : The SRID of table "+building_table_name+" and "+receivers_table_name+" are not the same.")
@@ -400,7 +400,7 @@ def exec(Connection connection, input) {
         // do it case-insensitive
         dem_table_name = dem_table_name.toUpperCase()
         // Check if srid are in metric projection and are all the same.
-        int sridDEM = SFSUtilities.getSRID(connection, TableLocation.parse(dem_table_name))
+        int sridDEM = GeometryTableUtilities.getSRID(connection, TableLocation.parse(dem_table_name))
         if (sridDEM == 3785 || sridReceivers == 4326) throw new IllegalArgumentException("Error : Please use a metric projection for "+dem_table_name+".")
         if (sridDEM == 0) throw new IllegalArgumentException("Error : The table "+dem_table_name+" does not have an associated SRID.")
         if (sridDEM != sridSources) throw new IllegalArgumentException("Error : The SRID of table "+sources_table_name+" and "+dem_table_name+" are not the same.")
@@ -413,7 +413,7 @@ def exec(Connection connection, input) {
         // do it case-insensitive
         ground_table_name = ground_table_name.toUpperCase()
         // Check if srid are in metric projection and are all the same.
-        int sridGROUND = SFSUtilities.getSRID(connection, TableLocation.parse(ground_table_name))
+        int sridGROUND = GeometryTableUtilities.getSRID(connection, TableLocation.parse(ground_table_name))
         if (sridGROUND == 3785 || sridReceivers == 4326) throw new IllegalArgumentException("Error : Please use a metric projection for "+ground_table_name+".")
         if (sridGROUND == 0) throw new IllegalArgumentException("Error : The table "+ground_table_name+" does not have an associated SRID.")
         if (sridGROUND != sridSources) throw new IllegalArgumentException("Error : The SRID of table "+ground_table_name+" and "+sources_table_name+" are not the same.")

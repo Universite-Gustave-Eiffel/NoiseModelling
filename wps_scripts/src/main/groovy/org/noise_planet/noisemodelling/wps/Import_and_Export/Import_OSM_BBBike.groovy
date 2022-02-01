@@ -32,7 +32,7 @@ import org.h2gis.functions.io.osm.OSMDriverFunction
 import org.h2gis.functions.io.shp.SHPDriverFunction
 import org.h2gis.functions.io.tsv.TSVDriverFunction
 import org.h2gis.utilities.JDBCUtilities
-import org.h2gis.utilities.SFSUtilities
+import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
@@ -286,7 +286,7 @@ def exec(Connection connection, input) {
             }
 
             // Read Geometry Index and type of the table
-            List<String> spatialFieldNames = SFSUtilities.getGeometryFields(connection, TableLocation.parse(outputTableName, JDBCUtilities.isH2DataBase(connection.getMetaData())))
+            List<String> spatialFieldNames = GeometryTableUtilities.getGeometryColumnNames(connection, TableLocation.parse(outputTableName, JDBCUtilities.isH2DataBase(connection.getMetaData())))
 
             // If the table does not contain a geometry field
             if (spatialFieldNames.isEmpty()) {
@@ -294,7 +294,7 @@ def exec(Connection connection, input) {
             } else {
                 stmt.execute('CREATE SPATIAL INDEX IF NOT EXISTS ' + outputTableName + '_INDEX ON ' + TableLocation.parse(outputTableName) + '(the_geom);')
                 // Get the SRID of the table
-                Integer tableSrid = SFSUtilities.getSRID(connection, TableLocation.parse(outputTableName))
+                Integer tableSrid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(outputTableName))
 
                 if (tableSrid != 0 && tableSrid != srid ) {
                     resultString = "The table " + outputTableName + " already has a different SRID than the one you gave."
@@ -370,7 +370,7 @@ def exec(Connection connection, input) {
 
 
         //get SRID of the table
-        srid = SFSUtilities.getSRID(connection, TableLocation.parse(tableName))
+        srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(tableName))
 
         // if a SRID exists
         if (srid > 0) {
@@ -453,7 +453,7 @@ def exec(Connection connection, input) {
         building_table_name = building_table_name.toUpperCase()
 
         //get SRID of the table
-        srid = SFSUtilities.getSRID(connection, TableLocation.parse(building_table_name))
+        srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(building_table_name))
         if (srid == 3785 || srid == 4326) throw new IllegalArgumentException("Error : This SRID is not metric. Please use another SRID for your table.")
         if (srid == 0) throw new IllegalArgumentException("Error : The table does not have an associated SRID.")
 

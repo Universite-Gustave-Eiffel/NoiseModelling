@@ -10,7 +10,7 @@ import geoserver.catalog.Store
 import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.utilities.JDBCUtilities
-import org.h2gis.utilities.SFSUtilities
+import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
@@ -85,7 +85,7 @@ def exec(connection, input) {
 
     //Get the geometry field of the source table
     TableLocation sourceTableIdentifier = TableLocation.parse(sources_table_name)
-    List<String> geomFields = SFSUtilities.getGeometryFields(connection, sourceTableIdentifier)
+    List<String> geomFields = GeometryTableUtilities.getGeometryColumnNames(connection, sourceTableIdentifier)
     if(geomFields.isEmpty()) {
         output = String.format("The table %s does not exists or does not contain a geometry field", sourceTableIdentifier)
         throw new SQLException(String.format("The table %s does not exists or does not contain a geometry field", sourceTableIdentifier));

@@ -26,7 +26,7 @@ import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.api.ProgressVisitor
 import org.h2gis.functions.spatial.crs.ST_SetSRID
 import org.h2gis.functions.spatial.crs.ST_Transform
-import org.h2gis.utilities.SFSUtilities
+import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
@@ -198,7 +198,7 @@ def exec(Connection connection, input) {
         maxArea = input['maxArea'] as Double
     }
 
-    int srid = SFSUtilities.getSRID(connection, TableLocation.parse(building_table_name))
+    int srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(building_table_name))
 
     Geometry fence = null
     WKTReader wktReader = new WKTReader()
@@ -220,9 +220,9 @@ def exec(Connection connection, input) {
 
     if (fence != null) {
         // Reproject fence
-        int targetSrid = SFSUtilities.getSRID(connection, TableLocation.parse(building_table_name))
+        int targetSrid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(building_table_name))
         if (targetSrid == 0) {
-            targetSrid = SFSUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
+            targetSrid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
         }
         if (targetSrid != 0) {
             // Transform fence to the same coordinate system than the buildings & sources

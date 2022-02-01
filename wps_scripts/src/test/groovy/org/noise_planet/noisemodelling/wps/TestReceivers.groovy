@@ -17,7 +17,7 @@ import org.h2gis.functions.io.shp.SHPRead
 import org.h2gis.functions.io.shp.SHPWrite
 import org.h2gis.functions.spatial.crs.ST_SetSRID
 import org.h2gis.functions.spatial.crs.ST_Transform
-import org.h2gis.utilities.SFSUtilities
+import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.TableLocation
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory
@@ -57,7 +57,7 @@ class TestReceivers extends JdbcTestCase {
         assertEquals(4.55, average_receiver_min_distance, 0.1)
 
 
-        assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
+        assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
 
 
     }
@@ -93,7 +93,7 @@ class TestReceivers extends JdbcTestCase {
         assertEquals(5, average_receiver_min_distance, 0.6)
 
 
-        assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
+        assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
 
 
     }
@@ -123,7 +123,7 @@ class TestReceivers extends JdbcTestCase {
         assertEquals(0, buildings_pop - receivers_pop, 0.1);
 
 
-        assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
+        assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
 
     }
     void testBuildingGridFence() {
@@ -148,7 +148,7 @@ class TestReceivers extends JdbcTestCase {
         assertEquals(0, receivers_pop);
 
 
-        assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
+        assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
 
     }
 
@@ -164,7 +164,7 @@ class TestReceivers extends JdbcTestCase {
         "sourcesTableName" : "ROADS"]);
 
 
-        assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
+        assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
 
         sql.execute("CREATE SPATIAL INDEX ON RECEIVERS(THE_GEOM)")
 
@@ -192,7 +192,7 @@ class TestReceivers extends JdbcTestCase {
                                              "nReceivers" : 200])
 
         assertTrue(200 >= (sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS")[0] as Integer))
-        assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
+        assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
     }
 
     public void testRandomGridFence() {
@@ -209,7 +209,7 @@ class TestReceivers extends JdbcTestCase {
 
         assertTrue(200 >= (sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS")[0] as Integer))
 
-        assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
+        assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
     }
 
     public void testRandomGridFence2() {
@@ -237,7 +237,7 @@ class TestReceivers extends JdbcTestCase {
 
         assertEquals(0, sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS WHERE ST_INTERSECTS(THE_GEOM, '"+gNoReceiver.toString()+"'::geometry)")[0] as Integer)
 
-        assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
+        assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
     }
 
 
@@ -257,7 +257,7 @@ class TestReceivers extends JdbcTestCase {
                                               "delta" : 50,
                                               "fence" : gFence.toString()])
 
-        assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
+        assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
     }
 
     public void testRegularGridFenceTable() {
@@ -272,7 +272,7 @@ class TestReceivers extends JdbcTestCase {
                                               "delta" : 50,
                                               "fenceTableName" : "BUILDINGS"])
 
-        assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
+        assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
     }
 
 
@@ -301,7 +301,7 @@ class TestReceivers extends JdbcTestCase {
 
         assertEquals(0, sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS WHERE ST_INTERSECTS(THE_GEOM, '"+gNoReceiver.toString()+"'::geometry)")[0] as Integer)
 
-        assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
+        assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
 
         SHPWrite.exportTable(connection, "target/regular.shp", "RECEIVERS")
 

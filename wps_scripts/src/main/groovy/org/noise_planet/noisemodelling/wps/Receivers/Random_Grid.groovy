@@ -24,7 +24,7 @@ import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.functions.spatial.crs.ST_SetSRID
 import org.h2gis.functions.spatial.crs.ST_Transform
-import org.h2gis.utilities.SFSUtilities
+import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.TableLocation
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
@@ -162,9 +162,9 @@ def exec(Connection connection, input) {
     Sql sql = new Sql(connection)
 
     // Reproject fence
-    int targetSrid = SFSUtilities.getSRID(connection, TableLocation.parse(building_table_name))
+    int targetSrid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(building_table_name))
     if (targetSrid == 0 && input['sourcesTableName']) {
-        targetSrid = SFSUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
+        targetSrid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
     }
 
     Geometry fenceGeom = null
@@ -178,7 +178,7 @@ def exec(Connection connection, input) {
             throw new Exception("Unable to find buildings or sources SRID, ignore fence parameters")
         }
     } else if (input['fenceTableName']) {
-        fenceGeom = (new GeometryFactory()).toGeometry(SFSUtilities.getTableEnvelope(connection, TableLocation.parse(input['fenceTableName'] as String), "THE_GEOM"))
+        fenceGeom = GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(input['fenceTableName'] as String), "THE_GEOM")
     }
 
 
@@ -189,8 +189,8 @@ def exec(Connection connection, input) {
 
     Envelope envelope
     if (fenceGeom == null) {
-        envelope = SFSUtilities.getTableEnvelope(connection, TableLocation.parse(sources_table_name), "THE_GEOM");
-        envelope.expandToInclude(SFSUtilities.getTableEnvelope(connection, TableLocation.parse(building_table_name), "THE_GEOM"))
+        envelope = GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(sources_table_name), "THE_GEOM").getEnvelopeInternal();
+        envelope.expandToInclude(GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(building_table_name), "THE_GEOM").getEnvelopeInternal())
     } else {
         envelope = fenceGeom.envelopeInternal
     }

@@ -30,7 +30,7 @@ import org.h2gis.functions.io.osm.OSMDriverFunction
 import org.h2gis.functions.io.shp.SHPDriverFunction
 import org.h2gis.functions.io.tsv.TSVDriverFunction
 import org.h2gis.utilities.JDBCUtilities
-import org.h2gis.utilities.SFSUtilities
+import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.TableLocation
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -210,7 +210,7 @@ def exec(Connection connection, input) {
     }
 
     // Read Geometry Index and type of the table
-    List<String> spatialFieldNames = SFSUtilities.getGeometryFields(connection, TableLocation.parse(tableName, JDBCUtilities.isH2DataBase(connection.getMetaData())))
+    List<String> spatialFieldNames = GeometryTableUtilities.getGeometryColumnNames(connection, TableLocation.parse(tableName, JDBCUtilities.isH2DataBase(connection.getMetaData())))
 
     // If the table does not contain a geometry field
     if (spatialFieldNames.isEmpty()) {
@@ -219,7 +219,7 @@ def exec(Connection connection, input) {
         stmt.execute('CREATE SPATIAL INDEX IF NOT EXISTS ' + tableName + '_INDEX ON ' + tableName + '(the_geom);')
 
         // Get the SRID of the table
-        Integer tableSrid = SFSUtilities.getSRID(connection, TableLocation.parse(tableName))
+        Integer tableSrid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(tableName))
 
         if (tableSrid != 0 && tableSrid != srid && input['inputSRID']) {
             resultString = "The table already has a different SRID than the one you gave."

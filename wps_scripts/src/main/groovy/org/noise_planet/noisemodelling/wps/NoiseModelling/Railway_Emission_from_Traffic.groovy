@@ -18,7 +18,7 @@ import geoserver.catalog.Store
 import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.functions.spatial.edit.ST_AddZ
-import org.h2gis.utilities.SFSUtilities
+import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
@@ -116,7 +116,7 @@ def exec(Connection connection, input) {
     // do it case-insensitive
     sources_geom_table_name = sources_geom_table_name.toUpperCase()
 
-    int sridSources = SFSUtilities.getSRID(connection, TableLocation.parse(sources_geom_table_name))
+    int sridSources = GeometryTableUtilities.getSRID(connection, TableLocation.parse(sources_geom_table_name))
     if (sridSources == 3785 || sridSources == 4326) throw new IllegalArgumentException("Error : Please use a metric projection for "+sources_geom_table_name+".")
     if (sridSources == 0) throw new IllegalArgumentException("Error : The table "+sources_geom_table_name+" does not have an associated spatial reference system. (missing prj file on import ?)")
 
@@ -126,7 +126,7 @@ def exec(Connection connection, input) {
 
     //Get the geometry field of the source table
     TableLocation sourceTableIdentifier = TableLocation.parse(sources_geom_table_name)
-    List<String> geomFields = SFSUtilities.getGeometryFields(connection, sourceTableIdentifier)
+    List<String> geomFields = GeometryTableUtilities.getGeometryColumnNames(connection, sourceTableIdentifier)
     if (geomFields.isEmpty()) {
         throw new SQLException(String.format("The table %s does not exists or does not contain a geometry field", sourceTableIdentifier))
     }

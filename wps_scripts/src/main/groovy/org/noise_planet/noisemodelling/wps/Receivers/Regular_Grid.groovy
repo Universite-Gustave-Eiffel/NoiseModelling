@@ -23,7 +23,7 @@ import geoserver.catalog.Store
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.functions.spatial.crs.ST_SetSRID
 import org.h2gis.functions.spatial.crs.ST_Transform
-import org.h2gis.utilities.SFSUtilities
+import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.TableLocation
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
@@ -167,7 +167,7 @@ def exec(connection, input) {
     }
     building_table_name = building_table_name.toUpperCase()
 
-    int srid = SFSUtilities.getSRID(connection, TableLocation.parse(building_table_name))
+    int srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(building_table_name))
 
     Sql sql = new Sql(connection)
     //Delete previous receivers grid.
@@ -176,9 +176,9 @@ def exec(connection, input) {
 
 
     // Reproject fence
-    int targetSrid = SFSUtilities.getSRID(connection, TableLocation.parse(building_table_name))
+    int targetSrid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(building_table_name))
     if (targetSrid == 0 && input['sourcesTableName']) {
-        targetSrid = SFSUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
+        targetSrid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
     }
 
     Geometry fenceGeom = null
@@ -192,9 +192,9 @@ def exec(connection, input) {
             throw new Exception("Unable to find buildings or sources SRID, ignore fence parameters")
         }
     } else if (input['fenceTableName']) {
-        fenceGeom = (new GeometryFactory()).toGeometry(SFSUtilities.getTableEnvelope(connection, TableLocation.parse(input['fenceTableName'] as String), "THE_GEOM"))
+        fenceGeom = GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(input['fenceTableName'] as String), "THE_GEOM")
     } else {
-        fenceGeom = (new GeometryFactory()).toGeometry(SFSUtilities.getTableEnvelope(connection, TableLocation.parse(building_table_name), "THE_GEOM"))
+        fenceGeom = GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(building_table_name), "THE_GEOM")
     }
 
     sql.execute("CREATE TABLE " + receivers_table_name + "(PK SERIAL, THE_GEOM GEOMETRY) AS SELECT null, ST_SETSRID(ST_UPDATEZ(THE_GEOM, " + h + "), " + srid + ") THE_GEOM FROM ST_MakeGridPoints(ST_GeomFromText('" + fenceGeom + "')," + delta + "," + delta + ");")

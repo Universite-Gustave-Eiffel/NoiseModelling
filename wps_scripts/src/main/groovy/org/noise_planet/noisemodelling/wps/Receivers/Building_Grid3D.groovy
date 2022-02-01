@@ -25,7 +25,7 @@ import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.functions.spatial.crs.ST_SetSRID
 import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.JDBCUtilities
-import org.h2gis.utilities.SFSUtilities
+import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.TableLocation
 import org.locationtech.jts.geom.*
 import org.locationtech.jts.io.WKTReader
@@ -174,9 +174,9 @@ def exec(Connection connection, input) {
     sql.execute(String.format("DROP TABLE IF EXISTS %s", receivers_table_name))
 
     // Reproject fence
-    int targetSrid = SFSUtilities.getSRID(connection, TableLocation.parse(building_table_name))
+    int targetSrid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(building_table_name))
     if (targetSrid == 0 && input['sourcesTableName']) {
-        targetSrid = SFSUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
+        targetSrid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
     }
 
     Geometry fenceGeom = null
@@ -190,7 +190,7 @@ def exec(Connection connection, input) {
             throw new Exception("Unable to find buildings or sources SRID, ignore fence parameters")
         }
     } else if (input['fenceTableName']) {
-        fenceGeom = (new GeometryFactory()).toGeometry(SFSUtilities.getTableEnvelope(connection, TableLocation.parse(input['fenceTableName'] as String), "THE_GEOM"))
+        fenceGeom = GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(input['fenceTableName'] as String), "THE_GEOM")
     }
 
 

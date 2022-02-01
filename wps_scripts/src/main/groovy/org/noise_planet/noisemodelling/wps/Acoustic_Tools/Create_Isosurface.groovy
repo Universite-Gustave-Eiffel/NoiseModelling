@@ -21,7 +21,7 @@ package org.noise_planet.noisemodelling.wps.Acoustic_Tools
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import org.geotools.jdbc.JDBCDataStore
-import org.h2gis.utilities.SFSUtilities
+import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.noise_planet.noisemodelling.jdbc.BezierContouring
@@ -107,7 +107,7 @@ def exec(Connection connection, input) {
 
     String levelTable = input['resultTable'] as String
 
-    int srid = SFSUtilities.getSRID(connection, TableLocation.parse(levelTable))
+    int srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(levelTable))
 
     BezierContouring bezierContouring = new BezierContouring(isoLevels, srid)
 

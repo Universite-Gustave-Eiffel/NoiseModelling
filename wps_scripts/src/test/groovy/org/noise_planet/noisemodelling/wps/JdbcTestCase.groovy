@@ -13,7 +13,7 @@
 package org.noise_planet.noisemodelling.wps
 
 import org.h2gis.functions.factory.H2GISDBFactory
-import org.h2gis.utilities.SFSUtilities
+import org.h2gis.utilities.JDBCUtilities
 import org.junit.After
 import org.junit.Before
 import org.junit.Ignore
@@ -26,7 +26,7 @@ class JdbcTestCase  extends GroovyTestCase {
 
     @Before
     void setUp() {
-        connection = SFSUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(UUID.randomUUID().toString(), true))
+        connection = JDBCUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(UUID.randomUUID().toString(), true))
     }
 
     @After

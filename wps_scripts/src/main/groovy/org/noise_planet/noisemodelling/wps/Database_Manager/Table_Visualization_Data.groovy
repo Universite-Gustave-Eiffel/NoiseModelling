@@ -23,7 +23,7 @@ import geoserver.catalog.Store
 import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.utilities.JDBCUtilities
-import org.h2gis.utilities.SFSUtilities
+import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.TableLocation
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.io.WKTWriter
@@ -31,6 +31,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import java.sql.Connection
+
 
 title = 'Display first rows of a table.'
 description = 'Display first rows of a table containing. ' +
@@ -132,7 +133,7 @@ static String mapToTable(List<Map> list, Sql sql, String tableName, Connection c
     output.append("The total number of rows is " + sql.firstRow('SELECT COUNT(*) FROM ' + tableName)[0])
 
     //get SRID of the table
-    int srid = SFSUtilities.getSRID(connection, TableLocation.parse(tableName))
+    int srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(tableName))
 
     if (srid > 0) {
         output.append("</br>")

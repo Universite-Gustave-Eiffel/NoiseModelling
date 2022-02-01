@@ -14,7 +14,7 @@ package org.noise_planet.noisemodelling.wps
 
 import groovy.sql.Sql
 import org.h2gis.utilities.JDBCUtilities
-import org.h2gis.utilities.SFSUtilities
+import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.TableLocation
 import org.junit.Test
 import org.noise_planet.noisemodelling.wps.Database_Manager.Display_Database
@@ -52,7 +52,7 @@ class TestTutorials extends JdbcTestCase {
                  "convert2Roads" : false])
 
         // Check SRID
-        assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("BUILDINGS")))
+        assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("BUILDINGS")))
 
         // Check database
         res = new Display_Database().exec(connection, [])
@@ -146,7 +146,7 @@ INSERT INTO buildings (PK, the_geom, height) VALUES (2, ST_GeomFromText('MULTIPO
                  "importExt" : "geojson"])
 
         // Check SRID
-        assertEquals(2154, SFSUtilities.getSRID(connection, TableLocation.parse("BUILDINGS")))
+        assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("BUILDINGS")))
 
         // Check database
         res = new Display_Database().exec(connection, [])

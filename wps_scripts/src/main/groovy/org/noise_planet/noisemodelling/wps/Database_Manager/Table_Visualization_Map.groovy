@@ -21,11 +21,10 @@ package org.noise_planet.noisemodelling.wps.Database_Manager
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
-import org.h2gis.utilities.SFSUtilities
 import org.h2gis.utilities.TableLocation
 import org.locationtech.jts.geom.Geometry
-import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.io.WKTWriter
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -102,7 +101,7 @@ def exec(Connection connection, input) {
     }
 
     // Read Geometry Index and type of the table
-    List<String> spatialFieldNames = SFSUtilities.getGeometryFields(connection, TableLocation.parse(tableName, JDBCUtilities.isH2DataBase(connection.getMetaData())))
+    List<String> spatialFieldNames = GeometryTableUtilities.getGeometryColumnNames(connection, TableLocation.parse(tableName, JDBCUtilities.isH2DataBase(connection.getMetaData())))
 
     // If the table does not contain a geometry field
     if (spatialFieldNames.isEmpty()) {
@@ -110,7 +109,7 @@ def exec(Connection connection, input) {
     }
 
     // Get the SRID of the table
-    Integer tableSrid = SFSUtilities.getSRID(connection, TableLocation.parse(tableName))
+    Integer tableSrid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(tableName))
 
     if (tableSrid != 0 && tableSrid != srid && input['inputSRID']) throw new Exception("The table already has a different SRID than the one you gave.")
 

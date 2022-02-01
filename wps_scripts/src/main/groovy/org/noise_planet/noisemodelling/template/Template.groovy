@@ -140,7 +140,7 @@ def exec(Connection connection, input) {
 
     //Get the geometry field of the source table
     TableLocation sourceTableIdentifier = TableLocation.parse(sources_table_name)
-    List<String> geomFields = SFSUtilities.getGeometryFields(connection, sourceTableIdentifier)
+    List<String> geomFields = GeometryTableUtilities.getGeometryFields(connection, sourceTableIdentifier)
 
     // Please throw Exception in this format
     if (geomFields.isEmpty()) {
