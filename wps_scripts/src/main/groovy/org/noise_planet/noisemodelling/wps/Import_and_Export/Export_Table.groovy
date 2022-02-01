@@ -93,7 +93,7 @@ def exec(Connection connection, input) {
     // do it case-insensitive
     tableToExport = tableToExport.toUpperCase()
 
-    List<String> fields = JDBCUtilities.getFieldNames(connection.getMetaData(), tableToExport)
+    List<String> fields = JDBCUtilities.getColumnNames(connection, tableToExport)
     if (fields.size()<1)
     {
         throw new Exception("The table is empty and can not be exported.")

@@ -23,6 +23,7 @@ import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
+import org.h2.value.ValueBoolean
 import org.h2gis.functions.io.osm.OSMRead
 import org.locationtech.jts.geom.Geometry
 import org.slf4j.Logger
@@ -210,7 +211,7 @@ def exec(Connection connection, input) {
     }
 
     // import OSM file
-    OSMRead.readOSM(connection, pathFile, "MAP")
+    OSMRead.importTable(connection, pathFile, "MAP", ValueBoolean.TRUE)
 
 
     // IMPORT BUILDINGS

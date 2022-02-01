@@ -33,7 +33,7 @@ class TestDatabaseManager extends JdbcTestCase {
 
     @Test
     void testAddPrimaryKey1() {
-        SHPRead.readShape(connection, TestDatabaseManager.getResource("receivers.shp").getPath())
+        SHPRead.importTable(connection, TestDatabaseManager.getResource("receivers.shp").getPath())
         Statement stmt = connection.createStatement()
         stmt.execute("ALTER TABLE receivers DROP PRIMARY KEY;")
 
@@ -46,7 +46,7 @@ class TestDatabaseManager extends JdbcTestCase {
 
     @Test
     void testAddPrimaryKey2() {
-        SHPRead.readShape(connection, TestDatabaseManager.getResource("receivers.shp").getPath())
+        SHPRead.importTable(connection, TestDatabaseManager.getResource("receivers.shp").getPath())
         Statement stmt = connection.createStatement()
         stmt.execute("ALTER TABLE receivers DROP PRIMARY KEY;")
 
@@ -59,7 +59,7 @@ class TestDatabaseManager extends JdbcTestCase {
 
     @Test
     void testAddPrimaryKey3() {
-        SHPRead.readShape(connection, TestDatabaseManager.getResource("receivers.shp").getPath())
+        SHPRead.importTable(connection, TestDatabaseManager.getResource("receivers.shp").getPath())
 
         String res = new Add_Primary_Key().exec(connection,
                 ["pkName": "PK",
@@ -70,7 +70,7 @@ class TestDatabaseManager extends JdbcTestCase {
 
     @Test
     void testCleanDatabase() {
-        SHPRead.readShape(connection, TestDatabaseManager.getResource("receivers.shp").getPath())
+        SHPRead.importTable(connection, TestDatabaseManager.getResource("receivers.shp").getPath())
 
         String res = new Clean_Database().exec(connection,
                 ["areYouSure": true ])
@@ -80,7 +80,7 @@ class TestDatabaseManager extends JdbcTestCase {
 
     @Test
     void testDropTable() {
-        SHPRead.readShape(connection, TestDatabaseManager.getResource("receivers.shp").getPath())
+        SHPRead.importTable(connection, TestDatabaseManager.getResource("receivers.shp").getPath())
 
         String res = new Drop_a_Table().exec(connection,
                 ["tableToDrop": "receivers" ])
@@ -90,14 +90,14 @@ class TestDatabaseManager extends JdbcTestCase {
 
     @Test
     void testDisplayTables1() {
-        SHPRead.readShape(connection, TestDatabaseManager.getResource("buildings.shp").getPath())
+        SHPRead.importTable(connection, TestDatabaseManager.getResource("buildings.shp").getPath())
         String res = new Display_Database().exec(connection, [])
         assertEquals("BUILDINGS</br></br>", res)
     }
 
     @Test
     void testTableVisualizationMap() {
-        SHPRead.readShape(connection, TestDatabaseManager.getResource("receivers.shp").getPath())
+        SHPRead.importTable(connection, TestDatabaseManager.getResource("receivers.shp").getPath())
         def res = new Table_Visualization_Map().exec(connection,
                 ["tableName": "receivers" ])
         assertTrue(res instanceof org.locationtech.jts.geom.MultiPoint)
@@ -105,7 +105,7 @@ class TestDatabaseManager extends JdbcTestCase {
 
     @Test
     void testTableVisualizationData() {
-        SHPRead.readShape(connection, TestDatabaseManager.getResource("receivers.shp").getPath())
+        SHPRead.importTable(connection, TestDatabaseManager.getResource("receivers.shp").getPath())
         String res = new Table_Visualization_Data().exec(connection,
                 ["tableName": "receivers" ])
         assertTrue(res.contains("The total number of rows is 830"))

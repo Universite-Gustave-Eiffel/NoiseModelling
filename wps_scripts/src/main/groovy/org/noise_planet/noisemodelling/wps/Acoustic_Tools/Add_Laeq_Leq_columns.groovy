@@ -93,7 +93,7 @@ def exec(Connection connection, input) {
     table = table.toUpperCase()
 
 
-    List<String> fields = JDBCUtilities.getFieldNames(connection.getMetaData(), table)
+    List<String> fields = JDBCUtilities.getColumnNames(connection, table)
     if (!fields.contains("" + prefix + "63")) {
         resultString = "This table does not contain column with this suffix : " + prefix + ""
         return resultString

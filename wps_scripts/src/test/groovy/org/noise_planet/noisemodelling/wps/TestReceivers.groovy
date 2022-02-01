@@ -33,7 +33,7 @@ class TestReceivers extends JdbcTestCase {
     void testBuildingGrid3D() {
         def sql = new Sql(connection)
 
-        SHPRead.readShape(connection, TestReceivers.getResource("buildings.shp").getPath())
+        SHPRead.importTable(connection, TestReceivers.getResource("buildings.shp").getPath())
         sql.execute("CREATE SPATIAL INDEX ON BUILDINGS(THE_GEOM)")
         sql.execute("CREATE INDEX bheight ON BUILDINGS(height)")
 
@@ -65,11 +65,11 @@ class TestReceivers extends JdbcTestCase {
     void testBuildingGrid() {
         def sql = new Sql(connection)
 
-        SHPRead.readShape(connection, TestReceivers.getResource("buildings.shp").getPath())
+        SHPRead.importTable(connection, TestReceivers.getResource("buildings.shp").getPath())
         sql.execute("CREATE SPATIAL INDEX ON BUILDINGS(THE_GEOM)")
         sql.execute("CREATE INDEX bheight ON BUILDINGS(height)")
 
-        SHPRead.readShape(connection, TestReceivers.getResource("roads.shp").getPath())
+        SHPRead.importTable(connection, TestReceivers.getResource("roads.shp").getPath())
 
         new Building_Grid().exec(connection,  ["tableBuilding" : "BUILDINGS",
                                                "delta" : 5,
@@ -101,11 +101,11 @@ class TestReceivers extends JdbcTestCase {
     void testBuildingGridWithPop() {
         def sql = new Sql(connection)
 
-        SHPRead.readShape(connection, TestReceivers.getResource("buildings.shp").getPath(), "BUILDINGS_NOPOP")
+        SHPRead.importTable(connection, TestReceivers.getResource("buildings.shp").getPath(), "BUILDINGS_NOPOP")
         sql.execute("DROP TABLE IF EXISTS BUILDINGS")
         sql.execute("CREATE TABLE BUILDINGS(pk serial, the_geom geometry, height double, pop double) AS SELECT pk, the_geom, height, ST_AREA(THE_GEOM) / 15 as pop from buildings_nopop")
 
-        SHPRead.readShape(connection, TestReceivers.getResource("roads.shp").getPath())
+        SHPRead.importTable(connection, TestReceivers.getResource("roads.shp").getPath())
 
         new Building_Grid().exec(connection,  ["tableBuilding" : "BUILDINGS",
                                                "delta" : 5,
@@ -129,7 +129,7 @@ class TestReceivers extends JdbcTestCase {
     void testBuildingGridFence() {
         def sql = new Sql(connection)
 
-        SHPRead.readShape(connection, TestReceivers.getResource("buildings.shp").getPath())
+        SHPRead.importTable(connection, TestReceivers.getResource("buildings.shp").getPath())
         sql.execute("CREATE SPATIAL INDEX ON BUILDINGS(THE_GEOM)")
         sql.execute("CREATE INDEX bheight ON BUILDINGS(height)")
 
@@ -155,8 +155,8 @@ class TestReceivers extends JdbcTestCase {
     public void testDelaunayGrid() {
         def sql = new Sql(connection)
 
-        SHPRead.readShape(connection, TestReceivers.getResource("buildings.shp").getPath())
-        SHPRead.readShape(connection, TestReceivers.getResource("roads.shp").getPath())
+        SHPRead.importTable(connection, TestReceivers.getResource("buildings.shp").getPath())
+        SHPRead.importTable(connection, TestReceivers.getResource("roads.shp").getPath())
         sql.execute("CREATE SPATIAL INDEX ON BUILDINGS(THE_GEOM)")
         sql.execute("CREATE SPATIAL INDEX ON ROADS(THE_GEOM)")
 
@@ -184,8 +184,8 @@ class TestReceivers extends JdbcTestCase {
 
         def sql = new Sql(connection)
 
-        SHPRead.readShape(connection, TestReceivers.getResource("buildings.shp").getPath())
-        SHPRead.readShape(connection, TestReceivers.getResource("roads.shp").getPath())
+        SHPRead.importTable(connection, TestReceivers.getResource("buildings.shp").getPath())
+        SHPRead.importTable(connection, TestReceivers.getResource("roads.shp").getPath())
 
         new Random_Grid().exec(connection,  ["buildingTableName" : "BUILDINGS",
                                              "sourcesTableName" : "ROADS",
@@ -199,8 +199,8 @@ class TestReceivers extends JdbcTestCase {
 
         def sql = new Sql(connection)
 
-        SHPRead.readShape(connection, TestReceivers.getResource("buildings.shp").getPath())
-        SHPRead.readShape(connection, TestReceivers.getResource("roads.shp").getPath())
+        SHPRead.importTable(connection, TestReceivers.getResource("buildings.shp").getPath())
+        SHPRead.importTable(connection, TestReceivers.getResource("roads.shp").getPath())
 
         new Random_Grid().exec(connection,  ["buildingTableName" : "BUILDINGS",
                                              "sourcesTableName" : "ROADS",
@@ -216,8 +216,8 @@ class TestReceivers extends JdbcTestCase {
 
         def sql = new Sql(connection)
 
-        SHPRead.readShape(connection, TestReceivers.getResource("buildings.shp").getPath())
-        SHPRead.readShape(connection, TestReceivers.getResource("roads.shp").getPath())
+        SHPRead.importTable(connection, TestReceivers.getResource("buildings.shp").getPath())
+        SHPRead.importTable(connection, TestReceivers.getResource("roads.shp").getPath())
 
         GeometryFactory f = new GeometryFactory();
         WKTReader r = new WKTReader();
@@ -245,8 +245,8 @@ class TestReceivers extends JdbcTestCase {
 
         def sql = new Sql(connection)
 
-        SHPRead.readShape(connection, TestReceivers.getResource("buildings.shp").getPath())
-        SHPRead.readShape(connection, TestReceivers.getResource("roads.shp").getPath())
+        SHPRead.importTable(connection, TestReceivers.getResource("buildings.shp").getPath())
+        SHPRead.importTable(connection, TestReceivers.getResource("roads.shp").getPath())
 
         GeometryFactory f = new GeometryFactory();
         def g = f.toGeometry(new Envelope(223556.5, 223765.7,6758256.91, 6758576.3))
@@ -264,8 +264,8 @@ class TestReceivers extends JdbcTestCase {
 
         def sql = new Sql(connection)
 
-        SHPRead.readShape(connection, TestReceivers.getResource("buildings.shp").getPath())
-        SHPRead.readShape(connection, TestReceivers.getResource("roads.shp").getPath())
+        SHPRead.importTable(connection, TestReceivers.getResource("buildings.shp").getPath())
+        SHPRead.importTable(connection, TestReceivers.getResource("roads.shp").getPath())
 
         new Regular_Grid().exec(connection,  ["buildingTableName": "BUILDINGS",
                                               "sourcesTableName" : "ROADS",
@@ -280,8 +280,8 @@ class TestReceivers extends JdbcTestCase {
 
         def sql = new Sql(connection)
 
-        SHPRead.readShape(connection, TestReceivers.getResource("buildings.shp").getPath())
-        SHPRead.readShape(connection, TestReceivers.getResource("roads.shp").getPath())
+        SHPRead.importTable(connection, TestReceivers.getResource("buildings.shp").getPath())
+        SHPRead.importTable(connection, TestReceivers.getResource("roads.shp").getPath())
 
         GeometryFactory f = new GeometryFactory();
         WKTReader r = new WKTReader();

@@ -38,7 +38,7 @@ class TestAcousticTools extends JdbcTestCase {
     @Test
     void testAddLeqLaeqColumns1() {
 
-        SHPRead.readShape(connection, TestAcousticTools.getResource("ROADS2.shp").getPath())
+        SHPRead.importTable(connection, TestAcousticTools.getResource("ROADS2.shp").getPath())
 
         new Road_Emission_from_Traffic().exec(connection,
                 ["tableRoads": "ROADS2"])
@@ -53,7 +53,7 @@ class TestAcousticTools extends JdbcTestCase {
     @Test
     void testAddLeqLaeqColumns2() {
 
-        SHPRead.readShape(connection, TestAcousticTools.getResource("ROADS2.shp").getPath())
+        SHPRead.importTable(connection, TestAcousticTools.getResource("ROADS2.shp").getPath())
 
         new Road_Emission_from_Traffic().exec(connection,
                 ["tableRoads": "ROADS2"])
@@ -62,7 +62,7 @@ class TestAcousticTools extends JdbcTestCase {
                 ["prefix": "LWD",
                  "tableName": "LW_ROADS"])
 
-        List<String> fields = JDBCUtilities.getFieldNames(connection.getMetaData(), "LW_ROADS")
+        List<String> fields = JDBCUtilities.getColumnNames(connection, "LW_ROADS")
 
         assertEquals(true, fields.contains("LEQ"))
     }
@@ -71,8 +71,8 @@ class TestAcousticTools extends JdbcTestCase {
     void testCreateIsosurface() {
         def sql = new Sql(connection)
 
-        SHPRead.readShape(connection, TestReceivers.getResource("buildings.shp").getPath())
-        SHPRead.readShape(connection, TestReceivers.getResource("ROADS2.shp").getPath())
+        SHPRead.importTable(connection, TestReceivers.getResource("buildings.shp").getPath())
+        SHPRead.importTable(connection, TestReceivers.getResource("ROADS2.shp").getPath())
         sql.execute("CREATE SPATIAL INDEX ON BUILDINGS(THE_GEOM)")
         sql.execute("CREATE SPATIAL INDEX ON ROADS2(THE_GEOM)")
 
@@ -107,7 +107,7 @@ class TestAcousticTools extends JdbcTestCase {
 
     @Test
     void testUpdateZ() throws SQLException, IOException {
-        SHPRead.readShape(connection, TestAcousticTools.getResource("receivers.shp").getPath())
+        SHPRead.importTable(connection, TestAcousticTools.getResource("receivers.shp").getPath())
         def st = new Sql(connection)
         st.execute("select ST_FORCE3D('MULTILINESTRING ((223553.4 6757818.7, 223477.7 6758058))'::geometry) the_geom")
     }

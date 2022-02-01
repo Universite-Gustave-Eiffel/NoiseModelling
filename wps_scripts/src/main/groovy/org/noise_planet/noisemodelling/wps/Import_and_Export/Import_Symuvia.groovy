@@ -142,7 +142,7 @@ class SYMUVIADriverFunction {
             throw new IOException(new IllegalArgumentException("This driver handle only .xml files"))
         }
         if(deleteTables){
-            SYMUVIATablesFactory.dropSYMUVIATables(connection, JDBCUtilities.isH2DataBase(connection.getMetaData()), tableReference)
+            SYMUVIATablesFactory.dropSYMUVIATables(connection, JDBCUtilities.isH2DataBase(connection), tableReference)
         }
         SYMUVIAParser symuviap = new SYMUVIAParser()
         symuviap.read(connection, tableReference, fileName, progress)
@@ -216,7 +216,7 @@ class SYMUVIADriverFunction {
         public boolean read(Connection connection, String tableName, File inputFile, ProgressVisitor progress) throws SQLException {
             this.progress = progress.subProcess(100);
             // Initialisation
-            final boolean isH2 = JDBCUtilities.isH2DataBase(connection.getMetaData());
+            final boolean isH2 = JDBCUtilities.isH2DataBase(connection);
             boolean success = false;
             TableLocation requestedTable = TableLocation.parse(tableName, isH2);
             String symuviaTableName = requestedTable.getTable();

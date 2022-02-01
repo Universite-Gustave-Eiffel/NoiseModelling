@@ -100,12 +100,12 @@ def exec(Connection connection, input) {
 
 
     // get the PrimaryKey field if exists to keep it in the final table
-    int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, tableName)
+    int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, new TableLocation(tableName))
 
     // Build the result string with every tables
     StringBuilder sbFields = new StringBuilder()
     // Get the column names to keep all column in the final table
-    List<String> fields = JDBCUtilities.getFieldNames(connection.getMetaData(), tableName)
+    List<String> fields = JDBCUtilities.getColumnNames(connection, tableName)
     int k = 1
     String pkField = ""
     fields.each {

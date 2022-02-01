@@ -36,6 +36,7 @@ import org.noise_planet.noisemodelling.jdbc.*
 
 
 import java.sql.Connection
+import java.sql.ResultSet
 import java.sql.SQLException
 
 title = 'Road traffic probabilistic modeling'
@@ -496,7 +497,7 @@ def exec(Connection connection, input) {
 /**
  * Read source database and compute the sound emission spectrum of roads sources
  * */
-class WpsPropagationProcessDataProba extends PropagationProcessData {
+class WpsPropagationProcessDataProba extends CnossosPropagationData {
     static List<Integer> freq_lvl = Arrays.asList(PropagationProcessPathData.asOctaveBands(PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE))
 
     // Lden values
@@ -510,12 +511,12 @@ class WpsPropagationProcessDataProba extends PropagationProcessData {
     public String inputFormat = "Proba"
     int idSource = 0
 
-    WpsPropagationProcessDataProba(FastObstructionTest freeFieldFinder) {
-        super(freeFieldFinder)
+    WpsPropagationProcessDataProba(ProfileBuilder profileBuilder) {
+        super(profileBuilder)
     }
 
     @Override
-    void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException {
+    void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException, IOException {
         super.addSource(pk, geom, rs)
         SourcesPk.put(pk, idSource++)
 
@@ -524,7 +525,6 @@ class WpsPropagationProcessDataProba extends PropagationProcessData {
         wjSourcesE.add(res[1])
         wjSourcesN.add(res[2])
         wjSourcesDEN.add(res[3])
-
     }
 
     double[][] computeLw(String Format, SpatialResultSet rs) throws SQLException {
@@ -794,8 +794,8 @@ class WpsPropagationProcessDataProba extends PropagationProcessData {
 class WpsPropagationProcessDataProbaFactory implements PointNoiseMap.PropagationProcessDataFactory {
 
     @Override
-    PropagationProcessData create(FastObstructionTest freeFieldFinder) {
-        return new WpsPropagationProcessDataProba(freeFieldFinder)
+    CnossosPropagationData create(ProfileBuilder builder) {
+        return new WpsPropagationProcessDataProba(builder)
     }
 
     @Override

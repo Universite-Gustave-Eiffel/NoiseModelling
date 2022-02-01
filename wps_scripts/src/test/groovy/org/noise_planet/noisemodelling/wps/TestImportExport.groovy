@@ -142,7 +142,7 @@ class TestImportExport extends JdbcTestCase {
             testPath.delete()
         }
 
-        SHPRead.readShape(connection, TestImportExport.getResource("receivers.shp").getPath())
+        SHPRead.importTable(connection, TestImportExport.getResource("receivers.shp").getPath())
 
         String res = new Export_Table().exec(connection,
                 ["exportPath"   : "target/test.geojson",

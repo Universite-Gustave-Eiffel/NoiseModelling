@@ -32,6 +32,7 @@ import org.h2gis.functions.io.tsv.TSVDriverFunction
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.TableLocation
+import org.h2gis.utilities.dbtypes.DBUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -210,7 +211,7 @@ def exec(Connection connection, input) {
     }
 
     // Read Geometry Index and type of the table
-    List<String> spatialFieldNames = GeometryTableUtilities.getGeometryColumnNames(connection, TableLocation.parse(tableName, JDBCUtilities.isH2DataBase(connection.getMetaData())))
+    List<String> spatialFieldNames = GeometryTableUtilities.getGeometryColumnNames(connection, TableLocation.parse(tableName, DBUtils.getDBType(connection)))
 
     // If the table does not contain a geometry field
     if (spatialFieldNames.isEmpty()) {

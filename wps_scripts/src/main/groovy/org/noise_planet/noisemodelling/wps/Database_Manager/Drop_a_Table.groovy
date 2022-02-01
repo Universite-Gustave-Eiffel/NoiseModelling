@@ -82,7 +82,7 @@ def exec(Connection connection, input) {
     int flag = 0
 
     // Get every table names
-    List<String> tables = JDBCUtilities.getTableNames(connection.getMetaData(), null, "PUBLIC", "%", null)
+    List<String> tables = JDBCUtilities.getTableNames(connection, null, "PUBLIC", "%", null)
     // Loop over the tables
     tables.each { t ->
         TableLocation tab = TableLocation.parse(t)

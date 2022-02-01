@@ -31,7 +31,7 @@ class TestGeometricTools extends JdbcTestCase {
     @Test
     void testChangeSRID1() {
 
-        SHPRead.readShape(connection, TestGeometricTools.getResource("roads.shp").getPath())
+        SHPRead.importTable(connection, TestGeometricTools.getResource("roads.shp").getPath())
 
         String res = new Change_SRID().exec(connection,
                 ["newSRID": "2154",
@@ -43,7 +43,7 @@ class TestGeometricTools extends JdbcTestCase {
     @Test
     void testChangeSRID2() {
 
-        SHPRead.readShape(connection, TestGeometricTools.getResource("roads.shp").getPath())
+        SHPRead.importTable(connection, TestGeometricTools.getResource("roads.shp").getPath())
 
         String res = new Change_SRID().exec(connection,
                 ["newSRID": "4326",
@@ -62,7 +62,7 @@ class TestGeometricTools extends JdbcTestCase {
         def sql = new Sql(connection)
         sql.execute("CREATE TABLE SCREENS(pk serial, the_geom geometry, height double)")
         sql.executeInsert("INSERT INTO SCREENS(pk, THE_GEOM, HEIGHT) VALUES (2001,?, 66), (2002,?, 99)", [screen1, screen2])
-        SHPRead.readShape(connection, TestGeometricTools.getResource("buildings.shp").getPath())
+        SHPRead.importTable(connection, TestGeometricTools.getResource("buildings.shp").getPath())
 
         String res = new Change_SRID().exec(connection,
                 ["newSRID": "2154",
@@ -76,7 +76,7 @@ class TestGeometricTools extends JdbcTestCase {
 
     @Test
     void testSetHeight1() {
-        SHPRead.readShape(connection, TestGeometricTools.getResource("receivers.shp").getPath())
+        SHPRead.importTable(connection, TestGeometricTools.getResource("receivers.shp").getPath())
         def sql = new Sql(connection)
 
         new Set_Height().exec(connection,
@@ -90,7 +90,7 @@ class TestGeometricTools extends JdbcTestCase {
 
     @Test
     void testSetHeight2() {
-        SHPRead.readShape(connection, TestGeometricTools.getResource("roads.shp").getPath())
+        SHPRead.importTable(connection, TestGeometricTools.getResource("roads.shp").getPath())
         def sql = new Sql(connection)
 
         new Set_Height().exec(connection,
@@ -102,7 +102,7 @@ class TestGeometricTools extends JdbcTestCase {
 
     @Test
     void testCleanBuildings() {
-        SHPRead.readShape(connection, TestGeometricTools.getResource("buildings.shp").getPath())
+        SHPRead.importTable(connection, TestGeometricTools.getResource("buildings.shp").getPath())
         def sql = new Sql(connection)
 
         new Clean_Buildings_Table().exec(connection,
@@ -114,7 +114,7 @@ class TestGeometricTools extends JdbcTestCase {
 
     @Test
     void testCleanBuildingsPop() {
-        SHPRead.readShape(connection, TestGeometricTools.getResource("buildings.shp").getPath())
+        SHPRead.importTable(connection, TestGeometricTools.getResource("buildings.shp").getPath())
         def sql = new Sql(connection)
 
         sql.execute("ALTER TABLE BUILDINGS ADD COLUMN POP REAL")

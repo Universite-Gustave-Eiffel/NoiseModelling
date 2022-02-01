@@ -35,7 +35,7 @@ class TestNoiseModelling extends JdbcTestCase {
     @Test
     void testRoadEmissionFromDEN() {
 
-        SHPRead.readShape(connection, TestDatabaseManager.getResource("ROADS2.shp").getPath())
+        SHPRead.importTable(connection, TestDatabaseManager.getResource("ROADS2.shp").getPath())
 
         String res = new Road_Emission_from_Traffic().exec(connection,
                 ["tableRoads": "ROADS2"])
@@ -71,7 +71,7 @@ class TestNoiseModelling extends JdbcTestCase {
                  "tableRailwayTrack": "RAIL_SECTIONS"
                 ])
 
-        def fieldNames = JDBCUtilities.getFieldNames(connection.getMetaData(), "LW_RAILWAY")
+        def fieldNames = JDBCUtilities.getColumnNames(connection, "LW_RAILWAY")
 
         def expected = ["ID_SECTION","THE_GEOM","DIR_ID","LWD50","LWD63","LWD80","LWD100","LWD125",
                         "LWD160","LWD200","LWD250","LWD315","LWD400","LWD500","LWD630","LWD800","LWD1000","LWD1250",
@@ -85,7 +85,7 @@ class TestNoiseModelling extends JdbcTestCase {
         assertArrayEquals(expected.toArray(new String[expected.size()]), fieldNames.toArray(new String[fieldNames.size()]))
 
 
-        SHPRead.readShape(connection, TestDatabaseManager.getResource("Train/buildings2.shp").getPath(), "BUILDINGS")
+        SHPRead.importTable(connection, TestDatabaseManager.getResource("Train/buildings2.shp").getPath(), "BUILDINGS")
 
         sql.execute("DROP TABLE IF EXISTS LDAY_GEOM")
 
@@ -111,7 +111,7 @@ class TestNoiseModelling extends JdbcTestCase {
     @Test
     void testLdayFromTraffic() {
 
-        SHPRead.readShape(connection, TestNoiseModelling.getResource("ROADS2.shp").getPath())
+        SHPRead.importTable(connection, TestNoiseModelling.getResource("ROADS2.shp").getPath())
 
         new Import_File().exec(connection,
                 ["pathFile" : TestNoiseModelling.getResource("buildings.shp").getPath(),
@@ -189,7 +189,7 @@ class TestNoiseModelling extends JdbcTestCase {
 
         def sql = new Sql(connection)
 
-        SHPRead.readShape(connection, TestNoiseModelling.getResource("ROADS2.shp").getPath())
+        SHPRead.importTable(connection, TestNoiseModelling.getResource("ROADS2.shp").getPath())
 
         new Import_File().exec(connection,
                 ["pathFile" : TestNoiseModelling.getResource("buildings.shp").getPath(),
@@ -271,7 +271,7 @@ class TestNoiseModelling extends JdbcTestCase {
     @Test
     void testLdenFromEmission() {
 
-        SHPRead.readShape(connection, TestNoiseModelling.getResource("ROADS2.shp").getPath())
+        SHPRead.importTable(connection, TestNoiseModelling.getResource("ROADS2.shp").getPath())
 
         String res = new Road_Emission_from_Traffic().exec(connection,
                 ["tableRoads": "ROADS2"])
@@ -300,7 +300,7 @@ class TestNoiseModelling extends JdbcTestCase {
 
     void testLdenFromEmission1khz() {
 
-        SHPRead.readShape(connection, TestNoiseModelling.getResource("ROADS2.shp").getPath())
+        SHPRead.importTable(connection, TestNoiseModelling.getResource("ROADS2.shp").getPath())
 
         String res = new Road_Emission_from_Traffic().exec(connection,
                 ["tableRoads": "ROADS2"])
@@ -332,7 +332,7 @@ class TestNoiseModelling extends JdbcTestCase {
         assertTrue(res.contains("LDAY_GEOM"))
 
         // fetch columns
-        def fields = JDBCUtilities.getFieldNames(connection.getMetaData(), "LDAY_GEOM")
+        def fields = JDBCUtilities.getColumnNames(connection, "LDAY_GEOM")
 
         assertArrayEquals(["IDRECEIVER","THE_GEOM", "HZ1000", "LAEQ", "LEQ"].toArray(), fields.toArray())
     }

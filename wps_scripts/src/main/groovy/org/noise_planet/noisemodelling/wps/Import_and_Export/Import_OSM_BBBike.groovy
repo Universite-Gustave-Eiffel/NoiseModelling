@@ -286,7 +286,7 @@ def exec(Connection connection, input) {
             }
 
             // Read Geometry Index and type of the table
-            List<String> spatialFieldNames = GeometryTableUtilities.getGeometryColumnNames(connection, TableLocation.parse(outputTableName, JDBCUtilities.isH2DataBase(connection.getMetaData())))
+            List<String> spatialFieldNames = GeometryTableUtilities.getGeometryColumnNames(connection, TableLocation.parse(outputTableName, DBUtils.getDBType(connection)))
 
             // If the table does not contain a geometry field
             if (spatialFieldNames.isEmpty()) {
@@ -317,7 +317,7 @@ def exec(Connection connection, input) {
             // If the table has a PK column and doesn't have any Primary Key Constraint, then automatically associate a Primary Key
             ResultSet rs2 = stmt.executeQuery("SELECT * FROM \"" + outputTableName + "\"")
             int pkUserIndex = JDBCUtilities.getFieldIndex(rs2.getMetaData(), "PK")
-            int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, outputTableName)
+            int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, new TableLocation(outputTableName))
 
             if (pkIndex == 0) {
                 if (pkUserIndex > 0) {
@@ -350,13 +350,13 @@ def exec(Connection connection, input) {
     osm_tables.each { tableName ->
 
         // Get the PrimaryKey field if exists to keep it in the final table
-        int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, tableName)
+        int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse(tableName))
 
         // Build the result string with every tables
         StringBuilder sbFields = new StringBuilder()
 
         // Get the column names to keep all column in the final table
-        List<String> fields = JDBCUtilities.getFieldNames(connection.getMetaData(), tableName)
+        List<String> fields = JDBCUtilities.getColumnNames(connection, tableName)
         int k = 1
         String pkField = ""
         fields.each {
