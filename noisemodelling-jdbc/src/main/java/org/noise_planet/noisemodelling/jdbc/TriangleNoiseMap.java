@@ -11,19 +11,12 @@ import org.locationtech.jts.operation.buffer.BufferParameters;
 import org.locationtech.jts.simplify.TopologyPreservingSimplifier;
 import org.noise_planet.noisemodelling.pathfinder.*;
 import org.noise_planet.noisemodelling.pathfinder.Triangle;
-import org.noise_planet.noisemodelling.pathfinder.utils.Densifier3D;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
+import java.sql.*;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -41,6 +34,10 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
     private double receiverHeight = 1.6;
     private double buildingBuffer = 2;
     private String exceptionDumpFolder = "";
+    private AtomicInteger constraintId = new AtomicInteger(1);
+    private double epsilon = 1e-6;
+    private double geometrySimplificationDistance = 1;
+    private boolean isoSurfaceInBuildings = false;
 
     /**
      * @param buildingsTableName Buildings table
@@ -48,6 +45,20 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
      */
     public TriangleNoiseMap(String buildingsTableName, String sourcesTableName) {
         super(buildingsTableName, sourcesTableName);
+    }
+
+    /**
+     * @return True if isosurface will be placed into buildings
+     */
+    public boolean isIsoSurfaceInBuildings() {
+        return isoSurfaceInBuildings;
+    }
+
+    /**
+     * @param isoSurfaceInBuildings Set true in order to place isosurface in buildings
+     */
+    public void setIsoSurfaceInBuildings(boolean isoSurfaceInBuildings) {
+        this.isoSurfaceInBuildings = isoSurfaceInBuildings;
     }
 
     /**
@@ -88,7 +99,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
                 explodeAndAddPolygon(subGeom, delaunayTool);
             }
         } else if(intersectedGeometry instanceof Polygon && !intersectedGeometry.isEmpty()){
-            delaunayTool.addPolygon((Polygon)intersectedGeometry, 1);
+            delaunayTool.addPolygon((Polygon)intersectedGeometry, constraintId.getAndAdd(1));
         }
     }
 
@@ -118,7 +129,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         fetchBox.expandBy(buildingBuffer);
         Geometry fetchGeometry = geometryFactory.toGeometry(fetchBox);
         for(MeshBuilder.PolygonWithHeight building : buildings) {
-            if(building.getGeometry().intersects(fetchGeometry)) {
+            if(building.getGeometry().distance(fetchGeometry) < buildingBuffer) {
                 toUnite.add(building.getGeometry());
             }
         }
@@ -127,9 +138,15 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         LinkedList<Geometry> toUniteFinal = new LinkedList<>();
         if (!toUnite.isEmpty()) {
             Geometry bufferBuildings = merge(toUnite, buildingBuffer);
-            //bufferBuildings = TopologyPreservingSimplifier.simplify(bufferBuildings,
-            //        minRecDist / 2);
-            toUniteFinal.add(bufferBuildings); // Add buildingsTableName to triangulation
+            bufferBuildings = TopologyPreservingSimplifier.simplify(bufferBuildings, geometrySimplificationDistance);
+            if(bufferBuildings.getNumPoints() > 3) {
+                // Densify buildings to follow triangle area constraint
+                if (maximumArea > 1) {
+                    double triangleSide = (2 * Math.pow(maximumArea, 0.5)) / Math.pow(3, 0.25);
+                    bufferBuildings = Densifier.densify(bufferBuildings, triangleSide);
+                }
+                toUniteFinal.add(bufferBuildings); // Add buildingsTableName to triangulation
+            }
         }
         Geometry geom1 = geometryFactory.createPolygon();
         Geometry geom2 = geometryFactory.createPolygon();
@@ -141,8 +158,12 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
                     // Build Polygons buffer from roads lines
                     Geometry bufferRoads = merge(toUniteRoads, minRecDist / 2);
                     // Remove small artifacts due to multiple buffer crosses
-                    bufferRoads = TopologyPreservingSimplifier.simplify(bufferRoads,
-                            minRecDist / 2);
+                    bufferRoads = TopologyPreservingSimplifier.simplify(bufferRoads, geometrySimplificationDistance);
+                    // Densify roads to follow triangle area constraint
+                    if(maximumArea > 1) {
+                        double triangleSide = (2*Math.pow(maximumArea, 0.5)) / Math.pow(3, 0.25);
+                        bufferRoads = Densifier.densify(bufferRoads, triangleSide);
+                    }
                     toUniteFinal.add(bufferRoads); // Merge roads with minRecDist m
                 }
             }
@@ -192,19 +213,19 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         // Add roads into delaunay tool
         LinkedList<LineString> delaunaySegments = new LinkedList<>();
         if (minRecDist > 0.1) {
-            for (Geometry pt : sources) {
-                Envelope ptEnv = pt.getEnvelopeInternal();
+            for (Geometry sourceGeometry : sources) {
+                Envelope ptEnv = sourceGeometry.getEnvelopeInternal();
                 if (ptEnv.intersects(expandedCellEnvelop)) {
-                    if (pt instanceof Point) {
+                    if (sourceGeometry instanceof Point) {
                         // Add square in rendering
-                        cellMesh.addPolygon((Polygon)cellEnvelopeGeometry.intersection(pt.buffer(minRecDist, BufferParameters.CAP_SQUARE)), 1);
+                        cellMesh.addPolygon((Polygon)cellEnvelopeGeometry.intersection(sourceGeometry.buffer(minRecDist, BufferParameters.CAP_SQUARE)), 1);
                     } else {
-                        if (pt instanceof LineString) {
-                            delaunaySegments.add((LineString) (pt));
-                        } else if (pt instanceof MultiLineString) {
-                            int nbLineString = pt.getNumGeometries();
+                        if (sourceGeometry instanceof LineString) {
+                            delaunaySegments.add((LineString) (sourceGeometry));
+                        } else if (sourceGeometry instanceof MultiLineString) {
+                            int nbLineString = sourceGeometry.getNumGeometries();
                             for (int idLineString = 0; idLineString < nbLineString; idLineString++) {
-                                delaunaySegments.add((LineString) (pt
+                                delaunaySegments.add((LineString) (sourceGeometry
                                         .getGeometryN(idLineString)));
                             }
                         }
@@ -221,7 +242,6 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         cellMesh.setRetrieveNeighbors(false);
         // Add cell envelope
         if (maximumArea > 1) {
-            cellMesh.setMaxArea(maximumArea);
             double triangleSide = (2*Math.pow(maximumArea, 0.5)) / Math.pow(3, 0.25);
             Polygon polygon = (Polygon)Densifier.densify(new GeometryFactory().toGeometry(cellEnvelope), triangleSide);
             cellMesh.addLineString(polygon.getExteriorRing(), 0);
@@ -235,7 +255,33 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
 
     @Override
     protected Envelope getComputationEnvelope(Connection connection) throws SQLException {
-        return SFSUtilities.getTableEnvelope(connection, TableLocation.parse(sourcesTableName), "");
+        Envelope computationEnvelope = new Envelope();
+        if(!sourcesTableName.isEmpty()) {
+            computationEnvelope.expandToInclude(SFSUtilities.getTableEnvelope(connection, TableLocation.parse(sourcesTableName), ""));
+        }
+        if(!buildingsTableName.isEmpty()) {
+            computationEnvelope.expandToInclude(SFSUtilities.getTableEnvelope(connection, TableLocation.parse(buildingsTableName), ""));
+        }
+        return computationEnvelope;
+    }
+
+    public double getEpsilon() {
+        return epsilon;
+    }
+
+    public double getGeometrySimplificationDistance() {
+        return geometrySimplificationDistance;
+    }
+
+    public void setGeometrySimplificationDistance(double geometrySimplificationDistance) {
+        this.geometrySimplificationDistance = geometrySimplificationDistance;
+    }
+
+    /**
+     * @param epsilon Merge points that are closer that this epsilon value
+     */
+    public void setEpsilon(double epsilon) {
+        this.epsilon = epsilon;
     }
 
     public void generateReceivers(Connection connection, int cellI, int cellJ, String receiverTableName, String trianglesTableName, AtomicInteger receiverPK) throws SQLException, LayerDelaunayError, IOException {
@@ -253,15 +299,22 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
                 cellJ, getCellWidth(), getCellHeight());
         // Fetch all source located in expandedCellEnvelop
         PropagationProcessData data = new PropagationProcessData(null);
-        fetchCellSource(connection, cellEnvelope, data);
+        if(!sourcesTableName.isEmpty()) {
+            fetchCellSource(connection, cellEnvelope, data, false);
+        }
 
         List<Geometry> sourceDelaunayGeometries = data.sourceGeometries;
 
         ArrayList<MeshBuilder.PolygonWithHeight> buildings = new ArrayList<>();
-        fetchCellBuildings(connection, cellEnvelope, buildings);
+        Envelope expandedCell = new Envelope(cellEnvelope);
+        expandedCell.expandBy(buildingBuffer);
+        fetchCellBuildings(connection, expandedCell, buildings);
 
         LayerTinfour cellMesh = new LayerTinfour();
+        cellMesh.setEpsilon(epsilon);
         cellMesh.setDumpFolder(exceptionDumpFolder);
+        cellMesh.setMaxArea(maximumArea > 1 ? maximumArea : 0);
+
         try {
             computeDelaunay(cellMesh, mainEnvelope, cellI,
                     cellJ,
@@ -285,11 +338,17 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
             vertices.add(translatedVertex);
         }
         // Do not add triangles associated with buildings
-        List<Triangle> triangles = new ArrayList<>();
-        for(Triangle triangle : cellMesh.getTriangles()) {
-            if(triangle.getAttribute() == 0) {
-                triangles.add(triangle);
+        List<Triangle> triangles;
+        if (!isoSurfaceInBuildings) {
+            triangles = new ArrayList<>(cellMesh.getTriangles().size());
+            for (Triangle triangle : cellMesh.getTriangles()) {
+                if (triangle.getAttribute() == 0) {
+                    // place only triangles not associated to a building
+                    triangles.add(triangle);
+                }
             }
+        } else {
+            triangles = cellMesh.getTriangles();
         }
         nbreceivers += vertices.size();
 

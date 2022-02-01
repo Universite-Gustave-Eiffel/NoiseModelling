@@ -289,7 +289,7 @@ public abstract class JdbcNoiseMap {
      * @param propagationProcessData (Out) Propagation process input data
      * @throws SQLException
      */
-    public void fetchCellSource(Connection connection,Envelope fetchEnvelope, PropagationProcessData propagationProcessData)
+    public void fetchCellSource(Connection connection,Envelope fetchEnvelope, PropagationProcessData propagationProcessData, boolean doIntersection)
             throws SQLException, IOException {
         TableLocation sourceTableIdentifier = TableLocation.parse(sourcesTableName);
         List<String> geomFields = SFSUtilities.getGeometryFields(connection, sourceTableIdentifier);
@@ -315,7 +315,9 @@ public abstract class JdbcNoiseMap {
                 while (rs.next()) {
                     Geometry geo = rs.getGeometry();
                     if (geo != null) {
-                        geo = domainConstraint.intersection(geo);
+                        if(doIntersection) {
+                            geo = domainConstraint.intersection(geo);
+                        }
                         if(!geo.isEmpty()) {
                             propagationProcessData.addSource(rs.getLong(pkIndex), geo, rs);
                         }
@@ -353,11 +355,10 @@ public abstract class JdbcNoiseMap {
             throw new SQLException(new IllegalArgumentException(
                     "Maximum wall seeking distance cannot be superior than maximum propagation distance"));
         }
-        if(sourcesTableName.isEmpty()) {
-            throw new SQLException("A sound source table must be provided");
-        }
         int srid = 0;
-        srid = SFSUtilities.getSRID(connection, TableLocation.parse(sourcesTableName));
+        if(!sourcesTableName.isEmpty()) {
+            srid = SFSUtilities.getSRID(connection, TableLocation.parse(sourcesTableName));
+        }
         if(srid == 0) {
             srid = SFSUtilities.getSRID(connection, TableLocation.parse(buildingsTableName));
         }

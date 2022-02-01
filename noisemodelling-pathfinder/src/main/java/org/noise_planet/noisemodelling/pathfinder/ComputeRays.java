@@ -985,7 +985,7 @@ public class ComputeRays {
      * @param dataOut
      * @return Minimal power level (dB) or maximum attenuation (dB)
      */
-    private double[] receiverSourcePropa(SourcePointInfo src,
+    public double[] receiverSourcePropa(SourcePointInfo src,
                                          Coordinate receiverCoord, int rcvId, AtomicInteger raysCount,
                                          IComputeRaysOut dataOut,List<FastObstructionTest.Wall> nearBuildingsWalls, List<MirrorReceiverResult> mirrorReceiverResults) {
         Coordinate srcCoord = src.position;
@@ -1385,7 +1385,7 @@ public static final class AbsoluteCoordinateSequenceFilter implements Coordinate
     }
 }
 
-private static final class SourcePointInfo implements Comparable<SourcePointInfo> {
+public static final class SourcePointInfo implements Comparable<SourcePointInfo> {
     private double[] wj;
     private double li; //
     private int sourcePrimaryKey;
@@ -1401,6 +1401,7 @@ private static final class SourcePointInfo implements Comparable<SourcePointInfo
      * @param position
      * @param li Coefficient of power per meter for this point source
      * @param orientation
+     * @param gs Ground factor of the source area. Gs=0 for road platforms, slab tracks. Gs=1 for rail tracks on ballast
      */
     public SourcePointInfo(double[] wj, int sourcePrimaryKey, Coordinate position, double li, Orientation orientation, double gs) {
         this.wj = wj;

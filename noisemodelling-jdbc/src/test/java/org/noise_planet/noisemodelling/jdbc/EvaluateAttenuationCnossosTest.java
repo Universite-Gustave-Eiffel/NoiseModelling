@@ -1,15 +1,20 @@
 package org.noise_planet.noisemodelling.jdbc;
 
+import org.cts.crs.CRSException;
+import org.cts.op.CoordinateOperationException;
 import org.junit.Test;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 import org.noise_planet.noisemodelling.pathfinder.*;
+import org.noise_planet.noisemodelling.pathfinder.utils.KMLDocument;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.xml.stream.XMLStreamException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.*;
 
@@ -2602,4 +2607,118 @@ public class EvaluateAttenuationCnossosTest {
 
         }
 
+
+
+    public static void exportScene(String name, FastObstructionTest manager, ComputeRaysOutAttenuation result) throws IOException {
+        try {
+            Coordinate proj = new Coordinate( 351714.794877, 6685824.856402, 0);
+            FileOutputStream outData = new FileOutputStream(name);
+            KMLDocument kmlDocument = new KMLDocument(outData);
+            kmlDocument.setInputCRS("EPSG:2154");
+            kmlDocument.setOffset(proj);
+            kmlDocument.writeHeader();
+            if(manager != null) {
+                kmlDocument.writeTopographic(manager.getTriangles(), manager.getVertices());
+            }
+            if(result != null) {
+                kmlDocument.writeRays(result.getPropagationPaths());
+            }
+            if(manager != null && manager.isHasBuildingWithHeight()) {
+                kmlDocument.writeBuildings(manager);
+            }
+            kmlDocument.writeFooter();
+        } catch (XMLStreamException | CoordinateOperationException | CRSException ex) {
+            throw new IOException(ex);
+        }
+    }
+
+    /**
+     * Ground with spatially varying heights, source not visible from receiver
+     * building
+     */
+    @Test
+    public void testSourceOverHill() throws LayerDelaunayError, IOException {
+
+        PropagationProcessPathData attData = new PropagationProcessPathData();
+        GeometryFactory factory = new GeometryFactory();
+
+        double baseHeight = 200;
+        //Scene dimension
+
+        //Create obstruction test object
+        MeshBuilder mesh = new MeshBuilder();
+
+        // Ground Surface
+
+        Polygon env = factory.createPolygon(new Coordinate[]{new Coordinate(-250, -250, baseHeight),
+                new Coordinate(-250, 250, baseHeight),
+                new Coordinate(250, 250, baseHeight),
+                new Coordinate(250, -250, baseHeight),
+                new Coordinate(-250, -250, baseHeight)});
+        // base square
+        double baseWidth = 25;
+        double length = 100;
+        double topWidth = 5;
+        double topLength = 80;
+        double height = baseHeight + 5;
+        double topXOffset = baseWidth / 2 - topWidth / 2;
+        double topYOffset = length / 2 - topLength / 2;
+
+        Coordinate baseA = new Coordinate(0, 0, baseHeight);
+        Coordinate baseB = new Coordinate(0, length, baseHeight);
+        Coordinate baseC = new Coordinate(baseWidth, length, baseHeight);
+        Coordinate baseD = new Coordinate(baseWidth, 0, baseHeight);
+
+        Coordinate topA = new Coordinate(topXOffset, topYOffset, height);
+        Coordinate topB = new Coordinate(topA.x, topA.y + topLength, height);
+        Coordinate topC = new Coordinate(topA.x + topWidth, topA.y + topLength, height);
+        Coordinate topD = new Coordinate(topA.x + topWidth, topA.y, height);
+
+        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{baseA, baseB, baseC, baseD}));
+
+
+        mesh.addTopographicLine(factory.createLineString(new Coordinate[]{topA, topB, topC, topD}));
+
+        mesh.finishPolygonFeeding(env);
+
+        //Retrieve Delaunay triangulation of scene
+        FastObstructionTest manager = new FastObstructionTest(mesh.getPolygonWithHeight(), mesh.getTriangles(),
+                mesh.getTriNeighbors(), mesh.getVertices());
+
+        PropagationProcessData rayData = new PropagationProcessData(manager);
+        rayData.addReceiver(new Coordinate(baseWidth + 3, length / 2, baseHeight + 0.1));
+        rayData.addSource(factory.createPoint(new Coordinate(baseWidth / 2, length / 2, height + 0.05)));
+        rayData.setComputeHorizontalDiffraction(false);
+
+        // Create porous surface as defined by the test:
+        // The surface of the earth berm is porous (G = 1).
+        rayData.addSoilType(new GeoWithSoilType(factory.createPolygon(new Coordinate[]{
+                new Coordinate(59.6, -9.87, 0), // 5
+                new Coordinate(76.84, -5.28, 0), // 5-6
+                new Coordinate(63.71, 41.16, 0), // 6-7
+                new Coordinate(46.27, 36.28, 0), // 7-8
+                new Coordinate(59.6, -9.87, 0) // 8
+        }), 1.));
+
+        rayData.setComputeVerticalDiffraction(true);
+        rayData.setReflexionOrder(0);
+
+        rayData.setGs(0.);
+
+        attData.setHumidity(70);
+        attData.setTemperature(10);
+        attData.setPrime2520(false);
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
+        ComputeRays computeRays = new ComputeRays(rayData);
+        computeRays.setThreadCount(1);
+        computeRays.run(propDataOut);
+
+        exportScene("target/testSourceOverHill.kml", manager, propDataOut);
+        assertEquals(1, propDataOut.getVerticesSoundLevel().size());
+        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93 - 26.2, 93 - 16.1,
+                93 - 8.6, 93 - 3.2, 93, 93 + 1.2, 93 + 1.0, 93 - 1.1});
+        System.out.println(Arrays.toString(L));
+        //assertArrayEquals(new double[]{12.7, 21.07, 27.66, 31.48, 31.42, 28.74, 23.75, 13.92}, L, ERROR_EPSILON_high);//p=0.5
+
+    }
 }
