@@ -105,31 +105,31 @@ def exec(Connection connection, input) {
     switch (ext) {
         case "csv":
             CSVDriverFunction csvDriver = new CSVDriverFunction()
-            csvDriver.exportTable(connection, tableToExport, new File(exportPath), new EmptyProgressVisitor())
+            csvDriver.exportTable(connection, tableToExport, new File(exportPath), true, new EmptyProgressVisitor())
             break
         case "dbf":
             DBFDriverFunction dbfDriver = new DBFDriverFunction()
-            dbfDriver.exportTable(connection, tableToExport, new File(exportPath), new EmptyProgressVisitor())
+            dbfDriver.exportTable(connection, tableToExport, new File(exportPath),true, new EmptyProgressVisitor())
             break
         case "geojson":
             GeoJsonDriverFunction geoJsonDriver = new GeoJsonDriverFunction()
-            geoJsonDriver.exportTable(connection, tableToExport, new File(exportPath), new EmptyProgressVisitor())
+            geoJsonDriver.exportTable(connection, tableToExport, new File(exportPath),true,  new EmptyProgressVisitor())
             break
         case "json":
             JsonDriverFunction jsonDriver = new JsonDriverFunction()
-            jsonDriver.exportTable(connection, tableToExport, new File(exportPath), new EmptyProgressVisitor())
+            jsonDriver.exportTable(connection, tableToExport, new File(exportPath),true, new EmptyProgressVisitor())
             break
         case "kml":
             KMLDriverFunction kmlDriver = new KMLDriverFunction()
-            kmlDriver.exportTable(connection, tableToExport, new File(exportPath), new EmptyProgressVisitor())
+            kmlDriver.exportTable(connection, tableToExport, new File(exportPath),true,  new EmptyProgressVisitor())
             break
         case "shp":
             SHPDriverFunction shpDriver = new SHPDriverFunction()
-            shpDriver.exportTable(connection, tableToExport, new File(exportPath), new EmptyProgressVisitor())
+            shpDriver.exportTable(connection, tableToExport, new File(exportPath),true, new EmptyProgressVisitor())
             break
         case "tsv":
             TSVDriverFunction tsvDriver = new TSVDriverFunction()
-            tsvDriver.exportTable(connection, tableToExport, new File(exportPath), new EmptyProgressVisitor())
+            tsvDriver.exportTable(connection, tableToExport, new File(exportPath), true, new EmptyProgressVisitor())
             break
         default:
             throw new Exception("The file extension is not valid. No table has been exported.")
