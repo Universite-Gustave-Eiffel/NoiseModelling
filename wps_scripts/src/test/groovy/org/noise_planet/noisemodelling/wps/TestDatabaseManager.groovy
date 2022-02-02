@@ -14,6 +14,7 @@ package org.noise_planet.noisemodelling.wps
 
 import org.h2gis.functions.io.shp.SHPRead
 import org.junit.Test
+import org.locationtech.jts.geom.MultiPoint
 import org.noise_planet.noisemodelling.wps.Database_Manager.Add_Primary_Key
 import org.noise_planet.noisemodelling.wps.Database_Manager.Clean_Database
 import org.noise_planet.noisemodelling.wps.Database_Manager.Display_Database
@@ -100,7 +101,7 @@ class TestDatabaseManager extends JdbcTestCase {
         SHPRead.importTable(connection, TestDatabaseManager.getResource("receivers.shp").getPath())
         def res = new Table_Visualization_Map().exec(connection,
                 ["tableName": "receivers" ])
-        assertTrue(res instanceof org.locationtech.jts.geom.MultiPoint)
+        assertTrue(res instanceof MultiPoint)
     }
 
     @Test
@@ -110,6 +111,6 @@ class TestDatabaseManager extends JdbcTestCase {
                 ["tableName": "receivers" ])
         assertTrue(res.contains("The total number of rows is 830"))
         assertTrue(res.contains("The srid of the table is 2154"))
-        assertTrue(res.contains("POINT (223495.9880411485 6757167.98900822 0)"))
+        assertTrue(res.contains("POINT Z(223495.9880411485 6757167.98900822 0)"))
     }
 }

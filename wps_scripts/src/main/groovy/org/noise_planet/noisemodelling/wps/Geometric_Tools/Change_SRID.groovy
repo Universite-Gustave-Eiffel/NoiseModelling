@@ -126,8 +126,8 @@ def exec(Connection connection, input) {
             resultString = "The table already counts " + newSrid.toString() + " as SRID."
         else {
             stmt.execute("CREATE table temp as select ST_Transform(the_geom," + newSrid.toInteger() + ") THE_GEOM" + sbFields + " FROM " + TableLocation.parse(tableName).toString())
-            stmt.execute("DROP TABLE" + TableLocation.parse(tableName).toString())
-            stmt.execute("CREATE TABLE" + TableLocation.parse(tableName).toString() + " AS SELECT * FROM TEMP")
+            stmt.execute("DROP TABLE " + TableLocation.parse(tableName).toString())
+            stmt.execute("CREATE TABLE " + TableLocation.parse(tableName).toString() + " AS SELECT * FROM TEMP")
             stmt.execute("DROP TABLE TEMP")
             if (pkField != "") {
                 stmt.execute("ALTER TABLE " + tableName.toString() + " ALTER COLUMN " + pkField + " INT NOT NULL;")
@@ -137,8 +137,8 @@ def exec(Connection connection, input) {
         }
     } else {     // if the table doesn't have any associated SRID
         stmt.execute("CREATE table temp as select ST_SetSRID(the_geom," + newSrid.toInteger() + ") THE_GEOM" + sbFields + " FROM " + TableLocation.parse(tableName).toString())
-        stmt.execute("DROP TABLE" + TableLocation.parse(tableName).toString())
-        stmt.execute("CREATE TABLE" + TableLocation.parse(tableName).toString() + " AS SELECT * FROM TEMP")
+        stmt.execute("DROP TABLE " + TableLocation.parse(tableName).toString())
+        stmt.execute("CREATE TABLE " + TableLocation.parse(tableName).toString() + " AS SELECT * FROM TEMP")
         stmt.execute("DROP TABLE TEMP")
         if (pkField != "") {
             stmt.execute("ALTER TABLE " + tableName.toString() + " ALTER COLUMN " + pkField + " INT NOT NULL;")

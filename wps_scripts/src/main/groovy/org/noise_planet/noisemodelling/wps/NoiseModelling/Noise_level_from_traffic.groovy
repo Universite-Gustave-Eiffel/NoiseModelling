@@ -586,7 +586,7 @@ def exec(Connection connection, input) {
                 LDENPropagationProcessData ldenPropagationProcessData = (LDENPropagationProcessData) ro.inputData;
                 logger.info(String.format("This computation area contains %d receivers %d sound sources and %d buildings",
                         ldenPropagationProcessData.receivers.size(), ldenPropagationProcessData.sourceGeometries.size(),
-                        ldenPropagationProcessData.freeFieldFinder.getBuildingCount()));
+                        ldenPropagationProcessData.profileBuilder.getBuildingCount()));
             }
         }
     } catch(IllegalArgumentException | IllegalStateException ex) {

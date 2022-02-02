@@ -183,7 +183,7 @@ def exec(Connection connection, input) {
 
         // Merge buildings and buffered screens
         sql.execute("DROP TABLE IF EXISTS BUILDINGS_SCREENS")
-        sql.execute("CREATE TABLE BUILDINGS_SCREENS as select the_geom the_geom, HEIGHT from TMP_BUFFERED_SCREENS sc UNION ALL select the_geom, HEIGHT from " + building_table_name + " ")
+        sql.execute("CREATE TABLE BUILDINGS_SCREENS(the_geom GEOMETRY, height double) as select the_geom the_geom, HEIGHT from TMP_BUFFERED_SCREENS sc UNION ALL select the_geom, HEIGHT from " + building_table_name + " ")
         sql.execute("DROP TABLE IF EXISTS TMP_BUFFERED_SCREENS")
         sql.execute("DROP TABLE IF EXISTS BUFFERED_SCREENS")
 
