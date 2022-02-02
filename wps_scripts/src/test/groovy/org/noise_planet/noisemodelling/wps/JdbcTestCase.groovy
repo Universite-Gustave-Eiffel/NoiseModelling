@@ -26,7 +26,7 @@ class JdbcTestCase  extends GroovyTestCase {
 
     @Before
     void setUp() {
-        connection = JDBCUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(UUID.randomUUID().toString(), true))
+        connection = JDBCUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(UUID.randomUUID().toString().replace("-", ""), true))
     }
 
     @After

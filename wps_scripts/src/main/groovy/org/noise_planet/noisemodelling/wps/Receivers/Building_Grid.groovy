@@ -194,7 +194,7 @@ def exec(Connection connection, input) {
         fenceGeom = GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(input['fenceTableName'] as String), "THE_GEOM")
     }
 
-    def buildingPk = JDBCUtilities.getFieldName(connection.getMetaData(), building_table_name, JDBCUtilities.getIntegerPrimaryKey(connection, building_table_name));
+    def buildingPk = JDBCUtilities.getFieldName(connection.getMetaData(), building_table_name, JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse(building_table_name)))
     if (buildingPk == "") {
         return "Buildings table must have a primary key"
     }

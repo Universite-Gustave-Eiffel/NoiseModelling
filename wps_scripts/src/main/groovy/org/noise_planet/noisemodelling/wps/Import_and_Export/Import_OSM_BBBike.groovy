@@ -392,7 +392,7 @@ def exec(Connection connection, input) {
         }
 
         // get the index of the primary key column (if exists > 0)
-        pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, tableName.toString())
+        pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse(tableName))
 
         // Reattribute Primary key
         if (pkIndex ==0) {

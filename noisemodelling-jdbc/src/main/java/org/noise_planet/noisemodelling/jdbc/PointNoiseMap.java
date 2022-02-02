@@ -22,6 +22,7 @@ import org.noise_planet.noisemodelling.pathfinder.CnossosPropagationData;
 import org.noise_planet.noisemodelling.pathfinder.ComputeCnossosRays;
 import org.noise_planet.noisemodelling.pathfinder.IComputeRaysOut;
 import org.noise_planet.noisemodelling.pathfinder.ProfileBuilder;
+import org.noise_planet.noisemodelling.pathfinder.utils.ProfilerThread;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 import org.slf4j.Logger;
@@ -44,10 +45,29 @@ public class PointNoiseMap extends JdbcNoiseMap {
     private IComputeRaysOutFactory computeRaysOutFactory;
     private Logger logger = LoggerFactory.getLogger(PointNoiseMap.class);
     private int threadCount = 0;
+    private ProfilerThread profilerThread;
 
     public PointNoiseMap(String buildingsTableName, String sourcesTableName, String receiverTableName) {
         super(buildingsTableName, sourcesTableName);
         this.receiverTableName = receiverTableName;
+    }
+
+    /**
+     * Computation stacks and timing are collected by this class in order
+     * to profile the execution of the simulation
+     * @return Instance of ProfilerThread or null
+     */
+    public ProfilerThread getProfilerThread() {
+        return profilerThread;
+    }
+
+    /**
+     * Computation stacks and timing are collected by this class in order
+     * to profile the execution of the simulation
+     * @param profilerThread Instance of ProfilerThread
+     */
+    public void setProfilerThread(ProfilerThread profilerThread) {
+        this.profilerThread = profilerThread;
     }
 
     public void setComputeRaysOutFactory(IComputeRaysOutFactory computeRaysOutFactory) {
@@ -240,6 +260,10 @@ public class PointNoiseMap extends JdbcNoiseMap {
         }
 
         ComputeCnossosRays computeRays = new ComputeCnossosRays(threadData);
+
+        if(profilerThread != null) {
+            computeRays.setProfilerThread(profilerThread);
+        }
 
         if(threadCount > 0) {
             computeRays.setThreadCount(threadCount);

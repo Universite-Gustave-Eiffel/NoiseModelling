@@ -194,7 +194,7 @@ def exec(Connection connection, input) {
     }
 
 
-    def buildingPk = JDBCUtilities.getFieldName(connection.getMetaData(), building_table_name, JDBCUtilities.getIntegerPrimaryKey(connection, building_table_name));
+    def buildingPk = JDBCUtilities.getColumnName(connection, building_table_name, JDBCUtilities.getIntegerPrimaryKey(connection, building_table_name));
     if (buildingPk == "") {
         return "Buildings table must have a primary key"
     }

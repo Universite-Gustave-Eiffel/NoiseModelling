@@ -358,7 +358,7 @@ def exec(Connection connection, input) {
     }
 
     //Get the primary key field of the source table
-    int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, sources_table_name)
+    int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse(sources_table_name))
     if (pkIndex < 1) {
         throw new IllegalArgumentException(String.format("Source table %s does not contain a primary key", sourceTableIdentifier))
     }
@@ -380,7 +380,7 @@ def exec(Connection connection, input) {
 
 
     //Get the primary key field of the receiver table
-    int pkIndexRecv = JDBCUtilities.getIntegerPrimaryKey(connection, receivers_table_name)
+    int pkIndexRecv = JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse(receivers_table_name))
     if (pkIndexRecv < 1) {
         throw new IllegalArgumentException(String.format("Source table %s does not contain a primary key", receiverTableIdentifier))
     }

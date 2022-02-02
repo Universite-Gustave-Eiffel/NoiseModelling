@@ -233,7 +233,7 @@ def exec(Connection connection, input) {
             // If the table has a PK column and doesn't have any Primary Key Constraint, then automatically associate a Primary Key
             ResultSet rs2 = stmt.executeQuery("SELECT * FROM \"" + outputTableName + "\"")
             int pkUserIndex = JDBCUtilities.getFieldIndex(rs2.getMetaData(), "PK")
-            int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, outputTableName)
+            int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse(outputTableName))
 
             if (pkIndex == 0) {
                 if (pkUserIndex > 0) {

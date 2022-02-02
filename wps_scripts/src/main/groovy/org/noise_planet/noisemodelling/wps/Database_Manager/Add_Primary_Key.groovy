@@ -20,6 +20,7 @@ import geoserver.GeoServer
 import geoserver.catalog.Store
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.utilities.JDBCUtilities
+import org.h2gis.utilities.TableLocation
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -92,7 +93,7 @@ def exec(Connection connection, input) {
     Statement stmt = connection.createStatement()
 
     // get the index of the primary key column (if exists > 0)
-    int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, table)
+    int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse(table))
 
     // get the index of the column given by the user (if exists > 0)
     ResultSet rs = stmt.executeQuery("SELECT * FROM " + table)

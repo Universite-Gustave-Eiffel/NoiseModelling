@@ -144,11 +144,11 @@ static String mapToTable(List<Map> list, Sql sql, String tableName, Connection c
     }
 
     //get SRID of the table
-    int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, tableName)
+    int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse(tableName))
 
     if (pkIndex > 0) {
         output.append("</br>")
-        output.append("The table has the following primary key : " + JDBCUtilities.getFieldName(connection.getMetaData(),tableName, pkIndex))
+        output.append("The table has the following primary key : " + JDBCUtilities.getColumnName(connection, tableName, pkIndex))
     } else {
         output.append("</br>")
         output.append("This table does not have primary key.")

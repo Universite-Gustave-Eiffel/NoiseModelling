@@ -43,12 +43,15 @@ import org.locationtech.jts.geom.prep.PreparedLineString;
 import org.locationtech.jts.index.ItemVisitor;
 import org.locationtech.jts.math.Vector3D;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
+import org.noise_planet.noisemodelling.pathfinder.utils.ProfilerThread;
+import org.noise_planet.noisemodelling.pathfinder.utils.ReceiverStatsMetric;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static java.lang.Double.isInfinite;
@@ -82,6 +85,7 @@ public class ComputeCnossosRays {
 
     /** Number of thread used for ray computation. */
     private int threadCount ;
+    private ProfilerThread profilerThread;
 
     /**
      * Create new instance from the propagation data.
@@ -90,6 +94,24 @@ public class ComputeCnossosRays {
     public ComputeCnossosRays (CnossosPropagationData data) {
         this.data = data;
         this.threadCount = Runtime.getRuntime().availableProcessors();
+    }
+
+    /**
+     * Computation stacks and timing are collected by this class in order
+     * to profile the execution of the simulation
+     * @return Instance of ProfilerThread or null
+     */
+    public ProfilerThread getProfilerThread() {
+        return profilerThread;
+    }
+
+    /**
+     * Computation stacks and timing are collected by this class in order
+     * to profile the execution of the simulation
+     * @param profilerThread Instance of ProfilerThread
+     */
+    public void setProfilerThread(ProfilerThread profilerThread) {
+        this.profilerThread = profilerThread;
     }
 
     /**
@@ -206,8 +228,9 @@ public class ComputeCnossosRays {
         Collections.sort(sourceList);
         double powerAtSource = 0;
         // For each Pt Source - Pt Receiver
+        AtomicInteger raysCount = new AtomicInteger(0);
         for (SourcePointInfo src : sourceList) {
-            double[] power = rcvSrcPropagation(src, src.li, rcv, dataOut);
+            double[] power = rcvSrcPropagation(src, src.li, rcv, dataOut, raysCount);
             double global = sumArray(power.length, dbaToW(power));
             totalPowerRemaining -= src.globalWj;
             if (power.length > 0) {
@@ -222,6 +245,12 @@ public class ComputeCnossosRays {
                 break; //Stop looking for more rays
             }
         }
+
+        if(profilerThread != null &&
+                profilerThread.getMetric(ReceiverStatsMetric.class) != null) {
+            profilerThread.getMetric(ReceiverStatsMetric.class).onReceiverRays(rcv.getId(), raysCount.get());
+        }
+
         // No more rays for this receiver
         dataOut.finalizeReceiver(rcv.getId());
     }
@@ -236,7 +265,7 @@ public class ComputeCnossosRays {
      * @return
      */
     private double[] rcvSrcPropagation(SourcePointInfo src, double srcLi,
-                                         ReceiverPointInfo rcv, IComputeRaysOut dataOut) {
+                                         ReceiverPointInfo rcv, IComputeRaysOut dataOut, AtomicInteger raysCount) {
 
         double propaDistance = src.getCoord().distance(rcv.getCoord());
         if (propaDistance < data.maxSrcDist) {
@@ -247,6 +276,9 @@ public class ComputeCnossosRays {
                 propagationPaths.addAll(computeReflexion(rcv.getCoord(), src.getCoord(), false, src.getOrientation()));
             }
             if (!propagationPaths.isEmpty()) {
+                if(raysCount != null) {
+                    raysCount.addAndGet(propagationPaths.size());
+                }
                 return dataOut.addPropagationPaths(src.getId(), srcLi, rcv.getId(), propagationPaths);
             }
         }
